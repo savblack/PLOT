@@ -1,17 +1,53 @@
 import { useState, useEffect } from 'react';
 import { tmdb } from './api/tmdb';
-import { useStorage } from './hooks/useStorage';
+import { supabase } from './api/supabase';
 import MediaModal from './components/MediaModal';
+import AuthModal from './components/AuthModal';
 
 export default function App() {
-  const [watched, setWatched] = useStorage('plot-watched', []);
+  const [watched, setWatched] = useState([]);
+  const [user, setUser] = useState(null);
+  const [showAuth, setShowAuth] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [trending, setTrending] = useState([]);
   const [view, setView] = useState('home'); // home, search, watchlist, suggested
   const [selectedItem, setSelectedItem] = useState(null);
-
   const [suggested, setSuggested] = useState([]);
+
+  // Check user session and load local fallback
+  useEffect(() => {
+    const init = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setUser(session?.user || null);
+
+      if (!session) {
+        const local = localStorage.getItem('plot-watched');
+        if (local) setWatched(JSON.parse(local));
+      }
+    };
+    init();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user || null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Sync with Supabase when user is logged in
+  useEffect(() => {
+    if (user) {
+      const fetchJournal = async () => {
+        const { data, error } = await supabase
+          .from('journal')
+          .select('*')
+          .order('watched_at', { ascending: false });
+        if (data) setWatched(data.map(i => ({ ...i, id: i.tmdb_id })));
+      };
+      fetchJournal();
+    }
+  }, [user]);
 
   useEffect(() => {
     const loadTrending = async () => {
@@ -51,16 +87,53 @@ export default function App() {
     }
   };
 
-  const saveToWatched = (item) => {
-    setWatched(prev => {
-      const existing = prev.findIndex(i => i.id === item.id);
-      if (existing > -1) {
-        const update = [...prev];
-        update[existing] = item;
-        return update;
+  const saveToWatched = async (item) => {
+    if (user) {
+      const entry = {
+        user_id: user.id,
+        tmdb_id: item.id,
+        media_type: item.type || (item.title ? 'movie' : 'tv'),
+        title: item.title || item.name,
+        poster_path: item.poster_path,
+        rating: item.rating,
+        note: item.note
+      };
+
+      const { data, error } = await supabase
+        .from('journal')
+        .upsert(entry, { onConflict: 'user_id, tmdb_id' });
+
+      if (error) {
+        console.error('Supabase Sync Error:', error);
+      } else {
+        // Optimistic update
+        setWatched(prev => {
+          const existing = prev.findIndex(i => i.id === item.id);
+          if (existing > -1) {
+            const update = [...prev];
+            update[existing] = { ...item };
+            return update;
+          }
+          return [{ ...item }, ...prev];
+        });
       }
-      return [item, ...prev];
-    });
+    } else {
+      // Local fallback
+      const updated = [...watched];
+      const existing = updated.findIndex(i => i.id === item.id);
+      if (existing > -1) {
+        updated[existing] = item;
+      } else {
+        updated.unshift(item);
+      }
+      setWatched(updated);
+      localStorage.setItem('plot-watched', JSON.stringify(updated));
+    }
+  };
+
+  const logout = () => {
+    supabase.auth.signOut();
+    setWatched([]);
   };
 
   const getSavedData = (id) => watched.find(i => i.id === id);
@@ -84,7 +157,11 @@ export default function App() {
             </form>
           </div>
           <div className="action-btns">
-            <button className="create-btn">Create</button>
+            {user ? (
+              <button className="create-btn" onClick={logout}>Sign Out</button>
+            ) : (
+              <button className="create-btn" onClick={() => setShowAuth(true)}>Log In</button>
+            )}
           </div>
         </div>
 
@@ -184,6 +261,13 @@ export default function App() {
           onClose={() => setSelectedItem(null)}
           onSave={saveToWatched}
           savedData={getSavedData(selectedItem.id)}
+        />
+      )}
+
+      {showAuth && (
+        <AuthModal 
+          onClose={() => setShowAuth(false)} 
+          onAuthSuccess={(u) => setUser(u)} 
         />
       )}
 
