@@ -54,7 +54,7 @@ export default function MediaModal({ item, onClose, onSave, savedData, userLists
                 viewBox="0 0 24 24" 
                 fill={rating >= val ? 'currentColor' : 'none'} 
                 stroke="currentColor" 
-                strokeWidth="1.5"
+                strokeWidth="0.7"
               >
                 <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
               </svg>
@@ -444,6 +444,70 @@ export default function MediaModal({ item, onClose, onSave, savedData, userLists
           background: #4CAF50;
           pointer-events: none;
         }
+
+        [data-theme="dark"] .modal-content {
+          background: #161616;
+          border-color: rgba(255,255,255,0.06);
+          box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+        }
+
+        [data-theme="dark"] .close-btn {
+          background: #2a2a2a;
+          color: #f0f0f0;
+        }
+        [data-theme="dark"] .close-btn:hover { background: #333; }
+
+        [data-theme="dark"] .poster-side {
+          background: #111;
+        }
+
+        [data-theme="dark"] .providers h3 {
+          color: #f0f0f0;
+        }
+
+        [data-theme="dark"] .provider-pill {
+          background: #2a2a2a;
+          color: #f0f0f0;
+        }
+
+        [data-theme="dark"] textarea {
+          background: #1e1e1e;
+          border-color: #333;
+          color: #f0f0f0;
+        }
+        [data-theme="dark"] textarea::placeholder { color: #555; }
+        [data-theme="dark"] textarea:focus { border-color: #555; }
+
+        [data-theme="dark"] .list-pill {
+          background: #2a2a2a;
+          color: #ccc;
+        }
+        [data-theme="dark"] .list-pill.active {
+          background: #444;
+          color: #f0f0f0;
+        }
+
+        [data-theme="dark"] .add-list-btn {
+          border-color: #444;
+          color: #888;
+        }
+
+        [data-theme="dark"] .new-list-input input {
+          background: #2a2a2a;
+          border-color: #444;
+          color: #f0f0f0;
+        }
+        [data-theme="dark"] .new-list-input button {
+          background: #444;
+        }
+
+        [data-theme="dark"] .save-btn {
+          background: #2a2a2a;
+          color: #aaa;
+        }
+
+        [data-theme="dark"] .star-btn.active { color: #f0f0f0; }
+        [data-theme="dark"] .rating-value { color: #f0f0f0; }
 
         @media (max-width: 900px) {
           .modal-body { grid-template-columns: 1fr; }

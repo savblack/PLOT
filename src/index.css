@@ -16,6 +16,16 @@
   --transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
+[data-theme="dark"] {
+  --bg-color: #111111;
+  --surface-color: #1c1c1c;
+  --text-primary: #f0f0f0;
+  --text-secondary: #888888;
+  --accent-primary: #ffffff;
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-bg: rgba(28, 28, 28, 0.85);
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -172,4 +182,13 @@ h1, h2, h3 {
 
 @media (max-width: 480px) {
   .modal-overlay { padding: 0.5rem; }
+}
+
+[data-theme="dark"] .modal-overlay {
+  background: rgba(0,0,0,0.5);
+}
+
+[data-theme="dark"] .stack-card.empty {
+  background: #1c1c1c;
+  border-color: #333;
 }

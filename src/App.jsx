@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { tmdb } from './api/tmdb';
 import { supabase } from './api/supabase';
 import MediaModal from './components/MediaModal';
@@ -288,6 +289,27 @@ export default function App() {
   const [showJournalNewList, setShowJournalNewList] = useState(false);
   const [journalNewListName, setJournalNewListName] = useState('');
   const [showMobileSearch, setShowMobileSearch] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [theme, setTheme] = useState(() => localStorage.getItem('plot-theme') || 'system');
+  const [feedLayout, setFeedLayout] = useState(() => localStorage.getItem('plot-feed-layout') || 'bento');
+
+  useEffect(() => {
+    localStorage.setItem('plot-theme', theme);
+    const root = document.documentElement;
+    if (theme === 'system') {
+      const mq = window.matchMedia('(prefers-color-scheme: dark)');
+      root.setAttribute('data-theme', mq.matches ? 'dark' : 'light');
+      const handler = e => root.setAttribute('data-theme', e.matches ? 'dark' : 'light');
+      mq.addEventListener('change', handler);
+      return () => mq.removeEventListener('change', handler);
+    } else {
+      root.setAttribute('data-theme', theme);
+    }
+  }, [theme]);
+
+  useEffect(() => {
+    localStorage.setItem('plot-feed-layout', feedLayout);
+  }, [feedLayout]);
 
   const ListStack = ({ list, items }) => {
     const [hoverIndex, setHoverIndex] = useState(0);
@@ -408,7 +430,53 @@ export default function App() {
             </form>
           </div>
           {user ? (
-            <button className="auth-header-btn" onClick={logout}>Sign Out</button>
+            <div className="profile-menu-wrapper">
+              <button className="profile-avatar-btn" onClick={() => setShowProfileMenu(v => !v)}>
+                {user.email?.[0]?.toUpperCase()}
+              </button>
+              {showProfileMenu && createPortal(
+                <>
+                  <div className="profile-menu-backdrop" onClick={() => setShowProfileMenu(false)} />
+                  <div className="profile-dropdown">
+                    <div className="profile-dropdown-header">
+                      <div className="profile-dropdown-avatar">{user.email?.[0]?.toUpperCase()}</div>
+                      <p className="profile-dropdown-email">{user.email}</p>
+                    </div>
+                    <div className="profile-dropdown-settings">
+                      <div className="settings-row">
+                        <span className="settings-label">Theme</span>
+                        <div className="settings-toggle">
+                          <button className={theme === 'light' ? 'active' : ''} onClick={() => setTheme('light')} title="Light">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                          </button>
+                          <button className={theme === 'dark' ? 'active' : ''} onClick={() => setTheme('dark')} title="Dark">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                          </button>
+                          <button className={theme === 'system' ? 'active' : ''} onClick={() => setTheme('system')} title="System">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20z" fill="currentColor" stroke="none"/></svg>
+                          </button>
+                        </div>
+                      </div>
+                      <div className="settings-row">
+                        <span className="settings-label">View</span>
+                        <div className="settings-toggle">
+                          <button className={feedLayout === 'bento' ? 'active' : ''} onClick={() => setFeedLayout('bento')} title="Bento">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="11" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="18" width="7" height="3" rx="1"/></svg>
+                          </button>
+                          <button className={feedLayout === 'grid' ? 'active' : ''} onClick={() => setFeedLayout('grid')} title="Grid">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="9" rx="1"/><rect x="3" y="15" width="7" height="9" rx="1"/><rect x="14" y="15" width="7" height="9" rx="1"/></svg>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    <button className="profile-dropdown-item danger" onClick={() => { logout(); setShowProfileMenu(false); }}>
+                      Sign Out
+                    </button>
+                  </div>
+                </>,
+                document.body
+              )}
+            </div>
           ) : (
             <button className="auth-header-btn" onClick={() => setShowAuth(true)}>Sign In</button>
           )}
@@ -450,7 +518,7 @@ export default function App() {
                 .map((item, index) => (
                 <div 
                   key={`${item.id}-${index}`} 
-                  className={`bento-item glass ${index % 5 === 0 ? 'large' : ''}`}
+                  className={`bento-item glass ${feedLayout === 'bento' && index % 5 === 0 ? 'large' : ''}`}
                   onClick={() => setSelectedItem(item)}
                 >
                   <img src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title || item.name} />
@@ -478,7 +546,7 @@ export default function App() {
               {(mediaFilter === 'movie' ? newReleases : newTV).map((item, index) => (
                 <div 
                   key={item.id} 
-                  className={`bento-item glass ${index === 0 ? 'large' : ''}`}
+                  className={`bento-item glass ${feedLayout === 'bento' && index === 0 ? 'large' : ''}`}
                   onClick={() => setSelectedItem(item)}
                 >
                   <img src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title || item.name} />
@@ -534,56 +602,48 @@ export default function App() {
               </div>
             ) : (
               <div className="journal-section">
-                <h2 className="section-title">Your Lists</h2>
-                <div className="lists-grid">
-                  {showJournalNewList ? (
-                    <div className="list-stack new-list-stack">
-                      <div className="stack-container">
-                        <div className="stack-card empty">
-                          <div className="new-list-inline">
-                            <input
-                              type="text"
-                              placeholder="List name..."
-                              value={journalNewListName}
-                              autoFocus
-                              onChange={e => setJournalNewListName(e.target.value)}
-                              onKeyDown={async (e) => {
-                                if (e.key === 'Enter') {
-                                  e.preventDefault();
-                                  if (journalNewListName.trim()) {
-                                    await createList(journalNewListName.trim());
-                                    setJournalNewListName('');
-                                    setShowJournalNewList(false);
-                                  }
-                                }
-                                if (e.key === 'Escape') {
-                                  e.preventDefault();
-                                  setJournalNewListName('');
-                                  setShowJournalNewList(false);
-                                }
-                              }}
-                            />
-                            <button onClick={async () => {
-                              if (journalNewListName.trim()) {
-                                await createList(journalNewListName.trim());
-                                setJournalNewListName('');
-                                setShowJournalNewList(false);
-                              }
-                            }}>Create</button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="list-stack" onClick={() => setShowJournalNewList(true)}>
-                      <div className="stack-container">
-                        <div className="stack-card empty new-list-card">
-                          <span>+ NEW LIST</span>
-                        </div>
-                      </div>
-                    </div>
+                <div className="section-header-row">
+                  <h2 className="section-title">Your Lists</h2>
+                  {!showJournalNewList && (
+                    <button className="new-list-header-btn" onClick={() => setShowJournalNewList(true)}>
+                      + New List
+                    </button>
                   )}
-
+                </div>
+                {showJournalNewList && (
+                  <div className="new-list-bar">
+                    <input
+                      type="text"
+                      placeholder="List name..."
+                      value={journalNewListName}
+                      autoFocus
+                      onChange={e => setJournalNewListName(e.target.value)}
+                      onKeyDown={async (e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          if (journalNewListName.trim()) {
+                            await createList(journalNewListName.trim());
+                            setJournalNewListName('');
+                            setShowJournalNewList(false);
+                          }
+                        }
+                        if (e.key === 'Escape') {
+                          setJournalNewListName('');
+                          setShowJournalNewList(false);
+                        }
+                      }}
+                    />
+                    <button onClick={async () => {
+                      if (journalNewListName.trim()) {
+                        await createList(journalNewListName.trim());
+                        setJournalNewListName('');
+                        setShowJournalNewList(false);
+                      }
+                    }}>Create</button>
+                    <button className="cancel-btn" onClick={() => { setJournalNewListName(''); setShowJournalNewList(false); }}>Cancel</button>
+                  </div>
+                )}
+                <div className="lists-grid">
                   {userLists.map(list => (
                     <ListStack
                       key={list.id}
@@ -822,6 +882,7 @@ export default function App() {
           cursor: pointer;
           border: none;
           transition: var(--transition);
+          z-index: 0;
         }
 
         .bento-item.large {
@@ -1083,7 +1144,6 @@ export default function App() {
           border-radius: var(--radius-md);
           overflow: hidden;
           box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-          background: #eee;
         }
 
         .stack-card img {
@@ -1140,45 +1200,304 @@ export default function App() {
           grid-column: 1 / -1;
         }
 
-        .new-list-card {
-          border: 2px dashed #ccc !important;
-          background: #fafafa !important;
+        .new-list-header-btn {
+          background: none;
+          border: 1px solid #ccc;
+          color: var(--text-secondary);
+          padding: 0.4rem 1rem;
+          border-radius: var(--radius-pill);
+          font-size: 0.8rem;
+          cursor: pointer;
+          font-family: var(--font-sans);
           transition: var(--transition);
         }
-
-        .new-list-card:hover {
-          border-color: #999 !important;
-          background: #f0f0f0 !important;
+        .new-list-header-btn:hover {
+          border-color: #999;
+          color: var(--text-primary);
         }
 
-        .new-list-inline {
+        .new-list-bar {
           display: flex;
-          flex-direction: column;
-          gap: 0.8rem;
-          padding: 1.5rem;
-          width: 100%;
+          gap: 0.5rem;
+          align-items: center;
+          margin-bottom: 1.5rem;
         }
-
-        .new-list-inline input {
-          background: white;
+        .new-list-bar input {
+          flex: 1;
+          background: var(--bg-secondary);
           border: 1px solid #ddd;
           padding: 0.6rem 1rem;
           border-radius: var(--radius-pill);
           font-size: 0.85rem;
           outline: none;
-          width: 100%;
-          font-family: inherit;
+          font-family: var(--font-sans);
+        }
+        .new-list-bar input:focus { border-color: #aaa; }
+        .new-list-bar button {
+          background: #444;
+          color: #f0f0f0;
+          border: none;
+          padding: 0.6rem 1.1rem;
+          border-radius: var(--radius-pill);
+          font-size: 0.8rem;
+          cursor: pointer;
+          font-family: var(--font-sans);
+        }
+        .new-list-bar .cancel-btn {
+          background: none;
+          color: var(--text-secondary);
+          border: 1px solid #ddd;
+        }
+        .new-list-bar .cancel-btn:hover { border-color: #aaa; }
+
+        /* Profile menu */
+        .profile-menu-wrapper {
+          position: relative;
+          margin-left: 0.8rem;
         }
 
-        .new-list-inline button {
-          background: black;
+        .profile-avatar-btn {
+          width: 34px;
+          height: 34px;
+          border-radius: 50%;
+          background: #1a1a1a;
           color: white;
           border: none;
-          padding: 0.6rem 1rem;
-          border-radius: var(--radius-pill);
-          font-size: 0.85rem;
           cursor: pointer;
-          font-family: inherit;
+          font-size: 0.85rem;
+          font-weight: 300;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-family: var(--font-sans);
+          transition: opacity 0.2s ease;
+        }
+
+        .profile-avatar-btn:hover { opacity: 0.8; }
+
+        .profile-menu-backdrop {
+          position: fixed;
+          inset: 0;
+          z-index: 9998;
+        }
+
+        .profile-dropdown {
+          position: fixed;
+          top: 70px;
+          right: 1.5rem;
+          background: white;
+          border-radius: var(--radius-lg);
+          box-shadow: 0 8px 40px rgba(0,0,0,0.12);
+          border: 1px solid rgba(0,0,0,0.06);
+          min-width: 220px;
+          z-index: 9999;
+          overflow: hidden;
+          animation: fadeIn 0.15s ease;
+        }
+
+        .profile-dropdown-header {
+          padding: 1.5rem;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 0.6rem;
+          background: #f8f8f8;
+        }
+
+        .profile-dropdown-avatar {
+          width: 52px;
+          height: 52px;
+          border-radius: 50%;
+          background: #1a1a1a;
+          color: white;
+          font-size: 1.3rem;
+          font-weight: 300;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-family: var(--font-sans);
+        }
+
+        .profile-dropdown-email {
+          font-size: 0.8rem;
+          color: var(--text-secondary);
+          text-align: center;
+          word-break: break-all;
+        }
+
+        .profile-dropdown-item {
+          width: 100%;
+          background: none;
+          border: none;
+          padding: 0.9rem 1.5rem;
+          text-align: left;
+          font-size: 0.9rem;
+          font-weight: 500;
+          cursor: pointer;
+          color: var(--text-primary);
+          font-family: var(--font-sans);
+          transition: background 0.15s ease;
+          display: block;
+        }
+
+        .profile-dropdown-item:hover { background: #f8f8f8; }
+        .profile-dropdown-item.danger { color: #c00; }
+
+        .profile-dropdown-settings {
+          padding: 0.5rem 0;
+          border-bottom: 1px solid rgba(0,0,0,0.06);
+        }
+
+        .settings-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 0.65rem 1.25rem;
+        }
+
+        .settings-label {
+          font-size: 0.82rem;
+          color: var(--text-secondary);
+          font-family: var(--font-sans);
+          font-weight: 500;
+          letter-spacing: 0.01em;
+        }
+
+        .settings-toggle {
+          display: flex;
+          gap: 2px;
+          background: #ebebeb;
+          border-radius: 999px;
+          padding: 3px;
+        }
+
+        [data-theme="dark"] .profile-dropdown {
+          background: #1c1c1c;
+          border-color: rgba(255,255,255,0.08);
+          box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+        }
+
+        [data-theme="dark"] .profile-dropdown-header {
+          background: #141414;
+        }
+
+        [data-theme="dark"] .profile-dropdown-avatar {
+          background: #f0f0f0;
+          color: #1a1a1a;
+        }
+
+        [data-theme="dark"] .profile-dropdown-email {
+          color: #888;
+        }
+
+        [data-theme="dark"] .profile-dropdown-settings {
+          border-bottom-color: rgba(255,255,255,0.06);
+        }
+
+        [data-theme="dark"] .settings-label {
+          color: #777;
+        }
+
+        [data-theme="dark"] .settings-toggle {
+          background: #2a2a2a;
+        }
+
+        [data-theme="dark"] .settings-toggle button.active {
+          background: #3a3a3a;
+          color: #f0f0f0;
+          box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+        }
+
+        [data-theme="dark"] .settings-toggle button:hover {
+          color: #ccc;
+        }
+
+        [data-theme="dark"] .profile-dropdown-item {
+          color: #f0f0f0;
+        }
+
+        [data-theme="dark"] .profile-dropdown-item:hover {
+          background: #2a2a2a;
+        }
+
+        [data-theme="dark"] .header-nav {
+          background: #222;
+        }
+        [data-theme="dark"] .header-nav button.active {
+          background: #383838;
+          color: #f0f0f0;
+        }
+
+        [data-theme="dark"] .filter-toggle {
+          background: #222;
+        }
+        [data-theme="dark"] .filter-toggle button.active {
+          background: #383838;
+          color: #f0f0f0;
+        }
+
+        [data-theme="dark"] .search-pill.search-small {
+          background: #222;
+        }
+        [data-theme="dark"] .search-pill.search-small input::placeholder {
+          color: #666;
+        }
+
+        [data-theme="dark"] .mobile-filter-row {
+          background: #222;
+        }
+        [data-theme="dark"] .mobile-filter-row button.active {
+          background: #383838;
+          color: #f0f0f0;
+        }
+
+        [data-theme="dark"] .mobile-search-overlay {
+          background: #1c1c1c;
+        }
+
+        [data-theme="dark"] .auth-header-btn {
+          border-color: #333;
+        }
+
+        [data-theme="dark"] .section-title {
+          color: #f0f0f0;
+        }
+
+        [data-theme="dark"] .new-list-header-btn {
+          border-color: #444;
+        }
+        [data-theme="dark"] .new-list-bar input {
+          background: #2a2a2a;
+          border-color: #444;
+          color: #f0f0f0;
+        }
+        [data-theme="dark"] .new-list-bar .cancel-btn {
+          border-color: #444;
+        }
+
+        .settings-toggle button {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 30px;
+          height: 26px;
+          border: none;
+          border-radius: 999px;
+          background: transparent;
+          color: #999;
+          cursor: pointer;
+          transition: all 0.15s ease;
+          padding: 0;
+        }
+
+        .settings-toggle button:hover {
+          color: #555;
+        }
+
+        .settings-toggle button.active {
+          background: white;
+          color: #1a1a1a;
+          box-shadow: 0 1px 4px rgba(0,0,0,0.12);
         }
 
         @media (max-width: 1024px) {
@@ -1190,6 +1509,7 @@ export default function App() {
           .content-grid { padding-bottom: 80px; }
           .header-right { gap: 0.2rem; }
           .auth-header-btn { margin-left: 0; }
+          .profile-menu-wrapper { margin-left: 0; }
         }
 
         @media (max-width: 768px) {
