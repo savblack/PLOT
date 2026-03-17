@@ -29,12 +29,7 @@ export default function AuthModal({ onClose, onAuthSuccess }) {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="auth-box glass animate-in" onClick={e => e.stopPropagation()}>
-        <button className="close-btn" onClick={onClose}>
-           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
-        </button>
-        
-        <h2>{mode === 'login' ? 'Welcome Back' : 'Join Plot'}</h2>
-        <p className="subtitle">{mode === 'login' ? 'Sign in to sync your journal.' : 'Start your personal cinema diary.'}</p>
+        <h2>{mode === 'login' ? 'Welcome Back' : 'Join PLOT'}</h2>
 
         <form onSubmit={handleSubmit}>
           {error && <div className="error-badge">{error}</div>}
@@ -80,7 +75,7 @@ export default function AuthModal({ onClose, onAuthSuccess }) {
           position: relative;
         }
 
-        h2 { font-size: 2rem; margin-bottom: 0.5rem; }
+        h2 { font-size: 2rem; margin-bottom: 1.5rem; }
         
         .subtitle { 
           color: var(--text-secondary); 

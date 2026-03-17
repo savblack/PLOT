@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Inter:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Manrope:wght@300;400;500;600;700;800&display=swap');
 
 :root {
   --bg-color: #f8f8f8;
@@ -9,7 +9,7 @@
   --glass-border: rgba(0, 0, 0, 0.05);
   --glass-bg: rgba(255, 255, 255, 0.8);
   --font-serif: 'Playfair Display', serif;
-  --font-sans: 'Inter', sans-serif;
+  --font-sans: 'Manrope', sans-serif;
   --radius-lg: 32px;
   --radius-md: 16px;
   --radius-pill: 9999px;
@@ -73,4 +73,99 @@ h1, h2, h3 {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #bbb;
+}
+
+/* Journal Lists Grid */
+.lists-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 3rem 2rem;
+  margin-top: 1rem;
+}
+
+.list-stack {
+  cursor: pointer;
+  transition: var(--transition);
+  position: relative;
+  width: 100%;
+}
+
+.stack-container {
+  position: relative;
+  height: 320px;
+  width: 100%;
+  margin-bottom: 1.5rem;
+  perspective: 1000px;
+}
+
+.stack-card {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+  border: 1px solid rgba(255,255,255,0.1);
+  background: #eee;
+}
+
+.stack-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.stack-card.empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f0f0f0;
+  color: var(--text-secondary);
+  font-family: var(--font-serif);
+  border: 2px dashed #ddd;
+}
+
+.stack-info h3 {
+  font-family: var(--font-serif);
+  font-size: 1.2rem;
+  margin-bottom: 0.2rem;
+  color: var(--text-primary);
+}
+
+.stack-info p {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Hover States */
+.list-stack:hover .stack-info h3 {
+  color: var(--accent-primary);
+}
+
+.empty-small {
+  color: var(--text-secondary);
+  font-style: italic;
+  font-size: 0.95rem;
+}
+
+/* Modal overlay — shared by AuthModal and MediaModal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255,255,255,0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 2rem;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
