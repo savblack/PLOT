@@ -169,3 +169,7 @@ h1, h2, h3 {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
 }
+
+@media (max-width: 480px) {
+  .modal-overlay { padding: 0.5rem; }
+}

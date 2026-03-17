@@ -287,6 +287,7 @@ export default function App() {
   const [activeList, setActiveList] = useState(null);
   const [showJournalNewList, setShowJournalNewList] = useState(false);
   const [journalNewListName, setJournalNewListName] = useState('');
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
 
   const ListStack = ({ list, items }) => {
     const [hoverIndex, setHoverIndex] = useState(0);
@@ -392,6 +393,9 @@ export default function App() {
           </div>
 
           <div className="header-right">
+            <button className="mobile-search-btn" onClick={() => setShowMobileSearch(true)}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="1.5"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            </button>
             <div className="search-pill search-small">
             <svg className="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
             <form onSubmit={handleSearch}>
@@ -412,10 +416,31 @@ export default function App() {
       </div>
     </header>
 
+    {showMobileSearch && (
+      <div className="mobile-search-overlay">
+        <form onSubmit={(e) => { handleSearch(e); setShowMobileSearch(false); }}>
+          <input
+            type="text"
+            placeholder="Search movies & TV..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            autoFocus
+          />
+        </form>
+        <button className="mobile-search-cancel" onClick={() => setShowMobileSearch(false)}>Cancel</button>
+      </div>
+    )}
+
       <main className="content-grid animate-in">
         {view === 'home' && (
           <section>
-            <h2 className="section-title">Feed</h2>
+            <div className="section-header-row">
+              <h2 className="section-title">Feed</h2>
+              <div className="mobile-filter-row">
+                <button className={mediaFilter === 'movie' ? 'active' : ''} onClick={() => setMediaFilter('movie')}>Movies</button>
+                <button className={mediaFilter === 'tv' ? 'active' : ''} onClick={() => setMediaFilter('tv')}>TV</button>
+              </div>
+            </div>
             <div className="bento-grid">
               {blendedFeed
                 .filter(item => {
@@ -442,7 +467,13 @@ export default function App() {
 
         {view === 'new' && (
           <section>
-            <h2 className="section-title">New Releases</h2>
+            <div className="section-header-row">
+              <h2 className="section-title">New Releases</h2>
+              <div className="mobile-filter-row">
+                <button className={mediaFilter === 'movie' ? 'active' : ''} onClick={() => setMediaFilter('movie')}>Movies</button>
+                <button className={mediaFilter === 'tv' ? 'active' : ''} onClick={() => setMediaFilter('tv')}>TV</button>
+              </div>
+            </div>
             <div className="bento-grid">
               {(mediaFilter === 'movie' ? newReleases : newTV).map((item, index) => (
                 <div 
@@ -568,7 +599,13 @@ export default function App() {
 
         {view === 'upcoming' && (
           <section className="upcoming">
-            <h2 className="section-title">Upcoming</h2>
+            <div className="section-header-row">
+              <h2 className="section-title">Upcoming</h2>
+              <div className="mobile-filter-row">
+                <button className={mediaFilter === 'movie' ? 'active' : ''} onClick={() => setMediaFilter('movie')}>Movies</button>
+                <button className={mediaFilter === 'tv' ? 'active' : ''} onClick={() => setMediaFilter('tv')}>TV</button>
+              </div>
+            </div>
             <div className="bento-grid">
               {(mediaFilter === 'movie' ? upcoming : upcomingTV).map(item => (
                 <div key={item.id} className="bento-item glass" onClick={() => setSelectedItem(item)}>
@@ -604,11 +641,18 @@ export default function App() {
       )}
 
       {showAuth && (
-        <AuthModal 
-          onClose={() => setShowAuth(false)} 
-          onAuthSuccess={(u) => setUser(u)} 
+        <AuthModal
+          onClose={() => setShowAuth(false)}
+          onAuthSuccess={(u) => setUser(u)}
         />
       )}
+
+      <nav className="bottom-tab-bar">
+        <button onClick={() => setView('home')} className={view === 'home' ? 'active' : ''}>Feed</button>
+        <button onClick={() => setView('new')} className={view === 'new' ? 'active' : ''}>New</button>
+        <button onClick={() => setView('upcoming')} className={view === 'upcoming' ? 'active' : ''}>Upcoming</button>
+        <button onClick={() => setView('watchlist')} className={view === 'watchlist' ? 'active' : ''}>Journal</button>
+      </nav>
 
       <style>{`
         .app-container {
@@ -893,10 +937,157 @@ export default function App() {
           display: inline-block;
         }
 
+        .section-header-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 1.5rem;
+        }
+
+        .section-header-row .section-title {
+          margin-bottom: 0;
+        }
+
+        .section-header-row .mobile-filter-row {
+          margin-bottom: 0;
+        }
+
+        /* Mobile-only elements: hidden by default */
+        .mobile-search-btn {
+          display: none;
+          background: none;
+          border: none;
+          cursor: pointer;
+          padding: 0.5rem;
+          color: var(--text-primary);
+          align-items: center;
+        }
+
+        .mobile-filter-row {
+          display: none;
+          background: #efefef;
+          padding: 0.3rem;
+          border-radius: var(--radius-pill);
+          gap: 0.2rem;
+          margin-bottom: 1.5rem;
+        }
+
+        .mobile-filter-row button {
+          background: none;
+          border: none;
+          padding: 0.5rem 1.2rem;
+          border-radius: var(--radius-pill);
+          cursor: pointer;
+          font-weight: 500;
+          font-size: 0.9rem;
+          color: var(--text-secondary);
+          transition: var(--transition);
+        }
+
+        .mobile-filter-row button.active {
+          background: white;
+          color: black;
+        }
+
+        .mobile-search-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          background: white;
+          padding: 0.75rem 1rem;
+          display: flex;
+          align-items: center;
+          gap: 0.8rem;
+          z-index: 200;
+          box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+        }
+
+        .mobile-search-overlay form { flex: 1; }
+
+        .mobile-search-overlay input {
+          width: 100%;
+          background: #f0f0f0;
+          border: none;
+          padding: 0.75rem 1rem;
+          border-radius: var(--radius-pill);
+          font-size: 1rem;
+          outline: none;
+          font-family: inherit;
+        }
+
+        .mobile-search-cancel {
+          background: none;
+          border: none;
+          font-size: 0.95rem;
+          font-weight: 500;
+          cursor: pointer;
+          color: var(--text-secondary);
+          white-space: nowrap;
+        }
+
+        .bottom-tab-bar {
+          display: none;
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          background: rgba(255,255,255,0.92);
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
+          border-top: 1px solid rgba(0,0,0,0.08);
+          padding: 0.5rem 0;
+          padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));
+          z-index: 100;
+          justify-content: space-around;
+        }
+
+        .bottom-tab-bar button {
+          background: none;
+          border: none;
+          cursor: pointer;
+          padding: 0.6rem 1rem;
+          color: var(--text-secondary);
+          font-size: 0.85rem;
+          font-weight: 500;
+          font-family: var(--font-sans);
+          transition: color 0.2s ease;
+        }
+
+        .bottom-tab-bar button.active { color: black; }
+
         @media (max-width: 768px) {
           .search-pill { width: 100%; }
           .logo-font { font-size: 2.5rem; }
-          .bento-item.large { grid-column: span 1; }
+          .header-right { gap: 0.2rem; }
+          .auth-header-btn { margin-left: 0; }
+          .bento-item.large { grid-column: span 1; grid-row: span 1; }
+          .center-group { display: none; }
+          .search-pill.search-small { display: none; }
+          .mobile-search-btn { display: flex; }
+          .mobile-filter-row { display: flex; }
+          .bottom-tab-bar { display: flex; }
+          .content-grid { padding-bottom: 80px; }
+          .app-container { padding: 1rem; }
+          .top-nav { padding: 0.6rem 0; margin-bottom: 1rem; }
+          .section-title { font-size: 1.3rem; }
+          .bento-grid {
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            grid-auto-rows: 240px;
+            gap: 0.75rem;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .bento-grid {
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            grid-auto-rows: 200px;
+          }
+          .stack-container { height: 200px; }
+          .lists-grid {
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 1.5rem;
+          }
         }
 
         /* Custom Lists & Stacks */

@@ -134,6 +134,11 @@ export default function AuthModal({ onClose, onAuthSuccess }) {
           cursor: pointer;
           text-decoration: underline;
         }
+
+        @media (max-width: 480px) {
+          .auth-box { padding: 2rem 1.5rem; }
+          h2 { font-size: 1.6rem; }
+        }
       `}</style>
     </div>
   );

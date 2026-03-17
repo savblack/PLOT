@@ -450,6 +450,17 @@ export default function MediaModal({ item, onClose, onSave, savedData, userLists
           .poster-side { display: none; }
           .info-side { padding: 2rem; }
         }
+
+        @media (max-width: 768px) {
+          .info-side { padding: 1.5rem; }
+          .detail-title { font-size: 1.8rem; }
+          textarea { height: 80px; }
+        }
+
+        @media (max-width: 480px) {
+          .modal-content { border-radius: 20px; }
+          .detail-title { font-size: 1.5rem; }
+        }
       `}</style>
     </div>
   );
