@@ -31,5 +31,9 @@ export const tmdb = {
   getTVDetails: (id) => fetchFromTMDB(`/tv/${id}`, { append_to_response: 'watch/providers,recommendations' }),
   getRecommendations: (type, id) => fetchFromTMDB(`/${type}/${id}/recommendations`),
   getUpcoming: () => fetchFromTMDB('/movie/upcoming'),
+  getNowPlaying: () => fetchFromTMDB('/movie/now_playing'),
+  getTVOnTheAir: () => fetchFromTMDB('/tv/on_the_air'),
+  getTVTrending: () => fetchFromTMDB('/trending/tv/day'),
   getAiringToday: () => fetchFromTMDB('/tv/airing_today'),
+  getWatchProviders: (id, type) => fetchFromTMDB(`/${type}/${id}/watch/providers`),
 };
