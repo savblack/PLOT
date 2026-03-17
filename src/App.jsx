@@ -675,11 +675,10 @@ export default function App() {
         }
 
         .center-group {
-          position: absolute;
-          left: 50%;
-          transform: translateX(-58%);
+          flex: 1;
           display: flex;
           align-items: center;
+          justify-content: center;
           gap: 0.8rem;
           white-space: nowrap;
         }
@@ -1182,18 +1181,22 @@ export default function App() {
           font-family: inherit;
         }
 
-        @media (max-width: 768px) {
-          .search-pill { width: 100%; }
-          .logo-font { font-size: 2.5rem; }
-          .header-right { gap: 0.2rem; }
-          .auth-header-btn { margin-left: 0; }
-          .bento-item.large { grid-column: span 1; grid-row: span 1; }
+        @media (max-width: 1024px) {
           .center-group { display: none; }
           .search-pill.search-small { display: none; }
           .mobile-search-btn { display: flex; }
           .mobile-filter-row { display: flex; }
           .bottom-tab-bar { display: flex; }
           .content-grid { padding-bottom: 80px; }
+          .header-right { gap: 0.2rem; }
+          .auth-header-btn { margin-left: 0; }
+        }
+
+        @media (max-width: 768px) {
+          .search-pill { width: 100%; }
+          .logo-font { font-size: 2.5rem; }
+          .bento-item.large { grid-column: span 1; grid-row: span 1; }
+          .mobile-filter-row { display: flex; }
           .app-container { padding: 1rem; }
           .top-nav { padding: 0.6rem 0; margin-bottom: 1rem; }
           .section-title { font-size: 1.3rem; }
