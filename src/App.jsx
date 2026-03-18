@@ -20,6 +20,7 @@ export default function App() {
   const [upcoming, setUpcoming] = useState([]);
   const [upcomingTV, setUpcomingTV] = useState([]);
   const [blendedFeed, setBlendedFeed] = useState([]);
+  const [suggested, setSuggested] = useState([]);
   const [mediaFilter, setMediaFilter] = useState('movie'); // movie, tv
   const [userLists, setUserLists] = useState([]);
   const [listItems, setListItems] = useState([]);
@@ -260,6 +261,24 @@ export default function App() {
     return data;
   };
 
+  const deleteList = async (listId) => {
+    await supabase.from('list_items').delete().match({ list_id: listId });
+    await supabase.from('lists').delete().match({ id: listId });
+    setUserLists(prev => prev.filter(l => l.id !== listId));
+    setListItems(prev => prev.filter(li => li.list_id !== listId));
+    setActiveList(null);
+  };
+
+  const renameList = async (listId, newName) => {
+    if (!newName.trim()) { setEditingListName(false); return; }
+    const { error } = await supabase.from('lists').update({ name: newName.trim() }).match({ id: listId });
+    if (!error) {
+      setUserLists(prev => prev.map(l => l.id === listId ? { ...l, name: newName.trim() } : l));
+      setActiveList(prev => ({ ...prev, name: newName.trim() }));
+    }
+    setEditingListName(false);
+  };
+
   const toggleListItem = async (listId, item, isAdding) => {
     if (!user) return;
     if (isAdding) {
@@ -288,6 +307,10 @@ export default function App() {
   const [activeList, setActiveList] = useState(null);
   const [showJournalNewList, setShowJournalNewList] = useState(false);
   const [journalNewListName, setJournalNewListName] = useState('');
+  const [journalTab, setJournalTab] = useState('lists');
+  const [editingListName, setEditingListName] = useState(false);
+  const [editListNameValue, setEditListNameValue] = useState('');
+  const [showListEditMenu, setShowListEditMenu] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [theme, setTheme] = useState(() => localStorage.getItem('plot-theme') || 'system');
@@ -381,6 +404,20 @@ export default function App() {
       </div>
     );
   };
+
+  const isVirtualList = activeList && typeof activeList.id === 'string' &&
+    (activeList.id.startsWith('status-') || activeList.id.startsWith('rating-') || activeList.id.startsWith('mood-'));
+
+  const activeListItems = activeList
+    ? (isVirtualList
+        ? watched.filter(w => {
+            if (activeList.id.startsWith('status-')) return w.watchStatus === activeList.id.slice(7);
+            if (activeList.id.startsWith('rating-')) return w.rating === parseInt(activeList.id.slice(7));
+            if (activeList.id.startsWith('mood-')) return w.mood === activeList.id.slice(5);
+            return false;
+          })
+        : listItems.filter(li => li.list_id === activeList.id))
+    : [];
 
   return (
     <div className="app-container">
@@ -583,75 +620,212 @@ export default function App() {
             {activeList ? (
               <div className="list-detail-view animate-in">
                 <div className="list-detail-header">
-                  <button className="back-btn" onClick={() => setActiveList(null)}>← Back to Journal</button>
-                  <h2 className="section-title">{activeList.name}</h2>
+                  <button className="back-btn" onClick={() => { setActiveList(null); setEditingListName(false); }}>← Back to Journal</button>
+                  <div className="section-header-row">
+                    {!isVirtualList && editingListName ? (
+                      <input
+                        className="list-rename-input"
+                        value={editListNameValue}
+                        autoFocus
+                        onChange={e => setEditListNameValue(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') renameList(activeList.id, editListNameValue);
+                          if (e.key === 'Escape') setEditingListName(false);
+                        }}
+                        onBlur={() => renameList(activeList.id, editListNameValue)}
+                      />
+                    ) : (
+                      <h2 className="section-title">{activeList.name}</h2>
+                    )}
+                    {!isVirtualList && (
+                      <div className="list-edit-menu-wrapper">
+                        <button className="new-list-header-btn" onClick={() => setShowListEditMenu(v => !v)}>
+                          Edit list
+                        </button>
+                        {showListEditMenu && (
+                          <>
+                            <div className="list-edit-backdrop" onClick={() => setShowListEditMenu(false)} />
+                            <div className="list-edit-dropdown">
+                              <button onClick={() => { setEditListNameValue(activeList.name); setEditingListName(true); setShowListEditMenu(false); }}>
+                                Rename
+                              </button>
+                              <button className="danger" onClick={() => { if (window.confirm(`Delete "${activeList.name}"?`)) { deleteList(activeList.id); setShowListEditMenu(false); } }}>
+                                Delete list
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div className="bento-grid">
-                  {listItems.filter(li => li.list_id === activeList.id).map(item => (
-                    <div key={item.id} className="bento-item glass" onClick={() => setSelectedItem({ ...item, id: item.tmdb_id })}>
-                      <img src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title} />
+                  {activeListItems.map((item, index) => (
+                    <div
+                      key={item.id || index}
+                      className="bento-item glass list-detail-item"
+                      onClick={() => setSelectedItem(isVirtualList ? item : { ...item, id: item.tmdb_id })}
+                    >
+                      <img src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title || item.name} />
                       <div className="overlay">
-                        <h3>{item.title}</h3>
+                        <h3>{item.title || item.name}</h3>
                       </div>
+                      {!isVirtualList && (
+                        <button
+                          className="remove-item-btn"
+                          onClick={e => { e.stopPropagation(); toggleListItem(activeList.id, { id: item.tmdb_id }, false); }}
+                          title="Remove from list"
+                        >×</button>
+                      )}
                     </div>
                   ))}
-                  {listItems.filter(li => li.list_id === activeList.id).length === 0 && (
-                    <p className="empty">This list is empty. Add some movies or TV shows!</p>
+                  {activeListItems.length === 0 && (
+                    <p className="empty-list-msg">Nothing here yet.</p>
                   )}
                 </div>
               </div>
             ) : (
               <div className="journal-section">
                 <div className="section-header-row">
-                  <h2 className="section-title">Your Lists</h2>
-                  {!showJournalNewList && (
+                  <h2 className="section-title">Journal</h2>
+                  {journalTab === 'lists' && !showJournalNewList && (
                     <button className="new-list-header-btn" onClick={() => setShowJournalNewList(true)}>
                       + New List
                     </button>
                   )}
                 </div>
-                {showJournalNewList && (
-                  <div className="new-list-bar">
-                    <input
-                      type="text"
-                      placeholder="List name..."
-                      value={journalNewListName}
-                      autoFocus
-                      onChange={e => setJournalNewListName(e.target.value)}
-                      onKeyDown={async (e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
+
+                <div className="journal-tab-nav">
+                  {['lists', 'all', 'status', 'ratings', 'mood'].map(tab => (
+                    <button
+                      key={tab}
+                      className={`journal-tab-btn ${journalTab === tab ? 'active' : ''}`}
+                      onClick={() => setJournalTab(tab)}
+                    >
+                      {tab === 'lists' ? 'My Lists' : tab === 'all' ? 'All' : tab === 'status' ? 'Status' : tab === 'ratings' ? 'Ratings' : 'Mood'}
+                    </button>
+                  ))}
+                </div>
+
+                {journalTab === 'lists' && (
+                  <>
+                    {!user && (
+                      <div className="journal-signin-prompt">
+                        <p>Sign in to save lists across devices.</p>
+                        <button className="new-list-header-btn" onClick={() => setShowAuth(true)}>Sign in</button>
+                      </div>
+                    )}
+                    {user && userLists.length === 0 && !showJournalNewList && (
+                      <p className="empty-list-msg">No lists yet. Hit <strong>+ New List</strong> to create one.</p>
+                    )}
+                    {showJournalNewList && (
+                      <div className="new-list-bar">
+                        <input
+                          type="text"
+                          placeholder="List name..."
+                          value={journalNewListName}
+                          autoFocus
+                          onChange={e => setJournalNewListName(e.target.value)}
+                          onKeyDown={async (e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              if (journalNewListName.trim()) {
+                                await createList(journalNewListName.trim());
+                                setJournalNewListName('');
+                                setShowJournalNewList(false);
+                              }
+                            }
+                            if (e.key === 'Escape') {
+                              setJournalNewListName('');
+                              setShowJournalNewList(false);
+                            }
+                          }}
+                        />
+                        <button onClick={async () => {
                           if (journalNewListName.trim()) {
                             await createList(journalNewListName.trim());
                             setJournalNewListName('');
                             setShowJournalNewList(false);
                           }
-                        }
-                        if (e.key === 'Escape') {
-                          setJournalNewListName('');
-                          setShowJournalNewList(false);
-                        }
-                      }}
-                    />
-                    <button onClick={async () => {
-                      if (journalNewListName.trim()) {
-                        await createList(journalNewListName.trim());
-                        setJournalNewListName('');
-                        setShowJournalNewList(false);
-                      }
-                    }}>Create</button>
-                    <button className="cancel-btn" onClick={() => { setJournalNewListName(''); setShowJournalNewList(false); }}>Cancel</button>
+                        }}>Create</button>
+                        <button className="cancel-btn" onClick={() => { setJournalNewListName(''); setShowJournalNewList(false); }}>Cancel</button>
+                      </div>
+                    )}
+                    <div className="lists-grid">
+                      {userLists.map(list => (
+                        <ListStack
+                          key={list.id}
+                          list={list}
+                          items={listItems.filter(li => li.list_id === list.id)}
+                        />
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                {journalTab === 'all' && (
+                  <div className="bento-grid">
+                    {watched.length === 0 && (
+                      <p className="empty-list-msg">Nothing logged yet. Open any movie or show and hit Save.</p>
+                    )}
+                    {watched.map((item, index) => (
+                      <div
+                        key={item.id || index}
+                        className="bento-item glass"
+                        onClick={() => setSelectedItem(item)}
+                      >
+                        <img src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title || item.name} />
+                        <div className="overlay">
+                          <h3>{item.title || item.name}</h3>
+                          {item.rating > 0 && <span className="rating-tag">{'★'.repeat(item.rating)}</span>}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
-                <div className="lists-grid">
-                  {userLists.map(list => (
-                    <ListStack
-                      key={list.id}
-                      list={list}
-                      items={listItems.filter(li => li.list_id === list.id)}
-                    />
-                  ))}
-                </div>
+
+                {journalTab === 'status' && (
+                  <div className="lists-grid">
+                    {['Watched', 'Binged', "Didn't Finish", 'Want to Watch'].map(status => (
+                      <ListStack
+                        key={status}
+                        list={{ id: `status-${status}`, name: status }}
+                        items={watched.filter(w => w.watchStatus === status)}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                {journalTab === 'ratings' && (
+                  <div className="lists-grid">
+                    {[5, 4, 3, 2, 1].map(star => (
+                      <ListStack
+                        key={star}
+                        list={{ id: `rating-${star}`, name: `${'★'.repeat(star)}${'☆'.repeat(5 - star)}` }}
+                        items={watched.filter(w => w.rating === star)}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                {journalTab === 'mood' && (
+                  <div className="lists-grid">
+                    {[
+                      { value: 'happy',     emoji: '😊' },
+                      { value: 'emotional', emoji: '🥲' },
+                      { value: 'fun',       emoji: '😂' },
+                      { value: 'tense',     emoji: '😬' },
+                      { value: 'amazing',   emoji: '🤩' },
+                      { value: 'mindblown', emoji: '🤯' },
+                    ].map(m => (
+                      <ListStack
+                        key={m.value}
+                        list={{ id: `mood-${m.value}`, name: m.emoji }}
+                        items={watched.filter(w => w.mood === m.value)}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </section>
@@ -667,8 +841,8 @@ export default function App() {
               </div>
             </div>
             <div className="bento-grid">
-              {(mediaFilter === 'movie' ? upcoming : upcomingTV).map(item => (
-                <div key={item.id} className="bento-item glass" onClick={() => setSelectedItem(item)}>
+              {(mediaFilter === 'movie' ? upcoming : upcomingTV).map((item, index) => (
+                <div key={item.id} className={`bento-item glass ${index % 5 === 0 ? 'large' : ''}`} onClick={() => setSelectedItem(item)}>
                   <img src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title || item.name} />
                   <div className="overlay">
                     <span className="rating-tag date-tag">
@@ -718,7 +892,7 @@ export default function App() {
         .app-container {
           max-width: 1400px;
           margin: 0 auto;
-          padding: 1.5rem;
+          padding: 1.5rem 4rem;
         }
 
         .main-header {
@@ -1194,11 +1368,193 @@ export default function App() {
 
         .back-btn:hover { color: black; }
 
+        [data-theme="dark"] .back-btn:hover { color: #f0f0f0; }
+
+        .list-detail-title-row {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+        }
+
+        .editable-title {
+          cursor: pointer;
+        }
+        .editable-title:hover { opacity: 0.7; }
+
+        .list-rename-input {
+          font-family: var(--font-serif);
+          font-size: 2rem;
+          font-weight: 600;
+          border: none;
+          border-bottom: 2px solid #333;
+          outline: none;
+          background: none;
+          color: var(--text-primary);
+          width: 300px;
+        }
+
+        [data-theme="dark"] .list-rename-input {
+          border-bottom-color: #ccc;
+        }
+
+        .list-edit-menu-wrapper {
+          position: relative;
+        }
+
+        .list-edit-btn {
+          background: none;
+          border: 1px solid #ddd;
+          color: var(--text-secondary);
+          font-size: 0.78rem;
+          font-family: var(--font-sans);
+          padding: 0.3rem 0.9rem;
+          border-radius: var(--radius-pill);
+          cursor: pointer;
+          transition: var(--transition);
+          white-space: nowrap;
+        }
+
+        .list-edit-btn:hover { border-color: #aaa; color: var(--text-primary); }
+
+        [data-theme="dark"] .list-edit-btn { border-color: #444; color: #666; }
+        [data-theme="dark"] .list-edit-btn:hover { border-color: #777; color: #ccc; }
+
+        .list-edit-backdrop {
+          position: fixed;
+          inset: 0;
+          z-index: 10;
+        }
+
+        .list-edit-dropdown {
+          position: absolute;
+          top: calc(100% + 0.4rem);
+          left: 0;
+          background: white;
+          border: 1px solid #e0e0e0;
+          border-radius: 10px;
+          box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+          overflow: hidden;
+          z-index: 11;
+          min-width: 140px;
+          padding: 0.3rem;
+        }
+
+        .list-edit-dropdown button {
+          display: block;
+          width: 100%;
+          text-align: left;
+          background: none;
+          border: none;
+          padding: 0.55rem 0.9rem;
+          font-size: 0.85rem;
+          font-family: var(--font-sans);
+          color: var(--text-primary);
+          cursor: pointer;
+          border-radius: 6px;
+          transition: background 0.12s;
+        }
+
+        .list-edit-dropdown button:hover { background: #f5f5f5; }
+        .list-edit-dropdown button.danger { color: #e55; }
+        .list-edit-dropdown button.danger:hover { background: #fff0f0; }
+
+        [data-theme="dark"] .list-edit-dropdown { background: #1e1e1e; border-color: #333; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+        [data-theme="dark"] .list-edit-dropdown button { color: #ccc; }
+        [data-theme="dark"] .list-edit-dropdown button:hover { background: #2a2a2a; }
+        [data-theme="dark"] .list-edit-dropdown button.danger:hover { background: #2a1515; }
+
+        .list-detail-item {
+          position: relative;
+        }
+
+        .remove-item-btn {
+          position: absolute;
+          top: 0.5rem;
+          right: 0.5rem;
+          width: 28px;
+          height: 28px;
+          border-radius: 50%;
+          background: rgba(0,0,0,0.6);
+          color: white;
+          border: none;
+          font-size: 1.1rem;
+          line-height: 1;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          opacity: 0;
+          transition: opacity 0.15s;
+          z-index: 10;
+        }
+
+        .list-detail-item:hover .remove-item-btn { opacity: 1; }
+
+        .empty-list-msg {
+          color: var(--text-secondary);
+          font-size: 0.9rem;
+          grid-column: 1 / -1;
+          margin-bottom: 1rem;
+        }
+
+        .journal-signin-prompt {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          margin-bottom: 1.5rem;
+          padding: 1rem 1.2rem;
+          background: #f9f9f9;
+          border-radius: var(--radius-md);
+          border: 1px solid #eee;
+        }
+
+        .journal-signin-prompt p {
+          font-size: 0.85rem;
+          color: var(--text-secondary);
+          margin: 0;
+          flex: 1;
+        }
+
+        [data-theme="dark"] .journal-signin-prompt {
+          background: #1e1e1e;
+          border-color: #2a2a2a;
+        }
+
         .empty-small {
           color: var(--text-secondary);
           font-size: 0.9rem;
           grid-column: 1 / -1;
         }
+
+        .journal-tab-nav {
+          display: flex;
+          gap: 0;
+          border-bottom: 1px solid #eee;
+          margin-bottom: 2rem;
+        }
+
+        .journal-tab-btn {
+          background: none;
+          border: none;
+          border-bottom: 2px solid transparent;
+          padding: 0.5rem 1.1rem 0.6rem;
+          font-size: 0.8rem;
+          font-family: var(--font-sans);
+          font-weight: 500;
+          letter-spacing: 0.04em;
+          color: var(--text-secondary);
+          cursor: pointer;
+          margin-bottom: -1px;
+          transition: color 0.15s, border-color 0.15s;
+        }
+
+        .journal-tab-btn:hover { color: var(--text-primary); }
+        .journal-tab-btn.active { color: var(--text-primary); border-bottom-color: currentColor; }
+
+        [data-theme="dark"] .journal-tab-nav { border-bottom-color: #2a2a2a; }
+        [data-theme="dark"] .journal-tab-btn { color: #666; }
+        [data-theme="dark"] .journal-tab-btn:hover { color: #ccc; }
+        [data-theme="dark"] .journal-tab-btn.active { color: #f0f0f0; }
 
         .new-list-header-btn {
           background: none;
@@ -1517,7 +1873,7 @@ export default function App() {
           .logo-font { font-size: 2.5rem; }
           .bento-item.large { grid-column: span 1; grid-row: span 1; }
           .mobile-filter-row { display: flex; }
-          .app-container { padding: 1rem; }
+          .app-container { padding: 1rem 1.5rem; }
           .top-nav { padding: 0.6rem 0; margin-bottom: 1rem; }
           .section-title { font-size: 1.3rem; }
           .bento-grid {
