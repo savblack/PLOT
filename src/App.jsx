@@ -105,12 +105,13 @@ export default function App() {
 
   useEffect(() => {
     const loadData = async () => {
-      const [trendingMovies, nowPlayingData, upcomingData, tvOnAir, trendingTV] = await Promise.all([
+      const [trendingMovies, nowPlayingData, upcomingData, tvOnAir, trendingTV, upcomingTVData] = await Promise.all([
         tmdb.getTrending('movie'),
         tmdb.getNowPlaying(),
         tmdb.getUpcoming(),
         tmdb.getTVOnTheAir(),
-        tmdb.getTVTrending()
+        tmdb.getTVTrending(),
+        tmdb.getUpcomingTV(),
       ]);
 
       const enrichWithProviders = async (items, type) => {
@@ -133,6 +134,12 @@ export default function App() {
         }));
       };
 
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const isReleased = (item) => { const d = item.release_date || item.first_air_date; return d ? new Date(d) <= today : false; };
+      const isFuture   = (item) => { const d = item.release_date || item.first_air_date; return d ? new Date(d) >  today : false; };
+      const byDateAsc  = (a, b) => new Date(a.release_date || a.first_air_date) - new Date(b.release_date || b.first_air_date);
+
       if (trendingMovies && trendingTV) {
         const [enrichedMovies, enrichedTV] = await Promise.all([
           enrichWithProviders(trendingMovies.results, 'movie'),
@@ -143,18 +150,18 @@ export default function App() {
       }
       
       if (nowPlayingData) {
-        const enriched = await enrichWithProviders(nowPlayingData.results.slice(0, 15), 'movie');
+        const enriched = await enrichWithProviders(nowPlayingData.results.filter(isReleased).slice(0, 15), 'movie');
         setNewReleases(enriched);
       }
-      
-      if (upcomingData) setUpcoming(upcomingData.results.slice(0, 15));
-      
+
+      if (upcomingData) setUpcoming(upcomingData.results.filter(isFuture).sort(byDateAsc).slice(0, 15));
+
       if (tvOnAir) {
-        const enriched = await enrichWithProviders(tvOnAir.results.slice(0, 15), 'tv');
+        const enriched = await enrichWithProviders(tvOnAir.results.filter(isReleased).slice(0, 15), 'tv');
         setNewTV(enriched);
       }
-      
-      if (trendingTV) setUpcomingTV(trendingTV.results.slice(0, 15));
+
+      if (upcomingTVData) setUpcomingTV(upcomingTVData.results.filter(isFuture).sort(byDateAsc).slice(0, 15));
     };
     loadData();
   }, []);
@@ -345,6 +352,7 @@ export default function App() {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [theme, setTheme] = useState(() => localStorage.getItem('plot-theme') || 'system');
   const [feedLayout, setFeedLayout] = useState(() => localStorage.getItem('plot-feed-layout') || 'bento');
+  const [upcomingTimeFilter, setUpcomingTimeFilter] = useState('month');
   const [timelineView, setTimelineView] = useState('linear'); // 'linear' | 'grid'
   const [gridTimeframe, setGridTimeframe] = useState('monthly'); // 'monthly' | 'yearly'
   const [gridNav, setGridNav] = useState({ month: new Date().getMonth(), year: new Date().getFullYear() });
@@ -684,14 +692,14 @@ export default function App() {
                           <button
                             className={profile?.is_public ? 'active' : ''}
                             onClick={() => { if (!profile?.is_public) toggleProfilePublic(); }}
-                            title="Public"
+                            data-tooltip="Public"
                           >
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                           </button>
                           <button
                             className={!profile?.is_public ? 'active' : ''}
                             onClick={() => { if (profile?.is_public) toggleProfilePublic(); }}
-                            title="Private"
+                            data-tooltip="Private"
                           >
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
                           </button>
@@ -740,10 +748,6 @@ export default function App() {
           <section>
             <div className="section-header-row">
               <h2 className="section-title">Feed</h2>
-              <div className="mobile-filter-row">
-                <button className={mediaFilter === 'movie' ? 'active' : ''} onClick={() => setMediaFilter('movie')}>Movies</button>
-                <button className={mediaFilter === 'tv' ? 'active' : ''} onClick={() => setMediaFilter('tv')}>TV</button>
-              </div>
             </div>
             <div className="bento-grid">
               {blendedFeed
@@ -773,10 +777,6 @@ export default function App() {
           <section>
             <div className="section-header-row">
               <h2 className="section-title">New Releases</h2>
-              <div className="mobile-filter-row">
-                <button className={mediaFilter === 'movie' ? 'active' : ''} onClick={() => setMediaFilter('movie')}>Movies</button>
-                <button className={mediaFilter === 'tv' ? 'active' : ''} onClick={() => setMediaFilter('tv')}>TV</button>
-              </div>
             </div>
             <div className="bento-grid">
               {(mediaFilter === 'movie' ? newReleases : newTV).map((item, index) => (
@@ -1235,7 +1235,7 @@ export default function App() {
                                   onClick={() => entries.length > 0 && setSelectedGridDay(isSelected ? null : dateKey)}
                                 >
                                   {entries[0]?.poster_path && (
-                                    <img src={`https://image.tmdb.org/t/p/w92${entries[0].poster_path}`} alt="" />
+                                    <img src={`https://image.tmdb.org/t/p/w342${entries[0].poster_path}`} alt="" />
                                   )}
                                   <span className="month-day-num">{day}</span>
                                   {entries.length > 1 && <span className="month-day-count">+{entries.length - 1}</span>}
@@ -1347,13 +1347,24 @@ export default function App() {
           <section className="upcoming">
             <div className="section-header-row">
               <h2 className="section-title">Upcoming</h2>
-              <div className="mobile-filter-row">
-                <button className={mediaFilter === 'movie' ? 'active' : ''} onClick={() => setMediaFilter('movie')}>Movies</button>
-                <button className={mediaFilter === 'tv' ? 'active' : ''} onClick={() => setMediaFilter('tv')}>TV</button>
-              </div>
+            </div>
+            <div className="journal-tab-nav">
+              {[['week','This Week'],['next-week','Next Week'],['month','This Month'],['next-month','Next Month']].map(([val, label]) => (
+                <button key={val} className={`journal-tab-btn ${upcomingTimeFilter === val ? 'active' : ''}`} onClick={() => setUpcomingTimeFilter(val)}>{label}</button>
+              ))}
             </div>
             <div className="bento-grid">
-              {(mediaFilter === 'movie' ? upcoming : upcomingTV).map((item, index) => (
+              {(() => {
+                const filterByTimeRange = (items, filter) => {
+                  const now = new Date(); now.setHours(0, 0, 0, 0);
+                  let start = now, end;
+                  if (filter === 'week')       { end = new Date(now); end.setDate(now.getDate() + 7); }
+                  if (filter === 'next-week')  { start = new Date(now); start.setDate(now.getDate() + 7); end = new Date(start); end.setDate(start.getDate() + 7); }
+                  if (filter === 'month')      { end = new Date(now.getFullYear(), now.getMonth() + 1, 0); }
+                  if (filter === 'next-month') { start = new Date(now.getFullYear(), now.getMonth() + 1, 1); end = new Date(now.getFullYear(), now.getMonth() + 2, 0); }
+                  return items.filter(item => { const d = new Date(item.release_date || item.first_air_date); return d >= start && d <= end; });
+                };
+                return filterByTimeRange(mediaFilter === 'movie' ? upcoming : upcomingTV, upcomingTimeFilter).map((item, index) => (
                 <div key={item.id} className={`bento-item glass ${feedLayout === 'bento' && index % 5 === 0 ? 'large' : ''}`} onClick={() => setSelectedItem(item)}>
                   <img src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title || item.name} />
                   <div className="overlay">
@@ -1367,7 +1378,8 @@ export default function App() {
                     <h3>{item.title || item.name}</h3>
                   </div>
                 </div>
-              ))}
+              ));
+              })()}
             </div>
           </section>
         )}
@@ -2447,7 +2459,7 @@ export default function App() {
         /* Monthly grid */
         .month-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.35rem; }
         .month-grid-header-cell { text-align: center; font-size: 0.7rem; color: var(--text-secondary); font-weight: 600; padding-bottom: 0.5rem; }
-        .month-day-cell { aspect-ratio: 1; border-radius: 8px; overflow: hidden; position: relative; cursor: pointer; background: var(--bg-color); border: 1px solid var(--border-color); }
+        .month-day-cell { aspect-ratio: 2/3; border-radius: 8px; overflow: hidden; position: relative; cursor: pointer; background: var(--bg-color); border: 1px solid var(--border-color); }
         .month-day-cell.has-entries { border-color: var(--accent-primary, #7c5cfc); }
         .month-day-cell.selected { outline: 2px solid var(--accent-primary, #7c5cfc); }
         .month-day-cell img { width: 100%; height: 100%; object-fit: cover; opacity: 0.85; display: block; }
@@ -2557,6 +2569,28 @@ export default function App() {
           color: var(--text-secondary);
           margin: 0.2rem 0 0;
         }
+
+        .settings-toggle button[data-tooltip] { position: relative; }
+        .settings-toggle button[data-tooltip]::after {
+          content: attr(data-tooltip);
+          position: absolute;
+          bottom: calc(100% + 6px);
+          left: 50%;
+          transform: translateX(-50%);
+          background: #111;
+          color: #fff;
+          font-size: 0.68rem;
+          font-family: var(--font-sans);
+          padding: 0.2rem 0.5rem;
+          border-radius: 4px;
+          white-space: nowrap;
+          opacity: 0;
+          pointer-events: none;
+          transition: opacity 0.15s;
+          z-index: 100;
+        }
+        .settings-toggle button[data-tooltip]:hover::after { opacity: 1; }
+        [data-theme="dark"] .settings-toggle button[data-tooltip]::after { background: #e0e0e0; color: #111; }
 
         [data-theme="dark"] .profile-public-section { border-color: rgba(255,255,255,0.06); }
         [data-theme="dark"] .username-input { color: #f0f0f0; }
