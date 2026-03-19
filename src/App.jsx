@@ -2427,7 +2427,8 @@ export default function App() {
         .tl-vertical { display: flex; flex-direction: column; align-items: center; padding: 2rem 1rem 4rem; }
         .tl-entry-group { display: flex; flex-direction: column; align-items: center; width: 100%; }
         .tl-anchor-col { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
-        .tl-day-scroll { overflow-x: auto; direction: rtl; width: 100%; }
+        .tl-day-scroll { overflow-x: auto; direction: rtl; width: 100%; scrollbar-width: none; }
+        .tl-day-scroll::-webkit-scrollbar { display: none; }
         .tl-day-inner { direction: ltr; display: flex; flex-direction: row; gap: 1.5rem; min-width: fit-content; padding-bottom: 0.5rem; align-items: flex-start; padding-right: calc(50% - 130px); padding-left: calc(50% - 130px); }
         .tl-entry { position: relative; width: 260px; cursor: pointer; z-index: 1; }
         .tl-entry:hover .tl-poster { transform: scale(1.02); }
