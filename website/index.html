@@ -485,10 +485,10 @@
 
     .cta-headline {
       font-family: var(--serif);
-      font-size: clamp(2.4rem, 6vw, 4.5rem);
-      font-weight: 700;
+      font-size: clamp(2.6rem, 6.5vw, 5rem);
+      font-weight: 400;
       letter-spacing: -0.03em;
-      line-height: 1.1;
+      line-height: 0.85;
       max-width: 660px;
       margin: 0 auto 1rem;
     }
@@ -629,20 +629,6 @@
     <p class="manifesto-line no-fade reveal" id="plotDoes" style="margin-top: 20rem; margin-bottom: 14rem;">PLOT <em>does.</em></p>
   </section>
 
-  <!-- ── For the Plot ─────────────────────────────────────────── -->
-  <section id="for-the-plot">
-    <h2 class="ftp-headline reveal">Your journal.<br>Your rules.</h2>
-    <p class="ftp-body reveal reveal-delay-2">
-      Your top ten. All the series you binged in a weekend. The one dropping next month you've already cleared your schedule for.<span style="display:block; margin-top: 0.6rem;">Make a list for anything.</span>
-    </p>
-    <a href="#" class="btn btn-primary btn-large reveal reveal-delay-3" style="margin-top: 2.5rem;">Make it yours →</a>
-  </section>
-
-  <!-- ── Value Prop ───────────────────────────────────────────── -->
-  <section id="value">
-    <div class="list-stack-wrap" id="listStackWrap"></div>
-  </section>
-
   <!-- ── Features ─────────────────────────────────────────────── -->
   <section id="features">
     <p class="section-label reveal">What you get</p>
@@ -682,6 +668,20 @@
         <p class="bento-desc">What's trending, what's new, what your taste says you'll love next. Recommendations that actually know you.</p>
       </div>
     </div>
+  </section>
+
+  <!-- ── For the Plot ─────────────────────────────────────────── -->
+  <section id="for-the-plot">
+    <h2 class="ftp-headline reveal">Your journal.<br>Your rules.</h2>
+    <p class="ftp-body reveal reveal-delay-2">
+      Your top ten. All the series you binged in a weekend. The one dropping next month you've already cleared your schedule for.<span style="display:block; margin-top: 0.6rem;">Make a list for anything.</span>
+    </p>
+    <a href="#" class="btn btn-primary btn-large reveal reveal-delay-3" style="margin-top: 2.5rem;">Make it yours →</a>
+  </section>
+
+  <!-- ── Value Prop ───────────────────────────────────────────── -->
+  <section id="value">
+    <div class="list-stack-wrap" id="listStackWrap"></div>
   </section>
 
   <!-- ── Timeline ────────────────────────────────────────────────── -->
@@ -775,31 +775,31 @@
     // restX       → distance from screen edge when fully in
     const sideData = [
       // On load — four posters visible immediately (2 left, 2 right)
-      { src: 'images/hero/challengers.webp',          side: 'left',  vy: 0.51, showAt: -400, w: 255, h: 383, restX: 16, hold: 1000 },
-      { src: 'images/hero/saltburn.png',              side: 'left',  vy: 0.11, showAt: -400, w: 305, h: 415, restX: 34, bgSize: '100% 100%', hold: 1000 },
-      { src: 'images/hero/devil-wears-prada-two.jpg', side: 'right', vy: 0.11, showAt: -400, w: 270, h: 405, restX: 22, hold: 1000 },
-      { src: 'images/hero/love-story.webp',           side: 'right', vy: 0.518, showAt: -400, w: 268, h: 402, restX: 58, hold: 1000 },
+      { src: 'images/hero/challengers.webp',          side: 'left',  vy: 0.51, showAt:  0, w: 255, h: 383, restX: 16, hold: 1000 },
+      { src: 'images/hero/saltburn.png',              side: 'left',  vy: 0.11, showAt: 40, w: 305, h: 415, restX: 34, bgSize: '100% 100%', hold: 1000 },
+      { src: 'images/hero/devil-wears-prada-two.jpg', side: 'right', vy: 0.11, showAt: 20, w: 270, h: 405, restX: 22, hold: 1000 },
+      { src: 'images/hero/love-story.webp',           side: 'right', vy: 0.518, showAt: 60, w: 268, h: 402, restX: 58, hold: 1000 },
       // Scroll reveals — all finish well before the manifesto fade-out
-      { src: 'images/hero/the-white-lotus.jpg',       side: 'left',  vy: 0.24, showAt:  100, w: 268, h: 402, restX: 90 },
-      { src: 'images/hero/nosferatu.jpg',             side: 'right', vy: 0.22, showAt:  180, w: 275, h: 413, restX: 85 },
-      { src: 'images/hero/gone-girl.jpg',             side: 'left',  vy: 0.50, showAt:  300, w: 260, h: 390, restX: 85 },
-      { src: 'images/hero/the-bear.jpg',              side: 'right', vy: 0.48, showAt:  380, w: 268, h: 402, restX: 18 },
-      { src: 'images/hero/scream.jpg',                side: 'left',  vy: 0.09, showAt:  500, w: 282, h: 423, restX: 95 },
-      { src: 'images/hero/squid-game-2.jpg',          side: 'right', vy: 0.11, showAt:  580, w: 255, h: 383, restX: 90 },
-      { src: 'images/hero/the-vampire-diaries.jpeg',  side: 'left',  vy: 0.34, showAt:  700, w: 268, h: 402, restX: 88 },
-      { src: 'images/hero/the-wolf-of-wall-street.png', side: 'right', vy: 0.30, showAt: 780, w: 282, h: 423, restX: 18 },
-      { src: 'images/hero/the-conjuring.avif',        side: 'left',  vy: 0.52, showAt:  900, w: 260, h: 390, restX: 88 },
-      { src: 'images/hero/clueless.jpg',              side: 'right', vy: 0.50, showAt:  980, w: 255, h: 383, restX: 82 },
-      { src: 'images/hero/parasite.jpg',              side: 'left',  vy: 0.12, showAt: 1100, w: 282, h: 423, restX: 92 },
-      { src: 'images/hero/oppenheimer.webp',          side: 'right', vy: 0.09, showAt: 1180, w: 268, h: 402, restX: 16 },
-      { src: 'images/hero/the-substance.avif',        side: 'left',  vy: 0.38, showAt: 1300, w: 275, h: 413, restX: 92 },
-      { src: 'images/hero/anniversary.jpg',           side: 'right', vy: 0.36, showAt: 1380, w: 260, h: 390, restX: 86 },
-      { src: 'images/hero/past-lives.jpg',            side: 'right', vy: 0.52, showAt: 1500, w: 268, h: 402, restX: 20 },
-      { src: 'images/hero/housemaid.jpg',             side: 'left',  vy: 0.50, showAt: 1580, w: 255, h: 383, restX: 86 },
-      { src: 'images/hero/aftersun.jpg',              side: 'right', vy: 0.14, showAt: 1700, w: 282, h: 423, restX: 88 },
-      { src: 'images/hero/friday-night-lights.jpg',   side: 'left',  vy: 0.11, showAt: 1780, w: 268, h: 402, restX: 90 },
-      { src: 'images/hero/the-summer-i-turned-pretty.jpg', side: 'left', vy: 0.38, showAt: 1900, w: 260, h: 390, restX: 90 },
-      { src: 'images/hero/american-primeval.jpg',     side: 'right', vy: 0.36, showAt: 1980, w: 275, h: 413, restX: 18 },
+      { src: 'images/hero/the-white-lotus.jpg',       side: 'left',  vy: 0.24, showAt:  400, w: 268, h: 402, restX: 90 },
+      { src: 'images/hero/nosferatu.jpg',             side: 'right', vy: 0.22, showAt:  440, w: 275, h: 413, restX: 85 },
+      { src: 'images/hero/gone-girl.jpg',             side: 'left',  vy: 0.50, showAt:  580, w: 260, h: 390, restX: 85 },
+      { src: 'images/hero/the-bear.jpg',              side: 'right', vy: 0.48, showAt:  620, w: 268, h: 402, restX: 18 },
+      { src: 'images/hero/scream.jpg',                side: 'left',  vy: 0.09, showAt:  760, w: 282, h: 423, restX: 95 },
+      { src: 'images/hero/squid-game-2.jpg',          side: 'right', vy: 0.11, showAt:  800, w: 255, h: 383, restX: 90 },
+      { src: 'images/hero/the-vampire-diaries.jpeg',  side: 'left',  vy: 0.34, showAt:  940, w: 268, h: 402, restX: 88 },
+      { src: 'images/hero/the-wolf-of-wall-street.png', side: 'right', vy: 0.30, showAt: 980, w: 282, h: 423, restX: 18 },
+      { src: 'images/hero/the-conjuring.avif',        side: 'left',  vy: 0.52, showAt: 1120, w: 260, h: 390, restX: 88 },
+      { src: 'images/hero/clueless.jpg',              side: 'right', vy: 0.50, showAt: 1160, w: 255, h: 383, restX: 82 },
+      { src: 'images/hero/parasite.jpg',              side: 'left',  vy: 0.12, showAt: 1300, w: 282, h: 423, restX: 92 },
+      { src: 'images/hero/oppenheimer.webp',          side: 'right', vy: 0.09, showAt: 1340, w: 268, h: 402, restX: 16 },
+      { src: 'images/hero/the-substance.avif',        side: 'left',  vy: 0.38, showAt: 1480, w: 275, h: 413, restX: 92 },
+      { src: 'images/hero/anniversary.jpg',           side: 'right', vy: 0.36, showAt: 1520, w: 260, h: 390, restX: 86 },
+      { src: 'images/hero/past-lives.jpg',            side: 'right', vy: 0.52, showAt: 1660, w: 268, h: 402, restX: 20 },
+      { src: 'images/hero/housemaid.jpg',             side: 'left',  vy: 0.50, showAt: 1700, w: 255, h: 383, restX: 86 },
+      { src: 'images/hero/aftersun.jpg',              side: 'right', vy: 0.14, showAt: 1840, w: 282, h: 423, restX: 88 },
+      { src: 'images/hero/friday-night-lights.jpg',   side: 'left',  vy: 0.11, showAt: 1880, w: 268, h: 402, restX: 90 },
+      { src: 'images/hero/the-summer-i-turned-pretty.jpg', side: 'left', vy: 0.38, showAt: 2020, w: 260, h: 390, restX: 90 },
+      { src: 'images/hero/american-primeval.jpg',     side: 'right', vy: 0.36, showAt: 2060, w: 275, h: 413, restX: 18 },
     ];
 
     const posterSide = document.getElementById('posterSide');
@@ -814,9 +814,9 @@
       return { el, data };
     });
 
-    const SLIDE_IN  = 320; // px of scroll to fade/slide in
+    const SLIDE_IN  = 180; // px of scroll to fade/slide in
     const HOLD      = 500; // px of scroll to stay visible
-    const SLIDE_OUT = 320; // px of scroll to fade/slide out
+    const SLIDE_OUT = 180; // px of scroll to fade/slide out
     const SLIDE_TOTAL = SLIDE_IN + HOLD + SLIDE_OUT;
 
     function updateSide() {
@@ -892,15 +892,15 @@
     ];
 
     const listFan = [
-      { x: -360, rot: -24, z: 1, y: 30 },
-      { x: -270, rot: -18, z: 2, y: 18 },
-      { x: -180, rot: -12, z: 3, y: 8  },
-      { x:  -90, rot:  -6, z: 4, y: -2 },
-      { x:    0, rot:   0, z: 5, y: -8 },
-      { x:   90, rot:   6, z: 4, y: -2 },
-      { x:  180, rot:  12, z: 3, y: 8  },
-      { x:  270, rot:  18, z: 2, y: 18 },
-      { x:  360, rot:  24, z: 1, y: 30 },
+      { x: -360, rot: 0, z: 1, y: 0 },
+      { x: -270, rot: 0, z: 2, y: 0 },
+      { x: -180, rot: 0, z: 3, y: 0 },
+      { x:  -90, rot: 0, z: 4, y: 0 },
+      { x:    0, rot: 0, z: 5, y: 0 },
+      { x:   90, rot: 0, z: 4, y: 0 },
+      { x:  180, rot: 0, z: 3, y: 0 },
+      { x:  270, rot: 0, z: 2, y: 0 },
+      { x:  360, rot: 0, z: 1, y: 0 },
     ];
 
     const listWrap = document.getElementById('listStackWrap');
