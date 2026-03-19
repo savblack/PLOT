@@ -7,7 +7,7 @@
   <meta name="description" content="Every film. Every series. Your taste, finally yours." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Nothing+You+Could+Do&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <style>
     /* ── Reset & Tokens ─────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -68,6 +68,7 @@
     .reveal-delay-1 { transition-delay: 0.1s; }
     .reveal-delay-2 { transition-delay: 0.2s; }
     .reveal-delay-3 { transition-delay: 0.3s; }
+    .reveal-delay-4 { transition-delay: 0.4s; }
 
     /* ── Navbar ─────────────────────────────────────────────── */
     nav {
@@ -394,57 +395,62 @@
       margin-bottom: 3rem;
     }
 
-    .bento-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 1.5rem;
+    .feature-list {
+      width: 100%;
+      margin-top: 3rem;
     }
 
-    .bento-card {
-      background: var(--glass-bg);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border: 1px solid var(--glass-border);
-      border-radius: var(--r-lg);
-      padding: 2.5rem 2rem;
-      transition: all 0.4s var(--ease);
-    }
-    .bento-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 20px 48px rgba(0,0,0,0.08);
-      border-color: rgba(0,0,0,0.10);
-    }
-
-    .bento-icon {
-      width: 48px; height: 48px;
-      border-radius: 14px;
-      background: var(--text);
+    .feature-row {
       display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 1.5rem;
+      align-items: baseline;
+      gap: 2.5rem;
+      padding: 2rem 0;
+      border-bottom: 1px solid rgba(0,0,0,0.08);
+      transition: background 0.2s ease;
+      cursor: default;
     }
-    .bento-icon svg {
-      width: 22px; height: 22px;
-      stroke: #fff;
-      fill: none;
-      stroke-width: 1.8;
-      stroke-linecap: round;
-      stroke-linejoin: round;
+    .feature-list .feature-row:first-child {
+      border-top: 1px solid rgba(0,0,0,0.08);
+    }
+    .feature-row:hover {
+      background: rgba(0,0,0,0.02);
+      padding-left: 0.5rem;
+      padding-right: 0.5rem;
+      margin-left: -0.5rem;
+      margin-right: -0.5rem;
+      border-radius: 8px;
     }
 
-    .bento-title {
+    .feature-num {
       font-family: var(--serif);
-      font-size: 1.4rem;
-      font-weight: 600;
-      margin-bottom: 0.7rem;
-      letter-spacing: -0.02em;
+      font-size: clamp(2rem, 3.5vw, 3rem);
+      font-weight: 400;
+      color: var(--muted);
+      line-height: 1;
+      min-width: 70px;
+      opacity: 0.45;
     }
 
-    .bento-desc {
+    .feature-body {
+      flex: 1;
+    }
+    .feature-title {
+      font-family: var(--serif);
+      font-size: clamp(1.2rem, 2vw, 1.5rem);
+      font-weight: 400;
+      color: var(--text);
+      letter-spacing: -0.02em;
+      margin-bottom: 0.35rem;
+      transition: font-style 0.15s ease;
+    }
+    .feature-row:hover .feature-title {
+      font-style: italic;
+    }
+    .feature-desc {
+      font-size: 0.88rem;
       color: var(--muted);
-      font-size: 0.95rem;
       line-height: 1.65;
+      max-width: 520px;
     }
 
     /* ── Timeline ───────────────────────────────────────────── */
@@ -464,6 +470,87 @@
       letter-spacing: -0.03em;
       color: var(--text);
     }
+
+    .timeline-entries {
+      position: relative;
+      max-width: 860px;
+      margin: 5rem auto 0;
+    }
+
+    /* center vertical line */
+    .timeline-entries::before {
+      content: '';
+      position: absolute;
+      top: 0; bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 1px;
+      background: rgba(0,0,0,0.1);
+    }
+
+    .tl-entry {
+      display: grid;
+      grid-template-columns: 1fr 160px 1fr;
+      align-items: center;
+      gap: 3rem;
+      margin-bottom: 5rem;
+      position: relative;
+    }
+
+    .tl-poster-wrap {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      justify-content: center;
+    }
+
+    /* dot on the line */
+    .tl-poster-wrap::after {
+      content: '';
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.2);
+      z-index: -1;
+    }
+
+    .tl-poster {
+      width: 160px;
+      height: 240px;
+      border-radius: 8px;
+      background-size: cover;
+      background-position: center;
+      background-color: #111;
+      box-shadow: 0 10px 36px rgba(0,0,0,0.15);
+      transition: transform 0.35s var(--ease), box-shadow 0.35s var(--ease);
+    }
+    .tl-poster:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+    }
+
+    .tl-note {
+      font-family: 'Nothing You Could Do', cursive;
+      font-size: 1.15rem;
+      line-height: 1.4;
+      color: rgba(26,26,26,0.75);
+    }
+    .tl-note-left  { text-align: right; }
+    .tl-note-right { text-align: left;  }
+
+    .tl-date {
+      font-family: var(--sans);
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.6rem;
+    }
+
+    .tl-empty { /* placeholder column */ }
 
     /* ── Closing CTA ────────────────────────────────────────── */
     #cta {
@@ -566,9 +653,11 @@
         max-width: 980px;
         margin: 0 auto;
       }
-      .bento-grid {
-        grid-template-columns: 1fr;
-      }
+    }
+
+    @media (max-width: 600px) {
+      .feature-row { gap: 1.5rem; }
+      .feature-num { min-width: 44px; font-size: 1.8rem; }
     }
 
     @media (max-width: 600px) {
@@ -635,38 +724,34 @@
   <section id="features">
     <h2 class="section-title reveal">Designed for the way you watch.</h2>
 
-    <div class="bento-grid">
-      <!-- Journal -->
-      <div class="bento-card reveal reveal-delay-1">
-        <div class="bento-icon">
-          <svg viewBox="0 0 24 24">
-            <path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/>
-          </svg>
+    <div class="feature-list">
+      <div class="feature-row reveal reveal-delay-1">
+        <span class="feature-num">01</span>
+        <div class="feature-body">
+          <div class="feature-title">Log</div>
+          <p class="feature-desc">Rate and journal every film and show you watch — with a score, a note, a mood. Your viewing history, exactly how you lived it.</p>
         </div>
-        <h3 class="bento-title">Journal</h3>
-        <p class="bento-desc">Rate and log everything you watch — with a score, a note, a mood. Your viewing history, exactly how you lived it.</p>
       </div>
-
-      <!-- Lists -->
-      <div class="bento-card reveal reveal-delay-2">
-        <div class="bento-icon">
-          <svg viewBox="0 0 24 24">
-            <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>
-          </svg>
+      <div class="feature-row reveal reveal-delay-2">
+        <span class="feature-num">02</span>
+        <div class="feature-body">
+          <div class="feature-title">Lists</div>
+          <p class="feature-desc">Build lists for any mood, occasion, or obsession. No algorithm in sight — just your taste, organised exactly how you want it.</p>
         </div>
-        <h3 class="bento-title">Lists</h3>
-        <p class="bento-desc">Organise by mood, genre, occasion — your lists, your rules. No algorithm in sight. Just beautifully stacked intent.</p>
       </div>
-
-      <!-- Discover -->
-      <div class="bento-card reveal reveal-delay-3">
-        <div class="bento-icon">
-          <svg viewBox="0 0 24 24">
-            <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
-          </svg>
+      <div class="feature-row reveal reveal-delay-3">
+        <span class="feature-num">03</span>
+        <div class="feature-body">
+          <div class="feature-title">Timeline</div>
+          <p class="feature-desc">A visual record of your entire watching history. Scroll back and see the exact week you discovered your favourite director.</p>
         </div>
-        <h3 class="bento-title">Discover</h3>
-        <p class="bento-desc">What's trending, what's new, what your taste says you'll love next. Recommendations that actually know you.</p>
+      </div>
+      <div class="feature-row reveal reveal-delay-4">
+        <span class="feature-num">04</span>
+        <div class="feature-body">
+          <div class="feature-title">Discover</div>
+          <p class="feature-desc">Recommendations shaped by your actual taste, not an algorithm. What your history says you'll love next.</p>
+        </div>
       </div>
     </div>
   </section>
@@ -691,6 +776,82 @@
     <p class="ftp-body reveal reveal-delay-2" style="margin-top: 2rem;">
       One day you'll scroll back and see the exact week you discovered your favourite director. Remember the month you watched nothing but comfort rewatches and the series that kept you up until 2am.
     </p>
+
+    <div class="timeline-entries">
+
+      <!-- 1: note right -->
+      <div class="tl-entry">
+        <div class="tl-empty"></div>
+        <div class="tl-poster-wrap">
+          <div class="tl-poster reveal" style="background-image: url('images/hero/aftersun.jpg')"></div>
+        </div>
+        <div class="tl-note tl-note-right reveal reveal-delay-2">
+          <div class="tl-date">October 2023</div>
+          <p>Still not over this one.<br>Probably never will be.</p>
+        </div>
+      </div>
+
+      <!-- 2: note left -->
+      <div class="tl-entry">
+        <div class="tl-note tl-note-left reveal reveal-delay-2">
+          <div class="tl-date">February 2024</div>
+          <p>Watched this twice<br>in one sitting.</p>
+        </div>
+        <div class="tl-poster-wrap">
+          <div class="tl-poster reveal" style="background-image: url('images/hero/past-lives.jpg')"></div>
+        </div>
+        <div class="tl-empty"></div>
+      </div>
+
+      <!-- 3: note right -->
+      <div class="tl-entry">
+        <div class="tl-empty"></div>
+        <div class="tl-poster-wrap">
+          <div class="tl-poster reveal" style="background-image: url('images/hero/saltburn.png'); background-size: 100% 100%;"></div>
+        </div>
+        <div class="tl-note tl-note-right reveal reveal-delay-2">
+          <div class="tl-date">June 2024</div>
+          <p>Unhinged in all<br>the right ways.</p>
+        </div>
+      </div>
+
+      <!-- 4: note left -->
+      <div class="tl-entry">
+        <div class="tl-note tl-note-left reveal reveal-delay-2">
+          <div class="tl-date">August 2024</div>
+          <p>The twist I did not<br>see coming.</p>
+        </div>
+        <div class="tl-poster-wrap">
+          <div class="tl-poster reveal" style="background-image: url('images/hero/parasite.jpg')"></div>
+        </div>
+        <div class="tl-empty"></div>
+      </div>
+
+      <!-- 5: note right -->
+      <div class="tl-entry">
+        <div class="tl-empty"></div>
+        <div class="tl-poster-wrap">
+          <div class="tl-poster reveal" style="background-image: url('images/hero/the-substance.avif')"></div>
+        </div>
+        <div class="tl-note tl-note-right reveal reveal-delay-2">
+          <div class="tl-date">December 2024</div>
+          <p>Nothing could have<br>prepared me for this.</p>
+        </div>
+      </div>
+
+      <!-- 6: note left -->
+      <div class="tl-entry">
+        <div class="tl-note tl-note-left reveal reveal-delay-2">
+          <div class="tl-date">March 2025</div>
+          <p>My top ten.<br>Number one. Always.</p>
+        </div>
+        <div class="tl-poster-wrap">
+          <div class="tl-poster reveal" style="background-image: url('images/hero/gone-girl.jpg')"></div>
+        </div>
+        <div class="tl-empty"></div>
+      </div>
+
+    </div>
   </section>
 
   <!-- ── Closing CTA ───────────────────────────────────────────── -->
