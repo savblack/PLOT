@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { tmdb } from './api/tmdb';
 import { supabase } from './api/supabase';
 import MediaModal from './components/MediaModal';
 import AuthModal from './components/AuthModal';
+import PublicProfileView from './components/PublicProfileView';
 
 export default function App() {
   const [watched, setWatched] = useState([]);
@@ -24,6 +25,13 @@ export default function App() {
   const [mediaFilter, setMediaFilter] = useState('movie'); // movie, tv
   const [userLists, setUserLists] = useState([]);
   const [listItems, setListItems] = useState([]);
+  const [profile, setProfile] = useState(null);
+  const [profileUsernameInput, setProfileUsernameInput] = useState('');
+  const [profileUsernameSaving, setProfileUsernameSaving] = useState(false);
+  const [profileUsernameError, setProfileUsernameError] = useState('');
+  const [copiedLink, setCopiedLink] = useState(null);
+  const [publicProfileUsername, setPublicProfileUsername] = useState(null);
+  const [publicProfileInitialList, setPublicProfileInitialList] = useState(null);
 
   // Check user session and load local fallback
   useEffect(() => {
@@ -34,6 +42,15 @@ export default function App() {
       if (!session) {
         const local = localStorage.getItem('plot-watched');
         if (local) setWatched(JSON.parse(local));
+      }
+
+      const params = new URLSearchParams(window.location.search);
+      const pUser = params.get('p');
+      const pList = params.get('list');
+      if (pUser) {
+        setPublicProfileUsername(pUser);
+        if (pList) setPublicProfileInitialList(pList);
+        setView('public');
       }
     };
     init();
@@ -48,6 +65,19 @@ export default function App() {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Load user profile
+  useEffect(() => {
+    if (user) {
+      const loadProfile = async () => {
+        const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+        if (data) { setProfile(data); setProfileUsernameInput(data.username || ''); }
+      };
+      loadProfile();
+    } else {
+      setProfile(null);
+    }
+  }, [user]);
 
   // Sync with Supabase when user is logged in
   useEffect(() => {
@@ -315,6 +345,11 @@ export default function App() {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [theme, setTheme] = useState(() => localStorage.getItem('plot-theme') || 'system');
   const [feedLayout, setFeedLayout] = useState(() => localStorage.getItem('plot-feed-layout') || 'bento');
+  const [timelineView, setTimelineView] = useState('linear'); // 'linear' | 'grid'
+  const [gridTimeframe, setGridTimeframe] = useState('monthly'); // 'monthly' | 'yearly'
+  const [gridNav, setGridNav] = useState({ month: new Date().getMonth(), year: new Date().getFullYear() });
+  const [selectedGridDay, setSelectedGridDay] = useState(null);
+  const timelineScrollRef = useRef(null);
 
   useEffect(() => {
     localStorage.setItem('plot-theme', theme);
@@ -333,6 +368,120 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('plot-feed-layout', feedLayout);
   }, [feedLayout]);
+
+  useEffect(() => {
+    if (journalTab === 'timeline' && timelineScrollRef.current) {
+      timelineScrollRef.current.scrollLeft = timelineScrollRef.current.scrollWidth;
+    }
+  }, [journalTab, watched]);
+
+  const formatDate = (iso) => new Date(iso).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
+  const toDateKey = (iso) => iso?.slice(0, 10);
+  const moodLabel = m => ({ happy: 'Happy', emotional: 'Emotional', fun: 'Fun', tense: 'Tense', amazing: 'Amazing', mindblown: 'Mind Blown' })[m] || '';
+  const tlScribble = (height, seed) => {
+    const r = n => { const v = Math.sin(seed * 9.301 + n * 46.218) * 43758.5453; return v - Math.floor(v); };
+    const cx = 40; // centre of 80px-wide SVG
+    const k = 0.5523; // cubic bezier circle approximation constant
+    const numLoops = r(99) > 0.55 ? 0 : height > 100 ? (r(1) > 0.35 ? 2 : 1) : 1;
+    const loops = Array.from({ length: numLoops }, (_, i) => ({
+      y: ((i + 1) / (numLoops + 1) + (r(i + 5) - 0.5) * 0.12) * height,
+      x: cx + (r(i + 20) - 0.5) * 18,
+      lr: 9 + r(i + 30) * 6,
+      dir: r(i + 40) > 0.5 ? 1 : -1,
+    }));
+    let px = cx, py = 0;
+    let d = `M ${px} ${py}`;
+    const seg = (tx, ty, slack, si) => {
+      const dy = ty - py;
+      d += ` C ${(px + (r(si) - 0.5) * slack).toFixed(1)} ${(py + dy * 0.35).toFixed(1)} ${(tx + (r(si + 1) - 0.5) * slack * 0.6).toFixed(1)} ${(ty - dy * 0.2).toFixed(1)} ${tx.toFixed(1)} ${ty.toFixed(1)}`;
+      px = tx; py = ty;
+    };
+    loops.forEach(({ x: lx, y: ly, lr, dir }, i) => {
+      const ex = lx + dir * lr;
+      seg(ex, ly, 38, i * 7 + 10);
+      if (dir === 1) {
+        d += ` C ${lx+lr} ${ly-k*lr} ${lx+k*lr} ${ly-lr} ${lx} ${ly-lr}`;
+        d += ` C ${lx-k*lr} ${ly-lr} ${lx-lr} ${ly-k*lr} ${lx-lr} ${ly}`;
+        d += ` C ${lx-lr} ${ly+k*lr} ${lx-k*lr} ${ly+lr} ${lx} ${ly+lr}`;
+        d += ` C ${lx+k*lr} ${ly+lr} ${lx+lr} ${ly+k*lr} ${lx+lr} ${ly}`;
+      } else {
+        d += ` C ${lx-lr} ${ly-k*lr} ${lx-k*lr} ${ly-lr} ${lx} ${ly-lr}`;
+        d += ` C ${lx+k*lr} ${ly-lr} ${lx+lr} ${ly-k*lr} ${lx+lr} ${ly}`;
+        d += ` C ${lx+lr} ${ly+k*lr} ${lx+k*lr} ${ly+lr} ${lx} ${ly+lr}`;
+        d += ` C ${lx-k*lr} ${ly+lr} ${lx-lr} ${ly+k*lr} ${lx-lr} ${ly}`;
+      }
+      px = ex; py = ly;
+    });
+    seg(cx, height, 38, 90);
+    return d;
+  };
+  const watchedByDate = watched.reduce((acc, item) => {
+    const key = toDateKey(item.watched_at);
+    if (!key) return acc;
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(item);
+    return acc;
+  }, {});
+
+  const toggleProfilePublic = async () => {
+    const username = profile?.username || profileUsernameInput.toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 30);
+    if (!username) { setProfileUsernameError('Set a username first'); return; }
+    const next = !(profile?.is_public ?? false);
+    const { data, error } = await supabase.from('profiles').upsert({
+      id: user.id,
+      username,
+      is_public: next
+    }).select().single();
+    if (error) {
+      setProfileUsernameError(error.message.includes('unique') ? 'Username taken' : 'Error saving');
+    } else if (data) {
+      setProfile(data);
+      setProfileUsernameInput(data.username);
+      setProfileUsernameError('');
+    }
+  };
+
+  const toggleListPublic = async (listId) => {
+    const list = userLists.find(l => l.id === listId);
+    if (!list) return;
+    const next = !list.is_public;
+    const { error } = await supabase.from('lists').update({ is_public: next }).eq('id', listId);
+    if (!error) {
+      setUserLists(prev => prev.map(l => l.id === listId ? { ...l, is_public: next } : l));
+      if (activeList?.id === listId) setActiveList(prev => ({ ...prev, is_public: next }));
+    }
+  };
+
+  const saveUsername = async () => {
+    if (!user) return;
+    const cleaned = profileUsernameInput.toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 30);
+    if (!cleaned || cleaned === profile?.username) return;
+    setProfileUsernameSaving(true);
+    setProfileUsernameError('');
+    const { data, error } = await supabase.from('profiles').upsert({
+      id: user.id,
+      username: cleaned,
+      is_public: profile?.is_public ?? false
+    }).select().single();
+    if (error) {
+      setProfileUsernameError(error.message.includes('unique') ? 'Username taken' : 'Error saving');
+      setProfileUsernameInput(profile?.username || '');
+    } else if (data) {
+      setProfile(data);
+      setProfileUsernameError('');
+    }
+    setProfileUsernameSaving(false);
+  };
+
+  const copyLink = (type, id) => {
+    const base = `${window.location.origin}${window.location.pathname}`;
+    const url = type === 'profile'
+      ? `${base}?p=${profile.username}`
+      : `${base}?p=${profile.username}&list=${id}`;
+    navigator.clipboard.writeText(url);
+    setCopiedLink(type === 'profile' ? 'profile' : id);
+    setTimeout(() => setCopiedLink(null), 2000);
+  };
 
   const ListStack = ({ list, items }) => {
     const [hoverIndex, setHoverIndex] = useState(0);
@@ -359,6 +508,7 @@ export default function App() {
           <div className="stack-info">
             <h3>{list.name}</h3>
             <p>0 items</p>
+            {list.is_public && <span className="list-public-badge">Public</span>}
           </div>
         </div>
       );
@@ -400,6 +550,7 @@ export default function App() {
         <div className="stack-info">
           <h3>{list.name}</h3>
           <p>{items.length} {items.length === 1 ? 'item' : 'items'}</p>
+          {list.is_public && <span className="list-public-badge">Public</span>}
         </div>
       </div>
     );
@@ -505,6 +656,54 @@ export default function App() {
                           </button>
                         </div>
                       </div>
+                    </div>
+                    <div className="profile-public-section">
+                      <div className="settings-row">
+                        <span className="settings-label">Username</span>
+                        <div className="username-input-row">
+                          <span className="username-at">@</span>
+                          <input
+                            className="username-input"
+                            value={profileUsernameInput}
+                            placeholder="set username"
+                            onChange={e => setProfileUsernameInput(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') saveUsername();
+                              if (e.key === 'Escape') setProfileUsernameInput(profile?.username || '');
+                            }}
+                            onBlur={saveUsername}
+                            maxLength={30}
+                          />
+                          {profileUsernameSaving && <span className="username-saving">...</span>}
+                        </div>
+                      </div>
+                      {profileUsernameError && <p className="username-error">{profileUsernameError}</p>}
+                      <div className="settings-row">
+                        <span className="settings-label">Visibility</span>
+                        <div className="settings-toggle">
+                          <button
+                            className={profile?.is_public ? 'active' : ''}
+                            onClick={() => { if (!profile?.is_public) toggleProfilePublic(); }}
+                            title="Public"
+                          >
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                          </button>
+                          <button
+                            className={!profile?.is_public ? 'active' : ''}
+                            onClick={() => { if (profile?.is_public) toggleProfilePublic(); }}
+                            title="Private"
+                          >
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                          </button>
+                        </div>
+                      </div>
+                      {profile?.is_public && profile?.username && (
+                        <div className="settings-row">
+                          <button className="copy-link-btn" onClick={() => copyLink('profile')}>
+                            {copiedLink === 'profile' ? 'Copied!' : 'Copy profile link'}
+                          </button>
+                        </div>
+                      )}
                     </div>
                     <button className="profile-dropdown-item danger" onClick={() => { logout(); setShowProfileMenu(false); }}>
                       Sign Out
@@ -649,6 +848,14 @@ export default function App() {
                               <button onClick={() => { setEditListNameValue(activeList.name); setEditingListName(true); setShowListEditMenu(false); }}>
                                 Rename
                               </button>
+                              <button onClick={() => { toggleListPublic(activeList.id); setShowListEditMenu(false); }}>
+                                {activeList.is_public ? 'Make private' : 'Make public'}
+                              </button>
+                              {activeList.is_public && profile?.username && (
+                                <button onClick={() => { copyLink('list', activeList.id); setShowListEditMenu(false); }}>
+                                  {copiedLink === activeList.id ? 'Copied!' : 'Copy list link'}
+                                </button>
+                              )}
                               <button className="danger" onClick={() => { if (window.confirm(`Delete "${activeList.name}"?`)) { deleteList(activeList.id); setShowListEditMenu(false); } }}>
                                 Delete list
                               </button>
@@ -696,13 +903,13 @@ export default function App() {
                 </div>
 
                 <div className="journal-tab-nav">
-                  {['lists', 'all', 'status', 'ratings', 'mood'].map(tab => (
+                  {['lists', 'all', 'status', 'ratings', 'mood', 'timeline'].map(tab => (
                     <button
                       key={tab}
                       className={`journal-tab-btn ${journalTab === tab ? 'active' : ''}`}
                       onClick={() => setJournalTab(tab)}
                     >
-                      {tab === 'lists' ? 'My Lists' : tab === 'all' ? 'All' : tab === 'status' ? 'Status' : tab === 'ratings' ? 'Ratings' : 'Mood'}
+                      {tab === 'lists' ? 'My Lists' : tab === 'all' ? 'All' : tab === 'status' ? 'Status' : tab === 'ratings' ? 'Ratings' : tab === 'mood' ? 'Mood' : 'Timeline'}
                     </button>
                   ))}
                 </div>
@@ -826,8 +1033,313 @@ export default function App() {
                     ))}
                   </div>
                 )}
+
+                {journalTab === 'timeline' && (
+                  <div className="timeline-tab">
+                    <div className="timeline-grid-header">
+                      <div className="timeline-grid-nav">
+                        {timelineView === 'grid' && gridTimeframe === 'monthly' && (
+                          <>
+                            <button onClick={() => setGridNav(n => {
+                              const d = new Date(n.year, n.month - 1, 1);
+                              return { month: d.getMonth(), year: d.getFullYear() };
+                            })}>‹</button>
+                            <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>
+                              {new Date(gridNav.year, gridNav.month).toLocaleDateString('en-AU', { month: 'long', year: 'numeric' })}
+                            </span>
+                            <button onClick={() => setGridNav(n => {
+                              const d = new Date(n.year, n.month + 1, 1);
+                              return { month: d.getMonth(), year: d.getFullYear() };
+                            })}>›</button>
+                          </>
+                        )}
+                        {timelineView === 'grid' && gridTimeframe === 'yearly' && (
+                          <>
+                            <button onClick={() => setGridNav(n => ({ ...n, year: n.year - 1 }))}>‹</button>
+                            <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{gridNav.year}</span>
+                            <button onClick={() => setGridNav(n => ({ ...n, year: n.year + 1 }))}>›</button>
+                          </>
+                        )}
+                      </div>
+                      <div className="timeline-view-toggle">
+                        <button className={timelineView === 'linear' ? 'active' : ''} onClick={() => setTimelineView('linear')}>Linear</button>
+                        <button className={timelineView === 'grid' ? 'active' : ''} onClick={() => setTimelineView('grid')}>Grid</button>
+                      </div>
+                      {timelineView === 'grid' && (
+                        <div className="timeline-view-toggle">
+                          <button className={gridTimeframe === 'monthly' ? 'active' : ''} onClick={() => setGridTimeframe('monthly')}>Monthly</button>
+                          <button className={gridTimeframe === 'yearly' ? 'active' : ''} onClick={() => setGridTimeframe('yearly')}>Yearly</button>
+                        </div>
+                      )}
+                    </div>
+
+                    {watched.length === 0 && (
+                      <div style={{ textAlign: 'center', padding: '2rem 0' }}>
+                        <p className="empty-list-msg">Nothing logged yet.</p>
+                        <button
+                          className="new-list-header-btn"
+                          style={{ marginTop: '0.75rem' }}
+                          onClick={() => {
+                            const seed = [
+                              // Sep 3 — solo
+                              { id: 'seed-1', tmdb_id: 550, title: 'Fight Club', poster_path: '/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK.jpg', media_type: 'movie', watched_at: '2025-09-03T18:00:00Z', rating: 5, mood: 'mindblown', watchStatus: 'Watched', notes: 'First rule: you do not talk about Fight Club.' },
+                              // Oct 12 — solo
+                              { id: 'seed-2', tmdb_id: 238, title: 'The Godfather', poster_path: '/3bhkrj58Vtu7enYsLeMLoNWsgfG.jpg', media_type: 'movie', watched_at: '2025-10-12T20:00:00Z', rating: 5, mood: 'tense', watchStatus: 'Watched', notes: 'An offer I could not refuse.' },
+                              // Nov 1 — 3 in one day
+                              { id: 'seed-3', tmdb_id: 157336, title: 'Interstellar', poster_path: '/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg', media_type: 'movie', watched_at: '2025-11-01T12:00:00Z', rating: 4, mood: 'emotional', watchStatus: 'Watched', notes: 'The ending hit different.' },
+                              { id: 'seed-3b', tmdb_id: 27205, title: 'Inception', poster_path: '/oYuLEt3zVCKq57qu2F8dT7NIa6f.jpg', media_type: 'movie', watched_at: '2025-11-01T15:30:00Z', rating: 5, mood: 'mindblown', watchStatus: 'Watched', notes: null },
+                              { id: 'seed-3c', tmdb_id: 816692, title: 'Everything Everywhere All at Once', poster_path: '/w3LxiVYdWWRvEVdn5RYq6jIqkb1.jpg', media_type: 'movie', watched_at: '2025-11-01T21:00:00Z', rating: 5, mood: 'mindblown', watchStatus: 'Watched', notes: 'Watched three films in one day, no regrets.' },
+                              // Nov 20 — solo
+                              { id: 'seed-4', tmdb_id: 1396, name: 'Breaking Bad', poster_path: '/ggFHVNu6YYI5L9pCfOacjizRGt.jpg', media_type: 'tv', watched_at: '2025-11-20T19:00:00Z', rating: 5, mood: 'tense', watchStatus: 'Binged', notes: 'I am the one who knocks.' },
+                              // Dec 5 — solo
+                              { id: 'seed-5', tmdb_id: 19404, title: 'Dilwale Dulhania Le Jayenge', poster_path: '/2CAL2433ZeIihfX1Hb2139CX0pW.jpg', media_type: 'movie', watched_at: '2025-12-05T17:00:00Z', rating: 3, mood: 'happy', watchStatus: 'Watched', notes: null },
+                              // Dec 25 — 2 in one day
+                              { id: 'seed-6', tmdb_id: 278, title: 'The Shawshank Redemption', poster_path: '/9cqNxx0GxF0bAY0gFZhKPDfejAp.jpg', media_type: 'movie', watched_at: '2025-12-25T14:00:00Z', rating: 5, mood: 'emotional', watchStatus: 'Watched', notes: 'Hope is a good thing.' },
+                              { id: 'seed-6b', tmdb_id: 240, title: 'The Godfather Part II', poster_path: '/hek3koDUyRQk7FIhPXsa6mT2Zc3.jpg', media_type: 'movie', watched_at: '2025-12-25T20:00:00Z', rating: 5, mood: 'tense', watchStatus: 'Watched', notes: 'Christmas with the Corleones.' },
+                              // Jan 8 — solo
+                              { id: 'seed-7', tmdb_id: 424, title: "Schindler's List", poster_path: '/sF1U4EUQS8YHUYjNl3pMGNIQyr0.jpg', media_type: 'movie', watched_at: '2026-01-08T18:30:00Z', rating: 5, mood: 'emotional', watchStatus: 'Watched', notes: null },
+                              // Jan 22 — solo
+                              { id: 'seed-8', tmdb_id: 680, title: 'Pulp Fiction', poster_path: '/d5iIlFn5s0ImszYzBPb8JPIfbXD.jpg', media_type: 'movie', watched_at: '2026-01-22T21:00:00Z', rating: 4, mood: 'fun', watchStatus: 'Watched', notes: 'Royale with cheese.' },
+                              // Feb 14 — 5 in one day (movie marathon)
+                              { id: 'seed-9', tmdb_id: 13, title: 'Forrest Gump', poster_path: '/arw2vcBveWOVZr6pxd9XTd1TdQa.jpg', media_type: 'movie', watched_at: '2026-02-14T10:00:00Z', rating: 4, mood: 'happy', watchStatus: 'Watched', notes: 'Life is like a box of chocolates.' },
+                              { id: 'seed-10', tmdb_id: 11, title: 'Star Wars', poster_path: '/6FfCtAuVAW8XJjZ7eWeLibRLWTw.jpg', media_type: 'movie', watched_at: '2026-02-14T13:00:00Z', rating: 4, mood: 'amazing', watchStatus: 'Watched', notes: null },
+                              { id: 'seed-10b', tmdb_id: 120, title: 'The Lord of the Rings: The Fellowship of the Ring', poster_path: '/6oom5QYQ2yQTMJIbnvbkBL9cHo6.jpg', media_type: 'movie', watched_at: '2026-02-14T16:00:00Z', rating: 5, mood: 'amazing', watchStatus: 'Watched', notes: null },
+                              { id: 'seed-10c', tmdb_id: 121, title: 'The Lord of the Rings: The Two Towers', poster_path: '/5VTN0pR8gcqV3EPUHHfMGnJYspL.jpg', media_type: 'movie', watched_at: '2026-02-14T19:30:00Z', rating: 5, mood: 'tense', watchStatus: 'Watched', notes: null },
+                              { id: 'seed-10d', tmdb_id: 122, title: 'The Return of the King', poster_path: '/rCzpDGLbOoPwLjy3OAm5NUPOTrC.jpg', media_type: 'movie', watched_at: '2026-02-14T23:00:00Z', rating: 5, mood: 'emotional', watchStatus: 'Watched', notes: 'Extended editions. Worth every minute.' },
+                              // Mar 1 — solo
+                              { id: 'seed-11', tmdb_id: 598, title: 'City of God', poster_path: '/k7eYdWvhYQyRQoU2TB2A2Xu2grZ.jpg', media_type: 'movie', watched_at: '2026-03-01T20:00:00Z', rating: 5, mood: 'tense', watchStatus: 'Watched', notes: 'Brutal and brilliant.' },
+                              // Mar 10 — 2 in one day
+                              { id: 'seed-12', tmdb_id: 37854, name: 'One Piece', poster_path: '/cMD9Ygz11zjJzAovURpO75Qg7rT.jpg', media_type: 'tv', watched_at: '2026-03-10T15:00:00Z', rating: 4, mood: 'fun', watchStatus: "Didn't Finish", notes: 'Still going...' },
+                              { id: 'seed-12b', tmdb_id: 76341, title: 'Mad Max: Fury Road', poster_path: '/8tZYtuWezp8JbcsvHYO0O46tFbo.jpg', media_type: 'movie', watched_at: '2026-03-10T21:00:00Z', rating: 4, mood: 'amazing', watchStatus: 'Watched', notes: 'What a lovely day.' },
+                              // Mar 19 — solo
+                              { id: 'seed-13', tmdb_id: 496243, title: 'Parasite', poster_path: '/7IiTTgloJzvGI1TAYymCfbfl3vT.jpg', media_type: 'movie', watched_at: '2026-03-19T21:00:00Z', rating: 5, mood: 'tense', watchStatus: 'Watched', notes: 'Did not see that ending coming.' },
+                            ];
+                            setWatched(seed);
+                            localStorage.setItem('plot-watched', JSON.stringify(seed));
+                          }}
+                        >
+                          Load sample data
+                        </button>
+                      </div>
+                    )}
+
+                    {timelineView === 'linear' && (() => {
+                      const sorted = [...watched]
+                        .filter(item => item.watched_at)
+                        .sort((a, b) => new Date(a.watched_at) - new Date(b.watched_at));
+                      const dayGroups = sorted.reduce((groups, item) => {
+                        const key = toDateKey(item.watched_at);
+                        if (!groups.length || groups[groups.length - 1].key !== key) {
+                          groups.push({ key, items: [item] });
+                        } else {
+                          groups[groups.length - 1].items.push(item);
+                        }
+                        return groups;
+                      }, []);
+                      const renderCard = (item, k) => (
+                        <div key={k} className="tl-entry" onClick={() => setSelectedItem(item)}>
+                          <div className="tl-poster">
+                            {item.poster_path
+                              ? <img src={`https://image.tmdb.org/t/p/w300${item.poster_path}`} alt={item.title || item.name} />
+                              : <div className="tl-no-poster" />
+                            }
+                          </div>
+                          <div className="tl-info">
+                            <span className="tl-title">{item.title || item.name}</span>
+                            {item.rating > 0 && <span className="tl-stars">{'★'.repeat(item.rating)}{'☆'.repeat(5 - item.rating)}</span>}
+                          </div>
+                          <div className="tl-bottom">
+                            <span className="tl-date">{formatDate(item.watched_at)}</span>
+                            {item.mood && <span className="tl-mood">{moodLabel(item.mood)}</span>}
+                          </div>
+                        </div>
+                      );
+                      return (
+                        <div className="tl-vertical">
+                          {dayGroups.map((group, dayIdx) => {
+                            const anchor = group.items[group.items.length - 1];
+                            const extras = group.items.slice(0, -1);
+                            const nextGroup = dayGroups[dayIdx + 1];
+                            const days = nextGroup ? Math.round((new Date(nextGroup.items[nextGroup.items.length - 1].watched_at) - new Date(anchor.watched_at)) / 86400000) : 0;
+                            const scribbleH = nextGroup ? Math.min(Math.max(160 + days * 1.5, 180), 400) : 0;
+                            const gapLabel = days >= 365 ? `${Math.round(days / 365)}y` : days >= 30 ? `${Math.round(days / 30)}mo` : days > 6 ? `${days}d` : null;
+                            const connector = nextGroup && (
+                              <div className="tl-connector">
+                                {gapLabel ? (
+                                  <>
+                                    <svg width="80" height={scribbleH / 2} viewBox={`0 0 80 ${scribbleH / 2}`} style={{ overflow: 'visible' }}>
+                                      <path d={tlScribble(scribbleH / 2, dayIdx)} stroke="var(--text-primary)" fill="none" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.2" />
+                                    </svg>
+                                    <span className="tl-gap">{gapLabel}</span>
+                                    <svg width="80" height={scribbleH / 2} viewBox={`0 0 80 ${scribbleH / 2}`} style={{ overflow: 'visible' }}>
+                                      <path d={tlScribble(scribbleH / 2, dayIdx + 51)} stroke="var(--text-primary)" fill="none" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.2" />
+                                    </svg>
+                                  </>
+                                ) : (
+                                  <svg width="80" height={scribbleH} viewBox={`0 0 80 ${scribbleH}`} style={{ overflow: 'visible' }}>
+                                    <path d={tlScribble(scribbleH, dayIdx)} stroke="var(--text-primary)" fill="none" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.2" />
+                                  </svg>
+                                )}
+                              </div>
+                            );
+                            return (
+                              <div key={group.key} className="tl-entry-group">
+                                {extras.length > 0 ? (
+                                  <div className="tl-day-scroll">
+                                    <div className="tl-day-inner">
+                                      {[...extras].reverse().map((extra, ei) => renderCard(extra, `${group.key}-${ei}`))}
+                                      <div className="tl-anchor-col">
+                                        {renderCard(anchor, group.key)}
+                                        {connector}
+                                      </div>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <>
+                                    {renderCard(anchor, group.key)}
+                                    {connector}
+                                  </>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
+
+                    {timelineView === 'grid' && gridTimeframe === 'monthly' && (() => {
+                      const year = gridNav.year;
+                      const month = gridNav.month;
+                      const firstDay = new Date(year, month, 1);
+                      const daysInMonth = new Date(year, month + 1, 0).getDate();
+                      // Monday-first: Mon=0 ... Sun=6
+                      const startOffset = (firstDay.getDay() + 6) % 7;
+                      const cells = [];
+                      for (let i = 0; i < startOffset; i++) cells.push(null);
+                      for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+                      return (
+                        <>
+                          <div className="month-grid">
+                            {['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d => (
+                              <div key={d} className="month-grid-header-cell">{d}</div>
+                            ))}
+                            {cells.map((day, i) => {
+                              if (!day) return <div key={`empty-${i}`} />;
+                              const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                              const entries = watchedByDate[dateKey] || [];
+                              const isSelected = selectedGridDay === dateKey;
+                              return (
+                                <div
+                                  key={dateKey}
+                                  className={`month-day-cell${entries.length > 0 ? ' has-entries' : ' month-day-empty'}${isSelected ? ' selected' : ''}`}
+                                  onClick={() => entries.length > 0 && setSelectedGridDay(isSelected ? null : dateKey)}
+                                >
+                                  {entries[0]?.poster_path && (
+                                    <img src={`https://image.tmdb.org/t/p/w92${entries[0].poster_path}`} alt="" />
+                                  )}
+                                  <span className="month-day-num">{day}</span>
+                                  {entries.length > 1 && <span className="month-day-count">+{entries.length - 1}</span>}
+                                </div>
+                              );
+                            })}
+                          </div>
+                          {selectedGridDay && watchedByDate[selectedGridDay] && (
+                            <div className="grid-day-panel">
+                              <div className="grid-day-panel-title">{formatDate(selectedGridDay + 'T00:00:00')}</div>
+                              <div className="grid-day-entries">
+                                {watchedByDate[selectedGridDay].map((item, idx) => (
+                                  <div key={item.id || idx} className="timeline-card" style={{ width: 150, flexShrink: 0 }} onClick={() => setSelectedItem(item)}>
+                                    {item.poster_path
+                                      ? <img src={`https://image.tmdb.org/t/p/w200${item.poster_path}`} alt={item.title || item.name} />
+                                      : <div style={{ height: 130, background: 'var(--border-color)' }} />
+                                    }
+                                    <div className="timeline-card-info">
+                                      <span className="timeline-title">{item.title || item.name}</span>
+                                      {item.rating > 0 && <span style={{ fontSize: '0.7rem' }}>{'★'.repeat(item.rating)}</span>}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
+
+                    {timelineView === 'grid' && gridTimeframe === 'yearly' && (() => {
+                      const year = gridNav.year;
+                      const months = Array.from({ length: 12 }, (_, m) => m);
+                      return (
+                        <>
+                          <div className="year-grid">
+                            {months.map(m => {
+                              const daysInMonth = new Date(year, m + 1, 0).getDate();
+                              return (
+                                <div key={m} className="year-month-col">
+                                  <div className="year-month-label">
+                                    {new Date(year, m).toLocaleDateString('en-AU', { month: 'short' })}
+                                  </div>
+                                  {Array.from({ length: daysInMonth }, (_, d) => {
+                                    const day = d + 1;
+                                    const dateKey = `${year}-${String(m + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                                    const count = (watchedByDate[dateKey] || []).length;
+                                    const cls = count === 0 ? 'empty' : count === 1 ? 'count-1' : count === 2 ? 'count-2' : 'count-3plus';
+                                    const isSelected = selectedGridDay === dateKey;
+                                    return (
+                                      <div
+                                        key={dateKey}
+                                        className={`year-day-cell ${cls}${isSelected ? ' selected' : ''}`}
+                                        title={count > 0 ? `${dateKey}: ${count} entr${count === 1 ? 'y' : 'ies'}` : dateKey}
+                                        onClick={() => count > 0 && setSelectedGridDay(isSelected ? null : dateKey)}
+                                      />
+                                    );
+                                  })}
+                                </div>
+                              );
+                            })}
+                          </div>
+                          {selectedGridDay && watchedByDate[selectedGridDay] && (
+                            <div className="grid-day-panel">
+                              <div className="grid-day-panel-title">{formatDate(selectedGridDay + 'T00:00:00')}</div>
+                              <div className="grid-day-entries">
+                                {watchedByDate[selectedGridDay].map((item, idx) => (
+                                  <div key={item.id || idx} className="timeline-card" style={{ width: 150, flexShrink: 0 }} onClick={() => setSelectedItem(item)}>
+                                    {item.poster_path
+                                      ? <img src={`https://image.tmdb.org/t/p/w200${item.poster_path}`} alt={item.title || item.name} />
+                                      : <div style={{ height: 130, background: 'var(--border-color)' }} />
+                                    }
+                                    <div className="timeline-card-info">
+                                      <span className="timeline-title">{item.title || item.name}</span>
+                                      {item.rating > 0 && <span style={{ fontSize: '0.7rem' }}>{'★'.repeat(item.rating)}</span>}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </div>
+                )}
               </div>
             )}
+          </section>
+        )}
+
+        {view === 'public' && publicProfileUsername && (
+          <section>
+            <PublicProfileView
+              username={publicProfileUsername}
+              initialListId={publicProfileInitialList}
+              onItemClick={setSelectedItem}
+              onBack={() => {
+                setView('home');
+                setPublicProfileUsername(null);
+                setPublicProfileInitialList(null);
+                window.history.pushState({}, '', window.location.pathname);
+              }}
+            />
           </section>
         )}
 
@@ -842,7 +1354,7 @@ export default function App() {
             </div>
             <div className="bento-grid">
               {(mediaFilter === 'movie' ? upcoming : upcomingTV).map((item, index) => (
-                <div key={item.id} className={`bento-item glass ${index % 5 === 0 ? 'large' : ''}`} onClick={() => setSelectedItem(item)}>
+                <div key={item.id} className={`bento-item glass ${feedLayout === 'bento' && index % 5 === 0 ? 'large' : ''}`} onClick={() => setSelectedItem(item)}>
                   <img src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title || item.name} />
                   <div className="overlay">
                     <span className="rating-tag date-tag">
@@ -1901,6 +2413,157 @@ export default function App() {
           .list-stack { padding: 0.4rem; }
           .stack-container { height: auto; aspect-ratio: 2/3; }
         }
+
+        /* Timeline tab */
+        .timeline-tab { padding: 0.5rem 0; }
+        .timeline-grid-header { display: flex; align-items: center; gap: 1rem; justify-content: flex-end; margin-bottom: 1.5rem; flex-wrap: wrap; }
+        .timeline-grid-nav { display: flex; align-items: center; gap: 0.75rem; margin-right: auto; }
+        .timeline-grid-nav button { background: none; border: 1px solid var(--border-color); border-radius: var(--radius-pill, 999px); padding: 0.3rem 0.8rem; cursor: pointer; color: var(--text-primary); font-size: 1rem; line-height: 1; }
+        .timeline-view-toggle { display: flex; gap: 0.25rem; background: var(--bg-color); border-radius: var(--radius-pill, 999px); padding: 0.2rem; border: 1px solid var(--border-color); }
+        .timeline-view-toggle button { padding: 0.3rem 0.9rem; border-radius: var(--radius-pill, 999px); border: none; cursor: pointer; background: none; color: var(--text-secondary); font-size: 0.8rem; }
+        .timeline-view-toggle button.active { background: var(--surface-color); color: var(--text-primary); font-weight: 600; }
+
+        /* Vertical timeline */
+        .tl-vertical { display: flex; flex-direction: column; align-items: center; padding: 2rem 1rem 4rem; }
+        .tl-entry-group { display: flex; flex-direction: column; align-items: center; width: 100%; }
+        .tl-anchor-col { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+        .tl-day-scroll { overflow-x: auto; direction: rtl; width: 100%; }
+        .tl-day-inner { direction: ltr; display: flex; flex-direction: row; gap: 1.5rem; min-width: fit-content; padding-bottom: 0.5rem; align-items: flex-start; padding-right: calc(50% - 130px); padding-left: calc(50% - 130px); }
+        .tl-entry { position: relative; width: 260px; cursor: pointer; z-index: 1; }
+        .tl-entry:hover .tl-poster { transform: scale(1.02); }
+        .tl-mood { font-size: 0.68rem; font-style: italic; color: var(--text-secondary); white-space: nowrap; opacity: 0.8; }
+        .tl-poster { border-radius: var(--radius-md, 12px); overflow: hidden; transition: transform 0.2s ease; box-shadow: 0 4px 20px rgba(0,0,0,0.18); }
+        .tl-poster img { width: 100%; display: block; aspect-ratio: 2/3; object-fit: cover; }
+        .tl-no-poster { width: 100%; aspect-ratio: 2/3; background: var(--border-color); border-radius: var(--radius-md, 12px); }
+        .tl-info { display: flex; justify-content: space-between; align-items: baseline; margin-top: 0.55rem; gap: 0.4rem; padding: 0 0.1rem; position: relative; z-index: 1; }
+        .tl-title { font-family: 'Playfair Display', serif; font-size: 0.85rem; font-weight: 600; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; flex: 1; }
+        .tl-stars { font-size: 0.65rem; flex-shrink: 0; opacity: 0.9; }
+        .tl-bottom { display: flex; justify-content: space-between; align-items: baseline; margin-top: 0.2rem; padding: 0 0.1rem; position: relative; z-index: 1; }
+        .tl-date { font-size: 0.65rem; color: var(--text-secondary); }
+        .tl-connector { display: flex; flex-direction: column; align-items: center; gap: 0.15rem; margin-top: -54px; position: relative; z-index: 0; }
+        .tl-gap { font-size: 0.62rem; color: var(--text-secondary); opacity: 0.55; letter-spacing: 0.08em; padding: 0.15rem 0.5rem; }
+
+        /* Monthly grid */
+        .month-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.35rem; }
+        .month-grid-header-cell { text-align: center; font-size: 0.7rem; color: var(--text-secondary); font-weight: 600; padding-bottom: 0.5rem; }
+        .month-day-cell { aspect-ratio: 1; border-radius: 8px; overflow: hidden; position: relative; cursor: pointer; background: var(--bg-color); border: 1px solid var(--border-color); }
+        .month-day-cell.has-entries { border-color: var(--accent-primary, #7c5cfc); }
+        .month-day-cell.selected { outline: 2px solid var(--accent-primary, #7c5cfc); }
+        .month-day-cell img { width: 100%; height: 100%; object-fit: cover; opacity: 0.85; display: block; }
+        .month-day-num { position: absolute; top: 3px; left: 5px; font-size: 0.65rem; font-weight: 700; color: var(--text-primary); text-shadow: 0 1px 3px rgba(0,0,0,0.4); }
+        .month-day-count { position: absolute; bottom: 3px; right: 4px; font-size: 0.6rem; background: var(--accent-primary, #7c5cfc); color: #fff; border-radius: 999px; padding: 0 4px; font-weight: 700; }
+        .month-day-empty { cursor: default; }
+
+        /* Yearly grid */
+        .year-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 0.5rem; overflow-x: auto; }
+        .year-month-col { display: flex; flex-direction: column; gap: 0.2rem; }
+        .year-month-label { font-size: 0.65rem; color: var(--text-secondary); text-align: center; margin-bottom: 0.3rem; font-weight: 600; }
+        .year-day-cell { aspect-ratio: 1; border-radius: 3px; border: 1px solid var(--border-color); cursor: pointer; transition: opacity 0.15s; }
+        .year-day-cell:hover { opacity: 0.7; }
+        .year-day-cell.empty { background: var(--bg-color); cursor: default; }
+        .year-day-cell.count-1 { background: color-mix(in srgb, var(--accent-primary, #7c5cfc) 30%, transparent); border-color: var(--accent-primary, #7c5cfc); }
+        .year-day-cell.count-2 { background: color-mix(in srgb, var(--accent-primary, #7c5cfc) 60%, transparent); border-color: var(--accent-primary, #7c5cfc); }
+        .year-day-cell.count-3plus { background: var(--accent-primary, #7c5cfc); border-color: var(--accent-primary, #7c5cfc); }
+        .year-day-cell.selected { outline: 2px solid var(--accent-primary, #7c5cfc); }
+
+        /* Expanded day panel */
+        .grid-day-panel { margin-top: 1.5rem; padding: 1rem; background: var(--surface-color); border-radius: var(--radius-md, 12px); border: 1px solid var(--border-color); }
+        .grid-day-panel-title { font-size: 0.85rem; font-weight: 700; margin-bottom: 1rem; color: var(--text-secondary); }
+        .grid-day-entries { display: flex; gap: 1rem; overflow-x: auto; padding-bottom: 0.5rem; }
+
+        /* Profile public settings */
+        .profile-public-section {
+          border-top: 1px solid rgba(0,0,0,0.06);
+          border-bottom: 1px solid rgba(0,0,0,0.06);
+          padding: 0.5rem 0;
+        }
+        .username-input-row {
+          display: flex;
+          align-items: center;
+          gap: 2px;
+        }
+        .username-at { font-size: 0.82rem; color: #bbb; }
+        .username-input {
+          background: none;
+          border: none;
+          outline: none;
+          font-size: 0.82rem;
+          font-family: var(--font-sans);
+          color: var(--text-primary);
+          width: 100px;
+          border-bottom: 1px solid transparent;
+          padding: 2px 0;
+          transition: border-color 0.15s;
+        }
+        .username-input:focus { border-bottom-color: #aaa; }
+        .username-input::placeholder { color: #ccc; }
+        .username-saving { font-size: 0.7rem; color: #aaa; margin-left: 4px; }
+        .username-error {
+          padding: 0 1.25rem 0.4rem;
+          font-size: 0.72rem;
+          color: #c00;
+          margin: 0;
+          display: block;
+        }
+        .copy-link-btn {
+          background: none;
+          border: none;
+          font-size: 0.78rem;
+          font-family: var(--font-sans);
+          color: var(--text-secondary);
+          cursor: pointer;
+          padding: 0;
+          text-decoration: underline;
+        }
+        .copy-link-btn:hover { color: var(--text-primary); }
+        .list-public-badge {
+          font-size: 0.65rem;
+          color: #16a34a;
+          background: #f0fdf4;
+          border: 1px solid #bbf7d0;
+          padding: 0.1rem 0.45rem;
+          border-radius: 999px;
+          font-weight: 500;
+          display: inline-block;
+          margin-top: 0.3rem;
+        }
+
+        /* Public profile view */
+        .public-profile-header {
+          display: flex;
+          align-items: center;
+          gap: 1.2rem;
+          margin-bottom: 2.5rem;
+          padding-bottom: 2rem;
+          border-bottom: 1px solid var(--border-color);
+        }
+        .public-profile-avatar {
+          width: 60px;
+          height: 60px;
+          border-radius: 50%;
+          background: #1a1a1a;
+          color: white;
+          font-size: 1.5rem;
+          font-weight: 300;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-family: var(--font-sans);
+          flex-shrink: 0;
+        }
+        .public-profile-username {
+          font-size: 0.82rem;
+          color: var(--text-secondary);
+          margin: 0.2rem 0 0;
+        }
+
+        [data-theme="dark"] .profile-public-section { border-color: rgba(255,255,255,0.06); }
+        [data-theme="dark"] .username-input { color: #f0f0f0; }
+        [data-theme="dark"] .username-input:focus { border-bottom-color: #666; }
+        [data-theme="dark"] .username-input::placeholder { color: #555; }
+        [data-theme="dark"] .username-at { color: #555; }
+        [data-theme="dark"] .public-profile-avatar { background: #f0f0f0; color: #1a1a1a; }
+        [data-theme="dark"] .list-public-badge { background: #052e16; border-color: #166534; color: #4ade80; }
       `}</style>
     </div>
   );
