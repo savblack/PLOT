@@ -272,9 +272,9 @@
 
     /* ── For the Plot ───────────────────────────────────────── */
     #for-the-plot {
-      padding: 12rem 2rem 2rem;
+      padding: 12rem 2rem 0;
       text-align: center;
-      max-width: 800px;
+      max-width: 1400px;
       margin: 0 auto;
     }
 
@@ -295,6 +295,7 @@
       letter-spacing: -0.03em;
       line-height: 0.80;
       margin-bottom: 2rem;
+      white-space: nowrap;
     }
 
     .ftp-body {
@@ -312,7 +313,7 @@
 
     /* ── Value Prop ─────────────────────────────────────────── */
     #value {
-      padding: 0 0 8rem;
+      padding: 4rem 0 8rem;
       overflow: visible;
       display: flex;
       justify-content: center;
@@ -322,7 +323,7 @@
       position: relative;
       width: 100%;
       max-width: 1200px;
-      height: 560px;
+      height: 420px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -330,6 +331,7 @@
 
     .list-stack-poster {
       position: absolute;
+      top: 0;
       width: 280px;
       height: 420px;
       border-radius: 10px;
@@ -385,10 +387,10 @@
 
     .section-title {
       font-family: var(--serif);
-      font-size: clamp(2rem, 4vw, 3rem);
-      font-weight: 600;
-      letter-spacing: -0.025em;
-      line-height: 1.15;
+      font-size: clamp(1.8rem, 4vw, 3rem);
+      font-weight: 400;
+      letter-spacing: -0.03em;
+      line-height: 0.85;
       margin-bottom: 3rem;
     }
 
@@ -631,8 +633,7 @@
 
   <!-- ── Features ─────────────────────────────────────────────── -->
   <section id="features">
-    <p class="section-label reveal">What you get</p>
-    <h2 class="section-title reveal">Everything your taste<br>deserves.</h2>
+    <h2 class="section-title reveal">Designed for the way you watch.</h2>
 
     <div class="bento-grid">
       <!-- Journal -->
@@ -672,11 +673,11 @@
 
   <!-- ── For the Plot ─────────────────────────────────────────── -->
   <section id="for-the-plot">
-    <h2 class="ftp-headline reveal">Your journal.<br>Your rules.</h2>
+    <h2 class="ftp-headline reveal">Your journal. Your rules.</h2>
     <p class="ftp-body reveal reveal-delay-2">
-      Your top ten. All the series you binged in a weekend. The one dropping next month you've already cleared your schedule for.<span style="display:block; margin-top: 0.6rem;">Make a list for anything.</span>
+      Your top ten. All the series you binged in a weekend. The one dropping next month you've already cleared your schedule for. Make a list for anything.
     </p>
-    <a href="#" class="btn btn-primary btn-large reveal reveal-delay-3" style="margin-top: 2.5rem;">Make it yours →</a>
+    <a href="#" class="btn btn-primary btn-large reveal reveal-delay-3" style="margin-top: 2rem;">Make it yours →</a>
   </section>
 
   <!-- ── Value Prop ───────────────────────────────────────────── -->
@@ -892,15 +893,15 @@
     ];
 
     const listFan = [
-      { x: -360, rot: 0, z: 1, y: 0 },
-      { x: -270, rot: 0, z: 2, y: 0 },
-      { x: -180, rot: 0, z: 3, y: 0 },
-      { x:  -90, rot: 0, z: 4, y: 0 },
-      { x:    0, rot: 0, z: 5, y: 0 },
-      { x:   90, rot: 0, z: 4, y: 0 },
-      { x:  180, rot: 0, z: 3, y: 0 },
-      { x:  270, rot: 0, z: 2, y: 0 },
-      { x:  360, rot: 0, z: 1, y: 0 },
+      { x: -360, rot: 0, z: 1, y: 0, align: 'left'  },
+      { x: -270, rot: 0, z: 2, y: 0, align: 'left'  },
+      { x: -180, rot: 0, z: 3, y: 0, align: 'left'  },
+      { x:  -90, rot: 0, z: 4, y: 0, align: 'left'  },
+      { x:    0, rot: 0, z: 5, y: 0, align: 'left'  },
+      { x:   90, rot: 0, z: 4, y: 0, align: 'right' },
+      { x:  180, rot: 0, z: 3, y: 0, align: 'right' },
+      { x:  270, rot: 0, z: 2, y: 0, align: 'right' },
+      { x:  360, rot: 0, z: 1, y: 0, align: 'right' },
     ];
 
     const listWrap = document.getElementById('listStackWrap');
@@ -915,6 +916,7 @@
 
       const labelEl = document.createElement('div');
       labelEl.className = 'stack-label';
+      labelEl.style.textAlign = listFan[i].align;
       const spanEl = document.createElement('span');
       spanEl.textContent = item.label;
       const strongEl = document.createElement('strong');
