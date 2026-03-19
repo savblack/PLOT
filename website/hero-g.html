@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PLOT — Hero G: Big Tilted Poster</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:    #f7f7f5;
+      --text:  #1a1a1a;
+      --muted: #777;
+      --serif: 'Playfair Display', Georgia, serif;
+      --sans:  'Manrope', system-ui, sans-serif;
+      --ease:  cubic-bezier(0.23, 1, 0.32, 1);
+    }
+    html, body { height: 100%; overflow-x: hidden; }
+    body { font-family: var(--sans); background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; }
+
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      padding: 0 2.5rem; height: 64px;
+      display: flex; align-items: center; justify-content: space-between;
+      background: transparent;
+    }
+    .nav-logo { font-family: var(--serif); font-size: 1.4rem; font-weight: 600; color: var(--text); text-decoration: none; }
+    .nav-cta {
+      display: inline-flex; align-items: center;
+      padding: 0.5rem 1.3rem; border-radius: 9999px;
+      background: #000; color: #fff;
+      font-family: var(--sans); font-size: 0.85rem; font-weight: 500;
+      text-decoration: none;
+    }
+
+    #hero {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      align-items: center;
+      padding: 64px 0 0;
+      overflow: hidden;
+    }
+
+    /* ── Left: text ── */
+    .hero-left {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 5rem 3rem 5rem 5rem;
+    }
+
+    .hero-eyebrow {
+      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.14em;
+      text-transform: uppercase; color: var(--muted);
+      margin-bottom: 2rem;
+      opacity: 0; transform: translateY(10px);
+      transition: opacity 0.7s var(--ease) 0.2s, transform 0.7s var(--ease) 0.2s;
+    }
+    .hero-headline {
+      font-family: var(--serif);
+      font-size: clamp(2.8rem, 4.8vw, 4.8rem);
+      font-weight: 400; line-height: 0.88;
+      letter-spacing: -0.03em; margin-bottom: 2rem;
+      opacity: 0; transform: translateY(16px);
+      transition: opacity 0.8s var(--ease) 0.4s, transform 0.8s var(--ease) 0.4s;
+    }
+    .hero-sub {
+      font-size: 0.92rem; color: var(--muted); line-height: 1.8;
+      max-width: 360px; margin-bottom: 2.8rem;
+      opacity: 0; transform: translateY(10px);
+      transition: opacity 0.7s var(--ease) 0.6s, transform 0.7s var(--ease) 0.6s;
+    }
+    .hero-btn {
+      display: inline-flex; align-items: center; align-self: flex-start;
+      padding: 0.85rem 2rem; border-radius: 9999px;
+      background: #000; color: #fff;
+      font-family: var(--sans); font-size: 0.88rem; font-weight: 500;
+      text-decoration: none; transition: background 0.2s;
+      opacity: 0; transform: translateY(10px);
+      transition: opacity 0.7s var(--ease) 0.8s, transform 0.7s var(--ease) 0.8s, background 0.2s;
+    }
+    .hero-btn:hover { background: #222; }
+
+    .animate-in .hero-eyebrow,
+    .animate-in .hero-headline,
+    .animate-in .hero-sub,
+    .animate-in .hero-btn { opacity: 1; transform: translateY(0); }
+
+    /* ── Right: big tilted poster ── */
+    .hero-right {
+      position: relative;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* The main featured poster */
+    .big-poster {
+      position: relative;
+      width: 340px;
+      height: 510px;
+      border-radius: 14px;
+      background-size: cover;
+      background-position: center;
+      box-shadow: 0 40px 100px rgba(0,0,0,0.22), 0 10px 30px rgba(0,0,0,0.12);
+      border: 1px solid rgba(0,0,0,0.06);
+      z-index: 5;
+      transform: rotate(4deg) translateY(-20px);
+      opacity: 0;
+      transition: opacity 0.8s var(--ease) 0.5s, transform 0.8s var(--ease) 0.5s;
+      overflow: hidden;
+    }
+    .big-poster.show {
+      opacity: 1;
+      transform: rotate(4deg) translateY(0);
+    }
+
+    /* Slide crossfade */
+    .big-poster-slide {
+      position: absolute; inset: 0;
+      background-size: cover; background-position: center;
+      opacity: 0; transition: opacity 0.9s var(--ease);
+    }
+    .big-poster-slide.active { opacity: 1; }
+
+    /* Film title label at bottom */
+    .poster-label {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      padding: 2rem 1.5rem 1.5rem;
+      background: linear-gradient(transparent, rgba(0,0,0,0.65));
+      z-index: 10;
+    }
+    .poster-label-title {
+      font-family: var(--serif); font-size: 1rem; font-style: italic; color: #fff;
+      opacity: 0; transform: translateY(4px);
+      transition: opacity 0.4s var(--ease), transform 0.4s var(--ease);
+    }
+    .poster-label-title.show { opacity: 1; transform: translateY(0); }
+
+    /* Two small peek posters stacked behind */
+    .peek-poster {
+      position: absolute;
+      width: 300px; height: 450px;
+      border-radius: 12px;
+      background-size: cover; background-position: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.14);
+      border: 1px solid rgba(0,0,0,0.05);
+      opacity: 0;
+      transition: opacity 0.6s var(--ease);
+    }
+    .peek-poster.show { opacity: 1; }
+    .peek-1 { transform: rotate(-5deg) translateX(-30px) translateY(10px); z-index: 3; }
+    .peek-2 { transform: rotate(9deg)  translateX( 40px) translateY(20px); z-index: 2; }
+
+    body::before {
+      content: '';
+      position: fixed; inset: 0; pointer-events: none; z-index: 9999; opacity: 0.025;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+      background-size: 200px 200px;
+    }
+
+    .variant-label {
+      position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%);
+      background: rgba(0,0,0,0.07); backdrop-filter: blur(12px);
+      border: 1px solid rgba(0,0,0,0.08); color: rgba(0,0,0,0.5);
+      font-size: 0.75rem; font-weight: 500; padding: 0.5rem 1.2rem; border-radius: 9999px;
+      letter-spacing: 0.06em; text-transform: uppercase; z-index: 200; font-family: var(--sans);
+    }
+    .variant-nav {
+      position: fixed; bottom: 2rem; right: 2rem; display: flex; gap: 0.6rem; z-index: 200;
+    }
+    .variant-nav a {
+      background: rgba(0,0,0,0.07); backdrop-filter: blur(12px);
+      border: 1px solid rgba(0,0,0,0.08); color: rgba(0,0,0,0.5);
+      font-size: 0.75rem; font-weight: 500; padding: 0.5rem 1rem; border-radius: 9999px;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      text-decoration: none; font-family: var(--sans); transition: background 0.2s;
+    }
+    .variant-nav a:hover { background: rgba(0,0,0,0.12); }
+    .variant-nav a.active { background: #000; color: #fff; }
+
+    @media (max-width: 768px) {
+      #hero { grid-template-columns: 1fr; }
+      .hero-right { height: 55vh; }
+      .hero-left { padding: 3rem 2rem 1rem; }
+      .big-poster { width: 220px; height: 330px; }
+      .peek-1, .peek-2 { width: 190px; height: 285px; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a href="#" class="nav-logo">PLOT</a>
+    <a href="#" class="nav-cta">Sign up</a>
+  </nav>
+
+  <section id="hero">
+    <div class="hero-left animate-in">
+      <span class="hero-eyebrow">Your film &amp; TV journal</span>
+      <h1 class="hero-headline">For the plots<br>that moved you.</h1>
+      <p class="hero-sub">A film and TV journal as considered as your taste.</p>
+      <a href="#" class="hero-btn">Start your journal →</a>
+    </div>
+
+    <div class="hero-right" id="heroRight">
+      <div class="peek-poster peek-2" id="peek2"></div>
+      <div class="peek-poster peek-1" id="peek1"></div>
+      <div class="big-poster" id="bigPoster">
+        <div class="poster-label">
+          <div class="poster-label-title" id="posterTitle"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="variant-label">G — Big Tilted Poster</div>
+  <div class="variant-nav">
+    <a href="hero-f.html">F</a>
+    <a href="hero-g.html" class="active">G</a>
+    <a href="hero-h.html">H</a>
+  </div>
+
+  <script>
+    const films = [
+      { img: 'images/hero/the-substance.avif',         title: 'The Substance' },
+      { img: 'images/hero/gone-girl.jpg',               title: 'Gone Girl' },
+      { img: 'images/hero/saltburn.png',                title: 'Saltburn' },
+      { img: 'images/hero/parasite.jpg',                title: 'Parasite' },
+      { img: 'images/hero/housemaid.jpg',               title: 'The Housemaid' },
+    ];
+
+    const bigPoster = document.getElementById('bigPoster');
+    const peek1     = document.getElementById('peek1');
+    const peek2     = document.getElementById('peek2');
+    const titleEl   = document.getElementById('posterTitle');
+    let current = 0;
+
+    // Build slides inside big poster
+    const slideEls = films.map((f, i) => {
+      const el = document.createElement('div');
+      el.className = 'big-poster-slide' + (i === 0 ? ' active' : '');
+      el.style.backgroundImage = `url('${f.img}')`;
+      bigPoster.insertBefore(el, bigPoster.firstChild);
+      return el;
+    });
+
+    // Peek posters
+    peek1.style.backgroundImage = `url('${films[1].img}')`;
+    peek2.style.backgroundImage = `url('${films[2].img}')`;
+
+    // Animate in
+    setTimeout(() => {
+      bigPoster.classList.add('show');
+      titleEl.textContent = films[0].title;
+      setTimeout(() => titleEl.classList.add('show'), 300);
+    }, 500);
+    setTimeout(() => { peek1.classList.add('show'); }, 700);
+    setTimeout(() => { peek2.classList.add('show'); }, 900);
+
+    // Cycle
+    setInterval(() => {
+      slideEls[current].classList.remove('active');
+      titleEl.classList.remove('show');
+      current = (current + 1) % films.length;
+      slideEls[current].classList.add('active');
+      peek1.style.backgroundImage = `url('${films[(current + 1) % films.length].img}')`;
+      peek2.style.backgroundImage = `url('${films[(current + 2) % films.length].img}')`;
+      setTimeout(() => {
+        titleEl.textContent = films[current].title;
+        titleEl.classList.add('show');
+      }, 400);
+    }, 4000);
+  </script>
+</body>
+</html>

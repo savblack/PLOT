@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PLOT — Hero F: Film Strip</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:    #f7f7f5;
+      --text:  #1a1a1a;
+      --muted: #777;
+      --serif: 'Playfair Display', Georgia, serif;
+      --sans:  'Manrope', system-ui, sans-serif;
+      --ease:  cubic-bezier(0.23, 1, 0.32, 1);
+    }
+    html, body { height: 100%; overflow-x: hidden; }
+    body { font-family: var(--sans); background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; }
+
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      padding: 0 2.5rem; height: 64px;
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--bg); border-bottom: 1px solid rgba(0,0,0,0.06);
+    }
+    .nav-logo { font-family: var(--serif); font-size: 1.4rem; font-weight: 600; color: var(--text); text-decoration: none; }
+    .nav-cta {
+      display: inline-flex; align-items: center;
+      padding: 0.5rem 1.3rem; border-radius: 9999px;
+      background: #000; color: #fff;
+      font-family: var(--sans); font-size: 0.85rem; font-weight: 500;
+      text-decoration: none;
+    }
+
+    #hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding-top: 64px;
+      gap: 0;
+      overflow: hidden;
+    }
+
+    /* ── Text block ── */
+    .hero-text {
+      text-align: center;
+      max-width: 580px;
+      padding: 4rem 2rem 3rem;
+      position: relative;
+      z-index: 10;
+    }
+
+    .hero-eyebrow {
+      display: inline-block;
+      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.14em;
+      text-transform: uppercase; color: var(--muted);
+      margin-bottom: 1.4rem;
+      opacity: 0; transform: translateY(10px);
+      transition: opacity 0.7s var(--ease) 0.2s, transform 0.7s var(--ease) 0.2s;
+    }
+    .hero-headline {
+      font-family: var(--serif);
+      font-size: clamp(3rem, 6.5vw, 5.2rem);
+      font-weight: 400; line-height: 0.85;
+      letter-spacing: -0.03em; margin-bottom: 1.5rem;
+      opacity: 0; transform: translateY(14px);
+      transition: opacity 0.8s var(--ease) 0.4s, transform 0.8s var(--ease) 0.4s;
+    }
+    .hero-sub {
+      font-size: 0.9rem; color: var(--muted); line-height: 1.75; margin-bottom: 2rem;
+      opacity: 0; transform: translateY(10px);
+      transition: opacity 0.7s var(--ease) 0.6s, transform 0.7s var(--ease) 0.6s;
+    }
+    .hero-btn {
+      display: inline-flex; align-items: center;
+      padding: 0.85rem 2rem; border-radius: 9999px;
+      background: #000; color: #fff;
+      font-family: var(--sans); font-size: 0.88rem; font-weight: 500;
+      text-decoration: none; transition: background 0.2s;
+      opacity: 0; transform: translateY(10px);
+      transition: opacity 0.7s var(--ease) 0.8s, transform 0.7s var(--ease) 0.8s, background 0.2s;
+    }
+    .hero-btn:hover { background: #222; }
+    .animate-in .hero-eyebrow,
+    .animate-in .hero-headline,
+    .animate-in .hero-sub,
+    .animate-in .hero-btn { opacity: 1; transform: translateY(0); }
+
+    /* ── Film strips ── */
+    .strips-wrap {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding-bottom: 3rem;
+    }
+
+    .strip {
+      display: flex;
+      gap: 10px;
+      width: max-content;
+    }
+    .strip-left  { animation: scrollLeft  28s linear infinite; }
+    .strip-right { animation: scrollRight 24s linear infinite; }
+
+    @keyframes scrollLeft  { from { transform: translateX(0); }    to { transform: translateX(-50%); } }
+    @keyframes scrollRight { from { transform: translateX(-50%); } to { transform: translateX(0); } }
+
+    .strip-poster {
+      width: 130px;
+      height: 195px;
+      border-radius: 8px;
+      background-size: cover;
+      background-position: center;
+      flex-shrink: 0;
+      border: 1px solid rgba(0,0,0,0.06);
+    }
+
+    /* Fade edges */
+    .strips-wrap::before, .strips-wrap::after {
+      content: '';
+      position: absolute;
+      top: 0; bottom: 0; width: 140px;
+      pointer-events: none; z-index: 5;
+    }
+    .strips-wrap::before { left: 0; background: linear-gradient(to right, var(--bg), transparent); }
+    .strips-wrap::after  { right: 0; background: linear-gradient(to left, var(--bg), transparent); }
+    .strips-wrap { position: relative; }
+
+    body::before {
+      content: '';
+      position: fixed; inset: 0; pointer-events: none; z-index: 9999; opacity: 0.025;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+      background-size: 200px 200px;
+    }
+
+    .variant-label {
+      position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%);
+      background: rgba(0,0,0,0.07); backdrop-filter: blur(12px);
+      border: 1px solid rgba(0,0,0,0.08); color: rgba(0,0,0,0.5);
+      font-size: 0.75rem; font-weight: 500; padding: 0.5rem 1.2rem; border-radius: 9999px;
+      letter-spacing: 0.06em; text-transform: uppercase; z-index: 200; font-family: var(--sans);
+    }
+    .variant-nav {
+      position: fixed; bottom: 2rem; right: 2rem; display: flex; gap: 0.6rem; z-index: 200;
+    }
+    .variant-nav a {
+      background: rgba(0,0,0,0.07); backdrop-filter: blur(12px);
+      border: 1px solid rgba(0,0,0,0.08); color: rgba(0,0,0,0.5);
+      font-size: 0.75rem; font-weight: 500; padding: 0.5rem 1rem; border-radius: 9999px;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      text-decoration: none; font-family: var(--sans); transition: background 0.2s;
+    }
+    .variant-nav a:hover { background: rgba(0,0,0,0.12); }
+    .variant-nav a.active { background: #000; color: #fff; }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a href="#" class="nav-logo">PLOT</a>
+    <a href="#" class="nav-cta">Sign up</a>
+  </nav>
+
+  <section id="hero">
+    <div class="hero-text animate-in">
+      <span class="hero-eyebrow">Your film &amp; TV journal</span>
+      <h1 class="hero-headline">For the plots<br>that moved you.</h1>
+      <p class="hero-sub">A film and TV journal as considered as your taste.</p>
+      <a href="#" class="hero-btn">Start your journal →</a>
+    </div>
+
+    <div class="strips-wrap" id="stripsWrap">
+      <div class="strip strip-left"  id="stripA"></div>
+      <div class="strip strip-right" id="stripB"></div>
+    </div>
+  </section>
+
+  <div class="variant-label">F — Film Strip</div>
+  <div class="variant-nav">
+    <a href="hero-f.html" class="active">F</a>
+    <a href="hero-g.html">G</a>
+    <a href="hero-h.html">H</a>
+  </div>
+
+  <script>
+    const row1 = [
+      'images/hero/top-gun-maverick.jpg',
+      'images/hero/gone-girl.jpg',
+      'images/hero/parasite.jpg',
+      'images/hero/saltburn.png',
+      'images/hero/the-substance.avif',
+      'images/hero/housemaid.jpg',
+      'images/hero/eternity.jpg',
+    ];
+    const row2 = [
+      'images/hero/devil-wears-prada-two.jpg',
+      'images/hero/my-neighbour-totoro.jpg',
+      'images/hero/the-wolf-of-wall-street.png',
+      'images/hero/spiderman-no-way-home.jpg',
+      'images/hero/tetris.jpg',
+      'images/hero/the-summer-i-turned-pretty.jpg',
+      'images/hero/marty-supreme.jpg',
+    ];
+
+    function buildStrip(el, imgs) {
+      // Duplicate for seamless loop
+      [...imgs, ...imgs].forEach(src => {
+        const d = document.createElement('div');
+        d.className = 'strip-poster';
+        d.style.backgroundImage = `url('${src}')`;
+        el.appendChild(d);
+      });
+    }
+
+    buildStrip(document.getElementById('stripA'), row1);
+    buildStrip(document.getElementById('stripB'), row2);
+  </script>
+</body>
+</html>

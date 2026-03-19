@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PLOT — Hero J: Film Poster</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --serif: 'Playfair Display', Georgia, serif;
+      --sans:  'Manrope', system-ui, sans-serif;
+      --ease:  cubic-bezier(0.23, 1, 0.32, 1);
+    }
+    html, body { height: 100%; overflow-x: hidden; }
+    body { font-family: var(--sans); background: #000; color: #fff; -webkit-font-smoothing: antialiased; }
+
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      padding: 0 2.5rem; height: 64px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .nav-logo { font-family: var(--serif); font-size: 1.4rem; font-weight: 600; color: #fff; text-decoration: none; }
+    .nav-cta {
+      display: inline-flex; align-items: center;
+      padding: 0.5rem 1.3rem; border-radius: 9999px;
+      background: rgba(255,255,255,0.1); color: #fff;
+      border: 1px solid rgba(255,255,255,0.2);
+      font-family: var(--sans); font-size: 0.85rem; font-weight: 500;
+      text-decoration: none; backdrop-filter: blur(8px);
+    }
+
+    /* ── Full bleed poster ── */
+    #hero {
+      position: relative;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .bg-slide {
+      position: absolute; inset: 0;
+      background-size: cover; background-position: center;
+      opacity: 0;
+      transform: scale(1.08);
+      transition: opacity 1.2s var(--ease), transform 8s linear;
+    }
+    .bg-slide.active {
+      opacity: 1;
+      transform: scale(1.0);
+    }
+    .bg-slide.exit {
+      opacity: 0;
+      transform: scale(1.02);
+    }
+
+    /* Cinematic gradient — heavy at bottom, light at top */
+    .hero-overlay {
+      position: absolute; inset: 0; z-index: 5;
+      background:
+        linear-gradient(to bottom,
+          rgba(0,0,0,0.35) 0%,
+          rgba(0,0,0,0) 30%,
+          rgba(0,0,0,0) 45%,
+          rgba(0,0,0,0.75) 75%,
+          rgba(0,0,0,0.95) 100%
+        );
+    }
+
+    /* ── Bottom text block — like a real film poster ── */
+    .hero-content {
+      position: absolute; bottom: 0; left: 0; right: 0; z-index: 10;
+      padding: 3rem 4rem;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 2rem;
+    }
+
+    .hero-left { flex: 1; }
+
+    .now-in {
+      font-size: 0.65rem; font-weight: 700; letter-spacing: 0.18em;
+      text-transform: uppercase; color: rgba(255,255,255,0.45);
+      margin-bottom: 1rem;
+      opacity: 0; transform: translateY(8px);
+      transition: opacity 0.6s var(--ease) 0.6s, transform 0.6s var(--ease) 0.6s;
+    }
+    .hero-title {
+      font-family: var(--serif);
+      font-size: clamp(2.8rem, 5.5vw, 5rem);
+      font-weight: 400; line-height: 0.88; letter-spacing: -0.03em;
+      margin-bottom: 1.2rem;
+      opacity: 0; transform: translateY(14px);
+      transition: opacity 0.8s var(--ease) 0.8s, transform 0.8s var(--ease) 0.8s;
+    }
+    .hero-tagline {
+      font-family: var(--serif); font-style: italic;
+      font-size: clamp(0.9rem, 1.5vw, 1.1rem);
+      color: rgba(255,255,255,0.6); line-height: 1.5;
+      max-width: 480px;
+      opacity: 0; transform: translateY(8px);
+      transition: opacity 0.7s var(--ease) 1s, transform 0.7s var(--ease) 1s;
+    }
+
+    .hero-right {
+      display: flex; flex-direction: column; align-items: flex-end; gap: 1rem;
+      flex-shrink: 0;
+    }
+    .hero-btn {
+      display: inline-flex; align-items: center;
+      padding: 0.85rem 2rem; border-radius: 9999px;
+      background: #fff; color: #000;
+      font-family: var(--sans); font-size: 0.88rem; font-weight: 600;
+      text-decoration: none; transition: background 0.2s;
+      opacity: 0; transform: translateY(8px);
+      transition: opacity 0.7s var(--ease) 1.1s, transform 0.7s var(--ease) 1.1s, background 0.2s;
+    }
+    .hero-btn:hover { background: #e8e8e8; }
+    .hero-note {
+      font-size: 0.72rem; color: rgba(255,255,255,0.3);
+      opacity: 0; transform: translateY(6px);
+      transition: opacity 0.6s var(--ease) 1.3s, transform 0.6s var(--ease) 1.3s;
+    }
+
+    /* Film switcher dots — top right */
+    .film-dots {
+      position: absolute; top: 5.5rem; right: 2.5rem; z-index: 20;
+      display: flex; flex-direction: column; gap: 8px; align-items: center;
+    }
+    .film-dot {
+      width: 5px; height: 5px; border-radius: 50%;
+      background: rgba(255,255,255,0.3);
+      cursor: pointer; transition: background 0.3s, transform 0.3s;
+    }
+    .film-dot.active { background: #fff; transform: scale(1.4); }
+
+    .animate-in .now-in,
+    .animate-in .hero-title,
+    .animate-in .hero-tagline,
+    .animate-in .hero-btn,
+    .animate-in .hero-note { opacity: 1; transform: translateY(0); }
+
+    body::before {
+      content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 9999; opacity: 0.035;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+      background-size: 200px 200px;
+    }
+
+    .variant-label {
+      position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%);
+      background: rgba(255,255,255,0.08); backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.5);
+      font-size: 0.75rem; font-weight: 500; padding: 0.5rem 1.2rem; border-radius: 9999px;
+      letter-spacing: 0.06em; text-transform: uppercase; z-index: 200; font-family: var(--sans);
+    }
+    .variant-nav {
+      position: fixed; bottom: 2rem; right: 2rem; display: flex; gap: 0.6rem; z-index: 200;
+    }
+    .variant-nav a {
+      background: rgba(255,255,255,0.08); backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.5);
+      font-size: 0.75rem; font-weight: 500; padding: 0.5rem 1rem; border-radius: 9999px;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      text-decoration: none; font-family: var(--sans); transition: background 0.2s;
+    }
+    .variant-nav a:hover { background: rgba(255,255,255,0.15); }
+    .variant-nav a.active { background: #fff; color: #000; }
+
+    @media (max-width: 640px) {
+      .hero-content { flex-direction: column; align-items: flex-start; padding: 2rem; }
+      .hero-right { align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a href="#" class="nav-logo">PLOT</a>
+    <a href="#" class="nav-cta">Sign up</a>
+  </nav>
+
+  <section id="hero" id="heroSection">
+    <div class="hero-overlay"></div>
+    <div class="film-dots" id="filmDots"></div>
+
+    <div class="hero-content animate-in" id="heroContent">
+      <div class="hero-left">
+        <p class="now-in">Your film &amp; TV journal</p>
+        <h1 class="hero-title" id="heroTitle">For the plots<br>that moved you.</h1>
+        <p class="hero-tagline">A film and TV journal as considered as your taste.</p>
+      </div>
+      <div class="hero-right">
+        <a href="#" class="hero-btn">Start your journal →</a>
+        <p class="hero-note">Free to join · Launching on iOS</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="variant-label">J — Film Poster</div>
+  <div class="variant-nav">
+    <a href="hero-i.html">I</a>
+    <a href="hero-j.html" class="active">J</a>
+    <a href="hero-k.html">K</a>
+  </div>
+
+  <script>
+    const films = [
+      { img: 'images/hero/the-substance.avif' },
+      { img: 'images/hero/gone-girl.jpg' },
+      { img: 'images/hero/saltburn.png' },
+      { img: 'images/hero/parasite.jpg' },
+      { img: 'images/hero/housemaid.jpg' },
+    ];
+
+    const hero    = document.getElementById('heroSection') || document.querySelector('#hero');
+    const dotsWrap = document.getElementById('filmDots');
+    let   current = 0;
+    let   timer;
+
+    const slides = films.map((f, i) => {
+      const el = document.createElement('div');
+      el.className = 'bg-slide';
+      el.style.backgroundImage = `url('${f.img}')`;
+      hero.insertBefore(el, hero.firstChild);
+      return el;
+    });
+
+    const dots = films.map((_, i) => {
+      const d = document.createElement('div');
+      d.className = 'film-dot' + (i === 0 ? ' active' : '');
+      d.addEventListener('click', () => goTo(i));
+      dotsWrap.appendChild(d);
+      return d;
+    });
+
+    function goTo(n) {
+      slides[current].classList.remove('active');
+      slides[current].classList.add('exit');
+      dots[current].classList.remove('active');
+      const prev = current;
+      current = n;
+      slides[current].classList.add('active');
+      dots[current].classList.add('active');
+      setTimeout(() => slides[prev].classList.remove('exit'), 1400);
+      clearInterval(timer);
+      timer = setInterval(() => goTo((current + 1) % films.length), 5000);
+    }
+
+    // Init
+    slides[0].classList.add('active');
+    timer = setInterval(() => goTo((current + 1) % films.length), 5000);
+  </script>
+</body>
+</html>

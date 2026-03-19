@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PLOT — Hero D: Scattered Mood Board</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:    #f7f7f5;
+      --text:  #1a1a1a;
+      --muted: #777;
+      --serif: 'Playfair Display', Georgia, serif;
+      --sans:  'Manrope', system-ui, sans-serif;
+      --ease:  cubic-bezier(0.23, 1, 0.32, 1);
+    }
+    html, body { height: 100%; overflow-x: hidden; }
+    body { font-family: var(--sans); background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; }
+
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      padding: 0 2.5rem; height: 64px;
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--bg); border-bottom: 1px solid rgba(0,0,0,0.06);
+    }
+    .nav-logo { font-family: var(--serif); font-size: 1.4rem; font-weight: 600; color: var(--text); text-decoration: none; }
+    .nav-cta {
+      display: inline-flex; align-items: center;
+      padding: 0.5rem 1.3rem; border-radius: 9999px;
+      background: #000; color: #fff;
+      font-family: var(--sans); font-size: 0.85rem; font-weight: 500;
+      text-decoration: none;
+    }
+
+    /* ── Hero ── */
+    #hero {
+      position: relative;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      padding-top: 64px;
+    }
+
+    /* Scattered posters — absolutely placed, JS sets final positions */
+    .scatter-poster {
+      position: absolute;
+      background-size: cover;
+      background-position: center;
+      border-radius: 10px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+      border: 1px solid rgba(0,0,0,0.06);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* ── Hero text — sits on top, centered ── */
+    .hero-content {
+      position: relative;
+      z-index: 10;
+      text-align: center;
+      max-width: 580px;
+      padding: 0 2rem;
+    }
+
+    .hero-eyebrow {
+      display: inline-block;
+      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.14em;
+      text-transform: uppercase; color: var(--muted);
+      margin-bottom: 1.5rem;
+      opacity: 0; transform: translateY(10px);
+      transition: opacity 0.7s var(--ease) 0.6s, transform 0.7s var(--ease) 0.6s;
+    }
+    .hero-headline {
+      font-family: var(--serif);
+      font-size: clamp(3rem, 6.5vw, 5.2rem);
+      font-weight: 400; line-height: 0.85;
+      letter-spacing: -0.03em; color: var(--text);
+      margin-bottom: 1.6rem;
+      opacity: 0; transform: translateY(14px);
+      transition: opacity 0.8s var(--ease) 0.8s, transform 0.8s var(--ease) 0.8s;
+    }
+    .hero-sub {
+      font-size: clamp(0.78rem, 1.4vw, 0.9rem);
+      color: var(--muted); font-weight: 400;
+      margin-bottom: 2.2rem; line-height: 1.75;
+      opacity: 0; transform: translateY(10px);
+      transition: opacity 0.7s var(--ease) 1s, transform 0.7s var(--ease) 1s;
+    }
+    .hero-btn {
+      display: inline-flex; align-items: center;
+      padding: 0.85rem 2rem; border-radius: 9999px;
+      background: #000; color: #fff;
+      font-family: var(--sans); font-size: 0.88rem; font-weight: 500;
+      text-decoration: none;
+      opacity: 0; transform: translateY(10px);
+      transition: opacity 0.7s var(--ease) 1.2s, transform 0.7s var(--ease) 1.2s, background 0.2s;
+    }
+    .hero-btn:hover { background: #222; }
+
+    .animate-in .hero-eyebrow,
+    .animate-in .hero-headline,
+    .animate-in .hero-sub,
+    .animate-in .hero-btn { opacity: 1; transform: translateY(0); }
+
+    /* Vignette so text reads cleanly over scattered posters */
+    #hero::before {
+      content: '';
+      position: absolute; inset: 0; z-index: 5;
+      background: radial-gradient(ellipse 55% 70% at 50% 50%,
+        rgba(247,247,245,0.92) 0%,
+        rgba(247,247,245,0.7) 40%,
+        rgba(247,247,245,0.2) 80%,
+        transparent 100%
+      );
+      pointer-events: none;
+    }
+
+    body::before {
+      content: '';
+      position: fixed; inset: 0; pointer-events: none; z-index: 9999;
+      opacity: 0.025;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+      background-size: 200px 200px;
+    }
+
+    .variant-label {
+      position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%);
+      background: rgba(0,0,0,0.07); backdrop-filter: blur(12px);
+      border: 1px solid rgba(0,0,0,0.08);
+      color: rgba(0,0,0,0.5); font-size: 0.75rem; font-weight: 500;
+      padding: 0.5rem 1.2rem; border-radius: 9999px;
+      letter-spacing: 0.06em; text-transform: uppercase; z-index: 200;
+      font-family: var(--sans);
+    }
+    .variant-nav {
+      position: fixed; bottom: 2rem; right: 2rem;
+      display: flex; gap: 0.6rem; z-index: 200;
+    }
+    .variant-nav a {
+      background: rgba(0,0,0,0.07); backdrop-filter: blur(12px);
+      border: 1px solid rgba(0,0,0,0.08);
+      color: rgba(0,0,0,0.5); font-size: 0.75rem; font-weight: 500;
+      padding: 0.5rem 1rem; border-radius: 9999px;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      text-decoration: none; font-family: var(--sans); transition: background 0.2s;
+    }
+    .variant-nav a:hover { background: rgba(0,0,0,0.12); }
+    .variant-nav a.active { background: #000; color: #fff; }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a href="#" class="nav-logo">PLOT</a>
+    <a href="#" class="nav-cta">Sign up</a>
+  </nav>
+
+  <section id="hero">
+    <div class="hero-content" id="heroContent">
+      <span class="hero-eyebrow">Your film &amp; TV journal</span>
+      <h1 class="hero-headline">For the plots<br>that moved you.</h1>
+      <p class="hero-sub">A film and TV journal as considered as your taste.</p>
+      <a href="#" class="hero-btn">Start your journal →</a>
+    </div>
+  </section>
+
+  <div class="variant-label">D — Scattered</div>
+  <div class="variant-nav">
+    <a href="hero-a.html">A</a>
+    <a href="hero-b.html">B</a>
+    <a href="hero-c.html">C</a>
+    <a href="hero-d.html" class="active">D</a>
+    <a href="hero-e.html">E</a>
+  </div>
+
+  <script>
+    // Scattered poster positions: [left%, top%, width, height, rotation]
+    const positions = [
+      [  4,  10, 160, 240,  -8 ],
+      [ 14,  52, 140, 210,   5 ],
+      [  2,  68, 130, 195, -12 ],
+      [ 20,  78, 150, 225,   7 ],
+      [ 72,   8, 165, 248,   9 ],
+      [ 82,  50, 145, 218,  -6 ],
+      [ 76,  72, 155, 233,  11 ],
+      [ 60,  80, 135, 203,  -4 ],
+      [ 38,   5, 150, 225,  -3 ],
+      [ 54,   6, 140, 210,   6 ],
+    ];
+
+    const images = [
+      'images/hero/top-gun-maverick.jpg',
+      'images/hero/gone-girl.jpg',
+      'images/hero/parasite.jpg',
+      'images/hero/saltburn.png',
+      'images/hero/the-substance.avif',
+      'images/hero/housemaid.jpg',
+      'images/hero/eternity.jpg',
+      'images/hero/devil-wears-prada-two.jpg',
+      'images/hero/my-neighbour-totoro.jpg',
+      'images/hero/the-wolf-of-wall-street.png',
+    ];
+
+    const hero = document.getElementById('hero');
+
+    positions.forEach(([l, t, w, h, rot], i) => {
+      const el = document.createElement('div');
+      el.className = 'scatter-poster';
+      el.style.cssText = `
+        left: ${l}%; top: ${t}%;
+        width: ${w}px; height: ${h}px;
+        background-image: url('${images[i]}');
+        transform: rotate(${rot}deg) translateY(20px);
+        transition: opacity 0.5s ease ${200 + i * 80}ms, transform 0.6s cubic-bezier(0.34,1.2,0.64,1) ${200 + i * 80}ms;
+      `;
+      hero.appendChild(el);
+
+      // Trigger entry
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        el.style.opacity = '1';
+        el.style.transform = `rotate(${rot}deg) translateY(0px)`;
+      }));
+    });
+
+    setTimeout(() => document.getElementById('heroContent').classList.add('animate-in'), 200);
+  </script>
+</body>
+</html>
