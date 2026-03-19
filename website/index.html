@@ -87,11 +87,11 @@
 
     .nav-logo {
       font-family: var(--serif);
-      font-size: 1.5rem;
-      font-weight: 600;
+      font-size: 2rem;
+      font-weight: 400;
       color: var(--text);
       text-decoration: none;
-      letter-spacing: -0.02em;
+      letter-spacing: -0.05em;
     }
 
     .nav-links {
@@ -239,7 +239,7 @@
 
     /* ── Manifesto ──────────────────────────────────────────── */
     #manifesto {
-      padding: 10rem 2rem 30rem;
+      padding: 10rem 2rem 22rem;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -512,7 +512,7 @@
       letter-spacing: -0.08em;
       line-height: 0.85;
       color: #1a1a1a;
-      padding: 1rem 0 0;
+      padding: 0;
       user-select: none;
       display: block;
       text-align: center;
@@ -626,7 +626,7 @@
     <p class="manifesto-line reveal">You talk about them.</p>
     <p class="manifesto-line reveal">You carry them with you.</p>
     <p class="manifesto-line reveal">But no app has ever cared<br>as much as you do.</p>
-    <p class="manifesto-line no-fade reveal" id="plotDoes" style="margin-top: 20rem; margin-bottom: 20rem;">PLOT <em>does.</em></p>
+    <p class="manifesto-line no-fade reveal" id="plotDoes" style="margin-top: 20rem; margin-bottom: 14rem;">PLOT <em>does.</em></p>
   </section>
 
   <!-- ── For the Plot ─────────────────────────────────────────── -->
@@ -775,30 +775,30 @@
     // restX       → distance from screen edge when fully in
     const sideData = [
       // On load — four posters visible immediately (2 left, 2 right)
-      { src: 'images/hero/challengers.webp',          side: 'left',  vy: 0.54, showAt: -150, w: 255, h: 383, restX: 16, z: 1 },
-      { src: 'images/hero/saltburn.png',              side: 'left',  vy: 0.09, showAt: -150, w: 305, h: 415, restX: 22, z: 2, bgSize: '100% 100%' },
-      { src: 'images/hero/devil-wears-prada-two.jpg', side: 'right', vy: 0.07, showAt: -150, w: 270, h: 405, restX: 22 },
-      { src: 'images/hero/love-story.webp',           side: 'right', vy: 0.52, showAt: -150, w: 255, h: 383, restX: 24 },
+      { src: 'images/hero/challengers.webp',          side: 'left',  vy: 0.51, showAt: -400, w: 255, h: 383, restX: 16, hold: 1000 },
+      { src: 'images/hero/saltburn.png',              side: 'left',  vy: 0.11, showAt: -400, w: 305, h: 415, restX: 34, bgSize: '100% 100%', hold: 1000 },
+      { src: 'images/hero/devil-wears-prada-two.jpg', side: 'right', vy: 0.11, showAt: -400, w: 270, h: 405, restX: 22, hold: 1000 },
+      { src: 'images/hero/love-story.webp',           side: 'right', vy: 0.518, showAt: -400, w: 268, h: 402, restX: 58, hold: 1000 },
       // Scroll reveals — all finish well before the manifesto fade-out
-      { src: 'images/hero/the-white-lotus.jpg',       side: 'left',  vy: 0.24, showAt:  100, w: 268, h: 402, restX: 20 },
-      { src: 'images/hero/nosferatu.jpg',             side: 'right', vy: 0.22, showAt:  180, w: 275, h: 413, restX: 28 },
-      { src: 'images/hero/gone-girl.jpg',             side: 'left',  vy: 0.50, showAt:  300, w: 260, h: 390, restX: 16 },
+      { src: 'images/hero/the-white-lotus.jpg',       side: 'left',  vy: 0.24, showAt:  100, w: 268, h: 402, restX: 90 },
+      { src: 'images/hero/nosferatu.jpg',             side: 'right', vy: 0.22, showAt:  180, w: 275, h: 413, restX: 85 },
+      { src: 'images/hero/gone-girl.jpg',             side: 'left',  vy: 0.50, showAt:  300, w: 260, h: 390, restX: 85 },
       { src: 'images/hero/the-bear.jpg',              side: 'right', vy: 0.48, showAt:  380, w: 268, h: 402, restX: 18 },
-      { src: 'images/hero/scream.jpg',                side: 'left',  vy: 0.09, showAt:  500, w: 282, h: 423, restX: 20 },
-      { src: 'images/hero/squid-game-2.jpg',           side: 'right', vy: 0.11, showAt:  580, w: 255, h: 383, restX: 20 },
-      { src: 'images/hero/the-vampire-diaries.jpeg',  side: 'left',  vy: 0.34, showAt:  700, w: 268, h: 402, restX: 22 },
+      { src: 'images/hero/scream.jpg',                side: 'left',  vy: 0.09, showAt:  500, w: 282, h: 423, restX: 95 },
+      { src: 'images/hero/squid-game-2.jpg',          side: 'right', vy: 0.11, showAt:  580, w: 255, h: 383, restX: 90 },
+      { src: 'images/hero/the-vampire-diaries.jpeg',  side: 'left',  vy: 0.34, showAt:  700, w: 268, h: 402, restX: 88 },
       { src: 'images/hero/the-wolf-of-wall-street.png', side: 'right', vy: 0.30, showAt: 780, w: 282, h: 423, restX: 18 },
-      { src: 'images/hero/the-conjuring.avif',        side: 'left',  vy: 0.52, showAt:  900, w: 260, h: 390, restX: 18 },
-      { src: 'images/hero/clueless.jpg',              side: 'right', vy: 0.50, showAt:  980, w: 255, h: 383, restX: 26 },
-      { src: 'images/hero/parasite.jpg',              side: 'left',  vy: 0.12, showAt: 1100, w: 282, h: 423, restX: 22 },
+      { src: 'images/hero/the-conjuring.avif',        side: 'left',  vy: 0.52, showAt:  900, w: 260, h: 390, restX: 88 },
+      { src: 'images/hero/clueless.jpg',              side: 'right', vy: 0.50, showAt:  980, w: 255, h: 383, restX: 82 },
+      { src: 'images/hero/parasite.jpg',              side: 'left',  vy: 0.12, showAt: 1100, w: 282, h: 423, restX: 92 },
       { src: 'images/hero/oppenheimer.webp',          side: 'right', vy: 0.09, showAt: 1180, w: 268, h: 402, restX: 16 },
-      { src: 'images/hero/the-substance.avif',        side: 'left',  vy: 0.38, showAt: 1300, w: 275, h: 413, restX: 18 },
-      { src: 'images/hero/anniversary.jpg',           side: 'right', vy: 0.36, showAt: 1380, w: 260, h: 390, restX: 28 },
+      { src: 'images/hero/the-substance.avif',        side: 'left',  vy: 0.38, showAt: 1300, w: 275, h: 413, restX: 92 },
+      { src: 'images/hero/anniversary.jpg',           side: 'right', vy: 0.36, showAt: 1380, w: 260, h: 390, restX: 86 },
       { src: 'images/hero/past-lives.jpg',            side: 'right', vy: 0.52, showAt: 1500, w: 268, h: 402, restX: 20 },
-      { src: 'images/hero/housemaid.jpg',             side: 'left',  vy: 0.50, showAt: 1580, w: 255, h: 383, restX: 24 },
-      { src: 'images/hero/aftersun.jpg',              side: 'right', vy: 0.14, showAt: 1700, w: 282, h: 423, restX: 22 },
-      { src: 'images/hero/friday-night-lights.jpg',   side: 'left',  vy: 0.11, showAt: 1780, w: 268, h: 402, restX: 16 },
-      { src: 'images/hero/the-summer-i-turned-pretty.jpg', side: 'left', vy: 0.38, showAt: 1900, w: 260, h: 390, restX: 20 },
+      { src: 'images/hero/housemaid.jpg',             side: 'left',  vy: 0.50, showAt: 1580, w: 255, h: 383, restX: 86 },
+      { src: 'images/hero/aftersun.jpg',              side: 'right', vy: 0.14, showAt: 1700, w: 282, h: 423, restX: 88 },
+      { src: 'images/hero/friday-night-lights.jpg',   side: 'left',  vy: 0.11, showAt: 1780, w: 268, h: 402, restX: 90 },
+      { src: 'images/hero/the-summer-i-turned-pretty.jpg', side: 'left', vy: 0.38, showAt: 1900, w: 260, h: 390, restX: 90 },
       { src: 'images/hero/american-primeval.jpg',     side: 'right', vy: 0.36, showAt: 1980, w: 275, h: 413, restX: 18 },
     ];
 
@@ -810,14 +810,13 @@
       el.style.height = data.h + 'px';
       el.style.backgroundImage = `url('${data.src}')`;
       if (data.bgSize) el.style.backgroundSize = data.bgSize;
-      if (data.z) el.style.zIndex = data.z;
       posterSide.appendChild(el);
       return { el, data };
     });
 
-    const SLIDE_IN  = 150; // px of scroll to fade/slide in
+    const SLIDE_IN  = 320; // px of scroll to fade/slide in
     const HOLD      = 500; // px of scroll to stay visible
-    const SLIDE_OUT = 320; // px of scroll to fade/slide out (longer = softer exit)
+    const SLIDE_OUT = 320; // px of scroll to fade/slide out
     const SLIDE_TOTAL = SLIDE_IN + HOLD + SLIDE_OUT;
 
     function updateSide() {
@@ -835,10 +834,11 @@
 
       sidePosters.forEach(({ el, data }) => {
         const { side, vy, showAt, w, restX } = data;
+        const hold     = data.hold !== undefined ? data.hold : HOLD;
+        const total    = SLIDE_IN + hold + SLIDE_OUT;
         const progress = scrollY - showAt;
-        // Poster slides from off-screen edge toward restX, then back out same side
-        const slideAmt = restX + w + 40; // full off-screen distance
-        const dir      = side === 'left' ? -1 : 1; // left = negative x, right = positive x
+        const slideAmt = restX + w + 40;
+        const dir      = side === 'left' ? -1 : 1;
 
         let opacity, tx;
 
@@ -846,14 +846,14 @@
           opacity = 0;
           tx = dir * slideAmt;
         } else if (progress < SLIDE_IN) {
-          const e = 1 - Math.pow(1 - progress / SLIDE_IN, 3);
+          const e = 1 - Math.pow(1 - progress / SLIDE_IN, 3); // ease-out cubic: decelerates to a gentle stop
           opacity = e;
           tx = dir * slideAmt * (1 - e);
-        } else if (progress < SLIDE_IN + HOLD) {
+        } else if (progress < SLIDE_IN + hold) {
           opacity = 1;
           tx = 0;
-        } else if (progress < SLIDE_TOTAL) {
-          const e = Math.pow((progress - SLIDE_IN - HOLD) / SLIDE_OUT, 2); // ease-in: lingers then drifts
+        } else if (progress < total) {
+          const e = Math.pow((progress - SLIDE_IN - hold) / SLIDE_OUT, 2);
           opacity = 1 - e;
           tx = dir * slideAmt * e;
         } else {
