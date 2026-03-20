@@ -496,6 +496,28 @@
     }
     .feature-col:hover .feature-desc { color: rgba(255,255,255,0.55); }
 
+    .feature-desc-more {
+      font-size: 0.95rem;
+      color: var(--muted);
+      line-height: 1.75;
+      position: relative;
+      z-index: 1;
+      max-height: 0;
+      overflow: hidden;
+      opacity: 0;
+      margin-top: 0;
+      transition: max-height 0.45s cubic-bezier(0.76, 0, 0.24, 1),
+                  opacity 0.3s ease 0.1s,
+                  margin-top 0.3s ease,
+                  color 0.35s ease;
+    }
+    .feature-col:hover .feature-desc-more {
+      max-height: 200px;
+      opacity: 1;
+      margin-top: 0.6rem;
+      color: rgba(255,255,255,0.55);
+    }
+
     @media (max-width: 600px) {
       .feature-grid { grid-template-columns: 1fr; }
     }
@@ -789,9 +811,8 @@
   <!-- ── Hero ────────────────────────────────────────────────── -->
   <section id="hero">
     <div class="hero-content">
-      <span class="hero-eyebrow reveal">Your film &amp; TV journal</span>
-      <h1 class="hero-headline reveal reveal-delay-1">For the plots<br>that moved you.</h1>
-      <p class="hero-sub reveal reveal-delay-2">A film and TV journal as considered as your taste.</p>
+      <h1 class="hero-headline reveal">Your <span style="letter-spacing:-0.01em">fi</span>lm and<br>TV journal.</h1>
+      <p class="hero-sub reveal reveal-delay-2">The beautiful way to track what you watch.</p>
       <div class="hero-actions reveal reveal-delay-3">
         <a href="#" class="btn btn-primary btn-large">Start your journal →</a>
       </div>
@@ -812,29 +833,33 @@
   <section id="features">
     <div class="features-inner">
       <div class="features-left reveal">
-        <h2 class="section-title">Designed for the way you watch.</h2>
+        <h2 class="section-title">Designed for your<br>viewing habits.</h2>
         <p class="features-sub">Everything you need to track, organise and share your taste — in one place.</p>
       </div>
       <div class="feature-grid">
         <div class="feature-col reveal reveal-delay-1">
           <span class="feature-num">01</span>
           <div class="feature-title">Discover</div>
-          <p class="feature-desc">Browse what's new, what's trending, what's coming soon and where you can watch it. All in one place. Your starting point for finding something to watch tonight.</p>
+          <p class="feature-desc">Know what's new, trending, and coming soon.</p>
+          <p class="feature-desc-more">And find out where you can watch it, all in one place. PLOT is your starting point for finding something to watch tonight.</p>
         </div>
         <div class="feature-col reveal reveal-delay-2">
           <span class="feature-num">02</span>
           <div class="feature-title">Journal</div>
-          <p class="feature-desc">Rate it. Write about it. Tag a mood. Every film and series you watch becomes part of your timeline. Look back and see it take shape like a story you didn't know you were writing.</p>
+          <p class="feature-desc">Save it. Rate it. Write about it.</p>
+          <p class="feature-desc-more">Every film and series you watch becomes part of your timeline. Look back and see it take shape like a story you didn't know you were writing.</p>
         </div>
         <div class="feature-col reveal reveal-delay-3">
           <span class="feature-num">03</span>
           <div class="feature-title">Personalise</div>
-          <p class="feature-desc">No two feeds look the same. Yours is shaped by every film you've rated, every series you've logged and every list you've made. The more you use PLOT, the more it gets you.</p>
+          <p class="feature-desc">No two feeds look the same, and they shouldn't.</p>
+          <p class="feature-desc-more">Yours is shaped by every film you've rated, every series you've logged and every list you've made. The more you use PLOT, the more it <em>gets</em> you.</p>
         </div>
         <div class="feature-col reveal reveal-delay-4">
           <span class="feature-num">04</span>
           <div class="feature-title">Share</div>
-          <p class="feature-desc">Drop a list in the group chat. Share your profile like a love letter. Or a warning. Check if your flatmate's taste is grounds for moving out. What's the point of great taste if nobody knows?</p>
+          <p class="feature-desc">Drop your top ten list in the group chat.</p>
+          <p class="feature-desc-more">Check if your flatmate's TV taste is grounds for moving out. Share your profile like a love letter. Or a <em>warning.</em> What's the point of great taste if nobody knows?</p>
         </div>
       </div>
     </div>
