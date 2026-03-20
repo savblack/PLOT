@@ -154,7 +154,7 @@ export default function App() {
         setNewReleases(enriched);
       }
 
-      if (upcomingData) setUpcoming(upcomingData.results.filter(isFuture).sort(byDateAsc).slice(0, 15));
+      if (upcomingData) setUpcoming(upcomingData.results.filter(isFuture).sort(byDateAsc).slice(0, 60));
 
       if (tvOnAir) {
         const enriched = await enrichWithProviders(tvOnAir.results.filter(isReleased).slice(0, 15), 'tv');
