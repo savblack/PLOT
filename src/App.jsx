@@ -1,10 +1,41 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { tmdb, setTmdbRegion } from './api/tmdb';
 import { supabase } from './api/supabase';
 import MediaModal from './components/MediaModal';
 import AuthModal from './components/AuthModal';
 import PublicProfileView from './components/PublicProfileView';
+
+const SAMPLE_WATCHED = [
+  { title: 'Oppenheimer',                     media_type: 'movie', watched_at: '2025-01-04', rating: 5, mood: 'thoughtful', note: 'Three hours felt like one. The Trinity sequence broke me.' },
+  { title: 'Dune: Part Two',                  media_type: 'movie', watched_at: '2025-01-18', rating: 4, mood: 'excited', note: 'Zendaya finally got something to do. Worth the wait.' },
+  { title: 'Poor Things',                     media_type: 'movie', watched_at: '2025-01-18', rating: 4, mood: 'weird' },
+  { title: 'Killers of the Flower Moon',      media_type: 'movie', watched_at: '2025-02-02', rating: 5, mood: 'sad' },
+  { title: 'Barbie',                          media_type: 'movie', watched_at: '2025-02-14', rating: 3, mood: 'happy' },
+  { title: 'Spider-Man: Across the Spider-Verse', media_type: 'movie', watched_at: '2025-02-14', rating: 5, mood: 'excited' },
+  { title: 'Saltburn',                        media_type: 'movie', watched_at: '2025-02-28', rating: 4, mood: 'unsettled', note: 'Did not see that ending coming. Thought about it for days.' },
+  { title: 'Past Lives',                      media_type: 'movie', watched_at: '2025-03-08', rating: 5, mood: 'sad', note: 'Quietly devastating. The airport bench scene.' },
+  { title: 'The Holdovers',                   media_type: 'movie', watched_at: '2025-03-22', rating: 4, mood: 'cosy' },
+  { title: 'Anatomy of a Fall',               media_type: 'movie', watched_at: '2025-04-05', rating: 4, mood: 'tense' },
+  { name:  'The Last of Us',                  media_type: 'tv',    watched_at: '2025-04-19', rating: 5, mood: 'emotional' },
+  { name:  'The Bear',                        media_type: 'tv',    watched_at: '2025-05-03', rating: 5, mood: 'stressed' },
+  { title: 'Society of the Snow',             media_type: 'movie', watched_at: '2025-05-17', rating: 4, mood: 'intense' },
+  { title: 'American Fiction',               media_type: 'movie', watched_at: '2025-06-01', rating: 4, mood: 'thoughtful' },
+  { name:  'Succession',                      media_type: 'tv',    watched_at: '2025-06-21', rating: 5, mood: 'gripped' },
+  { title: 'Priscilla',                       media_type: 'movie', watched_at: '2025-07-04', rating: 3, mood: 'melancholy' },
+  { title: 'The Zone of Interest',            media_type: 'movie', watched_at: '2025-08-09', rating: 5, mood: 'haunted' },
+  { title: 'May December',                    media_type: 'movie', watched_at: '2025-09-13', rating: 3, mood: 'uncomfortable' },
+  { title: 'Migration',                       media_type: 'movie', watched_at: '2025-10-05', rating: 3, mood: 'happy' },
+  { name:  'Shōgun',                          media_type: 'tv',    watched_at: '2025-11-02', rating: 5, mood: 'epic' },
+  { title: 'Inside Out 2',                    media_type: 'movie', watched_at: '2025-11-29', rating: 4, mood: 'emotional' },
+  { title: 'Despicable Me 4',                 media_type: 'movie', watched_at: '2025-12-14', rating: 2, mood: 'meh' },
+  { title: 'Mufasa: The Lion King',           media_type: 'movie', watched_at: '2025-12-26', rating: 3, mood: 'nostalgic' },
+  { title: 'Anora',                           media_type: 'movie', watched_at: '2026-01-11', rating: 5, mood: 'shocked' },
+  { title: 'Conclave',                        media_type: 'movie', watched_at: '2026-01-25', rating: 4, mood: 'tense' },
+  { title: 'A Complete Unknown',              media_type: 'movie', watched_at: '2026-02-08', rating: 4, mood: 'inspired' },
+  { title: 'Terrifier 3',                     media_type: 'movie', watched_at: '2026-02-22', rating: 3, mood: 'scared' },
+  { name:  'Severance',                       media_type: 'tv',    watched_at: '2026-03-07', rating: 5, mood: 'unsettled' },
+];
 
 const GENRES = [
   { key: 'action',      label: 'Action',      movieId: 28,    tvId: 10759, desc: 'Fast-paced and intense.'     },
@@ -53,7 +84,7 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [trending, setTrending] = useState([]);
-  const [view, setView] = useState('home'); // home, search, watchlist, suggested
+  const [view, setView] = useState(() => localStorage.getItem('plot-view') || 'home');
   const [selectedItem, setSelectedItem] = useState(null);
   const [personalized, setPersonalized] = useState([]);
   const [forYouFeed, setForYouFeed] = useState([]);
@@ -78,6 +109,12 @@ export default function App() {
   const [copiedLink, setCopiedLink] = useState(null);
   const [publicProfileUsername, setPublicProfileUsername] = useState(null);
   const [publicProfileInitialList, setPublicProfileInitialList] = useState(null);
+
+  useEffect(() => {
+    if (view !== 'public' && view !== 'search') {
+      localStorage.setItem('plot-view', view);
+    }
+  }, [view]);
 
   // Check user session and load local fallback
   useEffect(() => {
@@ -243,6 +280,29 @@ export default function App() {
   useEffect(() => {
     setTmdbRegion(preferences.region || 'AU');
   }, [preferences.region]);
+
+  // Enrich sample data by searching TMDB for each title — never guesses IDs
+  useEffect(() => {
+    if (watched.length > 0) return;
+    const enrich = async () => {
+      const enriched = await Promise.all(
+        SAMPLE_WATCHED.map(async (item) => {
+          const query = item.title || item.name;
+          const results = await tmdb.search(query);
+          const match = results?.results?.find(r => r.media_type === item.media_type);
+          if (!match) return item;
+          return {
+            ...item,
+            id: match.id,
+            tmdb_id: match.id,
+            poster_path: match.poster_path,
+          };
+        })
+      );
+      setSampleWatched(enriched);
+    };
+    enrich();
+  }, [watched.length]);
 
   // For You feed — improves with every item the user logs
   useEffect(() => {
@@ -474,6 +534,30 @@ export default function App() {
   const [pendingGenres, setPendingGenres] = useState([]);
   const [theme, setTheme] = useState(() => localStorage.getItem('plot-theme') || 'system');
   const [feedLayout, setFeedLayout] = useState(() => localStorage.getItem('plot-feed-layout') || 'bento');
+  const [rankBadgeDark, setRankBadgeDark] = useState({});
+  const [sampleWatched, setSampleWatched] = useState(SAMPLE_WATCHED);
+  const [dateBadgeDark, setDateBadgeDark] = useState({});
+
+  const sampleImageCorner = useCallback((img, itemId, setter) => {
+    try {
+      const canvas = document.createElement('canvas');
+      const size = 60;
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      const srcX = img.naturalWidth - (size * img.naturalWidth / img.width);
+      const srcY = 0;
+      const srcW = size * img.naturalWidth / img.width;
+      const srcH = size * img.naturalHeight / img.height;
+      ctx.drawImage(img, srcX, srcY, srcW, srcH, 0, 0, size, size);
+      const data = ctx.getImageData(0, 0, size, size).data;
+      let r = 0, g = 0, b = 0;
+      const pixels = data.length / 4;
+      for (let i = 0; i < data.length; i += 4) { r += data[i]; g += data[i+1]; b += data[i+2]; }
+      const luminance = (0.299 * (r / pixels) + 0.587 * (g / pixels) + 0.114 * (b / pixels)) / 255;
+      if (luminance > 0.55) setter(prev => ({ ...prev, [itemId]: true }));
+    } catch (_) {}
+  }, []);
   const [upcomingTimeFilter, setUpcomingTimeFilter] = useState('month');
   const [timelineView, setTimelineView] = useState('linear'); // 'linear' | 'grid'
   const [gridTimeframe, setGridTimeframe] = useState('monthly'); // 'monthly' | 'yearly'
@@ -545,7 +629,8 @@ export default function App() {
     seg(cx, height, 38, 90);
     return d;
   };
-  const filteredWatched = watched.filter(item => (item.media_type || (item.title ? 'movie' : 'tv')) === mediaFilter);
+  const activeWatched = watched.length > 0 ? watched : sampleWatched;
+  const filteredWatched = activeWatched.filter(item => (item.media_type || (item.title ? 'movie' : 'tv')) === mediaFilter);
   const watchedByDate = filteredWatched.reduce((acc, item) => {
     const key = toDateKey(item.watched_at);
     if (!key) return acc;
@@ -673,7 +758,10 @@ export default function App() {
                   transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)'
                 }}
               >
-                <img src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title} />
+                {item.poster_path
+                  ? <img src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title} />
+                  : <div className="no-image">{item.title}</div>
+                }
               </div>
             );
           })}
@@ -963,7 +1051,10 @@ export default function App() {
                     className={`bento-item glass ${feedLayout === 'bento' && index % 5 === 0 ? 'large' : ''}`}
                     onClick={() => setSelectedItem(item)}
                   >
-                    <img src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title || item.name} />
+                    {item.poster_path
+                      ? <img src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title || item.name} />
+                      : <div className="no-image">{item.title || item.name}</div>
+                    }
                     <div className="overlay">
                       <h3>{item.title || item.name}</h3>
                       {getSavedData(item.id) && <span className="watched-dot"></span>}
@@ -1002,11 +1093,17 @@ export default function App() {
                     className={`bento-item glass ${feedLayout === 'bento' && index === 0 ? 'large' : ''}`}
                     onClick={() => setSelectedItem(item)}
                   >
-                    <img src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title || item.name} />
+                    {item.poster_path
+                      ? <img src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title || item.name} />
+                      : <div className="no-image">{item.title || item.name}</div>
+                    }
                     {newReleasesTab === 'streaming' && item.provider && (
                       <div className="provider-badge">
                         <img className="provider-logo" src={item.provider.logo} alt={item.provider.name} />
                       </div>
+                    )}
+                    {newReleasesTab === 'popular' && (
+                      <div className={`rank-badge${rankBadgeDark[item.id] ? ' rank-badge--dark' : ''}`}>#{index + 1}</div>
                     )}
                     <div className="overlay">
                       <h3>{item.title || item.name}</h3>
@@ -1096,7 +1193,10 @@ export default function App() {
                       className="bento-item glass list-detail-item"
                       onClick={() => setSelectedItem(isVirtualList ? item : { ...item, id: item.tmdb_id })}
                     >
-                      <img src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title || item.name} />
+                      {item.poster_path
+                        ? <img src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title || item.name} />
+                        : <div className="no-image">{item.title || item.name}</div>
+                      }
                       <div className="overlay">
                         <h3>{item.title || item.name}</h3>
                       </div>
@@ -1204,7 +1304,10 @@ export default function App() {
                         className="bento-item glass"
                         onClick={() => setSelectedItem(item)}
                       >
-                        <img src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title || item.name} />
+                        {item.poster_path
+                          ? <img src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title || item.name} />
+                          : <div className="no-image">{item.title || item.name}</div>
+                        }
                         <div className="overlay">
                           <h3>{item.title || item.name}</h3>
                           {item.rating > 0 && <span className="rating-tag">{'★'.repeat(item.rating)}</span>}
@@ -1241,16 +1344,16 @@ export default function App() {
                 {journalTab === 'mood' && (
                   <div className="lists-grid">
                     {[
-                      { value: 'happy',     emoji: '😊' },
-                      { value: 'emotional', emoji: '🥲' },
-                      { value: 'fun',       emoji: '😂' },
-                      { value: 'tense',     emoji: '😬' },
-                      { value: 'amazing',   emoji: '🤩' },
-                      { value: 'mindblown', emoji: '🤯' },
+                      { value: 'happy',     label: 'Happy' },
+                      { value: 'emotional', label: 'Emotional' },
+                      { value: 'fun',       label: 'Fun' },
+                      { value: 'tense',     label: 'Tense' },
+                      { value: 'amazing',   label: 'Amazing' },
+                      { value: 'mindblown', label: 'Mind Blown' },
                     ].map(m => (
                       <ListStack
                         key={m.value}
-                        list={{ id: `mood-${m.value}`, name: m.emoji }}
+                        list={{ id: `mood-${m.value}`, name: m.label }}
                         items={filteredWatched.filter(w => w.mood === m.value)}
                       />
                     ))}
@@ -1297,53 +1400,9 @@ export default function App() {
                     </div>
 
                     {filteredWatched.length === 0 && (
-                      <div style={{ textAlign: 'center', padding: '2rem 0' }}>
-                        <p className="empty-list-msg">Nothing logged yet.</p>
-                        <button
-                          className="new-list-header-btn"
-                          style={{ marginTop: '0.75rem' }}
-                          onClick={() => {
-                            const seed = [
-                              // Sep 3 — solo
-                              { id: 'seed-1', tmdb_id: 550, title: 'Fight Club', poster_path: '/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK.jpg', media_type: 'movie', watched_at: '2025-09-03T18:00:00Z', rating: 5, mood: 'mindblown', watchStatus: 'Watched', notes: 'First rule: you do not talk about Fight Club.' },
-                              // Oct 12 — solo
-                              { id: 'seed-2', tmdb_id: 238, title: 'The Godfather', poster_path: '/3bhkrj58Vtu7enYsLeMLoNWsgfG.jpg', media_type: 'movie', watched_at: '2025-10-12T20:00:00Z', rating: 5, mood: 'tense', watchStatus: 'Watched', notes: 'An offer I could not refuse.' },
-                              // Nov 1 — 3 in one day
-                              { id: 'seed-3', tmdb_id: 157336, title: 'Interstellar', poster_path: '/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg', media_type: 'movie', watched_at: '2025-11-01T12:00:00Z', rating: 4, mood: 'emotional', watchStatus: 'Watched', notes: 'The ending hit different.' },
-                              { id: 'seed-3b', tmdb_id: 27205, title: 'Inception', poster_path: '/oYuLEt3zVCKq57qu2F8dT7NIa6f.jpg', media_type: 'movie', watched_at: '2025-11-01T15:30:00Z', rating: 5, mood: 'mindblown', watchStatus: 'Watched', notes: null },
-                              { id: 'seed-3c', tmdb_id: 816692, title: 'Everything Everywhere All at Once', poster_path: '/w3LxiVYdWWRvEVdn5RYq6jIqkb1.jpg', media_type: 'movie', watched_at: '2025-11-01T21:00:00Z', rating: 5, mood: 'mindblown', watchStatus: 'Watched', notes: 'Watched three films in one day, no regrets.' },
-                              // Nov 20 — solo
-                              { id: 'seed-4', tmdb_id: 1396, name: 'Breaking Bad', poster_path: '/ggFHVNu6YYI5L9pCfOacjizRGt.jpg', media_type: 'tv', watched_at: '2025-11-20T19:00:00Z', rating: 5, mood: 'tense', watchStatus: 'Binged', notes: 'I am the one who knocks.' },
-                              // Dec 5 — solo
-                              { id: 'seed-5', tmdb_id: 19404, title: 'Dilwale Dulhania Le Jayenge', poster_path: '/2CAL2433ZeIihfX1Hb2139CX0pW.jpg', media_type: 'movie', watched_at: '2025-12-05T17:00:00Z', rating: 3, mood: 'happy', watchStatus: 'Watched', notes: null },
-                              // Dec 25 — 2 in one day
-                              { id: 'seed-6', tmdb_id: 278, title: 'The Shawshank Redemption', poster_path: '/9cqNxx0GxF0bAY0gFZhKPDfejAp.jpg', media_type: 'movie', watched_at: '2025-12-25T14:00:00Z', rating: 5, mood: 'emotional', watchStatus: 'Watched', notes: 'Hope is a good thing.' },
-                              { id: 'seed-6b', tmdb_id: 240, title: 'The Godfather Part II', poster_path: '/hek3koDUyRQk7FIhPXsa6mT2Zc3.jpg', media_type: 'movie', watched_at: '2025-12-25T20:00:00Z', rating: 5, mood: 'tense', watchStatus: 'Watched', notes: 'Christmas with the Corleones.' },
-                              // Jan 8 — solo
-                              { id: 'seed-7', tmdb_id: 424, title: "Schindler's List", poster_path: '/sF1U4EUQS8YHUYjNl3pMGNIQyr0.jpg', media_type: 'movie', watched_at: '2026-01-08T18:30:00Z', rating: 5, mood: 'emotional', watchStatus: 'Watched', notes: null },
-                              // Jan 22 — solo
-                              { id: 'seed-8', tmdb_id: 680, title: 'Pulp Fiction', poster_path: '/d5iIlFn5s0ImszYzBPb8JPIfbXD.jpg', media_type: 'movie', watched_at: '2026-01-22T21:00:00Z', rating: 4, mood: 'fun', watchStatus: 'Watched', notes: 'Royale with cheese.' },
-                              // Feb 14 — 5 in one day (movie marathon)
-                              { id: 'seed-9', tmdb_id: 13, title: 'Forrest Gump', poster_path: '/arw2vcBveWOVZr6pxd9XTd1TdQa.jpg', media_type: 'movie', watched_at: '2026-02-14T10:00:00Z', rating: 4, mood: 'happy', watchStatus: 'Watched', notes: 'Life is like a box of chocolates.' },
-                              { id: 'seed-10', tmdb_id: 11, title: 'Star Wars', poster_path: '/6FfCtAuVAW8XJjZ7eWeLibRLWTw.jpg', media_type: 'movie', watched_at: '2026-02-14T13:00:00Z', rating: 4, mood: 'amazing', watchStatus: 'Watched', notes: null },
-                              { id: 'seed-10b', tmdb_id: 120, title: 'The Lord of the Rings: The Fellowship of the Ring', poster_path: '/6oom5QYQ2yQTMJIbnvbkBL9cHo6.jpg', media_type: 'movie', watched_at: '2026-02-14T16:00:00Z', rating: 5, mood: 'amazing', watchStatus: 'Watched', notes: null },
-                              { id: 'seed-10c', tmdb_id: 121, title: 'The Lord of the Rings: The Two Towers', poster_path: '/5VTN0pR8gcqV3EPUHHfMGnJYspL.jpg', media_type: 'movie', watched_at: '2026-02-14T19:30:00Z', rating: 5, mood: 'tense', watchStatus: 'Watched', notes: null },
-                              { id: 'seed-10d', tmdb_id: 122, title: 'The Return of the King', poster_path: '/rCzpDGLbOoPwLjy3OAm5NUPOTrC.jpg', media_type: 'movie', watched_at: '2026-02-14T23:00:00Z', rating: 5, mood: 'emotional', watchStatus: 'Watched', notes: 'Extended editions. Worth every minute.' },
-                              // Mar 1 — solo
-                              { id: 'seed-11', tmdb_id: 598, title: 'City of God', poster_path: '/k7eYdWvhYQyRQoU2TB2A2Xu2grZ.jpg', media_type: 'movie', watched_at: '2026-03-01T20:00:00Z', rating: 5, mood: 'tense', watchStatus: 'Watched', notes: 'Brutal and brilliant.' },
-                              // Mar 10 — 2 in one day
-                              { id: 'seed-12', tmdb_id: 37854, name: 'One Piece', poster_path: '/cMD9Ygz11zjJzAovURpO75Qg7rT.jpg', media_type: 'tv', watched_at: '2026-03-10T15:00:00Z', rating: 4, mood: 'fun', watchStatus: "Didn't Finish", notes: 'Still going...' },
-                              { id: 'seed-12b', tmdb_id: 76341, title: 'Mad Max: Fury Road', poster_path: '/8tZYtuWezp8JbcsvHYO0O46tFbo.jpg', media_type: 'movie', watched_at: '2026-03-10T21:00:00Z', rating: 4, mood: 'amazing', watchStatus: 'Watched', notes: 'What a lovely day.' },
-                              // Mar 19 — solo
-                              { id: 'seed-13', tmdb_id: 496243, title: 'Parasite', poster_path: '/7IiTTgloJzvGI1TAYymCfbfl3vT.jpg', media_type: 'movie', watched_at: '2026-03-19T21:00:00Z', rating: 5, mood: 'tense', watchStatus: 'Watched', notes: 'Did not see that ending coming.' },
-                            ];
-                            setWatched(seed);
-                            localStorage.setItem('plot-watched', JSON.stringify(seed));
-                          }}
-                        >
-                          Load sample data
-                        </button>
-                      </div>
+                      <p className="empty-list-msg" style={{ textAlign: 'center', padding: '2rem 0' }}>
+                        Nothing logged yet. Start by opening any movie or show.
+                      </p>
                     )}
 
                     {timelineView === 'linear' && (() => {
@@ -1359,24 +1418,39 @@ export default function App() {
                         }
                         return groups;
                       }, []);
-                      const renderCard = (item, k) => (
-                        <div key={k} className="tl-entry" onClick={() => setSelectedItem(item)}>
-                          <div className="tl-poster">
-                            {item.poster_path
-                              ? <img src={`https://image.tmdb.org/t/p/w300${item.poster_path}`} alt={item.title || item.name} />
-                              : <div className="tl-no-poster" />
-                            }
+                      const renderCard = (item, k, idx = 0) => {
+                        const infoRight = idx % 2 === 0;
+                        const infoNote = (
+                          <div className="tl-note">
+                            <span className="tl-note-title">{item.title || item.name}</span>
+                            {item.rating > 0 && <span className="tl-note-stars">{'★'.repeat(item.rating)}{'☆'.repeat(5 - item.rating)}</span>}
+                            <span className="tl-note-date">{formatDate(item.watched_at)}</span>
+                            {item.mood && <span className="tl-note-mood">{moodLabel(item.mood)}</span>}
                           </div>
-                          <div className="tl-info">
-                            <span className="tl-title">{item.title || item.name}</span>
-                            {item.rating > 0 && <span className="tl-stars">{'★'.repeat(item.rating)}{'☆'.repeat(5 - item.rating)}</span>}
+                        );
+                        const userNote = item.note ? (
+                          <div className="tl-note tl-user-note" style={{ lineHeight: '1.1' }}>
+                            <span className="tl-note-text" style={{ display: 'block', lineHeight: '1.1' }}>{item.note}</span>
                           </div>
-                          <div className="tl-bottom">
-                            <span className="tl-date">{formatDate(item.watched_at)}</span>
-                            {item.mood && <span className="tl-mood">{moodLabel(item.mood)}</span>}
+                        ) : <div className="tl-note tl-note-empty" />;
+                        return (
+                          <div key={k} className="tl-entry" onClick={() => setSelectedItem(item)}>
+                            {infoRight ? userNote : infoNote}
+                            <div className="tl-poster">
+                              {item.poster_path
+                                ? <img
+                                    src={`https://image.tmdb.org/t/p/w300${item.poster_path}`}
+                                    alt={item.title || item.name}
+                                    onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }}
+                                  />
+                                : null
+                              }
+                              <div className="tl-no-poster" style={{ display: item.poster_path ? 'none' : 'block' }} />
+                            </div>
+                            {infoRight ? infoNote : userNote}
                           </div>
-                        </div>
-                      );
+                        );
+                      };
                       return (
                         <div className="tl-vertical">
                           {dayGroups.map((group, dayIdx) => {
@@ -1410,16 +1484,16 @@ export default function App() {
                                 {extras.length > 0 ? (
                                   <div className="tl-day-scroll">
                                     <div className="tl-day-inner">
-                                      {[...extras].reverse().map((extra, ei) => renderCard(extra, `${group.key}-${ei}`))}
+                                      {[...extras].reverse().map((extra, ei) => renderCard(extra, `${group.key}-${ei}`, dayIdx))}
                                       <div className="tl-anchor-col">
-                                        {renderCard(anchor, group.key)}
+                                        {renderCard(anchor, group.key, dayIdx)}
                                         {connector}
                                       </div>
                                     </div>
                                   </div>
                                 ) : (
                                   <>
-                                    {renderCard(anchor, group.key)}
+                                    {renderCard(anchor, group.key, dayIdx)}
                                     {connector}
                                   </>
                                 )}
@@ -1473,9 +1547,10 @@ export default function App() {
                                 {watchedByDate[selectedGridDay].map((item, idx) => (
                                   <div key={item.id || idx} className="timeline-card" style={{ width: 150, flexShrink: 0 }} onClick={() => setSelectedItem(item)}>
                                     {item.poster_path
-                                      ? <img src={`https://image.tmdb.org/t/p/w200${item.poster_path}`} alt={item.title || item.name} />
-                                      : <div style={{ height: 130, background: 'var(--border-color)' }} />
+                                      ? <img src={`https://image.tmdb.org/t/p/w200${item.poster_path}`} alt={item.title || item.name} onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }} />
+                                      : null
                                     }
+                                    <div style={{ height: 130, background: 'var(--border-color)', display: item.poster_path ? 'none' : 'block' }} />
                                     <div className="timeline-card-info">
                                       <span className="timeline-title">{item.title || item.name}</span>
                                       {item.rating > 0 && <span style={{ fontSize: '0.7rem' }}>{'★'.repeat(item.rating)}</span>}
@@ -1528,9 +1603,10 @@ export default function App() {
                                 {watchedByDate[selectedGridDay].map((item, idx) => (
                                   <div key={item.id || idx} className="timeline-card" style={{ width: 150, flexShrink: 0 }} onClick={() => setSelectedItem(item)}>
                                     {item.poster_path
-                                      ? <img src={`https://image.tmdb.org/t/p/w200${item.poster_path}`} alt={item.title || item.name} />
-                                      : <div style={{ height: 130, background: 'var(--border-color)' }} />
+                                      ? <img src={`https://image.tmdb.org/t/p/w200${item.poster_path}`} alt={item.title || item.name} onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }} />
+                                      : null
                                     }
+                                    <div style={{ height: 130, background: 'var(--border-color)', display: item.poster_path ? 'none' : 'block' }} />
                                     <div className="timeline-card-info">
                                       <span className="timeline-title">{item.title || item.name}</span>
                                       {item.rating > 0 && <span style={{ fontSize: '0.7rem' }}>{'★'.repeat(item.rating)}</span>}
@@ -1589,9 +1665,12 @@ export default function App() {
                 };
                 return filterByTimeRange(mediaFilter === 'movie' ? upcoming : upcomingTV, upcomingTimeFilter).map((item, index) => (
                 <div key={item.id} className={`bento-item glass ${feedLayout === 'bento' && index % 5 === 0 ? 'large' : ''}`} onClick={() => setSelectedItem(item)}>
-                  <img src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title || item.name} />
+                  {item.poster_path
+                    ? <img src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title || item.name} />
+                    : <div className="no-image">{item.title || item.name}</div>
+                  }
                   <div className="overlay">
-                    <span className="rating-tag date-tag">
+                    <span className={`rating-tag date-tag${dateBadgeDark[item.id] ? ' date-tag--dark' : ''}`}>
                       {new Date(item.release_date || item.first_air_date).toLocaleDateString('en-GB', {
                         day: 'numeric',
                         month: 'long',
@@ -1609,15 +1688,16 @@ export default function App() {
       </main>
 
       {selectedItem && (
-        <MediaModal 
-          item={selectedItem} 
+        <MediaModal
+          item={selectedItem}
+          region={preferences.region || 'AU'}
           savedData={getSavedData(selectedItem.id)}
           userLists={userLists}
           listItems={listItems.filter(li => li.tmdb_id === selectedItem.id)}
           onCreateList={createList}
           onToggleList={(listId, isAdding) => toggleListItem(listId, selectedItem, isAdding)}
           onSave={saveToWatched}
-          onClose={() => setSelectedItem(null)} 
+          onClose={() => setSelectedItem(null)}
         />
       )}
 
@@ -1818,6 +1898,28 @@ export default function App() {
           transition: var(--transition);
         }
 
+        .rank-badge {
+          position: absolute;
+          top: 20px;
+          right: 20px;
+          z-index: 5;
+          background: rgba(255, 255, 255, 0.4);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          color: #fff;
+          font-size: 0.8rem;
+          font-weight: 600;
+          padding: 0.2rem 0.6rem;
+          border-radius: var(--radius-md);
+        }
+
+        .rank-badge--dark {
+          background: rgba(0, 0, 0, 0.5);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          color: #fff;
+        }
+
         .provider-badge {
           position: absolute;
           top: 20px;
@@ -1903,6 +2005,10 @@ export default function App() {
           -webkit-backdrop-filter: blur(12px) !important;
           color: white;
           transition: none !important;
+        }
+
+        .date-tag--dark {
+          background: rgba(0, 0, 0, 0.5) !important;
         }
 
         .watched-dot {
@@ -2266,7 +2372,7 @@ export default function App() {
 
         .stack-container {
           position: relative;
-          height: 300px;
+          aspect-ratio: 2 / 3;
           width: 100%;
           margin-bottom: 1rem;
         }
@@ -2848,7 +2954,7 @@ export default function App() {
             gap: 1rem;
           }
           .list-stack { padding: 0.4rem; }
-          .stack-container { height: auto; aspect-ratio: 2/3; }
+          .stack-container { aspect-ratio: 2/3; }
         }
 
         @media (max-width: 480px) {
@@ -2861,7 +2967,7 @@ export default function App() {
             gap: 0.75rem;
           }
           .list-stack { padding: 0.4rem; }
-          .stack-container { height: auto; aspect-ratio: 2/3; }
+          .stack-container { aspect-ratio: 2/3; }
         }
 
         /* Timeline tab */
@@ -2880,17 +2986,23 @@ export default function App() {
         .tl-day-scroll { overflow-x: auto; direction: rtl; width: 100%; scrollbar-width: none; }
         .tl-day-scroll::-webkit-scrollbar { display: none; }
         .tl-day-inner { direction: ltr; display: flex; flex-direction: row; gap: 1.5rem; min-width: fit-content; padding-bottom: 0.5rem; align-items: flex-start; padding-right: calc(50% - 130px); padding-left: calc(50% - 130px); }
-        .tl-entry { position: relative; width: 260px; cursor: pointer; z-index: 1; }
+        .tl-entry { position: relative; display: flex; flex-direction: row; align-items: center; gap: 1.5rem; cursor: pointer; z-index: 1; width: 720px; }
         .tl-entry:hover .tl-poster { transform: scale(1.02); }
-        .tl-mood { font-size: 0.68rem; font-style: italic; color: var(--text-secondary); white-space: nowrap; opacity: 0.8; }
-        .tl-poster { border-radius: var(--radius-md, 12px); overflow: hidden; transition: transform 0.2s ease; box-shadow: 0 4px 20px rgba(0,0,0,0.18); }
-        .tl-poster img { width: 100%; display: block; aspect-ratio: 2/3; object-fit: cover; }
+        .tl-note-empty { width: 32px !important; padding: 0 !important; }
+        .tl-note { width: 220px; flex-shrink: 0; display: flex; flex-direction: column; gap: 0.3rem; font-family: var(--font-sans); padding: 0 1rem; }
+        .tl-entry .tl-note:first-child { text-align: right; align-items: flex-end; }
+        .tl-user-note { font-family: 'Nothing You Could Do', cursive; line-height: 1.1; }
+        .tl-user-note .tl-note-text { display: block; }
+        .tl-note-title { font-size: 0.75rem; line-height: 1.3; color: var(--text-primary); }
+        .tl-note-stars { font-size: 0.6rem; opacity: 0.7; letter-spacing: 0.05em; }
+        .tl-note-date { font-size: 0.65rem; color: var(--muted, #888); }
+        .tl-note-mood { font-size: 0.65rem; font-style: italic; color: var(--text-secondary); opacity: 0.75; }
+        .tl-user-note .tl-note-text { font-size: 0.95rem; line-height: 1.5; color: var(--text-primary); opacity: 0.85; }
+        .tl-poster { width: 200px; flex-shrink: 0; border-radius: var(--radius-md, 12px); overflow: hidden; transition: transform 0.2s ease; box-shadow: 0 4px 20px rgba(0,0,0,0.18); }
+        .tl-poster img { width: 200px; height: 300px; display: block; object-fit: cover; }
+        .tl-no-poster { width: 200px; height: 300px; background: var(--border-color); }
         .tl-no-poster { width: 100%; aspect-ratio: 2/3; background: var(--border-color); border-radius: var(--radius-md, 12px); }
-        .tl-info { display: flex; justify-content: space-between; align-items: baseline; margin-top: 0.55rem; gap: 0.4rem; padding: 0 0.1rem; position: relative; z-index: 1; }
-        .tl-title { font-family: 'Playfair Display', serif; font-size: 0.85rem; font-weight: 600; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; flex: 1; }
-        .tl-stars { font-size: 0.65rem; flex-shrink: 0; opacity: 0.9; }
-        .tl-bottom { display: flex; justify-content: space-between; align-items: baseline; margin-top: 0.2rem; padding: 0 0.1rem; position: relative; z-index: 1; }
-        .tl-date { font-size: 0.65rem; color: var(--text-secondary); }
+        .tl-mood { font-size: 0.68rem; font-style: italic; color: var(--text-secondary); white-space: nowrap; opacity: 0.8; }
         .tl-connector { display: flex; flex-direction: column; align-items: center; gap: 0.15rem; margin-top: -54px; position: relative; z-index: 0; }
         .tl-gap { font-size: 0.62rem; color: var(--text-secondary); opacity: 0.55; letter-spacing: 0.08em; padding: 0.15rem 0.5rem; }
 
@@ -3056,6 +3168,22 @@ export default function App() {
         [data-theme="dark"] .username-at { color: #555; }
         [data-theme="dark"] .public-profile-avatar { background: #f0f0f0; color: #1a1a1a; }
         [data-theme="dark"] .list-public-badge { background: #052e16; border-color: #166534; color: #4ade80; }
+
+        .modal-loading {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          min-height: 300px;
+        }
+        .modal-spinner {
+          width: 32px;
+          height: 32px;
+          border: 2.5px solid var(--border-color);
+          border-top-color: var(--text-primary);
+          border-radius: 50%;
+          animation: spin 0.7s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
     </div>
   );
