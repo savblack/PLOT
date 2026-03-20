@@ -397,10 +397,10 @@
 
     .section-title {
       font-family: var(--serif);
-      font-size: clamp(1.8rem, 3.5vw, 2.8rem);
+      font-size: clamp(2.6rem, 6.5vw, 5rem);
       font-weight: 400;
       letter-spacing: -0.03em;
-      line-height: 1;
+      line-height: 0.85;
       margin-bottom: 1.5rem;
     }
 
@@ -428,6 +428,7 @@
       display: flex;
       flex-direction: column;
       justify-content: flex-end;
+      text-align: left;
       box-shadow: 0 2px 12px rgba(0,0,0,0.04);
       transition: transform 0.45s cubic-bezier(0.76, 0, 0.24, 1),
                   box-shadow 0.45s cubic-bezier(0.76, 0, 0.24, 1);
@@ -592,6 +593,7 @@
     #cta {
       padding: 10rem 2rem 14rem;
       overflow: hidden;
+      background: #0e0e0e;
     }
 
     .cta-inner {
@@ -610,6 +612,7 @@
       letter-spacing: -0.03em;
       line-height: 0.85;
       text-align: left;
+      color: #fff;
     }
 
     .cta-sub {
@@ -618,7 +621,7 @@
       font-weight: 400;
       letter-spacing: -0.03em;
       line-height: 0.85;
-      color: var(--muted);
+      color: rgba(255,255,255,0.35);
       margin-top: 1.5rem;
       text-align: left;
     }
@@ -790,7 +793,7 @@
   <section id="for-the-plot">
     <div class="ftp-inner">
       <div class="ftp-left reveal">
-        <h2 class="ftp-headline">Your journal. Your rules.</h2>
+        <h2 class="ftp-headline">Your journal.<br>Your rules.</h2>
         <p class="ftp-body">Your top ten. All the series you binged in a weekend. The one dropping next month you've already cleared your schedule for. Make a list for anything.</p>
         <a href="#" class="btn btn-primary btn-large">Make it yours →</a>
       </div>
@@ -905,7 +908,7 @@
         <p class="cta-sub reveal reveal-delay-1">And every story needs a PLOT.</p>
       </div>
       <div class="reveal reveal-delay-2" style="flex-shrink: 0; margin-top: 1rem;">
-        <a href="#" class="btn btn-primary btn-large">Create your PLOT →</a>
+        <a href="#" class="btn btn-large" style="background:#fff; color:#0e0e0e;">Create your PLOT →</a>
       </div>
     </div>
   </section>
@@ -1195,20 +1198,6 @@
     let stackOrder = [...listCards];
     let isFlicking = false;
 
-    function applyStack(animate) {
-      stackOrder.forEach((card, i) => {
-        const c = listFan[i];
-        card.style.zIndex = String(i + 1);
-        if (animate) {
-          card.style.transition = 'transform 0.5s cubic-bezier(0.23, 1, 0.32, 1), opacity 0.4s ease';
-        } else {
-          card.style.transition = 'none';
-        }
-        card.style.transform = `translateX(${c.x}px) translateY(${c.y}px) rotate(${c.rot}deg)`;
-        card.style.opacity   = '1';
-      });
-    }
-
     function flickTop() {
       if (isFlicking) return;
       isFlicking = true;
@@ -1216,7 +1205,7 @@
       const top    = stackOrder[stackOrder.length - 1];
       const topCfg = listFan[stackOrder.length - 1];
 
-      // lift and fade top card out
+      // animate top card out
       top.style.transition = 'transform 0.5s cubic-bezier(0.23, 1, 0.32, 1), opacity 0.4s ease';
       top.style.transform  = `translateX(${topCfg.x}px) translateY(${topCfg.y - 50}px) rotate(${topCfg.rot}deg)`;
       top.style.opacity    = '0';
@@ -1225,17 +1214,26 @@
         // move top to bottom
         stackOrder.unshift(stackOrder.pop());
 
-        // snap the newly bottomed card silently into its position (hidden)
+        // silently snap ALL cards to their correct positions — prevents drift
+        stackOrder.forEach((card, i) => {
+          const c = listFan[i];
+          card.style.transition = 'none';
+          card.style.zIndex     = String(i + 1);
+          card.style.transform  = `translateX(${c.x}px) translateY(${c.y}px) rotate(${c.rot}deg)`;
+          card.style.opacity    = '1';
+        });
+
+        // nudge the new bottom card down so it can fade up into place
         const bottom = stackOrder[0];
         const bc     = listFan[0];
-        bottom.style.transition = 'none';
-        bottom.style.transform  = `translateX(${bc.x}px) translateY(${bc.y + 20}px) rotate(${bc.rot}deg)`;
-        bottom.style.opacity    = '0';
-        bottom.style.zIndex     = '1';
+        bottom.style.transform = `translateX(${bc.x}px) translateY(${bc.y + 20}px) rotate(${bc.rot}deg)`;
+        bottom.style.opacity   = '0';
 
-        // one frame later: animate everything into place
+        // fade bottom card in
         requestAnimationFrame(() => requestAnimationFrame(() => {
-          applyStack(true);
+          bottom.style.transition = 'transform 0.5s cubic-bezier(0.23, 1, 0.32, 1), opacity 0.4s ease';
+          bottom.style.transform  = `translateX(${bc.x}px) translateY(${bc.y}px) rotate(${bc.rot}deg)`;
+          bottom.style.opacity    = '1';
           setTimeout(() => { isFlicking = false; }, 550);
         }));
       }, 500);
