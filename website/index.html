@@ -5,6 +5,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>PLOT — Track what moves you.</title>
   <meta name="description" content="Every film. Every series. Your taste, finally yours." />
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="PLOT — Track what moves you." />
+  <meta property="og:description" content="A film and TV journal as considered as your taste." />
+  <meta property="og:image" content="og-image.png" />
+  <meta property="og:url" content="https://plotapp.io" />
+
+  <!-- Twitter / X card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="PLOT — Track what moves you." />
+  <meta name="twitter:description" content="A film and TV journal as considered as your taste." />
+  <meta name="twitter:image" content="og-image.png" />
+
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Nothing+You+Could+Do&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -263,9 +280,6 @@
     .manifesto-line.passed {
       color: rgba(26,26,26,0.22);
     }
-    .manifesto-line.accent {
-      font-style: italic;
-    }
     .manifesto-line em {
       font-style: italic;
     }
@@ -321,51 +335,47 @@
     /* ── Value Prop ─────────────────────────────────────────── */
     #value { display: none; }
 
-    .list-stack-wrap {
+    .editorial-wrap {
       position: relative;
-      width: 100%;
-      height: 480px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      height: 460px;
     }
 
-    .list-stack-poster {
+    .ed-poster {
       position: absolute;
-      top: 0;
-      width: 280px;
-      height: 420px;
-      border-radius: 10px;
+      border-radius: 12px;
       background-size: cover;
       background-position: center;
-      background-repeat: no-repeat;
       background-color: #111;
-      box-shadow: 0 12px 40px rgba(0,0,0,0.14);
-      border: none;
+      box-shadow: 0 16px 48px rgba(0,0,0,0.18);
       overflow: hidden;
-      opacity: 0;
+      transition: transform 0.45s cubic-bezier(0.23, 1, 0.32, 1),
+                  box-shadow 0.45s ease;
       cursor: default;
     }
+    .ed-poster:hover {
+      box-shadow: 0 28px 64px rgba(0,0,0,0.28);
+      z-index: 10 !important;
+    }
 
-    .stack-label {
+    .ed-label {
       position: absolute;
       bottom: 0; left: 0; right: 0;
       padding: 1rem;
-      background: linear-gradient(transparent, rgba(0,0,0,0.65));
+      background: linear-gradient(transparent, rgba(0,0,0,0.7));
     }
-    .stack-label span {
+    .ed-label span {
       display: block;
-      color: rgba(255,255,255,0.9);
-      font-size: 0.7rem;
-      font-weight: 600;
-      letter-spacing: 0.06em;
+      color: rgba(255,255,255,0.75);
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
     }
-    .stack-label strong {
+    .ed-label strong {
       display: block;
       color: #fff;
       font-family: var(--serif);
-      font-size: 0.95rem;
+      font-size: 0.9rem;
       font-style: italic;
       margin-top: 2px;
     }
@@ -626,10 +636,6 @@
       text-align: left;
     }
 
-    .cta-footer-row {
-      display: none;
-    }
-
     /* ── Footer ─────────────────────────────────────────────── */
     footer {
       background: #0e0e0e;
@@ -690,11 +696,8 @@
         grid-template-columns: 1fr;
         gap: 3rem;
       }
-      .app-mockup {
-        width: 100%;
-        max-width: 980px;
-        margin: 0 auto;
-      }
+      /* Editorial poster stack uses absolute pixel positions — hide on smaller screens */
+      #editorialWrap { display: none; }
     }
 
     @media (max-width: 600px) {
@@ -713,7 +716,55 @@
         gap: 1.2rem;
       }
       .nav-hamburger { display: flex; }
+
+      /* Hero */
       #hero { padding-top: 5rem; }
+
+      /* Manifesto — tighten scroll gaps so it doesn't require endless scrolling */
+      #manifesto {
+        padding: 5rem 2rem 8rem;
+        gap: 12rem;
+      }
+      #plotDoes {
+        margin-top: 8rem !important;
+        margin-bottom: 6rem !important;
+      }
+
+      /* Features — reduce oversized card padding */
+      #features { padding: 4rem 1.5rem; }
+      .feature-col {
+        padding: 2.5rem 2rem;
+        min-height: 200px;
+      }
+      .feature-num { top: 1.75rem; right: 2rem; }
+
+      /* For the Plot — section padding */
+      #for-the-plot { padding: 5rem 1.5rem; }
+
+      /* Timeline — collapse to single centered column, poster above note */
+      #timeline-section { padding: 5rem 1.5rem; }
+      .timeline-entries { margin-top: 3rem; }
+      .timeline-entries::before { display: none; }
+      .tl-entry {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1.2rem;
+        margin-bottom: 3rem;
+      }
+      .tl-empty { display: none; }
+      .tl-poster-wrap { order: 1; }
+      .tl-note { order: 2; text-align: center; }
+
+      /* CTA — stack vertically */
+      #cta { padding: 5rem 1.5rem 7rem; }
+      .cta-inner {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2.5rem;
+      }
+
+      /* Footer */
       .footer-meta { flex-direction: column; gap: 1.5rem; align-items: flex-start; }
     }
   </style>
@@ -797,7 +848,7 @@
         <p class="ftp-body">Your top ten. All the series you binged in a weekend. The one dropping next month you've already cleared your schedule for. Make a list for anything.</p>
         <a href="#" class="btn btn-primary btn-large">Make it yours →</a>
       </div>
-      <div class="list-stack-wrap" id="listStackWrap"></div>
+      <div class="editorial-wrap" id="editorialWrap"></div>
     </div>
   </section>
 
@@ -841,7 +892,7 @@
       <div class="tl-entry">
         <div class="tl-empty"></div>
         <div class="tl-poster-wrap">
-          <div class="tl-poster reveal" style="background-image: url('images/hero/saltburn.png'); background-size: 100% 100%;"></div>
+          <div class="tl-poster reveal" style="background-image: url('images/hero/saltburn.jpg');"></div>
         </div>
         <div class="tl-note tl-note-right reveal reveal-delay-2">
           <div class="tl-date">June 2024</div>
@@ -988,7 +1039,7 @@
     const sideData = [
       // On load — four posters visible immediately (2 left, 2 right)
       { src: 'images/hero/challengers.webp',          side: 'left',  vy: 0.51, showAt:  0, w: 255, h: 383, restX: 16, hold: 1000 },
-      { src: 'images/hero/saltburn.png',              side: 'left',  vy: 0.11, showAt: 40, w: 305, h: 415, restX: 34, bgSize: '100% 100%', hold: 1000 },
+      { src: 'images/hero/saltburn.jpg',              side: 'left',  vy: 0.11, showAt: 40, w: 305, h: 415, restX: 34, hold: 1000 },
       { src: 'images/hero/devil-wears-prada-two.jpg', side: 'right', vy: 0.11, showAt: 20, w: 270, h: 405, restX: 22, hold: 1000 },
       { src: 'images/hero/love-story.webp',           side: 'right', vy: 0.518, showAt: 60, w: 268, h: 402, restX: 58, hold: 1000 },
       // Scroll reveals — all finish well before the manifesto fade-out
@@ -1108,146 +1159,52 @@
     }
     requestAnimationFrame(updateSide);
 
-    // ── List fan stack ────────────────────────────────────────
-    const listData = [
-      { img: 'images/lists/fallout.webp',                         label: 'Sci-Fi',      title: 'Watch with her'     },
-      { img: 'images/lists/the-secret-lives-of-mormon-wives.jpg', label: 'Reality',     title: 'My Roman Empire'    },
-      { img: 'images/lists/enron.jpg',                            label: 'Documentary', title: 'Mind expanding'     },
-      { img: 'images/lists/napoleon-dynamite.jpg',                label: 'Comedy',      title: 'Easy watching'      },
-      { img: 'images/lists/10-things-i-hate-about-you.jpg',       label: 'Romance',     title: 'Date night picks'   },
-      { img: 'images/lists/the-invisible-man.jpg',                label: 'Horror',      title: 'For the brave'      },
-      { img: 'images/lists/monsters.jpg',                         label: 'Thriller',    title: 'Need to watch'      },
-      { img: 'images/lists/jaws.webp',                            label: 'All-time',    title: 'My top films'       },
-      { img: 'images/lists/landman.jpg',                          label: 'Drama',       title: "Can't stop watching" },
+    // ── Editorial poster layout ───────────────────────────────
+    const editorialData = [
+      { img: 'images/lists/fallout.webp',                         label: 'Sci-Fi',   title: 'Weekend watch',       w: 160, h: 240, top:  40, left:  10, rot: -5, z: 2 },
+      { img: 'images/lists/10-things-i-hate-about-you.jpg',       label: 'Romance',  title: 'Date night picks',    w: 175, h: 263, top:  80, left: 145, rot:  4, z: 4 },
+      { img: 'images/lists/monsters.jpg',                         label: 'Thriller', title: 'Need to watch',       w: 185, h: 278, top:  20, left: 285, rot: -2, z: 5 },
+      { img: 'images/lists/landman.jpg',                          label: 'Drama',    title: "Can't stop watching", w: 165, h: 248, top:  70, left: 428, rot:  5, z: 3 },
+      { img: 'images/lists/napoleon-dynamite.jpg',                label: 'Comedy',   title: 'Feel good movies',    w: 150, h: 225, top: 120, left: 552, rot: -3, z: 2 },
     ];
 
-    const listFan = [
-      { x:  18, rot:  9,  z: 1, y: -10, align: 'left'  },
-      { x: -22, rot: -7,  z: 2, y:   5, align: 'left'  },
-      { x:  12, rot:  5,  z: 3, y:  -8, align: 'left'  },
-      { x: -10, rot: -4,  z: 4, y:   4, align: 'left'  },
-      { x:   6, rot:  2,  z: 5, y:  -4, align: 'left'  },
-      { x: -14, rot: -6,  z: 6, y:   6, align: 'left'  },
-      { x:  20, rot:  8,  z: 7, y: -12, align: 'left'  },
-      { x:  -8, rot: -3,  z: 8, y:   2, align: 'left'  },
-      { x:   0, rot:  0,  z: 9, y:   0, align: 'left'  },
-    ];
+    const editorialWrap = document.getElementById('editorialWrap');
 
-    const listWrap = document.getElementById('listStackWrap');
+    editorialData.forEach(item => {
+      const poster = document.createElement('div');
+      poster.className = 'ed-poster';
+      poster.style.cssText = [
+        `width:${item.w}px`,
+        `height:${item.h}px`,
+        `top:${item.top}px`,
+        `left:${item.left}px`,
+        `z-index:${item.z}`,
+        `background-image:url('${item.img}')`,
+        `transform:rotate(${item.rot}deg)`,
+      ].join(';');
 
-    const listCards = listData.map((item, i) => {
-      const card = document.createElement('div');
-      card.className = 'list-stack-poster';
-      card.style.backgroundImage = `url('${item.img}')`;
-      card.style.zIndex    = listFan[i].z;
-      card.style.transform = 'translateX(0px) translateY(0px) rotate(0deg)';
-      card.style.transition = 'none';
+      const label = document.createElement('div');
+      label.className = 'ed-label';
 
-      const labelEl = document.createElement('div');
-      labelEl.className = 'stack-label';
-      labelEl.style.textAlign = listFan[i].align;
-      const spanEl = document.createElement('span');
-      spanEl.textContent = item.label;
-      const strongEl = document.createElement('strong');
-      strongEl.textContent = item.title;
-      labelEl.appendChild(spanEl);
-      labelEl.appendChild(strongEl);
-      card.appendChild(labelEl);
+      const genre = document.createElement('span');
+      genre.textContent = item.label;
 
-      listWrap.appendChild(card);
-      return card;
-    });
+      const title = document.createElement('strong');
+      title.textContent = item.title;
 
-    const fanObserver = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (!entry.isIntersecting) return;
-        fanObserver.disconnect();
-        listCards.forEach((card, i) => {
-          card.style.transition = `opacity 0.4s ease ${i * 60}ms`;
-          card.style.opacity = '1';
-        });
-        setTimeout(() => {
-          listCards.forEach((card, i) => {
-            const cfg = listFan[i];
-            card.style.transition = `transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) ${i * 40}ms`;
-            card.style.transform = `translateX(${cfg.x}px) translateY(${cfg.y}px) rotate(${cfg.rot}deg)`;
-          });
-        }, 400);
+      label.appendChild(genre);
+      label.appendChild(title);
+      poster.appendChild(label);
+      editorialWrap.appendChild(poster);
+
+      // hover: lift + keep rotation
+      poster.addEventListener('mouseenter', () => {
+        poster.style.transform = `rotate(${item.rot}deg) translateY(-8px) scale(1.04)`;
       });
-    }, { threshold: 0.2 });
-    fanObserver.observe(listWrap);
-
-    // hover
-    listCards.forEach((card, i) => {
-      const cfg = listFan[i];
-      card.addEventListener('mouseenter', () => {
-        card.style.transition = 'transform 0.3s cubic-bezier(0.23, 1, 0.32, 1), box-shadow 0.3s ease';
-        card.style.transform  = `translateX(${cfg.x}px) translateY(${cfg.y - 16}px) rotate(${cfg.rot}deg)`;
-        card.style.boxShadow  = '0 24px 60px rgba(0,0,0,0.22)';
-        card.style.zIndex     = '10';
-      });
-      card.addEventListener('mouseleave', () => {
-        card.style.transition = 'transform 0.4s cubic-bezier(0.23, 1, 0.32, 1), box-shadow 0.4s ease, z-index 0s 0.4s';
-        card.style.transform  = `translateX(${cfg.x}px) translateY(${cfg.y}px) rotate(${cfg.rot}deg)`;
-        card.style.boxShadow  = '0 12px 40px rgba(0,0,0,0.14)';
-        card.style.zIndex     = cfg.z;
+      poster.addEventListener('mouseleave', () => {
+        poster.style.transform = `rotate(${item.rot}deg)`;
       });
     });
-
-    // auto-flick — cycles top card to back of stack every 2.5s
-    let stackOrder = [...listCards];
-    let isFlicking = false;
-
-    function flickTop() {
-      if (isFlicking) return;
-      isFlicking = true;
-
-      const top    = stackOrder[stackOrder.length - 1];
-      const topCfg = listFan[stackOrder.length - 1];
-
-      // animate top card out
-      top.style.transition = 'transform 0.5s cubic-bezier(0.23, 1, 0.32, 1), opacity 0.4s ease';
-      top.style.transform  = `translateX(${topCfg.x}px) translateY(${topCfg.y - 50}px) rotate(${topCfg.rot}deg)`;
-      top.style.opacity    = '0';
-
-      setTimeout(() => {
-        // move top to bottom
-        stackOrder.unshift(stackOrder.pop());
-
-        // silently snap ALL cards to their correct positions — prevents drift
-        stackOrder.forEach((card, i) => {
-          const c = listFan[i];
-          card.style.transition = 'none';
-          card.style.zIndex     = String(i + 1);
-          card.style.transform  = `translateX(${c.x}px) translateY(${c.y}px) rotate(${c.rot}deg)`;
-          card.style.opacity    = '1';
-        });
-
-        // nudge the new bottom card down so it can fade up into place
-        const bottom = stackOrder[0];
-        const bc     = listFan[0];
-        bottom.style.transform = `translateX(${bc.x}px) translateY(${bc.y + 20}px) rotate(${bc.rot}deg)`;
-        bottom.style.opacity   = '0';
-
-        // fade bottom card in
-        requestAnimationFrame(() => requestAnimationFrame(() => {
-          bottom.style.transition = 'transform 0.5s cubic-bezier(0.23, 1, 0.32, 1), opacity 0.4s ease';
-          bottom.style.transform  = `translateX(${bc.x}px) translateY(${bc.y}px) rotate(${bc.rot}deg)`;
-          bottom.style.opacity    = '1';
-          setTimeout(() => { isFlicking = false; }, 550);
-        }));
-      }, 500);
-    }
-
-    const flickObserver = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          setTimeout(() => { setInterval(flickTop, 2500); }, 1200);
-          flickObserver.disconnect();
-        }
-      });
-    }, { threshold: 0.3 });
-    flickObserver.observe(listWrap);
   </script>
 </body>
 </html>
