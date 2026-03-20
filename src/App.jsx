@@ -1,25 +1,49 @@
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { tmdb } from './api/tmdb';
+import { tmdb, setTmdbRegion } from './api/tmdb';
 import { supabase } from './api/supabase';
 import MediaModal from './components/MediaModal';
 import AuthModal from './components/AuthModal';
 import PublicProfileView from './components/PublicProfileView';
 
 const GENRES = [
-  { key: 'action',      label: 'Action',      movieId: 28,    tvId: 10759 },
-  { key: 'comedy',      label: 'Comedy',      movieId: 35,    tvId: 35 },
-  { key: 'drama',       label: 'Drama',       movieId: 18,    tvId: 18 },
-  { key: 'thriller',    label: 'Thriller',    movieId: 53,    tvId: 53 },
-  { key: 'horror',      label: 'Horror',      movieId: 27,    tvId: 27 },
-  { key: 'scifi',       label: 'Sci-Fi',      movieId: 878,   tvId: 10765 },
-  { key: 'romance',     label: 'Romance',     movieId: 10749, tvId: 10749 },
-  { key: 'animation',   label: 'Animation',   movieId: 16,    tvId: 16 },
-  { key: 'family',      label: 'Family',      movieId: 10751, tvId: 10751 },
-  { key: 'crime',       label: 'Crime',       movieId: 80,    tvId: 80 },
-  { key: 'fantasy',     label: 'Fantasy',     movieId: 14,    tvId: 10765 },
-  { key: 'mystery',     label: 'Mystery',     movieId: 9648,  tvId: 9648 },
-  { key: 'documentary', label: 'Documentary', movieId: 99,    tvId: 99 },
+  { key: 'action',      label: 'Action',      movieId: 28,    tvId: 10759, desc: 'Fast-paced and intense.'     },
+  { key: 'comedy',      label: 'Comedy',      movieId: 35,    tvId: 35,    desc: 'Laugh-out-loud fun.'         },
+  { key: 'drama',       label: 'Drama',       movieId: 18,    tvId: 18,    desc: 'Gripping and emotional.'     },
+  { key: 'thriller',    label: 'Thriller',    movieId: 53,    tvId: 53,    desc: 'Suspense and tension.'       },
+  { key: 'horror',      label: 'Horror',      movieId: 27,    tvId: 27,    desc: 'Scary and unsettling.'       },
+  { key: 'scifi',       label: 'Sci-Fi',      movieId: 878,   tvId: 10765, desc: 'Futuristic and speculative.' },
+  { key: 'romance',     label: 'Romance',     movieId: 10749, tvId: 10749, desc: 'Love stories and connection.'},
+  { key: 'animation',   label: 'Animation',   movieId: 16,    tvId: 16,    desc: 'Animated worlds.'            },
+  { key: 'crime',       label: 'Crime',       movieId: 80,    tvId: 80,    desc: 'Heists, detectives and more.'},
+  { key: 'fantasy',     label: 'Fantasy',     movieId: 14,    tvId: 10765, desc: 'Magic and other worlds.'     },
+  { key: 'mystery',     label: 'Mystery',     movieId: 9648,  tvId: 9648,  desc: 'Whodunits and big reveals.'  },
+  { key: 'documentary', label: 'Documentary', movieId: 99,    tvId: 99,    desc: 'Real stories, real world.'   },
+];
+
+const REGIONS = [
+  { code: 'AU', name: 'Australia' },
+  { code: 'US', name: 'United States' },
+  { code: 'GB', name: 'United Kingdom' },
+  { code: 'CA', name: 'Canada' },
+  { code: 'NZ', name: 'New Zealand' },
+  { code: 'IE', name: 'Ireland' },
+  { code: 'DE', name: 'Germany' },
+  { code: 'FR', name: 'France' },
+  { code: 'ES', name: 'Spain' },
+  { code: 'IT', name: 'Italy' },
+  { code: 'NL', name: 'Netherlands' },
+  { code: 'SE', name: 'Sweden' },
+  { code: 'NO', name: 'Norway' },
+  { code: 'DK', name: 'Denmark' },
+  { code: 'FI', name: 'Finland' },
+  { code: 'JP', name: 'Japan' },
+  { code: 'KR', name: 'South Korea' },
+  { code: 'IN', name: 'India' },
+  { code: 'SG', name: 'Singapore' },
+  { code: 'BR', name: 'Brazil' },
+  { code: 'MX', name: 'Mexico' },
+  { code: 'ZA', name: 'South Africa' },
 ];
 
 export default function App() {
@@ -35,7 +59,7 @@ export default function App() {
   const [forYouFeed, setForYouFeed] = useState([]);
   const [feedTab, setFeedTab] = useState('foryou');
   const [newReleasesTab, setNewReleasesTab] = useState('all');
-  const [preferences, setPreferences] = useState({ genres: [] });
+  const [preferences, setPreferences] = useState({ genres: [], region: 'AU' });
   const [newReleases, setNewReleases] = useState([]);
   const [newTV, setNewTV] = useState([]);
   const [streamingMovies, setStreamingMovies] = useState([]);
@@ -143,8 +167,8 @@ export default function App() {
         return Promise.all(items.map(async (item) => {
           try {
             const providers = await tmdb.getWatchProviders(item.id, type);
-            const au = providers.results?.AU;
-            const primaryProvider = au?.flatrate?.[0]; 
+            const regionData = providers.results?.[preferences.region || 'AU'];
+            const primaryProvider = regionData?.flatrate?.[0];
             return {
               ...item,
               media_type: type,
@@ -208,12 +232,17 @@ export default function App() {
       }
     };
     loadData();
-  }, []);
+  }, [preferences.region]);
 
   // Persist preferences to localStorage
   useEffect(() => {
     localStorage.setItem('plot-prefs', JSON.stringify(preferences));
   }, [preferences]);
+
+  // Sync region to TMDB module
+  useEffect(() => {
+    setTmdbRegion(preferences.region || 'AU');
+  }, [preferences.region]);
 
   // For You feed — improves with every item the user logs
   useEffect(() => {
@@ -758,6 +787,18 @@ export default function App() {
                           </button>
                         </div>
                       </div>
+                      <div className="settings-row">
+                        <span className="settings-label">Region</span>
+                        <select
+                          className="region-select"
+                          value={preferences.region || 'AU'}
+                          onChange={e => setPreferences(p => ({ ...p, region: e.target.value }))}
+                        >
+                          {REGIONS.map(r => (
+                            <option key={r.code} value={r.code}>{r.name}</option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
                     <div className="profile-public-section">
                       <div className="settings-row">
@@ -831,6 +872,7 @@ export default function App() {
                                       : [...p.genres, g.key],
                                   }))}
                                 />
+                                <span className={`taste-genre-circle ${checked ? 'active' : ''}`} />
                                 {g.label}
                               </label>
                             );
@@ -880,32 +922,38 @@ export default function App() {
             </div>
             {feedTab === 'foryou' && forYouFeed.length === 0 && preferences.genres.length === 0 ? (
               <div className="genre-onboarding">
-                <h3 className="genre-onboarding-title">What do you like to watch?</h3>
-                <p className="genre-onboarding-sub">Pick your genres to personalise your For You feed.</p>
-                <div className="genre-pill-grid">
+                <div className="genre-onboarding-copy">
+                  <h3 className="genre-onboarding-title">What floats your boat?</h3>
+                  <p className="genre-onboarding-sub">Tell us what you're into and we'll find something worth watching.</p>
+                  {pendingGenres.length > 0 && (
+                    <button
+                      className="genre-save-btn"
+                      onClick={() => setPreferences(p => ({ ...p, genres: pendingGenres }))}
+                    >
+                      Save — {pendingGenres.length} {pendingGenres.length === 1 ? 'genre' : 'genres'} selected
+                    </button>
+                  )}
+                </div>
+                <div className="genre-toggle-grid">
                   {GENRES.map(g => {
                     const selected = pendingGenres.includes(g.key);
                     return (
                       <button
                         key={g.key}
-                        className={`genre-pill ${selected ? 'active' : ''}`}
+                        className={`genre-toggle-card ${selected ? 'active' : ''}`}
                         onClick={() => setPendingGenres(prev =>
                           selected ? prev.filter(k => k !== g.key) : [...prev, g.key]
                         )}
                       >
-                        {g.label}
+                        <div className="genre-toggle-body">
+                          <span className="genre-toggle-name">{g.label}</span>
+                          <span className="genre-toggle-desc">{g.desc}</span>
+                        </div>
+                        <div className="genre-toggle-check">{selected ? '✓' : ''}</div>
                       </button>
                     );
                   })}
                 </div>
-                {pendingGenres.length > 0 && (
-                  <button
-                    className="genre-save-btn"
-                    onClick={() => setPreferences(p => ({ ...p, genres: pendingGenres }))}
-                  >
-                    Save — {pendingGenres.length} {pendingGenres.length === 1 ? 'genre' : 'genres'} selected
-                  </button>
-                )}
               </div>
             ) : (
               <div className="bento-grid">
@@ -1894,68 +1942,121 @@ export default function App() {
 
         .genre-onboarding {
           padding: 4rem 2rem;
-          text-align: center;
+          display: flex;
+          flex-direction: row;
+          align-items: flex-start;
+          gap: 6rem;
+        }
+
+        .genre-onboarding-copy {
+          flex: 0 0 300px;
           display: flex;
           flex-direction: column;
-          align-items: center;
+          align-items: flex-start;
+          padding-top: 0.25rem;
         }
 
         .genre-onboarding-title {
           font-size: 1.6rem;
-          font-weight: 700;
+          font-weight: 400;
           letter-spacing: -0.03em;
           margin-bottom: 0.5rem;
+          text-align: left;
         }
 
         .genre-onboarding-sub {
           color: var(--muted);
           font-size: 0.9rem;
-          margin-bottom: 2.5rem;
+          margin-bottom: 1.5rem;
+          text-align: left;
         }
 
-        .genre-pill-grid {
+        .genre-toggle-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr 1fr;
+          gap: 0.65rem;
+          flex: 1;
+        }
+
+        .genre-toggle-card {
           display: flex;
-          flex-wrap: wrap;
-          gap: 0.6rem;
-          justify-content: center;
-          max-width: 580px;
-        }
-
-        .genre-pill {
-          padding: 0.6rem 1.4rem;
-          border-radius: 999px;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 0.5rem;
+          padding: 0.9rem 0.9rem 0.9rem 1rem;
+          border-radius: 14px;
           border: 1.5px solid var(--border-color);
           background: transparent;
           color: var(--text-primary);
-          font-size: 0.95rem;
-          font-weight: 500;
           cursor: pointer;
           transition: all 0.18s;
-          letter-spacing: 0.01em;
+          text-align: left;
+          font-family: var(--font-sans);
         }
 
-        .genre-pill:hover {
-          border-color: var(--text-primary);
-          background: rgba(0,0,0,0.04);
+        .genre-toggle-card:hover {
+          border-color: var(--border-color);
+          background: rgba(0, 0, 0, 0.04);
         }
 
-        [data-theme="dark"] .genre-pill:hover {
-          background: rgba(255,255,255,0.06);
+        .genre-toggle-card.active {
+          border-color: #999;
+          background: #f0f0f0;
         }
 
-        .genre-pill.active {
-          background: var(--text-primary);
+        .genre-toggle-body {
+          display: flex;
+          flex-direction: column;
+          gap: 0.2rem;
+          flex: 1;
+        }
+
+        .genre-toggle-name {
+          font-size: 0.9rem;
+          font-weight: 700;
+          color: var(--text-primary);
+        }
+
+        .genre-toggle-card.active .genre-toggle-name {
+          color: #444;
+        }
+
+        .genre-toggle-desc {
+          font-size: 0.7rem;
+          color: var(--muted);
+          line-height: 1.4;
+        }
+
+        .genre-toggle-check {
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          border: 1.5px solid #bbb;
+          flex-shrink: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 0.65rem;
+          font-weight: 900;
+          color: transparent;
+          margin-top: 1px;
+          transition: all 0.18s;
+        }
+
+        .genre-toggle-card.active .genre-toggle-check {
+          background: #999;
+          border-color: #999;
           color: #fff;
-          border-color: var(--text-primary);
         }
 
         .genre-save-btn {
-          margin-top: 2.5rem;
-          padding: 0.75rem 2.5rem;
+          margin-top: 0;
+          padding: 0.75rem 1.5rem;
           border-radius: 999px;
           background: var(--text-primary);
           color: #fff;
           border: none;
+          font-family: var(--font-sans);
           font-size: 0.9rem;
           font-weight: 600;
           cursor: pointer;
@@ -2014,11 +2115,21 @@ export default function App() {
         }
 
         .taste-genre-row input[type="checkbox"] {
-          accent-color: var(--text-primary);
+          display: none;
+        }
+
+        .taste-genre-circle {
           width: 14px;
           height: 14px;
-          cursor: pointer;
+          border-radius: 50%;
+          border: 1.5px solid #bbb;
           flex-shrink: 0;
+          transition: all 0.15s;
+        }
+
+        .taste-genre-circle.active {
+          background: #999;
+          border-color: #999;
         }
 
 
@@ -2823,6 +2934,25 @@ export default function App() {
           gap: 2px;
         }
         .username-at { font-size: 0.82rem; color: #bbb; }
+        .region-select {
+          background: none;
+          border: none;
+          outline: none;
+          font-size: 0.82rem;
+          font-family: var(--font-sans);
+          color: var(--text-primary);
+          cursor: pointer;
+          text-align: right;
+        }
+
+        [data-theme="dark"] .region-select {
+          color: #f0f0f0;
+        }
+
+        [data-theme="dark"] .region-select option {
+          background: #2a2a2a;
+        }
+
         .username-input {
           background: none;
           border: none;
