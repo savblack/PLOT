@@ -26,7 +26,10 @@ const fetchFromTMDB = async (endpoint, params = {}) => {
 
 export const tmdb = {
   search: (query) => fetchFromTMDB('/search/multi', { query }),
-  getTrending: (type = 'all', time = 'day') => fetchFromTMDB(`/trending/${type}/${time}`),
+  getTrending: async (type = 'all', time = 'day') => {
+    const pages = await Promise.all([1, 2, 3].map(page => fetchFromTMDB(`/trending/${type}/${time}`, { page })));
+    return { results: pages.flatMap(p => p?.results ?? []) };
+  },
   getMovieDetails: (id) => fetchFromTMDB(`/movie/${id}`, { append_to_response: 'watch/providers,recommendations' }),
   getTVDetails: (id) => fetchFromTMDB(`/tv/${id}`, { append_to_response: 'watch/providers,recommendations' }),
   getRecommendations: (type, id) => fetchFromTMDB(`/${type}/${id}/recommendations`),
@@ -45,9 +48,18 @@ export const tmdb = {
     const results = pages.flatMap(p => p?.results ?? []);
     return { results };
   },
-  getNowPlaying: () => fetchFromTMDB('/movie/now_playing'),
-  getTVOnTheAir: () => fetchFromTMDB('/tv/on_the_air'),
-  getTVTrending: () => fetchFromTMDB('/trending/tv/day'),
+  getNowPlaying: async () => {
+    const pages = await Promise.all([1, 2, 3].map(page => fetchFromTMDB('/movie/now_playing', { page })));
+    return { results: pages.flatMap(p => p?.results ?? []) };
+  },
+  getTVOnTheAir: async () => {
+    const pages = await Promise.all([1, 2, 3].map(page => fetchFromTMDB('/tv/on_the_air', { page })));
+    return { results: pages.flatMap(p => p?.results ?? []) };
+  },
+  getTVTrending: async () => {
+    const pages = await Promise.all([1, 2, 3].map(page => fetchFromTMDB('/trending/tv/day', { page })));
+    return { results: pages.flatMap(p => p?.results ?? []) };
+  },
   getAiringToday: () => fetchFromTMDB('/tv/airing_today'),
   getWatchProviders: (id, type) => fetchFromTMDB(`/${type}/${id}/watch/providers`),
   getUpcomingTV: () => {
@@ -56,6 +68,38 @@ export const tmdb = {
       'first_air_date.gte': today,
       sort_by: 'first_air_date.asc',
       'vote_count.gte': 5,
+    });
+  },
+  getStreamingMovies: async () => {
+    const pages = await Promise.all([1, 2, 3].map(page =>
+      fetchFromTMDB('/discover/movie', {
+        watch_region: 'AU',
+        with_watch_monetization_types: 'flatrate',
+        sort_by: 'popularity.desc',
+        'vote_count.gte': 50,
+        page,
+      })
+    ));
+    return { results: pages.flatMap(p => p?.results ?? []) };
+  },
+  getStreamingTV: async () => {
+    const pages = await Promise.all([1, 2, 3].map(page =>
+      fetchFromTMDB('/discover/tv', {
+        watch_region: 'AU',
+        with_watch_monetization_types: 'flatrate',
+        sort_by: 'popularity.desc',
+        'vote_count.gte': 50,
+        page,
+      })
+    ));
+    return { results: pages.flatMap(p => p?.results ?? []) };
+  },
+  discoverByGenres: (type, genreIds) => {
+    if (!genreIds.length) return Promise.resolve(null);
+    return fetchFromTMDB(`/discover/${type}`, {
+      with_genres: genreIds.join('|'),
+      sort_by: 'popularity.desc',
+      'vote_count.gte': 100,
     });
   },
 };

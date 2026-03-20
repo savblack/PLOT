@@ -6,6 +6,22 @@ import MediaModal from './components/MediaModal';
 import AuthModal from './components/AuthModal';
 import PublicProfileView from './components/PublicProfileView';
 
+const GENRES = [
+  { key: 'action',      label: 'Action',      movieId: 28,    tvId: 10759 },
+  { key: 'comedy',      label: 'Comedy',      movieId: 35,    tvId: 35 },
+  { key: 'drama',       label: 'Drama',       movieId: 18,    tvId: 18 },
+  { key: 'thriller',    label: 'Thriller',    movieId: 53,    tvId: 53 },
+  { key: 'horror',      label: 'Horror',      movieId: 27,    tvId: 27 },
+  { key: 'scifi',       label: 'Sci-Fi',      movieId: 878,   tvId: 10765 },
+  { key: 'romance',     label: 'Romance',     movieId: 10749, tvId: 10749 },
+  { key: 'animation',   label: 'Animation',   movieId: 16,    tvId: 16 },
+  { key: 'family',      label: 'Family',      movieId: 10751, tvId: 10751 },
+  { key: 'crime',       label: 'Crime',       movieId: 80,    tvId: 80 },
+  { key: 'fantasy',     label: 'Fantasy',     movieId: 14,    tvId: 10765 },
+  { key: 'mystery',     label: 'Mystery',     movieId: 9648,  tvId: 9648 },
+  { key: 'documentary', label: 'Documentary', movieId: 99,    tvId: 99 },
+];
+
 export default function App() {
   const [watched, setWatched] = useState([]);
   const [user, setUser] = useState(null);
@@ -16,8 +32,14 @@ export default function App() {
   const [view, setView] = useState('home'); // home, search, watchlist, suggested
   const [selectedItem, setSelectedItem] = useState(null);
   const [personalized, setPersonalized] = useState([]);
+  const [forYouFeed, setForYouFeed] = useState([]);
+  const [feedTab, setFeedTab] = useState('foryou');
+  const [newReleasesTab, setNewReleasesTab] = useState('all');
+  const [preferences, setPreferences] = useState({ genres: [] });
   const [newReleases, setNewReleases] = useState([]);
   const [newTV, setNewTV] = useState([]);
+  const [streamingMovies, setStreamingMovies] = useState([]);
+  const [streamingTV, setStreamingTV] = useState([]);
   const [upcoming, setUpcoming] = useState([]);
   const [upcomingTV, setUpcomingTV] = useState([]);
   const [blendedFeed, setBlendedFeed] = useState([]);
@@ -43,6 +65,9 @@ export default function App() {
         const local = localStorage.getItem('plot-watched');
         if (local) setWatched(JSON.parse(local));
       }
+
+      const savedPrefs = localStorage.getItem('plot-prefs');
+      if (savedPrefs) setPreferences(JSON.parse(savedPrefs));
 
       const params = new URLSearchParams(window.location.search);
       const pUser = params.get('p');
@@ -145,41 +170,107 @@ export default function App() {
           enrichWithProviders(trendingMovies.results, 'movie'),
           enrichWithProviders(trendingTV.results, 'tv')
         ]);
-        // Combine and shuffle for a diverse feed
-        setTrending([...enrichedMovies, ...enrichedTV].sort(() => Math.random() - 0.5).slice(0, 40));
+        // Combine, deduplicate, and shuffle for a diverse feed
+        const seen = new Set();
+        const deduped = [...enrichedMovies, ...enrichedTV].filter(item => {
+          if (seen.has(item.id)) return false;
+          seen.add(item.id);
+          return true;
+        });
+        setTrending(deduped.sort(() => Math.random() - 0.5).slice(0, 120));
       }
-      
+
       if (nowPlayingData) {
-        const enriched = await enrichWithProviders(nowPlayingData.results.filter(isReleased).slice(0, 15), 'movie');
+        const enriched = await enrichWithProviders(nowPlayingData.results.filter(isReleased).slice(0, 40), 'movie');
         setNewReleases(enriched);
       }
 
-      if (upcomingData) setUpcoming(upcomingData.results.filter(isFuture).sort(byDateAsc).slice(0, 60));
+      if (upcomingData) setUpcoming(upcomingData.results.filter(isFuture).sort(byDateAsc).slice(0, 40));
 
       if (tvOnAir) {
-        const enriched = await enrichWithProviders(tvOnAir.results.filter(isReleased).slice(0, 15), 'tv');
+        const enriched = await enrichWithProviders(tvOnAir.results.filter(isReleased).slice(0, 40), 'tv');
         setNewTV(enriched);
       }
 
-      if (upcomingTVData) setUpcomingTV(upcomingTVData.results.filter(isFuture).sort(byDateAsc).slice(0, 15));
+      if (upcomingTVData) setUpcomingTV(upcomingTVData.results.filter(isFuture).sort(byDateAsc).slice(0, 40));
+
+      const [streamingMovieData, streamingTVData] = await Promise.all([
+        tmdb.getStreamingMovies(),
+        tmdb.getStreamingTV(),
+      ]);
+      if (streamingMovieData) {
+        const enriched = await enrichWithProviders(streamingMovieData.results.slice(0, 60), 'movie');
+        setStreamingMovies(enriched);
+      }
+      if (streamingTVData) {
+        const enriched = await enrichWithProviders(streamingTVData.results.slice(0, 60), 'tv');
+        setStreamingTV(enriched);
+      }
     };
     loadData();
   }, []);
 
-  // Personalized recommendations for the Feed
+  // Persist preferences to localStorage
   useEffect(() => {
-    const loadPersonalized = async () => {
-      const highRated = watched.filter(i => i.rating >= 4).slice(0, 3);
-      if (highRated.length > 0) {
-        const allRecs = await Promise.all(
-          highRated.map(item => tmdb.getRecommendations(item.media_type, item.tmdb_id))
-        );
-        const results = allRecs.flatMap(r => r?.results || []).filter(r => !getSavedData(r.id));
-        setPersonalized([...new Set(results)].slice(0, 10));
+    localStorage.setItem('plot-prefs', JSON.stringify(preferences));
+  }, [preferences]);
+
+  // For You feed — improves with every item the user logs
+  useEffect(() => {
+    const loadForYou = async () => {
+      const watchedIds = new Set(watched.map(i => i.tmdb_id || i.id));
+
+      // Use top 10 rated items as seeds; fall back to most recently logged
+      const seeds = [...watched]
+        .filter(i => i.rating)
+        .sort((a, b) => b.rating - a.rating)
+        .slice(0, 10);
+      const finalSeeds = seeds.length > 0 ? seeds : watched.slice(0, 5);
+
+      if (finalSeeds.length === 0) {
+        // Fallback: discover by genre preferences
+        if (preferences.genres.length === 0) return;
+        const movieIds = preferences.genres.map(k => GENRES.find(g => g.key === k)?.movieId).filter(Boolean);
+        const tvIds    = preferences.genres.map(k => GENRES.find(g => g.key === k)?.tvId).filter(Boolean);
+        const [movieData, tvData] = await Promise.all([
+          tmdb.discoverByGenres('movie', movieIds),
+          tmdb.discoverByGenres('tv', tvIds),
+        ]);
+        const combined = [
+          ...(movieData?.results || []).map(i => ({ ...i, media_type: 'movie' })),
+          ...(tvData?.results   || []).map(i => ({ ...i, media_type: 'tv' })),
+        ].sort((a, b) => b.popularity - a.popularity).slice(0, 60);
+        if (combined.length > 0) setForYouFeed(combined);
+        return;
       }
+
+      const allRecs = await Promise.all(
+        finalSeeds.map(item =>
+          tmdb.getRecommendations(
+            item.media_type || (item.title ? 'movie' : 'tv'),
+            item.tmdb_id || item.id
+          )
+        )
+      );
+
+      const seen = new Set();
+      const results = allRecs
+        .flatMap(r => r?.results || [])
+        .filter(r => {
+          if (watchedIds.has(r.id) || seen.has(r.id)) return false;
+          seen.add(r.id);
+          return true;
+        })
+        .sort((a, b) =>
+          (b.vote_average * Math.log(b.vote_count + 1)) -
+          (a.vote_average * Math.log(a.vote_count + 1))
+        )
+        .slice(0, 40);
+
+      if (results.length > 0) setForYouFeed(results);
     };
-    loadPersonalized();
-  }, [watched]);
+    loadForYou();
+  }, [watched, preferences.genres]);
 
   // Blend Trending + Personalized for the Feed
   useEffect(() => {
@@ -350,6 +441,8 @@ export default function App() {
   const [showListEditMenu, setShowListEditMenu] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showTasteExpanded, setShowTasteExpanded] = useState(false);
+  const [pendingGenres, setPendingGenres] = useState([]);
   const [theme, setTheme] = useState(() => localStorage.getItem('plot-theme') || 'system');
   const [feedLayout, setFeedLayout] = useState(() => localStorage.getItem('plot-feed-layout') || 'bento');
   const [upcomingTimeFilter, setUpcomingTimeFilter] = useState('month');
@@ -423,7 +516,8 @@ export default function App() {
     seg(cx, height, 38, 90);
     return d;
   };
-  const watchedByDate = watched.reduce((acc, item) => {
+  const filteredWatched = watched.filter(item => (item.media_type || (item.title ? 'movie' : 'tv')) === mediaFilter);
+  const watchedByDate = filteredWatched.reduce((acc, item) => {
     const key = toDateKey(item.watched_at);
     if (!key) return acc;
     if (!acc[key]) acc[key] = [];
@@ -595,14 +689,14 @@ export default function App() {
             </div>
 
             <div className="filter-toggle">
-              <button 
-                className={mediaFilter === 'movie' ? 'active' : ''} 
+              <button
+                className={mediaFilter === 'movie' ? 'active' : ''}
                 onClick={() => setMediaFilter('movie')}
               >
                 Movies
               </button>
-              <button 
-                className={mediaFilter === 'tv' ? 'active' : ''} 
+              <button
+                className={mediaFilter === 'tv' ? 'active' : ''}
                 onClick={() => setMediaFilter('tv')}
               >
                 TV
@@ -713,6 +807,37 @@ export default function App() {
                         </div>
                       )}
                     </div>
+                    <div className="profile-public-section">
+                      <button className="taste-accordion-btn" onClick={() => setShowTasteExpanded(v => !v)}>
+                        <span className="settings-label">Taste</span>
+                        <span className="taste-accordion-meta">
+                          {preferences.genres.length > 0 ? `${preferences.genres.length} selected` : 'None'}
+                          <svg className={`taste-chevron ${showTasteExpanded ? 'open' : ''}`} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                        </span>
+                      </button>
+                      {showTasteExpanded && (
+                        <div className="taste-genre-list">
+                          {GENRES.map(g => {
+                            const checked = preferences.genres.includes(g.key);
+                            return (
+                              <label key={g.key} className="taste-genre-row">
+                                <input
+                                  type="checkbox"
+                                  checked={checked}
+                                  onChange={() => setPreferences(p => ({
+                                    ...p,
+                                    genres: checked
+                                      ? p.genres.filter(k => k !== g.key)
+                                      : [...p.genres, g.key],
+                                  }))}
+                                />
+                                {g.label}
+                              </label>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
                     <button className="profile-dropdown-item danger" onClick={() => { logout(); setShowProfileMenu(false); }}>
                       Sign Out
                     </button>
@@ -749,27 +874,56 @@ export default function App() {
             <div className="section-header-row">
               <h2 className="section-title">Feed</h2>
             </div>
-            <div className="bento-grid">
-              {blendedFeed
-                .filter(item => {
-                  const type = item.media_type || (item.title ? 'movie' : 'tv');
-                  return type === mediaFilter;
-                })
-                .map((item, index) => (
-                <div 
-                  key={`${item.id}-${index}`} 
-                  className={`bento-item glass ${feedLayout === 'bento' && index % 5 === 0 ? 'large' : ''}`}
-                  onClick={() => setSelectedItem(item)}
-                >
-                  <img src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title || item.name} />
-                  <div className="overlay">
-                    {item.isPersonalized && <span className="rec-tag">Recommended for you</span>}
-                    <h3>{item.title || item.name}</h3>
-                    {getSavedData(item.id) && <span className="watched-dot"></span>}
-                  </div>
-                </div>
-              ))}
+            <div className="journal-tab-nav">
+              <button className={`journal-tab-btn ${feedTab === 'foryou' ? 'active' : ''}`} onClick={() => setFeedTab('foryou')}>For You</button>
+              <button className={`journal-tab-btn ${feedTab === 'trending' ? 'active' : ''}`} onClick={() => setFeedTab('trending')}>Trending</button>
             </div>
+            {feedTab === 'foryou' && forYouFeed.length === 0 && preferences.genres.length === 0 ? (
+              <div className="genre-onboarding">
+                <h3 className="genre-onboarding-title">What do you like to watch?</h3>
+                <p className="genre-onboarding-sub">Pick your genres to personalise your For You feed.</p>
+                <div className="genre-pill-grid">
+                  {GENRES.map(g => {
+                    const selected = pendingGenres.includes(g.key);
+                    return (
+                      <button
+                        key={g.key}
+                        className={`genre-pill ${selected ? 'active' : ''}`}
+                        onClick={() => setPendingGenres(prev =>
+                          selected ? prev.filter(k => k !== g.key) : [...prev, g.key]
+                        )}
+                      >
+                        {g.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                {pendingGenres.length > 0 && (
+                  <button
+                    className="genre-save-btn"
+                    onClick={() => setPreferences(p => ({ ...p, genres: pendingGenres }))}
+                  >
+                    Save — {pendingGenres.length} {pendingGenres.length === 1 ? 'genre' : 'genres'} selected
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="bento-grid">
+                {(feedTab === 'trending' ? trending : forYouFeed).filter(item => (item.media_type || (item.title ? 'movie' : 'tv')) === mediaFilter).map((item, index) => (
+                  <div
+                    key={`${item.id}-${index}`}
+                    className={`bento-item glass ${feedLayout === 'bento' && index % 5 === 0 ? 'large' : ''}`}
+                    onClick={() => setSelectedItem(item)}
+                  >
+                    <img src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title || item.name} />
+                    <div className="overlay">
+                      <h3>{item.title || item.name}</h3>
+                      {getSavedData(item.id) && <span className="watched-dot"></span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </section>
         )}
 
@@ -778,20 +932,41 @@ export default function App() {
             <div className="section-header-row">
               <h2 className="section-title">New Releases</h2>
             </div>
+            <div className="journal-tab-nav">
+              <button className={`journal-tab-btn ${newReleasesTab === 'all' ? 'active' : ''}`} onClick={() => setNewReleasesTab('all')}>All</button>
+              <button className={`journal-tab-btn ${newReleasesTab === 'popular' ? 'active' : ''}`} onClick={() => setNewReleasesTab('popular')}>Popular</button>
+              <button className={`journal-tab-btn ${newReleasesTab === 'streaming' ? 'active' : ''}`} onClick={() => setNewReleasesTab('streaming')}>Now Streaming</button>
+            </div>
             <div className="bento-grid">
-              {(mediaFilter === 'movie' ? newReleases : newTV).map((item, index) => (
-                <div 
-                  key={item.id} 
-                  className={`bento-item glass ${feedLayout === 'bento' && index === 0 ? 'large' : ''}`}
-                  onClick={() => setSelectedItem(item)}
-                >
-                  <img src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title || item.name} />
-                  <div className="overlay">
-                    <h3>{item.title || item.name}</h3>
-                    {getSavedData(item.id) && <span className="watched-dot"></span>}
+              {(() => {
+                const streamingSource = mediaFilter === 'movie' ? streamingMovies : streamingTV;
+                const combined = (newReleasesTab === 'streaming' ? streamingSource : (mediaFilter === 'movie' ? newReleases : newTV))
+                  .slice()
+                  .sort((a, b) => b.popularity - a.popularity);
+
+                const filtered =
+                  newReleasesTab === 'popular'   ? combined.filter(i => i.vote_average >= 7.0) :
+                  combined;
+
+                return filtered.map((item, index) => (
+                  <div
+                    key={item.id}
+                    className={`bento-item glass ${feedLayout === 'bento' && index === 0 ? 'large' : ''}`}
+                    onClick={() => setSelectedItem(item)}
+                  >
+                    <img src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title || item.name} />
+                    {newReleasesTab === 'streaming' && item.provider && (
+                      <div className="provider-badge">
+                        <img className="provider-logo" src={item.provider.logo} alt={item.provider.name} />
+                      </div>
+                    )}
+                    <div className="overlay">
+                      <h3>{item.title || item.name}</h3>
+                      {getSavedData(item.id) && <span className="watched-dot"></span>}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ));
+              })()}
             </div>
           </section>
         )}
@@ -903,7 +1078,7 @@ export default function App() {
                 </div>
 
                 <div className="journal-tab-nav">
-                  {['lists', 'all', 'status', 'ratings', 'mood', 'timeline'].map(tab => (
+                  {['lists', 'mood', 'ratings', 'status', 'timeline'].map(tab => (
                     <button
                       key={tab}
                       className={`journal-tab-btn ${journalTab === tab ? 'active' : ''}`}
@@ -972,10 +1147,10 @@ export default function App() {
 
                 {journalTab === 'all' && (
                   <div className="bento-grid">
-                    {watched.length === 0 && (
+                    {filteredWatched.length === 0 && (
                       <p className="empty-list-msg">Nothing logged yet. Open any movie or show and hit Save.</p>
                     )}
-                    {watched.map((item, index) => (
+                    {filteredWatched.map((item, index) => (
                       <div
                         key={item.id || index}
                         className="bento-item glass"
@@ -997,7 +1172,7 @@ export default function App() {
                       <ListStack
                         key={status}
                         list={{ id: `status-${status}`, name: status }}
-                        items={watched.filter(w => w.watchStatus === status)}
+                        items={filteredWatched.filter(w => w.watchStatus === status)}
                       />
                     ))}
                   </div>
@@ -1009,7 +1184,7 @@ export default function App() {
                       <ListStack
                         key={star}
                         list={{ id: `rating-${star}`, name: `${'★'.repeat(star)}${'☆'.repeat(5 - star)}` }}
-                        items={watched.filter(w => w.rating === star)}
+                        items={filteredWatched.filter(w => w.rating === star)}
                       />
                     ))}
                   </div>
@@ -1028,7 +1203,7 @@ export default function App() {
                       <ListStack
                         key={m.value}
                         list={{ id: `mood-${m.value}`, name: m.emoji }}
-                        items={watched.filter(w => w.mood === m.value)}
+                        items={filteredWatched.filter(w => w.mood === m.value)}
                       />
                     ))}
                   </div>
@@ -1073,7 +1248,7 @@ export default function App() {
                       )}
                     </div>
 
-                    {watched.length === 0 && (
+                    {filteredWatched.length === 0 && (
                       <div style={{ textAlign: 'center', padding: '2rem 0' }}>
                         <p className="empty-list-msg">Nothing logged yet.</p>
                         <button
@@ -1124,7 +1299,7 @@ export default function App() {
                     )}
 
                     {timelineView === 'linear' && (() => {
-                      const sorted = [...watched]
+                      const sorted = [...filteredWatched]
                         .filter(item => item.watched_at)
                         .sort((a, b) => new Date(a.watched_at) - new Date(b.watched_at));
                       const dayGroups = sorted.reduce((groups, item) => {
@@ -1595,6 +1770,21 @@ export default function App() {
           transition: var(--transition);
         }
 
+        .provider-badge {
+          position: absolute;
+          top: 20px;
+          right: 20px;
+          z-index: 5;
+          display: flex;
+        }
+        .provider-logo {
+          width: 36px !important;
+          height: 36px !important;
+          border-radius: 4px;
+          object-fit: cover;
+          display: block;
+        }
+
         .provider-overlay {
           position: absolute;
           top: 1rem;
@@ -1694,6 +1884,143 @@ export default function App() {
           margin-bottom: 0.5rem;
           display: inline-block;
         }
+
+        .feed-empty-state {
+          padding: 4rem 2rem;
+          text-align: center;
+          color: var(--muted);
+          font-size: 0.95rem;
+        }
+
+        .genre-onboarding {
+          padding: 4rem 2rem;
+          text-align: center;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+        }
+
+        .genre-onboarding-title {
+          font-size: 1.6rem;
+          font-weight: 700;
+          letter-spacing: -0.03em;
+          margin-bottom: 0.5rem;
+        }
+
+        .genre-onboarding-sub {
+          color: var(--muted);
+          font-size: 0.9rem;
+          margin-bottom: 2.5rem;
+        }
+
+        .genre-pill-grid {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.6rem;
+          justify-content: center;
+          max-width: 580px;
+        }
+
+        .genre-pill {
+          padding: 0.6rem 1.4rem;
+          border-radius: 999px;
+          border: 1.5px solid var(--border-color);
+          background: transparent;
+          color: var(--text-primary);
+          font-size: 0.95rem;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.18s;
+          letter-spacing: 0.01em;
+        }
+
+        .genre-pill:hover {
+          border-color: var(--text-primary);
+          background: rgba(0,0,0,0.04);
+        }
+
+        [data-theme="dark"] .genre-pill:hover {
+          background: rgba(255,255,255,0.06);
+        }
+
+        .genre-pill.active {
+          background: var(--text-primary);
+          color: #fff;
+          border-color: var(--text-primary);
+        }
+
+        .genre-save-btn {
+          margin-top: 2.5rem;
+          padding: 0.75rem 2.5rem;
+          border-radius: 999px;
+          background: var(--text-primary);
+          color: #fff;
+          border: none;
+          font-size: 0.9rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: opacity 0.15s;
+          animation: fadeIn 0.2s ease;
+        }
+
+        .genre-save-btn:hover {
+          opacity: 0.8;
+        }
+
+        .taste-accordion-btn {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          width: 100%;
+          background: none;
+          border: none;
+          padding: 0.65rem 1.25rem;
+          cursor: pointer;
+          color: inherit;
+        }
+
+        .taste-accordion-meta {
+          display: flex;
+          align-items: center;
+          gap: 0.35rem;
+          font-size: 0.8rem;
+          color: var(--muted);
+        }
+
+        .taste-chevron {
+          transition: transform 0.2s;
+        }
+
+        .taste-chevron.open {
+          transform: rotate(180deg);
+        }
+
+        .taste-genre-list {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 0 0.5rem;
+          padding: 0 1.25rem 0.75rem;
+        }
+
+        .taste-genre-row {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          font-size: 0.8rem;
+          padding: 0.35rem 0;
+          cursor: pointer;
+          color: var(--text-primary);
+          min-width: 0;
+        }
+
+        .taste-genre-row input[type="checkbox"] {
+          accent-color: var(--text-primary);
+          width: 14px;
+          height: 14px;
+          cursor: pointer;
+          flex-shrink: 0;
+        }
+
 
         .section-header-row {
           display: flex;
@@ -2169,7 +2496,7 @@ export default function App() {
           border-radius: var(--radius-lg);
           box-shadow: 0 8px 40px rgba(0,0,0,0.12);
           border: 1px solid rgba(0,0,0,0.06);
-          min-width: 220px;
+          width: 240px;
           z-index: 9999;
           overflow: hidden;
           animation: fadeIn 0.15s ease;
@@ -2221,7 +2548,7 @@ export default function App() {
         }
 
         .profile-dropdown-item:hover { background: #f8f8f8; }
-        .profile-dropdown-item.danger { color: #c00; }
+        .profile-dropdown-item.danger { color: #c00; padding-bottom: 1.5rem; }
 
         .profile-dropdown-settings {
           padding: 0.5rem 0;
