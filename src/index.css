@@ -102,7 +102,7 @@ h1, h2, h3 {
 
 .stack-container {
   position: relative;
-  height: 320px;
+  aspect-ratio: 2/3;
   width: 100%;
   margin-bottom: 1.5rem;
   perspective: 1000px;
@@ -117,8 +117,6 @@ h1, h2, h3 {
   border-radius: var(--radius-md);
   overflow: hidden;
   box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-  border: 1px solid rgba(255,255,255,0.1);
-  background: #eee;
 }
 
 .stack-card img {
@@ -190,5 +188,4 @@ h1, h2, h3 {
 
 [data-theme="dark"] .stack-card.empty {
   background: #1c1c1c;
-  border-color: #333;
 }

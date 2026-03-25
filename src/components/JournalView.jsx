@@ -236,18 +236,11 @@ export default function JournalView({
         <div className="journal-section">
           <div className="section-header-row">
             <h2 className="section-title">Journal</h2>
-            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-              {user && (
-                <button className="new-list-header-btn" onClick={() => setShowImportModal(true)}>
-                  Import history
-                </button>
-              )}
-              {journalTab === 'lists' && !showJournalNewList && (
-                <button className="new-list-header-btn" onClick={() => setShowJournalNewList(true)}>
-                  + New List
-                </button>
-              )}
-            </div>
+            {journalTab === 'lists' && !showJournalNewList && (
+              <button className="new-list-header-btn" onClick={() => setShowJournalNewList(true)}>
+                + New List
+              </button>
+            )}
           </div>
 
           <div className="journal-tab-nav">
@@ -445,35 +438,33 @@ export default function JournalView({
                   return groups;
                 }, []);
                 const renderCard = (item, k, idx = 0) => {
-                  const infoRight = idx % 2 === 0;
-                  const infoNote = (
-                    <div className="tl-note tl-info-note">
-                      <span className="tl-note-title">{item.title || item.name}</span>
-                      {item.rating > 0 && <span className="tl-note-stars">{'★'.repeat(item.rating)}{'☆'.repeat(5 - item.rating)}</span>}
-                      <span className="tl-note-date">{formatDate(item.watched_at)}</span>
-                      {item.mood && <span className="tl-note-mood">{moodLabel(item.mood)}</span>}
+                  const posterLeft = idx % 2 === 0;
+                  const poster = (
+                    <div className="tl-poster">
+                      {item.poster_path
+                        ? <img
+                            src={`https://image.tmdb.org/t/p/w300${item.poster_path}`}
+                            alt={item.title || item.name}
+                            onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }}
+                          />
+                        : null
+                      }
+                      <div className="tl-no-poster" style={{ display: item.poster_path ? 'none' : 'block' }} />
                     </div>
                   );
-                  const userNote = item.note ? (
-                    <div className="tl-note tl-user-note" style={{ lineHeight: '1.1' }}>
-                      <span className="tl-note-text" style={{ display: 'block', lineHeight: '1.1' }}>{item.note}</span>
+                  const textBlock = (
+                    <div className={`tl-text-block ${posterLeft ? 'text-left' : 'text-right'}`}>
+                      <span className="tl-note-date">{formatDate(item.watched_at)}</span>
+                      <span className="tl-note-title">{item.title || item.name}</span>
+                      {item.rating > 0 && <span className="tl-note-stars">{'★'.repeat(item.rating)}{'☆'.repeat(5 - item.rating)}</span>}
+                      {item.mood && <span className="tl-note-mood">{moodLabel(item.mood)}</span>}
+                      {item.note && <span className="tl-note-text">{item.note}</span>}
                     </div>
-                  ) : <div className="tl-note tl-note-empty" />;
+                  );
                   return (
                     <div key={k} className="tl-entry" onClick={() => onItemClick(item)}>
-                      {infoRight ? userNote : infoNote}
-                      <div className="tl-poster">
-                        {item.poster_path
-                          ? <img
-                              src={`https://image.tmdb.org/t/p/w300${item.poster_path}`}
-                              alt={item.title || item.name}
-                              onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }}
-                            />
-                          : null
-                        }
-                        <div className="tl-no-poster" style={{ display: item.poster_path ? 'none' : 'block' }} />
-                      </div>
-                      {infoRight ? infoNote : userNote}
+                      {posterLeft ? poster : textBlock}
+                      {posterLeft ? textBlock : poster}
                     </div>
                   );
                 };

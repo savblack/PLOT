@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../api/supabase';
 import './AuthPage.css';
@@ -30,28 +30,55 @@ const POSTERS = [
   '/website-images/hero/anniversary.jpg',
 ];
 
+function friendlyError(msg) {
+  if (!msg) return 'Something went wrong. Please try again.';
+  if (msg.includes('Invalid login credentials'))    return 'Oops! Incorrect email or password.';
+  if (msg.includes('Email not confirmed'))          return '__warning__Almost in! Your activation email is waiting in your inbox.';
+  if (msg.includes('User already registered'))      return 'An account with this email already exists. Try signing in instead.';
+  if (msg.includes('Password should be at least'))  return 'Password must be at least 6 characters.';
+  if (msg.includes('Unable to validate email'))     return 'Please enter a valid email address.';
+  if (msg.includes('rate limit') || msg.includes('too many')) return 'Too many attempts. Please wait a moment and try again.';
+  return msg;
+}
+
 export default function AuthPage({ initialMode = 'signup' }) {
-  const [mode, setMode] = useState(initialMode);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [mode, setMode]               = useState(initialMode);
+  const [email, setEmail]             = useState('');
+  const [password, setPassword]       = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(false);
+  const [loading, setLoading]         = useState(false);
+  const [error, setError]             = useState('__warning__Almost in! Your activation email is waiting in your inbox.');
+  const [success, setSuccess]         = useState(false);
   const navigate = useNavigate();
+
+  // Auto-redirect if already logged in
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) navigate('/app', { replace: true });
+    });
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
+    if (mode === 'forgot') {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      });
+      if (error) { setError(friendlyError(error.message)); setLoading(false); }
+      else setSuccess(true);
+      return;
+    }
+
     if (mode === 'login') {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) { setError(error.message); setLoading(false); }
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) { setError(friendlyError(error.message)); setLoading(false); }
       else navigate('/app');
     } else {
-      const { data, error } = await supabase.auth.signUp({ email, password });
-      if (error) { setError(error.message); setLoading(false); }
+      const { error } = await supabase.auth.signUp({ email, password });
+      if (error) { setError(friendlyError(error.message)); setLoading(false); }
       else setSuccess(true);
     }
   };
@@ -62,8 +89,25 @@ export default function AuthPage({ initialMode = 'signup' }) {
     setSuccess(false);
   };
 
-  // Duplicate posters so the scroll animation loops seamlessly
   const scrollPosters = [...POSTERS, ...POSTERS];
+
+  const headings = {
+    signup: 'Create your account',
+    login:  'Welcome back',
+    forgot: 'Reset your password',
+  };
+
+  const subheadings = {
+    signup: 'For people who think about what they watch.',
+    login:  'Good to see you again.',
+    forgot: 'We\'ll send a link to your inbox.',
+  };
+
+  const ctaLabels = {
+    signup: 'Create account',
+    login:  'Sign in',
+    forgot: 'Send reset link',
+  };
 
   return (
     <div className="auth-page">
@@ -77,33 +121,50 @@ export default function AuthPage({ initialMode = 'signup' }) {
         </div>
         <div className="auth-visual-gradient" />
         <div className="auth-visual-brand">
-          <span className="auth-visual-logo">PLOT</span>
+          <img src="/plot-logo-inverse.svg" className="auth-visual-logo" alt="PLOT" />
           <span className="auth-visual-tagline">Your film &amp; TV journal</span>
         </div>
       </div>
 
       {/* ── Right: form panel ── */}
       <div className="auth-panel">
-        <Link to="/" className="auth-panel-logo">PLOT</Link>
+        <Link to="/" className="auth-panel-logo">
+          <img src="/plot-logo.svg" alt="PLOT" />
+        </Link>
 
         <div className="auth-panel-body">
 
-          {success ? (
+          {success && mode === 'signup' && (
             <div className="auth-success">
               <div className="auth-success-icon">✓</div>
               <h1>Check your inbox</h1>
               <p>We sent a confirmation link to <strong>{email}</strong>. Click it to activate your account, then come back to sign in.</p>
               <button className="auth-cta" onClick={() => switchMode('login')}>Back to sign in</button>
             </div>
-          ) : (
+          )}
+
+          {success && mode === 'forgot' && (
+            <div className="auth-success">
+              <div className="auth-success-icon">✓</div>
+              <h1>Link sent</h1>
+              <p>Check <strong>{email}</strong> for a password reset link. It'll expire in an hour.</p>
+              <button className="auth-cta" onClick={() => switchMode('login')}>Back to sign in</button>
+            </div>
+          )}
+
+          {!success && (
             <>
               <div className="auth-header">
-                <h1>{mode === 'signup' ? 'Create your account' : 'Welcome back'}</h1>
-                <p>{mode === 'signup' ? 'For people who think about what they watch.' : 'Good to see you again.'}</p>
+                <h1>{headings[mode]}</h1>
+                <p>{subheadings[mode]}</p>
               </div>
 
               <form onSubmit={handleSubmit} className="auth-form" noValidate>
-                {error && <div className="auth-error">{error}</div>}
+                {error && (
+                  <div className={error.startsWith('__warning__') ? 'auth-warning' : 'auth-error'}>
+                    {error.replace('__warning__', '')}
+                  </div>
+                )}
 
                 <div className="auth-field">
                   <label htmlFor="auth-email">Email</label>
@@ -119,45 +180,54 @@ export default function AuthPage({ initialMode = 'signup' }) {
                   />
                 </div>
 
-                <div className="auth-field">
-                  <label htmlFor="auth-password">Password</label>
-                  <div className="auth-password-wrap">
-                    <input
-                      id="auth-password"
-                      type={showPassword ? 'text' : 'password'}
-                      placeholder={mode === 'signup' ? 'At least 6 characters' : 'Your password'}
-                      value={password}
-                      onChange={e => setPassword(e.target.value)}
-                      required
-                      minLength={6}
-                      autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
-                    />
-                    <button
-                      type="button"
-                      className="auth-show-pw"
-                      onClick={() => setShowPassword(v => !v)}
-                      tabIndex={-1}
-                      aria-label={showPassword ? 'Hide password' : 'Show password'}
-                    >
-                      {showPassword ? 'Hide' : 'Show'}
-                    </button>
+                {mode !== 'forgot' && (
+                  <div className="auth-field">
+                    <div className="auth-field-label-row">
+                      <label htmlFor="auth-password">Password</label>
+                      {mode === 'login' && (
+                        <button type="button" className="auth-forgot-link" onClick={() => switchMode('forgot')}>
+                          Forgot password?
+                        </button>
+                      )}
+                    </div>
+                    <div className="auth-password-wrap">
+                      <input
+                        id="auth-password"
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder={mode === 'signup' ? 'At least 6 characters' : 'Your password'}
+                        value={password}
+                        onChange={e => setPassword(e.target.value)}
+                        required
+                        minLength={6}
+                        autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+                      />
+                      <button
+                        type="button"
+                        className="auth-show-pw"
+                        onClick={() => setShowPassword(v => !v)}
+                        tabIndex={-1}
+                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      >
+                        {showPassword ? 'Hide' : 'Show'}
+                      </button>
+                    </div>
                   </div>
-                </div>
+                )}
 
                 <button type="submit" className="auth-cta" disabled={loading}>
-                  {loading
-                    ? <span className="auth-spinner" />
-                    : mode === 'signup' ? 'Create account' : 'Sign in'}
+                  {loading ? <span className="auth-spinner" /> : ctaLabels[mode]}
                 </button>
               </form>
 
-              <p className="auth-toggle">
-                {mode === 'signup' ? 'Already have an account?' : "Don't have an account?"}
-                {' '}
-                <button onClick={() => switchMode(mode === 'signup' ? 'login' : 'signup')}>
-                  {mode === 'signup' ? 'Sign in' : 'Sign up'}
-                </button>
-              </p>
+              <div className="auth-toggle">
+                {mode === 'forgot' ? (
+                  <button onClick={() => switchMode('login')}>Back to sign in</button>
+                ) : mode === 'signup' ? (
+                  <p>Already have an account? <button onClick={() => switchMode('login')}>Sign in</button></p>
+                ) : (
+                  <p>Don't have an account? <button onClick={() => switchMode('signup')}>Sign up</button></p>
+                )}
+              </div>
             </>
           )}
         </div>

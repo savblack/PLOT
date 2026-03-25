@@ -1,6 +1,9 @@
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 
+let userRegion = 'AU';
+export const setTmdbRegion = (region) => { userRegion = region; };
+
 const fetchFromTMDB = async (endpoint, params = {}) => {
   if (!API_KEY) {
     console.warn('TMDB API Key missing. Please set VITE_TMDB_API_KEY in .env');
@@ -9,8 +12,8 @@ const fetchFromTMDB = async (endpoint, params = {}) => {
 
   const queryParams = new URLSearchParams({
     api_key: API_KEY,
-    language: 'en-AU',
-    region: 'AU',
+    language: 'en-US',
+    region: userRegion,
     ...params,
   });
 
@@ -73,7 +76,7 @@ export const tmdb = {
   getStreamingMovies: async () => {
     const pages = await Promise.all([1, 2, 3].map(page =>
       fetchFromTMDB('/discover/movie', {
-        watch_region: 'AU',
+        watch_region: userRegion,
         with_watch_monetization_types: 'flatrate',
         sort_by: 'popularity.desc',
         'vote_count.gte': 50,
@@ -85,7 +88,7 @@ export const tmdb = {
   getStreamingTV: async () => {
     const pages = await Promise.all([1, 2, 3].map(page =>
       fetchFromTMDB('/discover/tv', {
-        watch_region: 'AU',
+        watch_region: userRegion,
         with_watch_monetization_types: 'flatrate',
         sort_by: 'popularity.desc',
         'vote_count.gte': 50,
@@ -102,4 +105,14 @@ export const tmdb = {
       'vote_count.gte': 100,
     });
   },
+  getWatchProvidersForRegion: (type, region) =>
+    fetchFromTMDB(`/watch/providers/${type}`, { watch_region: region }),
+  discoverByProviders: (type, providerIds, region) =>
+    fetchFromTMDB(`/discover/${type}`, {
+      watch_region: region,
+      with_watch_providers: providerIds.join('|'),
+      with_watch_monetization_types: 'flatrate',
+      sort_by: 'popularity.desc',
+      'vote_count.gte': 50,
+    }),
 };

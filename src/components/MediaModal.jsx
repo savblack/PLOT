@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { tmdb } from '../api/tmdb';
 
-export default function MediaModal({ item, onClose, onSave, savedData, userLists, listItems, onCreateList, onToggleList }) {
+export default function MediaModal({ item, onClose, onSave, savedData, userLists, listItems, onCreateList, onToggleList, region = 'AU' }) {
   const [details, setDetails] = useState(null);
   const [rating, setRating] = useState(savedData?.rating || 0);
   const [note, setNote] = useState(savedData?.note || '');
@@ -21,7 +21,7 @@ export default function MediaModal({ item, onClose, onSave, savedData, userLists
       const data = type === 'movie' ? await tmdb.getMovieDetails(item.id) : await tmdb.getTVDetails(item.id);
       if (data) {
         setDetails(data);
-        setProviders(data['watch/providers']?.results?.AU || {});
+        setProviders(data['watch/providers']?.results?.[region] || {});
       }
     };
     fetchDetails();
@@ -31,12 +31,30 @@ export default function MediaModal({ item, onClose, onSave, savedData, userLists
   }, [item]);
 
   const MOODS = [
-    { value: 'happy',     emoji: '😊', label: 'Happy' },
-    { value: 'emotional', emoji: '🥲', label: 'Emotional' },
-    { value: 'fun',       emoji: '😂', label: 'Fun' },
-    { value: 'tense',     emoji: '😬', label: 'Tense' },
-    { value: 'amazing',   emoji: '🤩', label: 'Amazing' },
-    { value: 'mindblown', emoji: '🤯', label: 'Mind-blown' },
+    { value: 'happy',         emoji: '😊', label: 'Happy' },
+    { value: 'sad',           emoji: '😢', label: 'Sad' },
+    { value: 'emotional',     emoji: '🥲', label: 'Emotional' },
+    { value: 'excited',       emoji: '😆', label: 'Excited' },
+    { value: 'fun',           emoji: '😂', label: 'Fun' },
+    { value: 'tense',         emoji: '😬', label: 'Tense' },
+    { value: 'scared',        emoji: '😱', label: 'Scared' },
+    { value: 'unsettled',     emoji: '😟', label: 'Unsettled' },
+    { value: 'weird',         emoji: '🤪', label: 'Weird' },
+    { value: 'cosy',          emoji: '🥰', label: 'Cosy' },
+    { value: 'thoughtful',    emoji: '🤔', label: 'Thoughtful' },
+    { value: 'inspired',      emoji: '✨', label: 'Inspired' },
+    { value: 'intense',       emoji: '😤', label: 'Intense' },
+    { value: 'stressed',      emoji: '😰', label: 'Stressed' },
+    { value: 'epic',          emoji: '🔥', label: 'Epic' },
+    { value: 'haunted',       emoji: '👻', label: 'Haunted' },
+    { value: 'nostalgic',     emoji: '🥹', label: 'Nostalgic' },
+    { value: 'melancholy',    emoji: '😔', label: 'Melancholy' },
+    { value: 'gripped',       emoji: '😮', label: 'Gripped' },
+    { value: 'shocked',       emoji: '😲', label: 'Shocked' },
+    { value: 'uncomfortable', emoji: '😣', label: 'Uncomfortable' },
+    { value: 'meh',           emoji: '😐', label: 'Meh' },
+    { value: 'amazing',       emoji: '🤩', label: 'Amazing' },
+    { value: 'mindblown',     emoji: '🤯', label: 'Mind-blown' },
   ];
 
   const handleSave = () => {
@@ -48,6 +66,7 @@ export default function MediaModal({ item, onClose, onSave, savedData, userLists
       watchStatus: watchStatus,
       tmdb_id: item.id,
       media_type: item.media_type || (item.title ? 'movie' : 'tv'),
+      watched_at: savedData?.watched_at || new Date().toISOString().split('T')[0],
       updatedAt: new Date().toISOString()
     });
     setHasSaved(true);
@@ -81,7 +100,13 @@ export default function MediaModal({ item, onClose, onSave, savedData, userLists
     );
   };
 
-  if (!details) return null;
+  if (!details) return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-loading">
+        <div className="modal-spinner" />
+      </div>
+    </div>
+  );
 
   return (
     <div className="modal-overlay" onClick={onClose}>
