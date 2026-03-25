@@ -427,7 +427,7 @@ export default function JournalView({
               {timelineView === 'linear' && (() => {
                 const sorted = [...filteredWatched]
                   .filter(item => item.watched_at)
-                  .sort((a, b) => new Date(a.watched_at) - new Date(b.watched_at));
+                  .sort((a, b) => new Date(b.watched_at) - new Date(a.watched_at));
 
                 const ROW_SIZE = 3;
                 const rows = [];
@@ -487,8 +487,8 @@ export default function JournalView({
                           {!isLastRow && (
                             <div className={`tl-turn-connector ${reversed ? 'turn-left' : 'turn-right'}`}>
                               {gapLabel && <span className="tl-gap">{gapLabel}</span>}
-                              <svg width="80" height={turnH} viewBox={`0 0 80 ${turnH}`} style={{ overflow: 'visible' }}>
-                                <path d={tlScribble(turnH, rowIdx * 3 + 7)} stroke="var(--text-primary)" fill="none" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.22" />
+                              <svg width="80" height="100%" viewBox="0 0 80 260" preserveAspectRatio="xMidYMid meet" style={{ flex: 1, overflow: 'visible' }}>
+                                <path d={tlScribble(260, rowIdx * 3 + 7)} stroke="var(--text-primary)" fill="none" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.25" />
                               </svg>
                             </div>
                           )}
