@@ -58,8 +58,8 @@ The MediaModal already displays streaming provider logos via TMDB data. Make tho
 
 ### Implementation
 
-- Replace existing provider URLs in MediaModal with affiliate-tagged URLs
-- JustWatch provides a deep-link API that resolves to the correct service
+- Provider logos in MediaModal are currently static `<div>`/`<img>` elements with no links — wrap each in an `<a>` tag with affiliate-tagged URLs
+- Use JustWatch deep-link API with the TMDB content ID to resolve per-provider affiliate URLs
 - Add a small "affiliate link" disclosure note in the modal footer for compliance
 
 ### Revenue expectation
@@ -130,12 +130,26 @@ App reads profile.is_pro to gate Pro features
 - **Plot Pro Monthly** — $3.00/mo recurring
 - **Plot Pro Annual** — $29.00/yr recurring (~20% discount)
 
+### Webhook Edge Function
+
+- **Name:** `stripe-webhook` (Supabase Edge Function)
+- **Security:** Must verify the `stripe-signature` header using the webhook signing secret before processing any event. Reject unverified requests.
+- **Idempotency:** Check `event.id` to avoid processing duplicate/replayed events (store processed event IDs or rely on database constraints).
+
+### Environment variables
+
+- `VITE_STRIPE_PUBLISHABLE_KEY` — client-side, used for Stripe Checkout redirect
+- `STRIPE_SECRET_KEY` — Edge Function only, never exposed to client
+- `STRIPE_WEBHOOK_SECRET` — Edge Function only, for signature verification
+- Use separate test-mode and live-mode keys for development vs. production
+
 ### Webhook events to handle
 
 - `checkout.session.completed` — activate Pro
 - `invoice.paid` — renew Pro (update `pro_expires_at`)
+- `customer.subscription.updated` — update `pro_plan` and `pro_expires_at` (fires when user switches monthly ↔ annual via Customer Portal)
 - `customer.subscription.deleted` — deactivate Pro
-- `invoice.payment_failed` — optionally notify user, grace period
+- `invoice.payment_failed` — Pro access remains active during Stripe's Smart Retries (~3 weeks). Pro is only deactivated when `customer.subscription.deleted` fires after all retries are exhausted.
 
 ### Cancellation
 
@@ -164,6 +178,9 @@ App reads profile.is_pro to gate Pro features
 | `user_id` | uuid (FK → profiles) | Owner |
 | `name` | text | Tag label, e.g., "date night" |
 | `color` | text (nullable) | Hex color for tag pill UI |
+| `created_at` | timestamptz | Default `now()`, for ordering |
+
+**Constraints:** Unique on `(user_id, name)` to prevent duplicate tag labels per user.
 
 ### `journal_tags` table — new (join table)
 
@@ -176,7 +193,8 @@ Primary key: composite `(journal_id, tag_id)`.
 
 ### Row Level Security
 
-- `tags` and `journal_tags`: users can only read/write their own rows (`auth.uid() = user_id`)
+- `tags`: users can only read/write their own rows (`auth.uid() = user_id`)
+- `journal_tags`: ownership resolved via join — policy uses `EXISTS (SELECT 1 FROM tags WHERE tags.id = journal_tags.tag_id AND tags.user_id = auth.uid())`
 - `is_pro`, `pro_plan`, `pro_expires_at`, `stripe_customer_id` on `profiles`: writable only by the Supabase Edge Function using the service role key, never from the client
 - Client-side RLS policy for profiles should exclude these columns from update
 
@@ -189,9 +207,11 @@ Primary key: composite `(journal_id, tag_id)`.
 ```jsx
 function usePro() {
   const { profile } = useAuth(); // or however profile is accessed
-  return profile?.is_pro === true;
+  return profile?.is_pro === true && new Date(profile.pro_expires_at) > new Date();
 }
 ```
+
+The `pro_expires_at` check is a client-side safety net — if the webhook that flips `is_pro` to false is delayed, the client won't grant access beyond the paid period.
 
 ### Gating pattern
 
@@ -297,6 +317,10 @@ TMDB's API is free for non-commercial use. Once Plot monetizes, you need to appl
 - Additional app themes
 - Custom profile themes
 - Profile badges
+- Year in Review (deferred — build in Q4 so it's ready for first January; auto-generates from previous year's journal data, displayed as a shareable page)
+
+### Prerequisites
+- Public profile routes (`/u/:username`) must be accessible without authentication — currently behind `ProtectedRoute`. Fix before Phase 2 so affiliate links on public profiles reach all visitors.
 
 ### Phase 5: Upgrade UX
 - "Upgrade to Pro" banner and flows
