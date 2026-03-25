@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import ImportModal from './ImportModal';
 
 const MOODS = [
@@ -428,91 +428,69 @@ export default function JournalView({
                 const sorted = [...filteredWatched]
                   .filter(item => item.watched_at)
                   .sort((a, b) => new Date(a.watched_at) - new Date(b.watched_at));
-                const dayGroups = sorted.reduce((groups, item) => {
-                  const key = toDateKey(item.watched_at);
-                  if (!groups.length || groups[groups.length - 1].key !== key) {
-                    groups.push({ key, items: [item] });
-                  } else {
-                    groups[groups.length - 1].items.push(item);
-                  }
-                  return groups;
-                }, []);
-                const renderCard = (item, k, idx = 0) => {
-                  const posterLeft = idx % 2 === 0;
-                  const poster = (
-                    <div className="tl-poster">
-                      {item.poster_path
-                        ? <img
-                            src={`https://image.tmdb.org/t/p/w300${item.poster_path}`}
-                            alt={item.title || item.name}
-                            onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }}
-                          />
-                        : null
-                      }
-                      <div className="tl-no-poster" style={{ display: item.poster_path ? 'none' : 'block' }} />
-                    </div>
-                  );
-                  const textBlock = (
-                    <div className={`tl-text-block ${posterLeft ? 'text-left' : 'text-right'}`}>
-                      <span className="tl-note-date">{formatDate(item.watched_at)}</span>
-                      <span className="tl-note-title">{item.title || item.name}</span>
-                      {item.rating > 0 && <span className="tl-note-stars">{'★'.repeat(item.rating)}{'☆'.repeat(5 - item.rating)}</span>}
-                      {item.mood && <span className="tl-note-mood">{moodLabel(item.mood)}</span>}
-                      {item.note && <span className="tl-note-text">{item.note}</span>}
-                    </div>
-                  );
-                  return (
-                    <div key={k} className="tl-entry" onClick={() => onItemClick(item)}>
-                      {posterLeft ? poster : textBlock}
-                      {posterLeft ? textBlock : poster}
-                    </div>
-                  );
+
+                const ROW_SIZE = 3;
+                const rows = [];
+                for (let i = 0; i < sorted.length; i += ROW_SIZE) rows.push(sorted.slice(i, i + ROW_SIZE));
+
+                const hLine = (w, seed) => {
+                  const r = n => { const v = Math.sin(seed * 9.301 + n * 46.218) * 43758.5453; return v - Math.floor(v); };
+                  const cy = 20;
+                  return `M 0 ${cy} C ${w * 0.35} ${cy + (r(1) - 0.5) * 16} ${w * 0.65} ${cy + (r(2) - 0.5) * 16} ${w} ${cy}`;
                 };
+
                 return (
-                  <div className="tl-vertical" ref={timelineScrollRef}>
-                    {dayGroups.map((group, dayIdx) => {
-                      const anchor = group.items[group.items.length - 1];
-                      const extras = group.items.slice(0, -1);
-                      const nextGroup = dayGroups[dayIdx + 1];
-                      const days = nextGroup ? Math.round((new Date(nextGroup.items[nextGroup.items.length - 1].watched_at) - new Date(anchor.watched_at)) / 86400000) : 0;
-                      const scribbleH = nextGroup ? Math.min(Math.max(160 + days * 1.5, 180), 400) : 0;
+                  <div className="tl-snake-wrap" ref={timelineScrollRef}>
+                    {rows.map((row, rowIdx) => {
+                      const reversed = rowIdx % 2 === 1;
+                      const displayRow = reversed ? [...row].reverse() : row;
+                      const isLastRow = rowIdx === rows.length - 1;
+                      const nextRow = rows[rowIdx + 1];
+                      const days = nextRow
+                        ? Math.round((new Date(nextRow[0].watched_at) - new Date(row[row.length - 1].watched_at)) / 86400000)
+                        : 0;
                       const gapLabel = days >= 365 ? `${Math.round(days / 365)}y` : days >= 30 ? `${Math.round(days / 30)}mo` : days > 6 ? `${days}d` : null;
-                      const connector = nextGroup && (
-                        <div className="tl-connector">
-                          {gapLabel ? (
-                            <>
-                              <svg width="80" height={scribbleH / 2} viewBox={`0 0 80 ${scribbleH / 2}`} style={{ overflow: 'visible' }}>
-                                <path d={tlScribble(scribbleH / 2, dayIdx)} stroke="var(--text-primary)" fill="none" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.2" />
-                              </svg>
-                              <span className="tl-gap">{gapLabel}</span>
-                              <svg width="80" height={scribbleH / 2} viewBox={`0 0 80 ${scribbleH / 2}`} style={{ overflow: 'visible' }}>
-                                <path d={tlScribble(scribbleH / 2, dayIdx + 51)} stroke="var(--text-primary)" fill="none" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.2" />
-                              </svg>
-                            </>
-                          ) : (
-                            <svg width="80" height={scribbleH} viewBox={`0 0 80 ${scribbleH}`} style={{ overflow: 'visible' }}>
-                              <path d={tlScribble(scribbleH, dayIdx)} stroke="var(--text-primary)" fill="none" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.2" />
-                            </svg>
-                          )}
-                        </div>
-                      );
+                      const turnH = Math.min(Math.max(80 + days * 0.4, 80), 160);
+
                       return (
-                        <div key={group.key} className="tl-entry-group">
-                          {extras.length > 0 ? (
-                            <div className="tl-day-scroll">
-                              <div className="tl-day-inner">
-                                {[...extras].reverse().map((extra, ei) => renderCard(extra, `${group.key}-${ei}`, dayIdx))}
-                                <div className="tl-anchor-col">
-                                  {renderCard(anchor, group.key, dayIdx)}
-                                  {connector}
+                        <div key={rowIdx} className="tl-snake-section">
+                          <div className="tl-snake-row">
+                            {displayRow.map((item, colIdx) => (
+                              <React.Fragment key={item.id || `${rowIdx}-${colIdx}`}>
+                                {colIdx > 0 && (
+                                  <div className="tl-h-connector">
+                                    <svg width="60" height="40" viewBox="0 0 60 40" style={{ overflow: 'visible' }}>
+                                      <path d={hLine(60, rowIdx * 10 + colIdx)} stroke="var(--text-primary)" fill="none" strokeWidth="1.5" strokeLinecap="round" opacity="0.22" />
+                                    </svg>
+                                  </div>
+                                )}
+                                <div className="tl-snake-card" onClick={() => onItemClick(item)}>
+                                  <div className="tl-poster">
+                                    {item.poster_path
+                                      ? <img src={`https://image.tmdb.org/t/p/w300${item.poster_path}`} alt={item.title || item.name}
+                                          onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }}
+                                        />
+                                      : null
+                                    }
+                                    <div className="tl-no-poster" style={{ display: item.poster_path ? 'none' : 'block' }} />
+                                  </div>
+                                  <div className="tl-snake-info">
+                                    <span className="tl-note-date">{formatDate(item.watched_at)}</span>
+                                    <span className="tl-note-title">{item.title || item.name}</span>
+                                    {item.rating > 0 && <span className="tl-note-stars">{'★'.repeat(item.rating)}{'☆'.repeat(5 - item.rating)}</span>}
+                                    {item.note && <span className="tl-note-text">{item.note}</span>}
+                                  </div>
                                 </div>
-                              </div>
+                              </React.Fragment>
+                            ))}
+                          </div>
+                          {!isLastRow && (
+                            <div className={`tl-turn-connector ${reversed ? 'turn-left' : 'turn-right'}`}>
+                              {gapLabel && <span className="tl-gap">{gapLabel}</span>}
+                              <svg width="80" height={turnH} viewBox={`0 0 80 ${turnH}`} style={{ overflow: 'visible' }}>
+                                <path d={tlScribble(turnH, rowIdx * 3 + 7)} stroke="var(--text-primary)" fill="none" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.22" />
+                              </svg>
                             </div>
-                          ) : (
-                            <>
-                              {renderCard(anchor, group.key, dayIdx)}
-                              {connector}
-                            </>
                           )}
                         </div>
                       );
