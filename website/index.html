@@ -3,23 +3,23 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PLOT — Track what moves you.</title>
-  <meta name="description" content="Every film. Every series. Your taste, finally yours." />
+  <title>PLOT</title>
+  <meta name="description" content="Your film &amp; TV journal" />
 
   <!-- Favicon -->
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
 
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="PLOT — Track what moves you." />
-  <meta property="og:description" content="A film and TV journal as considered as your taste." />
+  <meta property="og:title" content="PLOT" />
+  <meta property="og:description" content="Your film &amp; TV journal" />
   <meta property="og:image" content="og-image.png" />
   <meta property="og:url" content="https://plotapp.io" />
 
   <!-- Twitter / X card -->
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="PLOT — Track what moves you." />
-  <meta name="twitter:description" content="A film and TV journal as considered as your taste." />
+  <meta name="twitter:title" content="PLOT" />
+  <meta name="twitter:description" content="Your film &amp; TV journal" />
   <meta name="twitter:image" content="og-image.png" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -50,7 +50,7 @@
       background: var(--bg);
       color: var(--text);
       font-family: var(--sans);
-      line-height: 1.6;
+      line-height: 1.45;
       -webkit-font-smoothing: antialiased;
     }
 
@@ -155,7 +155,7 @@
     .btn-outline {
       background: transparent;
       color: var(--text);
-      border: 0.5px solid var(--text);
+      border: 1px solid var(--text);
     }
     .btn-outline:hover {
       background: var(--text);
@@ -165,7 +165,7 @@
     .btn-outline-white {
       background: transparent;
       color: #fff;
-      border: 0.5px solid #fff;
+      border: 1px solid #fff;
     }
     .btn-outline-white:hover {
       background: #fff;
@@ -324,8 +324,7 @@
     }
 
     .ftp-left {
-      position: sticky;
-      top: 8rem;
+      position: static;
     }
 
     .ftp-headline {
@@ -340,8 +339,12 @@
     .ftp-body {
       font-size: 0.95rem;
       color: var(--muted);
-      line-height: 1.8;
+      line-height: 1.5;
       margin-bottom: 2rem;
+    }
+
+    #for-the-plot .ftp-body {
+      max-width: 320px;
     }
     .ftp-body em {
       font-family: var(--serif);
@@ -359,24 +362,29 @@
 
     .editorial-wrap {
       position: relative;
-      height: 460px;
+      height: 580px;
     }
 
     .ed-poster {
       position: absolute;
-      border-radius: 12px;
+      border-radius: 14px;
       background-size: cover;
       background-position: center;
       background-color: #111;
       box-shadow: 0 16px 48px rgba(0,0,0,0.18);
       overflow: hidden;
-      transition: transform 0.45s cubic-bezier(0.23, 1, 0.32, 1),
-                  box-shadow 0.45s ease;
-      cursor: default;
+      cursor: pointer;
+      transform: rotate(var(--rot, 0deg));
+      transition: transform 1.1s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                  box-shadow 1.1s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+
+      will-change: transform;
     }
-    .ed-poster:hover {
-      box-shadow: 0 28px 64px rgba(0,0,0,0.28);
-      z-index: 10 !important;
+    .ed-poster.lifted {
+      transform: rotate(var(--rot, 0deg)) translateY(-16px) scale(1.06);
+      box-shadow: 0 36px 80px rgba(0,0,0,0.32);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+                  box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .ed-label {
@@ -475,8 +483,11 @@
       cursor: default;
     }
 
+    .feat-item:first-child {
+      border-top: none;
+    }
     .feat-item:last-child {
-      border-bottom: 1px solid rgba(0,0,0,0.1);
+      border-bottom: none;
     }
 
     .feat-header {
@@ -487,7 +498,7 @@
 
     .feat-num {
       font-family: 'Nothing You Could Do', cursive;
-      font-size: 1rem;
+      font-size: 1.5rem;
       color: var(--muted);
       flex-shrink: 0;
       transition: color 0.3s ease;
@@ -500,11 +511,7 @@
       letter-spacing: -0.03em;
       line-height: 1;
       color: var(--text);
-      transition: font-style 0.2s ease, color 0.2s ease;
-    }
-
-    .feat-item.active .feat-title {
-      font-style: italic;
+      transition: color 0.2s ease;
     }
 
     .feat-body {
@@ -526,7 +533,7 @@
     .feat-body p {
       font-size: 0.95rem;
       color: var(--muted);
-      line-height: 1.75;
+      line-height: 1.5;
     }
 
     @media (max-width: 900px) {
@@ -620,8 +627,8 @@
 
     .tl-note {
       font-family: 'Nothing You Could Do', cursive;
-      font-size: 1.15rem;
-      line-height: 1.4;
+      font-size: 1.5rem;
+      line-height: 1.15;
       color: rgba(26,26,26,0.75);
     }
     .tl-note-left  { text-align: right; }
@@ -674,6 +681,84 @@
       color: rgba(255,255,255,0.35);
       margin-top: 1.5rem;
       text-align: left;
+    }
+
+    /* ── Live Ticker ─────────────────────────────────────────── */
+    @keyframes ticker-scroll {
+      from { transform: translateX(0); }
+      to   { transform: translateX(-50%); }
+    }
+
+    .ticker-section {
+      background: var(--bg);
+      border-top: 1px solid rgba(0,0,0,0.08);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      height: 2.75rem;
+    }
+
+    .ticker-badge {
+      flex-shrink: 0;
+      font-family: var(--sans);
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #fff;
+      background: var(--text);
+      padding: 0 1rem;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      border-right: 1px solid rgba(0,0,0,0.12);
+      white-space: nowrap;
+    }
+
+    .ticker-outer {
+      flex: 1;
+      overflow: hidden;
+      height: 100%;
+      display: flex;
+      align-items: center;
+    }
+
+    .ticker-track {
+      display: flex;
+      align-items: center;
+      width: max-content;
+      animation: ticker-scroll 90s linear infinite;
+    }
+
+    .ticker-track:hover {
+      animation-play-state: paused;
+    }
+
+    .ticker-cat {
+      font-family: var(--sans);
+      font-size: 0.58rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 0 1.25rem 0 2rem;
+      white-space: nowrap;
+    }
+
+    .ticker-item {
+      font-family: var(--sans);
+      font-size: 0.8rem;
+      font-weight: 400;
+      color: var(--text);
+      white-space: nowrap;
+      padding: 0 0.4rem;
+    }
+
+    .ticker-sep {
+      font-size: 0.7rem;
+      color: var(--muted);
+      padding: 0 0.2rem;
+      opacity: 0.4;
     }
 
     /* ── Footer ─────────────────────────────────────────────── */
@@ -824,7 +909,7 @@
   <!-- ── Hero ────────────────────────────────────────────────── -->
   <section id="hero">
     <div class="hero-content">
-      <h1 class="hero-headline reveal" style="white-space: nowrap; text-align: center; width: 100%;">Your <span style="letter-spacing: -0.13em;">fi</span>lm and <span style="letter-spacing: -0.22em;">TV</span> journal</h1>
+      <h1 class="hero-headline reveal" style="white-space: nowrap; text-align: center; width: 100%;">Your <span style="letter-spacing: -0.13em;">fi</span>lm and <span style="letter-spacing: -0.19em;">TV</span> journal</h1>
       <p class="hero-sub reveal reveal-delay-2">Every film. Every series. Every feeling.<br>In one beautiful place.</p>
       <div class="hero-actions reveal reveal-delay-3">
         <a href="#" class="btn btn-outline btn-large">Start your journal →</a>
@@ -845,7 +930,7 @@
   <!-- ── Features ─────────────────────────────────────────────── -->
   <section id="features">
     <div class="features-header reveal">
-      <h2 class="section-title">Designed for your<br>viewing habits.</h2>
+      <h2 class="section-title">Designed for your<br>viewing habits</h2>
     </div>
     <div class="features-split">
 
@@ -922,7 +1007,7 @@
   <!-- ── Timeline ────────────────────────────────────────────────── -->
   <section id="timeline-section">
     <h2 class="timeline-headline reveal">A timeline as rich<br>as your taste</h2>
-    <p class="ftp-body reveal reveal-delay-2" style="margin-top: 2rem;">
+    <p class="ftp-body reveal reveal-delay-2" style="margin-top: 2rem; max-width: 630px; margin-left: auto; margin-right: auto;">
       One day you'll scroll back and see the exact week you discovered your favourite director.<br>Remember the month you watched nothing but comfort rewatches and the series that kept you up until 2am.
     </p>
 
@@ -1015,11 +1100,21 @@
     </div>
   </section>
 
+  <!-- ── Live Ticker ──────────────────────────────────────────── -->
+  <div class="ticker-section">
+    <div class="ticker-badge">Plot Live</div>
+    <div class="ticker-outer">
+      <div class="ticker-track" id="tickerTrack">
+        <!-- populated by JS -->
+      </div>
+    </div>
+  </div>
+
   <!-- ── Closing CTA ───────────────────────────────────────────── -->
   <section id="cta">
     <div class="cta-inner">
       <div class="cta-text">
-        <h2 class="cta-headline reveal">You are what you watch</h2>
+        <h2 class="cta-headline reveal">Your taste tells a story</h2>
         <p class="cta-sub reveal reveal-delay-1">And every story needs a PLOT.</p>
       </div>
       <div class="reveal reveal-delay-2" style="flex-shrink: 0; margin-top: 1rem;">
@@ -1240,11 +1335,11 @@
 
     // ── Editorial poster layout ───────────────────────────────
     const editorialData = [
-      { img: 'images/lists/fallout.webp',                         label: 'Sci-Fi',   title: 'Weekend watch',       w: 160, h: 240, top:  40, left:  10, rot: -5, z: 2 },
-      { img: 'images/lists/10-things-i-hate-about-you.jpg',       label: 'Romance',  title: 'Date night picks',    w: 175, h: 263, top:  80, left: 145, rot:  4, z: 4 },
-      { img: 'images/lists/monsters.jpg',                         label: 'Thriller', title: 'Need to watch',       w: 185, h: 278, top:  20, left: 285, rot: -2, z: 5 },
-      { img: 'images/lists/landman.jpg',                          label: 'Drama',    title: "Can't stop watching", w: 165, h: 248, top:  70, left: 428, rot:  5, z: 3 },
-      { img: 'images/lists/napoleon-dynamite.jpg',                label: 'Comedy',   title: 'Feel good movies',    w: 150, h: 225, top: 120, left: 552, rot: -3, z: 2 },
+      { img: 'images/lists/fallout.webp',                         label: 'Sci-Fi',   title: 'Weekend watch',       w: 200, h: 300, top:  80, left: -40, rot: -5, z: 2 },
+      { img: 'images/lists/10-things-i-hate-about-you.jpg',       label: 'Romance',  title: 'Date night picks',    w: 218, h: 327, top: 115, left: 110, rot:  4, z: 4 },
+      { img: 'images/lists/monsters.jpg',                         label: 'Thriller', title: 'Need to watch',       w: 230, h: 345, top:  60, left: 260, rot: -2, z: 5 },
+      { img: 'images/lists/landman.jpg',                          label: 'Drama',    title: "Can't stop watching", w: 205, h: 308, top: 110, left: 410, rot:  5, z: 3 },
+      { img: 'images/lists/napoleon-dynamite.jpg',                label: 'Comedy',   title: 'Feel good movies',    w: 188, h: 282, top: 155, left: 552, rot: -3, z: 2 },
     ];
 
     const editorialWrap = document.getElementById('editorialWrap');
@@ -1259,7 +1354,7 @@
         `left:${item.left}px`,
         `z-index:${item.z}`,
         `background-image:url('${item.img}')`,
-        `transform:rotate(${item.rot}deg)`,
+        `--rot:${item.rot}deg`,
       ].join(';');
 
       const label = document.createElement('div');
@@ -1271,19 +1366,121 @@
       const title = document.createElement('strong');
       title.textContent = item.title;
 
+      poster.dataset.origZ = item.z;
       label.appendChild(genre);
       label.appendChild(title);
       poster.appendChild(label);
       editorialWrap.appendChild(poster);
-
-      // hover: lift + keep rotation
-      poster.addEventListener('mouseenter', () => {
-        poster.style.transform = `rotate(${item.rot}deg) translateY(-8px) scale(1.04)`;
-      });
-      poster.addEventListener('mouseleave', () => {
-        poster.style.transform = `rotate(${item.rot}deg)`;
-      });
     });
+
+    // Container-level hover tracking — avoids enter/leave chaos on overlapping cards
+    let edHovered = null;
+    let edRaf = false;
+
+    function pickTopCard(e) {
+      const cards = editorialWrap.querySelectorAll('.ed-poster');
+      let topCard = null, topZ = -1;
+      cards.forEach(card => {
+        const r = card.getBoundingClientRect();
+        if (e.clientX >= r.left && e.clientX <= r.right &&
+            e.clientY >= r.top  && e.clientY <= r.bottom) {
+          const z = parseInt(card.style.zIndex) || 0;
+          if (z > topZ) { topZ = z; topCard = card; }
+        }
+      });
+      return topCard;
+    }
+
+    function setHovered(card) {
+      if (card === edHovered) return;
+      if (edHovered) {
+        edHovered.classList.remove('lifted');
+      }
+      edHovered = card;
+      if (card) {
+        editorialWrap.querySelectorAll('.ed-poster').forEach(c => {
+          if (c !== card) c.style.zIndex = c.dataset.origZ;
+        });
+        card.style.zIndex = 20;
+        card.classList.add('lifted');
+      }
+    }
+
+    editorialWrap.addEventListener('mousemove', e => {
+      if (edRaf) return;
+      edRaf = true;
+      requestAnimationFrame(() => { setHovered(pickTopCard(e)); edRaf = false; });
+    });
+
+    editorialWrap.addEventListener('mouseleave', () => {
+      if (edHovered) edHovered.classList.remove('lifted');
+      edHovered = null;
+    });
+
+    // ── Live ticker ───────────────────────────────────────────
+    (async function initTicker() {
+      const KEY  = 'REMOVED_TMDB_API_KEY';
+      const BASE = 'https://api.themoviedb.org/3';
+      const track = document.getElementById('tickerTrack');
+      if (!track) return;
+
+      function buildNodes(groups) {
+        // Returns a DocumentFragment with category labels and title items
+        const frag = document.createDocumentFragment();
+        groups.forEach(({ label, items }) => {
+          const cat = document.createElement('span');
+          cat.className = 'ticker-cat';
+          cat.textContent = label;
+          frag.appendChild(cat);
+
+          items.forEach(title => {
+            const item = document.createElement('span');
+            item.className = 'ticker-item';
+            item.textContent = title;
+            frag.appendChild(item);
+
+            const sep = document.createElement('span');
+            sep.className = 'ticker-sep';
+            sep.textContent = '·';
+            frag.appendChild(sep);
+          });
+        });
+        return frag;
+      }
+
+      function populate(groups) {
+        track.textContent = ''; // clear
+        track.appendChild(buildNodes(groups));
+        track.appendChild(buildNodes(groups)); // duplicate for seamless loop
+
+        // Scale animation speed to content length (~60px/s)
+        const duration = (track.scrollWidth / 2) / 60;
+        track.style.animationDuration = `${Math.max(30, duration)}s`;
+      }
+
+      try {
+        const [trending, nowPlaying, upcoming, topTv] = await Promise.all([
+          fetch(`${BASE}/trending/all/week?api_key=${KEY}`).then(r => r.json()),
+          fetch(`${BASE}/movie/now_playing?api_key=${KEY}`).then(r => r.json()),
+          fetch(`${BASE}/movie/upcoming?api_key=${KEY}`).then(r => r.json()),
+          fetch(`${BASE}/tv/top_rated?api_key=${KEY}`).then(r => r.json()),
+        ]);
+
+        populate([
+          { label: 'Trending Now', items: (trending.results  || []).slice(0, 8).map(r => r.title || r.name) },
+          { label: 'In Cinemas',   items: (nowPlaying.results || []).slice(0, 6).map(r => r.title) },
+          { label: 'Coming Soon',  items: (upcoming.results  || []).slice(0, 6).map(r => r.title) },
+          { label: 'Top Rated TV', items: (topTv.results     || []).slice(0, 6).map(r => r.name) },
+        ]);
+      } catch (err) {
+        populate([
+          { label: 'Trending Now', items: ['Sinners', 'Thunderbolts', 'Novocaine', 'A Working Man', 'The Amateur', 'Black Bag'] },
+          { label: 'Coming Soon',  items: ['Mission: Impossible – The Final Reckoning', 'Lilo & Stitch', 'Jurassic World Rebirth'] },
+          { label: 'Top Rated TV', items: ['Adolescence', 'Severance', 'The White Lotus', 'Landman', 'Paradise'] },
+        ]);
+      }
+    })();
+
   </script>
 </body>
 </html>
