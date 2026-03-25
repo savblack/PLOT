@@ -44,8 +44,36 @@ const SLIDE_OUT = 280;
 function easeOutQuint(t) { return 1 - Math.pow(1 - t, 5); }
 function easeInCubic(t)  { return t * t * t; }
 
+const FEATURES = [
+  {
+    id: 'discover',
+    num: '01',
+    title: 'Discover',
+    body: "Know what's new, trending, and coming soon — and find out where you can watch it, all in one place. PLOT is your starting point for finding something to watch tonight.",
+  },
+  {
+    id: 'journal',
+    num: '02',
+    title: 'Journal',
+    body: "Save it. Rate it. Write about it. Every film and series you watch becomes part of your timeline — look back and see it take shape like a story you didn't know you were writing.",
+  },
+  {
+    id: 'personalise',
+    num: '03',
+    title: 'Personalise',
+    body: "No two feeds look the same, and they shouldn't. Yours is shaped by every film you've rated, every series you've logged and every list you've made. The more you use PLOT, the more it gets you.",
+  },
+  {
+    id: 'share',
+    num: '04',
+    title: 'Share',
+    body: "Drop your top ten list in the group chat. Check if your flatmate's TV taste is grounds for moving out. Share your profile like a love letter. Or a warning. What's the point of great taste if nobody knows?",
+  },
+];
+
 export default function LandingPage() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [activeFeature, setActiveFeature] = useState('discover');
   const navRef        = useRef(null);
   const posterSideRef = useRef(null);
   const posterElsRef  = useRef([]);
@@ -240,36 +268,35 @@ export default function LandingPage() {
 
       {/* Features */}
       <section id="features">
-        <div className="features-inner">
-          <div className="features-left reveal">
-            <h2 className="section-title">Designed for your<br />viewing habits.</h2>
-            <p className="features-sub">Everything you need to track, organise and share your taste — in one place.</p>
+        <div className="features-header reveal">
+          <h2 className="section-title">Designed for your<br />viewing habits</h2>
+        </div>
+        <div className="features-split">
+          <div className="feat-visual reveal">
+            {FEATURES.map(f => (
+              <div
+                key={f.id}
+                className={`feat-img${activeFeature === f.id ? ' active' : ''}`}
+                style={{ backgroundImage: "url('/plot-product.png')" }}
+              />
+            ))}
           </div>
-          <div className="feature-grid">
-            <div className="feature-col reveal reveal-delay-1">
-              <span className="feature-num">01</span>
-              <div className="feature-title">Discover</div>
-              <p className="feature-desc">Know what's new, trending, and coming soon.</p>
-              <p className="feature-desc-more">And find out where you can watch it, all in one place. PLOT is your starting point for finding something to watch tonight.</p>
-            </div>
-            <div className="feature-col reveal reveal-delay-2">
-              <span className="feature-num">02</span>
-              <div className="feature-title">Journal</div>
-              <p className="feature-desc">Save it. Rate it. Write about it.</p>
-              <p className="feature-desc-more">Every film and series you watch becomes part of your timeline. Look back and see it take shape like a story you didn't know you were writing.</p>
-            </div>
-            <div className="feature-col reveal reveal-delay-3">
-              <span className="feature-num">03</span>
-              <div className="feature-title">Personalise</div>
-              <p className="feature-desc">No two feeds look the same, and they shouldn't.</p>
-              <p className="feature-desc-more">Yours is shaped by every film you've rated, every series you've logged and every list you've made. The more you use PLOT, the more it <em>gets</em> you.</p>
-            </div>
-            <div className="feature-col reveal reveal-delay-4">
-              <span className="feature-num">04</span>
-              <div className="feature-title">Share</div>
-              <p className="feature-desc">Drop your top ten list in the group chat.</p>
-              <p className="feature-desc-more">Check if your flatmate's TV taste is grounds for moving out. Share your profile like a love letter. Or a <em>warning.</em> What's the point of great taste if nobody knows?</p>
-            </div>
+          <div className="feat-accordion reveal reveal-delay-2">
+            {FEATURES.map(f => (
+              <div
+                key={f.id}
+                className={`feat-item${activeFeature === f.id ? ' active' : ''}`}
+                onMouseEnter={() => setActiveFeature(f.id)}
+              >
+                <div className="feat-header">
+                  <span className="feat-num">{f.num}</span>
+                  <span className="feat-title">{f.title}</span>
+                </div>
+                <div className="feat-body">
+                  <p>{f.body}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
