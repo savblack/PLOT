@@ -3,23 +3,23 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PLOT</title>
-  <meta name="description" content="Your film &amp; TV journal" />
+  <title>PLOT | Your Film &amp; TV Journal</title>
+  <meta name="description" content="The beautiful way to track what you watch. Log, rate, and share your film and TV taste." />
 
   <!-- Favicon -->
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
 
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="PLOT" />
-  <meta property="og:description" content="Your film &amp; TV journal" />
+  <meta property="og:title" content="PLOT | Your Film &amp; TV Journal" />
+  <meta property="og:description" content="The beautiful way to track what you watch. Log, rate, and share your film and TV taste." />
   <meta property="og:image" content="og-image.png" />
   <meta property="og:url" content="https://theplot.tv" />
 
   <!-- Twitter / X card -->
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="PLOT" />
-  <meta name="twitter:description" content="Your film &amp; TV journal" />
+  <meta name="twitter:title" content="PLOT | Your Film &amp; TV Journal" />
+  <meta name="twitter:description" content="The beautiful way to track what you watch. Log, rate, and share your film and TV taste." />
   <meta name="twitter:image" content="og-image.png" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -100,7 +100,13 @@
       align-items: center;
       justify-content: space-between;
       background: transparent;
-      transition: box-shadow 0.3s var(--ease);
+      transition: background 0.3s var(--ease), backdrop-filter 0.3s var(--ease), box-shadow 0.3s var(--ease);
+    }
+    nav.scrolled {
+      background: var(--glass-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      box-shadow: 0 1px 0 var(--glass-border);
     }
 
     .nav-logo {
@@ -235,16 +241,6 @@
       max-width: 900px;
     }
 
-    .hero-eyebrow {
-      display: inline-block;
-      font-size: 0.72rem;
-      font-weight: 700;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: 1.5rem;
-    }
-
     .hero-headline {
       font-family: var(--serif);
       font-size: clamp(2.6rem, 6.5vw, 5rem);
@@ -309,6 +305,11 @@
       color: var(--text);
     }
 
+    #plotDoes {
+      margin-top: 20rem;
+      margin-bottom: 14rem;
+    }
+
     /* ── For the Plot ───────────────────────────────────────── */
     #for-the-plot {
       padding: 10rem 2rem;
@@ -321,10 +322,6 @@
       grid-template-columns: 1fr 2fr;
       gap: 6rem;
       align-items: center;
-    }
-
-    .ftp-left {
-      position: static;
     }
 
     .ftp-headline {
@@ -354,11 +351,7 @@
 
     @media (max-width: 900px) {
       .ftp-inner { grid-template-columns: 1fr; gap: 3rem; }
-      .ftp-left { position: static; }
     }
-
-    /* ── Value Prop ─────────────────────────────────────────── */
-    #value { display: none; }
 
     .editorial-wrap {
       position: relative;
@@ -415,15 +408,6 @@
       padding: 8rem 2rem;
       max-width: 1200px;
       margin: 0 auto;
-    }
-
-    .section-label {
-      font-size: 0.78rem;
-      font-weight: 700;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: 1rem;
     }
 
     .section-title {
@@ -485,9 +469,6 @@
 
     .feat-item:first-child {
       border-top: none;
-    }
-    .feat-item:last-child {
-      border-bottom: none;
     }
 
     .feat-header {
@@ -563,6 +544,13 @@
       line-height: 0.85;
       letter-spacing: -0.08em;
       color: var(--text);
+    }
+
+    .timeline-intro {
+      margin-top: 2rem;
+      max-width: 630px;
+      margin-left: auto;
+      margin-right: auto;
     }
 
     .timeline-entries {
@@ -643,8 +631,6 @@
       color: var(--muted);
       margin-bottom: 0.6rem;
     }
-
-    .tl-empty { /* placeholder column */ }
 
     /* ── Closing CTA ────────────────────────────────────────── */
     #cta {
@@ -816,10 +802,6 @@
 
     /* ── Responsive ─────────────────────────────────────────── */
     @media (max-width: 900px) {
-      #value {
-        grid-template-columns: 1fr;
-        gap: 3rem;
-      }
       /* Editorial poster stack uses absolute pixel positions — hide on smaller screens */
       #editorialWrap { display: none; }
     }
@@ -850,8 +832,8 @@
         gap: 12rem;
       }
       #plotDoes {
-        margin-top: 8rem !important;
-        margin-bottom: 6rem !important;
+        margin-top: 8rem;
+        margin-bottom: 6rem;
       }
 
       /* Features */
@@ -898,8 +880,8 @@
   <nav id="navbar">
     <a href="#" class="nav-logo"><img src="plot-logo.svg" alt="PLOT"></a>
     <ul class="nav-links" id="navLinks">
-      <li><a href="#">Log in</a></li>
-      <li><a href="#" class="nav-cta">Sign up</a></li>
+      <li><a href="https://app.theplot.tv/login">Log in</a></li>
+      <li><a href="https://app.theplot.tv/signup" class="nav-cta">Sign up</a></li>
     </ul>
     <button class="nav-hamburger" id="hamburger" aria-label="Menu">
       <span></span><span></span><span></span>
@@ -909,10 +891,10 @@
   <!-- ── Hero ────────────────────────────────────────────────── -->
   <section id="hero">
     <div class="hero-content">
-      <h1 class="hero-headline reveal" style="white-space: nowrap; text-align: center; width: 100%;">Your <span style="letter-spacing: -0.13em;">fi</span>lm and <span style="letter-spacing: -0.19em;">TV</span> journal</h1>
+      <h1 class="hero-headline reveal">Your <span style="letter-spacing: -0.13em;">fi</span>lm and <span style="letter-spacing: -0.19em;">TV</span> journal</h1>
       <p class="hero-sub reveal reveal-delay-2">Every film. Every series. Every feeling.<br>In one beautiful place.</p>
       <div class="hero-actions reveal reveal-delay-3">
-        <a href="#" class="btn btn-outline btn-large">Start your journal →</a>
+        <a href="https://app.theplot.tv/signup" class="btn btn-outline btn-large">Start your journal →</a>
       </div>
     </div>
   </section>
@@ -924,7 +906,7 @@
     <p class="manifesto-line reveal">You talk about them.</p>
     <p class="manifesto-line reveal">You carry them with you.</p>
     <p class="manifesto-line reveal">But no app has ever cared<br>as much as you do.</p>
-    <p class="manifesto-line no-fade reveal" id="plotDoes" style="margin-top: 20rem; margin-bottom: 14rem;">PLOT <em>does.</em></p>
+    <p class="manifesto-line no-fade reveal" id="plotDoes">PLOT <em>does.</em></p>
   </section>
 
   <!-- ── Features ─────────────────────────────────────────────── -->
@@ -995,19 +977,16 @@
       <div class="ftp-left reveal">
         <h2 class="ftp-headline">Your journal.<br>Your rules.</h2>
         <p class="ftp-body">Your top ten. All the series you binged in a weekend. The one dropping next month you've already cleared your schedule for. Make a list for anything.</p>
-        <a href="#" class="btn btn-outline btn-large">Make it yours →</a>
+        <a href="https://app.theplot.tv/signup" class="btn btn-outline btn-large">Make it yours →</a>
       </div>
       <div class="editorial-wrap" id="editorialWrap"></div>
     </div>
   </section>
 
-  <!-- ── Value Prop ───────────────────────────────────────────── -->
-  <section id="value" style="display:none"></section>
-
   <!-- ── Timeline ────────────────────────────────────────────────── -->
   <section id="timeline-section">
     <h2 class="timeline-headline reveal">A timeline as rich<br>as your taste</h2>
-    <p class="ftp-body reveal reveal-delay-2" style="margin-top: 2rem; max-width: 630px; margin-left: auto; margin-right: auto;">
+    <p class="timeline-intro ftp-body reveal reveal-delay-2">
       One day you'll scroll back and see the exact week you discovered your favourite director.<br>Remember the month you watched nothing but comfort rewatches and the series that kept you up until 2am.
     </p>
 
@@ -1041,7 +1020,7 @@
       <div class="tl-entry">
         <div class="tl-empty"></div>
         <div class="tl-poster-wrap">
-          <div class="tl-poster reveal" style="background-image: url('images/hero/saltburn.jpg');"></div>
+          <div class="tl-poster reveal" style="background-image: url('images/hero/saltburn.jpg')"></div>
         </div>
         <div class="tl-note tl-note-right reveal reveal-delay-2">
           <div class="tl-date">June 2024</div>
@@ -1056,7 +1035,7 @@
           <p>The twist I did not<br>see coming.</p>
         </div>
         <div class="tl-poster-wrap">
-          <div class="tl-poster reveal" style="background-image: url('images/hero/parasite.jpg')"></div>
+          <div class="tl-poster reveal" style="background-image: url('images/hero/sinners.jpg')"></div>
         </div>
         <div class="tl-empty"></div>
       </div>
@@ -1065,7 +1044,7 @@
       <div class="tl-entry">
         <div class="tl-empty"></div>
         <div class="tl-poster-wrap">
-          <div class="tl-poster reveal" style="background-image: url('images/hero/the-substance.avif')"></div>
+          <div class="tl-poster reveal" style="background-image: url('images/hero/the-substance.jpg')"></div>
         </div>
         <div class="tl-note tl-note-right reveal reveal-delay-2">
           <div class="tl-date">December 2024</div>
@@ -1080,7 +1059,7 @@
           <p>My top ten.<br>Number one. Always.</p>
         </div>
         <div class="tl-poster-wrap">
-          <div class="tl-poster reveal" style="background-image: url('images/hero/gone-girl.jpg')"></div>
+          <div class="tl-poster reveal" style="background-image: url('images/hero/wuthering-heights.jpg')"></div>
         </div>
         <div class="tl-empty"></div>
       </div>
@@ -1089,7 +1068,7 @@
       <div class="tl-entry">
         <div class="tl-empty"></div>
         <div class="tl-poster-wrap">
-          <div class="tl-poster reveal" style="background-image: url('images/hero/the-summer-i-turned-pretty.jpg')"></div>
+          <div class="tl-poster reveal" style="background-image: url('images/hero/anyone-but-you.jpg')"></div>
         </div>
         <div class="tl-note tl-note-right reveal reveal-delay-2">
           <div class="tl-date">September 2025</div>
@@ -1118,7 +1097,7 @@
         <p class="cta-sub reveal reveal-delay-1">And every story needs a PLOT.</p>
       </div>
       <div class="reveal reveal-delay-2" style="flex-shrink: 0; margin-top: 1rem;">
-        <a href="#" class="btn btn-outline-white btn-large">Create your PLOT →</a>
+        <a href="https://app.theplot.tv/signup" class="btn btn-outline-white btn-large">Create your PLOT →</a>
       </div>
     </div>
   </section>
@@ -1196,32 +1175,32 @@
     // vy          → vertical position as fraction of viewport height (poster top)
     // restX       → distance from screen edge when fully in
     const sideData = [
-      // On load — four posters visible immediately (2 left, 2 right)
-      { src: 'images/hero/challengers.webp',          side: 'left',  vy: 0.51, showAt:  0, w: 255, h: 383, restX: 16, hold: 1000 },
-      { src: 'images/hero/saltburn.jpg',              side: 'left',  vy: 0.11, showAt: 40, w: 305, h: 415, restX: 34, hold: 1000 },
-      { src: 'images/hero/devil-wears-prada-two.jpg', side: 'right', vy: 0.11, showAt: 20, w: 270, h: 405, restX: 22, hold: 1000 },
-      { src: 'images/hero/love-story.webp',           side: 'right', vy: 0.518, showAt: 60, w: 268, h: 402, restX: 58, hold: 1000 },
-      // Scroll reveals — all finish well before the manifesto fade-out
-      { src: 'images/hero/the-white-lotus.jpg',       side: 'left',  vy: 0.24, showAt:  400, w: 268, h: 402, restX: 90 },
-      { src: 'images/hero/nosferatu.jpg',             side: 'right', vy: 0.22, showAt:  440, w: 275, h: 413, restX: 85 },
-      { src: 'images/hero/gone-girl.jpg',             side: 'left',  vy: 0.50, showAt:  580, w: 260, h: 390, restX: 85 },
-      { src: 'images/hero/the-bear.jpg',              side: 'right', vy: 0.48, showAt:  620, w: 268, h: 402, restX: 18 },
-      { src: 'images/hero/scream.jpg',                side: 'left',  vy: 0.09, showAt:  760, w: 282, h: 423, restX: 95 },
-      { src: 'images/hero/squid-game-2.jpg',          side: 'right', vy: 0.11, showAt:  800, w: 255, h: 383, restX: 90 },
-      { src: 'images/hero/the-vampire-diaries.jpeg',  side: 'left',  vy: 0.34, showAt:  940, w: 268, h: 402, restX: 88 },
-      { src: 'images/hero/the-wolf-of-wall-street.png', side: 'right', vy: 0.30, showAt: 980, w: 282, h: 423, restX: 18 },
-      { src: 'images/hero/the-conjuring.avif',        side: 'left',  vy: 0.52, showAt: 1120, w: 260, h: 390, restX: 88 },
-      { src: 'images/hero/clueless.jpg',              side: 'right', vy: 0.50, showAt: 1160, w: 255, h: 383, restX: 82 },
-      { src: 'images/hero/parasite.jpg',              side: 'left',  vy: 0.12, showAt: 1300, w: 282, h: 423, restX: 92 },
-      { src: 'images/hero/oppenheimer.webp',          side: 'right', vy: 0.09, showAt: 1340, w: 268, h: 402, restX: 16 },
-      { src: 'images/hero/the-substance.avif',        side: 'left',  vy: 0.38, showAt: 1480, w: 275, h: 413, restX: 92 },
-      { src: 'images/hero/anniversary.jpg',           side: 'right', vy: 0.36, showAt: 1520, w: 260, h: 390, restX: 86 },
-      { src: 'images/hero/past-lives.jpg',            side: 'right', vy: 0.52, showAt: 1660, w: 268, h: 402, restX: 20 },
-      { src: 'images/hero/housemaid.jpg',             side: 'left',  vy: 0.50, showAt: 1700, w: 255, h: 383, restX: 86 },
-      { src: 'images/hero/aftersun.jpg',              side: 'right', vy: 0.14, showAt: 1840, w: 282, h: 423, restX: 88 },
-      { src: 'images/hero/friday-night-lights.jpg',   side: 'left',  vy: 0.11, showAt: 1880, w: 268, h: 402, restX: 90 },
-      { src: 'images/hero/the-summer-i-turned-pretty.jpg', side: 'left', vy: 0.38, showAt: 2020, w: 260, h: 390, restX: 90 },
-      { src: 'images/hero/american-primeval.jpg',     side: 'right', vy: 0.36, showAt: 2060, w: 275, h: 413, restX: 18 },
+      // On load — four posters (2 left, 2 right)
+      { src: 'images/hero/saltburn.jpg',              side: 'left',  vy: 0.51, showAt:  0, w: 255, h: 383, restX: 16, hold: 1000 },
+      { src: 'images/hero/anyone-but-you.jpg',        side: 'left',  vy: 0.11, showAt: 40, w: 305, h: 415, restX: 34, hold: 1000 },
+      { src: 'images/hero/nosferatu.jpg',             side: 'right', vy: 0.11, showAt: 20, w: 270, h: 405, restX: 22, hold: 1000 },
+      { src: 'images/hero/wuthering-heights.jpg',     side: 'right', vy: 0.51, showAt: 60, w: 268, h: 402, restX: 58, hold: 1000 },
+      // Scroll reveals
+      { src: 'images/hero/aftersun.jpg',              side: 'left',  vy: 0.24, showAt:  400, w: 268, h: 402, restX: 90 },
+      { src: 'images/hero/anatomy-of-a-fall.jpg',     side: 'right', vy: 0.22, showAt:  440, w: 275, h: 413, restX: 85 },
+      { src: 'images/hero/babygirl.jpg',              side: 'left',  vy: 0.50, showAt:  580, w: 260, h: 390, restX: 85 },
+      { src: 'images/hero/dont-worry-darling.jpg',    side: 'right', vy: 0.48, showAt:  620, w: 268, h: 402, restX: 18 },
+      { src: 'images/hero/eternity.jpg',              side: 'left',  vy: 0.09, showAt:  760, w: 282, h: 423, restX: 95 },
+      { src: 'images/hero/f1-the-movie.jpg',          side: 'right', vy: 0.11, showAt:  800, w: 255, h: 383, restX: 90 },
+      { src: 'images/hero/frankenstein.jpg',          side: 'left',  vy: 0.34, showAt:  940, w: 268, h: 402, restX: 88 },
+      { src: 'images/hero/heretic.jpg',               side: 'right', vy: 0.30, showAt:  980, w: 282, h: 423, restX: 18 },
+      { src: 'images/hero/if-i-had-legs-id-kick-you.jpg', side: 'left', vy: 0.52, showAt: 1120, w: 260, h: 390, restX: 88 },
+      { src: 'images/hero/longlegs.jpg',              side: 'right', vy: 0.50, showAt: 1160, w: 255, h: 383, restX: 82 },
+      { src: 'images/hero/marty-supreme.jpg',         side: 'left',  vy: 0.12, showAt: 1300, w: 282, h: 423, restX: 92 },
+      { src: 'images/hero/past-lives.jpg',            side: 'right', vy: 0.09, showAt: 1340, w: 268, h: 402, restX: 16 },
+      { src: 'images/hero/people-we-meet-on-vacation.jpg', side: 'left', vy: 0.38, showAt: 1480, w: 275, h: 413, restX: 92 },
+      { src: 'images/hero/priscilla.jpg',             side: 'right', vy: 0.36, showAt: 1520, w: 260, h: 390, restX: 86 },
+      { src: 'images/hero/project-hail-mary.jpg',     side: 'left',  vy: 0.52, showAt: 1660, w: 268, h: 402, restX: 20 },
+      { src: 'images/hero/sinners.jpg',               side: 'right', vy: 0.50, showAt: 1700, w: 255, h: 383, restX: 86 },
+      { src: 'images/hero/the-drama.jpg',             side: 'left',  vy: 0.14, showAt: 1840, w: 282, h: 423, restX: 88 },
+      { src: 'images/hero/the-housemaid.jpg',         side: 'right', vy: 0.11, showAt: 1880, w: 268, h: 402, restX: 90 },
+      { src: 'images/hero/the-substance.jpg',         side: 'left',  vy: 0.38, showAt: 2020, w: 260, h: 390, restX: 90 },
+      { src: 'images/hero/top-gun-maverick.jpg',      side: 'right', vy: 0.36, showAt: 2060, w: 275, h: 413, restX: 18 },
     ];
 
     const posterSide = document.getElementById('posterSide');
@@ -1231,7 +1210,6 @@
       el.style.width  = data.w + 'px';
       el.style.height = data.h + 'px';
       el.style.backgroundImage = `url('${data.src}')`;
-      if (data.bgSize) el.style.backgroundSize = data.bgSize;
       posterSide.appendChild(el);
       return { el, data };
     });
@@ -1240,10 +1218,6 @@
     const HOLD      = 600;
     const SLIDE_OUT = 280;
 
-    // smooth ease-in-out cubic
-    function easeInOutCubic(t) {
-      return t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2;
-    }
     // gentle ease-out quint
     function easeOutQuint(t) {
       return 1 - Math.pow(1 - t, 5);
@@ -1413,7 +1387,10 @@
     });
 
     editorialWrap.addEventListener('mouseleave', () => {
-      if (edHovered) edHovered.classList.remove('lifted');
+      if (edHovered) {
+        edHovered.classList.remove('lifted');
+        edHovered.style.zIndex = edHovered.dataset.origZ;
+      }
       edHovered = null;
     });
 
