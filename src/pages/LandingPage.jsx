@@ -447,8 +447,8 @@ export default function LandingPage() {
           <ul className="footer-links">
             <li><a href="#">X</a></li>
             <li><a href="#">Instagram</a></li>
-            <li><a href="#">Privacy</a></li>
-            <li><a href="#">Terms</a></li>
+            <li><a href="/privacy">Privacy</a></li>
+            <li><a href="/terms">Terms</a></li>
           </ul>
           <span className="footer-copy">© 2026 PLOT</span>
         </div>
