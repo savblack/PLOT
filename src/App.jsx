@@ -276,28 +276,12 @@ export default function App() {
     const loadForYou = async () => {
       const watchedIds = new Set(watched.map(i => i.tmdb_id || i.id));
 
-      // Use top 10 rated real items (with valid IDs) as seeds
-      const ratedReal = [...watched]
-        .filter(i => i.rating && (i.tmdb_id || i.id))
+      // Use top 10 rated items as seeds; fall back to most recently logged
+      const seeds = [...watched]
+        .filter(i => i.rating)
         .sort((a, b) => b.rating - a.rating)
         .slice(0, 10);
-
-      // If not enough real seeds, resolve a few high-rated sample titles via search
-      let finalSeeds = ratedReal;
-      if (ratedReal.length < 3) {
-        const toResolve = SAMPLE_WATCHED
-          .filter(s => s.rating >= 5)
-          .slice(0, 5);
-        const resolved = await Promise.all(
-          toResolve.map(async s => {
-            const type = s.media_type || 'movie';
-            const res = await tmdb.search(s.title || s.name);
-            const match = res?.results?.find(r => r.media_type === type);
-            return match ? { ...s, id: match.id, tmdb_id: match.id, media_type: type } : null;
-          })
-        );
-        finalSeeds = [...ratedReal, ...resolved.filter(Boolean)];
-      }
+      const finalSeeds = seeds.length > 0 ? seeds : watched.slice(0, 5);
 
       if (finalSeeds.length === 0) {
         // Fallback: discover by genre preferences
