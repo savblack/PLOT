@@ -42,6 +42,8 @@ export default function PrivacyPage() {
         <ul>
           <li><strong>Supabase</strong> — authentication and database hosting</li>
           <li><strong>The Movie Database (TMDB)</strong> — film and TV metadata</li>
+          <li><strong>Vercel</strong> — website and application hosting. Your requests are routed through Vercel's infrastructure.</li>
+          <li><strong>Google Fonts</strong> — typography loaded from Google's servers, which may log your IP address per Google's privacy policy.</li>
         </ul>
         <p>We are not liable for the acts or omissions of these third-party providers, including any data breaches, service outages, or loss of data that occurs on their infrastructure. Your use of the Service constitutes your acceptance of their respective policies.</p>
 

@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privacy Policy — PLOT</title>
+  <meta name="description" content="Privacy Policy for PLOT, your film and TV journal." />
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:           #f8f8f8;
+      --surface:      #ffffff;
+      --text:         #1a1a1a;
+      --muted:        #666666;
+      --accent:       #000000;
+      --glass-bg:     rgba(255,255,255,0.8);
+      --glass-border: rgba(0,0,0,0.05);
+      --serif:        'Playfair Display', Georgia, serif;
+      --sans:         'Manrope', system-ui, sans-serif;
+      --r-pill:       9999px;
+      --ease:         cubic-bezier(0.23, 1, 0.32, 1);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Navbar ─────────────────────────────────────────────── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      padding: 0 2rem;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--glass-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--glass-border);
+    }
+    .nav-logo { text-decoration: none; display: flex; align-items: center; }
+    .nav-logo img { height: 28px; display: block; }
+
+    .nav-links {
+      display: flex; align-items: center; gap: 2rem; list-style: none;
+    }
+    .nav-links a {
+      text-decoration: none;
+      color: var(--muted);
+      font-size: 0.75rem;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+    .nav-cta { color: var(--text) !important; font-weight: 600 !important; }
+
+    /* ── Content ─────────────────────────────────────────────── */
+    .page-wrap {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 120px 2rem 80px;
+    }
+
+    .page-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 1rem;
+    }
+
+    h1 {
+      font-family: var(--serif);
+      font-size: clamp(2rem, 4vw, 2.8rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--text);
+      margin-bottom: 0.5rem;
+    }
+
+    .page-owner {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #1a1a1a;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.75rem;
+    }
+
+    .page-meta {
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-bottom: 3rem;
+      padding-bottom: 2rem;
+      border-bottom: 1px solid rgba(0,0,0,0.08);
+    }
+
+    h2 {
+      font-family: var(--sans);
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+      margin: 2.5rem 0 0.75rem;
+    }
+
+    p {
+      font-size: 0.93rem;
+      color: #333;
+      margin-bottom: 1rem;
+      text-align: justify;
+    }
+
+    ul {
+      font-size: 0.93rem;
+      color: #333;
+      margin: 0 0 1rem 1.5rem;
+      text-align: justify;
+    }
+    ul li { margin-bottom: 0.4rem; }
+
+    a { color: var(--text); }
+    a:hover { opacity: 0.7; }
+
+    /* ── Footer ─────────────────────────────────────────────── */
+    footer {
+      background: #0e0e0e;
+      overflow: hidden;
+    }
+    .footer-wordmark { display: block; width: 100%; padding: 0; user-select: none; }
+    .footer-wordmark img {
+      width: 92%;
+      display: block;
+      margin: 0 auto;
+      filter: brightness(0) invert(1);
+      opacity: 0.07;
+    }
+    .footer-meta {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      padding: 3rem 3rem 3rem;
+    }
+    .footer-tagline { font-family: var(--sans); font-size: 0.75rem; color: rgba(255,255,255,0.3); }
+    .footer-links { display: flex; gap: 2rem; list-style: none; }
+    .footer-links a {
+      text-decoration: none;
+      color: rgba(255,255,255,0.3);
+      font-size: 0.8rem;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      transition: color 0.2s;
+    }
+    .footer-links a:hover { color: rgba(255,255,255,0.8); }
+    .footer-copy { color: rgba(255,255,255,0.2); font-size: 0.78rem; }
+
+    @media (max-width: 600px) {
+      .footer-meta { flex-direction: column; gap: 1.5rem; align-items: flex-start; }
+      .nav-links { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a href="index.html" class="nav-logo"><img src="plot-logo.svg" alt="PLOT"></a>
+    <ul class="nav-links">
+      <li><a href="https://app.theplot.tv/login">Log in</a></li>
+      <li><a href="https://app.theplot.tv/signup" class="nav-cta">Sign up</a></li>
+    </ul>
+  </nav>
+
+  <main class="page-wrap">
+    <p class="page-label">Legal</p>
+    <h1>Privacy Policy</h1>
+    <p class="page-owner">A product of SUSUMU HOUSE</p>
+    <p class="page-meta">Last updated: March 2026</p>
+
+    <h2>1. Agreement to This Policy</h2>
+    <p><strong>By creating an account or using PLOT in any way, you acknowledge that you have read, understood, and agree to this Privacy Policy in full. If you do not agree, you must not use the Service.</strong></p>
+    <p>You use the Service at your own risk. While we take reasonable steps to protect your data, no method of transmission over the internet or electronic storage is completely secure. We cannot guarantee the absolute security of your information, and by using the Service you accept this inherent risk.</p>
+
+    <h2>2. What We Collect</h2>
+    <p>When you use PLOT, we may collect:</p>
+    <ul>
+      <li><strong>Account information</strong> — your email address and hashed password (managed via Supabase Auth)</li>
+      <li><strong>Profile data</strong> — your username, display name, and optional bio</li>
+      <li><strong>Activity data</strong> — films and TV shows you log, rate, or add to lists</li>
+      <li><strong>Journal entries</strong> — notes and reviews you write about content you've watched</li>
+      <li><strong>Usage data</strong> — basic analytics such as pages visited and features used, collected in aggregate and anonymised form</li>
+      <li><strong>Technical data</strong> — IP address, browser type, and device information collected automatically when you access the Service</li>
+    </ul>
+
+    <h2>3. How We Use Your Data</h2>
+    <p>We use your data to operate, maintain, and improve the Service. This includes:</p>
+    <ul>
+      <li>Providing and personalising your PLOT experience</li>
+      <li>Displaying your watch history, lists, and journal (publicly or privately, per your settings)</li>
+      <li>Sending transactional emails (account confirmation, password reset)</li>
+      <li>Analysing usage patterns in anonymised, aggregate form to improve the product</li>
+    </ul>
+    <p>We do not sell your personal data to third parties. We are not responsible for how you choose to use or expose your own data within the Service.</p>
+
+    <h2>4. Third-Party Services &amp; Disclaimer</h2>
+    <p>The Service relies on third-party infrastructure and data providers. By using PLOT, you acknowledge and accept that your data will be processed by these third parties under their own terms and privacy policies, over which SUSUMU HOUSE has no control:</p>
+    <ul>
+      <li><strong>Supabase</strong> — authentication and database. See <a href="https://supabase.com/privacy" target="_blank" rel="noopener">Supabase's Privacy Policy</a>.</li>
+      <li><strong>The Movie Database (TMDB)</strong> — film and TV metadata. See <a href="https://www.themoviedb.org/privacy-policy" target="_blank" rel="noopener">TMDB's Privacy Policy</a>.</li>
+      <li><strong>Vercel</strong> — website and application hosting. Your requests are routed through Vercel's infrastructure.</li>
+      <li><strong>Google Fonts</strong> — typography loaded from Google's servers, which may log your IP address per Google's privacy policy.</li>
+    </ul>
+    <p>We are not liable for the acts or omissions of these third-party providers, including any data breaches, service outages, or loss of data that occurs on their infrastructure. Your use of the Service constitutes your acceptance of their respective policies.</p>
+
+    <h2>5. Data Security &amp; Limitation of Liability</h2>
+    <p>We implement commercially reasonable technical and organisational measures to protect your data. However, <strong>we cannot guarantee that your data will be completely secure at all times.</strong> You acknowledge and agree that:</p>
+    <ul>
+      <li>No internet transmission or electronic storage method is 100% secure</li>
+      <li>You provide your data at your own risk</li>
+      <li>SUSUMU HOUSE shall not be liable for any unauthorised access, data breach, loss, theft, or disclosure of your information that is beyond our reasonable control</li>
+      <li>In the event of a data breach, we will notify affected users as required by applicable law, but shall not be liable for any resulting damages</li>
+    </ul>
+
+    <h2>6. Data Retention &amp; Deletion</h2>
+    <p>Your data is retained for as long as your account remains active. You may request deletion of your account and associated data at any time through the account settings screen. We will make reasonable efforts to remove your personal data in a timely manner, subject to any legal obligations to retain it. We are not liable for residual copies of data that may persist temporarily in backup systems during normal operations.</p>
+
+    <h2>7. Cookies &amp; Local Storage</h2>
+    <p>PLOT uses cookies and local storage solely for session management and authentication. We do not use tracking or advertising cookies. By using the Service, you consent to this use.</p>
+
+    <h2>8. Your Rights</h2>
+    <p>Depending on your jurisdiction, you may have rights regarding your personal data (such as access, correction, deletion, or portability). To exercise any such rights, contact us via the app. We will respond to reasonable requests in accordance with applicable law but are not liable for any inability to fully comply where doing so conflicts with our legal obligations or technical constraints.</p>
+
+    <h2>9. Children's Privacy</h2>
+    <p>The Service is not directed at children under the age of 13. We do not knowingly collect personal data from children under 13. If we become aware that we have collected such data, we will delete it immediately. Parents or guardians who believe their child has provided personal data to us should contact us via the app.</p>
+
+    <h2>10. Changes to This Policy</h2>
+    <p>We reserve the right to update this Privacy Policy at any time. Changes will be posted to this page with an updated "last updated" date. Your continued use of the Service after any changes constitutes your acceptance of the revised policy. We are not obligated to provide individual notice of changes beyond updating this page.</p>
+
+    <h2>11. Contact</h2>
+    <p>PLOT is a product of SUSUMU HOUSE. This Privacy Policy is governed by the laws of New South Wales, Australia. Any disputes arising in connection with this policy are subject to the exclusive jurisdiction of the courts of New South Wales, Australia. For privacy-related enquiries, contact us at <a href="mailto:contact@susumuhouse.com">contact@susumuhouse.com</a> or via the app.</p>
+  </main>
+
+  <!-- ── Footer ────────────────────────────────────────────────── -->
+  <footer>
+    <div class="footer-wordmark"><img src="plot-logo.svg" alt="PLOT"></div>
+    <div class="footer-meta">
+      <span class="footer-tagline">YOUR FILM &amp; TV JOURNAL</span>
+      <ul class="footer-links">
+        <li><a href="#">X</a></li>
+        <li><a href="#">Instagram</a></li>
+        <li><a href="privacy.html">Privacy</a></li>
+        <li><a href="terms.html">Terms</a></li>
+      </ul>
+      <span class="footer-copy">© 2026 PLOT</span>
+    </div>
+  </footer>
+
+</body>
+</html>

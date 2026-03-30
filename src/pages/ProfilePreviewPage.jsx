@@ -35,12 +35,13 @@ export default function ProfilePreviewPage() {
     </div>
   );
 
-  const listItems = items.slice(0, 16).map(r => ({
+  const listIds = ['a', 'b', 'c', 'd'];
+  const listItems = items.slice(0, 16).map((r, i) => ({
     id: r.id,
     poster_path: r.poster_path,
     title: r.title || r.name,
     media_type: r.media_type,
-    list_id: ['a', 'b', 'c', 'd'][Math.floor(Math.random() * 4)],
+    list_id: listIds[i % 4],
   }));
 
   const watches = items.slice(0, 8).map((r, i) => ({
