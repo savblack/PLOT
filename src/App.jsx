@@ -387,6 +387,14 @@ export default function App() {
     }
   };
 
+  const navigateTo = (nextView) => {
+    if (nextView === 'home')      setFeedTab('foryou');
+    if (nextView === 'new')       setNewReleasesTab('all');
+    if (nextView === 'upcoming')  setUpcomingTimeFilter('week');
+    if (nextView === 'watchlist') setJournalTab('lists');
+    setView(nextView);
+  };
+
   const logout = () => {
     supabase.auth.signOut();
     setWatched([]);
@@ -538,7 +546,7 @@ export default function App() {
     };
     loops.forEach(({ x: lx, y: ly, lr, dir }, i) => {
       const ex = lx + dir * lr;
-      seg(ex, ly, 38, i * 7 + 10);
+      seg(ex, ly, 65, i * 7 + 10);
       if (dir === 1) {
         d += ` C ${lx+lr} ${ly-k*lr} ${lx+k*lr} ${ly-lr} ${lx} ${ly-lr}`;
         d += ` C ${lx-k*lr} ${ly-lr} ${lx-lr} ${ly-k*lr} ${lx-lr} ${ly}`;
@@ -552,7 +560,7 @@ export default function App() {
       }
       px = ex; py = ly;
     });
-    seg(cx, height, 38, 90);
+    seg(cx, height, 65, 90);
     return d;
   };
   const toggleProfilePublic = async () => {
@@ -625,10 +633,10 @@ export default function App() {
           
           <div className="center-group">
             <div className="nav-pills header-nav">
-              <button onClick={() => setView('home')} className={view === 'home' ? 'active' : ''}>Feed</button>
-              <button onClick={() => setView('new')} className={view === 'new' ? 'active' : ''}>New</button>
-              <button onClick={() => setView('upcoming')} className={view === 'upcoming' ? 'active' : ''}>Upcoming</button>
-              <button onClick={() => setView('watchlist')} className={view === 'watchlist' ? 'active' : ''}>Journal</button>
+              <button onClick={() => navigateTo('home')} className={view === 'home' ? 'active' : ''}>Feed</button>
+              <button onClick={() => navigateTo('new')} className={view === 'new' ? 'active' : ''}>New</button>
+              <button onClick={() => navigateTo('upcoming')} className={view === 'upcoming' ? 'active' : ''}>Upcoming</button>
+              <button onClick={() => navigateTo('watchlist')} className={view === 'watchlist' ? 'active' : ''}>Journal</button>
             </div>
 
             <div className="filter-toggle">
@@ -937,10 +945,10 @@ export default function App() {
       )}
 
       <nav className="bottom-tab-bar">
-        <button onClick={() => setView('home')} className={view === 'home' ? 'active' : ''}>Feed</button>
-        <button onClick={() => setView('new')} className={view === 'new' ? 'active' : ''}>New</button>
-        <button onClick={() => setView('upcoming')} className={view === 'upcoming' ? 'active' : ''}>Upcoming</button>
-        <button onClick={() => setView('watchlist')} className={view === 'watchlist' ? 'active' : ''}>Journal</button>
+        <button onClick={() => navigateTo('home')} className={view === 'home' ? 'active' : ''}>Feed</button>
+        <button onClick={() => navigateTo('new')} className={view === 'new' ? 'active' : ''}>New</button>
+        <button onClick={() => navigateTo('upcoming')} className={view === 'upcoming' ? 'active' : ''}>Upcoming</button>
+        <button onClick={() => navigateTo('watchlist')} className={view === 'watchlist' ? 'active' : ''}>Journal</button>
       </nav>
 
     </div>

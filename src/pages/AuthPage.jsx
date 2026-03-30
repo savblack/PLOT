@@ -47,7 +47,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
   const [password, setPassword]       = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading]         = useState(false);
-  const [error, setError]             = useState('__warning__Almost in! Your activation email is waiting in your inbox.');
+  const [error, setError]             = useState(null);
   const [success, setSuccess]         = useState(false);
   const navigate = useNavigate();
 
@@ -233,7 +233,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
         </div>
 
         <p className="auth-panel-footer">
-          By continuing you agree to our <a href="#">Terms</a> and <a href="#">Privacy Policy</a>.
+          By continuing you agree to our <Link to="/terms">Terms</Link> and <Link to="/privacy">Privacy Policy</Link>.
         </p>
       </div>
     </div>

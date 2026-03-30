@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../api/supabase';
-import plotLogo from '/plot-logo.svg';
 
 function StarRow({ rating }) {
   if (!rating) return null;
@@ -29,6 +28,7 @@ export default function PublicProfileView({ username, initialListId, onItemClick
   const [isFollowing, setIsFollowing] = useState(false);
   const [followerCount, setFollowerCount] = useState(0);
   const [followLoading, setFollowLoading] = useState(false);
+  const [watchedCount, setWatchedCount] = useState(0);
 
   useEffect(() => {
     const load = async () => {
@@ -44,14 +44,16 @@ export default function PublicProfileView({ username, initialListId, onItemClick
       if (!prof) { setNotFound(true); setLoading(false); return; }
       setProfileData(prof);
 
-      const [listsResult, journalResult, followerResult, followingResult] = await Promise.all([
+      const [listsResult, journalResult, followerResult, followingResult, watchCountResult] = await Promise.all([
         supabase.from('lists').select('*').eq('user_id', prof.id).eq('is_public', true),
         supabase.from('journal').select('*').eq('user_id', prof.id).order('watched_at', { ascending: false }).limit(8),
         supabase.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', prof.id),
         user ? supabase.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', user.id).eq('following_id', prof.id) : Promise.resolve({ count: 0 }),
+        supabase.from('journal').select('*', { count: 'exact', head: true }).eq('user_id', prof.id),
       ]);
       setFollowerCount(followerResult.count ?? 0);
       setIsFollowing((followingResult.count ?? 0) > 0);
+      setWatchedCount(watchCountResult.count ?? 0);
 
       if (listsResult.data?.length) {
         setPublicLists(listsResult.data);
@@ -186,7 +188,7 @@ export default function PublicProfileView({ username, initialListId, onItemClick
                 <h1 className="pp-display-name">{displayName}</h1>
                 <p className="public-profile-username">@{profileData.username}</p>
                 <p className="pp-stats">
-                  {followerCount} {followerCount === 1 ? 'follower' : 'followers'} · {publicLists.length} {publicLists.length === 1 ? 'list' : 'lists'} · {recentWatches.length} watched
+                  {followerCount} {followerCount === 1 ? 'follower' : 'followers'} · {publicLists.length} {publicLists.length === 1 ? 'list' : 'lists'} · {watchedCount} watched
                 </p>
               </div>
               {user && (
@@ -219,6 +221,10 @@ export default function PublicProfileView({ username, initialListId, onItemClick
             const w = watches[watchIdx];
             return (
               <div className="pp-watches-carousel pp-section">
+                <div className="pp-section-header">
+                  <h2 className="pp-section-title">Recently Watched</h2>
+                  <span className="pp-section-count">{watches.length}</span>
+                </div>
                 <div className="pp-carousel-stage">
                   <button
                     className="pp-carousel-arrow"
@@ -261,29 +267,6 @@ export default function PublicProfileView({ username, initialListId, onItemClick
             );
           })()}
 
-          {/* Recently Added to lists */}
-          {recentItems.length > 0 && (
-            <div className="pp-section">
-              <div className="pp-section-header">
-                <h2 className="pp-section-title">Recently Added</h2>
-                <span className="pp-section-count">{listItems.length} total</span>
-              </div>
-              <div className="pp-scroll-row">
-                {recentItems.map((item, i) => (
-                  <div key={item.id || i} className="pp-scroll-item" onClick={() => onItemClick({ ...item, id: item.tmdb_id })}>
-                    <img
-                      className="pp-scroll-poster"
-                      src={`https://image.tmdb.org/t/p/w342${item.poster_path}`}
-                      alt={item.title || item.name}
-                    />
-                    <p className="pp-scroll-label">{item.title || item.name}</p>
-                    <p className="pp-scroll-meta">{item.media_type === 'tv' ? 'Series' : 'Film'}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* Lists */}
           {publicLists.length > 0 && (
             <div className="pp-section">
@@ -319,6 +302,29 @@ export default function PublicProfileView({ username, initialListId, onItemClick
             </div>
           )}
 
+          {/* Recently Added to lists */}
+          {recentItems.length > 0 && (
+            <div className="pp-section">
+              <div className="pp-section-header">
+                <h2 className="pp-section-title">Recently Added</h2>
+                <span className="pp-section-count">{listItems.length} total</span>
+              </div>
+              <div className="pp-scroll-row">
+                {recentItems.map((item, i) => (
+                  <div key={item.id || i} className="pp-scroll-item" onClick={() => onItemClick({ ...item, id: item.tmdb_id })}>
+                    <img
+                      className="pp-scroll-poster"
+                      src={`https://image.tmdb.org/t/p/w342${item.poster_path}`}
+                      alt={item.title || item.name}
+                    />
+                    <p className="pp-scroll-label">{item.title || item.name}</p>
+                    <p className="pp-scroll-meta">{item.media_type === 'tv' ? 'Series' : 'Film'}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {publicLists.length === 0 && recentWatches.length === 0 && (
             <p className="empty-list-msg">No public activity yet.</p>
           )}
@@ -327,9 +333,7 @@ export default function PublicProfileView({ username, initialListId, onItemClick
           {!user && (
             <div className="pp-join-cta">
               <p className="pp-join-tagline">Track what you watch. Share what you love.</p>
-              <a href="/signup" className="pp-join-link">
-                Join <img src={plotLogo} alt="PLOT" className="pp-join-logo-inline" /> →
-              </a>
+              <a href="/signup" className="pp-join-link">Join Plot →</a>
             </div>
           )}
         </>

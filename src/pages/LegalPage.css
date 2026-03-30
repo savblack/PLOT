@@ -1,0 +1,98 @@
+/* ── Legal pages (Terms & Privacy) ───────────────────────── */
+.legal-page {
+  min-height: 100vh;
+  background: #f8f8f8;
+  display: flex;
+  justify-content: center;
+  padding: 3rem 1.5rem 5rem;
+  font-family: 'Manrope', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.legal-panel {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 3rem 3.5rem;
+  max-width: 680px;
+  width: 100%;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+
+.legal-back {
+  display: inline-block;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #666;
+  text-decoration: none;
+  margin-bottom: 2rem;
+  transition: color 0.2s;
+}
+.legal-back:hover { color: #1a1a1a; }
+
+.legal-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #888;
+  margin-bottom: 0.5rem;
+}
+
+.legal-panel h1 {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  color: #1a1a1a;
+  margin-bottom: 0.4rem;
+  line-height: 1.2;
+}
+
+.legal-owner {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.75rem;
+}
+
+.legal-meta {
+  font-size: 0.8rem;
+  color: #999;
+  margin-bottom: 2.5rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+}
+
+.legal-panel h2 {
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 2rem 0 0.6rem;
+}
+
+.legal-panel p {
+  font-size: 0.88rem;
+  color: #444;
+  line-height: 1.65;
+  margin-bottom: 0.85rem;
+  text-align: justify;
+}
+
+.legal-panel ul {
+  font-size: 0.88rem;
+  color: #444;
+  line-height: 1.65;
+  margin: 0 0 0.85rem 1.4rem;
+  text-align: justify;
+}
+.legal-panel ul li { margin-bottom: 0.35rem; }
+
+.legal-panel a { color: #1a1a1a; }
+.legal-panel a:hover { opacity: 0.7; }
+
+@media (max-width: 600px) {
+  .legal-panel { padding: 2rem 1.5rem; }
+}

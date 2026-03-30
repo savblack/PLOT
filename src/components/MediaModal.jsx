@@ -7,8 +7,15 @@ export default function MediaModal({ item, onClose, onSave, savedData, userLists
   const [note, setNote] = useState(savedData?.note || '');
   const [mood, setMood] = useState(savedData?.mood || null);
   const [watchStatus, setWatchStatus] = useState(savedData?.watchStatus || null);
+  const [watchedAt, setWatchedAt] = useState(savedData?.watched_at || new Date().toISOString().split('T')[0]);
   const [providers, setProviders] = useState(null);
   const [hasSaved, setHasSaved] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
+
+  const closeWithFade = () => {
+    setIsClosing(true);
+    setTimeout(onClose, 350);
+  };
   const [newListName, setNewListName] = useState('');
   const [showNewListInput, setShowNewListInput] = useState(false);
   const [showListDropdown, setShowListDropdown] = useState(false);
@@ -30,32 +37,42 @@ export default function MediaModal({ item, onClose, onSave, savedData, userLists
     };
   }, [item]);
 
-  const MOODS = [
-    { value: 'happy',         emoji: '😊', label: 'Happy' },
-    { value: 'sad',           emoji: '😢', label: 'Sad' },
-    { value: 'emotional',     emoji: '🥲', label: 'Emotional' },
-    { value: 'excited',       emoji: '😆', label: 'Excited' },
-    { value: 'fun',           emoji: '😂', label: 'Fun' },
-    { value: 'tense',         emoji: '😬', label: 'Tense' },
-    { value: 'scared',        emoji: '😱', label: 'Scared' },
-    { value: 'unsettled',     emoji: '😟', label: 'Unsettled' },
-    { value: 'weird',         emoji: '🤪', label: 'Weird' },
-    { value: 'cosy',          emoji: '🥰', label: 'Cosy' },
-    { value: 'thoughtful',    emoji: '🤔', label: 'Thoughtful' },
-    { value: 'inspired',      emoji: '✨', label: 'Inspired' },
-    { value: 'intense',       emoji: '😤', label: 'Intense' },
-    { value: 'stressed',      emoji: '😰', label: 'Stressed' },
-    { value: 'epic',          emoji: '🔥', label: 'Epic' },
-    { value: 'haunted',       emoji: '👻', label: 'Haunted' },
-    { value: 'nostalgic',     emoji: '🥹', label: 'Nostalgic' },
-    { value: 'melancholy',    emoji: '😔', label: 'Melancholy' },
-    { value: 'gripped',       emoji: '😮', label: 'Gripped' },
-    { value: 'shocked',       emoji: '😲', label: 'Shocked' },
-    { value: 'uncomfortable', emoji: '😣', label: 'Uncomfortable' },
-    { value: 'meh',           emoji: '😐', label: 'Meh' },
-    { value: 'amazing',       emoji: '🤩', label: 'Amazing' },
-    { value: 'mindblown',     emoji: '🤯', label: 'Mind-blown' },
+  const PRESET_MOODS = [
+    { value: 'happy',      label: 'Happy' },
+    { value: 'sad',        label: 'Sad' },
+    { value: 'excited',    label: 'Excited' },
+    { value: 'scared',     label: 'Scared' },
+    { value: 'thoughtful', label: 'Thoughtful' },
   ];
+
+  const [showMoodDropdown, setShowMoodDropdown] = useState(false);
+  const [customMoods, setCustomMoods] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('plot-custom-moods') || '[]'); } catch { return []; }
+  });
+  const [customMoodInput, setCustomMoodInput] = useState('');
+  const [showCustomMoodInput, setShowCustomMoodInput] = useState(false);
+
+  const allMoods = [...PRESET_MOODS, ...customMoods];
+  const selectedMood = allMoods.find(m => m.value === mood);
+
+  const addCustomMood = () => {
+    const label = customMoodInput.trim();
+    if (!label) return;
+    const newMood = { value: label, label };
+    const updated = [...customMoods, newMood];
+    setCustomMoods(updated);
+    localStorage.setItem('plot-custom-moods', JSON.stringify(updated));
+    setMood(label);
+    setCustomMoodInput('');
+    setShowCustomMoodInput(false);
+    setShowMoodDropdown(false);
+  };
+
+  const closeMoodDropdown = () => {
+    setShowMoodDropdown(false);
+    setShowCustomMoodInput(false);
+    setCustomMoodInput('');
+  };
 
   const handleSave = () => {
     onSave({
@@ -66,11 +83,11 @@ export default function MediaModal({ item, onClose, onSave, savedData, userLists
       watchStatus: watchStatus,
       tmdb_id: item.id,
       media_type: item.media_type || (item.title ? 'movie' : 'tv'),
-      watched_at: savedData?.watched_at || new Date().toISOString().split('T')[0],
+      watched_at: watchedAt,
       updatedAt: new Date().toISOString()
     });
     setHasSaved(true);
-    setTimeout(() => setHasSaved(false), 2000);
+    setTimeout(closeWithFade, 700);
   };
 
   const StarRating = () => {
@@ -101,7 +118,7 @@ export default function MediaModal({ item, onClose, onSave, savedData, userLists
   };
 
   if (!details) return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className={`modal-overlay${isClosing ? ' modal-closing' : ''}`} onClick={closeWithFade}>
       <div className="modal-loading">
         <div className="modal-spinner" />
       </div>
@@ -109,9 +126,9 @@ export default function MediaModal({ item, onClose, onSave, savedData, userLists
   );
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className={`modal-overlay${isClosing ? ' modal-closing' : ''}`} onClick={closeWithFade}>
       <div className="modal-content glass animate-in" onClick={e => e.stopPropagation()}>
-        <button className="close-btn" onClick={onClose}>
+        <button className="close-btn" onClick={closeWithFade}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
         </button>
         
@@ -183,29 +200,114 @@ export default function MediaModal({ item, onClose, onSave, savedData, userLists
                     <h3>Rating</h3>
                     <StarRating />
                     <h3>Mood</h3>
-                    <div className="mood-selector">
-                      {MOODS.map(m => (
-                        <button
-                          key={m.value}
-                          className={`mood-btn ${mood === m.value ? 'active' : ''}`}
-                          onClick={() => setMood(mood === m.value ? null : m.value)}
-                          title={m.label}
-                        >
-                          <span className="mood-emoji">{m.emoji}</span>
-                        </button>
-                      ))}
+                    <div className="mood-dropdown-wrapper">
+                      <button
+                        className={`mood-dropdown-trigger ${mood ? 'has-value' : ''}`}
+                        onClick={() => setShowMoodDropdown(v => !v)}
+                      >
+                        {selectedMood
+                          ? <span>{selectedMood.label}</span>
+                          : <span className="mood-placeholder">Select...</span>
+                        }
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                      </button>
+                      {showMoodDropdown && (
+                        <>
+                          <div className="mood-dropdown-backdrop" onClick={closeMoodDropdown} />
+                          <div className="mood-dropdown">
+                            {allMoods.map(m => (
+                              <button
+                                key={m.value}
+                                className={`mood-dropdown-item ${mood === m.value ? 'active' : ''}`}
+                                onClick={() => { setMood(mood === m.value ? null : m.value); setShowMoodDropdown(false); }}
+                              >
+                                <span>{m.label}</span>
+                                {mood === m.value && <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20 6L9 17l-5-5"/></svg>}
+                              </button>
+                            ))}
+                            <div className="mood-dropdown-divider" />
+                            {!showCustomMoodInput ? (
+                              <button className="mood-dropdown-item mood-add-item" onClick={() => setShowCustomMoodInput(true)}>
+                                + Add your own
+                              </button>
+                            ) : (
+                              <div className="mood-custom-input">
+                                <input
+                                  type="text"
+                                  placeholder="e.g. Nostalgic..."
+                                  value={customMoodInput}
+                                  autoFocus
+                                  maxLength={30}
+                                  onChange={e => setCustomMoodInput(e.target.value)}
+                                  onKeyDown={e => {
+                                    if (e.key === 'Enter') addCustomMood();
+                                    if (e.key === 'Escape') { setShowCustomMoodInput(false); setCustomMoodInput(''); }
+                                  }}
+                                />
+                                <button onClick={addCustomMood}>Add</button>
+                              </div>
+                            )}
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
 
                 <div className="input-group input-group-note">
-                  <h3>Note</h3>
+                  <div className="note-label-row">
+                    <h3>Note</h3>
+                    {note.length > 0 && (
+                      <span className={`note-char-count ${note.length > 260 ? 'note-char-warn' : ''}`}>
+                        {280 - note.length}
+                      </span>
+                    )}
+                  </div>
                   <textarea
                     placeholder="Draft your thoughts..."
                     value={note}
+                    maxLength={280}
                     onChange={e => setNote(e.target.value)}
                   />
                 </div>
+                <div className="input-group">
+                  <div className="rating-row">
+                    <h3>Date watched</h3>
+                    <div className="date-picker-row">
+                      {(() => {
+                        const [y, m, d] = watchedAt.split('-').map(Number);
+                        const today = new Date();
+                        const currentYear = today.getFullYear();
+                        const daysInMonth = new Date(y, m, 0).getDate();
+                        const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                        const update = (newY, newM, newD) => {
+                          const capped = Math.min(newD, new Date(newY, newM, 0).getDate());
+                          setWatchedAt(`${newY}-${String(newM).padStart(2,'0')}-${String(capped).padStart(2,'0')}`);
+                        };
+                        return (
+                          <>
+                            <select className="date-select" value={d} onChange={e => update(y, m, Number(e.target.value))}>
+                              {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(n => (
+                                <option key={n} value={n}>{n}</option>
+                              ))}
+                            </select>
+                            <select className="date-select" value={m} onChange={e => update(y, Number(e.target.value), d)}>
+                              {months.map((name, i) => (
+                                <option key={i} value={i + 1}>{name}</option>
+                              ))}
+                            </select>
+                            <select className="date-select" value={y} onChange={e => update(Number(e.target.value), m, d)}>
+                              {Array.from({ length: currentYear - 1899 }, (_, i) => currentYear - i).map(n => (
+                                <option key={n} value={n}>{n}</option>
+                              ))}
+                            </select>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                </div>
+
                 <div className="log-action-row">
                   <button
                     className={`save-log-btn ${hasSaved ? 'saved' : ''}`}
@@ -503,6 +605,31 @@ export default function MediaModal({ item, onClose, onSave, savedData, userLists
 
         textarea:focus { border-color: #ccc; }
 
+        .date-picker-row {
+          display: flex;
+          gap: 0.35rem;
+          align-items: center;
+        }
+
+        .date-select {
+          appearance: none;
+          -webkit-appearance: none;
+          background: #f5f5f5;
+          border: 1px solid #e8e8e8;
+          border-radius: var(--radius-pill);
+          padding: 0.3rem 0.65rem;
+          font-size: 0.8rem;
+          font-family: var(--font-sans);
+          color: var(--text-primary);
+          outline: none;
+          cursor: pointer;
+          transition: var(--transition);
+        }
+        .date-select:focus { border-color: #aaa; }
+        .date-select:hover { border-color: #ccc; }
+        [data-theme="dark"] .date-select { background: #222; border-color: #333; color: #ccc; }
+        [data-theme="dark"] .date-select:focus { border-color: #555; }
+
         .watch-status-selector {
           display: flex;
           flex-wrap: wrap;
@@ -694,25 +821,105 @@ export default function MediaModal({ item, onClose, onSave, savedData, userLists
           cursor: pointer;
         }
 
-.mood-selector {
-          display: flex;
-          align-items: center;
-          gap: 0.1rem;
+.mood-dropdown-wrapper {
+          position: relative;
         }
-        .mood-btn {
+        .mood-dropdown-trigger {
           display: flex;
           align-items: center;
+          gap: 0.35rem;
+          background: #f5f5f5;
+          border: 1px solid #e8e8e8;
+          border-radius: var(--radius-pill);
+          padding: 0.3rem 0.7rem;
+          font-size: 0.8rem;
+          font-family: var(--font-sans);
+          cursor: pointer;
+          color: var(--text-secondary);
+          transition: var(--transition);
+          white-space: nowrap;
+        }
+        .mood-dropdown-trigger:hover { border-color: #ccc; color: var(--text-primary); }
+        .mood-dropdown-trigger.has-value { color: var(--text-primary); border-color: #ccc; }
+        .mood-placeholder { color: #bbb; }
+        .mood-dropdown-backdrop {
+          position: fixed;
+          inset: 0;
+          z-index: 10;
+        }
+        .mood-dropdown {
+          position: absolute;
+          top: calc(100% + 0.4rem);
+          left: 0;
+          min-width: 160px;
+          background: white;
+          border: 1px solid #e0e0e0;
+          border-radius: 14px;
+          box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+          overflow: hidden;
+          z-index: 11;
+          padding: 0.4rem;
+        }
+        .mood-dropdown-item {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          width: 100%;
+          padding: 0.5rem 0.7rem;
           background: none;
           border: none;
-          padding: 0.2rem;
+          border-radius: 8px;
+          font-size: 0.85rem;
+          font-family: var(--font-sans);
           cursor: pointer;
-          transition: var(--transition);
-          opacity: 0.35;
-          border-radius: 4px;
+          text-align: left;
+          color: #333;
+          transition: background 0.15s;
         }
-        .mood-btn:hover { opacity: 0.7; transform: scale(1.15); }
-        .mood-btn.active { opacity: 1; transform: scale(1.15); }
-        .mood-emoji { font-size: 1.4rem; line-height: 1; }
+        .mood-dropdown-item:hover { background: #f5f5f5; }
+        .mood-dropdown-item.active { font-weight: 600; }
+        .mood-dropdown-item svg { margin-left: auto; }
+        .mood-dropdown-divider { height: 1px; background: #f0f0f0; margin: 0.3rem 0.4rem; }
+        .mood-add-item { color: #888; }
+        .mood-add-item:hover { color: #333; }
+        .mood-custom-input {
+          display: flex;
+          gap: 0.4rem;
+          padding: 0.4rem;
+        }
+        .mood-custom-input input {
+          flex: 1;
+          padding: 0.35rem 0.75rem;
+          border: 1px solid #ddd;
+          border-radius: var(--radius-pill);
+          font-size: 0.8rem;
+          font-family: var(--font-sans);
+          outline: none;
+          min-width: 0;
+        }
+        .mood-custom-input input:focus { border-color: #aaa; }
+        .mood-custom-input button {
+          padding: 0.35rem 0.85rem;
+          background: #333;
+          color: white;
+          border: none;
+          border-radius: var(--radius-pill);
+          font-size: 0.8rem;
+          font-family: var(--font-sans);
+          cursor: pointer;
+          white-space: nowrap;
+        }
+        [data-theme="dark"] .mood-dropdown-trigger { background: #222; border-color: #333; color: #888; }
+        [data-theme="dark"] .mood-dropdown-trigger:hover { border-color: #555; color: #ccc; }
+        [data-theme="dark"] .mood-dropdown-trigger.has-value { color: #ccc; border-color: #555; }
+        [data-theme="dark"] .mood-dropdown { background: #1e1e1e; border-color: #333; box-shadow: 0 8px 30px rgba(0,0,0,0.4); }
+        [data-theme="dark"] .mood-dropdown-item { color: #ccc; }
+        [data-theme="dark"] .mood-dropdown-item:hover { background: #2a2a2a; }
+        [data-theme="dark"] .mood-dropdown-divider { background: #2a2a2a; }
+        [data-theme="dark"] .mood-add-item { color: #666; }
+        [data-theme="dark"] .mood-add-item:hover { color: #ccc; }
+        [data-theme="dark"] .mood-custom-input input { background: #2a2a2a; border-color: #444; color: #ccc; }
+        [data-theme="dark"] .mood-custom-input button { background: #555; }
 
         [data-theme="dark"] .modal-content {
           background: #161616;
@@ -882,6 +1089,11 @@ export default function MediaModal({ item, onClose, onSave, savedData, userLists
         [data-theme="dark"] .save-log-btn { background: #f0f0f0; color: #111; }
         [data-theme="dark"] .save-log-btn:hover { background: #ccc; }
         [data-theme="dark"] .save-log-btn.saved { background: #4CAF50; color: white; }
+
+        .note-label-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.6rem; }
+        .note-label-row h3 { margin-bottom: 0; }
+        .note-char-count { font-size: 0.72rem; color: var(--text-secondary); opacity: 0.55; }
+        .note-char-count.note-char-warn { color: #e05; opacity: 1; }
 
         .input-group-note {
           flex: 1;

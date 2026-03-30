@@ -1,6 +1,5 @@
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, Navigate } from 'react-router-dom';
 import App from './App.jsx';
-import LandingPage from './pages/LandingPage.jsx';
 import AuthPage from './pages/AuthPage.jsx';
 import AuthCallbackPage from './pages/AuthCallbackPage.jsx';
 import ResetPasswordPage from './pages/ResetPasswordPage.jsx';
@@ -8,9 +7,13 @@ import OnboardingFlow from './pages/OnboardingFlow.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import ProfilePreviewPage from './pages/ProfilePreviewPage.jsx';
+import TermsPage from './pages/TermsPage.jsx';
+import PrivacyPage from './pages/PrivacyPage.jsx';
 
 const router = createBrowserRouter([
-  { path: '/',               element: <LandingPage /> },
+  { path: '/',               element: <Navigate to="/login" replace /> },
+  { path: '/terms',          element: <TermsPage /> },
+  { path: '/privacy',        element: <PrivacyPage /> },
   { path: '/profile-preview', element: <ProfilePreviewPage /> },
   { path: '/signup',         element: <AuthPage initialMode="signup" /> },
   { path: '/login',          element: <AuthPage initialMode="login" /> },

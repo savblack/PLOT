@@ -128,7 +128,12 @@ export default function JournalView({
   const [editListNameValue, setEditListNameValue] = useState('');
   const [showListEditMenu, setShowListEditMenu] = useState(false);
 
-  const activeWatched = watched.length > 0 ? watched : sampleWatched;
+  const activeWatched = (() => {
+    if (watched.length >= 20) return watched;
+    const realTitles = new Set(watched.map(w => w.title || w.name));
+    const filler = sampleWatched.filter(s => !realTitles.has(s.title || s.name));
+    return [...watched, ...filler].sort((a, b) => new Date(b.watched_at) - new Date(a.watched_at));
+  })();
   const filteredWatched = activeWatched.filter(item => (item.media_type || (item.title ? 'movie' : 'tv')) === mediaFilter);
   const watchedByDate = filteredWatched.reduce((acc, item) => {
     const key = toDateKey(item.watched_at);
@@ -139,11 +144,14 @@ export default function JournalView({
   }, {});
 
   const isVirtualList = activeList && typeof activeList.id === 'string' &&
-    (activeList.id.startsWith('status-') || activeList.id.startsWith('rating-') || activeList.id.startsWith('mood-'));
+    (activeList.id === 'unlisted' || activeList.id.startsWith('status-') || activeList.id.startsWith('rating-') || activeList.id.startsWith('mood-'));
+
+  const listedTmdbIds = new Set(listItems.map(li => li.tmdb_id));
 
   const activeListItems = activeList
     ? (isVirtualList
         ? watched.filter(w => {
+            if (activeList.id === 'unlisted') return !listedTmdbIds.has(w.tmdb_id || w.id);
             if (activeList.id.startsWith('status-')) return w.watchStatus === activeList.id.slice(7);
             if (activeList.id.startsWith('rating-')) return w.rating === parseInt(activeList.id.slice(7));
             if (activeList.id.startsWith('mood-')) return w.mood === activeList.id.slice(5);
@@ -157,7 +165,7 @@ export default function JournalView({
       {activeList ? (
         <div className="list-detail-view animate-in">
           <div className="list-detail-header">
-            <button className="back-btn" onClick={() => { setActiveList(null); setEditingListName(false); }}>← Back to Journal</button>
+            <button className="back-btn" onClick={() => { setActiveList(null); setEditingListName(false); }}>← <span style={{ fontFamily: 'var(--font-serif)', fontSize: '1.15em' }}>Journal</span></button>
             <div className="section-header-row">
               {!isVirtualList && editingListName ? (
                 <input
@@ -311,6 +319,12 @@ export default function JournalView({
                     onListClick={setActiveList}
                   />
                 ))}
+                <ListStack
+                  key="unlisted"
+                  list={{ id: 'unlisted', name: 'No list' }}
+                  items={watched.filter(w => !listedTmdbIds.has(w.tmdb_id || w.id))}
+                  onListClick={setActiveList}
+                />
               </div>
             </>
           )}
@@ -429,7 +443,7 @@ export default function JournalView({
                   .filter(item => item.watched_at)
                   .sort((a, b) => new Date(b.watched_at) - new Date(a.watched_at));
 
-                const ROW_SIZE = 3;
+                const ROW_SIZE = 4;
                 const rows = [];
                 for (let i = 0; i < sorted.length; i += ROW_SIZE) rows.push(sorted.slice(i, i + ROW_SIZE));
 
@@ -484,14 +498,47 @@ export default function JournalView({
                               </React.Fragment>
                             ))}
                           </div>
-                          {!isLastRow && (
-                            <div className={`tl-turn-connector ${reversed ? 'turn-left' : 'turn-right'}`}>
-                              {gapLabel && <span className="tl-gap">{gapLabel}</span>}
-                              <svg width="80" height="100%" viewBox="0 0 80 260" preserveAspectRatio="xMidYMid meet" style={{ flex: 1, overflow: 'visible' }}>
-                                <path d={tlScribble(260, rowIdx * 3 + 7)} stroke="var(--text-primary)" fill="none" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.25" />
-                              </svg>
-                            </div>
-                          )}
+                          {!isLastRow && (() => {
+                            const seed = rowIdx * 3 + 7;
+                            const r = n => { const v = Math.sin(seed * 9.301 + n * 46.218) * 43758.5453; return v - Math.floor(v); };
+                            const f = v => +v.toFixed(1);
+
+                            const sx = reversed ? 175 : -65;  // card center x in connector coords
+                            const pk = reversed ? -95 : 195;  // outer peak x
+
+                            // C-curve spine: M sx 0 C pk 0 pk 500 sx 500
+                            const bx  = t => sx * ((1-t)**3 + t**3) + 3 * pk * t * (1-t);
+                            const dbx = t => 3 * (sx - pk) * (2*t - 1); // tangent x-component (dy/dt = 500)
+
+                            // Single bezier segment following C-curve tangents + tiny jitter
+                            const drawSeg = (a0, a1, si) => {
+                              const tx0 = dbx(a0.t), tx1 = dbx(a1.t);
+                              const len0 = Math.sqrt(tx0**2 + 500**2);
+                              const len1 = Math.sqrt(tx1**2 + 500**2);
+                              const chord = Math.sqrt((a1.x - a0.x)**2 + (a1.y - a0.y)**2);
+                              const h = chord / 2.8;
+                              const cp1x = f(a0.x + (tx0/len0)*h + (r(si)   - 0.5) * 6);
+                              const cp1y = f(a0.y + (500 /len0)*h + (r(si+1) - 0.5) * 4);
+                              const cp2x = f(a1.x - (tx1/len1)*h + (r(si+2) - 0.5) * 6);
+                              const cp2y = f(a1.y - (500 /len1)*h + (r(si+3) - 0.5) * 4);
+                              return ` C ${cp1x} ${cp1y} ${cp2x} ${cp2y} ${f(a1.x)} ${f(a1.y)}`;
+                            };
+
+                            const anchors = [{ x: sx, y: 0, t: 0 }, { x: sx, y: 500, t: 1 }];
+                            let d = `M ${f(sx)} 0`;
+                            for (let i = 1; i < anchors.length; i++) {
+                              d += drawSeg(anchors[i-1], anchors[i], i * 10);
+                            }
+
+                            return (
+                              <div className={`tl-turn-connector ${reversed ? 'turn-left' : 'turn-right'}`}>
+                                {gapLabel && <span className="tl-gap">{gapLabel}</span>}
+                                <svg width="110" height="100%" viewBox="0 0 110 500" preserveAspectRatio="none" style={{ flex: 1, display: 'block', overflow: 'visible' }}>
+                                  <path d={d} stroke="var(--text-primary)" fill="none" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" opacity="0.3" />
+                                </svg>
+                              </div>
+                            );
+                          })()}
                         </div>
                       );
                     })}
