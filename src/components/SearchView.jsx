@@ -1,3 +1,5 @@
+import ShareButton from './ShareButton';
+
 export default function SearchView({ searchResults, onItemClick }) {
   return (
     <section className="results">
@@ -8,6 +10,7 @@ export default function SearchView({ searchResults, onItemClick }) {
             {item.poster_path ? (
               <img src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title || item.name} />
             ) : <div className="no-image">{item.title || item.name}</div>}
+            <ShareButton item={item} />
             <div className="overlay">
               <h3>{item.title || item.name}</h3>
             </div>

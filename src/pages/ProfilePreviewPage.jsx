@@ -4,6 +4,8 @@
  */
 import { useState, useEffect } from 'react';
 import { tmdb } from '../api/tmdb';
+import { supabase } from '../api/supabase';
+import ShareButton from '../components/ShareButton';
 
 const MOCK_NOTES = [
   { rating: 5, mood: 'Unsettled',  note: 'The ending destroyed me. Watched it twice in one sitting.' },
@@ -19,14 +21,29 @@ const MOCK_NOTES = [
 export default function ProfilePreviewPage() {
   const [watchIdx, setWatchIdx] = useState(0);
   const [items, setItems] = useState([]);
+  const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [activeList, setActiveList] = useState(null);
 
   useEffect(() => {
-    tmdb.getTrending('all', 'week').then(data => {
-      const results = (data?.results ?? []).filter(r => r.poster_path);
+    const load = async () => {
+      const [tmdbData, { data: { user } }] = await Promise.all([
+        tmdb.getTrending('all', 'week'),
+        supabase.auth.getUser(),
+      ]);
+      const results = (tmdbData?.results ?? []).filter(r => r.poster_path);
       setItems(results.slice(0, 24));
+      if (user) {
+        const { data: prof } = await supabase
+          .from('profiles')
+          .select('username, display_name, avatar_url')
+          .eq('id', user.id)
+          .single();
+        setProfile(prof);
+      }
       setLoading(false);
-    });
+    };
+    load();
   }, []);
 
   if (loading) return (
@@ -66,6 +83,53 @@ export default function ProfilePreviewPage() {
   const recentItems = listItems.slice(0, 12);
   const w = watches[watchIdx];
 
+  const displayName = profile?.display_name || profile?.username || 'Savannah';
+  const username = profile?.username || 'savannah';
+
+  if (activeList) {
+    const activeListItems = listItems.filter(i => i.list_id === activeList.id);
+    return (
+      <div style={{ maxWidth: 960, margin: '0 auto', padding: '2rem 2rem 6rem' }} className="animate-in">
+        <div className="list-detail-header">
+          <button className="back-btn" onClick={() => setActiveList(null)}>
+            ← {displayName}'s lists
+          </button>
+          <div className="section-header-row">
+            <div>
+              <h2 className="section-title" style={{ marginBottom: '0.25rem' }}>{activeList.name}</h2>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0 }}>
+                {activeListItems.length} {activeListItems.length === 1 ? 'item' : 'items'}
+              </p>
+            </div>
+            <ShareButton
+              shareData={{
+                title: activeList.name,
+                text: `${activeList.name} — a list by ${displayName} on Plot`,
+                url: `${window.location.origin}/u/${username}/list/${activeList.id}`,
+              }}
+              variant="modal"
+              label="Share List"
+            />
+          </div>
+        </div>
+        <div className="bento-grid">
+          {activeListItems.map((item, idx) => (
+            <div key={item.id || idx} className="bento-item glass">
+              {item.poster_path
+                ? <img src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title} />
+                : <div className="no-image">{item.title}</div>
+              }
+              <ShareButton item={item} />
+              <div className="overlay">
+                <h3>{item.title}</h3>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ maxWidth: 960, margin: '0 auto', padding: '2rem 2rem 6rem' }}>
 
@@ -78,11 +142,27 @@ export default function ProfilePreviewPage() {
         </div>
         <div className="pp-hero-overlay" />
         <div className="pp-profile-card">
-          <div className="public-profile-avatar pp-avatar-large">S</div>
-          <div>
-            <h1 className="pp-display-name">Savannah</h1>
-            <p className="public-profile-username">@savannah</p>
+          <div className="public-profile-avatar pp-avatar-large">
+            {profile?.avatar_url
+              ? <img src={profile.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+              : (profile?.display_name || profile?.username || 'S')[0].toUpperCase()
+            }
+          </div>
+          <div style={{ flex: 1 }}>
+            <h1 className="pp-display-name">{profile?.display_name || profile?.username || 'Savannah'}</h1>
+            <p className="public-profile-username">@{profile?.username || 'savannah'}</p>
             <p className="pp-stats">4 lists · {watches.length} watched</p>
+          </div>
+          <div className="pp-hero-actions">
+            <ShareButton
+              shareData={{
+                title: profile?.display_name || profile?.username || 'Savannah',
+                text: `Check out ${profile?.display_name || profile?.username || 'Savannah'}'s watchlist on Plot`,
+                url: `${window.location.origin}/u/${profile?.username || 'savannah'}`,
+              }}
+              variant="modal"
+              label="Share Profile"
+            />
           </div>
         </div>
       </div>
@@ -139,7 +219,7 @@ export default function ProfilePreviewPage() {
             const filled = lItems.slice(0, 4);
             const empty = Math.max(0, 4 - filled.length);
             return (
-              <div key={list.id} className="pp-list-mosaic">
+              <div key={list.id} className="pp-list-mosaic" onClick={() => setActiveList(list)}>
                 <div className="pp-mosaic-grid">
                   {filled.map((item, idx) => (
                     <img key={idx} src={`https://image.tmdb.org/t/p/w342${item.poster_path}`} alt="" />

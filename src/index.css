@@ -125,6 +125,14 @@ h1, h2, h3 {
   object-fit: cover;
 }
 
+.stack-card-depth {
+  background: var(--glass-border);
+}
+
+[data-theme="dark"] .stack-card-depth {
+  background: rgba(255,255,255,0.06);
+}
+
 .stack-card.empty {
   display: flex;
   align-items: center;

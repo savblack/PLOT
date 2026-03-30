@@ -1,4 +1,5 @@
 import LoadingSpinner from './LoadingSpinner';
+import ShareButton from './ShareButton';
 
 export default function NewReleasesView({
   newReleasesTab, setNewReleasesTab,
@@ -55,6 +56,7 @@ export default function NewReleasesView({
             {newReleasesTab === 'popular' && (
               <div className={`rank-badge${rankBadgeDark[item.id] ? ' rank-badge--dark' : ''}`}>#{index + 1}</div>
             )}
+            <ShareButton item={item} />
             <div className="overlay">
               <h3>{item.title || item.name}</h3>
               {getSavedData(item.id) && <span className="watched-dot"></span>}

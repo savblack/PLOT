@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ImportModal from './ImportModal';
+import ShareButton from './ShareButton';
 
 const MOODS = [
   { value: 'happy',         label: 'Happy' },
@@ -29,18 +30,34 @@ const MOODS = [
 ];
 
 function ListStack({ list, items, onListClick }) {
-  const [hoverIndex, setHoverIndex] = useState(0);
+  const [activeIdx, setActiveIdx] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
+  const intervalRef = useRef(null);
+  const resetRef    = useRef(null);
+  const maxItems = Math.min(items.length, 10);
 
-  useEffect(() => {
-    let interval;
-    if (isHovered && items.length > 1) {
-      interval = setInterval(() => {
-        setHoverIndex(prev => (prev + 1) % Math.min(items.length, 5));
-      }, 400);
+  const startCycle = () => {
+    clearTimeout(resetRef.current);
+    setIsHovered(true);
+    if (maxItems > 1) {
+      intervalRef.current = setInterval(
+        () => setActiveIdx(p => (p + 1) % maxItems),
+        550
+      );
     }
-    return () => clearInterval(interval);
-  }, [isHovered, items]);
+  };
+
+  const stopCycle = () => {
+    clearInterval(intervalRef.current);
+    setIsHovered(false);
+    // Reset after the fade-out completes so there's no snap
+    resetRef.current = setTimeout(() => setActiveIdx(0), 400);
+  };
+
+  useEffect(() => () => {
+    clearInterval(intervalRef.current);
+    clearTimeout(resetRef.current);
+  }, []);
 
   if (items.length === 0) {
     return (
@@ -62,33 +79,40 @@ function ListStack({ list, items, onListClick }) {
   return (
     <div
       className="list-stack"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => { setIsHovered(false); setHoverIndex(0); }}
+      onMouseEnter={startCycle}
+      onMouseLeave={stopCycle}
       onClick={() => onListClick(list)}
     >
       <div className="stack-container">
-        {items.slice(0, 3).map((item, idx) => {
-          const isTop = idx === hoverIndex;
-          return (
-            <div
-              key={item.id}
-              className="stack-card"
-              style={{
-                zIndex: isHovered ? (isTop ? 10 : 5 - idx) : (10 - idx),
-                transform: isHovered
-                  ? (isTop ? 'translateY(-10px) scale(1.02)' : `translateY(${idx * 2}px) scale(0.95)`)
-                  : `rotate(${idx === 0 ? 0 : (idx % 2 === 0 ? 1 : -1) * idx * 4}deg) translateY(${idx * 3}px)`,
-                opacity: isHovered ? (isTop ? 1 : 0.4) : 1,
-                transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)'
-              }}
-            >
-              {item.poster_path
-                ? <img src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title} />
-                : <div className="no-image">{item.title}</div>
-              }
-            </div>
-          );
-        })}
+        {/* Static back cards for visual depth */}
+        <div className="stack-card stack-card-depth" style={{
+          zIndex: 1,
+          transform: isHovered ? 'rotate(5deg) translateY(5px) scale(0.95)' : 'rotate(3deg) translateY(3px) scale(0.97)',
+          transition: 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+        }} />
+        <div className="stack-card stack-card-depth" style={{
+          zIndex: 1,
+          transform: isHovered ? 'rotate(-4deg) translateY(4px) scale(0.97)' : 'rotate(-2deg) translateY(2px) scale(0.98)',
+          transition: 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+        }} />
+
+        {/* All posters stacked — only active one is visible, crossfade via opacity only */}
+        {items.slice(0, maxItems).map((item, idx) => (
+          <div
+            key={item.id || idx}
+            className="stack-card"
+            style={{
+              zIndex: 2,
+              opacity: idx === activeIdx ? 1 : 0,
+              transition: 'opacity 0.35s ease',
+            }}
+          >
+            {item.poster_path
+              ? <img src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title || item.name} />
+              : <div className="no-image">{item.title || item.name}</div>
+            }
+          </div>
+        ))}
       </div>
       <div className="stack-info">
         <h3>{list.name}</h3>
@@ -223,6 +247,7 @@ export default function JournalView({
                   ? <img src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title || item.name} />
                   : <div className="no-image">{item.title || item.name}</div>
                 }
+                <ShareButton item={isVirtualList ? item : { ...item, id: item.tmdb_id }} />
                 <div className="overlay">
                   <h3>{item.title || item.name}</h3>
                 </div>
@@ -319,12 +344,14 @@ export default function JournalView({
                     onListClick={setActiveList}
                   />
                 ))}
-                <ListStack
-                  key="unlisted"
-                  list={{ id: 'unlisted', name: 'No list' }}
-                  items={watched.filter(w => !listedTmdbIds.has(w.tmdb_id || w.id))}
-                  onListClick={setActiveList}
-                />
+                {watched.filter(w => !listedTmdbIds.has(w.tmdb_id || w.id)).length > 0 && (
+                  <ListStack
+                    key="unlisted"
+                    list={{ id: 'unlisted', name: 'No list' }}
+                    items={watched.filter(w => !listedTmdbIds.has(w.tmdb_id || w.id))}
+                    onListClick={setActiveList}
+                  />
+                )}
               </div>
             </>
           )}
@@ -344,6 +371,7 @@ export default function JournalView({
                     ? <img src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title || item.name} />
                     : <div className="no-image">{item.title || item.name}</div>
                   }
+                  <ShareButton item={item} />
                   <div className="overlay">
                     <h3>{item.title || item.name}</h3>
                     {item.rating > 0 && <span className="rating-tag">{'★'.repeat(item.rating)}</span>}

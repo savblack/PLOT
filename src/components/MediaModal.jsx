@@ -273,38 +273,13 @@ export default function MediaModal({ item, onClose, onSave, savedData, userLists
                 <div className="input-group">
                   <div className="rating-row">
                     <h3>Date watched</h3>
-                    <div className="date-picker-row">
-                      {(() => {
-                        const [y, m, d] = watchedAt.split('-').map(Number);
-                        const today = new Date();
-                        const currentYear = today.getFullYear();
-                        const daysInMonth = new Date(y, m, 0).getDate();
-                        const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-                        const update = (newY, newM, newD) => {
-                          const capped = Math.min(newD, new Date(newY, newM, 0).getDate());
-                          setWatchedAt(`${newY}-${String(newM).padStart(2,'0')}-${String(capped).padStart(2,'0')}`);
-                        };
-                        return (
-                          <>
-                            <select className="date-select" value={d} onChange={e => update(y, m, Number(e.target.value))}>
-                              {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(n => (
-                                <option key={n} value={n}>{n}</option>
-                              ))}
-                            </select>
-                            <select className="date-select" value={m} onChange={e => update(y, Number(e.target.value), d)}>
-                              {months.map((name, i) => (
-                                <option key={i} value={i + 1}>{name}</option>
-                              ))}
-                            </select>
-                            <select className="date-select" value={y} onChange={e => update(Number(e.target.value), m, d)}>
-                              {Array.from({ length: currentYear - 1899 }, (_, i) => currentYear - i).map(n => (
-                                <option key={n} value={n}>{n}</option>
-                              ))}
-                            </select>
-                          </>
-                        );
-                      })()}
-                    </div>
+                    <input
+                      type="date"
+                      className="date-input"
+                      value={watchedAt}
+                      max={new Date().toISOString().split('T')[0]}
+                      onChange={e => setWatchedAt(e.target.value)}
+                    />
                   </div>
                 </div>
 
@@ -605,30 +580,25 @@ export default function MediaModal({ item, onClose, onSave, savedData, userLists
 
         textarea:focus { border-color: #ccc; }
 
-        .date-picker-row {
-          display: flex;
-          gap: 0.35rem;
-          align-items: center;
-        }
-
-        .date-select {
-          appearance: none;
-          -webkit-appearance: none;
+        .date-input {
+          width: auto;
           background: #f5f5f5;
           border: 1px solid #e8e8e8;
-          border-radius: var(--radius-pill);
-          padding: 0.3rem 0.65rem;
-          font-size: 0.8rem;
+          border-radius: var(--radius-md);
+          padding: 0.5rem 0.75rem;
+          font-size: 0.85rem;
           font-family: var(--font-sans);
           color: var(--text-primary);
           outline: none;
           cursor: pointer;
-          transition: var(--transition);
+          transition: border-color 0.15s;
         }
-        .date-select:focus { border-color: #aaa; }
-        .date-select:hover { border-color: #ccc; }
-        [data-theme="dark"] .date-select { background: #222; border-color: #333; color: #ccc; }
-        [data-theme="dark"] .date-select:focus { border-color: #555; }
+        .date-input::-webkit-calendar-picker-indicator { display: none; }
+        .date-input::-webkit-inner-spin-button { display: none; }
+        .date-input:focus { border-color: #aaa; }
+        .date-input:hover { border-color: #ccc; }
+        [data-theme="dark"] .date-input { background: #222; border-color: #333; color: #ccc; color-scheme: dark; }
+        [data-theme="dark"] .date-input:focus { border-color: #555; }
 
         .watch-status-selector {
           display: flex;

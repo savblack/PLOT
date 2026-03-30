@@ -1,4 +1,5 @@
 import LoadingSpinner from './LoadingSpinner';
+import ShareButton from './ShareButton';
 
 export default function UpcomingView({
   upcomingTimeFilter, setUpcomingTimeFilter,
@@ -46,6 +47,7 @@ export default function UpcomingView({
               ? <img src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title || item.name} />
               : <div className="no-image">{item.title || item.name}</div>
             }
+            <ShareButton item={item} />
             <div className="overlay">
               <span className={`rating-tag date-tag${dateBadgeDark[item.id] ? ' date-tag--dark' : ''}`}>
                 {new Date(item.release_date || item.first_air_date).toLocaleDateString('en-GB', {

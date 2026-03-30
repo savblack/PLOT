@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import './app.css';
@@ -14,6 +14,7 @@ import SearchView from './components/SearchView';
 import UpcomingView from './components/UpcomingView';
 import JournalView from './components/JournalView';
 import ImportModal from './components/ImportModal';
+import AvatarCropModal from './components/AvatarCropModal';
 
 
 export default function App() {
@@ -275,12 +276,28 @@ export default function App() {
     const loadForYou = async () => {
       const watchedIds = new Set(watched.map(i => i.tmdb_id || i.id));
 
-      // Use top 10 rated items as seeds; fall back to most recently logged
-      const seeds = [...watched]
-        .filter(i => i.rating)
+      // Use top 10 rated real items (with valid IDs) as seeds
+      const ratedReal = [...watched]
+        .filter(i => i.rating && (i.tmdb_id || i.id))
         .sort((a, b) => b.rating - a.rating)
         .slice(0, 10);
-      const finalSeeds = seeds.length > 0 ? seeds : watched.slice(0, 5);
+
+      // If not enough real seeds, resolve a few high-rated sample titles via search
+      let finalSeeds = ratedReal;
+      if (ratedReal.length < 3) {
+        const toResolve = SAMPLE_WATCHED
+          .filter(s => s.rating >= 5)
+          .slice(0, 5);
+        const resolved = await Promise.all(
+          toResolve.map(async s => {
+            const type = s.media_type || 'movie';
+            const res = await tmdb.search(s.title || s.name);
+            const match = res?.results?.find(r => r.media_type === type);
+            return match ? { ...s, id: match.id, tmdb_id: match.id, media_type: type } : null;
+          })
+        );
+        finalSeeds = [...ratedReal, ...resolved.filter(Boolean)];
+      }
 
       if (finalSeeds.length === 0) {
         // Fallback: discover by genre preferences
@@ -592,6 +609,25 @@ export default function App() {
     }
   };
 
+  const avatarInputRef = useRef(null);
+  const [cropFile, setCropFile] = useState(null);
+
+  const uploadAvatar = async (blob) => {
+    if (!user || !blob) return;
+    const path = `${user.id}/avatar.jpg`;
+    const { error: uploadError } = await supabase.storage.from('avatars').upload(path, blob, { upsert: true, contentType: 'image/jpeg' });
+    if (uploadError) return;
+    const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path);
+    const url = `${publicUrl}?t=${Date.now()}`;
+    const { data } = await supabase.from('profiles').upsert({
+      id: user.id,
+      username: profile?.username || '',
+      is_public: profile?.is_public ?? false,
+      avatar_url: url,
+    }).select().single();
+    if (data) setProfile(data);
+  };
+
   const saveUsername = async () => {
     if (!user) return;
     const cleaned = profileUsernameInput.toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 30);
@@ -673,14 +709,34 @@ export default function App() {
           {user ? (
             <div className="profile-menu-wrapper">
               <button className="profile-avatar-btn" onClick={() => setShowProfileMenu(v => !v)}>
-                {user.email?.[0]?.toUpperCase()}
+                {profile?.avatar_url
+                  ? <img src={profile.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                  : user.email?.[0]?.toUpperCase()
+                }
               </button>
               {showProfileMenu && createPortal(
                 <>
                   <div className="profile-menu-backdrop" onClick={() => setShowProfileMenu(false)} />
                   <div className="profile-dropdown">
                     <div className="profile-dropdown-header">
-                      <div className="profile-dropdown-avatar">{user.email?.[0]?.toUpperCase()}</div>
+                      <div className="avatar-upload-wrapper" onClick={() => avatarInputRef.current?.click()}>
+                        <div className="profile-dropdown-avatar">
+                          {profile?.avatar_url
+                            ? <img src={profile.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                            : user.email?.[0]?.toUpperCase()
+                          }
+                        </div>
+                        <div className="avatar-upload-overlay">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        </div>
+                        <input
+                          ref={avatarInputRef}
+                          type="file"
+                          accept="image/*"
+                          style={{ display: 'none' }}
+                          onChange={e => { const f = e.target.files?.[0]; if (f) setCropFile(f); e.target.value = ''; }}
+                        />
+                      </div>
                       <p className="profile-dropdown-email">{user.email}</p>
                     </div>
                     <div className="profile-dropdown-settings">
@@ -941,6 +997,14 @@ export default function App() {
         <ImportModal
           user={user}
           onClose={() => setShowImportModal(false)}
+        />
+      )}
+
+      {cropFile && (
+        <AvatarCropModal
+          file={cropFile}
+          onConfirm={blob => { uploadAvatar(blob); setCropFile(null); }}
+          onCancel={() => setCropFile(null)}
         />
       )}
 

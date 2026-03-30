@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../api/supabase';
+import ShareButton from './ShareButton';
 
 function StarRow({ rating }) {
   if (!rating) return null;
@@ -36,7 +37,7 @@ export default function PublicProfileView({ username, initialListId, onItemClick
 
       const { data: prof } = await supabase
         .from('profiles')
-        .select('id, username, display_name, is_public')
+        .select('id, username, display_name, is_public, avatar_url')
         .eq('username', username)
         .eq('is_public', true)
         .single();
@@ -143,6 +144,15 @@ export default function PublicProfileView({ username, initialListId, onItemClick
                   {activeListItems.length} {activeListItems.length === 1 ? 'item' : 'items'}
                 </p>
               </div>
+              <ShareButton
+                shareData={{
+                  title: activeList.name,
+                  text: `${activeList.name} — a list by ${displayName} on Plot`,
+                  url: `${window.location.origin}/u/${profileData.username}/list/${activeList.id}`,
+                }}
+                variant="modal"
+                label="Share List"
+              />
             </div>
           </div>
           <div className="bento-grid">
@@ -156,6 +166,7 @@ export default function PublicProfileView({ username, initialListId, onItemClick
                   ? <img src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title || item.name} />
                   : <div className="no-image">{item.title || item.name}</div>
                 }
+                <ShareButton item={{ ...item, id: item.tmdb_id }} />
                 <div className="overlay">
                   <h3>{item.title || item.name}</h3>
                 </div>
@@ -182,7 +193,10 @@ export default function PublicProfileView({ username, initialListId, onItemClick
             <div className="pp-hero-overlay" />
             <div className="pp-profile-card">
               <div className="public-profile-avatar pp-avatar-large">
-                {displayName[0].toUpperCase()}
+                {profileData.avatar_url
+                  ? <img src={profileData.avatar_url} alt={displayName} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                  : displayName[0].toUpperCase()
+                }
               </div>
               <div style={{ flex: 1 }}>
                 <h1 className="pp-display-name">{displayName}</h1>
@@ -191,15 +205,26 @@ export default function PublicProfileView({ username, initialListId, onItemClick
                   {followerCount} {followerCount === 1 ? 'follower' : 'followers'} · {publicLists.length} {publicLists.length === 1 ? 'list' : 'lists'} · {watchedCount} watched
                 </p>
               </div>
-              {user && (
-                <button
-                  className={`pp-follow-btn ${isFollowing ? 'following' : ''}`}
-                  onClick={handleFollow}
-                  disabled={followLoading}
-                >
-                  {isFollowing ? 'Following' : 'Follow'}
-                </button>
-              )}
+              <div className="pp-hero-actions">
+                {user && (
+                  <button
+                    className={`pp-follow-btn ${isFollowing ? 'following' : ''}`}
+                    onClick={handleFollow}
+                    disabled={followLoading}
+                  >
+                    {isFollowing ? 'Following' : 'Follow'}
+                  </button>
+                )}
+                <ShareButton
+                  shareData={{
+                    title: displayName,
+                    text: `Check out ${displayName}'s watchlist on Plot`,
+                    url: `${window.location.origin}/u/${profileData.username}`,
+                  }}
+                  variant="modal"
+                  label="Share Profile"
+                />
+              </div>
             </div>
           </div>
 
