@@ -923,10 +923,10 @@
 
       <!-- Left: product image (swap src per feature) -->
       <div class="feat-visual reveal">
-        <div class="feat-img active"  data-feature="discover"    data-poster="images/product/discover-poster.png"    data-gif="images/product/discover-fast.gif"><img src="images/product/discover-poster.png" alt="Discover" /></div>
-        <div class="feat-img"         data-feature="journal"     data-poster="images/product/journal-poster.png"     data-gif="images/product/journal-fast.gif"><img src="images/product/journal-poster.png" alt="Journal" /></div>
-        <div class="feat-img"         data-feature="personalise" data-poster="images/product/personalise-poster.png" data-gif="images/product/personalise-fast.gif"><img src="images/product/personalise-poster.png" alt="Personalise" /></div>
-        <div class="feat-img"         data-feature="share"       data-poster="images/product/share-poster.png"       data-gif="images/product/share-fast.gif"><img src="images/product/share-poster.png" alt="Share" /></div>
+        <div class="feat-img active"  data-feature="discover"><img src="images/product/discover.png" alt="Discover" /></div>
+        <div class="feat-img"         data-feature="journal"><img src="images/product/journal.png" alt="Journal" /></div>
+        <div class="feat-img"         data-feature="personalise"><img src="images/product/personalise.png" alt="Personalise" /></div>
+        <div class="feat-img"         data-feature="share"><img src="images/product/share.png" alt="Share" /></div>
       </div>
 
       <!-- Right: accordion -->
@@ -1298,13 +1298,8 @@
     requestAnimationFrame(updateSide);
 
     // ── Features accordion ────────────────────────────────────
-    const featItems  = document.querySelectorAll('.feat-item');
-    const featImgs   = document.querySelectorAll('.feat-img');
-    const featVisual = document.querySelector('.feat-visual');
-
-    function getActiveImg() {
-      return document.querySelector('.feat-img.active');
-    }
+    const featItems = document.querySelectorAll('.feat-item');
+    const featImgs  = document.querySelectorAll('.feat-img');
 
     featItems.forEach(item => {
       item.addEventListener('mouseenter', () => {
@@ -1313,27 +1308,8 @@
         item.classList.add('active');
         featImgs.forEach(img => {
           img.classList.toggle('active', img.dataset.feature === feature);
-          // revert any hovering gif back to poster when switching feature
-          if (img.dataset.feature !== feature) {
-            img.querySelector('img').src = img.dataset.poster;
-          }
         });
       });
-    });
-
-    // Hover on visual area: swap poster → gif, revert on leave
-    featVisual.addEventListener('mouseenter', () => {
-      const active = getActiveImg();
-      if (active && active.dataset.gif) {
-        active.querySelector('img').src = active.dataset.gif;
-      }
-    });
-
-    featVisual.addEventListener('mouseleave', () => {
-      const active = getActiveImg();
-      if (active && active.dataset.poster) {
-        active.querySelector('img').src = active.dataset.poster;
-      }
     });
 
     // ── Editorial poster layout ───────────────────────────────
