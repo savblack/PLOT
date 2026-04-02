@@ -284,7 +284,6 @@ export default function App() {
       const finalSeeds = seeds.length > 0 ? seeds : watched.slice(0, 5);
 
       if (finalSeeds.length === 0) {
-        // Fallback: discover by genre preferences
         if (preferences.genres.length === 0) return;
         const movieIds = preferences.genres.map(k => GENRES.find(g => g.key === k)?.movieId).filter(Boolean);
         const tvIds    = preferences.genres.map(k => GENRES.find(g => g.key === k)?.tvId).filter(Boolean);

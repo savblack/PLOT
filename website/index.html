@@ -215,7 +215,7 @@
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
-      background-color: #111;
+      background-color: transparent;
       box-shadow: 0 8px 28px rgba(0,0,0,0.09);
       will-change: transform, opacity;
       transition: transform 0.7s cubic-bezier(0.23, 1, 0.32, 1),
@@ -875,6 +875,10 @@
       .footer-meta { flex-direction: column; gap: 1.5rem; align-items: flex-start; }
     }
   </style>
+  <link rel="preload" as="image" href="images/hero/saltburn.webp" />
+  <link rel="preload" as="image" href="images/hero/anyone-but-you.webp" />
+  <link rel="preload" as="image" href="images/hero/nosferatu.webp" />
+  <link rel="preload" as="image" href="images/hero/wuthering-heights.webp" />
 </head>
 <body>
 
@@ -923,10 +927,10 @@
 
       <!-- Left: product image (swap src per feature) -->
       <div class="feat-visual reveal">
-        <div class="feat-img active"  data-feature="discover"><img src="images/product/discover.png" alt="Discover" /></div>
-        <div class="feat-img"         data-feature="journal"><img src="images/product/journal.png" alt="Journal" /></div>
-        <div class="feat-img"         data-feature="personalise"><img src="images/product/personalise.png" alt="Personalise" /></div>
-        <div class="feat-img"         data-feature="share"><img src="images/product/share.png" alt="Share" /></div>
+        <div class="feat-img active"  data-feature="discover"><img src="images/product/discover.webp" alt="Discover" /></div>
+        <div class="feat-img"         data-feature="journal"><img src="images/product/journal.webp" loading="lazy" alt="Journal" /></div>
+        <div class="feat-img"         data-feature="personalise"><img src="images/product/personalise.webp" loading="lazy" alt="Personalise" /></div>
+        <div class="feat-img"         data-feature="share"><img src="images/product/share.webp" loading="lazy" alt="Share" /></div>
       </div>
 
       <!-- Right: accordion -->
@@ -1181,31 +1185,31 @@
     // restX       → distance from screen edge when fully in
     const sideData = [
       // On load — four posters (2 left, 2 right)
-      { src: 'images/hero/saltburn.jpg',              side: 'left',  vy: 0.51, showAt:  0, w: 255, h: 383, restX: 16, hold: 1000 },
-      { src: 'images/hero/anyone-but-you.jpg',        side: 'left',  vy: 0.11, showAt: 40, w: 305, h: 415, restX: 34, hold: 1000 },
-      { src: 'images/hero/nosferatu.jpg',             side: 'right', vy: 0.11, showAt: 20, w: 270, h: 405, restX: 22, hold: 1000 },
-      { src: 'images/hero/wuthering-heights.jpg',     side: 'right', vy: 0.51, showAt: 60, w: 268, h: 402, restX: 58, hold: 1000 },
+      { src: 'images/hero/saltburn.webp',              side: 'left',  vy: 0.51, showAt:  0, w: 255, h: 383, restX: 16, hold: 1000 },
+      { src: 'images/hero/anyone-but-you.webp',        side: 'left',  vy: 0.11, showAt: 40, w: 305, h: 415, restX: 34, hold: 1000 },
+      { src: 'images/hero/nosferatu.webp',             side: 'right', vy: 0.11, showAt: 20, w: 270, h: 405, restX: 22, hold: 1000 },
+      { src: 'images/hero/wuthering-heights.webp',     side: 'right', vy: 0.51, showAt: 60, w: 268, h: 402, restX: 58, hold: 1000 },
       // Scroll reveals
-      { src: 'images/hero/aftersun.jpg',              side: 'left',  vy: 0.24, showAt:  400, w: 268, h: 402, restX: 90 },
-      { src: 'images/hero/anatomy-of-a-fall.jpg',     side: 'right', vy: 0.22, showAt:  440, w: 275, h: 413, restX: 85 },
-      { src: 'images/hero/babygirl.jpg',              side: 'left',  vy: 0.50, showAt:  580, w: 260, h: 390, restX: 85 },
-      { src: 'images/hero/dont-worry-darling.jpg',    side: 'right', vy: 0.48, showAt:  620, w: 268, h: 402, restX: 18 },
-      { src: 'images/hero/eternity.jpg',              side: 'left',  vy: 0.09, showAt:  760, w: 282, h: 423, restX: 95 },
-      { src: 'images/hero/f1-the-movie.jpg',          side: 'right', vy: 0.11, showAt:  800, w: 255, h: 383, restX: 90 },
-      { src: 'images/hero/frankenstein.jpg',          side: 'left',  vy: 0.34, showAt:  940, w: 268, h: 402, restX: 88 },
-      { src: 'images/hero/heretic.jpg',               side: 'right', vy: 0.30, showAt:  980, w: 282, h: 423, restX: 18 },
-      { src: 'images/hero/if-i-had-legs-id-kick-you.jpg', side: 'left', vy: 0.52, showAt: 1120, w: 260, h: 390, restX: 88 },
-      { src: 'images/hero/longlegs.jpg',              side: 'right', vy: 0.50, showAt: 1160, w: 255, h: 383, restX: 82 },
-      { src: 'images/hero/marty-supreme.jpg',         side: 'left',  vy: 0.12, showAt: 1300, w: 282, h: 423, restX: 92 },
-      { src: 'images/hero/past-lives.jpg',            side: 'right', vy: 0.09, showAt: 1340, w: 268, h: 402, restX: 16 },
-      { src: 'images/hero/people-we-meet-on-vacation.jpg', side: 'left', vy: 0.38, showAt: 1480, w: 275, h: 413, restX: 92 },
-      { src: 'images/hero/priscilla.jpg',             side: 'right', vy: 0.36, showAt: 1520, w: 260, h: 390, restX: 86 },
-      { src: 'images/hero/project-hail-mary.jpg',     side: 'left',  vy: 0.52, showAt: 1660, w: 268, h: 402, restX: 20 },
-      { src: 'images/hero/sinners.jpg',               side: 'right', vy: 0.50, showAt: 1700, w: 255, h: 383, restX: 86 },
-      { src: 'images/hero/the-drama.jpg',             side: 'left',  vy: 0.14, showAt: 1840, w: 282, h: 423, restX: 88 },
-      { src: 'images/hero/the-housemaid.jpg',         side: 'right', vy: 0.11, showAt: 1880, w: 268, h: 402, restX: 90 },
-      { src: 'images/hero/the-substance.jpg',         side: 'left',  vy: 0.38, showAt: 2020, w: 260, h: 390, restX: 90 },
-      { src: 'images/hero/the-wolf-of-wall-street.png', side: 'right', vy: 0.36, showAt: 2060, w: 275, h: 413, restX: 18 },
+      { src: 'images/hero/aftersun.webp',              side: 'left',  vy: 0.24, showAt:  400, w: 268, h: 402, restX: 90 },
+      { src: 'images/hero/anatomy-of-a-fall.webp',     side: 'right', vy: 0.22, showAt:  440, w: 275, h: 413, restX: 85 },
+      { src: 'images/hero/babygirl.webp',              side: 'left',  vy: 0.50, showAt:  580, w: 260, h: 390, restX: 85 },
+      { src: 'images/hero/dont-worry-darling.webp',    side: 'right', vy: 0.48, showAt:  620, w: 268, h: 402, restX: 18 },
+      { src: 'images/hero/eternity.webp',              side: 'left',  vy: 0.09, showAt:  760, w: 282, h: 423, restX: 95 },
+      { src: 'images/hero/f1-the-movie.webp',          side: 'right', vy: 0.11, showAt:  800, w: 255, h: 383, restX: 90 },
+      { src: 'images/hero/frankenstein.webp',          side: 'left',  vy: 0.34, showAt:  940, w: 268, h: 402, restX: 88 },
+      { src: 'images/hero/heretic.webp',               side: 'right', vy: 0.30, showAt:  980, w: 282, h: 423, restX: 18 },
+      { src: 'images/hero/if-i-had-legs-id-kick-you.webp', side: 'left', vy: 0.52, showAt: 1120, w: 260, h: 390, restX: 88 },
+      { src: 'images/hero/longlegs.webp',              side: 'right', vy: 0.50, showAt: 1160, w: 255, h: 383, restX: 82 },
+      { src: 'images/hero/marty-supreme.webp',         side: 'left',  vy: 0.12, showAt: 1300, w: 282, h: 423, restX: 92 },
+      { src: 'images/hero/past-lives.webp',            side: 'right', vy: 0.09, showAt: 1340, w: 268, h: 402, restX: 16 },
+      { src: 'images/hero/people-we-meet-on-vacation.webp', side: 'left', vy: 0.38, showAt: 1480, w: 275, h: 413, restX: 92 },
+      { src: 'images/hero/priscilla.webp',             side: 'right', vy: 0.36, showAt: 1520, w: 260, h: 390, restX: 86 },
+      { src: 'images/hero/project-hail-mary.webp',     side: 'left',  vy: 0.52, showAt: 1660, w: 268, h: 402, restX: 20 },
+      { src: 'images/hero/sinners.webp',               side: 'right', vy: 0.50, showAt: 1700, w: 255, h: 383, restX: 86 },
+      { src: 'images/hero/the-drama.webp',             side: 'left',  vy: 0.14, showAt: 1840, w: 282, h: 423, restX: 88 },
+      { src: 'images/hero/the-housemaid.webp',         side: 'right', vy: 0.11, showAt: 1880, w: 268, h: 402, restX: 90 },
+      { src: 'images/hero/the-substance.webp',         side: 'left',  vy: 0.38, showAt: 2020, w: 260, h: 390, restX: 90 },
+      { src: 'images/hero/the-wolf-of-wall-street.webp', side: 'right', vy: 0.36, showAt: 2060, w: 275, h: 413, restX: 18 },
     ];
 
     const posterSide = document.getElementById('posterSide');
