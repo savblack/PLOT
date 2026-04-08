@@ -232,6 +232,10 @@ export default function AppHeader({
             )}
           </div>
         </div>
+        <div className="mobile-filter-row">
+          <button className={mediaFilter === 'movie' ? 'active' : ''} onClick={() => setMediaFilter('movie')}>Movies</button>
+          <button className={mediaFilter === 'tv' ? 'active' : ''} onClick={() => setMediaFilter('tv')}>TV</button>
+        </div>
       </header>
 
       {showMobileSearch && (
