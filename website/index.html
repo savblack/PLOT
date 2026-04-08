@@ -267,6 +267,31 @@
       flex-wrap: wrap;
     }
 
+    .hero-filmstrip {
+      display: none;
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      margin-top: 2.5rem;
+    }
+    .hero-filmstrip::-webkit-scrollbar { display: none; }
+    .hero-filmstrip-inner {
+      display: flex;
+      gap: 8px;
+      width: max-content;
+      padding: 0 1.5rem 0.5rem;
+    }
+    .hero-film-card {
+      width: 72px;
+      height: 108px;
+      border-radius: 8px;
+      flex-shrink: 0;
+      background-size: cover;
+      background-position: center;
+      background-color: #ddd;
+    }
+
     #manifesto, #for-the-plot, #value, #features, #cta, footer {
       position: relative;
       z-index: 2;
@@ -755,6 +780,15 @@
       #editorialWrap { display: none; }
     }
 
+    @media (max-width: 768px) {
+      /* Manifesto — reduce gaps for mid-size screens */
+      #manifesto { gap: 10rem; padding: 6rem 2rem 10rem; }
+      #plotDoes { margin-top: 10rem; margin-bottom: 8rem; }
+
+      /* CTA — reduce enormous desktop padding */
+      #cta { padding: 8rem 1.5rem 10rem; }
+    }
+
     @media (max-width: 600px) {
       .nav-links { display: none; }
       .nav-links.open {
@@ -772,21 +806,23 @@
       }
       .nav-hamburger { display: flex; }
 
-      /* Hero */
+      /* Hero — show filmstrip */
       #hero { padding-top: 5rem; }
+      .hero-filmstrip { display: block; }
 
-      /* Manifesto — tighten scroll gaps so it doesn't require endless scrolling */
+      /* Manifesto — tighten further for small phones */
       #manifesto {
-        padding: 5rem 2rem 8rem;
-        gap: 12rem;
+        padding: 4rem 1.5rem 6rem;
+        gap: 8rem;
       }
       #plotDoes {
-        margin-top: 8rem;
-        margin-bottom: 6rem;
+        margin-top: 6rem;
+        margin-bottom: 5rem;
       }
 
       /* Features */
       #features { padding: 4rem 1.5rem; }
+      .features-header { margin-bottom: 2.5rem; }
       .feat-title { font-size: 1.6rem; }
 
       /* For the Plot — section padding */
@@ -805,7 +841,7 @@
       }
       .tl-empty { display: none; }
       .tl-poster-wrap { order: 1; }
-      .tl-note { order: 2; text-align: center; }
+      .tl-note { order: 2; text-align: center; font-size: 1.2rem; }
 
       /* CTA — stack vertically */
       #cta { padding: 5rem 1.5rem 7rem; }
@@ -817,6 +853,7 @@
 
       /* Footer */
       .footer-meta { flex-direction: column; gap: 1.5rem; align-items: flex-start; }
+      .footer-links { gap: 1rem; flex-wrap: wrap; }
     }
   </style>
   <link rel="preload" as="image" href="images/hero/saltburn.webp" />
@@ -848,6 +885,18 @@
       <p class="hero-sub reveal reveal-delay-2">Every film. Every series. Every feeling.<br>In one beautiful place.</p>
       <div class="hero-actions reveal reveal-delay-3">
         <a href="https://app.theplot.tv/signup" class="btn btn-outline btn-large">Start your journal →</a>
+      </div>
+      <div class="hero-filmstrip reveal reveal-delay-4">
+        <div class="hero-filmstrip-inner">
+          <div class="hero-film-card" style="background-image:url('images/hero/saltburn.webp')"></div>
+          <div class="hero-film-card" style="background-image:url('images/hero/anyone-but-you.webp')"></div>
+          <div class="hero-film-card" style="background-image:url('images/hero/nosferatu.webp')"></div>
+          <div class="hero-film-card" style="background-image:url('images/hero/wuthering-heights.webp')"></div>
+          <div class="hero-film-card" style="background-image:url('images/hero/past-lives.webp')"></div>
+          <div class="hero-film-card" style="background-image:url('images/hero/aftersun.webp')"></div>
+          <div class="hero-film-card" style="background-image:url('images/hero/babygirl.webp')"></div>
+          <div class="hero-film-card" style="background-image:url('images/hero/the-substance.webp')"></div>
+        </div>
       </div>
     </div>
   </section>
@@ -1099,6 +1148,7 @@
     // showAt < 0  → visible on load (negative puts us in hold phase at scrollY=0)
     // vy          → vertical position as fraction of viewport height (poster top)
     // restX       → distance from screen edge when fully in
+    if (window.innerWidth >= 600) {
     const sideData = [
       // On load — four posters (2 left, 2 right)
       { src: 'images/hero/saltburn.webp',              side: 'left',  vy: 0.51, showAt:  0, w: 217, h: 325, restX: 16, hold: 1000 },
@@ -1216,6 +1266,7 @@
       requestAnimationFrame(updateSide);
     }
     requestAnimationFrame(updateSide);
+    } // end desktop-only poster system
 
     // ── Editorial poster layout ───────────────────────────────
     const editorialData = [
