@@ -151,6 +151,25 @@ export default function JournalView({
   const [editingListName, setEditingListName] = useState(false);
   const [editListNameValue, setEditListNameValue] = useState('');
   const [showListEditMenu, setShowListEditMenu] = useState(false);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [showMoveList, setShowMoveList] = useState(false);
+  const [pendingHistoryDelete, setPendingHistoryDelete] = useState(null);
+
+  const exitSelectMode = () => {
+    setSelectMode(false);
+    setSelectedIds(new Set());
+    setShowMoveList(false);
+  };
+
+  const toggleItemSelect = (tmdbId) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(tmdbId)) next.delete(tmdbId);
+      else next.add(tmdbId);
+      return next;
+    });
+  };
 
   const activeWatched = (() => {
     if (watched.length >= 20) return watched;
@@ -206,9 +225,9 @@ export default function JournalView({
               ) : (
                 <h2 className="section-title">{activeList.name}</h2>
               )}
-              {!isVirtualList && (
+              {!isVirtualList && !selectMode && (
                 <div className="list-edit-menu-wrapper">
-                  <button className="new-list-header-btn" onClick={() => setShowListEditMenu(v => !v)}>
+                  <button className="new-list-header-btn list-edit-btn" onClick={() => setShowListEditMenu(v => !v)}>
                     Edit list
                   </button>
                   {showListEditMenu && (
@@ -226,6 +245,9 @@ export default function JournalView({
                             {copiedLink === activeList.id ? 'Copied!' : 'Copy list link'}
                           </button>
                         )}
+                        <button onClick={() => { setSelectMode(true); setShowListEditMenu(false); }}>
+                          Select items
+                        </button>
                         <button className="danger" onClick={() => { if (window.confirm(`Delete "${activeList.name}"?`)) { deleteList(activeList.id); setShowListEditMenu(false); } }}>
                           Delete list
                         </button>
@@ -233,6 +255,16 @@ export default function JournalView({
                     </>
                   )}
                 </div>
+              )}
+              {isVirtualList && !selectMode && (
+                <button className="new-list-header-btn list-edit-btn" onClick={() => setSelectMode(true)}>
+                  Select
+                </button>
+              )}
+              {selectMode && (
+                <button className="new-list-header-btn list-edit-btn" onClick={exitSelectMode}>
+                  Cancel
+                </button>
               )}
             </div>
           </div>
