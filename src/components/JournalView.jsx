@@ -171,6 +171,44 @@ export default function JournalView({
     });
   };
 
+  const handleBulkDelete = async () => {
+    const tmdbIds = [...selectedIds];
+    if (isVirtualList) {
+      await deleteFromJournal(tmdbIds);
+      exitSelectMode();
+    } else {
+      await Promise.all(tmdbIds.map(id => toggleListItem(activeList.id, { id }, false)));
+      const inHistory = tmdbIds.filter(id =>
+        watched.some(w => (w.tmdb_id || w.id) === id)
+      );
+      if (inHistory.length > 0) {
+        setPendingHistoryDelete(inHistory);
+      } else {
+        exitSelectMode();
+      }
+    }
+  };
+
+  const handleBulkMove = async (targetListId) => {
+    const tmdbIds = [...selectedIds];
+    const itemsToMove = activeListItems.filter(item =>
+      tmdbIds.includes(item.tmdb_id || item.id)
+    );
+    if (!isVirtualList) {
+      await Promise.all(tmdbIds.map(id => toggleListItem(activeList.id, { id }, false)));
+    }
+    await Promise.all(itemsToMove.map(item =>
+      toggleListItem(targetListId, {
+        id: item.tmdb_id || item.id,
+        media_type: item.media_type || (item.title ? 'movie' : 'tv'),
+        title: item.title || item.name,
+        poster_path: item.poster_path,
+      }, true)
+    ));
+    setShowMoveList(false);
+    exitSelectMode();
+  };
+
   const activeWatched = (() => {
     if (watched.length >= 20) return watched;
     const realTitles = new Set(watched.map(w => w.title || w.name));
@@ -316,6 +354,42 @@ export default function JournalView({
               <p className="empty-list-msg">Nothing here yet.</p>
             )}
           </div>
+
+          {selectMode && selectedIds.size > 0 && (
+            <div className="select-action-bar">
+              <span className="select-count">{selectedIds.size} selected</span>
+              <div className="select-actions">
+                <button className="select-action-btn" onClick={() => setShowMoveList(v => !v)}>
+                  Move to list
+                </button>
+                <button className="select-action-btn danger" onClick={handleBulkDelete}>
+                  Delete
+                </button>
+              </div>
+            </div>
+          )}
+
+          {showMoveList && (
+            <>
+              <div className="move-list-backdrop" onClick={() => setShowMoveList(false)} />
+              <div className="move-to-list-popup">
+                <h4>Move to list</h4>
+                {userLists
+                  .filter(l => isVirtualList || l.id !== activeList.id)
+                  .map(l => (
+                    <button key={l.id} onClick={() => handleBulkMove(l.id)}>
+                      {l.name}
+                    </button>
+                  ))
+                }
+                {userLists.filter(l => isVirtualList || l.id !== activeList.id).length === 0 && (
+                  <p style={{ padding: '0.5rem 0.75rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                    No other lists. Create one first.
+                  </p>
+                )}
+              </div>
+            </>
+          )}
         </div>
       ) : (
         <div className="journal-section">

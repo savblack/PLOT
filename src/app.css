@@ -950,6 +950,111 @@
   border-color: var(--accent-primary);
 }
 
+/* ── Select action bar ───────────────────────────────────── */
+.select-action-bar {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--text-primary);
+  color: var(--bg-color);
+  border-radius: var(--radius-pill);
+  padding: 0.75rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  z-index: 150;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  white-space: nowrap;
+}
+
+.select-count {
+  font-size: 0.85rem;
+  opacity: 0.6;
+}
+
+.select-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.select-action-btn {
+  background: rgba(128, 128, 128, 0.25);
+  color: inherit;
+  border: none;
+  border-radius: var(--radius-pill);
+  padding: 0.4rem 0.9rem;
+  font-size: 0.85rem;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.select-action-btn:hover { background: rgba(128, 128, 128, 0.4); }
+
+.select-action-btn.danger { background: rgba(229, 85, 85, 0.4); }
+.select-action-btn.danger:hover { background: rgba(229, 85, 85, 0.6); }
+
+/* ── Move to list popup ──────────────────────────────────── */
+.move-list-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 149;
+}
+
+.move-to-list-popup {
+  position: fixed;
+  bottom: 5.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--surface-color);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  padding: 0.5rem;
+  z-index: 151;
+  min-width: 200px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+}
+
+.move-to-list-popup h4 {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-secondary);
+  padding: 0.5rem 0.75rem 0.25rem;
+  margin: 0;
+  font-family: var(--font-sans);
+  font-weight: 600;
+}
+
+.move-to-list-popup button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 0.6rem 0.75rem;
+  border-radius: calc(var(--radius-md) - 4px);
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-family: var(--font-sans);
+  color: var(--text-primary);
+  transition: background 0.12s;
+}
+
+.move-to-list-popup button:hover { background: var(--glass-border); }
+
+[data-theme="dark"] .move-to-list-popup {
+  background: #1e1e1e;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+/* On mobile, raise action bar above the bottom tab bar */
+@media (max-width: 768px) {
+  .select-action-bar { bottom: 5rem; }
+  .move-to-list-popup { bottom: 8.5rem; }
+}
+
 .empty-list-msg {
   color: var(--text-secondary);
   font-size: 0.9rem;
