@@ -162,6 +162,11 @@ export default function JournalView({
     setShowMoveList(false);
   };
 
+  useEffect(() => {
+    exitSelectMode();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeList?.id]);
+
   const toggleItemSelect = (tmdbId) => {
     setSelectedIds(prev => {
       const next = new Set(prev);
@@ -246,7 +251,7 @@ export default function JournalView({
       {activeList ? (
         <div className="list-detail-view animate-in">
           <div className="list-detail-header">
-            <button className="back-btn" onClick={() => { setActiveList(null); setEditingListName(false); }}>← <span style={{ fontFamily: 'var(--font-serif)', fontSize: '1.15em' }}>Journal</span></button>
+            <button className="back-btn" onClick={() => { setActiveList(null); setEditingListName(false); exitSelectMode(); }}>← <span style={{ fontFamily: 'var(--font-serif)', fontSize: '1.15em' }}>Journal</span></button>
             <div className="section-header-row">
               {!isVirtualList && editingListName ? (
                 <input
