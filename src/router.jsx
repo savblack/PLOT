@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom';
+import { createBrowserRouter } from 'react-router-dom';
 import App from './App.jsx';
 import AuthPage from './pages/AuthPage.jsx';
 import AuthCallbackPage from './pages/AuthCallbackPage.jsx';
@@ -9,9 +9,10 @@ import ProtectedRoute from './components/ProtectedRoute.jsx';
 import ProfilePreviewPage from './pages/ProfilePreviewPage.jsx';
 import TermsPage from './pages/TermsPage.jsx';
 import PrivacyPage from './pages/PrivacyPage.jsx';
+import RootRoute from './pages/RootRoute.jsx';
 
 const router = createBrowserRouter([
-  { path: '/',               element: <Navigate to="/login" replace /> },
+  { path: '/',               element: <RootRoute /> },
   { path: '/terms',          element: <TermsPage /> },
   { path: '/privacy',        element: <PrivacyPage /> },
   { path: '/profile-preview', element: <ProfilePreviewPage /> },

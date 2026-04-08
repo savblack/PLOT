@@ -422,64 +422,17 @@
       margin-bottom: 5rem;
     }
 
-    .features-split {
-      display: grid;
-      grid-template-columns: 3fr 2fr;
-      gap: 4rem;
-      align-items: start;
-    }
-
-    /* Left — sticky product image */
-    .feat-visual {
-      position: sticky;
-      top: 8rem;
-      border-radius: 20px;
-      overflow: hidden;
-      background: #e0e0e0;
-      height: 520px;
-      box-shadow: 0 24px 64px rgba(0,0,0,0.12);
-    }
-
-    .feat-img {
-      position: absolute;
-      inset: 0;
-      opacity: 0;
-      transition: opacity 0.55s ease;
-    }
-
-    .feat-img img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      object-position: top center;
-      display: block;
-    }
-
-    .feat-img.active {
-      opacity: 1;
-    }
-
-    /* Right — accordion */
-    .feat-accordion {
-      display: flex;
-      flex-direction: column;
-      padding-top: 0.25rem;
-    }
-
-    .feat-item {
+    .feat-rows {
       border-top: 1px solid rgba(0,0,0,0.1);
-      padding: 1.75rem 0;
-      cursor: default;
     }
 
-    .feat-item:first-child {
-      border-top: none;
-    }
-
-    .feat-header {
-      display: flex;
+    .feat-row {
+      display: grid;
+      grid-template-columns: 4rem 1fr 2fr;
+      gap: 2rem 4rem;
       align-items: baseline;
-      gap: 1.25rem;
+      padding: 2.5rem 0;
+      border-bottom: 1px solid rgba(0,0,0,0.1);
     }
 
     .feat-num {
@@ -487,7 +440,6 @@
       font-size: 1.5rem;
       color: var(--muted);
       flex-shrink: 0;
-      transition: color 0.3s ease;
     }
 
     .feat-title {
@@ -497,39 +449,21 @@
       letter-spacing: -0.03em;
       line-height: 1;
       color: var(--text);
-      transition: color 0.2s ease;
     }
 
     .feat-body {
-      overflow: hidden;
-      max-height: 0;
-      opacity: 0;
-      margin-top: 0;
-      transition: max-height 0.45s cubic-bezier(0.23, 1, 0.32, 1),
-                  opacity 0.35s ease,
-                  margin-top 0.35s ease;
-    }
-
-    .feat-item.active .feat-body {
-      max-height: 160px;
-      opacity: 1;
-      margin-top: 1rem;
-    }
-
-    .feat-body p {
       font-size: 0.95rem;
       color: var(--muted);
-      line-height: 1.5;
+      line-height: 1.6;
     }
 
-    @media (max-width: 900px) {
-      .features-split {
-        grid-template-columns: 1fr;
-        gap: 3rem;
+    @media (max-width: 700px) {
+      .feat-row {
+        grid-template-columns: 3rem 1fr;
+        grid-template-rows: auto auto;
       }
-      .feat-visual {
-        position: static;
-        height: 360px;
+      .feat-row .feat-body {
+        grid-column: 1 / -1;
       }
     }
 
@@ -641,7 +575,7 @@
     #cta {
       padding: 16rem 2rem 20rem;
       overflow: hidden;
-      background: #0e0e0e;
+      background: var(--bg);
     }
 
     .cta-inner {
@@ -660,7 +594,7 @@
       letter-spacing: -0.08em;
       line-height: 0.85;
       text-align: left;
-      color: #fff;
+      color: #0e0e0e;
     }
 
     .cta-sub {
@@ -669,7 +603,7 @@
       font-weight: 400;
       letter-spacing: -0.08em;
       line-height: 0.85;
-      color: rgba(255,255,255,0.35);
+      color: rgba(0,0,0,0.35);
       margin-top: 1.5rem;
       text-align: left;
     }
@@ -756,6 +690,7 @@
     footer {
       background: #0e0e0e;
       overflow: hidden;
+      padding-top: 8rem;
     }
 
     .footer-wordmark {
@@ -923,60 +858,32 @@
     <div class="features-header reveal">
       <h2 class="section-title">Designed for your<br>viewing habits</h2>
     </div>
-    <div class="features-split">
+    <div class="feat-rows">
 
-      <!-- Left: product image (swap src per feature) -->
-      <div class="feat-visual reveal">
-        <div class="feat-img active"  data-feature="discover"><img src="images/product/discover.webp" alt="Discover" /></div>
-        <div class="feat-img"         data-feature="journal"><img src="images/product/journal.webp" loading="lazy" alt="Journal" /></div>
-        <div class="feat-img"         data-feature="personalise"><img src="images/product/personalise.webp" loading="lazy" alt="Personalise" /></div>
-        <div class="feat-img"         data-feature="share"><img src="images/product/share.webp" loading="lazy" alt="Share" /></div>
+      <div class="feat-row reveal">
+        <span class="feat-num">01</span>
+        <span class="feat-title">Discover</span>
+        <p class="feat-body">Know what's new, trending, and coming soon — and find out where you can watch it, all in one place. PLOT is your starting point for finding something to watch tonight.</p>
       </div>
 
-      <!-- Right: accordion -->
-      <div class="feat-accordion reveal reveal-delay-2">
-
-        <div class="feat-item active" data-feature="discover">
-          <div class="feat-header">
-            <span class="feat-num">01</span>
-            <span class="feat-title">Discover</span>
-          </div>
-          <div class="feat-body">
-            <p>Know what's new, trending, and coming soon — and find out where you can watch it, all in one place. PLOT is your starting point for finding something to watch tonight.</p>
-          </div>
-        </div>
-
-        <div class="feat-item" data-feature="journal">
-          <div class="feat-header">
-            <span class="feat-num">02</span>
-            <span class="feat-title">Journal</span>
-          </div>
-          <div class="feat-body">
-            <p>Save it. Rate it. Write about it. Every film and series you watch becomes part of your timeline — look back and see it take shape like a story you didn't know you were writing.</p>
-          </div>
-        </div>
-
-        <div class="feat-item" data-feature="personalise">
-          <div class="feat-header">
-            <span class="feat-num">03</span>
-            <span class="feat-title">Personalise</span>
-          </div>
-          <div class="feat-body">
-            <p>No two feeds look the same, and they shouldn't. Yours is shaped by every film you've rated, every series you've logged and every list you've made. The more you use PLOT, the more it gets you.</p>
-          </div>
-        </div>
-
-        <div class="feat-item" data-feature="share">
-          <div class="feat-header">
-            <span class="feat-num">04</span>
-            <span class="feat-title">Share</span>
-          </div>
-          <div class="feat-body">
-            <p>Drop your top ten list in the group chat. Check if your flatmate's TV taste is grounds for moving out. Share your profile like a love letter. Or a <em>warning.</em> What's the point of great taste if nobody knows?</p>
-          </div>
-        </div>
-
+      <div class="feat-row reveal">
+        <span class="feat-num">02</span>
+        <span class="feat-title">Journal</span>
+        <p class="feat-body">Save it. Rate it. Write about it. Every film and series you watch becomes part of your timeline — look back and see it take shape like a story you didn't know you were writing.</p>
       </div>
+
+      <div class="feat-row reveal">
+        <span class="feat-num">03</span>
+        <span class="feat-title">Personalise</span>
+        <p class="feat-body">No two feeds look the same, and they shouldn't. Yours is shaped by every film you've rated, every series you've logged and every list you've made. The more you use PLOT, the more it gets you.</p>
+      </div>
+
+      <div class="feat-row reveal">
+        <span class="feat-num">04</span>
+        <span class="feat-title">Share</span>
+        <p class="feat-body">Drop your top ten list in the group chat. Check if your flatmate's TV taste is grounds for moving out. Share your profile like a love letter. Or a <em>warning.</em> What's the point of great taste if nobody knows?</p>
+      </div>
+
     </div>
   </section>
 
@@ -1088,6 +995,19 @@
     </div>
   </section>
 
+  <!-- ── Closing CTA ───────────────────────────────────────────── -->
+  <section id="cta">
+    <div class="cta-inner">
+      <div class="cta-text">
+        <h2 class="cta-headline reveal">Your taste tells a story</h2>
+        <p class="cta-sub reveal reveal-delay-1">And every story needs a PLOT.</p>
+      </div>
+      <div class="reveal reveal-delay-2" style="flex-shrink: 0; margin-top: 1rem;">
+        <a href="https://app.theplot.tv/signup" class="btn btn-outline btn-large">Create your PLOT →</a>
+      </div>
+    </div>
+  </section>
+
   <!-- ── Live Ticker ──────────────────────────────────────────── -->
   <div class="ticker-section">
     <div class="ticker-badge">Plot Live</div>
@@ -1097,19 +1017,6 @@
       </div>
     </div>
   </div>
-
-  <!-- ── Closing CTA ───────────────────────────────────────────── -->
-  <section id="cta">
-    <div class="cta-inner">
-      <div class="cta-text">
-        <h2 class="cta-headline reveal">Your taste tells a story</h2>
-        <p class="cta-sub reveal reveal-delay-1">And every story needs a PLOT.</p>
-      </div>
-      <div class="reveal reveal-delay-2" style="flex-shrink: 0; margin-top: 1rem;">
-        <a href="https://app.theplot.tv/signup" class="btn btn-outline-white btn-large">Create your PLOT →</a>
-      </div>
-    </div>
-  </section>
 
   <!-- ── Footer ────────────────────────────────────────────────── -->
   <footer>
@@ -1185,31 +1092,31 @@
     // restX       → distance from screen edge when fully in
     const sideData = [
       // On load — four posters (2 left, 2 right)
-      { src: 'images/hero/saltburn.webp',              side: 'left',  vy: 0.51, showAt:  0, w: 255, h: 383, restX: 16, hold: 1000 },
-      { src: 'images/hero/anyone-but-you.webp',        side: 'left',  vy: 0.11, showAt: 40, w: 305, h: 415, restX: 34, hold: 1000 },
-      { src: 'images/hero/nosferatu.webp',             side: 'right', vy: 0.11, showAt: 20, w: 270, h: 405, restX: 22, hold: 1000 },
-      { src: 'images/hero/wuthering-heights.webp',     side: 'right', vy: 0.51, showAt: 60, w: 268, h: 402, restX: 58, hold: 1000 },
+      { src: 'images/hero/saltburn.webp',              side: 'left',  vy: 0.51, showAt:  0, w: 217, h: 325, restX: 16, hold: 1000 },
+      { src: 'images/hero/anyone-but-you.webp',        side: 'left',  vy: 0.11, showAt: 40, w: 259, h: 353, restX: 34, hold: 1000 },
+      { src: 'images/hero/nosferatu.webp',             side: 'right', vy: 0.11, showAt: 20, w: 230, h: 344, restX: 22, hold: 1000 },
+      { src: 'images/hero/wuthering-heights.webp',     side: 'right', vy: 0.51, showAt: 60, w: 228, h: 342, restX: 58, hold: 1000 },
       // Scroll reveals
-      { src: 'images/hero/aftersun.webp',              side: 'left',  vy: 0.24, showAt:  400, w: 268, h: 402, restX: 90 },
-      { src: 'images/hero/anatomy-of-a-fall.webp',     side: 'right', vy: 0.22, showAt:  440, w: 275, h: 413, restX: 85 },
-      { src: 'images/hero/babygirl.webp',              side: 'left',  vy: 0.50, showAt:  580, w: 260, h: 390, restX: 85 },
-      { src: 'images/hero/dont-worry-darling.webp',    side: 'right', vy: 0.48, showAt:  620, w: 268, h: 402, restX: 18 },
-      { src: 'images/hero/eternity.webp',              side: 'left',  vy: 0.09, showAt:  760, w: 282, h: 423, restX: 95 },
-      { src: 'images/hero/f1-the-movie.webp',          side: 'right', vy: 0.11, showAt:  800, w: 255, h: 383, restX: 90 },
-      { src: 'images/hero/frankenstein.webp',          side: 'left',  vy: 0.34, showAt:  940, w: 268, h: 402, restX: 88 },
-      { src: 'images/hero/heretic.webp',               side: 'right', vy: 0.30, showAt:  980, w: 282, h: 423, restX: 18 },
-      { src: 'images/hero/if-i-had-legs-id-kick-you.webp', side: 'left', vy: 0.52, showAt: 1120, w: 260, h: 390, restX: 88 },
-      { src: 'images/hero/longlegs.webp',              side: 'right', vy: 0.50, showAt: 1160, w: 255, h: 383, restX: 82 },
-      { src: 'images/hero/marty-supreme.webp',         side: 'left',  vy: 0.12, showAt: 1300, w: 282, h: 423, restX: 92 },
-      { src: 'images/hero/past-lives.webp',            side: 'right', vy: 0.09, showAt: 1340, w: 268, h: 402, restX: 16 },
-      { src: 'images/hero/people-we-meet-on-vacation.webp', side: 'left', vy: 0.38, showAt: 1480, w: 275, h: 413, restX: 92 },
-      { src: 'images/hero/priscilla.webp',             side: 'right', vy: 0.36, showAt: 1520, w: 260, h: 390, restX: 86 },
-      { src: 'images/hero/project-hail-mary.webp',     side: 'left',  vy: 0.52, showAt: 1660, w: 268, h: 402, restX: 20 },
-      { src: 'images/hero/sinners.webp',               side: 'right', vy: 0.50, showAt: 1700, w: 255, h: 383, restX: 86 },
-      { src: 'images/hero/the-drama.webp',             side: 'left',  vy: 0.14, showAt: 1840, w: 282, h: 423, restX: 88 },
-      { src: 'images/hero/the-housemaid.webp',         side: 'right', vy: 0.11, showAt: 1880, w: 268, h: 402, restX: 90 },
-      { src: 'images/hero/the-substance.webp',         side: 'left',  vy: 0.38, showAt: 2020, w: 260, h: 390, restX: 90 },
-      { src: 'images/hero/the-wolf-of-wall-street.webp', side: 'right', vy: 0.36, showAt: 2060, w: 275, h: 413, restX: 18 },
+      { src: 'images/hero/aftersun.webp',              side: 'left',  vy: 0.24, showAt:  400, w: 228, h: 342, restX: 90 },
+      { src: 'images/hero/anatomy-of-a-fall.webp',     side: 'right', vy: 0.22, showAt:  440, w: 234, h: 351, restX: 85 },
+      { src: 'images/hero/babygirl.webp',              side: 'left',  vy: 0.50, showAt:  580, w: 221, h: 332, restX: 85 },
+      { src: 'images/hero/dont-worry-darling.webp',    side: 'right', vy: 0.48, showAt:  620, w: 228, h: 342, restX: 18 },
+      { src: 'images/hero/eternity.webp',              side: 'left',  vy: 0.09, showAt:  760, w: 240, h: 360, restX: 95 },
+      { src: 'images/hero/f1-the-movie.webp',          side: 'right', vy: 0.11, showAt:  800, w: 217, h: 325, restX: 90 },
+      { src: 'images/hero/frankenstein.webp',          side: 'left',  vy: 0.34, showAt:  940, w: 228, h: 342, restX: 88 },
+      { src: 'images/hero/heretic.webp',               side: 'right', vy: 0.30, showAt:  980, w: 240, h: 360, restX: 18 },
+      { src: 'images/hero/if-i-had-legs-id-kick-you.webp', side: 'left', vy: 0.52, showAt: 1120, w: 221, h: 332, restX: 88 },
+      { src: 'images/hero/longlegs.webp',              side: 'right', vy: 0.50, showAt: 1160, w: 217, h: 325, restX: 82 },
+      { src: 'images/hero/marty-supreme.webp',         side: 'left',  vy: 0.12, showAt: 1300, w: 240, h: 360, restX: 92 },
+      { src: 'images/hero/past-lives.webp',            side: 'right', vy: 0.09, showAt: 1340, w: 228, h: 342, restX: 16 },
+      { src: 'images/hero/people-we-meet-on-vacation.webp', side: 'left', vy: 0.38, showAt: 1480, w: 234, h: 351, restX: 92 },
+      { src: 'images/hero/priscilla.webp',             side: 'right', vy: 0.36, showAt: 1520, w: 221, h: 332, restX: 86 },
+      { src: 'images/hero/project-hail-mary.webp',     side: 'left',  vy: 0.52, showAt: 1660, w: 228, h: 342, restX: 20 },
+      { src: 'images/hero/sinners.webp',               side: 'right', vy: 0.50, showAt: 1700, w: 217, h: 325, restX: 86 },
+      { src: 'images/hero/the-drama.webp',             side: 'left',  vy: 0.14, showAt: 1840, w: 240, h: 360, restX: 88 },
+      { src: 'images/hero/the-housemaid.webp',         side: 'right', vy: 0.11, showAt: 1880, w: 228, h: 342, restX: 90 },
+      { src: 'images/hero/the-substance.webp',         side: 'left',  vy: 0.38, showAt: 2020, w: 221, h: 332, restX: 90 },
+      { src: 'images/hero/the-wolf-of-wall-street.webp', side: 'right', vy: 0.36, showAt: 2060, w: 234, h: 351, restX: 18 },
     ];
 
     const posterSide = document.getElementById('posterSide');
@@ -1300,21 +1207,6 @@
       requestAnimationFrame(updateSide);
     }
     requestAnimationFrame(updateSide);
-
-    // ── Features accordion ────────────────────────────────────
-    const featItems = document.querySelectorAll('.feat-item');
-    const featImgs  = document.querySelectorAll('.feat-img');
-
-    featItems.forEach(item => {
-      item.addEventListener('mouseenter', () => {
-        const feature = item.dataset.feature;
-        featItems.forEach(i => i.classList.remove('active'));
-        item.classList.add('active');
-        featImgs.forEach(img => {
-          img.classList.toggle('active', img.dataset.feature === feature);
-        });
-      });
-    });
 
     // ── Editorial poster layout ───────────────────────────────
     const editorialData = [
