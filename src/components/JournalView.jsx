@@ -269,28 +269,49 @@ export default function JournalView({
             </div>
           </div>
           <div className="bento-grid">
-            {activeListItems.map((item, index) => (
-              <div
-                key={item.id || index}
-                className="bento-item glass list-detail-item"
-                onClick={() => onItemClick(isVirtualList ? item : { ...item, id: item.tmdb_id })}
-              >
-                {item.poster_path
-                  ? <img src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title || item.name} />
-                  : <div className="no-image">{item.title || item.name}</div>
-                }
-                <div className="overlay">
-                  <h3>{item.title || item.name}</h3>
+            {activeListItems.map((item, index) => {
+              const tmdbId = item.tmdb_id || item.id;
+              const isSelected = selectedIds.has(tmdbId);
+              return (
+                <div
+                  key={item.id || index}
+                  className={`bento-item glass list-detail-item${isSelected ? ' selected' : ''}`}
+                  onClick={() => {
+                    if (selectMode) {
+                      toggleItemSelect(tmdbId);
+                    } else {
+                      onItemClick(isVirtualList ? item : { ...item, id: item.tmdb_id });
+                    }
+                  }}
+                >
+                  {item.poster_path
+                    ? <img src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title || item.name} />
+                    : <div className="no-image">{item.title || item.name}</div>
+                  }
+                  <div className="overlay">
+                    <h3>{item.title || item.name}</h3>
+                  </div>
+                  {selectMode && (
+                    <div className={`item-select-overlay${isSelected ? ' checked' : ''}`}>
+                      <div className="item-checkbox">
+                        {isSelected && (
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12"/>
+                          </svg>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  {!selectMode && !isVirtualList && (
+                    <button
+                      className="remove-item-btn"
+                      onClick={e => { e.stopPropagation(); toggleListItem(activeList.id, { id: item.tmdb_id }, false); }}
+                      title="Remove from list"
+                    >×</button>
+                  )}
                 </div>
-                {!isVirtualList && (
-                  <button
-                    className="remove-item-btn"
-                    onClick={e => { e.stopPropagation(); toggleListItem(activeList.id, { id: item.tmdb_id }, false); }}
-                    title="Remove from list"
-                  >×</button>
-                )}
-              </div>
-            ))}
+              );
+            })}
             {activeListItems.length === 0 && (
               <p className="empty-list-msg">Nothing here yet.</p>
             )}
