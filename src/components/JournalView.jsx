@@ -823,6 +823,28 @@ export default function JournalView({
           onClose={() => setShowImportModal(false)}
         />
       )}
+      {pendingHistoryDelete && (
+        <>
+          <div className="modal-backdrop" onClick={() => { setPendingHistoryDelete(null); exitSelectMode(); }} />
+          <div className="confirm-modal">
+            <p>
+              Also remove {pendingHistoryDelete.length} item{pendingHistoryDelete.length !== 1 ? 's' : ''} from Watch History?
+            </p>
+            <div className="confirm-modal-actions">
+              <button onClick={async () => {
+                await deleteFromJournal(pendingHistoryDelete);
+                setPendingHistoryDelete(null);
+                exitSelectMode();
+              }}>
+                Yes, remove from history
+              </button>
+              <button onClick={() => { setPendingHistoryDelete(null); exitSelectMode(); }}>
+                No, keep in history
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </section>
   );
 }
