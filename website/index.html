@@ -267,20 +267,21 @@
       flex-wrap: wrap;
     }
 
+    @keyframes filmstrip-scroll {
+      from { transform: translateX(0); }
+      to   { transform: translateX(-50%); }
+    }
+
     .hero-filmstrip {
       display: none;
-      overflow-x: auto;
-      overflow-y: hidden;
-      -webkit-overflow-scrolling: touch;
-      scrollbar-width: none;
-      margin-top: 2.5rem;
+      overflow: hidden;
+      margin-top: 4rem;
     }
-    .hero-filmstrip::-webkit-scrollbar { display: none; }
     .hero-filmstrip-inner {
       display: flex;
       gap: 8px;
       width: max-content;
-      padding: 0 1.5rem 0.5rem;
+      animation: filmstrip-scroll 20s linear infinite;
     }
     .hero-film-card {
       width: 72px;
@@ -887,7 +888,16 @@
         <a href="https://app.theplot.tv/signup" class="btn btn-outline btn-large">Start your journal →</a>
       </div>
       <div class="hero-filmstrip reveal reveal-delay-4">
-        <div class="hero-filmstrip-inner">
+        <div class="hero-filmstrip-inner" aria-hidden="true">
+          <div class="hero-film-card" style="background-image:url('images/hero/saltburn.webp')"></div>
+          <div class="hero-film-card" style="background-image:url('images/hero/anyone-but-you.webp')"></div>
+          <div class="hero-film-card" style="background-image:url('images/hero/nosferatu.webp')"></div>
+          <div class="hero-film-card" style="background-image:url('images/hero/wuthering-heights.webp')"></div>
+          <div class="hero-film-card" style="background-image:url('images/hero/past-lives.webp')"></div>
+          <div class="hero-film-card" style="background-image:url('images/hero/aftersun.webp')"></div>
+          <div class="hero-film-card" style="background-image:url('images/hero/babygirl.webp')"></div>
+          <div class="hero-film-card" style="background-image:url('images/hero/the-substance.webp')"></div>
+          <!-- duplicate set for seamless loop -->
           <div class="hero-film-card" style="background-image:url('images/hero/saltburn.webp')"></div>
           <div class="hero-film-card" style="background-image:url('images/hero/anyone-but-you.webp')"></div>
           <div class="hero-film-card" style="background-image:url('images/hero/nosferatu.webp')"></div>
