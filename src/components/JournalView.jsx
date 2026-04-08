@@ -380,14 +380,14 @@ export default function JournalView({
               <div className="move-to-list-popup">
                 <h4>Move to list</h4>
                 {userLists
-                  .filter(l => isVirtualList || l.id !== activeList.id)
+                  .filter(l => l.id !== activeList.id)
                   .map(l => (
                     <button key={l.id} onClick={() => handleBulkMove(l.id)}>
                       {l.name}
                     </button>
                   ))
                 }
-                {userLists.filter(l => isVirtualList || l.id !== activeList.id).length === 0 && (
+                {userLists.filter(l => l.id !== activeList.id).length === 0 && (
                   <p style={{ padding: '0.5rem 0.75rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
                     No other lists. Create one first.
                   </p>
@@ -833,7 +833,7 @@ export default function JournalView({
           <div className="modal-backdrop" onClick={() => { setPendingHistoryDelete(null); exitSelectMode(); }} />
           <div className="confirm-modal">
             <p>
-              Also remove {pendingHistoryDelete.length} item{pendingHistoryDelete.length !== 1 ? 's' : ''} from Watch History?
+              {pendingHistoryDelete.length === 1 ? 'This item has' : `${pendingHistoryDelete.length} items have`} been removed from the list. Also remove from Watch History?
             </p>
             <div className="confirm-modal-actions">
               <button onClick={async () => {
