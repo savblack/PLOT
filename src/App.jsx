@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import './app.css';
 import { tmdb, setTmdbRegion } from './api/tmdb';
 import { supabase } from './api/supabase';
-import { GENRES, SAMPLE_WATCHED } from './constants.js';
+import { GENRES } from './constants.js';
 import { formatDate, toDateKey, moodLabel, tlScribble } from './utils/journal.js';
 import { sampleImageCorner } from './utils/imageUtils.js';
 import MediaModal from './components/MediaModal';
@@ -250,29 +250,6 @@ export default function App() {
     setTmdbRegion(preferences.region || 'AU');
   }, [preferences.region]);
 
-  // Enrich sample data by searching TMDB for each title — never guesses IDs
-  useEffect(() => {
-    if (watched.length > 0) return;
-    const enrich = async () => {
-      const enriched = await Promise.all(
-        SAMPLE_WATCHED.map(async (item) => {
-          const query = item.title || item.name;
-          const results = await tmdb.search(query);
-          const match = results?.results?.find(r => r.media_type === item.media_type);
-          if (!match) return item;
-          return {
-            ...item,
-            id: match.id,
-            tmdb_id: match.id,
-            poster_path: match.poster_path,
-          };
-        })
-      );
-      setSampleWatched(enriched);
-    };
-    enrich();
-  }, [watched.length]);
-
   // For You feed — improves with every item the user logs
   useEffect(() => {
     const loadForYou = async () => {
@@ -463,7 +440,6 @@ export default function App() {
     }
   };
 
-  const [sampleWatched, setSampleWatched] = useState(SAMPLE_WATCHED);
   const [activeList, setActiveList] = useState(null);
   const [journalTab, setJournalTab] = useState('lists');
   const [showMobileSearch, setShowMobileSearch] = useState(false);
@@ -637,7 +613,7 @@ export default function App() {
 
         {view === 'watchlist' && (
           <JournalView
-            user={user} watched={watched} sampleWatched={sampleWatched} mediaFilter={mediaFilter}
+            user={user} watched={watched} mediaFilter={mediaFilter}
             userLists={userLists} listItems={listItems} activeList={activeList} setActiveList={setActiveList}
             journalTab={journalTab} setJournalTab={setJournalTab}
             profile={profile}

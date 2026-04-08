@@ -123,7 +123,7 @@ function ListStack({ list, items, onListClick }) {
 }
 
 export default function JournalView({
-  user, watched, sampleWatched, mediaFilter,
+  user, watched, mediaFilter,
   userLists, listItems, activeList, setActiveList,
   journalTab, setJournalTab,
   profile,
@@ -214,12 +214,7 @@ export default function JournalView({
     exitSelectMode();
   };
 
-  const activeWatched = (() => {
-    if (watched.length >= 20) return watched;
-    const realTitles = new Set(watched.map(w => w.title || w.name));
-    const filler = sampleWatched.filter(s => !realTitles.has(s.title || s.name));
-    return [...watched, ...filler].sort((a, b) => new Date(b.watched_at) - new Date(a.watched_at));
-  })();
+  const activeWatched = watched;
   const filteredWatched = activeWatched.filter(item => (item.media_type || (item.title ? 'movie' : 'tv')) === mediaFilter);
   const watchedByDate = filteredWatched.reduce((acc, item) => {
     const key = toDateKey(item.watched_at);
