@@ -3,6 +3,7 @@ import { tmdb } from '../api/tmdb';
 
 export default function MediaModal({ item, onClose, onSave, savedData, userLists, listItems, onCreateList, onToggleList, region = 'AU' }) {
   const [details, setDetails] = useState(null);
+  const [fetchError, setFetchError] = useState(false);
   const [rating, setRating] = useState(savedData?.rating || 0);
   const [note, setNote] = useState(savedData?.note || '');
   const [mood, setMood] = useState(savedData?.mood || null);
@@ -24,11 +25,17 @@ export default function MediaModal({ item, onClose, onSave, savedData, userLists
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     const fetchDetails = async () => {
-      const type = item.media_type || (item.title ? 'movie' : 'tv');
-      const data = type === 'movie' ? await tmdb.getMovieDetails(item.id) : await tmdb.getTVDetails(item.id);
-      if (data) {
-        setDetails(data);
-        setProviders(data['watch/providers']?.results?.[region] || {});
+      try {
+        const type = item.media_type || (item.title ? 'movie' : 'tv');
+        const data = type === 'movie' ? await tmdb.getMovieDetails(item.id) : await tmdb.getTVDetails(item.id);
+        if (data) {
+          setDetails(data);
+          setProviders(data['watch/providers']?.results?.[region] || {});
+        } else {
+          setFetchError(true);
+        }
+      } catch {
+        setFetchError(true);
       }
     };
     fetchDetails();
@@ -120,7 +127,10 @@ export default function MediaModal({ item, onClose, onSave, savedData, userLists
   if (!details) return (
     <div className={`modal-overlay${isClosing ? ' modal-closing' : ''}`} onClick={closeWithFade}>
       <div className="modal-loading">
-        <div className="modal-spinner" />
+        {fetchError
+          ? <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Could not load details. Please try again.</p>
+          : <div className="modal-spinner" />
+        }
       </div>
     </div>
   );
@@ -168,7 +178,7 @@ export default function MediaModal({ item, onClose, onSave, savedData, userLists
                   <div className="provider-list">
                     {providers?.flatrate?.map(p => (
                       <div key={p.provider_id} className="provider-pill">
-                        <img src={`https://image.tmdb.org/t/p/original${p.logo_path}`} title={p.provider_name} />
+                        <img src={`https://image.tmdb.org/t/p/w92${p.logo_path}`} title={p.provider_name} decoding="async" />
                         <span>{p.provider_name}</span>
                       </div>
                     ))}
@@ -305,7 +315,7 @@ export default function MediaModal({ item, onClose, onSave, savedData, userLists
                               <button
                                 key={list.id}
                                 className={`list-dropdown-item ${isInList ? 'active' : ''}`}
-                                onClick={() => { onToggleList(list.id, !isInList); handleSave(); }}
+                                onClick={async () => { await onToggleList(list.id, !isInList); handleSave(); }}
                               >
                                 <span>{list.name}</span>
                                 {isInList && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20 6L9 17l-5-5"/></svg>}
@@ -328,7 +338,7 @@ export default function MediaModal({ item, onClose, onSave, savedData, userLists
                                 onKeyDown={async (e) => {
                                   if (e.key === 'Enter' && newListName.trim()) {
                                     const newList = await onCreateList(newListName.trim());
-                                    if (newList) { onToggleList(newList.id, true); handleSave(); }
+                                    if (newList) { await onToggleList(newList.id, true); handleSave(); }
                                     setNewListName('');
                                     setShowNewListInput(false);
                                     setShowListDropdown(false);
@@ -339,7 +349,7 @@ export default function MediaModal({ item, onClose, onSave, savedData, userLists
                               <button onClick={async () => {
                                 if (!newListName.trim()) return;
                                 const newList = await onCreateList(newListName.trim());
-                                if (newList) { onToggleList(newList.id, true); handleSave(); }
+                                if (newList) { await onToggleList(newList.id, true); handleSave(); }
                                 setNewListName('');
                                 setShowNewListInput(false);
                                 setShowListDropdown(false);

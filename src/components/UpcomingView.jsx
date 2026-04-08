@@ -1,11 +1,9 @@
 import LoadingSpinner from './LoadingSpinner';
-import ShareButton from './ShareButton';
 
 export default function UpcomingView({
   upcomingTimeFilter, setUpcomingTimeFilter,
   mediaFilter, feedLayout,
   upcoming, upcomingTV,
-  dateBadgeDark,
   onItemClick,
 }) {
   const filterByTimeRange = (items, filter) => {
@@ -44,12 +42,11 @@ export default function UpcomingView({
         {items.map((item, index) => (
           <div key={item.id} className={`bento-item glass ${feedLayout === 'bento' && index % 5 === 0 ? 'large' : ''}`} onClick={() => onItemClick(item)}>
             {item.poster_path
-              ? <img src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title || item.name} />
+              ? <img src={`https://image.tmdb.org/t/p/w342${item.poster_path}`} alt={item.title || item.name} loading="lazy" decoding="async" />
               : <div className="no-image">{item.title || item.name}</div>
             }
-            <ShareButton item={item} />
             <div className="overlay">
-              <span className={`rating-tag date-tag${dateBadgeDark[item.id] ? ' date-tag--dark' : ''}`}>
+              <span className="rating-tag date-tag">
                 {new Date(item.release_date || item.first_air_date).toLocaleDateString('en-GB', {
                   day: 'numeric',
                   month: 'long',

@@ -180,7 +180,7 @@ export default function App() {
               media_type: type,
               provider: primaryProvider ? {
                 name: primaryProvider.provider_name,
-                logo: `https://image.tmdb.org/t/p/original${primaryProvider.logo_path}`
+                logo: `https://image.tmdb.org/t/p/w92${primaryProvider.logo_path}`
               } : null
             };
           } catch (e) {
@@ -197,8 +197,8 @@ export default function App() {
 
       if (trendingMovies && trendingTV) {
         const [enrichedMovies, enrichedTV] = await Promise.all([
-          enrichWithProviders(trendingMovies.results, 'movie'),
-          enrichWithProviders(trendingTV.results, 'tv')
+          enrichWithProviders(trendingMovies.results ?? [], 'movie'),
+          enrichWithProviders(trendingTV.results ?? [], 'tv')
         ]);
         // Combine, deduplicate, and shuffle for a diverse feed
         const seen = new Set();
@@ -420,8 +420,10 @@ export default function App() {
   };
 
   const deleteList = async (listId) => {
-    await supabase.from('list_items').delete().match({ list_id: listId });
-    await supabase.from('lists').delete().match({ id: listId });
+    const { error: itemsError } = await supabase.from('list_items').delete().match({ list_id: listId });
+    if (itemsError) { console.error('deleteList items error:', itemsError); alert('Failed to delete list. Please try again.'); return; }
+    const { error: listError } = await supabase.from('lists').delete().match({ id: listId });
+    if (listError) { console.error('deleteList error:', listError); alert('Failed to delete list. Please try again.'); return; }
     setUserLists(prev => prev.filter(l => l.id !== listId));
     setListItems(prev => prev.filter(li => li.list_id !== listId));
     setActiveList(null);
@@ -469,8 +471,6 @@ export default function App() {
   const [showTasteExpanded, setShowTasteExpanded] = useState(false);
   const [theme, setTheme] = useState(() => localStorage.getItem('plot-theme') || 'system');
   const [feedLayout, setFeedLayout] = useState(() => localStorage.getItem('plot-feed-layout') || 'bento');
-  const [rankBadgeDark, setRankBadgeDark] = useState({});
-  const [dateBadgeDark, setDateBadgeDark] = useState({});
 
   const [upcomingTimeFilter, setUpcomingTimeFilter] = useState('month');
   const [timelineView, setTimelineView] = useState('linear'); // 'linear' | 'grid'
@@ -517,7 +517,8 @@ export default function App() {
 
   const deleteFromJournal = async (tmdbIds) => {
     if (!user) return;
-    await supabase.from('journal').delete().in('tmdb_id', tmdbIds);
+    const { error: journalError } = await supabase.from('journal').delete().in('tmdb_id', tmdbIds);
+    if (journalError) { console.error('deleteFromJournal error:', journalError); alert('Failed to delete entry. Please try again.'); return; }
     await supabase.from('list_items').delete().in('tmdb_id', tmdbIds).eq('user_id', user.id);
     setWatched(prev => prev.filter(w => !tmdbIds.includes(w.tmdb_id || w.id)));
     setListItems(prev => prev.filter(li => !tmdbIds.includes(li.tmdb_id)));
@@ -575,6 +576,7 @@ export default function App() {
   };
 
   const copyLink = (type, id) => {
+    if (!profile) return;
     const base = window.location.origin;
     const url = type === 'profile'
       ? `${base}/u/${profile.username}`
@@ -613,7 +615,7 @@ export default function App() {
             forYouFeed={forYouFeed} trending={trending}
             mediaFilter={mediaFilter} feedLayout={feedLayout}
             preferences={preferences}
-            followingFeed={followingFeed} user={user}
+            followingFeed={followingFeed} followingLoading={!followingFeedLoaded} user={user}
             getSavedData={getSavedData} onItemClick={setSelectedItem}
             onNavigateToProfile={(uname) => { setPublicProfileUsername(uname); setView('public'); navigate(`/u/${uname}`); }}
           />
@@ -625,7 +627,6 @@ export default function App() {
             mediaFilter={mediaFilter} feedLayout={feedLayout}
             newReleases={newReleases} newTV={newTV}
             streamingMovies={streamingMovies} streamingTV={streamingTV}
-            rankBadgeDark={rankBadgeDark}
             getSavedData={getSavedData} onItemClick={setSelectedItem}
           />
         )}
@@ -677,7 +678,6 @@ export default function App() {
             upcomingTimeFilter={upcomingTimeFilter} setUpcomingTimeFilter={setUpcomingTimeFilter}
             mediaFilter={mediaFilter} feedLayout={feedLayout}
             upcoming={upcoming} upcomingTV={upcomingTV}
-            dateBadgeDark={dateBadgeDark}
             onItemClick={setSelectedItem}
           />
         )}

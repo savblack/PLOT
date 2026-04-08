@@ -1,9 +1,8 @@
 import LoadingSpinner from './LoadingSpinner';
-import ShareButton from './ShareButton';
 
 export default function FeedView({
   feedTab, setFeedTab,
-  forYouFeed, trending, followingFeed,
+  forYouFeed, trending, followingFeed, followingLoading,
   mediaFilter, feedLayout,
   preferences, user,
   getSavedData, onItemClick, onNavigateToProfile,
@@ -25,8 +24,9 @@ export default function FeedView({
 
       {feedTab === 'foryou' && forYouFeed.length === 0 && preferences.genres.length > 0 && <LoadingSpinner />}
       {feedTab === 'trending' && trending.length === 0 && <LoadingSpinner />}
+      {feedTab === 'following' && followingLoading && <LoadingSpinner />}
 
-      {feedTab === 'following' && followingFeed.length === 0 ? (
+      {feedTab === 'following' && !followingLoading && followingFeed.length === 0 ? (
         <p className="feed-empty-state">Follow people to see what they're watching.</p>
       ) : (
         <div className="bento-grid">
@@ -39,10 +39,9 @@ export default function FeedView({
               onClick={() => onItemClick(item)}
             >
               {item.poster_path
-                ? <img src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title || item.name} />
+                ? <img src={`https://image.tmdb.org/t/p/w342${item.poster_path}`} alt={item.title || item.name} loading="lazy" decoding="async" />
                 : <div className="no-image">{item.title || item.name}</div>
               }
-              <ShareButton item={item} />
               <div className="overlay">
                 <h3>{item.title || item.name}</h3>
                 {getSavedData(item.id) && <span className="watched-dot" />}

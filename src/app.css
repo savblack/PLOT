@@ -45,9 +45,7 @@
   display: block;
 }
 
-[data-theme="dark"] .logo-img {
-  content: url('/plot-logo-inverse.svg');
-}
+
 
 .header-right {
   display: flex;
@@ -855,14 +853,14 @@
 .list-edit-dropdown {
   position: absolute;
   top: calc(100% + 0.4rem);
-  left: 0;
+  right: 0;
   background: white;
   border: 1px solid #e0e0e0;
   border-radius: 10px;
   box-shadow: 0 8px 24px rgba(0,0,0,0.1);
   overflow: hidden;
   z-index: 11;
-  min-width: 140px;
+  min-width: 190px;
   padding: 0.3rem;
 }
 
@@ -932,8 +930,8 @@
 
 .item-checkbox {
   position: absolute;
-  top: 0.5rem;
-  left: 0.5rem;
+  top: 0.85rem;
+  left: 0.85rem;
   width: 24px;
   height: 24px;
   border-radius: 50%;
@@ -952,19 +950,15 @@
 
 /* ── Select action bar ───────────────────────────────────── */
 .select-action-bar {
-  position: fixed;
-  bottom: 2rem;
-  left: 50%;
-  transform: translateX(-50%);
   background: var(--text-primary);
   color: var(--bg-color);
   border-radius: var(--radius-pill);
-  padding: 0.75rem 1.25rem;
-  display: flex;
+  padding: 0.6rem 1rem;
+  display: inline-flex;
   align-items: center;
   gap: 1rem;
-  z-index: 150;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  margin: 0 auto 1rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
   white-space: nowrap;
 }
 
@@ -1113,9 +1107,7 @@
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
-/* On mobile, raise action bar above the bottom tab bar */
 @media (max-width: 768px) {
-  .select-action-bar { bottom: 5rem; }
   .move-to-list-popup { bottom: 8.5rem; }
 }
 

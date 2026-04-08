@@ -29,6 +29,7 @@ export default function PublicProfileView({ username, initialListId, onItemClick
   const [isFollowing, setIsFollowing] = useState(false);
   const [followerCount, setFollowerCount] = useState(0);
   const [followLoading, setFollowLoading] = useState(false);
+  const [followError, setFollowError] = useState(false);
   const [watchedCount, setWatchedCount] = useState(0);
 
   useEffect(() => {
@@ -116,8 +117,14 @@ export default function PublicProfileView({ username, initialListId, onItemClick
     const { error } = next
       ? await supabase.from('follows').insert({ follower_id: user.id, following_id: profileData.id })
       : await supabase.from('follows').delete().eq('follower_id', user.id).eq('following_id', profileData.id);
-    if (error) { setIsFollowing(!next); setFollowerCount(c => next ? c - 1 : c + 1); }
-    else onFollowChanged?.();
+    if (error) {
+      setIsFollowing(!next);
+      setFollowerCount(c => next ? c - 1 : c + 1);
+      setFollowError(true);
+      setTimeout(() => setFollowError(false), 3000);
+    } else {
+      onFollowChanged?.();
+    }
     setFollowLoading(false);
   };
 
@@ -163,10 +170,9 @@ export default function PublicProfileView({ username, initialListId, onItemClick
                 onClick={() => onItemClick({ ...item, id: item.tmdb_id })}
               >
                 {item.poster_path
-                  ? <img src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title || item.name} />
+                  ? <img src={`https://image.tmdb.org/t/p/w342${item.poster_path}`} alt={item.title || item.name} loading="lazy" decoding="async" />
                   : <div className="no-image">{item.title || item.name}</div>
                 }
-                <ShareButton item={{ ...item, id: item.tmdb_id }} />
                 <div className="overlay">
                   <h3>{item.title || item.name}</h3>
                 </div>
@@ -184,7 +190,7 @@ export default function PublicProfileView({ username, initialListId, onItemClick
             {heroPosters.length > 0 ? (
               <div className="pp-hero-strip">
                 {heroPosters.map((p, i) => (
-                  <img key={i} src={`https://image.tmdb.org/t/p/w342${p}`} alt="" />
+                  <img key={i} src={`https://image.tmdb.org/t/p/w342${p}`} alt="" loading="lazy" decoding="async" />
                 ))}
               </div>
             ) : (
@@ -215,6 +221,11 @@ export default function PublicProfileView({ username, initialListId, onItemClick
                     {isFollowing ? 'Following' : 'Follow'}
                   </button>
                 )}
+                {followError && (
+                  <span style={{ fontSize: '0.8rem', color: '#c00', marginLeft: '0.5rem' }}>
+                    Action failed. Please try again.
+                  </span>
+                )}
                 <ShareButton
                   shareData={{
                     title: displayName,
@@ -233,7 +244,7 @@ export default function PublicProfileView({ username, initialListId, onItemClick
             <div className="pp-filmstrip">
               <div className="pp-filmstrip-track">
                 {filmstripItems.map((p, i) => (
-                  <img key={i} src={`https://image.tmdb.org/t/p/w92${p}`} alt="" />
+                  <img key={i} src={`https://image.tmdb.org/t/p/w92${p}`} alt="" loading="lazy" decoding="async" />
                 ))}
               </div>
             </div>
@@ -264,7 +275,7 @@ export default function PublicProfileView({ username, initialListId, onItemClick
                       className="pp-carousel-poster-wrap"
                       onClick={() => onItemClick({ ...w, id: w.tmdb_id })}
                     >
-                      <img src={`https://image.tmdb.org/t/p/w342${w.poster_path}`} alt={w.title || w.name} />
+                      <img src={`https://image.tmdb.org/t/p/w342${w.poster_path}`} alt={w.title || w.name} loading="lazy" decoding="async" />
                     </div>
                     <div className="pp-carousel-side">
                       <h3 className="pp-carousel-title">{w.title || w.name}</h3>
@@ -309,7 +320,7 @@ export default function PublicProfileView({ username, initialListId, onItemClick
                       <div className="pp-mosaic-grid">
                         {filledItems.map((item, idx) => (
                           item.poster_path
-                            ? <img key={idx} src={`https://image.tmdb.org/t/p/w342${item.poster_path}`} alt="" />
+                            ? <img key={idx} src={`https://image.tmdb.org/t/p/w342${item.poster_path}`} alt="" loading="lazy" decoding="async" />
                             : <div key={idx} className="pp-mosaic-empty" />
                         ))}
                         {Array.from({ length: emptyCount }).map((_, idx) => (
@@ -341,6 +352,7 @@ export default function PublicProfileView({ username, initialListId, onItemClick
                       className="pp-scroll-poster"
                       src={`https://image.tmdb.org/t/p/w342${item.poster_path}`}
                       alt={item.title || item.name}
+                      loading="lazy" decoding="async"
                     />
                     <p className="pp-scroll-label">{item.title || item.name}</p>
                     <p className="pp-scroll-meta">{item.media_type === 'tv' ? 'Series' : 'Film'}</p>

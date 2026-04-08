@@ -1,12 +1,10 @@
 import LoadingSpinner from './LoadingSpinner';
-import ShareButton from './ShareButton';
 
 export default function NewReleasesView({
   newReleasesTab, setNewReleasesTab,
   mediaFilter, feedLayout,
   newReleases, newTV,
   streamingMovies, streamingTV,
-  rankBadgeDark,
   getSavedData, onItemClick,
 }) {
   const streamingSource = mediaFilter === 'movie' ? streamingMovies : streamingTV;
@@ -45,7 +43,7 @@ export default function NewReleasesView({
             onClick={() => onItemClick(item)}
           >
             {item.poster_path
-              ? <img src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title || item.name} />
+              ? <img src={`https://image.tmdb.org/t/p/w342${item.poster_path}`} alt={item.title || item.name} loading="lazy" decoding="async" />
               : <div className="no-image">{item.title || item.name}</div>
             }
             {newReleasesTab === 'streaming' && item.provider && (
@@ -54,9 +52,8 @@ export default function NewReleasesView({
               </div>
             )}
             {newReleasesTab === 'popular' && (
-              <div className={`rank-badge${rankBadgeDark[item.id] ? ' rank-badge--dark' : ''}`}>#{index + 1}</div>
+              <div className="rank-badge">#{index + 1}</div>
             )}
-            <ShareButton item={item} />
             <div className="overlay">
               <h3>{item.title || item.name}</h3>
               {getSavedData(item.id) && <span className="watched-dot"></span>}
