@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ImportModal from './ImportModal';
-import ShareButton from './ShareButton';
 
 const MOODS = [
   { value: 'happy',         label: 'Happy' },
@@ -247,7 +246,6 @@ export default function JournalView({
                   ? <img src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title || item.name} />
                   : <div className="no-image">{item.title || item.name}</div>
                 }
-                <ShareButton item={isVirtualList ? item : { ...item, id: item.tmdb_id }} />
                 <div className="overlay">
                   <h3>{item.title || item.name}</h3>
                 </div>
@@ -347,7 +345,7 @@ export default function JournalView({
                 {watched.filter(w => !listedTmdbIds.has(w.tmdb_id || w.id)).length > 0 && (
                   <ListStack
                     key="unlisted"
-                    list={{ id: 'unlisted', name: 'No list' }}
+                    list={{ id: 'unlisted', name: 'Watch History' }}
                     items={watched.filter(w => !listedTmdbIds.has(w.tmdb_id || w.id))}
                     onListClick={setActiveList}
                   />
@@ -371,7 +369,6 @@ export default function JournalView({
                     ? <img src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title || item.name} />
                     : <div className="no-image">{item.title || item.name}</div>
                   }
-                  <ShareButton item={item} />
                   <div className="overlay">
                     <h3>{item.title || item.name}</h3>
                     {item.rating > 0 && <span className="rating-tag">{'★'.repeat(item.rating)}</span>}
