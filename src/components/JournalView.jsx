@@ -107,7 +107,7 @@ function ListStack({ list, items, onListClick }) {
             }}
           >
             {item.poster_path
-              ? <img src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title || item.name} />
+              ? <img src={`https://image.tmdb.org/t/p/w342${item.poster_path}`} alt={item.title || item.name} loading="lazy" decoding="async" />
               : <div className="no-image">{item.title || item.name}</div>
             }
           </div>
@@ -268,41 +268,52 @@ export default function JournalView({
               ) : (
                 <h2 className="section-title">{activeList.name}</h2>
               )}
-              {!isVirtualList && !selectMode && (
+              {!selectMode && (
                 <div className="list-edit-menu-wrapper">
                   <button className="new-list-header-btn list-edit-btn" onClick={() => setShowListEditMenu(v => !v)}>
-                    Edit list
+                    Edit
                   </button>
                   {showListEditMenu && (
                     <>
                       <div className="list-edit-backdrop" onClick={() => setShowListEditMenu(false)} />
                       <div className="list-edit-dropdown">
-                        <button onClick={() => { setEditListNameValue(activeList.name); setEditingListName(true); setShowListEditMenu(false); }}>
-                          Rename
+                        <button onClick={() => { setSelectMode(true); setShowListEditMenu(false); }}>
+                          Select
                         </button>
-                        <button onClick={() => { toggleListPublic(activeList.id); setShowListEditMenu(false); }}>
-                          {activeList.is_public ? 'Make private' : 'Make public'}
-                        </button>
-                        {activeList.is_public && profile?.username && (
+                        {!isVirtualList && (
+                          <button onClick={() => { setEditListNameValue(activeList.name); setEditingListName(true); setShowListEditMenu(false); }}>
+                            Edit name
+                          </button>
+                        )}
+                        {!isVirtualList && (
+                          <button onClick={() => { toggleListPublic(activeList.id); setShowListEditMenu(false); }}>
+                            {activeList.is_public ? 'Make private' : 'Make public'}
+                          </button>
+                        )}
+                        {!isVirtualList && activeList.is_public && profile?.username && (
                           <button onClick={() => { copyLink('list', activeList.id); setShowListEditMenu(false); }}>
                             {copiedLink === activeList.id ? 'Copied!' : 'Copy list link'}
                           </button>
                         )}
-                        <button onClick={() => { setSelectMode(true); setShowListEditMenu(false); }}>
-                          Select items
-                        </button>
-                        <button className="danger" onClick={() => { if (window.confirm(`Delete "${activeList.name}"?`)) { deleteList(activeList.id); setShowListEditMenu(false); } }}>
-                          Delete list
-                        </button>
+                        {!isVirtualList && (
+                          <button className="danger" onClick={() => { if (window.confirm(`Delete "${activeList.name}"?`)) { deleteList(activeList.id); setShowListEditMenu(false); } }}>
+                            Delete list
+                          </button>
+                        )}
+                        {activeList.id === 'unlisted' && (
+                          <button className="danger" onClick={() => {
+                            if (window.confirm('Delete your entire Watch History? This will permanently remove all entries from your journal and cannot be undone.')) {
+                              deleteFromJournal(activeListItems.map(item => item.tmdb_id || item.id));
+                              setShowListEditMenu(false);
+                            }
+                          }}>
+                            Delete Watch History
+                          </button>
+                        )}
                       </div>
                     </>
                   )}
                 </div>
-              )}
-              {isVirtualList && !selectMode && (
-                <button className="new-list-header-btn list-edit-btn" onClick={() => setSelectMode(true)}>
-                  Select
-                </button>
               )}
               {selectMode && (
                 <button className="new-list-header-btn list-edit-btn" onClick={exitSelectMode}>
@@ -311,6 +322,22 @@ export default function JournalView({
               )}
             </div>
           </div>
+          {selectMode && selectedIds.size > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <div className="select-action-bar">
+              <span className="select-count">{selectedIds.size} selected</span>
+              <div className="select-actions">
+                <button className="select-action-btn" onClick={() => setShowMoveList(v => !v)}>
+                  Move to list
+                </button>
+                <button className="select-action-btn danger" onClick={handleBulkDelete}>
+                  Delete
+                </button>
+              </div>
+            </div>
+            </div>
+          )}
+
           <div className="bento-grid">
             {activeListItems.map((item, index) => {
               const tmdbId = item.tmdb_id || item.id;
@@ -328,7 +355,7 @@ export default function JournalView({
                   }}
                 >
                   {item.poster_path
-                    ? <img src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title || item.name} />
+                    ? <img src={`https://image.tmdb.org/t/p/w342${item.poster_path}`} alt={item.title || item.name} loading="lazy" decoding="async" />
                     : <div className="no-image">{item.title || item.name}</div>
                   }
                   <div className="overlay">
@@ -359,20 +386,6 @@ export default function JournalView({
               <p className="empty-list-msg">Nothing here yet.</p>
             )}
           </div>
-
-          {selectMode && selectedIds.size > 0 && (
-            <div className="select-action-bar">
-              <span className="select-count">{selectedIds.size} selected</span>
-              <div className="select-actions">
-                <button className="select-action-btn" onClick={() => setShowMoveList(v => !v)}>
-                  Move to list
-                </button>
-                <button className="select-action-btn danger" onClick={handleBulkDelete}>
-                  Delete
-                </button>
-              </div>
-            </div>
-          )}
 
           {showMoveList && (
             <>
@@ -427,7 +440,7 @@ export default function JournalView({
                   <button className="new-list-header-btn" onClick={() => setShowAuth(true)}>Sign in</button>
                 </div>
               )}
-              {user && userLists.length === 0 && !showJournalNewList && (
+              {user && userLists.length === 0 && watched.length === 0 && !showJournalNewList && (
                 <div className="empty-journal-state">
                   <h3>Your journal is empty</h3>
                   <p>Start by searching for a movie or show and adding it to your journal.</p>
@@ -499,7 +512,7 @@ export default function JournalView({
                   onClick={() => onItemClick(item)}
                 >
                   {item.poster_path
-                    ? <img src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title || item.name} />
+                    ? <img src={`https://image.tmdb.org/t/p/w342${item.poster_path}`} alt={item.title || item.name} loading="lazy" decoding="async" />
                     : <div className="no-image">{item.title || item.name}</div>
                   }
                   <div className="overlay">
@@ -639,7 +652,8 @@ export default function JournalView({
                                 <div className="tl-snake-card" onClick={() => onItemClick(item)}>
                                   <div className="tl-poster">
                                     {item.poster_path
-                                      ? <img src={`https://image.tmdb.org/t/p/w300${item.poster_path}`} alt={item.title || item.name}
+                                      ? <img src={`https://image.tmdb.org/t/p/w185${item.poster_path}`} alt={item.title || item.name}
+                                          loading="lazy" decoding="async"
                                           onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }}
                                         />
                                       : null
@@ -731,7 +745,7 @@ export default function JournalView({
                             onClick={() => entries.length > 0 && setSelectedGridDay(isSelected ? null : dateKey)}
                           >
                             {entries[0]?.poster_path && (
-                              <img src={`https://image.tmdb.org/t/p/w342${entries[0].poster_path}`} alt="" />
+                              <img src={`https://image.tmdb.org/t/p/w342${entries[0].poster_path}`} alt="" loading="lazy" decoding="async" />
                             )}
                             <span className="month-day-num">{day}</span>
                             {entries.length > 1 && <span className="month-day-count">+{entries.length - 1}</span>}
@@ -746,7 +760,7 @@ export default function JournalView({
                           {watchedByDate[selectedGridDay].map((item, idx) => (
                             <div key={item.id || idx} className="timeline-card" style={{ width: 150, flexShrink: 0 }} onClick={() => onItemClick(item)}>
                               {item.poster_path
-                                ? <img src={`https://image.tmdb.org/t/p/w200${item.poster_path}`} alt={item.title || item.name} onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }} />
+                                ? <img src={`https://image.tmdb.org/t/p/w200${item.poster_path}`} alt={item.title || item.name} loading="lazy" decoding="async" onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }} />
                                 : null
                               }
                               <div style={{ height: 130, background: 'var(--border-color)', display: item.poster_path ? 'none' : 'block' }} />
@@ -802,7 +816,7 @@ export default function JournalView({
                           {watchedByDate[selectedGridDay].map((item, idx) => (
                             <div key={item.id || idx} className="timeline-card" style={{ width: 150, flexShrink: 0 }} onClick={() => onItemClick(item)}>
                               {item.poster_path
-                                ? <img src={`https://image.tmdb.org/t/p/w200${item.poster_path}`} alt={item.title || item.name} onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }} />
+                                ? <img src={`https://image.tmdb.org/t/p/w200${item.poster_path}`} alt={item.title || item.name} loading="lazy" decoding="async" onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }} />
                                 : null
                               }
                               <div style={{ height: 130, background: 'var(--border-color)', display: item.poster_path ? 'none' : 'block' }} />

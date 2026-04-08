@@ -116,7 +116,7 @@ export default function ProfilePreviewPage() {
           {activeListItems.map((item, idx) => (
             <div key={item.id || idx} className="bento-item glass">
               {item.poster_path
-                ? <img src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title} />
+                ? <img src={`https://image.tmdb.org/t/p/w342${item.poster_path}`} alt={item.title} loading="lazy" decoding="async" />
                 : <div className="no-image">{item.title}</div>
               }
               <ShareButton item={item} />

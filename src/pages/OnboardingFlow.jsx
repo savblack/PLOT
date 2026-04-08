@@ -434,7 +434,7 @@ export default function OnboardingFlow() {
                       >
                         <img
                           className="onboarding-provider-logo"
-                          src={`https://image.tmdb.org/t/p/original${p.logo_path}`}
+                          src={`https://image.tmdb.org/t/p/w92${p.logo_path}`}
                           alt={p.provider_name}
                         />
                         <span className="onboarding-provider-name">{p.provider_name}</span>
@@ -468,7 +468,7 @@ export default function OnboardingFlow() {
                         >
                           <img
                             className="onboarding-provider-logo"
-                            src={`https://image.tmdb.org/t/p/original${p.logo_path}`}
+                            src={`https://image.tmdb.org/t/p/w92${p.logo_path}`}
                             alt={p.provider_name}
                           />
                           <div className="onboarding-seed-info">
