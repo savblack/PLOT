@@ -422,48 +422,57 @@
       margin-bottom: 5rem;
     }
 
-    .feat-rows {
-      border-top: 1px solid rgba(0,0,0,0.1);
+    .feat-bento {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      grid-template-areas:
+        "one  one  two"
+        "three four four";
+      gap: 1rem;
     }
 
-    .feat-row {
-      display: grid;
-      grid-template-columns: 4rem 1fr 2fr;
-      gap: 2rem 4rem;
-      align-items: baseline;
-      padding: 2.5rem 0;
-      border-bottom: 1px solid rgba(0,0,0,0.1);
+    .feat-tile {
+      background: white;
+      border-radius: 20px;
+      padding: 2.75rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 2rem;
+      min-height: 260px;
     }
+
+    .feat-tile:nth-child(1) { grid-area: one; }
+    .feat-tile:nth-child(2) { grid-area: two; }
+    .feat-tile:nth-child(3) { grid-area: three; }
+    .feat-tile:nth-child(4) { grid-area: four; }
 
     .feat-num {
       font-family: 'Nothing You Could Do', cursive;
-      font-size: 1.5rem;
+      font-size: 1.3rem;
       color: var(--muted);
-      flex-shrink: 0;
+      opacity: 0.45;
     }
 
     .feat-title {
       font-family: var(--serif);
       font-size: clamp(1.8rem, 2.8vw, 2.8rem);
       font-weight: 400;
-      letter-spacing: -0.03em;
-      line-height: 1;
+      letter-spacing: -0.04em;
+      line-height: 0.92;
       color: var(--text);
     }
 
     .feat-body {
-      font-size: 0.95rem;
+      font-size: 0.88rem;
       color: var(--muted);
-      line-height: 1.6;
+      line-height: 1.65;
     }
 
     @media (max-width: 700px) {
-      .feat-row {
-        grid-template-columns: 3rem 1fr;
-        grid-template-rows: auto auto;
-      }
-      .feat-row .feat-body {
-        grid-column: 1 / -1;
+      .feat-bento {
+        grid-template-columns: 1fr;
+        grid-template-areas: "one" "two" "three" "four";
       }
     }
 
@@ -858,29 +867,29 @@
     <div class="features-header reveal">
       <h2 class="section-title">Designed for your<br>viewing habits</h2>
     </div>
-    <div class="feat-rows">
+    <div class="feat-bento">
 
-      <div class="feat-row reveal">
+      <div class="feat-tile reveal">
         <span class="feat-num">01</span>
-        <span class="feat-title">Discover</span>
+        <div class="feat-title">Discover</div>
         <p class="feat-body">Know what's new, trending, and coming soon — and find out where you can watch it, all in one place. PLOT is your starting point for finding something to watch tonight.</p>
       </div>
 
-      <div class="feat-row reveal">
+      <div class="feat-tile reveal">
         <span class="feat-num">02</span>
-        <span class="feat-title">Journal</span>
+        <div class="feat-title">Journal</div>
         <p class="feat-body">Save it. Rate it. Write about it. Every film and series you watch becomes part of your timeline — look back and see it take shape like a story you didn't know you were writing.</p>
       </div>
 
-      <div class="feat-row reveal">
+      <div class="feat-tile reveal">
         <span class="feat-num">03</span>
-        <span class="feat-title">Personalise</span>
+        <div class="feat-title">Personalise</div>
         <p class="feat-body">No two feeds look the same, and they shouldn't. Yours is shaped by every film you've rated, every series you've logged and every list you've made. The more you use PLOT, the more it gets you.</p>
       </div>
 
-      <div class="feat-row reveal">
+      <div class="feat-tile reveal">
         <span class="feat-num">04</span>
-        <span class="feat-title">Share</span>
+        <div class="feat-title">Share</div>
         <p class="feat-body">Drop your top ten list in the group chat. Check if your flatmate's TV taste is grounds for moving out. Share your profile like a love letter. Or a <em>warning.</em> What's the point of great taste if nobody knows?</p>
       </div>
 
