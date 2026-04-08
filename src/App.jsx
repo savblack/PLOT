@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { createPortal } from 'react-dom';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import './app.css';
 import { tmdb, setTmdbRegion } from './api/tmdb';
 import { supabase } from './api/supabase';
-import { GENRES, REGIONS, SAMPLE_WATCHED } from './constants.js';
+import { GENRES, SAMPLE_WATCHED } from './constants.js';
+import { formatDate, toDateKey, moodLabel, tlScribble } from './utils/journal.js';
+import { sampleImageCorner } from './utils/imageUtils.js';
 import MediaModal from './components/MediaModal';
 import AuthModal from './components/AuthModal';
 import PublicProfileView from './components/PublicProfileView';
@@ -15,6 +16,7 @@ import UpcomingView from './components/UpcomingView';
 import JournalView from './components/JournalView';
 import ImportModal from './components/ImportModal';
 import AvatarCropModal from './components/AvatarCropModal';
+import AppHeader from './components/AppHeader';
 
 
 export default function App() {
@@ -470,26 +472,6 @@ export default function App() {
   const [rankBadgeDark, setRankBadgeDark] = useState({});
   const [dateBadgeDark, setDateBadgeDark] = useState({});
 
-  const sampleImageCorner = useCallback((img, itemId, setter) => {
-    try {
-      const canvas = document.createElement('canvas');
-      const size = 60;
-      canvas.width = size;
-      canvas.height = size;
-      const ctx = canvas.getContext('2d');
-      const srcX = img.naturalWidth - (size * img.naturalWidth / img.width);
-      const srcY = 0;
-      const srcW = size * img.naturalWidth / img.width;
-      const srcH = size * img.naturalHeight / img.height;
-      ctx.drawImage(img, srcX, srcY, srcW, srcH, 0, 0, size, size);
-      const data = ctx.getImageData(0, 0, size, size).data;
-      let r = 0, g = 0, b = 0;
-      const pixels = data.length / 4;
-      for (let i = 0; i < data.length; i += 4) { r += data[i]; g += data[i+1]; b += data[i+2]; }
-      const luminance = (0.299 * (r / pixels) + 0.587 * (g / pixels) + 0.114 * (b / pixels)) / 255;
-      if (luminance > 0.55) setter(prev => ({ ...prev, [itemId]: true }));
-    } catch (_) {}
-  }, []);
   const [upcomingTimeFilter, setUpcomingTimeFilter] = useState('month');
   const [timelineView, setTimelineView] = useState('linear'); // 'linear' | 'grid'
   const [gridTimeframe, setGridTimeframe] = useState('monthly'); // 'monthly' | 'yearly'
@@ -515,54 +497,6 @@ export default function App() {
   }, [feedLayout]);
 
 
-  const formatDate = (iso) => new Date(iso).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
-  const toDateKey = (iso) => iso?.slice(0, 10);
-  const moodLabel = m => ({
-    happy: 'Happy', sad: 'Sad', emotional: 'Emotional', excited: 'Excited',
-    fun: 'Fun', tense: 'Tense', scared: 'Scared', unsettled: 'Unsettled',
-    weird: 'Weird', cosy: 'Cosy', thoughtful: 'Thoughtful', inspired: 'Inspired',
-    intense: 'Intense', stressed: 'Stressed', epic: 'Epic', haunted: 'Haunted',
-    nostalgic: 'Nostalgic', melancholy: 'Melancholy', gripped: 'Gripped',
-    shocked: 'Shocked', uncomfortable: 'Uncomfortable', meh: 'Meh',
-    amazing: 'Amazing', mindblown: 'Mind Blown',
-  })[m] || m || '';
-  const tlScribble = (height, seed) => {
-    const r = n => { const v = Math.sin(seed * 9.301 + n * 46.218) * 43758.5453; return v - Math.floor(v); };
-    const cx = 40; // centre of 80px-wide SVG
-    const k = 0.5523; // cubic bezier circle approximation constant
-    const numLoops = r(99) > 0.55 ? 0 : height > 100 ? (r(1) > 0.35 ? 2 : 1) : 1;
-    const loops = Array.from({ length: numLoops }, (_, i) => ({
-      y: ((i + 1) / (numLoops + 1) + (r(i + 5) - 0.5) * 0.12) * height,
-      x: cx + (r(i + 20) - 0.5) * 18,
-      lr: 9 + r(i + 30) * 6,
-      dir: r(i + 40) > 0.5 ? 1 : -1,
-    }));
-    let px = cx, py = 0;
-    let d = `M ${px} ${py}`;
-    const seg = (tx, ty, slack, si) => {
-      const dy = ty - py;
-      d += ` C ${(px + (r(si) - 0.5) * slack).toFixed(1)} ${(py + dy * 0.35).toFixed(1)} ${(tx + (r(si + 1) - 0.5) * slack * 0.6).toFixed(1)} ${(ty - dy * 0.2).toFixed(1)} ${tx.toFixed(1)} ${ty.toFixed(1)}`;
-      px = tx; py = ty;
-    };
-    loops.forEach(({ x: lx, y: ly, lr, dir }, i) => {
-      const ex = lx + dir * lr;
-      seg(ex, ly, 65, i * 7 + 10);
-      if (dir === 1) {
-        d += ` C ${lx+lr} ${ly-k*lr} ${lx+k*lr} ${ly-lr} ${lx} ${ly-lr}`;
-        d += ` C ${lx-k*lr} ${ly-lr} ${lx-lr} ${ly-k*lr} ${lx-lr} ${ly}`;
-        d += ` C ${lx-lr} ${ly+k*lr} ${lx-k*lr} ${ly+lr} ${lx} ${ly+lr}`;
-        d += ` C ${lx+k*lr} ${ly+lr} ${lx+lr} ${ly+k*lr} ${lx+lr} ${ly}`;
-      } else {
-        d += ` C ${lx-lr} ${ly-k*lr} ${lx-k*lr} ${ly-lr} ${lx} ${ly-lr}`;
-        d += ` C ${lx+k*lr} ${ly-lr} ${lx+lr} ${ly-k*lr} ${lx+lr} ${ly}`;
-        d += ` C ${lx+lr} ${ly+k*lr} ${lx+k*lr} ${ly+lr} ${lx} ${ly+lr}`;
-        d += ` C ${lx-k*lr} ${ly+lr} ${lx-lr} ${ly+k*lr} ${lx-lr} ${ly}`;
-      }
-      px = ex; py = ly;
-    });
-    seg(cx, height, 65, 90);
-    return d;
-  };
   const toggleProfilePublic = async () => {
     const username = profile?.username || profileUsernameInput.toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 30);
     if (!username) { setProfileUsernameError('Set a username first'); return; }
@@ -579,6 +513,14 @@ export default function App() {
       setProfileUsernameInput(data.username);
       setProfileUsernameError('');
     }
+  };
+
+  const deleteFromJournal = async (tmdbIds) => {
+    if (!user) return;
+    await supabase.from('journal').delete().in('tmdb_id', tmdbIds);
+    await supabase.from('list_items').delete().in('tmdb_id', tmdbIds).eq('user_id', user.id);
+    setWatched(prev => prev.filter(w => !tmdbIds.includes(w.tmdb_id || w.id)));
+    setListItems(prev => prev.filter(li => !tmdbIds.includes(li.tmdb_id)));
   };
 
   const toggleListPublic = async (listId) => {
@@ -644,240 +586,25 @@ export default function App() {
 
   return (
     <div className="app-container">
-      <header className="main-header animate-in">
-        <div className="top-nav">
-          <div className="branding-left" onClick={() => setView('home')}>
-            <img src="/plot-logo.svg" alt="Plot" className="logo-img" />
-          </div>
-          
-          <div className="center-group">
-            <div className="nav-pills header-nav">
-              <button onClick={() => navigateTo('home')} className={view === 'home' ? 'active' : ''}>Feed</button>
-              <button onClick={() => navigateTo('new')} className={view === 'new' ? 'active' : ''}>New</button>
-              <button onClick={() => navigateTo('upcoming')} className={view === 'upcoming' ? 'active' : ''}>Upcoming</button>
-              <button onClick={() => navigateTo('watchlist')} className={view === 'watchlist' ? 'active' : ''}>Journal</button>
-            </div>
-
-            <div className="filter-toggle">
-              <button
-                className={mediaFilter === 'movie' ? 'active' : ''}
-                onClick={() => setMediaFilter('movie')}
-              >
-                Movies
-              </button>
-              <button
-                className={mediaFilter === 'tv' ? 'active' : ''}
-                onClick={() => setMediaFilter('tv')}
-              >
-                TV
-              </button>
-            </div>
-          </div>
-
-          <div className="header-right">
-            <button className="mobile-search-btn" onClick={() => setShowMobileSearch(true)}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="1.5"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-            </button>
-            <div className="search-pill search-small">
-            <svg className="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-            <form onSubmit={handleSearch}>
-              <input
-                type="text"
-                placeholder="Search..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </form>
-          </div>
-          {user ? (
-            <div className="profile-menu-wrapper">
-              <button className="profile-avatar-btn" onClick={() => setShowProfileMenu(v => !v)}>
-                {profile?.avatar_url
-                  ? <img src={profile.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
-                  : user.email?.[0]?.toUpperCase()
-                }
-              </button>
-              {showProfileMenu && createPortal(
-                <>
-                  <div className="profile-menu-backdrop" onClick={() => setShowProfileMenu(false)} />
-                  <div className="profile-dropdown">
-                    <div className="profile-dropdown-header">
-                      <div className="avatar-upload-wrapper" onClick={() => avatarInputRef.current?.click()}>
-                        <div className="profile-dropdown-avatar">
-                          {profile?.avatar_url
-                            ? <img src={profile.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
-                            : user.email?.[0]?.toUpperCase()
-                          }
-                        </div>
-                        <div className="avatar-upload-overlay">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                        </div>
-                        <input
-                          ref={avatarInputRef}
-                          type="file"
-                          accept="image/*"
-                          style={{ display: 'none' }}
-                          onChange={e => { const f = e.target.files?.[0]; if (f) setCropFile(f); e.target.value = ''; }}
-                        />
-                      </div>
-                      <p className="profile-dropdown-email">{user.email}</p>
-                    </div>
-                    <div className="profile-dropdown-settings">
-                      <div className="settings-row">
-                        <span className="settings-label">Theme</span>
-                        <div className="settings-toggle">
-                          <button className={theme === 'light' ? 'active' : ''} onClick={() => setTheme('light')} title="Light">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-                          </button>
-                          <button className={theme === 'dark' ? 'active' : ''} onClick={() => setTheme('dark')} title="Dark">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-                          </button>
-                          <button className={theme === 'system' ? 'active' : ''} onClick={() => setTheme('system')} title="System">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20z" fill="currentColor" stroke="none"/></svg>
-                          </button>
-                        </div>
-                      </div>
-                      <div className="settings-row">
-                        <span className="settings-label">View</span>
-                        <div className="settings-toggle">
-                          <button className={feedLayout === 'bento' ? 'active' : ''} onClick={() => setFeedLayout('bento')} title="Bento">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="11" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="18" width="7" height="3" rx="1"/></svg>
-                          </button>
-                          <button className={feedLayout === 'grid' ? 'active' : ''} onClick={() => setFeedLayout('grid')} title="Grid">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="9" rx="1"/><rect x="3" y="15" width="7" height="9" rx="1"/><rect x="14" y="15" width="7" height="9" rx="1"/></svg>
-                          </button>
-                        </div>
-                      </div>
-                      <div className="settings-row">
-                        <span className="settings-label">Region</span>
-                        <select
-                          className="region-select"
-                          value={preferences.region || 'AU'}
-                          onChange={e => setPreferences(p => ({ ...p, region: e.target.value }))}
-                        >
-                          {REGIONS.map(r => (
-                            <option key={r.code} value={r.code}>{r.name}</option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                    <div className="profile-public-section">
-                      <div className="settings-row">
-                        <span className="settings-label">Username</span>
-                        <div className="username-input-row">
-                          <span className="username-at">@</span>
-                          <input
-                            className="username-input"
-                            value={profileUsernameInput}
-                            placeholder="set username"
-                            onChange={e => setProfileUsernameInput(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-                            onKeyDown={e => {
-                              if (e.key === 'Enter') saveUsername();
-                              if (e.key === 'Escape') setProfileUsernameInput(profile?.username || '');
-                            }}
-                            onBlur={saveUsername}
-                            maxLength={30}
-                          />
-                          {profileUsernameSaving && <span className="username-saving">...</span>}
-                        </div>
-                      </div>
-                      {profileUsernameError && <p className="username-error">{profileUsernameError}</p>}
-                      <div className="settings-row">
-                        <span className="settings-label">Visibility</span>
-                        <div className="settings-toggle">
-                          <button
-                            className={profile?.is_public ? 'active' : ''}
-                            onClick={() => { if (!profile?.is_public) toggleProfilePublic(); }}
-                            data-tooltip="Public"
-                          >
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                          </button>
-                          <button
-                            className={!profile?.is_public ? 'active' : ''}
-                            onClick={() => { if (profile?.is_public) toggleProfilePublic(); }}
-                            data-tooltip="Private"
-                          >
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-                          </button>
-                        </div>
-                      </div>
-                      {profile?.is_public && profile?.username && (
-                        <div className="settings-row">
-                          <button className="copy-link-btn" onClick={() => copyLink('profile')}>
-                            {copiedLink === 'profile' ? 'Copied!' : 'Copy profile link'}
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                    <div className="profile-public-section">
-                      <button className="taste-accordion-btn" onClick={() => setShowTasteExpanded(v => !v)}>
-                        <span className="settings-label">Taste</span>
-                        <span className="taste-accordion-meta">
-                          {preferences.genres.length > 0 ? `${preferences.genres.length} selected` : 'None'}
-                          <svg className={`taste-chevron ${showTasteExpanded ? 'open' : ''}`} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-                        </span>
-                      </button>
-                      {showTasteExpanded && (
-                        <div className="taste-genre-list">
-                          {GENRES.map(g => {
-                            const checked = preferences.genres.includes(g.key);
-                            return (
-                              <label key={g.key} className="taste-genre-row">
-                                <input
-                                  type="checkbox"
-                                  checked={checked}
-                                  onChange={() => setPreferences(p => ({
-                                    ...p,
-                                    genres: checked
-                                      ? p.genres.filter(k => k !== g.key)
-                                      : [...p.genres, g.key],
-                                  }))}
-                                />
-                                <span className={`taste-genre-circle ${checked ? 'active' : ''}`} />
-                                {g.label}
-                              </label>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                    <div className="profile-public-section">
-                      <div className="settings-row">
-                        <span className="settings-label">History</span>
-                        <button className="copy-link-btn" onClick={() => { setShowImportModal(true); setShowProfileMenu(false); }}>
-                          Import watch history
-                        </button>
-                      </div>
-                    </div>
-                    <button className="profile-dropdown-item danger" onClick={() => { logout(); setShowProfileMenu(false); }}>
-                      Sign Out
-                    </button>
-                  </div>
-                </>,
-                document.body
-              )}
-            </div>
-          ) : (
-            <button className="auth-header-btn" onClick={() => setShowAuth(true)}>Sign In</button>
-          )}
-        </div>
-      </div>
-    </header>
-
-    {showMobileSearch && (
-      <div className="mobile-search-overlay">
-        <form onSubmit={(e) => { handleSearch(e); setShowMobileSearch(false); }}>
-          <input
-            type="text"
-            placeholder="Search movies & TV..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            autoFocus
-          />
-        </form>
-        <button className="mobile-search-cancel" onClick={() => setShowMobileSearch(false)}>Cancel</button>
-      </div>
-    )}
+      <AppHeader
+        user={user} profile={profile}
+        view={view} navigateTo={navigateTo}
+        mediaFilter={mediaFilter} setMediaFilter={setMediaFilter}
+        searchQuery={searchQuery} setSearchQuery={setSearchQuery} handleSearch={handleSearch}
+        showProfileMenu={showProfileMenu} setShowProfileMenu={setShowProfileMenu}
+        showMobileSearch={showMobileSearch} setShowMobileSearch={setShowMobileSearch}
+        theme={theme} setTheme={setTheme}
+        feedLayout={feedLayout} setFeedLayout={setFeedLayout}
+        preferences={preferences} setPreferences={setPreferences}
+        profileUsernameInput={profileUsernameInput} setProfileUsernameInput={setProfileUsernameInput}
+        profileUsernameSaving={profileUsernameSaving} profileUsernameError={profileUsernameError}
+        saveUsername={saveUsername} toggleProfilePublic={toggleProfilePublic}
+        copyLink={copyLink} copiedLink={copiedLink}
+        showTasteExpanded={showTasteExpanded} setShowTasteExpanded={setShowTasteExpanded}
+        setShowImportModal={setShowImportModal}
+        logout={logout} setShowAuth={setShowAuth}
+        avatarInputRef={avatarInputRef} setCropFile={setCropFile}
+      />
 
       <main className="content-grid animate-in">
         {view === 'home' && (
@@ -923,6 +650,7 @@ export default function App() {
             onItemClick={setSelectedItem}
             formatDate={formatDate} toDateKey={toDateKey} moodLabel={moodLabel} tlScribble={tlScribble}
             setShowAuth={setShowAuth}
+            deleteFromJournal={deleteFromJournal}
           />
         )}
 

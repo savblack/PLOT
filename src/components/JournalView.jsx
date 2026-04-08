@@ -135,6 +135,7 @@ export default function JournalView({
   selectedGridDay, setSelectedGridDay,
   onItemClick, formatDate, toDateKey, moodLabel, tlScribble,
   setShowAuth,
+  deleteFromJournal,
 }) {
   const timelineScrollRef = useRef(null);
 
