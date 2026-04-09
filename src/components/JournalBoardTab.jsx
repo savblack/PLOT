@@ -138,14 +138,16 @@ export default function JournalBoardTab({ watched, user, onItemClick }) {
   };
 
   const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState(null);
 
   const generateJournal = async () => {
     setAiLoading(true);
+    setAiError(null);
     const layoutStyles = ['mood-clusters', 'era-grid', 'rating-galaxy', 'pure-vibes'];
     const layoutStyle = layoutStyles[currentLayoutIdx % 4];
 
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-    let summary = buildSummary(watched);
+    let summary = null;
 
     if (apiKey) {
       try {
@@ -174,12 +176,21 @@ Rules:
           }
         );
         const json = await res.json();
-        console.log('Gemini response:', JSON.stringify(json));
         const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (text) summary = text;
+        if (text) {
+          summary = text;
+        } else {
+          const errMsg = json.error?.message || JSON.stringify(json);
+          setAiError(`Gemini: ${errMsg}`);
+          summary = buildSummary(watched);
+        }
       } catch (err) {
-        console.error('Gemini error:', err);
+        setAiError(`Request failed: ${err.message}`);
+        summary = buildSummary(watched);
       }
+    } else {
+      setAiError('No Gemini API key found (VITE_GEMINI_API_KEY)');
+      summary = buildSummary(watched);
     }
 
     setAiJournal({ summary, layoutStyle, items: watched.slice(0, 30) });
@@ -357,6 +368,9 @@ Rules:
             {aiLoading ? 'Generating…' : aiJournal ? 'Regenerate' : 'Generate'}
           </button>
 
+          {aiError && (
+            <p style={{ color: 'red', fontSize: '0.8rem', marginBottom: '1rem' }}>{aiError}</p>
+          )}
           {aiJournal?.summary && (
             <p className="ai-journal-summary">{aiJournal.summary}</p>
           )}
