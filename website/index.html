@@ -1448,8 +1448,7 @@
 
     // ── Live ticker ───────────────────────────────────────────
     (async function initTicker() {
-      const KEY  = 'REMOVED_TMDB_API_KEY';
-      const BASE = 'https://api.themoviedb.org/3';
+      const PROXY = 'https://mkegtssedjyqldysvzga.supabase.co/functions/v1/tmdb-proxy';
       const track = document.getElementById('tickerTrack');
       if (!track) return;
 
@@ -1489,10 +1488,10 @@
 
       try {
         const [trending, nowPlaying, upcoming, topTv] = await Promise.all([
-          fetch(`${BASE}/trending/all/week?api_key=${KEY}`).then(r => r.json()),
-          fetch(`${BASE}/movie/now_playing?api_key=${KEY}`).then(r => r.json()),
-          fetch(`${BASE}/movie/upcoming?api_key=${KEY}`).then(r => r.json()),
-          fetch(`${BASE}/tv/top_rated?api_key=${KEY}`).then(r => r.json()),
+          fetch(`${PROXY}?path=trending/all/week`).then(r => r.json()),
+          fetch(`${PROXY}?path=movie/now_playing`).then(r => r.json()),
+          fetch(`${PROXY}?path=movie/upcoming`).then(r => r.json()),
+          fetch(`${PROXY}?path=tv/top_rated`).then(r => r.json()),
         ]);
 
         populate([
