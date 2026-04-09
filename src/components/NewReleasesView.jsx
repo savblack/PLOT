@@ -7,8 +7,14 @@ export default function NewReleasesView({
   streamingMovies, streamingTV,
   getSavedData, onItemClick,
 }) {
-  const streamingSource = mediaFilter === 'movie' ? streamingMovies : streamingTV;
-  const combined = (newReleasesTab === 'streaming' ? streamingSource : (mediaFilter === 'movie' ? newReleases : newTV))
+  const effectiveFilter = mediaFilter === 'all' ? null : mediaFilter;
+  const streamingSource = effectiveFilter === 'movie' ? streamingMovies
+    : effectiveFilter === 'tv' ? streamingTV
+    : [...streamingMovies, ...streamingTV];
+  const baseSource = effectiveFilter === 'movie' ? newReleases
+    : effectiveFilter === 'tv' ? newTV
+    : [...newReleases, ...newTV];
+  const combined = (newReleasesTab === 'streaming' ? streamingSource : baseSource)
     .slice()
     .sort((a, b) => b.popularity - a.popularity);
 
@@ -16,14 +22,19 @@ export default function NewReleasesView({
     newReleasesTab === 'popular' ? combined.filter(i => i.vote_average >= 7.0) :
     combined;
 
+  const filterRow = (
+    <div className="mobile-filter-row">
+      <button className={mediaFilter === 'all' ? 'active' : ''} onClick={() => setMediaFilter('all')}>All</button>
+      <button className={mediaFilter === 'movie' ? 'active' : ''} onClick={() => setMediaFilter('movie')}>Movies</button>
+      <button className={mediaFilter === 'tv' ? 'active' : ''} onClick={() => setMediaFilter('tv')}>TV</button>
+    </div>
+  );
+
   if (combined.length === 0) return (
     <section>
       <div className="section-header-row">
         <h2 className="section-title">New Releases</h2>
-        <div className="mobile-filter-row">
-          <button className={mediaFilter === 'movie' ? 'active' : ''} onClick={() => setMediaFilter('movie')}>Movies</button>
-          <button className={mediaFilter === 'tv' ? 'active' : ''} onClick={() => setMediaFilter('tv')}>TV</button>
-        </div>
+        {filterRow}
       </div>
       <LoadingSpinner />
     </section>
@@ -33,10 +44,7 @@ export default function NewReleasesView({
     <section>
       <div className="section-header-row">
         <h2 className="section-title">New Releases</h2>
-        <div className="mobile-filter-row">
-          <button className={mediaFilter === 'movie' ? 'active' : ''} onClick={() => setMediaFilter('movie')}>Movies</button>
-          <button className={mediaFilter === 'tv' ? 'active' : ''} onClick={() => setMediaFilter('tv')}>TV</button>
-        </div>
+        {filterRow}
       </div>
       <div className="journal-tab-nav">
         <button className={`journal-tab-btn ${newReleasesTab === 'all' ? 'active' : ''}`} onClick={() => setNewReleasesTab('all')}>All</button>

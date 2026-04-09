@@ -45,14 +45,14 @@ export default function App() {
   const [selectedItem, setSelectedItem] = useState(null);
   const [feedTab, setFeedTab] = useState('foryou');
   const [newReleasesTab, setNewReleasesTab] = useState('all');
-  const [mediaFilter, setMediaFilter] = useState('movie');
+  const [mediaFilter, setMediaFilter] = useState('all');
   const [publicProfileUsername, setPublicProfileUsername] = useState(null);
   const [publicProfileInitialList, setPublicProfileInitialList] = useState(null);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showTasteExpanded, setShowTasteExpanded] = useState(false);
   const [upcomingTimeFilter, setUpcomingTimeFilter] = useState('month');
-  const [journalTab, setJournalTab] = useState('journal');
+  const [journalTab, setJournalTab] = useState('lists');
 
   // ── Custom hooks ────────────────────────────────────
   const { theme, setTheme, feedLayout, setFeedLayout } = useTheme();
@@ -270,7 +270,7 @@ export default function App() {
         )}
 
         {view === 'search' && (
-          <SearchView searchResults={searchResults} onItemClick={setSelectedItem} />
+          <SearchView searchResults={searchResults} onItemClick={setSelectedItem} mediaFilter={mediaFilter} />
         )}
 
         {view === 'watchlist' && (

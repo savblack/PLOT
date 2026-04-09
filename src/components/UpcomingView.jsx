@@ -16,17 +16,23 @@ export default function UpcomingView({
     return items.filter(item => { const d = new Date(item.release_date || item.first_air_date); return d >= start && d <= end; });
   };
 
-  const items = filterByTimeRange(mediaFilter === 'movie' ? upcoming : upcomingTV, upcomingTimeFilter);
-  const allItems = mediaFilter === 'movie' ? upcoming : upcomingTV;
+  const effectiveSource = mediaFilter === 'all' ? [...upcoming, ...upcomingTV] : mediaFilter === 'movie' ? upcoming : upcomingTV;
+  const items = filterByTimeRange(effectiveSource, upcomingTimeFilter);
+  const allItems = effectiveSource;
+
+  const filterRow = (
+    <div className="mobile-filter-row">
+      <button className={mediaFilter === 'all' ? 'active' : ''} onClick={() => setMediaFilter('all')}>All</button>
+      <button className={mediaFilter === 'movie' ? 'active' : ''} onClick={() => setMediaFilter('movie')}>Movies</button>
+      <button className={mediaFilter === 'tv' ? 'active' : ''} onClick={() => setMediaFilter('tv')}>TV</button>
+    </div>
+  );
 
   if (allItems.length === 0) return (
     <section className="upcoming">
       <div className="section-header-row">
         <h2 className="section-title">Upcoming</h2>
-        <div className="mobile-filter-row">
-          <button className={mediaFilter === 'movie' ? 'active' : ''} onClick={() => setMediaFilter('movie')}>Movies</button>
-          <button className={mediaFilter === 'tv' ? 'active' : ''} onClick={() => setMediaFilter('tv')}>TV</button>
-        </div>
+        {filterRow}
       </div>
       <LoadingSpinner />
     </section>
@@ -36,10 +42,7 @@ export default function UpcomingView({
     <section className="upcoming">
       <div className="section-header-row">
         <h2 className="section-title">Upcoming</h2>
-        <div className="mobile-filter-row">
-          <button className={mediaFilter === 'movie' ? 'active' : ''} onClick={() => setMediaFilter('movie')}>Movies</button>
-          <button className={mediaFilter === 'tv' ? 'active' : ''} onClick={() => setMediaFilter('tv')}>TV</button>
-        </div>
+        {filterRow}
       </div>
       <div className="journal-tab-nav">
         {[['week','This Week'],['next-week','Next Week'],['month','This Month'],['next-month','Next Month']].map(([val, label]) => (

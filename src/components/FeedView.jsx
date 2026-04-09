@@ -16,11 +16,12 @@ export default function FeedView({
 
   useEffect(() => {
     if (feedTab !== 'browse' || !selectedGenre) return;
-    const genreId = mediaFilter === 'movie' ? selectedGenre.movieId : selectedGenre.tvId;
+    const effectiveType = mediaFilter === 'all' ? 'movie' : mediaFilter;
+    const genreId = effectiveType === 'movie' ? selectedGenre.movieId : selectedGenre.tvId;
     if (!genreId) return;
     setBrowseLoading(true);
-    tmdb.discoverByGenres(mediaFilter, [genreId]).then(data => {
-      setBrowseResults((data?.results || []).map(i => ({ ...i, media_type: mediaFilter })));
+    tmdb.discoverByGenres(effectiveType, [genreId]).then(data => {
+      setBrowseResults((data?.results || []).map(i => ({ ...i, media_type: effectiveType })));
       setBrowseLoading(false);
     });
   }, [selectedGenre, mediaFilter, feedTab]);
@@ -34,6 +35,7 @@ export default function FeedView({
       <div className="section-header-row">
         <h2 className="section-title">Feed</h2>
         <div className="mobile-filter-row">
+          <button className={mediaFilter === 'all' ? 'active' : ''} onClick={() => setMediaFilter('all')}>All</button>
           <button className={mediaFilter === 'movie' ? 'active' : ''} onClick={() => setMediaFilter('movie')}>Movies</button>
           <button className={mediaFilter === 'tv' ? 'active' : ''} onClick={() => setMediaFilter('tv')}>TV</button>
         </div>
@@ -96,7 +98,7 @@ export default function FeedView({
           ) : (
             <div className="bento-grid">
               {(feedTab === 'following' ? activeItems : activeItems.filter(item =>
-                (item.media_type || (item.title ? 'movie' : 'tv')) === mediaFilter
+                mediaFilter === 'all' || (item.media_type || (item.title ? 'movie' : 'tv')) === mediaFilter
               )).map((item, index) => (
                 <div
                   key={`${item.id}-${index}`}

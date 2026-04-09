@@ -337,12 +337,12 @@
 .auth-success-icon {
   width: 52px;
   height: 52px;
-  border: 1.5px solid #d0d0d0;
+  border: 0.75px solid #1a1a1a;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #555;
+  color: #1a1a1a;
   margin-bottom: 0.25rem;
 }
 
@@ -368,15 +368,18 @@
 .auth-cta--outline {
   background: transparent !important;
   color: #1a1a1a !important;
-  border: 1.5px solid #d0d0d0 !important;
+  border: 0.75px solid #1a1a1a !important;
+  width: auto !important;
+  padding-left: 1.75rem !important;
+  padding-right: 1.75rem !important;
+  align-self: center;
 }
 .auth-cta--outline:hover:not(:disabled) {
-  border-color: #999 !important;
-  opacity: 1 !important;
+  opacity: 0.6 !important;
 }
 
 .auth-success-resend {
-  font-size: 0.82rem;
+  font-size: 0.74rem;
   color: #aaa;
   margin-top: -0.25rem;
 }
@@ -394,6 +397,7 @@
 }
 .auth-resend-btn:hover:not(:disabled) { color: #333; }
 .auth-resend-btn:disabled { color: #aaa; cursor: default; text-decoration: none; }
+.auth-resend-btn--sent { color: #22863a !important; }
 
 /* ── Mobile ──────────────────────────────────────────────── */
 @media (max-width: 768px) {

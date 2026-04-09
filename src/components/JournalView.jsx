@@ -121,6 +121,8 @@ export default function JournalView({
   const [historyMoodFilter, setHistoryMoodFilter] = useState('');
   const [historyRatingFilter, setHistoryRatingFilter] = useState('');
   const [historyStatusFilter, setHistoryStatusFilter] = useState('');
+  const [historySearchFilter, setHistorySearchFilter] = useState('');
+  const [historySort, setHistorySort] = useState('date-desc');
 
   const exitSelectMode = () => {
     setSelectMode(false);
@@ -173,14 +175,22 @@ export default function JournalView({
     exitSelectMode();
   };
 
-  // Watch History filtered list
-  const historyFiltered = watched.filter(item => {
-    const matchMedia = (item.media_type || (item.title ? 'movie' : 'tv')) === mediaFilter;
-    const matchMood = !historyMoodFilter || item.mood === historyMoodFilter;
-    const matchRating = !historyRatingFilter || item.rating === parseInt(historyRatingFilter);
-    const matchStatus = !historyStatusFilter || item.watchStatus === historyStatusFilter;
-    return matchMedia && matchMood && matchRating && matchStatus;
-  });
+  // Watch History filtered + sorted list
+  const historyFiltered = watched
+    .filter(item => {
+      const matchMedia = mediaFilter === 'all' || (item.media_type || (item.title ? 'movie' : 'tv')) === mediaFilter;
+      const matchMood = !historyMoodFilter || item.mood === historyMoodFilter;
+      const matchRating = !historyRatingFilter || item.rating === parseInt(historyRatingFilter);
+      const matchStatus = !historyStatusFilter || item.watchStatus === historyStatusFilter;
+      const matchSearch = !historySearchFilter || (item.title || item.name || '').toLowerCase().includes(historySearchFilter.toLowerCase());
+      return matchMedia && matchMood && matchRating && matchStatus && matchSearch;
+    })
+    .sort((a, b) => {
+      if (historySort === 'rating-desc') return (b.rating || 0) - (a.rating || 0);
+      if (historySort === 'title-asc') return (a.title || a.name || '').localeCompare(b.title || b.name || '');
+      // date-desc (default)
+      return new Date(b.watched_at || 0) - new Date(a.watched_at || 0);
+    });
 
   // Active list items (real lists only)
   const activeListItems = activeList
@@ -340,10 +350,11 @@ export default function JournalView({
             <h2 className="section-title">Journal</h2>
             <div className="section-header-right">
               <div className="mobile-filter-row">
+                <button className={mediaFilter === 'all' ? 'active' : ''} onClick={() => setMediaFilter('all')}>All</button>
                 <button className={mediaFilter === 'movie' ? 'active' : ''} onClick={() => setMediaFilter('movie')}>Movies</button>
                 <button className={mediaFilter === 'tv' ? 'active' : ''} onClick={() => setMediaFilter('tv')}>TV</button>
               </div>
-              {journalTab === 'lists' && !showJournalNewList && (
+              {journalTab === 'lists' && !showJournalNewList && userLists.length > 0 && (
                 <button className="new-list-header-btn" onClick={() => setShowJournalNewList(true)}>
                   + New List
                 </button>
@@ -353,9 +364,9 @@ export default function JournalView({
 
           <div className="journal-tab-nav">
             {[
-              { id: 'journal', label: 'Journal' },
               { id: 'lists',   label: 'My Lists' },
-              { id: 'history', label: 'Watch History' },
+              { id: 'history', label: 'History' },
+              { id: 'taste',   label: 'Journal' },
             ].map(t => (
               <button
                 key={t.id}
@@ -368,6 +379,18 @@ export default function JournalView({
           {journalTab === 'history' && (
             <div className="history-tab">
               <div className="history-filters">
+                <input
+                  className="history-search-input"
+                  type="text"
+                  placeholder="Search titles…"
+                  value={historySearchFilter}
+                  onChange={e => setHistorySearchFilter(e.target.value)}
+                />
+                <select value={historySort} onChange={e => setHistorySort(e.target.value)}>
+                  <option value="date-desc">Newest first</option>
+                  <option value="rating-desc">Top rated</option>
+                  <option value="title-asc">A–Z</option>
+                </select>
                 <select value={historyMoodFilter} onChange={e => setHistoryMoodFilter(e.target.value)}>
                   <option value="">Mood</option>
                   {MOODS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
@@ -396,9 +419,9 @@ export default function JournalView({
                       ? <img src={`https://image.tmdb.org/t/p/w342${item.poster_path}`} alt={item.title || item.name} loading="lazy" decoding="async" />
                       : <div className="no-image">{item.title || item.name}</div>
                     }
+                    {item.rating > 0 && <span className="history-rating-badge">{'★'.repeat(item.rating)}</span>}
                     <div className="overlay">
                       <h3>{item.title || item.name}</h3>
-                      {item.rating > 0 && <span className="rating-tag">{'★'.repeat(item.rating)}</span>}
                     </div>
                   </div>
                 ))}
@@ -418,6 +441,9 @@ export default function JournalView({
                 <div className="empty-journal-state">
                   <h3>No lists yet</h3>
                   <p>Create a list to organise your favourites.</p>
+                  <button className="new-list-header-btn" style={{ marginTop: '1rem' }} onClick={() => setShowJournalNewList(true)}>
+                    + New List
+                  </button>
                 </div>
               )}
               {showJournalNewList && (
@@ -466,7 +492,7 @@ export default function JournalView({
             </>
           )}
 
-          {journalTab === 'journal' && (
+          {journalTab === 'taste' && (
             <JournalBoardTab
               watched={watched}
               user={user}

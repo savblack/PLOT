@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../api/supabase';
 
 export default function JournalBoardTab({ watched, user, onItemClick }) {
-  const [boardView, setBoardView] = useState('board'); // 'board' | 'ai'
+  const [showBoard, setShowBoard] = useState(false);
   const [positions, setPositions] = useState({});
   const [dragState, setDragState] = useState(null);
   const [isPanning, setIsPanning] = useState(false);
@@ -301,32 +301,92 @@ Rules:
     );
   };
 
+  // Stats derived from watch history
+  const statsTotal = watched.length;
+  const ratedItems = watched.filter(i => i.rating > 0);
+  const statsAvgRating = ratedItems.length > 0
+    ? (ratedItems.reduce((sum, i) => sum + i.rating, 0) / ratedItems.length).toFixed(1)
+    : null;
+  const moodCounts = {};
+  watched.forEach(i => { if (i.mood) moodCounts[i.mood] = (moodCounts[i.mood] || 0) + 1; });
+  const statsTopMood = Object.entries(moodCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
+  const movieCount = watched.filter(i => (i.media_type || (i.title ? 'movie' : 'tv')) === 'movie').length;
+  const statsMoviePct = statsTotal > 0 ? Math.round((movieCount / statsTotal) * 100) : null;
+
   if (watched.length === 0) {
     return (
       <div className="empty-journal-state">
-        <h3>Your board is empty</h3>
-        <p>Log some movies or shows to start building your board.</p>
+        <h3>Nothing logged yet</h3>
+        <p>Log some movies or shows to build your taste profile.</p>
       </div>
     );
   }
 
   return (
     <div>
-      <div className="board-view-toggle">
+      {statsTotal > 0 && (
+        <div className="taste-stats-bar">
+          <div className="taste-stat">
+            <span className="taste-stat-value">{statsTotal}</span>
+            <span className="taste-stat-label">logged</span>
+          </div>
+          {statsAvgRating && (
+            <div className="taste-stat">
+              <span className="taste-stat-value">{statsAvgRating}★</span>
+              <span className="taste-stat-label">avg rating</span>
+            </div>
+          )}
+          {statsTopMood && (
+            <div className="taste-stat">
+              <span className="taste-stat-value">{statsTopMood}</span>
+              <span className="taste-stat-label">top mood</span>
+            </div>
+          )}
+          {statsMoviePct !== null && (
+            <div className="taste-stat">
+              <span className="taste-stat-value">{statsMoviePct}%</span>
+              <span className="taste-stat-label">films</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      <div>
         <button
-          className={`board-view-pill ${boardView === 'board' ? 'active' : ''}`}
-          onClick={() => setBoardView('board')}
-        >Board</button>
-        <button
-          className={`board-view-pill ${boardView === 'ai' ? 'active' : ''}`}
-          onClick={() => setBoardView('ai')}
-        >Journal for me</button>
+          className="ai-journal-generate-btn"
+          onClick={generateJournal}
+          disabled={aiLoading}
+        >
+          {aiLoading ? 'Generating…' : aiJournal ? 'Regenerate taste profile' : 'Generate my taste profile'}
+        </button>
+
+        {aiJournal?.summary && (
+          <p className="ai-journal-summary">{aiJournal.summary}</p>
+        )}
+
+        {aiJournal && renderAiLayout()}
+
+        {!aiJournal && !aiLoading && (
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.75rem' }}>
+            Generate a personalised personality read and poster layout from your watch history.
+          </p>
+        )}
       </div>
 
-      {boardView === 'board' && (
+      <div style={{ marginTop: '2rem', textAlign: 'center' }}>
+        <button
+          className="view-board-link"
+          onClick={() => setShowBoard(v => !v)}
+        >
+          {showBoard ? 'Hide board' : 'View as board'}
+        </button>
+      </div>
+
+      {showBoard && (
         <div
           ref={containerRef}
           className="board-container"
+          style={{ marginTop: '1rem' }}
           onPointerMove={onCanvasPointerMove}
           onPointerUp={onCanvasPointerUp}
         >
@@ -355,30 +415,6 @@ Rules:
               );
             })}
           </div>
-        </div>
-      )}
-
-      {boardView === 'ai' && (
-        <div>
-          <button
-            className="ai-journal-generate-btn"
-            onClick={generateJournal}
-            disabled={aiLoading}
-          >
-            {aiLoading ? 'Generating…' : aiJournal ? 'Regenerate' : 'Generate'}
-          </button>
-
-{aiJournal?.summary && (
-            <p className="ai-journal-summary">{aiJournal.summary}</p>
-          )}
-
-          {aiJournal && renderAiLayout()}
-
-          {!aiJournal && !aiLoading && (
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-              Generate a personalised taste summary and poster layout from your watch history.
-            </p>
-          )}
         </div>
       )}
     </div>

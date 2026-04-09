@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { tmdb } from '../api/tmdb';
 import './SearchBar.css';
 
 export default function SearchBar({ searchQuery, setSearchQuery, onSubmit, onResultClick, placeholder = 'Search...', autoFocus = false }) {
   const [dropdownResults, setDropdownResults] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0, width: 0 });
   const containerRef = useRef(null);
   const debounceTimer = useRef(null);
 
@@ -17,6 +19,11 @@ export default function SearchBar({ searchQuery, setSearchQuery, onSubmit, onRes
 
     clearTimeout(debounceTimer.current);
     debounceTimer.current = setTimeout(async () => {
+      // Don't show dropdown if this instance is CSS-hidden (e.g. desktop bar on mobile)
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        if (rect.width === 0) return;
+      }
       const data = await tmdb.search(searchQuery);
       if (data) {
         const filtered = (data.results || []).filter(r => r.media_type !== 'person').slice(0, 6);
@@ -27,6 +34,17 @@ export default function SearchBar({ searchQuery, setSearchQuery, onSubmit, onRes
 
     return () => clearTimeout(debounceTimer.current);
   }, [searchQuery]);
+
+  // Reposition dropdown whenever it becomes visible
+  useEffect(() => {
+    if (!showDropdown || !containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    setDropdownPos({
+      top: rect.bottom + window.scrollY + 8,
+      left: rect.right - 320, // 320px is the fixed dropdown width
+      width: 320,
+    });
+  }, [showDropdown]);
 
   useEffect(() => {
     const handler = (e) => {
@@ -61,6 +79,46 @@ export default function SearchBar({ searchQuery, setSearchQuery, onSubmit, onRes
     return date ? new Date(date).getFullYear() : null;
   };
 
+  const dropdown = showDropdown ? createPortal(
+    <div
+      className="search-dropdown"
+      style={{ position: 'absolute', top: dropdownPos.top, left: dropdownPos.left, width: dropdownPos.width }}
+    >
+      {dropdownResults.map(item => (
+        <button
+          key={item.id}
+          className="search-dropdown-item"
+          onClick={() => handleResultClick(item)}
+          type="button"
+        >
+          <div className="search-dropdown-poster">
+            {item.poster_path
+              ? <img src={`https://image.tmdb.org/t/p/w92${item.poster_path}`} alt="" />
+              : <div className="search-dropdown-no-poster" />
+            }
+          </div>
+          <div className="search-dropdown-info">
+            <span className="search-dropdown-title">{item.title || item.name}</span>
+            <span className="search-dropdown-meta">
+              {getYear(item)}
+              <span className={`search-type-badge ${item.media_type}`}>
+                {item.media_type === 'movie' ? 'Film' : 'TV'}
+              </span>
+            </span>
+          </div>
+        </button>
+      ))}
+      <button
+        className="search-dropdown-see-all"
+        onClick={handleSubmit}
+        type="button"
+      >
+        See all results →
+      </button>
+    </div>,
+    document.body
+  ) : null;
+
   return (
     <div className="search-bar-wrapper" ref={containerRef}>
       <div className="search-pill search-small">
@@ -81,43 +139,7 @@ export default function SearchBar({ searchQuery, setSearchQuery, onSubmit, onRes
           </button>
         )}
       </div>
-
-      {showDropdown && (
-        <div className="search-dropdown">
-          {dropdownResults.map(item => (
-            <button
-              key={item.id}
-              className="search-dropdown-item"
-              onClick={() => handleResultClick(item)}
-              type="button"
-            >
-              <div className="search-dropdown-poster">
-                {item.poster_path
-                  ? <img src={`https://image.tmdb.org/t/p/w92${item.poster_path}`} alt="" />
-                  : <div className="search-dropdown-no-poster" />
-                }
-              </div>
-              <div className="search-dropdown-info">
-                <span className="search-dropdown-title">{item.title || item.name}</span>
-                <span className="search-dropdown-meta">
-                  {getYear(item)}
-                  <span className={`search-type-badge ${item.media_type}`}>
-                    {item.media_type === 'movie' ? 'Film' : 'TV'}
-                  </span>
-                </span>
-              </div>
-            </button>
-          ))}
-          <button
-            className="search-dropdown-see-all"
-            onClick={handleSubmit}
-            type="button"
-          >
-            See all results →
-          </button>
-        </div>
-      )}
-
+      {dropdown}
     </div>
   );
 }

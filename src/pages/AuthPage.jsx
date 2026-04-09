@@ -141,8 +141,9 @@ export default function AuthPage({ initialMode = 'signup' }) {
           {success && mode === 'signup' && (
             <div className="auth-success">
               <div className="auth-success-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="20 6 9 17 4 12"/>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="4" width="20" height="16" rx="2"/>
+                  <polyline points="2 4 12 13 22 4"/>
                 </svg>
               </div>
               <h1>Almost there!</h1>
@@ -150,10 +151,13 @@ export default function AuthPage({ initialMode = 'signup' }) {
               <button className="auth-cta auth-cta--outline" onClick={() => switchMode('login')}>Back to sign in</button>
               <p className="auth-success-resend">
                 Didn't get it? Check spam or{' '}
-                <button className="auth-resend-btn" onClick={handleResend} disabled={resendStatus === 'sending' || resendStatus === 'sent'}>
-                  {resendStatus === 'sending' ? 'sending…' : resendStatus === 'sent' ? 'sent!' : resendStatus === 'error' ? 'try again' : 'resend'}
-                </button>.
-              </p>
+                <button
+                  className={`auth-resend-btn${resendStatus === 'sent' ? ' auth-resend-btn--sent' : ''}`}
+                  onClick={handleResend}
+                  disabled={resendStatus === 'sending' || resendStatus === 'sent'}
+                >
+                  {resendStatus === 'sending' ? 'sending' : resendStatus === 'sent' ? 'sent' : resendStatus === 'error' ? 'try again' : 'resend'}
+                </button>.</p>
             </div>
           )}
 
