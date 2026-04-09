@@ -1732,6 +1732,7 @@ main.content-grid.animate-in {
   justify-content: flex-end;
 }
 .history-filters select {
+  width: 100px;
   padding: 0.35rem 1.5rem 0.35rem 0.75rem;
   border-radius: var(--radius-pill);
   border: 1px solid var(--border-color);
