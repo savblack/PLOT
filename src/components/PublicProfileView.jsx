@@ -208,7 +208,12 @@ export default function PublicProfileView({ username, initialListId, onItemClick
                 <h1 className="pp-display-name">
                   {displayName}
                   {profileData.is_supporter && (
-                    <span className="supporter-badge">♥ Supporter</span>
+                    <span className="supporter-badge">
+                      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round">
+                        <path d="M8 13.5S1.5 9 1.5 4.8A3.3 3.3 0 0 1 8 3a3.3 3.3 0 0 1 6.5 1.8C14.5 9 8 13.5 8 13.5z"/>
+                      </svg>
+                      Supporter
+                    </span>
                   )}
                 </h1>
                 <p className="public-profile-username">@{profileData.username}</p>
