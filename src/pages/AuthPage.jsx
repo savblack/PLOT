@@ -152,7 +152,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
                 Didn't get it? Check spam or{' '}
                 <button className="auth-resend-btn" onClick={handleResend} disabled={resendStatus === 'sending' || resendStatus === 'sent'}>
                   {resendStatus === 'sending' ? 'sending…' : resendStatus === 'sent' ? 'sent!' : resendStatus === 'error' ? 'try again' : 'resend'}
-                </button>.
+                </button>
               </p>
             </div>
           )}
