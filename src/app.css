@@ -1940,6 +1940,24 @@ main.content-grid.animate-in {
   line-height: 1.1;
 }
 
+.supporter-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: #fff0e6;
+  color: #c95a00;
+  border: 1px solid #f5c9a0;
+  border-radius: 9999px;
+  padding: 2px 8px;
+  margin-left: 8px;
+  vertical-align: middle;
+  position: relative;
+  top: -2px;
+}
+
 .pp-profile-card .public-profile-username {
   color: rgba(255,255,255,0.65);
   font-size: 0.82rem;

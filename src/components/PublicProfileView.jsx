@@ -38,7 +38,7 @@ export default function PublicProfileView({ username, initialListId, onItemClick
 
       const { data: prof } = await supabase
         .from('profiles')
-        .select('id, username, display_name, is_public, avatar_url')
+        .select('id, username, display_name, is_public, avatar_url, is_supporter')
         .eq('username', username)
         .eq('is_public', true)
         .single();
@@ -205,7 +205,12 @@ export default function PublicProfileView({ username, initialListId, onItemClick
                 }
               </div>
               <div className="pp-profile-card-body">
-                <h1 className="pp-display-name">{displayName}</h1>
+                <h1 className="pp-display-name">
+                  {displayName}
+                  {profileData.is_supporter && (
+                    <span className="supporter-badge">♥ Supporter</span>
+                  )}
+                </h1>
                 <p className="public-profile-username">@{profileData.username}</p>
                 <p className="pp-stats">
                   {followerCount} {followerCount === 1 ? 'follower' : 'followers'} · {publicLists.length} {publicLists.length === 1 ? 'list' : 'lists'} · {watchedCount} watched

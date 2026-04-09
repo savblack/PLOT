@@ -786,6 +786,40 @@
       font-size: 0.78rem;
     }
 
+    /* ── Support section ─────────────────────────────────────── */
+    .support-section {
+      background: #f8f8f8;
+      padding: 3rem 2rem;
+      text-align: center;
+      border-top: 1px solid #e8e8e8;
+    }
+    .support-section p {
+      font-family: 'Manrope', sans-serif;
+      font-size: 0.95rem;
+      color: #666;
+      margin-bottom: 1.25rem;
+    }
+    .kofi-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: 'Manrope', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #111;
+      border: 1.5px solid #111;
+      border-radius: 9999px;
+      padding: 0.6rem 1.4rem;
+      text-decoration: none;
+      transition: background 0.2s, color 0.2s;
+    }
+    .kofi-btn:hover {
+      background: #111;
+      color: #fff;
+    }
+
     /* ── Responsive ─────────────────────────────────────────── */
     @media (max-width: 900px) {
       /* Editorial poster stack uses absolute pixel positions — hide on smaller screens */
@@ -1229,6 +1263,12 @@
       </div>
     </div>
   </div>
+
+  <!-- ── Support ──────────────────────────────────────────────── -->
+  <section class="support-section">
+    <p>Plot is free forever. If you love it, you can support its development.</p>
+    <a class="kofi-btn" href="https://ko-fi.com/PLACEHOLDER" target="_blank" rel="noopener">♥ Support Plot</a>
+  </section>
 
   <!-- ── Footer ────────────────────────────────────────────────── -->
   <footer>

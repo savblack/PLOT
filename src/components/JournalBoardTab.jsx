@@ -152,10 +152,18 @@ export default function JournalBoardTab({ watched, user, onItemClick }) {
         const top = watched.filter(i => i.rating >= 4).slice(0, 15).map(i => ({
           title: i.title || i.name, rating: i.rating, mood: i.mood,
         }));
-        const prompt = `You are a film critic writing a short, warm, personal taste summary.
-Based on this watch history (title, rating 1-5, mood): ${JSON.stringify(top)}
-Write 2-3 sentences describing this person's film taste in a distinctive, non-generic way.
-Be specific to what they actually watched. No lists, no bullet points. Just flowing prose.`;
+        const prompt = `You are a brutally perceptive cultural psychologist doing a personality read based purely on someone's watch history. Like a horoscope, but actually accurate.
+
+Their top-rated watches (title, rating /5, mood they felt): ${JSON.stringify(top)}
+
+Write 2-3 sentences that reveal something true about WHO THIS PERSON IS — their psychology, their inner life, what they're probably like at a dinner party, what they need from stories.
+
+Rules:
+- This is a PERSONALITY read, not a taste summary — don't describe what they watch, describe what it reveals about them
+- Be specific and a little daring — generic observations are worse than wrong ones
+- Warm but sharp. Insightful not mean. Second person, flowing prose
+- You can reference a title or two but only to make a psychological point, not to list what they watched
+- End with something that feels like it sees them`;
 
         const res = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
