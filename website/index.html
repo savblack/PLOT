@@ -293,6 +293,9 @@
       background-color: #ddd;
     }
 
+    /* Manifesto mobile sequence — hidden on desktop */
+    .manifesto-seq { display: none; }
+
     #manifesto, #for-the-plot, #value, #features, #cta, footer {
       position: relative;
       z-index: 2;
@@ -811,15 +814,53 @@
       #hero { padding-top: 5rem; }
       .hero-filmstrip { display: block; }
 
-      /* Manifesto — tighten further for small phones */
-      #manifesto {
-        padding: 4rem 1.5rem 6rem;
-        gap: 8rem;
+      /* Manifesto — sequence mode on mobile */
+      #manifesto { padding: 0; gap: 0; min-height: 90vh; }
+      .manifesto-line { display: none; }
+      .manifesto-seq {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        min-height: 90vh;
+        padding: 4rem 2.5rem;
       }
-      #plotDoes {
-        margin-top: 6rem;
-        margin-bottom: 5rem;
+      .mseq-stage {
+        position: relative;
+        width: 100%;
+        height: 220px;
       }
+      .mseq-line {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        font-family: var(--serif);
+        font-size: clamp(1.6rem, 7vw, 2.2rem);
+        font-weight: 400;
+        letter-spacing: -0.05em;
+        line-height: 1.1;
+        color: var(--text);
+        opacity: 0;
+        transition: opacity 0.7s ease;
+      }
+      .mseq-line.active { opacity: 1; }
+      .mseq-dots {
+        display: flex;
+        gap: 6px;
+        margin-top: 2.5rem;
+      }
+      .mseq-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: rgba(0,0,0,0.15);
+        transition: background 0.4s;
+      }
+      .mseq-dot.active { background: var(--text); }
 
       /* Features */
       #features { padding: 4rem 1.5rem; }
@@ -919,6 +960,24 @@
     <p class="manifesto-line reveal">You carry them with you.</p>
     <p class="manifesto-line reveal">But no app has ever cared<br>as much as you do.</p>
     <p class="manifesto-line no-fade reveal" id="plotDoes">PLOT <em>does.</em></p>
+    <div class="manifesto-seq">
+      <div class="mseq-stage">
+        <div class="mseq-line active">You don't just watch things.</div>
+        <div class="mseq-line">You think about them.</div>
+        <div class="mseq-line">You talk about them.</div>
+        <div class="mseq-line">You carry them with you.</div>
+        <div class="mseq-line">But no app has ever cared<br>as much as you do.</div>
+        <div class="mseq-line">PLOT does.</div>
+      </div>
+      <div class="mseq-dots">
+        <span class="mseq-dot active"></span>
+        <span class="mseq-dot"></span>
+        <span class="mseq-dot"></span>
+        <span class="mseq-dot"></span>
+        <span class="mseq-dot"></span>
+        <span class="mseq-dot"></span>
+      </div>
+    </div>
   </section>
 
   <!-- ── Features ─────────────────────────────────────────────── -->
@@ -1136,6 +1195,20 @@
     document.querySelectorAll('#hero .reveal').forEach(el => {
       el.classList.add('visible');
     });
+
+    // ── Manifesto mobile sequence ─────────────────────────────
+    if (window.innerWidth < 600) {
+      const seqLines = document.querySelectorAll('.mseq-line');
+      const seqDots  = document.querySelectorAll('.mseq-dot');
+      let seqIdx = 0;
+      setInterval(() => {
+        seqLines[seqIdx].classList.remove('active');
+        seqDots[seqIdx].classList.remove('active');
+        seqIdx = (seqIdx + 1) % seqLines.length;
+        seqLines[seqIdx].classList.add('active');
+        seqDots[seqIdx].classList.add('active');
+      }, 2400);
+    }
 
     // ── Manifesto scroll-driven fade ──────────────────────────
     const manifestoLines = [...document.querySelectorAll('.manifesto-line')];
