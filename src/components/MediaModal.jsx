@@ -200,7 +200,7 @@ export default function MediaModal({ item, onClose, onSave, savedData, userLists
             <div className="tab-nav">
               <button className={`tab-btn ${activeTab === 'details' ? 'active' : ''}`} onClick={() => setActiveTab('details')}>Details</button>
               <button className={`tab-btn ${activeTab === 'log' ? 'active' : ''}`} onClick={() => setActiveTab('log')}>Log</button>
-              <button className={`tab-btn ${activeTab === 'similar' ? 'active' : ''}`} onClick={() => setActiveTab('similar')}>Similar</button>
+              <button className={`tab-btn ${activeTab === 'similar' ? 'active' : ''}`} onClick={() => setActiveTab('similar')}>More</button>
             </div>
 
             {activeTab === 'details' && (
