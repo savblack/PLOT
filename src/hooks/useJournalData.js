@@ -45,6 +45,7 @@ export function useJournalData(user, onAuthRequired) {
         watchStatus: item.watchStatus || null,
         watched_at:  item.watched_at || null,
         updatedAt:   item.updatedAt || null,
+        genre_ids:   item.genre_ids || null,
       };
       const { error } = await supabase
         .from('journal')
