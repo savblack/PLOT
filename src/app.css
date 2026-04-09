@@ -1730,6 +1730,7 @@ main.content-grid.animate-in {
   gap: 0.6rem;
   margin-bottom: 1.25rem;
   flex-wrap: wrap;
+  justify-content: flex-end;
 }
 .history-filters select {
   padding: 0.35rem 1.5rem 0.35rem 0.75rem;
@@ -1741,7 +1742,7 @@ main.content-grid.animate-in {
   color: var(--text-secondary);
   cursor: pointer;
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23999'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7' viewBox='0 0 10 7'%3E%3Cpolyline points='1 1 5 5.5 9 1' fill='none' stroke='%23999' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 0.6rem center;
 }
@@ -1943,19 +1944,25 @@ main.content-grid.animate-in {
 .supporter-badge {
   display: inline-flex;
   align-items: center;
-  font-size: 0.65rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
+  gap: 5px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
-  background: #fff0e6;
-  color: #c95a00;
-  border: 1px solid #f5c9a0;
+  background: transparent;
+  color: #c0a0e8;
+  border: 1.5px solid #c0a0e8;
   border-radius: 9999px;
-  padding: 2px 8px;
-  margin-left: 8px;
+  padding: 6px 16px 6px 13px;
+  margin-left: 12px;
   vertical-align: middle;
   position: relative;
   top: -2px;
+}
+.supporter-badge svg {
+  width: 11px;
+  height: 11px;
+  flex-shrink: 0;
 }
 
 .pp-profile-card .public-profile-username {

@@ -185,7 +185,7 @@ export default function MediaModal({ item, onClose, onSave, savedData, userLists
 
   return (
     <div className={`modal-overlay${isClosing ? ' modal-closing' : ''}`} onClick={closeWithFade}>
-      <div className="modal-content glass animate-in" onClick={e => e.stopPropagation()}>
+      <div className="modal-content animate-in" onClick={e => e.stopPropagation()}>
         <button className="close-btn" onClick={closeWithFade}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M18 6L6 18M6 6l12 12"/>
@@ -228,6 +228,31 @@ export default function MediaModal({ item, onClose, onSave, savedData, userLists
                     )}
                   </div>
                 </div>
+              </div>
+            )}
+
+            {activeTab === 'similar' && (
+              <div className="tab-content similar-tab-content">
+                {details.recommendations?.results?.length > 0 ? (
+                  <div className="similar-scroll">
+                    {details.recommendations.results.slice(0, 12).map(rec => (
+                      <button
+                        key={rec.id}
+                        className="similar-card"
+                        onClick={() => onItemClick && onItemClick({ ...rec, media_type: rec.media_type || (item.media_type || (item.title ? 'movie' : 'tv')) })}
+                        type="button"
+                      >
+                        {rec.poster_path
+                          ? <img src={`https://image.tmdb.org/t/p/w185${rec.poster_path}`} alt={rec.title || rec.name} loading="lazy" />
+                          : <div className="similar-no-poster">{rec.title || rec.name}</div>
+                        }
+                        <span className="similar-title">{rec.title || rec.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="no-similar">No similar titles found.</p>
+                )}
               </div>
             )}
 
@@ -361,31 +386,6 @@ export default function MediaModal({ item, onClose, onSave, savedData, userLists
               </div>
             )}
           </div>
-
-          {activeTab === 'similar' && (
-            <div className="tab-content similar-tab-content">
-              {details.recommendations?.results?.length > 0 ? (
-                <div className="similar-scroll">
-                  {details.recommendations.results.slice(0, 12).map(rec => (
-                    <button
-                      key={rec.id}
-                      className="similar-card"
-                      onClick={() => onItemClick && onItemClick({ ...rec, media_type: rec.media_type || (item.media_type || (item.title ? 'movie' : 'tv')) })}
-                      type="button"
-                    >
-                      {rec.poster_path
-                        ? <img src={`https://image.tmdb.org/t/p/w185${rec.poster_path}`} alt={rec.title || rec.name} loading="lazy" />
-                        : <div className="similar-no-poster">{rec.title || rec.name}</div>
-                      }
-                      <span className="similar-title">{rec.title || rec.name}</span>
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <p className="no-similar">No similar titles found.</p>
-              )}
-            </div>
-          )}
 
           <div className="poster-side">
             <img src={`https://image.tmdb.org/t/p/w500${details.poster_path}`} alt={details.title || details.name} />

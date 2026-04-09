@@ -14,36 +14,20 @@ export const GENRES = [
 ];
 
 export const MOODS = [
-  { value: 'happy',         label: 'Happy' },
-  { value: 'sad',           label: 'Sad' },
-  { value: 'emotional',     label: 'Emotional' },
-  { value: 'excited',       label: 'Excited' },
-  { value: 'fun',           label: 'Fun' },
-  { value: 'tense',         label: 'Tense' },
-  { value: 'scared',        label: 'Scared' },
-  { value: 'unsettled',     label: 'Unsettled' },
-  { value: 'weird',         label: 'Weird' },
-  { value: 'cosy',          label: 'Cosy' },
-  { value: 'thoughtful',    label: 'Thoughtful' },
-  { value: 'inspired',      label: 'Inspired' },
-  { value: 'intense',       label: 'Intense' },
-  { value: 'stressed',      label: 'Stressed' },
-  { value: 'epic',          label: 'Epic' },
-  { value: 'haunted',       label: 'Haunted' },
-  { value: 'nostalgic',     label: 'Nostalgic' },
-  { value: 'melancholy',    label: 'Melancholy' },
-  { value: 'gripped',       label: 'Gripped' },
-  { value: 'shocked',       label: 'Shocked' },
-  { value: 'uncomfortable', label: 'Uncomfortable' },
-  { value: 'meh',           label: 'Meh' },
-  { value: 'amazing',       label: 'Amazing' },
-  { value: 'mindblown',     label: 'Mind Blown' },
+  { value: 'happy',      label: 'Happy' },
+  { value: 'sad',        label: 'Sad' },
+  { value: 'emotional',  label: 'Emotional' },
+  { value: 'excited',    label: 'Excited' },
+  { value: 'tense',      label: 'Tense' },
+  { value: 'scared',     label: 'Scared' },
+  { value: 'cosy',       label: 'Cosy' },
+  { value: 'thoughtful', label: 'Thoughtful' },
+  { value: 'nostalgic',  label: 'Nostalgic' },
+  { value: 'mindblown',  label: 'Mind Blown' },
 ];
 
-// Subset shown as quick-pick presets in the log modal
-export const PRESET_MOODS = MOODS.filter(m =>
-  ['happy', 'sad', 'excited', 'scared', 'thoughtful'].includes(m.value)
-);
+// All moods shown as presets in the log modal
+export const PRESET_MOODS = MOODS;
 
 export const TIMEZONE_TO_REGION = {
   'Australia/': 'AU',        // prefix match handled in timezoneToRegion()
