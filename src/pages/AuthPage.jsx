@@ -44,6 +44,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
   const [loading, setLoading]         = useState(false);
   const [error, setError]             = useState(null);
   const [success, setSuccess]         = useState(false);
+  const [resendStatus, setResendStatus] = useState(null); // null | 'sending' | 'sent' | 'error'
   const navigate = useNavigate();
 
   // Auto-redirect if already logged in
@@ -82,6 +83,14 @@ export default function AuthPage({ initialMode = 'signup' }) {
     setMode(next);
     setError(null);
     setSuccess(false);
+    setResendStatus(null);
+  };
+
+  const handleResend = async () => {
+    if (resendStatus === 'sending' || resendStatus === 'sent') return;
+    setResendStatus('sending');
+    const { error } = await supabase.auth.resend({ type: 'signup', email });
+    setResendStatus(error ? 'error' : 'sent');
   };
 
   const scrollPosters = [...POSTERS, ...POSTERS];
@@ -131,10 +140,20 @@ export default function AuthPage({ initialMode = 'signup' }) {
 
           {success && mode === 'signup' && (
             <div className="auth-success">
-              <div className="auth-success-icon">✓</div>
-              <h1>Check your inbox</h1>
+              <div className="auth-success-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+              </div>
+              <h1>Almost there!</h1>
               <p>We sent a confirmation link to <strong>{email}</strong>. Click it to activate your account, then come back to sign in.</p>
-              <button className="auth-cta" onClick={() => switchMode('login')}>Back to sign in</button>
+              <button className="auth-cta auth-cta--outline" onClick={() => switchMode('login')}>Back to sign in</button>
+              <p className="auth-success-resend">
+                Didn't get it? Check spam or{' '}
+                <button className="auth-resend-btn" onClick={handleResend} disabled={resendStatus === 'sending' || resendStatus === 'sent'}>
+                  {resendStatus === 'sending' ? 'sending…' : resendStatus === 'sent' ? 'sent!' : resendStatus === 'error' ? 'try again' : 'resend'}
+                </button>.
+              </p>
             </div>
           )}
 
