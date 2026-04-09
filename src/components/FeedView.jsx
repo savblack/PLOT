@@ -122,13 +122,6 @@ export default function FeedView({
                       @{item.profile.username}
                     </button>
                   )}
-                  {feedTab === 'foryou' && (
-                    <button
-                      className="dismiss-btn"
-                      onClick={e => { e.stopPropagation(); onDismiss(item.id); }}
-                      title="Not interested"
-                    >×</button>
-                  )}
                 </div>
               ))}
             </div>
