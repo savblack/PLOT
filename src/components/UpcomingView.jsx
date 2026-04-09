@@ -2,7 +2,7 @@ import LoadingSpinner from './LoadingSpinner';
 
 export default function UpcomingView({
   upcomingTimeFilter, setUpcomingTimeFilter,
-  mediaFilter, feedLayout,
+  mediaFilter, setMediaFilter, feedLayout,
   upcoming, upcomingTV,
   onItemClick,
 }) {
@@ -23,6 +23,10 @@ export default function UpcomingView({
     <section className="upcoming">
       <div className="section-header-row">
         <h2 className="section-title">Upcoming</h2>
+        <div className="mobile-filter-row">
+          <button className={mediaFilter === 'movie' ? 'active' : ''} onClick={() => setMediaFilter('movie')}>Movies</button>
+          <button className={mediaFilter === 'tv' ? 'active' : ''} onClick={() => setMediaFilter('tv')}>TV</button>
+        </div>
       </div>
       <LoadingSpinner />
     </section>
@@ -32,6 +36,10 @@ export default function UpcomingView({
     <section className="upcoming">
       <div className="section-header-row">
         <h2 className="section-title">Upcoming</h2>
+        <div className="mobile-filter-row">
+          <button className={mediaFilter === 'movie' ? 'active' : ''} onClick={() => setMediaFilter('movie')}>Movies</button>
+          <button className={mediaFilter === 'tv' ? 'active' : ''} onClick={() => setMediaFilter('tv')}>TV</button>
+        </div>
       </div>
       <div className="journal-tab-nav">
         {[['week','This Week'],['next-week','Next Week'],['month','This Month'],['next-month','Next Month']].map(([val, label]) => (

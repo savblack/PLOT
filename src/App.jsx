@@ -588,7 +588,7 @@ export default function App() {
           <FeedView
             feedTab={feedTab} setFeedTab={setFeedTab}
             forYouFeed={forYouFeed} trending={trending}
-            mediaFilter={mediaFilter} feedLayout={feedLayout}
+            mediaFilter={mediaFilter} setMediaFilter={setMediaFilter} feedLayout={feedLayout}
             preferences={preferences}
             followingFeed={followingFeed} followingLoading={!followingFeedLoaded} user={user}
             getSavedData={getSavedData} onItemClick={setSelectedItem}
@@ -599,7 +599,7 @@ export default function App() {
         {view === 'new' && (
           <NewReleasesView
             newReleasesTab={newReleasesTab} setNewReleasesTab={setNewReleasesTab}
-            mediaFilter={mediaFilter} feedLayout={feedLayout}
+            mediaFilter={mediaFilter} setMediaFilter={setMediaFilter} feedLayout={feedLayout}
             newReleases={newReleases} newTV={newTV}
             streamingMovies={streamingMovies} streamingTV={streamingTV}
             getSavedData={getSavedData} onItemClick={setSelectedItem}
@@ -612,7 +612,7 @@ export default function App() {
 
         {view === 'watchlist' && (
           <JournalView
-            user={user} watched={watched} mediaFilter={mediaFilter}
+            user={user} watched={watched} mediaFilter={mediaFilter} setMediaFilter={setMediaFilter}
             userLists={userLists} listItems={listItems} activeList={activeList} setActiveList={setActiveList}
             journalTab={journalTab} setJournalTab={setJournalTab}
             profile={profile}
@@ -651,7 +651,7 @@ export default function App() {
         {view === 'upcoming' && (
           <UpcomingView
             upcomingTimeFilter={upcomingTimeFilter} setUpcomingTimeFilter={setUpcomingTimeFilter}
-            mediaFilter={mediaFilter} feedLayout={feedLayout}
+            mediaFilter={mediaFilter} setMediaFilter={setMediaFilter} feedLayout={feedLayout}
             upcoming={upcoming} upcomingTV={upcomingTV}
             onItemClick={setSelectedItem}
           />

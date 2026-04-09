@@ -382,11 +382,17 @@ export default function JournalView({
         <div className="journal-section">
           <div className="section-header-row">
             <h2 className="section-title">Journal</h2>
-            {journalTab === 'lists' && !showJournalNewList && (
-              <button className="new-list-header-btn" onClick={() => setShowJournalNewList(true)}>
-                + New List
-              </button>
-            )}
+            <div className="section-header-right">
+              <div className="mobile-filter-row">
+                <button className={mediaFilter === 'movie' ? 'active' : ''} onClick={() => setMediaFilter('movie')}>Movies</button>
+                <button className={mediaFilter === 'tv' ? 'active' : ''} onClick={() => setMediaFilter('tv')}>TV</button>
+              </div>
+              {journalTab === 'lists' && !showJournalNewList && (
+                <button className="new-list-header-btn" onClick={() => setShowJournalNewList(true)}>
+                  + New List
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="journal-tab-nav">

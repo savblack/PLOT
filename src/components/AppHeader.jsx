@@ -1,11 +1,12 @@
 import { createPortal } from 'react-dom';
 import { GENRES, REGIONS } from '../constants.js';
+import SearchBar from './SearchBar';
 
 export default function AppHeader({
   user, profile,
   view, navigateTo,
   mediaFilter, setMediaFilter,
-  searchQuery, setSearchQuery, handleSearch,
+  searchQuery, setSearchQuery, handleSearch, onResultClick,
   showProfileMenu, setShowProfileMenu,
   showMobileSearch, setShowMobileSearch,
   theme, setTheme,
@@ -48,17 +49,12 @@ export default function AppHeader({
             <button className="mobile-search-btn" onClick={() => setShowMobileSearch(true)}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="1.5"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
             </button>
-            <div className="search-pill search-small">
-              <svg className="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-              <form onSubmit={handleSearch}>
-                <input
-                  type="text"
-                  placeholder="Search..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </form>
-            </div>
+            <SearchBar
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              onSubmit={handleSearch}
+              onResultClick={onResultClick}
+            />
             {user ? (
               <div className="profile-menu-wrapper">
                 <button className="profile-avatar-btn" onClick={() => setShowProfileMenu(v => !v)}>
@@ -232,23 +228,17 @@ export default function AppHeader({
             )}
           </div>
         </div>
-        <div className="mobile-filter-row">
-          <button className={mediaFilter === 'movie' ? 'active' : ''} onClick={() => setMediaFilter('movie')}>Movies</button>
-          <button className={mediaFilter === 'tv' ? 'active' : ''} onClick={() => setMediaFilter('tv')}>TV</button>
-        </div>
       </header>
 
       {showMobileSearch && (
         <div className="mobile-search-overlay">
-          <form onSubmit={(e) => { handleSearch(e); setShowMobileSearch(false); }}>
-            <input
-              type="text"
-              placeholder="Search movies & TV..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              autoFocus
-            />
-          </form>
+          <SearchBar
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            onSubmit={(q) => { handleSearch(q); setShowMobileSearch(false); }}
+            onResultClick={(item) => { onResultClick(item); setShowMobileSearch(false); }}
+            placeholder="Search movies & TV..."
+          />
           <button className="mobile-search-cancel" onClick={() => setShowMobileSearch(false)}>Cancel</button>
         </div>
       )}

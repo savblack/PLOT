@@ -611,6 +611,12 @@
   margin-bottom: 0;
 }
 
+.section-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .section-header-row .mobile-filter-row {
   margin-bottom: 0;
 }
@@ -1974,6 +1980,7 @@
 
 /* Film strip marquee */
 .pp-filmstrip {
+  margin-top: 1rem;
   margin-bottom: 3.5rem;
   overflow: hidden;
   border-radius: var(--radius-md);
@@ -2004,6 +2011,17 @@
   flex-shrink: 0;
   border-radius: 6px;
   display: block;
+}
+
+@media (max-width: 768px) {
+  .pp-filmstrip {
+    margin-top: 2.5rem;
+    height: 220px;
+  }
+  .pp-filmstrip-track img {
+    height: 220px;
+    width: 148px;
+  }
 }
 
 /* Recently added scroll row */

@@ -2,7 +2,7 @@ import LoadingSpinner from './LoadingSpinner';
 
 export default function NewReleasesView({
   newReleasesTab, setNewReleasesTab,
-  mediaFilter, feedLayout,
+  mediaFilter, setMediaFilter, feedLayout,
   newReleases, newTV,
   streamingMovies, streamingTV,
   getSavedData, onItemClick,
@@ -20,6 +20,10 @@ export default function NewReleasesView({
     <section>
       <div className="section-header-row">
         <h2 className="section-title">New Releases</h2>
+        <div className="mobile-filter-row">
+          <button className={mediaFilter === 'movie' ? 'active' : ''} onClick={() => setMediaFilter('movie')}>Movies</button>
+          <button className={mediaFilter === 'tv' ? 'active' : ''} onClick={() => setMediaFilter('tv')}>TV</button>
+        </div>
       </div>
       <LoadingSpinner />
     </section>
@@ -29,6 +33,10 @@ export default function NewReleasesView({
     <section>
       <div className="section-header-row">
         <h2 className="section-title">New Releases</h2>
+        <div className="mobile-filter-row">
+          <button className={mediaFilter === 'movie' ? 'active' : ''} onClick={() => setMediaFilter('movie')}>Movies</button>
+          <button className={mediaFilter === 'tv' ? 'active' : ''} onClick={() => setMediaFilter('tv')}>TV</button>
+        </div>
       </div>
       <div className="journal-tab-nav">
         <button className={`journal-tab-btn ${newReleasesTab === 'all' ? 'active' : ''}`} onClick={() => setNewReleasesTab('all')}>All</button>
