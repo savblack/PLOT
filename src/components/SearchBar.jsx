@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { tmdb } from '../api/tmdb';
 import './SearchBar.css';
 
-export default function SearchBar({ searchQuery, setSearchQuery, onSubmit, onResultClick, placeholder = 'Search...' }) {
+export default function SearchBar({ searchQuery, setSearchQuery, onSubmit, onResultClick, placeholder = 'Search...', autoFocus = false }) {
   const [dropdownResults, setDropdownResults] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const containerRef = useRef(null);
@@ -72,6 +72,7 @@ export default function SearchBar({ searchQuery, setSearchQuery, onSubmit, onRes
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onFocus={() => dropdownResults.length > 0 && setShowDropdown(true)}
+            autoFocus={autoFocus}
           />
         </form>
         {searchQuery.length > 0 && (

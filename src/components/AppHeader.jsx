@@ -238,6 +238,7 @@ export default function AppHeader({
             onSubmit={(q) => { handleSearch(q); setShowMobileSearch(false); }}
             onResultClick={(item) => { onResultClick(item); setShowMobileSearch(false); }}
             placeholder="Search movies & TV..."
+            autoFocus
           />
           <button className="mobile-search-cancel" onClick={() => setShowMobileSearch(false)}>Cancel</button>
         </div>
