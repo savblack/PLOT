@@ -174,10 +174,11 @@ Rules:
           }
         );
         const json = await res.json();
+        console.log('Gemini response:', JSON.stringify(json));
         const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
         if (text) summary = text;
-      } catch {
-        // fall through to rule-based summary
+      } catch (err) {
+        console.error('Gemini error:', err);
       }
     }
 
