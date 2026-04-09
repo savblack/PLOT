@@ -136,6 +136,8 @@
   margin-top: 0.4rem;
 }
 
+.onboarding-input-valid { color: #2d7a2d; }
+
 .onboarding-skip-link {
   display: inline-block;
   margin-top: 1rem;
@@ -684,6 +686,8 @@
   color: #ccc;
   cursor: not-allowed;
 }
+
+.onboarding-seed-loading { display: flex; justify-content: center; padding: 1.5rem 0; }
 
 /* ── Spinner ─────────────────────────────────────────────── */
 .onboarding-spinner {

@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import './app.css';
 import { tmdb, setTmdbRegion } from './api/tmdb';
 import { supabase } from './api/supabase';
-import { formatDate, toDateKey, moodLabel, tlScribble } from './utils/journal.js';
 import MediaModal from './components/MediaModal';
 import AuthModal from './components/AuthModal';
 import PublicProfileView from './components/PublicProfileView';
@@ -53,11 +52,7 @@ export default function App() {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showTasteExpanded, setShowTasteExpanded] = useState(false);
   const [upcomingTimeFilter, setUpcomingTimeFilter] = useState('month');
-  const [timelineView, setTimelineView] = useState('linear');
-  const [gridTimeframe, setGridTimeframe] = useState('monthly');
-  const [gridNav, setGridNav] = useState({ month: new Date().getMonth(), year: new Date().getFullYear() });
-  const [selectedGridDay, setSelectedGridDay] = useState(null);
-  const [journalTab, setJournalTab] = useState('lists');
+  const [journalTab, setJournalTab] = useState('journal');
 
   // ── Custom hooks ────────────────────────────────────
   const { theme, setTheme, feedLayout, setFeedLayout } = useTheme();
@@ -215,7 +210,7 @@ export default function App() {
     if (nextView === 'home')      setFeedTab('foryou');
     if (nextView === 'new')       setNewReleasesTab('all');
     if (nextView === 'upcoming')  setUpcomingTimeFilter('week');
-    if (nextView === 'watchlist') setJournalTab('lists');
+    if (nextView === 'watchlist') setJournalTab('journal');
     setView(nextView);
   };
 
@@ -287,12 +282,7 @@ export default function App() {
             createList={createList} deleteList={deleteList} renameList={renameList}
             toggleListItem={toggleListItem} toggleListPublic={toggleListPublic}
             copyLink={copyLink} copiedLink={copiedLink}
-            timelineView={timelineView} setTimelineView={setTimelineView}
-            gridTimeframe={gridTimeframe} setGridTimeframe={setGridTimeframe}
-            gridNav={gridNav} setGridNav={setGridNav}
-            selectedGridDay={selectedGridDay} setSelectedGridDay={setSelectedGridDay}
             onItemClick={setSelectedItem}
-            formatDate={formatDate} toDateKey={toDateKey} moodLabel={moodLabel} tlScribble={tlScribble}
             setShowAuth={setShowAuth}
             deleteFromJournal={deleteFromJournal}
           />

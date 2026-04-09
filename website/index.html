@@ -185,6 +185,10 @@
       min-height: 44px;
     }
 
+    /* Mobile-only elements hidden by default */
+    .feat-dots { display: none; }
+    .ftp-mobile-posters { display: none; }
+
     /* Mobile nav toggle */
     .nav-hamburger {
       display: none;
@@ -898,10 +902,43 @@
         overflow-wrap: break-word;
       }
 
-      /* For the Plot — section padding */
-      #for-the-plot { padding: 5rem 1.5rem; }
+      /* Feature carousel dots */
+      .feat-dots {
+        display: flex;
+        gap: 6px;
+        justify-content: center;
+        margin-top: 1.25rem;
+        padding-right: 1.5rem;
+      }
+      .feat-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: rgba(0,0,0,0.15);
+        transition: background 0.3s;
+        flex-shrink: 0;
+      }
+      .feat-dot.active { background: var(--text); }
 
-      /* Timeline — collapse to single centered column, poster above note */
+      /* For the Plot — section padding + mobile poster grid */
+      #for-the-plot { padding: 5rem 1.5rem; }
+      .ftp-mobile-posters {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.5rem;
+        margin-top: 2rem;
+        border-radius: 16px;
+        overflow: hidden;
+      }
+      .ftp-mobile-poster {
+        aspect-ratio: 2/3;
+        background-size: cover;
+        background-position: center;
+        background-color: #ddd;
+        border-radius: 8px;
+      }
+
+      /* Timeline — collapse to single centered column, show only first 3 entries */
       #timeline-section { padding: 5rem 1.5rem; }
       .timeline-entries { margin-top: 3rem; }
       .timeline-entries::before { display: none; }
@@ -912,12 +949,14 @@
         gap: 1.2rem;
         margin-bottom: 3rem;
       }
+      .tl-entry:nth-child(n+4) { display: none; }
+      .tl-poster { width: 120px; height: 180px; }
       .tl-empty { display: none; }
       .tl-poster-wrap { order: 1; }
       .tl-note { order: 2; text-align: center; font-size: 1.2rem; }
 
       /* CTA — stack vertically */
-      #cta { padding: 5rem 1.5rem 7rem; }
+      #cta { padding: 5rem 1.5rem 4rem; }
       .cta-inner {
         flex-direction: column;
         align-items: flex-start;
@@ -925,6 +964,7 @@
       }
 
       /* Footer */
+      footer { padding-top: 3rem; }
       .footer-meta { flex-direction: column; gap: 1.5rem; align-items: flex-start; }
       .footer-links { gap: 1rem; flex-wrap: wrap; }
     }
@@ -1043,6 +1083,12 @@
       </div>
 
     </div>
+    <div class="feat-dots">
+      <span class="feat-dot active"></span>
+      <span class="feat-dot"></span>
+      <span class="feat-dot"></span>
+      <span class="feat-dot"></span>
+    </div>
   </section>
 
   <!-- ── For the Plot ─────────────────────────────────────────── -->
@@ -1052,6 +1098,14 @@
         <h2 class="ftp-headline">Your journal.<br>Your rules.</h2>
         <p class="ftp-body">Your top ten. All the series you binged in a weekend. The one dropping next month you've already cleared your schedule for. Make a list for anything.</p>
         <a href="https://app.theplot.tv/signup" class="btn btn-outline btn-large">Make it yours →</a>
+        <div class="ftp-mobile-posters">
+          <div class="ftp-mobile-poster" style="background-image:url('images/hero/saltburn.webp')"></div>
+          <div class="ftp-mobile-poster" style="background-image:url('images/hero/past-lives.webp')"></div>
+          <div class="ftp-mobile-poster" style="background-image:url('images/hero/nosferatu.webp')"></div>
+          <div class="ftp-mobile-poster" style="background-image:url('images/hero/aftersun.webp')"></div>
+          <div class="ftp-mobile-poster" style="background-image:url('images/hero/babygirl.webp')"></div>
+          <div class="ftp-mobile-poster" style="background-image:url('images/hero/the-substance.webp')"></div>
+        </div>
       </div>
       <div class="editorial-wrap" id="editorialWrap"></div>
     </div>

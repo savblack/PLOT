@@ -214,6 +214,7 @@ h1, h2, h3 {
 [data-theme="dark"] .modal-overlay {
   background: rgba(0,0,0,0.5);
 }
+.modal-overlay--crop { z-index: 10001; }
 
 [data-theme="dark"] .stack-card.empty {
   background: #1c1c1c;

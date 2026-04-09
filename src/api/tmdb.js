@@ -1,25 +1,19 @@
-const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
-const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
+const PROXY_URL = 'https://mkegtssedjyqldysvzga.supabase.co/functions/v1/tmdb-proxy';
 
 let userRegion = 'AU';
 export const setTmdbRegion = (region) => { userRegion = region; };
 
 const fetchFromTMDB = async (endpoint, params = {}) => {
-  if (!API_KEY) {
-    console.warn('TMDB API Key missing. Please set VITE_TMDB_API_KEY in .env');
-    return null;
-  }
-
   const queryParams = new URLSearchParams({
-    api_key: API_KEY,
+    path: endpoint.replace(/^\//, ''),
     language: 'en-US',
     region: userRegion,
     ...params,
   });
 
   try {
-    const response = await fetch(`${TMDB_BASE_URL}${endpoint}?${queryParams}`);
-    if (!response.ok) throw new Error(`TMDB API Error: ${response.status}`);
+    const response = await fetch(`${PROXY_URL}?${queryParams}`);
+    if (!response.ok) throw new Error(`TMDB Proxy Error: ${response.status}`);
     return await response.json();
   } catch (error) {
     console.error('TMDB Fetch Error:', error);
@@ -48,8 +42,7 @@ export const tmdb = {
         page,
       })
     ));
-    const results = pages.flatMap(p => p?.results ?? []);
-    return { results };
+    return { results: pages.flatMap(p => p?.results ?? []) };
   },
   getNowPlaying: async () => {
     const pages = await Promise.all([1, 2, 3].map(page => fetchFromTMDB('/movie/now_playing', { page })));

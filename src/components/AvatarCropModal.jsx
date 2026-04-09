@@ -73,7 +73,7 @@ export default function AvatarCropModal({ file, onConfirm, onCancel }) {
   const imgH = dims ? dims.h * base * scale : 0;
 
   return (
-    <div className="modal-overlay" style={{ zIndex: 10001 }}>
+    <div className="modal-overlay modal-overlay--crop">
       <div className="avatar-crop-modal">
         <h3>Adjust photo</h3>
 

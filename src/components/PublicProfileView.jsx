@@ -200,11 +200,11 @@ export default function PublicProfileView({ username, initialListId, onItemClick
             <div className="pp-profile-card">
               <div className="public-profile-avatar pp-avatar-large">
                 {profileData.avatar_url
-                  ? <img src={profileData.avatar_url} alt={displayName} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                  ? <img src={profileData.avatar_url} alt={displayName} className="pp-avatar-img" />
                   : displayName[0].toUpperCase()
                 }
               </div>
-              <div style={{ flex: 1 }}>
+              <div className="pp-profile-card-body">
                 <h1 className="pp-display-name">{displayName}</h1>
                 <p className="public-profile-username">@{profileData.username}</p>
                 <p className="pp-stats">
