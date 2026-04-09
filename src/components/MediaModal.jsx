@@ -543,12 +543,12 @@ export default function MediaModal({ item, onClose, onSave, savedData, userLists
         .star-btn {
           background: none;
           border: none;
-          padding: 0;
+          padding: 4px;
           cursor: pointer;
           color: #ccc;
           transition: var(--transition);
-          width: 28px;
-          height: 28px;
+          width: 36px;
+          height: 36px;
           display: flex;
           align-items: center;
           justify-content: center;
