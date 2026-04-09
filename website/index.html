@@ -1613,15 +1613,21 @@
       if (!bento) return;
 
       const getCards = () => Array.from(bento.querySelectorAll('.feat-tile'));
+      const dots = Array.from(document.querySelectorAll('.feat-dot'));
       let current = 0;
       let timer = null;
       let paused = false;
+
+      function updateDots(index) {
+        dots.forEach((d, i) => d.classList.toggle('active', i === index));
+      }
 
       function slideTo(index) {
         const cards = getCards();
         if (!cards.length) return;
         current = index % cards.length;
         bento.scrollTo({ left: cards[current].offsetLeft - bento.offsetLeft, behavior: 'smooth' });
+        updateDots(current);
       }
 
       function start() {
@@ -1650,6 +1656,7 @@
           if (dist < minDist) { minDist = dist; closest = i; }
         });
         current = closest;
+        updateDots(current);
       });
 
       start();
