@@ -1232,13 +1232,34 @@
       const seqLines = document.querySelectorAll('.mseq-line');
       const seqDots  = document.querySelectorAll('.mseq-dot');
       let seqIdx = 0;
-      setInterval(() => {
-        seqLines[seqIdx].classList.remove('active');
-        seqDots[seqIdx].classList.remove('active');
-        seqIdx = (seqIdx + 1) % seqLines.length;
-        seqLines[seqIdx].classList.add('active');
-        seqDots[seqIdx].classList.add('active');
-      }, 2400);
+      let started = false;
+
+      function startSequence() {
+        if (started) return;
+        started = true;
+        // Hold on first line for 2s, then begin cycling
+        setTimeout(() => {
+          setInterval(() => {
+            seqLines[seqIdx].classList.remove('active');
+            seqDots[seqIdx].classList.remove('active');
+            seqIdx = (seqIdx + 1) % seqLines.length;
+            seqLines[seqIdx].classList.add('active');
+            seqDots[seqIdx].classList.add('active');
+          }, 2400);
+        }, 2000);
+      }
+
+      const manifestoObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            startSequence();
+            manifestoObserver.disconnect();
+          }
+        });
+      }, { threshold: 0.5 });
+
+      const manifestoSection = document.getElementById('manifesto');
+      if (manifestoSection) manifestoObserver.observe(manifestoSection);
     }
 
     // ── Manifesto scroll-driven fade ──────────────────────────
