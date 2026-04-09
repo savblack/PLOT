@@ -1532,6 +1532,58 @@
       }
     })();
 
+    // ── Feature cards auto-slide (mobile only) ────────────────
+    (function initFeatSlider() {
+      const bento = document.querySelector('.feat-bento');
+      if (!bento) return;
+
+      const getCards = () => Array.from(bento.querySelectorAll('.feat-tile'));
+      let current = 0;
+      let timer = null;
+      let paused = false;
+
+      function slideTo(index) {
+        const cards = getCards();
+        if (!cards.length) return;
+        current = index % cards.length;
+        bento.scrollTo({ left: cards[current].offsetLeft - bento.offsetLeft, behavior: 'smooth' });
+      }
+
+      function start() {
+        if (window.innerWidth > 600) return;
+        timer = setInterval(() => {
+          if (!paused) slideTo(current + 1);
+        }, 3000);
+      }
+
+      // Pause on touch, resume after 5s of inactivity
+      bento.addEventListener('touchstart', () => {
+        paused = true;
+      }, { passive: true });
+      bento.addEventListener('touchend', () => {
+        setTimeout(() => { paused = false; }, 5000);
+      }, { passive: true });
+
+      // Update current index when user manually scrolls
+      bento.addEventListener('scrollend', () => {
+        const cards = getCards();
+        const scrollLeft = bento.scrollLeft;
+        let closest = 0;
+        let minDist = Infinity;
+        cards.forEach((card, i) => {
+          const dist = Math.abs(card.offsetLeft - bento.offsetLeft - scrollLeft);
+          if (dist < minDist) { minDist = dist; closest = i; }
+        });
+        current = closest;
+      });
+
+      start();
+      window.addEventListener('resize', () => {
+        clearInterval(timer);
+        start();
+      });
+    })();
+
   </script>
 </body>
 </html>
