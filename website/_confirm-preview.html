@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Confirmation Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Manrope', sans-serif;
+    background: #f5f5f5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .auth-panel {
+    background: white;
+    width: 480px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 2.5rem;
+    box-shadow: 0 0 60px rgba(0,0,0,0.08);
+    position: relative;
+  }
+
+  .auth-panel-logo {
+    position: absolute;
+    top: 2rem;
+    left: 2rem;
+    font-family: 'Playfair Display', serif;
+    font-size: 1.2rem;
+    color: #1a1a1a;
+    letter-spacing: -0.02em;
+  }
+
+  /* — Copied exactly from AuthPage.css — */
+  .auth-success {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    width: 100%;
+    max-width: 380px;
+  }
+
+  .auth-success-icon {
+    width: 52px;
+    height: 52px;
+    border: 0.75px solid #1a1a1a;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #1a1a1a;
+    margin-bottom: 0.25rem;
+  }
+
+  .auth-success h1 {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 1.8rem;
+    font-weight: 500;
+    letter-spacing: -0.03em;
+    color: #1a1a1a;
+  }
+
+  .auth-success p {
+    font-size: 0.92rem;
+    color: #777;
+    line-height: 1.6;
+    max-width: 300px;
+  }
+
+  .auth-success strong { color: #333; font-weight: 600; }
+
+  .auth-cta--outline {
+    background: transparent;
+    color: #1a1a1a;
+    border: 0.75px solid #1a1a1a;
+    width: auto;
+    padding: 0.75rem 1.75rem;
+    border-radius: 100px;
+    font-family: 'Manrope', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    align-self: center;
+    margin-top: 0.5rem;
+    transition: opacity 0.15s;
+  }
+  .auth-cta--outline:hover { opacity: 0.6; }
+
+  .auth-success-resend {
+    font-size: 0.82rem;
+    color: #aaa;
+    margin-top: -0.25rem;
+  }
+
+  .auth-resend-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    font-family: inherit;
+    font-size: inherit;
+    color: #777;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .auth-resend-btn:hover { color: #333; }
+  .auth-resend-btn:disabled { color: #aaa; cursor: default; text-decoration: none; }
+  .auth-resend-btn--sent { color: #22863a !important; }
+
+  /* Preview controls */
+  .state-btns {
+    position: fixed;
+    bottom: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 0.5rem;
+    background: white;
+    padding: 0.5rem 0.75rem;
+    border-radius: 100px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+    font-size: 0.72rem;
+    font-family: 'Manrope', sans-serif;
+    align-items: center;
+    color: #999;
+  }
+  .state-btns button {
+    background: none;
+    border: 1px solid #e0e0e0;
+    border-radius: 100px;
+    padding: 0.3rem 0.8rem;
+    font-size: 0.72rem;
+    font-family: 'Manrope', sans-serif;
+    cursor: pointer;
+    color: #555;
+  }
+  .state-btns button:hover { border-color: #aaa; }
+</style>
+</head>
+<body>
+
+<div class="auth-panel">
+  <span class="auth-panel-logo">PLOT</span>
+
+  <div class="auth-success">
+    <div class="auth-success-icon">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="20 6 9 17 4 12"/>
+      </svg>
+    </div>
+    <h1>Almost there!</h1>
+    <p>We sent a confirmation link to <strong>kit@theplot.tv</strong>. Click it to activate your account, then come back to sign in.</p>
+    <button class="auth-cta--outline">Back to sign in</button>
+    <p class="auth-success-resend">
+      Didn't get it? Check spam or
+      <button class="auth-resend-btn" id="resend-btn" onclick="simulateResend()">resend.</button>
+    </p>
+  </div>
+</div>
+
+<div class="state-btns">
+  Resend states:
+  <button onclick="setState('default')">default</button>
+  <button onclick="setState('sending')">sending</button>
+  <button onclick="setState('sent')">sent</button>
+  <button onclick="setState('error')">error</button>
+</div>
+
+<script>
+  function setState(s) {
+    const btn = document.getElementById('resend-btn');
+    btn.className = 'auth-resend-btn' + (s === 'sent' ? ' auth-resend-btn--sent' : '');
+    btn.disabled = s === 'sending' || s === 'sent';
+    btn.textContent = s === 'sending' ? 'sending.' : s === 'sent' ? 'sent.' : s === 'error' ? 'try again.' : 'resend.';
+  }
+  function simulateResend() {
+    setState('sending');
+    setTimeout(() => setState('sent'), 1200);
+  }
+</script>
+
+</body>
+</html>
