@@ -886,11 +886,16 @@
       }
       .feat-bento::-webkit-scrollbar { display: none; }
       .feat-tile {
-        min-width: 72vw;
+        width: 72vw;
         min-height: unset;
         padding: 1.75rem;
         scroll-snap-align: start;
         flex-shrink: 0;
+        overflow: hidden;
+      }
+      .feat-tile .feat-body {
+        word-wrap: break-word;
+        overflow-wrap: break-word;
       }
 
       /* For the Plot — section padding */
