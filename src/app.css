@@ -644,11 +644,11 @@
 .mobile-filter-row button {
   background: none;
   border: none;
-  padding: 0.5rem 1.2rem;
+  padding: 0.3rem 0.75rem;
   border-radius: var(--radius-pill);
   cursor: pointer;
   font-weight: 500;
-  font-size: 0.9rem;
+  font-size: 0.78rem;
   color: var(--text-secondary);
   transition: var(--transition);
 }
@@ -1179,6 +1179,7 @@
   cursor: pointer;
   margin-bottom: -1px;
   transition: color 0.15s, border-color 0.15s;
+  white-space: nowrap;
 }
 
 .journal-tab-btn:hover { color: var(--text-primary); }
@@ -2016,7 +2017,10 @@
 @media (max-width: 768px) {
   .pp-filmstrip {
     margin-top: 2.5rem;
+    margin-left: -2rem;
+    width: calc(100% + 4rem);
     height: 220px;
+    border-radius: 0;
   }
   .pp-filmstrip-track img {
     height: 220px;
