@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../api/supabase';
+import { GENRES } from '../constants';
 
 export default function JournalBoardTab({ watched, user, onItemClick }) {
   const [showBoard, setShowBoard] = useState(false);
@@ -313,6 +314,18 @@ Rules:
   const movieCount = watched.filter(i => (i.media_type || (i.title ? 'movie' : 'tv')) === 'movie').length;
   const statsMoviePct = statsTotal > 0 ? Math.round((movieCount / statsTotal) * 100) : null;
 
+  const genreIdToLabel = {};
+  GENRES.forEach(g => {
+    if (g.movieId) genreIdToLabel[g.movieId] = g.label;
+    if (g.tvId)   genreIdToLabel[g.tvId]    = g.label;
+  });
+  const genreCounts = {};
+  watched.forEach(i => (i.genre_ids || []).forEach(id => {
+    const label = genreIdToLabel[id];
+    if (label) genreCounts[label] = (genreCounts[label] || 0) + 1;
+  }));
+  const statsTopGenre = Object.entries(genreCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
+
   if (watched.length === 0) {
     return (
       <div className="empty-journal-state">
@@ -340,6 +353,12 @@ Rules:
             <div className="taste-stat">
               <span className="taste-stat-value">{statsTopMood}</span>
               <span className="taste-stat-label">top mood</span>
+            </div>
+          )}
+          {statsTopGenre && (
+            <div className="taste-stat">
+              <span className="taste-stat-value">{statsTopGenre}</span>
+              <span className="taste-stat-label">top genre</span>
             </div>
           )}
           {statsMoviePct !== null && (
