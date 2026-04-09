@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { tmdb } from '../api/tmdb';
+import { PRESET_MOODS } from '../constants';
 
-export default function MediaModal({ item, onClose, onSave, savedData, userLists, listItems, onCreateList, onToggleList, region = 'AU' }) {
+export default function MediaModal({ item, onClose, onSave, savedData, userLists, listItems, onCreateList, onToggleList, region = 'AU', onItemClick }) {
   const [details, setDetails] = useState(null);
   const [fetchError, setFetchError] = useState(false);
   const [rating, setRating] = useState(savedData?.rating || 0);
@@ -43,14 +44,6 @@ export default function MediaModal({ item, onClose, onSave, savedData, userLists
       document.body.style.overflow = 'unset';
     };
   }, [item]);
-
-  const PRESET_MOODS = [
-    { value: 'happy',      label: 'Happy' },
-    { value: 'sad',        label: 'Sad' },
-    { value: 'excited',    label: 'Excited' },
-    { value: 'scared',     label: 'Scared' },
-    { value: 'thoughtful', label: 'Thoughtful' },
-  ];
 
   const [showMoodDropdown, setShowMoodDropdown] = useState(false);
   const [customMoods, setCustomMoods] = useState(() => {
@@ -159,6 +152,12 @@ export default function MediaModal({ item, onClose, onSave, savedData, userLists
                 onClick={() => setActiveTab('log')}
               >
                 Log
+              </button>
+              <button
+                className={`tab-btn ${activeTab === 'similar' ? 'active' : ''}`}
+                onClick={() => setActiveTab('similar')}
+              >
+                Similar
               </button>
             </div>
 
@@ -364,6 +363,31 @@ export default function MediaModal({ item, onClose, onSave, savedData, userLists
               </div>
             )}
           </div>
+
+            {activeTab === 'similar' && (
+              <div className="tab-content similar-tab-content">
+                {details.recommendations?.results?.length > 0 ? (
+                  <div className="similar-scroll">
+                    {details.recommendations.results.slice(0, 12).map(rec => (
+                      <button
+                        key={rec.id}
+                        className="similar-card"
+                        onClick={() => onItemClick && onItemClick({ ...rec, media_type: rec.media_type || (item.media_type || (item.title ? 'movie' : 'tv')) })}
+                        type="button"
+                      >
+                        {rec.poster_path
+                          ? <img src={`https://image.tmdb.org/t/p/w185${rec.poster_path}`} alt={rec.title || rec.name} loading="lazy" />
+                          : <div className="similar-no-poster">{rec.title || rec.name}</div>
+                        }
+                        <span className="similar-title">{rec.title || rec.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="no-similar">No similar titles found.</p>
+                )}
+              </div>
+            )}
 
           <div className="poster-side">
             <img src={`https://image.tmdb.org/t/p/w500${details.poster_path}`} alt={details.title || details.name} />
@@ -1092,6 +1116,64 @@ export default function MediaModal({ item, onClose, onSave, savedData, userLists
         [data-theme="dark"] .tab-btn { color: #666; }
         [data-theme="dark"] .tab-btn:hover { color: #ccc; }
         [data-theme="dark"] .tab-btn.active { color: #f0f0f0; }
+
+        .similar-tab-content { }
+        .similar-scroll {
+          display: flex;
+          gap: 0.75rem;
+          overflow-x: auto;
+          padding-bottom: 0.5rem;
+          scrollbar-width: none;
+        }
+        .similar-scroll::-webkit-scrollbar { display: none; }
+        .similar-card {
+          flex-shrink: 0;
+          width: 90px;
+          background: none;
+          border: none;
+          cursor: pointer;
+          padding: 0;
+          text-align: left;
+          transition: transform 0.15s;
+        }
+        .similar-card:hover { transform: scale(1.04); }
+        .similar-card img {
+          width: 90px;
+          height: 135px;
+          object-fit: cover;
+          border-radius: var(--radius-md);
+          display: block;
+        }
+        .similar-no-poster {
+          width: 90px;
+          height: 135px;
+          background: #eee;
+          border-radius: var(--radius-md);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 0.65rem;
+          color: #aaa;
+          padding: 0.5rem;
+          text-align: center;
+        }
+        [data-theme="dark"] .similar-no-poster { background: #2a2a2a; color: #666; }
+        .similar-title {
+          display: block;
+          font-size: 0.72rem;
+          font-family: var(--font-sans);
+          color: var(--text-primary);
+          margin-top: 0.35rem;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          max-width: 90px;
+        }
+        .no-similar {
+          font-size: 0.85rem;
+          color: var(--text-secondary);
+          margin-top: 0.5rem;
+        }
       `}</style>
     </div>
   );

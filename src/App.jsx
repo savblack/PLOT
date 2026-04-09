@@ -5,7 +5,6 @@ import { tmdb, setTmdbRegion } from './api/tmdb';
 import { supabase } from './api/supabase';
 import { GENRES } from './constants.js';
 import { formatDate, toDateKey, moodLabel, tlScribble } from './utils/journal.js';
-import { sampleImageCorner } from './utils/imageUtils.js';
 import MediaModal from './components/MediaModal';
 import AuthModal from './components/AuthModal';
 import PublicProfileView from './components/PublicProfileView';
@@ -306,10 +305,10 @@ export default function App() {
     loadForYou();
   }, [watched, preferences.genres]);
 
-  const handleSearch = async (e) => {
-    e.preventDefault();
-    if (!searchQuery.trim()) return;
-    const data = await tmdb.search(searchQuery);
+  const handleSearch = async (query) => {
+    const q = typeof query === 'string' ? query : searchQuery;
+    if (!q.trim()) return;
+    const data = await tmdb.search(q);
     if (data) {
       setSearchResults(data.results);
       setView('search');
@@ -568,7 +567,7 @@ export default function App() {
         user={user} profile={profile}
         view={view} navigateTo={navigateTo}
         mediaFilter={mediaFilter} setMediaFilter={setMediaFilter}
-        searchQuery={searchQuery} setSearchQuery={setSearchQuery} handleSearch={handleSearch}
+        searchQuery={searchQuery} setSearchQuery={setSearchQuery} handleSearch={handleSearch} onResultClick={setSelectedItem}
         showProfileMenu={showProfileMenu} setShowProfileMenu={setShowProfileMenu}
         showMobileSearch={showMobileSearch} setShowMobileSearch={setShowMobileSearch}
         theme={theme} setTheme={setTheme}
@@ -661,6 +660,7 @@ export default function App() {
 
       {selectedItem && (
         <MediaModal
+          key={selectedItem.id}
           item={selectedItem}
           region={preferences.region || 'AU'}
           savedData={getSavedData(selectedItem.id)}
@@ -670,6 +670,7 @@ export default function App() {
           onToggleList={(listId, isAdding) => toggleListItem(listId, selectedItem, isAdding)}
           onSave={saveToWatched}
           onClose={() => setSelectedItem(null)}
+          onItemClick={setSelectedItem}
         />
       )}
 

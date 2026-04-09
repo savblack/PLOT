@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../api/supabase';
 import { tmdb } from '../api/tmdb';
-import { GENRES, REGIONS } from '../constants';
+import { GENRES, REGIONS, TIMEZONE_TO_REGION } from '../constants';
 import ImportModal from '../components/ImportModal';
 import PlotLoader from '../components/PlotLoader';
 import './OnboardingFlow.css';
@@ -11,28 +11,7 @@ const TOTAL_STEPS = 5;
 
 const timezoneToRegion = (tz) => {
   if (tz.startsWith('Australia/')) return 'AU';
-  if (tz.includes('New_York') || tz.includes('Chicago') || tz.includes('Los_Angeles') || tz.includes('Denver') || tz.includes('Phoenix')) return 'US';
-  if (tz.includes('London')) return 'GB';
-  if (tz.includes('Toronto') || tz.includes('Vancouver') || tz.includes('Edmonton') || tz.includes('Winnipeg')) return 'CA';
-  if (tz.includes('Auckland')) return 'NZ';
-  if (tz.includes('Dublin')) return 'IE';
-  if (tz.includes('Berlin')) return 'DE';
-  if (tz.includes('Paris')) return 'FR';
-  if (tz.includes('Madrid')) return 'ES';
-  if (tz.includes('Rome')) return 'IT';
-  if (tz.includes('Amsterdam')) return 'NL';
-  if (tz.includes('Stockholm')) return 'SE';
-  if (tz.includes('Oslo')) return 'NO';
-  if (tz.includes('Copenhagen')) return 'DK';
-  if (tz.includes('Helsinki')) return 'FI';
-  if (tz.includes('Tokyo')) return 'JP';
-  if (tz.includes('Seoul')) return 'KR';
-  if (tz.includes('Kolkata') || tz.includes('Calcutta')) return 'IN';
-  if (tz.includes('Singapore')) return 'SG';
-  if (tz.includes('Sao_Paulo')) return 'BR';
-  if (tz.includes('Mexico_City')) return 'MX';
-  if (tz.includes('Johannesburg')) return 'ZA';
-  return null;
+  return TIMEZONE_TO_REGION[tz] ?? null;
 };
 
 export default function OnboardingFlow() {
@@ -269,9 +248,6 @@ export default function OnboardingFlow() {
 
     setSaving(false);
     setPersonalizing(true);
-
-    // Taste profile generation via Edge Function — wired up post-launch
-    // supabase.functions.invoke('generate-taste-profile', { body: { genres: selectedGenres, seedTitles: seedTitles.map(t => t.title), region: selectedRegion } });
 
     setTimeout(() => navigate('/app', { replace: true }), 2000);
   };

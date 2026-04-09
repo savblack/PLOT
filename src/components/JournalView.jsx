@@ -1,32 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import ImportModal from './ImportModal';
-
-const MOODS = [
-  { value: 'happy',         label: 'Happy' },
-  { value: 'sad',           label: 'Sad' },
-  { value: 'emotional',     label: 'Emotional' },
-  { value: 'excited',       label: 'Excited' },
-  { value: 'fun',           label: 'Fun' },
-  { value: 'tense',         label: 'Tense' },
-  { value: 'scared',        label: 'Scared' },
-  { value: 'unsettled',     label: 'Unsettled' },
-  { value: 'weird',         label: 'Weird' },
-  { value: 'cosy',          label: 'Cosy' },
-  { value: 'thoughtful',    label: 'Thoughtful' },
-  { value: 'inspired',      label: 'Inspired' },
-  { value: 'intense',       label: 'Intense' },
-  { value: 'stressed',      label: 'Stressed' },
-  { value: 'epic',          label: 'Epic' },
-  { value: 'haunted',       label: 'Haunted' },
-  { value: 'nostalgic',     label: 'Nostalgic' },
-  { value: 'melancholy',    label: 'Melancholy' },
-  { value: 'gripped',       label: 'Gripped' },
-  { value: 'shocked',       label: 'Shocked' },
-  { value: 'uncomfortable', label: 'Uncomfortable' },
-  { value: 'meh',           label: 'Meh' },
-  { value: 'amazing',       label: 'Amazing' },
-  { value: 'mindblown',     label: 'Mind Blown' },
-];
+import { MOODS } from '../constants';
 
 function ListStack({ list, items, onListClick }) {
   const [activeIdx, setActiveIdx] = useState(0);
@@ -123,7 +97,7 @@ function ListStack({ list, items, onListClick }) {
 }
 
 export default function JournalView({
-  user, watched, mediaFilter,
+  user, watched, mediaFilter, setMediaFilter,
   userLists, listItems, activeList, setActiveList,
   journalTab, setJournalTab,
   profile,

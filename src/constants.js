@@ -13,6 +13,71 @@ export const GENRES = [
   { key: 'documentary', label: 'Documentary', movieId: 99,    tvId: 99,    desc: 'Real stories, real world.'   },
 ];
 
+export const MOODS = [
+  { value: 'happy',         label: 'Happy' },
+  { value: 'sad',           label: 'Sad' },
+  { value: 'emotional',     label: 'Emotional' },
+  { value: 'excited',       label: 'Excited' },
+  { value: 'fun',           label: 'Fun' },
+  { value: 'tense',         label: 'Tense' },
+  { value: 'scared',        label: 'Scared' },
+  { value: 'unsettled',     label: 'Unsettled' },
+  { value: 'weird',         label: 'Weird' },
+  { value: 'cosy',          label: 'Cosy' },
+  { value: 'thoughtful',    label: 'Thoughtful' },
+  { value: 'inspired',      label: 'Inspired' },
+  { value: 'intense',       label: 'Intense' },
+  { value: 'stressed',      label: 'Stressed' },
+  { value: 'epic',          label: 'Epic' },
+  { value: 'haunted',       label: 'Haunted' },
+  { value: 'nostalgic',     label: 'Nostalgic' },
+  { value: 'melancholy',    label: 'Melancholy' },
+  { value: 'gripped',       label: 'Gripped' },
+  { value: 'shocked',       label: 'Shocked' },
+  { value: 'uncomfortable', label: 'Uncomfortable' },
+  { value: 'meh',           label: 'Meh' },
+  { value: 'amazing',       label: 'Amazing' },
+  { value: 'mindblown',     label: 'Mind Blown' },
+];
+
+// Subset shown as quick-pick presets in the log modal
+export const PRESET_MOODS = MOODS.filter(m =>
+  ['happy', 'sad', 'excited', 'scared', 'thoughtful'].includes(m.value)
+);
+
+export const TIMEZONE_TO_REGION = {
+  'Australia/': 'AU',        // prefix match handled in timezoneToRegion()
+  'America/New_York': 'US',
+  'America/Chicago': 'US',
+  'America/Los_Angeles': 'US',
+  'America/Denver': 'US',
+  'America/Phoenix': 'US',
+  'Europe/London': 'GB',
+  'America/Toronto': 'CA',
+  'America/Vancouver': 'CA',
+  'America/Edmonton': 'CA',
+  'America/Winnipeg': 'CA',
+  'Pacific/Auckland': 'NZ',
+  'Europe/Dublin': 'IE',
+  'Europe/Berlin': 'DE',
+  'Europe/Paris': 'FR',
+  'Europe/Madrid': 'ES',
+  'Europe/Rome': 'IT',
+  'Europe/Amsterdam': 'NL',
+  'Europe/Stockholm': 'SE',
+  'Europe/Oslo': 'NO',
+  'Europe/Copenhagen': 'DK',
+  'Europe/Helsinki': 'FI',
+  'Asia/Tokyo': 'JP',
+  'Asia/Seoul': 'KR',
+  'Asia/Kolkata': 'IN',
+  'Asia/Calcutta': 'IN',
+  'Asia/Singapore': 'SG',
+  'America/Sao_Paulo': 'BR',
+  'America/Mexico_City': 'MX',
+  'Africa/Johannesburg': 'ZA',
+};
+
 export const REGIONS = [
   { code: 'AU', name: 'Australia' },
   { code: 'US', name: 'United States' },
