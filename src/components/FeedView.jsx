@@ -9,7 +9,6 @@ export default function FeedView({
   mediaFilter, setMediaFilter, feedLayout,
   preferences, user,
   getSavedData, onItemClick, onNavigateToProfile,
-  onDismiss, refreshForYou, forYouMoodFilter, setForYouMoodFilter, userMoods,
 }) {
   const [selectedGenre, setSelectedGenre] = useState(null);
   const [browseResults, setBrowseResults] = useState([]);
@@ -33,12 +32,7 @@ export default function FeedView({
   return (
     <section>
       <div className="section-header-row">
-        <h2 className="section-title">
-          Feed
-          {feedTab === 'foryou' && (
-            <button className="feed-refresh-btn" onClick={refreshForYou} title="Refresh">↻</button>
-          )}
-        </h2>
+        <h2 className="section-title">Feed</h2>
         <div className="mobile-filter-row">
           <button className={mediaFilter === 'movie' ? 'active' : ''} onClick={() => setMediaFilter('movie')}>Movies</button>
           <button className={mediaFilter === 'tv' ? 'active' : ''} onClick={() => setMediaFilter('tv')}>TV</button>
@@ -51,17 +45,6 @@ export default function FeedView({
         <button className={`journal-tab-btn ${feedTab === 'browse' ? 'active' : ''}`} onClick={() => setFeedTab('browse')}>Browse</button>
       </div>
 
-      {feedTab === 'foryou' && userMoods && userMoods.length > 0 && (
-        <div className="mood-filter-row">
-          {userMoods.map(m => (
-            <button
-              key={m}
-              className={`mood-filter-pill ${forYouMoodFilter === m ? 'active' : ''}`}
-              onClick={() => setForYouMoodFilter(forYouMoodFilter === m ? null : m)}
-            >{m}</button>
-          ))}
-        </div>
-      )}
 
       {feedTab === 'browse' ? (
         <div className="browse-tab">
