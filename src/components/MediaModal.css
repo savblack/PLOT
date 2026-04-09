@@ -533,6 +533,13 @@ textarea:focus { border-color: #ccc; }
 }
 
 /* Similar tab */
+.similar-heading {
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+}
+
 .similar-scroll {
   display: flex;
   gap: 0.75rem;

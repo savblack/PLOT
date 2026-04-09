@@ -233,6 +233,7 @@ export default function MediaModal({ item, onClose, onSave, savedData, userLists
 
             {activeTab === 'similar' && (
               <div className="tab-content similar-tab-content">
+                <p className="similar-heading">More like {details.title || details.name}.</p>
                 {details.recommendations?.results?.length > 0 ? (
                   <div className="similar-scroll">
                     {details.recommendations.results.slice(0, 12).map(rec => (
