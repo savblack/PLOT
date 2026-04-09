@@ -168,7 +168,7 @@ Rules:
 - End with something that feels like it sees them`;
 
         const res = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -368,10 +368,7 @@ Rules:
             {aiLoading ? 'Generating…' : aiJournal ? 'Regenerate' : 'Generate'}
           </button>
 
-          {aiError && (
-            <p style={{ color: 'red', fontSize: '0.8rem', marginBottom: '1rem' }}>{aiError}</p>
-          )}
-          {aiJournal?.summary && (
+{aiJournal?.summary && (
             <p className="ai-journal-summary">{aiJournal.summary}</p>
           )}
 
