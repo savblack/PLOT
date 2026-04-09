@@ -105,6 +105,15 @@ export const tmdb = {
       'vote_count.gte': 100,
     });
   },
+  discoverTopRatedByGenres: (type, genreIds) => {
+    if (!genreIds.length) return Promise.resolve(null);
+    return fetchFromTMDB(`/discover/${type}`, {
+      with_genres: genreIds.join('|'),
+      sort_by: 'vote_average.desc',
+      'vote_count.gte': 300,
+    });
+  },
+  getTopRated: (type) => fetchFromTMDB(`/${type}/top_rated`),
   getWatchProvidersForRegion: (type, region) =>
     fetchFromTMDB(`/watch/providers/${type}`, { watch_region: region }),
   discoverByProviders: (type, providerIds, region) =>

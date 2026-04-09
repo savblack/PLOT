@@ -74,8 +74,10 @@ export default function App() {
     toggleListItem, deleteFromJournal, toggleListPublic,
   } = useJournalData(user, () => setShowAuth(true));
 
-  const { forYouFeed, followingFeed, followingFeedLoaded, setFollowingFeedLoaded } =
-    useForYouFeed({ watched, preferences, user, feedTab });
+  const {
+    forYouFeed, followingFeed, followingFeedLoaded, setFollowingFeedLoaded,
+    refreshForYou, onDismiss, moodFilter, setMoodFilter, userMoods,
+  } = useForYouFeed({ watched, preferences, user, feedTab });
 
   // ── Auth init ───────────────────────────────────────
   useEffect(() => {
@@ -254,6 +256,11 @@ export default function App() {
             followingFeed={followingFeed} followingLoading={!followingFeedLoaded} user={user}
             getSavedData={getSavedData} onItemClick={setSelectedItem}
             onNavigateToProfile={(uname) => { setPublicProfileUsername(uname); setView('public'); navigate(`/u/${uname}`); }}
+            onDismiss={onDismiss}
+            refreshForYou={refreshForYou}
+            forYouMoodFilter={moodFilter}
+            setForYouMoodFilter={setMoodFilter}
+            userMoods={userMoods}
           />
         )}
 

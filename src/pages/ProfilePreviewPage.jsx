@@ -171,7 +171,7 @@ export default function ProfilePreviewPage() {
       <div className="pp-filmstrip">
         <div className="pp-filmstrip-track">
           {filmstrip.map((p, i) => (
-            <img key={i} src={`https://image.tmdb.org/t/p/w92${p}`} alt="" />
+            <img key={i} src={`https://image.tmdb.org/t/p/w185${p}`} alt="" />
           ))}
         </div>
       </div>

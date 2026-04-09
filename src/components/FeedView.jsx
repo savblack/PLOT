@@ -9,22 +9,22 @@ export default function FeedView({
   mediaFilter, setMediaFilter, feedLayout,
   preferences, user,
   getSavedData, onItemClick, onNavigateToProfile,
+  onDismiss, refreshForYou, forYouMoodFilter, setForYouMoodFilter, userMoods,
 }) {
   const [selectedGenre, setSelectedGenre] = useState(null);
-  const [browseType, setBrowseType] = useState('movie');
   const [browseResults, setBrowseResults] = useState([]);
   const [browseLoading, setBrowseLoading] = useState(false);
 
   useEffect(() => {
     if (feedTab !== 'browse' || !selectedGenre) return;
-    const genreId = browseType === 'movie' ? selectedGenre.movieId : selectedGenre.tvId;
+    const genreId = mediaFilter === 'movie' ? selectedGenre.movieId : selectedGenre.tvId;
     if (!genreId) return;
     setBrowseLoading(true);
-    tmdb.discoverByGenres(browseType, [genreId]).then(data => {
-      setBrowseResults((data?.results || []).map(i => ({ ...i, media_type: browseType })));
+    tmdb.discoverByGenres(mediaFilter, [genreId]).then(data => {
+      setBrowseResults((data?.results || []).map(i => ({ ...i, media_type: mediaFilter })));
       setBrowseLoading(false);
     });
-  }, [selectedGenre, browseType, feedTab]);
+  }, [selectedGenre, mediaFilter, feedTab]);
 
   const activeItems = feedTab === 'trending' ? trending
     : feedTab === 'following' ? followingFeed
@@ -33,13 +33,16 @@ export default function FeedView({
   return (
     <section>
       <div className="section-header-row">
-        <h2 className="section-title">Feed</h2>
-        {feedTab !== 'browse' && (
-          <div className="mobile-filter-row">
-            <button className={mediaFilter === 'movie' ? 'active' : ''} onClick={() => setMediaFilter('movie')}>Movies</button>
-            <button className={mediaFilter === 'tv' ? 'active' : ''} onClick={() => setMediaFilter('tv')}>TV</button>
-          </div>
-        )}
+        <h2 className="section-title">
+          Feed
+          {feedTab === 'foryou' && (
+            <button className="feed-refresh-btn" onClick={refreshForYou} title="Refresh">↻</button>
+          )}
+        </h2>
+        <div className="mobile-filter-row">
+          <button className={mediaFilter === 'movie' ? 'active' : ''} onClick={() => setMediaFilter('movie')}>Movies</button>
+          <button className={mediaFilter === 'tv' ? 'active' : ''} onClick={() => setMediaFilter('tv')}>TV</button>
+        </div>
       </div>
       <div className="journal-tab-nav">
         <button className={`journal-tab-btn ${feedTab === 'foryou' ? 'active' : ''}`} onClick={() => setFeedTab('foryou')}>For You</button>
@@ -48,24 +51,30 @@ export default function FeedView({
         <button className={`journal-tab-btn ${feedTab === 'browse' ? 'active' : ''}`} onClick={() => setFeedTab('browse')}>Browse</button>
       </div>
 
+      {feedTab === 'foryou' && userMoods && userMoods.length > 0 && (
+        <div className="mood-filter-row">
+          {userMoods.map(m => (
+            <button
+              key={m}
+              className={`mood-filter-pill ${forYouMoodFilter === m ? 'active' : ''}`}
+              onClick={() => setForYouMoodFilter(forYouMoodFilter === m ? null : m)}
+            >{m}</button>
+          ))}
+        </div>
+      )}
+
       {feedTab === 'browse' ? (
         <div className="browse-tab">
-          <div className="browse-controls">
-            <div className="genre-pill-row">
-              {GENRES.map(g => (
-                <button
-                  key={g.key}
-                  className={`genre-pill ${selectedGenre?.key === g.key ? 'active' : ''}`}
-                  onClick={() => setSelectedGenre(selectedGenre?.key === g.key ? null : g)}
-                >
-                  {g.label}
-                </button>
-              ))}
-            </div>
-            <div className="browse-type-toggle">
-              <button className={browseType === 'movie' ? 'active' : ''} onClick={() => setBrowseType('movie')}>Movies</button>
-              <button className={browseType === 'tv' ? 'active' : ''} onClick={() => setBrowseType('tv')}>TV</button>
-            </div>
+          <div className="genre-pill-row">
+            {GENRES.map(g => (
+              <button
+                key={g.key}
+                className={`genre-pill ${selectedGenre?.key === g.key ? 'active' : ''}`}
+                onClick={() => setSelectedGenre(selectedGenre?.key === g.key ? null : g)}
+              >
+                {g.label}
+              </button>
+            ))}
           </div>
 
           {!selectedGenre ? (
@@ -118,6 +127,9 @@ export default function FeedView({
                   <div className="overlay">
                     <h3>{item.title || item.name}</h3>
                     {getSavedData(item.id) && <span className="watched-dot" />}
+                    {item.fromNetwork && (
+                      <span className="network-label">from your network</span>
+                    )}
                   </div>
                   {item.profile && (
                     <button
@@ -127,6 +139,13 @@ export default function FeedView({
                       @{item.profile.username}
                     </button>
                   )}
+                  {feedTab === 'foryou' && (
+                    <button
+                      className="dismiss-btn"
+                      onClick={e => { e.stopPropagation(); onDismiss(item.id); }}
+                      title="Not interested"
+                    >×</button>
+                  )}
                 </div>
               ))}
             </div>
@@ -135,17 +154,11 @@ export default function FeedView({
       )}
 
       <style>{`
-        .browse-tab { }
-        .browse-controls {
-          display: flex;
-          flex-direction: column;
-          gap: 0.75rem;
-          margin-bottom: 1.5rem;
-        }
         .genre-pill-row {
           display: flex;
           flex-wrap: wrap;
           gap: 0.4rem;
+          margin-bottom: 1.5rem;
         }
         .genre-pill {
           padding: 0.35rem 0.85rem;
@@ -163,32 +176,73 @@ export default function FeedView({
         [data-theme="dark"] .genre-pill { border-color: #333; color: #888; }
         [data-theme="dark"] .genre-pill:hover { border-color: #666; color: #ccc; }
         [data-theme="dark"] .genre-pill.active { background: #f0f0f0; border-color: #f0f0f0; color: #111; }
-        .browse-type-toggle {
-          display: flex;
-          gap: 0;
-          border: 1px solid #e0e0e0;
-          border-radius: var(--radius-pill);
-          overflow: hidden;
-          width: fit-content;
-        }
-        .browse-type-toggle button {
-          padding: 0.3rem 1rem;
-          background: transparent;
-          border: none;
-          font-size: 0.78rem;
-          font-family: var(--font-sans);
-          cursor: pointer;
-          color: var(--text-secondary);
-          transition: background 0.15s, color 0.15s;
-        }
-        .browse-type-toggle button.active { background: #111; color: white; }
-        [data-theme="dark"] .browse-type-toggle { border-color: #333; }
-        [data-theme="dark"] .browse-type-toggle button.active { background: #f0f0f0; color: #111; }
         .browse-empty-state {
           color: var(--text-secondary);
           font-size: 0.9rem;
           margin-top: 2rem;
           text-align: center;
+        }
+        .mood-filter-row {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.4rem;
+          margin-bottom: 1rem;
+        }
+        .mood-filter-pill {
+          padding: 0.35rem 0.85rem;
+          border-radius: var(--radius-pill);
+          border: 1px solid #ddd;
+          background: transparent;
+          font-size: 0.8rem;
+          font-family: var(--font-sans);
+          cursor: pointer;
+          transition: background 0.15s, border-color 0.15s, color 0.15s;
+          color: var(--text-secondary);
+        }
+        .mood-filter-pill:hover { border-color: #999; color: var(--text-primary); }
+        .mood-filter-pill.active { background: #111; border-color: #111; color: white; }
+        [data-theme="dark"] .mood-filter-pill { border-color: #333; color: #888; }
+        [data-theme="dark"] .mood-filter-pill:hover { border-color: #666; color: #ccc; }
+        [data-theme="dark"] .mood-filter-pill.active { background: #f0f0f0; border-color: #f0f0f0; color: #111; }
+        .feed-refresh-btn {
+          background: none;
+          border: none;
+          cursor: pointer;
+          font-size: 1.1rem;
+          color: var(--text-secondary);
+          padding: 0 0 0 0.5rem;
+          line-height: 1;
+          vertical-align: middle;
+        }
+        .feed-refresh-btn:hover { color: var(--text-primary); }
+        .bento-item { position: relative; }
+        .dismiss-btn {
+          position: absolute;
+          top: 0.4rem;
+          right: 0.4rem;
+          background: rgba(0,0,0,0.55);
+          border: none;
+          color: white;
+          font-size: 1rem;
+          line-height: 1;
+          width: 1.5rem;
+          height: 1.5rem;
+          border-radius: 50%;
+          cursor: pointer;
+          display: none;
+          align-items: center;
+          justify-content: center;
+          z-index: 10;
+        }
+        .bento-item:hover .dismiss-btn { display: flex; }
+        .network-label {
+          display: inline-block;
+          font-size: 0.65rem;
+          color: #aaa;
+          background: rgba(0,0,0,0.4);
+          border-radius: 3px;
+          padding: 0.1rem 0.3rem;
+          margin-top: 0.2rem;
         }
       `}</style>
     </section>
