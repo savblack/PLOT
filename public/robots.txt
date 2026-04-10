@@ -1,0 +1,18 @@
+User-agent: *
+
+# Public-facing routes — allow indexing
+Allow: /$
+Allow: /u/
+Allow: /terms
+Allow: /privacy
+
+# App and auth routes — no value to crawl
+Disallow: /app
+Disallow: /app/
+Disallow: /onboarding
+Disallow: /auth/
+Disallow: /login
+Disallow: /signup
+Disallow: /reset-password
+
+Sitemap: https://app.theplot.tv/sitemap.xml

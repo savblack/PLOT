@@ -20,6 +20,7 @@ export default function AppHeader({
   setShowImportModal,
   logout, setShowAuth,
   avatarInputRef, setCropFile,
+  onDeleteAccount,
 }) {
   const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
@@ -218,6 +219,9 @@ export default function AppHeader({
                       </div>
                       <button className="profile-dropdown-item danger" onClick={() => { logout(); setShowProfileMenu(false); }}>
                         Sign Out
+                      </button>
+                      <button className="profile-dropdown-item danger" style={{ fontSize: '0.75rem', opacity: 0.6 }} onClick={() => { setShowProfileMenu(false); onDeleteAccount?.(); }}>
+                        Delete account
                       </button>
                     </div>
                   </>,

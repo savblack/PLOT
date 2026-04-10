@@ -1,0 +1,18 @@
+{
+  "name": "Plot — Your Film & TV Journal",
+  "short_name": "Plot",
+  "description": "The beautiful way to track what you watch. Log, rate, and share your film and TV taste.",
+  "start_url": "/app",
+  "display": "standalone",
+  "background_color": "#111111",
+  "theme_color": "#111111",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

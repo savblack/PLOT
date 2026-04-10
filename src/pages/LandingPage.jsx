@@ -277,7 +277,7 @@ export default function LandingPage() {
               <div
                 key={f.id}
                 className={`feat-img${activeFeature === f.id ? ' active' : ''}`}
-                style={{ backgroundImage: "url('/plot-product.png')" }}
+                style={{  }}
               />
             ))}
           </div>

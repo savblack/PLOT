@@ -37,6 +37,8 @@ export default function App() {
   const [showImportModal, setShowImportModal] = useState(false);
   const avatarInputRef = useRef(null);
   const [cropFile, setCropFile] = useState(null);
+  const [errorToast, setErrorToast] = useState(null);
+  const toastTimerRef = useRef(null);
 
   // ── UI state ─────────────────────────────────────────
   const [view, setView] = useState('home');
@@ -67,7 +69,11 @@ export default function App() {
     getSavedData, saveToWatched,
     createList, deleteList, renameList,
     toggleListItem, deleteFromJournal, toggleListPublic,
-  } = useJournalData(user, () => setShowAuth(true));
+  } = useJournalData(user, () => setShowAuth(true), (msg) => {
+    clearTimeout(toastTimerRef.current);
+    setErrorToast(msg);
+    toastTimerRef.current = setTimeout(() => setErrorToast(null), 3500);
+  });
 
   const {
     forYouFeed, followingFeed, followingFeedLoaded, setFollowingFeedLoaded,
@@ -219,6 +225,19 @@ export default function App() {
     setWatched([]);
   };
 
+  const deleteAccount = async () => {
+    if (!user) return;
+    if (!window.confirm('Permanently delete your account and all data? This cannot be undone.')) return;
+    const { error } = await supabase.functions.invoke('delete-account');
+    if (error) {
+      clearTimeout(toastTimerRef.current);
+      setErrorToast('Failed to delete account. Please try again.');
+      toastTimerRef.current = setTimeout(() => setErrorToast(null), 3500);
+      return;
+    }
+    logout();
+  };
+
   return (
     <div className="app-container">
       <AppHeader
@@ -239,6 +258,7 @@ export default function App() {
         setShowImportModal={setShowImportModal}
         logout={logout} setShowAuth={setShowAuth}
         avatarInputRef={avatarInputRef} setCropFile={setCropFile}
+        onDeleteAccount={deleteAccount}
       />
 
       <main className="content-grid animate-in">
@@ -352,6 +372,17 @@ export default function App() {
           onConfirm={blob => { uploadAvatar(blob); setCropFile(null); }}
           onCancel={() => setCropFile(null)}
         />
+      )}
+
+      {errorToast && (
+        <div style={{
+          position: 'fixed', bottom: '5rem', left: '50%', transform: 'translateX(-50%)',
+          background: '#222', color: '#fff', padding: '0.75rem 1.25rem',
+          borderRadius: '8px', fontSize: '0.875rem', zIndex: 9999,
+          boxShadow: '0 4px 16px rgba(0,0,0,0.3)', pointerEvents: 'none',
+        }}>
+          {errorToast}
+        </div>
       )}
 
       <nav className="bottom-tab-bar">

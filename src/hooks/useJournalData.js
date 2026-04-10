@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../api/supabase';
 
-export function useJournalData(user, onAuthRequired) {
+export function useJournalData(user, onAuthRequired, onError) {
   const [watched, setWatched] = useState(() => {
     try { return JSON.parse(localStorage.getItem('plot-watched') || '[]'); } catch { return []; }
   });
@@ -95,9 +95,9 @@ export function useJournalData(user, onAuthRequired) {
 
   const deleteList = async (listId) => {
     const { error: itemsError } = await supabase.from('list_items').delete().match({ list_id: listId });
-    if (itemsError) { console.error('deleteList items error:', itemsError); alert('Failed to delete list. Please try again.'); return; }
+    if (itemsError) { console.error('deleteList items error:', itemsError); onError?.('Failed to delete list. Please try again.'); return; }
     const { error: listError } = await supabase.from('lists').delete().match({ id: listId });
-    if (listError) { console.error('deleteList error:', listError); alert('Failed to delete list. Please try again.'); return; }
+    if (listError) { console.error('deleteList error:', listError); onError?.('Failed to delete list. Please try again.'); return; }
     setUserLists(prev => prev.filter(l => l.id !== listId));
     setListItems(prev => prev.filter(li => li.list_id !== listId));
     setActiveList(null);
@@ -140,7 +140,7 @@ export function useJournalData(user, onAuthRequired) {
   const deleteFromJournal = async (tmdbIds) => {
     if (!user) return;
     const { error: journalError } = await supabase.from('journal').delete().in('tmdb_id', tmdbIds);
-    if (journalError) { console.error('deleteFromJournal error:', journalError); alert('Failed to delete entry. Please try again.'); return; }
+    if (journalError) { console.error('deleteFromJournal error:', journalError); onError?.('Failed to delete entry. Please try again.'); return; }
     await supabase.from('list_items').delete().in('tmdb_id', tmdbIds).eq('user_id', user.id);
     setWatched(prev => prev.filter(w => !tmdbIds.includes(w.tmdb_id || w.id)));
     setListItems(prev => prev.filter(li => !tmdbIds.includes(li.tmdb_id)));
