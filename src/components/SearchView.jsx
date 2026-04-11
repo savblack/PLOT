@@ -13,7 +13,13 @@ export default function SearchView({ searchResults, onItemClick, mediaFilter }) 
               <img src={`https://image.tmdb.org/t/p/w342${item.poster_path}`} alt={item.title || item.name} loading="lazy" decoding="async" />
             ) : <div className="no-image">{item.title || item.name}</div>}
             <div className="overlay">
+              {(item.release_date || item.first_air_date) && (
+                <div className="overlay-year">{(item.release_date || item.first_air_date).slice(0, 4)}</div>
+              )}
               <h3>{item.title || item.name}</h3>
+              {item.vote_average > 0 && (
+                <div className="overlay-rating">★ {item.vote_average.toFixed(1)}</div>
+              )}
             </div>
           </div>
         ))}

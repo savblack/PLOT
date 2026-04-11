@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plot — Private Profile Mockups (Signed In)</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f4f4f2;
+    padding: 3rem 2rem;
+    color: #111;
+  }
+  .page { max-width: 860px; margin: 0 auto; display: flex; flex-direction: column; gap: 5rem; }
+
+  .label {
+    font-size: 0.72rem;
+    font-weight: 400;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #999;
+    margin-bottom: 0.75rem;
+  }
+
+  /* ── Shared hero stub ── */
+  .hero {
+    border: 1px solid #e0e0e0;
+    border-radius: 16px;
+    padding: 1.75rem 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    margin-bottom: 0.5rem;
+    background: #fff;
+  }
+  .avatar {
+    width: 56px; height: 56px; border-radius: 50%;
+    background: #e8e8e8; flex-shrink: 0;
+  }
+  .hero-body { flex: 1; }
+  .hero-name { font-size: 1.8rem; font-family: Georgia, serif; font-weight: 500; letter-spacing: -0.02em; color: #111; }
+  .hero-username { font-size: 0.82rem; color: #999; margin-top: 0.15rem; }
+  .hero-stats { font-size: 0.75rem; color: #aaa; margin-top: 0.3rem; }
+  .hero-actions { display: flex; gap: 0.5rem; align-items: center; }
+  .btn-follow {
+    background: #111; color: #fff; border: 1px solid #111;
+    padding: 0.5rem 1.25rem; border-radius: 999px;
+    font-size: 0.83rem; cursor: pointer;
+  }
+  .btn-follow.following {
+    background: transparent; color: #111; border: 1px solid #ccc;
+  }
+  .btn-icon {
+    width: 34px; height: 34px; border-radius: 50%;
+    border: 1px solid #ddd; background: transparent;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: #999;
+  }
+
+  /* ── OPTION A: Lock card — minimal, centred ── */
+  .lock-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 3rem 1rem;
+    text-align: center;
+  }
+  .lock-icon {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: transparent;
+    border: 1px solid #ddd;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 0.25rem;
+  }
+  .lock-title { font-size: 0.95rem; font-weight: 500; color: #111; }
+  .lock-sub { font-size: 0.85rem; color: #999; max-width: 260px; line-height: 1.5; }
+  .btn-request {
+    margin-top: 0.5rem;
+    background: transparent; color: #111;
+    border: 1px solid #bbb;
+    padding: 0.6rem 1.5rem; border-radius: 999px;
+    font-size: 0.85rem; cursor: pointer;
+  }
+
+  /* ── OPTION B: Pending state after requesting ── */
+  .pending-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 3rem 1rem;
+    text-align: center;
+  }
+  .pending-icon {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: transparent;
+    border: 1px solid #ddd;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 0.25rem;
+  }
+  .pending-title { font-size: 0.95rem; font-weight: 500; color: #111; }
+  .pending-sub { font-size: 0.85rem; color: #999; max-width: 260px; line-height: 1.5; }
+  .btn-pending {
+    margin-top: 0.5rem;
+    background: #f5f5f5; color: #999;
+    border: 1px solid #e0e0e0;
+    padding: 0.6rem 1.5rem; border-radius: 999px;
+    font-size: 0.85rem; cursor: default;
+  }
+  .btn-withdraw {
+    font-size: 0.78rem; color: #bbb; background: none; border: none;
+    cursor: pointer; text-decoration: underline; text-underline-offset: 2px;
+  }
+
+  /* ── OPTION C: Ghost grid with lock overlay ── */
+  .ghost-wrap {
+    position: relative;
+    overflow: hidden;
+    border-radius: 12px;
+  }
+  .ghost-content {
+    filter: blur(5px);
+    opacity: 0.25;
+    pointer-events: none;
+    user-select: none;
+    padding: 1.5rem 0;
+  }
+  .ghost-section-label {
+    font-size: 0.72rem; font-weight: 400; letter-spacing: 0.08em;
+    text-transform: uppercase; color: #aaa; margin-bottom: 0.75rem;
+  }
+  .ghost-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem;
+    margin-bottom: 2rem;
+  }
+  .ghost-card {
+    background: #e8e8e8; border-radius: 10px; height: 130px;
+  }
+  .ghost-row {
+    display: flex; gap: 0.5rem; overflow: hidden;
+  }
+  .ghost-poster {
+    flex-shrink: 0; width: 75px; height: 112px;
+    background: #e8e8e8; border-radius: 6px;
+  }
+  .ghost-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(to bottom, rgba(244,244,242,0) 0%, rgba(244,244,242,0.6) 40%, rgba(244,244,242,1) 75%);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: flex-end;
+    padding-bottom: 2rem;
+    gap: 0.5rem; text-align: center;
+  }
+  .ghost-lock-icon {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: #fff; border: 1px solid #e0e0e0;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 0.25rem;
+  }
+  .ghost-title { font-size: 0.92rem; font-weight: 500; color: #111; }
+  .ghost-sub { font-size: 0.82rem; color: #999; }
+  .btn-ghost-request {
+    background: #111; color: #fff;
+    border: none; padding: 0.6rem 1.5rem;
+    border-radius: 999px; font-size: 0.83rem; cursor: pointer;
+    margin-top: 0.25rem;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ── OPTION A: Clean lock card + request button ── -->
+  <div>
+    <div class="label">Option A — Lock card with follow request</div>
+    <div class="hero">
+      <div class="avatar"></div>
+      <div class="hero-body">
+        <div class="hero-name">Leo Brennan</div>
+        <div class="hero-username">@leocritique</div>
+        <div class="hero-stats">Private profile</div>
+      </div>
+      <div class="hero-actions">
+        <button class="btn-follow">Follow</button>
+        <div class="btn-icon">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        </div>
+      </div>
+    </div>
+    <div class="lock-card">
+      <div class="lock-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+      </div>
+      <p class="lock-title">This account is private</p>
+      <p class="lock-sub">Follow Leo to see their lists, watchlog, and activity.</p>
+      <button class="btn-request">Request to follow</button>
+    </div>
+  </div>
+
+  <!-- ── OPTION A (pending state) ── -->
+  <div>
+    <div class="label">Option A — After requesting (pending state)</div>
+    <div class="hero">
+      <div class="avatar"></div>
+      <div class="hero-body">
+        <div class="hero-name">Leo Brennan</div>
+        <div class="hero-username">@leocritique</div>
+        <div class="hero-stats">Private profile</div>
+      </div>
+      <div class="hero-actions">
+        <button class="btn-follow following">Requested</button>
+        <div class="btn-icon">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        </div>
+      </div>
+    </div>
+    <div class="pending-card">
+      <div class="pending-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        </svg>
+      </div>
+      <p class="pending-title">Follow request sent</p>
+      <p class="pending-sub">You'll be able to see Leo's content once they approve your request.</p>
+      <button class="btn-pending">Requested</button>
+      <button class="btn-withdraw">Withdraw request</button>
+    </div>
+  </div>
+
+  <!-- ── OPTION B: Ghost grid with overlay ── -->
+  <div>
+    <div class="label">Option B — Ghost content with lock overlay</div>
+    <div class="hero">
+      <div class="avatar"></div>
+      <div class="hero-body">
+        <div class="hero-name">Leo Brennan</div>
+        <div class="hero-username">@leocritique</div>
+        <div class="hero-stats">Private profile</div>
+      </div>
+      <div class="hero-actions">
+        <button class="btn-follow">Follow</button>
+        <div class="btn-icon">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        </div>
+      </div>
+    </div>
+    <div class="ghost-wrap">
+      <div class="ghost-content">
+        <p class="ghost-section-label">Lists</p>
+        <div class="ghost-grid">
+          <div class="ghost-card"></div>
+          <div class="ghost-card"></div>
+          <div class="ghost-card"></div>
+        </div>
+        <p class="ghost-section-label">Recently Watched</p>
+        <div class="ghost-row">
+          <div class="ghost-poster"></div>
+          <div class="ghost-poster"></div>
+          <div class="ghost-poster"></div>
+          <div class="ghost-poster"></div>
+          <div class="ghost-poster"></div>
+        </div>
+      </div>
+      <div class="ghost-overlay">
+        <div class="ghost-lock-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+        </div>
+        <p class="ghost-title">This account is private</p>
+        <p class="ghost-sub">Follow Leo to see their content.</p>
+        <button class="btn-ghost-request">Request to follow</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

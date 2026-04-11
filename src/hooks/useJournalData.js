@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../api/supabase';
 
-export function useJournalData(user, onAuthRequired, onError) {
+export function useJournalData(user, onAuthRequired, onError, posthog) {
   const [watched, setWatched] = useState(() => {
     try { return JSON.parse(localStorage.getItem('plot-watched') || '[]'); } catch { return []; }
   });
@@ -94,10 +94,12 @@ export function useJournalData(user, onAuthRequired, onError) {
   };
 
   const deleteList = async (listId) => {
+    const listToDelete = userLists.find(l => l.id === listId);
     const { error: itemsError } = await supabase.from('list_items').delete().match({ list_id: listId });
     if (itemsError) { console.error('deleteList items error:', itemsError); onError?.('Failed to delete list. Please try again.'); return; }
     const { error: listError } = await supabase.from('lists').delete().match({ id: listId });
     if (listError) { console.error('deleteList error:', listError); onError?.('Failed to delete list. Please try again.'); return; }
+    posthog?.capture('list_deleted', { list_name: listToDelete?.name });
     setUserLists(prev => prev.filter(l => l.id !== listId));
     setListItems(prev => prev.filter(li => li.list_id !== listId));
     setActiveList(null);
@@ -107,6 +109,7 @@ export function useJournalData(user, onAuthRequired, onError) {
     if (!newName.trim()) return;
     const { error } = await supabase.from('lists').update({ name: newName.trim() }).match({ id: listId });
     if (!error) {
+      posthog?.capture('list_renamed', { new_name: newName.trim() });
       setUserLists(prev => prev.map(l => l.id === listId ? { ...l, name: newName.trim() } : l));
       setActiveList(prev => ({ ...prev, name: newName.trim() }));
     }
@@ -142,6 +145,7 @@ export function useJournalData(user, onAuthRequired, onError) {
     const { error: journalError } = await supabase.from('journal').delete().in('tmdb_id', tmdbIds);
     if (journalError) { console.error('deleteFromJournal error:', journalError); onError?.('Failed to delete entry. Please try again.'); return; }
     await supabase.from('list_items').delete().in('tmdb_id', tmdbIds).eq('user_id', user.id);
+    posthog?.capture('media_deleted', { count: tmdbIds.length });
     setWatched(prev => prev.filter(w => !tmdbIds.includes(w.tmdb_id || w.id)));
     setListItems(prev => prev.filter(li => !tmdbIds.includes(li.tmdb_id)));
   };
@@ -152,6 +156,7 @@ export function useJournalData(user, onAuthRequired, onError) {
     const next = !list.is_public;
     const { error } = await supabase.from('lists').update({ is_public: next }).eq('id', listId);
     if (!error) {
+      posthog?.capture('list_visibility_changed', { list_name: list.name, is_public: next });
       setUserLists(prev => prev.map(l => l.id === listId ? { ...l, is_public: next } : l));
       if (activeList?.id === listId) setActiveList(prev => ({ ...prev, is_public: next }));
     }

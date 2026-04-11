@@ -8,7 +8,7 @@ function StarRow({ rating }) {
   if (!rating) return null;
   return (
     <span className="pp-watch-stars">
-      {'★'.repeat(rating)}{'☆'.repeat(5 - rating)}
+      ★ {rating}/10
     </span>
   );
 }
@@ -159,8 +159,7 @@ export default function PublicProfileView({ username, initialListId, onItemClick
   // Option A (lock card, clean) is active. To preview Option B (ghost grid + blur), swap the comments below.
   if (isPrivate) return (
     <div className="animate-in">
-      {/* Hero — same as public */}
-      <div className="pp-hero" style={{ background: heroGradient }}>
+      <div className="pp-hero">
         <div className="pp-hero-overlay" />
         <div className="pp-profile-card">
           {profileData.avatar_url && (
@@ -171,7 +170,7 @@ export default function PublicProfileView({ username, initialListId, onItemClick
           <div className="pp-profile-card-body">
             <h1 className="pp-display-name">{displayName}</h1>
             <p className="public-profile-username">@{profileData.username}</p>
-            <p className="pp-stats" style={{ opacity: 0.5 }}>Private profile</p>
+            <p className="pp-stats">Private profile</p>
           </div>
           <div className="pp-hero-actions">
             {user && (
@@ -180,7 +179,7 @@ export default function PublicProfileView({ username, initialListId, onItemClick
                 onClick={handleFollow}
                 disabled={followLoading}
               >
-                {isFollowing ? 'Following' : 'Follow'}
+                {isFollowing ? 'Requested' : 'Follow'}
               </button>
             )}
             <ShareButton
@@ -196,67 +195,34 @@ export default function PublicProfileView({ username, initialListId, onItemClick
         </div>
       </div>
 
-      {/* OPTION A — Lock card */}
-      <div style={{
-        display: 'flex', flexDirection: 'column', alignItems: 'center',
-        gap: '0.75rem', padding: '3.5rem 1rem', textAlign: 'center',
-      }}>
-        <div style={{
-          width: 52, height: 52, borderRadius: '50%',
-          background: 'var(--surface)', display: 'flex',
-          alignItems: 'center', justifyContent: 'center',
-          border: '1px solid var(--border)',
-        }}>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-          </svg>
-        </div>
-        <p style={{ color: 'var(--text-primary)', fontWeight: 500, fontSize: '0.95rem', margin: 0 }}>
-          This account is private
-        </p>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: 0, maxWidth: 280 }}>
-          Follow {displayName} to see their lists and activity.
-        </p>
-        {!user && (
-          <a href="/signup" className="pp-join-link" style={{ marginTop: '0.5rem' }}>
-            Join Plot to follow →
-          </a>
+      <div className="pp-private-card">
+        {isFollowing ? (
+          <>
+            <div className="pp-private-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+              </svg>
+            </div>
+            <p className="pp-private-title">Follow request sent</p>
+            <p className="pp-private-sub">You'll be able to see {displayName}'s content once they approve your request.</p>
+            <button className="pp-private-withdraw" onClick={handleFollow}>Withdraw request</button>
+          </>
+        ) : (
+          <>
+            <div className="pp-private-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+            </div>
+            <p className="pp-private-title">This account is private</p>
+            <p className="pp-private-sub">Follow {displayName} to see their lists and activity.</p>
+            {user
+              ? <button className="pp-private-request" onClick={handleFollow} disabled={followLoading}>Request to follow</button>
+              : <a href="/signup" className="pp-private-request">Join Plot to follow</a>
+            }
+          </>
         )}
       </div>
-
-      {/* OPTION B — Ghost grid with blur overlay (comment out Option A and uncomment this to preview)
-      <div style={{ position: 'relative', overflow: 'hidden', padding: '2rem 0' }}>
-        <div style={{ filter: 'blur(8px)', opacity: 0.3, pointerEvents: 'none', userSelect: 'none' }}>
-          <div style={{ padding: '0 1.5rem 1.5rem' }}>
-            <p style={{ fontSize: '0.8rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>Lists</p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
-              {[1,2,3].map(i => <div key={i} style={{ background: 'var(--surface)', borderRadius: 12, height: 140, border: '1px solid var(--border)' }} />)}
-            </div>
-          </div>
-          <div style={{ padding: '0 1.5rem' }}>
-            <p style={{ fontSize: '0.8rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>Recently Watched</p>
-            <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'hidden' }}>
-              {[1,2,3,4,5].map(i => <div key={i} style={{ flexShrink: 0, width: 80, height: 120, background: 'var(--surface)', borderRadius: 8, border: '1px solid var(--border)' }} />)}
-            </div>
-          </div>
-        </div>
-        <div style={{
-          position: 'absolute', inset: 0,
-          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-          gap: '0.75rem', textAlign: 'center',
-          background: 'linear-gradient(to bottom, transparent 0%, var(--bg) 80%)',
-        }}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-          </svg>
-          <p style={{ color: 'var(--text-primary)', fontWeight: 500, fontSize: '0.95rem', margin: 0 }}>This account is private</p>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: 0 }}>Follow {displayName} to see their content.</p>
-          {!user && <a href="/signup" className="pp-join-link" style={{ marginTop: '0.5rem' }}>Join Plot to follow →</a>}
-        </div>
-      </div>
-      */}
     </div>
   );
 
@@ -298,7 +264,13 @@ export default function PublicProfileView({ username, initialListId, onItemClick
                   : <div className="no-image">{item.title || item.name}</div>
                 }
                 <div className="overlay">
+                  {(item.release_date || item.first_air_date) && (
+                    <div className="overlay-year">{(item.release_date || item.first_air_date).slice(0, 4)}</div>
+                  )}
                   <h3>{item.title || item.name}</h3>
+                  {item.vote_average > 0 && (
+                    <div className="overlay-rating">★ {item.vote_average.toFixed(1)}</div>
+                  )}
                 </div>
               </div>
             ))}
@@ -409,7 +381,7 @@ export default function PublicProfileView({ username, initialListId, onItemClick
                     </div>
                     <div className="pp-carousel-side">
                       <h3 className="pp-carousel-title">{w.title || w.name}</h3>
-                      {w.rating && <p className="pp-carousel-stars">{'★'.repeat(w.rating)}{'☆'.repeat(5 - w.rating)}</p>}
+                      {w.rating && <p className="pp-carousel-stars">★ {w.rating}/10</p>}
                       <p className="pp-carousel-date">{formatDate(w.watched_at)}</p>
                       {w.mood && <p className="pp-carousel-mood">{w.mood}</p>}
                     </div>

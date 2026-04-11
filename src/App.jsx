@@ -56,7 +56,7 @@ export default function App() {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showTasteExpanded, setShowTasteExpanded] = useState(false);
   const [upcomingTimeFilter, setUpcomingTimeFilter] = useState('month');
-  const [journalTab, setJournalTab] = useState('lists');
+  const [journalTab, setJournalTab] = useState('taste');
 
   // ── Custom hooks ────────────────────────────────────
   const { theme, setTheme, feedLayout, setFeedLayout } = useTheme();
@@ -342,9 +342,11 @@ export default function App() {
         {view === 'upcoming' && (
           <UpcomingView
             upcomingTimeFilter={upcomingTimeFilter} setUpcomingTimeFilter={setUpcomingTimeFilter}
-            mediaFilter={mediaFilter} setMediaFilter={setMediaFilter} feedLayout={feedLayout}
+            mediaFilter={mediaFilter} setMediaFilter={setMediaFilter}
             upcoming={upcoming} upcomingTV={upcomingTV}
             onItemClick={setSelectedItem}
+            user={user} userLists={userLists} listItems={listItems}
+            createList={createList} toggleListItem={toggleListItem}
           />
         )}
       </main>

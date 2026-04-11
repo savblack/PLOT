@@ -9,6 +9,7 @@ import StepRegion from './onboarding/StepRegion';
 import StepProviders from './onboarding/StepProviders';
 import StepSeedTitles from './onboarding/StepSeedTitles';
 import './OnboardingFlow.css';
+import { usePostHog } from '@posthog/react';
 
 const TOTAL_STEPS = 5;
 
@@ -19,6 +20,7 @@ const timezoneToRegion = (tz) => {
 
 export default function OnboardingFlow() {
   const navigate = useNavigate();
+  const posthog = usePostHog();
   const [user, setUser] = useState(null);
   const [step, setStep] = useState(1);
 
@@ -152,6 +154,13 @@ export default function OnboardingFlow() {
       }));
       await supabase.from('journal').upsert(entries, { onConflict: 'user_id, tmdb_id' });
     }
+
+    posthog?.capture('onboarding_completed', {
+      genres_count: selectedGenres.length,
+      providers_count: selectedProviders.length,
+      seed_titles_count: seedTitles.length,
+      region: selectedRegion,
+    });
 
     setSaving(false);
     setPersonalizing(true);

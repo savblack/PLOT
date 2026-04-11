@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../api/supabase';
 import './AuthPage.css';
+import { usePostHog } from '@posthog/react';
 
 const POSTERS = [
   '/website-images/hero/challengers.webp',
@@ -46,6 +47,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
   const [success, setSuccess]         = useState(false);
   const [resendStatus, setResendStatus] = useState(null); // null | 'sending' | 'sent' | 'error'
   const navigate = useNavigate();
+  const posthog = usePostHog();
 
   // Auto-redirect if already logged in
   useEffect(() => {
@@ -64,18 +66,28 @@ export default function AuthPage({ initialMode = 'signup' }) {
         redirectTo: `${window.location.origin}/auth/callback`,
       });
       if (error) { setError(friendlyError(error.message)); setLoading(false); }
-      else setSuccess(true);
+      else {
+        posthog?.capture('password_reset_requested');
+        setSuccess(true);
+      }
       return;
     }
 
     if (mode === 'login') {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) { setError(friendlyError(error.message)); setLoading(false); }
-      else navigate('/app');
+      else {
+        posthog?.identify(data.user.id, { email: data.user.email });
+        posthog?.capture('user_logged_in');
+        navigate('/app');
+      }
     } else {
       const { error } = await supabase.auth.signUp({ email, password });
       if (error) { setError(friendlyError(error.message)); setLoading(false); }
-      else setSuccess(true);
+      else {
+        posthog?.capture('user_signed_up');
+        setSuccess(true);
+      }
     }
   };
 

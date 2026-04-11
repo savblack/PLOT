@@ -62,13 +62,6 @@ export default function FeedView({
       {feedTab === 'browse' ? (
         <div className="browse-tab">
           <div className="history-filters">
-            <input
-              className="history-search-input"
-              type="text"
-              placeholder="Search titles…"
-              value={browseSearch}
-              onChange={e => setBrowseSearch(e.target.value)}
-            />
             <select value={browseSort} onChange={e => setBrowseSort(e.target.value)}>
               {BROWSE_SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
@@ -110,7 +103,7 @@ export default function FeedView({
                   }
                   <div className="browse-featured-overlay">
                     <div className="browse-featured-tag">
-                      {featured.media_type === 'tv' ? 'TV Series' : 'Film'} · {(featured.release_date || featured.first_air_date || '').slice(0, 4)}
+                      {(featured.release_date || featured.first_air_date || '').slice(0, 4)}
                     </div>
                     <div className="browse-featured-title">{featured.title || featured.name}</div>
                     <div className="browse-featured-meta">
@@ -170,7 +163,13 @@ export default function FeedView({
                     : <div className="no-image">{item.title || item.name}</div>
                   }
                   <div className="overlay">
+                    {(item.release_date || item.first_air_date) && (
+                      <div className="overlay-year">{(item.release_date || item.first_air_date).slice(0, 4)}</div>
+                    )}
                     <h3>{item.title || item.name}</h3>
+                    {item.vote_average > 0 && (
+                      <div className="overlay-rating">★ {item.vote_average.toFixed(1)}</div>
+                    )}
                     {getSavedData(item.id) && <span className="watched-dot" />}
                     {item.fromNetwork && (
                       <span className="network-label">from your network</span>

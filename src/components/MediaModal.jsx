@@ -2,23 +2,24 @@ import { useState, useEffect } from 'react';
 import { tmdb } from '../api/tmdb';
 import { PRESET_MOODS } from '../constants';
 import './MediaModal.css';
+import { usePostHog } from '@posthog/react';
 
 function StarRating({ rating, setRating }) {
   return (
     <div className="star-rating">
-      {[1, 2, 3, 4, 5].map((val) => (
+      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((val) => (
         <button
           key={val}
           className={`star-btn ${rating >= val ? 'active' : ''}`}
           onClick={() => setRating(rating === val ? 0 : val)}
-          title={`${val} stars`}
+          title={`${val}/10`}
         >
           <svg viewBox="0 0 24 24" fill={rating >= val ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.5">
             <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
           </svg>
         </button>
       ))}
-      {rating > 0 && <span className="rating-value">{rating}</span>}
+      {rating > 0 && <span className="rating-value">{rating}/10</span>}
     </div>
   );
 }
@@ -116,6 +117,7 @@ function MoodPicker({ mood, setMood }) {
 }
 
 export default function MediaModal({ item, onClose, onSave, savedData, userLists, listItems, onCreateList, onToggleList, region = 'AU', onItemClick }) {
+  const posthog = usePostHog();
   const [details, setDetails] = useState(null);
   const [fetchError, setFetchError] = useState(false);
   const [rating, setRating] = useState(savedData?.rating || 0);
@@ -157,6 +159,7 @@ export default function MediaModal({ item, onClose, onSave, savedData, userLists
   }, [item]);
 
   const handleSave = () => {
+    const mediaType = item.media_type || (item.title ? 'movie' : 'tv');
     onSave({
       ...item,
       rating,
@@ -164,9 +167,18 @@ export default function MediaModal({ item, onClose, onSave, savedData, userLists
       mood,
       watchStatus,
       tmdb_id: item.id,
-      media_type: item.media_type || (item.title ? 'movie' : 'tv'),
+      media_type: mediaType,
       watched_at: watchedAt,
       updatedAt: new Date().toISOString(),
+    });
+    posthog?.capture('media_logged', {
+      media_type: mediaType,
+      title: item.title || item.name,
+      tmdb_id: item.id,
+      has_rating: rating > 0,
+      has_note: note.length > 0,
+      has_mood: !!mood,
+      watch_status: watchStatus,
     });
     setHasSaved(true);
     setTimeout(closeWithFade, 700);
@@ -334,7 +346,11 @@ export default function MediaModal({ item, onClose, onSave, savedData, userLists
                               <button
                                 key={list.id}
                                 className={`list-dropdown-item ${isInList ? 'active' : ''}`}
-                                onClick={async () => { await onToggleList(list.id, !isInList); handleSave(); }}
+                                onClick={async () => {
+                                  await onToggleList(list.id, !isInList);
+                                  if (!isInList) posthog?.capture('media_added_to_list', { list_name: list.name, title: item.title || item.name, media_type: item.media_type || (item.title ? 'movie' : 'tv') });
+                                  handleSave();
+                                }}
                               >
                                 <span>{list.name}</span>
                                 {isInList && (
@@ -361,7 +377,12 @@ export default function MediaModal({ item, onClose, onSave, savedData, userLists
                                 onKeyDown={async (e) => {
                                   if (e.key === 'Enter' && newListName.trim()) {
                                     const newList = await onCreateList(newListName.trim());
-                                    if (newList) { await onToggleList(newList.id, true); handleSave(); }
+                                    if (newList) {
+                                      posthog?.capture('list_created', { list_name: newListName.trim() });
+                                      await onToggleList(newList.id, true);
+                                      posthog?.capture('media_added_to_list', { list_name: newListName.trim(), title: item.title || item.name, media_type: item.media_type || (item.title ? 'movie' : 'tv') });
+                                      handleSave();
+                                    }
                                     setNewListName('');
                                     setShowNewListInput(false);
                                     setShowListDropdown(false);
@@ -372,7 +393,12 @@ export default function MediaModal({ item, onClose, onSave, savedData, userLists
                               <button onClick={async () => {
                                 if (!newListName.trim()) return;
                                 const newList = await onCreateList(newListName.trim());
-                                if (newList) { await onToggleList(newList.id, true); handleSave(); }
+                                if (newList) {
+                                  posthog?.capture('list_created', { list_name: newListName.trim() });
+                                  await onToggleList(newList.id, true);
+                                  posthog?.capture('media_added_to_list', { list_name: newListName.trim(), title: item.title || item.name, media_type: item.media_type || (item.title ? 'movie' : 'tv') });
+                                  handleSave();
+                                }
                                 setNewListName('');
                                 setShowNewListInput(false);
                                 setShowListDropdown(false);

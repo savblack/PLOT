@@ -71,7 +71,13 @@ export default function NewReleasesView({
               <div className="rank-badge">#{index + 1}</div>
             )}
             <div className="overlay">
+              {(item.release_date || item.first_air_date) && (
+                <div className="overlay-year">{(item.release_date || item.first_air_date).slice(0, 4)}</div>
+              )}
               <h3>{item.title || item.name}</h3>
+              {item.vote_average > 0 && (
+                <div className="overlay-rating">★ {item.vote_average.toFixed(1)}</div>
+              )}
               {getSavedData(item.id) && <span className="watched-dot"></span>}
             </div>
           </div>

@@ -294,7 +294,13 @@ export default function JournalView({
                     : <div className="no-image">{item.title || item.name}</div>
                   }
                   <div className="overlay">
+                    {(item.release_date || item.first_air_date) && (
+                      <div className="overlay-year">{(item.release_date || item.first_air_date).slice(0, 4)}</div>
+                    )}
                     <h3>{item.title || item.name}</h3>
+                    {item.vote_average > 0 && (
+                      <div className="overlay-rating">★ {item.vote_average.toFixed(1)}</div>
+                    )}
                   </div>
                   {selectMode && (
                     <div className={`item-select-overlay${isSelected ? ' checked' : ''}`}>
@@ -364,9 +370,10 @@ export default function JournalView({
 
           <div className="journal-tab-nav">
             {[
-              { id: 'lists',   label: 'My Lists' },
-              { id: 'history', label: 'History' },
-              { id: 'taste',   label: 'Journal' },
+              { id: 'taste',     label: 'Journal' },
+              { id: 'lists',     label: 'My Lists' },
+              { id: 'watchlist', label: 'Watchlist' },
+              { id: 'history',   label: 'History' },
             ].map(t => (
               <button
                 key={t.id}
@@ -397,7 +404,7 @@ export default function JournalView({
                 </select>
                 <select value={historyRatingFilter} onChange={e => setHistoryRatingFilter(e.target.value)}>
                   <option value="">Rating</option>
-                  {[5,4,3,2,1].map(r => <option key={r} value={r}>{'★'.repeat(r)}</option>)}
+                  {[10,9,8,7,6,5,4,3,2,1].map(r => <option key={r} value={r}>{r}/10</option>)}
                 </select>
                 <select value={historyStatusFilter} onChange={e => setHistoryStatusFilter(e.target.value)}>
                   <option value="">Status</option>
@@ -419,9 +426,14 @@ export default function JournalView({
                       ? <img src={`https://image.tmdb.org/t/p/w342${item.poster_path}`} alt={item.title || item.name} loading="lazy" decoding="async" />
                       : <div className="no-image">{item.title || item.name}</div>
                     }
-                    {item.rating > 0 && <span className="history-rating-badge">{'★'.repeat(item.rating)}</span>}
                     <div className="overlay">
+                      {(item.release_date || item.first_air_date) && (
+                        <div className="overlay-year">{(item.release_date || item.first_air_date).slice(0, 4)}</div>
+                      )}
                       <h3>{item.title || item.name}</h3>
+                      {item.vote_average > 0 && (
+                        <div className="overlay-rating">★ {item.vote_average.toFixed(1)}</div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -491,6 +503,44 @@ export default function JournalView({
               </div>
             </>
           )}
+
+          {journalTab === 'watchlist' && (() => {
+            const wl = userLists.find(l => l.name === '__watchlist__');
+            const wlItems = wl ? listItems.filter(li => li.list_id === wl.id) : [];
+            if (!user) return (
+              <div className="journal-signin-prompt">
+                <p>Sign in to save upcoming releases.</p>
+                <button className="new-list-header-btn" onClick={() => setShowAuth(true)}>Sign in</button>
+              </div>
+            );
+            if (wlItems.length === 0) return (
+              <div className="empty-journal-state">
+                <h3>Nothing saved yet</h3>
+                <p>Head to Upcoming and hit + to save releases you're looking forward to.</p>
+              </div>
+            );
+            return (
+              <div className="bento-grid">
+                {wlItems.map((item, idx) => (
+                  <div key={item.id || idx} className="bento-item glass" onClick={() => onItemClick({ ...item, id: item.tmdb_id })}>
+                    {item.poster_path
+                      ? <img src={`https://image.tmdb.org/t/p/w342${item.poster_path}`} alt={item.title || item.name} loading="lazy" decoding="async" />
+                      : <div className="no-image">{item.title || item.name}</div>
+                    }
+                    <div className="overlay">
+                      {(item.release_date || item.first_air_date) && (
+                        <div className="overlay-year">{(item.release_date || item.first_air_date).slice(0, 4)}</div>
+                      )}
+                      <h3>{item.title || item.name}</h3>
+                      {item.vote_average > 0 && (
+                        <div className="overlay-rating">★ {item.vote_average.toFixed(1)}</div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
 
           {journalTab === 'taste' && (
             <JournalBoardTab

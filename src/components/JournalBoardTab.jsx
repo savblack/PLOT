@@ -90,8 +90,8 @@ export default function JournalBoardTab({ watched, user, onItemClick }) {
   const buildSummary = (items) => {
     if (items.length === 0) return "Nothing logged yet — start watching!";
 
-    const top = items.filter(i => i.rating >= 4);
-    const loved = items.filter(i => i.rating === 5);
+    const top = items.filter(i => i.rating >= 8);
+    const loved = items.filter(i => i.rating === 10);
 
     // Most common mood
     const moodCounts = {};
@@ -128,7 +128,7 @@ export default function JournalBoardTab({ watched, user, onItemClick }) {
     }
 
     if (loved.length > 0) {
-      parts.push(`${loved.length} ${loved.length === 1 ? 'thing has' : 'things have'} earned a perfect 5 stars.`);
+      parts.push(`${loved.length} ${loved.length === 1 ? 'thing has' : 'things have'} earned a perfect 10.`);
     }
 
     if (recentTitle) {
@@ -157,7 +157,7 @@ export default function JournalBoardTab({ watched, user, onItemClick }) {
         }));
         const prompt = `You are a brutally perceptive cultural psychologist doing a personality read based purely on someone's watch history. Like a horoscope, but actually accurate.
 
-Their top-rated watches (title, rating /5, mood they felt): ${JSON.stringify(top)}
+Their top-rated watches (title, rating /10, mood they felt): ${JSON.stringify(top)}
 
 Write 2-3 sentences that reveal something true about WHO THIS PERSON IS — their psychology, their inner life, what they're probably like at a dinner party, what they need from stories.
 
@@ -267,8 +267,8 @@ Rules:
       return (
         <div className="ai-layout-rating">
           {items.map((item, i) => {
-            const cls = item.rating >= 5 ? 'ai-poster-lg' : item.rating >= 4 ? 'ai-poster-md' : 'ai-poster-sm';
-            const width = item.rating >= 5 ? 120 : item.rating >= 4 ? 90 : 65;
+            const cls = item.rating >= 9 ? 'ai-poster-lg' : item.rating >= 7 ? 'ai-poster-md' : 'ai-poster-sm';
+            const width = item.rating >= 9 ? 120 : item.rating >= 7 ? 90 : 65;
             return (
               <div key={item.id || i} className={`ai-poster ${cls}`} onClick={() => onItemClick(item)}>
                 {item.poster_path
@@ -345,7 +345,7 @@ Rules:
           </div>
           {statsAvgRating && (
             <div className="taste-stat">
-              <span className="taste-stat-value">{statsAvgRating}★</span>
+              <span className="taste-stat-value">★ {statsAvgRating}/10</span>
               <span className="taste-stat-label">avg rating</span>
             </div>
           )}
@@ -429,7 +429,7 @@ Rules:
                     ? <img src={`https://image.tmdb.org/t/p/w154${item.poster_path}`} alt={item.title || item.name} draggable={false} />
                     : <div className="board-card-no-poster">{item.title || item.name}</div>
                   }
-                  {item.rating > 0 && <span className="board-card-rating">{'★'.repeat(item.rating)}</span>}
+                  {item.rating > 0 && <span className="board-card-rating">★ {item.rating}</span>}
                 </div>
               );
             })}

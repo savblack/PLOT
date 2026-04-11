@@ -4,6 +4,7 @@ import { supabase } from '../api/supabase';
 import { tmdb } from '../api/tmdb';
 import { detectFormat, parseNetflix, parseLetterboxd } from '../utils/importParsers';
 import './ImportModal.css';
+import { usePostHog } from '@posthog/react';
 
 const BATCH_SIZE = 10;
 
@@ -69,6 +70,7 @@ async function matchToTMDB(entries, format, onProgress) {
 }
 
 export default function ImportModal({ user, onClose, onImported }) {
+  const posthog = usePostHog();
   const [step, setStep] = useState('upload'); // upload | matching | preview | done
   const [error, setError] = useState('');
   const [dragging, setDragging] = useState(false);
@@ -161,6 +163,11 @@ export default function ImportModal({ user, onClose, onImported }) {
       }));
 
     await supabase.from('journal').upsert(entries, { onConflict: 'user_id, tmdb_id' });
+
+    posthog?.capture('import_completed', {
+      imported_count: entries.length,
+      unmatched_count: unmatched.length,
+    });
 
     setImportCount(entries.length);
     setImporting(false);
