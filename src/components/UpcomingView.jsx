@@ -138,7 +138,6 @@ export default function UpcomingView({
                 <div className="upcoming-date-header">
                   <span className="upcoming-date-label">{label}</span>
                   <span className="upcoming-date-sub">{sub}</span>
-                  {isToday && <span className="upcoming-today-pill">Today</span>}
                 </div>
                 <div className="upcoming-poster-row">
                   {groupItems.map(item => {
