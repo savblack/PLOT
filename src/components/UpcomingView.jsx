@@ -28,6 +28,7 @@ export default function UpcomingView({
     if (filter === 'next-week')  { start = new Date(now); start.setDate(now.getDate() + 7); end = new Date(start); end.setDate(start.getDate() + 7); }
     if (filter === 'month')      { end = new Date(now.getFullYear(), now.getMonth() + 1, 0); }
     if (filter === 'next-month') { start = new Date(now.getFullYear(), now.getMonth() + 1, 1); end = new Date(now.getFullYear(), now.getMonth() + 2, 0); }
+    if (filter === 'later')      { start = new Date(now.getFullYear(), now.getMonth() + 2, 1); end = null; }
     return items.filter(item => { const d = new Date(item.release_date || item.first_air_date); return d >= start && (end ? d <= end : true); });
   };
 
@@ -92,7 +93,7 @@ export default function UpcomingView({
         {filterRow}
       </div>
       <div className="journal-tab-nav">
-        {[['week','This Week'],['next-week','Next Week'],['month','This Month'],['next-month','Next Month']].map(([val, label]) => (
+        {[['week','This Week'],['next-week','Next Week'],['month','This Month'],['next-month','Next Month'],['later','Later']].map(([val, label]) => (
           <button key={val} className={`journal-tab-btn ${upcomingTimeFilter === val ? 'active' : ''}`} onClick={() => setUpcomingTimeFilter(val)}>{label}</button>
         ))}
       </div>
