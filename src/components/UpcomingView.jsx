@@ -112,7 +112,7 @@ export default function UpcomingView({
               }
               <div className="upcoming-hero-overlay">
                 <div className="upcoming-hero-eyebrow">
-                  {hero.media_type === 'tv' ? 'TV Series' : 'Film'} · {(hero.release_date || hero.first_air_date || '').slice(0, 4)}
+                  {new Date(hero.release_date || hero.first_air_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase()}
                 </div>
                 <h3 className="upcoming-hero-title">{hero.title || hero.name}</h3>
                 <p className="upcoming-hero-date">
