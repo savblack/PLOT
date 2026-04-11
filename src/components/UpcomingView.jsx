@@ -160,7 +160,6 @@ export default function UpcomingView({
                           )}
                         </div>
                         <div className="upcoming-card-title">{item.title || item.name}</div>
-                        <div className="upcoming-card-type">{item.media_type === 'tv' ? 'TV Series' : 'Film'}</div>
                       </div>
                     );
                   })}
