@@ -3042,9 +3042,15 @@ main.content-grid.animate-in {
   text-transform: uppercase; color: rgba(255,255,255,0.45);
   margin-bottom: 0.4rem; font-family: var(--font-sans);
 }
+.upcoming-hero-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
 .upcoming-hero-title {
   font-family: var(--font-serif); font-size: 1.9rem; font-weight: 500;
-  color: white; line-height: 1.1; margin-bottom: 0.35rem;
+  color: white; line-height: 1.1; margin: 0;
 }
 .upcoming-hero-date {
   font-size: 0.75rem; color: rgba(255,255,255,0.5); font-family: var(--font-sans);

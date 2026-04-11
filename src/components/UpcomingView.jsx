@@ -114,15 +114,17 @@ export default function UpcomingView({
                 <div className="upcoming-hero-eyebrow">
                   {new Date(hero.release_date || hero.first_air_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase()}
                 </div>
-                <h3 className="upcoming-hero-title">{hero.title || hero.name}</h3>
-                {user && (
-                  <button
-                    className={`upcoming-watchlist-btn hero ${watchlistIds.has(hero.id) ? 'saved' : ''}`}
-                    onClick={e => toggleWatchlist(e, hero)}
-                  >
-                    {watchlistIds.has(hero.id) ? '✓ Saved' : 'Add to Watchlist'}
-                  </button>
-                )}
+                <div className="upcoming-hero-title-row">
+                  <h3 className="upcoming-hero-title">{hero.title || hero.name}</h3>
+                  {user && (
+                    <button
+                      className={`upcoming-watchlist-btn hero ${watchlistIds.has(hero.id) ? 'saved' : ''}`}
+                      onClick={e => toggleWatchlist(e, hero)}
+                    >
+                      {watchlistIds.has(hero.id) ? '✓ Saved' : 'Add to Watchlist'}
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           )}
