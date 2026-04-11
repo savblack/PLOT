@@ -24,6 +24,11 @@ export default function FeedView({
   const [browseStatus, setBrowseStatus] = useState('');
   const [browseSearch, setBrowseSearch] = useState('');
 
+  const [feedSort, setFeedSort] = useState('');
+  const [feedMood, setFeedMood] = useState('');
+  const [feedRating, setFeedRating] = useState('');
+  const [feedStatus, setFeedStatus] = useState('');
+
   useEffect(() => {
     if (feedTab !== 'browse') return;
     const effectiveType = mediaFilter === 'all' ? 'movie' : mediaFilter;
@@ -37,9 +42,22 @@ export default function FeedView({
     });
   }, [feedTab, mediaFilter, browseSort, browseGenre, browseRating]);
 
-  const activeItems = feedTab === 'trending' ? trending
+  const rawItems = feedTab === 'trending' ? trending
     : feedTab === 'following' ? followingFeed
     : forYouFeed;
+
+  const activeItems = (() => {
+    let items = feedTab === 'following' ? rawItems : rawItems.filter(item =>
+      mediaFilter === 'all' || (item.media_type || (item.title ? 'movie' : 'tv')) === mediaFilter
+    );
+    if (feedStatus === 'watched')   items = items.filter(i => getSavedData(i.id));
+    if (feedStatus === 'unwatched') items = items.filter(i => !getSavedData(i.id));
+    if (feedMood)   items = items.filter(i => getSavedData(i.id)?.mood === feedMood);
+    if (feedRating) items = items.filter(i => (getSavedData(i.id)?.rating ?? 0) >= parseInt(feedRating));
+    if (feedSort === 'date-desc')   items = [...items].sort((a, b) => (b.release_date || b.first_air_date || '').localeCompare(a.release_date || a.first_air_date || ''));
+    if (feedSort === 'rating-desc') items = [...items].sort((a, b) => (b.vote_average || 0) - (a.vote_average || 0));
+    return items;
+  })();
 
   return (
     <section>
@@ -142,6 +160,27 @@ export default function FeedView({
         </div>
       ) : (
         <>
+          <div className="history-filters">
+            <select value={feedSort} onChange={e => setFeedSort(e.target.value)}>
+              <option value="">Sort</option>
+              <option value="date-desc">Newest first</option>
+              <option value="rating-desc">Top Rated</option>
+            </select>
+            <select value={feedMood} onChange={e => setFeedMood(e.target.value)}>
+              <option value="">Mood</option>
+              {MOODS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+            </select>
+            <select value={feedRating} onChange={e => setFeedRating(e.target.value)}>
+              <option value="">Rating</option>
+              {[10,9,8,7,6,5,4,3,2,1].map(r => <option key={r} value={r}>{r}/10</option>)}
+            </select>
+            <select value={feedStatus} onChange={e => setFeedStatus(e.target.value)}>
+              <option value="">Status</option>
+              <option value="unwatched">Not watched</option>
+              <option value="watched">Watched</option>
+            </select>
+          </div>
+
           {feedTab === 'foryou' && forYouFeed.length === 0 && preferences.genres.length > 0 && <LoadingSpinner />}
           {feedTab === 'trending' && trending.length === 0 && <LoadingSpinner />}
           {feedTab === 'following' && followingLoading && <LoadingSpinner />}
@@ -150,9 +189,7 @@ export default function FeedView({
             <p className="feed-empty-state">Follow people to see what they're watching.</p>
           ) : (
             <div className="bento-grid">
-              {(feedTab === 'following' ? activeItems : activeItems.filter(item =>
-                mediaFilter === 'all' || (item.media_type || (item.title ? 'movie' : 'tv')) === mediaFilter
-              )).map((item, index) => (
+              {activeItems.map((item, index) => (
                 <div
                   key={`${item.id}-${index}`}
                   className={`bento-item glass ${feedLayout === 'bento' && index % 5 === 0 ? 'large' : ''}`}

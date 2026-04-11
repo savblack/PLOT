@@ -58,7 +58,6 @@ export default function AppHeader({
           <div className="center-group">
             <div className="nav-pills header-nav">
               <button onClick={() => navigateTo('home')} className={view === 'home' ? 'active' : ''}>Feed</button>
-              <button onClick={() => navigateTo('new')} className={view === 'new' ? 'active' : ''}>New</button>
               <button onClick={() => navigateTo('upcoming')} className={view === 'upcoming' ? 'active' : ''}>Upcoming</button>
               <button onClick={() => navigateTo('watchlist')} className={view === 'watchlist' ? 'active' : ''}>Journal</button>
             </div>

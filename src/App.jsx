@@ -222,9 +222,8 @@ export default function App() {
 
   const navigateTo = (nextView) => {
     if (nextView === 'home')      setFeedTab('foryou');
-    if (nextView === 'new')       setNewReleasesTab('all');
     if (nextView === 'upcoming')  setUpcomingTimeFilter('week');
-    if (nextView === 'watchlist') setJournalTab('journal');
+    if (nextView === 'watchlist') setJournalTab('taste');
     setView(nextView);
   };
 
@@ -292,15 +291,6 @@ export default function App() {
           />
         )}
 
-        {view === 'new' && (
-          <NewReleasesView
-            newReleasesTab={newReleasesTab} setNewReleasesTab={setNewReleasesTab}
-            mediaFilter={mediaFilter} setMediaFilter={setMediaFilter} feedLayout={feedLayout}
-            newReleases={newReleases} newTV={newTV}
-            streamingMovies={streamingMovies} streamingTV={streamingTV}
-            getSavedData={getSavedData} onItemClick={setSelectedItem}
-          />
-        )}
 
         {view === 'search' && (
           <SearchView searchResults={searchResults} onItemClick={setSelectedItem} mediaFilter={mediaFilter} />
@@ -402,7 +392,6 @@ export default function App() {
 
       <nav className="bottom-tab-bar">
         <button onClick={() => navigateTo('home')} className={view === 'home' ? 'active' : ''}>Feed</button>
-        <button onClick={() => navigateTo('new')} className={view === 'new' ? 'active' : ''}>New</button>
         <button onClick={() => navigateTo('upcoming')} className={view === 'upcoming' ? 'active' : ''}>Upcoming</button>
         <button onClick={() => navigateTo('watchlist')} className={view === 'watchlist' ? 'active' : ''}>Journal</button>
       </nav>

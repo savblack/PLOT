@@ -415,11 +415,10 @@ export default function JournalView({
                 </select>
               </div>
               {historyFiltered.length === 0 && (
-                <p className="empty-list-msg">
-                  {watched.length === 0
-                    ? 'Nothing logged yet. Open any movie or show and hit Save.'
-                    : 'No items match the selected filters.'}
-                </p>
+                <div className="empty-journal-state">
+                  <h3>{watched.length === 0 ? 'Nothing logged yet' : 'No matches'}</h3>
+                  <p>{watched.length === 0 ? 'Open any movie or show and hit Save.' : 'No items match the selected filters.'}</p>
+                </div>
               )}
               <div className="bento-grid">
                 {historyFiltered.map((item, idx) => (
