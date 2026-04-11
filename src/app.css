@@ -384,6 +384,7 @@ main.content-grid.animate-in {
   margin-top: 0.3rem;
   font-family: var(--font-sans);
 }
+.overlay-rating.my-rating { color: #f5c518; }
 
 .rating-tag {
   background: white;
@@ -1961,8 +1962,34 @@ main.content-grid.animate-in {
 .ai-layout-vibes { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.4rem; }
 .ai-layout-vibes .ai-poster img { width: 100%; height: 100%; object-fit: cover; }
 .ai-layout-vibes .ai-poster-no-img { width: 100%; height: 100%; min-height: 93px; }
+.ai-poster { position: relative; cursor: pointer; }
 .ai-poster img { width: 100%; border-radius: 6px; display: block; }
 .ai-poster-no-img { background: var(--border-color); border-radius: 6px; }
+.ai-poster-overlay {
+  position: absolute; inset: 0;
+  border-radius: 6px;
+  background: linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 55%);
+  display: flex; flex-direction: column; justify-content: flex-end;
+  padding: 0.35rem 0.4rem;
+  opacity: 0; transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+.ai-poster:hover .ai-poster-overlay { opacity: 1; }
+.ai-poster-overlay-year {
+  font-size: 0.5rem; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: rgba(255,255,255,0.55);
+  font-family: var(--font-sans); margin-bottom: 0.1rem;
+}
+.ai-poster-overlay-title {
+  font-family: var(--font-serif); font-size: 0.65rem; font-weight: 500;
+  color: white; line-height: 1.15; margin: 0;
+  overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+}
+.ai-poster-overlay-rating {
+  font-size: 0.55rem; font-weight: 700; color: white;
+  font-family: var(--font-sans); margin-top: 0.15rem;
+}
+.ai-poster-overlay-rating.my-rating { color: #f5c518; }
 
 /* Profile public settings */
 .profile-public-section {
@@ -2977,7 +3004,7 @@ main.content-grid.animate-in {
 
 .empty-journal-state {
   text-align: center;
-  padding: 4rem 2rem;
+  padding: 1.5rem 2rem 4rem;
   color: var(--text-secondary);
 }
 .empty-journal-state h3 {

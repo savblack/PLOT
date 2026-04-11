@@ -360,11 +360,6 @@ export default function JournalView({
                 <button className={mediaFilter === 'movie' ? 'active' : ''} onClick={() => setMediaFilter('movie')}>Movies</button>
                 <button className={mediaFilter === 'tv' ? 'active' : ''} onClick={() => setMediaFilter('tv')}>TV</button>
               </div>
-              {journalTab === 'lists' && !showJournalNewList && userLists.length > 0 && (
-                <button className="new-list-header-btn" onClick={() => setShowJournalNewList(true)}>
-                  + New List
-                </button>
-              )}
             </div>
           </div>
 
@@ -382,6 +377,13 @@ export default function JournalView({
               >{t.label}</button>
             ))}
           </div>
+          {journalTab === 'lists' && !showJournalNewList && (
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '2rem', marginTop: '0.35rem' }}>
+              <button className="new-list-header-btn" onClick={() => setShowJournalNewList(true)}>
+                Create list
+              </button>
+            </div>
+          )}
 
           {journalTab === 'history' && (
             <div className="history-tab">
@@ -431,9 +433,11 @@ export default function JournalView({
                         <div className="overlay-year">{(item.release_date || item.first_air_date).slice(0, 4)}</div>
                       )}
                       <h3>{item.title || item.name}</h3>
-                      {item.vote_average > 0 && (
+                      {item.rating > 0 ? (
+                        <div className="overlay-rating my-rating">★ {item.rating}/10</div>
+                      ) : item.vote_average > 0 ? (
                         <div className="overlay-rating">★ {item.vote_average.toFixed(1)}</div>
-                      )}
+                      ) : null}
                     </div>
                   </div>
                 ))}
@@ -453,9 +457,6 @@ export default function JournalView({
                 <div className="empty-journal-state">
                   <h3>No lists yet</h3>
                   <p>Create a list to organise your favourites.</p>
-                  <button className="new-list-header-btn" style={{ marginTop: '1rem' }} onClick={() => setShowJournalNewList(true)}>
-                    + New List
-                  </button>
                 </div>
               )}
               {showJournalNewList && (

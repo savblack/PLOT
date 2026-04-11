@@ -205,6 +205,20 @@ Rules:
     return x - Math.floor(x);
   };
 
+  const posterOverlay = (item) => (
+    <div className="ai-poster-overlay">
+      {(item.release_date || item.first_air_date) && (
+        <div className="ai-poster-overlay-year">{(item.release_date || item.first_air_date).slice(0, 4)}</div>
+      )}
+      <div className="ai-poster-overlay-title">{item.title || item.name}</div>
+      {item.rating > 0 ? (
+        <div className="ai-poster-overlay-rating my-rating">★ {item.rating}/10</div>
+      ) : item.vote_average > 0 ? (
+        <div className="ai-poster-overlay-rating">★ {item.vote_average.toFixed(1)}</div>
+      ) : null}
+    </div>
+  );
+
   const renderAiLayout = () => {
     if (!aiJournal) return null;
     const { layoutStyle, items } = aiJournal;
@@ -228,6 +242,7 @@ Rules:
                       ? <img src={`https://image.tmdb.org/t/p/w92${item.poster_path}`} alt={item.title || item.name} />
                       : <div className="ai-poster-no-img" style={{ width: 62, height: 93 }} />
                     }
+                    {posterOverlay(item)}
                   </div>
                 ))}
               </div>
@@ -255,6 +270,7 @@ Rules:
                     ? <img src={`https://image.tmdb.org/t/p/w92${item.poster_path}`} alt={item.title || item.name} />
                     : <div className="ai-poster-no-img" style={{ width: 62, height: 93 }} />
                   }
+                  {posterOverlay(item)}
                 </div>
               ))}
             </div>
@@ -275,6 +291,7 @@ Rules:
                   ? <img src={`https://image.tmdb.org/t/p/w154${item.poster_path}`} alt={item.title || item.name} style={{ width }} />
                   : <div className="ai-poster-no-img" style={{ width, height: Math.round(width * 1.5) }} />
                 }
+                {posterOverlay(item)}
               </div>
             );
           })}
@@ -295,6 +312,7 @@ Rules:
                 ? <img src={`https://image.tmdb.org/t/p/w154${item.poster_path}`} alt={item.title || item.name} />
                 : <div className="ai-poster-no-img" />
               }
+              {posterOverlay(item)}
             </div>
           );
         })}
