@@ -115,9 +115,6 @@ export default function UpcomingView({
                   {new Date(hero.release_date || hero.first_air_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase()}
                 </div>
                 <h3 className="upcoming-hero-title">{hero.title || hero.name}</h3>
-                <p className="upcoming-hero-date">
-                  {new Date(hero.release_date || hero.first_air_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
-                </p>
                 {user && (
                   <button
                     className={`upcoming-watchlist-btn hero ${watchlistIds.has(hero.id) ? 'saved' : ''}`}
