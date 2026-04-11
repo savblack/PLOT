@@ -380,7 +380,7 @@ main.content-grid.animate-in {
   gap: 0.25rem;
   font-size: 0.68rem;
   font-weight: 700;
-  color: #f5c518;
+  color: white;
   margin-top: 0.3rem;
   font-family: var(--font-sans);
 }
