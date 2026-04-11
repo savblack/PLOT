@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import ImportModal from './ImportModal';
 import JournalBoardTab from './JournalBoardTab';
-import { MOODS } from '../constants';
+import { MOODS, GENRES } from '../constants';
 
 function ListStack({ list, items, onListClick }) {
   const [activeIdx, setActiveIdx] = useState(0);
@@ -118,6 +118,7 @@ export default function JournalView({
   const [pendingHistoryDelete, setPendingHistoryDelete] = useState(null);
 
   // Watch History filters
+  const [historyGenreFilter, setHistoryGenreFilter] = useState('');
   const [historyMoodFilter, setHistoryMoodFilter] = useState('');
   const [historyRatingFilter, setHistoryRatingFilter] = useState('');
   const [historyStatusFilter, setHistoryStatusFilter] = useState('');
@@ -179,11 +180,17 @@ export default function JournalView({
   const historyFiltered = watched
     .filter(item => {
       const matchMedia = mediaFilter === 'all' || (item.media_type || (item.title ? 'movie' : 'tv')) === mediaFilter;
+      const matchGenre = !historyGenreFilter || (() => {
+        const g = GENRES.find(g => g.key === historyGenreFilter);
+        if (!g) return true;
+        const id = (item.media_type === 'tv') ? g.tvId : g.movieId;
+        return (item.genre_ids || []).includes(id);
+      })();
       const matchMood = !historyMoodFilter || item.mood === historyMoodFilter;
       const matchRating = !historyRatingFilter || item.rating === parseInt(historyRatingFilter);
       const matchStatus = !historyStatusFilter || item.watchStatus === historyStatusFilter;
       const matchSearch = !historySearchFilter || (item.title || item.name || '').toLowerCase().includes(historySearchFilter.toLowerCase());
-      return matchMedia && matchMood && matchRating && matchStatus && matchSearch;
+      return matchMedia && matchGenre && matchMood && matchRating && matchStatus && matchSearch;
     })
     .sort((a, b) => {
       if (historySort === 'rating-desc') return (b.rating || 0) - (a.rating || 0);
@@ -395,23 +402,27 @@ export default function JournalView({
                   value={historySearchFilter}
                   onChange={e => setHistorySearchFilter(e.target.value)}
                 />
-                <select value={historySort} onChange={e => setHistorySort(e.target.value)}>
-                  <option value="date-desc">Newest first</option>
-                  <option value="rating-desc">Top rated</option>
-                  <option value="title-asc">A–Z</option>
-                </select>
-                <select value={historyMoodFilter} onChange={e => setHistoryMoodFilter(e.target.value)}>
-                  <option value="">Mood</option>
-                  {MOODS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+                <select value={historyGenreFilter} onChange={e => setHistoryGenreFilter(e.target.value)}>
+                  <option value="">Genre</option>
+                  {GENRES.map(g => <option key={g.key} value={g.key}>{g.label}</option>)}
                 </select>
                 <select value={historyRatingFilter} onChange={e => setHistoryRatingFilter(e.target.value)}>
                   <option value="">Rating</option>
                   {[10,9,8,7,6,5,4,3,2,1].map(r => <option key={r} value={r}>{r}/10</option>)}
                 </select>
+                <select value={historyMoodFilter} onChange={e => setHistoryMoodFilter(e.target.value)}>
+                  <option value="">Mood</option>
+                  {MOODS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+                </select>
                 <select value={historyStatusFilter} onChange={e => setHistoryStatusFilter(e.target.value)}>
                   <option value="">Status</option>
                   {['Watched','Binged',"Didn't Finish",'Want to Watch'].map(s =>
                     <option key={s} value={s}>{s}</option>)}
+                </select>
+                <select value={historySort} onChange={e => setHistorySort(e.target.value)}>
+                  <option value="date-desc">Newest first</option>
+                  <option value="rating-desc">Top rated</option>
+                  <option value="title-asc">A–Z</option>
                 </select>
               </div>
               {historyFiltered.length === 0 && (

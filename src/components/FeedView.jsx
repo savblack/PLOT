@@ -24,6 +24,7 @@ export default function FeedView({
   const [browseStatus, setBrowseStatus] = useState('');
   const [browseSearch, setBrowseSearch] = useState('');
 
+  const [feedGenre, setFeedGenre] = useState('');
   const [feedSort, setFeedSort] = useState('');
   const [feedMood, setFeedMood] = useState('');
   const [feedRating, setFeedRating] = useState('');
@@ -56,6 +57,13 @@ export default function FeedView({
     let items = feedTab === 'following' ? rawItems : rawItems.filter(item =>
       mediaFilter === 'all' || (item.media_type || (item.title ? 'movie' : 'tv')) === mediaFilter
     );
+    if (feedGenre) {
+      const genre = GENRES.find(g => g.key === feedGenre);
+      if (genre) items = items.filter(i => {
+        const id = (i.media_type === 'tv') ? genre.tvId : genre.movieId;
+        return (i.genre_ids || []).includes(id);
+      });
+    }
     if (feedStatus === 'watched')   items = items.filter(i => getSavedData(i.id));
     if (feedStatus === 'unwatched') items = items.filter(i => !getSavedData(i.id));
     if (feedMood)   items = items.filter(i => getSavedData(i.id)?.mood === feedMood);
@@ -168,23 +176,22 @@ export default function FeedView({
       ) : (
         <>
           <div className="history-filters">
-            <select value={feedSort} onChange={e => setFeedSort(e.target.value)}>
-              <option value="">Sort</option>
-              <option value="date-desc">Newest first</option>
-              <option value="rating-desc">Top Rated</option>
-            </select>
-            <select value={feedMood} onChange={e => setFeedMood(e.target.value)}>
-              <option value="">Mood</option>
-              {MOODS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+            <select value={feedGenre} onChange={e => setFeedGenre(e.target.value)}>
+              <option value="">Genre</option>
+              {GENRES.map(g => <option key={g.key} value={g.key}>{g.label}</option>)}
             </select>
             <select value={feedRating} onChange={e => setFeedRating(e.target.value)}>
               <option value="">Rating</option>
               {[10,9,8,7,6,5,4,3,2,1].map(r => <option key={r} value={r}>{r}/10</option>)}
             </select>
-            <select value={feedStatus} onChange={e => setFeedStatus(e.target.value)}>
-              <option value="">Status</option>
-              <option value="unwatched">Not watched</option>
-              <option value="watched">Watched</option>
+            <select value={feedMood} onChange={e => setFeedMood(e.target.value)}>
+              <option value="">Mood</option>
+              {MOODS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+            </select>
+            <select value={feedSort} onChange={e => setFeedSort(e.target.value)}>
+              <option value="">Sort</option>
+              <option value="date-desc">Newest first</option>
+              <option value="rating-desc">Top Rated</option>
             </select>
           </div>
 
