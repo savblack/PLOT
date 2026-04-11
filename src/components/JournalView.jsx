@@ -371,8 +371,8 @@ export default function JournalView({
           <div className="journal-tab-nav">
             {[
               { id: 'taste',     label: 'Journal' },
-              { id: 'lists',     label: 'My Lists' },
               { id: 'watchlist', label: 'Watchlist' },
+              { id: 'lists',     label: 'My Lists' },
               { id: 'history',   label: 'History' },
             ].map(t => (
               <button
