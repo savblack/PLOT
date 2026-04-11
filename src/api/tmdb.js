@@ -106,6 +106,12 @@ export const tmdb = {
       'vote_count.gte': 300,
     });
   },
+  discoverBrowse: (type, { sortBy = 'popularity.desc', genreId, minRating } = {}) => {
+    const params = { sort_by: sortBy, 'vote_count.gte': 100 };
+    if (genreId) params.with_genres = genreId;
+    if (minRating) params['vote_average.gte'] = minRating;
+    return fetchFromTMDB(`/discover/${type}`, params);
+  },
   getTopRated: (type) => fetchFromTMDB(`/${type}/top_rated`),
   getWatchProvidersForRegion: (type, region) =>
     fetchFromTMDB(`/watch/providers/${type}`, { watch_region: region }),

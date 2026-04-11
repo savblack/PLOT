@@ -1,7 +1,13 @@
 import { useState, useEffect } from 'react';
-import { GENRES } from '../constants.js';
+import { GENRES, MOODS } from '../constants.js';
 import { tmdb } from '../api/tmdb';
 import LoadingSpinner from './LoadingSpinner';
+
+const BROWSE_SORT_OPTIONS = [
+  { value: 'popularity.desc', label: 'Most Popular' },
+  { value: 'release_date.desc', label: 'Newest first' },
+  { value: 'vote_average.desc', label: 'Top Rated' },
+];
 
 export default function FeedView({
   feedTab, setFeedTab,
@@ -10,21 +16,26 @@ export default function FeedView({
   preferences, user,
   getSavedData, onItemClick, onNavigateToProfile,
 }) {
-  const [selectedGenre, setSelectedGenre] = useState(null);
   const [browseResults, setBrowseResults] = useState([]);
   const [browseLoading, setBrowseLoading] = useState(false);
+  const [browseSort, setBrowseSort] = useState('popularity.desc');
+  const [browseGenre, setBrowseGenre] = useState('');
+  const [browseRating, setBrowseRating] = useState('');
+  const [browseStatus, setBrowseStatus] = useState('');
+  const [browseSearch, setBrowseSearch] = useState('');
 
   useEffect(() => {
-    if (feedTab !== 'browse' || !selectedGenre) return;
+    if (feedTab !== 'browse') return;
     const effectiveType = mediaFilter === 'all' ? 'movie' : mediaFilter;
-    const genreId = effectiveType === 'movie' ? selectedGenre.movieId : selectedGenre.tvId;
-    if (!genreId) return;
     setBrowseLoading(true);
-    tmdb.discoverByGenres(effectiveType, [genreId]).then(data => {
+    const genre = GENRES.find(g => g.key === browseGenre);
+    const genreId = genre ? (effectiveType === 'movie' ? genre.movieId : genre.tvId) : null;
+    const minRating = browseRating ? parseFloat(browseRating) : null;
+    tmdb.discoverBrowse(effectiveType, { sortBy: browseSort, genreId, minRating }).then(data => {
       setBrowseResults((data?.results || []).map(i => ({ ...i, media_type: effectiveType })));
       setBrowseLoading(false);
     });
-  }, [selectedGenre, mediaFilter, feedTab]);
+  }, [feedTab, mediaFilter, browseSort, browseGenre, browseRating]);
 
   const activeItems = feedTab === 'trending' ? trending
     : feedTab === 'following' ? followingFeed
@@ -50,42 +61,91 @@ export default function FeedView({
 
       {feedTab === 'browse' ? (
         <div className="browse-tab">
-          <div className="genre-pill-row">
-            {GENRES.map(g => (
-              <button
-                key={g.key}
-                className={`genre-pill ${selectedGenre?.key === g.key ? 'active' : ''}`}
-                onClick={() => setSelectedGenre(selectedGenre?.key === g.key ? null : g)}
-              >
-                {g.label}
-              </button>
-            ))}
+          <div className="history-filters">
+            <input
+              className="history-search-input"
+              type="text"
+              placeholder="Search titles…"
+              value={browseSearch}
+              onChange={e => setBrowseSearch(e.target.value)}
+            />
+            <select value={browseSort} onChange={e => setBrowseSort(e.target.value)}>
+              {BROWSE_SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+            <select value={browseGenre} onChange={e => setBrowseGenre(e.target.value)}>
+              <option value="">Genre</option>
+              {GENRES.map(g => <option key={g.key} value={g.key}>{g.label}</option>)}
+            </select>
+            <select value={browseRating} onChange={e => setBrowseRating(e.target.value)}>
+              <option value="">Rating</option>
+              <option value="8">8+ / 10</option>
+              <option value="7">7+ / 10</option>
+              <option value="6">6+ / 10</option>
+            </select>
+            <select value={browseStatus} onChange={e => setBrowseStatus(e.target.value)}>
+              <option value="">Status</option>
+              <option value="unwatched">Not watched</option>
+              <option value="watched">Watched</option>
+            </select>
           </div>
 
-          {!selectedGenre ? (
-            <p className="browse-empty-state">Pick a genre to explore.</p>
-          ) : browseLoading ? (
+          {browseLoading ? (
             <LoadingSpinner />
-          ) : (
-            <div className="bento-grid">
-              {browseResults.map((item, index) => (
-                <div
-                  key={`${item.id}-${index}`}
-                  className={`bento-item glass ${feedLayout === 'bento' && index % 5 === 0 ? 'large' : ''}`}
-                  onClick={() => onItemClick(item)}
-                >
-                  {item.poster_path
-                    ? <img src={`https://image.tmdb.org/t/p/w342${item.poster_path}`} alt={item.title || item.name} loading="lazy" decoding="async" />
-                    : <div className="no-image">{item.title || item.name}</div>
+          ) : (() => {
+            const searchLower = browseSearch.toLowerCase();
+            const filtered = browseResults.filter(item => {
+              if (searchLower && !(item.title || item.name || '').toLowerCase().includes(searchLower)) return false;
+              if (browseStatus === 'watched' && !getSavedData(item.id)) return false;
+              if (browseStatus === 'unwatched' && getSavedData(item.id)) return false;
+              return true;
+            });
+            if (!filtered.length) return <p className="browse-empty-state">No results found.</p>;
+            const [featured, ...rest] = filtered;
+            return (
+              <div className="browse-featured-layout">
+                <div className="browse-featured-main" onClick={() => onItemClick(featured)}>
+                  {featured.poster_path
+                    ? <img src={`https://image.tmdb.org/t/p/w780${featured.poster_path}`} alt={featured.title || featured.name} loading="lazy" decoding="async" />
+                    : <div className="no-image">{featured.title || featured.name}</div>
                   }
-                  <div className="overlay">
-                    <h3>{item.title || item.name}</h3>
-                    {getSavedData(item.id) && <span className="watched-dot" />}
+                  <div className="browse-featured-overlay">
+                    <div className="browse-featured-tag">
+                      {featured.media_type === 'tv' ? 'TV Series' : 'Film'} · {(featured.release_date || featured.first_air_date || '').slice(0, 4)}
+                    </div>
+                    <div className="browse-featured-title">{featured.title || featured.name}</div>
+                    <div className="browse-featured-meta">
+                      {featured.vote_average ? `★ ${featured.vote_average.toFixed(1)}` : ''}
+                      {getSavedData(featured.id) ? ' · Watched' : ''}
+                    </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
+                <div className="browse-sidebar">
+                  {rest.slice(0, 18).map((item, i) => (
+                    <div key={`${item.id}-${i}`} className="browse-sidebar-item" onClick={() => onItemClick(item)}>
+                      <span className="browse-sidebar-rank">{i + 2}</span>
+                      <div className="browse-sidebar-poster">
+                        {item.poster_path
+                          ? <img src={`https://image.tmdb.org/t/p/w154${item.poster_path}`} alt={item.title || item.name} loading="lazy" decoding="async" />
+                          : <div className="no-image" style={{ fontSize: '0.6rem' }}>{item.title || item.name}</div>
+                        }
+                      </div>
+                      <div className="browse-sidebar-info">
+                        <div className="browse-sidebar-title">{item.title || item.name}</div>
+                        <div className="browse-sidebar-meta">
+                          {(item.release_date || item.first_air_date || '').slice(0, 4)}
+                          {item.media_type === 'tv' ? ' · TV' : ''}
+                          {getSavedData(item.id) ? ' · Watched' : ''}
+                        </div>
+                      </div>
+                      {item.vote_average > 0 && (
+                        <span className="browse-sidebar-rating">★ {item.vote_average.toFixed(1)}</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
         </div>
       ) : (
         <>
@@ -132,56 +192,86 @@ export default function FeedView({
       )}
 
       <style>{`
-        .genre-pill-row {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 0.4rem;
-          margin-bottom: 1.5rem;
-        }
-        .genre-pill {
-          padding: 0.35rem 0.85rem;
-          border-radius: var(--radius-pill);
-          border: 1px solid #ddd;
-          background: transparent;
-          font-size: 0.8rem;
-          font-family: var(--font-sans);
-          cursor: pointer;
-          transition: background 0.15s, border-color 0.15s, color 0.15s;
-          color: var(--text-secondary);
-        }
-        .genre-pill:hover { border-color: #999; color: var(--text-primary); }
-        .genre-pill.active { background: #111; border-color: #111; color: white; }
-        [data-theme="dark"] .genre-pill { border-color: #333; color: #888; }
-        [data-theme="dark"] .genre-pill:hover { border-color: #666; color: #ccc; }
-        [data-theme="dark"] .genre-pill.active { background: #f0f0f0; border-color: #f0f0f0; color: #111; }
         .browse-empty-state {
           color: var(--text-secondary);
           font-size: 0.9rem;
           margin-top: 2rem;
           text-align: center;
         }
-        .mood-filter-row {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 0.4rem;
-          margin-bottom: 1rem;
+        .browse-featured-layout {
+          display: grid;
+          grid-template-columns: 2fr 1fr;
+          gap: 1.25rem;
+          height: 400px;
         }
-        .mood-filter-pill {
-          padding: 0.35rem 0.85rem;
-          border-radius: var(--radius-pill);
-          border: 1px solid #ddd;
-          background: transparent;
-          font-size: 0.8rem;
-          font-family: var(--font-sans);
+        .browse-featured-main {
+          height: 100%;
+          border-radius: var(--radius-lg);
+          overflow: hidden;
+          position: relative;
+          background: #1a1a1a;
           cursor: pointer;
-          transition: background 0.15s, border-color 0.15s, color 0.15s;
-          color: var(--text-secondary);
         }
-        .mood-filter-pill:hover { border-color: #999; color: var(--text-primary); }
-        .mood-filter-pill.active { background: #111; border-color: #111; color: white; }
-        [data-theme="dark"] .mood-filter-pill { border-color: #333; color: #888; }
-        [data-theme="dark"] .mood-filter-pill:hover { border-color: #666; color: #ccc; }
-        [data-theme="dark"] .mood-filter-pill.active { background: #f0f0f0; border-color: #f0f0f0; color: #111; }
+        .browse-featured-main img {
+          width: 100%; height: 100%; object-fit: cover; object-position: top center;
+          display: block; opacity: 0.85;
+          transition: opacity 0.3s ease;
+        }
+        .browse-featured-main:hover img { opacity: 0.7; }
+        .browse-featured-overlay {
+          position: absolute; inset: 0;
+          background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 55%);
+          display: flex; flex-direction: column; justify-content: flex-end;
+          padding: 1.5rem;
+          pointer-events: none;
+        }
+        .browse-featured-tag {
+          font-size: 0.63rem; font-weight: 700; letter-spacing: 0.12em;
+          text-transform: uppercase; color: rgba(255,255,255,0.5); margin-bottom: 0.35rem;
+          font-family: var(--font-sans);
+        }
+        .browse-featured-title {
+          font-family: var(--font-serif); font-size: 1.9rem; font-weight: 500;
+          color: white; line-height: 1.1; margin-bottom: 0.4rem;
+        }
+        .browse-featured-meta {
+          font-size: 0.72rem; color: rgba(255,255,255,0.5);
+          font-family: var(--font-sans);
+        }
+        .browse-sidebar {
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          overflow-y: auto;
+        }
+        .browse-sidebar-item {
+          display: flex; gap: 0.7rem; align-items: center; cursor: pointer;
+          padding: 0.55rem 0; border-bottom: 1px solid var(--border-color);
+        }
+        .browse-sidebar-item:last-child { border-bottom: none; }
+        .browse-sidebar-item:hover .browse-sidebar-title { color: var(--text-primary); }
+        .browse-sidebar-rank {
+          font-size: 0.7rem; font-weight: 700; color: var(--text-secondary);
+          width: 16px; text-align: center; flex-shrink: 0; opacity: 0.4;
+        }
+        .browse-sidebar-poster {
+          width: 42px; height: 63px; border-radius: 6px; overflow: hidden;
+          flex-shrink: 0; background: var(--border-color);
+        }
+        .browse-sidebar-poster img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .browse-sidebar-info { flex: 1; min-width: 0; }
+        .browse-sidebar-title {
+          font-size: 0.8rem; font-weight: 600; color: var(--text-primary);
+          white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+          margin-bottom: 3px; transition: color 0.15s;
+        }
+        .browse-sidebar-meta { font-size: 0.67rem; color: var(--text-secondary); }
+        .browse-sidebar-rating { font-size: 0.67rem; font-weight: 600; color: var(--text-secondary); flex-shrink: 0; }
+        [data-theme="dark"] .browse-sidebar-item { border-color: #2a2a2a; }
+        @media (max-width: 700px) {
+          .browse-featured-layout { grid-template-columns: 1fr; }
+          .browse-sidebar { max-height: none; }
+        }
         .feed-refresh-btn {
           background: none;
           border: none;
