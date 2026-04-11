@@ -58,13 +58,20 @@ export const tmdb = {
   },
   getAiringToday: () => fetchFromTMDB('/tv/airing_today'),
   getWatchProviders: (id, type) => fetchFromTMDB(`/${type}/${id}/watch/providers`),
-  getUpcomingTV: () => {
+  getUpcomingTV: async () => {
     const today = new Date().toISOString().split('T')[0];
-    return fetchFromTMDB('/discover/tv', {
-      'first_air_date.gte': today,
-      sort_by: 'first_air_date.asc',
-      'vote_count.gte': 5,
-    });
+    const sixMonthsOut = new Date(); sixMonthsOut.setMonth(sixMonthsOut.getMonth() + 6);
+    const endDate = sixMonthsOut.toISOString().split('T')[0];
+    const pages = await Promise.all([1, 2, 3, 4, 5].map(page =>
+      fetchFromTMDB('/discover/tv', {
+        'first_air_date.gte': today,
+        'first_air_date.lte': endDate,
+        sort_by: 'popularity.desc',
+        'vote_count.gte': 5,
+        page,
+      })
+    ));
+    return { results: pages.flatMap(p => p?.results ?? []) };
   },
   getStreamingMovies: async () => {
     const pages = await Promise.all([1, 2, 3].map(page =>

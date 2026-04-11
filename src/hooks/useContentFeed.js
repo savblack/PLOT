@@ -66,14 +66,14 @@ export function useContentFeed(region) {
         setNewReleases(enriched);
       }
 
-      if (upcomingData) setUpcoming(upcomingData.results.filter(isFuture).sort(byDateAsc).slice(0, 40));
+      if (upcomingData) setUpcoming(upcomingData.results.filter(isFuture).sort(byDateAsc));
 
       if (tvOnAir) {
         const enriched = await enrichWithProviders(tvOnAir.results.filter(isReleased).slice(0, 40), 'tv');
         setNewTV(enriched);
       }
 
-      if (upcomingTVData) setUpcomingTV(upcomingTVData.results.filter(isFuture).sort(byDateAsc).slice(0, 40));
+      if (upcomingTVData) setUpcomingTV(upcomingTVData.results.filter(isFuture).sort(byDateAsc));
 
       const [streamingMovieData, streamingTVData] = await Promise.all([
         tmdb.getStreamingMovies(),
