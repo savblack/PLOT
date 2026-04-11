@@ -3053,8 +3053,8 @@ main.content-grid.animate-in {
   color: white; line-height: 1.1; margin: 0;
 }
 .upcoming-hero-date {
-  font-size: 0.85rem; color: rgba(255,255,255,0.5); font-family: var(--font-serif);
-  margin-bottom: 0.85rem;
+  font-size: 0.75rem; color: rgba(255,255,255,0.5); font-family: var(--font-sans);
+  margin-top: 0.4rem; margin-bottom: 0.85rem;
 }
 
 /* Watchlist button — hero variant */
