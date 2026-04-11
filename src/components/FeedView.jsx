@@ -184,10 +184,6 @@ export default function FeedView({
               <option value="">Rating</option>
               {[10,9,8,7,6,5,4,3,2,1].map(r => <option key={r} value={r}>{r}/10</option>)}
             </select>
-            <select value={feedMood} onChange={e => setFeedMood(e.target.value)}>
-              <option value="">Mood</option>
-              {MOODS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
-            </select>
             <select value={feedSort} onChange={e => setFeedSort(e.target.value)}>
               <option value="">Sort</option>
               <option value="date-desc">Newest first</option>
