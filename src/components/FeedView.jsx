@@ -11,7 +11,7 @@ const BROWSE_SORT_OPTIONS = [
 
 export default function FeedView({
   feedTab, setFeedTab,
-  forYouFeed, trending, followingFeed, followingLoading,
+  forYouFeed, trending, newReleases, newTV, followingFeed, followingLoading,
   mediaFilter, setMediaFilter, feedLayout,
   preferences, user,
   getSavedData, onItemClick, onNavigateToProfile,
@@ -42,7 +42,13 @@ export default function FeedView({
     });
   }, [feedTab, mediaFilter, browseSort, browseGenre, browseRating]);
 
+  const newReleasesFeed = [...(newReleases || []), ...(newTV || [])].map(i => ({
+    ...i,
+    media_type: i.media_type || (i.title ? 'movie' : 'tv'),
+  }));
+
   const rawItems = feedTab === 'trending' ? trending
+    : feedTab === 'new' ? newReleasesFeed
     : feedTab === 'following' ? followingFeed
     : forYouFeed;
 
@@ -72,6 +78,7 @@ export default function FeedView({
       <div className="journal-tab-nav">
         <button className={`journal-tab-btn ${feedTab === 'foryou' ? 'active' : ''}`} onClick={() => setFeedTab('foryou')}>For You</button>
         <button className={`journal-tab-btn ${feedTab === 'trending' ? 'active' : ''}`} onClick={() => setFeedTab('trending')}>Trending</button>
+        <button className={`journal-tab-btn ${feedTab === 'new' ? 'active' : ''}`} onClick={() => setFeedTab('new')}>New Releases</button>
         {user && <button className={`journal-tab-btn ${feedTab === 'following' ? 'active' : ''}`} onClick={() => setFeedTab('following')}>Following</button>}
         <button className={`journal-tab-btn ${feedTab === 'browse' ? 'active' : ''}`} onClick={() => setFeedTab('browse')}>Browse</button>
       </div>
@@ -183,6 +190,7 @@ export default function FeedView({
 
           {feedTab === 'foryou' && forYouFeed.length === 0 && preferences.genres.length > 0 && <LoadingSpinner />}
           {feedTab === 'trending' && trending.length === 0 && <LoadingSpinner />}
+          {feedTab === 'new' && newReleasesFeed.length === 0 && <LoadingSpinner />}
           {feedTab === 'following' && followingLoading && <LoadingSpinner />}
 
           {feedTab === 'following' && !followingLoading && followingFeed.length === 0 ? (

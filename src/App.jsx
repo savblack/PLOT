@@ -277,7 +277,7 @@ export default function App() {
         {view === 'home' && (
           <FeedView
             feedTab={feedTab} setFeedTab={setFeedTab}
-            forYouFeed={forYouFeed} trending={trending}
+            forYouFeed={forYouFeed} trending={trending} newReleases={newReleases} newTV={newTV}
             mediaFilter={mediaFilter} setMediaFilter={setMediaFilter} feedLayout={feedLayout}
             preferences={preferences}
             followingFeed={followingFeed} followingLoading={!followingFeedLoaded} user={user}
