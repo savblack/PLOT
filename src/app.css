@@ -1209,11 +1209,17 @@ main.content-grid.animate-in {
   grid-column: 1 / -1;
 }
 
+.journal-tab-nav-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid #eee;
+}
+
 .journal-tab-nav {
   display: flex;
   gap: 0;
-  border-bottom: 1px solid #eee;
-  margin-bottom: 2rem;
 }
 
 .journal-tab-btn {
@@ -1235,7 +1241,7 @@ main.content-grid.animate-in {
 .journal-tab-btn:hover { color: var(--text-primary); }
 .journal-tab-btn.active { color: var(--text-primary); border-bottom-color: currentColor; }
 
-[data-theme="dark"] .journal-tab-nav { border-bottom-color: #2a2a2a; }
+[data-theme="dark"] .journal-tab-nav-row { border-bottom-color: #2a2a2a; }
 [data-theme="dark"] .journal-tab-btn { color: #666; }
 [data-theme="dark"] .journal-tab-btn:hover { color: #ccc; }
 [data-theme="dark"] .journal-tab-btn.active { color: #f0f0f0; }
@@ -3020,7 +3026,7 @@ main.content-grid.animate-in {
   border-radius: var(--radius-lg);
   overflow: hidden;
   position: relative;
-  height: 240px;
+  height: 320px;
   background: #111;
   cursor: pointer;
   margin-bottom: 2rem;
