@@ -3055,10 +3055,10 @@ main.content-grid.animate-in {
 .upcoming-watchlist-btn.hero {
   padding: 0.38rem 1rem;
   border-radius: var(--radius-pill);
-  border: 1.5px solid rgba(255,255,255,0.5);
+  border: 1px solid rgba(255,255,255,0.35);
   background: transparent;
   color: white;
-  font-size: 0.75rem; font-weight: 600; font-family: var(--font-sans);
+  font-size: 0.75rem; font-weight: 400; font-family: var(--font-sans);
   cursor: pointer; width: fit-content;
   transition: background 0.15s, border-color 0.15s;
 }

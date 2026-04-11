@@ -123,7 +123,7 @@ export default function UpcomingView({
                     className={`upcoming-watchlist-btn hero ${watchlistIds.has(hero.id) ? 'saved' : ''}`}
                     onClick={e => toggleWatchlist(e, hero)}
                   >
-                    {watchlistIds.has(hero.id) ? '✓ Saved' : '+ Watchlist'}
+                    {watchlistIds.has(hero.id) ? '✓ Saved' : 'Add to Watchlist'}
                   </button>
                 )}
               </div>
