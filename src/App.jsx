@@ -18,10 +18,12 @@ import { useTheme } from './hooks/useTheme';
 import { useContentFeed } from './hooks/useContentFeed';
 import { useForYouFeed } from './hooks/useForYouFeed';
 import { useJournalData } from './hooks/useJournalData';
+import { usePostHog } from '@posthog/react';
 
 export default function App() {
   const { username: routeUsername, listId: routeListId, view: routeView } = useParams();
   const navigate = useNavigate();
+  const posthog = usePostHog();
 
   // ── Auth & preferences ─────────────────────────────
   const [user, setUser] = useState(null);
@@ -73,7 +75,7 @@ export default function App() {
     clearTimeout(toastTimerRef.current);
     setErrorToast(msg);
     toastTimerRef.current = setTimeout(() => setErrorToast(null), 3500);
-  });
+  }, posthog);
 
   const {
     forYouFeed, followingFeed, followingFeedLoaded, setFollowingFeedLoaded,
@@ -152,6 +154,7 @@ export default function App() {
     if (error) {
       setProfileUsernameError(error.message.includes('unique') ? 'Username taken' : 'Error saving');
     } else if (data) {
+      posthog?.capture('profile_visibility_changed', { is_public: next });
       setProfile(data);
       setProfileUsernameInput(data.username);
       setProfileUsernameError('');
@@ -200,6 +203,7 @@ export default function App() {
       ? `${base}/u/${profile.username}`
       : `${base}/u/${profile.username}/list/${id}`;
     navigator.clipboard.writeText(url);
+    posthog?.capture('profile_link_copied', { link_type: type });
     setCopiedLink(type === 'profile' ? 'profile' : id);
     setTimeout(() => setCopiedLink(null), 2000);
   };
@@ -209,7 +213,11 @@ export default function App() {
     const q = typeof query === 'string' ? query : searchQuery;
     if (!q.trim()) return;
     const data = await tmdb.search(q);
-    if (data) { setSearchResults(data.results); setView('search'); }
+    if (data) {
+      posthog?.capture('search_performed', { query: q, result_count: data.results?.length ?? 0 });
+      setSearchResults(data.results);
+      setView('search');
+    }
   };
 
   const navigateTo = (nextView) => {
@@ -221,6 +229,8 @@ export default function App() {
   };
 
   const logout = () => {
+    posthog?.capture('user_logged_out');
+    posthog?.reset();
     supabase.auth.signOut();
     setWatched([]);
   };
@@ -235,6 +245,7 @@ export default function App() {
       toastTimerRef.current = setTimeout(() => setErrorToast(null), 3500);
       return;
     }
+    posthog?.capture('account_deleted');
     logout();
   };
 
@@ -259,6 +270,8 @@ export default function App() {
         logout={logout} setShowAuth={setShowAuth}
         avatarInputRef={avatarInputRef} setCropFile={setCropFile}
         onDeleteAccount={deleteAccount}
+        onNavigateToProfile={(uname) => { setPublicProfileUsername(uname); setView('public'); navigate(`/u/${uname}`); }}
+        minimal={!user && view === 'public'}
       />
 
       <main className="content-grid animate-in">

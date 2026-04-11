@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { GENRES, REGIONS } from '../constants.js';
 import SearchBar from './SearchBar';
@@ -8,7 +9,7 @@ export default function AppHeader({
   mediaFilter, setMediaFilter,
   searchQuery, setSearchQuery, handleSearch, onResultClick,
   showProfileMenu, setShowProfileMenu,
-  showMobileSearch, setShowMobileSearch,
+  showMobileSearch, setShowMobileSearch, onNavigateToProfile,
   theme, setTheme,
   feedLayout, setFeedLayout,
   preferences, setPreferences,
@@ -21,8 +22,30 @@ export default function AppHeader({
   logout, setShowAuth,
   avatarInputRef, setCropFile,
   onDeleteAccount,
+  minimal,
 }) {
   const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+  if (minimal) return (
+    <header className="main-header animate-in">
+      <div className="top-nav">
+        <div className="branding-left" onClick={() => navigateTo('home')}>
+          <img src={isDark ? '/plot-logo-inverse.svg' : '/plot-logo.svg'} alt="Plot" className="logo-img" />
+        </div>
+        <div className="header-right">
+          <button className="auth-header-btn" onClick={() => setShowAuth(true)}>Sign In</button>
+        </div>
+      </div>
+    </header>
+  );
+  const [usernameCopied, setUsernameCopied] = useState(false);
+  const [showManageAccount, setShowManageAccount] = useState(false);
+  const copyProfileLink = () => {
+    if (!profile?.username) return;
+    navigator.clipboard.writeText(`${window.location.origin}/u/${profile.username}`);
+    setUsernameCopied(true);
+    setTimeout(() => setUsernameCopied(false), 2000);
+  };
 
   return (
     <>
@@ -56,6 +79,7 @@ export default function AppHeader({
               setSearchQuery={setSearchQuery}
               onSubmit={handleSearch}
               onResultClick={onResultClick}
+              onProfileClick={onNavigateToProfile}
             />
             {user ? (
               <div className="profile-menu-wrapper">
@@ -132,21 +156,26 @@ export default function AppHeader({
                       <div className="profile-public-section">
                         <div className="settings-row">
                           <span className="settings-label">Username</span>
-                          <div className="username-input-row">
-                            <span className="username-at">@</span>
-                            <input
-                              className="username-input"
-                              value={profileUsernameInput}
-                              placeholder="set username"
-                              onChange={e => setProfileUsernameInput(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-                              onKeyDown={e => {
-                                if (e.key === 'Enter') saveUsername();
-                                if (e.key === 'Escape') setProfileUsernameInput(profile?.username || '');
-                              }}
-                              onBlur={saveUsername}
-                              maxLength={30}
-                            />
-                            {profileUsernameSaving && <span className="username-saving">...</span>}
+                          <div className="username-copy-wrap" onClick={copyProfileLink}>
+                            <span className="username-tooltip">
+                              {usernameCopied ? 'Copied!' : 'Copy profile link'}
+                            </span>
+                            <div className="username-input-row">
+                              <span className="username-at">@</span>
+                              <input
+                                className="username-input"
+                                value={profileUsernameInput}
+                                placeholder="set username"
+                                onChange={e => setProfileUsernameInput(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                                onKeyDown={e => {
+                                  if (e.key === 'Enter') saveUsername();
+                                  if (e.key === 'Escape') setProfileUsernameInput(profile?.username || '');
+                                }}
+                                onBlur={saveUsername}
+                                maxLength={30}
+                              />
+                              {profileUsernameSaving && <span className="username-saving">...</span>}
+                            </div>
                           </div>
                         </div>
                         {profileUsernameError && <p className="username-error">{profileUsernameError}</p>}
@@ -220,9 +249,21 @@ export default function AppHeader({
                       <button className="profile-dropdown-item danger" onClick={() => { logout(); setShowProfileMenu(false); }}>
                         Sign Out
                       </button>
-                      <button className="profile-dropdown-item danger" style={{ fontSize: '0.75rem', opacity: 0.6 }} onClick={() => { setShowProfileMenu(false); onDeleteAccount?.(); }}>
-                        Delete account
+                      <hr className="dropdown-divider" />
+                      <button className="manage-account-toggle" onClick={() => setShowManageAccount(v => !v)}>
+                        Manage account
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ transform: showManageAccount ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
+                          <polyline points="6 9 12 15 18 9"/>
+                        </svg>
                       </button>
+                      {showManageAccount && (
+                        <div className="manage-account-content">
+                          <p className="manage-account-desc">Permanently deletes your account, lists, journal entries, and all data. This cannot be undone.</p>
+                          <button className="manage-account-delete" onClick={() => { setShowProfileMenu(false); setShowManageAccount(false); onDeleteAccount?.(); }}>
+                            Delete account
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </>,
                   document.body

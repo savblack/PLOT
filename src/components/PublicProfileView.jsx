@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { supabase } from '../api/supabase';
 import ShareButton from './ShareButton';
+import { usePostHog } from '@posthog/react';
 
 function StarRow({ rating }) {
   if (!rating) return null;
@@ -18,6 +20,7 @@ function formatDate(dateStr) {
 }
 
 export default function PublicProfileView({ username, initialListId, onItemClick, onBack, user, onAuthRequired, onFollowChanged }) {
+  const posthog = usePostHog();
   const [profileData, setProfileData] = useState(null);
   const [publicLists, setPublicLists] = useState([]);
   const [listItems, setListItems] = useState([]);
@@ -26,6 +29,7 @@ export default function PublicProfileView({ username, initialListId, onItemClick
   const [activeList, setActiveList] = useState(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [isPrivate, setIsPrivate] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followerCount, setFollowerCount] = useState(0);
   const [followLoading, setFollowLoading] = useState(false);
@@ -40,10 +44,10 @@ export default function PublicProfileView({ username, initialListId, onItemClick
         .from('profiles')
         .select('id, username, display_name, is_public, avatar_url, is_supporter')
         .eq('username', username)
-        .eq('is_public', true)
         .single();
 
       if (!prof) { setNotFound(true); setLoading(false); return; }
+      if (!prof.is_public) { setProfileData(prof); setIsPrivate(true); setLoading(false); return; }
       setProfileData(prof);
 
       const [listsResult, journalResult, followerResult, followingResult, watchCountResult] = await Promise.all([
@@ -88,7 +92,7 @@ export default function PublicProfileView({ username, initialListId, onItemClick
   if (notFound) return (
     <div style={{ padding: '4rem', textAlign: 'center' }}>
       <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
-        Profile not found or is private.
+        Profile not found.
       </p>
       <button className="back-btn" onClick={onBack}>← Go back</button>
     </div>
@@ -97,8 +101,22 @@ export default function PublicProfileView({ username, initialListId, onItemClick
   const activeListItems = activeList ? listItems.filter(li => li.list_id === activeList.id) : [];
   const displayName = profileData.display_name || profileData.username;
 
+  const HERO_GRADIENTS = [
+    'linear-gradient(135deg, #f0c8d8 0%, #c8d8f0 100%)', // dusk: rose → sky blue
+    'linear-gradient(135deg, #e8c8f0 0%, #f0e0c0 100%)', // dawnlight: lavender → cream
+    'linear-gradient(135deg, #c8f0e0 0%, #f0f0c0 100%)', // garden: mint → soft yellow
+    'linear-gradient(135deg, #f0d0b8 0%, #d8b8f0 100%)', // sorbet: peach → lilac
+    'linear-gradient(135deg, #b8e0f0 0%, #f0b8d8 100%)', // horizon: ice blue → soft pink
+  ];
+
+  const heroGradient = (() => {
+    let hash = 0;
+    const s = profileData.username;
+    for (let i = 0; i < s.length; i++) hash = (hash * 31 + s.charCodeAt(i)) >>> 0;
+    return HERO_GRADIENTS[hash % HERO_GRADIENTS.length];
+  })();
+
   const allPosters = listItems.filter(i => i.poster_path).map(i => i.poster_path);
-  const heroPosters = allPosters.slice(0, 4);
 
   const stripRaw = allPosters.length > 0
     ? Array.from({ length: Math.ceil(40 / allPosters.length) }, () => allPosters).flat().slice(0, 40)
@@ -123,6 +141,7 @@ export default function PublicProfileView({ username, initialListId, onItemClick
       setFollowError(true);
       setTimeout(() => setFollowError(false), 3000);
     } else {
+      posthog?.capture(next ? 'user_followed' : 'user_unfollowed', { followed_username: profileData.username });
       onFollowChanged?.();
     }
     setFollowLoading(false);
@@ -136,8 +155,113 @@ export default function PublicProfileView({ username, initialListId, onItemClick
     }
   };
 
-  return (
+  // PRIVATE PROFILE VIEW
+  // Option A (lock card, clean) is active. To preview Option B (ghost grid + blur), swap the comments below.
+  if (isPrivate) return (
     <div className="animate-in">
+      {/* Hero — same as public */}
+      <div className="pp-hero" style={{ background: heroGradient }}>
+        <div className="pp-hero-overlay" />
+        <div className="pp-profile-card">
+          {profileData.avatar_url && (
+            <div className="public-profile-avatar pp-avatar-large">
+              <img src={profileData.avatar_url} alt={displayName} className="pp-avatar-img" />
+            </div>
+          )}
+          <div className="pp-profile-card-body">
+            <h1 className="pp-display-name">{displayName}</h1>
+            <p className="public-profile-username">@{profileData.username}</p>
+            <p className="pp-stats" style={{ opacity: 0.5 }}>Private profile</p>
+          </div>
+          <div className="pp-hero-actions">
+            {user && (
+              <button
+                className={`pp-follow-btn ${isFollowing ? 'following' : ''}`}
+                onClick={handleFollow}
+                disabled={followLoading}
+              >
+                {isFollowing ? 'Following' : 'Follow'}
+              </button>
+            )}
+            <ShareButton
+              shareData={{
+                title: displayName,
+                text: `Check out ${displayName}'s watchlist on Plot`,
+                url: `${window.location.origin}/u/${profileData.username}`,
+              }}
+              variant="modal"
+              label="Share Profile"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* OPTION A — Lock card */}
+      <div style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        gap: '0.75rem', padding: '3.5rem 1rem', textAlign: 'center',
+      }}>
+        <div style={{
+          width: 52, height: 52, borderRadius: '50%',
+          background: 'var(--surface)', display: 'flex',
+          alignItems: 'center', justifyContent: 'center',
+          border: '1px solid var(--border)',
+        }}>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+        </div>
+        <p style={{ color: 'var(--text-primary)', fontWeight: 500, fontSize: '0.95rem', margin: 0 }}>
+          This account is private
+        </p>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: 0, maxWidth: 280 }}>
+          Follow {displayName} to see their lists and activity.
+        </p>
+        {!user && (
+          <a href="/signup" className="pp-join-link" style={{ marginTop: '0.5rem' }}>
+            Join Plot to follow →
+          </a>
+        )}
+      </div>
+
+      {/* OPTION B — Ghost grid with blur overlay (comment out Option A and uncomment this to preview)
+      <div style={{ position: 'relative', overflow: 'hidden', padding: '2rem 0' }}>
+        <div style={{ filter: 'blur(8px)', opacity: 0.3, pointerEvents: 'none', userSelect: 'none' }}>
+          <div style={{ padding: '0 1.5rem 1.5rem' }}>
+            <p style={{ fontSize: '0.8rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>Lists</p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
+              {[1,2,3].map(i => <div key={i} style={{ background: 'var(--surface)', borderRadius: 12, height: 140, border: '1px solid var(--border)' }} />)}
+            </div>
+          </div>
+          <div style={{ padding: '0 1.5rem' }}>
+            <p style={{ fontSize: '0.8rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>Recently Watched</p>
+            <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'hidden' }}>
+              {[1,2,3,4,5].map(i => <div key={i} style={{ flexShrink: 0, width: 80, height: 120, background: 'var(--surface)', borderRadius: 8, border: '1px solid var(--border)' }} />)}
+            </div>
+          </div>
+        </div>
+        <div style={{
+          position: 'absolute', inset: 0,
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          gap: '0.75rem', textAlign: 'center',
+          background: 'linear-gradient(to bottom, transparent 0%, var(--bg) 80%)',
+        }}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+          <p style={{ color: 'var(--text-primary)', fontWeight: 500, fontSize: '0.95rem', margin: 0 }}>This account is private</p>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: 0 }}>Follow {displayName} to see their content.</p>
+          {!user && <a href="/signup" className="pp-join-link" style={{ marginTop: '0.5rem' }}>Join Plot to follow →</a>}
+        </div>
+      </div>
+      */}
+    </div>
+  );
+
+  return (
+    <div className="animate-in" style={!user ? { paddingBottom: '180px' } : undefined}>
       {activeList ? (
         <>
           <div className="list-detail-header">
@@ -187,32 +311,28 @@ export default function PublicProfileView({ username, initialListId, onItemClick
         <>
           {/* Hero banner */}
           <div className="pp-hero">
-            {heroPosters.length > 0 ? (
-              <div className="pp-hero-strip">
-                {heroPosters.map((p, i) => (
-                  <img key={i} src={`https://image.tmdb.org/t/p/w342${p}`} alt="" loading="lazy" decoding="async" />
-                ))}
-              </div>
-            ) : (
-              <div className="pp-hero-fallback" />
-            )}
             <div className="pp-hero-overlay" />
             <div className="pp-profile-card">
-              <div className="public-profile-avatar pp-avatar-large">
-                {profileData.avatar_url
-                  ? <img src={profileData.avatar_url} alt={displayName} className="pp-avatar-img" />
-                  : displayName[0].toUpperCase()
-                }
-              </div>
+              {profileData.avatar_url && (
+                <div className="public-profile-avatar pp-avatar-large">
+                  <img src={profileData.avatar_url} alt={displayName} className="pp-avatar-img" />
+                </div>
+              )}
               <div className="pp-profile-card-body">
                 <h1 className="pp-display-name">
                   {displayName}
-                  {profileData.is_supporter && (
-                    <span className="supporter-badge">
-                      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round">
-                        <path d="M8 13.5S1.5 9 1.5 4.8A3.3 3.3 0 0 1 8 3a3.3 3.3 0 0 1 6.5 1.8C14.5 9 8 13.5 8 13.5z"/>
+                  {profileData.is_pro && (
+                    <span className="pro-badge" title="Pro">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12"/>
                       </svg>
-                      Supporter
+                    </span>
+                  )}
+                  {profileData.is_supporter && (
+                    <span className="supporter-badge" title="Supporter">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
                     </span>
                   )}
                 </h1>
@@ -373,15 +493,21 @@ export default function PublicProfileView({ username, initialListId, onItemClick
           )}
 
           {publicLists.length === 0 && recentWatches.length === 0 && (
-            <p className="empty-list-msg">No public activity yet.</p>
+            <p className="empty-list-msg" style={{ textAlign: 'center', padding: '2rem 0' }}>No public activity yet.</p>
           )}
 
-          {/* Join CTA for unauthenticated visitors */}
-          {!user && (
-            <div className="pp-join-cta">
-              <p className="pp-join-tagline">Track what you watch. Share what you love.</p>
-              <a href="/signup" className="pp-join-link">Join Plot →</a>
-            </div>
+          {!user && createPortal(
+            <div className="pp-cta-a" style={{ background: heroGradient }}>
+              <div className="pp-cta-a-inner">
+                <p className="pp-cta-a-eyebrow">You're perusing {displayName.split(' ')[0]}'s picks</p>
+                <h2 className="pp-cta-a-headline">Track what you watch.<br/>Share what you love.</h2>
+                <div className="pp-cta-a-actions">
+                  <a href="/signup" className="pp-cta-a-btn">Create account</a>
+                  <a href="/" className="pp-cta-a-secondary">Learn more</a>
+                </div>
+              </div>
+            </div>,
+            document.body
           )}
         </>
       )}
