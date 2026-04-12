@@ -24,7 +24,7 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Nothing+You+Could+Do&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Nothing+You+Could+Do&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Manrope:wght@300;400;500;600;700;800&family=Poiret+One&display=swap" rel="stylesheet" />
   <style>
     /* ── Reset & Tokens ─────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -115,9 +115,15 @@
       display: flex;
       align-items: center;
     }
-    .nav-logo img {
-      height: 30px;
-      display: block;
+    .nav-logo span {
+      font-family: 'Poiret One', sans-serif;
+      font-size: 2.5rem;
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      text-transform: uppercase;
+      color: var(--text);
+      line-height: 1;
+      user-select: none;
     }
 
     .nav-links {
@@ -745,12 +751,18 @@
       padding: 0;
       user-select: none;
     }
-    .footer-wordmark img {
-      width: 92%;
-      display: block;
-      margin: 0 auto;
-      filter: brightness(0) invert(1);
+    .footer-wordmark span {
+      font-family: 'Poiret One', sans-serif;
+      font-size: clamp(8rem, 22vw, 18rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      text-transform: uppercase;
+      color: #fff;
       opacity: 0.07;
+      line-height: 1;
+      display: block;
+      text-align: center;
+      user-select: none;
     }
 
     .footer-meta {
@@ -1015,7 +1027,7 @@
 
   <!-- ── Navbar ──────────────────────────────────────────────── -->
   <nav id="navbar">
-    <a href="#" class="nav-logo"><img src="plot-logo.svg" alt="PLOT"></a>
+    <a href="#" class="nav-logo"><span>PLOT</span></a>
     <ul class="nav-links" id="navLinks">
       <li><a href="https://app.theplot.tv/login">Log in</a></li>
       <li><a href="https://app.theplot.tv/signup" class="nav-cta">Sign up</a></li>
@@ -1272,7 +1284,7 @@
 
   <!-- ── Footer ────────────────────────────────────────────────── -->
   <footer>
-    <div class="footer-wordmark"><img src="plot-logo.svg" alt="PLOT"></div>
+    <div class="footer-wordmark"><span>PLOT</span></div>
     <div class="footer-meta">
       <span class="footer-tagline">YOUR FILM & TV JOURNAL</span>
       <ul class="footer-links">
