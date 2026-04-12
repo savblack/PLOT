@@ -105,6 +105,7 @@ export default function JournalView({
   onItemClick,
   setShowAuth,
   deleteFromJournal,
+  backfillReleaseDates,
 }) {
   const [showImportModal, setShowImportModal] = useState(false);
   const [showJournalNewList, setShowJournalNewList] = useState(false);
@@ -558,6 +559,7 @@ export default function JournalView({
               watched={watched}
               user={user}
               onItemClick={onItemClick}
+              onMount={backfillReleaseDates}
             />
           )}
         </div>

@@ -1,6 +1,8 @@
+import { useEffect } from 'react';
 import { GENRES } from '../constants';
 
-export default function JournalBoardTab({ watched, user, onItemClick }) {
+export default function JournalBoardTab({ watched, user, onItemClick, onMount }) {
+  useEffect(() => { onMount?.(); }, []);
 
   // ── Derived stats ──────────────────────────────────────
   const now = new Date();
@@ -46,6 +48,20 @@ export default function JournalBoardTab({ watched, user, onItemClick }) {
   const movieCount = watched.filter(i => (i.media_type || (i.title ? 'movie' : 'tv')) === 'movie').length;
   const tvCount = watched.length - movieCount;
   const moviePct = watched.length > 0 ? Math.round((movieCount / watched.length) * 100) : 0;
+
+  // By decade
+  const decadeCounts = {};
+  watched.forEach(i => {
+    const dateStr = i.release_date || i.first_air_date;
+    if (!dateStr) return;
+    const year = new Date(dateStr).getFullYear();
+    if (isNaN(year)) return;
+    const key = year >= 2020 ? '2020s' : year >= 2010 ? '2010s' : year >= 2000 ? '2000s' : year >= 1990 ? '1990s' : 'older';
+    decadeCounts[key] = (decadeCounts[key] || 0) + 1;
+  });
+  const decadeOrder = ['2020s', '2010s', '2000s', '1990s', 'older'];
+  const topDecades = decadeOrder.filter(d => decadeCounts[d]).map(d => [d, decadeCounts[d]]);
+  const maxDecadeCount = Math.max(...topDecades.map(d => d[1]), 1);
 
   // Rating distribution 1–10
   const ratingDist = Array.from({ length: 10 }, (_, i) => ({
@@ -129,28 +145,57 @@ export default function JournalBoardTab({ watched, user, onItemClick }) {
         </div>
         <div className="td-hero-cell">
           <span className="td-hero-label">Top mood</span>
-          <span className="td-hero-num td-hero-num-sm td-hero-num-upper">{topMoods[0]?.[0] ?? '—'}</span>
+          <span className="td-hero-num td-hero-num-sm" style={{ textTransform: 'capitalize' }}>{topMoods[0]?.[0] ?? '—'}</span>
           {topMoods[0] && (
             <span className="td-hero-sub">{topMoods[0][1]} titles</span>
           )}
         </div>
       </div>
 
-      {/* ── Top genres ───────────────────────────────── */}
-      {topGenres.length > 0 && (
-        <div className="td-card">
-          <div className="td-card-label">Top genres</div>
-          {topGenres.map(([label, count]) => (
-            <div key={label} className="td-bar-row">
-              <span className="td-bar-label">{label}</span>
-              <div className="td-bar-track">
-                <div className="td-bar-fill" style={{ width: `${(count / maxGenreCount) * 100}%` }} />
-              </div>
-              <span className="td-bar-pct">{Math.round((count / watched.length) * 100)}%</span>
-            </div>
-          ))}
+      {/* ── Movies vs TV ─────────────────────────────── */}
+      <div className="td-card">
+        <div className="td-card-label">Movies vs TV</div>
+        <div className="td-ft-bar">
+          <div className="td-ft-fill" style={{ width: `${moviePct}%` }} />
         </div>
-      )}
+        <div className="td-ft-labels">
+          <span style={{ fontWeight: 500 }}>Movies {moviePct}%</span>
+          <span style={{ color: 'var(--text-secondary)' }}>TV Series {100 - moviePct}%</span>
+        </div>
+      </div>
+
+      {/* ── Top genres + By decade ────────────────────── */}
+      <div className="td-two-col">
+        {topGenres.length > 0 && (
+          <div className="td-card">
+            <div className="td-card-label">Top genres</div>
+            {topGenres.map(([label, count]) => (
+              <div key={label} className="td-bar-row">
+                <span className="td-bar-label">{label}</span>
+                <div className="td-bar-track">
+                  <div className="td-bar-fill" style={{ width: `${(count / maxGenreCount) * 100}%` }} />
+                </div>
+                <span className="td-bar-pct">{Math.round((count / watched.length) * 100)}%</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {topDecades.length > 0 && (
+          <div className="td-card">
+            <div className="td-card-label">By decade</div>
+            {topDecades.map(([decade, count]) => (
+              <div key={decade} className="td-bar-row">
+                <span className="td-bar-label">{decade}</span>
+                <div className="td-bar-track">
+                  <div className="td-bar-fill" style={{ width: `${(count / maxDecadeCount) * 100}%` }} />
+                </div>
+                <span className="td-bar-pct">{count}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* ── Mood fingerprint ─────────────────────────── */}
       {topMoods.length > 0 && (
@@ -218,18 +263,6 @@ export default function JournalBoardTab({ watched, user, onItemClick }) {
               Most active: {peakMonth.month} · {peakMonth.count} title{peakMonth.count !== 1 ? 's' : ''}
             </div>
           )}
-        </div>
-      </div>
-
-      {/* ── Movies vs TV ─────────────────────────────── */}
-      <div className="td-card">
-        <div className="td-card-label">Movies vs TV</div>
-        <div className="td-ft-bar">
-          <div className="td-ft-fill" style={{ width: `${moviePct}%` }} />
-        </div>
-        <div className="td-ft-labels">
-          <span style={{ fontWeight: 500 }}>Movies {moviePct}%</span>
-          <span style={{ color: 'var(--text-secondary)' }}>TV Series {100 - moviePct}%</span>
         </div>
       </div>
 

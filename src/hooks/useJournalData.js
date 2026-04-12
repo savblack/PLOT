@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { tmdb } from '../api/tmdb';
 import { supabase } from '../api/supabase';
 
 export function useJournalData(user, onAuthRequired, onError, posthog) {
@@ -45,7 +46,8 @@ export function useJournalData(user, onAuthRequired, onError, posthog) {
         watchStatus: item.watchStatus || null,
         watched_at:  item.watched_at || null,
         updatedAt:   item.updatedAt || null,
-        genre_ids:   item.genre_ids || null,
+        genre_ids:    item.genre_ids || null,
+        release_date: item.release_date || item.first_air_date || null,
       };
       const { error } = await supabase
         .from('journal')
@@ -150,6 +152,29 @@ export function useJournalData(user, onAuthRequired, onError, posthog) {
     setListItems(prev => prev.filter(li => !tmdbIds.includes(li.tmdb_id)));
   };
 
+  const backfillRan = useRef(false);
+  const backfillReleaseDates = async () => {
+    if (!user || backfillRan.current) return;
+    backfillRan.current = true;
+    const missing = watched.filter(i => !i.release_date);
+    if (missing.length === 0) return;
+    for (const item of missing) {
+      try {
+        const id = item.tmdb_id || item.id;
+        const type = item.media_type || (item.title ? 'movie' : 'tv');
+        const details = type === 'movie'
+          ? await tmdb.getMovieDetails(id)
+          : await tmdb.getTVDetails(id);
+        const date = details?.release_date || details?.first_air_date;
+        if (!date) continue;
+        await supabase.from('journal').update({ release_date: date }).match({ user_id: user.id, tmdb_id: id });
+        setWatched(prev => prev.map(w => (w.tmdb_id || w.id) === id ? { ...w, release_date: date } : w));
+      } catch {
+        // skip failed items silently
+      }
+    }
+  };
+
   const toggleListPublic = async (listId) => {
     const list = userLists.find(l => l.id === listId);
     if (!list) return;
@@ -169,5 +194,6 @@ export function useJournalData(user, onAuthRequired, onError, posthog) {
     getSavedData, saveToWatched,
     createList, deleteList, renameList,
     toggleListItem, deleteFromJournal, toggleListPublic,
+    backfillReleaseDates,
   };
 }

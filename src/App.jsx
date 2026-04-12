@@ -308,6 +308,7 @@ export default function App() {
             onItemClick={setSelectedItem}
             setShowAuth={setShowAuth}
             deleteFromJournal={deleteFromJournal}
+            backfillReleaseDates={backfillReleaseDates}
           />
         )}
 
