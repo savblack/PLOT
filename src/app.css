@@ -2998,7 +2998,7 @@ main.content-grid.animate-in {
 
 .empty-journal-state {
   text-align: center;
-  padding: 1.5rem 2rem 4rem;
+  padding: 8rem 2rem 4rem;
   color: var(--text-secondary);
 }
 .empty-journal-state h3 {
