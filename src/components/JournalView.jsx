@@ -525,7 +525,7 @@ export default function JournalView({
               </div>
             );
             if (wlItems.length === 0) return (
-              <div className="empty-journal-state">
+              <div className="empty-journal-state" style={{ paddingTop: '5rem' }}>
                 <h3>Nothing saved yet</h3>
                 <p>Head to Upcoming and hit + to save releases you're looking forward to.</p>
               </div>
