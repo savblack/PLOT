@@ -5,6 +5,7 @@ import AuthCallbackPage from './pages/AuthCallbackPage.jsx';
 import ResetPasswordPage from './pages/ResetPasswordPage.jsx';
 import OnboardingFlow from './pages/OnboardingFlow.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
+import NotFoundPage from './pages/NotFoundPage.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import TermsPage from './pages/TermsPage.jsx';
 import PrivacyPage from './pages/PrivacyPage.jsx';
@@ -38,6 +39,7 @@ const router = createBrowserRouter([
     path: '/u/:username/list/:listId',
     element: <ErrorBoundary><App /></ErrorBoundary>,
   },
+  { path: '*', element: <NotFoundPage /> },
 ]);
 
 export default router;
