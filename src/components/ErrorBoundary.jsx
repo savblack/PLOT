@@ -51,10 +51,10 @@ const styles = `
     position: absolute;
     top: 2.5rem;
     left: 6rem;
-    font-family: 'Instrument Serif', serif;
+    font-family: 'Poiret One', sans-serif;
     font-size: 1.4rem;
     color: #1a1a1a;
-    letter-spacing: -0.04em;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
   }
 
@@ -203,7 +203,7 @@ function ErrorScreen({ code, label, title, body, primaryLabel, primaryAction, gh
       <style>{styles}</style>
       <div className="plot-error-page">
         <div className="plot-error-left">
-          <div className="plot-error-logo">Plot</div>
+          <div className="plot-error-logo">PLOT</div>
           <div className="plot-error-label">Error · {label || code}</div>
           <div className="plot-error-number">{code}</div>
           <h1 className="plot-error-title">{title}</h1>

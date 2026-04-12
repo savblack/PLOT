@@ -36,7 +36,7 @@ export default function ResetPasswordPage() {
     <div className="auth-page" style={{ justifyContent: 'center' }}>
       <div className="auth-panel" style={{ maxWidth: 480, height: 'auto', minHeight: '100vh' }}>
         <Link to="/" className="auth-panel-logo">
-          <img src="/plot-logo.svg" alt="PLOT" />
+          <span className="logo-text">PLOT</span>
         </Link>
 
         <div className="auth-panel-body">

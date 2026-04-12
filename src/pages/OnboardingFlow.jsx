@@ -186,7 +186,7 @@ export default function OnboardingFlow() {
     <div className="onboarding-page">
       {/* Header */}
       <div className="onboarding-header">
-        <img src="/plot-logo.svg" alt="PLOT" className="onboarding-logo" />
+        <span className="logo-text">PLOT</span>
         <div className="onboarding-progress-row">
           <span className="onboarding-step-label">{step} / {TOTAL_STEPS}</span>
           <div className="onboarding-progress">

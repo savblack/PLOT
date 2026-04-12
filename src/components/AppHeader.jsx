@@ -30,7 +30,7 @@ export default function AppHeader({
     <header className="main-header animate-in">
       <div className="top-nav">
         <div className="branding-left" onClick={() => navigateTo('home')}>
-          <img src={isDark ? '/plot-logo-inverse.svg' : '/plot-logo.svg'} alt="Plot" className="logo-img" />
+          <span className="logo-text">PLOT</span>
         </div>
         <div className="header-right">
           <button className="auth-header-btn" onClick={() => setShowAuth(true)}>Sign In</button>
@@ -52,7 +52,7 @@ export default function AppHeader({
       <header className="main-header animate-in">
         <div className="top-nav">
           <div className="branding-left" onClick={() => navigateTo('home')}>
-            <img src={isDark ? '/plot-logo-inverse.svg' : '/plot-logo.svg'} alt="Plot" className="logo-img" />
+            <span className="logo-text">PLOT</span>
           </div>
 
           <div className="center-group">

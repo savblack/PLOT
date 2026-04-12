@@ -137,7 +137,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
         </div>
         <div className="auth-visual-gradient" />
         <div className="auth-visual-brand">
-          <img src="/plot-logo-inverse.svg" className="auth-visual-logo" alt="PLOT" />
+          <span className="logo-text" style={{ color: '#fff', fontSize: '2rem' }}>PLOT</span>
           <span className="auth-visual-tagline">Your film &amp; TV journal</span>
         </div>
       </div>
@@ -145,7 +145,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
       {/* ── Right: form panel ── */}
       <div className="auth-panel">
         <Link to="/" className="auth-panel-logo">
-          <img src="/plot-logo.svg" alt="PLOT" />
+          <span className="logo-text">PLOT</span>
         </Link>
 
         <div className="auth-panel-body">

@@ -50,10 +50,15 @@ main.content-grid.animate-in {
   text-transform: uppercase;
 }
 
-.logo-img {
-  height: 28px;
-  width: auto;
-  display: block;
+.logo-text {
+  font-family: 'Poiret One', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  line-height: 1;
+  user-select: none;
 }
 
 
