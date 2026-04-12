@@ -3000,7 +3000,7 @@ main.content-grid.animate-in {
 .empty-journal-state {
   text-align: center;
   padding: 0 2rem 4rem;
-  margin-top: -6rem;
+  margin-top: -3rem;
   color: var(--text-secondary);
 }
 .empty-journal-state h3 {
