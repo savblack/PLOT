@@ -1842,6 +1842,7 @@ main.content-grid.animate-in {
   border: 1px solid var(--border);
   background: var(--bg-color);
   color: var(--text-primary);
+  text-transform: uppercase;
 }
 .td-mood-lg { font-size: 0.88rem; font-weight: 500; padding: 0.32rem 0.8rem; }
 .td-mood-md { font-size: 0.78rem; }
