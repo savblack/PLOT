@@ -52,9 +52,9 @@ const styles = `
     top: 2.5rem;
     left: 6rem;
     font-family: 'Poiret One', sans-serif;
-    font-size: 1.4rem;
+    font-size: 2.5rem;
     color: #1a1a1a;
-    letter-spacing: 0.12em;
+    letter-spacing: -0.02em;
     text-transform: uppercase;
   }
 

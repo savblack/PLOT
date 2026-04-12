@@ -52,9 +52,9 @@ main.content-grid.animate-in {
 
 .logo-text {
   font-family: 'Poiret One', sans-serif;
-  font-size: 1.5rem;
+  font-size: 2.5rem;
   font-weight: 400;
-  letter-spacing: 0.12em;
+  letter-spacing: -0.02em;
   text-transform: uppercase;
   color: var(--text-primary);
   line-height: 1;

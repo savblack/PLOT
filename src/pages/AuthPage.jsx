@@ -137,7 +137,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
         </div>
         <div className="auth-visual-gradient" />
         <div className="auth-visual-brand">
-          <span className="logo-text" style={{ color: '#fff', fontSize: '2rem' }}>PLOT</span>
+          <span className="logo-text" style={{ color: '#fff' }}>PLOT</span>
           <span className="auth-visual-tagline">Your film &amp; TV journal</span>
         </div>
       </div>
