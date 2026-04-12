@@ -120,51 +120,51 @@ export default function JournalBoardTab({ watched, user, onItemClick }) {
             </span>
           )}
         </div>
-      </div>
-
-      {/* ── Genre + Mood row ─────────────────────────── */}
-      <div className="td-two-col">
-        {topGenres.length > 0 && (
-          <div className="td-card">
-            <div className="td-card-label">Top genres</div>
-            {topGenres.map(([label, count]) => (
-              <div key={label} className="td-bar-row">
-                <span className="td-bar-label">{label}</span>
-                <div className="td-bar-track">
-                  <div className="td-bar-fill" style={{ width: `${(count / maxGenreCount) * 100}%` }} />
-                </div>
-                <span className="td-bar-pct">{Math.round((count / watched.length) * 100)}%</span>
-              </div>
-            ))}
-          </div>
-        )}
-
-        <div className="td-card">
-          {topMoods.length > 0 && (
-            <>
-              <div className="td-card-label">Mood fingerprint</div>
-              <div className="td-mood-cloud">
-                {topMoods.slice(0, 8).map(([mood, count]) => {
-                  const ratio = count / maxMoodCount;
-                  const cls = ratio > 0.7 ? 'td-mood-lg' : ratio > 0.4 ? 'td-mood-md' : 'td-mood-sm';
-                  return <span key={mood} className={`td-mood-chip ${cls}`}>{mood}</span>;
-                })}
-              </div>
-            </>
+        <div className="td-hero-cell">
+          <span className="td-hero-label">Top genre</span>
+          <span className="td-hero-num td-hero-num-sm">{topGenres[0]?.[0] ?? '—'}</span>
+          {topGenres[0] && (
+            <span className="td-hero-sub">{topGenres[0][1]} titles</span>
           )}
-
-          <div className="td-films-tv">
-            <div className="td-card-label" style={{ marginTop: topMoods.length ? '1rem' : 0 }}>Films vs TV</div>
-            <div className="td-ft-bar">
-              <div className="td-ft-fill" style={{ width: `${moviePct}%` }} />
-            </div>
-            <div className="td-ft-labels">
-              <span style={{ fontWeight: 500 }}>Films {moviePct}%</span>
-              <span style={{ color: 'var(--text-secondary)' }}>TV {100 - moviePct}%</span>
-            </div>
-          </div>
+        </div>
+        <div className="td-hero-cell">
+          <span className="td-hero-label">Top mood</span>
+          <span className="td-hero-num td-hero-num-sm td-hero-num-upper">{topMoods[0]?.[0] ?? '—'}</span>
+          {topMoods[0] && (
+            <span className="td-hero-sub">{topMoods[0][1]} titles</span>
+          )}
         </div>
       </div>
+
+      {/* ── Top genres ───────────────────────────────── */}
+      {topGenres.length > 0 && (
+        <div className="td-card">
+          <div className="td-card-label">Top genres</div>
+          {topGenres.map(([label, count]) => (
+            <div key={label} className="td-bar-row">
+              <span className="td-bar-label">{label}</span>
+              <div className="td-bar-track">
+                <div className="td-bar-fill" style={{ width: `${(count / maxGenreCount) * 100}%` }} />
+              </div>
+              <span className="td-bar-pct">{Math.round((count / watched.length) * 100)}%</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Mood fingerprint ─────────────────────────── */}
+      {topMoods.length > 0 && (
+        <div className="td-card">
+          <div className="td-card-label">Mood fingerprint</div>
+          <div className="td-mood-cloud">
+            {topMoods.slice(0, 8).map(([mood, count]) => {
+              const ratio = count / maxMoodCount;
+              const cls = ratio > 0.7 ? 'td-mood-lg' : ratio > 0.4 ? 'td-mood-md' : 'td-mood-sm';
+              return <span key={mood} className={`td-mood-chip ${cls}`}>{mood}</span>;
+            })}
+          </div>
+        </div>
+      )}
 
       {/* ── Rating dist + Monthly activity ───────────── */}
       <div className="td-two-col">
@@ -221,6 +221,17 @@ export default function JournalBoardTab({ watched, user, onItemClick }) {
         </div>
       </div>
 
+      {/* ── Movies vs TV ─────────────────────────────── */}
+      <div className="td-card">
+        <div className="td-card-label">Movies vs TV</div>
+        <div className="td-ft-bar">
+          <div className="td-ft-fill" style={{ width: `${moviePct}%` }} />
+        </div>
+        <div className="td-ft-labels">
+          <span style={{ fontWeight: 500 }}>Movies {moviePct}%</span>
+          <span style={{ color: 'var(--text-secondary)' }}>TV Series {100 - moviePct}%</span>
+        </div>
+      </div>
 
       {/* ── Top rated ─────────────────────────────────── */}
       {topRated.length > 0 && (
