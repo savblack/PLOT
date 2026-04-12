@@ -1,9 +1,6 @@
-import { useState } from 'react';
 import { GENRES } from '../constants';
 
 export default function JournalBoardTab({ watched, user, onItemClick }) {
-  const [aiJournal, setAiJournal] = useState(null);
-  const [aiLoading, setAiLoading] = useState(false);
 
   // ── Derived stats ──────────────────────────────────────
   const now = new Date();
@@ -77,55 +74,6 @@ export default function JournalBoardTab({ watched, user, onItemClick }) {
     .sort((a, b) => b.rating - a.rating || new Date(b.watched_at || 0) - new Date(a.watched_at || 0))
     .slice(0, 5);
 
-  // ── AI generation ──────────────────────────────────────
-  const buildFallback = () => {
-    const top = watched.filter(i => i.rating >= 8);
-    const topTitles = top.slice(0, 2).map(i => i.title || i.name).filter(Boolean);
-    const lean = movieCount > tvCount * 1.5 ? 'film' : tvCount > movieCount * 1.5 ? 'TV' : 'film and TV equally';
-    const parts = [];
-    if (topTitles.length >= 2) parts.push(`You rate ${topTitles.join(' and ')} highly — taste that leans ${lean}.`);
-    if (topMoods[0]) parts.push(`Your mood fingerprint is mostly ${topMoods[0][0]}${topMoods[1] ? ` and ${topMoods[1][0]}` : ''}.`);
-    if (perfect10s.length) parts.push(`${perfect10s.length} ${perfect10s.length === 1 ? 'thing has' : 'things have'} earned a perfect 10.`);
-    return parts.join(' ') || 'Log more films and shows to generate your taste profile.';
-  };
-
-  const generateProfile = async () => {
-    setAiLoading(true);
-    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-    let summary = null;
-
-    if (apiKey) {
-      try {
-        const top = ratedItems.slice(0, 15).map(i => ({ title: i.title || i.name, rating: i.rating, mood: i.mood }));
-        const prompt = `You are a brutally perceptive cultural psychologist doing a personality read based purely on someone's watch history. Like a horoscope, but actually accurate.
-
-Their top-rated watches (title, rating /10, mood they felt): ${JSON.stringify(top)}
-
-Write 2-3 sentences that reveal something true about WHO THIS PERSON IS — their psychology, their inner life, what they're probably like at a dinner party, what they need from stories.
-
-Rules:
-- This is a PERSONALITY read, not a taste summary — don't describe what they watch, describe what it reveals about them
-- Be specific and a little daring — generic observations are worse than wrong ones
-- Warm but sharp. Insightful not mean. Second person, flowing prose
-- You can reference a title or two but only to make a psychological point, not to list what they watched
-- End with something that feels like it sees them`;
-
-        const res = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-          { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) }
-        );
-        const json = await res.json();
-        summary = json.candidates?.[0]?.content?.parts?.[0]?.text || buildFallback();
-      } catch {
-        summary = buildFallback();
-      }
-    } else {
-      summary = buildFallback();
-    }
-
-    setAiJournal(summary);
-    setAiLoading(false);
-  };
 
   if (watched.length === 0) {
     return (
@@ -273,27 +221,6 @@ Rules:
         </div>
       </div>
 
-      {/* ── AI personality card ───────────────────────── */}
-      <div className="td-ai-card">
-        <div className="td-ai-eyebrow">AI personality read</div>
-        {aiJournal ? (
-          <>
-            <p className="td-ai-text">{aiJournal}</p>
-            <button className="td-ai-btn" onClick={generateProfile} disabled={aiLoading}>
-              {aiLoading ? 'Generating…' : 'Regenerate'}
-            </button>
-          </>
-        ) : (
-          <div className="td-ai-empty">
-            <p className="td-ai-empty-sub">
-              A personalised personality read based on what you watch and how you rate it.
-            </p>
-            <button className="td-ai-btn" onClick={generateProfile} disabled={aiLoading}>
-              {aiLoading ? 'Generating…' : 'Generate my taste profile'}
-            </button>
-          </div>
-        )}
-      </div>
 
       {/* ── Top rated ─────────────────────────────────── */}
       {topRated.length > 0 && (
