@@ -211,7 +211,7 @@ export default class ErrorBoundary extends Component {
     if (this.state.hasError) {
       return (
         <ErrorScreen
-          code="Error"
+          code="404"
           title="Something went wrong."
           body="An unexpected error occurred. Try refreshing the page — if it keeps happening, something's broken on our end."
           primaryLabel="Refresh page"
