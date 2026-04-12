@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import ImportModal from './ImportModal';
 import JournalBoardTab from './JournalBoardTab';
+import TimelineTab from './TimelineTab';
 import { MOODS, GENRES } from '../constants';
 
 function ListStack({ list, items, onListClick }) {
@@ -374,6 +375,7 @@ export default function JournalView({
           <div className="journal-tab-nav">
             {[
               { id: 'taste',     label: 'Journal' },
+              { id: 'timeline',  label: 'Timeline' },
               { id: 'watchlist', label: 'Watchlist' },
               { id: 'lists',     label: 'My Lists' },
               { id: 'history',   label: 'History' },
@@ -560,6 +562,13 @@ export default function JournalView({
               user={user}
               onItemClick={onItemClick}
               onMount={backfillReleaseDates}
+            />
+          )}
+
+          {journalTab === 'timeline' && (
+            <TimelineTab
+              watched={watched}
+              onItemClick={onItemClick}
             />
           )}
         </div>

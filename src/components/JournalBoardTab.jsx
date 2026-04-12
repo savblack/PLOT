@@ -22,6 +22,23 @@ export default function JournalBoardTab({ watched, user, onItemClick, onMount })
 
   const perfect10s = watched.filter(i => i.rating === 10);
 
+  // Weekly logging streak
+  const getWeekStart = (date) => {
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() - d.getDay()); // Sunday
+    return d.getTime();
+  };
+  const loggedWeeks = new Set(watched.filter(i => i.watched_at).map(i => getWeekStart(new Date(i.watched_at))));
+  let streak = 0;
+  let checkWeek = getWeekStart(now);
+  // If nothing logged this week yet, start checking from last week
+  if (!loggedWeeks.has(checkWeek)) checkWeek -= 7 * 24 * 60 * 60 * 1000;
+  while (loggedWeeks.has(checkWeek)) {
+    streak++;
+    checkWeek -= 7 * 24 * 60 * 60 * 1000;
+  }
+
   // Genre counts
   const genreIdToLabel = {};
   GENRES.forEach(g => {
@@ -56,10 +73,10 @@ export default function JournalBoardTab({ watched, user, onItemClick, onMount })
     if (!dateStr) return;
     const year = new Date(dateStr).getFullYear();
     if (isNaN(year)) return;
-    const key = year >= 2020 ? '2020s' : year >= 2010 ? '2010s' : year >= 2000 ? '2000s' : year >= 1990 ? '1990s' : 'older';
+    const key = year >= 2020 ? '2020s' : year >= 2010 ? '2010s' : year >= 2000 ? '2000s' : year >= 1990 ? '1990s' : 'Older';
     decadeCounts[key] = (decadeCounts[key] || 0) + 1;
   });
-  const decadeOrder = ['2020s', '2010s', '2000s', '1990s', 'older'];
+  const decadeOrder = ['2020s', '2010s', '2000s', '1990s', 'Older'];
   const topDecades = decadeOrder.filter(d => decadeCounts[d]).map(d => [d, decadeCounts[d]]);
   const maxDecadeCount = Math.max(...topDecades.map(d => d[1]), 1);
 
@@ -70,19 +87,25 @@ export default function JournalBoardTab({ watched, user, onItemClick, onMount })
   }));
   const maxRatingCount = Math.max(...ratingDist.map(r => r.count), 1);
 
-  // Monthly activity — last 12 months
+  // Monthly activity — last 12 months with weekly breakdown
   const monthlyActivity = Array.from({ length: 12 }, (_, i) => {
     const d = new Date(now.getFullYear(), now.getMonth() - (11 - i), 1);
     const year = d.getFullYear();
     const month = d.getMonth();
-    const count = watched.filter(item => {
+    const monthItems = watched.filter(item => {
       if (!item.watched_at) return false;
       const w = new Date(item.watched_at);
       return w.getFullYear() === year && w.getMonth() === month;
-    }).length;
-    return { month: d.toLocaleString('default', { month: 'short' }), count, isCurrent: i === 11 };
+    });
+    const weeks = [0, 0, 0, 0];
+    monthItems.forEach(item => {
+      const day = new Date(item.watched_at).getDate();
+      const wi = day <= 7 ? 0 : day <= 14 ? 1 : day <= 21 ? 2 : 3;
+      weeks[wi]++;
+    });
+    return { month: d.toLocaleString('default', { month: 'short' }), weeks, count: monthItems.length, isCurrent: i === 11 };
   });
-  const maxMonthCount = Math.max(...monthlyActivity.map(m => m.count), 1);
+  const maxWeekCount = Math.max(...monthlyActivity.flatMap(m => m.weeks), 1);
   const peakMonth = [...monthlyActivity].sort((a, b) => b.count - a.count)[0];
 
   // Top rated
@@ -109,7 +132,7 @@ export default function JournalBoardTab({ watched, user, onItemClick, onMount })
           <span className="td-hero-label">
             {thisYearCount > 0 ? `Logged ${thisYear}` : 'Total logged'}
           </span>
-          <span className="td-hero-num td-hero-num-lg">
+          <span className="td-hero-num">
             {thisYearCount > 0 ? thisYearCount : watched.length}
           </span>
           {thisYearCount > 0 && lastYearCount > 0 && (
@@ -117,6 +140,11 @@ export default function JournalBoardTab({ watched, user, onItemClick, onMount })
               {yearDelta >= 0 ? `↑ ${yearDelta}` : `↓ ${Math.abs(yearDelta)}`} vs {lastYear}
             </span>
           )}
+        </div>
+        <div className="td-hero-cell td-hero-grey">
+          <span className="td-hero-label">Logging streak</span>
+          <span className="td-hero-num">{streak}</span>
+          <span className="td-hero-sub">{streak === 1 ? 'week' : 'weeks'}</span>
         </div>
         <div className="td-hero-cell">
           <span className="td-hero-label">Avg rating</span>
@@ -136,18 +164,62 @@ export default function JournalBoardTab({ watched, user, onItemClick, onMount })
             </span>
           )}
         </div>
-        <div className="td-hero-cell">
-          <span className="td-hero-label">Top genre</span>
-          <span className="td-hero-num td-hero-num-sm">{topGenres[0]?.[0] ?? '—'}</span>
-          {topGenres[0] && (
-            <span className="td-hero-sub">{topGenres[0][1]} titles</span>
-          )}
-        </div>
-        <div className="td-hero-cell">
-          <span className="td-hero-label">Top mood</span>
-          <span className="td-hero-num td-hero-num-sm" style={{ textTransform: 'capitalize' }}>{topMoods[0]?.[0] ?? '—'}</span>
-          {topMoods[0] && (
-            <span className="td-hero-sub">{topMoods[0][1]} titles</span>
+      </div>
+
+      {/* ── Rating dist + Monthly activity ───────────── */}
+      <div className="td-two-col">
+        {ratedItems.length > 0 && (
+          <div className="td-card">
+            <div className="td-card-label">Rating distribution</div>
+            <div className="td-rdist-wrap">
+              {ratingDist.map(({ rating, count }) => (
+                <div key={rating} className="td-rdist-col">
+                  <div className="td-rdist-bar-cell">
+                    <div
+                      className="td-rdist-bar"
+                      style={{ height: `${Math.max((count / maxRatingCount) * 100, count > 0 ? 4 : 0)}%` }}
+                      title={`${rating}/10 — ${count} title${count !== 1 ? 's' : ''}`}
+                    />
+                  </div>
+                  <span className="td-rdist-num">{rating}</span>
+                </div>
+              ))}
+            </div>
+            {avgRating && (
+              <div className="td-rdist-sub">
+                {parseFloat(avgRating) >= 8 ? 'You rate generously — most things land at 8+' :
+                 parseFloat(avgRating) >= 6 ? `Most ratings cluster around ${Math.round(parseFloat(avgRating))}` :
+                 'Tough critic'}
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="td-card">
+          <div className="td-card-label">Monthly activity</div>
+          <div className="td-month-grid">
+            {monthlyActivity.map(({ month, weeks, count, isCurrent }) => (
+              <div key={month + isCurrent} className="td-month-col">
+                {weeks.map((wCount, wi) => {
+                  const intensity = wCount / maxWeekCount;
+                  const l = Math.round(235 - intensity * 190);
+                  return (
+                    <div
+                      key={wi}
+                      className="td-month-cell"
+                      style={{ background: wCount === 0 ? '#ebebeb' : `rgb(${l},${l},${l})` }}
+                      title={`${month} wk${wi + 1} — ${wCount} title${wCount !== 1 ? 's' : ''}`}
+                    />
+                  );
+                })}
+                <span className={`td-month-label${isCurrent ? ' current' : ''}`}>{month[0]}</span>
+              </div>
+            ))}
+          </div>
+          {peakMonth?.count > 0 && (
+            <div className="td-rdist-sub">
+              Most active: {peakMonth.month} · {peakMonth.count} title{peakMonth.count !== 1 ? 's' : ''}
+            </div>
           )}
         </div>
       </div>
@@ -164,11 +236,25 @@ export default function JournalBoardTab({ watched, user, onItemClick, onMount })
         </div>
       </div>
 
+      {/* ── Mood fingerprint ─────────────────────────── */}
+      {topMoods.length > 0 && (
+        <div className="td-card">
+          <div className="td-card-label">Mood fingerprint</div>
+          <div className="td-mood-cloud">
+            {topMoods.slice(0, 8).map(([mood, count]) => {
+              const ratio = count / maxMoodCount;
+              const cls = ratio > 0.7 ? 'td-mood-lg' : ratio > 0.4 ? 'td-mood-md' : 'td-mood-sm';
+              return <span key={mood} className={`td-mood-chip ${cls}`}>{mood}</span>;
+            })}
+          </div>
+        </div>
+      )}
+
       {/* ── Top genres + By decade ────────────────────── */}
       <div className="td-two-col">
         {topGenres.length > 0 && (
           <div className="td-card">
-            <div className="td-card-label">Top genres</div>
+            <div className="td-card-label">By genre</div>
             {topGenres.map(([label, count]) => (
               <div key={label} className="td-bar-row">
                 <span className="td-bar-label">{label}</span>
@@ -195,75 +281,6 @@ export default function JournalBoardTab({ watched, user, onItemClick, onMount })
             ))}
           </div>
         )}
-      </div>
-
-      {/* ── Mood fingerprint ─────────────────────────── */}
-      {topMoods.length > 0 && (
-        <div className="td-card">
-          <div className="td-card-label">Mood fingerprint</div>
-          <div className="td-mood-cloud">
-            {topMoods.slice(0, 8).map(([mood, count]) => {
-              const ratio = count / maxMoodCount;
-              const cls = ratio > 0.7 ? 'td-mood-lg' : ratio > 0.4 ? 'td-mood-md' : 'td-mood-sm';
-              return <span key={mood} className={`td-mood-chip ${cls}`}>{mood}</span>;
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* ── Rating dist + Monthly activity ───────────── */}
-      <div className="td-two-col">
-        {ratedItems.length > 0 && (
-          <div className="td-card">
-            <div className="td-card-label">Rating distribution</div>
-            <div className="td-rdist">
-              {ratingDist.map(({ rating, count }) => (
-                <div
-                  key={rating}
-                  className="td-rdist-bar"
-                  style={{ height: `${Math.max((count / maxRatingCount) * 100, count > 0 ? 4 : 0)}%` }}
-                  title={`${rating}/10 — ${count} title${count !== 1 ? 's' : ''}`}
-                />
-              ))}
-            </div>
-            <div className="td-rdist-labels">
-              {ratingDist.map(({ rating }) => (
-                <span key={rating}>{rating}</span>
-              ))}
-            </div>
-            {avgRating && (
-              <div className="td-rdist-sub">
-                {parseFloat(avgRating) >= 8 ? 'You rate generously — most things land at 8+' :
-                 parseFloat(avgRating) >= 6 ? `Most ratings cluster around ${Math.round(parseFloat(avgRating))}` :
-                 'Tough critic'}
-              </div>
-            )}
-          </div>
-        )}
-
-        <div className="td-card">
-          <div className="td-card-label">Monthly activity</div>
-          <div className="td-sparkline">
-            {monthlyActivity.map(({ month, count, isCurrent }) => (
-              <div
-                key={month + isCurrent}
-                className={`td-spark-bar${isCurrent ? ' current' : ''}`}
-                style={{ height: `${Math.max((count / maxMonthCount) * 100, count > 0 ? 4 : 0)}%` }}
-                title={`${month} — ${count} title${count !== 1 ? 's' : ''}`}
-              />
-            ))}
-          </div>
-          <div className="td-spark-labels">
-            {monthlyActivity.map(({ month, isCurrent }) => (
-              <span key={month + isCurrent} className={isCurrent ? 'current' : ''}>{month[0]}</span>
-            ))}
-          </div>
-          {peakMonth?.count > 0 && (
-            <div className="td-rdist-sub">
-              Most active: {peakMonth.month} · {peakMonth.count} title{peakMonth.count !== 1 ? 's' : ''}
-            </div>
-          )}
-        </div>
       </div>
 
       {/* ── Top rated ─────────────────────────────────── */}
