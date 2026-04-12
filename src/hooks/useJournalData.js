@@ -3,6 +3,7 @@ import { tmdb } from '../api/tmdb';
 import { supabase } from '../api/supabase';
 
 export function useJournalData(user, onAuthRequired, onError, posthog) {
+  const backfillRan = useRef(false);
   const [watched, setWatched] = useState(() => {
     try { return JSON.parse(localStorage.getItem('plot-watched') || '[]'); } catch { return []; }
   });
@@ -152,7 +153,6 @@ export function useJournalData(user, onAuthRequired, onError, posthog) {
     setListItems(prev => prev.filter(li => !tmdbIds.includes(li.tmdb_id)));
   };
 
-  const backfillRan = useRef(false);
   const backfillReleaseDates = async () => {
     if (!user || backfillRan.current) return;
     backfillRan.current = true;

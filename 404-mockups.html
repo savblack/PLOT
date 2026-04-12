@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Plot — 404 Mockups</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400;1,500&family=DM+Sans:wght@300;400;500&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Libre+Baskerville:ital@0;1&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0e0e0e;
+      font-family: 'DM Sans', sans-serif;
+      color: white;
+    }
+
+    /* ── SECTION LABELS ── */
+    .section-label {
+      text-align: center;
+      padding: 3rem 2rem 1.5rem;
+      background: #0e0e0e;
+      color: rgba(255,255,255,0.3);
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      font-family: 'DM Sans', sans-serif;
+    }
+
+    /* ═══════════════════════════════════════
+       OPTION A — SCENE MISSING
+       Dark cinema, film grain, dramatic
+    ═══════════════════════════════════════ */
+    .option-a {
+      width: 100%;
+      min-height: 100vh;
+      background: #080808;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Film grain overlay */
+    .option-a::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      opacity: 0.35;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Vignette */
+    .option-a::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.85) 100%);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .option-a-content {
+      position: relative;
+      z-index: 2;
+      text-align: center;
+      max-width: 680px;
+      padding: 2rem;
+    }
+
+    .option-a-number {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(10rem, 22vw, 18rem);
+      font-weight: 300;
+      line-height: 0.85;
+      color: rgba(255,255,255,0.06);
+      letter-spacing: -0.05em;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -54%);
+      pointer-events: none;
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    .option-a-eyebrow {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.62rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.35);
+      margin-bottom: 1.5rem;
+    }
+
+    .option-a-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(2.4rem, 5vw, 4rem);
+      font-weight: 300;
+      font-style: italic;
+      line-height: 1.1;
+      color: rgba(255,255,255,0.92);
+      margin-bottom: 1.2rem;
+      letter-spacing: -0.01em;
+    }
+
+    .option-a-body {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.88rem;
+      color: rgba(255,255,255,0.38);
+      line-height: 1.7;
+      margin-bottom: 2.8rem;
+      font-weight: 300;
+    }
+
+    .option-a-actions {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .option-a-btn-primary {
+      background: white;
+      color: #080808;
+      border: none;
+      padding: 0.75rem 2rem;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.82rem;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      border-radius: 100px;
+      transition: opacity 0.2s;
+    }
+    .option-a-btn-primary:hover { opacity: 0.85; }
+
+    .option-a-btn-ghost {
+      background: transparent;
+      color: rgba(255,255,255,0.45);
+      border: 1px solid rgba(255,255,255,0.15);
+      padding: 0.75rem 1.8rem;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.82rem;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      border-radius: 100px;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .option-a-btn-ghost:hover { border-color: rgba(255,255,255,0.4); color: rgba(255,255,255,0.7); }
+
+    /* Decorative film strip top & bottom */
+    .film-strip {
+      position: absolute;
+      left: 0; right: 0;
+      height: 42px;
+      display: flex;
+      gap: 0;
+      opacity: 0.07;
+      z-index: 2;
+    }
+    .film-strip.top { top: 0; }
+    .film-strip.bottom { bottom: 0; }
+    .film-strip-hole {
+      width: 28px;
+      height: 20px;
+      border: 2px solid white;
+      border-radius: 3px;
+      flex-shrink: 0;
+      margin: auto 4px;
+    }
+
+    /* Scanning line animation */
+    .scan-line {
+      position: absolute;
+      left: 0; right: 0;
+      height: 1px;
+      background: rgba(255,255,255,0.04);
+      animation: scanDown 4s linear infinite;
+      z-index: 2;
+      pointer-events: none;
+    }
+    @keyframes scanDown {
+      from { top: 0; }
+      to { top: 100%; }
+    }
+
+    /* ═══════════════════════════════════════
+       OPTION B — EDITORIAL LIGHT
+       Clean, magazine, serif-led, light mode
+    ═══════════════════════════════════════ */
+    .option-b {
+      width: 100%;
+      min-height: 100vh;
+      background: #f5f4f0;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .option-b-left {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 5rem 4rem 5rem 6rem;
+      position: relative;
+      z-index: 2;
+    }
+
+    .option-b-right {
+      position: relative;
+      background: #1a1a1a;
+      overflow: hidden;
+    }
+
+    .option-b-poster-grid {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 3px;
+      opacity: 0.55;
+    }
+
+    .option-b-poster-cell {
+      background: #2a2a2a;
+      position: relative;
+    }
+    .option-b-poster-cell:nth-child(1) { background: #1e1e1e; }
+    .option-b-poster-cell:nth-child(2) { background: #282828; }
+    .option-b-poster-cell:nth-child(3) { background: #222; }
+    .option-b-poster-cell:nth-child(4) { background: #252525; }
+    .option-b-poster-cell:nth-child(5) { background: #1f1f1f; }
+    .option-b-poster-cell:nth-child(6) { background: #292929; }
+
+    .option-b-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to right, #1a1a1a 0%, transparent 60%);
+      z-index: 1;
+    }
+
+    .option-b-right-text {
+      position: absolute;
+      bottom: 3rem;
+      left: 2rem;
+      z-index: 2;
+      font-family: 'Instrument Serif', serif;
+      font-size: 8rem;
+      font-weight: 400;
+      color: rgba(255,255,255,0.06);
+      line-height: 1;
+      letter-spacing: -0.05em;
+    }
+
+    .option-b-label {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.62rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #999;
+      margin-bottom: 2rem;
+    }
+
+    .option-b-number {
+      font-family: 'Instrument Serif', serif;
+      font-size: clamp(6rem, 12vw, 10rem);
+      font-weight: 400;
+      line-height: 0.9;
+      color: #1a1a1a;
+      letter-spacing: -0.04em;
+      margin-bottom: 1.5rem;
+    }
+
+    .option-b-title {
+      font-family: 'Instrument Serif', serif;
+      font-size: clamp(1.8rem, 3vw, 2.4rem);
+      font-weight: 400;
+      font-style: italic;
+      color: #1a1a1a;
+      line-height: 1.2;
+      margin-bottom: 1rem;
+    }
+
+    .option-b-divider {
+      width: 40px;
+      height: 1px;
+      background: #ccc;
+      margin: 1.5rem 0;
+    }
+
+    .option-b-body {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.88rem;
+      color: #888;
+      line-height: 1.75;
+      font-weight: 300;
+      max-width: 320px;
+      margin-bottom: 2.5rem;
+    }
+
+    .option-b-actions {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+    }
+
+    .option-b-btn-primary {
+      background: #1a1a1a;
+      color: white;
+      border: none;
+      padding: 0.75rem 2rem;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .option-b-btn-primary:hover { opacity: 0.75; }
+
+    .option-b-btn-text {
+      background: none;
+      border: none;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.8rem;
+      color: #999;
+      cursor: pointer;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    /* Logo top-left */
+    .option-b-logo {
+      position: absolute;
+      top: 2.5rem;
+      left: 6rem;
+      font-family: 'Instrument Serif', serif;
+      font-size: 1.4rem;
+      color: #1a1a1a;
+      letter-spacing: -0.04em;
+      text-transform: uppercase;
+      z-index: 10;
+    }
+
+    /* ═══════════════════════════════════════
+       OPTION C — PROJECTOR FAILURE
+       Warm amber, retro-analogue, humanistic
+    ═══════════════════════════════════════ */
+    .option-c {
+      width: 100%;
+      min-height: 100vh;
+      background: #0d0b09;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Warm glow from projector */
+    .option-c::before {
+      content: '';
+      position: absolute;
+      top: -10%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 60%;
+      height: 60%;
+      background: radial-gradient(ellipse, rgba(255,185,80,0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    /* Film grain */
+    .option-c::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+      opacity: 0.4;
+      pointer-events: none;
+    }
+
+    /* Projector beam */
+    .projector-beam {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 180px solid transparent;
+      border-right: 180px solid transparent;
+      border-top: 320px solid rgba(255,185,80,0.03);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .option-c-frame {
+      position: relative;
+      z-index: 2;
+      text-align: center;
+      max-width: 560px;
+      padding: 3rem;
+    }
+
+    /* Burnt film frame border */
+    .option-c-screen {
+      border: 1px solid rgba(255,185,80,0.15);
+      padding: 3.5rem 4rem;
+      position: relative;
+      margin-bottom: 2rem;
+    }
+
+    .option-c-screen::before,
+    .option-c-screen::after {
+      content: '';
+      position: absolute;
+      width: 20px; height: 20px;
+      border: 2px solid rgba(255,185,80,0.3);
+    }
+    .option-c-screen::before { top: -2px; left: -2px; border-right: none; border-bottom: none; }
+    .option-c-screen::after  { bottom: -2px; right: -2px; border-left: none; border-top: none; }
+
+    .option-c-countdown {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(6rem, 16vw, 12rem);
+      font-weight: 300;
+      color: rgba(255,185,80,0.12);
+      line-height: 1;
+      letter-spacing: -0.05em;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+
+    .option-c-eyebrow {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.58rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: rgba(255,185,80,0.4);
+      margin-bottom: 1.2rem;
+    }
+
+    .option-c-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(2rem, 4.5vw, 3.2rem);
+      font-weight: 300;
+      font-style: italic;
+      color: rgba(255,235,180,0.88);
+      line-height: 1.15;
+      margin-bottom: 1rem;
+      letter-spacing: -0.01em;
+    }
+
+    .option-c-body {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.84rem;
+      color: rgba(255,200,120,0.35);
+      line-height: 1.8;
+      font-weight: 300;
+    }
+
+    .option-c-actions {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+    }
+
+    .option-c-btn-primary {
+      background: rgba(255,185,80,0.12);
+      color: rgba(255,210,140,0.85);
+      border: 1px solid rgba(255,185,80,0.25);
+      padding: 0.72rem 2rem;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 400;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+      border-radius: 0;
+    }
+    .option-c-btn-primary:hover {
+      background: rgba(255,185,80,0.2);
+      border-color: rgba(255,185,80,0.45);
+    }
+
+    .option-c-btn-ghost {
+      background: transparent;
+      color: rgba(255,200,120,0.3);
+      border: 1px solid rgba(255,185,80,0.1);
+      padding: 0.72rem 1.6rem;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.8rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+      border-radius: 0;
+    }
+    .option-c-btn-ghost:hover {
+      border-color: rgba(255,185,80,0.25);
+      color: rgba(255,200,120,0.55);
+    }
+
+    /* Flicker animation on title */
+    @keyframes flicker {
+      0%,100% { opacity: 1; }
+      92% { opacity: 1; }
+      93% { opacity: 0.4; }
+      94% { opacity: 1; }
+      96% { opacity: 0.6; }
+      97% { opacity: 1; }
+    }
+    .option-c-title { animation: flicker 6s ease infinite; }
+
+    /* Sprocket holes sides */
+    .sprocket {
+      position: absolute;
+      top: 0; bottom: 0;
+      width: 30px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-around;
+      padding: 2rem 0;
+      z-index: 2;
+      opacity: 0.12;
+    }
+    .sprocket.left { left: 2rem; }
+    .sprocket.right { right: 2rem; }
+    .sprocket-hole {
+      width: 16px;
+      height: 22px;
+      border: 1.5px solid rgba(255,185,80,0.8);
+      border-radius: 3px;
+      margin: 0 auto;
+    }
+
+    /* ── NAVIGATION ── */
+    .nav-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 2rem;
+      background: #0e0e0e;
+    }
+    .nav-back {
+      color: rgba(255,255,255,0.3);
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: none;
+      padding: 0.5rem 1.2rem;
+      color: rgba(255,255,255,0.35);
+      border-radius: 100px;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .nav-back:hover { border-color: rgba(255,255,255,0.25); color: rgba(255,255,255,0.6); }
+    .nav-logo {
+      font-family: 'Instrument Serif', serif;
+      color: rgba(255,255,255,0.5);
+      font-size: 1.2rem;
+      letter-spacing: -0.03em;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <div class="nav-row">
+    <button class="nav-back">← Back to plot</button>
+    <div class="nav-logo">Plot</div>
+    <div style="width:100px"></div>
+  </div>
+
+  <!-- ── OPTION A ── -->
+  <div class="section-label">Option A — Scene Missing</div>
+  <div class="option-a">
+    <div class="scan-line"></div>
+
+    <!-- Film strips -->
+    <div class="film-strip top">
+      <div class="film-strip-hole"></div><div class="film-strip-hole"></div><div class="film-strip-hole"></div>
+      <div class="film-strip-hole"></div><div class="film-strip-hole"></div><div class="film-strip-hole"></div>
+      <div class="film-strip-hole"></div><div class="film-strip-hole"></div><div class="film-strip-hole"></div>
+      <div class="film-strip-hole"></div><div class="film-strip-hole"></div><div class="film-strip-hole"></div>
+      <div class="film-strip-hole"></div><div class="film-strip-hole"></div><div class="film-strip-hole"></div>
+      <div class="film-strip-hole"></div><div class="film-strip-hole"></div><div class="film-strip-hole"></div>
+      <div class="film-strip-hole"></div><div class="film-strip-hole"></div><div class="film-strip-hole"></div>
+      <div class="film-strip-hole"></div><div class="film-strip-hole"></div><div class="film-strip-hole"></div>
+    </div>
+    <div class="film-strip bottom">
+      <div class="film-strip-hole"></div><div class="film-strip-hole"></div><div class="film-strip-hole"></div>
+      <div class="film-strip-hole"></div><div class="film-strip-hole"></div><div class="film-strip-hole"></div>
+      <div class="film-strip-hole"></div><div class="film-strip-hole"></div><div class="film-strip-hole"></div>
+      <div class="film-strip-hole"></div><div class="film-strip-hole"></div><div class="film-strip-hole"></div>
+      <div class="film-strip-hole"></div><div class="film-strip-hole"></div><div class="film-strip-hole"></div>
+      <div class="film-strip-hole"></div><div class="film-strip-hole"></div><div class="film-strip-hole"></div>
+      <div class="film-strip-hole"></div><div class="film-strip-hole"></div><div class="film-strip-hole"></div>
+    </div>
+
+    <div class="option-a-number">404</div>
+
+    <div class="option-a-content">
+      <div class="option-a-eyebrow">Plot · Error 404</div>
+      <h1 class="option-a-title">This scene<br>didn't make the cut.</h1>
+      <p class="option-a-body">The page you're looking for has been deleted from the archive,<br>moved to the cutting room floor, or never existed.</p>
+      <div class="option-a-actions">
+        <button class="option-a-btn-primary">Back to home</button>
+        <button class="option-a-btn-ghost">Search films</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── OPTION B ── -->
+  <div class="section-label">Option B — Editorial Split</div>
+  <div class="option-b">
+    <div class="option-b-logo">Plot</div>
+
+    <div class="option-b-left">
+      <div class="option-b-label">Error · 404</div>
+      <div class="option-b-number">404</div>
+      <h1 class="option-b-title">Page not found.</h1>
+      <div class="option-b-divider"></div>
+      <p class="option-b-body">Whatever you were looking for has gone missing — like a film lost to time. Head back and keep exploring.</p>
+      <div class="option-b-actions">
+        <button class="option-b-btn-primary">Go home</button>
+        <button class="option-b-btn-text">Search</button>
+      </div>
+    </div>
+
+    <div class="option-b-right">
+      <div class="option-b-poster-grid">
+        <div class="option-b-poster-cell"></div>
+        <div class="option-b-poster-cell"></div>
+        <div class="option-b-poster-cell"></div>
+        <div class="option-b-poster-cell"></div>
+        <div class="option-b-poster-cell"></div>
+        <div class="option-b-poster-cell"></div>
+        <div class="option-b-poster-cell"></div>
+        <div class="option-b-poster-cell"></div>
+        <div class="option-b-poster-cell"></div>
+        <div class="option-b-poster-cell"></div>
+        <div class="option-b-poster-cell"></div>
+        <div class="option-b-poster-cell"></div>
+      </div>
+      <div class="option-b-overlay"></div>
+      <div class="option-b-right-text">404</div>
+    </div>
+  </div>
+
+  <!-- ── OPTION C ── -->
+  <div class="section-label">Option C — Projector Failure</div>
+  <div class="option-c">
+    <div class="projector-beam"></div>
+
+    <div class="sprocket left">
+      <div class="sprocket-hole"></div>
+      <div class="sprocket-hole"></div>
+      <div class="sprocket-hole"></div>
+      <div class="sprocket-hole"></div>
+      <div class="sprocket-hole"></div>
+      <div class="sprocket-hole"></div>
+      <div class="sprocket-hole"></div>
+      <div class="sprocket-hole"></div>
+    </div>
+    <div class="sprocket right">
+      <div class="sprocket-hole"></div>
+      <div class="sprocket-hole"></div>
+      <div class="sprocket-hole"></div>
+      <div class="sprocket-hole"></div>
+      <div class="sprocket-hole"></div>
+      <div class="sprocket-hole"></div>
+      <div class="sprocket-hole"></div>
+      <div class="sprocket-hole"></div>
+    </div>
+
+    <div class="option-c-frame">
+      <div class="option-c-screen">
+        <div class="option-c-countdown">404</div>
+        <div class="option-c-eyebrow">Projection interrupted</div>
+        <h1 class="option-c-title">Something got<br>lost in the reel.</h1>
+        <p class="option-c-body">This page couldn't be found.<br>The film may have been removed or the URL recut.</p>
+      </div>
+      <div class="option-c-actions">
+        <button class="option-c-btn-primary">Return to lobby</button>
+        <button class="option-c-btn-ghost">Search titles</button>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

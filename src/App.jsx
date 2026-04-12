@@ -71,6 +71,7 @@ export default function App() {
     getSavedData, saveToWatched,
     createList, deleteList, renameList,
     toggleListItem, deleteFromJournal, toggleListPublic,
+    backfillReleaseDates,
   } = useJournalData(user, () => setShowAuth(true), (msg) => {
     clearTimeout(toastTimerRef.current);
     setErrorToast(msg);
