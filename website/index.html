@@ -24,7 +24,7 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Nothing+You+Could+Do&family=Trirong:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Manrope:wght@300;400;500;600;700;800&family=Poiret+One&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Nothing+You+Could+Do&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Manrope:wght@300;400;500;600;700;800&family=Poiret+One&display=swap" rel="stylesheet" />
   <style>
     /* ── Reset & Tokens ─────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -35,9 +35,10 @@
       --text:         #1a1a1a;
       --muted:        #666666;
       --accent:       #000000;
+      --pink:         #e05578;
       --glass-bg:     rgba(255,255,255,0.8);
       --glass-border: rgba(0,0,0,0.05);
-      --serif:        'Trirong', Georgia, serif;
+      --serif:        'Cormorant Garamond', Georgia, serif;
       --sans:         'Manrope', system-ui, sans-serif;
       --r-lg:         32px;
       --r-pill:       9999px;
@@ -354,7 +355,7 @@
 
     /* ── For the Plot ───────────────────────────────────────── */
     #for-the-plot {
-      padding: 10rem 2rem;
+      padding: 4rem 2rem 5rem;
       max-width: 1200px;
       margin: 0 auto;
     }
@@ -469,8 +470,8 @@
       display: grid;
       grid-template-columns: 1fr 1fr 1fr;
       grid-template-areas:
-        "one  one  two"
-        "three four four";
+        "one  two  two"
+        "three three four";
       gap: 1rem;
     }
 
@@ -514,6 +515,26 @@
       line-height: 1.65;
     }
 
+    .feat-body-more {
+      font-size: 0.88rem;
+      color: var(--muted);
+      line-height: 1.65;
+      overflow: hidden;
+      max-height: 0;
+      opacity: 0;
+      transition: max-height 0.4s ease, opacity 0.3s ease;
+    }
+
+    .feat-tile {
+      transition: box-shadow 0.3s ease;
+      cursor: default;
+    }
+
+    .feat-tile:hover .feat-body-more {
+      max-height: 10rem;
+      opacity: 1;
+    }
+
     @media (max-width: 700px) {
       .feat-bento {
         grid-template-columns: 1fr;
@@ -523,7 +544,7 @@
 
     /* ── Timeline ───────────────────────────────────────────── */
     #timeline-section {
-      padding: 8rem 2rem;
+      padding: 8rem 2rem 4rem;
       text-align: center;
       position: relative;
       z-index: 2;
@@ -549,7 +570,7 @@
     .timeline-entries {
       position: relative;
       max-width: 860px;
-      margin: 5rem auto 0;
+      margin: 3rem auto 0;
     }
 
     /* center vertical line */
@@ -625,42 +646,7 @@
       margin-bottom: 0.6rem;
     }
 
-    /* ── Closing CTA ────────────────────────────────────────── */
-    #cta {
-      padding: 16rem 2rem 20rem;
-      overflow: hidden;
-      background: var(--bg);
-    }
-
-    .cta-inner {
-      max-width: 1200px;
-      margin: 0 auto;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 4rem;
-    }
-
-    .cta-headline {
-      font-family: var(--serif);
-      font-size: clamp(1.8rem, 4.2vw, 3.2rem);
-      font-weight: 400;
-      letter-spacing: -0.05em;
-      line-height: 0.95;
-      text-align: left;
-      color: rgba(0,0,0,0.35);
-    }
-
-    .cta-sub {
-      font-family: var(--serif);
-      font-size: clamp(1.2rem, 2.6vw, 2rem);
-      font-weight: 400;
-      letter-spacing: -0.05em;
-      line-height: 0.95;
-      color: #0e0e0e;
-      margin-top: 0.4rem;
-      text-align: left;
-    }
+    /* ── Closing CTA (removed — merged into footer) ── */
 
     /* ── Live Ticker ─────────────────────────────────────────── */
     @keyframes ticker-scroll {
@@ -749,44 +735,117 @@
 
     /* ── Footer ─────────────────────────────────────────────── */
     footer {
-      background: var(--bg);
+      background: #0f0f0f;
+      border-top: none;
       overflow: hidden;
-      display: grid;
-      grid-template-columns: 1fr auto;
-      align-items: end;
+    }
+
+    /* CTA row */
+    .footer-cta {
+      position: relative;
+      overflow: hidden;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .footer-cta-left {
+      position: relative;
+      z-index: 2;
+      padding: 4rem 3rem 2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 0;
+    }
+
+    .footer-cta-kicker {
+      font-family: var(--sans);
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--pink);
+      margin-bottom: 1rem;
+    }
+
+    .footer-cta-headline {
+      font-family: var(--serif);
+      font-size: clamp(1.8rem, 3.5vw, 3.2rem);
+      font-weight: 400;
+      letter-spacing: -0.04em;
+      line-height: 0.88;
+      color: rgba(255,255,255,0.88);
+    }
+
+    .footer-cta-sub {
+      font-family: var(--serif);
+      font-size: clamp(1.2rem, 2.5vw, 2.2rem);
+      font-style: normal;
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      color: rgba(255,255,255,0.35);
+      margin-top: -0.4rem;
+    }
+
+    .footer-cta-sub .plot-word {
+      font-family: 'Poiret One', sans-serif;
+      letter-spacing: -0.02em;
+      font-size: 1.4em;
+      line-height: 0.8;
+      vertical-align: middle;
+    }
+
+    .footer-cta-action {
+      margin-top: 1.6rem;
+    }
+
+    .footer-cta-right {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      z-index: 1;
     }
 
     .footer-wordmark {
-      padding-right: 2.5rem;
-      padding-bottom: 1rem;
-      user-select: none;
-    }
-    .footer-wordmark span {
       font-family: 'Poiret One', sans-serif;
-      font-size: clamp(10rem, 28vw, 26rem);
+      font-size: clamp(12rem, 30vw, 32rem);
       font-weight: 400;
       letter-spacing: -0.03em;
       text-transform: uppercase;
-      color: #1a1410;
-      opacity: 0.85;
-      line-height: 0.88;
+      color: rgba(255,255,255,0.055);
+      line-height: 0.82;
       display: block;
       user-select: none;
+      white-space: nowrap;
+      padding-bottom: 0;
     }
 
+    /* Meta bar */
     .footer-meta {
       display: flex;
-      flex-direction: column;
-      justify-content: flex-end;
-      gap: 1.4rem;
-      padding: 3rem 4rem 3rem 3rem;
+      align-items: center;
+      gap: 2rem;
+      padding: 1.4rem 3rem;
+    }
+
+    .footer-meta .footer-links {
+      margin: 0 auto;
+    }
+
+    .footer-copy {
+      color: rgba(255,255,255,0.15);
+      font-size: 0.7rem;
+      margin-left: auto;
     }
 
     .footer-tagline {
       font-family: var(--sans);
-      font-size: 0.72rem;
+      font-size: 0.68rem;
       letter-spacing: 0.12em;
-      color: rgba(0,0,0,0.35);
+      color: rgba(255,255,255,0.2);
       text-transform: uppercase;
     }
 
@@ -797,17 +856,23 @@
     }
     .footer-links a {
       text-decoration: none;
-      color: rgba(0,0,0,0.35);
-      font-size: 0.78rem;
+      color: rgba(255,255,255,0.2);
+      font-size: 0.74rem;
       font-weight: 500;
       letter-spacing: 0.05em;
       transition: color 0.2s;
     }
-    .footer-links a:hover { color: rgba(0,0,0,0.85); }
+    .footer-links a:hover { color: rgba(255,255,255,0.9); }
 
-    .footer-copy {
-      color: rgba(0,0,0,0.25);
-      font-size: 0.72rem;
+    .btn-footer {
+      background: transparent;
+      color: var(--pink);
+      border: 1px solid var(--pink);
+    }
+    .btn-footer:hover {
+      background: var(--pink);
+      color: #fff;
+      transform: translateY(-1px);
     }
 
 
@@ -926,6 +991,10 @@
         word-wrap: break-word;
         overflow-wrap: break-word;
       }
+      .feat-tile .feat-body-more {
+        max-height: 10rem;
+        opacity: 1;
+      }
 
       /* Feature carousel dots */
       .feat-dots {
@@ -989,11 +1058,12 @@
       }
 
       /* Footer */
-      footer { grid-template-columns: 1fr; }
-      .footer-wordmark { padding-left: 1.5rem; }
-      .footer-wordmark span { font-size: clamp(6rem, 28vw, 12rem); }
-      .footer-meta { padding: 2rem 1.5rem 2.5rem; gap: 1.2rem; }
+      .footer-cta { grid-template-columns: 1fr; }
+      .footer-cta-right { display: none; }
+      .footer-cta-left { padding: 3rem 1.5rem 2rem; }
+      .footer-meta { padding: 1.2rem 1.5rem; flex-wrap: wrap; gap: 1rem; }
       .footer-links { gap: 1rem; flex-wrap: wrap; }
+      .footer-copy { margin-left: 0; }
     }
   </style>
   <link rel="preload" as="image" href="images/hero/saltburn.webp" />
@@ -1065,7 +1135,7 @@
         <div class="mseq-line">You talk about them.</div>
         <div class="mseq-line">You carry them with you.</div>
         <div class="mseq-line">But no app has ever cared<br>as much as you do.</div>
-        <div class="mseq-line">PLOT does.</div>
+        <div class="mseq-line"><span style="font-family:'Poiret One',sans-serif;">PLOT</span> does.</div>
       </div>
       <div class="mseq-dots">
         <span class="mseq-dot active"></span>
@@ -1088,25 +1158,29 @@
       <div class="feat-tile reveal">
         <span class="feat-num">01</span>
         <div class="feat-title">Discover</div>
-        <p class="feat-body">Know what's new, trending, and coming soon — and find out where you can watch it, all in one place. PLOT is your starting point for finding something to watch tonight.</p>
+        <p class="feat-body">Know what's new, trending, and coming soon.</p>
+        <p class="feat-body-more">Find out where you can watch it, all in one place. PLOT is your starting point for finding something to watch tonight.</p>
       </div>
 
       <div class="feat-tile reveal">
         <span class="feat-num">02</span>
         <div class="feat-title">Journal</div>
-        <p class="feat-body">Save it. Rate it. Write about it. Every film and series you watch becomes part of your timeline — look back and see it take shape like a story you didn't know you were writing.</p>
+        <p class="feat-body">Save it. Rate it. Write about it.</p>
+        <p class="feat-body-more">Every film and series you watch becomes part of your timeline. Look back and see it take shape like a story you didn't know you were writing.</p>
       </div>
 
       <div class="feat-tile reveal">
         <span class="feat-num">03</span>
         <div class="feat-title">Personalise</div>
-        <p class="feat-body">No two feeds look the same, and they shouldn't. Yours is shaped by every film you've rated, every series you've logged and every list you've made. The more you use PLOT, the more it gets you.</p>
+        <p class="feat-body">No two feeds look the same, and they shouldn't.</p>
+        <p class="feat-body-more">Yours is shaped by every film you've rated, every series you've logged and every list you've made. The more you use PLOT, the more it gets you.</p>
       </div>
 
       <div class="feat-tile reveal">
         <span class="feat-num">04</span>
         <div class="feat-title">Share</div>
-        <p class="feat-body">Drop your top ten list in the group chat. Check if your flatmate's TV taste is grounds for moving out. Share your profile like a love letter. Or a <em>warning.</em> What's the point of great taste if nobody knows?</p>
+        <p class="feat-body">Drop your top ten list in the group chat.</p>
+        <p class="feat-body-more">Check if your flatmate's TV taste is grounds for moving out. Share your profile like a love letter. Or a <em>warning.</em> What's the point of great taste if nobody knows?</p>
       </div>
 
     </div>
@@ -1115,26 +1189,6 @@
       <span class="feat-dot"></span>
       <span class="feat-dot"></span>
       <span class="feat-dot"></span>
-    </div>
-  </section>
-
-  <!-- ── For the Plot ─────────────────────────────────────────── -->
-  <section id="for-the-plot">
-    <div class="ftp-inner">
-      <div class="ftp-left reveal">
-        <h2 class="ftp-headline">Your journal.<br>Your rules.</h2>
-        <p class="ftp-body">Your top ten. All the series you binged in a weekend. The one dropping next month you've already cleared your schedule for. Make a list for anything.</p>
-        <a href="https://app.theplot.tv/signup" class="btn btn-outline btn-large">Make it yours →</a>
-        <div class="ftp-mobile-posters">
-          <div class="ftp-mobile-poster" style="background-image:url('images/hero/saltburn.webp')"></div>
-          <div class="ftp-mobile-poster" style="background-image:url('images/hero/past-lives.webp')"></div>
-          <div class="ftp-mobile-poster" style="background-image:url('images/hero/nosferatu.webp')"></div>
-          <div class="ftp-mobile-poster" style="background-image:url('images/hero/aftersun.webp')"></div>
-          <div class="ftp-mobile-poster" style="background-image:url('images/hero/babygirl.webp')"></div>
-          <div class="ftp-mobile-poster" style="background-image:url('images/hero/the-substance.webp')"></div>
-        </div>
-      </div>
-      <div class="editorial-wrap" id="editorialWrap"></div>
     </div>
   </section>
 
@@ -1234,16 +1288,23 @@
     </div>
   </section>
 
-  <!-- ── Closing CTA ───────────────────────────────────────────── -->
-  <section id="cta">
-    <div class="cta-inner">
-      <div class="cta-text">
-        <h2 class="cta-headline reveal">Your taste tells a story</h2>
-        <p class="cta-sub reveal reveal-delay-1">And every story needs a PLOT.</p>
+  <!-- ── For the Plot ─────────────────────────────────────────── -->
+  <section id="for-the-plot">
+    <div class="ftp-inner">
+      <div class="ftp-left reveal">
+        <h2 class="ftp-headline">Your journal.<br>Your rules.</h2>
+        <p class="ftp-body">Your top ten. All the series you binged in a weekend. The one dropping next month you've already cleared your schedule for. Make a list for anything.</p>
+        <a href="https://app.theplot.tv/signup" class="btn btn-outline btn-large">Make it yours →</a>
+        <div class="ftp-mobile-posters">
+          <div class="ftp-mobile-poster" style="background-image:url('images/hero/saltburn.webp')"></div>
+          <div class="ftp-mobile-poster" style="background-image:url('images/hero/past-lives.webp')"></div>
+          <div class="ftp-mobile-poster" style="background-image:url('images/hero/nosferatu.webp')"></div>
+          <div class="ftp-mobile-poster" style="background-image:url('images/hero/aftersun.webp')"></div>
+          <div class="ftp-mobile-poster" style="background-image:url('images/hero/babygirl.webp')"></div>
+          <div class="ftp-mobile-poster" style="background-image:url('images/hero/the-substance.webp')"></div>
+        </div>
       </div>
-      <div class="reveal reveal-delay-2" style="flex-shrink: 0; margin-top: 1rem;">
-        <a href="https://app.theplot.tv/signup" class="btn btn-outline btn-large">Create your PLOT →</a>
-      </div>
+      <div class="editorial-wrap" id="editorialWrap"></div>
     </div>
   </section>
 
@@ -1259,6 +1320,16 @@
 
   <!-- ── Footer ────────────────────────────────────────────────── -->
   <footer>
+    <div class="footer-cta">
+      <div class="footer-cta-left">
+        <span class="footer-cta-kicker">Your PLOT</span>
+        <h2 class="footer-cta-headline reveal">Your taste tells a story.</h2>
+        <p class="footer-cta-sub reveal reveal-delay-1">And every story needs a <span class="plot-word">PLOT.</span></p>
+        <div class="footer-cta-action reveal reveal-delay-2">
+          <a href="https://app.theplot.tv/signup" class="btn btn-footer btn-large">Create your PLOT →</a>
+        </div>
+      </div>
+    </div>
     <div class="footer-meta">
       <span class="footer-tagline">YOUR FILM & TV JOURNAL</span>
       <ul class="footer-links">
@@ -1269,10 +1340,10 @@
       </ul>
       <span class="footer-copy">© 2026 PLOT</span>
     </div>
-    <div class="footer-wordmark"><span>PLOT</span></div>
   </footer>
 
   <script>
+
     // Navbar scroll effect
     const navbar = document.getElementById('navbar');
     window.addEventListener('scroll', () => {
