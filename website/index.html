@@ -825,6 +825,7 @@
 
     /* Meta bar */
     .footer-meta {
+      position: relative;
       display: flex;
       align-items: center;
       gap: 2rem;
@@ -832,13 +833,12 @@
     }
 
     .footer-meta .footer-links {
-      margin: 0 auto;
+      margin-left: auto;
     }
 
     .footer-copy {
       color: rgba(0,0,0,0.25);
       font-size: 0.7rem;
-      margin-left: auto;
     }
 
     .footer-tagline {
@@ -847,6 +847,9 @@
       letter-spacing: 0.12em;
       color: rgba(0,0,0,0.3);
       text-transform: uppercase;
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
     }
 
     .footer-links {
@@ -1331,6 +1334,7 @@
       </div>
     </div>
     <div class="footer-meta">
+      <span class="footer-copy">© 2026 PLOT</span>
       <span class="footer-tagline">YOUR FILM & TV JOURNAL</span>
       <ul class="footer-links">
         <li><a href="#">X</a></li>
@@ -1338,7 +1342,6 @@
         <li><a href="privacy.html">Privacy</a></li>
         <li><a href="terms.html">Terms</a></li>
       </ul>
-      <span class="footer-copy">© 2026 PLOT</span>
     </div>
   </footer>
 
