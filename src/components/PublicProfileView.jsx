@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase } from '../api/supabase';
 import ShareButton from './ShareButton';
+import EmptyState from './EmptyState';
 import { usePostHog } from '@posthog/react';
 
 function StarRow({ rating }) {
@@ -275,7 +276,12 @@ export default function PublicProfileView({ username, initialListId, onItemClick
               </div>
             ))}
             {activeListItems.length === 0 && (
-              <p className="empty-list-msg">This list is empty.</p>
+              <EmptyState
+                variant="grid"
+                eyebrow="List · empty"
+                title="Nothing here yet."
+                description="This list hasn't been filled in."
+              />
             )}
           </div>
         </>
@@ -465,7 +471,11 @@ export default function PublicProfileView({ username, initialListId, onItemClick
           )}
 
           {publicLists.length === 0 && recentWatches.length === 0 && (
-            <p className="empty-list-msg" style={{ textAlign: 'center', padding: '2rem 0' }}>No public activity yet.</p>
+            <EmptyState
+              eyebrow="Profile · quiet"
+              title="Nothing public yet."
+              description={`${displayName.split(' ')[0]} hasn't shared any lists or activity.`}
+            />
           )}
 
           {!user && createPortal(

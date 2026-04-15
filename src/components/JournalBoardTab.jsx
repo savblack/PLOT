@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { GENRES } from '../constants';
+import EmptyState from './EmptyState';
 
 export default function JournalBoardTab({ watched, user, onItemClick, onMount }) {
   useEffect(() => { onMount?.(); }, []);
@@ -116,10 +117,11 @@ export default function JournalBoardTab({ watched, user, onItemClick, onMount })
 
   if (watched.length === 0) {
     return (
-      <div className="empty-journal-state">
-        <h3>Nothing logged yet</h3>
-        <p>Log some movies or shows to build your taste profile.</p>
-      </div>
+      <EmptyState
+        eyebrow="Taste · blank"
+        title="A blank page, for now."
+        description="Log a few films or shows and we'll start mapping your patterns — genres, decades, moods, streaks."
+      />
     );
   }
 

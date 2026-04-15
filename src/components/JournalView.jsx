@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import ImportModal from './ImportModal';
 import JournalBoardTab from './JournalBoardTab';
 import TimelineTab from './TimelineTab';
+import EmptyState from './EmptyState';
 import { MOODS, GENRES } from '../constants';
 
 function ListStack({ list, items, onListClick }) {
@@ -39,12 +40,15 @@ function ListStack({ list, items, onListClick }) {
       <div className="list-stack empty" onClick={() => onListClick(list)}>
         <div className="stack-container">
           <div className="stack-card empty">
-            <span>Empty List</span>
+            <div className="stack-card-empty-inner">
+              <span className="stack-card-empty-eyebrow">Empty</span>
+              <span className="stack-card-empty-title">Nothing yet.</span>
+            </div>
           </div>
         </div>
         <div className="stack-info">
           <h3>{list.name}</h3>
-          <p>0 items</p>
+          <p>Tap to add titles</p>
           {list.is_public && <span className="list-public-badge">Public</span>}
         </div>
       </div>
@@ -333,7 +337,12 @@ export default function JournalView({
               );
             })}
             {activeListItems.length === 0 && (
-              <p className="empty-list-msg">Nothing here yet.</p>
+              <EmptyState
+                variant="grid"
+                eyebrow="List · empty"
+                title="Nothing here yet."
+                description="Add titles from search or from any film or show page."
+              />
             )}
           </div>
 
@@ -351,9 +360,12 @@ export default function JournalView({
                   ))
                 }
                 {userLists.filter(l => l.id !== activeList.id).length === 0 && (
-                  <p style={{ padding: '0.5rem 0.75rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                    No other lists. Create one first.
-                  </p>
+                  <EmptyState
+                    variant="inline"
+                    eyebrow="Lists"
+                    title="No other lists."
+                    description="Create another list to move items between them."
+                  />
                 )}
               </div>
             </>
@@ -429,10 +441,29 @@ export default function JournalView({
                 </select>
               </div>
               {historyFiltered.length === 0 && (
-                <div className="empty-journal-state">
-                  <h3>{watched.length === 0 ? 'Nothing logged yet' : 'No matches'}</h3>
-                  <p>{watched.length === 0 ? 'Open any movie or show and hit Save.' : 'No items match the selected filters.'}</p>
-                </div>
+                watched.length === 0 ? (
+                  <EmptyState
+                    eyebrow="Journal · empty"
+                    title="Nothing logged yet."
+                    description="Open any film or show and hit Save to track it here."
+                  />
+                ) : (
+                  <EmptyState
+                    eyebrow="No matches"
+                    title="Nothing fits these filters."
+                    description="Loosen the filters or clear them to see everything."
+                    action={{
+                      label: 'Clear filters',
+                      onClick: () => {
+                        setHistoryGenreFilter('');
+                        setHistoryMoodFilter('');
+                        setHistoryRatingFilter('');
+                        setHistoryStatusFilter('');
+                        setHistorySearchFilter('');
+                      },
+                    }}
+                  />
+                )
               )}
               <div className="bento-grid">
                 {historyFiltered.map((item, idx) => (
@@ -467,10 +498,12 @@ export default function JournalView({
                 </div>
               )}
               {user && userLists.length === 0 && !showJournalNewList && (
-                <div className="empty-journal-state">
-                  <h3>No lists yet</h3>
-                  <p>Create a list to organise your favourites.</p>
-                </div>
+                <EmptyState
+                  eyebrow="Lists · empty"
+                  title="No lists yet."
+                  description="Group films by mood, director, decade — however you like to organise."
+                  action={{ label: 'Create a list', onClick: () => setShowJournalNewList(true) }}
+                />
               )}
               {showJournalNewList && (
                 <div className="new-list-bar">
@@ -528,10 +561,11 @@ export default function JournalView({
               </div>
             );
             if (wlItems.length === 0) return (
-              <div className="empty-journal-state" style={{ paddingTop: '5rem' }}>
-                <h3>Nothing saved yet</h3>
-                <p>Head to Upcoming and hit + to save releases you're looking forward to.</p>
-              </div>
+              <EmptyState
+                eyebrow="Watchlist · empty"
+                title="Nothing on the horizon yet."
+                description="Find an upcoming release and hit + to save it for later."
+              />
             );
             return (
               <div className="bento-grid">

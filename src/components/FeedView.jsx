@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { GENRES, MOODS } from '../constants.js';
 import { tmdb } from '../api/tmdb';
 import LoadingSpinner from './LoadingSpinner';
+import EmptyState from './EmptyState';
 
 const BROWSE_SORT_OPTIONS = [
   { value: 'popularity.desc', label: 'Most Popular' },
@@ -125,7 +126,22 @@ export default function FeedView({
               if (browseStatus === 'unwatched' && getSavedData(item.id)) return false;
               return true;
             });
-            if (!filtered.length) return <p className="browse-empty-state">No results found.</p>;
+            if (!filtered.length) return (
+              <EmptyState
+                eyebrow="No matches"
+                title="Nothing fits these filters."
+                description="Try clearing filters or adjusting your criteria."
+                action={{
+                  label: 'Clear filters',
+                  onClick: () => {
+                    setBrowseGenre('');
+                    setBrowseRating('');
+                    setBrowseStatus('');
+                    setBrowseSearch('');
+                  },
+                }}
+              />
+            );
             const [featured, ...rest] = filtered;
             return (
               <div className="browse-featured-layout">
@@ -197,7 +213,11 @@ export default function FeedView({
           {feedTab === 'following' && followingLoading && <LoadingSpinner />}
 
           {feedTab === 'following' && !followingLoading && followingFeed.length === 0 ? (
-            <p className="feed-empty-state">Follow people to see what they're watching.</p>
+            <EmptyState
+              eyebrow="Following · empty"
+              title="Nobody to follow yet."
+              description="Follow people to see what they're watching and rating."
+            />
           ) : (
             <div className="bento-grid">
               {activeItems.map((item, index) => (
@@ -239,12 +259,6 @@ export default function FeedView({
       )}
 
       <style>{`
-        .browse-empty-state {
-          color: var(--text-secondary);
-          font-size: 0.9rem;
-          margin-top: 2rem;
-          text-align: center;
-        }
         .browse-featured-layout {
           display: grid;
           grid-template-columns: 2fr 1fr;

@@ -1,4 +1,5 @@
 import LoadingSpinner from './LoadingSpinner';
+import EmptyState from './EmptyState';
 
 export default function NewReleasesView({
   newReleasesTab, setNewReleasesTab,
@@ -51,6 +52,14 @@ export default function NewReleasesView({
         <button className={`journal-tab-btn ${newReleasesTab === 'popular' ? 'active' : ''}`} onClick={() => setNewReleasesTab('popular')}>Popular</button>
         <button className={`journal-tab-btn ${newReleasesTab === 'streaming' ? 'active' : ''}`} onClick={() => setNewReleasesTab('streaming')}>Now Streaming</button>
       </div>
+      {filtered.length === 0 && (
+        <EmptyState
+          eyebrow="New releases"
+          title="Nothing to show here."
+          description={newReleasesTab === 'popular' ? 'No recent releases have landed above a 7/10 yet.' : 'No new releases in this view.'}
+          action={newReleasesTab !== 'all' ? { label: 'See all releases', onClick: () => setNewReleasesTab('all') } : null}
+        />
+      )}
       <div className="bento-grid">
         {filtered.map((item, index) => (
           <div

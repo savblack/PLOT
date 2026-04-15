@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import EmptyState from './EmptyState';
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -140,10 +141,11 @@ export default function TimelineTab({ watched, onItemClick }) {
 
   if (watched.filter(i => i.watched_at).length === 0) {
     return (
-      <div className="empty-journal-state">
-        <h3>Nothing logged yet</h3>
-        <p>Log some movies or shows to build your timeline.</p>
-      </div>
+      <EmptyState
+        eyebrow="Timeline · empty"
+        title="No timeline yet."
+        description="Every title you log lands here, in order — with streaks, milestones, and your best months."
+      />
     );
   }
 
@@ -170,10 +172,21 @@ export default function TimelineTab({ watched, onItemClick }) {
 
       {/* Empty state */}
       {filtered.length === 0 && (
-        <div className="empty-journal-state" style={{ paddingTop: '3rem' }}>
-          <h3>{hasActiveFilters ? 'No matches' : `Nothing logged in ${resolvedYear}`}</h3>
-          <p>{hasActiveFilters ? 'No items match the selected filters.' : 'Select a different year or log something new.'}</p>
-        </div>
+        hasActiveFilters ? (
+          <EmptyState
+            eyebrow="No matches"
+            title="Nothing fits this search."
+            description="Loosen the search to see more."
+            action={{ label: 'Clear search', onClick: () => setSearchFilter('') }}
+          />
+        ) : (
+          <EmptyState
+            eyebrow="Timeline"
+            title={`Nothing logged in ${resolvedYear}.`}
+            description="Pick another year, or log something new to fill in this one."
+            action={{ label: 'View all time', onClick: () => setSelectedYear('all') }}
+          />
+        )
       )}
 
       {/* Timeline */}

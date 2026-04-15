@@ -294,7 +294,7 @@ export default function App() {
 
 
         {view === 'search' && (
-          <SearchView searchResults={searchResults} onItemClick={setSelectedItem} mediaFilter={mediaFilter} />
+          <SearchView searchResults={searchResults} onItemClick={setSelectedItem} mediaFilter={mediaFilter} searchQuery={searchQuery} setMediaFilter={setMediaFilter} />
         )}
 
         {view === 'watchlist' && (

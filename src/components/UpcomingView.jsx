@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import LoadingSpinner from './LoadingSpinner';
+import EmptyState from './EmptyState';
 
 function formatDateHeader(dateStr) {
   const d = new Date(dateStr);
@@ -99,7 +100,16 @@ export default function UpcomingView({
       </div>
 
       {items.length === 0 ? (
-        <p className="feed-empty-state">Nothing releasing in this window.</p>
+        <EmptyState
+          eyebrow="Upcoming"
+          title="Nothing in this window."
+          description="Try a different time range to see more releases."
+          action={
+            upcomingTimeFilter !== 'later'
+              ? { label: 'See later releases', onClick: () => setUpcomingTimeFilter('later') }
+              : null
+          }
+        />
       ) : (
         <>
           {/* Hero */}
