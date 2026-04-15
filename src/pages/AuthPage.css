@@ -124,7 +124,7 @@
 }
 
 .auth-header h1 {
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: 'Cormorant Garamond', Georgia, serif;
   font-size: clamp(1.7rem, 2.5vw, 2.2rem);
   font-weight: 500;
   letter-spacing: -0.03em;
@@ -347,7 +347,7 @@
 }
 
 .auth-success h1 {
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: 'Cormorant Garamond', Georgia, serif;
   font-size: 1.8rem;
   font-weight: 500;
   letter-spacing: -0.03em;
