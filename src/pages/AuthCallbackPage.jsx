@@ -38,7 +38,7 @@ export default function AuthCallbackPage() {
         padding: '2rem',
         textAlign: 'center',
       }}>
-        <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '2rem', letterSpacing: '-0.04em' }}>PLOT</span>
+        <span style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: '2rem', letterSpacing: '-0.04em' }}>PLOT</span>
         <p style={{ color: '#c0392b', fontSize: '0.95rem' }}>This link has expired or is invalid.</p>
         <a href="/login" style={{ color: '#1a1a1a', fontWeight: 600, fontSize: '0.9rem' }}>Back to sign in</a>
       </div>
@@ -51,7 +51,7 @@ export default function AuthCallbackPage() {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      fontFamily: "'Playfair Display', Georgia, serif",
+      fontFamily: "'Cormorant Garamond', Georgia, serif",
       fontSize: '2rem',
       fontWeight: 400,
       letterSpacing: '-0.04em',
