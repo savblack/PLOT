@@ -48,7 +48,6 @@ export default function App() {
   const [searchResults, setSearchResults] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
   const [feedTab, setFeedTab] = useState('foryou');
-  const [newReleasesTab, setNewReleasesTab] = useState('all');
   const [mediaFilter, setMediaFilter] = useState('all');
   const [publicProfileUsername, setPublicProfileUsername] = useState(null);
   const [publicProfileInitialList, setPublicProfileInitialList] = useState(null);
@@ -61,7 +60,7 @@ export default function App() {
   // ── Custom hooks ────────────────────────────────────
   const { theme, setTheme, feedLayout, setFeedLayout } = useTheme();
 
-  const { trending, newReleases, newTV, streamingMovies, streamingTV, upcoming, upcomingTV } =
+  const { trending, newReleases, newTV, upcoming, upcomingTV } =
     useContentFeed(preferences.region || 'AU');
 
   const {

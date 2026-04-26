@@ -30,7 +30,7 @@ export default function StepSeedTitles({ seedTitles, onToggleSeedTitle, user }) 
 
   useEffect(() => {
     updateChipsScroll();
-  }, [seedTitles]);
+  }, [seedTitles, updateChipsScroll]);
 
   useEffect(() => {
     setResultsScrolled(false);

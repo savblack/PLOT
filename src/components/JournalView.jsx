@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import ImportModal from './ImportModal';
 import JournalBoardTab from './JournalBoardTab';
 import TimelineTab from './TimelineTab';
@@ -7,11 +7,12 @@ import { MOODS, GENRES } from '../constants';
 function ListStack({ list, items, onListClick }) {
   const [activeIdx, setActiveIdx] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
-  const intervalRef = { current: null };
-  const resetRef    = { current: null };
+  const intervalRef = useRef(null);
+  const resetRef = useRef(null);
   const maxItems = Math.min(items.length, 10);
 
   const startCycle = () => {
+    clearInterval(intervalRef.current);
     clearTimeout(resetRef.current);
     setIsHovered(true);
     if (maxItems > 1) {
@@ -31,7 +32,6 @@ function ListStack({ list, items, onListClick }) {
   useEffect(() => () => {
     clearInterval(intervalRef.current);
     clearTimeout(resetRef.current);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (items.length === 0) {
@@ -135,7 +135,6 @@ export default function JournalView({
 
   useEffect(() => {
     exitSelectMode();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeList?.id]);
 
   const toggleItemSelect = (tmdbId) => {

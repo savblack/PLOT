@@ -24,7 +24,8 @@ export default function AppHeader({
   onDeleteAccount,
   minimal,
 }) {
-  const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  const [usernameCopied, setUsernameCopied] = useState(false);
+  const [showManageAccount, setShowManageAccount] = useState(false);
 
   if (minimal) return (
     <header className="main-header animate-in">
@@ -38,8 +39,6 @@ export default function AppHeader({
       </div>
     </header>
   );
-  const [usernameCopied, setUsernameCopied] = useState(false);
-  const [showManageAccount, setShowManageAccount] = useState(false);
   const copyProfileLink = () => {
     if (!profile?.username) return;
     navigator.clipboard.writeText(`${window.location.origin}/u/${profile.username}`);

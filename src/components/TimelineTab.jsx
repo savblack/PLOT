@@ -54,7 +54,7 @@ export default function TimelineTab({ watched, onItemClick }) {
         if (searchFilter && !(i.title || i.name || '').toLowerCase().includes(searchFilter.toLowerCase())) return false;
         return true;
       });
-  }, [watched, resolvedYear, searchFilter, genreFilter, ratingFilter, moodFilter, statusFilter]);
+  }, [watched, resolvedYear, searchFilter]);
 
   // Group by year-month
   const byMonth = useMemo(() => {

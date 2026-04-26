@@ -81,7 +81,7 @@ export default function PublicProfileView({ username, initialListId, onItemClick
     };
 
     load();
-  }, [username, initialListId]);
+  }, [username, initialListId, user]);
 
   if (loading) return (
     <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
@@ -145,14 +145,6 @@ export default function PublicProfileView({ username, initialListId, onItemClick
       onFollowChanged?.();
     }
     setFollowLoading(false);
-  };
-
-  const handleBack = () => {
-    if (!user) {
-      window.location.href = '/';
-    } else {
-      onBack();
-    }
   };
 
   // PRIVATE PROFILE VIEW

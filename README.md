@@ -1,16 +1,72 @@
-# React + Vite
+# PLOT
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+PLOT is a private React/Vite app for discovering, logging, and sharing movies and TV shows. It uses Supabase for auth, storage, database access, and edge functions, TMDB for media metadata, and PostHog for product analytics.
 
-Currently, two official plugins are available:
+## Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- React 19 and React Router
+- Vite
+- Supabase client and edge functions
+- PostHog
+- Vercel deployment
 
-## React Compiler
+## Local Setup
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+1. Install dependencies:
 
-## Expanding the ESLint configuration
+   ```sh
+   npm ci
+   ```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+2. Create a local env file:
+
+   ```sh
+   cp .env.example .env
+   ```
+
+3. Fill in the browser-safe `VITE_*` values in `.env`. Keep service-role and TMDB API keys server-side or local-script-only.
+
+4. Start the app:
+
+   ```sh
+   npm run dev
+   ```
+
+## Scripts
+
+- `npm run dev` starts Vite locally.
+- `npm run build` creates a production build.
+- `npm run lint` runs ESLint.
+- `npm run check` runs lint and build together.
+- `npm run test:smoke` builds the app and runs Playwright route smoke tests.
+- `npm run preview` serves the production build locally.
+
+## Supabase Functions
+
+The frontend expects `VITE_TMDB_PROXY_URL` to point at the deployed `tmdb-proxy` function. The proxy keeps the TMDB API key out of the browser and only allows the TMDB endpoints used by the app.
+
+Deploy functions with the Supabase CLI after configuring project secrets:
+
+```sh
+supabase functions deploy tmdb-proxy
+supabase functions deploy generate-taste-profile
+supabase functions deploy generate-journal
+supabase functions deploy delete-account
+```
+
+Required function secrets:
+
+- `TMDB_API_KEY`
+- `ANTHROPIC_API_KEY` or `CLAUDE_API_KEY`, depending on the function
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+
+
+## Data Rules
+
+Never hardcode TMDB movie or TV IDs. Resolve titles through TMDB search at runtime and only reuse IDs returned by TMDB API responses.
+
+## GitHub Hygiene
+
+Pull requests should pass CI before merging. The repository is private, so required branch protection may depend on the GitHub plan; keep CI, Dependabot, and security alerts enabled as the practical guardrails.
