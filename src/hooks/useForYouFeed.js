@@ -120,7 +120,7 @@ export function useForYouFeed({ watched, preferences, user, feedTab }) {
       setForYouFeed(pool.slice(0, 40));
     };
     loadForYou();
-  }, [watched, preferences.genres, moodFilter, dismissed.size]);
+  }, [watched, preferences.genres, moodFilter, dismissed, followingFeed]);
 
   const onDismiss = (id) => {
     setDismissed(prev => {

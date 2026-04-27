@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
 import { GENRES } from '../constants';
 
-export default function JournalBoardTab({ watched, user, onItemClick, onMount }) {
-  useEffect(() => { onMount?.(); }, []);
+export default function JournalBoardTab({ watched, onItemClick, onMount }) {
+  useEffect(() => { onMount?.(); }, [onMount]);
 
   // ── Derived stats ──────────────────────────────────────
   const now = new Date();
@@ -63,7 +63,6 @@ export default function JournalBoardTab({ watched, user, onItemClick, onMount })
 
   // Films vs TV
   const movieCount = watched.filter(i => (i.media_type || (i.title ? 'movie' : 'tv')) === 'movie').length;
-  const tvCount = watched.length - movieCount;
   const moviePct = watched.length > 0 ? Math.round((movieCount / watched.length) * 100) : 0;
 
   // By decade
@@ -198,7 +197,7 @@ export default function JournalBoardTab({ watched, user, onItemClick, onMount })
         <div className="td-card">
           <div className="td-card-label">Monthly activity</div>
           <div className="td-month-grid">
-            {monthlyActivity.map(({ month, weeks, count, isCurrent }) => (
+            {monthlyActivity.map(({ month, weeks, isCurrent }) => (
               <div key={month + isCurrent} className="td-month-col">
                 {weeks.map((wCount, wi) => {
                   const intensity = wCount / maxWeekCount;

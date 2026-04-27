@@ -21,7 +21,7 @@ export default function StepProviders({ selectedRegion, selectedProviders, onTog
       setLoading(false);
     };
     fetchProviders();
-  }, []);
+  }, [loading, providers.length, selectedRegion]);
 
   useEffect(() => {
     if (!search.trim()) { setSearchResults([]); return; }
@@ -32,7 +32,7 @@ export default function StepProviders({ selectedRegion, selectedProviders, onTog
         .filter(p => p.provider_name.toLowerCase().includes(q))
         .slice(0, 6)
     );
-  }, [search, allProviders]);
+  }, [search, allProviders, providers]);
 
   return (
     <div>

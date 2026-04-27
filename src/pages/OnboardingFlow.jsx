@@ -56,7 +56,9 @@ export default function OnboardingFlow() {
         const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
         const guess = timezoneToRegion(tz);
         if (guess) setSelectedRegion(guess);
-      } catch (_) {}
+      } catch {
+        // Browser timezone detection is best-effort.
+      }
 
       const { data: profile } = await supabase
         .from('profiles')
@@ -71,7 +73,7 @@ export default function OnboardingFlow() {
       if (profile?.username) setUsername(profile.username);
     };
     init();
-  }, []);
+  }, [navigate]);
 
   // Debounced username uniqueness check
   useEffect(() => {

@@ -4,10 +4,28 @@ const CORS = {
 };
 
 const BASE = 'https://api.themoviedb.org/3';
+const ALLOWED_PATHS = [
+  /^search\/multi$/,
+  /^trending\/(all|movie|tv)\/(day|week)$/,
+  /^movie\/(now_playing|top_rated)$/,
+  /^tv\/(on_the_air|airing_today|top_rated)$/,
+  /^discover\/(movie|tv)$/,
+  /^(movie|tv)\/\d+$/,
+  /^(movie|tv)\/\d+\/recommendations$/,
+  /^(movie|tv)\/\d+\/watch\/providers$/,
+  /^watch\/providers\/(movie|tv)$/,
+];
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: CORS });
+  }
+
+  if (req.method !== 'GET') {
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+      status: 405,
+      headers: { ...CORS, 'Content-Type': 'application/json' },
+    });
   }
 
   const key = Deno.env.get('TMDB_API_KEY');
@@ -27,8 +45,16 @@ Deno.serve(async (req) => {
     });
   }
 
+  const cleanPath = path.replace(/^\/+/, '');
+  if (!ALLOWED_PATHS.some((pattern) => pattern.test(cleanPath))) {
+    return new Response(JSON.stringify({ error: 'TMDB path not allowed' }), {
+      status: 403,
+      headers: { ...CORS, 'Content-Type': 'application/json' },
+    });
+  }
+
   // Forward all query params except 'path' to TMDB
-  const tmdbUrl = new URL(`${BASE}/${path}`);
+  const tmdbUrl = new URL(`${BASE}/${cleanPath}`);
   tmdbUrl.searchParams.set('api_key', key);
   url.searchParams.forEach((v, k) => {
     if (k !== 'path') tmdbUrl.searchParams.set(k, v);

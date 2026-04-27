@@ -1,4 +1,4 @@
-const PROXY_URL = 'https://mkegtssedjyqldysvzga.supabase.co/functions/v1/tmdb-proxy';
+const PROXY_URL = import.meta.env.VITE_TMDB_PROXY_URL;
 
 let userRegion = 'AU';
 export const setTmdbRegion = (region) => { userRegion = region; };
@@ -12,6 +12,7 @@ const fetchFromTMDB = async (endpoint, params = {}) => {
   });
 
   try {
+    if (!PROXY_URL) throw new Error('VITE_TMDB_PROXY_URL is not configured');
     const response = await fetch(`${PROXY_URL}?${queryParams}`);
     if (!response.ok) throw new Error(`TMDB Proxy Error: ${response.status}`);
     return await response.json();

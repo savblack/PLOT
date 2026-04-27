@@ -1,5 +1,5 @@
 // Seed journal entries for fake profiles so the Following feed has content.
-// Usage: SUPABASE_SERVICE_KEY=your_key node scripts/seed-journal.mjs
+// Usage: SUPABASE_SERVICE_KEY=your_key TMDB_API_KEY=your_key node scripts/seed-journal.mjs
 
 import { createClient } from '@supabase/supabase-js';
 
@@ -9,6 +9,11 @@ const TMDB_KEY = process.env.TMDB_API_KEY;
 
 if (!SERVICE_KEY) {
   console.error('Missing SUPABASE_SERVICE_KEY. Run: SUPABASE_SERVICE_KEY=your_key node scripts/seed-journal.mjs');
+  process.exit(1);
+}
+
+if (!TMDB_KEY) {
+  console.error('Missing TMDB_API_KEY. Run: TMDB_API_KEY=your_key node scripts/seed-journal.mjs');
   process.exit(1);
 }
 

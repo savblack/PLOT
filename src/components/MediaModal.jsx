@@ -156,7 +156,7 @@ export default function MediaModal({ item, onClose, onSave, savedData, userLists
     };
     fetchDetails();
     return () => { document.body.style.overflow = 'unset'; };
-  }, [item]);
+  }, [item, region]);
 
   const handleSave = () => {
     const mediaType = item.media_type || (item.title ? 'movie' : 'tv');

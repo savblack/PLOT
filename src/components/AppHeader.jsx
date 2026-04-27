@@ -22,9 +22,12 @@ export default function AppHeader({
   logout, setShowAuth,
   avatarInputRef, setCropFile,
   onDeleteAccount,
+  plexIntegration,
   minimal,
 }) {
-  const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  const [usernameCopied, setUsernameCopied] = useState(false);
+  const [showManageAccount, setShowManageAccount] = useState(false);
+  const [plexServerSelected, setPlexServerSelected] = useState('');
 
   if (minimal) return (
     <header className="main-header animate-in">
@@ -38,8 +41,6 @@ export default function AppHeader({
       </div>
     </header>
   );
-  const [usernameCopied, setUsernameCopied] = useState(false);
-  const [showManageAccount, setShowManageAccount] = useState(false);
   const copyProfileLink = () => {
     if (!profile?.username) return;
     navigator.clipboard.writeText(`${window.location.origin}/u/${profile.username}`);
@@ -237,6 +238,68 @@ export default function AppHeader({
                           </div>
                         )}
                       </div>
+                      {plexIntegration && (
+                        <div className="profile-public-section">
+                          <div className="settings-row">
+                            <span className="settings-label">Plex</span>
+                            {plexIntegration.status === 'disconnected' && (
+                              <button className="copy-link-btn" onClick={plexIntegration.startAuth} disabled={plexIntegration.loading}>
+                                {plexIntegration.loading ? 'Starting…' : 'Connect'}
+                              </button>
+                            )}
+                            {plexIntegration.status === 'pending' && (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <span className="plex-spinner plex-spinner--sm" />
+                                <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>Waiting…</span>
+                                <button className="copy-link-btn" onClick={plexIntegration.cancelAuth}>Cancel</button>
+                              </div>
+                            )}
+                            {(plexIntegration.status === 'connected' || plexIntegration.status === 'syncing') && (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                {plexIntegration.plexUsername && (
+                                  <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                                    {plexIntegration.plexUsername}
+                                  </span>
+                                )}
+                                <button className="copy-link-btn" onClick={plexIntegration.syncNow} disabled={plexIntegration.status === 'syncing'}>
+                                  {plexIntegration.status === 'syncing' ? 'Syncing…' : 'Sync'}
+                                </button>
+                                <button className="copy-link-btn" onClick={plexIntegration.disconnect} disabled={plexIntegration.loading}>
+                                  Disconnect
+                                </button>
+                              </div>
+                            )}
+                            {plexIntegration.status === 'error' && (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <span style={{ fontSize: '0.78rem', color: '#c0392b' }}>Error</span>
+                                <button className="copy-link-btn" onClick={plexIntegration.syncNow}>Retry</button>
+                                <button className="copy-link-btn" onClick={plexIntegration.disconnect}>Disconnect</button>
+                              </div>
+                            )}
+                          </div>
+                          {plexIntegration.status === 'needs_server' && (
+                            <div className="settings-row" style={{ gap: '0.5rem' }}>
+                              <select
+                                className="region-select"
+                                value={plexServerSelected}
+                                onChange={e => setPlexServerSelected(e.target.value)}
+                              >
+                                <option value="">Pick a server…</option>
+                                {plexIntegration.servers.map(s => (
+                                  <option key={s.id} value={s.id}>{s.name}</option>
+                                ))}
+                              </select>
+                              <button
+                                className="copy-link-btn"
+                                disabled={!plexServerSelected}
+                                onClick={() => plexIntegration.selectServer(plexServerSelected)}
+                              >
+                                Use
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
                       <div className="profile-public-section">
                         <div className="settings-row">
                           <span className="settings-label">History</span>

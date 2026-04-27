@@ -10,7 +10,12 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+test-results/
+playwright-report/
 *.local
+supabase/.temp/
+.claude/
+website/.claude/
 
 # Editor directories and files
 .vscode/*
@@ -23,4 +28,14 @@ dist-ssr
 *.sln
 *.sw?
 .env
+.env.*
+!.env.example
+*.zip
+*-mockup.html
+*-mockups.html
+*-preview.html
+*-previews.html
+*-variants.html
+*-variants-*.html
 website/images/product/*.gif
+.vercel

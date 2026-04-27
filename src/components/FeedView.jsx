@@ -22,13 +22,10 @@ export default function FeedView({
   const [browseGenre, setBrowseGenre] = useState('');
   const [browseRating, setBrowseRating] = useState('');
   const [browseStatus, setBrowseStatus] = useState('');
-  const [browseSearch, setBrowseSearch] = useState('');
 
   const [feedGenre, setFeedGenre] = useState('');
   const [feedSort, setFeedSort] = useState('');
-  const [feedMood, setFeedMood] = useState('');
   const [feedRating, setFeedRating] = useState('');
-  const [feedStatus, setFeedStatus] = useState('');
 
   useEffect(() => {
     if (feedTab !== 'browse') return;
@@ -64,9 +61,6 @@ export default function FeedView({
         return (i.genre_ids || []).includes(id);
       });
     }
-    if (feedStatus === 'watched')   items = items.filter(i => getSavedData(i.id));
-    if (feedStatus === 'unwatched') items = items.filter(i => !getSavedData(i.id));
-    if (feedMood)   items = items.filter(i => getSavedData(i.id)?.mood === feedMood);
     if (feedRating) items = items.filter(i => (getSavedData(i.id)?.rating ?? 0) >= parseInt(feedRating));
     if (feedSort === 'date-desc')   items = [...items].sort((a, b) => (b.release_date || b.first_air_date || '').localeCompare(a.release_date || a.first_air_date || ''));
     if (feedSort === 'rating-desc') items = [...items].sort((a, b) => (b.vote_average || 0) - (a.vote_average || 0));
@@ -118,9 +112,7 @@ export default function FeedView({
           {browseLoading ? (
             <LoadingSpinner />
           ) : (() => {
-            const searchLower = browseSearch.toLowerCase();
             const filtered = browseResults.filter(item => {
-              if (searchLower && !(item.title || item.name || '').toLowerCase().includes(searchLower)) return false;
               if (browseStatus === 'watched' && !getSavedData(item.id)) return false;
               if (browseStatus === 'unwatched' && getSavedData(item.id)) return false;
               return true;

@@ -54,7 +54,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) navigate('/app', { replace: true });
     });
-  }, []);
+  }, [navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

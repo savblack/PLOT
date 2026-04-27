@@ -135,7 +135,7 @@ export default function UpcomingView({
 
           {/* Date groups */}
           {dateGroups.map(([dateKey, groupItems]) => {
-            const { label, sub, isToday } = formatDateHeader(dateKey);
+            const { label, sub } = formatDateHeader(dateKey);
             return (
               <div key={dateKey} className="upcoming-date-group">
                 <div className="upcoming-date-header">

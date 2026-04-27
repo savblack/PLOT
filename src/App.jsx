@@ -18,6 +18,7 @@ import { useTheme } from './hooks/useTheme';
 import { useContentFeed } from './hooks/useContentFeed';
 import { useForYouFeed } from './hooks/useForYouFeed';
 import { useJournalData } from './hooks/useJournalData';
+import { usePlexIntegration } from './hooks/usePlexIntegration';
 import { usePostHog } from '@posthog/react';
 
 export default function App() {
@@ -48,7 +49,6 @@ export default function App() {
   const [searchResults, setSearchResults] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
   const [feedTab, setFeedTab] = useState('foryou');
-  const [newReleasesTab, setNewReleasesTab] = useState('all');
   const [mediaFilter, setMediaFilter] = useState('all');
   const [publicProfileUsername, setPublicProfileUsername] = useState(null);
   const [publicProfileInitialList, setPublicProfileInitialList] = useState(null);
@@ -61,7 +61,7 @@ export default function App() {
   // ── Custom hooks ────────────────────────────────────
   const { theme, setTheme, feedLayout, setFeedLayout } = useTheme();
 
-  const { trending, newReleases, newTV, streamingMovies, streamingTV, upcoming, upcomingTV } =
+  const { trending, newReleases, newTV, upcoming, upcomingTV } =
     useContentFeed(preferences.region || 'AU');
 
   const {
@@ -82,6 +82,8 @@ export default function App() {
     forYouFeed, followingFeed, followingFeedLoaded, setFollowingFeedLoaded,
     refreshForYou, onDismiss, moodFilter, setMoodFilter, userMoods,
   } = useForYouFeed({ watched, preferences, user, feedTab });
+
+  const plexIntegration = usePlexIntegration(user);
 
   // ── Auth init ───────────────────────────────────────
   useEffect(() => {
@@ -271,6 +273,7 @@ export default function App() {
         avatarInputRef={avatarInputRef} setCropFile={setCropFile}
         onDeleteAccount={deleteAccount}
         onNavigateToProfile={(uname) => { setPublicProfileUsername(uname); setView('public'); navigate(`/u/${uname}`); }}
+        plexIntegration={user ? plexIntegration : null}
         minimal={!user && view === 'public'}
       />
 

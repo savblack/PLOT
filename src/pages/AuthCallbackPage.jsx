@@ -23,7 +23,7 @@ export default function AuthCallbackPage() {
     };
 
     handle();
-  }, []);
+  }, [navigate, searchParams]);
 
   if (error) {
     return (
