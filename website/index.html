@@ -398,7 +398,18 @@
 
     .editorial-wrap {
       position: relative;
+      width: 100%;
+      height: 580px; /* overridden by ResizeObserver */
+    }
+
+    .ed-inner {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 760px;
       height: 580px;
+      transform: scale(var(--ed-scale, 1));
+      transform-origin: top left;
     }
 
     .ed-poster {
@@ -1569,6 +1580,10 @@
 
     const editorialWrap = document.getElementById('editorialWrap');
 
+    const edInner = document.createElement('div');
+    edInner.className = 'ed-inner';
+    editorialWrap.appendChild(edInner);
+
     editorialData.forEach(item => {
       const poster = document.createElement('div');
       poster.className = 'ed-poster';
@@ -1595,8 +1610,17 @@
       label.appendChild(genre);
       label.appendChild(title);
       poster.appendChild(label);
-      editorialWrap.appendChild(poster);
+      edInner.appendChild(poster);
     });
+
+    // Scale the card fan to fit the container width
+    const DESIGN_W = 760;
+    const DESIGN_H = 580;
+    new ResizeObserver(([entry]) => {
+      const scale = Math.min(1, entry.contentRect.width / DESIGN_W);
+      editorialWrap.style.setProperty('--ed-scale', scale);
+      editorialWrap.style.height = (DESIGN_H * scale) + 'px';
+    }).observe(editorialWrap);
 
     // Container-level hover tracking — avoids enter/leave chaos on overlapping cards
     let edHovered = null;
