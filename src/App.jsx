@@ -18,6 +18,7 @@ import { useTheme } from './hooks/useTheme';
 import { useContentFeed } from './hooks/useContentFeed';
 import { useForYouFeed } from './hooks/useForYouFeed';
 import { useJournalData } from './hooks/useJournalData';
+import { usePlexIntegration } from './hooks/usePlexIntegration';
 import { usePostHog } from '@posthog/react';
 
 export default function App() {
@@ -81,6 +82,8 @@ export default function App() {
     forYouFeed, followingFeed, followingFeedLoaded, setFollowingFeedLoaded,
     refreshForYou, onDismiss, moodFilter, setMoodFilter, userMoods,
   } = useForYouFeed({ watched, preferences, user, feedTab });
+
+  const plexIntegration = usePlexIntegration(user);
 
   // ── Auth init ───────────────────────────────────────
   useEffect(() => {
@@ -270,6 +273,7 @@ export default function App() {
         avatarInputRef={avatarInputRef} setCropFile={setCropFile}
         onDeleteAccount={deleteAccount}
         onNavigateToProfile={(uname) => { setPublicProfileUsername(uname); setView('public'); navigate(`/u/${uname}`); }}
+        plexIntegration={user ? plexIntegration : null}
         minimal={!user && view === 'public'}
       />
 
