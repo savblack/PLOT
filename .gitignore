@@ -33,6 +33,7 @@ website/.claude/
 *.zip
 *-mockup.html
 *-mockups.html
+mockup-*.html
 *-preview.html
 *-previews.html
 *-variants.html
