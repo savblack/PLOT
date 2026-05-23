@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useApp, posterUrl, countdownChip, TodayLabel } from '../App.jsx';
+import { localDateStr } from '../utils/date.js';
 import { useGenres } from '../hooks/useGenres.js';
 import MultiSelect from './MultiSelect.jsx';
 
@@ -39,20 +40,18 @@ export default function WatchlistView() {
     return <div className="loading-state"><div className="spinner" /></div>;
   }
 
-  // Watching section — all watching_progress rows
   const watchingItems = watching.items;
 
-  // Saved section — list_items not already being watched
   const watchingIds = new Set(watchingItems.map(i => i.tmdb_id));
   const savedItems  = watchlist.items.filter(i => !watchingIds.has(Number(i.tmdb_id)));
 
-  // Sort saved: Coming Soon first, then Available Now
-  const today = new Date(); today.setHours(0, 0, 0, 0);
+  // Sort saved: Coming Soon first (string compare is safe for YYYY-MM-DD), then Available Now
+  const todayStr = localDateStr();
   const comingSoon   = savedItems
-    .filter(i => i.release_date && new Date(i.release_date) > today)
-    .sort((a, b) => new Date(a.release_date) - new Date(b.release_date));
+    .filter(i => i.release_date && i.release_date > todayStr)
+    .sort((a, b) => a.release_date.localeCompare(b.release_date));
   const availableNow = savedItems
-    .filter(i => !i.release_date || new Date(i.release_date) <= today);
+    .filter(i => !i.release_date || i.release_date <= todayStr);
   const sortedSaved  = [...comingSoon, ...availableNow];
 
   // Filter helpers — items with missing data pass through
@@ -76,8 +75,9 @@ export default function WatchlistView() {
 
   const filteredSaved    = applyFilters(sortedSaved);
   // Watching items don't have genre/provider stored — only apply type filter
-  const filteredWatching = typeFilters.length
-    ? watchingItems.filter(() => typeFilters.includes('tv')) // watching is always TV
+  // Watching is always TV — hide all if the active filter excludes TV
+  const filteredWatching = typeFilters.length && !typeFilters.includes('tv')
+    ? []
     : watchingItems;
 
   const isEmpty = watchingItems.length === 0 && sortedSaved.length === 0;

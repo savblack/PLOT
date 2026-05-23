@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useApp, posterUrl, logoUrl, TodayLabel } from '../App.jsx';
-import { localDateStr } from '../utils/date.js';
+import { localDateStr, dateToLocalStr } from '../utils/date.js';
 import { useDragScroll } from '../hooks/useDragScroll.js';
 import { useGenres } from '../hooks/useGenres.js';
 import { tmdb, getTmdbRegion } from '../api/tmdb.js';
@@ -120,7 +120,7 @@ function MediaCard({ item, openPanel, watchlist }) {
 /* ── Date label ── */
 function formatDayLabel(dateStr) {
   const today = new Date(); today.setHours(0, 0, 0, 0);
-  const d     = new Date(dateStr); d.setHours(0, 0, 0, 0);
+  const d     = new Date(dateStr + 'T00:00:00'); // force local-time parse (bare YYYY-MM-DD parses as UTC)
   const diff  = Math.round((d - today) / 86400000);
   if (diff === 0)  return 'Today';
   if (diff === 1)  return 'Tomorrow';
@@ -206,16 +206,17 @@ function UpcomingContent({ typeFilters, genreFilters, providers, openPanel, watc
         seenIds.add(movie.id);
       }
       const recentDates = Object.keys(recentGrouped)
-        .sort((a, b) => new Date(b) - new Date(a))
+        .sort((a, b) => b.localeCompare(a))
         .filter(d => recentGrouped[d].length > 0);
 
       const upcomingGrouped = {};
-      for (let i = 1; i <= 60; i++) upcomingGrouped[localDateStr(i)] = [];
 
+      const sixMonthsStr = (() => { const d = new Date(); d.setMonth(d.getMonth() + 6); return dateToLocalStr(d); })();
       for (const movie of (upcomingMovRes?.results || [])) {
         if (seenIds.has(movie.id)) continue;
         const d = movie.release_date;
-        if (d && d > todayStr && upcomingGrouped[d] !== undefined) {
+        if (d && d > todayStr && d <= sixMonthsStr) {
+          if (!upcomingGrouped[d]) upcomingGrouped[d] = [];
           upcomingGrouped[d].push({ ...movie, media_type: 'movie', _cinema: true });
           seenIds.add(movie.id);
         }
@@ -223,18 +224,19 @@ function UpcomingContent({ typeFilters, genreFilters, providers, openPanel, watc
       for (const show of (upcomingTVRes?.results || [])) {
         if (seenIds.has(show.id)) continue;
         const d = show.first_air_date;
-        if (d && d > todayStr && upcomingGrouped[d] !== undefined) {
+        if (d && d > todayStr && d <= sixMonthsStr) {
+          if (!upcomingGrouped[d]) upcomingGrouped[d] = [];
           upcomingGrouped[d].push({ ...show, media_type: 'tv', first_air_date: null });
           seenIds.add(show.id);
         }
       }
-      const upcomingDates = Object.keys(upcomingGrouped).sort().filter(d => upcomingGrouped[d].length > 0);
+      const upcomingDates = Object.keys(upcomingGrouped).sort();
 
       setData({ today: todayItems, recentGrouped, recentDates, upcomingGrouped, upcomingDates });
       setLoading(false);
     }
     load();
-  }, [JSON.stringify(providerIds)]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [providerIds.join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading) return <div className="loading-state"><div className="spinner" /></div>;
 
@@ -242,11 +244,19 @@ function UpcomingContent({ typeFilters, genreFilters, providers, openPanel, watc
 
   const applyFilters = (items) => filterByGenre(filterByType(items, typeFilters), genreFilters);
 
-  const filteredToday    = applyFilters(today);
-  const filteredRecent   = Object.fromEntries(recentDates.map(d => [d, applyFilters(recentGrouped[d])]));
-  const filteredRecDates = recentDates.filter(d => filteredRecent[d].length > 0);
-  const filteredUpcoming = Object.fromEntries(upcomingDates.map(d => [d, applyFilters(upcomingGrouped[d])]));
-  const filteredUpDates  = upcomingDates.filter(d => filteredUpcoming[d].length > 0);
+  const filteredToday = applyFilters(today);
+  const filteredRecent = {};
+  const filteredRecDates = recentDates.filter(d => {
+    const arr = applyFilters(recentGrouped[d]);
+    if (arr.length) { filteredRecent[d] = arr; return true; }
+    return false;
+  });
+  const filteredUpcoming = {};
+  const filteredUpDates = upcomingDates.filter(d => {
+    const arr = applyFilters(upcomingGrouped[d]);
+    if (arr.length) { filteredUpcoming[d] = arr; return true; }
+    return false;
+  });
 
   const hasContent = filteredToday.length > 0 || filteredRecDates.length > 0 || filteredUpDates.length > 0;
 
@@ -295,60 +305,6 @@ function UpcomingContent({ typeFilters, genreFilters, providers, openPanel, watc
   );
 }
 
-/* ── Platform content (trending on a specific platform) ── */
-function PlatformContent({ rail, typeFilters, genreFilters, openPanel, watchlist }) {
-  if (!rail) {
-    return (
-      <div className="empty-state">
-        <div className="empty-title">No content found</div>
-        <div className="empty-body">Try a different platform or filter.</div>
-      </div>
-    );
-  }
-
-  const applyFilters = (items) => filterByGenre(filterByType(items, typeFilters), genreFilters);
-  const tvItems    = applyFilters(rail.items.filter(i => i.media_type === 'tv'));
-  const movieItems = applyFilters(rail.items.filter(i => i.media_type === 'movie'));
-
-  return (
-    <div style={{ paddingTop: '1rem' }}>
-      {tvItems.length > 0 && (
-        <div className="section-rail">
-          <div className="rail-header">
-            {rail.provider.logo_path && (
-              <img src={logoUrl(rail.provider.logo_path, 'w45')} alt="" style={{ width: 18, height: 18, borderRadius: 4 }} />
-            )}
-            <span className="rail-title">Trending on {rail.provider.name}</span>
-          </div>
-          <Rail>
-            {tvItems.map(item => (
-              <MediaCard key={item.id} item={item} openPanel={openPanel} watchlist={watchlist} />
-            ))}
-          </Rail>
-        </div>
-      )}
-      {movieItems.length > 0 && (
-        <div className="section-rail">
-          <div className="rail-header">
-            <span className="rail-dot dot-movie" />
-            <span className="rail-title">Movies on {rail.provider.name}</span>
-          </div>
-          <Rail>
-            {movieItems.map(item => (
-              <MediaCard key={item.id} item={item} openPanel={openPanel} watchlist={watchlist} />
-            ))}
-          </Rail>
-        </div>
-      )}
-      {tvItems.length === 0 && movieItems.length === 0 && (
-        <div className="empty-state">
-          <div className="empty-title">Nothing matching this filter</div>
-          <div className="empty-body">Try a different type filter.</div>
-        </div>
-      )}
-    </div>
-  );
-}
 
 /* ═══════════════════════════════════════
    GuideView

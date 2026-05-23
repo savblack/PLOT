@@ -94,7 +94,7 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone }) {
 
         const map = {};
         for (const ep of eps) {
-          const stamp = ep.airstamp || (ep.airtime ? null : null);
+          const stamp = ep.airstamp ?? null;
           if (stamp) map[`${ep.season}-${ep.number}`] = stamp;
         }
         setTvmazeTimes(map);
