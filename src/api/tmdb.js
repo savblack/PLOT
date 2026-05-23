@@ -1,4 +1,4 @@
-import { localDateStr } from '../utils/date.js';
+import { localDateStr, dateToLocalStr } from '../utils/date.js';
 
 const PROXY_URL       = import.meta.env.VITE_TMDB_PROXY_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -62,7 +62,7 @@ export const tmdb = {
   getUpcoming: async (providerIds = []) => {
     const today = localDateStr();
     const sixMonths = new Date(); sixMonths.setMonth(sixMonths.getMonth() + 6);
-    const end = `${sixMonths.getFullYear()}-${String(sixMonths.getMonth()+1).padStart(2,'0')}-${String(sixMonths.getDate()).padStart(2,'0')}`;
+    const end = dateToLocalStr(sixMonths);
     const providerParams = providerIds.length
       ? { watch_region: userRegion, with_watch_providers: providerIds.join('|'), with_watch_monetization_types: 'flatrate' }
       : {};
@@ -112,7 +112,7 @@ export const tmdb = {
   getUpcomingTV: async (providerIds = []) => {
     const today = localDateStr();
     const sixMonths = new Date(); sixMonths.setMonth(sixMonths.getMonth() + 6);
-    const end = `${sixMonths.getFullYear()}-${String(sixMonths.getMonth()+1).padStart(2,'0')}-${String(sixMonths.getDate()).padStart(2,'0')}`;
+    const end = dateToLocalStr(sixMonths);
     const providerParams = providerIds.length
       ? { watch_region: userRegion, with_watch_providers: providerIds.join('|'), with_watch_monetization_types: 'flatrate' }
       : {};

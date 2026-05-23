@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useApp, posterUrl, TodayLabel } from '../App.jsx';
-import { localDateStr } from '../utils/date.js';
+import { localDateStr, dateToLocalStr } from '../utils/date.js';
 import { useCalendar } from '../hooks/useCalendar.js';
 import { tmdb } from '../api/tmdb.js';
 import MultiSelect from './MultiSelect.jsx';
@@ -30,10 +30,6 @@ function startOfWeek(date) {
   d.setDate(d.getDate() - d.getDay());
   d.setHours(0, 0, 0, 0);
   return d;
-}
-
-function toDateStr(d) {
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
 // episode  = upcoming ep from a show you're watching
@@ -154,7 +150,7 @@ export default function CalendarView() {
   const { openPanel, watchlist, watching, reminders } = useApp();
 
   const today    = new Date();
-  const todayStr = toDateStr(today);
+  const todayStr = dateToLocalStr(today);
 
   const [year,  setYear]  = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
@@ -194,7 +190,7 @@ export default function CalendarView() {
     const map = {};
     days.forEach(({ date, current }) => {
       if (!current) return;
-      const ds  = toDateStr(date);
+      const ds  = dateToLocalStr(date);
       const evs = filterEvs(eventsForDate(ds));
       if (evs.length > 0) map[ds] = evs;
     });
@@ -205,7 +201,7 @@ export default function CalendarView() {
   const agendaDays = useMemo(() => (
     days
       .filter(({ current }) => current)
-      .map(({ date }) => { const ds = toDateStr(date); return { date, ds, events: filterEvs(eventsForDate(ds)) }; })
+      .map(({ date }) => { const ds = dateToLocalStr(date); return { date, ds, events: filterEvs(eventsForDate(ds)) }; })
       .filter(({ events }) => events.length > 0)
   ), [days, eventsForDate, filterEvs]);
 
@@ -333,7 +329,7 @@ export default function CalendarView() {
                 <div key={d} className="cal-day-header">{d}</div>
               ))}
               {days.map(({ date, current }, i) => {
-                const ds         = toDateStr(date);
+                const ds         = dateToLocalStr(date);
                 const dots       = dotMap[ds] || [];
                 const cellEvents = pillEventsMap[ds] || [];
                 const isToday    = ds === todayStr;
@@ -394,7 +390,7 @@ export default function CalendarView() {
           <>
             <div className="calendar-grid calendar-grid--week">
               {weekDays.map((date, i) => {
-                const ds         = toDateStr(date);
+                const ds         = dateToLocalStr(date);
                 const cellEvents = filterEvs(eventsForDate(ds));
                 const isToday    = ds === todayStr;
                 const isSelected = ds === selectedDate;

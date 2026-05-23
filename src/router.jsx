@@ -59,6 +59,7 @@ const router = createBrowserRouter([
       </ProtectedRoute>
     ),
     children: [
+      { path: '/app',      element: <Navigate to="/guide" replace /> },
       { path: '/guide',    element: wrap(<GuideView />) },
       { path: '/calendar', element: wrap(<CalendarView />) },
       { path: '/watching', element: <Navigate to="/list" replace /> },

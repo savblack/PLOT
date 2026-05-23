@@ -7,13 +7,13 @@ import { tmdb, getTmdbRegion } from '../api/tmdb.js';
 import EpgView from './EpgView.jsx';
 import MultiSelect from './MultiSelect.jsx';
 
-/* ── Module-level provider logo cache ── */
+/* ── Module-level provider logo cache (keyed with region to avoid stale logos after region change) ── */
 const _providerCache = new Map();
 async function getProviderLogo(id, type) {
-  const key = `${type}-${id}`;
+  const region = getTmdbRegion();
+  const key = `${type}-${id}-${region}`;
   if (_providerCache.has(key)) return _providerCache.get(key);
   const data = await tmdb.getWatchProviders(id, type);
-  const region = getTmdbRegion();
   const providers = data?.results?.[region]?.flatrate || [];
   const logo = providers[0]?.logo_path || null;
   _providerCache.set(key, logo);
@@ -93,7 +93,7 @@ function MediaCard({ item, openPanel, watchlist }) {
       if (!cancelled && logo) setProviderLogo(logo);
     });
     return () => { cancelled = true; };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [item.id, item.tmdb_id, type]);
 
   return (
     <div className="media-card" onClick={() => openPanel(item.id, type)}>

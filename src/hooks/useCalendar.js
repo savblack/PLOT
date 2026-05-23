@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { localDateStr } from '../utils/date.js';
+import { localDateStr, dateToLocalStr } from '../utils/date.js';
 
 /**
  * Builds calendar events from:
@@ -22,7 +22,7 @@ export function useCalendar(watchlistItems = [], watchingItems = [], fetchSeason
       // If it's a Date object, convert using local date (not toISOString which is UTC).
       const dateStr = typeof rem.air_date === 'string'
         ? rem.air_date
-        : (rem.air_date instanceof Date ? `${rem.air_date.getFullYear()}-${String(rem.air_date.getMonth()+1).padStart(2,'0')}-${String(rem.air_date.getDate()).padStart(2,'0')}` : null);
+        : (rem.air_date instanceof Date ? dateToLocalStr(rem.air_date) : null);
       if (!dateStr) continue;
       all.push({
         date:  dateStr,
@@ -81,7 +81,7 @@ export function useCalendar(watchlistItems = [], watchingItems = [], fetchSeason
     // Deduplicate by date + id
     const seen = new Set();
     const deduped = all.filter(ev => {
-      const key = `${ev.date}-${ev.item?.tmdb_id ?? ev.item?.id ?? Math.random()}`;
+      const key = `${ev.date}-${ev.type}-${ev.item?.tmdb_id ?? ev.item?.id ?? ev.item?.title ?? ev.label}`;
       if (seen.has(key)) return false;
       seen.add(key);
       return true;

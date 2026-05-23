@@ -37,7 +37,7 @@ const TABS = [
 ];
 
 const NAV_ITEMS = [
-  { id: 'guide',    label: 'Guide',    Icon: IconGuide    },
+  { id: 'guide',    label: 'Home',     Icon: IconGuide    },
   { id: 'calendar', label: 'Calendar', Icon: IconCalendar },
   { id: 'list',     label: 'Watchlist',Icon: IconWatchlist },
   { id: 'watching', label: 'Watching', Icon: IconWatching },
