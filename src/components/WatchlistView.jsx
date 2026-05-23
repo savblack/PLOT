@@ -77,7 +77,7 @@ export default function WatchlistView() {
   const filteredSaved    = applyFilters(sortedSaved);
   // Watching items don't have genre/provider stored — only apply type filter
   const filteredWatching = typeFilters.length
-    ? watchingItems.filter(i => typeFilters.includes('tv')) // watching is always TV
+    ? watchingItems.filter(() => typeFilters.includes('tv')) // watching is always TV
     : watchingItems;
 
   const isEmpty = watchingItems.length === 0 && sortedSaved.length === 0;
@@ -210,21 +210,9 @@ export default function WatchlistView() {
 }
 
 /* ── Currently-watching row ── */
-function WatchingRow({ item, openPanel, watching, watchlist }) {
+function WatchingRow({ item, openPanel }) {
   const img    = posterUrl(item.poster_path, 'w92');
   const epCode = `S${String(item.current_season).padStart(2,'0')}E${String(item.current_episode).padStart(2,'0')}`;
-
-  const handleStopWatching = async (e) => {
-    e.stopPropagation();
-    await watching.stopWatching(item.tmdb_id);
-    // Re-add to saved list so it doesn't disappear entirely
-    await watchlist.addToList({
-      id:          item.tmdb_id,
-      title:       item.title,
-      poster_path: item.poster_path,
-      media_type:  'tv',
-    });
-  };
 
   return (
     <div className="list-row" onClick={() => openPanel(item.tmdb_id, 'tv')}>

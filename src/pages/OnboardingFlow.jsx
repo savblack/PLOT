@@ -121,7 +121,7 @@ export default function OnboardingFlow() {
 
     // Detect device IANA timezone (e.g. "Australia/Sydney")
     let detectedTz = 'UTC';
-    try { detectedTz = Intl.DateTimeFormat().resolvedOptions().timeZone; } catch {}
+    try { detectedTz = Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { /* unsupported */ }
 
     await supabase.from('profiles').upsert({
       id:                  user.id,

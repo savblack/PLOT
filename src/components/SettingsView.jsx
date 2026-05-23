@@ -453,7 +453,7 @@ export default function SettingsView() {
     refreshProfile();
     setShowTimezone(false);
     // Clear any pending nudge dismissal so the banner doesn't re-appear
-    try { localStorage.removeItem('plot_tz_dismissed'); } catch {}
+    try { localStorage.removeItem('plot_tz_dismissed'); } catch { /* storage unavailable */ }
   };
 
   const handleSignOut = async () => {

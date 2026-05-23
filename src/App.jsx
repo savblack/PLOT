@@ -153,7 +153,7 @@ export default function App() {
   useEffect(() => {
     if (!profile?.timezone) return; // no saved tz yet — onboarding will set it
     let deviceTz = 'UTC';
-    try { deviceTz = Intl.DateTimeFormat().resolvedOptions().timeZone; } catch {}
+    try { deviceTz = Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { /* unsupported */ }
     if (deviceTz === profile.timezone) return; // matches — no nudge needed
 
     // Check dismissal
@@ -164,7 +164,7 @@ export default function App() {
         const daysSince = (Date.now() - at) / 86400000;
         if (dismissedFor === deviceTz && daysSince < TZ_NUDGE_DAYS) return;
       }
-    } catch {}
+    } catch { /* corrupt storage — ignore */ }
 
     setTzBanner({ deviceTz });
   }, [profile?.timezone]);
@@ -180,7 +180,7 @@ export default function App() {
     if (!tzBanner) return;
     try {
       localStorage.setItem(TZ_DISMISS_KEY, JSON.stringify({ at: Date.now(), deviceTz: tzBanner.deviceTz }));
-    } catch {}
+    } catch { /* storage unavailable — ignore */ }
     setTzBanner(null);
   }, [tzBanner]);
 

@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useApp, backdropUrl, countdownChip, TodayLabel } from '../App.jsx';
+import { useApp, backdropUrl, TodayLabel } from '../App.jsx';
 import { localDateStr } from '../utils/date.js';
-import { tmdb } from '../api/tmdb.js';
 
 /* ── Icons ── */
 function CheckCircleIcon() {

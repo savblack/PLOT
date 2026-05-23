@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useApp, posterUrl, logoUrl, TodayLabel } from '../App.jsx';
-import { localDateStr, dateToLocalStr } from '../utils/date.js';
+import { localDateStr } from '../utils/date.js';
 import { useDragScroll } from '../hooks/useDragScroll.js';
 import { useGenres } from '../hooks/useGenres.js';
 import { tmdb, getTmdbRegion } from '../api/tmdb.js';
@@ -83,7 +83,6 @@ function TypeBadge({ type, cinema }) {
 
 function MediaCard({ item, openPanel, watchlist }) {
   const img   = posterUrl(item.poster_path, 'w185');
-  const date  = item.release_date || item.first_air_date;
   const type  = item.media_type || 'movie';
   const title = item.title || item.name;
   const [providerLogo, setProviderLogo] = useState(null);

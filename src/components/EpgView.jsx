@@ -60,7 +60,7 @@ function stampToLocalHHMM(airstamp, timezone) {
 function resolveAirtime(ep, timezone) {
   if (ep.airstamp) {
     const hhmm = stampToLocalHHMM(ep.airstamp, timezone);
-    const [h, m] = hhmm.split(':').map(Number);
+    const [h] = hhmm.split(':').map(Number);
     if (h >= END_H) return null;
     if (h < START_H) return { time: `${String(START_H).padStart(2, '0')}:00`, available: true };
     return { time: hhmm, available: ep.airtime === '' };

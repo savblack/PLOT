@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useApp, posterUrl, TodayLabel } from '../App.jsx';
+import { localDateStr } from '../utils/date.js';
 import { useCalendar } from '../hooks/useCalendar.js';
 import { tmdb } from '../api/tmdb.js';
 import MultiSelect from './MultiSelect.jsx';
@@ -211,13 +212,13 @@ export default function CalendarView() {
   const dayEvents = filterEvs(eventsForDate(selectedDate));
 
   /* ── Jump back to today ── */
-  const goToToday = useCallback(() => {
+  const goToToday = () => {
     const t = new Date();
     setYear(t.getFullYear());
     setMonth(t.getMonth());
     setWeekStart(startOfWeek(t));
-    setSelectedDate(todayStr);
-  }, [todayStr]);
+    setSelectedDate(localDateStr(t));
+  };
 
   /* ── Navigation ── */
   const prevMonth = () => {
