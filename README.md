@@ -49,6 +49,7 @@ Deploy functions with the Supabase CLI after configuring project secrets:
 
 ```sh
 supabase functions deploy tmdb-proxy
+supabase functions deploy media-sync
 supabase functions deploy generate-taste-profile
 supabase functions deploy generate-journal
 supabase functions deploy delete-account
@@ -61,7 +62,19 @@ Required function secrets:
 - `SUPABASE_URL`
 - `SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
+- `PLEX_TOKEN_SECRET` for encrypting Plex auth tokens at rest
 
+## Plex Sync
+
+Plot syncs Plex through the `media-sync` Edge Function. Users connect from Journal → Watchlist → Connect Plex, sign in on Plex, and return to Plot. Plex tokens are encrypted server-side and are never shown in the browser.
+
+```sh
+supabase secrets set PLEX_TOKEN_SECRET=your-long-random-secret
+supabase db push
+supabase functions deploy media-sync
+```
+
+The sync imports Plex Universal Watchlist titles into Plot, queues Plot Watchlist additions back to Plex, and imports watched history when a reachable Plex Media Server is available.
 
 ## Data Rules
 

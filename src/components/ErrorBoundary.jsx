@@ -249,11 +249,11 @@ export default class ErrorBoundary extends Component {
           code="404"
           label="Page not found"
           title="Looks like we hit a plot hole."
-          body="Even the best productions have outtakes. This one may have been deleted — try refreshing to get this scene back on track. In the meantime, there's a whole library waiting to be discovered."
+          body="Luckily, there's a lot more worth watching."
           primaryLabel="Go home"
           primaryAction={() => { window.location.href = '/'; }}
           ghostLabel="Search titles"
-          ghostAction={() => { window.location.href = '/app/home'; }}
+          ghostAction={() => { window.location.href = '/search'; }}
         />
       );
     }

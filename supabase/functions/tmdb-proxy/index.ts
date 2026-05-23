@@ -14,6 +14,11 @@ const ALLOWED_PATHS = [
   /^(movie|tv)\/\d+\/recommendations$/,
   /^(movie|tv)\/\d+\/watch\/providers$/,
   /^watch\/providers\/(movie|tv)$/,
+  // Episode schedule endpoints (for Watching view + Calendar)
+  /^tv\/\d+\/season\/\d+$/,
+  /^tv\/\d+\/season\/\d+\/episode\/\d+$/,
+  // Genre lists (for filters)
+  /^genre\/(movie|tv)\/list$/,
 ];
 
 Deno.serve(async (req) => {

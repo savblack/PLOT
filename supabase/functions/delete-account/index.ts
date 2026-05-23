@@ -17,6 +17,9 @@ Deno.serve(async (req) => {
   const userId = user.id
 
   // Delete all user data
+  await supabaseClient.from('integration_outbox').delete().eq('user_id', userId)
+  await supabaseClient.from('integration_items').delete().eq('user_id', userId)
+  await supabaseClient.from('media_integrations').delete().eq('user_id', userId)
   await supabaseClient.from('journal').delete().eq('user_id', userId)
   await supabaseClient.from('list_items').delete().eq('user_id', userId)
   await supabaseClient.from('lists').delete().eq('user_id', userId)

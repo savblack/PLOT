@@ -1,0 +1,120 @@
+import { useState, useCallback } from 'react';
+import { supabase } from '../api/supabase.js';
+
+const SYNC_URL = import.meta.env.VITE_SUPABASE_URL
+  ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/media-sync`
+  : null;
+
+async function callSync(action, body = {}) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session || !SYNC_URL) return null;
+
+  const res = await fetch(SYNC_URL, {
+    method:  'POST',
+    headers: {
+      'Content-Type':  'application/json',
+      'Authorization': `Bearer ${session.access_token}`,
+    },
+    body: JSON.stringify({ action, ...body }),
+  });
+
+  if (!res.ok) {
+    const err = await res.text().catch(() => 'Unknown error');
+    throw new Error(err);
+  }
+  return res.json();
+}
+
+export function useMediaSync(userId) {
+  const [integration, setIntegration] = useState(null);
+  const [syncing,     setSyncing]     = useState(false);
+  const [polling,     setPolling]     = useState(false);
+  const [error,       setError]       = useState(null);
+
+  /* ── Load existing integration ── */
+  const loadIntegration = useCallback(async () => {
+    if (!userId) return;
+    const { data } = await supabase
+      .from('media_integrations')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('provider', 'plex')
+      .maybeSingle();
+    setIntegration(data);
+    return data;
+  }, [userId]);
+
+  /* ── Start Plex OAuth ── */
+  const startPlexAuth = useCallback(async () => {
+    setError(null);
+    try {
+      const result = await callSync('start-auth');
+      if (result?.authUrl) window.open(result.authUrl, '_blank');
+      return result;
+    } catch (e) {
+      setError(e.message);
+      return null;
+    }
+  }, []);
+
+  /* ── Poll for auth completion ── */
+  const pollPlexAuth = useCallback(async (integrationId) => {
+    setPolling(true);
+    setError(null);
+    const interval = setInterval(async () => {
+      try {
+        const result = await callSync('poll-auth', { integrationId });
+        if (result?.status === 'active') {
+          clearInterval(interval);
+          setPolling(false);
+          await loadIntegration();
+        }
+      } catch {
+        clearInterval(interval);
+        setPolling(false);
+      }
+    }, 3000);
+    // Auto-stop after 5 minutes
+    setTimeout(() => { clearInterval(interval); setPolling(false); }, 300000);
+  }, [loadIntegration]);
+
+  /* ── Sync ── */
+  const sync = useCallback(async () => {
+    setSyncing(true);
+    setError(null);
+    try {
+      await callSync('sync');
+      await loadIntegration();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setSyncing(false);
+    }
+  }, [loadIntegration]);
+
+  /* ── Disconnect ── */
+  const disconnect = useCallback(async () => {
+    if (!userId) return;
+    await supabase
+      .from('media_integrations')
+      .update({ status: 'disabled' })
+      .eq('user_id', userId)
+      .eq('provider', 'plex');
+    setIntegration(prev => prev ? { ...prev, status: 'disabled' } : null);
+  }, [userId]);
+
+  const isConnected = integration?.status === 'active';
+
+  return {
+    integration,
+    syncing,
+    polling,
+    error,
+    isConnected,
+    loadIntegration,
+    startPlexAuth,
+    pollPlexAuth,
+    sync,
+    disconnect,
+  };
+}

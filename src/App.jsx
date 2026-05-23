@@ -1,401 +1,264 @@
-import { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import './app.css';
-import { tmdb, setTmdbRegion } from './api/tmdb';
-import { supabase } from './api/supabase';
-import MediaModal from './components/MediaModal';
-import AuthModal from './components/AuthModal';
-import PublicProfileView from './components/PublicProfileView';
-import FeedView from './components/FeedView';
-import NewReleasesView from './components/NewReleasesView';
-import SearchView from './components/SearchView';
-import UpcomingView from './components/UpcomingView';
-import JournalView from './components/JournalView';
-import ImportModal from './components/ImportModal';
-import AvatarCropModal from './components/AvatarCropModal';
-import AppHeader from './components/AppHeader';
-import { useTheme } from './hooks/useTheme';
-import { useContentFeed } from './hooks/useContentFeed';
-import { useForYouFeed } from './hooks/useForYouFeed';
-import { useJournalData } from './hooks/useJournalData';
-import { usePostHog } from '@posthog/react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { supabase } from './api/supabase.js';
+import { setTmdbRegion } from './api/tmdb.js';
+import AppShell from './components/AppShell.jsx';
+import MediaPanel from './components/MediaPanel.jsx';
+import { useTheme } from './hooks/useTheme.js';
+import { useWatchlist } from './hooks/useWatchlist.js';
+import { useWatching }  from './hooks/useWatching.js';
+import { useReminders } from './hooks/useReminders.js';
+import PlotLoader from './components/PlotLoader.jsx';
+export { localDateStr } from './utils/date.js';
 
+/* ── App Context ─────────────────────── */
+export const AppContext = createContext(null);
+export const useApp = () => useContext(AppContext);
+
+/* ── TMDB image helpers ──────────────── */
+export const posterUrl   = (path, size = 'w342') =>
+  path ? `https://image.tmdb.org/t/p/${size}${path}` : null;
+export const backdropUrl = (path, size = 'w780') =>
+  path ? `https://image.tmdb.org/t/p/${size}${path}` : null;
+export const logoUrl     = (path, size = 'w45')  =>
+  path ? `https://image.tmdb.org/t/p/${size}${path}` : null;
+
+/* ── Countdown chip helper ───────────── */
+export function countdownChip(dateStr) {
+  if (!dateStr) return null;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const d = new Date(dateStr); d.setHours(0, 0, 0, 0);
+  const diff = Math.round((d - today) / 86400000);
+  if (diff < 0)   return { label: 'Released',    cls: 'chip-muted' };
+  if (diff === 0) return { label: 'Today',        cls: 'chip-today' };
+  if (diff === 1) return { label: 'Tomorrow',     cls: 'chip-tomorrow' };
+  if (diff <= 7)  return { label: `${diff} days`, cls: 'chip-soon' };
+  const fmt = new Date(dateStr).toLocaleDateString('en', { month: 'short', day: 'numeric' });
+  return { label: fmt, cls: 'chip-muted' };
+}
+
+export function formatDate(dateStr) {
+  if (!dateStr) return '';
+  return new Date(dateStr).toLocaleDateString('en', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+/* ── Today label for view headers ("Fri, May 22") ── */
+export function TodayLabel({ onClick }) {
+  const label = new Date().toLocaleDateString('en', { weekday: 'short', month: 'short', day: 'numeric' });
+  return (
+    <span
+      onClick={onClick}
+      style={{
+        fontSize: '0.68rem',
+        fontWeight: 700,
+        color: 'var(--text-muted)',
+        letterSpacing: '0.07em',
+        textTransform: 'uppercase',
+        cursor: onClick ? 'pointer' : 'default',
+        userSelect: 'none',
+        transition: 'color 0.15s ease',
+      }}
+      onMouseEnter={onClick ? e => { e.currentTarget.style.color = 'var(--text-secondary)'; } : undefined}
+      onMouseLeave={onClick ? e => { e.currentTarget.style.color = 'var(--text-muted)'; } : undefined}
+    >
+      {label}
+    </span>
+  );
+}
+
+/* ── Timezone mismatch banner ─────────── */
+const TZ_DISMISS_KEY = 'plot_tz_dismissed';
+const TZ_NUDGE_DAYS  = 7;
+
+function TimezoneBanner({ deviceTz, onUpdate, onDismiss }) {
+  return (
+    <div style={{
+      position: 'fixed',
+      bottom: 'calc(var(--tab-bar-height, 56px) + 0.75rem)',
+      left: '0.75rem',
+      right: '0.75rem',
+      background: 'var(--surface-raised)',
+      border: '1px solid var(--border)',
+      borderRadius: 'var(--radius-lg)',
+      padding: '0.85rem 1rem',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '0.65rem',
+      boxShadow: '0 4px 24px rgba(0,0,0,0.18)',
+      zIndex: 900,
+    }}>
+      <div style={{ fontSize: '0.82rem', color: 'var(--text-primary)', lineHeight: 1.45 }}>
+        Looks like you're in <span style={{ fontWeight: 700 }}>{deviceTz}</span>. Want to update your timezone so new releases drop at the right time?
+      </div>
+      <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <button className="btn btn-primary btn-sm" style={{ flex: 1 }} onClick={onUpdate}>
+          Update to {deviceTz}
+        </button>
+        <button className="btn btn-ghost btn-sm" onClick={onDismiss}>
+          Not now
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════
+   App Component (layout shell)
+═══════════════════════════════════════ */
 export default function App() {
-  const { username: routeUsername, listId: routeListId, view: routeView } = useParams();
-  const navigate = useNavigate();
-  const posthog = usePostHog();
+  const navigate  = useNavigate();
+  const location  = useLocation();
+  const { theme, setTheme } = useTheme();
 
-  // ── Auth & preferences ─────────────────────────────
-  const [user, setUser] = useState(null);
-  const [showAuth, setShowAuth] = useState(false);
-  const [preferences, setPreferences] = useState({ genres: [], region: 'AU' });
-
-  // ── Profile ─────────────────────────────────────────
+  const [user,    setUser]    = useState(null);
   const [profile, setProfile] = useState(null);
-  const [profileUsernameInput, setProfileUsernameInput] = useState('');
-  const [profileUsernameSaving, setProfileUsernameSaving] = useState(false);
-  const [profileUsernameError, setProfileUsernameError] = useState('');
-  const [copiedLink, setCopiedLink] = useState(null);
-  const [showImportModal, setShowImportModal] = useState(false);
-  const avatarInputRef = useRef(null);
-  const [cropFile, setCropFile] = useState(null);
-  const [errorToast, setErrorToast] = useState(null);
-  const toastTimerRef = useRef(null);
+  const [loading, setLoading] = useState(true);
 
-  // ── UI state ─────────────────────────────────────────
-  const [view, setView] = useState('home');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
-  const [selectedItem, setSelectedItem] = useState(null);
-  const [feedTab, setFeedTab] = useState('foryou');
-  const [mediaFilter, setMediaFilter] = useState('all');
-  const [publicProfileUsername, setPublicProfileUsername] = useState(null);
-  const [publicProfileInitialList, setPublicProfileInitialList] = useState(null);
-  const [showMobileSearch, setShowMobileSearch] = useState(false);
-  const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [showTasteExpanded, setShowTasteExpanded] = useState(false);
-  const [upcomingTimeFilter, setUpcomingTimeFilter] = useState('month');
-  const [journalTab, setJournalTab] = useState('taste');
+  // Media panel state
+  const [panelItem,    setPanelItem]    = useState(null);
+  const [panelClosing, setPanelClosing] = useState(false);
 
-  // ── Custom hooks ────────────────────────────────────
-  const { theme, setTheme, feedLayout, setFeedLayout } = useTheme();
+  // Timezone nudge state
+  const [tzBanner, setTzBanner] = useState(null); // { deviceTz }
 
-  const { trending, newReleases, newTV, upcoming, upcomingTV } =
-    useContentFeed(preferences.region || 'AU');
-
-  const {
-    watched, setWatched,
-    userLists, listItems,
-    activeList, setActiveList,
-    getSavedData, saveToWatched,
-    createList, deleteList, renameList,
-    toggleListItem, deleteFromJournal, toggleListPublic,
-    backfillReleaseDates,
-  } = useJournalData(user, () => setShowAuth(true), (msg) => {
-    clearTimeout(toastTimerRef.current);
-    setErrorToast(msg);
-    toastTimerRef.current = setTimeout(() => setErrorToast(null), 3500);
-  }, posthog);
-
-  const {
-    forYouFeed, followingFeed, followingFeedLoaded, setFollowingFeedLoaded,
-    refreshForYou, onDismiss, moodFilter, setMoodFilter, userMoods,
-  } = useForYouFeed({ watched, preferences, user, feedTab });
-
-  // ── Auth init ───────────────────────────────────────
-  useEffect(() => {
-    const init = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user || null);
-      const savedPrefs = localStorage.getItem('plot-prefs');
-      if (savedPrefs) setPreferences(JSON.parse(savedPrefs));
-    };
-    init();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(prev => {
-        const next = session?.user || null;
-        if (prev?.id === next?.id) return prev;
-        return next;
-      });
-    });
-
-    return () => subscription.unsubscribe();
+  /* ── Profile loader ── */
+  const loadProfile = useCallback(async (userId) => {
+    const { data } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .maybeSingle();
+    setProfile(data);
+    if (data?.region) setTmdbRegion(data.region);
+    setLoading(false);
   }, []);
 
-  // ── Load profile ────────────────────────────────────
+  /* ── Auth ── */
   useEffect(() => {
-    if (user) {
-      const loadProfile = async () => {
-        const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-        if (data) {
-          setProfile(data);
-          setProfileUsernameInput(data.username || '');
-          if (data.genres?.length) setPreferences(p => ({ ...p, genres: data.genres }));
-          if (data.region) { setPreferences(p => ({ ...p, region: data.region })); setTmdbRegion(data.region); }
-        }
-      };
-      loadProfile();
-    } else {
-      setProfile(null);
-    }
-  }, [user]);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      if (session?.user) loadProfile(session.user.id);
+      else setLoading(false);
+    });
 
-  // ── Route params ────────────────────────────────────
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
+      setUser(session?.user ?? null);
+      if (session?.user) loadProfile(session.user.id);
+      else { setProfile(null); setLoading(false); }
+    });
+    return () => subscription.unsubscribe();
+  }, [loadProfile]);
+
+  /* ── Timezone mismatch check ── */
   useEffect(() => {
-    if (routeUsername) {
-      setPublicProfileUsername(routeUsername);
-      if (routeListId) setPublicProfileInitialList(routeListId);
-      setView('public');
-    } else if (routeView) {
-      setView(routeView);
-    } else {
-      setView('home');
-    }
-  }, [routeUsername, routeListId, routeView]);
+    if (!profile?.timezone) return; // no saved tz yet — onboarding will set it
+    let deviceTz = 'UTC';
+    try { deviceTz = Intl.DateTimeFormat().resolvedOptions().timeZone; } catch {}
+    if (deviceTz === profile.timezone) return; // matches — no nudge needed
 
-  // ── Persist preferences & sync region ──────────────
-  useEffect(() => {
-    localStorage.setItem('plot-prefs', JSON.stringify(preferences));
-  }, [preferences]);
+    // Check dismissal
+    try {
+      const raw = localStorage.getItem(TZ_DISMISS_KEY);
+      if (raw) {
+        const { at, deviceTz: dismissedFor } = JSON.parse(raw);
+        const daysSince = (Date.now() - at) / 86400000;
+        if (dismissedFor === deviceTz && daysSince < TZ_NUDGE_DAYS) return;
+      }
+    } catch {}
 
-  useEffect(() => {
-    setTmdbRegion(preferences.region || 'AU');
-  }, [preferences.region]);
+    setTzBanner({ deviceTz });
+  }, [profile?.timezone]);
 
-  // ── Profile actions ─────────────────────────────────
-  const toggleProfilePublic = async () => {
-    const username = profile?.username || profileUsernameInput.toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 30);
-    if (!username) { setProfileUsernameError('Set a username first'); return; }
-    const next = !(profile?.is_public ?? false);
-    const { data, error } = await supabase.from('profiles').upsert({
-      id: user.id, username, is_public: next
-    }).select().single();
-    if (error) {
-      setProfileUsernameError(error.message.includes('unique') ? 'Username taken' : 'Error saving');
-    } else if (data) {
-      posthog?.capture('profile_visibility_changed', { is_public: next });
-      setProfile(data);
-      setProfileUsernameInput(data.username);
-      setProfileUsernameError('');
-    }
-  };
+  const handleTzUpdate = useCallback(async () => {
+    if (!tzBanner || !user) return;
+    await supabase.from('profiles').update({ timezone: tzBanner.deviceTz }).eq('id', user.id);
+    setTzBanner(null);
+    loadProfile(user.id);
+  }, [tzBanner, user, loadProfile]);
 
-  const uploadAvatar = async (blob) => {
-    if (!user || !blob) return;
-    const path = `${user.id}/avatar.jpg`;
-    const { error: uploadError } = await supabase.storage.from('avatars').upload(path, blob, { upsert: true, contentType: 'image/jpeg' });
-    if (uploadError) return;
-    const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path);
-    const url = `${publicUrl}?t=${Date.now()}`;
-    const { data } = await supabase.from('profiles').upsert({
-      id: user.id,
-      username: profile?.username || '',
-      is_public: profile?.is_public ?? false,
-      avatar_url: url,
-    }).select().single();
-    if (data) setProfile(data);
-  };
+  const handleTzDismiss = useCallback(() => {
+    if (!tzBanner) return;
+    try {
+      localStorage.setItem(TZ_DISMISS_KEY, JSON.stringify({ at: Date.now(), deviceTz: tzBanner.deviceTz }));
+    } catch {}
+    setTzBanner(null);
+  }, [tzBanner]);
 
-  const saveUsername = async () => {
-    if (!user) return;
-    const cleaned = profileUsernameInput.toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 30);
-    if (!cleaned || cleaned === profile?.username) return;
-    setProfileUsernameSaving(true);
-    setProfileUsernameError('');
-    const { data, error } = await supabase.from('profiles').upsert({
-      id: user.id, username: cleaned, is_public: profile?.is_public ?? false
-    }).select().single();
-    if (error) {
-      setProfileUsernameError(error.message.includes('unique') ? 'Username taken' : 'Error saving');
-      setProfileUsernameInput(profile?.username || '');
-    } else if (data) {
-      setProfile(data);
-      setProfileUsernameError('');
-    }
-    setProfileUsernameSaving(false);
-  };
+  /* ── Media Panel ── */
+  const openPanel = useCallback((id, type) => {
+    setPanelItem({ id, type });
+    setPanelClosing(false);
+  }, []);
 
-  const copyLink = (type, id) => {
-    if (!profile) return;
-    const base = window.location.origin;
-    const url = type === 'profile'
-      ? `${base}/u/${profile.username}`
-      : `${base}/u/${profile.username}/list/${id}`;
-    navigator.clipboard.writeText(url);
-    posthog?.capture('profile_link_copied', { link_type: type });
-    setCopiedLink(type === 'profile' ? 'profile' : id);
-    setTimeout(() => setCopiedLink(null), 2000);
-  };
+  const closePanel = useCallback(() => {
+    setPanelClosing(true);
+    setTimeout(() => { setPanelItem(null); setPanelClosing(false); }, 280);
+  }, []);
 
-  // ── Navigation & search ─────────────────────────────
-  const handleSearch = async (query) => {
-    const q = typeof query === 'string' ? query : searchQuery;
-    if (!q.trim()) return;
-    const data = await tmdb.search(q);
-    if (data) {
-      posthog?.capture('search_performed', { query: q, result_count: data.results?.length ?? 0 });
-      setSearchResults(data.results);
-      setView('search');
-    }
-  };
+  /* ── Navigation ── */
+  const navigateTo = useCallback((view) => navigate(`/${view}`), [navigate]);
 
-  const navigateTo = (nextView) => {
-    if (nextView === 'home')      setFeedTab('foryou');
-    if (nextView === 'upcoming')  setUpcomingTimeFilter('week');
-    if (nextView === 'watchlist') setJournalTab('taste');
-    setView(nextView);
-  };
+  const currentView = location.pathname.replace(/^\//, '') || 'guide';
 
-  const logout = () => {
-    posthog?.capture('user_logged_out');
-    posthog?.reset();
-    supabase.auth.signOut();
-    setWatched([]);
-  };
+  /* ── Global data hooks ── */
+  const watchlist = useWatchlist(user?.id);
+  const watching  = useWatching(user?.id);
+  const reminders = useReminders(user?.id);
 
-  const deleteAccount = async () => {
-    if (!user) return;
-    if (!window.confirm('Permanently delete your account and all data? This cannot be undone.')) return;
-    const { error } = await supabase.functions.invoke('delete-account');
-    if (error) {
-      clearTimeout(toastTimerRef.current);
-      setErrorToast('Failed to delete account. Please try again.');
-      toastTimerRef.current = setTimeout(() => setErrorToast(null), 3500);
-      return;
-    }
-    posthog?.capture('account_deleted');
-    logout();
+  const refreshProfile = useCallback(() => {
+    if (user?.id) loadProfile(user.id);
+  }, [user, loadProfile]);
+
+  if (loading) {
+    return (
+      <div style={{
+        height: '100dvh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'var(--bg)',
+      }}>
+        <PlotLoader />
+      </div>
+    );
+  }
+
+  const ctx = {
+    user,
+    profile,
+    theme,
+    setTheme,
+    openPanel,
+    closePanel,
+    navigateTo,
+    watchlist,
+    watching,
+    reminders,
+    refreshProfile,
   };
 
   return (
-    <div className="app-container">
-      <AppHeader
-        user={user} profile={profile}
-        view={view} navigateTo={navigateTo}
-        mediaFilter={mediaFilter} setMediaFilter={setMediaFilter}
-        searchQuery={searchQuery} setSearchQuery={setSearchQuery} handleSearch={handleSearch} onResultClick={setSelectedItem}
-        showProfileMenu={showProfileMenu} setShowProfileMenu={setShowProfileMenu}
-        showMobileSearch={showMobileSearch} setShowMobileSearch={setShowMobileSearch}
-        theme={theme} setTheme={setTheme}
-        feedLayout={feedLayout} setFeedLayout={setFeedLayout}
-        preferences={preferences} setPreferences={setPreferences}
-        profileUsernameInput={profileUsernameInput} setProfileUsernameInput={setProfileUsernameInput}
-        profileUsernameSaving={profileUsernameSaving} profileUsernameError={profileUsernameError}
-        saveUsername={saveUsername} toggleProfilePublic={toggleProfilePublic}
-        copyLink={copyLink} copiedLink={copiedLink}
-        showTasteExpanded={showTasteExpanded} setShowTasteExpanded={setShowTasteExpanded}
-        setShowImportModal={setShowImportModal}
-        logout={logout} setShowAuth={setShowAuth}
-        avatarInputRef={avatarInputRef} setCropFile={setCropFile}
-        onDeleteAccount={deleteAccount}
-        onNavigateToProfile={(uname) => { setPublicProfileUsername(uname); setView('public'); navigate(`/u/${uname}`); }}
-        minimal={!user && view === 'public'}
-      />
+    <AppContext.Provider value={ctx}>
+      <AppShell currentView={currentView} navigateTo={navigateTo} profile={profile}>
+        <Outlet />
+      </AppShell>
 
-      <main className="content-grid animate-in">
-        {view === 'home' && (
-          <FeedView
-            feedTab={feedTab} setFeedTab={setFeedTab}
-            forYouFeed={forYouFeed} trending={trending} newReleases={newReleases} newTV={newTV}
-            mediaFilter={mediaFilter} setMediaFilter={setMediaFilter} feedLayout={feedLayout}
-            preferences={preferences}
-            followingFeed={followingFeed} followingLoading={!followingFeedLoaded} user={user}
-            getSavedData={getSavedData} onItemClick={setSelectedItem}
-            onNavigateToProfile={(uname) => { setPublicProfileUsername(uname); setView('public'); navigate(`/u/${uname}`); }}
-            onDismiss={onDismiss}
-            refreshForYou={refreshForYou}
-            forYouMoodFilter={moodFilter}
-            setForYouMoodFilter={setMoodFilter}
-            userMoods={userMoods}
-          />
-        )}
-
-
-        {view === 'search' && (
-          <SearchView searchResults={searchResults} onItemClick={setSelectedItem} mediaFilter={mediaFilter} />
-        )}
-
-        {view === 'watchlist' && (
-          <JournalView
-            user={user} watched={watched} mediaFilter={mediaFilter} setMediaFilter={setMediaFilter}
-            userLists={userLists} listItems={listItems} activeList={activeList} setActiveList={setActiveList}
-            journalTab={journalTab} setJournalTab={setJournalTab}
-            profile={profile}
-            createList={createList} deleteList={deleteList} renameList={renameList}
-            toggleListItem={toggleListItem} toggleListPublic={toggleListPublic}
-            copyLink={copyLink} copiedLink={copiedLink}
-            onItemClick={setSelectedItem}
-            setShowAuth={setShowAuth}
-            deleteFromJournal={deleteFromJournal}
-            backfillReleaseDates={backfillReleaseDates}
-          />
-        )}
-
-        {view === 'public' && publicProfileUsername && (
-          <section>
-            <PublicProfileView
-              username={publicProfileUsername}
-              initialListId={publicProfileInitialList}
-              onItemClick={setSelectedItem}
-              user={user}
-              onAuthRequired={() => setShowAuth(true)}
-              onFollowChanged={() => setFollowingFeedLoaded(false)}
-              onBack={() => {
-                setPublicProfileUsername(null);
-                setPublicProfileInitialList(null);
-                navigate('/app');
-              }}
-            />
-          </section>
-        )}
-
-        {view === 'upcoming' && (
-          <UpcomingView
-            upcomingTimeFilter={upcomingTimeFilter} setUpcomingTimeFilter={setUpcomingTimeFilter}
-            mediaFilter={mediaFilter} setMediaFilter={setMediaFilter}
-            upcoming={upcoming} upcomingTV={upcomingTV}
-            onItemClick={setSelectedItem}
-            user={user} userLists={userLists} listItems={listItems}
-            createList={createList} toggleListItem={toggleListItem}
-          />
-        )}
-      </main>
-
-      {selectedItem && (
-        <MediaModal
-          key={selectedItem.id}
-          item={selectedItem}
-          region={preferences.region || 'AU'}
-          savedData={getSavedData(selectedItem.id)}
-          userLists={userLists}
-          listItems={listItems.filter(li => li.tmdb_id === selectedItem.id)}
-          onCreateList={createList}
-          onToggleList={(listId, isAdding) => toggleListItem(listId, selectedItem, isAdding)}
-          onSave={saveToWatched}
-          onClose={() => setSelectedItem(null)}
-          onItemClick={setSelectedItem}
+      {panelItem && (
+        <MediaPanel
+          itemId={panelItem.id}
+          itemType={panelItem.type}
+          closing={panelClosing}
+          onClose={closePanel}
         />
       )}
 
-      {showAuth && (
-        <AuthModal
-          onClose={() => setShowAuth(false)}
-          onAuthSuccess={(u) => setUser(u)}
+      {tzBanner && (
+        <TimezoneBanner
+          deviceTz={tzBanner.deviceTz}
+          onUpdate={handleTzUpdate}
+          onDismiss={handleTzDismiss}
         />
       )}
-
-      {showImportModal && (
-        <ImportModal
-          user={user}
-          onClose={() => setShowImportModal(false)}
-        />
-      )}
-
-      {cropFile && (
-        <AvatarCropModal
-          file={cropFile}
-          onConfirm={blob => { uploadAvatar(blob); setCropFile(null); }}
-          onCancel={() => setCropFile(null)}
-        />
-      )}
-
-      {errorToast && (
-        <div style={{
-          position: 'fixed', bottom: '5rem', left: '50%', transform: 'translateX(-50%)',
-          background: '#222', color: '#fff', padding: '0.75rem 1.25rem',
-          borderRadius: '8px', fontSize: '0.875rem', zIndex: 9999,
-          boxShadow: '0 4px 16px rgba(0,0,0,0.3)', pointerEvents: 'none',
-        }}>
-          {errorToast}
-        </div>
-      )}
-
-      <nav className="bottom-tab-bar">
-        <button onClick={() => navigateTo('home')} className={view === 'home' ? 'active' : ''}>Feed</button>
-        <button onClick={() => navigateTo('upcoming')} className={view === 'upcoming' ? 'active' : ''}>Upcoming</button>
-        <button onClick={() => navigateTo('watchlist')} className={view === 'watchlist' ? 'active' : ''}>Journal</button>
-      </nav>
-    </div>
+    </AppContext.Provider>
   );
 }

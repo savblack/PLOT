@@ -6,7 +6,7 @@ import PlotLoader from '../components/PlotLoader';
 const LandingPage = lazy(() => import('./LandingPage'));
 
 export default function RootRoute() {
-  const [loading, setLoading] = useState(true);
+  const [loading,       setLoading]       = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
 
   useEffect(() => {
@@ -18,13 +18,15 @@ export default function RootRoute() {
 
   if (loading) {
     return (
-      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ height: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <PlotLoader />
       </div>
     );
   }
 
-  if (authenticated) return <Navigate to="/app" replace />;
+  // Authenticated users go to the guide (new home)
+  if (authenticated) return <Navigate to="/guide" replace />;
+
   return (
     <Suspense fallback={<PlotLoader />}>
       <LandingPage />

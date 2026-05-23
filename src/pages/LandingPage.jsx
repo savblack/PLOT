@@ -74,12 +74,13 @@ const FEATURES = [
 export default function LandingPage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeFeature, setActiveFeature] = useState('discover');
-  const navRef        = useRef(null);
-  const posterSideRef = useRef(null);
-  const posterElsRef  = useRef([]);
-  const plotDoesRef   = useRef(null);
-  const smoothScrollY = useRef(window.scrollY);
-  const rafRef        = useRef(null);
+  const navRef           = useRef(null);
+  const posterSideRef    = useRef(null);
+  const posterElsRef     = useRef([]);
+  const plotDoesRef      = useRef(null);
+  const editorialWrapRef = useRef(null);
+  const smoothScrollY    = useRef(window.scrollY);
+  const rafRef           = useRef(null);
 
   // Smooth scroll for the landing page
   useEffect(() => {
@@ -128,6 +129,21 @@ export default function LandingPage() {
     window.addEventListener('scroll', update, { passive: true });
     update();
     return () => window.removeEventListener('scroll', update);
+  }, []);
+
+  // Editorial card fan — scale to fit container
+  useEffect(() => {
+    const wrap = editorialWrapRef.current;
+    if (!wrap) return;
+    const DESIGN_W = 700;
+    const DESIGN_H = 460;
+    const obs = new ResizeObserver(([entry]) => {
+      const scale = Math.min(1, entry.contentRect.width / DESIGN_W);
+      wrap.style.setProperty('--ed-scale', scale);
+      wrap.style.height = (DESIGN_H * scale) + 'px';
+    });
+    obs.observe(wrap);
+    return () => obs.disconnect();
   }, []);
 
   // Side-slide poster rAF loop
@@ -309,29 +325,31 @@ export default function LandingPage() {
             <p className="ftp-body">Your top ten. All the series you binged in a weekend. The one dropping next month you've already cleared your schedule for. Make a list for anything.</p>
             <Link to="/signup" className="btn btn-primary btn-large">Make it yours →</Link>
           </div>
-          <div className="editorial-wrap" id="editorialWrap">
-            {EDITORIAL_DATA.map((item, i) => (
-              <div
-                key={i}
-                className="ed-poster"
-                style={{
-                  width:           item.w,
-                  height:          item.h,
-                  top:             item.top,
-                  left:            item.left,
-                  zIndex:          item.z,
-                  backgroundImage: `url('${item.img}')`,
-                  transform:       `rotate(${item.rot}deg)`,
-                }}
-                onMouseEnter={e => { e.currentTarget.style.transform = `rotate(${item.rot}deg) translateY(-8px) scale(1.04)`; }}
-                onMouseLeave={e => { e.currentTarget.style.transform = `rotate(${item.rot}deg)`; }}
-              >
-                <div className="ed-label">
-                  <span>{item.label}</span>
-                  <strong>{item.title}</strong>
+          <div className="editorial-wrap" id="editorialWrap" ref={editorialWrapRef}>
+            <div className="ed-inner">
+              {EDITORIAL_DATA.map((item, i) => (
+                <div
+                  key={i}
+                  className="ed-poster"
+                  style={{
+                    width:           item.w,
+                    height:          item.h,
+                    top:             item.top,
+                    left:            item.left,
+                    zIndex:          item.z,
+                    backgroundImage: `url('${item.img}')`,
+                    transform:       `rotate(${item.rot}deg)`,
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.transform = `rotate(${item.rot}deg) translateY(-8px) scale(1.04)`; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = `rotate(${item.rot}deg)`; }}
+                >
+                  <div className="ed-label">
+                    <span>{item.label}</span>
+                    <strong>{item.title}</strong>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       </section>

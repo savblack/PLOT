@@ -5,7 +5,7 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist', '.claude', 'website/.claude', 'supabase/.temp', 'node_modules']),
+  globalIgnores(['dist', '.claude', 'website/.claude', 'supabase/.temp', 'node_modules', 'archive/']),
   {
     files: ['**/*.{js,jsx}'],
     extends: [
@@ -23,7 +23,7 @@ export default defineConfig([
       },
     },
     rules: {
-      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]', argsIgnorePattern: '^[A-Z_]', destructuredArrayIgnorePattern: '^[A-Z_]' }],
       'react-hooks/set-state-in-effect': 'warn',
     },
   },
@@ -34,7 +34,7 @@ export default defineConfig([
     },
   },
   {
-    files: ['src/router.jsx'],
+    files: ['src/router.jsx', 'src/App.jsx'],
     rules: {
       'react-refresh/only-export-components': 'off',
     },

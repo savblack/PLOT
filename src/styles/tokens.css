@@ -1,0 +1,91 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Manrope:wght@300;400;500;600;700;800&display=swap');
+
+/* ── Light mode ──────────────────────── */
+:root {
+  /* Surface */
+  --bg:             #F4F4F5;
+  --surface:        #FFFFFF;
+  --surface-raised: #FAFAFA;
+  --surface-sunken: #EBEBEC;
+
+  /* Text */
+  --text-primary:   #09090B;
+  --text-secondary: #52525B;
+  --text-muted:     #A1A1AA;
+
+  /* Border */
+  --border:         rgba(0,0,0,0.07);
+  --border-strong:  rgba(0,0,0,0.14);
+
+  /* Accent */
+  --accent:         #E05578;
+  --accent-dim:     rgba(224,85,120,0.12);
+
+  /* Status chips */
+  --chip-now:       #059669;
+  --chip-today:     #059669;
+  --chip-tomorrow:  #D97706;
+  --chip-soon:      #D97706;
+  --chip-cinema:    #DC2626;
+  --chip-episode:   #4F46E5;
+
+  /* Glass */
+  --glass-bg:       rgba(255,255,255,0.82);
+  --glass-border:   rgba(0,0,0,0.05);
+
+  /* Typography */
+  --font-serif:     'Cormorant Garamond', Georgia, serif;
+  --font-sans:      'Manrope', system-ui, sans-serif;
+
+  /* Radii */
+  --radius-xs:      6px;
+  --radius-sm:      10px;
+  --radius-md:      16px;
+  --radius-lg:      24px;
+  --radius-xl:      32px;
+  --radius-pill:    9999px;
+
+  /* Shadows */
+  --shadow-xs:      0 1px 2px rgba(0,0,0,0.06);
+  --shadow-sm:      0 2px 8px rgba(0,0,0,0.08);
+  --shadow-md:      0 4px 20px rgba(0,0,0,0.10);
+  --shadow-lg:      0 12px 40px rgba(0,0,0,0.14);
+
+  /* Layout constants */
+  --header-h:       56px;
+  --tabbar-h:       58px;
+  --panel-w:        460px;
+  --content-max:    680px;
+
+  /* Motion */
+  --ease:           cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-bounce:    cubic-bezier(0.34, 1.56, 0.64, 1);
+  --transition:     all 0.3s var(--ease);
+  --transition-fast: all 0.15s ease;
+}
+
+/* ── Dark mode ───────────────────────── */
+[data-theme="dark"] {
+  --bg:             #09090B;
+  --surface:        #18181B;
+  --surface-raised: #27272A;
+  --surface-sunken: #111113;
+
+  --text-primary:   #FAFAFA;
+  --text-secondary: #A1A1AA;
+  --text-muted:     #52525B;
+
+  --border:         rgba(255,255,255,0.07);
+  --border-strong:  rgba(255,255,255,0.14);
+
+  --accent:         #F06A88;
+  --accent-dim:     rgba(240,106,136,0.15);
+
+  --glass-bg:       rgba(24,24,27,0.88);
+  --glass-border:   rgba(255,255,255,0.07);
+
+  --shadow-xs:      0 1px 2px rgba(0,0,0,0.3);
+  --shadow-sm:      0 2px 8px rgba(0,0,0,0.35);
+  --shadow-md:      0 4px 20px rgba(0,0,0,0.45);
+  --shadow-lg:      0 12px 40px rgba(0,0,0,0.55);
+}
