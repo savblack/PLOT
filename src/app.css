@@ -1212,6 +1212,134 @@ main.content-grid.animate-in {
   border-color: #2a2a2a;
 }
 
+.watchlist-sync {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.watchlist-sync-panel,
+.watchlist-pairing-card,
+.watchlist-review-list {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  background: color-mix(in srgb, var(--bg-primary) 88%, var(--text-primary) 4%);
+}
+
+.watchlist-sync-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.watchlist-sync-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.watchlist-sync-panel h3,
+.watchlist-review-list h3 {
+  margin: 0 0 0.35rem;
+  font-family: var(--font-serif);
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+.watchlist-sync-panel p,
+.watchlist-pairing-card p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.watchlist-sync-panel p + p {
+  margin-top: 0.25rem;
+}
+
+.watchlist-sync-error {
+  color: #b42318 !important;
+  margin-top: 0.35rem !important;
+}
+
+.watchlist-pairing-card pre {
+  overflow: auto;
+  margin: 0.85rem 0 0;
+  padding: 0.85rem;
+  border-radius: var(--radius-md);
+  background: rgba(0,0,0,0.06);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+[data-theme="dark"] .watchlist-pairing-card pre {
+  background: rgba(255,255,255,0.06);
+}
+
+.watchlist-badges {
+  position: absolute;
+  top: 0.55rem;
+  left: 0.55rem;
+  right: 0.55rem;
+  z-index: 3;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  pointer-events: none;
+}
+
+.watchlist-badges span,
+.watchlist-review-state {
+  border-radius: var(--radius-pill);
+  padding: 0.18rem 0.45rem;
+  background: rgba(0,0,0,0.68);
+  color: white;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.watchlist-badges .error {
+  background: #b42318;
+}
+
+.watchlist-review-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.watchlist-review-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-top: 1px solid var(--border-color);
+  padding-top: 0.65rem;
+}
+
+.watchlist-review-row strong {
+  display: block;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+
+.watchlist-review-row span {
+  display: block;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+}
+
+.watchlist-review-state.stale {
+  background: #7a5c00;
+}
+
 .empty-small {
   color: var(--text-secondary);
   font-size: 0.9rem;
