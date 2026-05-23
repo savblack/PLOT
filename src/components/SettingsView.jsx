@@ -374,6 +374,132 @@ function ProviderPicker({ title, hint, region, selected, onSave, onClose, limit 
   );
 }
 
+/* ── Feedback panel ── */
+const FEEDBACK_TYPES = [
+  { id: 'bug',     label: '🐛 Bug Report' },
+  { id: 'feature', label: '💡 Feature Request' },
+  { id: 'general', label: '💬 General Feedback' },
+];
+
+function FeedbackPanel({ user, onClose }) {
+  const [type,      setType]      = useState('bug');
+  const [message,   setMessage]   = useState('');
+  const [status,    setStatus]    = useState('idle'); // idle | submitting | done | error
+
+  const handleSubmit = async () => {
+    if (!message.trim()) return;
+    setStatus('submitting');
+    const { error } = await supabase.from('feedback').insert({
+      user_id:    user?.id ?? null,
+      user_email: user?.email ?? null,
+      type,
+      message:    message.trim(),
+    });
+    setStatus(error ? 'error' : 'done');
+  };
+
+  return createPortal(
+    <>
+      <div className="panel-overlay" onClick={onClose} />
+      <div className="panel">
+        <div style={{ padding: '1.25rem 1.1rem', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.4rem', fontWeight: 500 }}>Feedback</h2>
+          <button className="btn btn-ghost btn-sm" onClick={onClose}>Close</button>
+        </div>
+
+        {status === 'done' ? (
+          <div style={{ padding: '2.5rem 1.5rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
+            <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'var(--accent-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 22, height: 22 }}>
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </div>
+            <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-primary)' }}>Thanks for your feedback!</div>
+            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>We read every submission and use it to improve PLOT.</div>
+            <button className="btn btn-primary btn-sm" style={{ marginTop: '0.5rem' }} onClick={onClose}>Done</button>
+          </div>
+        ) : (
+          <div style={{ padding: '1.25rem 1.1rem', display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
+            <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0 }}>
+              Found a bug or have an idea? We'd love to hear it.
+            </p>
+
+            {/* Type chips */}
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+              {FEEDBACK_TYPES.map(t => (
+                <button
+                  key={t.id}
+                  onClick={() => setType(t.id)}
+                  style={{
+                    padding: '0.4rem 0.85rem',
+                    borderRadius: 'var(--radius-full)',
+                    border: type === t.id ? '2px solid var(--accent)' : '1.5px solid var(--border)',
+                    background: type === t.id ? 'var(--accent-dim)' : 'var(--surface)',
+                    color: type === t.id ? 'var(--accent)' : 'var(--text-secondary)',
+                    fontWeight: type === t.id ? 700 : 500,
+                    fontSize: '0.78rem',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Message */}
+            <textarea
+              value={message}
+              onChange={e => setMessage(e.target.value)}
+              placeholder={
+                type === 'bug'
+                  ? 'Describe what happened and how to reproduce it…'
+                  : type === 'feature'
+                    ? 'What would you like to see in PLOT?'
+                    : 'Share your thoughts…'
+              }
+              rows={6}
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                borderRadius: 'var(--radius-md)',
+                border: '1.5px solid var(--border)',
+                background: 'var(--surface)',
+                color: 'var(--text-primary)',
+                fontSize: '0.85rem',
+                lineHeight: 1.55,
+                resize: 'vertical',
+                outline: 'none',
+                fontFamily: 'var(--font-sans)',
+                boxSizing: 'border-box',
+                transition: 'border-color 0.15s ease',
+              }}
+              onFocus={e => { e.currentTarget.style.borderColor = 'var(--accent)'; }}
+              onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)'; }}
+            />
+
+            {status === 'error' && (
+              <p style={{ fontSize: '0.78rem', color: 'var(--chip-cinema)', margin: 0 }}>
+                Something went wrong — please try again.
+              </p>
+            )}
+
+            <button
+              className="btn btn-primary btn-sm"
+              onClick={handleSubmit}
+              disabled={!message.trim() || status === 'submitting'}
+              style={{ alignSelf: 'flex-end' }}
+            >
+              {status === 'submitting' ? 'Sending…' : 'Send Feedback'}
+            </button>
+          </div>
+        )}
+      </div>
+    </>,
+    document.body,
+  );
+}
+
 /* ═══════════════════════════════════════
    SettingsView
 ═══════════════════════════════════════ */
@@ -392,6 +518,7 @@ export default function SettingsView() {
   const [showGuideChannels,   setShowGuideChannels]   = useState(false);
   const [showRegion,          setShowRegion]          = useState(false);
   const [showTimezone,        setShowTimezone]        = useState(false);
+  const [showFeedback,        setShowFeedback]        = useState(false);
   const [showClearWatchlist,  setShowClearWatchlist]  = useState(false);
   const [clearingHistory,     setClearingHistory]     = useState(false);
   const [clearingWatchlist,   setClearingWatchlist]   = useState(false);
@@ -747,7 +874,7 @@ export default function SettingsView() {
             <div>
               <div className="settings-row-label">Subscribe to Calendar</div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                {calendarToken ? 'Live feed · updates automatically' : 'Get a URL for Google or Apple Calendar'}
+                {calendarToken ? 'Live feed · keep this link private' : 'Get a URL for Google or Apple Calendar'}
               </div>
             </div>
           </div>
@@ -797,6 +924,22 @@ export default function SettingsView() {
           >
             Download .ics
           </button>
+        </div>
+      </div>
+
+      {/* Support */}
+      <div className="settings-group">
+        <div className="settings-group-title">Support</div>
+        <div className="settings-row" onClick={() => setShowFeedback(true)}>
+          <div className="settings-row-left">
+            <div className="settings-row-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            </div>
+            <span className="settings-row-label">Report a Bug / Leave Feedback</span>
+          </div>
+          <div className="settings-row-value">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ width: 14, height: 14, opacity: 0.4 }}><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
         </div>
       </div>
 
@@ -884,6 +1027,11 @@ export default function SettingsView() {
           onSave={saveTimezone}
           onClose={() => setShowTimezone(false)}
         />
+      )}
+
+      {/* Feedback panel */}
+      {showFeedback && (
+        <FeedbackPanel user={user} onClose={() => setShowFeedback(false)} />
       )}
     </div>
   );
