@@ -376,9 +376,9 @@ function ProviderPicker({ title, hint, region, selected, onSave, onClose, limit 
 
 /* ── Feedback panel ── */
 const FEEDBACK_TYPES = [
-  { id: 'bug',     label: '🐛 Bug Report' },
-  { id: 'feature', label: '💡 Feature Request' },
-  { id: 'general', label: '💬 General Feedback' },
+  { id: 'bug',     label: 'Bug Report 🐛' },
+  { id: 'feature', label: 'Feature Request 💡' },
+  { id: 'general', label: 'General Feedback 💬' },
 ];
 
 function FeedbackPanel({ user, onClose }) {
@@ -432,7 +432,7 @@ function FeedbackPanel({ user, onClose }) {
                   onClick={() => setType(t.id)}
                   style={{
                     padding: '0.4rem 0.85rem',
-                    borderRadius: 'var(--radius-full)',
+                    borderRadius: 'var(--radius-pill)',
                     border: type === t.id ? '2px solid var(--accent)' : '1.5px solid var(--border)',
                     background: type === t.id ? 'var(--accent-dim)' : 'var(--surface)',
                     color: type === t.id ? 'var(--accent)' : 'var(--text-secondary)',
