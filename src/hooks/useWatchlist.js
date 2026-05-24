@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../api/supabase.js';
-import { getTmdbRegion } from '../api/tmdb.js';
+import { tmdb, getTmdbRegion } from '../api/tmdb.js';
 
 const LIST_NAME = 'My List';
 
@@ -128,16 +128,23 @@ export function useWatchlist(userId) {
       .map(p => p.provider_id)
       .filter(Boolean);
 
+    // For cinema movies, look up the digital release date in the background
+    let streaming_date = null;
+    if (item._cinema && item.media_type === 'movie') {
+      streaming_date = await tmdb.getDigitalReleaseDate(tmdb_id).catch(() => null);
+    }
+
     const row = {
-      list_id:      listId,
-      user_id:      userId,
+      list_id:        listId,
+      user_id:        userId,
       tmdb_id,
-      media_type:   item.media_type || 'movie',
-      title:        item.title || item.name || '',
-      poster_path:  item.poster_path || null,
-      release_date: item.release_date || item.first_air_date || null,
-      genre_ids:    item.genre_ids || [],
-      provider_ids: providerIds,
+      media_type:     item.media_type || 'movie',
+      title:          item.title || item.name || '',
+      poster_path:    item.poster_path || null,
+      release_date:   item.release_date || item.first_air_date || null,
+      genre_ids:      item.genre_ids || [],
+      provider_ids:   providerIds,
+      streaming_date: streaming_date || null,
     };
 
     const { data, error } = await supabase

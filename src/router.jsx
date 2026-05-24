@@ -8,8 +8,8 @@ import LoadingSpinner from './components/LoadingSpinner.jsx';
 const App         = lazy(() => import('./App.jsx'));
 const GuideView   = lazy(() => import('./components/GuideView.jsx'));
 const CalendarView= lazy(() => import('./components/CalendarView.jsx'));
-const WatchlistView=lazy(() => import('./components/WatchlistView.jsx'));
-const HistoryView = lazy(() => import('./components/HistoryView.jsx'));
+const HistoryView   = lazy(() => import('./components/HistoryView.jsx'));
+const MyListsView   = lazy(() => import('./components/MyListsView.jsx'));
 const SearchView  = lazy(() => import('./components/SearchView.jsx'));
 const SettingsView= lazy(() => import('./components/SettingsView.jsx'));
 
@@ -59,12 +59,14 @@ const router = createBrowserRouter([
       </ProtectedRoute>
     ),
     children: [
-      { path: '/app',      element: <Navigate to="/guide" replace /> },
-      { path: '/guide',    element: wrap(<GuideView />) },
+      { path: '/app',      element: <Navigate to="/home" replace /> },
+      { path: '/guide',    element: <Navigate to="/home" replace /> },
+      { path: '/home',     element: wrap(<GuideView />) },
       { path: '/calendar', element: wrap(<CalendarView />) },
-      { path: '/watching', element: <Navigate to="/list" replace /> },
-      { path: '/list',     element: wrap(<WatchlistView />) },
+      { path: '/watching', element: <Navigate to="/my-lists" replace /> },
+      { path: '/list',     element: <Navigate to="/my-lists" replace /> },
       { path: '/history',  element: wrap(<HistoryView />) },
+      { path: '/my-lists', element: wrap(<MyListsView />) },
       { path: '/search',   element: wrap(<SearchView />) },
       { path: '/settings', element: wrap(<SettingsView />) },
     ],

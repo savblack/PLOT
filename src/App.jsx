@@ -5,9 +5,12 @@ import { setTmdbRegion } from './api/tmdb.js';
 import AppShell from './components/AppShell.jsx';
 import MediaPanel from './components/MediaPanel.jsx';
 import { useTheme } from './hooks/useTheme.js';
-import { useWatchlist } from './hooks/useWatchlist.js';
-import { useWatching }  from './hooks/useWatching.js';
-import { useReminders } from './hooks/useReminders.js';
+import { useWatchlist }    from './hooks/useWatchlist.js';
+import { useWatching }     from './hooks/useWatching.js';
+import { useReminders }    from './hooks/useReminders.js';
+import { useTopLists }     from './hooks/useTopLists.js';
+import { useFavorites }    from './hooks/useFavorites.js';
+import { useCustomLists }  from './hooks/useCustomLists.js';
 import PlotLoader from './components/PlotLoader.jsx';
 export { localDateStr } from './utils/date.js';
 
@@ -198,12 +201,15 @@ export default function App() {
   /* ── Navigation ── */
   const navigateTo = useCallback((view) => navigate(`/${view}`), [navigate]);
 
-  const currentView = location.pathname.replace(/^\//, '') || 'guide';
+  const currentView = location.pathname.replace(/^\//, '') || 'home';
 
   /* ── Global data hooks ── */
-  const watchlist = useWatchlist(user?.id);
-  const watching  = useWatching(user?.id);
-  const reminders = useReminders(user?.id);
+  const watchlist    = useWatchlist(user?.id);
+  const watching     = useWatching(user?.id);
+  const reminders    = useReminders(user?.id);
+  const topLists     = useTopLists(user?.id);
+  const favorites    = useFavorites(user?.id);
+  const customLists  = useCustomLists(user?.id);
 
   const refreshProfile = useCallback(() => {
     if (user?.id) loadProfile(user.id);
@@ -234,6 +240,9 @@ export default function App() {
     watchlist,
     watching,
     reminders,
+    topLists,
+    favorites,
+    customLists,
     refreshProfile,
   };
 

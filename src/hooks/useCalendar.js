@@ -39,14 +39,24 @@ export function useCalendar(watchlistItems = [], watchingItems = [], fetchSeason
       });
     }
 
-    // 1. Watchlist items with known dates — both TV and movies use 'release'
+    // 1. Watchlist items with known dates
     for (const item of watchlistItems) {
-      const date = item.release_date;
-      if (date) {
+      // Cinema movies have streaming_date set — their release_date is the theatrical date
+      if (item.release_date) {
+        const isCinema = !!item.streaming_date;
         all.push({
-          date,
-          type:  'release',
-          label: 'Release',
+          date:  item.release_date,
+          type:  isCinema ? 'cinema' : 'streaming',
+          label: isCinema ? 'Cinema' : 'Streaming',
+          item,
+        });
+      }
+      // Also add the streaming premiere date for cinema movies
+      if (item.streaming_date) {
+        all.push({
+          date:  item.streaming_date,
+          type:  'streaming',
+          label: 'Streaming',
           item,
         });
       }

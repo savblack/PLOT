@@ -2,6 +2,18 @@ import { useState } from 'react';
 import { useApp, posterUrl, TodayLabel } from '../App.jsx';
 import { useHistory } from '../hooks/useHistory.js';
 
+function HeartIcon({ filled }) {
+  return filled ? (
+    <svg viewBox="0 0 24 24" fill="#ef4444" stroke="#ef4444" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14 }}>
+      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+    </svg>
+  ) : (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14 }}>
+      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+    </svg>
+  );
+}
+
 function groupByMonth(entries) {
   const groups = {};
   for (const entry of entries) {
@@ -40,7 +52,7 @@ function StarRating({ value, onChange }) {
 }
 
 export default function HistoryView() {
-  const { openPanel, user } = useApp();
+  const { openPanel, user, favorites } = useApp();
   const { entries, loading, updateEntry, removeEntry } = useHistory(user?.id);
   const [filter,       setFilter]       = useState('all'); // all | movie | tv
   const [openMonths,   setOpenMonths]   = useState({});    // month label → bool
@@ -123,6 +135,8 @@ export default function HistoryView() {
                   openPanel={openPanel}
                   onRatingChange={rating => updateEntry(entry.tmdb_id, { rating })}
                   onRemove={() => removeEntry(entry.tmdb_id)}
+                  isFav={favorites.isFavorite(entry.tmdb_id)}
+                  onToggleFav={() => favorites.toggleFavorite(entry)}
                 />
               ))}
             </div>
@@ -133,7 +147,7 @@ export default function HistoryView() {
   );
 }
 
-function HistoryRow({ entry, openPanel, onRatingChange, onRemove }) {
+function HistoryRow({ entry, openPanel, onRatingChange, onRemove, isFav, onToggleFav }) {
   const img   = posterUrl(entry.poster_path, 'w92');
   const title = entry.title || 'Unknown';
   const date  = entry.watched_at
@@ -157,7 +171,15 @@ function HistoryRow({ entry, openPanel, onRatingChange, onRemove }) {
           </div>
         )}
       </div>
-      <div className="list-row-end">
+      <div className="list-row-end" style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+        <button
+          className="btn btn-ghost btn-xs"
+          style={{ color: isFav ? '#ef4444' : undefined, padding: '3px' }}
+          onClick={e => { e.stopPropagation(); onToggleFav(); }}
+          title={isFav ? 'Remove from favorites' : 'Add to favorites'}
+        >
+          <HeartIcon filled={isFav} />
+        </button>
         <button
           className="btn btn-ghost btn-xs"
           onClick={e => { e.stopPropagation(); onRemove(); }}

@@ -49,6 +49,17 @@ export const tmdb = {
   getTVDetails: (id) =>
     fetchFromTMDB(`/tv/${id}`, { append_to_response: 'watch/providers,recommendations' }),
 
+  /* ── Digital (streaming) release date for a movie, by region ── */
+  getDigitalReleaseDate: async (movieId) => {
+    const data = await fetchFromTMDB(`/movie/${movieId}/release_dates`);
+    const entries = data?.results || [];
+    // Prefer the user's region, fall back to US
+    const forRegion = (r) => entries.find(e => e.iso_3166_1 === r)?.release_dates || [];
+    const dates = forRegion(userRegion).length ? forRegion(userRegion) : forRegion('US');
+    const digital = dates.find(d => d.type === 4); // 4 = Digital
+    return digital?.release_date ? digital.release_date.slice(0, 10) : null;
+  },
+
   /* ── Season & Episode (new) ── */
   getSeason: (tvId, seasonNumber) =>
     fetchFromTMDB(`/tv/${tvId}/season/${seasonNumber}`),
@@ -66,22 +77,21 @@ export const tmdb = {
     const providerParams = providerIds.length
       ? { watch_region: userRegion, with_watch_providers: providerIds.join('|'), with_watch_monetization_types: 'flatrate' }
       : {};
-    const pages = await Promise.all(
-      [1, 2, 3, 4, 5].map(page =>
-        fetchFromTMDB('/discover/movie', {
-          // release_date + with_release_type + region = use the *regional* theatrical
-          // release date for filtering, not the US primary_release_date.
-          // This ensures AU movies releasing locally (even after a US run) appear correctly.
-          'release_date.gte': today,
-          'release_date.lte': end,
-          'with_release_type': '2|3', // 2 = limited theatrical, 3 = theatrical
-          sort_by: 'popularity.desc',
-          page,
-          ...providerParams,
-        })
-      )
-    );
-    return { results: pages.flatMap(p => p?.results ?? []) };
+    const baseParams = { 'release_date.gte': today, 'release_date.lte': end, sort_by: 'popularity.desc', ...providerParams };
+    const [theatricalPages, streamingPages] = await Promise.all([
+      Promise.all([1, 2, 3, 4, 5].map(page =>
+        fetchFromTMDB('/discover/movie', { ...baseParams, 'with_release_type': '2|3', page })
+      )),
+      Promise.all([1, 2, 3].map(page =>
+        fetchFromTMDB('/discover/movie', { ...baseParams, 'with_release_type': '4', page })
+      )),
+    ]);
+    const theatrical = theatricalPages.flatMap(p => p?.results ?? []).map(m => ({ ...m, _cinema: true }));
+    const theatricalIds = new Set(theatrical.map(m => m.id));
+    const streaming = streamingPages.flatMap(p => p?.results ?? [])
+      .filter(m => !theatricalIds.has(m.id))
+      .map(m => ({ ...m, _cinema: false }));
+    return { results: [...theatrical, ...streaming] };
   },
 
   /* ── Now playing in cinemas ── */
@@ -240,12 +250,13 @@ export const tmdb = {
 
   /* ── Recently released (past N days, optionally filtered to specific providers) ── */
   getRecentReleases: async (days = 14, providerIds = []) => {
-    const endStr   = localDateStr();      // include today
+    const endStr   = localDateStr();
     const startStr = localDateStr(-days);
     const providerParams = providerIds.length
       ? { watch_region: userRegion, with_watch_providers: providerIds.join('|'), with_watch_monetization_types: 'flatrate' }
       : {};
-    const [tvRes, movieRes] = await Promise.all([
+    const movieBase = { 'release_date.gte': startStr, 'release_date.lte': endStr, sort_by: 'popularity.desc', ...providerParams };
+    const [tvRes, theatricalRes, streamingRes] = await Promise.all([
       fetchFromTMDB('/discover/tv', {
         'first_air_date.gte': startStr,
         'first_air_date.lte': endStr,
@@ -253,18 +264,17 @@ export const tmdb = {
         'vote_count.gte': 3,
         ...providerParams,
       }),
-      fetchFromTMDB('/discover/movie', {
-        // Use regional release date so AU theatrical releases aren't missed
-        'release_date.gte': startStr,
-        'release_date.lte': endStr,
-        'with_release_type': '2|3',
-        sort_by: 'popularity.desc',
-        ...providerParams,
-      }),
+      fetchFromTMDB('/discover/movie', { ...movieBase, 'with_release_type': '2|3' }),
+      fetchFromTMDB('/discover/movie', { ...movieBase, 'with_release_type': '4' }),
     ]);
+    const theatrical = (theatricalRes?.results || []).map(m => ({ ...m, media_type: 'movie', _cinema: true }));
+    const theatricalIds = new Set(theatrical.map(m => m.id));
+    const streaming = (streamingRes?.results || [])
+      .filter(m => !theatricalIds.has(m.id))
+      .map(m => ({ ...m, media_type: 'movie', _cinema: false }));
     return {
-      tv:     (tvRes?.results    || []).map(s => ({ ...s, media_type: 'tv' })),
-      movies: (movieRes?.results || []).map(m => ({ ...m, media_type: 'movie', _cinema: true })),
+      tv:     (tvRes?.results || []).map(s => ({ ...s, media_type: 'tv' })),
+      movies: [...theatrical, ...streaming],
     };
   },
 

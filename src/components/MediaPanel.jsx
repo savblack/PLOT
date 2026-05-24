@@ -227,8 +227,135 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone }) {
 /* ═══════════════════════════════════════
    MediaPanel
 ═══════════════════════════════════════ */
+/* ── Heart icon ── */
+function HeartIcon({ filled }) {
+  return filled ? (
+    <svg viewBox="0 0 24 24" fill="#ef4444" stroke="#ef4444" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+    </svg>
+  ) : (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+    </svg>
+  );
+}
+
+/* ── Add to custom list sheet ── */
+function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
+  const { customLists } = useApp();
+  const { lists, createList, addItem, removeItem, isInList } = customLists;
+  const [creatingName, setCreatingName] = useState('');
+  const [showCreate,   setShowCreate]   = useState(false);
+
+  const item = {
+    id: itemId,
+    media_type: itemType,
+    title: details?.title || details?.name || '',
+    poster_path: details?.poster_path || null,
+  };
+
+  const handleCreate = async () => {
+    if (!creatingName.trim()) return;
+    const newList = await createList(creatingName);
+    if (newList) await addItem(newList.id, item);
+    setCreatingName('');
+    setShowCreate(false);
+  };
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 1100,
+      display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
+    }}>
+      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)' }} onClick={onClose} />
+      <div style={{
+        position: 'relative',
+        background: 'var(--surface)',
+        borderRadius: 'var(--radius-lg) var(--radius-lg) 0 0',
+        maxHeight: '70vh',
+        display: 'flex', flexDirection: 'column',
+        overflow: 'hidden',
+      }}>
+        <div style={{ padding: '1rem', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>Add to list</span>
+          <button className="btn btn-ghost btn-xs" onClick={onClose}>✕</button>
+        </div>
+        <div style={{ overflowY: 'auto', flex: 1 }}>
+          {lists.length === 0 && !showCreate && (
+            <div style={{ padding: '1.5rem 1rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+              No lists yet
+            </div>
+          )}
+          {lists.map(list => {
+            const checked = isInList(list.id, itemId);
+            return (
+              <button
+                key={list.id}
+                onClick={() => checked ? removeItem(list.id, itemId) : addItem(list.id, item)}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  width: '100%', padding: '0.75rem 1rem',
+                  border: 'none', borderBottom: '1px solid var(--border)',
+                  background: 'none', cursor: 'pointer', textAlign: 'left',
+                }}
+              >
+                <div>
+                  <div style={{ fontWeight: 500, fontSize: '0.875rem', color: 'var(--text-primary)' }}>{list.name}</div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{(list.items || []).length} items</div>
+                </div>
+                <div style={{
+                  width: 20, height: 20, borderRadius: 4,
+                  border: `2px solid ${checked ? 'var(--accent)' : 'var(--border-strong)'}`,
+                  background: checked ? 'var(--accent)' : 'transparent',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0,
+                }}>
+                  {checked && <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" style={{ width: 12, height: 12 }}><polyline points="20 6 9 17 4 12"/></svg>}
+                </div>
+              </button>
+            );
+          })}
+          {showCreate ? (
+            <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--border)', display: 'flex', gap: '0.5rem' }}>
+              <input
+                type="text"
+                placeholder="List name…"
+                value={creatingName}
+                onChange={e => setCreatingName(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleCreate()}
+                autoFocus
+                style={{
+                  flex: 1, padding: '0.4rem 0.6rem',
+                  border: '1px solid var(--border)', borderRadius: 'var(--radius)',
+                  background: 'var(--bg)', color: 'var(--text-primary)',
+                  fontSize: '0.875rem', outline: 'none',
+                }}
+              />
+              <button className="btn btn-primary btn-xs" disabled={!creatingName.trim()} onClick={handleCreate}>Create</button>
+              <button className="btn btn-ghost btn-xs" onClick={() => setShowCreate(false)}>✕</button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowCreate(true)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '0.5rem',
+                width: '100%', padding: '0.75rem 1rem',
+                border: 'none', background: 'none', cursor: 'pointer', textAlign: 'left',
+                color: 'var(--text-secondary)', fontSize: '0.875rem',
+              }}
+            >
+              <span style={{ fontSize: '1.1rem', lineHeight: 1 }}>+</span>
+              Create new list
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function MediaPanel({ itemId, itemType, closing, onClose }) {
-  const { watchlist, watching, user, profile } = useApp();
+  const { watchlist, watching, user, profile, favorites } = useApp();
   const timezone = profile?.timezone || null;
   const history = useHistory(user?.id);
 
@@ -237,11 +364,14 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
   const [loading,      setLoading]      = useState(true);
   const [detailsError, setDetailsError] = useState(false);
 
+  const [showListSheet, setShowListSheet] = useState(false);
+
   const isMovie    = itemType === 'movie';
   const inList     = watchlist.isInList(itemId);
   const isWatching = !isMovie && watching.isWatching(itemId);
   const progress   = watching.getProgress(itemId);
   const watched    = history.isWatched(itemId);
+  const isFav      = favorites.isFavorite(itemId);
 
   const loadDetails = useCallback(async () => {
     if (!itemId) return;
@@ -259,7 +389,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
       setProviders(prov?.results?.[region]?.flatrate || []);
     }
     setLoading(false);
-  }, [itemId, itemType, isMovie]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [itemId, itemType, isMovie]);
 
   useEffect(() => { loadDetails(); }, [loadDetails]);
 
@@ -272,6 +402,14 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
 
   return (
     <>
+      {showListSheet && details && (
+        <AddToCustomListSheet
+          details={details}
+          itemId={itemId}
+          itemType={itemType}
+          onClose={() => setShowListSheet(false)}
+        />
+      )}
       <div className={`panel-overlay${closing ? ' closing' : ''}`} onClick={onClose} />
       <div className={`panel${closing ? ' closing' : ''}`}>
         {/* Header image */}
@@ -324,6 +462,24 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
               <p className="panel-overview">{details.overview}</p>
             )}
 
+            {/* Heart + List actions */}
+            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+              <button
+                className={`btn btn-ghost btn-sm`}
+                style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: isFav ? '#ef4444' : undefined }}
+                onClick={() => favorites.toggleFavorite({ ...details, id: itemId, media_type: itemType })}
+              >
+                <span style={{ width: 16, height: 16, display: 'inline-flex' }}><HeartIcon filled={isFav} /></span>
+                {isFav ? 'Unfavorite' : 'Favorite'}
+              </button>
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={() => setShowListSheet(true)}
+              >
+                + List
+              </button>
+            </div>
+
             {/* Actions */}
             <div className="panel-actions">
               {/* Save for later — hidden while actively watching (already in list) */}
@@ -360,9 +516,12 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
               {!watched ? (
                 <button
                   className="btn btn-ghost btn-sm"
-                  onClick={() => history.logWatched({ ...details, id: itemId, media_type: itemType })}
+                  onClick={async () => {
+                    await history.logWatched({ ...details, id: itemId, media_type: itemType });
+                    if (!isMovie && isWatching) await watching.stopWatching(itemId);
+                  }}
                 >
-                  Mark watched
+                  {!isMovie ? 'Mark all watched' : 'Mark watched'}
                 </button>
               ) : (
                 <button

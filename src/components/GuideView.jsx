@@ -182,7 +182,7 @@ function UpcomingContent({ typeFilters, genreFilters, providers, openPanel, watc
       // that TMDB stores with a US primary_release_date in the past but AU regional date = now)
       for (const m of (upcomingMovRes?.results || [])) {
         if (m.release_date <= todayStr) {
-          todayItems.push({ ...m, media_type: 'movie', _cinema: true, release_date: null });
+          todayItems.push({ ...m, media_type: 'movie', release_date: null });
           seenIds.add(m.id);
         }
       }
@@ -217,7 +217,7 @@ function UpcomingContent({ typeFilters, genreFilters, providers, openPanel, watc
         const d = movie.release_date;
         if (d && d > todayStr && d <= sixMonthsStr) {
           if (!upcomingGrouped[d]) upcomingGrouped[d] = [];
-          upcomingGrouped[d].push({ ...movie, media_type: 'movie', _cinema: true });
+          upcomingGrouped[d].push({ ...movie, media_type: 'movie' });
           seenIds.add(movie.id);
         }
       }
@@ -288,8 +288,8 @@ function UpcomingContent({ typeFilters, genreFilters, providers, openPanel, watc
               <div className="date-group-subheader">{formatDayLabel(date)}</div>
               <Rail style={{ paddingLeft: '1rem', paddingRight: '1rem', paddingTop: '1.25rem', paddingBottom: '1.5rem' }}>
                 {filteredRecent[date].map(item => (
-                  <MediaCard key={`${item.media_type}-${item.id}`} item={item} openPanel={openPanel} watchlist={watchlist} />
-                ))}
+                <MediaCard key={`${item.media_type}-${item.id}`} item={item} openPanel={openPanel} watchlist={watchlist} />
+              ))}
               </Rail>
             </div>
           ))}

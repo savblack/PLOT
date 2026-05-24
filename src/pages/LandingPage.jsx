@@ -358,7 +358,7 @@ export default function LandingPage() {
       <section id="timeline-section">
         <h2 className="timeline-headline reveal">A timeline as rich<br />as your taste.</h2>
         <p className="ftp-body reveal reveal-delay-2" style={{ marginTop: '2rem' }}>
-          One day you'll scroll back and see the exact week you discovered your favourite director.<br />
+          One day you'll scroll back and see the exact week you discovered your favorite director.<br />
           Remember the month you watched nothing but comfort rewatches and the series that kept you up until 2am.
         </p>
 

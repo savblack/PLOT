@@ -52,7 +52,7 @@ svg { stroke-width: 1.5; }
 .app-page-title {
   font-family: var(--font-serif);
   font-size: 1.55rem;
-  font-weight: 600;
+  font-weight: 400;
   letter-spacing: -0.05em;
   color: var(--text-primary);
   white-space: nowrap;
@@ -203,7 +203,7 @@ svg { stroke-width: 1.5; }
 .nav-drawer-logo {
   font-family: var(--font-serif);
   font-size: 1.45rem;
-  font-weight: 600;
+  font-weight: 400;
   letter-spacing: -0.05em;
   color: var(--text-primary);
   user-select: none;
@@ -614,8 +614,9 @@ svg { stroke-width: 1.5; }
 .chip-today   { background: rgba(5, 150, 105, 0.55);  color: #fff; }
 .chip-tomorrow{ background: rgba(217, 119, 6, 0.55);  color: #fff; }
 .chip-soon    { background: rgba(217, 119, 6, 0.55);  color: #fff; }
-.chip-cinema  { background: rgba(220, 38, 38, 0.55);  color: #fff; }
-.chip-episode { background: rgba(79, 70, 229, 0.55);  color: #fff; }
+.chip-cinema    { background: rgba(220, 38, 38, 0.55);  color: #fff; }
+.chip-streaming { background: rgba(13, 148, 136, 0.55); color: #fff; }
+.chip-episode   { background: rgba(79, 70, 229, 0.55);  color: #fff; }
 .chip-muted   {
   background: var(--surface-raised);
   color: var(--text-secondary);
@@ -1177,10 +1178,12 @@ svg { stroke-width: 1.5; }
   border-radius: 50%;
   flex-shrink: 0;
 }
-.cal-dot-ep       { background: var(--chip-episode); }  /* Episode  – blue   */
-.cal-dot-premiere { background: var(--chip-now); }     /* Premiere – green  */
-.cal-dot-release  { background: var(--chip-cinema); }  /* Release  – red    */
-.cal-dot-reminder { background: #f59e0b; }             /* Reminder – amber  */
+.cal-dot-ep        { background: var(--chip-episode);   }  /* Episode   – blue  */
+.cal-dot-premiere  { background: var(--chip-now);       }  /* Premiere  – green */
+.cal-dot-release   { background: var(--chip-cinema);    }  /* legacy            */
+.cal-dot-cinema    { background: var(--chip-cinema);    }  /* Cinema    – red   */
+.cal-dot-streaming { background: var(--chip-streaming); }  /* Streaming – teal  */
+.cal-dot-reminder  { background: #f59e0b; }               /* Reminder  – amber */
 
 /* ── Calendar day panel ── */
 .cal-day-panel {
@@ -1362,14 +1365,18 @@ svg { stroke-width: 1.5; }
   flex: 1;
   min-width: 0;
 }
-.cal-pill-ep       { background: color-mix(in srgb, var(--chip-episode) 12%, transparent); color: var(--chip-episode); }
-.cal-pill-premiere { background: color-mix(in srgb, var(--chip-now)     12%, transparent); color: var(--chip-now);     }
-.cal-pill-release  { background: color-mix(in srgb, var(--chip-cinema)  12%, transparent); color: var(--chip-cinema);  }
-.cal-pill-reminder { background: color-mix(in srgb, #f59e0b 12%, transparent); color: #d97706; }
-.cal-pill-ep .cal-pill-dot       { background: var(--chip-episode); }
-.cal-pill-premiere .cal-pill-dot { background: var(--chip-now);     }
-.cal-pill-release .cal-pill-dot  { background: var(--chip-cinema);  }
-.cal-pill-reminder .cal-pill-dot { background: #f59e0b;             }
+.cal-pill-ep        { background: color-mix(in srgb, var(--chip-episode)   12%, transparent); color: var(--chip-episode);   }
+.cal-pill-premiere  { background: color-mix(in srgb, var(--chip-now)       12%, transparent); color: var(--chip-now);       }
+.cal-pill-release   { background: color-mix(in srgb, var(--chip-cinema)    12%, transparent); color: var(--chip-cinema);    }
+.cal-pill-cinema    { background: color-mix(in srgb, var(--chip-cinema)    12%, transparent); color: var(--chip-cinema);    }
+.cal-pill-streaming { background: color-mix(in srgb, var(--chip-streaming) 12%, transparent); color: var(--chip-streaming); }
+.cal-pill-reminder  { background: color-mix(in srgb, #f59e0b 12%, transparent); color: #d97706; }
+.cal-pill-ep .cal-pill-dot        { background: var(--chip-episode);   }
+.cal-pill-premiere .cal-pill-dot  { background: var(--chip-now);       }
+.cal-pill-release .cal-pill-dot   { background: var(--chip-cinema);    }
+.cal-pill-cinema .cal-pill-dot    { background: var(--chip-cinema);    }
+.cal-pill-streaming .cal-pill-dot { background: var(--chip-streaming); }
+.cal-pill-reminder .cal-pill-dot  { background: #f59e0b;               }
 /* ── Calendar legend ── */
 .cal-legend {
   display: flex;
@@ -1407,6 +1414,13 @@ svg { stroke-width: 1.5; }
   z-index: 100;
 }
 .cal-legend-item:hover::after { opacity: 1; }
+.cal-legend-icon {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 3px;
+  opacity: 0.55;
+  vertical-align: middle;
+}
 
 .cal-pill-more {
   font-size: 0.49rem;

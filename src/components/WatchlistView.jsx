@@ -232,10 +232,11 @@ function WatchingRow({ item, openPanel }) {
 
 /* ── Saved-for-later row ── */
 function SavedRow({ item, openPanel, watchlist, watching }) {
-  const img   = posterUrl(item.poster_path, 'w92');
-  const title = item.title || item.name || 'Unknown';
-  const isTV  = item.media_type === 'tv';
-  const chip  = item.release_date ? countdownChip(item.release_date) : null;
+  const img            = posterUrl(item.poster_path, 'w92');
+  const title          = item.title || item.name || 'Unknown';
+  const isTV           = item.media_type === 'tv';
+  const chip           = item.release_date ? countdownChip(item.release_date) : null;
+  const streamingChip  = item.streaming_date ? countdownChip(item.streaming_date) : null;
 
   const handleStartWatching = async (e) => {
     e.stopPropagation();
@@ -260,6 +261,11 @@ function SavedRow({ item, openPanel, watchlist, watching }) {
           <span className="list-type-badge">{isTV ? 'Series' : 'Movie'}</span>
           {chip && (
             <span className={`chip ${chip.cls}`} style={{ fontSize: '0.62rem' }}>{chip.label}</span>
+          )}
+          {streamingChip && (
+            <span className={`chip ${streamingChip.cls}`} style={{ fontSize: '0.62rem' }} title="Streaming release">
+              Streaming {streamingChip.label.toLowerCase()}
+            </span>
           )}
         </div>
       </div>

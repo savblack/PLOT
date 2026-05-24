@@ -178,7 +178,7 @@ export default function OnboardingFlow() {
       {/* Header */}
       <div style={{ width: '100%', maxWidth: 420, padding: '2rem 0 1.5rem', textAlign: 'center' }}>
         <div style={{ fontFamily: 'var(--font-serif)', fontSize: '2rem', fontWeight: 500, letterSpacing: '-0.05em', textTransform: 'uppercase', marginBottom: '1.5rem' }}>
-          Plot
+          PLOT
         </div>
         {/* Progress */}
         <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'center', marginBottom: '0.6rem' }}>

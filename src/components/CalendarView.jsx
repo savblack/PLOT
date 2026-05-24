@@ -36,28 +36,38 @@ function startOfWeek(date) {
 // release  = movie or TV release from your watchlist
 // reminder = EPG bookmark you set manually
 const DOT_COLORS = {
-  episode:  'cal-dot-ep',
-  release:  'cal-dot-release',
-  reminder: 'cal-dot-reminder',
+  episode:   'cal-dot-ep',
+  cinema:    'cal-dot-cinema',
+  streaming: 'cal-dot-streaming',
+  reminder:  'cal-dot-reminder',
 };
 const PILL_COLORS = {
-  episode:  'cal-pill-ep',
-  release:  'cal-pill-release',
-  reminder: 'cal-pill-reminder',
+  episode:   'cal-pill-ep',
+  cinema:    'cal-pill-cinema',
+  streaming: 'cal-pill-streaming',
+  reminder:  'cal-pill-reminder',
 };
 const EVENT_LABELS = {
-  episode:  'Episode',
-  release:  'Release',
-  reminder: 'Reminder',
+  episode:   'Episode',
+  cinema:    'Cinema',
+  streaming: 'Streaming',
+  reminder:  'Reminder',
+};
+const CHIP_COLORS = {
+  episode:   'chip-episode',
+  cinema:    'chip-cinema',
+  streaming: 'chip-streaming',
+  reminder:  'chip-muted',
 };
 
-const ALL_EVENT_TYPES = ['episode', 'release', 'reminder'];
+const ALL_EVENT_TYPES = ['episode', 'cinema', 'streaming', 'reminder'];
 const MAX_PILLS_MONTH = 3;
 
 const LEGEND_TIPS = {
-  episode:  'Upcoming episodes of shows you\'re watching',
-  release:  'Movies and TV releases from your watchlist',
-  reminder: 'Episodes you\'ve bookmarked from the TV guide',
+  episode:   'Upcoming episodes of shows you\'re watching',
+  cinema:    'Theatrical releases of movies on your watchlist',
+  streaming: 'New streaming premieres from your watchlist, including when cinema films hit streaming',
+  reminder:  'Episodes you\'ve bookmarked from the TV guide',
 };
 
 /* ═══════════════════════════════════════
@@ -116,10 +126,7 @@ function EventRowList({ events, openPanel }) {
           <div className="cal-event-title">{title}</div>
           <div className="cal-event-meta">
             <span
-              className={`chip chip-sm ${
-                ev.type === 'episode'  ? 'chip-episode' :
-                ev.type === 'release'  ? 'chip-cinema'  : 'chip-muted'
-              }`}
+              className={`chip chip-sm ${CHIP_COLORS[ev.type] || 'chip-muted'}`}
               style={{ fontSize: '0.6rem' }}
             >
               {EVENT_LABELS[ev.type] || ev.label}
@@ -291,9 +298,10 @@ export default function CalendarView() {
           <MultiSelect
             placeholder="Type"
             options={[
-              { id: 'episode',  label: 'Episode'  },
-              { id: 'release',  label: 'Release'  },
-              { id: 'reminder', label: 'Reminder' },
+              { id: 'episode',   label: 'Episode'   },
+              { id: 'cinema',    label: 'Cinema'    },
+              { id: 'streaming', label: 'Streaming' },
+              { id: 'reminder',  label: 'Reminder'  },
             ]}
             value={typeFilter}
             onChange={setTypeFilter}
@@ -317,6 +325,13 @@ export default function CalendarView() {
           {ALL_EVENT_TYPES.map(type => (
             <div key={type} className={`cal-legend-item cal-pill ${PILL_COLORS[type]}`} data-tip={LEGEND_TIPS[type]}>
               {EVENT_LABELS[type]}
+              <span className="cal-legend-icon">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="12" y1="8" x2="12" y2="8" strokeWidth="3"/>
+                  <line x1="12" y1="12" x2="12" y2="17"/>
+                </svg>
+              </span>
             </div>
           ))}
         </div>
