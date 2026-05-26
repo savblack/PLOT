@@ -24,7 +24,7 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,200;1,400&family=Poiret+One&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,200;1,400&family=Instrument+Serif:ital@0;1&family=Poiret+One&display=swap" rel="stylesheet" />
   <style>
     /* ── Reset & Tokens ─────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -38,10 +38,16 @@
       --pink:         #e05578;
       --glass-bg:     rgba(255,255,255,0.8);
       --glass-border: rgba(0,0,0,0.05);
-      --serif:        'DM Sans', system-ui, sans-serif;
+      --serif:        'Instrument Serif', Georgia, serif;
       --sans:         'DM Sans', system-ui, sans-serif;
       --serif-stroke: 0px;
-      --serif-tracking: -0.03em;
+      --serif-tracking: -0.01em;
+      --dark:          #0c0c0c;
+      --text-dark:     #f0efe8;
+      --muted-dark:    rgba(240,239,232,0.42);
+      --episode:       #4a90d9;
+      --streaming:     #3a9e6a;
+      --reminder:      #c9a227;
       --r-lg:         32px;
       --r-pill:       9999px;
       --ease:         cubic-bezier(0.23, 1, 0.32, 1);
@@ -56,8 +62,8 @@
     .timeline-headline,
     .footer-cta-headline,
     .footer-cta-sub {
-      font-weight: 200 !important;
-      letter-spacing: var(--serif-tracking) !important;
+      font-weight: 400;
+      letter-spacing: var(--serif-tracking);
     }
 
     html { scroll-behavior: smooth; }
@@ -71,7 +77,7 @@
       font-weight: 200;
       line-height: 1.45;
       -webkit-font-smoothing: antialiased;
-      padding-bottom: 2.75rem;
+      padding-bottom: 0;
     }
 
 
@@ -135,11 +141,10 @@
       align-items: center;
     }
     .nav-logo span {
-      font-family: 'Poiret One', sans-serif;
+      font-family: 'Instrument Serif', Georgia, serif;
       font-size: 2.5rem;
       font-weight: 400;
-      letter-spacing: -0.02em;
-      text-transform: uppercase;
+      letter-spacing: -0.05em;
       color: var(--text);
       line-height: 1;
       user-select: none;
@@ -278,7 +283,7 @@
       font-size: clamp(2.6rem, 6.5vw, 5rem);
       font-weight: 400;
       line-height: 0.88;
-      letter-spacing: -0.08em;
+      letter-spacing: -0.02em;
       color: var(--text);
       margin-bottom: 2rem;
     }
@@ -349,7 +354,7 @@
       font-family: var(--serif);
       font-size: clamp(1.5rem, 3.4vw, 2.7rem);
       font-weight: 500;
-      letter-spacing: -0.08em;
+      letter-spacing: -0.02em;
       line-height: 1.15;
       color: var(--text);
       max-width: 700px;
@@ -388,7 +393,7 @@
       font-family: var(--serif);
       font-size: clamp(1.8rem, 3.5vw, 2.8rem);
       font-weight: 400;
-      letter-spacing: -0.08em;
+      letter-spacing: -0.02em;
       line-height: 1;
       margin-bottom: 0.75rem;
     }
@@ -485,7 +490,7 @@
       font-family: var(--serif);
       font-size: clamp(1.8rem, 4.2vw, 3.2rem);
       font-weight: 400;
-      letter-spacing: -0.05em;
+      letter-spacing: -0.02em;
       line-height: 0.95;
       margin-bottom: 1.5rem;
     }
@@ -531,7 +536,7 @@
       font-family: var(--serif);
       font-size: clamp(1.8rem, 2.8vw, 2.8rem);
       font-weight: 400;
-      letter-spacing: -0.04em;
+      letter-spacing: -0.02em;
       line-height: 0.92;
       color: var(--text);
       margin-bottom: 0.3rem;
@@ -584,7 +589,7 @@
       font-size: clamp(1.8rem, 4.2vw, 3.2rem);
       font-weight: 400;
       line-height: 0.95;
-      letter-spacing: -0.05em;
+      letter-spacing: -0.02em;
       color: var(--text);
     }
 
@@ -763,147 +768,87 @@
 
     /* ── Footer ─────────────────────────────────────────────── */
     footer {
-      background: var(--bg);
+      background: var(--dark);
       border-top: none;
-      overflow: hidden;
-    }
-
-    /* CTA row */
-    .footer-cta {
+      overflow-x: hidden;
+      overflow-y: visible;
+      padding-bottom: 2.75rem;
       position: relative;
-      overflow: hidden;
-      border-bottom: 1px solid rgba(0,0,0,0.07);
+      z-index: 3;
     }
 
-    .footer-cta-left {
-      position: relative;
-      z-index: 2;
-      padding: 7rem 3rem 5rem;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-      gap: 0;
-    }
-
-    .footer-cta-kicker {
-      font-family: var(--sans);
-      font-size: 0.62rem;
-      font-weight: 200;
-      letter-spacing: 0.22em;
-      text-transform: uppercase;
-      color: var(--pink);
-      margin-bottom: 1rem;
-    }
-
-    .footer-cta-headline {
-      font-family: var(--serif);
-      font-size: clamp(1.8rem, 3.5vw, 3.2rem);
-      font-weight: 400;
-      letter-spacing: -0.08em;
-      line-height: 0.88;
-      color: rgba(0,0,0,0.85);
-    }
-
-    .footer-cta-sub {
-      font-family: var(--serif);
-      font-size: clamp(1.2rem, 2.5vw, 2.2rem);
-      font-style: normal;
-      font-weight: 400;
-      letter-spacing: -0.08em;
-      color: rgba(0,0,0,0.38);
-      margin-top: -0.4rem;
-    }
-
-    .footer-cta-sub .plot-word {
-      font-family: 'Poiret One', sans-serif;
-      letter-spacing: -0.02em;
-      font-size: 1.4em;
-      line-height: 0.8;
-      vertical-align: middle;
-    }
-
-    .footer-cta-action {
-      margin-top: 1.6rem;
-    }
-
-    .footer-cta-right {
+    footer::before {
+      content: '';
       position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-      z-index: 1;
+      top: -42rem;
+      left: 0;
+      right: 0;
+      height: 42rem;
+      background: linear-gradient(to bottom,
+        rgba(12,12,12,0)    0%,
+        rgba(12,12,12,0.01) 18%,
+        rgba(12,12,12,0.04) 32%,
+        rgba(12,12,12,0.12) 48%,
+        rgba(12,12,12,0.35) 63%,
+        rgba(12,12,12,0.68) 78%,
+        rgba(12,12,12,0.90) 90%,
+        rgba(12,12,12,1)   100%
+      );
+      pointer-events: none;
+      z-index: 10;
     }
 
-    .footer-wordmark {
-      font-family: 'Poiret One', sans-serif;
-      font-size: clamp(12rem, 30vw, 32rem);
+    .footer-wm {
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-size: clamp(38vw, 52vw, 66vw);
       font-weight: 400;
-      letter-spacing: -0.03em;
-      text-transform: uppercase;
-      color: rgba(0,0,0,0.055);
+      font-style: normal;
+      letter-spacing: -0.01em;
       line-height: 0.82;
-      display: block;
+      color: #1c1c1c;
+      text-align: center;
       user-select: none;
-      white-space: nowrap;
-      padding-bottom: 0;
+      padding-top: 10rem;
     }
 
     /* Meta bar */
     .footer-meta {
-      position: relative;
       display: flex;
       align-items: center;
-      gap: 2rem;
-      padding: 1.4rem 3rem;
+      justify-content: space-between;
+      padding: 2rem 3rem 3rem;
+      flex-wrap: wrap;
+      gap: 1rem;
     }
 
-    .footer-meta .footer-links {
-      margin-left: auto;
-    }
-
-    .footer-copy {
-      color: rgba(0,0,0,0.25);
-      font-size: 0.7rem;
-    }
-
-    .footer-tagline {
-      font-family: var(--sans);
+    .footer-tag {
       font-size: 0.68rem;
+      font-weight: 500;
       letter-spacing: 0.12em;
-      color: rgba(0,0,0,0.3);
       text-transform: uppercase;
-      position: absolute;
-      left: 50%;
-      transform: translateX(-50%);
+      color: rgba(240,239,232,0.22);
     }
 
     .footer-links {
       display: flex;
-      gap: 1.8rem;
+      gap: 2rem;
       list-style: none;
     }
+
     .footer-links a {
       text-decoration: none;
-      color: rgba(0,0,0,0.3);
-      font-size: 0.74rem;
-      font-weight: 200;
-      letter-spacing: 0.05em;
+      color: rgba(240,239,232,0.22);
+      font-size: 0.78rem;
+      font-weight: 400;
       transition: color 0.2s;
+      white-space: nowrap;
     }
-    .footer-links a:hover { color: rgba(0,0,0,0.85); }
 
-    .btn-footer {
-      background: transparent;
-      color: var(--pink);
-      border: 1px solid var(--pink);
-    }
-    .btn-footer:hover {
-      background: var(--pink);
-      color: #fff;
-      transform: translateY(-1px);
+    .footer-links a:hover { color: rgba(240,239,232,0.65); }
+
+    .footer-copy {
+      font-size: 0.72rem;
+      color: rgba(240,239,232,0.13);
     }
 
 
@@ -974,7 +919,7 @@
         font-family: var(--serif);
         font-size: clamp(1.6rem, 7vw, 2.2rem);
         font-weight: 400;
-        letter-spacing: -0.05em;
+        letter-spacing: -0.02em;
         line-height: 1.1;
         color: var(--text);
         opacity: 0;
@@ -1089,12 +1034,759 @@
       }
 
       /* Footer */
-      .footer-cta { grid-template-columns: 1fr; }
-      .footer-cta-right { display: none; }
-      .footer-cta-left { padding: 3rem 1.5rem 2rem; }
-      .footer-meta { padding: 1.2rem 1.5rem; flex-wrap: wrap; gap: 1rem; }
+      .footer-meta { padding: 1.5rem; flex-wrap: wrap; gap: 1rem; }
       .footer-links { gap: 1rem; flex-wrap: wrap; }
-      .footer-copy { margin-left: 0; }
+      .footer-tag { display: none; }
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       DEMO SECTIONS — Guide, My Lists, Calendar
+    ═══════════════════════════════════════════════════════════ */
+
+    /* Shared dark section base */
+    .section-dark {
+      background: var(--dark);
+      color: var(--text-dark);
+    }
+
+    /* Section eyebrow label */
+    .section-eyebrow {
+      display: block;
+      font-size: 0.62rem;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(240,239,232,0.4);
+      margin-bottom: 1.4rem;
+    }
+
+    /* Demo split layout */
+    .demo-split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5rem;
+      align-items: center;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .demo-copy { position: sticky; top: 10rem; }
+    .demo-headline {
+      font-family: var(--serif);
+      font-size: clamp(2.2rem, 4.5vw, 4rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 0.92;
+      margin-bottom: 1.8rem;
+      color: var(--text-dark);
+    }
+    .demo-headline em { font-style: normal; font-weight: 400; }
+    .demo-body {
+      font-size: 0.88rem;
+      color: rgba(240,239,232,0.5);
+      line-height: 1.85;
+      max-width: 380px;
+    }
+    .demo-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      margin-top: 2.2rem;
+      font-size: 0.82rem;
+      color: var(--text-dark);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(240,239,232,0.25);
+      padding-bottom: 2px;
+      transition: border-color 0.2s;
+    }
+    .demo-link:hover { border-color: var(--text-dark); }
+    .demo-link.dark-link {
+      color: var(--text);
+      border-bottom-color: rgba(26,26,26,0.2);
+    }
+    .demo-link.dark-link:hover { border-bottom-color: var(--text); }
+    .phone-wrap { display: flex; justify-content: center; }
+
+    /* Phone frame */
+    .phone-frame {
+      width: 320px;
+      height: 600px;
+      background: #111;
+      border-radius: 36px;
+      border: 1.5px solid rgba(255,255,255,0.1);
+      box-shadow:
+        0 0 0 6px #1a1a1a,
+        0 40px 100px rgba(0,0,0,0.7),
+        inset 0 1px 0 rgba(255,255,255,0.06);
+      overflow: hidden;
+      position: relative;
+      flex-shrink: 0;
+    }
+    .phone-frame.light-frame {
+      background: #f4f4f0;
+      border-color: rgba(0,0,0,0.1);
+      box-shadow:
+        0 0 0 6px #e0e0dc,
+        0 40px 100px rgba(0,0,0,0.16),
+        inset 0 1px 0 rgba(255,255,255,0.7);
+    }
+
+    /* App chrome */
+    .demo-app-bar {
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      flex-shrink: 0;
+    }
+    .demo-app-bar.light-bar {
+      border-bottom-color: rgba(0,0,0,0.07);
+      background: #f4f4f0;
+    }
+    .demo-app-bar-title {
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-size: 1.1rem;
+      font-weight: 400;
+      letter-spacing: -0.01em;
+      color: #f0efe8;
+    }
+    .demo-app-bar-title.dark-title {
+      font-family: 'DM Sans', system-ui, sans-serif;
+      font-size: 0.95rem;
+      font-weight: 500;
+      letter-spacing: 0.01em;
+      color: #1a1a1a;
+    }
+    .demo-app-icon { color: rgba(240,239,232,0.4); font-size: 1rem; }
+    .demo-app-icon.dark-icon { color: #888; }
+    .demo-tab-bar {
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      flex-shrink: 0;
+    }
+    .demo-tab-bar.light-tabs { border-top-color: rgba(0,0,0,0.07); background: #f4f4f0; }
+    .demo-tab-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      padding: 6px 10px;
+    }
+    .demo-tab-icon { font-size: 0.9rem; opacity: 0.35; }
+    .demo-tab-label { font-size: 0.46rem; font-weight: 500; letter-spacing: 0.04em; color: rgba(240,239,232,0.4); }
+    .demo-tab-item.tab-active .demo-tab-icon { opacity: 1; }
+    .demo-tab-item.tab-active .demo-tab-label { color: #f0efe8; }
+    .demo-tab-item.tab-active-l .demo-tab-icon { opacity: 1; }
+    .demo-tab-item.tab-active-l .demo-tab-label { color: #1a1a1a; }
+
+    /* Guide screen */
+    #guide-demo { background: var(--dark); padding: 10rem 2rem; }
+    .guide-screen {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+    }
+    .guide-date-hdr {
+      padding: 9px 14px 6px;
+      font-size: 0.58rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(240,239,232,0.35);
+    }
+    .guide-cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 5px;
+      padding: 0 10px;
+      flex: 1;
+      overflow: hidden;
+    }
+    .guide-card {
+      border-radius: 8px;
+      overflow: hidden;
+      position: relative;
+      background: #1c1c1c;
+      aspect-ratio: 2/3;
+    }
+    .guide-card-bg {
+      position: absolute;
+      inset: 0;
+      background-size: cover;
+      background-position: center;
+    }
+    .guide-card-grad {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(0,0,0,0.72) 0%, transparent 55%);
+    }
+    .guide-badge {
+      position: absolute;
+      top: 5px; left: 5px;
+      padding: 2px 5px;
+      border-radius: 4px;
+      font-size: 0.5rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .badge-movie { background: rgba(40,40,40,0.85); color: rgba(240,239,232,0.75); }
+    .badge-tv    { background: var(--episode); color: #fff; }
+    .guide-bk {
+      position: absolute;
+      bottom: 5px; right: 5px;
+      width: 22px; height: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.55);
+      backdrop-filter: blur(4px);
+    }
+    .guide-bk svg { width: 10px; height: 10px; }
+    .bk-path { fill: none; stroke: rgba(240,239,232,0.8); stroke-width: 1.5; }
+    .guide-stream {
+      position: absolute;
+      bottom: 5px; left: 5px;
+      font-size: 0.46rem;
+      font-weight: 600;
+      color: rgba(240,239,232,0.5);
+      letter-spacing: 0.04em;
+    }
+    .phone-frame.animating .anim-bk .bk-path { animation: bk-fill 4s linear infinite; }
+    .phone-frame.animating .anim-bk { animation: bk-bg 4s linear infinite; }
+    @keyframes bk-fill {
+      0%,43%  { fill: none; stroke: rgba(240,239,232,0.8); }
+      44%     { fill: var(--pink); stroke: var(--pink); }
+      100%    { fill: var(--pink); stroke: var(--pink); }
+    }
+    @keyframes bk-bg {
+      0%,43%  { background: rgba(0,0,0,0.55); }
+      44%     { background: rgba(224,85,120,0.22); }
+      100%    { background: rgba(224,85,120,0.22); }
+    }
+    .demo-toast {
+      position: absolute;
+      bottom: 58px; left: 10px; right: 10px;
+      background: #1e1e1e;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.6rem;
+      color: #f0efe8;
+      opacity: 0;
+      transform: translateY(8px);
+      pointer-events: none;
+      z-index: 10;
+    }
+    .toast-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--pink); flex-shrink: 0; }
+    .phone-frame.animating .guide-toast { animation: toast-pop 4s linear infinite; }
+    @keyframes toast-pop {
+      0%,49%   { opacity: 0; transform: translateY(8px); }
+      55%      { opacity: 1; transform: translateY(0); }
+      79%      { opacity: 1; transform: translateY(0); }
+      87%      { opacity: 0; transform: translateY(8px); }
+      100%     { opacity: 0; transform: translateY(8px); }
+    }
+
+    /* Mock cursor */
+    .mock-cursor {
+      position: absolute;
+      width: 18px; height: 18px;
+      pointer-events: none;
+      z-index: 20;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .mock-cursor.visible { opacity: 1; }
+    .mock-cursor svg { width: 18px; height: 18px; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.5)); }
+    .guide-mc { animation: guide-mc 4s ease-in-out infinite; animation-play-state: paused; }
+    .phone-frame.animating .guide-mc { animation-play-state: running; }
+    @keyframes guide-mc {
+      0%   { top: 60%; left: 110%; opacity: 0; }
+      8%   { top: 60%; left: 110%; opacity: 0; }
+      22%  { top: 37%; left: 74%; opacity: 1; transform: scale(1); }
+      38%  { top: 37%; left: 74%; transform: scale(1); }
+      42%  { top: 37%; left: 74%; transform: scale(0.8); }
+      46%  { top: 37%; left: 74%; transform: scale(1); opacity: 1; }
+      70%  { top: 37%; left: 74%; opacity: 1; }
+      80%  { top: 37%; left: 74%; opacity: 0; }
+      100% { top: 37%; left: 74%; opacity: 0; }
+    }
+
+    /* My Lists screen */
+    #lists-demo { background: #f4f4f0; padding: 10rem 2rem; }
+    .lists-screen {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+      background: #f4f4f0;
+    }
+    .lists-tabs {
+      display: flex;
+      gap: 5px;
+      padding: 8px 10px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      border-bottom: 1px solid rgba(0,0,0,0.07);
+      flex-shrink: 0;
+    }
+    .lists-tabs::-webkit-scrollbar { display: none; }
+    .l-tab {
+      padding: 3px 9px;
+      border-radius: 9999px;
+      font-size: 0.55rem;
+      font-weight: 500;
+      white-space: nowrap;
+      color: #777;
+      background: transparent;
+      border: 1px solid rgba(0,0,0,0.1);
+      transition: background 0.25s, color 0.25s;
+    }
+    .l-tab.active { background: #1a1a1a; color: #f4f4f0; border-color: #1a1a1a; }
+    .top10-panel {
+      flex: 1;
+      overflow: hidden;
+      padding: 7px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .top10-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 0;
+      border-bottom: 1px solid rgba(0,0,0,0.05);
+      opacity: 0;
+      transform: translateX(-6px);
+      transition: opacity 0.35s cubic-bezier(0.23,1,0.32,1), transform 0.35s cubic-bezier(0.23,1,0.32,1);
+    }
+    .top10-row.show { opacity: 1; transform: none; }
+    .top10-num {
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-size: 1rem;
+      font-weight: 400;
+      color: rgba(26,26,26,0.22);
+      width: 18px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+    .top10-img {
+      width: 26px; height: 39px;
+      border-radius: 4px;
+      background-size: cover;
+      background-position: center;
+      background-color: #ccc;
+      flex-shrink: 0;
+    }
+    .top10-name { font-size: 0.6rem; font-weight: 500; color: #1a1a1a; }
+    .favs-panel {
+      flex: 1;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 5px;
+      padding: 8px 10px;
+      overflow: hidden;
+      display: none;
+    }
+    .fav-cell {
+      border-radius: 6px;
+      background-size: cover;
+      background-position: center;
+      background-color: #ccc;
+      aspect-ratio: 2/3;
+      position: relative;
+      overflow: hidden;
+      opacity: 0;
+      transform: scale(0.9);
+      transition: opacity 0.35s cubic-bezier(0.23,1,0.32,1), transform 0.35s cubic-bezier(0.23,1,0.32,1);
+    }
+    .fav-cell.show { opacity: 1; transform: scale(1); }
+    .fav-h {
+      position: absolute;
+      bottom: 4px; right: 5px;
+      font-size: 0.72rem;
+      line-height: 1;
+      transition: transform 0.25s cubic-bezier(0.23,1,0.32,1);
+    }
+    .fav-h.on  { color: #e05578; }
+    .fav-h.off { color: rgba(255,255,255,0.55); }
+    .lists-mc { top: 13%; left: -12%; animation: lists-mc 5.5s ease-in-out infinite; animation-play-state: paused; }
+    .phone-frame.animating .lists-mc { animation-play-state: running; }
+    @keyframes lists-mc {
+      0%   { top: 13%; left: -12%; opacity: 0; }
+      6%   { top: 13%; left: 37%; opacity: 1; transform: scale(1); }
+      10%  { top: 13%; left: 37%; transform: scale(0.82); }
+      14%  { top: 13%; left: 37%; transform: scale(1); opacity: 1; }
+      30%  { top: 13%; left: 37%; opacity: 1; }
+      38%  { top: 13%; left: 54%; opacity: 1; transform: scale(1); }
+      42%  { top: 13%; left: 54%; transform: scale(0.82); }
+      46%  { top: 13%; left: 54%; transform: scale(1); opacity: 1; }
+      65%  { top: 13%; left: 54%; opacity: 1; }
+      74%  { top: 44%; left: 43%; opacity: 1; transform: scale(1); }
+      78%  { top: 44%; left: 43%; transform: scale(0.82); }
+      82%  { top: 44%; left: 43%; transform: scale(1); opacity: 1; }
+      93%  { top: 44%; left: 43%; opacity: 1; }
+      99%  { top: 44%; left: 43%; opacity: 0; }
+      100% { top: 13%; left: -12%; opacity: 0; }
+    }
+
+    /* Calendar */
+    #calendar-demo { background: var(--dark); padding: 10rem 2rem 12rem; text-align: center; }
+    .cal-headline {
+      font-family: var(--serif);
+      font-size: clamp(3rem, 6.5vw, 7rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 0.88;
+      color: var(--text-dark);
+      margin-bottom: 1.5rem;
+    }
+    .cal-headline em { font-style: normal; }
+    .cal-sub {
+      font-size: 0.88rem;
+      color: rgba(240,239,232,0.45);
+      max-width: 440px;
+      margin: 0 auto 5rem;
+      line-height: 1.85;
+    }
+    .cal-mockup {
+      max-width: 560px;
+      margin: 0 auto;
+      background: #141414;
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 40px 100px rgba(0,0,0,0.6);
+      position: relative;
+    }
+    .cal-hdr {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .cal-month {
+      font-family: var(--serif);
+      font-size: 1.15rem;
+      font-weight: 400;
+      color: var(--text-dark);
+      letter-spacing: -0.02em;
+    }
+    .cal-nav {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: transparent;
+      color: rgba(240,239,232,0.45);
+      font-size: 0.8rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .cal-wdays { display: grid; grid-template-columns: repeat(7, 1fr); padding: 8px 12px 4px; }
+    .cal-wd {
+      text-align: center;
+      font-size: 0.56rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(240,239,232,0.35);
+    }
+    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; padding: 0 12px 12px; }
+    .cal-cell {
+      aspect-ratio: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 4px 2px 2px;
+      border-radius: 8px;
+      position: relative;
+    }
+    .cal-dn {
+      font-size: 0.6rem;
+      font-weight: 400;
+      color: var(--text-dark);
+      line-height: 1;
+      margin-bottom: 2px;
+      min-width: 20px;
+      text-align: center;
+    }
+    .cal-cell.dim .cal-dn { color: rgba(240,239,232,0.18); }
+    .cal-cell.today .cal-dn {
+      background: var(--text-dark);
+      color: var(--dark);
+      border-radius: 50%;
+      width: 20px; height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .cal-cell.sel { background: rgba(255,255,255,0.06); box-shadow: 0 0 0 1.5px rgba(255,255,255,0.14); border-radius: 8px; }
+    .cdots { display: flex; gap: 2px; flex-wrap: wrap; justify-content: center; }
+    .cdot { width: 4px; height: 4px; border-radius: 50%; }
+    .ce { background: var(--episode); }
+    .cc { background: var(--pink); }
+    .cs { background: var(--streaming); }
+    .cr { background: var(--reminder); }
+    .ev-card {
+      margin: 0 12px 10px;
+      background: #1e1e1e;
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 12px;
+      padding: 10px 12px;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      opacity: 0;
+      transform: translateY(-6px);
+      transition: opacity 0.4s cubic-bezier(0.23,1,0.32,1), transform 0.4s cubic-bezier(0.23,1,0.32,1);
+    }
+    .ev-card.show { opacity: 1; transform: none; }
+    .ev-poster { width: 34px; height: 51px; border-radius: 5px; background-size: cover; background-position: center; background-color: #333; flex-shrink: 0; }
+    .ev-title { font-size: 0.68rem; font-weight: 500; color: var(--text-dark); margin-bottom: 3px; }
+    .ev-meta  { font-size: 0.58rem; color: rgba(240,239,232,0.45); margin-bottom: 5px; }
+    .ev-pill { display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; border-radius: 4px; font-size: 0.52rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+    .cinema-pill    { background: rgba(224,85,120,0.18); color: var(--pink); }
+    .streaming-pill { background: rgba(58,158,106,0.18); color: var(--streaming); }
+    .cal-legend { display: flex; justify-content: center; gap: 1.5rem; margin-top: 2.5rem; flex-wrap: wrap; }
+    .leg-item { display: flex; align-items: center; gap: 6px; font-size: 0.72rem; color: rgba(240,239,232,0.45); }
+    .leg-dot  { width: 8px; height: 8px; border-radius: 50%; }
+    .cal-mc { animation: cal-mc 5s ease-in-out infinite; animation-play-state: paused; }
+    .cal-mockup.animating .cal-mc { animation-play-state: running; }
+    @keyframes cal-mc {
+      0%   { top: 28%; left: -8%; opacity: 0; }
+      8%   { top: 41%; left: 35%; opacity: 1; transform: scale(1); }
+      14%  { top: 41%; left: 35%; transform: scale(0.82); }
+      18%  { top: 41%; left: 35%; transform: scale(1); opacity: 1; }
+      42%  { top: 41%; left: 35%; opacity: 1; }
+      50%  { top: 53%; left: 60%; opacity: 1; transform: scale(1); }
+      56%  { top: 53%; left: 60%; transform: scale(0.82); }
+      60%  { top: 53%; left: 60%; transform: scale(1); opacity: 1; }
+      86%  { top: 53%; left: 60%; opacity: 1; }
+      94%  { top: 53%; left: 60%; opacity: 0; }
+      100% { top: 28%; left: -8%; opacity: 0; }
+    }
+
+    @media (max-width: 900px) {
+      .demo-split { grid-template-columns: 1fr; gap: 3.5rem; }
+      .demo-copy { position: static; order: 1 !important; }
+      .phone-wrap { order: 2 !important; }
+      .phone-frame { width: 280px; height: 520px; }
+    }
+
+    /* ── Interactive Calendar Demo ──────────────────────────────── */
+    .cal-interactive {
+      display: grid;
+      grid-template-columns: 1fr 1.15fr;
+      gap: 1.5rem;
+      max-width: 1060px;
+      margin: 3rem auto 0;
+      align-items: stretch;
+    }
+
+    /* Guide panel */
+    .guide-panel {
+      background: #141414;
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 20px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .guide-hdr {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 18px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      flex-shrink: 0;
+    }
+    .guide-hdr-title {
+      font-size: 0.67rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: rgba(240,239,232,0.45);
+    }
+    .guide-hdr-hint {
+      font-size: 0.62rem;
+      color: rgba(240,239,232,0.22);
+    }
+    .guide-list { flex: 1; overflow-y: hidden; }
+    .guide-item {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      padding: 10px 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      transition: background 0.15s;
+    }
+    .guide-item:hover { background: rgba(255,255,255,0.03); }
+    .guide-item:last-child { border-bottom: none; }
+    .guide-poster {
+      width: 38px;
+      height: 54px;
+      border-radius: 5px;
+      background: #222 center/cover no-repeat;
+      flex-shrink: 0;
+    }
+    .guide-info { flex: 1; min-width: 0; }
+    .guide-item-title {
+      font-size: 0.84rem;
+      font-weight: 500;
+      color: var(--text-dark);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 2px;
+    }
+    .guide-item-meta {
+      font-size: 0.67rem;
+      color: rgba(240,239,232,0.35);
+      margin-bottom: 4px;
+    }
+    .guide-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 0.57rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .guide-badge.cinema    { background: rgba(224,85,120,0.14); color: #e05578; }
+    .guide-badge.streaming { background: rgba(58,158,106,0.14); color: #3a9e6a; }
+    .guide-badge.episode   { background: rgba(74,144,217,0.14); color: #4a90d9; }
+    .guide-add-btn {
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(255,255,255,0.14);
+      background: transparent;
+      color: rgba(240,239,232,0.45);
+      font-size: 1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.18s;
+      line-height: 1;
+    }
+    .guide-add-btn:hover { border-color: #e05578; color: #e05578; background: rgba(224,85,120,0.08); }
+    .guide-add-btn.added  { border-color: #3a9e6a; color: #3a9e6a; background: rgba(58,158,106,0.12); }
+
+    /* Interactive calendar mockup */
+    .cal-mockup-int {
+      background: #141414;
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+    }
+    .cal-grid-int {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      padding: 4px 8px 8px;
+      gap: 2px;
+    }
+    .cal-cell-int {
+      border-radius: 7px;
+      padding: 5px 2px 4px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      transition: background 0.15s;
+      min-height: 46px;
+    }
+    .cal-cell-int:hover:not(.dim) { background: rgba(255,255,255,0.06); }
+    .cal-cell-int.dim  { opacity: 0.28; pointer-events: none; }
+    .cal-cell-int.selected { background: rgba(255,255,255,0.09); }
+    .cal-cell-int.today .cal-dn-int {
+      background: rgba(240,239,232,0.92);
+      color: #0c0c0c;
+      border-radius: 50%;
+      width: 22px; height: 22px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .cal-dn-int {
+      font-size: 0.7rem;
+      color: rgba(240,239,232,0.6);
+      width: 22px; height: 22px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .cal-dots-int { display: flex; gap: 2px; flex-wrap: wrap; justify-content: center; }
+    .cal-dot-int  { width: 4px; height: 4px; border-radius: 50%; }
+
+    /* Day events panel */
+    .cal-day-panel {
+      border-top: 1px solid rgba(255,255,255,0.06);
+      padding: 12px 14px;
+      min-height: 64px;
+    }
+    .cal-day-empty {
+      font-size: 0.7rem;
+      color: rgba(240,239,232,0.2);
+      text-align: center;
+      padding: 8px 0;
+    }
+    .cal-day-event {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 7px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .cal-day-event:last-child { border-bottom: none; }
+    .cal-day-poster {
+      width: 28px; height: 40px;
+      border-radius: 4px;
+      background: #222 center/cover no-repeat;
+      flex-shrink: 0;
+    }
+    .cal-day-title { font-size: 0.8rem; font-weight: 500; color: var(--text-dark); }
+    .cal-day-meta  { font-size: 0.63rem; color: rgba(240,239,232,0.32); margin-top: 2px; }
+
+    /* Toast */
+    .cal-toast {
+      position: fixed;
+      bottom: 5rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(16px);
+      background: #1d1d1d;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 9px 16px 9px 12px;
+      font-size: 0.78rem;
+      color: var(--text-dark);
+      opacity: 0;
+      transition: opacity 0.28s ease, transform 0.28s cubic-bezier(0.23,1,0.32,1);
+      pointer-events: none;
+      z-index: 200;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .cal-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    @media (max-width: 800px) {
+      .cal-interactive { grid-template-columns: 1fr; }
     }
   </style>
   <link rel="preload" as="image" href="images/hero/saltburn.webp" />
@@ -1158,7 +1850,7 @@
     <p class="manifesto-line reveal">You talk about them.</p>
     <p class="manifesto-line reveal">You carry them with you.</p>
     <p class="manifesto-line reveal">But no app has ever cared<br>as much as you do.</p>
-    <p class="manifesto-line no-fade reveal" id="plotDoes"><span style="font-family:'Poiret One',sans-serif;font-weight:400;">PLOT</span> <em>does.</em></p>
+    <p class="manifesto-line no-fade reveal" id="plotDoes"><span style="font-family:'Instrument Serif',Georgia,serif;font-weight:400;">PLOT</span> <em>does.</em></p>
     <div class="manifesto-seq">
       <div class="mseq-stage">
         <div class="mseq-line active">You don't just watch things.</div>
@@ -1166,7 +1858,7 @@
         <div class="mseq-line">You talk about them.</div>
         <div class="mseq-line">You carry them with you.</div>
         <div class="mseq-line">But no app has ever cared<br>as much as you do.</div>
-        <div class="mseq-line"><span style="font-family:'Poiret One',sans-serif;font-weight:400;">PLOT</span> does.</div>
+        <div class="mseq-line"><span style="font-family:'Instrument Serif',Georgia,serif;font-weight:400;">PLOT</span> does.</div>
       </div>
       <div class="mseq-dots">
         <span class="mseq-dot active"></span>
@@ -1179,6 +1871,105 @@
     </div>
   </section>
 
+
+  <!-- ── Guide Demo ───────────────────────────────────────────── -->
+  <section id="guide-demo">
+    <div class="demo-split">
+      <div class="demo-copy reveal">
+        <span class="section-eyebrow">The Guide</span>
+        <h2 class="demo-headline">Everything new.<br><em>In one place.</em></h2>
+        <p class="demo-body">
+          Theatrical releases, streaming premieres, new episodes — all on the same screen.
+          PLOT pulls together what's dropping today, this week, and what's on its way,
+          so you never have to check five different apps to find out where to watch it.
+        </p>
+        <a href="https://app.theplot.tv/signup" class="demo-link">See what's on tonight &rarr;</a>
+      </div>
+      <div class="phone-wrap reveal">
+        <div class="phone-frame" id="guideFrame">
+          <div class="guide-screen">
+            <div class="demo-app-bar">
+              <span class="demo-app-icon">&#9776;</span>
+              <span class="demo-app-bar-title">PLOT</span>
+              <span class="demo-app-icon">&#128269;</span>
+            </div>
+            <div class="guide-date-hdr">Today &mdash; May 25</div>
+            <div class="guide-cards">
+              <div class="guide-card">
+                <div class="guide-card-bg" style="background-image:url('images/hero/saltburn.webp')"></div>
+                <div class="guide-card-grad"></div>
+                <div class="guide-badge badge-movie">Movie</div>
+                <div class="guide-stream">PRIME</div>
+                <div class="guide-bk anim-bk" id="gBk">
+                  <svg viewBox="0 0 12 14" fill="none"><path class="bk-path" d="M1 1h10v12l-5-3-5 3V1z"/></svg>
+                </div>
+              </div>
+              <div class="guide-card">
+                <div class="guide-card-bg" style="background-image:url('images/hero/nosferatu.webp')"></div>
+                <div class="guide-card-grad"></div>
+                <div class="guide-badge badge-movie">Movie</div>
+                <div class="guide-stream">MAX</div>
+                <div class="guide-bk">
+                  <svg viewBox="0 0 12 14" fill="none"><path class="bk-path" d="M1 1h10v12l-5-3-5 3V1z"/></svg>
+                </div>
+              </div>
+              <div class="guide-card">
+                <div class="guide-card-bg" style="background-image:url('images/hero/the-substance.webp')"></div>
+                <div class="guide-card-grad"></div>
+                <div class="guide-badge badge-tv">TV</div>
+                <div class="guide-stream">MUBI</div>
+                <div class="guide-bk">
+                  <svg viewBox="0 0 12 14" fill="none"><path class="bk-path" d="M1 1h10v12l-5-3-5 3V1z"/></svg>
+                </div>
+              </div>
+              <div class="guide-card">
+                <div class="guide-card-bg" style="background-image:url('images/hero/sinners.webp')"></div>
+                <div class="guide-card-grad"></div>
+                <div class="guide-badge badge-movie">Movie</div>
+                <div class="guide-stream">A24</div>
+                <div class="guide-bk">
+                  <svg viewBox="0 0 12 14" fill="none"><path class="bk-path" d="M1 1h10v12l-5-3-5 3V1z"/></svg>
+                </div>
+              </div>
+              <div class="guide-card">
+                <div class="guide-card-bg" style="background-image:url('images/hero/babygirl.webp')"></div>
+                <div class="guide-card-grad"></div>
+                <div class="guide-badge badge-movie">Movie</div>
+                <div class="guide-stream">NFLX</div>
+                <div class="guide-bk">
+                  <svg viewBox="0 0 12 14" fill="none"><path class="bk-path" d="M1 1h10v12l-5-3-5 3V1z"/></svg>
+                </div>
+              </div>
+              <div class="guide-card">
+                <div class="guide-card-bg" style="background-image:url('images/hero/wuthering-heights.webp')"></div>
+                <div class="guide-card-grad"></div>
+                <div class="guide-badge badge-movie">Movie</div>
+                <div class="guide-stream">HULU</div>
+                <div class="guide-bk">
+                  <svg viewBox="0 0 12 14" fill="none"><path class="bk-path" d="M1 1h10v12l-5-3-5 3V1z"/></svg>
+                </div>
+              </div>
+            </div>
+            <div class="demo-toast guide-toast">
+              <div class="toast-dot"></div>
+              Saved to Want to Watch
+            </div>
+            <div class="demo-tab-bar">
+              <div class="demo-tab-item tab-active"><span class="demo-tab-icon">&#8962;</span><span class="demo-tab-label">Home</span></div>
+              <div class="demo-tab-item"><span class="demo-tab-icon">&#9633;</span><span class="demo-tab-label">Calendar</span></div>
+              <div class="demo-tab-item"><span class="demo-tab-icon">&#9776;</span><span class="demo-tab-label">My Lists</span></div>
+              <div class="demo-tab-item"><span class="demo-tab-icon">&#9711;</span><span class="demo-tab-label">History</span></div>
+            </div>
+          </div>
+          <div class="mock-cursor guide-mc" id="guideMC">
+            <svg viewBox="0 0 18 20" fill="none">
+              <path d="M2 2l14 8-8 1.5-3.5 8z" fill="white" stroke="rgba(0,0,0,0.35)" stroke-width="0.8"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
   <!-- ── Features ─────────────────────────────────────────────── -->
   <section id="features">
     <div class="features-header reveal">
@@ -1223,6 +2014,68 @@
     </div>
   </section>
 
+
+  <!-- ── My Lists Demo ────────────────────────────────────────── -->
+  <section id="lists-demo">
+    <div class="demo-split">
+      <div class="phone-wrap reveal">
+        <div class="phone-frame light-frame" id="listsFrame">
+          <div class="lists-screen">
+            <div class="demo-app-bar light-bar">
+              <span class="demo-app-icon dark-icon">&#8592;</span>
+              <span class="demo-app-bar-title dark-title">My Lists</span>
+              <span class="demo-app-icon dark-icon">&#8943;</span>
+            </div>
+            <div class="lists-tabs">
+              <div class="l-tab">All</div>
+              <div class="l-tab">Watching</div>
+              <div class="l-tab">Want to Watch</div>
+              <div class="l-tab active" id="lTabTop10">Top 10</div>
+              <div class="l-tab" id="lTabFavs">Favorites</div>
+              <div class="l-tab">Lists</div>
+            </div>
+            <div class="top10-panel" id="top10Panel">
+              <div class="top10-row" style="transition-delay:.04s"><span class="top10-num">1</span><div class="top10-img" style="background-image:url('images/hero/saltburn.webp')"></div><span class="top10-name">Saltburn</span></div>
+              <div class="top10-row" style="transition-delay:.09s"><span class="top10-num">2</span><div class="top10-img" style="background-image:url('images/hero/past-lives.webp')"></div><span class="top10-name">Past Lives</span></div>
+              <div class="top10-row" style="transition-delay:.14s"><span class="top10-num">3</span><div class="top10-img" style="background-image:url('images/hero/aftersun.webp')"></div><span class="top10-name">Aftersun</span></div>
+              <div class="top10-row" style="transition-delay:.19s"><span class="top10-num">4</span><div class="top10-img" style="background-image:url('images/timeline/adolescence.jpg')"></div><span class="top10-name">Adolescence</span></div>
+              <div class="top10-row" style="transition-delay:.24s"><span class="top10-num">5</span><div class="top10-img" style="background-image:url('images/hero/the-substance.webp')"></div><span class="top10-name">The Substance</span></div>
+              <div class="top10-row" style="transition-delay:.29s"><span class="top10-num">6</span><div class="top10-img" style="background-image:url('images/hero/nosferatu.webp')"></div><span class="top10-name">Nosferatu</span></div>
+              <div class="top10-row" style="transition-delay:.34s"><span class="top10-num">7</span><div class="top10-img" style="background-image:url('images/hero/sinners.webp')"></div><span class="top10-name">Sinners</span></div>
+            </div>
+            <div class="favs-panel" id="favsPanel">
+              <div class="fav-cell" style="background-image:url('images/hero/saltburn.webp');transition-delay:.03s"><div class="fav-h on" id="fh1">&#9829;</div></div>
+              <div class="fav-cell" style="background-image:url('images/hero/aftersun.webp');transition-delay:.07s"><div class="fav-h on">&#9829;</div></div>
+              <div class="fav-cell" style="background-image:url('images/hero/past-lives.webp');transition-delay:.11s"><div class="fav-h on">&#9829;</div></div>
+              <div class="fav-cell" style="background-image:url('images/hero/nosferatu.webp');transition-delay:.15s"><div class="fav-h off">&#9825;</div></div>
+              <div class="fav-cell" style="background-image:url('images/hero/the-substance.webp');transition-delay:.19s"><div class="fav-h off">&#9825;</div></div>
+              <div class="fav-cell" style="background-image:url('images/hero/sinners.webp');transition-delay:.23s"><div class="fav-h off">&#9825;</div></div>
+            </div>
+            <div class="demo-tab-bar light-tabs">
+              <div class="demo-tab-item"><span class="demo-tab-icon" style="color:#888;opacity:1">&#8962;</span><span class="demo-tab-label" style="color:#888">Home</span></div>
+              <div class="demo-tab-item"><span class="demo-tab-icon" style="color:#888;opacity:1">&#9633;</span><span class="demo-tab-label" style="color:#888">Calendar</span></div>
+              <div class="demo-tab-item tab-active-l"><span class="demo-tab-icon" style="color:#1a1a1a;opacity:1">&#9776;</span><span class="demo-tab-label" style="color:#1a1a1a">My Lists</span></div>
+              <div class="demo-tab-item"><span class="demo-tab-icon" style="color:#888;opacity:1">&#9711;</span><span class="demo-tab-label" style="color:#888">History</span></div>
+            </div>
+          </div>
+          <div class="mock-cursor lists-mc" id="listsMC">
+            <svg viewBox="0 0 18 20" fill="none">
+              <path d="M2 2l14 8-8 1.5-3.5 8z" fill="#1a1a1a" stroke="rgba(255,255,255,0.25)" stroke-width="0.8"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+      <div class="demo-copy reveal">
+        <span class="section-eyebrow" style="color:var(--muted)">My Lists</span>
+        <h2 class="demo-headline" style="color:var(--text)">Your journal.<br><em>Your rules.</em></h2>
+        <p class="demo-body" style="color:var(--muted)">
+          Your all-time Top 10 movies. The series you're deep in. The film you keep telling people about.
+          A custom list for every mood. PLOT organises your taste so you can actually find it again.
+        </p>
+        <a href="https://app.theplot.tv/signup" class="demo-link dark-link">Build your collection &rarr;</a>
+      </div>
+    </div>
+  </section>
   <!-- ── Timeline ────────────────────────────────────────────────── -->
   <section id="timeline-section">
     <h2 class="timeline-headline reveal">A timeline as rich<br>as your taste</h2>
@@ -1319,6 +2172,51 @@
     </div>
   </section>
 
+
+  <!-- ── Calendar Demo ────────────────────────────────────────── -->
+  <section id="calendar-demo">
+    <span class="section-eyebrow reveal" style="color:rgba(240,239,232,0.4)">The Calendar</span>
+    <h2 class="cal-headline reveal">Never miss<br><em>a release.</em></h2>
+    <p class="cal-sub reveal">
+      Every episode, cinema release, and streaming premiere —
+      add it to your calendar and it appears on the right date.
+    </p>
+
+    <div class="cal-interactive reveal">
+      <!-- Left: Guide list -->
+      <div class="guide-panel">
+        <div class="guide-hdr">
+          <span class="guide-hdr-title">Upcoming &middot; June 2026</span>
+          <span class="guide-hdr-hint">Tap + to save</span>
+        </div>
+        <div class="guide-list" id="guideList"></div>
+      </div>
+
+      <!-- Right: Interactive calendar -->
+      <div class="cal-mockup-int">
+        <div class="cal-hdr">
+          <div class="cal-nav">&#8249;</div>
+          <div class="cal-month">June 2026</div>
+          <div class="cal-nav">&#8250;</div>
+        </div>
+        <div class="cal-wdays">
+          <div class="cal-wd">Su</div><div class="cal-wd">Mo</div><div class="cal-wd">Tu</div>
+          <div class="cal-wd">We</div><div class="cal-wd">Th</div><div class="cal-wd">Fr</div><div class="cal-wd">Sa</div>
+        </div>
+        <div class="cal-grid-int" id="calGridInt"></div>
+        <div class="cal-day-panel" id="calDayPanel">
+          <div class="cal-day-empty">Add releases from the guide to see them here</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cal-legend reveal">
+      <div class="leg-item"><div class="leg-dot" style="background:var(--episode)"></div>Episode</div>
+      <div class="leg-item"><div class="leg-dot" style="background:var(--pink)"></div>Cinema</div>
+      <div class="leg-item"><div class="leg-dot" style="background:var(--streaming)"></div>Streaming</div>
+    </div>
+    <div class="cal-toast" id="calToastInt"></div>
+  </section>
   <!-- ── For the Plot ─────────────────────────────────────────── -->
   <section id="for-the-plot">
     <div class="ftp-inner">
@@ -1351,25 +2249,16 @@
 
   <!-- ── Footer ────────────────────────────────────────────────── -->
   <footer>
-    <div class="footer-cta">
-      <div class="footer-cta-left">
-        <span class="footer-cta-kicker">Your PLOT</span>
-        <h2 class="footer-cta-headline reveal">Your taste tells a story.</h2>
-        <p class="footer-cta-sub reveal reveal-delay-1">And every story needs a <span class="plot-word">PLOT.</span></p>
-        <div class="footer-cta-action reveal reveal-delay-2">
-          <a href="https://app.theplot.tv/signup" class="btn btn-footer btn-large">Create your PLOT →</a>
-        </div>
-      </div>
-    </div>
+    <div class="footer-wm">PLOT</div>
     <div class="footer-meta">
-      <span class="footer-copy">© 2026 PLOT</span>
-      <span class="footer-tagline">YOUR FILM & TV JOURNAL</span>
+      <span class="footer-tag">Your Film &amp; TV Journal</span>
       <ul class="footer-links">
-        <li><a href="#">X</a></li>
-        <li><a href="#">Instagram</a></li>
+        <li><a href="https://theplot.tv/login">Log in</a></li>
+        <li><a href="https://theplot.tv/signup">Sign up</a></li>
         <li><a href="privacy.html">Privacy</a></li>
         <li><a href="terms.html">Terms</a></li>
       </ul>
+      <span class="footer-copy">&copy; 2026 PLOT</span>
     </div>
   </footer>
 
@@ -1808,6 +2697,283 @@
       });
     })();
 
+
+    // ── Guide phone animation ─────────────────────────────────
+    const guideFrame = document.getElementById('guideFrame');
+    const guideMC = document.getElementById('guideMC');
+    if (guideFrame) {
+      new IntersectionObserver(entries => {
+        entries.forEach(e => {
+          guideFrame.classList.toggle('animating', e.isIntersecting);
+          guideMC.classList.toggle('visible', e.isIntersecting);
+        });
+      }, { threshold: 0.4 }).observe(guideFrame);
+    }
+
+    // ── Lists phone animation ─────────────────────────────────
+    const listsFrame = document.getElementById('listsFrame');
+    const listsMC    = document.getElementById('listsMC');
+    const top10Panel = document.getElementById('top10Panel');
+    const favsPanel  = document.getElementById('favsPanel');
+    const lTabTop10  = document.getElementById('lTabTop10');
+    const lTabFavs   = document.getElementById('lTabFavs');
+    const fh1        = document.getElementById('fh1');
+    let listsTimer   = null;
+
+    function showTop10() {
+      if (!favsPanel || !top10Panel) return;
+      favsPanel.style.display = 'none';
+      top10Panel.style.display = 'flex';
+      lTabTop10.classList.add('active');
+      lTabFavs.classList.remove('active');
+      top10Panel.querySelectorAll('.top10-row').forEach((r, i) => {
+        r.classList.remove('show');
+        setTimeout(() => r.classList.add('show'), 30 + i * 55);
+      });
+    }
+    function showFavs() {
+      if (!favsPanel || !top10Panel) return;
+      top10Panel.style.display = 'none';
+      favsPanel.style.display = 'grid';
+      lTabFavs.classList.add('active');
+      lTabTop10.classList.remove('active');
+      favsPanel.querySelectorAll('.fav-cell').forEach((c, i) => {
+        c.classList.remove('show');
+        setTimeout(() => c.classList.add('show'), 30 + i * 60);
+      });
+    }
+    function runLists() {
+      if (!top10Panel) return;
+      top10Panel.querySelectorAll('.top10-row').forEach(r => r.classList.remove('show'));
+      favsPanel.querySelectorAll('.fav-cell').forEach(c => c.classList.remove('show'));
+      showTop10();
+      listsTimer = setTimeout(() => {
+        showFavs();
+        listsTimer = setTimeout(() => {
+          if (fh1) { fh1.style.transform = 'scale(1.5)'; setTimeout(() => { fh1.style.transform = ''; }, 280); }
+          listsTimer = setTimeout(runLists, 1400);
+        }, 1650);
+      }, 2100);
+    }
+
+    if (listsFrame) {
+      new IntersectionObserver(entries => {
+        entries.forEach(e => {
+          listsFrame.classList.toggle('animating', e.isIntersecting);
+          listsMC.classList.toggle('visible', e.isIntersecting);
+          if (e.isIntersecting) runLists();
+          else clearTimeout(listsTimer);
+        });
+      }, { threshold: 0.4 }).observe(listsFrame);
+    }
+
+    // ── Interactive Calendar Demo ─────────────────────────────
+    (function() {
+      var PROXY = 'https://mkegtssedjyqldysvzga.supabase.co/functions/v1/tmdb-proxy';
+      var KEY   = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1rZWd0c3NlZGp5cWxkeXN2emdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2MDgzMzUsImV4cCI6MjA4OTE4NDMzNX0.W-toEr3ftNeN0iTpRQ8Ord09sxBiwO2CQC6j2jszN6w';
+      var HDRS  = { 'Authorization': 'Bearer ' + KEY, 'apikey': KEY };
+
+      // Fallback: shown while TMDB loads (or on error)
+      var FALLBACK = [
+        { id: 'f1',         title: 'F1: The Movie',     type: 'cinema',    day: 26, img: 'images/hero/f1-the-movie.webp' },
+        { id: 'sinners',    title: 'Sinners',           type: 'streaming', day: 4,  img: 'images/hero/sinners.webp' },
+        { id: 'hailmary',   title: 'Project Hail Mary', type: 'episode',   day: 6,  img: 'images/hero/project-hail-mary.webp' },
+        { id: 'nosferatu',  title: 'Nosferatu',         type: 'streaming', day: 12, img: 'images/hero/nosferatu.webp' },
+        { id: 'substance',  title: 'The Substance',     type: 'streaming', day: 19, img: 'images/hero/the-substance.webp' },
+      ];
+
+      var TYPE = {
+        cinema:    { label: 'Cinema',    color: '#e05578' },
+        streaming: { label: 'Streaming', color: '#3a9e6a' },
+        episode:   { label: 'Episode',   color: '#4a90d9' },
+      };
+
+      // June 2026: June 1 = Monday (col index 1, 0=Sun). 30 days. No today marker.
+      var GRID = [
+        {day:31,dim:true},
+        {day:1},{day:2},{day:3},{day:4},{day:5},{day:6},{day:7},
+        {day:8},{day:9},{day:10},{day:11},{day:12},{day:13},{day:14},
+        {day:15},{day:16},{day:17},{day:18},{day:19},{day:20},{day:21},
+        {day:22},{day:23},{day:24},{day:25},{day:26},{day:27},
+        {day:28},{day:29},{day:30},
+        {day:1,dim:true},{day:2,dim:true},{day:3,dim:true},{day:4,dim:true},
+      ];
+
+      var RELEASES = FALLBACK.slice();
+      var saved = {};
+      var selectedDay = null;
+
+      function renderGuide() {
+        var list = document.getElementById('guideList');
+        if (!list) return;
+        var html = '';
+        RELEASES.slice(0, 5).forEach(function(r) {
+          var isAdded = !!saved[r.id];
+          html += '<div class="guide-item" data-type="' + r.type + '">';
+          html += '<div class="guide-poster" style="background-image:url(\'' + r.img + '\')"></div>';
+          html += '<div class="guide-info">';
+          html += '<div class="guide-item-title">' + r.title + '</div>';
+          html += '<div class="guide-item-meta">June ' + r.day + ' · ' + TYPE[r.type].label + '</div>';
+          html += '</div>';
+          html += '<button class="guide-add-btn' + (isAdded ? ' added' : '') + '" ';
+          html += 'onclick="window._calDemo.toggle(\'' + r.id + '\')" ';
+          html += 'title="' + (isAdded ? 'Remove' : 'Add to calendar') + '">';
+          html += isAdded ? '&#10003;' : '+';
+          html += '</button></div>';
+        });
+        list.innerHTML = html;
+      }
+
+      function renderCalendar() {
+        var grid = document.getElementById('calGridInt');
+        if (!grid) return;
+        var dayMap = {};
+        RELEASES.forEach(function(r) {
+          if (saved[r.id]) { if (!dayMap[r.day]) dayMap[r.day] = []; dayMap[r.day].push(r); }
+        });
+        var html = '';
+        GRID.forEach(function(cell) {
+          var events = (!cell.dim && dayMap[cell.day]) ? dayMap[cell.day] : [];
+          var sel = !cell.dim && cell.day === selectedDay;
+          var cls = 'cal-cell-int' + (cell.dim ? ' dim' : '') + (sel ? ' selected' : '');
+          var click = !cell.dim ? 'onclick="window._calDemo.selectDay(' + cell.day + ')"' : '';
+          var dots = '';
+          events.forEach(function(e) { dots += '<div class="cal-dot-int" style="background:' + TYPE[e.type].color + '"></div>'; });
+          html += '<div class="' + cls + '" ' + click + '>';
+          html += '<div class="cal-dn-int">' + cell.day + '</div>';
+          if (dots) html += '<div class="cal-dots-int">' + dots + '</div>';
+          html += '</div>';
+        });
+        grid.innerHTML = html;
+      }
+
+      function renderDayPanel() {
+        var panel = document.getElementById('calDayPanel');
+        if (!panel) return;
+        if (!selectedDay) {
+          panel.innerHTML = '<div class="cal-day-empty">Add releases from the guide — they appear here</div>';
+          return;
+        }
+        var events = RELEASES.filter(function(r) { return r.day === selectedDay && saved[r.id]; });
+        if (!events.length) {
+          panel.innerHTML = '<div class="cal-day-empty">June ' + selectedDay + ' — no saved releases</div>';
+          return;
+        }
+        var html = '';
+        events.forEach(function(e) {
+          var tc = TYPE[e.type];
+          html += '<div class="cal-day-event">';
+          html += '<div class="cal-day-poster" style="background-image:url(\'' + e.img + '\')"></div>';
+          html += '<div><div class="cal-day-title">' + e.title + '</div>';
+          html += '<div class="cal-day-meta">June ' + e.day + ' &middot; <span style="color:' + tc.color + '">' + tc.label + '</span></div></div>';
+          html += '</div>';
+        });
+        panel.innerHTML = html;
+      }
+
+      var toastTimer;
+      function showToast(msg) {
+        var t = document.getElementById('calToastInt');
+        if (!t) return;
+        t.textContent = msg;
+        t.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(function() { t.classList.remove('show'); }, 2400);
+      }
+
+      window._calDemo = {
+        toggle: function(id) {
+          var item = null;
+          RELEASES.forEach(function(r) { if (r.id === id) item = r; });
+          if (!item) return;
+          if (saved[id]) {
+            delete saved[id];
+            if (selectedDay === item.day) selectedDay = null;
+            showToast('Removed from calendar');
+          } else {
+            saved[id] = true;
+            selectedDay = item.day;
+            showToast('✓ Added to June ' + item.day);
+          }
+          renderGuide(); renderCalendar(); renderDayPanel();
+        },
+        selectDay: function(day) {
+          selectedDay = (selectedDay === day) ? null : day;
+          renderCalendar(); renderDayPanel();
+        }
+      };
+
+      function fetchAndRender() {
+        // 3 separate calls: trending TV (2), trending movies (2), upcoming cinema (1)
+        Promise.all([
+          fetch(PROXY + '?path=trending%2Ftv%2Fweek&language=en-US&page=1', { headers: HDRS }),
+          fetch(PROXY + '?path=trending%2Fmovie%2Fweek&language=en-US&page=1', { headers: HDRS }),
+          fetch(PROXY + '?path=movie%2Fnow_playing&region=US&language=en-US&page=1', { headers: HDRS })
+        ]).then(function(responses) {
+          return Promise.all(responses.map(function(r) { return r.json(); }));
+        }).then(function(data) {
+          var tvList       = (data[0] && data[0].results) ? data[0].results : [];
+          var movieList    = (data[1] && data[1].results) ? data[1].results : [];
+          var nowPlaying   = (data[2] && data[2].results) ? data[2].results : [];
+
+          var items = [];
+
+          // 2 trending TV shows
+          tvList.filter(function(t) { return !!t.poster_path; }).slice(0, 2).forEach(function(t) {
+            items.push({ id: 'tv-' + t.id, title: t.name, type: 'episode',
+                         img: 'https://image.tmdb.org/t/p/w185' + t.poster_path });
+          });
+
+          // 2 trending movies (streaming) — skip any that are also in now_playing
+          var nowPlayingIds = nowPlaying.map(function(m) { return m.id; });
+          movieList.filter(function(m) { return !!m.poster_path && nowPlayingIds.indexOf(m.id) === -1; })
+                   .slice(0, 2).forEach(function(m) {
+            items.push({ id: 'mov-' + m.id, title: m.title, type: 'streaming',
+                         img: 'https://image.tmdb.org/t/p/w185' + m.poster_path });
+          });
+
+          // 1 cinema release — movie in US theaters released within last 21 days (fresh, not yet on streaming)
+          var today = new Date();
+          var cutoff = new Date(today.getTime() - 21 * 24 * 60 * 60 * 1000);
+          var cinemaSource = nowPlaying.filter(function(m) {
+            if (!m.poster_path || !m.release_date) return false;
+            return new Date(m.release_date) >= cutoff;
+          }).sort(function(a, b) {
+            return new Date(b.release_date) - new Date(a.release_date); // newest first
+          })[0] || nowPlaying.filter(function(m) { return !!m.poster_path; })[0];
+          if (cinemaSource) {
+            items.push({ id: 'cin-' + cinemaSource.id, title: cinemaSource.title, type: 'cinema',
+                         img: 'https://image.tmdb.org/t/p/w185' + cinemaSource.poster_path });
+          }
+
+          if (items.length < 2) return; // keep fallback
+
+          // Shuffle randomly
+          for (var i = items.length - 1; i > 0; i--) {
+            var j = Math.floor(Math.random() * (i + 1));
+            var tmp = items[i]; items[i] = items[j]; items[j] = tmp;
+          }
+
+          // Assign spread-out June days in order after shuffle
+          var days = [3, 8, 14, 20, 27];
+          items.slice(0, 5).forEach(function(item, i) { item.day = days[i]; });
+
+          RELEASES = items.slice(0, 5);
+          renderGuide(); renderCalendar(); renderDayPanel();
+        }).catch(function() { /* keep fallback */ });
+      }
+
+      function init() {
+        if (document.getElementById('guideList')) {
+          renderGuide(); renderCalendar(); renderDayPanel();
+          fetchAndRender();
+        } else {
+          setTimeout(init, 80);
+        }
+      }
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+      else init();
+    })();
   </script>
 </body>
 </html>
