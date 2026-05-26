@@ -261,11 +261,11 @@ export default function LandingPage() {
       <section id="hero">
         <div className="hero-content">
           <h1 className="hero-headline reveal" style={{ whiteSpace: 'nowrap', textAlign: 'center', width: '100%' }}>
-            Never lose the PLOT
+            Your <span style={{ letterSpacing: '-0.13em' }}>fi</span>lm and TV journal
           </h1>
-          <p className="hero-sub reveal reveal-delay-2">Always know what's on.</p>
+          <p className="hero-sub reveal reveal-delay-2">The beautiful way to track what you watch.</p>
           <div className="hero-actions reveal reveal-delay-3">
-            <Link to="/signup" className="btn btn-primary btn-large">Be in the know →</Link>
+            <Link to="/signup" className="btn btn-primary btn-large">Start your journal →</Link>
           </div>
         </div>
       </section>
@@ -461,7 +461,7 @@ export default function LandingPage() {
       <footer>
         <div className="footer-wordmark">PLOT</div>
         <div className="footer-meta">
-          <span className="footer-tagline">NEVER LOSE THE PLOT</span>
+          <span className="footer-tagline">YOUR FILM &amp; TV JOURNAL</span>
           <ul className="footer-links">
             <li><a href="#">X</a></li>
             <li><a href="#">Instagram</a></li>

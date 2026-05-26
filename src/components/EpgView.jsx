@@ -159,6 +159,8 @@ for (let h = START_H; h < END_H; h++) {
     });
   }
 }
+// Cap the ruler at midnight
+MARKS.push({ offset: TOTAL_MINS * MINUTE_PX, label: '12:00am' });
 
 /* ── Bell icon ── */
 function BellIcon({ filled }) {
