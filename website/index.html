@@ -768,34 +768,22 @@
 
     /* ── Footer ─────────────────────────────────────────────── */
     footer {
-      background: #1a1a1a;
+      background: linear-gradient(to bottom,
+        #f8f8f8  0%,
+        #e8e8e5  8%,
+        #c0bfbb  18%,
+        #888480  30%,
+        #4a4846  44%,
+        #2a2827  56%,
+        #1a1a1a  70%,
+        #1a1a1a  100%
+      );
       border-top: none;
       overflow-x: hidden;
       overflow-y: visible;
       padding-bottom: 2.75rem;
       position: relative;
       z-index: 3;
-    }
-
-    footer::before {
-      content: '';
-      position: absolute;
-      top: -42rem;
-      left: 0;
-      right: 0;
-      height: 42rem;
-      background: linear-gradient(to bottom,
-        rgba(26,26,26,0)    0%,
-        rgba(26,26,26,0.01) 18%,
-        rgba(26,26,26,0.04) 32%,
-        rgba(26,26,26,0.12) 48%,
-        rgba(26,26,26,0.35) 63%,
-        rgba(26,26,26,0.68) 78%,
-        rgba(26,26,26,0.90) 90%,
-        rgba(26,26,26,1)   100%
-      );
-      pointer-events: none;
-      z-index: 10;
     }
 
     .footer-wm {
