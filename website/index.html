@@ -2237,7 +2237,7 @@
 
   <!-- ── Footer ────────────────────────────────────────────────── -->
   <footer>
-    <div class="footer-wm">PLOT</div>
+    <div class="footer-wm" id="footerWm"><span class="wm-l" data-c="P">P</span><span class="wm-l" data-c="L">L</span><span class="wm-l" data-c="O">O</span><span class="wm-l" data-c="T">T</span></div>
     <div class="footer-meta">
       <span class="footer-tag">Your Film &amp; TV Journal</span>
       <ul class="footer-links">
@@ -2961,6 +2961,38 @@
       }
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
       else init();
+    })();
+
+    // ── Footer PLOT scramble ─────────────────────────────────────
+    (function() {
+      var CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      var done = false;
+      function scramble() {
+        if (done) return;
+        done = true;
+        var letters = document.querySelectorAll('.wm-l');
+        letters.forEach(function(el, i) {
+          var target = el.dataset.c;
+          var frame = 0;
+          var total = 14;
+          setTimeout(function() {
+            var iv = setInterval(function() {
+              if (frame >= total) {
+                el.textContent = target;
+                clearInterval(iv);
+              } else {
+                el.textContent = CHARS[Math.floor(Math.random() * CHARS.length)];
+                frame++;
+              }
+            }, 45);
+          }, i * 90);
+        });
+      }
+      var obs = new IntersectionObserver(function(entries) {
+        if (entries[0].isIntersecting) { scramble(); obs.disconnect(); }
+      }, { threshold: 0.15 });
+      var wm = document.getElementById('footerWm');
+      if (wm) obs.observe(wm);
     })();
   </script>
 </body>
