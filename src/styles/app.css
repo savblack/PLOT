@@ -2060,6 +2060,11 @@ svg { stroke-width: 1.5; }
 @keyframes spin    { to { transform: rotate(360deg); } }
 @keyframes ob-spin { to { transform: rotate(360deg); } }
 
+@keyframes plot-letter-pulse {
+  0%, 60%, 100% { opacity: 0.18; }
+  20%            { opacity: 1; }
+}
+
 /* ── Skeleton shimmer ── */
 @keyframes shimmer {
   0%   { background-position: -600px 0; }
