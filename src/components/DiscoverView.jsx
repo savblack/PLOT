@@ -287,7 +287,9 @@ function DiscoverContent({ openPanel, watchlist, providers }) {
    DiscoverView — unified home with 3 tabs
 ═══════════════════════════════════════ */
 export default function DiscoverView() {
-  const { openPanel, watchlist, profile } = useApp();
+  const app = useApp();
+  if (!app) return null;
+  const { openPanel, watchlist, profile } = app;
   const genres        = useGenres();
   const streamingProviders = profile?.streaming_providers || [];
   const guideChannels      = profile?.guide_channels      || [];
