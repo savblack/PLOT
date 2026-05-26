@@ -138,17 +138,20 @@ svg { stroke-width: 1.5; }
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0.4rem 0;
+  padding: 0.4rem 0.1rem;
   background: none;
   border: none;
   cursor: pointer;
   color: var(--text-muted);
-  font-size: 0.68rem;
+  font-size: 0.62rem;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   transition: color 0.15s ease;
   -webkit-tap-highlight-color: transparent;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .tab-btn.active {
   color: var(--accent);
@@ -2340,10 +2343,10 @@ svg { stroke-width: 1.5; }
 
 /* Accent bar on left edge by channel type */
 .epg-sidebar-cell--broadcast {
-  border-left: 3px solid var(--accent);
+  border-left: 3px solid #60a5fa;
 }
 .epg-sidebar-cell--streaming {
-  border-left: 3px solid #a855f7;  /* purple for streaming */
+  border-left: 3px solid color-mix(in srgb, var(--accent) 55%, transparent);
 }
 
 .epg-ch-name {
@@ -2425,14 +2428,24 @@ svg { stroke-width: 1.5; }
   opacity: 0.6;
 }
 
-/* Streaming program blocks: slightly different tint */
+/* Streaming program blocks: lighter pink accent */
 .epg-program--stream {
-  border-color: rgba(168, 85, 247, 0.35);
-  background: color-mix(in srgb, var(--surface-raised) 88%, #a855f7 12%);
+  border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface-raised));
 }
 .epg-program--stream:hover {
-  background: var(--surface);
-  border-color: #a855f7;
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+/* Broadcast/TV program blocks: soft light blue */
+.epg-program:not(.epg-program--stream) {
+  border-color: rgba(96, 165, 250, 0.35);
+  background: color-mix(in srgb, #93c5fd 10%, var(--surface-raised));
+}
+.epg-program:not(.epg-program--stream):hover {
+  background: color-mix(in srgb, #93c5fd 14%, var(--surface));
+  border-color: rgba(96, 165, 250, 0.6);
 }
 
 .epg-prog-name {
@@ -2592,6 +2605,296 @@ svg { stroke-width: 1.5; }
   font-size: 0.85rem;
   cursor: pointer;
   text-align: center;
+}
+
+/* ═══════════════════════════════════════
+   DISCOVER VIEW
+═══════════════════════════════════════ */
+
+/* Hero card */
+.discover-hero {
+  position: relative;
+  height: 240px;
+  margin: 0.75rem 1rem 0;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  cursor: pointer;
+  flex-shrink: 0;
+  background: var(--surface-sunken);
+}
+
+.discover-hero-backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.discover-hero-backdrop-fallback {
+  background: linear-gradient(135deg, #2d1b2e 0%, #1a1a2e 55%, #16213e 100%);
+}
+
+.discover-hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.35) 55%, transparent 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 1rem;
+}
+
+.discover-hero-badge {
+  display: inline-block;
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: var(--accent-dim);
+  border: 1px solid var(--accent);
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--radius-xs);
+  margin-bottom: 0.4rem;
+  width: fit-content;
+}
+
+.discover-hero-title {
+  font-family: var(--font-serif);
+  font-size: 1.9rem;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  margin-bottom: 0.25rem;
+}
+
+.discover-hero-meta {
+  font-size: 0.68rem;
+  color: rgba(255,255,255,0.6);
+  margin-bottom: 0.65rem;
+  font-weight: 500;
+}
+
+.discover-hero-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.discover-hero-save {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-sans);
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.45rem 0.9rem;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  transition: opacity 0.15s;
+}
+.discover-hero-save svg {
+  width: 13px;
+  height: 13px;
+  stroke: #fff;
+  stroke-width: 2;
+  flex-shrink: 0;
+}
+.discover-hero-save.saved {
+  background: rgba(255,255,255,0.18);
+}
+.discover-hero-save:disabled { opacity: 0.6; }
+
+.discover-hero-info {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-sans);
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.45rem 0.9rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255,255,255,0.3);
+  background: rgba(255,255,255,0.12);
+  color: #fff;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+/* Rank badge overlaid on poster */
+.discover-rank-badge {
+  font-family: var(--font-serif);
+  font-size: 2rem;
+  font-weight: 700;
+  color: #fff;
+  position: absolute;
+  bottom: 4px;
+  left: 8px;
+  line-height: 1;
+  text-shadow: 0 1px 10px rgba(0,0,0,0.7), 0 0 20px rgba(0,0,0,0.5);
+  z-index: 2;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Chart row */
+.discover-chart-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.discover-chart-row:hover {
+  background: var(--surface-raised);
+}
+
+.discover-chart-rank {
+  font-family: var(--font-serif);
+  font-size: 1.55rem;
+  font-weight: 700;
+  color: var(--accent);
+  width: 2rem;
+  text-align: right;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.discover-chart-rank.glow {
+  text-shadow: 0 0 14px var(--accent-dim);
+}
+.discover-chart-rank.dim {
+  color: var(--text-muted);
+  font-size: 1.2rem;
+}
+
+.discover-chart-poster {
+  width: 38px;
+  height: 57px;
+  border-radius: var(--radius-xs);
+  overflow: hidden;
+  flex-shrink: 0;
+  background: var(--surface-sunken);
+  box-shadow: var(--shadow-xs);
+}
+
+.discover-chart-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.discover-chart-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 0.15rem;
+}
+
+.discover-chart-meta {
+  font-size: 0.63rem;
+  color: var(--text-muted);
+}
+
+.discover-chart-right {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+/* Platform collapsible section */
+.discover-plat-section {
+  border-bottom: 1px solid var(--border);
+}
+
+.discover-plat-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1rem;
+  background: var(--surface);
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s;
+}
+.discover-plat-header:hover {
+  background: var(--surface-raised);
+}
+
+.discover-plat-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.discover-plat-logo {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-xs);
+  object-fit: contain;
+  flex-shrink: 0;
+  background: var(--surface-sunken);
+}
+
+.discover-plat-logo-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  font-weight: 800;
+  color: var(--text-muted);
+  background: var(--surface-sunken);
+}
+
+.discover-plat-name {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.discover-plat-chevron {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--text-muted);
+  transition: transform 0.2s var(--ease);
+}
+.discover-plat-chevron.open {
+  transform: rotate(180deg);
+}
+
+.discover-plat-body {
+  padding: 0.75rem;
+  background: var(--surface-raised);
+  border-top: 1px solid var(--border);
+}
+
+.discover-plat-type-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+  padding-left: 0.1rem;
+}
+
+.discover-plat-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.5rem;
 }
 
 /* ═══════════════════════════════════════

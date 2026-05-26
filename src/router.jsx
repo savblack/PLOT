@@ -6,6 +6,7 @@ import LoadingSpinner from './components/LoadingSpinner.jsx';
 
 // Layout + views
 const App         = lazy(() => import('./App.jsx'));
+const DiscoverView = lazy(() => import('./components/DiscoverView.jsx'));
 const GuideView   = lazy(() => import('./components/GuideView.jsx'));
 const CalendarView= lazy(() => import('./components/CalendarView.jsx'));
 const HistoryView   = lazy(() => import('./components/HistoryView.jsx'));
@@ -60,8 +61,8 @@ const router = createBrowserRouter([
     ),
     children: [
       { path: '/app',      element: <Navigate to="/home" replace /> },
-      { path: '/guide',    element: <Navigate to="/home" replace /> },
-      { path: '/home',     element: wrap(<GuideView />) },
+      { path: '/home',     element: wrap(<DiscoverView />) },
+      { path: '/guide',    element: wrap(<GuideView />) },
       { path: '/calendar', element: wrap(<CalendarView />) },
       { path: '/watching', element: <Navigate to="/my-lists" replace /> },
       { path: '/list',     element: <Navigate to="/my-lists" replace /> },

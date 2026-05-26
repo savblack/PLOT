@@ -20,7 +20,7 @@ export function useHistory(userId) {
   useEffect(() => { load(); }, [load]);
 
   /* ── Log a watched item ── */
-  const logWatched = useCallback(async (item, { rating, note } = {}) => {
+  const logWatched = useCallback(async (item, { rating, note, dnf } = {}) => {
     if (!userId) return;
     const row = {
       user_id:     userId,
@@ -31,6 +31,7 @@ export function useHistory(userId) {
       watched_at:  localDateStr(),
       rating:      rating ?? null,
       note:        note ?? null,
+      dnf:         dnf ?? false,
       release_date: item.release_date || item.first_air_date || null,
     };
 

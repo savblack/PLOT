@@ -46,6 +46,7 @@ const NAV_ITEMS = [
 
 const VIEW_TITLES = {
   home:       'PLOT',
+  guide:      'Guide',
   calendar:   'Calendar',
   'my-lists': 'My Lists',
   history:    'History',

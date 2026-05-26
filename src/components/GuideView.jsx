@@ -78,7 +78,7 @@ function SaveBtn({ item, watchlist }) {
 function TypeBadge({ type, cinema }) {
   if (type === 'tv') return <span className="chip chip-episode">TV</span>;
   if (cinema)        return <span className="chip chip-cinema">Cinema</span>;
-  return                    <span className="chip chip-muted">Movie</span>;
+  return                    <span className="chip chip-streaming">Movie</span>;
 }
 
 function MediaCard({ item, openPanel, watchlist }) {
@@ -150,7 +150,7 @@ function DateGroup({ label, items, openPanel, watchlist, defaultOpen = true }) {
 }
 
 /* ── Upcoming content (global, date-grouped) ── */
-function UpcomingContent({ typeFilters, genreFilters, providers, openPanel, watchlist }) {
+export function UpcomingContent({ typeFilters, genreFilters, providers, openPanel, watchlist }) {
   const [data,       setData]       = useState({ today: [], recentGrouped: {}, recentDates: [], upcomingGrouped: {}, upcomingDates: [] });
   const [loading,    setLoading]    = useState(true);
   const [recentOpen, setRecentOpen] = useState(false);

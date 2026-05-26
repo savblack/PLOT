@@ -229,13 +229,51 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone }) {
 ═══════════════════════════════════════ */
 /* ── Heart icon ── */
 function HeartIcon({ filled }) {
-  return filled ? (
-    <svg viewBox="0 0 24 24" fill="#ef4444" stroke="#ef4444" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+  const path = "M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z";
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16"
+      fill={filled ? 'var(--accent)' : 'none'}
+      stroke={filled ? 'var(--accent)' : 'currentColor'}
+      strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <path d={path}/>
     </svg>
-  ) : (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+  );
+}
+function PlusIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+      <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+  );
+}
+function CheckSmallIcon({ color } = {}) {
+  return (
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none"
+      stroke={color || 'currentColor'} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="20 6 9 17 4 12"/>
+    </svg>
+  );
+}
+function PlaySmallIcon() {
+  return (
+    <svg viewBox="0 0 16 16" width="11" height="11" fill="currentColor">
+      <polygon points="3,1 14,8 3,15"/>
+    </svg>
+  );
+}
+function StopSmallIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
+      <rect x="4" y="4" width="16" height="16" rx="2"/>
+    </svg>
+  );
+}
+function StarIcon({ filled }) {
+  return (
+    <svg viewBox="0 0 24 24" width="22" height="22"
+      fill={filled ? 'var(--text-primary)' : 'none'} stroke="var(--text-primary)"
+      strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
     </svg>
   );
 }
@@ -355,7 +393,7 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
 }
 
 export default function MediaPanel({ itemId, itemType, closing, onClose }) {
-  const { watchlist, watching, user, profile, favorites } = useApp();
+  const { watchlist, watching, user, profile, favorites, customLists } = useApp();
   const timezone = profile?.timezone || null;
   const history = useHistory(user?.id);
 
@@ -364,14 +402,29 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
   const [loading,      setLoading]      = useState(true);
   const [detailsError, setDetailsError] = useState(false);
 
-  const [showListSheet, setShowListSheet] = useState(false);
+  const [showListSheet,  setShowListSheet]  = useState(false);
+  const [localRating,    setLocalRating]    = useState(0);
+  const [localReview,    setLocalReview]    = useState('');
+  const [localDnf,       setLocalDnf]       = useState(false);
+  const [reviewSaving,   setReviewSaving]   = useState(false);
 
   const isMovie    = itemType === 'movie';
   const inList     = watchlist.isInList(itemId);
   const isWatching = !isMovie && watching.isWatching(itemId);
   const progress   = watching.getProgress(itemId);
   const watched    = history.isWatched(itemId);
-  const isFav      = favorites.isFavorite(itemId);
+  const isFav        = favorites.isFavorite(itemId);
+  const isInAnyList  = customLists?.lists?.some(list => customLists.isInList(list.id, itemId)) ?? false;
+  const watchedEntry = history.entries.find(e => e.tmdb_id === Number(itemId));
+
+  // Sync local review state when entry loads or changes
+  useEffect(() => {
+    if (watchedEntry) {
+      setLocalRating(watchedEntry.rating || 0);
+      setLocalReview(watchedEntry.note   || '');
+      setLocalDnf(watchedEntry.dnf       || false);
+    }
+  }, [watchedEntry?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadDetails = useCallback(async () => {
     if (!itemId) return;
@@ -462,77 +515,228 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
               <p className="panel-overview">{details.overview}</p>
             )}
 
-            {/* Heart + List actions */}
-            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
-              <button
-                className={`btn btn-ghost btn-sm`}
-                style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: isFav ? '#ef4444' : undefined }}
-                onClick={() => favorites.toggleFavorite({ ...details, id: itemId, media_type: itemType })}
-              >
-                <span style={{ width: 16, height: 16, display: 'inline-flex' }}><HeartIcon filled={isFav} /></span>
-                {isFav ? 'Unfavorite' : 'Favorite'}
-              </button>
-              <button
-                className="btn btn-ghost btn-sm"
-                onClick={() => setShowListSheet(true)}
-              >
-                + List
-              </button>
-            </div>
+            {/* ── Action buttons ── */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
 
-            {/* Actions */}
-            <div className="panel-actions">
-              {/* Save for later — hidden while actively watching (already in list) */}
+              {/* Primary: Save / Saved — hidden while actively watching */}
               {!isWatching && (
                 <button
-                  className={`btn ${inList ? 'btn-secondary' : 'btn-primary'} btn-sm`}
                   onClick={() => watchlist.toggle({ ...details, id: itemId, media_type: itemType })}
-                >
-                  {inList ? 'SAVED' : 'SAVE'}
-                </button>
-              )}
-
-              {/* TV: Start Watching (also removes from Saved list) */}
-              {!isMovie && !isWatching && (
-                <button
-                  className="btn btn-accent btn-sm"
-                  onClick={async () => {
-                    await watching.startWatching({ ...details, id: itemId, media_type: 'tv' });
-                    // Move from Saved → Watching
-                    if (inList) await watchlist.removeFromList(itemId);
+                  style={{
+                    width: '100%', padding: '0.72rem', borderRadius: '0.75rem',
+                    border: inList ? '1.5px solid rgba(74,222,128,0.2)' : 'none',
+                    cursor: 'pointer',
+                    background: inList ? '#0d2d1a' : 'var(--accent)',
+                    color: inList ? '#4ade80' : '#fff',
+                    fontWeight: 600, fontSize: '0.88rem', transition: 'all 0.2s',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
                   }}
                 >
-                  ▶ Start Watching
+                  {inList ? <><CheckSmallIcon color="#4ade80" /> Saved</> : 'Save'}
                 </button>
               )}
 
-              {/* TV: Currently watching badge + progress */}
-              {!isMovie && isWatching && (
-                <span className="chip chip-episode" style={{ fontSize: '0.78rem', padding: '0.3rem 0.65rem' }}>
-                  ▶ Watching · S{String(progress?.current_season).padStart(2,'0')}E{String(progress?.current_episode).padStart(2,'0')}
-                </span>
-              )}
-
-              {!watched ? (
+              {/* Secondary row: Favourite + Add to list */}
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                {/* Favourite */}
                 <button
-                  className="btn btn-ghost btn-sm"
+                  onClick={() => favorites.toggleFavorite({ ...details, id: itemId, media_type: itemType })}
+                  style={{
+                    flex: 1, padding: '0.6rem 0.5rem', borderRadius: '0.75rem',
+                    border: isFav ? '1.5px solid color-mix(in srgb, var(--accent) 40%, transparent)' : '1.5px solid var(--border)',
+                    background: isFav ? 'var(--accent-dim)' : 'transparent',
+                    color: isFav ? 'var(--accent)' : 'var(--text-secondary)',
+                    cursor: 'pointer', fontSize: '0.82rem', fontWeight: 500, transition: 'all 0.18s',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.38rem',
+                  }}
+                >
+                  <HeartIcon filled={isFav} />
+                  {isFav ? 'Favourited' : 'Favourite'}
+                </button>
+
+                {/* Add to list / On your list */}
+                <button
+                  onClick={() => setShowListSheet(true)}
+                  style={{
+                    flex: 1, padding: '0.6rem 0.5rem', borderRadius: '0.75rem',
+                    border: isInAnyList ? '1.5px solid rgba(99,102,241,0.4)' : '1.5px solid var(--border)',
+                    background: isInAnyList ? 'rgba(99,102,241,0.1)' : 'transparent',
+                    color: isInAnyList ? '#818cf8' : 'var(--text-secondary)',
+                    cursor: 'pointer', fontSize: '0.82rem', fontWeight: 500, transition: 'all 0.18s',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.38rem',
+                  }}
+                >
+                  {isInAnyList
+                    ? <><CheckSmallIcon color="#818cf8" /> On your list</>
+                    : <><PlusIcon /> Add to list</>
+                  }
+                </button>
+              </div>
+            </div>
+
+            {/* ── Watching / watched tracking (Option C) ── */}
+            {!watched ? (
+              <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+                {/* Start / Stop watching — TV only */}
+                {!isMovie && (
+                  <button
+                    style={{
+                      flex: 1, padding: '0.62rem 0.5rem', borderRadius: '0.75rem',
+                      border: isWatching ? '1.5px solid rgba(99,102,241,0.45)' : '1.5px solid var(--border)',
+                      background: isWatching ? 'rgba(99,102,241,0.12)' : 'transparent',
+                      color: isWatching ? '#818cf8' : 'var(--text-secondary)',
+                      fontWeight: 500, fontSize: '0.82rem', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
+                      transition: 'all 0.18s',
+                    }}
+                    onClick={async () => {
+                      if (isWatching) {
+                        await watching.stopWatching(itemId);
+                      } else {
+                        await watching.startWatching({ ...details, id: itemId, media_type: 'tv' });
+                        if (inList) await watchlist.removeFromList(itemId);
+                      }
+                    }}
+                  >
+                    {isWatching
+                      ? <><StopSmallIcon /> Stop watching</>
+                      : <><PlaySmallIcon /> Start watching</>
+                    }
+                  </button>
+                )}
+
+                {/* Mark watched */}
+                <button
+                  style={{
+                    flex: 1, padding: '0.62rem 0.5rem', borderRadius: '0.75rem',
+                    border: '1.5px solid var(--border)', background: 'transparent',
+                    color: 'var(--text-secondary)',
+                    fontWeight: 500, fontSize: '0.82rem', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
+                  }}
                   onClick={async () => {
                     await history.logWatched({ ...details, id: itemId, media_type: itemType });
                     if (!isMovie && isWatching) await watching.stopWatching(itemId);
                   }}
                 >
-                  {!isMovie ? 'Mark all watched' : 'Mark watched'}
+                  <CheckSmallIcon /> {!isMovie ? 'Mark all watched' : 'Mark watched'}
                 </button>
-              ) : (
+              </div>
+            ) : (
+              /* Watched state + review section */
+              <div style={{ marginBottom: '1rem' }}>
+                {/* Divider above — only visible in watched state */}
+                <div style={{ height: 1, background: 'var(--border)', marginBottom: '0.85rem' }} />
+
+                {/* Watched button — full-width, matches Saved style, click to undo */}
                 <button
-                  className="btn btn-secondary btn-sm"
                   onClick={() => history.removeEntry(itemId)}
-                  title="Mark as unwatched"
+                  style={{
+                    width: '100%', padding: '0.72rem', borderRadius: '0.75rem',
+                    border: '1.5px solid rgba(74,222,128,0.2)',
+                    cursor: 'pointer', background: '#0d2d1a', color: '#4ade80',
+                    fontWeight: 600, fontSize: '0.88rem', transition: 'all 0.2s',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
+                    marginBottom: '0.85rem',
+                  }}
                 >
-                  Watched ✓
+                  <CheckSmallIcon color="#4ade80" /> Watched
                 </button>
-              )}
-            </div>
+
+                {/* Divider before review */}
+                <div style={{ height: 1, background: 'var(--border)', marginBottom: '0.85rem' }} />
+
+                {/* Review section label */}
+                <div style={{
+                  fontSize: '0.58rem', fontWeight: 700, letterSpacing: '0.1em',
+                  textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.65rem',
+                }}>
+                  Your review
+                </div>
+
+                {/* Stars + DNF */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.65rem' }}>
+                  {/* Star rating */}
+                  <div style={{ display: 'flex', gap: '2px' }}>
+                    {[1,2,3,4,5].map(n => (
+                      <button
+                        key={n}
+                        onClick={() => setLocalRating(r => r === n ? 0 : n)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '1px', lineHeight: 0 }}
+                      >
+                        <StarIcon filled={localRating >= n} />
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Didn't finish chip */}
+                  <button
+                    onClick={() => setLocalDnf(d => !d)}
+                    style={{
+                      padding: '5px 11px', borderRadius: 999,
+                      border: localDnf ? '1.5px solid rgba(251,146,60,0.5)' : '1.5px solid var(--border)',
+                      background: localDnf ? 'rgba(251,146,60,0.12)' : 'transparent',
+                      color: localDnf ? '#fb923c' : 'var(--text-muted)',
+                      fontSize: '0.76rem', fontWeight: 600, cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', gap: '4px', transition: 'all 0.18s',
+                    }}
+                  >
+                    {localDnf && <CheckSmallIcon color="#fb923c" />}
+                    Didn't finish
+                  </button>
+                </div>
+
+                {/* Review text */}
+                <div style={{ position: 'relative', marginBottom: '0.65rem' }}>
+                  <textarea
+                    value={localReview}
+                    onChange={e => { if (e.target.value.length <= 280) setLocalReview(e.target.value); }}
+                    placeholder="Write a quick review…"
+                    rows={3}
+                    style={{
+                      width: '100%', boxSizing: 'border-box',
+                      background: 'var(--surface-sunken)', border: '1.5px solid var(--border)',
+                      borderRadius: '0.65rem', color: 'var(--text-primary)',
+                      fontSize: '0.84rem', padding: '0.6rem 0.75rem',
+                      resize: 'none', outline: 'none', fontFamily: 'inherit', lineHeight: 1.5,
+                    }}
+                  />
+                  <span style={{
+                    position: 'absolute', bottom: '0.55rem', right: '0.65rem',
+                    fontSize: '0.62rem', fontVariantNumeric: 'tabular-nums',
+                    color: (280 - localReview.length) <= 40
+                      ? (280 - localReview.length) <= 0 ? '#ef4444' : '#f59e0b'
+                      : 'var(--text-muted)',
+                  }}>
+                    {280 - localReview.length}
+                  </span>
+                </div>
+
+                {/* Save button — only when something to save */}
+                {(localRating > 0 || localReview.trim() || localDnf) && (
+                  <button
+                    disabled={reviewSaving}
+                    onClick={async () => {
+                      setReviewSaving(true);
+                      await history.updateEntry(itemId, {
+                        rating: localRating || null,
+                        note:   localReview.trim() || null,
+                        dnf:    localDnf,
+                      });
+                      setReviewSaving(false);
+                    }}
+                    style={{
+                      width: '100%', padding: '0.62rem', borderRadius: '0.75rem',
+                      border: 'none', background: 'var(--surface-raised)',
+                      color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.84rem',
+                      cursor: reviewSaving ? 'default' : 'pointer', opacity: reviewSaving ? 0.6 : 1,
+                    }}
+                  >
+                    {reviewSaving ? 'Saving…' : 'Save review'}
+                  </button>
+                )}
+              </div>
+            )}
 
             {/* Where to watch */}
             {providers.length > 0 && (

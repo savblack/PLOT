@@ -271,15 +271,9 @@ function TopTenSection({ listType, title, topLists }) {
   };
 
   return (
-    <div style={{ marginBottom: '0.5rem' }}>
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0.85rem 1rem 0.5rem',
-        borderBottom: '1px solid var(--border)',
-      }}>
-        <span style={{ fontWeight: 700, fontSize: '0.85rem', letterSpacing: '0.03em', color: 'var(--text-primary)' }}>
-          {title}
-        </span>
+    <div>
+      <div className="date-group-header">
+        <span className="date-group-label">{title}</span>
         {items.length > 0 && (
           <button
             className="btn btn-ghost btn-xs"
@@ -323,7 +317,7 @@ function TopTenSection({ listType, title, topLists }) {
                 +
               </div>
               <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
-                {rank === 1 ? "Who's your GOAT?" : 'Add a title'}
+                {rank === 1 ? "What's your GOAT?" : 'Add a title'}
               </span>
             </button>
           );
@@ -472,22 +466,14 @@ function FavoritesSection({ favorites: favsHook, filterItems, hideHeader }) {
   const visible = filterItems ? filterItems(favorites) : favorites;
 
   return (
-    <div style={{ marginBottom: '0.5rem' }}>
+    <div>
       {!hideHeader && (
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '0.85rem 1rem 0.5rem',
-          borderBottom: '1px solid var(--border)',
-        }}>
-          <span style={{ fontWeight: 700, fontSize: '0.85rem', letterSpacing: '0.03em', color: 'var(--text-primary)' }}>
-            Favorites
-          </span>
-          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-            {visible.length > 0 && (
-              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{visible.length}</span>
-            )}
-            <button className="btn btn-ghost btn-xs" onClick={() => setShowAdd(true)}>+ Add</button>
-          </div>
+        <div className="date-group-header">
+          <span className="date-group-label">Favourites</span>
+          {visible.length > 0 && (
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginRight: '0.25rem' }}>{visible.length}</span>
+          )}
+          <button className="btn btn-ghost btn-xs" onClick={() => setShowAdd(true)}>+ Add</button>
         </div>
       )}
 
@@ -595,14 +581,8 @@ function CustomListsSection({ customLists: clHook, filterItems, hideHeader }) {
   return (
     <div style={{ marginBottom: '2rem' }}>
       {!hideHeader && (
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '0.85rem 1rem 0.5rem',
-          borderBottom: '1px solid var(--border)',
-        }}>
-          <span style={{ fontWeight: 700, fontSize: '0.85rem', letterSpacing: '0.03em', color: 'var(--text-primary)' }}>
-            My Lists
-          </span>
+        <div className="date-group-header">
+          <span className="date-group-label">My Lists</span>
           <button className="btn btn-ghost btn-xs" onClick={() => setCreatingList(true)}>+ New List</button>
         </div>
       )}
@@ -773,16 +753,10 @@ function WatchingSection({ watching, watchlist, hideHeader }) {
   }
 
   return (
-    <div style={{ marginBottom: '0.5rem' }}>
+    <div>
       {!hideHeader && (
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '0.85rem 1rem 0.5rem',
-          borderBottom: '1px solid var(--border)',
-        }}>
-          <span style={{ fontWeight: 700, fontSize: '0.85rem', letterSpacing: '0.03em', color: 'var(--text-primary)' }}>
-            Watching
-          </span>
+        <div className="date-group-header">
+          <span className="date-group-label">Watching</span>
           <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{items.length}</span>
         </div>
       )}
@@ -833,16 +807,10 @@ function WantToWatchSection({ watchlist, watching, hideHeader }) {
   }
 
   return (
-    <div style={{ marginBottom: '0.5rem' }}>
+    <div>
       {!hideHeader && (
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '0.85rem 1rem 0.5rem',
-          borderBottom: '1px solid var(--border)',
-        }}>
-          <span style={{ fontWeight: 700, fontSize: '0.85rem', letterSpacing: '0.03em', color: 'var(--text-primary)' }}>
-            Want to Watch
-          </span>
+        <div className="date-group-header">
+          <span className="date-group-label">Want to Watch</span>
           <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{sorted.length}</span>
         </div>
       )}
@@ -1028,9 +996,7 @@ export default function MyListsView() {
       {/* ── Favorites ── */}
       {showFavs && (
         <>
-          {isAll && favorites.favorites?.length > 0 && (
-            <CollapsibleBar label="Favorites" open={favsOpen} onToggle={() => setFavsOpen(o => !o)} />
-          )}
+          {isAll && <CollapsibleBar label="Favourites" open={favsOpen} onToggle={() => setFavsOpen(o => !o)} />}
           {(!isAll || favsOpen) && <FavoritesSection favorites={favorites} filterItems={filterItems} hideHeader={isAll} />}
         </>
       )}
@@ -1038,9 +1004,7 @@ export default function MyListsView() {
       {/* ── My Lists ── */}
       {showLists && (
         <>
-          {isAll && customListData.length > 0 && (
-            <CollapsibleBar label="My Lists" open={listsOpen} onToggle={() => setListsOpen(o => !o)} />
-          )}
+          {isAll && <CollapsibleBar label="My Lists" open={listsOpen} onToggle={() => setListsOpen(o => !o)} />}
           {(!isAll || listsOpen) && <CustomListsSection customLists={customLists} filterItems={filterItems} hideHeader={isAll} />}
         </>
       )}
