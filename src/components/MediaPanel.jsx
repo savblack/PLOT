@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useApp, backdropUrl, logoUrl, countdownChip, formatDate } from '../App.jsx';
 import { tmdb, getTmdbRegion } from '../api/tmdb.js';
 import { useHistory } from '../hooks/useHistory.js';
+import MediaPanelSkeleton from './skeletons/MediaPanelSkeleton.jsx';
+import EpisodesSkeleton from './skeletons/EpisodesSkeleton.jsx';
 
 /* ── Close icon ── */
 function CloseIcon() {
@@ -161,7 +163,7 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone }) {
       )}
 
       {epLoading ? (
-        <div className="loading-state" style={{ minHeight: 80 }}><div className="spinner" /></div>
+        <EpisodesSkeleton />
       ) : episodes.length === 0 ? (
         <div style={{ padding: '1rem 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
           {epError ? 'Could not load episodes. Try again later.' : 'No episodes available yet.'}
@@ -477,7 +479,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
         </div>
 
         {loading ? (
-          <div className="loading-state" style={{ minHeight: 200 }}><div className="spinner" /></div>
+          <MediaPanelSkeleton />
         ) : detailsError ? (
           <div className="panel-body" style={{ textAlign: 'center', paddingTop: '2rem' }}>
             <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useApp } from '../App.jsx';
 import { localDateStr, dateToLocalStr } from '../utils/date.js';
 import MultiSelect from './MultiSelect.jsx';
+import EpgSkeleton from './skeletons/EpgSkeleton.jsx';
 
 /* ── Constants ── */
 const MINUTE_PX  = 3;
@@ -386,7 +387,7 @@ export default function EpgView() {
       </div>
 
       {loading ? (
-        <div className="loading-state"><div className="spinner" /></div>
+        <EpgSkeleton />
       ) : channels.length === 0 ? (
         <div className="empty-state">
           <div className="empty-title">No schedule available</div>

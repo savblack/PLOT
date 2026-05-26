@@ -2057,7 +2057,27 @@ svg { stroke-width: 1.5; }
   border-radius: 50%;
   animation: spin 0.75s linear infinite;
 }
-@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes spin    { to { transform: rotate(360deg); } }
+@keyframes ob-spin { to { transform: rotate(360deg); } }
+
+/* ── Skeleton shimmer ── */
+@keyframes shimmer {
+  0%   { background-position: -600px 0; }
+  100% { background-position:  600px 0; }
+}
+
+.sk {
+  background: linear-gradient(
+    90deg,
+    var(--surface-sunken) 0%,
+    var(--surface)        50%,
+    var(--surface-sunken) 100%
+  );
+  background-size: 1200px 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+  border-radius: var(--radius-xs);
+  flex-shrink: 0;
+}
 
 /* ═══════════════════════════════════════
    DATE GROUP HEADERS (Schedule view)
@@ -2343,10 +2363,10 @@ svg { stroke-width: 1.5; }
 
 /* Accent bar on left edge by channel type */
 .epg-sidebar-cell--broadcast {
-  border-left: 3px solid #60a5fa;
+  border-left: 3px solid var(--epg-bar-broadcast);
 }
 .epg-sidebar-cell--streaming {
-  border-left: 3px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  border-left: 3px solid var(--epg-bar-stream);
 }
 
 .epg-ch-name {
@@ -2652,8 +2672,8 @@ svg { stroke-width: 1.5; }
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--accent);
-  background: var(--accent-dim);
-  border: 1px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 60%, transparent);
   padding: 0.2rem 0.55rem;
   border-radius: var(--radius-xs);
   margin-bottom: 0.4rem;
@@ -2734,8 +2754,8 @@ svg { stroke-width: 1.5; }
   font-weight: 700;
   color: #fff;
   position: absolute;
-  bottom: 4px;
-  left: 8px;
+  bottom: 6px;
+  left: 14px;
   line-height: 1;
   text-shadow: 0 1px 10px rgba(0,0,0,0.7), 0 0 20px rgba(0,0,0,0.5);
   z-index: 2;

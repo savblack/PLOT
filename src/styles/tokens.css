@@ -21,6 +21,10 @@
   --accent:         #E05578;
   --accent-dim:     rgba(224,85,120,0.12);
 
+  /* EPG sidebar channel-type bars */
+  --epg-bar-stream:    #F0AABC;  /* lighter pink — streaming */
+  --epg-bar-broadcast: #93c5fd;  /* light blue — live TV */
+
   /* Status chips */
   --chip-now:       #059669;
   --chip-today:     #059669;
@@ -81,6 +85,9 @@
 
   --accent:         #F06A88;
   --accent-dim:     rgba(240,106,136,0.15);
+
+  --epg-bar-stream:    #9a4960;  /* muted rose — streaming in dark mode */
+  --epg-bar-broadcast: #60a5fa;  /* blue-400 — live TV in dark mode */
 
   --glass-bg:       rgba(24,24,27,0.88);
   --glass-border:   rgba(255,255,255,0.07);

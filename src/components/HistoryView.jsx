@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useApp, posterUrl, TodayLabel } from '../App.jsx';
 import { useHistory } from '../hooks/useHistory.js';
+import HistorySkeleton from './skeletons/HistorySkeleton.jsx';
 
 function HeartIcon({ filled }) {
   return filled ? (
@@ -61,7 +62,7 @@ export default function HistoryView() {
     setOpenMonths(prev => ({ ...prev, [month]: !(prev[month] ?? true) }));
   const isOpen = (month) => openMonths[month] ?? true; // default open
 
-  if (loading) return <div className="loading-state"><div className="spinner" /></div>;
+  if (loading) return <HistorySkeleton />;
 
   const filtered = entries.filter(e =>
     filter === 'all' || e.media_type === filter

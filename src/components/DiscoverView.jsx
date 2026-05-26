@@ -7,6 +7,7 @@ import { UpcomingContent } from './GuideView.jsx';
 import EpgView from './EpgView.jsx';
 import MultiSelect from './MultiSelect.jsx';
 import { tmdb, getTmdbRegion } from '../api/tmdb.js';
+import DiscoverSkeleton from './skeletons/DiscoverSkeleton.jsx';
 
 /* ── Module-level provider logo cache ── */
 const _providerCache = new Map();
@@ -225,9 +226,7 @@ function PlatformSection({ platform, openPanel, watchlist }) {
 function DiscoverContent({ openPanel, watchlist, providers }) {
   const { data, loading } = useDiscover(providers);
 
-  if (loading) {
-    return <div className="loading-state"><div className="spinner" /></div>;
-  }
+  if (loading) return <DiscoverSkeleton />;
 
   const { hero, hotRail, weekly, platforms } = data;
   const platformList = Object.values(platforms);
@@ -241,7 +240,7 @@ function DiscoverContent({ openPanel, watchlist, providers }) {
           <div className="date-group-header" style={{ paddingTop: '1.1rem' }}>
             <div>
               <div style={{ fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.15rem' }}>Trending today</div>
-              <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1.2rem', fontWeight: 600, letterSpacing: '-0.03em', color: 'color-mix(in srgb, var(--text-primary) 60%, transparent)' }}>Hot Right Now</div>
+              <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1.2rem', fontWeight: 600, letterSpacing: '0', color: 'color-mix(in srgb, var(--text-primary) 60%, transparent)' }}>Hot Right Now</div>
             </div>
           </div>
           <Rail>
@@ -257,7 +256,7 @@ function DiscoverContent({ openPanel, watchlist, providers }) {
           <div className="date-group-header" style={{ paddingTop: '0.5rem' }}>
             <div>
               <div style={{ fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.15rem' }}>Global ranking</div>
-              <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1.2rem', fontWeight: 600, letterSpacing: '-0.03em', color: 'var(--text-primary)' }}>Top 20 This Week</div>
+              <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1.2rem', fontWeight: 600, letterSpacing: '0', color: 'var(--text-primary)' }}>Top 20 This Week</div>
             </div>
           </div>
           {weekly.map((item, i) => (
@@ -271,7 +270,7 @@ function DiscoverContent({ openPanel, watchlist, providers }) {
           <div className="date-group-header" style={{ paddingTop: '0.5rem' }}>
             <div>
               <div style={{ fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.15rem' }}>Your platforms</div>
-              <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1.2rem', fontWeight: 600, letterSpacing: '-0.03em', color: 'var(--text-primary)' }}>On Your Services</div>
+              <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1.2rem', fontWeight: 600, letterSpacing: '0', color: 'var(--text-primary)' }}>On Your Services</div>
             </div>
           </div>
           {platformList.map(platform => (

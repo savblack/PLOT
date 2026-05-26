@@ -4,6 +4,7 @@ import { localDateStr, dateToLocalStr } from '../utils/date.js';
 import { useCalendar } from '../hooks/useCalendar.js';
 import { tmdb } from '../api/tmdb.js';
 import MultiSelect from './MultiSelect.jsx';
+import CalendarSkeleton from './skeletons/CalendarSkeleton.jsx';
 
 /* ── Helpers ── */
 function buildMonthDays(year, month) {
@@ -384,7 +385,7 @@ export default function CalendarView() {
 
             {/* Selected day panel */}
             {loading ? (
-              <div className="loading-state" style={{ minHeight: 80 }}><div className="spinner" /></div>
+              <CalendarSkeleton />
             ) : (
               <div className="cal-day-panel">
                 <div className="cal-day-panel-header">{selectedLabel}</div>
@@ -437,7 +438,7 @@ export default function CalendarView() {
 
             {/* Selected day panel */}
             {loading ? (
-              <div className="loading-state" style={{ minHeight: 80 }}><div className="spinner" /></div>
+              <CalendarSkeleton />
             ) : (
               <div className="cal-day-panel" style={{ marginTop: '0.75rem' }}>
                 <div className="cal-day-panel-header">{selectedLabel}</div>

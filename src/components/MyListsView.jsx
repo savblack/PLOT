@@ -5,6 +5,7 @@ import { useHistory } from '../hooks/useHistory.js';
 import { useGenres } from '../hooks/useGenres.js';
 import { localDateStr } from '../utils/date.js';
 import MultiSelect from './MultiSelect.jsx';
+import MyListsSkeleton from './skeletons/MyListsSkeleton.jsx';
 
 /* ── Heart icon ── */
 function HeartIcon({ filled }) {
@@ -900,7 +901,7 @@ export default function MyListsView() {
 
   if (!user) return null;
   if (topLists.loading || favorites.loading || customLists.loading || watchlist.loading || watching.loading) {
-    return <div className="loading-state"><div className="spinner" /></div>;
+    return <MyListsSkeleton />;
   }
 
   const TABS = [
