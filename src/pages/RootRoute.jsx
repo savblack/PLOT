@@ -28,7 +28,11 @@ export default function RootRoute() {
   if (authenticated) return <Navigate to="/guide" replace />;
 
   return (
-    <Suspense fallback={<PlotLoader />}>
+    <Suspense fallback={
+      <div style={{ height: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <PlotLoader />
+      </div>
+    }>
       <LandingPage />
     </Suspense>
   );
