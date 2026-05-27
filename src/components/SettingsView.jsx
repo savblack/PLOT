@@ -506,7 +506,7 @@ function FeedbackPanel({ user, onClose }) {
    SettingsView
 ═══════════════════════════════════════ */
 export default function SettingsView() {
-  const { profile, user, theme, setTheme, refreshProfile, watchlist, watching, reminders } = useApp();
+  const { profile, user, theme, setTheme, refreshProfile, watchlist, watching, reminders, navigateTo } = useApp();
   const sync  = useMediaSync(user?.id);
   const trakt = useTraktSync(user?.id);
   const history = useHistory(user?.id);
@@ -596,9 +596,15 @@ export default function SettingsView() {
   const handleClearHistory = async () => {
     if (!window.confirm('Clear your entire watch history? This cannot be undone.')) return;
     setClearingHistory(true);
-    await supabase.from('journal').delete().eq('user_id', user.id);
-    await history.reload();
-    setClearingHistory(false);
+    try {
+      await history.clearAll();
+      setClearingHistory(false);
+      navigateTo('history?cleared=1');
+    } catch (error) {
+      console.error('[settings] clear history failed:', error);
+      window.alert('Could not clear your watch history. Please try again.');
+      setClearingHistory(false);
+    }
   };
 
   const handleClearListOnly = async () => {

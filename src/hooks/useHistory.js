@@ -7,17 +7,33 @@ export function useHistory(userId) {
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    if (!userId) { setLoading(false); return; }
-    const { data } = await supabase
+    if (!userId) {
+      setEntries([]);
+      setLoading(false);
+      return [];
+    }
+    setLoading(true);
+    const { data, error } = await supabase
       .from('journal')
       .select('*')
       .eq('user_id', userId)
       .order('watched_at', { ascending: false });
+    if (error) {
+      setLoading(false);
+      throw error;
+    }
     setEntries(data || []);
     setLoading(false);
+    return data || [];
   }, [userId]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load().catch(error => {
+      console.error('[useHistory] load failed:', error);
+      setEntries([]);
+      setLoading(false);
+    });
+  }, [load]);
 
   /* ── Log a watched item ── */
   const logWatched = useCallback(async (item, { rating, note, dnf } = {}) => {
@@ -68,10 +84,25 @@ export function useHistory(userId) {
     setEntries(prev => prev.filter(e => e.tmdb_id !== Number(tmdbId)));
   }, [userId]);
 
+  const clearAll = useCallback(async () => {
+    if (!userId) return [];
+    const previous = entries;
+    setEntries([]);
+    const { error } = await supabase
+      .from('journal')
+      .delete()
+      .eq('user_id', userId);
+    if (error) {
+      setEntries(previous);
+      throw error;
+    }
+    return [];
+  }, [entries, userId]);
+
   const isWatched = useCallback(
     (tmdbId) => entries.some(e => e.tmdb_id === Number(tmdbId)),
     [entries]
   );
 
-  return { entries, loading, logWatched, updateEntry, removeEntry, isWatched, reload: load };
+  return { entries, loading, logWatched, updateEntry, removeEntry, clearAll, isWatched, reload: load };
 }

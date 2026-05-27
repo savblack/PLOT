@@ -4,6 +4,7 @@ import { supabase } from './api/supabase.js';
 import { setTmdbRegion } from './api/tmdb.js';
 import AppShell from './components/AppShell.jsx';
 import MediaPanel from './components/MediaPanel.jsx';
+import ErrorBoundary from './components/ErrorBoundary.jsx';
 import { useTheme } from './hooks/useTheme.js';
 import { useWatchlist }    from './hooks/useWatchlist.js';
 import { useWatching }     from './hooks/useWatching.js';
@@ -249,7 +250,9 @@ export default function App() {
   return (
     <AppContext.Provider value={ctx}>
       <AppShell currentView={currentView} navigateTo={navigateTo} profile={profile}>
-        <Outlet />
+        <ErrorBoundary resetKey={location.pathname} variant="view">
+          <Outlet />
+        </ErrorBoundary>
       </AppShell>
 
       {panelItem && (

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useApp, posterUrl, TodayLabel } from '../App.jsx';
 import { useHistory } from '../hooks/useHistory.js';
 import { downloadWatchHistoryCsv } from '../utils/watchHistoryExport.js';
@@ -64,10 +65,12 @@ function StarRating({ value, onChange }) {
 }
 
 export default function HistoryView() {
-  const { openPanel, user, favorites } = useApp();
+  const { openPanel, user, favorites, navigateTo } = useApp();
+  const location = useLocation();
   const { entries, loading, updateEntry, removeEntry } = useHistory(user?.id);
   const [filter,       setFilter]       = useState('all'); // all | movie | tv
   const [openMonths,   setOpenMonths]   = useState({});    // month label → bool
+  const historyCleared = new URLSearchParams(location.search).get('cleared') === '1';
 
   const toggleMonth = (month) =>
     setOpenMonths(prev => ({ ...prev, [month]: !(prev[month] ?? true) }));
@@ -83,55 +86,72 @@ export default function HistoryView() {
 
   return (
     <div>
-      <div className="sub-tabs">
-        <span className="sub-tabs-date"><TodayLabel /></span>
-        {entries.length > 0 ? (
-          <>
-            <div className="sub-tabs-scroll">
-              {[
-                { id: 'all',   label: 'All' },
-                { id: 'tv',    label: 'Series' },
-                { id: 'movie', label: 'Movies' },
-              ].map(f => (
-                <button
-                  key={f.id}
-                  className={`sub-tab-btn${filter === f.id ? ' active' : ''}`}
-                  onClick={() => setFilter(f.id)}
-                >
-                  {f.label}
-                </button>
-              ))}
-            </div>
-            <span className="sub-tabs-subtitle">
-              {entries.length} title{entries.length !== 1 ? 's' : ''} watched
-            </span>
-            <button
-              type="button"
-              className="btn btn-ghost btn-xs history-export-btn"
-              onClick={() => downloadWatchHistoryCsv(entries)}
-              title="Export watch history as CSV"
-              aria-label="Export watch history as CSV"
-            >
-              <ExportIcon />
-              <span>CSV</span>
-            </button>
-          </>
-        ) : (
-          <span className="sub-tabs-subtitle">Your watch history will appear here</span>
-        )}
-      </div>
+      {entries.length > 0 && (
+        <div className="sub-tabs">
+          <span className="sub-tabs-date"><TodayLabel /></span>
+          <div className="sub-tabs-scroll">
+            {[
+              { id: 'all',   label: 'All' },
+              { id: 'tv',    label: 'Series' },
+              { id: 'movie', label: 'Movies' },
+            ].map(f => (
+              <button
+                key={f.id}
+                className={`sub-tab-btn${filter === f.id ? ' active' : ''}`}
+                onClick={() => setFilter(f.id)}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+          <span className="sub-tabs-subtitle">
+            {entries.length} title{entries.length !== 1 ? 's' : ''} watched
+          </span>
+          <button
+            type="button"
+            className="btn btn-ghost btn-xs history-export-btn"
+            onClick={() => downloadWatchHistoryCsv(entries)}
+            title="Export watch history as CSV"
+            aria-label="Export watch history as CSV"
+          >
+            <ExportIcon />
+            <span>CSV</span>
+          </button>
+        </div>
+      )}
+
+      {historyCleared && (
+        <div
+          role="status"
+          style={{
+            margin: '0.85rem 0 0',
+            padding: '0.75rem 0.85rem',
+            border: '1px solid rgba(74,222,128,0.25)',
+            borderRadius: 'var(--radius-sm)',
+            background: 'rgba(74,222,128,0.08)',
+            color: '#4ade80',
+            fontSize: '0.82rem',
+            fontWeight: 600,
+          }}
+        >
+          Watch history cleared
+        </div>
+      )}
 
       {filtered.length === 0 ? (
         <div className="empty-state" style={{ marginTop: '1rem' }}>
-          <div className="empty-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 40, height: 40, opacity: 0.35 }}>
-              <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/>
-            </svg>
-          </div>
           <div className="empty-title">Nothing watched yet</div>
           <div className="empty-body">
             Your watch history will appear here. Search for a title and mark it as watched to get started.
           </div>
+          <button
+            type="button"
+            className="btn btn-ghost"
+            onClick={() => navigateTo('search')}
+            style={{ marginTop: '1rem' }}
+          >
+            Add titles
+          </button>
         </div>
       ) : (
         <div style={{ paddingBottom: '2rem' }}>

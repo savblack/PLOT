@@ -242,8 +242,30 @@ export default class ErrorBoundary extends Component {
     posthog.captureException(error, { extra: info });
   }
 
+  componentDidUpdate(prevProps) {
+    if (this.state.hasError && prevProps.resetKey !== this.props.resetKey) {
+      this.setState({ hasError: false });
+    }
+  }
+
   render() {
     if (this.state.hasError) {
+      if (this.props.variant === 'view') {
+        return (
+          <div className="empty-state" style={{ marginTop: '1rem' }}>
+            <div className="empty-title">Something went wrong</div>
+            <div className="empty-body">Try another page, or come back to this one in a moment.</div>
+            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', marginTop: '1rem' }}>
+              <button className="btn btn-primary btn-sm" onClick={() => { window.location.href = '/home'; }}>
+                Go home
+              </button>
+              <button className="btn btn-secondary btn-sm" onClick={() => this.setState({ hasError: false })}>
+                Try again
+              </button>
+            </div>
+          </div>
+        );
+      }
       return (
         <ErrorScreen
           code="404"
@@ -251,7 +273,7 @@ export default class ErrorBoundary extends Component {
           title="Looks like we hit a plot hole."
           body="Luckily, there's a lot more worth watching."
           primaryLabel="Go home"
-          primaryAction={() => { window.location.href = '/'; }}
+          primaryAction={() => { window.location.href = '/home'; }}
           ghostLabel="Search titles"
           ghostAction={() => { window.location.href = '/search'; }}
         />
