@@ -1,26 +1,12 @@
-import { useState, useEffect } from 'react';
-import { useApp, posterUrl, backdropUrl, logoUrl, TodayLabel } from '../App.jsx';
+import { useState } from 'react';
+import { useApp, posterUrl, backdropUrl, TodayLabel } from '../App.jsx';
 import { useDragScroll } from '../hooks/useDragScroll.js';
 import { useGenres } from '../hooks/useGenres.js';
 import { useDiscover } from '../hooks/useDiscover.js';
 import { UpcomingContent } from './GuideView.jsx';
 import EpgView from './EpgView.jsx';
 import MultiSelect from './MultiSelect.jsx';
-import { tmdb, getTmdbRegion } from '../api/tmdb.js';
 import DiscoverSkeleton from './skeletons/DiscoverSkeleton.jsx';
-
-/* ── Module-level provider logo cache ── */
-const _providerCache = new Map();
-async function getProviderLogo(id, type) {
-  const region = getTmdbRegion();
-  const key = `${type}-${id}-${region}`;
-  if (_providerCache.has(key)) return _providerCache.get(key);
-  const data = await tmdb.getWatchProviders(id, type);
-  const providers = data?.results?.[region]?.flatrate || [];
-  const logo = providers[0]?.logo_path || null;
-  _providerCache.set(key, logo);
-  return logo;
-}
 
 const ALL_TYPES = ['tv', 'cinema', 'movie'];
 
@@ -181,7 +167,7 @@ function PlatformSection({ platform, openPanel, watchlist }) {
               <div className="discover-plat-type-label">Movies</div>
               <div className="discover-plat-grid">
                 {platform.movies.slice(0, 10).map((item, i) => (
-                  <div key={item.id} className="media-card" style={{ width: '100%' }} onClick={() => openPanel(item.id, 'movie')}>
+                  <div key={item.id} className="media-card" onClick={() => openPanel(item.id, 'movie')}>
                     <div className="media-card-img">
                       {posterUrl(item.poster_path, 'w185')
                         ? <img src={posterUrl(item.poster_path, 'w185')} alt={item.title || item.name} loading="lazy" />
@@ -198,10 +184,10 @@ function PlatformSection({ platform, openPanel, watchlist }) {
           )}
           {platform.tv.length > 0 && (
             <>
-              <div className="discover-plat-type-label" style={{ marginTop: platform.movies.length ? '0.75rem' : 0 }}>TV Shows</div>
+              <div className="discover-plat-type-label">TV Shows</div>
               <div className="discover-plat-grid">
                 {platform.tv.slice(0, 10).map((item, i) => (
-                  <div key={item.id} className="media-card" style={{ width: '100%' }} onClick={() => openPanel(item.id, 'tv')}>
+                  <div key={item.id} className="media-card" onClick={() => openPanel(item.id, 'tv')}>
                     <div className="media-card-img">
                       {posterUrl(item.poster_path, 'w185')
                         ? <img src={posterUrl(item.poster_path, 'w185')} alt={item.title || item.name} loading="lazy" />
@@ -236,11 +222,11 @@ function DiscoverContent({ openPanel, watchlist, providers }) {
       {hero && <HeroCard item={hero} openPanel={openPanel} watchlist={watchlist} />}
 
       {hotRail.length > 0 && (
-        <section>
-          <div className="date-group-header" style={{ paddingTop: '1.1rem' }}>
+        <section style={{ paddingTop: '1rem' }}>
+          <div className="date-group-header" style={{ paddingTop: '0.5rem' }}>
             <div>
               <div style={{ fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.15rem' }}>Trending today</div>
-              <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1.2rem', fontWeight: 600, letterSpacing: '0', color: 'color-mix(in srgb, var(--text-primary) 60%, transparent)' }}>Hot Right Now</div>
+              <div style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-primary)' }}>Hot Right Now</div>
             </div>
           </div>
           <Rail>
@@ -256,7 +242,7 @@ function DiscoverContent({ openPanel, watchlist, providers }) {
           <div className="date-group-header" style={{ paddingTop: '0.5rem' }}>
             <div>
               <div style={{ fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.15rem' }}>Global ranking</div>
-              <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1.2rem', fontWeight: 600, letterSpacing: '0', color: 'var(--text-primary)' }}>Top 20 This Week</div>
+              <div style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-primary)' }}>Top 20 This Week</div>
             </div>
           </div>
           {weekly.map((item, i) => (
@@ -270,7 +256,7 @@ function DiscoverContent({ openPanel, watchlist, providers }) {
           <div className="date-group-header" style={{ paddingTop: '0.5rem' }}>
             <div>
               <div style={{ fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.15rem' }}>Your platforms</div>
-              <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1.2rem', fontWeight: 600, letterSpacing: '0', color: 'var(--text-primary)' }}>On Your Services</div>
+              <div style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-primary)' }}>On Your Services</div>
             </div>
           </div>
           {platformList.map(platform => (
@@ -288,15 +274,16 @@ function DiscoverContent({ openPanel, watchlist, providers }) {
 ═══════════════════════════════════════ */
 export default function DiscoverView() {
   const app = useApp();
-  if (!app) return null;
-  const { openPanel, watchlist, profile } = app;
   const genres        = useGenres();
-  const streamingProviders = profile?.streaming_providers || [];
-  const guideChannels      = profile?.guide_channels      || [];
-
   const [tab,          setTab]          = useState('discover');
   const [typeFilters,  setTypeFilters]  = useState(ALL_TYPES);
   const [genreFilters, setGenreFilters] = useState([]);
+
+  if (!app) return null;
+
+  const { openPanel, watchlist, profile } = app;
+  const streamingProviders = profile?.streaming_providers || [];
+  const guideChannels      = profile?.guide_channels      || [];
 
   return (
     <div className={tab === 'guide' ? 'guide-schedule-mode' : ''}>

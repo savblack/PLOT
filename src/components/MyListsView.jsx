@@ -266,15 +266,15 @@ function TopTenSection({ listType, title, topLists }) {
   const slots = Array.from({ length: 10 }, (_, i) => i + 1);
 
   const rankColor = (rank) => {
-    if (rank === 1) return '#F59E0B';
+    if (rank === 1) return 'var(--accent)';
     if (rank <= 3)  return 'var(--text-secondary)';
     return 'var(--text-muted)';
   };
 
   return (
     <div>
-      <div className="date-group-header">
-        <span className="date-group-label">{title}</span>
+      <div className="discover-plat-type-label mylists-topten-type-label">
+        <span>{title}</span>
         {items.length > 0 && (
           <button
             className="btn btn-ghost btn-xs"
@@ -738,7 +738,7 @@ function PlayIcon() {
 }
 
 /* ── Currently-watching section ── */
-function WatchingSection({ watching, watchlist, hideHeader }) {
+function WatchingSection({ watching, hideHeader }) {
   const { openPanel } = useApp();
   const items = watching.items || [];
 
@@ -878,7 +878,7 @@ function CollapsibleBar({ label, open, onToggle }) {
 
 /* ── Main view ── */
 export default function MyListsView() {
-  const { user, topLists, favorites, customLists, watching, watchlist, openPanel } = useApp();
+  const { user, topLists, favorites, customLists, watching, watchlist } = useApp();
   const genres = useGenres();
 
   const [tab,          setTab]          = useState('all');
@@ -920,10 +920,7 @@ export default function MyListsView() {
   const showFavs     = isAll || tab === 'favorites';
   const showLists    = isAll || tab === 'lists';
 
-  // Data for "All" collapsible bars
   const watchingItems  = watching.items || [];
-  const favItems       = filterItems(favorites.favorites || []);
-  const customListData = customLists.lists || [];
 
   return (
     <div style={{ paddingBottom: '2rem' }}>
@@ -962,11 +959,11 @@ export default function MyListsView() {
       {showWatching && watchingItems.length > 0 && (
         <>
           {isAll && <CollapsibleBar label="Watching" open={watchingOpen} onToggle={() => setWatchingOpen(o => !o)} />}
-          {(!isAll || watchingOpen) && <WatchingSection watching={watching} watchlist={watchlist} hideHeader={isAll} />}
+          {(!isAll || watchingOpen) && <WatchingSection watching={watching} hideHeader={isAll} />}
         </>
       )}
       {tab === 'watching' && watchingItems.length === 0 && (
-        <WatchingSection watching={watching} watchlist={watchlist} />
+        <WatchingSection watching={watching} />
       )}
 
       {/* ── Want to Watch ── */}
@@ -980,14 +977,14 @@ export default function MyListsView() {
       {/* ── Top 10 ── */}
       {showTop10 && (
         <>
-          {isAll && <CollapsibleBar label="Top 10" open={top10Open} onToggle={() => setTop10Open(o => !o)} />}
+          {(isAll || tab === 'top10') && <CollapsibleBar label="Top 10" open={top10Open} onToggle={() => setTop10Open(o => !o)} />}
           {(!isAll || top10Open) && (
             <>
               {(typeFilters.length === 0 || typeFilters.includes('movie')) && (
-                <TopTenSection listType="movies" title={isAll ? 'Movies' : 'Top 10 Movies'} topLists={topLists} />
+                <TopTenSection listType="movies" title="Movies" topLists={topLists} />
               )}
               {(typeFilters.length === 0 || typeFilters.includes('tv')) && (
-                <TopTenSection listType="tv" title={isAll ? 'TV Shows' : 'Top 10 TV Shows'} topLists={topLists} />
+                <TopTenSection listType="tv" title="TV Shows" topLists={topLists} />
               )}
             </>
           )}

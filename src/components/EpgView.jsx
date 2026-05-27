@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, useMemo } from 'react';
 import { useApp } from '../App.jsx';
 import { localDateStr, dateToLocalStr } from '../utils/date.js';
 import MultiSelect from './MultiSelect.jsx';
@@ -228,8 +228,7 @@ export default function EpgView() {
   ].filter(p => { if (seenIds.has(p.id)) return false; seenIds.add(p.id); return true; });
 
   const [date,             setDate]             = useState(todayStr);
-  const [channels,         setChannels]         = useState([]);
-  const [loading,          setLoading]          = useState(true);
+  const [scheduleByDate,   setScheduleByDate]   = useState({});
   const [hiddenChannelIds, setHiddenChannelIds] = useState(new Set());
   const [typeFilters,      setTypeFilters]      = useState([]);
   const [platformFilters,  setPlatformFilters]  = useState([]); // provider names to match against EPG channel names
@@ -239,37 +238,58 @@ export default function EpgView() {
   const sidebarRef = useRef(null);
   const rulerRef   = useRef(null);
   const rafRef     = useRef(null);
+  const wheelFlipRef = useRef(false);
+  const pendingScrollRef = useRef(null);
 
   /* ── Day tabs ── */
-  const days = Array.from({ length: 7 }, (_, i) => {
+  const days = useMemo(() => Array.from({ length: 7 }, (_, i) => {
     const d = new Date(); d.setDate(d.getDate() + i);
     return {
       dateStr: dateToLocalStr(d),
       label:   i === 0 ? 'Today' : d.toLocaleDateString('en', { weekday: 'short' }),
       num:     d.getDate(),
     };
-  });
+  }), [todayStr]);
 
-  /* ── Fetch ── */
+  const dayDateStrs = useMemo(() => days.map(d => d.dateStr), [days]);
+  const dayDateKey = dayDateStrs.join('|');
+  const selectedDayIndex = days.findIndex(d => d.dateStr === date);
+  const channels = scheduleByDate[date] ?? [];
+  const loading = scheduleByDate[date] === undefined;
+
+  /* ── Fetch the visible week up front so day-to-day scroll feels local ── */
   useEffect(() => {
-    setLoading(true);
-    Promise.all([
-      fetchBroadcast(date, country),
-      fetchWebSchedule(date),
-    ]).then(([broadcastEps, webEps]) => {
+    let cancelled = false;
+    setScheduleByDate({});
+
+    dayDateStrs.forEach(async (dateStr) => {
+      const [broadcastEps, webEps] = await Promise.all([
+        fetchBroadcast(dateStr, country),
+        fetchWebSchedule(dateStr),
+      ]);
+      if (cancelled) return;
+
       const all = [
-        ...buildBroadcastChannels(broadcastEps, date, timezone),
-        ...buildStreamingChannels(webEps, date, timezone),
+        ...buildBroadcastChannels(broadcastEps, dateStr, timezone),
+        ...buildStreamingChannels(webEps, dateStr, timezone),
       ].sort((a, b) => a.name.localeCompare(b.name));
-      setChannels(all);
-      setLoading(false);
-    });
-  }, [date, country, timezone]);
 
-  /* ── Auto-scroll to now (using user's timezone) ── */
-  useEffect(() => {
+      setScheduleByDate(prev => ({ ...prev, [dateStr]: all }));
+    });
+
+    return () => { cancelled = true; };
+  }, [country, timezone, dayDateKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* ── Apply day scroll position before paint to avoid boundary flicker ── */
+  useLayoutEffect(() => {
     if (loading || !bodyRef.current) return;
-    if (date === todayStr) {
+    if (pendingScrollRef.current === 'end') {
+      bodyRef.current.scrollLeft = bodyRef.current.scrollWidth - bodyRef.current.clientWidth;
+      pendingScrollRef.current = null;
+    } else if (pendingScrollRef.current === 'start') {
+      bodyRef.current.scrollLeft = 0;
+      pendingScrollRef.current = null;
+    } else if (date === todayStr) {
       // Get current H:MM in the user's saved timezone
       const hhmm = stampToLocalHHMM(new Date().toISOString(), timezone);
       const [h, m] = hhmm.split(':').map(Number);
@@ -279,6 +299,45 @@ export default function EpgView() {
       bodyRef.current.scrollLeft = 0;
     }
   }, [loading, date, todayStr, timezone]);
+
+  /* ── Continue horizontal scrolling across day boundaries ── */
+  useEffect(() => {
+    const body = bodyRef.current;
+    if (!body) return;
+
+    const onWheel = (event) => {
+      const horizontalDelta = Math.abs(event.deltaX) >= Math.abs(event.deltaY)
+        ? event.deltaX
+        : event.shiftKey
+          ? event.deltaY
+          : 0;
+
+      if (!horizontalDelta || wheelFlipRef.current) return;
+
+      const maxLeft = body.scrollWidth - body.clientWidth;
+      const atStart = body.scrollLeft <= 2;
+      const atEnd = body.scrollLeft >= maxLeft - 2;
+
+      if (horizontalDelta > 0 && atEnd && selectedDayIndex < days.length - 1) {
+        if (scheduleByDate[days[selectedDayIndex + 1].dateStr] === undefined) return;
+        event.preventDefault();
+        wheelFlipRef.current = true;
+        pendingScrollRef.current = 'start';
+        setDate(days[selectedDayIndex + 1].dateStr);
+        window.setTimeout(() => { wheelFlipRef.current = false; }, 450);
+      } else if (horizontalDelta < 0 && atStart && selectedDayIndex > 0) {
+        if (scheduleByDate[days[selectedDayIndex - 1].dateStr] === undefined) return;
+        event.preventDefault();
+        wheelFlipRef.current = true;
+        pendingScrollRef.current = 'end';
+        setDate(days[selectedDayIndex - 1].dateStr);
+        window.setTimeout(() => { wheelFlipRef.current = false; }, 450);
+      }
+    };
+
+    body.addEventListener('wheel', onWheel, { passive: false });
+    return () => body.removeEventListener('wheel', onWheel);
+  }, [days, scheduleByDate, selectedDayIndex]);
 
   /* ── Passive scroll sync: body drives ruler (x) and sidebar (y) ── */
   useEffect(() => {
@@ -349,7 +408,10 @@ export default function EpgView() {
             <button
               key={d.dateStr}
               className={`epg-day-btn${date === d.dateStr ? ' active' : ''}`}
-              onClick={() => setDate(d.dateStr)}
+              onClick={() => {
+                pendingScrollRef.current = null;
+                setDate(d.dateStr);
+              }}
             >
               <span className="epg-day-name">{d.label}</span>
               <span className="epg-day-num">{d.num}</span>

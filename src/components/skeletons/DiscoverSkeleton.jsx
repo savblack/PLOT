@@ -9,7 +9,7 @@ function PosterCard() {
   );
 }
 
-function SectionLabel({ subLabel, labelWidth = 160 }) {
+function SectionLabel({ labelWidth = 160 }) {
   return (
     <div style={{ padding: '1.1rem 1rem 0.25rem' }}>
       <Skeleton width={80} height={9} style={{ marginBottom: '0.3rem' }} />
