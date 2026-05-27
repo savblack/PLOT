@@ -720,6 +720,11 @@ svg { stroke-width: 1.5; }
   flex-shrink: 0;
 }
 
+.history-export-btn {
+  margin-left: 0.5rem;
+  flex-shrink: 0;
+}
+
 .sub-tab-btn {
   padding: 0.8rem 0.9rem;
   background: none;

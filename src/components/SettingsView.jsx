@@ -7,6 +7,8 @@ import { useMediaSync } from '../hooks/useMediaSync.js';
 import { useTraktSync } from '../hooks/useTraktSync.js';
 import { useCalendar } from '../hooks/useCalendar.js';
 import { downloadICS } from '../utils/ics.js';
+import { useHistory } from '../hooks/useHistory.js';
+import { downloadWatchHistoryCsv } from '../utils/watchHistoryExport.js';
 
 const REGIONS = [
   { code: 'US', name: 'United States' }, { code: 'AU', name: 'Australia' },
@@ -507,6 +509,7 @@ export default function SettingsView() {
   const { profile, user, theme, setTheme, refreshProfile, watchlist, watching, reminders } = useApp();
   const sync  = useMediaSync(user?.id);
   const trakt = useTraktSync(user?.id);
+  const history = useHistory(user?.id);
   const { events: calEvents, loading: calLoading } = useCalendar(
     watchlist?.items ?? [],
     watching?.items ?? [],
@@ -594,6 +597,7 @@ export default function SettingsView() {
     if (!window.confirm('Clear your entire watch history? This cannot be undone.')) return;
     setClearingHistory(true);
     await supabase.from('journal').delete().eq('user_id', user.id);
+    await history.reload();
     setClearingHistory(false);
   };
 
@@ -923,6 +927,37 @@ export default function SettingsView() {
             onClick={() => downloadICS(calEvents)}
           >
             Download .ics
+          </button>
+        </div>
+      </div>
+
+      {/* Data */}
+      <div className="settings-group">
+        <div className="settings-group-title">Data</div>
+        <div className="settings-row" style={{ cursor: 'default' }}>
+          <div className="settings-row-left">
+            <div className="settings-row-icon">
+              <svg viewBox="0 0 24 24">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+            </div>
+            <div>
+              <div className="settings-row-label">Export Watch History</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                {history.loading
+                  ? 'Loading history...'
+                  : `${history.entries.length} title${history.entries.length !== 1 ? 's' : ''} · CSV`}
+              </div>
+            </div>
+          </div>
+          <button
+            className="btn btn-secondary btn-xs"
+            disabled={history.loading || history.entries.length === 0}
+            onClick={() => downloadWatchHistoryCsv(history.entries)}
+          >
+            Download CSV
           </button>
         </div>
       </div>
