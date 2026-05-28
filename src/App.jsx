@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from './api/supabase.js';
 import { setTmdbRegion } from './api/tmdb.js';
@@ -123,8 +123,7 @@ export default function App() {
   const [panelItem,    setPanelItem]    = useState(null);
   const [panelClosing, setPanelClosing] = useState(false);
 
-  // Timezone nudge state
-  const [tzBanner, setTzBanner] = useState(null); // { deviceTz }
+  const [tzCheckTime, setTzCheckTime] = useState(() => Date.now());
 
   /* ── Profile loader ── */
   const loadProfile = useCallback(async (userId) => {
@@ -155,38 +154,36 @@ export default function App() {
   }, [loadProfile]);
 
   /* ── Timezone mismatch check ── */
-  useEffect(() => {
-    if (!profile?.timezone) return; // no saved tz yet — onboarding will set it
+  const tzBanner = useMemo(() => {
+    if (!profile?.timezone) return null; // no saved tz yet — onboarding will set it
     let deviceTz = 'UTC';
     try { deviceTz = Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { /* unsupported */ }
-    if (deviceTz === profile.timezone) return; // matches — no nudge needed
+    if (deviceTz === profile.timezone) return null; // matches — no nudge needed
 
     // Check dismissal
     try {
       const raw = readStorage(TZ_DISMISS_KEY);
       if (raw) {
         const { at, deviceTz: dismissedFor } = JSON.parse(raw);
-        const daysSince = (Date.now() - at) / 86400000;
-        if (dismissedFor === deviceTz && daysSince < TZ_NUDGE_DAYS) return;
+        const daysSince = (tzCheckTime - at) / 86400000;
+        if (dismissedFor === deviceTz && daysSince < TZ_NUDGE_DAYS) return null;
       }
     } catch { /* corrupt storage — ignore */ }
 
-    setTzBanner({ deviceTz });
-  }, [profile?.timezone]);
+    return { deviceTz };
+  }, [profile, tzCheckTime]);
 
   const handleTzUpdate = useCallback(async () => {
     if (!tzBanner || !user) return;
     await supabase.from('profiles').update({ timezone: tzBanner.deviceTz }).eq('id', user.id);
-    setTzBanner(null);
     loadProfile(user.id);
   }, [tzBanner, user, loadProfile]);
 
   const handleTzDismiss = useCallback(() => {
     if (!tzBanner) return;
-    try {
-      writeStorage(TZ_DISMISS_KEY, JSON.stringify({ at: Date.now(), deviceTz: tzBanner.deviceTz }));
-    } catch { /* storage unavailable — ignore */ }
-    setTzBanner(null);
+    const dismissedAt = Date.now();
+    writeStorage(TZ_DISMISS_KEY, JSON.stringify({ at: dismissedAt, deviceTz: tzBanner.deviceTz }));
+    setTzCheckTime(dismissedAt);
   }, [tzBanner]);
 
   /* ── Media Panel ── */
