@@ -466,6 +466,28 @@
   margin: 0;
 }
 
+.ds-hero-card-sample {
+  height: 190px;
+  margin: 0;
+}
+
+.ds-hero-card-sample .discover-hero-title {
+  font-size: 1.55rem;
+}
+
+.ds-chart-row-sample {
+  margin: 0;
+  padding: 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+.ds-chart-row-sample .card-save-btn {
+  position: static;
+  opacity: 1;
+}
+
 .ds-calendar-sample {
   margin: 0;
 }
@@ -509,6 +531,26 @@
 .ds-settings-sample .settings-row-icon svg {
   width: 15px;
   height: 15px;
+}
+
+.ds-drawer-sample {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+
+.ds-drawer-sample .nav-drawer-header {
+  border-bottom: 1px solid var(--border);
+}
+
+.ds-drawer-sample .nav-drawer-nav {
+  padding: 0.4rem;
+}
+
+.ds-drawer-sample .nav-drawer-item {
+  width: 100%;
+  border-radius: var(--radius-md);
 }
 
 .ds-episode-sample {
@@ -559,6 +601,14 @@
   display: grid;
   gap: 0.45rem;
   margin: 0.75rem 0;
+}
+
+.ds-empty-sample {
+  margin: 0.75rem 0 0;
+  padding: 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
 }
 
 .ds-skeleton span {

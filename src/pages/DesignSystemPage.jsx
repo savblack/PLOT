@@ -339,6 +339,22 @@ export default function DesignSystemPage() {
             </div>
           </div>
 
+          <div className="ds-card-example">
+            <span className="ds-example-label">Hero media card</span>
+            <div className="discover-hero ds-hero-card-sample">
+              <div className="discover-hero-backdrop discover-hero-backdrop-fallback" />
+              <div className="discover-hero-overlay">
+                <span className="discover-hero-badge">Trending #1</span>
+                <h2 className="discover-hero-title">Sample feature</h2>
+                <p className="discover-hero-meta">2026 · Movie</p>
+                <div className="discover-hero-actions">
+                  <button className="discover-hero-save">Save</button>
+                  <button className="discover-hero-info">Details</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div className="ds-form-card">
             <span className="ds-example-label">Form card</span>
             <label>Search field<input type="text" value="Severance" readOnly /></label>
@@ -353,6 +369,21 @@ export default function DesignSystemPage() {
               <div className="list-row-info">
                 <div className="list-row-title">The Studio</div>
                 <div className="list-row-meta"><span className="list-type-badge">Series</span><span>Season 1 · Episode 6</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div className="ds-card-example">
+            <span className="ds-example-label">Ranked chart row</span>
+            <div className="discover-chart-row ds-chart-row-sample">
+              <span className="discover-chart-rank glow">1</span>
+              <div className="discover-chart-poster"><div className="ds-mini-poster" /></div>
+              <div className="discover-chart-info">
+                <div className="discover-chart-title">Top title</div>
+                <div className="discover-chart-meta">2026 · TV</div>
+              </div>
+              <div className="discover-chart-right">
+                <button className="card-save-btn saved" aria-label="Saved sample"><IconBookmark /></button>
               </div>
             </div>
           </div>
@@ -408,6 +439,19 @@ export default function DesignSystemPage() {
           </div>
 
           <div className="ds-card-example">
+            <span className="ds-example-label">Navigation drawer</span>
+            <div className="ds-drawer-sample">
+              <div className="nav-drawer-header">
+                <span className="nav-drawer-logo">PLOT</span>
+              </div>
+              <div className="nav-drawer-nav">
+                <button className="nav-drawer-item active"><span className="nav-drawer-label">Home</span></button>
+                <button className="nav-drawer-item"><span className="nav-drawer-label">Settings</span></button>
+              </div>
+            </div>
+          </div>
+
+          <div className="ds-card-example">
             <span className="ds-example-label">Episode row</span>
             <div className="episode-list ds-episode-sample">
               <div className="ep-row ep-current">
@@ -431,6 +475,10 @@ export default function DesignSystemPage() {
             <span className="ds-example-label">State card</span>
             <strong>Empty and loading states</strong>
             <p>Keep the message short. Offer one next action when the user can recover immediately.</p>
+            <div className="empty-state ds-empty-sample">
+              <div className="empty-title">Nothing saved</div>
+              <div className="empty-body">Saved titles will appear here.</div>
+            </div>
             <div className="ds-skeleton"><span /><span /><span /></div>
             <button className="btn btn-ghost btn-sm">Refresh</button>
           </div>
