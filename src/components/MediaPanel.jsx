@@ -518,7 +518,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
             )}
 
             {/* ── Action buttons ── */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '0.5rem' }}>
 
               {/* Primary: Save / Saved — hidden while actively watching */}
               {!isWatching && (

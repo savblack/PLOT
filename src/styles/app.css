@@ -469,6 +469,7 @@ svg { stroke-width: 1.5; }
   padding: 2px 1rem 6px;
   cursor: grab;
   user-select: none;
+  touch-action: pan-y;
 }
 .rail-scroll::-webkit-scrollbar { display: none; }
 .rail-scroll:active { cursor: grabbing; }
@@ -1874,7 +1875,7 @@ svg { stroke-width: 1.5; }
 .search-input {
   width: 100%;
   padding: 0.7rem 1rem 0.7rem 2.5rem;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-xs);
   border: 1px solid var(--border);
   background: var(--surface);
   font-size: 0.88rem;
@@ -1905,6 +1906,9 @@ svg { stroke-width: 1.5; }
 
 .settings-group {
   margin-bottom: 2rem;
+}
+.settings-group:last-of-type {
+  margin-bottom: 0;
 }
 .settings-group-title {
   font-size: 0.65rem;
@@ -2845,6 +2849,9 @@ svg { stroke-width: 1.5; }
 .discover-plat-section {
   border-bottom: 1px solid var(--border);
 }
+.discover-plat-section:last-child {
+  border-bottom: none;
+}
 
 .discover-plat-header {
   width: 100%;
@@ -2947,11 +2954,17 @@ svg { stroke-width: 1.5; }
   overscroll-behavior-x: contain;
   scrollbar-width: none;
   padding-bottom: 0.15rem;
+  cursor: grab;
+  user-select: none;
+  touch-action: pan-y;
   -webkit-overflow-scrolling: touch;
 }
 
 .discover-plat-grid::-webkit-scrollbar {
   display: none;
+}
+.discover-plat-grid:active {
+  cursor: grabbing;
 }
 
 .discover-plat-grid > .media-card {

@@ -667,7 +667,7 @@ export default function SettingsView() {
   };
 
   return (
-    <div style={{ paddingBottom: '2rem' }}>
+    <div>
       {/* Account */}
       <div className="settings-group" style={{ marginTop: '0.75rem' }}>
         <div className="settings-group-title">Account</div>

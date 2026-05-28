@@ -21,6 +21,15 @@ function Rail({ children }) {
   );
 }
 
+function PlatformGrid({ children }) {
+  const { ref, handlers } = useDragScroll();
+  return (
+    <div className="discover-plat-grid" ref={ref} {...handlers}>
+      {children}
+    </div>
+  );
+}
+
 /* ── Save button ── */
 function SaveBtn({ item, watchlist }) {
   const id    = item.id || item.tmdb_id;
@@ -165,7 +174,7 @@ function PlatformSection({ platform, openPanel, watchlist }) {
           {platform.movies.length > 0 && (
             <>
               <div className="discover-plat-type-label">Movies</div>
-              <div className="discover-plat-grid">
+              <PlatformGrid>
                 {platform.movies.slice(0, 10).map((item, i) => (
                   <div key={item.id} className="media-card" onClick={() => openPanel(item.id, 'movie')}>
                     <div className="media-card-img">
@@ -179,13 +188,13 @@ function PlatformSection({ platform, openPanel, watchlist }) {
                     <div className="media-card-title">{item.title || item.name}</div>
                   </div>
                 ))}
-              </div>
+              </PlatformGrid>
             </>
           )}
           {platform.tv.length > 0 && (
             <>
               <div className="discover-plat-type-label">TV Shows</div>
-              <div className="discover-plat-grid">
+              <PlatformGrid>
                 {platform.tv.slice(0, 10).map((item, i) => (
                   <div key={item.id} className="media-card" onClick={() => openPanel(item.id, 'tv')}>
                     <div className="media-card-img">
@@ -199,7 +208,7 @@ function PlatformSection({ platform, openPanel, watchlist }) {
                     <div className="media-card-title">{item.title || item.name}</div>
                   </div>
                 ))}
-              </div>
+              </PlatformGrid>
             </>
           )}
         </div>
