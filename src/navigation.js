@@ -23,5 +23,7 @@ export function pathForView(view) {
 
 export function viewFromPath(pathname) {
   const path = pathname.replace(/\/+$/, '') || '/home';
-  return APP_NAV_ITEMS.find(item => item.path === path)?.id ?? (path.replace(/^\//, '') || 'home');
+  const fallbackView = path.replace(/^\//, '') || 'home';
+  const navItem = APP_NAV_ITEMS.find(item => item.path === path);
+  return navItem?.id ?? fallbackView;
 }
