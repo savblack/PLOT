@@ -1,21 +1,27 @@
 import { useState, useEffect } from 'react';
+import { canUseDOM, getSystemColorScheme, readStorage, writeStorage } from '../utils/browser.js';
 
 export function useTheme() {
-  const [theme, setTheme] = useState(() => localStorage.getItem('plot-theme') || 'system');
+  const [theme, setTheme] = useState(() => readStorage('plot-theme', 'system'));
 
   useEffect(() => {
-    localStorage.setItem('plot-theme', theme);
+    if (!canUseDOM()) return undefined;
+
+    writeStorage('plot-theme', theme);
     const root = document.documentElement;
 
     if (theme === 'system') {
-      const mq = window.matchMedia('(prefers-color-scheme: dark)');
-      root.setAttribute('data-theme', mq.matches ? 'dark' : 'light');
+      const mq = window.matchMedia?.('(prefers-color-scheme: dark)');
+      root.setAttribute('data-theme', getSystemColorScheme());
+      if (!mq?.addEventListener) return undefined;
+
       const handler = e => root.setAttribute('data-theme', e.matches ? 'dark' : 'light');
       mq.addEventListener('change', handler);
       return () => mq.removeEventListener('change', handler);
-    } else {
-      root.setAttribute('data-theme', theme);
     }
+
+    root.setAttribute('data-theme', theme);
+    return undefined;
   }, [theme]);
 
   return { theme, setTheme };

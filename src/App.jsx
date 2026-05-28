@@ -12,6 +12,8 @@ import { useTopLists }     from './hooks/useTopLists.js';
 import { useFavorites }    from './hooks/useFavorites.js';
 import { useCustomLists }  from './hooks/useCustomLists.js';
 import PlotLoader from './components/PlotLoader.jsx';
+import { pathForView, viewFromPath } from './navigation.js';
+import { readStorage, writeStorage } from './utils/browser.js';
 export { localDateStr } from './utils/date.js';
 
 /* ── App Context ─────────────────────── */
@@ -161,7 +163,7 @@ export default function App() {
 
     // Check dismissal
     try {
-      const raw = localStorage.getItem(TZ_DISMISS_KEY);
+      const raw = readStorage(TZ_DISMISS_KEY);
       if (raw) {
         const { at, deviceTz: dismissedFor } = JSON.parse(raw);
         const daysSince = (Date.now() - at) / 86400000;
@@ -182,7 +184,7 @@ export default function App() {
   const handleTzDismiss = useCallback(() => {
     if (!tzBanner) return;
     try {
-      localStorage.setItem(TZ_DISMISS_KEY, JSON.stringify({ at: Date.now(), deviceTz: tzBanner.deviceTz }));
+      writeStorage(TZ_DISMISS_KEY, JSON.stringify({ at: Date.now(), deviceTz: tzBanner.deviceTz }));
     } catch { /* storage unavailable — ignore */ }
     setTzBanner(null);
   }, [tzBanner]);
@@ -199,9 +201,9 @@ export default function App() {
   }, []);
 
   /* ── Navigation ── */
-  const navigateTo = useCallback((view) => navigate(`/${view}`), [navigate]);
+  const navigateTo = useCallback((view) => navigate(pathForView(view)), [navigate]);
 
-  const currentView = location.pathname.replace(/^\//, '') || 'home';
+  const currentView = viewFromPath(location.pathname);
 
   /* ── Global data hooks ── */
   const watchlist    = useWatchlist(user?.id);

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { PRIMARY_NAV_ITEMS, VIEW_TITLES } from '../navigation.js';
 
 /* ── SVG Icons ───────────────────────── */
 function IconMenu() {
@@ -19,32 +20,6 @@ function IconClose() {
     </svg>
   );
 }
-
-const TABS = [
-  { id: 'home',     label: 'Home'     },
-  { id: 'calendar', label: 'Calendar' },
-  { id: 'my-lists', label: 'My Lists' },
-  { id: 'history',  label: 'History'  },
-  { id: 'search',   label: 'Search'   },
-];
-
-const NAV_ITEMS = [
-  { id: 'home',     label: 'Home'     },
-  { id: 'calendar', label: 'Calendar' },
-  { id: 'my-lists', label: 'My Lists' },
-  { id: 'history',  label: 'History'  },
-  { id: 'search',   label: 'Search'   },
-];
-
-const VIEW_TITLES = {
-  home:       'PLOT',
-  guide:      'Guide',
-  calendar:   'Calendar',
-  'my-lists': 'My Lists',
-  history:    'History',
-  search:     'Search',
-  settings:   'Settings',
-};
 
 export default function AppShell({ currentView, navigateTo, children }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -67,6 +42,7 @@ export default function AppShell({ currentView, navigateTo, children }) {
 
         <div className="header-end">
           <button
+            type="button"
             className="icon-btn"
             onClick={openDrawer}
             aria-label="Open menu"
@@ -83,11 +59,13 @@ export default function AppShell({ currentView, navigateTo, children }) {
 
       {/* ── Bottom tab bar ── */}
       <nav className="tab-bar">
-        {TABS.map(({ id, label }) => (
+        {PRIMARY_NAV_ITEMS.map(({ id, label }) => (
           <button
             key={id}
+            type="button"
             className={`tab-btn${currentView === id ? ' active' : ''}`}
             onClick={() => navigateTo(id)}
+            aria-current={currentView === id ? 'page' : undefined}
           >
             {label}
           </button>
@@ -101,17 +79,19 @@ export default function AppShell({ currentView, navigateTo, children }) {
       <div className={`nav-drawer${drawerOpen ? ' open' : ''}`}>
         <div className="nav-drawer-header">
           <span className="nav-drawer-logo">PLOT</span>
-          <button className="icon-btn" onClick={closeDrawer} aria-label="Close menu">
+          <button type="button" className="icon-btn" onClick={closeDrawer} aria-label="Close menu">
             <IconClose />
           </button>
         </div>
 
         <nav className="nav-drawer-nav">
-          {NAV_ITEMS.map(({ id, label }) => (
+          {PRIMARY_NAV_ITEMS.map(({ id, label }) => (
             <button
               key={id}
+              type="button"
               className={`nav-drawer-item${currentView === id ? ' active' : ''}`}
               onClick={() => handleNav(id)}
+              aria-current={currentView === id ? 'page' : undefined}
             >
               <span className="nav-drawer-label">{label}</span>
             </button>
@@ -120,8 +100,10 @@ export default function AppShell({ currentView, navigateTo, children }) {
 
         <div className="nav-drawer-footer">
           <button
+            type="button"
             className={`nav-drawer-item${currentView === 'settings' ? ' active' : ''}`}
             onClick={() => handleNav('settings')}
+            aria-current={currentView === 'settings' ? 'page' : undefined}
           >
             <span className="nav-drawer-label">Settings</span>
           </button>
