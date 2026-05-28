@@ -599,6 +599,12 @@ svg { stroke-width: 1.5; }
   top: 6px;
   left: 6px;
 }
+.card-chip-overlay.chip-episode {
+  background: color-mix(in srgb, var(--chip-episode) 72%, rgba(0,0,0,0.28));
+  border-color: color-mix(in srgb, var(--chip-episode) 72%, rgba(255,255,255,0.34));
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.32);
+}
 
 .card-save-btn {
   position: absolute;
@@ -1683,7 +1689,7 @@ svg { stroke-width: 1.5; }
 .history-row-review {
   flex: 1 1 auto;
   min-width: 120px;
-  text-align: left;
+  text-align: right;
   color: var(--text-secondary);
   font-family: 'Nothing You Could Do', cursive;
   font-size: 0.92rem;

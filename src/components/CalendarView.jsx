@@ -154,7 +154,7 @@ export default function CalendarView() {
   const [month, setMonth] = useState(today.getMonth());
   const [weekStart, setWeekStart] = useState(() => startOfWeek(today));
   const [selectedDate, setSelectedDate] = useState(todayStr);
-  const [view, setView]   = useState('grid'); // 'grid' | 'week' | 'agenda'
+  const [view, setView]   = useState('agenda'); // 'grid' | 'week' | 'agenda'
   const [typeFilter, setTypeFilter] = useState(ALL_EVENT_TYPES);
 
   const { loading, eventsForDate } = useCalendar(
