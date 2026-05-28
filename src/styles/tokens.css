@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Manrope:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Manrope:wght@300;400;500;600&display=swap');
 
 /* ── Light mode ──────────────────────── */
 :root {
@@ -30,9 +30,9 @@
   --chip-today:     #059669;
   --chip-tomorrow:  #D97706;
   --chip-soon:      #D97706;
-  --chip-cinema:    #DC2626;
-  --chip-streaming: #0D9488;
-  --chip-episode:   #4F46E5;
+  --chip-cinema:    #D95C66;
+  --chip-streaming: #68AFA8;
+  --chip-episode:   #6D68D9;
 
   /* Glass */
   --glass-bg:       rgba(255,255,255,0.82);
@@ -43,11 +43,8 @@
   --font-sans:      'Manrope', system-ui, sans-serif;
 
   /* Radii */
-  --radius-xs:      6px;
-  --radius-sm:      10px;
   --radius-md:      16px;
   --radius-lg:      24px;
-  --radius-xl:      32px;
   --radius-pill:    9999px;
 
   /* Shadows */
@@ -88,6 +85,10 @@
 
   --epg-bar-stream:    #9a4960;  /* muted rose — streaming in dark mode */
   --epg-bar-broadcast: #60a5fa;  /* blue-400 — live TV in dark mode */
+
+  --chip-cinema:    #E16A73;
+  --chip-streaming: #78BDB7;
+  --chip-episode:   #7A75E0;
 
   --glass-bg:       rgba(24,24,27,0.88);
   --glass-border:   rgba(255,255,255,0.07);

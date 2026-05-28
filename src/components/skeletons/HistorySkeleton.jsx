@@ -5,7 +5,7 @@ const ROW_TITLE_WIDTHS = ['55%', '45%', '60%', '40%', '50%', '65%'];
 function HistoryRow({ titleWidth }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.6rem 1rem' }}>
-      <Skeleton width={48} height={64} style={{ borderRadius: 'var(--radius-sm)', flexShrink: 0 }} />
+      <Skeleton width={48} height={64} style={{ borderRadius: 'var(--radius-md)', flexShrink: 0 }} />
       <div style={{ flex: 1 }}>
         <Skeleton width={titleWidth} height={13} style={{ marginBottom: '0.4rem' }} />
         <Skeleton width={88} height={10} />

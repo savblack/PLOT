@@ -22,7 +22,7 @@ function ChannelRow({ widths }) {
       <Skeleton width={72} height={14} style={{ flexShrink: 0 }} />
       <div style={{ display: 'flex', gap: '0.4rem', flex: 1, overflow: 'hidden' }}>
         {widths.map((w, j) => (
-          <Skeleton key={j} width={w} height={36} style={{ borderRadius: 'var(--radius-sm)', flexShrink: 0 }} />
+          <Skeleton key={j} width={w} height={36} style={{ borderRadius: 'var(--radius-md)', flexShrink: 0 }} />
         ))}
       </div>
     </div>

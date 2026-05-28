@@ -53,7 +53,7 @@ export function TodayLabel({ onClick }) {
       onClick={onClick}
       style={{
         fontSize: '0.68rem',
-        fontWeight: 700,
+        fontWeight: 600,
         color: 'var(--text-muted)',
         letterSpacing: '0.07em',
         textTransform: 'uppercase',
@@ -91,7 +91,7 @@ function TimezoneBanner({ deviceTz, onUpdate, onDismiss }) {
       zIndex: 900,
     }}>
       <div style={{ fontSize: '0.82rem', color: 'var(--text-primary)', lineHeight: 1.45 }}>
-        Looks like you're in <span style={{ fontWeight: 700 }}>{deviceTz}</span>. Want to update your timezone so new releases drop at the right time?
+        Looks like you're in <span style={{ fontWeight: 600 }}>{deviceTz}</span>. Want to update your timezone so new releases drop at the right time?
       </div>
       <div style={{ display: 'flex', gap: '0.5rem' }}>
         <button className="btn btn-primary btn-sm" style={{ flex: 1 }} onClick={onUpdate}>

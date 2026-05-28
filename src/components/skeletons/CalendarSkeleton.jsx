@@ -16,7 +16,7 @@ export default function CalendarSkeleton() {
             borderBottom: i < EVENT_WIDTHS.length - 1 ? '1px solid var(--border)' : 'none',
           }}
         >
-          <Skeleton width={32} height={32} style={{ borderRadius: 'var(--radius-sm)', flexShrink: 0 }} />
+          <Skeleton width={32} height={32} style={{ borderRadius: 'var(--radius-md)', flexShrink: 0 }} />
           <div style={{ flex: 1 }}>
             <Skeleton width={w} height={12} style={{ marginBottom: '0.3rem' }} />
             <Skeleton width={64} height={10} />

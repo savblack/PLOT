@@ -10,6 +10,8 @@ const START_H    = 6;    // grid starts at 6:00 AM
 const END_H      = 24;   // grid ends at midnight
 const TOTAL_MINS = (END_H - START_H) * 60;
 const TOTAL_W    = TOTAL_MINS * MINUTE_PX;
+const DAY_FLIP_WHEEL_THRESHOLD = 180;
+const DAY_FLIP_RESET_MS = 450;
 
 /* ── Helpers ── */
 function minsFromStart(airtime) {
@@ -240,6 +242,7 @@ export default function EpgView() {
   const rafRef     = useRef(null);
   const wheelFlipRef = useRef(false);
   const pendingScrollRef = useRef(null);
+  const boundaryWheelRef = useRef({ direction: 0, amount: 0, lastAt: 0 });
 
   /* ── Day tabs ── */
   const days = useMemo(() => Array.from({ length: 7 }, (_, i) => {
@@ -317,17 +320,37 @@ export default function EpgView() {
       const maxLeft = body.scrollWidth - body.clientWidth;
       const atStart = body.scrollLeft <= 2;
       const atEnd = body.scrollLeft >= maxLeft - 2;
+      const direction = horizontalDelta > 0 ? 1 : -1;
+      const crossingDayBoundary =
+        (direction > 0 && atEnd && selectedDayIndex < days.length - 1) ||
+        (direction < 0 && atStart && selectedDayIndex > 0);
+
+      if (!crossingDayBoundary) {
+        boundaryWheelRef.current = { direction: 0, amount: 0, lastAt: 0 };
+        return;
+      }
+
+      const now = performance.now();
+      const previous = boundaryWheelRef.current;
+      const shouldReset =
+        previous.direction !== direction ||
+        now - previous.lastAt > DAY_FLIP_RESET_MS;
+      const amount = (shouldReset ? 0 : previous.amount) + Math.abs(horizontalDelta);
+      boundaryWheelRef.current = { direction, amount, lastAt: now };
+
+      event.preventDefault();
+      if (amount < DAY_FLIP_WHEEL_THRESHOLD) return;
+
+      boundaryWheelRef.current = { direction: 0, amount: 0, lastAt: 0 };
 
       if (horizontalDelta > 0 && atEnd && selectedDayIndex < days.length - 1) {
         if (scheduleByDate[days[selectedDayIndex + 1].dateStr] === undefined) return;
-        event.preventDefault();
         wheelFlipRef.current = true;
         pendingScrollRef.current = 'start';
         setDate(days[selectedDayIndex + 1].dateStr);
         window.setTimeout(() => { wheelFlipRef.current = false; }, 450);
       } else if (horizontalDelta < 0 && atStart && selectedDayIndex > 0) {
         if (scheduleByDate[days[selectedDayIndex - 1].dateStr] === undefined) return;
-        event.preventDefault();
         wheelFlipRef.current = true;
         pendingScrollRef.current = 'end';
         setDate(days[selectedDayIndex - 1].dateStr);
@@ -497,8 +520,10 @@ export default function EpgView() {
                   {ch.programs.map(prog => {
                     const start = minsFromStart(prog.airtime);
                     if (start < 0 || start >= TOTAL_MINS) return null;
-                    const left   = start * MINUTE_PX;
-                    const width  = Math.max(prog.runtime * MINUTE_PX - 2, 4);
+                    const left = start * MINUTE_PX;
+                    const dayEdgeWidth = Math.max(TOTAL_W - left - 2, 4);
+                    const width = Math.min(Math.max(prog.runtime * MINUTE_PX - 2, 4), dayEdgeWidth);
+                    const minWidth = Math.min(80, dayEdgeWidth);
                     const isPast = nowLeft !== null && (left + width) < nowLeft;
                     return (
                       <div
@@ -509,7 +534,7 @@ export default function EpgView() {
                           ch.type === 'streaming' ? 'epg-program--stream' : '',
                           prog.available  ? 'epg-program--available' : '',
                         ].filter(Boolean).join(' ')}
-                        style={{ left, width }}
+                        style={{ left, width, minWidth }}
                         onClick={() => setSelected(prog)}
                       >
                         <div className="epg-prog-name">{prog.showName}</div>

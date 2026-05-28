@@ -22,7 +22,7 @@ function ChartRowSkel() {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.55rem 1rem' }}>
       <Skeleton width={28} height={16} style={{ borderRadius: 2 }} />
-      <Skeleton width={40} height={56} style={{ borderRadius: 'var(--radius-sm)', flexShrink: 0 }} />
+      <Skeleton width={40} height={56} style={{ borderRadius: 'var(--radius-md)', flexShrink: 0 }} />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
         <Skeleton width="55%" height={13} />
         <Skeleton width={72} height={10} />

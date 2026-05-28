@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useApp, posterUrl, TodayLabel } from '../App.jsx';
+import { useApp, posterUrl } from '../App.jsx';
 import { useHistory } from '../hooks/useHistory.js';
 import HistorySkeleton from './skeletons/HistorySkeleton.jsx';
 
@@ -55,7 +55,6 @@ function StarRating({ value, onChange }) {
 export default function HistoryView() {
   const { openPanel, user, favorites } = useApp();
   const { entries, loading, updateEntry, removeEntry } = useHistory(user?.id);
-  const [filter,       setFilter]       = useState('all'); // all | movie | tv
   const [openMonths,   setOpenMonths]   = useState({});    // month label → bool
 
   const toggleMonth = (month) =>
@@ -64,49 +63,12 @@ export default function HistoryView() {
 
   if (loading) return <HistorySkeleton />;
 
-  const filtered = entries.filter(e =>
-    filter === 'all' || e.media_type === filter
-  );
-
-  const groups = groupByMonth(filtered);
+  const groups = groupByMonth(entries);
 
   return (
     <div>
-      <div className="sub-tabs">
-        <span className="sub-tabs-date"><TodayLabel /></span>
-        {entries.length > 0 ? (
-          <>
-            <div className="sub-tabs-scroll">
-              {[
-                { id: 'all',   label: 'All' },
-                { id: 'tv',    label: 'Series' },
-                { id: 'movie', label: 'Movies' },
-              ].map(f => (
-                <button
-                  key={f.id}
-                  className={`sub-tab-btn${filter === f.id ? ' active' : ''}`}
-                  onClick={() => setFilter(f.id)}
-                >
-                  {f.label}
-                </button>
-              ))}
-            </div>
-            <span className="sub-tabs-subtitle">
-              {entries.length} title{entries.length !== 1 ? 's' : ''} watched
-            </span>
-          </>
-        ) : (
-          <span className="sub-tabs-subtitle">Your watch history will appear here</span>
-        )}
-      </div>
-
-      {filtered.length === 0 ? (
+      {entries.length === 0 ? (
         <div className="empty-state" style={{ marginTop: '1rem' }}>
-          <div className="empty-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 40, height: 40, opacity: 0.35 }}>
-              <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/>
-            </svg>
-          </div>
           <div className="empty-title">Nothing watched yet</div>
           <div className="empty-body">
             Your watch history will appear here. Search for a title and mark it as watched to get started.

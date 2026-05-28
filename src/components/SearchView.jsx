@@ -27,7 +27,7 @@ function ResultRow({ item, openPanel, watchlist, watching }) {
       <div className="list-row-info" onClick={() => openPanel(id, type)} style={{ cursor: 'pointer' }}>
         <div className="list-row-title">{title}</div>
         <div className="list-row-meta">
-          <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+          <span style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
             {type === 'tv' ? 'Series' : 'Movie'}
           </span>
           {chip && <span className={`chip ${chip.cls}`} style={{ fontSize: '0.6rem' }}>{chip.label}</span>}

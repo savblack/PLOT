@@ -34,7 +34,7 @@ export default function MediaPanelSkeleton() {
       {/* Action buttons */}
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
         {[1, 2, 3].map(i => (
-          <Skeleton key={i} style={{ flex: 1, height: 40, borderRadius: 'var(--radius-sm)' }} />
+          <Skeleton key={i} style={{ flex: 1, height: 40, borderRadius: 'var(--radius-md)' }} />
         ))}
       </div>
 

@@ -496,13 +496,13 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
             <div className="panel-meta-row">
               {year && <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>{year}</span>}
               {isMovie ? (
-                <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Movie</span>
+                <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Movie</span>
               ) : (
-                <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                   Series{details?.number_of_seasons ? ` · ${details.number_of_seasons} season${details.number_of_seasons > 1 ? 's' : ''}` : ''}
                 </span>
               )}
-              {rating && <span style={{ fontSize: '0.8rem', color: '#F59E0B', fontWeight: 700 }}>{rating}</span>}
+              {rating && <span style={{ fontSize: '0.8rem', color: '#F59E0B', fontWeight: 600 }}>{rating}</span>}
               {chip && chip.cls !== 'chip-muted' && (
                 <span className={`chip ${chip.cls}`}>{chip.label}</span>
               )}
@@ -650,7 +650,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
 
                 {/* Review section label */}
                 <div style={{
-                  fontSize: '0.58rem', fontWeight: 700, letterSpacing: '0.1em',
+                  fontSize: '0.58rem', fontWeight: 600, letterSpacing: '0.1em',
                   textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.65rem',
                 }}>
                   Your review

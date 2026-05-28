@@ -7,7 +7,6 @@ import LoadingSpinner from './components/LoadingSpinner.jsx';
 // Layout + views
 const App         = lazy(() => import('./App.jsx'));
 const DiscoverView = lazy(() => import('./components/DiscoverView.jsx'));
-const GuideView   = lazy(() => import('./components/GuideView.jsx'));
 const CalendarView= lazy(() => import('./components/CalendarView.jsx'));
 const HistoryView   = lazy(() => import('./components/HistoryView.jsx'));
 const MyListsView   = lazy(() => import('./components/MyListsView.jsx'));
@@ -24,6 +23,7 @@ const NotFoundPage      = lazy(() => import('./pages/NotFoundPage.jsx'));
 const TermsPage         = lazy(() => import('./pages/TermsPage.jsx'));
 const PrivacyPage       = lazy(() => import('./pages/PrivacyPage.jsx'));
 const RootRoute         = lazy(() => import('./pages/RootRoute.jsx'));
+const DesignSystemPage  = lazy(() => import('./pages/DesignSystemPage.jsx'));
 
 const wrap = (el) => <Suspense fallback={<LoadingSpinner />}>{el}</Suspense>;
 
@@ -62,7 +62,6 @@ const router = createBrowserRouter([
     children: [
       { path: '/app',      element: <Navigate to="/home" replace /> },
       { path: '/home',     element: wrap(<DiscoverView />) },
-      { path: '/guide',    element: wrap(<GuideView />) },
       { path: '/calendar', element: wrap(<CalendarView />) },
       { path: '/watching', element: <Navigate to="/my-lists" replace /> },
       { path: '/list',     element: <Navigate to="/my-lists" replace /> },
@@ -70,6 +69,7 @@ const router = createBrowserRouter([
       { path: '/my-lists', element: wrap(<MyListsView />) },
       { path: '/search',   element: wrap(<SearchView />) },
       { path: '/settings', element: wrap(<SettingsView />) },
+      { path: '/design-system', element: wrap(<DesignSystemPage />) },
     ],
   },
 

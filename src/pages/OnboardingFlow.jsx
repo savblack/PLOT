@@ -152,7 +152,7 @@ export default function OnboardingFlow() {
       }
     }
 
-    navigate('/guide', { replace: true });
+    navigate('/home', { replace: true });
   };
 
   const toggleProvider = (id) =>
@@ -357,7 +357,7 @@ export default function OnboardingFlow() {
           {/* Selected */}
           {seedSelected.length > 0 && (
             <div style={{ marginBottom: '1rem' }}>
-              <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+              <div style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-secondary)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
                 Added ({seedSelected.length})
               </div>
               <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>

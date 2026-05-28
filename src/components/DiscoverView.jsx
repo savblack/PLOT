@@ -225,8 +225,8 @@ function DiscoverContent({ openPanel, watchlist, providers }) {
         <section style={{ paddingTop: '1rem' }}>
           <div className="date-group-header" style={{ paddingTop: '0.5rem' }}>
             <div>
-              <div style={{ fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.15rem' }}>Trending today</div>
-              <div style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-primary)' }}>Hot Right Now</div>
+              <div style={{ fontSize: '0.6rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.15rem' }}>Trending today</div>
+              <div style={{ fontSize: '0.72rem', fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-primary)' }}>Hot Right Now</div>
             </div>
           </div>
           <Rail>
@@ -241,8 +241,8 @@ function DiscoverContent({ openPanel, watchlist, providers }) {
         <section>
           <div className="date-group-header" style={{ paddingTop: '0.5rem' }}>
             <div>
-              <div style={{ fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.15rem' }}>Global ranking</div>
-              <div style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-primary)' }}>Top 20 This Week</div>
+              <div style={{ fontSize: '0.6rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.15rem' }}>Global ranking</div>
+              <div style={{ fontSize: '0.72rem', fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-primary)' }}>Top 20 This Week</div>
             </div>
           </div>
           {weekly.map((item, i) => (
@@ -255,8 +255,8 @@ function DiscoverContent({ openPanel, watchlist, providers }) {
         <section>
           <div className="date-group-header" style={{ paddingTop: '0.5rem' }}>
             <div>
-              <div style={{ fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.15rem' }}>Your platforms</div>
-              <div style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-primary)' }}>On Your Services</div>
+              <div style={{ fontSize: '0.6rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.15rem' }}>Your platforms</div>
+              <div style={{ fontSize: '0.72rem', fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-primary)' }}>On Your Services</div>
             </div>
           </div>
           {platformList.map(platform => (

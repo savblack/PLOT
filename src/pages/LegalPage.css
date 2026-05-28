@@ -50,7 +50,7 @@
 
 .legal-owner {
   font-size: 0.75rem;
-  font-weight: 700;
+  font-weight: 600;
   color: #1a1a1a;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -68,7 +68,7 @@
 .legal-panel h2 {
   font-family: 'Manrope', system-ui, sans-serif;
   font-size: 1rem;
-  font-weight: 700;
+  font-weight: 600;
   color: #1a1a1a;
   margin: 2rem 0 0.6rem;
 }

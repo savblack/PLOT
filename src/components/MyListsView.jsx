@@ -100,7 +100,7 @@ function AddToRankModal({ listType, rank, onAdd, onClose }) {
             autoFocus
             style={{
               width: '100%', padding: '0.5rem 0.75rem',
-              border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)',
+              border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
               background: 'var(--bg)', color: 'var(--text-primary)',
               fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box',
             }}
@@ -227,7 +227,7 @@ function AddToFavoritesModal({ onAdd, onClose }) {
             autoFocus
             style={{
               width: '100%', padding: '0.5rem 0.75rem',
-              border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)',
+              border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
               background: 'var(--bg)', color: 'var(--text-primary)',
               fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box',
             }}
@@ -302,7 +302,7 @@ function TopTenSection({ listType, title, topLists }) {
             >
               <span style={{
                 fontFamily: 'var(--font-serif)',
-                fontSize: '1.4rem', fontWeight: 700,
+                fontSize: '1.4rem', fontWeight: 600,
                 width: '2rem', textAlign: 'center', flexShrink: 0,
                 color: rankColor(rank),
               }}>
@@ -338,7 +338,7 @@ function TopTenSection({ listType, title, topLists }) {
           >
             <span style={{
               fontFamily: 'var(--font-serif)',
-              fontSize: '1.4rem', fontWeight: 700,
+              fontSize: '1.4rem', fontWeight: 600,
               width: '2rem', textAlign: 'center', flexShrink: 0,
               color: rankColor(rank),
             }}>
@@ -539,7 +539,7 @@ function CreateListModal({ onConfirm, onClose }) {
           onKeyDown={e => e.key === 'Enter' && name.trim() && onConfirm(name)}
           style={{
             width: '100%', padding: '0.6rem 0.75rem', marginBottom: '0.75rem',
-            border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)',
+            border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
             background: 'var(--bg)', color: 'var(--text-primary)',
             fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box',
           }}
@@ -646,7 +646,7 @@ function CustomListsSection({ customLists: clHook, filterItems, hideHeader }) {
                     position: 'absolute', right: 0, top: '100%', zIndex: 100,
                     background: 'var(--surface-raised)',
                     border: '1px solid var(--border)',
-                    borderRadius: 'var(--radius-sm)',
+                    borderRadius: 'var(--radius-md)',
                     minWidth: 120,
                     boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
                     overflow: 'hidden',
@@ -683,7 +683,7 @@ function CustomListsSection({ customLists: clHook, filterItems, hideHeader }) {
                 autoFocus
                 style={{
                   flex: 1, padding: '0.4rem 0.6rem',
-                  border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)',
+                  border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
                   background: 'var(--bg)', color: 'var(--text-primary)',
                   fontSize: '0.875rem', outline: 'none',
                 }}

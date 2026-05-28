@@ -181,7 +181,7 @@
 .landing-page .hero-eyebrow {
   display: inline-block;
   font-size: 0.72rem;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--muted);
@@ -348,7 +348,7 @@
   display: block;
   color: rgba(255,255,255,0.75);
   font-size: 0.62rem;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
@@ -370,7 +370,7 @@
 
 .landing-page .section-label {
   font-size: 0.78rem;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--muted);

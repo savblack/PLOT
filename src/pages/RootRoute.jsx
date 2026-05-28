@@ -24,8 +24,8 @@ export default function RootRoute() {
     );
   }
 
-  // Authenticated users go to the guide (new home)
-  if (authenticated) return <Navigate to="/guide" replace />;
+  // Authenticated users go to the discovery home.
+  if (authenticated) return <Navigate to="/home" replace />;
 
   return (
     <Suspense fallback={

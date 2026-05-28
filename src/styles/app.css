@@ -144,7 +144,7 @@ svg { stroke-width: 1.5; }
   cursor: pointer;
   color: var(--text-muted);
   font-size: 0.62rem;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   transition: color 0.15s ease;
@@ -247,20 +247,6 @@ svg { stroke-width: 1.5; }
 .nav-drawer-item.active {
   color: var(--accent);
   background: color-mix(in srgb, var(--accent) 8%, transparent);
-}
-.nav-drawer-icon {
-  width: 20px;
-  height: 20px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.nav-drawer-icon svg {
-  width: 20px;
-  height: 20px;
-  stroke: currentColor;
-  fill: none;
 }
 .nav-drawer-label {
   font-size: 0.95rem;
@@ -436,14 +422,14 @@ svg { stroke-width: 1.5; }
 }
 .rail-title {
   font-size: 0.68rem;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--text-secondary);
 }
 .rail-badge {
   font-size: 0.65rem;
-  font-weight: 700;
+  font-weight: 600;
   padding: 0.15rem 0.45rem;
   border-radius: var(--radius-pill);
   background: var(--surface-raised);
@@ -607,7 +593,7 @@ svg { stroke-width: 1.5; }
   padding: 0.18rem 0.5rem;
   border-radius: var(--radius-pill);
   font-size: 0.63rem;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   white-space: nowrap;
@@ -617,9 +603,9 @@ svg { stroke-width: 1.5; }
 .chip-today   { background: rgba(5, 150, 105, 0.55);  color: #fff; }
 .chip-tomorrow{ background: rgba(217, 119, 6, 0.55);  color: #fff; }
 .chip-soon    { background: rgba(217, 119, 6, 0.55);  color: #fff; }
-.chip-cinema    { background: rgba(220, 38, 38, 0.55);  color: #fff; }
-.chip-streaming { background: rgba(13, 148, 136, 0.55); color: #fff; }
-.chip-episode   { background: rgba(79, 70, 229, 0.55);  color: #fff; }
+.chip-cinema    { background: var(--chip-cinema);    color: #fff; }
+.chip-streaming { background: var(--chip-streaming); color: #fff; }
+.chip-episode   { background: var(--chip-episode);   color: #fff; }
 .chip-muted   {
   background: var(--surface-raised);
   color: var(--text-secondary);
@@ -688,7 +674,7 @@ svg { stroke-width: 1.5; }
 /* date label sitting left of the tabs */
 .sub-tabs-date {
   font-size: 0.68rem;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.07em;
   text-transform: uppercase;
   color: var(--text-muted);
@@ -840,7 +826,7 @@ svg { stroke-width: 1.5; }
 .season-nav-btn svg { width: 14px; height: 14px; }
 .season-nav-label {
   font-size: 0.82rem;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-primary);
   min-width: 72px;
   text-align: center;
@@ -848,7 +834,7 @@ svg { stroke-width: 1.5; }
 .season-watched-count {
   margin-left: auto;
   font-size: 0.7rem;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-muted);
 }
 
@@ -921,7 +907,7 @@ svg { stroke-width: 1.5; }
 }
 .ep-num {
   font-size: 0.72rem;
-  font-weight: 800;
+  font-weight: 600;
   color: var(--text-muted);
   letter-spacing: 0.04em;
   white-space: nowrap;
@@ -973,7 +959,7 @@ svg { stroke-width: 1.5; }
 }
 .progress-label {
   font-size: 0.7rem;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-muted);
   white-space: nowrap;
 }
@@ -1013,7 +999,7 @@ svg { stroke-width: 1.5; }
   border-radius: var(--radius-pill);
   border: none;
   font-size: 0.82rem;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
   transition: var(--transition-fast);
   white-space: nowrap;
@@ -1131,7 +1117,7 @@ svg { stroke-width: 1.5; }
   padding: 0.4rem 0;
   text-align: center;
   font-size: 0.62rem;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-muted);
@@ -1154,7 +1140,7 @@ svg { stroke-width: 1.5; }
 
 .cal-date {
   font-size: 0.78rem;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-primary);
   width: 22px;
   height: 22px;
@@ -1200,7 +1186,7 @@ svg { stroke-width: 1.5; }
   padding: 0.75rem 1rem 0.6rem;
   border-bottom: 1px solid var(--border);
   font-size: 0.75rem;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.07em;
   text-transform: uppercase;
   color: var(--text-secondary);
@@ -1262,7 +1248,7 @@ svg { stroke-width: 1.5; }
 .cal-view-btn {
   width: 28px;
   height: 28px;
-  border-radius: var(--radius-xs);
+  border-radius: var(--radius-md);
   border: 1px solid var(--border);
   background: var(--surface);
   cursor: pointer;
@@ -1325,7 +1311,7 @@ svg { stroke-width: 1.5; }
 }
 .cal-week-day-name {
   font-size: 0.58rem;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-muted);
@@ -1349,7 +1335,7 @@ svg { stroke-width: 1.5; }
   padding: 1px 4px 1px 3px;
   border-radius: 3px;
   font-size: 0.65rem;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1.4;
   overflow: hidden;
   white-space: nowrap;
@@ -1393,7 +1379,7 @@ svg { stroke-width: 1.5; }
   border-radius: 20px;
   cursor: default;
   position: relative;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.01em;
 }
 /* Tooltip */
@@ -1427,7 +1413,7 @@ svg { stroke-width: 1.5; }
 
 .cal-pill-more {
   font-size: 0.49rem;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-muted);
   padding: 0 2px;
   line-height: 1.3;
@@ -1492,7 +1478,7 @@ svg { stroke-width: 1.5; }
 }
 .cal-agenda-day-name {
   font-size: 0.62rem;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.09em;
   text-transform: uppercase;
   color: var(--text-muted);
@@ -1500,7 +1486,7 @@ svg { stroke-width: 1.5; }
 }
 .cal-agenda-today-pill {
   font-size: 0.6rem;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.07em;
   text-transform: uppercase;
   color: var(--accent);
@@ -1517,7 +1503,7 @@ svg { stroke-width: 1.5; }
 .list-section-label {
   padding: 0.9rem 1rem 0.4rem;
   font-size: 0.65rem;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--text-secondary);
@@ -1539,7 +1525,7 @@ svg { stroke-width: 1.5; }
 /* Type badge (Series / Movie) */
 .list-type-badge {
   font-size: 0.68rem;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -1556,7 +1542,7 @@ svg { stroke-width: 1.5; }
   background: transparent;
   color: var(--accent);
   font-size: 0.7rem;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
   transition: background 0.15s ease, color 0.15s ease;
@@ -1687,10 +1673,9 @@ svg { stroke-width: 1.5; }
   left: 0.7rem;
   width: 32px;
   height: 32px;
-  border-radius: 50%;
+  border-radius: 0;
   border: none;
-  background: rgba(0,0,0,0.5);
-  backdrop-filter: blur(6px);
+  background: transparent;
   color: white;
   cursor: pointer;
   display: flex;
@@ -1744,7 +1729,7 @@ svg { stroke-width: 1.5; }
 
 .panel-section-title {
   font-size: 0.7rem;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.09em;
   text-transform: uppercase;
   color: var(--text-secondary);
@@ -1783,7 +1768,7 @@ svg { stroke-width: 1.5; }
   flex-direction: column;
   gap: 1px;
   background: var(--border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   overflow: hidden;
 }
 .ep-row {
@@ -1800,13 +1785,13 @@ svg { stroke-width: 1.5; }
 .ep-row.ep-current {
   background: color-mix(in srgb, var(--accent) 8%, var(--surface));
 }
-.ep-row.ep-current .ep-title { font-weight: 700; }
+.ep-row.ep-current .ep-title { font-weight: 600; }
 .ep-row.ep-current .ep-num { color: var(--accent); }
 .ep-check-btn.checked { color: var(--accent); }
 .ep-check-btn.checked:hover:not(:disabled) { color: color-mix(in srgb, var(--accent) 70%, transparent); }
 .ep-num {
   font-size: 0.72rem;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-muted);
   white-space: nowrap;
   min-width: 2.5rem;
@@ -1903,7 +1888,7 @@ svg { stroke-width: 1.5; }
 }
 .settings-group-title {
   font-size: 0.65rem;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--text-secondary);
@@ -2080,7 +2065,7 @@ svg { stroke-width: 1.5; }
   );
   background-size: 1200px 100%;
   animation: shimmer 1.6s ease-in-out infinite;
-  border-radius: var(--radius-xs);
+  border-radius: var(--radius-md);
   flex-shrink: 0;
 }
 
@@ -2107,7 +2092,7 @@ svg { stroke-width: 1.5; }
 }
 .date-group-label {
   font-size: 0.72rem;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.07em;
   text-transform: uppercase;
   color: var(--text-primary);
@@ -2147,7 +2132,7 @@ svg { stroke-width: 1.5; }
 .date-group-subheader {
   padding: 0.35rem 1rem 0.4rem;
   font-size: 0.64rem;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--text-muted);
@@ -2236,7 +2221,7 @@ svg { stroke-width: 1.5; }
 }
 .epg-day-btn.active .epg-day-name {
   color: var(--accent);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .epg-day-num {
@@ -2254,7 +2239,7 @@ svg { stroke-width: 1.5; }
 .epg-day-btn.active .epg-day-num {
   background: var(--accent);
   color: #fff;
-  font-weight: 700;
+  font-weight: 600;
 }
 .epg-day-btn:hover:not(.active) .epg-day-num {
   background: var(--surface-raised);
@@ -2376,7 +2361,7 @@ svg { stroke-width: 1.5; }
 
 .epg-ch-name {
   font-size: 0.72rem;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.01em;
   color: var(--text-primary);
   white-space: nowrap;
@@ -2475,7 +2460,7 @@ svg { stroke-width: 1.5; }
 
 .epg-prog-name {
   font-size: 0.7rem;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
@@ -2580,7 +2565,7 @@ svg { stroke-width: 1.5; }
 
 .program-sheet-title {
   font-size: 1.05rem;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-primary);
   line-height: 1.3;
 }
@@ -2673,14 +2658,14 @@ svg { stroke-width: 1.5; }
 .discover-hero-badge {
   display: inline-block;
   font-size: 0.58rem;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--accent);
   background: color-mix(in srgb, var(--accent) 22%, transparent);
   border: 1px solid color-mix(in srgb, var(--accent) 60%, transparent);
   padding: 0.2rem 0.55rem;
-  border-radius: var(--radius-xs);
+  border-radius: var(--radius-md);
   margin-bottom: 0.4rem;
   width: fit-content;
 }
@@ -2713,9 +2698,9 @@ svg { stroke-width: 1.5; }
   gap: 0.4rem;
   font-family: var(--font-sans);
   font-size: 0.68rem;
-  font-weight: 700;
+  font-weight: 600;
   padding: 0.45rem 0.9rem;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   border: none;
   background: var(--accent);
   color: #fff;
@@ -2740,9 +2725,9 @@ svg { stroke-width: 1.5; }
   align-items: center;
   font-family: var(--font-sans);
   font-size: 0.68rem;
-  font-weight: 700;
+  font-weight: 600;
   padding: 0.45rem 0.9rem;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   border: 1px solid rgba(255,255,255,0.3);
   background: rgba(255,255,255,0.12);
   color: #fff;
@@ -2756,7 +2741,7 @@ svg { stroke-width: 1.5; }
 .discover-rank-badge {
   font-family: var(--font-serif);
   font-size: 2rem;
-  font-weight: 700;
+  font-weight: 600;
   color: #fff;
   position: absolute;
   bottom: 9px;
@@ -2785,7 +2770,7 @@ svg { stroke-width: 1.5; }
 .discover-chart-rank {
   font-family: var(--font-serif);
   font-size: 1.55rem;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--accent);
   width: 2rem;
   text-align: right;
@@ -2803,7 +2788,7 @@ svg { stroke-width: 1.5; }
 .discover-chart-poster {
   width: 38px;
   height: 57px;
-  border-radius: var(--radius-xs);
+  border-radius: var(--radius-md);
   overflow: hidden;
   flex-shrink: 0;
   background: var(--surface-sunken);
@@ -2817,7 +2802,7 @@ svg { stroke-width: 1.5; }
 
 .discover-chart-title {
   font-size: 0.78rem;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
@@ -2867,7 +2852,7 @@ svg { stroke-width: 1.5; }
 .discover-plat-logo {
   width: 30px;
   height: 30px;
-  border-radius: var(--radius-xs);
+  border-radius: var(--radius-md);
   object-fit: contain;
   flex-shrink: 0;
   background: var(--surface-sunken);
@@ -2878,14 +2863,14 @@ svg { stroke-width: 1.5; }
   align-items: center;
   justify-content: center;
   font-size: 0.6rem;
-  font-weight: 800;
+  font-weight: 600;
   color: var(--text-muted);
   background: var(--surface-sunken);
 }
 
 .discover-plat-name {
   font-size: 0.8rem;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-primary);
 }
 
@@ -2915,7 +2900,7 @@ svg { stroke-width: 1.5; }
   border-left: 3px solid var(--accent);
   border-bottom: 1px solid var(--border);
   font-size: 0.66rem;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.09em;
   text-transform: uppercase;
   color: var(--text-primary);

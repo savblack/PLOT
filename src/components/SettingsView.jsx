@@ -414,7 +414,7 @@ function FeedbackPanel({ user, onClose }) {
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             </div>
-            <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-primary)' }}>Thanks for your feedback!</div>
+            <div style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--text-primary)' }}>Thanks for your feedback!</div>
             <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>We read every submission and use it to improve PLOT.</div>
             <button className="btn btn-primary btn-sm" style={{ marginTop: '0.5rem' }} onClick={onClose}>Done</button>
           </div>
