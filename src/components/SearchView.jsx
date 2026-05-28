@@ -1,20 +1,61 @@
 import { useState, useRef } from 'react';
-import { useApp, posterUrl, countdownChip, TodayLabel } from '../App.jsx';
+import { useApp, posterUrl } from '../App.jsx';
 import { tmdb } from '../api/tmdb.js';
+import { useHistory } from '../hooks/useHistory.js';
+import { localDateStr } from '../utils/date.js';
+
+function BookmarkIcon({ filled }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M6 4.5A2.5 2.5 0 0 1 8.5 2h7A2.5 2.5 0 0 1 18 4.5v16l-6-3.75L6 20.5v-16Z"
+        fill={filled ? 'currentColor' : 'none'}
+      />
+    </svg>
+  );
+}
+
+function HeartIcon({ filled }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78Z"
+        fill={filled ? 'currentColor' : 'none'}
+      />
+    </svg>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M20 6 9 17l-5-5" />
+    </svg>
+  );
+}
 
 /* ── Result Row ── */
-function ResultRow({ item, openPanel, watchlist, watching }) {
+function ResultRow({ item, openPanel, watchlist, favorites, history }) {
   const id    = item.id;
   const type  = item.media_type || 'movie';
   const title = item.title || item.name || 'Unknown';
   const img   = posterUrl(item.poster_path, 'w92');
-  const date  = item.release_date || item.first_air_date;
-  const chip  = date ? countdownChip(date) : null;
+  const releaseDate = item.release_date || item.first_air_date || '';
+  const comingSoon = releaseDate > localDateStr();
   const inList     = watchlist.isInList(id);
-  const isWatching = type === 'tv' && watching.isWatching(id);
+  const isFav      = favorites.isFavorite(id);
+  const watched    = history.isWatched(id);
+
+  const handleToggleWatched = async () => {
+    if (watched) {
+      await history.removeEntry(id);
+    } else {
+      await history.logWatched({ ...item, id, media_type: type });
+    }
+  };
 
   return (
-    <div className="list-row">
+    <div className="list-row search-result-row">
       {/* Poster */}
       <div className="list-row-poster" onClick={() => openPanel(id, type)} style={{ cursor: 'pointer' }}>
         {img
@@ -30,28 +71,52 @@ function ResultRow({ item, openPanel, watchlist, watching }) {
           <span style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
             {type === 'tv' ? 'Series' : 'Movie'}
           </span>
-          {chip && <span className={`chip ${chip.cls}`} style={{ fontSize: '0.6rem' }}>{chip.label}</span>}
-          {isWatching && <span className="chip chip-episode" style={{ fontSize: '0.6rem' }}>Watching</span>}
         </div>
       </div>
 
       {/* Actions */}
-      <div className="list-row-end" style={{ gap: '0.3rem' }}>
-        {type === 'tv' && !isWatching && (
-          <button
-            className="btn btn-accent btn-xs"
-            onClick={() => watching.startWatching({ ...item, media_type: type })}
-            title="Start watching"
-          >
-            ▶
-          </button>
-        )}
+      {(watched || comingSoon) && (
+        <div className="list-row-end search-row-status">
+          {watched && <span className="chip chip-episode">Watched</span>}
+          {comingSoon && <span className="chip chip-soon">Coming Soon</span>}
+        </div>
+      )}
+      <div className="list-row-end search-row-actions">
         <button
-          className={`btn btn-xs ${inList ? 'btn-secondary' : 'btn-ghost'}`}
-          onClick={() => watchlist.toggle({ ...item, id, media_type: type })}
-          title={inList ? 'Remove from list' : 'Add to list'}
+          type="button"
+          className={`search-action-btn${inList ? ' active' : ''}`}
+          onClick={e => {
+            e.stopPropagation();
+            watchlist.toggle({ ...item, id, media_type: type });
+          }}
+          data-tip={inList ? 'Remove from watch list' : 'Save to watch list'}
+          aria-label={inList ? `Remove ${title} from list` : `Add ${title} to list`}
         >
-          {inList ? '✓' : '+'}
+          <BookmarkIcon filled={inList} />
+        </button>
+        <button
+          type="button"
+          className={`search-action-btn search-action-btn--heart${isFav ? ' active' : ''}`}
+          onClick={async e => {
+            e.stopPropagation();
+            await favorites.toggleFavorite({ ...item, id, tmdb_id: id, media_type: type });
+          }}
+          data-tip={isFav ? 'Remove favourite' : 'Favourite'}
+          aria-label={isFav ? `Remove ${title} from favourites` : `Add ${title} to favourites`}
+        >
+          <HeartIcon filled={isFav} />
+        </button>
+        <button
+          type="button"
+          className={`search-action-btn search-action-btn--watched${watched ? ' active' : ''}`}
+          onClick={e => {
+            e.stopPropagation();
+            handleToggleWatched();
+          }}
+          data-tip={watched ? 'Watched' : 'Mark watched'}
+          aria-label={watched ? `${title} watched` : `Mark ${title} watched`}
+        >
+          <CheckIcon />
         </button>
       </div>
     </div>
@@ -62,7 +127,8 @@ function ResultRow({ item, openPanel, watchlist, watching }) {
    SearchView
 ═══════════════════════════════════════ */
 export default function SearchView() {
-  const { openPanel, watchlist, watching } = useApp();
+  const { openPanel, watchlist, favorites, user } = useApp();
+  const history = useHistory(user?.id);
   const [query,   setQuery]   = useState('');
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -98,7 +164,7 @@ export default function SearchView() {
           <input
             className="search-input"
             type="search"
-            placeholder="Search movies & series…"
+            placeholder="Search TV shows, movies and cinema..."
             value={query}
             onChange={handleChange}
             autoFocus
@@ -135,7 +201,8 @@ export default function SearchView() {
               item={item}
               openPanel={openPanel}
               watchlist={watchlist}
-              watching={watching}
+              favorites={favorites}
+              history={history}
             />
           ))}
         </div>

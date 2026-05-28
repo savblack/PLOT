@@ -1,28 +1,11 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '../api/supabase.js';
-
-const TRAKT_SYNC_URL = import.meta.env.VITE_SUPABASE_URL
-  ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/trakt-sync`
-  : null;
+import { callAuthenticatedFunction } from '../api/functions.js';
+import { buildTraktAuthorizeUrl, redirectToExternal } from '../utils/redirects.js';
 
 async function callTraktSync(action, body = {}) {
   const { data: { session } } = await supabase.auth.getSession();
-  if (!session || !TRAKT_SYNC_URL) return null;
-
-  const res = await fetch(TRAKT_SYNC_URL, {
-    method:  'POST',
-    headers: {
-      'Content-Type':  'application/json',
-      'Authorization': `Bearer ${session.access_token}`,
-    },
-    body: JSON.stringify({ action, ...body }),
-  });
-
-  if (!res.ok) {
-    const err = await res.text().catch(() => 'Unknown error');
-    throw new Error(err);
-  }
-  return res.json();
+  return callAuthenticatedFunction('trakt-sync', session, { action, ...body });
 }
 
 export function useTraktSync(userId) {
@@ -50,13 +33,7 @@ export function useTraktSync(userId) {
       setError('Trakt client ID is not configured (VITE_TRAKT_CLIENT_ID)');
       return;
     }
-    const redirectUri = `${window.location.origin}/auth/trakt`;
-    const params = new URLSearchParams({
-      response_type: 'code',
-      client_id:     clientId,
-      redirect_uri:  redirectUri,
-    });
-    window.location.href = `https://trakt.tv/oauth/authorize?${params}`;
+    redirectToExternal(buildTraktAuthorizeUrl(clientId));
   }, []);
 
   /* ── Sync ── */

@@ -620,12 +620,6 @@
   font-size: 0.78rem;
 }
 
-.ds-skeleton {
-  display: grid;
-  gap: 0.45rem;
-  margin: 0.75rem 0;
-}
-
 .ds-empty-sample {
   margin: 0.75rem 0 0;
   padding: 0.85rem;
@@ -634,19 +628,11 @@
   background: var(--surface);
 }
 
-.ds-skeleton span {
-  display: block;
-  height: 12px;
-  border-radius: var(--radius-pill);
-  background: linear-gradient(90deg, var(--surface-sunken), var(--border), var(--surface-sunken));
-}
-
-.ds-skeleton span:nth-child(2) {
-  width: 82%;
-}
-
-.ds-skeleton span:nth-child(3) {
-  width: 58%;
+.ds-loader-sample {
+  min-height: 76px;
+  display: grid;
+  place-items: center;
+  margin: 0.75rem 0;
 }
 
 .ds-layout-grid {

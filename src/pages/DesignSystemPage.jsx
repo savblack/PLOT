@@ -1,4 +1,5 @@
 import './DesignSystemPage.css';
+import PlotLoader from '../components/PlotLoader.jsx';
 
 const colorTokens = [
   ['--bg', 'App background', 'The quiet canvas behind every primary view.'],
@@ -480,7 +481,7 @@ export default function DesignSystemPage() {
               <div className="empty-title">Nothing saved</div>
               <div className="empty-body">Saved titles will appear here.</div>
             </div>
-            <div className="ds-skeleton"><span /><span /><span /></div>
+            <div className="ds-loader-sample"><PlotLoader /></div>
             <button className="btn btn-ghost btn-sm">Refresh</button>
           </div>
         </div>

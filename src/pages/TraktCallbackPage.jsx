@@ -1,10 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../api/supabase';
-
-const TRAKT_SYNC_URL = import.meta.env.VITE_SUPABASE_URL
-  ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/trakt-sync`
-  : null;
+import { callAuthenticatedFunction, edgeFunctionUrl } from '../api/functions.js';
+import { getTraktCallbackUrl } from '../utils/redirects.js';
 
 export default function TraktCallbackPage() {
   const navigate = useNavigate();
@@ -28,20 +26,19 @@ export default function TraktCallbackPage() {
         navigate('/login', { replace: true });
         return;
       }
+      if (!edgeFunctionUrl('trakt-sync')) {
+        setError('Trakt sync is not configured.');
+        return;
+      }
 
-      const redirectUri = `${window.location.origin}/auth/trakt`;
-      const res = await fetch(TRAKT_SYNC_URL, {
-        method:  'POST',
-        headers: {
-          'Content-Type':  'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({ action: 'exchange', code, redirect_uri: redirectUri }),
-      });
-
-      if (!res.ok) {
-        const text = await res.text().catch(() => 'Unknown error');
-        setError(`Could not connect Trakt: ${text}`);
+      try {
+        await callAuthenticatedFunction('trakt-sync', session, {
+          action: 'exchange',
+          code,
+          redirect_uri: getTraktCallbackUrl(),
+        });
+      } catch (e) {
+        setError(`Could not connect Trakt: ${e.message}`);
         return;
       }
 

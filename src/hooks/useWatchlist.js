@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../api/supabase.js';
 import { tmdb, getTmdbRegion } from '../api/tmdb.js';
+import { providerIdsForRegion, tmdbIdFromItem } from '../domain/media.js';
+import { deleteListItem, saveListItem } from '../api/userMedia.js';
 
 const LIST_NAME = 'My List';
 
@@ -119,14 +121,13 @@ export function useWatchlist(userId) {
       return;
     }
 
-    const tmdb_id = Number(item.id || item.tmdb_id);
+    const tmdb_id = tmdbIdFromItem(item);
+    if (!tmdb_id) return;
     if (isInList(tmdb_id)) return;
 
     // Extract provider IDs for the user's current region
     const region = getTmdbRegion();
-    const providerIds = (item['watch/providers']?.results?.[region]?.flatrate || [])
-      .map(p => p.provider_id)
-      .filter(Boolean);
+    const providerIds = providerIdsForRegion(item, region);
 
     // For cinema movies, look up the digital release date in the background
     let streaming_date = null;
@@ -134,24 +135,13 @@ export function useWatchlist(userId) {
       streaming_date = await tmdb.getDigitalReleaseDate(tmdb_id).catch(() => null);
     }
 
-    const row = {
-      list_id:        listId,
-      user_id:        userId,
-      tmdb_id,
-      media_type:     item.media_type || 'movie',
-      title:          item.title || item.name || '',
-      poster_path:    item.poster_path || null,
-      release_date:   item.release_date || item.first_air_date || null,
-      genre_ids:      item.genre_ids || [],
-      provider_ids:   providerIds,
-      streaming_date: streaming_date || null,
-    };
-
-    const { data, error } = await supabase
-      .from('list_items')
-      .insert(row)
-      .select()
-      .single();
+    const { data, error, row } = await saveListItem({
+      listId,
+      userId,
+      item,
+      providerIds,
+      streamingDate: streaming_date || null,
+    });
 
     if (error) {
       console.error('[useWatchlist] INSERT list_items failed:', error);
@@ -175,11 +165,7 @@ export function useWatchlist(userId) {
   const removeFromList = useCallback(async (tmdbId) => {
     if (!listId) return;
 
-    const { error } = await supabase
-      .from('list_items')
-      .delete()
-      .eq('list_id', listId)
-      .eq('tmdb_id', Number(tmdbId));
+    const { error } = await deleteListItem({ listId, tmdbId });
 
     if (error) {
       console.error('[useWatchlist] DELETE list_items failed:', error);
@@ -200,7 +186,8 @@ export function useWatchlist(userId) {
 
   /* ── Toggle ── */
   const toggle = useCallback(async (item) => {
-    const id = Number(item.id || item.tmdb_id);
+    const id = tmdbIdFromItem(item);
+    if (!id) return;
     if (isInList(id)) await removeFromList(id);
     else await addToList(item);
   }, [isInList, addToList, removeFromList]);

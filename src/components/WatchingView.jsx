@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useApp, backdropUrl, TodayLabel } from '../App.jsx';
 import { localDateStr } from '../utils/date.js';
+import LoadingSpinner from './LoadingSpinner.jsx';
 
 /* ── Icons ── */
 function CheckCircleIcon() {
@@ -250,7 +251,7 @@ export default function WatchingView() {
   };
 
   if (watching.loading) {
-    return <div className="loading-state"><div className="spinner" /></div>;
+    return <LoadingSpinner />;
   }
 
   return (

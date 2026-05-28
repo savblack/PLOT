@@ -38,7 +38,7 @@ export default function ProtectedRoute({ children, skipOnboardingCheck = false }
 
   if (loading) {
     return (
-      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div className="app-boot-loader">
         <PlotLoader />
       </div>
     );

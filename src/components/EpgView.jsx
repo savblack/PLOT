@@ -1,8 +1,9 @@
 import { useState, useEffect, useLayoutEffect, useRef, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useApp } from '../App.jsx';
 import { localDateStr, dateToLocalStr } from '../utils/date.js';
-import MultiSelect from './MultiSelect.jsx';
-import EpgSkeleton from './skeletons/EpgSkeleton.jsx';
+import LoadingSpinner from './LoadingSpinner.jsx';
+import GroupedFilterMenu from './GroupedFilterMenu.jsx';
 
 /* ── Constants ── */
 const MINUTE_PX  = 3;
@@ -235,6 +236,7 @@ export default function EpgView() {
   const [typeFilters,      setTypeFilters]      = useState([]);
   const [platformFilters,  setPlatformFilters]  = useState([]); // provider names to match against EPG channel names
   const [selected,         setSelected]         = useState(null); // programme clicked for reminder sheet
+  const [filterTarget,     setFilterTarget]     = useState(null);
 
   const bodyRef    = useRef(null);
   const sidebarRef = useRef(null);
@@ -244,12 +246,18 @@ export default function EpgView() {
   const pendingScrollRef = useRef(null);
   const boundaryWheelRef = useRef({ direction: 0, amount: 0, lastAt: 0 });
 
+  useEffect(() => {
+    setFilterTarget(document.getElementById('guide-top-filters'));
+  }, []);
+
   /* ── Day tabs ── */
   const days = useMemo(() => Array.from({ length: 7 }, (_, i) => {
     const d = new Date(); d.setDate(d.getDate() + i);
     return {
       dateStr: dateToLocalStr(d),
       label:   i === 0 ? 'Today' : d.toLocaleDateString('en', { weekday: 'short' }),
+      weekday: d.toLocaleDateString('en', { weekday: 'short' }),
+      month:   d.toLocaleDateString('en', { month: 'short' }),
       num:     d.getDate(),
     };
   }), [todayStr]);
@@ -421,12 +429,42 @@ export default function EpgView() {
     setHiddenChannelIds(new Set(platformFilteredChannels.map(c => c.id).filter(id => !selectedSet.has(id))));
   };
 
+  const filterControls = !loading && channels.length > 0 ? (
+    <GroupedFilterMenu
+      ariaLabel="Filter guide"
+      groups={[
+        {
+          heading: 'Type',
+          options: [
+            { id: 'broadcast', label: 'Live TV'   },
+            { id: 'streaming', label: 'Streaming' },
+          ],
+          value: typeFilters,
+          onChange: setTypeFilters,
+        },
+        {
+          heading: 'Platforms',
+          options: allGuideProviders.map(p => ({ id: p.name, label: p.name })),
+          value: platformFilters,
+          onChange: setPlatformFilters,
+        },
+        {
+          heading: 'Channels',
+          options: platformFilteredChannels.map(c => ({ id: c.id, label: c.name })),
+          value: channelFilterValue,
+          onChange: handleChannelFilterChange,
+        },
+      ]}
+    />
+  ) : null;
+
   return (
+    <>
+    {filterTarget && filterControls && createPortal(filterControls, filterTarget)}
     <div className="epg-outer">
 
-      {/* ── Day selector + filters (single row) ── */}
-      <div className="sub-tabs-bar">
-        <div className="sub-tabs-left" style={{ padding: '0.4rem 0 0.4rem 0.5rem', gap: '0.25rem' }}>
+      {/* ── Day selector ── */}
+      <div className="epg-days">
           {days.map(d => (
             <button
               key={d.dateStr}
@@ -436,43 +474,17 @@ export default function EpgView() {
                 setDate(d.dateStr);
               }}
             >
-              <span className="epg-day-name">{d.label}</span>
+              <span className="epg-day-copy">
+                <span className="epg-day-name">{d.weekday}</span>
+                <span className="epg-day-month">{d.month}</span>
+              </span>
               <span className="epg-day-num">{d.num}</span>
             </button>
           ))}
-        </div>
-
-        {!loading && channels.length > 0 && (
-          <div className="sub-tabs-right">
-            <MultiSelect
-              placeholder="Type"
-              options={[
-                { id: 'broadcast', label: 'Live TV'   },
-                { id: 'streaming', label: 'Streaming' },
-              ]}
-              value={typeFilters}
-              onChange={setTypeFilters}
-            />
-            {allGuideProviders.length > 0 && (
-              <MultiSelect
-                placeholder="Platforms"
-                options={allGuideProviders.map(p => ({ id: p.name, label: p.name }))}
-                value={platformFilters}
-                onChange={setPlatformFilters}
-              />
-            )}
-            <MultiSelect
-              placeholder="Channels"
-              options={platformFilteredChannels.map(c => ({ id: c.id, label: c.name }))}
-              value={channelFilterValue}
-              onChange={handleChannelFilterChange}
-            />
-          </div>
-        )}
       </div>
 
       {loading ? (
-        <EpgSkeleton />
+        <LoadingSpinner />
       ) : channels.length === 0 ? (
         <div className="empty-state">
           <div className="empty-title">No schedule available</div>
@@ -561,5 +573,6 @@ export default function EpgView() {
         <ProgramSheet prog={selected} onClose={() => setSelected(null)} />
       )}
     </div>
+    </>
   );
 }

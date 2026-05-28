@@ -5,7 +5,8 @@ import { useDragScroll } from '../hooks/useDragScroll.js';
 import { useGenres } from '../hooks/useGenres.js';
 import { tmdb, getTmdbRegion } from '../api/tmdb.js';
 import EpgView from './EpgView.jsx';
-import MultiSelect from './MultiSelect.jsx';
+import LoadingSpinner from './LoadingSpinner.jsx';
+import GroupedFilterMenu from './GroupedFilterMenu.jsx';
 
 /* ── Module-level provider logo cache (keyed with region to avoid stale logos after region change) ── */
 const _providerCache = new Map();
@@ -238,7 +239,7 @@ export function UpcomingContent({ typeFilters, genreFilters, providers, openPane
     load();
   }, [providerIds.join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (loading) return <div className="loading-state"><div className="spinner" /></div>;
+  if (loading) return <LoadingSpinner />;
 
   const { today, recentGrouped, recentDates, upcomingGrouped, upcomingDates } = data;
 
@@ -275,7 +276,7 @@ export function UpcomingContent({ typeFilters, genreFilters, providers, openPane
   }
 
   return (
-    <div style={{ paddingTop: '0.5rem' }}>
+    <div className="upcoming-content">
       {/* Recently Released — collapsible, collapsed by default */}
       {filteredRecDates.length > 0 && (
         <div className="date-group">
@@ -337,24 +338,27 @@ export default function GuideView() {
         </button>
         {guideTab === 'releases' && (
           <div className="sub-tabs-filters">
-            <MultiSelect
-              placeholder="Type"
-              options={[
-                { id: 'tv',     label: 'TV'     },
-                { id: 'cinema', label: 'Cinema' },
-                { id: 'movie',  label: 'Movies' },
+            <GroupedFilterMenu
+              ariaLabel="Filter releases"
+              groups={[
+                {
+                  heading: 'Type',
+                  options: [
+                    { id: 'tv',     label: 'TV'     },
+                    { id: 'cinema', label: 'Cinema' },
+                    { id: 'movie',  label: 'Movies' },
+                  ],
+                  value: typeFilters,
+                  onChange: setTypeFilters,
+                },
+                {
+                  heading: 'Genre',
+                  options: genres.map(g => ({ id: g.id, label: g.name })),
+                  value: genreFilters,
+                  onChange: setGenreFilters,
+                },
               ]}
-              value={typeFilters}
-              onChange={setTypeFilters}
             />
-            {genres.length > 0 && (
-              <MultiSelect
-                placeholder="Genre"
-                options={genres.map(g => ({ id: g.id, label: g.name }))}
-                value={genreFilters}
-                onChange={setGenreFilters}
-              />
-            )}
           </div>
         )}
       </div>

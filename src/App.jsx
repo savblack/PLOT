@@ -216,13 +216,7 @@ export default function App() {
 
   if (loading) {
     return (
-      <div style={{
-        height: '100dvh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: 'var(--bg)',
-      }}>
+      <div className="app-boot-loader">
         <PlotLoader />
       </div>
     );

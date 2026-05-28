@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useApp, posterUrl, TodayLabel, countdownChip } from '../App.jsx';
+import { useApp, posterUrl, countdownChip } from '../App.jsx';
 import { tmdb } from '../api/tmdb.js';
 import { useHistory } from '../hooks/useHistory.js';
 import { useGenres } from '../hooks/useGenres.js';
 import { localDateStr } from '../utils/date.js';
-import MultiSelect from './MultiSelect.jsx';
-import MyListsSkeleton from './skeletons/MyListsSkeleton.jsx';
+import LoadingSpinner from './LoadingSpinner.jsx';
+import GroupedFilterMenu from './GroupedFilterMenu.jsx';
 
 /* ── Heart icon ── */
 function HeartIcon({ filled }) {
@@ -16,6 +16,14 @@ function HeartIcon({ filled }) {
   ) : (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }}>
       <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+    </svg>
+  );
+}
+
+function PlusIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 5v14M5 12h14" />
     </svg>
   );
 }
@@ -167,7 +175,7 @@ function ModalResultRow({ item, onSelect }) {
 }
 
 /* ── Add to Favorites search modal ── */
-function AddToFavoritesModal({ onAdd, onClose }) {
+function AddToFavoritesModal({ title = 'Add to Favorites', onAdd, onClose }) {
   const { user } = useApp();
   const { entries } = useHistory(user?.id);
   const [tab,     setTab]     = useState('history');
@@ -212,7 +220,7 @@ function AddToFavoritesModal({ onAdd, onClose }) {
       }}>
         <div style={{ padding: '1rem 1rem 0.5rem', borderBottom: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-            <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>Add to Favorites</span>
+            <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{title}</span>
             <button className="btn btn-ghost btn-xs" onClick={onClose}>✕</button>
           </div>
           <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
@@ -474,7 +482,15 @@ function FavoritesSection({ favorites: favsHook, filterItems, hideHeader }) {
           {visible.length > 0 && (
             <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginRight: '0.25rem' }}>{visible.length}</span>
           )}
-          <button className="btn btn-ghost btn-xs" onClick={() => setShowAdd(true)}>+ Add</button>
+          <button
+            className="date-group-action-btn date-group-action-btn--plain"
+            type="button"
+            aria-label="Add favourite"
+            title="Add favourite"
+            onClick={() => setShowAdd(true)}
+          >
+            <PlusIcon />
+          </button>
         </div>
       )}
 
@@ -483,9 +499,15 @@ function FavoritesSection({ favorites: favsHook, filterItems, hideHeader }) {
           <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
             Heart anything to add it here
           </div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-            Tap ♡ on any movie or TV show
-          </div>
+          <button
+            className="empty-add-btn"
+            type="button"
+            aria-label="Add favourite"
+            title="Add favourite"
+            onClick={() => setShowAdd(true)}
+          >
+            <PlusIcon />
+          </button>
         </div>
       ) : visible.length === 0 ? (
         <div style={{ padding: '1.5rem 1rem', textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
@@ -564,6 +586,7 @@ function CustomListsSection({ customLists: clHook, filterItems, hideHeader }) {
   const [renamingId,   setRenamingId]   = useState(null);
   const [renameValue,  setRenameValue]  = useState('');
   const [menuOpen,     setMenuOpen]     = useState(null);
+  const [showAddToList, setShowAddToList] = useState(null);
 
   const toggleList = (id) => setOpenItems(prev => ({ ...prev, [id]: !(prev[id] ?? true) }));
   const isOpen = (id) => openItems[id] ?? true;
@@ -584,7 +607,15 @@ function CustomListsSection({ customLists: clHook, filterItems, hideHeader }) {
       {!hideHeader && (
         <div className="date-group-header">
           <span className="date-group-label">My Lists</span>
-          <button className="btn btn-ghost btn-xs" onClick={() => setCreatingList(true)}>+ New List</button>
+          <button
+            className="date-group-action-btn date-group-action-btn--plain"
+            type="button"
+            aria-label="Create new list"
+            title="Create new list"
+            onClick={() => setCreatingList(true)}
+          >
+            <PlusIcon />
+          </button>
         </div>
       )}
 
@@ -593,9 +624,15 @@ function CustomListsSection({ customLists: clHook, filterItems, hideHeader }) {
           <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
             Create your first custom list
           </div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-            Add titles from the detail panel
-          </div>
+          <button
+            className="empty-add-btn"
+            type="button"
+            aria-label="Create new list"
+            title="Create new list"
+            onClick={() => setCreatingList(true)}
+          >
+            <PlusIcon />
+          </button>
         </div>
       )}
 
@@ -634,8 +671,9 @@ function CustomListsSection({ customLists: clHook, filterItems, hideHeader }) {
 
             <div style={{ position: 'relative' }}>
               <button
-                className="btn btn-ghost btn-xs"
+                className="list-options-btn"
                 onClick={() => setMenuOpen(menuOpen === list.id ? null : list.id)}
+                aria-label={`Open options for ${list.name}`}
               >
                 ···
               </button>
@@ -658,12 +696,14 @@ function CustomListsSection({ customLists: clHook, filterItems, hideHeader }) {
                         setRenameValue(list.name);
                         setMenuOpen(null);
                       }}
+                      aria-label={`Rename ${list.name}`}
                     >
                       Rename
                     </button>
                     <button
                       style={{ display: 'block', width: '100%', padding: '0.6rem 0.8rem', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', fontSize: '0.8rem', color: '#ef4444' }}
                       onClick={() => { deleteList(list.id); setMenuOpen(null); }}
+                      aria-label={`Delete ${list.name}`}
                     >
                       Delete list
                     </button>
@@ -699,7 +739,16 @@ function CustomListsSection({ customLists: clHook, filterItems, hideHeader }) {
             if (allItems.length === 0) {
               return (
                 <div style={{ padding: '1rem', fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'center' }}>
-                  No items yet — add from the detail panel
+                  <div style={{ marginBottom: '0.35rem' }}>No items yet</div>
+                  <button
+                    className="empty-add-btn"
+                    type="button"
+                    aria-label={`Add item to ${list.name}`}
+                    title={`Add item to ${list.name}`}
+                    onClick={() => setShowAddToList(list.id)}
+                  >
+                    <PlusIcon />
+                  </button>
                 </div>
               );
             }
@@ -724,16 +773,14 @@ function CustomListsSection({ customLists: clHook, filterItems, hideHeader }) {
       {creatingList && (
         <CreateListModal onConfirm={handleCreate} onClose={() => setCreatingList(false)} />
       )}
+      {showAddToList && (
+        <AddToFavoritesModal
+          title="Add to List"
+          onAdd={(item) => addItem(showAddToList, item)}
+          onClose={() => setShowAddToList(null)}
+        />
+      )}
     </div>
-  );
-}
-
-/* ── Play icon for "Start Watching" button ── */
-function PlayIcon() {
-  return (
-    <svg viewBox="0 0 16 16" fill="currentColor" style={{ width: 11, height: 11, flexShrink: 0 }}>
-      <polygon points="3,1 14,8 3,15"/>
-    </svg>
   );
 }
 
@@ -773,8 +820,10 @@ function WatchingSection({ watching, hideHeader }) {
               <div className="list-row-title">{item.title}</div>
               <div className="list-row-meta">
                 <span className="list-type-badge">Series</span>
-                <span className="chip chip-episode" style={{ fontSize: '0.62rem' }}>{epCode}</span>
               </div>
+            </div>
+            <div className="list-row-end mylists-row-status">
+              <span className="chip chip-episode">{epCode}</span>
             </div>
           </div>
         );
@@ -822,17 +871,6 @@ function WantToWatchSection({ watchlist, watching, hideHeader }) {
         const chip          = item.release_date ? countdownChip(item.release_date) : null;
         const streamingChip = item.streaming_date ? countdownChip(item.streaming_date) : null;
 
-        const handleStartWatching = async (e) => {
-          e.stopPropagation();
-          await watching.startWatching({
-            id:          item.tmdb_id,
-            title:       item.title || item.name,
-            poster_path: item.poster_path,
-            media_type:  'tv',
-          });
-          await watchlist.removeFromList(item.tmdb_id);
-        };
-
         return (
           <div key={item.id} className="list-row" onClick={() => openPanel(item.tmdb_id, item.media_type || 'movie')}>
             <div className="list-row-poster">
@@ -842,19 +880,16 @@ function WantToWatchSection({ watchlist, watching, hideHeader }) {
               <div className="list-row-title">{title}</div>
               <div className="list-row-meta">
                 <span className="list-type-badge">{isTV ? 'Series' : 'Movie'}</span>
-                {chip && <span className={`chip ${chip.cls}`} style={{ fontSize: '0.62rem' }}>{chip.label}</span>}
+              </div>
+            </div>
+            {(chip || streamingChip) && (
+              <div className="list-row-end mylists-row-status">
+                {chip && <span className={`chip ${chip.cls}`}>{chip.label}</span>}
                 {streamingChip && (
-                  <span className={`chip ${streamingChip.cls}`} style={{ fontSize: '0.62rem' }}>
+                  <span className={`chip ${streamingChip.cls}`}>
                     Streaming {streamingChip.label.toLowerCase()}
                   </span>
                 )}
-              </div>
-            </div>
-            {isTV && (
-              <div className="list-row-end">
-                <button className="btn-start-watching" onClick={handleStartWatching} title="Start watching">
-                  <PlayIcon /> Watch
-                </button>
               </div>
             )}
           </div>
@@ -894,14 +929,20 @@ export default function MyListsView() {
 
   const filterItems = (items) => {
     let filtered = items;
-    if (typeFilters.length)  filtered = filtered.filter(i => typeFilters.includes(i.media_type));
+    if (typeFilters.length) {
+      filtered = filtered.filter(i =>
+        (typeFilters.includes('tv') && i.media_type === 'tv') ||
+        (typeFilters.includes('cinema') && i._cinema === true) ||
+        (typeFilters.includes('movie') && i.media_type === 'movie' && !i._cinema)
+      );
+    }
     if (genreFilters.length) filtered = filtered.filter(i => !i.genre_ids?.length || i.genre_ids.some(id => genreFilters.includes(id)));
     return filtered;
   };
 
   if (!user) return null;
   if (topLists.loading || favorites.loading || customLists.loading || watchlist.loading || watching.loading) {
-    return <MyListsSkeleton />;
+    return <LoadingSpinner />;
   }
 
   const TABS = [
@@ -925,7 +966,6 @@ export default function MyListsView() {
   return (
     <div style={{ paddingBottom: '2rem' }}>
       <div className="sub-tabs">
-        <span className="sub-tabs-date"><TodayLabel /></span>
         <div className="sub-tabs-scroll">
           {TABS.map(({ id, label }) => (
             <button
@@ -938,20 +978,27 @@ export default function MyListsView() {
           ))}
         </div>
         <div className="sub-tabs-filters">
-          <MultiSelect
-            placeholder="Type"
-            options={[{ id: 'movie', label: 'Movies' }, { id: 'tv', label: 'TV' }]}
-            value={typeFilters}
-            onChange={setTypeFilters}
+          <GroupedFilterMenu
+            ariaLabel="Filter lists"
+            groups={[
+              {
+                heading: 'Type',
+                options: [
+                  { id: 'movie',  label: 'Movies' },
+                  { id: 'tv',     label: 'TV'     },
+                  { id: 'cinema', label: 'Cinema' },
+                ],
+                value: typeFilters,
+                onChange: setTypeFilters,
+              },
+              {
+                heading: 'Genre',
+                options: genres.map(g => ({ id: g.id, label: g.name })),
+                value: genreFilters,
+                onChange: setGenreFilters,
+              },
+            ]}
           />
-          {genres.length > 0 && (
-            <MultiSelect
-              placeholder="Genre"
-              options={genres.map(g => ({ id: g.id, label: g.name }))}
-              value={genreFilters}
-              onChange={setGenreFilters}
-            />
-          )}
         </div>
       </div>
 

@@ -3,8 +3,8 @@ import { useApp, posterUrl, TodayLabel } from '../App.jsx';
 import { localDateStr, dateToLocalStr } from '../utils/date.js';
 import { useCalendar } from '../hooks/useCalendar.js';
 import { tmdb } from '../api/tmdb.js';
-import MultiSelect from './MultiSelect.jsx';
-import CalendarSkeleton from './skeletons/CalendarSkeleton.jsx';
+import LoadingSpinner from './LoadingSpinner.jsx';
+import GroupedFilterMenu from './GroupedFilterMenu.jsx';
 
 /* ── Helpers ── */
 function buildMonthDays(year, month) {
@@ -273,28 +273,33 @@ export default function CalendarView() {
         <span className="sub-tabs-date"><TodayLabel onClick={goToToday} /></span>
 
         <div className="sub-tabs-scroll">
-          <button className={`sub-tab-btn${view === 'grid' ? ' active' : ''}`} onClick={() => switchView('grid')}>
-            Month
+          <button className={`sub-tab-btn${view === 'agenda' ? ' active' : ''}`} onClick={() => switchView('agenda')}>
+            Agenda
           </button>
           <button className={`sub-tab-btn${view === 'week' ? ' active' : ''}`} onClick={() => switchView('week')}>
             Week
           </button>
-          <button className={`sub-tab-btn${view === 'agenda' ? ' active' : ''}`} onClick={() => switchView('agenda')}>
-            Agenda
+          <button className={`sub-tab-btn${view === 'grid' ? ' active' : ''}`} onClick={() => switchView('grid')}>
+            Month
           </button>
         </div>
 
         <div className="sub-tabs-filters">
-          <MultiSelect
-            placeholder="Type"
-            options={[
-              { id: 'episode',   label: 'Episode'   },
-              { id: 'cinema',    label: 'Cinema'    },
-              { id: 'streaming', label: 'Streaming' },
-              { id: 'reminder',  label: 'Reminder'  },
+          <GroupedFilterMenu
+            ariaLabel="Filter calendar"
+            groups={[
+              {
+                heading: 'Type',
+                options: [
+                  { id: 'episode',   label: 'Episode'   },
+                  { id: 'cinema',    label: 'Cinema'    },
+                  { id: 'streaming', label: 'Streaming' },
+                  { id: 'reminder',  label: 'Reminder'  },
+                ],
+                value: typeFilter,
+                onChange: setTypeFilter,
+              },
             ]}
-            value={typeFilter}
-            onChange={setTypeFilter}
           />
           <div className="cal-month-nav">
             <button className="cal-month-btn" onClick={onPrev} aria-label="Previous">
@@ -367,7 +372,7 @@ export default function CalendarView() {
 
             {/* Selected day panel */}
             {loading ? (
-              <CalendarSkeleton />
+              <LoadingSpinner />
             ) : (
               <div className="cal-day-panel">
                 <div className="cal-day-panel-header">{selectedLabel}</div>
@@ -420,7 +425,7 @@ export default function CalendarView() {
 
             {/* Selected day panel */}
             {loading ? (
-              <CalendarSkeleton />
+              <LoadingSpinner />
             ) : (
               <div className="cal-day-panel" style={{ marginTop: '0.75rem' }}>
                 <div className="cal-day-panel-header">{selectedLabel}</div>
@@ -439,7 +444,7 @@ export default function CalendarView() {
         {/* ════════════ AGENDA VIEW ════════════ */}
         {view === 'agenda' && (
           loading ? (
-            <div className="loading-state" style={{ minHeight: 80 }}><div className="spinner" /></div>
+            <LoadingSpinner />
           ) : agendaDays.length === 0 ? (
             <div style={{ padding: '2.5rem 1rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.84rem' }}>
               {typeFilter.length < ALL_EVENT_TYPES.length ? 'Nothing matching this filter' : 'Nothing scheduled this month'}

@@ -21,6 +21,15 @@ function IconClose() {
   );
 }
 
+function IconSearch() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="11" cy="11" r="7" />
+      <line x1="16.5" y1="16.5" x2="21" y2="21" />
+    </svg>
+  );
+}
+
 export default function AppShell({ currentView, navigateTo, children }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -38,9 +47,7 @@ export default function AppShell({ currentView, navigateTo, children }) {
     <div className="app-shell">
       {/* ── Header ── */}
       <header className="app-header">
-        <span className="app-page-title">{pageTitle}</span>
-
-        <div className="header-end">
+        <div className="header-start">
           <button
             type="button"
             className="icon-btn"
@@ -48,6 +55,21 @@ export default function AppShell({ currentView, navigateTo, children }) {
             aria-label="Open menu"
           >
             <IconMenu />
+          </button>
+        </div>
+
+        <span className="app-page-title">{pageTitle}</span>
+
+        <div className="header-end">
+          <button
+            type="button"
+            className="icon-btn"
+            onClick={() => navigateTo('search')}
+            aria-label="Open search"
+            title="Search"
+            aria-current={currentView === 'search' ? 'page' : undefined}
+          >
+            <IconSearch />
           </button>
         </div>
       </header>

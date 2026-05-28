@@ -3,7 +3,7 @@ export const APP_NAV_ITEMS = [
   { id: 'calendar', label: 'Calendar', path: '/calendar', primary: true },
   { id: 'my-lists', label: 'My Lists', path: '/my-lists', primary: true },
   { id: 'history', label: 'History', path: '/history', primary: true },
-  { id: 'search', label: 'Search', path: '/search', primary: true },
+  { id: 'search', label: 'Search', path: '/search', primary: false },
   { id: 'settings', label: 'Settings', path: '/settings', primary: false },
 ];
 

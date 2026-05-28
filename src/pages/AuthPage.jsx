@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../api/supabase';
 import './AuthPage.css';
 import { usePostHog } from '@posthog/react';
+import { getAuthCallbackUrl } from '../utils/redirects.js';
 
 const POSTERS = [
   '/website-images/hero/challengers.webp',
@@ -63,7 +64,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
 
     if (mode === 'forgot') {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: getAuthCallbackUrl(),
       });
       if (error) { setError(friendlyError(error.message)); setLoading(false); }
       else {
@@ -82,7 +83,11 @@ export default function AuthPage({ initialMode = 'signup' }) {
         navigate('/app');
       }
     } else {
-      const { error } = await supabase.auth.signUp({ email, password });
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { emailRedirectTo: getAuthCallbackUrl() },
+      });
       if (error) { setError(friendlyError(error.message)); setLoading(false); }
       else {
         posthog?.capture('user_signed_up');
@@ -101,7 +106,11 @@ export default function AuthPage({ initialMode = 'signup' }) {
   const handleResend = async () => {
     if (resendStatus === 'sending' || resendStatus === 'sent') return;
     setResendStatus('sending');
-    const { error } = await supabase.auth.resend({ type: 'signup', email });
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email,
+      options: { emailRedirectTo: getAuthCallbackUrl() },
+    });
     setResendStatus(error ? 'error' : 'sent');
   };
 

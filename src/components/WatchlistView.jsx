@@ -3,7 +3,7 @@ import { useApp, posterUrl, countdownChip, TodayLabel } from '../App.jsx';
 import { localDateStr } from '../utils/date.js';
 import { useGenres } from '../hooks/useGenres.js';
 import MultiSelect from './MultiSelect.jsx';
-import WatchlistSkeleton from './skeletons/WatchlistSkeleton.jsx';
+import LoadingSpinner from './LoadingSpinner.jsx';
 
 
 /* ─── Chevron for "Start Watching" ── */
@@ -37,7 +37,7 @@ export default function WatchlistView() {
 
   const isLoading = watchlist.loading || watching.loading;
 
-  if (isLoading) return <WatchlistSkeleton />;
+  if (isLoading) return <LoadingSpinner />;
 
   const watchingItems = watching.items;
 

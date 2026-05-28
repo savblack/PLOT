@@ -5,8 +5,8 @@ import { useGenres } from '../hooks/useGenres.js';
 import { useDiscover } from '../hooks/useDiscover.js';
 import { UpcomingContent } from './GuideView.jsx';
 import EpgView from './EpgView.jsx';
-import MultiSelect from './MultiSelect.jsx';
-import DiscoverSkeleton from './skeletons/DiscoverSkeleton.jsx';
+import LoadingSpinner from './LoadingSpinner.jsx';
+import GroupedFilterMenu from './GroupedFilterMenu.jsx';
 
 const ALL_TYPES = ['tv', 'cinema', 'movie'];
 
@@ -18,6 +18,35 @@ function Rail({ children }) {
       style={{ paddingLeft: '1rem', paddingRight: '1rem', paddingTop: '0.75rem', paddingBottom: '1rem' }}>
       {children}
     </div>
+  );
+}
+
+function BingeRail({ children }) {
+  const { ref, handlers } = useDragScroll();
+  return (
+    <div className="discover-binge-rail" ref={ref} {...handlers}>
+      {children}
+    </div>
+  );
+}
+
+function DiscoverSectionHeader({ kicker, title, open, onToggle, className = '' }) {
+  return (
+    <button
+      className={`date-group-header date-group-collapsible discover-section-header${className ? ` ${className}` : ''}`}
+      style={{ paddingTop: '0.5rem' }}
+      onClick={onToggle}
+      aria-expanded={open}
+      type="button"
+    >
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: '0.6rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.15rem' }}>{kicker}</div>
+        <div style={{ fontSize: '0.72rem', fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-primary)' }}>{title}</div>
+      </div>
+      <svg className={`date-group-chevron${open ? ' open' : ''}`} viewBox="0 0 24 24" aria-hidden="true">
+        <polyline points="6 9 12 15 18 9" />
+      </svg>
+    </button>
   );
 }
 
@@ -62,6 +91,29 @@ function RankedCard({ item, rank, showRank = true, openPanel, watchlist }) {
       </div>
       <div className="media-card-title">{title}</div>
     </div>
+  );
+}
+
+function BingeCard({ item, openPanel }) {
+  const title = item.name || item.title;
+  const backdrop = backdropUrl(item.backdrop_path, 'w780');
+  const poster = posterUrl(item.poster_path, 'w342');
+  const year = (item.first_air_date || '').slice(0, 4);
+
+  return (
+    <button
+      className="discover-binge-card"
+      onClick={() => openPanel(item.id, 'tv')}
+      style={{ backgroundImage: `url(${backdrop || poster || ''})` }}
+    >
+      <span className="discover-binge-card-shade" />
+      <span className="discover-binge-card-copy">
+        <span className="discover-binge-card-title">{title}</span>
+        <span className="discover-binge-card-meta">
+          {year ? `${year} • ` : ''}TV Series
+        </span>
+      </span>
+    </button>
   );
 }
 
@@ -150,7 +202,7 @@ function PlatformSection({ platform, openPanel, watchlist }) {
             ? <img className="discover-plat-logo" src={`https://image.tmdb.org/t/p/w45${platform.logo_path}`} alt={platform.name} />
             : <div className="discover-plat-logo discover-plat-logo-fallback">{platform.name.slice(0, 2)}</div>
           }
-          <span className="discover-plat-name">Top 10 on {platform.name}</span>
+          <span className="discover-plat-name">{platform.name}</span>
         </div>
         <svg
           className={`discover-plat-chevron${open ? ' open' : ''}`}
@@ -211,12 +263,20 @@ function PlatformSection({ platform, openPanel, watchlist }) {
 /* ── Discover tab content ── */
 function DiscoverContent({ openPanel, watchlist, providers }) {
   const { data, loading } = useDiscover(providers);
+  const [openSections, setOpenSections] = useState({
+    hot: true,
+    binge: true,
+    weekly: true,
+    platforms: true,
+  });
 
-  if (loading) return <DiscoverSkeleton />;
+  if (loading) {
+    return <LoadingSpinner />;
+  }
 
-  const { hero, hotRail, weekly, platforms } = data;
+  const { hero, hotRail, weekly, bingedShows, platforms } = data;
   const platformList = Object.values(platforms);
-  const hasContent = hero || hotRail.length > 0 || weekly.length > 0 || platformList.length > 0;
+  const hasContent = hero || hotRail.length > 0 || weekly.length > 0 || bingedShows.length > 0 || platformList.length > 0;
 
   if (!hasContent) {
     return (
@@ -227,49 +287,74 @@ function DiscoverContent({ openPanel, watchlist, providers }) {
     );
   }
 
+  const toggleSection = (section) => {
+    setOpenSections(prev => ({ ...prev, [section]: !prev[section] }));
+  };
+
   return (
     <div>
       {hero && <HeroCard item={hero} openPanel={openPanel} watchlist={watchlist} />}
 
       {hotRail.length > 0 && (
-        <section style={{ paddingTop: '1rem' }}>
-          <div className="date-group-header" style={{ paddingTop: '0.5rem' }}>
-            <div>
-              <div style={{ fontSize: '0.6rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.15rem' }}>Trending today</div>
-              <div style={{ fontSize: '0.72rem', fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-primary)' }}>Hot Right Now</div>
-            </div>
-          </div>
-          <Rail>
-            {hotRail.map((item, i) => (
-              <RankedCard key={item.id} item={item} rank={i + 2} showRank={false} openPanel={openPanel} watchlist={watchlist} />
-            ))}
-          </Rail>
+        <section className="discover-section">
+          <DiscoverSectionHeader
+            kicker="Trending today"
+            title="Hot Right Now"
+            open={openSections.hot}
+            onToggle={() => toggleSection('hot')}
+          />
+          {openSections.hot && (
+            <Rail>
+              {hotRail.map((item, i) => (
+                <RankedCard key={item.id} item={item} rank={i + 2} showRank={false} openPanel={openPanel} watchlist={watchlist} />
+              ))}
+            </Rail>
+          )}
+        </section>
+      )}
+
+      {bingedShows.length > 0 && (
+        <section className="discover-section discover-binge-section">
+          <DiscoverSectionHeader
+            kicker="Popular TV"
+            title="Most Binged Shows"
+            open={openSections.binge}
+            onToggle={() => toggleSection('binge')}
+            className="discover-binge-header"
+          />
+          {openSections.binge && (
+            <BingeRail>
+              {bingedShows.map(item => (
+                <BingeCard key={item.id} item={item} openPanel={openPanel} />
+              ))}
+            </BingeRail>
+          )}
         </section>
       )}
 
       {weekly.length > 0 && (
-        <section>
-          <div className="date-group-header" style={{ paddingTop: '0.5rem' }}>
-            <div>
-              <div style={{ fontSize: '0.6rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.15rem' }}>Global ranking</div>
-              <div style={{ fontSize: '0.72rem', fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-primary)' }}>Top 20 This Week</div>
-            </div>
-          </div>
-          {weekly.map((item, i) => (
+        <section className="discover-section">
+          <DiscoverSectionHeader
+            kicker="Global ranking"
+            title="Top 20 This Week"
+            open={openSections.weekly}
+            onToggle={() => toggleSection('weekly')}
+          />
+          {openSections.weekly && weekly.map((item, i) => (
             <ChartRow key={item.id} item={item} rank={i + 1} openPanel={openPanel} watchlist={watchlist} />
           ))}
         </section>
       )}
 
       {platformList.length > 0 && (
-        <section>
-          <div className="date-group-header" style={{ paddingTop: '0.5rem' }}>
-            <div>
-              <div style={{ fontSize: '0.6rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.15rem' }}>Your platforms</div>
-              <div style={{ fontSize: '0.72rem', fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-primary)' }}>On Your Services</div>
-            </div>
-          </div>
-          {platformList.map(platform => (
+        <section className="discover-section">
+          <DiscoverSectionHeader
+            kicker="Your Streaming Services"
+            title="Top 10 On Your Platforms"
+            open={openSections.platforms}
+            onToggle={() => toggleSection('platforms')}
+          />
+          {openSections.platforms && platformList.map(platform => (
             <PlatformSection key={platform.id} platform={platform} openPanel={openPanel} watchlist={watchlist} />
           ))}
         </section>
@@ -325,25 +410,32 @@ export default function DiscoverView() {
 
         {tab === 'releases' && (
           <div className="sub-tabs-filters">
-            <MultiSelect
-              placeholder="Type"
-              options={[
-                { id: 'tv',     label: 'TV'     },
-                { id: 'cinema', label: 'Cinema' },
-                { id: 'movie',  label: 'Movies' },
+            <GroupedFilterMenu
+              ariaLabel="Filter releases"
+              groups={[
+                {
+                  heading: 'Type',
+                  options: [
+                    { id: 'tv',     label: 'TV'     },
+                    { id: 'cinema', label: 'Cinema' },
+                    { id: 'movie',  label: 'Movies' },
+                  ],
+                  value: typeFilters,
+                  onChange: setTypeFilters,
+                },
+                {
+                  heading: 'Genre',
+                  options: genres.map(g => ({ id: g.id, label: g.name })),
+                  value: genreFilters,
+                  onChange: setGenreFilters,
+                },
               ]}
-              value={typeFilters}
-              onChange={setTypeFilters}
             />
-            {genres.length > 0 && (
-              <MultiSelect
-                placeholder="Genre"
-                options={genres.map(g => ({ id: g.id, label: g.name }))}
-                value={genreFilters}
-                onChange={setGenreFilters}
-              />
-            )}
           </div>
+        )}
+
+        {tab === 'guide' && (
+          <div id="guide-top-filters" className="sub-tabs-filters" />
         )}
       </div>
 

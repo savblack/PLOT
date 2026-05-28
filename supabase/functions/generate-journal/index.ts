@@ -34,10 +34,10 @@ serve(async (req) => {
 
   const { watchHistory } = await req.json()
 
-  const topItems = (watchHistory ?? []).filter((i: { rating: number }) => i.rating >= 4).slice(0, 15)
+  const topItems = (watchHistory ?? []).filter((i: { rating: number }) => i.rating >= 8).slice(0, 15)
 
   const prompt = `You are a film critic writing a short, warm, personal taste summary.
-Based on this watch history (title, rating 1-5, mood): ${JSON.stringify(topItems)}
+Based on this watch history (title, rating 1-10 where 10 equals 5 stars, mood): ${JSON.stringify(topItems)}
 Write 2-3 sentences describing this person's film taste in a distinctive, non-generic way.
 Be specific to what they actually watched. No lists, no bullet points. Just flowing prose.`
 

@@ -26,6 +26,8 @@ PLOT is a private React/Vite app for discovering, logging, and sharing movies an
 
 3. Fill in the browser-safe `VITE_*` values in `.env`. Keep service-role and TMDB API keys server-side or local-script-only.
 
+   `VITE_AUTH_REDIRECT_BASE_URL` is optional for local web development. Set it when auth and provider callbacks must use a stable production URL or a native deep-link base.
+
 4. Start the app:
 
    ```sh

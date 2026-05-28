@@ -148,7 +148,7 @@
       font-family: 'Instrument Serif', Georgia, serif;
       font-size: 2.5rem;
       font-weight: 400;
-      letter-spacing: var(--serif-tracking);
+      letter-spacing: -0.05em;
       color: var(--text);
       line-height: 1;
       user-select: none;
@@ -782,10 +782,10 @@
 
     .footer-wm {
       font-family: 'Instrument Serif', Georgia, serif;
-      font-size: clamp(11rem, 52vw, 42rem);
+      font-size: clamp(10rem, calc((100vw - 6rem) * 0.507), 40rem);
       font-weight: 400;
       font-style: normal;
-      letter-spacing: var(--serif-tracking);
+      letter-spacing: 0.03em;
       line-height: 1;
       color: #1a1a1a;
       text-shadow:
@@ -1094,29 +1094,72 @@
     .demo-link.dark-link:hover { border-bottom-color: var(--text); }
     .phone-wrap { display: flex; justify-content: center; }
 
-    /* Phone frame */
-    .phone-frame {
-      width: 320px;
-      height: 600px;
-      background: #111;
-      border-radius: 36px;
-      border: 1.5px solid rgba(255,255,255,0.1);
-      box-shadow:
-        0 0 0 6px #1a1a1a,
-        0 40px 100px rgba(0,0,0,0.7),
-        inset 0 1px 0 rgba(255,255,255,0.06);
-      overflow: hidden;
+    /* iPhone PNG mockup wrapper
+       PNG pixel data: phone outer 564–1039 × 113–1086 (475×973px)
+       Transparent screen area: 587–1016 × 172–1064 (429×892px)
+       All display values calculated at scale = 320/475 ≈ 0.6737 */
+    .iphone-png-wrap {
       position: relative;
+      width: 320px;
+      height: 655px;
       flex-shrink: 0;
+      overflow: hidden;
+    }
+
+    .iphone-png-frame {
+      position: absolute;
+      width: 1077px;   /* 1600 × 320/475 */
+      height: auto;
+      left: -380px;    /* −564 × 320/475 */
+      top:  -76px;     /* −113 × 320/475 */
+      pointer-events: none;
+      z-index: 10;
+      user-select: none;
+    }
+
+    /* Phone frame — screen content, positioned to match transparent screen area */
+    .phone-frame {
+      position: absolute;
+      left: 16px;      /* (587−564) × 320/475 */
+      top:  40px;      /* (172−113) × 320/475 */
+      width: 289px;    /* 429 × 320/475 */
+      height: 601px;   /* 892 × 320/475 */
+      background: #111;
+      border-radius: 38px;
+      overflow: hidden;
     }
     .phone-frame.light-frame {
       background: #f4f4f0;
-      border-color: rgba(0,0,0,0.1);
-      box-shadow:
-        0 0 0 6px #e0e0dc,
-        0 40px 100px rgba(0,0,0,0.16),
-        inset 0 1px 0 rgba(255,255,255,0.7);
     }
+
+    /* Status bar — sits in the notch shoulder area */
+    .iphone-status-bar {
+      height: 42px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      padding: 0 18px 7px;
+      flex-shrink: 0;
+    }
+    .status-time {
+      font-size: 0.66rem;
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      color: rgba(240,239,232,0.9);
+      line-height: 1;
+    }
+    .iphone-status-bar.light-status .status-time { color: rgba(26,26,26,0.9); }
+    .status-icons {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .status-icon {
+      color: rgba(240,239,232,0.85);
+      display: flex;
+      align-items: center;
+    }
+    .iphone-status-bar.light-status .status-icon { color: rgba(26,26,26,0.85); }
 
     /* App chrome */
     .demo-app-bar {
@@ -1136,7 +1179,7 @@
       font-family: 'Instrument Serif', Georgia, serif;
       font-size: 1.1rem;
       font-weight: 400;
-      letter-spacing: var(--serif-tracking);
+      letter-spacing: -0.05em;
       color: #f0efe8;
     }
     .demo-app-bar-title.dark-title {
@@ -1571,7 +1614,9 @@
       .demo-split { grid-template-columns: 1fr; gap: 3.5rem; }
       .demo-copy { position: static; order: 1 !important; }
       .phone-wrap { order: 2 !important; }
-      .phone-frame { width: 280px; height: 520px; }
+      .iphone-png-wrap { width: 280px; height: 574px; }
+      .iphone-png-frame { width: 944px; left: -333px; top: -67px; }
+      .phone-frame { left: 14px; top: 35px; width: 253px; height: 526px; }
     }
 
     /* ── Interactive Calendar Demo ──────────────────────────────── */
@@ -1838,7 +1883,7 @@
     <p class="manifesto-line reveal">You talk about them.</p>
     <p class="manifesto-line reveal">You carry them with you.</p>
     <p class="manifesto-line reveal">But no app has ever cared<br>as much as you do.</p>
-    <p class="manifesto-line no-fade reveal" id="plotDoes"><span style="font-family:'Instrument Serif',Georgia,serif;font-weight:400;">PLOT</span> <em>does.</em></p>
+    <p class="manifesto-line no-fade reveal" id="plotDoes"><span style="font-family:'Instrument Serif',Georgia,serif;font-weight:400;letter-spacing:-0.02em;">PLOT</span> <em>does.</em></p>
     <div class="manifesto-seq">
       <div class="mseq-stage">
         <div class="mseq-line active">You don't just watch things.</div>
@@ -1846,7 +1891,7 @@
         <div class="mseq-line">You talk about them.</div>
         <div class="mseq-line">You carry them with you.</div>
         <div class="mseq-line">But no app has ever cared<br>as much as you do.</div>
-        <div class="mseq-line"><span style="font-family:'Instrument Serif',Georgia,serif;font-weight:400;">PLOT</span> does.</div>
+        <div class="mseq-line"><span style="font-family:'Instrument Serif',Georgia,serif;font-weight:400;letter-spacing:-0.02em;">PLOT</span> does.</div>
       </div>
       <div class="mseq-dots">
         <span class="mseq-dot active"></span>
@@ -1874,7 +1919,17 @@
         <a href="https://app.theplot.tv/signup" class="demo-link">See what's on tonight &rarr;</a>
       </div>
       <div class="phone-wrap reveal">
-        <div class="phone-frame" id="guideFrame">
+        <div class="iphone-png-wrap">
+          <img class="iphone-png-frame" src="images/iphone-mockup.png" alt="">
+          <div class="phone-frame" id="guideFrame">
+          <div class="iphone-status-bar">
+            <span class="status-time">9:41</span>
+            <div class="status-icons">
+              <svg class="status-icon" width="16" height="11" viewBox="0 0 16 11" fill="currentColor"><rect x="0" y="4" width="3" height="7" rx="0.5"/><rect x="4.5" y="2.5" width="3" height="8.5" rx="0.5"/><rect x="9" y="0.5" width="3" height="10.5" rx="0.5"/><rect x="13.5" y="0" width="2.5" height="11" rx="0.5" opacity="0.3"/></svg>
+              <svg class="status-icon" width="15" height="11" viewBox="0 0 15 11" fill="currentColor"><path d="M7.5 2.2C9.8 2.2 11.9 3.1 13.4 4.6L15 3C13.1 1.1 10.4 0 7.5 0S1.9 1.1 0 3l1.6 1.6C3.1 3.1 5.2 2.2 7.5 2.2z"/><path d="M7.5 5.5c1.4 0 2.7.6 3.6 1.5L12.7 5.4C11.4 4.2 9.5 3.4 7.5 3.4S3.6 4.2 2.3 5.4L3.9 7C4.8 6.1 6.1 5.5 7.5 5.5z"/><circle cx="7.5" cy="9.5" r="1.5"/></svg>
+              <svg class="status-icon" width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="currentColor" stroke-opacity="0.35"/><rect x="1.5" y="1.5" width="16" height="9" rx="2.5" fill="currentColor"/><path d="M23 4v4a2 2 0 000-4z" fill="currentColor" opacity="0.4"/></svg>
+            </div>
+          </div>
           <div class="guide-screen">
             <div class="demo-app-bar">
               <span class="demo-app-icon">&#9776;</span>
@@ -1954,7 +2009,8 @@
               <path d="M2 2l14 8-8 1.5-3.5 8z" fill="white" stroke="rgba(0,0,0,0.35)" stroke-width="0.8"/>
             </svg>
           </div>
-        </div>
+        </div><!-- /phone-frame -->
+        </div><!-- /iphone-png-wrap -->
       </div>
     </div>
   </section>
@@ -2007,7 +2063,17 @@
   <section id="lists-demo">
     <div class="demo-split">
       <div class="phone-wrap reveal">
-        <div class="phone-frame light-frame" id="listsFrame">
+        <div class="iphone-png-wrap">
+          <img class="iphone-png-frame" src="images/iphone-mockup.png" alt="">
+          <div class="phone-frame light-frame" id="listsFrame">
+          <div class="iphone-status-bar light-status">
+            <span class="status-time">9:41</span>
+            <div class="status-icons">
+              <svg class="status-icon" width="16" height="11" viewBox="0 0 16 11" fill="currentColor"><rect x="0" y="4" width="3" height="7" rx="0.5"/><rect x="4.5" y="2.5" width="3" height="8.5" rx="0.5"/><rect x="9" y="0.5" width="3" height="10.5" rx="0.5"/><rect x="13.5" y="0" width="2.5" height="11" rx="0.5" opacity="0.3"/></svg>
+              <svg class="status-icon" width="15" height="11" viewBox="0 0 15 11" fill="currentColor"><path d="M7.5 2.2C9.8 2.2 11.9 3.1 13.4 4.6L15 3C13.1 1.1 10.4 0 7.5 0S1.9 1.1 0 3l1.6 1.6C3.1 3.1 5.2 2.2 7.5 2.2z"/><path d="M7.5 5.5c1.4 0 2.7.6 3.6 1.5L12.7 5.4C11.4 4.2 9.5 3.4 7.5 3.4S3.6 4.2 2.3 5.4L3.9 7C4.8 6.1 6.1 5.5 7.5 5.5z"/><circle cx="7.5" cy="9.5" r="1.5"/></svg>
+              <svg class="status-icon" width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="currentColor" stroke-opacity="0.35"/><rect x="1.5" y="1.5" width="16" height="9" rx="2.5" fill="currentColor"/><path d="M23 4v4a2 2 0 000-4z" fill="currentColor" opacity="0.4"/></svg>
+            </div>
+          </div>
           <div class="lists-screen">
             <div class="demo-app-bar light-bar">
               <span class="demo-app-icon dark-icon">&#8592;</span>
@@ -2051,16 +2117,17 @@
               <path d="M2 2l14 8-8 1.5-3.5 8z" fill="#1a1a1a" stroke="rgba(255,255,255,0.25)" stroke-width="0.8"/>
             </svg>
           </div>
-        </div>
+        </div><!-- /phone-frame -->
+        </div><!-- /iphone-png-wrap -->
       </div>
       <div class="demo-copy reveal">
         <span class="section-eyebrow" style="color:var(--muted)">My Lists</span>
-        <h2 class="demo-headline" style="color:var(--text)">Your journal.<br><em>Your rules.</em></h2>
+        <h2 class="demo-headline" style="color:var(--text)">Make the lists<br>only <em style="font-style:italic">you</em> could make.</h2>
         <p class="demo-body" style="color:var(--muted)">
-          Your all-time Top 10 movies. The series you're deep in. The film you keep telling people about.
-          A custom list for every mood. PLOT organises your taste so you can actually find it again.
+          Best of a decade. Directors worth trusting. Comfort watches you'd never admit to.
+          Create collections that actually reflect how you think about film — then share them when you're ready.
         </p>
-        <a href="https://app.theplot.tv/signup" class="demo-link dark-link">Build your collection &rarr;</a>
+        <a href="https://app.theplot.tv/signup" class="demo-link dark-link">Start building &rarr;</a>
       </div>
     </div>
   </section>
@@ -2239,7 +2306,6 @@
   <footer>
     <div class="footer-wm">PLOT</div>
     <div class="footer-meta">
-      <span class="footer-tag">Your Film &amp; TV Journal</span>
       <ul class="footer-links">
         <li><a href="https://app.theplot.tv/login">Log in</a></li>
         <li><a href="https://app.theplot.tv/signup">Sign up</a></li>
@@ -2603,12 +2669,15 @@
         track.style.animationDuration = `${Math.max(30, duration)}s`;
       }
 
+      const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1rZWd0c3NlZGp5cWxkeXN2emdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2MDgzMzUsImV4cCI6MjA4OTE4NDMzNX0.W-toEr3ftNeN0iTpRQ8Ord09sxBiwO2CQC6j2jszN6w';
+      const headers = { Authorization: `Bearer ${ANON_KEY}` };
+
       try {
         const [trending, nowPlaying, upcoming, topTv] = await Promise.all([
-          fetch(`${PROXY}?path=trending/all/week`).then(r => r.json()),
-          fetch(`${PROXY}?path=movie/now_playing`).then(r => r.json()),
-          fetch(`${PROXY}?path=movie/upcoming`).then(r => r.json()),
-          fetch(`${PROXY}?path=tv/top_rated`).then(r => r.json()),
+          fetch(`${PROXY}?path=trending/all/week`, { headers }).then(r => r.json()),
+          fetch(`${PROXY}?path=movie/now_playing`, { headers }).then(r => r.json()),
+          fetch(`${PROXY}?path=movie/upcoming`,    { headers }).then(r => r.json()),
+          fetch(`${PROXY}?path=tv/top_rated`,      { headers }).then(r => r.json()),
         ]);
 
         populate([

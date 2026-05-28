@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../api/supabase.js';
+import { baseMediaRow, tmdbIdFromItem } from '../domain/media.js';
 
 export function useCustomLists(userId) {
   const [lists,   setLists]   = useState([]);
@@ -52,16 +53,15 @@ export function useCustomLists(userId) {
 
   const addItem = useCallback(async (listId, item) => {
     if (!userId) return;
-    const tmdbId = Number(item.id || item.tmdb_id);
+    const tmdbId = tmdbIdFromItem(item);
+    if (!tmdbId) return;
+
     const { data } = await supabase
       .from('user_custom_list_items')
       .insert({
         list_id:     listId,
         user_id:     userId,
-        tmdb_id:     tmdbId,
-        media_type:  item.media_type || 'movie',
-        title:       item.title || item.name || '',
-        poster_path: item.poster_path || null,
+        ...baseMediaRow(item),
       })
       .select()
       .single();

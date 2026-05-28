@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useApp, logoUrl } from '../App.jsx';
 import { tmdb, setTmdbRegion } from '../api/tmdb.js';
 import { supabase } from '../api/supabase.js';
+import { edgeFunctionUrl } from '../api/functions.js';
 import { useMediaSync } from '../hooks/useMediaSync.js';
 import { useTraktSync } from '../hooks/useTraktSync.js';
 import { useCalendar } from '../hooks/useCalendar.js';
@@ -528,9 +529,7 @@ export default function SettingsView() {
 
   // Use optimistic local value so the URL appears immediately after generation
   const calendarToken = localCalToken ?? profile?.calendar_token ?? null;
-  const calFeedUrl = calendarToken
-    ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/calendar-feed?token=${calendarToken}`
-    : null;
+  const calFeedUrl = calendarToken ? edgeFunctionUrl('calendar-feed', { token: calendarToken }) : null;
 
   // Sync local token back to null once profile catches up (or if revoked elsewhere)
   useEffect(() => {
@@ -618,7 +617,8 @@ export default function SettingsView() {
     if (window.confirm('Delete your account and all data? This cannot be undone.')) {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-account`;
+      const url = edgeFunctionUrl('delete-account');
+      if (!url) return;
       await fetch(url, {
         method:  'POST',
         headers: { Authorization: `Bearer ${session.access_token}` },

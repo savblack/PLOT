@@ -11,6 +11,14 @@ export default function AuthCallbackPage() {
     const handle = async () => {
       const token_hash = searchParams.get('token_hash');
       const type       = searchParams.get('type');
+      const code       = searchParams.get('code');
+
+      if (code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        if (error) { setError(error.message); return; }
+        navigate('/onboarding', { replace: true });
+        return;
+      }
 
       if (token_hash && type) {
         const { error } = await supabase.auth.verifyOtp({ token_hash, type });

@@ -1,28 +1,10 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '../api/supabase.js';
-
-const SYNC_URL = import.meta.env.VITE_SUPABASE_URL
-  ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/media-sync`
-  : null;
+import { callAuthenticatedFunction } from '../api/functions.js';
 
 async function callSync(action, body = {}) {
   const { data: { session } } = await supabase.auth.getSession();
-  if (!session || !SYNC_URL) return null;
-
-  const res = await fetch(SYNC_URL, {
-    method:  'POST',
-    headers: {
-      'Content-Type':  'application/json',
-      'Authorization': `Bearer ${session.access_token}`,
-    },
-    body: JSON.stringify({ action, ...body }),
-  });
-
-  if (!res.ok) {
-    const err = await res.text().catch(() => 'Unknown error');
-    throw new Error(err);
-  }
-  return res.json();
+  return callAuthenticatedFunction('media-sync', session, { action, ...body });
 }
 
 export function useMediaSync(userId) {

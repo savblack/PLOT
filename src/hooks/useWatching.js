@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../api/supabase.js';
 import { tmdb } from '../api/tmdb.js';
 import { localDateStr } from '../utils/date.js';
+import { baseMediaRow, tmdbIdFromItem } from '../domain/media.js';
 
 export function useWatching(userId) {
   const [items,       setItems]       = useState([]);
@@ -34,15 +35,17 @@ export function useWatching(userId) {
   /* ── Start watching a show ── */
   const startWatching = useCallback(async (item) => {
     if (!userId) return null;
-    const tmdb_id = Number(item.id || item.tmdb_id);
+    const tmdb_id = tmdbIdFromItem(item);
+    const mediaRow = baseMediaRow(item, { fallbackType: 'tv' });
+    if (!tmdb_id || !mediaRow) return null;
 
     const { data, error } = await supabase
       .from('watching_progress')
       .upsert({
         user_id:         userId,
         tmdb_id,
-        title:           item.title || item.name || '',
-        poster_path:     item.poster_path || null,
+        title:           mediaRow.title,
+        poster_path:     mediaRow.poster_path,
         current_season:  1,
         current_episode: 1,
         updated_at:      new Date().toISOString(),
