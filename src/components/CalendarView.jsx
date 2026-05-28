@@ -33,15 +33,6 @@ function startOfWeek(date) {
   return d;
 }
 
-// episode  = upcoming ep from a show you're watching
-// release  = movie or TV release from your watchlist
-// reminder = EPG bookmark you set manually
-const DOT_COLORS = {
-  episode:   'cal-dot-ep',
-  cinema:    'cal-dot-cinema',
-  streaming: 'cal-dot-streaming',
-  reminder:  'cal-dot-reminder',
-};
 const PILL_COLORS = {
   episode:   'cal-pill-ep',
   cinema:    'cal-pill-cinema',
@@ -80,8 +71,7 @@ function EventRowList({ events, openPanel }) {
   async function openReminder(title, tvmazeEpId) {
     setResolving(tvmazeEpId);
     try {
-      const results = await tmdb.search(title);
-      const match = results?.results?.find(r => r.media_type === 'tv');
+      const match = await tmdb.resolveTitle(title, 'tv');
       if (match) openPanel(match.id, 'tv');
     } finally {
       setResolving(null);
@@ -167,7 +157,7 @@ export default function CalendarView() {
   const [view, setView]   = useState('grid'); // 'grid' | 'week' | 'agenda'
   const [typeFilter, setTypeFilter] = useState(ALL_EVENT_TYPES);
 
-  const { loading, eventsForDate, datesWithEvents } = useCalendar(
+  const { loading, eventsForDate } = useCalendar(
     watchlist.items,
     watching.items,
     watching.fetchSeason,
@@ -176,7 +166,6 @@ export default function CalendarView() {
 
   /* ── Month grid ── */
   const days   = useMemo(() => buildMonthDays(year, month), [year, month]);
-  const dotMap = useMemo(() => datesWithEvents(year, month), [datesWithEvents, year, month]);
 
   /* ── Week strip ── */
   const weekDays = useMemo(() => (
@@ -346,7 +335,6 @@ export default function CalendarView() {
               ))}
               {days.map(({ date, current }, i) => {
                 const ds         = dateToLocalStr(date);
-                const dots       = dotMap[ds] || [];
                 const cellEvents = pillEventsMap[ds] || [];
                 const isToday    = ds === todayStr;
                 const isSelected = ds === selectedDate;
@@ -370,12 +358,6 @@ export default function CalendarView() {
                         {cellEvents.length > MAX_PILLS_MONTH && (
                           <span className="cal-pill-more">+{cellEvents.length - MAX_PILLS_MONTH} more</span>
                         )}
-                      </div>
-                    ) : (!current && dots.length > 0) ? (
-                      <div className="cal-dots">
-                        {[...new Set(dots)].slice(0, 4).map((type, j) => (
-                          <div key={j} className={`cal-dot ${DOT_COLORS[type] || ''}`} />
-                        ))}
                       </div>
                     ) : null}
                   </div>

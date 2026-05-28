@@ -34,6 +34,11 @@ const fetchFromTMDB = async (endpoint, params = {}) => {
 export const tmdb = {
   /* ── Search ── */
   search: (query) => fetchFromTMDB('/search/multi', { query }),
+  resolveTitle: async (query, mediaType) => {
+    const data = await fetchFromTMDB('/search/multi', { query });
+    const results = data?.results || [];
+    return results.find(result => result.media_type === mediaType) || null;
+  },
 
   /* ── Trending ── */
   getTrending: async (type = 'all', time = 'day') => {

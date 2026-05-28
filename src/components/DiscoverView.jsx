@@ -89,7 +89,6 @@ function HeroCard({ item, openPanel, watchlist }) {
             onClick={() => watchlist.toggle({ ...item })}
             disabled={watchlist.loading}
           >
-            <svg viewBox="0 0 24 24" fill={saved ? 'currentColor' : 'none'}><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
             {saved ? 'Saved' : 'Save'}
           </button>
           <button className="discover-hero-info" onClick={() => openPanel(item.id, type)}>
@@ -127,6 +126,7 @@ function ChartRow({ item, rank, openPanel, watchlist }) {
           className={`card-save-btn${saved ? ' saved' : ''}`}
           style={{ position: 'static', width: 28, height: 28 }}
           onClick={e => { e.stopPropagation(); watchlist.toggle({ ...item }); }}
+          aria-label={saved ? 'Remove from list' : 'Add to list'}
           disabled={watchlist.loading}
         >
           <svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
@@ -216,6 +216,16 @@ function DiscoverContent({ openPanel, watchlist, providers }) {
 
   const { hero, hotRail, weekly, platforms } = data;
   const platformList = Object.values(platforms);
+  const hasContent = hero || hotRail.length > 0 || weekly.length > 0 || platformList.length > 0;
+
+  if (!hasContent) {
+    return (
+      <div className="empty-state" style={{ marginTop: '1rem' }}>
+        <div className="empty-title">Discovery unavailable</div>
+        <div className="empty-body">Trending and platform picks could not load right now. Try again shortly.</div>
+      </div>
+    );
+  }
 
   return (
     <div>

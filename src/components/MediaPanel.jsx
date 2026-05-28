@@ -233,7 +233,7 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone }) {
 function HeartIcon({ filled }) {
   const path = "M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z";
   return (
-    <svg viewBox="0 0 24 24" width="16" height="16"
+    <svg viewBox="0 0 24 24" width="14" height="14"
       fill={filled ? 'var(--accent)' : 'none'}
       stroke={filled ? 'var(--accent)' : 'currentColor'}
       strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
@@ -258,15 +258,15 @@ function CheckSmallIcon({ color } = {}) {
 }
 function PlaySmallIcon() {
   return (
-    <svg viewBox="0 0 16 16" width="11" height="11" fill="currentColor">
-      <polygon points="3,1 14,8 3,15"/>
+    <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round">
+      <polygon points="4,3 12.75,8 4,13"/>
     </svg>
   );
 }
 function StopSmallIcon() {
   return (
-    <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
-      <rect x="4" y="4" width="16" height="16" rx="2"/>
+    <svg viewBox="0 0 16 16" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round">
+      <rect x="3.25" y="3.25" width="9.5" height="9.5" rx="1"/>
     </svg>
   );
 }
@@ -518,7 +518,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
             )}
 
             {/* ── Action buttons ── */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '0.5rem' }}>
 
               {/* Primary: Save / Saved — hidden while actively watching */}
               {!isWatching && (
@@ -627,9 +627,6 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
             ) : (
               /* Watched state + review section */
               <div style={{ marginBottom: '1rem' }}>
-                {/* Divider above — only visible in watched state */}
-                <div style={{ height: 1, background: 'var(--border)', marginBottom: '0.85rem' }} />
-
                 {/* Watched button — full-width, matches Saved style, click to undo */}
                 <button
                   onClick={() => history.removeEntry(itemId)}

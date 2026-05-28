@@ -237,8 +237,31 @@
 
 .ds-spec-row {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 1rem;
+  border-radius: var(--ds-spec-radius);
+}
+
+.ds-spec-side {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.ds-radius-preview {
+  display: block;
+  width: 96px;
+  height: 64px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--ds-spec-radius);
+  background: var(--surface);
+}
+
+.ds-spec-row--badge .ds-radius-preview {
+  width: 92px;
+  height: 32px;
 }
 
 .ds-spec-row code {
@@ -701,5 +724,13 @@
   .ds-type-scale,
   .ds-spec-row {
     grid-template-columns: 1fr;
+  }
+
+  .ds-spec-row {
+    display: grid;
+  }
+
+  .ds-spec-side {
+    justify-content: space-between;
   }
 }

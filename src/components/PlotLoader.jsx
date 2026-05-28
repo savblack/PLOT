@@ -5,7 +5,7 @@ export default function PlotLoader() {
       style={{
         fontFamily: 'var(--font-serif)',
         fontSize: '2rem',
-        letterSpacing: '0.04em',
+        letterSpacing: '-0.05em',
         display: 'flex',
         gap: 0,
         userSelect: 'none',

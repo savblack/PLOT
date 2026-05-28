@@ -23,7 +23,8 @@ const guideTokens = [
 const radiusTokens = [
   ['--radius-md', 'Default card radius', 'Poster masks, inputs, cards, rows, swatches, and ordinary controls.'],
   ['--radius-lg', 'Large panel radius', 'Sheets, watching cards, and elevated containers.'],
-  ['--radius-pill', 'Pill radius', 'Buttons, chips, badges, and segmented actions.'],
+  ['--radius-badge', 'Badge radius', 'Small status chips and media-type badges with flatter sides than pill controls.'],
+  ['--radius-pill', 'Pill radius', 'Large pill buttons, filter chips, and segmented actions.'],
 ];
 
 const layoutRules = [
@@ -64,12 +65,15 @@ function TokenCard({ token, label, purpose }) {
 
 function SpecRow({ token, label, purpose }) {
   return (
-    <div className="ds-spec-row">
+    <div className={`ds-spec-row ds-spec-row--${token.replace('--radius-', '')}`} style={{ '--ds-spec-radius': `var(${token})` }}>
       <div>
         <strong>{label}</strong>
         <p>{purpose}</p>
       </div>
-      <code>{token}</code>
+      <div className="ds-spec-side">
+        <span className="ds-radius-preview" aria-hidden="true" />
+        <code>{token}</code>
+      </div>
     </div>
   );
 }
@@ -206,11 +210,9 @@ export default function DesignSystemPage() {
           </div>
 
           <div className="ds-bar-item">
-            <div className="ds-bar-copy"><strong>Rail header</strong><p>Labels horizontal media rails with a signal dot and count.</p></div>
+            <div className="ds-bar-copy"><strong>Rail header</strong><p>Use for simple uppercase section labels above horizontal media rails.</p></div>
             <div className="rail-header ds-fake-rail-header">
-              <span className="rail-dot dot-live" />
               <span className="rail-title">Hot right now</span>
-              <span className="rail-badge">12</span>
             </div>
           </div>
 
@@ -265,7 +267,6 @@ export default function DesignSystemPage() {
                 <span className="discover-plat-logo discover-plat-logo-fallback">N</span>
                 <span className="discover-plat-name">Netflix</span>
               </span>
-              <span className="rail-badge">24</span>
             </button>
           </div>
 
