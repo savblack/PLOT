@@ -47,3 +47,10 @@ export function baseMediaRow(item, { fallbackType = 'movie' } = {}) {
     release_date: releaseDateFromItem(item),
   };
 }
+
+export function mediaIdentityRow(item, options) {
+  const row = baseMediaRow(item, options);
+  if (!row) return null;
+  const { release_date, ...identityRow } = row;
+  return identityRow;
+}

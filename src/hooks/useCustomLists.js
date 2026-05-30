@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../api/supabase.js';
-import { baseMediaRow, tmdbIdFromItem } from '../domain/media.js';
+import { mediaIdentityRow, tmdbIdFromItem } from '../domain/media.js';
 
 export function useCustomLists(userId) {
   const [lists,   setLists]   = useState([]);
@@ -55,19 +55,27 @@ export function useCustomLists(userId) {
     if (!userId) return;
     const tmdbId = tmdbIdFromItem(item);
     if (!tmdbId) return;
+    const row = mediaIdentityRow(item);
+    if (!row) return;
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('user_custom_list_items')
-      .insert({
+      .upsert({
         list_id:     listId,
         user_id:     userId,
-        ...baseMediaRow(item),
-      })
+        ...row,
+      }, { onConflict: 'list_id,tmdb_id' })
       .select()
       .single();
+    if (error) {
+      console.error('Failed to add custom list item', error);
+      return;
+    }
     if (data) {
       setLists(prev => prev.map(l =>
-        l.id === listId ? { ...l, items: [data, ...(l.items || [])] } : l
+        l.id === listId
+          ? { ...l, items: [data, ...(l.items || []).filter(i => i.tmdb_id !== tmdbId)] }
+          : l
       ));
     }
   }, [userId]);

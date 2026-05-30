@@ -1,5 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const smokePort = Number(process.env.PLOT_SMOKE_PORT || 4273);
+const smokeBaseUrl = `http://127.0.0.1:${smokePort}`;
+
 export default defineConfig({
   testDir: './tests/smoke',
   timeout: 30_000,
@@ -7,13 +10,13 @@ export default defineConfig({
     timeout: 10_000,
   },
   use: {
-    baseURL: 'http://127.0.0.1:4173',
+    baseURL: smokeBaseUrl,
     trace: 'on-first-retry',
   },
   webServer: {
-    command: 'npm run preview -- --host 127.0.0.1 --port 4173',
-    url: 'http://127.0.0.1:4173',
-    reuseExistingServer: !process.env.CI,
+    command: `npm run preview -- --host 127.0.0.1 --port ${smokePort} --strictPort`,
+    url: smokeBaseUrl,
+    reuseExistingServer: false,
     timeout: 30_000,
   },
   projects: [

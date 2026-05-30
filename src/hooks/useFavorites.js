@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../api/supabase.js';
-import { baseMediaRow, tmdbIdFromItem } from '../domain/media.js';
+import { mediaIdentityRow, tmdbIdFromItem } from '../domain/media.js';
 
 export function useFavorites(userId) {
   const [favorites, setFavorites] = useState([]);
@@ -43,7 +43,7 @@ export function useFavorites(userId) {
         setFavorites(previous);
       }
     } else {
-      const row = baseMediaRow(item);
+      const row = mediaIdentityRow(item);
       if (!row) return;
 
       const optimistic = {
