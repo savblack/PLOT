@@ -1,25 +1,33 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { localDateStr, dateToLocalStr } from '../utils/date.js';
+import { tmdb } from '../api/tmdb.js';
 
 /**
  * Builds calendar events from:
  *  - reminders (EPG episodes bookmarked by user)
- *  - watchlist items with release_date
+ *  - watchlist items with release_date (movies) or upcoming episodes (TV shows)
  *  - watching_progress items (fetches ALL upcoming episode air dates)
+ *
+ * All network fetches are parallelised so the hook doesn't block on serial awaits.
  */
 export function useCalendar(watchlistItems = [], watchingItems = [], fetchSeason, reminders = []) {
-  const [events,  setEvents]  = useState([]); // [{ date, type, item }]
+  const [events,  setEvents]  = useState([]);
   const [loading, setLoading] = useState(true);
+  const hasLoadedOnce = useRef(false);
+  const buildInFlight = useRef(false);
 
   const buildEvents = useCallback(async () => {
-    setLoading(true);
+    // Prevent concurrent builds
+    if (buildInFlight.current) return;
+    buildInFlight.current = true;
+    // Only show the full loading spinner on first load — subsequent rebuilds
+    // update events in the background so there's no flash
+    if (!hasLoadedOnce.current) setLoading(true);
+    const todayStr = localDateStr();
     const all = [];
-    const todayStr = localDateStr(); // local date, not UTC — critical for UTC+ timezones (e.g. Australia)
 
-    // 0. EPG reminders
+    // ── 0. EPG reminders (synchronous, no fetches needed) ──────────────────
     for (const rem of reminders) {
-      // Supabase returns date columns as "YYYY-MM-DD" strings.
-      // If it's a Date object, convert using local date (not toISOString which is UTC).
       const dateStr = typeof rem.air_date === 'string'
         ? rem.air_date
         : (rem.air_date instanceof Date ? dateToLocalStr(rem.air_date) : null);
@@ -33,16 +41,16 @@ export function useCalendar(watchlistItems = [], watchingItems = [], fetchSeason
           network_name: rem.network_name,
           air_time:     rem.air_time,
           media_type:   'tv',
-          id:           rem.tvmaze_ep_id,   // used for dedup key
+          id:           rem.tvmaze_ep_id,
           tmdb_id:      null,
         },
       });
     }
 
-    // 1. Watchlist items with known dates
+    // ── 1. Watchlist movies (synchronous, dates already stored) ─────────────
     for (const item of watchlistItems) {
-      // Cinema movies have streaming_date set — their release_date is the theatrical date
-      if (item.release_date) {
+      if (item.media_type === 'tv') continue; // handled below in parallel
+      if (item.release_date && item.release_date >= todayStr) {
         const isCinema = !!item.streaming_date;
         all.push({
           date:  item.release_date,
@@ -51,8 +59,7 @@ export function useCalendar(watchlistItems = [], watchingItems = [], fetchSeason
           item,
         });
       }
-      // Also add the streaming premiere date for cinema movies
-      if (item.streaming_date) {
+      if (item.streaming_date && item.streaming_date >= todayStr) {
         all.push({
           date:  item.streaming_date,
           type:  'streaming',
@@ -62,33 +69,72 @@ export function useCalendar(watchlistItems = [], watchingItems = [], fetchSeason
       }
     }
 
-    // 2. In-progress shows — ALL upcoming episode air dates for current season
-    for (const progress of watchingItems) {
-      const season = await fetchSeason?.(progress.tmdb_id, progress.current_season);
-      if (!season?.episodes) continue;
+    // ── 2. Watchlist TV shows — parallel fetch details + season ────────────
+    const watchlistTv = watchlistItems.filter(i => i.media_type === 'tv');
 
-      for (const ep of season.episodes) {
-        // Skip episodes already watched
-        if (ep.episode_number < progress.current_episode) continue;
-        // Skip episodes without an air date or that have already aired
-        if (!ep.air_date || ep.air_date < todayStr) continue;
+    const tvEpisodes = await Promise.all(
+      watchlistTv.map(async (item) => {
+        try {
+          const details = await tmdb.getTVDetails(item.tmdb_id);
+          const seasonNum =
+            details?.next_episode_to_air?.season_number ||
+            details?.last_episode_to_air?.season_number ||
+            details?.number_of_seasons ||
+            1;
+          const season = await fetchSeason?.(item.tmdb_id, seasonNum);
+          if (!season?.episodes) return [];
+          return season.episodes
+            .filter(ep => ep.air_date && ep.air_date >= todayStr)
+            .map(ep => ({
+              date:  ep.air_date,
+              type:  'episode',
+              label: `S${String(seasonNum).padStart(2,'0')}E${String(ep.episode_number).padStart(2,'0')}`,
+              item: {
+                title:       item.title || item.name,
+                poster_path: item.poster_path,
+                tmdb_id:     item.tmdb_id,
+                media_type:  'tv',
+                episode:     ep,
+              },
+            }));
+        } catch {
+          return [];
+        }
+      })
+    );
+    all.push(...tvEpisodes.flat());
 
-        all.push({
-          date:  ep.air_date,
-          type:  'episode',
-          label: `S${String(progress.current_season).padStart(2,'0')}E${String(ep.episode_number).padStart(2,'0')}`,
-          item: {
-            title:       progress.title,
-            poster_path: progress.poster_path,
-            tmdb_id:     progress.tmdb_id,
-            media_type:  'tv',
-            episode:     ep,
-          },
-        });
-      }
-    }
+    // ── 3. In-progress shows — parallel fetch seasons ──────────────────────
+    const watchingEpisodes = await Promise.all(
+      watchingItems.map(async (progress) => {
+        try {
+          const season = await fetchSeason?.(progress.tmdb_id, progress.current_season);
+          if (!season?.episodes) return [];
+          return season.episodes
+            .filter(ep =>
+              ep.episode_number >= progress.current_episode &&
+              ep.air_date && ep.air_date >= todayStr
+            )
+            .map(ep => ({
+              date:  ep.air_date,
+              type:  'episode',
+              label: `S${String(progress.current_season).padStart(2,'0')}E${String(ep.episode_number).padStart(2,'0')}`,
+              item: {
+                title:       progress.title,
+                poster_path: progress.poster_path,
+                tmdb_id:     progress.tmdb_id,
+                media_type:  'tv',
+                episode:     ep,
+              },
+            }));
+        } catch {
+          return [];
+        }
+      })
+    );
+    all.push(...watchingEpisodes.flat());
 
-    // Deduplicate by date + id
+    // ── Deduplicate and sort ───────────────────────────────────────────────
     const seen = new Set();
     const deduped = all.filter(ev => {
       const key = `${ev.date}-${ev.type}-${ev.item?.tmdb_id ?? ev.item?.id ?? ev.item?.title ?? ev.label}`;
@@ -98,18 +144,18 @@ export function useCalendar(watchlistItems = [], watchingItems = [], fetchSeason
     });
 
     setEvents(deduped.sort((a, b) => a.date.localeCompare(b.date)));
+    hasLoadedOnce.current = true;
+    buildInFlight.current = false;
     setLoading(false);
   }, [watchlistItems, watchingItems, fetchSeason, reminders]);
 
   useEffect(() => { buildEvents(); }, [buildEvents]);
 
-  /** Get events for a specific date string YYYY-MM-DD */
   const eventsForDate = useCallback(
     (dateStr) => events.filter(e => e.date === dateStr),
     [events]
   );
 
-  /** Get dates that have events in a given month */
   const datesWithEvents = useCallback(
     (year, month) => {
       const prefix = `${year}-${String(month + 1).padStart(2, '0')}`;

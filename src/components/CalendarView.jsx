@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useApp, posterUrl, TodayLabel } from '../App.jsx';
 import { localDateStr, dateToLocalStr } from '../utils/date.js';
 import { useCalendar } from '../hooks/useCalendar.js';
@@ -49,7 +49,7 @@ const CHIP_COLORS = {
   episode:   'chip-episode',
   cinema:    'chip-cinema',
   streaming: 'chip-streaming',
-  reminder:  'chip-muted',
+  reminder:  'chip-reminder',
 };
 
 const ALL_EVENT_TYPES = ['episode', 'cinema', 'streaming', 'reminder'];
@@ -116,26 +116,26 @@ function EventRowList({ events, openPanel }) {
         <div className="cal-event-info">
           <div className="cal-event-title">{title}</div>
           <div className="cal-event-meta">
-            <span
-              className={`chip chip-sm ${CHIP_COLORS[ev.type] || 'chip-muted'}`}
-              style={{ fontSize: '0.6rem' }}
-            >
-              {EVENT_LABELS[ev.type] || ev.label}
-            </span>
             {isReminder && item?.network_name && (
-              <span style={{ marginLeft: '0.3rem', color: 'var(--text-muted)' }}>{item.network_name}</span>
+              <span style={{ color: 'var(--text-muted)' }}>{item.network_name}</span>
             )}
             {isReminder && item?.air_time && (
               <span style={{ marginLeft: '0.3rem' }}>{item.air_time}</span>
             )}
             {ev.label && ev.type === 'episode' && (
-              <span style={{ marginLeft: '0.3rem' }}>{ev.label}</span>
+              <span>{ev.label}</span>
             )}
             {item?.episode?.name && (
               <span> — {item.episode.name}</span>
             )}
           </div>
         </div>
+        <span
+          className={`chip chip-sm ${CHIP_COLORS[ev.type] || 'chip-muted'}`}
+          style={{ fontSize: '0.6rem', marginLeft: 'auto', flexShrink: 0 }}
+        >
+          {EVENT_LABELS[ev.type] || ev.label}
+        </span>
       </div>
     );
   });
@@ -147,8 +147,8 @@ function EventRowList({ events, openPanel }) {
 export default function CalendarView() {
   const { openPanel, watchlist, watching, reminders } = useApp();
 
-  const today    = new Date();
-  const todayStr = dateToLocalStr(today);
+  const today    = useMemo(() => new Date(), []);
+  const todayStr = useMemo(() => dateToLocalStr(today), [today]);
 
   const [year,  setYear]  = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
@@ -157,7 +157,7 @@ export default function CalendarView() {
   const [view, setView]   = useState('agenda'); // 'grid' | 'week' | 'agenda'
   const [typeFilter, setTypeFilter] = useState(ALL_EVENT_TYPES);
 
-  const { loading, eventsForDate } = useCalendar(
+  const { loading, events: allEvents, eventsForDate } = useCalendar(
     watchlist.items,
     watching.items,
     watching.fetchSeason,
@@ -194,13 +194,36 @@ export default function CalendarView() {
     return map;
   }, [days, eventsForDate, filterEvs]);
 
-  /* ── Agenda days ── */
-  const agendaDays = useMemo(() => (
-    days
+  /* ── Auto-advance agenda to nearest month with events (runs once after load) ── */
+  const autoAdvancedRef = useRef(false);
+  useEffect(() => {
+    if (view !== 'agenda' || loading || autoAdvancedRef.current) return;
+    autoAdvancedRef.current = true;
+    const futureEvents = allEvents.filter(ev => ev.date >= todayStr);
+    if (!futureEvents.length) return;
+    const nearest = futureEvents[0]; // already sorted ascending
+    const d = new Date(nearest.date + 'T00:00:00');
+    const nearestYear  = d.getFullYear();
+    const nearestMonth = d.getMonth();
+    const currentMonthHasEvents = allEvents.some(ev => {
+      const prefix = `${year}-${String(month + 1).padStart(2, '0')}`;
+      return ev.date.startsWith(prefix) && ev.date >= todayStr;
+    });
+    if (!currentMonthHasEvents) {
+      setYear(nearestYear);
+      setMonth(nearestMonth);
+    }
+  }, [view, loading, allEvents, todayStr, year, month]);
+
+  /* ── Agenda days — from today onwards within the displayed month ── */
+  const agendaDays = useMemo(() => {
+    const isCurrentMonth = year === today.getFullYear() && month === today.getMonth();
+    return days
       .filter(({ current }) => current)
+      .filter(({ date }) => !isCurrentMonth || dateToLocalStr(date) >= todayStr)
       .map(({ date }) => { const ds = dateToLocalStr(date); return { date, ds, events: filterEvs(eventsForDate(ds)) }; })
-      .filter(({ events }) => events.length > 0)
-  ), [days, eventsForDate, filterEvs]);
+      .filter(({ events }) => events.length > 0);
+  }, [days, eventsForDate, filterEvs, year, month, today, todayStr]);
 
   const dayEvents = filterEvs(eventsForDate(selectedDate));
 
@@ -211,6 +234,8 @@ export default function CalendarView() {
     setMonth(t.getMonth());
     setWeekStart(startOfWeek(t));
     setSelectedDate(localDateStr(t));
+    // Allow auto-advance to re-run so agenda finds nearest events from today
+    autoAdvancedRef.current = false;
   };
 
   /* ── Navigation ── */
@@ -285,22 +310,6 @@ export default function CalendarView() {
         </div>
 
         <div className="sub-tabs-filters">
-          <GroupedFilterMenu
-            ariaLabel="Filter calendar"
-            groups={[
-              {
-                heading: 'Type',
-                options: [
-                  { id: 'episode',   label: 'Episode'   },
-                  { id: 'cinema',    label: 'Cinema'    },
-                  { id: 'streaming', label: 'Streaming' },
-                  { id: 'reminder',  label: 'Reminder'  },
-                ],
-                value: typeFilter,
-                onChange: setTypeFilter,
-              },
-            ]}
-          />
           <div className="cal-month-nav">
             <button className="cal-month-btn" onClick={onPrev} aria-label="Previous">
               <svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>
@@ -314,22 +323,6 @@ export default function CalendarView() {
       </div>
 
       <div className="calendar-wrap">
-
-        {/* Legend */}
-        <div className="cal-legend">
-          {ALL_EVENT_TYPES.map(type => (
-            <div key={type} className={`cal-legend-item cal-pill ${PILL_COLORS[type]}`} data-tip={LEGEND_TIPS[type]}>
-              {EVENT_LABELS[type]}
-              <span className="cal-legend-icon">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10"/>
-                  <line x1="12" y1="8" x2="12" y2="8" strokeWidth="3"/>
-                  <line x1="12" y1="12" x2="12" y2="17"/>
-                </svg>
-              </span>
-            </div>
-          ))}
-        </div>
 
         {/* ════════════ MONTH VIEW ════════════ */}
         {view === 'grid' && (

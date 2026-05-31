@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useApp, posterUrl, countdownChip } from '../App.jsx';
 import { tmdb } from '../api/tmdb.js';
 import { useHistory } from '../hooks/useHistory.js';
@@ -64,9 +65,9 @@ function AddToRankModal({ listType, rank, onAdd, onClose }) {
     onClose();
   };
 
-  return (
+  return createPortal(
     <div style={{
-      position: 'fixed', inset: 0, zIndex: 1000,
+      position: 'fixed', top: 0, left: 0, right: 0, bottom: '58px', zIndex: 1000,
       display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
     }}>
       <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)' }} onClick={onClose} />
@@ -74,16 +75,16 @@ function AddToRankModal({ listType, rank, onAdd, onClose }) {
         position: 'relative',
         background: 'var(--surface)',
         borderRadius: 'var(--radius-lg) var(--radius-lg) 0 0',
-        maxHeight: '80vh',
+        height: '80vh',
         display: 'flex', flexDirection: 'column',
         overflow: 'hidden',
       }}>
         <div style={{ padding: '1rem 1rem 0.5rem', borderBottom: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
             <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>
-              Pick #{rank} {listType === 'movies' ? 'Movie' : 'TV Show'}
+              Select #{rank} {listType === 'movies' ? 'Movie' : 'TV Show'}
             </span>
-            <button className="btn btn-ghost btn-xs" onClick={onClose}>✕</button>
+            <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '1rem', padding: '0.25rem', lineHeight: 1 }}>✕</button>
           </div>
           <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
             <button
@@ -142,7 +143,8 @@ function AddToRankModal({ listType, rank, onAdd, onClose }) {
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -204,9 +206,9 @@ function AddToFavoritesModal({ title = 'Add to Favorites', onAdd, onClose }) {
 
   const handleSelect = (item) => { onAdd(item); onClose(); };
 
-  return (
+  return createPortal(
     <div style={{
-      position: 'fixed', inset: 0, zIndex: 1000,
+      position: 'fixed', top: 0, left: 0, right: 0, bottom: '58px', zIndex: 1000,
       display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
     }}>
       <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)' }} onClick={onClose} />
@@ -214,14 +216,14 @@ function AddToFavoritesModal({ title = 'Add to Favorites', onAdd, onClose }) {
         position: 'relative',
         background: 'var(--surface)',
         borderRadius: 'var(--radius-lg) var(--radius-lg) 0 0',
-        maxHeight: '80vh',
+        height: '80vh',
         display: 'flex', flexDirection: 'column',
         overflow: 'hidden',
       }}>
         <div style={{ padding: '1rem 1rem 0.5rem', borderBottom: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
             <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{title}</span>
-            <button className="btn btn-ghost btn-xs" onClick={onClose}>✕</button>
+            <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '1rem', padding: '0.25rem', lineHeight: 1 }}>✕</button>
           </div>
           <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
             <button className={`sub-tab-btn${tab === 'history' ? ' active' : ''}`} onClick={() => { setTab('history'); setQuery(''); }}>From history</button>
@@ -260,7 +262,8 @@ function AddToFavoritesModal({ title = 'Add to Favorites', onAdd, onClose }) {
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

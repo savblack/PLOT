@@ -26,7 +26,7 @@ const POSTERS = [
 ];
 
 const styles = `
-  @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Manrope:wght@400;500;600&display=swap');
 
   .plot-error-page {
     width: 100vw;
@@ -34,7 +34,7 @@ const styles = `
     display: grid;
     grid-template-columns: 1fr 1fr;
     background: #f5f4f0;
-    font-family: 'DM Sans', sans-serif;
+    font-family: 'Manrope', system-ui, sans-serif;
     overflow: hidden;
   }
 
@@ -51,20 +51,33 @@ const styles = `
     position: absolute;
     top: 2.5rem;
     left: 6rem;
-    font-family: 'Poiret One', sans-serif;
-    font-size: 2.5rem;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  .plot-error-logo-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #E05578;
+    flex-shrink: 0;
+  }
+
+  .plot-error-logo-text {
+    font-family: 'Instrument Serif', serif;
+    font-size: 1.1rem;
+    letter-spacing: 0.04em;
     color: #1a1a1a;
-    letter-spacing: -0.02em;
-    text-transform: uppercase;
   }
 
   .plot-error-label {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.62rem;
-    letter-spacing: 0.2em;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: #999;
-    margin-bottom: 2rem;
+    color: #aaa;
+    margin-bottom: 1.25rem;
   }
 
   .plot-error-number {
@@ -74,70 +87,80 @@ const styles = `
     line-height: 0.9;
     color: #1a1a1a;
     letter-spacing: -0.04em;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.25rem;
   }
 
   .plot-error-title {
     font-family: 'Instrument Serif', serif;
-    font-size: clamp(1.8rem, 3vw, 2.4rem);
+    font-size: clamp(1.6rem, 2.8vw, 2.2rem);
     font-weight: 400;
     font-style: italic;
     color: #1a1a1a;
     line-height: 1.2;
-    margin-bottom: 1rem;
+    margin-bottom: 0.75rem;
   }
 
   .plot-error-divider {
-    width: 40px;
-    height: 1px;
-    background: #ccc;
-    margin: 1.5rem 0;
+    width: 32px;
+    height: 1.5px;
+    background: #E05578;
+    margin: 1.25rem 0;
+    border-radius: 2px;
   }
 
   .plot-error-body {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.88rem;
+    font-size: 0.875rem;
     color: #888;
-    line-height: 1.75;
-    font-weight: 300;
-    max-width: 320px;
-    margin-bottom: 2.5rem;
+    line-height: 1.7;
+    font-weight: 400;
+    max-width: 300px;
+    margin-bottom: 2rem;
   }
 
   .plot-error-actions {
     display: flex;
-    gap: 1rem;
+    gap: 0.75rem;
     align-items: center;
   }
 
   .plot-error-btn-primary {
-    background: transparent;
-    color: #1a1a1a;
-    border: 1px solid #1a1a1a;
-    padding: 0.75rem 2rem;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.82rem;
-    font-weight: 500;
+    background: #E05578;
+    color: #fff;
+    border: none;
+    padding: 0.7rem 1.75rem;
+    font-family: 'Manrope', system-ui, sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
     cursor: pointer;
     border-radius: 100px;
-    transition: background 0.2s, color 0.2s;
+    transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
     white-space: nowrap;
+    letter-spacing: 0.01em;
   }
-  .plot-error-btn-primary:hover { background: #1a1a1a; color: white; }
+  .plot-error-btn-primary:hover {
+    background: #ea6f8a;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(224,85,120,0.3);
+  }
 
   .plot-error-btn-ghost {
     background: transparent;
     color: #999;
-    border: 1px solid #d5d5d5;
-    padding: 0.75rem 1.8rem;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.82rem;
+    border: 1px solid #d0d0d0;
+    padding: 0.7rem 1.5rem;
+    font-family: 'Manrope', system-ui, sans-serif;
+    font-size: 0.8rem;
+    font-weight: 500;
     cursor: pointer;
     border-radius: 100px;
-    transition: border-color 0.2s, color 0.2s;
+    transition: border-color 0.2s, color 0.2s, transform 0.2s;
     white-space: nowrap;
   }
-  .plot-error-btn-ghost:hover { border-color: #aaa; color: #555; }
+  .plot-error-btn-ghost:hover {
+    border-color: #aaa;
+    color: #555;
+    transform: translateY(-1px);
+  }
 
   .plot-error-right {
     position: relative;
@@ -149,7 +172,7 @@ const styles = `
   .plot-error-poster-track {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 5px;
+    gap: 4px;
     animation: plotErrorScroll 40s linear infinite;
     will-change: transform;
   }
@@ -169,30 +192,32 @@ const styles = `
   .plot-error-right-overlay {
     position: absolute;
     inset: 0;
-    background: linear-gradient(to bottom, #0a0a0a 0%, transparent 20%, transparent 75%, #0a0a0a 100%);
+    background: linear-gradient(to bottom, #0a0a0a 0%, transparent 18%, transparent 78%, #0a0a0a 100%),
+                linear-gradient(to right, rgba(245,244,240,0.12) 0%, transparent 30%);
     z-index: 1;
     pointer-events: none;
   }
 
   .plot-error-right-num {
     position: absolute;
-    bottom: 2.5rem;
+    bottom: 2rem;
     left: 50%;
     transform: translateX(-50%);
     z-index: 2;
     font-family: 'Instrument Serif', serif;
     font-size: 9rem;
     font-weight: 400;
-    color: rgba(255,255,255,0.05);
+    color: rgba(255,255,255,0.06);
     line-height: 1;
     letter-spacing: -0.05em;
     pointer-events: none;
+    white-space: nowrap;
   }
 
   @media (max-width: 700px) {
     .plot-error-page { grid-template-columns: 1fr; }
     .plot-error-right { display: none; }
-    .plot-error-left { padding: 4rem 2rem; }
+    .plot-error-left { padding: 4rem 2rem 4rem 2rem; }
     .plot-error-logo { left: 2rem; }
   }
 `;
@@ -203,7 +228,10 @@ function ErrorScreen({ code, label, title, body, primaryLabel, primaryAction, gh
       <style>{styles}</style>
       <div className="plot-error-page">
         <div className="plot-error-left">
-          <div className="plot-error-logo">PLOT</div>
+          <div className="plot-error-logo">
+            <div className="plot-error-logo-dot" />
+            <span className="plot-error-logo-text">Plot</span>
+          </div>
           <div className="plot-error-label">Error · {label || code}</div>
           <div className="plot-error-number">{code}</div>
           <h1 className="plot-error-title">{title}</h1>

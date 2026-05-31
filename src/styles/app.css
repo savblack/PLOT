@@ -27,13 +27,15 @@ svg { stroke-width: 1.5; }
   left: 0;
   right: 0;
   z-index: 200;
-  height: var(--header-h);
+  height: calc(var(--header-h) + env(safe-area-inset-top, 0px));
+  padding-top: env(safe-area-inset-top, 0px);
   background: var(--surface);
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 1rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
 }
 
 .app-logo {
@@ -115,7 +117,7 @@ svg { stroke-width: 1.5; }
 /* ── Main Content ─────────────────────────────── */
 .app-main {
   position: fixed;
-  top: var(--header-h);
+  top: calc(var(--header-h) + env(safe-area-inset-top, 0px));
   left: 0;
   right: 0;
   bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px));
@@ -599,12 +601,18 @@ svg { stroke-width: 1.5; }
   top: 6px;
   left: 6px;
 }
-.card-chip-overlay .chip-episode {
+.card-chip-overlay .chip-episode,
+.card-chip-overlay .chip-cinema,
+.card-chip-overlay .chip-streaming,
+.card-chip-overlay .chip-soon {
   background: var(--chip-episode);
   color: #fff;
   border: 1px solid color-mix(in srgb, var(--chip-episode) 72%, rgba(255,255,255,0.36));
   box-shadow: 0 2px 8px rgba(0,0,0,0.32);
 }
+.card-chip-overlay .chip-cinema    { background: var(--chip-cinema);    border-color: color-mix(in srgb, var(--chip-cinema)    72%, rgba(255,255,255,0.36)); }
+.card-chip-overlay .chip-streaming { background: var(--chip-streaming); border-color: color-mix(in srgb, var(--chip-streaming) 72%, rgba(255,255,255,0.36)); }
+.card-chip-overlay .chip-soon      { background: var(--chip-soon);      border-color: color-mix(in srgb, var(--chip-soon)      72%, rgba(255,255,255,0.36)); }
 
 .card-save-btn {
   position: absolute;
@@ -693,17 +701,30 @@ svg { stroke-width: 1.5; }
 .chip-today   { background: rgba(5, 150, 105, 0.55);  color: #fff; }
 .chip-tomorrow{ background: rgba(217, 119, 6, 0.55);  color: #fff; }
 .chip-soon    { background: rgba(217, 119, 6, 0.55);  color: #fff; }
-.chip-cinema    { background: var(--chip-cinema);    color: #fff; }
-.chip-streaming { background: var(--chip-streaming); color: #fff; }
+.chip-cinema    {
+  background: color-mix(in srgb, var(--chip-cinema) 12%, transparent);
+  color: var(--chip-cinema);
+  border: 1px solid color-mix(in srgb, var(--chip-cinema) 34%, var(--border));
+}
+.chip-streaming {
+  background: color-mix(in srgb, var(--chip-streaming) 12%, transparent);
+  color: var(--chip-streaming);
+  border: 1px solid color-mix(in srgb, var(--chip-streaming) 34%, var(--border));
+}
 .chip-episode   {
   background: color-mix(in srgb, var(--chip-episode) 12%, transparent);
   color: var(--chip-episode);
   border: 1px solid color-mix(in srgb, var(--chip-episode) 34%, var(--border));
 }
 .chip-muted   {
-  background: var(--surface-raised);
+  background: color-mix(in srgb, var(--text-muted) 12%, transparent);
   color: var(--text-secondary);
-  border: 1px solid var(--border);
+  border: 1px solid color-mix(in srgb, var(--text-muted) 30%, var(--border));
+}
+.chip-reminder {
+  background: color-mix(in srgb, var(--chip-soon) 12%, transparent);
+  color: var(--chip-soon);
+  border: 1px solid color-mix(in srgb, var(--chip-soon) 34%, var(--border));
 }
 
 /* ═══════════════════════════════════════
@@ -2067,7 +2088,7 @@ svg { stroke-width: 1.5; }
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
   background: var(--surface);
-  font-size: 0.88rem;
+  font-size: 1rem; /* must be ≥16px to prevent iOS auto-zoom on focus */
   font-family: var(--font-sans);
   color: var(--text-primary);
   outline: none;
@@ -3494,6 +3515,19 @@ svg { stroke-width: 1.5; }
 /* ═══════════════════════════════════════
    MOBILE + TOUCH READINESS
 ═══════════════════════════════════════ */
+
+/* ── Prevent iOS font-size zoom on input focus ─────────────────────────── */
+@media (hover: none), (pointer: coarse) {
+  input[type="text"],
+  input[type="search"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  textarea,
+  select {
+    font-size: 1rem !important; /* 16px — iOS zooms if < 16px */
+  }
+}
 
 @media (hover: none), (pointer: coarse) {
   .media-card:hover {
