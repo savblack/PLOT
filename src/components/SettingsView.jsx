@@ -387,6 +387,8 @@ function FeedbackPanel({ user, onClose }) {
   const [message,   setMessage]   = useState('');
   const [status,    setStatus]    = useState('idle'); // idle | submitting | done | error
 
+  const FEEDBACK_MAX = 4000;
+
   const handleSubmit = async () => {
     if (!message.trim()) return;
     setStatus('submitting');
@@ -394,7 +396,7 @@ function FeedbackPanel({ user, onClose }) {
       user_id:    user?.id ?? null,
       user_email: user?.email ?? null,
       type,
-      message:    message.trim(),
+      message:    message.trim().slice(0, FEEDBACK_MAX),
     });
     setStatus(error ? 'error' : 'done');
   };
@@ -451,7 +453,8 @@ function FeedbackPanel({ user, onClose }) {
             {/* Message */}
             <textarea
               value={message}
-              onChange={e => setMessage(e.target.value)}
+              onChange={e => setMessage(e.target.value.slice(0, 4000))}
+              maxLength={4000}
               placeholder={
                 type === 'bug'
                   ? 'Describe what happened and how to reproduce it…'

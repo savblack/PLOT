@@ -1,13 +1,13 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../api/supabase.js';
 import { tmdb } from '../api/tmdb.js';
 import { localDateStr } from '../utils/date.js';
 import { baseMediaRow, tmdbIdFromItem } from '../domain/media.js';
 
 export function useWatching(userId) {
-  const [items,       setItems]       = useState([]);
-  const [seasonData,  setSeasonData]  = useState({}); // keyed by tmdbId
-  const [loading,     setLoading]     = useState(true);
+  const [items,   setItems]   = useState([]);
+  const [loading, setLoading] = useState(true);
+  const seasonCache = useRef({}); // keyed by "tmdbId-sN" — useRef avoids re-creating fetchSeason on every write
 
   /* ── Load all watching_progress rows ── */
   const loadWatching = useCallback(async () => {
@@ -23,14 +23,14 @@ export function useWatching(userId) {
 
   useEffect(() => { loadWatching(); }, [loadWatching]);
 
-  /* ── Fetch season data (cached) ── */
+  /* ── Fetch season data (ref-cached — stable identity, no re-render on write) ── */
   const fetchSeason = useCallback(async (tmdbId, seasonNum) => {
     const key = `${tmdbId}-s${seasonNum}`;
-    if (seasonData[key]) return seasonData[key];
+    if (seasonCache.current[key]) return seasonCache.current[key];
     const data = await tmdb.getSeason(tmdbId, seasonNum);
-    if (data) setSeasonData(prev => ({ ...prev, [key]: data }));
+    if (data) seasonCache.current[key] = data;
     return data;
-  }, [seasonData]);
+  }, []); // stable — seasonCache is a ref, never triggers recreation
 
   /* ── Start watching a show ── */
   const startWatching = useCallback(async (item) => {
@@ -66,7 +66,8 @@ export function useWatching(userId) {
 
     // Fetch current season to know episode count
     const season = await fetchSeason(tmdbId, progress.current_season);
-    const episodeCount = season?.episodes?.length || progress.total_episodes || 20;
+    const episodeCount = season?.episodes?.length || progress.total_episodes;
+    if (!episodeCount) return; // can't advance without knowing episode count
 
     let nextSeason = progress.current_season;
     let nextEp     = progress.current_episode + 1;
@@ -140,7 +141,7 @@ export function useWatching(userId) {
 
   return {
     items,
-    seasonData,
+
     loading,
     startWatching,
     markEpisodeWatched,

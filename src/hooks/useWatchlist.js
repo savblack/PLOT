@@ -159,7 +159,7 @@ export function useWatchlist(userId) {
       }
     }
     return data;
-  }, [listId, userId, isInList, listError]);
+  }, [listId, userId, isInList]);
 
   /* ── Remove item ── */
   const removeFromList = useCallback(async (tmdbId) => {

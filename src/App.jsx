@@ -14,7 +14,6 @@ import { useCustomLists }  from './hooks/useCustomLists.js';
 import PlotLoader from './components/PlotLoader.jsx';
 import { pathForView, viewFromPath } from './navigation.js';
 import { readStorage, writeStorage } from './utils/browser.js';
-export { localDateStr } from './utils/date.js';
 
 /* ── App Context ─────────────────────── */
 export const AppContext = createContext(null);
@@ -129,7 +128,7 @@ export default function App() {
   const loadProfile = useCallback(async (userId) => {
     const { data } = await supabase
       .from('profiles')
-      .select('*')
+      .select('id, region, timezone, onboarding_complete, guide_channels, streaming_providers, calendar_token')
       .eq('id', userId)
       .maybeSingle();
     setProfile(data);

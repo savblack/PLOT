@@ -25,25 +25,34 @@ export async function saveListItem({ listId, userId, item, providerIds = [], str
   return { data, error, row };
 }
 
-export async function deleteListItem({ listId, tmdbId }) {
+export async function deleteListItem({ listId, tmdbId, userId }) {
   if (!listId || !tmdbId) return { error: null };
 
-  return supabase
+  const query = supabase
     .from('list_items')
     .delete()
     .eq('list_id', listId)
     .eq('tmdb_id', Number(tmdbId));
+
+  // Defence-in-depth: also filter by user_id when provided (RLS should enforce this too)
+  return userId ? query.eq('user_id', userId) : query;
 }
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 export async function logWatchedItem({ userId, item, rating, note, dnf, watchedAt = localDateStr() }) {
   const mediaRow = baseMediaRow(item);
   if (!userId || !mediaRow) return { data: null, error: null, row: null };
+
+  // Validate watchedAt format to prevent bad date strings reaching the DB
+  const safeWatchedAt = DATE_RE.test(watchedAt) ? watchedAt : localDateStr();
+
   const normalizedRating = normalizeRating(rating);
 
   const row = {
     user_id: userId,
     ...mediaRow,
-    watched_at: watchedAt,
+    watched_at: safeWatchedAt,
     rating: normalizedRating || null,
     note: note ?? null,
     dnf: dnf ?? false,

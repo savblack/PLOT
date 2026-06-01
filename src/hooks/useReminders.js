@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../api/supabase.js';
+import { localDateStr } from '../utils/date.js';
 
 export function useReminders(userId) {
   const [reminders, setReminders] = useState([]);
@@ -12,7 +13,9 @@ export function useReminders(userId) {
       .from('reminders')
       .select('*')
       .eq('user_id', userId)
-      .order('air_date', { ascending: true });
+      .gte('air_date', localDateStr())   // only load upcoming reminders
+      .order('air_date', { ascending: true })
+      .limit(200);
     if (error) console.error('[useReminders] load failed:', error);
     setReminders(data || []);
     setLoading(false);

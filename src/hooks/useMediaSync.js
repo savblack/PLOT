@@ -31,7 +31,7 @@ export function useMediaSync(userId) {
     setError(null);
     try {
       const result = await callSync('start-auth');
-      if (result?.authUrl) window.open(result.authUrl, '_blank');
+      if (result?.authUrl?.startsWith('https://app.plex.tv')) window.open(result.authUrl, '_blank', 'noopener,noreferrer');
       return result;
     } catch (e) {
       setError(e.message);

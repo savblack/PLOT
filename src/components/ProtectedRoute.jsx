@@ -22,12 +22,7 @@ export default function ProtectedRoute({ children, skipOnboardingCheck = false }
           .maybeSingle();
 
         if (!profile?.onboarding_complete) {
-          // In dev, also update the DB so this doesn't repeat
-          if (import.meta.env.DEV) {
-            await supabase.from('profiles').upsert({ id: session.user.id, onboarding_complete: true });
-          } else {
-            setNeedsOnboarding(true);
-          }
+          setNeedsOnboarding(true);
         }
       }
 

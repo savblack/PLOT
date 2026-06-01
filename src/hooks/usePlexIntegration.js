@@ -99,6 +99,7 @@ export function usePlexIntegration(user) {
     try {
       const result = await callMediaSync('start-auth', {});
       setStatus('pending');
+      if (!result.authUrl?.startsWith('https://app.plex.tv')) throw new Error('Invalid Plex auth URL');
       window.open(result.authUrl, '_blank', 'noopener,noreferrer');
       startPolling(result.pinId);
     } catch (err) {
