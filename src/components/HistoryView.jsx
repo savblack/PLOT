@@ -1,35 +1,64 @@
-import { useState } from 'react';
-import { useApp, posterUrl } from '../App.jsx';
+import { useState, useMemo } from 'react';
+import { useApp, posterUrl, TodayLabel } from '../App.jsx';
 import { useHistory } from '../hooks/useHistory.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
-
-function groupByMonth(entries) {
-  const groups = {};
-  for (const entry of entries) {
-    const key = entry.watched_at
-      ? new Date(entry.watched_at).toLocaleDateString('en', { month: 'long', year: 'numeric' })
-      : 'Unknown date';
-    if (!groups[key]) groups[key] = [];
-    groups[key].push(entry);
-  }
-  return groups;
-}
 
 export default function HistoryView() {
   const { openPanel, user } = useApp();
   const { entries, loading } = useHistory(user?.id);
-  const [openMonths,   setOpenMonths]   = useState({});    // month label → bool
 
-  const toggleMonth = (month) =>
-    setOpenMonths(prev => ({ ...prev, [month]: !(prev[month] ?? true) }));
-  const isOpen = (month) => openMonths[month] ?? true; // default open
+  const today = useMemo(() => new Date(), []);
+  const [year,  setYear]  = useState(today.getFullYear());
+  const [month, setMonth] = useState(today.getMonth());
+
+  const isCurrentMonth = year === today.getFullYear() && month === today.getMonth();
+
+  const goToToday = () => {
+    setYear(today.getFullYear());
+    setMonth(today.getMonth());
+  };
+
+  const prevMonth = () => {
+    if (month === 0) { setYear(y => y - 1); setMonth(11); }
+    else setMonth(m => m - 1);
+  };
+  const nextMonth = () => {
+    if (month === 11) { setYear(y => y + 1); setMonth(0); }
+    else setMonth(m => m + 1);
+  };
+
+  const navLabel = new Date(year, month, 1).toLocaleDateString('en', { month: 'short', year: 'numeric' });
+
+  // Filter entries to the selected month
+  const filtered = useMemo(() => entries.filter(e => {
+    if (!e.watched_at) return false;
+    const d = new Date(e.watched_at);
+    return d.getFullYear() === year && d.getMonth() === month;
+  }), [entries, year, month]);
 
   if (loading) return <LoadingSpinner />;
 
-  const groups = groupByMonth(entries);
-
   return (
     <div>
+      {/* ── Sub-tabs bar ── */}
+      <div className="sub-tabs">
+        <span className="sub-tabs-date">
+          <TodayLabel onClick={!isCurrentMonth ? goToToday : undefined} />
+        </span>
+        <div className="sub-tabs-filters">
+          <div className="cal-month-nav">
+            <button className="cal-month-btn" onClick={prevMonth} aria-label="Previous month">
+              <svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>
+            </button>
+            <span className="cal-month-nav-label">{navLabel}</span>
+            <button className="cal-month-btn" onClick={nextMonth} aria-label="Next month">
+              <svg viewBox="0 0 24 24"><polyline points="9,18 15,12 9,6"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Content ── */}
       {entries.length === 0 ? (
         <div className="empty-state" style={{ marginTop: '1rem' }}>
           <div className="empty-title">Nothing watched yet</div>
@@ -37,31 +66,14 @@ export default function HistoryView() {
             Your watch history will appear here. Search for a title and mark it as watched to get started.
           </div>
         </div>
+      ) : filtered.length === 0 ? (
+        <div style={{ padding: '2.5rem 1rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.84rem' }}>
+          Nothing watched in {navLabel}
+        </div>
       ) : (
         <div style={{ paddingBottom: '2rem' }}>
-          {Object.entries(groups).map(([month, monthEntries]) => (
-            <div key={month}>
-              <button
-                className="date-group-header date-group-collapsible"
-                onClick={() => toggleMonth(month)}
-              >
-                <span className="date-group-label">{month}</span>
-                <svg
-                  className={`date-group-chevron${isOpen(month) ? ' open' : ''}`}
-                  viewBox="0 0 24 24"
-                  aria-hidden="true"
-                >
-                  <polyline points="6 9 12 15 18 9" />
-                </svg>
-              </button>
-              {isOpen(month) && monthEntries.map(entry => (
-                <HistoryRow
-                  key={entry.id}
-                  entry={entry}
-                  openPanel={openPanel}
-                />
-              ))}
-            </div>
+          {filtered.map(entry => (
+            <HistoryRow key={entry.id} entry={entry} openPanel={openPanel} />
           ))}
         </div>
       )}
