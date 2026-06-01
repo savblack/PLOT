@@ -41,7 +41,7 @@ export default function HistoryView() {
   return (
     <div>
       {/* ── Sub-tabs bar ── */}
-      <div className="sub-tabs">
+      <div className="sub-tabs" style={{ paddingTop: '0.8rem', paddingBottom: '0.8rem' }}>
         <span className="sub-tabs-date">
           <TodayLabel onClick={!isCurrentMonth ? goToToday : undefined} />
         </span>
