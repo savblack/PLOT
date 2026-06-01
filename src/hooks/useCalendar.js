@@ -15,15 +15,16 @@ export function useCalendar(watchlistItems = [], watchingItems = [], fetchSeason
   const [loading, setLoading] = useState(true);
   const hasLoadedOnce = useRef(false);
   const buildInFlight = useRef(false);
+  const cancelledRef  = useRef(false);
 
   const buildEvents = useCallback(async () => {
     // Prevent concurrent builds
     if (buildInFlight.current) return;
     buildInFlight.current = true;
+    cancelledRef.current  = false;
     // Only show the full loading spinner on first load — subsequent rebuilds
     // update events in the background so there's no flash
     if (!hasLoadedOnce.current) setLoading(true);
-    let cancelled = false;
     const todayStr = localDateStr();
     const all = [];
 
@@ -144,7 +145,7 @@ export function useCalendar(watchlistItems = [], watchingItems = [], fetchSeason
       return true;
     });
 
-    if (!cancelled) {
+    if (!cancelledRef.current) {
       setEvents(deduped.sort((a, b) => a.date.localeCompare(b.date)));
       hasLoadedOnce.current = true;
       setLoading(false);
@@ -153,9 +154,8 @@ export function useCalendar(watchlistItems = [], watchingItems = [], fetchSeason
   }, [watchlistItems, watchingItems, fetchSeason, reminders]);
 
   useEffect(() => {
-    let cancelled = false;
     buildEvents();
-    return () => { cancelled = true; buildInFlight.current = false; };
+    return () => { cancelledRef.current = true; buildInFlight.current = false; };
   }, [buildEvents]);
 
   const eventsForDate = useCallback(
