@@ -583,7 +583,7 @@ function CreateListModal({ onConfirm, onClose }) {
 /* ── Custom lists section ── */
 function CustomListsSection({ customLists: clHook, filterItems, hideHeader }) {
   const { openPanel } = useApp();
-  const { lists, createList, deleteList, renameList, removeItem } = clHook;
+  const { lists, createList, deleteList, renameList, addItem, removeItem } = clHook;
   const [openItems, setOpenItems] = useState({});
   const [creatingList, setCreatingList] = useState(false);
   const [renamingId,   setRenamingId]   = useState(null);
