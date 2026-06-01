@@ -1536,7 +1536,9 @@ svg { stroke-width: 1.5; }
   border: none;
   cursor: pointer;
   color: var(--text-secondary);
-  padding: 0.25rem 0.35rem;
+  padding: 0 0.28rem;
+  width: 26px;
+  flex-shrink: 0;
   transition: background 0.12s ease, color 0.12s ease;
 }
 .cal-month-btn:hover { background: var(--surface-sunken); color: var(--text-primary); }
