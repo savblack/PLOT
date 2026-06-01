@@ -1,7 +1,30 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useCallback } from 'react';
 import { useApp, posterUrl, TodayLabel } from '../App.jsx';
 import { useHistory } from '../hooks/useHistory.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
+
+function groupByMonth(entries) {
+  const groups = [];
+  const seen = {};
+  for (const entry of entries) {
+    const key = entry.watched_at
+      ? new Date(entry.watched_at).toLocaleDateString('en', { month: 'long', year: 'numeric' })
+      : 'Unknown date';
+    if (!seen[key]) { seen[key] = true; groups.push({ key, entries: [] }); }
+    groups[groups.length - 1].entries.push(entry);
+  }
+  return groups;
+}
+
+// Build a "YYYY-MM" key for comparing months
+function monthKey(year, month) {
+  return `${year}-${String(month + 1).padStart(2, '0')}`;
+}
+function entryMonthKey(entry) {
+  if (!entry.watched_at) return null;
+  const d = new Date(entry.watched_at);
+  return monthKey(d.getFullYear(), d.getMonth());
+}
 
 export default function HistoryView() {
   const { openPanel, user } = useApp();
@@ -12,29 +35,40 @@ export default function HistoryView() {
   const [month, setMonth] = useState(today.getMonth());
 
   const isCurrentMonth = year === today.getFullYear() && month === today.getMonth();
+  const navLabel = new Date(year, month, 1).toLocaleDateString('en', { month: 'short', year: 'numeric' });
+
+  // Refs keyed by "YYYY-MM" → DOM element to scroll to
+  const groupRefs = useRef({});
+
+  const scrollToMonth = useCallback((y, m) => {
+    const key = monthKey(y, m);
+    const el = groupRefs.current[key];
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, []);
 
   const goToToday = () => {
     setYear(today.getFullYear());
     setMonth(today.getMonth());
+    scrollToMonth(today.getFullYear(), today.getMonth());
   };
 
   const prevMonth = () => {
-    if (month === 0) { setYear(y => y - 1); setMonth(11); }
-    else setMonth(m => m - 1);
+    const newYear  = month === 0 ? year - 1 : year;
+    const newMonth = month === 0 ? 11 : month - 1;
+    setYear(newYear); setMonth(newMonth);
+    scrollToMonth(newYear, newMonth);
   };
+
   const nextMonth = () => {
-    if (month === 11) { setYear(y => y + 1); setMonth(0); }
-    else setMonth(m => m + 1);
+    const newYear  = month === 11 ? year + 1 : year;
+    const newMonth = month === 11 ? 0 : month + 1;
+    setYear(newYear); setMonth(newMonth);
+    scrollToMonth(newYear, newMonth);
   };
 
-  const navLabel = new Date(year, month, 1).toLocaleDateString('en', { month: 'short', year: 'numeric' });
-
-  // Filter entries to the selected month
-  const filtered = useMemo(() => entries.filter(e => {
-    if (!e.watched_at) return false;
-    const d = new Date(e.watched_at);
-    return d.getFullYear() === year && d.getMonth() === month;
-  }), [entries, year, month]);
+  const groups = useMemo(() => groupByMonth(entries), [entries]);
 
   if (loading) return <LoadingSpinner />;
 
@@ -58,7 +92,7 @@ export default function HistoryView() {
         </div>
       </div>
 
-      {/* ── Content ── */}
+      {/* ── Full history list, newest → oldest ── */}
       {entries.length === 0 ? (
         <div className="empty-state" style={{ marginTop: '1rem' }}>
           <div className="empty-title">Nothing watched yet</div>
@@ -66,15 +100,24 @@ export default function HistoryView() {
             Your watch history will appear here. Search for a title and mark it as watched to get started.
           </div>
         </div>
-      ) : filtered.length === 0 ? (
-        <div style={{ padding: '2.5rem 1rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.84rem' }}>
-          Nothing watched in {navLabel}
-        </div>
       ) : (
         <div style={{ paddingBottom: '2rem' }}>
-          {filtered.map(entry => (
-            <HistoryRow key={entry.id} entry={entry} openPanel={openPanel} />
-          ))}
+          {groups.map(({ key, entries: monthEntries }) => {
+            const mk = entryMonthKey(monthEntries[0]);
+            return (
+              <div
+                key={key}
+                ref={el => { if (mk) groupRefs.current[mk] = el; }}
+              >
+                <div className="date-group-header">
+                  <span className="date-group-label">{key}</span>
+                </div>
+                {monthEntries.map(entry => (
+                  <HistoryRow key={entry.id} entry={entry} openPanel={openPanel} />
+                ))}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
