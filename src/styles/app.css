@@ -3686,6 +3686,32 @@ svg { stroke-width: 1.5; }
     height: 44px;
   }
 
+  /* Compact month nav on mobile — keep 44px touch target, shrink visual */
+  .cal-month-nav {
+    border-radius: 4px;
+  }
+  .cal-month-btn {
+    padding: 0 0.3rem;
+  }
+  .cal-month-btn svg {
+    width: 10px;
+    height: 10px;
+  }
+  .cal-month-nav-label {
+    font-size: 0.68rem;
+    padding: 0 0.35rem;
+  }
+
+  /* Smaller header icon buttons on mobile */
+  .icon-btn {
+    width: 30px;
+    height: 30px;
+  }
+  .icon-btn svg {
+    width: 16px;
+    height: 16px;
+  }
+
   .season-select {
     gap: 0.55rem;
   }
