@@ -3175,7 +3175,8 @@ svg { stroke-width: 1.5; }
   font-family: var(--font-sans);
   font-size: 0.68rem;
   font-weight: 600;
-  padding: 0.45rem 0.9rem;
+  min-height: 36px;
+  padding: 0.34rem 0.9rem;
   border-radius: var(--radius-pill);
   border: none;
   background: var(--accent);
@@ -3202,7 +3203,8 @@ svg { stroke-width: 1.5; }
   font-family: var(--font-sans);
   font-size: 0.68rem;
   font-weight: 600;
-  padding: 0.45rem 0.9rem;
+  min-height: 36px;
+  padding: 0.34rem 0.9rem;
   border-radius: var(--radius-pill);
   border: 1px solid rgba(255,255,255,0.3);
   background: rgba(255,255,255,0.12);
@@ -3573,15 +3575,51 @@ svg { stroke-width: 1.5; }
     min-height: 44px;
   }
 
+  /* ── Bottom sheet on mobile ── */
+  .panel {
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    max-height: 92dvh;
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -8px 40px rgba(0,0,0,0.35);
+    animation: panelSheetIn 0.38s var(--ease);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .panel.closing {
+    animation: panelSheetOut 0.28s var(--ease) forwards;
+  }
+
+  @keyframes panelSheetIn {
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
+  }
+
+  @keyframes panelSheetOut {
+    from { transform: translateY(0); }
+    to   { transform: translateY(100%); }
+  }
+
+  /* Drag handle pill at top of sheet */
+  .panel::before {
+    content: '';
+    display: block;
+    width: 36px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--border-strong);
+    margin: 10px auto 0;
+    flex-shrink: 0;
+  }
+
   .panel-close-btn {
     width: 44px;
     height: 44px;
-    top: max(0.45rem, env(safe-area-inset-top, 0px));
-    left: 0.45rem;
-  }
-
-  .panel {
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+    top: 0.5rem;
+    left: 0.5rem;
   }
 
   .panel-body {
@@ -3628,10 +3666,13 @@ svg { stroke-width: 1.5; }
   .multi-select-btn,
   .platform-chip,
   .btn,
-  .btn-start-watching,
+  .btn-start-watching {
+    min-height: 44px;
+  }
+
   .discover-hero-save,
   .discover-hero-info {
-    min-height: 44px;
+    min-height: 36px;
   }
 
   .btn-xs {
@@ -3663,15 +3704,21 @@ svg { stroke-width: 1.5; }
   }
 
   .episode-list {
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
+    overflow: hidden;
   }
 
   .ep-row {
     align-items: center;
     min-width: 100%;
-    width: max-content;
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .ep-row::-webkit-scrollbar {
+    display: none;
   }
 
   .ep-info {

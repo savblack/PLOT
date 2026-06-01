@@ -4,7 +4,7 @@ import { localDateStr, dateToLocalStr } from '../utils/date.js';
 import { useCalendar } from '../hooks/useCalendar.js';
 import { tmdb } from '../api/tmdb.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
-import GroupedFilterMenu from './GroupedFilterMenu.jsx';
+
 
 /* ── Helpers ── */
 function buildMonthDays(year, month) {
