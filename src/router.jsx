@@ -69,7 +69,8 @@ const router = createBrowserRouter([
       { path: 'my-lists', element: wrap(<MyListsView />) },
       { path: 'search',   element: wrap(<SearchView />) },
       { path: 'settings', element: wrap(<SettingsView />) },
-      { path: 'design-system', element: wrap(<DesignSystemPage />) },
+      // Design system only available in dev builds
+      ...(import.meta.env.DEV ? [{ path: 'design-system', element: wrap(<DesignSystemPage />) }] : []),
     ],
   },
 

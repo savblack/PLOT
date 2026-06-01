@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { canUseDOM, getSystemColorScheme, readStorage, writeStorage } from '../utils/browser.js';
+import { canUseDOM, getSystemColorScheme, readStorage, writeStorage } from '../utils/storage.js';
 
 export function useTheme() {
   const [theme, setTheme] = useState(() => readStorage('plot-theme', 'system'));

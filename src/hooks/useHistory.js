@@ -15,13 +15,16 @@ export function useHistory(userId) {
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const PAGE_SIZE = 200;
+
   const load = useCallback(async () => {
     if (!userId) { setLoading(false); return; }
     const { data } = await supabase
       .from('journal')
       .select('*')
       .eq('user_id', userId)
-      .order('watched_at', { ascending: false });
+      .order('watched_at', { ascending: false })
+      .limit(PAGE_SIZE);
     setEntries(data || []);
     setLoading(false);
   }, [userId]);

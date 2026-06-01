@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useApp, logoUrl } from '../App.jsx';
 import { tmdb, setTmdbRegion } from '../api/tmdb.js';
@@ -8,6 +8,8 @@ import { useMediaSync } from '../hooks/useMediaSync.js';
 import { useTraktSync } from '../hooks/useTraktSync.js';
 import { useCalendar } from '../hooks/useCalendar.js';
 import { downloadICS } from '../utils/ics.js';
+import { IANA_TIMEZONES } from '../utils/timezones.js';
+import ConfirmModal from './ConfirmModal.jsx';
 
 const REGIONS = [
   { code: 'US', name: 'United States' }, { code: 'AU', name: 'Australia' },
@@ -169,10 +171,8 @@ function TimezonePicker({ current, onSave, onClose }) {
   const [saving,  setSaving]  = useState(false);
   const [chosen,  setChosen]  = useState(current || '');
 
-  // Get all IANA timezones the browser knows about
-  const allTzs = (() => {
-    try { return Intl.supportedValuesOf('timeZone'); } catch { return []; }
-  })();
+  // Use static list — Intl.supportedValuesOf('timeZone') is unsupported in Hermes (React Native)
+  const allTzs = IANA_TIMEZONES;
 
   const deviceTz = (() => {
     try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { return null; }
@@ -529,6 +529,9 @@ export default function SettingsView() {
   const [generatingCalToken,  setGeneratingCalToken]  = useState(false);
   const [calTokenCopied,      setCalTokenCopied]      = useState(false);
   const [localCalToken,       setLocalCalToken]       = useState(null);
+  const [confirmModal,        setConfirmModal]        = useState(null); // { title, message, confirmLabel, danger, onConfirm }
+
+  const showConfirm = useCallback((opts) => setConfirmModal(opts), []);
 
   // Use optimistic local value so the URL appears immediately after generation
   const calendarToken = localCalToken ?? profile?.calendar_token ?? null;
@@ -585,18 +588,29 @@ export default function SettingsView() {
     try { localStorage.removeItem('plot_tz_dismissed'); } catch { /* storage unavailable */ }
   };
 
-  const handleSignOut = async () => {
-    if (window.confirm('Sign out?')) {
-      await supabase.auth.signOut();
-      window.location.href = '/';
-    }
+  const handleSignOut = () => {
+    showConfirm({
+      message: 'Sign out of your account?',
+      confirmLabel: 'Sign out',
+      onConfirm: async () => {
+        await supabase.auth.signOut();
+        window.location.href = '/';
+      },
+    });
   };
 
-  const handleClearHistory = async () => {
-    if (!window.confirm('Clear your entire watch history? This cannot be undone.')) return;
-    setClearingHistory(true);
-    await supabase.from('journal').delete().eq('user_id', user.id);
-    setClearingHistory(false);
+  const handleClearHistory = () => {
+    showConfirm({
+      title: 'Clear watch history?',
+      message: 'This will permanently delete all your watched entries. This cannot be undone.',
+      confirmLabel: 'Clear history',
+      danger: true,
+      onConfirm: async () => {
+        setClearingHistory(true);
+        await supabase.from('journal').delete().eq('user_id', user.id);
+        setClearingHistory(false);
+      },
+    });
   };
 
   const handleClearListOnly = async () => {
@@ -616,19 +630,25 @@ export default function SettingsView() {
     setClearingWatchlist(false);
   };
 
-  const handleDeleteAccount = async () => {
-    if (window.confirm('Delete your account and all data? This cannot be undone.')) {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-      const url = edgeFunctionUrl('delete-account');
-      if (!url) return;
-      await fetch(url, {
-        method:  'POST',
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
-      await supabase.auth.signOut();
-      window.location.href = '/';
-    }
+  const handleDeleteAccount = () => {
+    showConfirm({
+      title: 'Delete account?',
+      message: 'This will permanently delete your account and all your data. This cannot be undone.',
+      confirmLabel: 'Delete account',
+      danger: true,
+      onConfirm: async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+        const url = edgeFunctionUrl('delete-account');
+        if (!url) return;
+        await fetch(url, {
+          method:  'POST',
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        await supabase.auth.signOut();
+        window.location.href = '/';
+      },
+    });
   };
 
   const handleGenerateCalToken = async () => {
@@ -645,11 +665,18 @@ export default function SettingsView() {
     refreshProfile();
   };
 
-  const handleRevokeCalToken = async () => {
-    if (!window.confirm('Revoke calendar link? Your calendar app will stop receiving updates.')) return;
-    await supabase.from('profiles').update({ calendar_token: null }).eq('id', user.id);
-    setLocalCalToken(null);
-    refreshProfile();
+  const handleRevokeCalToken = () => {
+    showConfirm({
+      title: 'Revoke calendar link?',
+      message: 'Your calendar app will stop receiving updates. You can generate a new link at any time.',
+      confirmLabel: 'Revoke',
+      danger: true,
+      onConfirm: async () => {
+        await supabase.from('profiles').update({ calendar_token: null }).eq('id', user.id);
+        setLocalCalToken(null);
+        refreshProfile();
+      },
+    });
   };
 
   const handleCopyCalUrl = async () => {
@@ -1035,6 +1062,13 @@ export default function SettingsView() {
       {/* Feedback panel */}
       {showFeedback && (
         <FeedbackPanel user={user} onClose={() => setShowFeedback(false)} />
+      )}
+
+      {confirmModal && (
+        <ConfirmModal
+          {...confirmModal}
+          onClose={() => setConfirmModal(null)}
+        />
       )}
     </div>
   );

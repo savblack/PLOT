@@ -13,7 +13,7 @@ import { useFavorites }    from './hooks/useFavorites.js';
 import { useCustomLists }  from './hooks/useCustomLists.js';
 import PlotLoader from './components/PlotLoader.jsx';
 import { pathForView, viewFromPath } from './navigation.js';
-import { readStorage, writeStorage } from './utils/browser.js';
+import { readStorage, writeStorage } from './utils/storage.js';
 
 /* ── App Context ─────────────────────── */
 export const AppContext = createContext(null);

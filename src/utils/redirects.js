@@ -1,4 +1,4 @@
-import { canUseDOM } from './browser.js';
+import { canUseDOM } from './storage.js';
 
 const env = import.meta.env ?? {};
 const APP_BASE_URL = env.VITE_AUTH_REDIRECT_BASE_URL || env.VITE_APP_ORIGIN || null;

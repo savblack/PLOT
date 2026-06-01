@@ -7,6 +7,9 @@ let userRegion = 'AU';
 export const setTmdbRegion = (region) => { userRegion = region; };
 export const getTmdbRegion = () => userRegion;
 
+const RETRY_STATUSES = new Set([429, 500, 502, 503, 504]);
+const RETRY_DELAYS   = [400, 1200]; // ms — 2 retries with backoff
+
 const fetchFromTMDB = async (endpoint, params = {}) => {
   const queryParams = new URLSearchParams({
     path: endpoint.replace(/^\//, ''),
@@ -15,20 +18,39 @@ const fetchFromTMDB = async (endpoint, params = {}) => {
     ...params,
   });
 
-  try {
-    if (!PROXY_URL) throw new Error('VITE_TMDB_PROXY_URL is not configured');
-    const response = await fetch(`${PROXY_URL}?${queryParams}`, {
-      headers: {
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        'apikey': SUPABASE_ANON_KEY,
-      },
-    });
-    if (!response.ok) throw new Error(`TMDB Proxy Error: ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.error('TMDB Fetch Error:', error);
+  if (!PROXY_URL) {
+    console.error('TMDB Fetch Error: VITE_TMDB_PROXY_URL is not configured');
     return null;
   }
+
+  const url = `${PROXY_URL}?${queryParams}`;
+  const headers = {
+    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+    'apikey': SUPABASE_ANON_KEY,
+  };
+
+  for (let attempt = 0; attempt <= RETRY_DELAYS.length; attempt++) {
+    try {
+      const response = await fetch(url, { headers });
+      if (!response.ok) {
+        if (RETRY_STATUSES.has(response.status) && attempt < RETRY_DELAYS.length) {
+          await new Promise(res => setTimeout(res, RETRY_DELAYS[attempt]));
+          continue;
+        }
+        console.error(`TMDB Proxy Error: ${response.status} ${endpoint}`);
+        return null;
+      }
+      return await response.json();
+    } catch (error) {
+      if (attempt < RETRY_DELAYS.length) {
+        await new Promise(res => setTimeout(res, RETRY_DELAYS[attempt]));
+        continue;
+      }
+      console.error('TMDB Fetch Error:', error);
+      return null;
+    }
+  }
+  return null;
 };
 
 export const tmdb = {
