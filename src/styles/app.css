@@ -1535,16 +1535,16 @@ svg { stroke-width: 1.5; }
   border: none;
   cursor: pointer;
   color: var(--text-secondary);
-  padding: 0.35rem 0.45rem;
+  padding: 0.25rem 0.35rem;
   transition: background 0.12s ease, color 0.12s ease;
 }
 .cal-month-btn:hover { background: var(--surface-sunken); color: var(--text-primary); }
-.cal-month-btn svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2.5; }
+.cal-month-btn svg { width: 10px; height: 10px; stroke: currentColor; fill: none; stroke-width: 2.5; }
 .cal-month-nav-label {
-  font-size: 0.8rem;
+  font-size: 0.72rem;
   font-weight: 600;
   color: var(--text-secondary);
-  padding: 0.35rem 0.5rem;
+  padding: 0.25rem 0.4rem;
   white-space: nowrap;
   border-left: 1px solid var(--border);
   border-right: 1px solid var(--border);
