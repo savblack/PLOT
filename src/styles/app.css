@@ -3683,18 +3683,17 @@ svg { stroke-width: 1.5; }
   }
 
   .cal-nav-btn,
-  .cal-month-btn,
   .season-nav-btn {
     width: 44px;
     height: 44px;
   }
 
-  /* Compact month nav on mobile — keep 44px touch target, shrink visual */
   .cal-month-nav {
     border-radius: 4px;
   }
   .cal-month-btn {
-    padding: 0 0.3rem;
+    width: 26px;
+    padding: 0;
   }
   .cal-month-btn svg {
     width: 10px;
