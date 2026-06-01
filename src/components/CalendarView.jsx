@@ -155,7 +155,7 @@ export default function CalendarView() {
   const [weekStart, setWeekStart] = useState(() => startOfWeek(today));
   const [selectedDate, setSelectedDate] = useState(todayStr);
   const [view, setView]   = useState('agenda'); // 'grid' | 'week' | 'agenda'
-  const [typeFilter, setTypeFilter] = useState(ALL_EVENT_TYPES);
+  const [typeFilter] = useState(ALL_EVENT_TYPES);
 
   const { loading, events: allEvents, eventsForDate } = useCalendar(
     watchlist.items,
@@ -210,8 +210,11 @@ export default function CalendarView() {
       return ev.date.startsWith(prefix) && ev.date >= todayStr;
     });
     if (!currentMonthHasEvents) {
-      setYear(nearestYear);
-      setMonth(nearestMonth);
+      // Defer out of the effect body to avoid cascading renders
+      setTimeout(() => {
+        setYear(nearestYear);
+        setMonth(nearestMonth);
+      }, 0);
     }
   }, [view, loading, allEvents, todayStr, year, month]);
 
