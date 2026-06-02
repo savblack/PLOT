@@ -25,7 +25,7 @@ export function useWatchlist(userId) {
   const [listId,    setListId]    = useState(null);
   const [items,     setItems]     = useState([]);
   const [loading,   setLoading]   = useState(true);
-  const [listError, setListError] = useState(null);   // exposed for UI feedback
+  const [, setListError] = useState(null);
 
   // Cache the active Trakt integration ID so add/remove can enqueue outbox rows.
   const traktIntegrationId = useRef(null);
