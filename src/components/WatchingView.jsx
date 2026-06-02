@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useApp, backdropUrl, TodayLabel } from '../App.jsx';
 import { localDateStr } from '../utils/date.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
+import ConfirmModal from './ConfirmModal.jsx';
 
 /* ── Icons ── */
 function CheckCircleIcon() {
@@ -243,12 +244,17 @@ function WatchingCard({ progress, watching, onOpen, onStop }) {
 ═══════════════════════════════════════ */
 export default function WatchingView() {
   const { openPanel, watching, navigateTo } = useApp();
+  const [confirmModal, setConfirmModal] = useState(null);
 
-  const handleStop = async (tmdbId) => {
-    if (window.confirm('Stop tracking this show?')) {
-      await watching.stopWatching(tmdbId);
-    }
-  };
+  const handleStop = useCallback((tmdbId) => {
+    setConfirmModal({
+      title: 'Stop tracking?',
+      message: 'This will remove the show from your in-progress list.',
+      confirmLabel: 'Stop tracking',
+      danger: true,
+      onConfirm: () => watching.stopWatching(tmdbId),
+    });
+  }, [watching]);
 
   if (watching.loading) {
     return <LoadingSpinner />;
@@ -296,6 +302,9 @@ export default function WatchingView() {
             />
           ))}
         </div>
+      )}
+      {confirmModal && (
+        <ConfirmModal {...confirmModal} onClose={() => setConfirmModal(null)} />
       )}
     </div>
   );

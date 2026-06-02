@@ -726,6 +726,7 @@ svg { stroke-width: 1.5; }
   color: var(--chip-soon);
   border: 1px solid color-mix(in srgb, var(--chip-soon) 34%, var(--border));
 }
+.chip-sm { font-size: 0.6rem; }
 
 /* ═══════════════════════════════════════
    SUB TABS
@@ -787,6 +788,24 @@ svg { stroke-width: 1.5; }
 .sub-tabs-scroll::-webkit-scrollbar { display: none; }
 
 /* date label sitting left of the tabs */
+.sub-tabs--compact { padding-top: 0.4rem; padding-bottom: 0.4rem; }
+
+.today-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  user-select: none;
+  transition: color 0.15s ease;
+}
+.today-label--clickable {
+  cursor: pointer;
+}
+.today-label--clickable:hover {
+  color: var(--text-secondary);
+}
+
 .sub-tabs-date {
   font-size: 0.68rem;
   font-weight: 600;

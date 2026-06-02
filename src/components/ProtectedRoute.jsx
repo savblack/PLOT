@@ -9,9 +9,13 @@ export default function ProtectedRoute({ children, skipOnboardingCheck = false }
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
 
   useEffect(() => {
-    const check = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { setLoading(false); return; }
+    const checkSession = async (session) => {
+      if (!session) {
+        setAuthenticated(false);
+        setNeedsOnboarding(false);
+        setLoading(false);
+        return;
+      }
       setAuthenticated(true);
 
       if (!skipOnboardingCheck) {
@@ -21,14 +25,21 @@ export default function ProtectedRoute({ children, skipOnboardingCheck = false }
           .eq('id', session.user.id)
           .maybeSingle();
 
-        if (!profile?.onboarding_complete) {
-          setNeedsOnboarding(true);
-        }
+        setNeedsOnboarding(!profile?.onboarding_complete);
       }
 
       setLoading(false);
     };
-    check();
+
+    // Initial session check
+    supabase.auth.getSession().then(({ data: { session } }) => checkSession(session));
+
+    // Stay in sync if session expires or is revoked
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      checkSession(session);
+    });
+
+    return () => subscription.unsubscribe();
   }, [skipOnboardingCheck]);
 
   if (loading) {

@@ -3,6 +3,7 @@ import { supabase } from '../api/supabase.js';
 import { tmdb } from '../api/tmdb.js';
 import { localDateStr } from '../utils/date.js';
 import { baseMediaRow, tmdbIdFromItem } from '../domain/media.js';
+import { logWatchedItem } from '../api/userMedia.js';
 
 export function useWatching(userId) {
   const [items,   setItems]   = useState([]);
@@ -91,16 +92,13 @@ export function useWatching(userId) {
 
     if (data) setItems(prev => prev.map(i => i.tmdb_id === Number(tmdbId) ? data : i));
 
-    // Log completed episode to journal
+    // Log completed episode to journal via shared helper (includes date validation)
     if (userId) {
-      await supabase.from('journal').upsert({
-        user_id:     userId,
-        tmdb_id:     progress.tmdb_id,
-        media_type:  'tv',
-        title:       progress.title,
-        poster_path: progress.poster_path,
-        watched_at:  localDateStr(),
-      }, { onConflict: 'user_id,tmdb_id' });
+      await logWatchedItem({
+        userId,
+        item: { ...progress, media_type: 'tv' },
+        watchedAt: localDateStr(),
+      });
     }
 
     return data;

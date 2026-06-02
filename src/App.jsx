@@ -52,18 +52,7 @@ export function TodayLabel({ onClick }) {
   return (
     <span
       onClick={onClick}
-      style={{
-        fontSize: '0.68rem',
-        fontWeight: 600,
-        color: 'var(--text-muted)',
-        letterSpacing: '0.07em',
-        textTransform: 'uppercase',
-        cursor: onClick ? 'pointer' : 'default',
-        userSelect: 'none',
-        transition: 'color 0.15s ease',
-      }}
-      onMouseEnter={onClick ? e => { e.currentTarget.style.color = 'var(--text-secondary)'; } : undefined}
-      onMouseLeave={onClick ? e => { e.currentTarget.style.color = 'var(--text-muted)'; } : undefined}
+      className={`today-label${onClick ? ' today-label--clickable' : ''}`}
     >
       {label}
     </span>

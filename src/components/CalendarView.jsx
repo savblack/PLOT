@@ -52,15 +52,7 @@ const CHIP_COLORS = {
   reminder:  'chip-reminder',
 };
 
-const ALL_EVENT_TYPES = ['episode', 'cinema', 'streaming', 'reminder'];
 const MAX_PILLS_MONTH = 3;
-
-const LEGEND_TIPS = {
-  episode:   'Upcoming episodes of shows you\'re watching',
-  cinema:    'Theatrical releases of movies on your watchlist',
-  streaming: 'New streaming premieres from your watchlist, including when cinema films hit streaming',
-  reminder:  'Episodes you\'ve bookmarked from the TV guide',
-};
 
 /* ═══════════════════════════════════════
    Shared event row list
@@ -132,7 +124,7 @@ function EventRowList({ events, openPanel }) {
         </div>
         <span
           className={`chip chip-sm ${CHIP_COLORS[ev.type] || 'chip-muted'}`}
-          style={{ fontSize: '0.6rem', marginLeft: 'auto', flexShrink: 0 }}
+          style={{ marginLeft: 'auto', flexShrink: 0 }}
         >
           {EVENT_LABELS[ev.type] || ev.label}
         </span>
@@ -155,7 +147,6 @@ export default function CalendarView() {
   const [weekStart, setWeekStart] = useState(() => startOfWeek(today));
   const [selectedDate, setSelectedDate] = useState(todayStr);
   const [view, setView]   = useState('agenda'); // 'grid' | 'week' | 'agenda'
-  const [typeFilter] = useState(ALL_EVENT_TYPES);
 
   const { loading, events: allEvents, eventsForDate } = useCalendar(
     watchlist.items,
@@ -176,11 +167,8 @@ export default function CalendarView() {
     })
   ), [weekStart]);
 
-  /* ── Filter helper ── */
-  const filterEvs = useCallback((evs) => {
-    if (!typeFilter.length || typeFilter.length === ALL_EVENT_TYPES.length) return evs;
-    return evs.filter(ev => typeFilter.includes(ev.type));
-  }, [typeFilter]);
+  /* ── Filter helper (identity — type filtering removed) ── */
+  const filterEvs = useCallback((evs) => evs, []);
 
   /* ── Pill map (month view) ── */
   const pillEventsMap = useMemo(() => {
@@ -443,7 +431,7 @@ export default function CalendarView() {
             <LoadingSpinner />
           ) : agendaDays.length === 0 ? (
             <div style={{ padding: '2.5rem 1rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.84rem' }}>
-              {typeFilter.length < ALL_EVENT_TYPES.length ? 'Nothing matching this filter' : 'Nothing scheduled this month'}
+              Nothing scheduled this month
             </div>
           ) : (
             <div className="cal-agenda">

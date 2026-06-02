@@ -163,20 +163,5 @@ export function useCalendar(watchlistItems = [], watchingItems = [], fetchSeason
     [events]
   );
 
-  const datesWithEvents = useCallback(
-    (year, month) => {
-      const prefix = `${year}-${String(month + 1).padStart(2, '0')}`;
-      const map = {};
-      for (const ev of events) {
-        if (ev.date.startsWith(prefix)) {
-          if (!map[ev.date]) map[ev.date] = [];
-          map[ev.date].push(ev.type);
-        }
-      }
-      return map;
-    },
-    [events]
-  );
-
-  return { events, loading, eventsForDate, datesWithEvents };
+  return { events, loading, eventsForDate };
 }

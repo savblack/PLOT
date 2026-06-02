@@ -10,8 +10,11 @@ function groupByMonth(entries) {
     const key = entry.watched_at
       ? new Date(entry.watched_at).toLocaleDateString('en', { month: 'long', year: 'numeric' })
       : 'Unknown date';
-    if (!seen[key]) { seen[key] = true; groups.push({ key, entries: [] }); }
-    groups[groups.length - 1].entries.push(entry);
+    if (seen[key] === undefined) {
+      seen[key] = groups.length;
+      groups.push({ key, entries: [] });
+    }
+    groups[seen[key]].entries.push(entry);
   }
   return groups;
 }
@@ -75,7 +78,7 @@ export default function HistoryView() {
   return (
     <div>
       {/* ── Sub-tabs bar ── */}
-      <div className="sub-tabs" style={{ paddingTop: '0.4rem', paddingBottom: '0.4rem' }}>
+      <div className="sub-tabs sub-tabs--compact">
         <span className="sub-tabs-date">
           <TodayLabel onClick={!isCurrentMonth ? goToToday : undefined} />
         </span>
@@ -139,7 +142,7 @@ function HistoryRow({ entry, openPanel }) {
       <div className="list-row-info">
         <div className="list-row-title">{title}</div>
         <div className="list-row-meta">
-          {date && <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{date}</span>}
+          {date && <span>{date}</span>}
         </div>
       </div>
       {entry.note && <div className="history-row-review">{entry.note}</div>}

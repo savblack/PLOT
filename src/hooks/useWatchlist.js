@@ -117,7 +117,7 @@ export function useWatchlist(userId) {
   /* ── Add item ── */
   const addToList = useCallback(async (item) => {
     if (!listId || !userId) {
-      console.warn('[useWatchlist] addToList: not ready — listId:', listId, 'userId:', userId, 'error:', listError);
+      if (import.meta.env.DEV) console.warn('[useWatchlist] addToList: not ready', { listId, userId });
       return;
     }
 
@@ -165,7 +165,7 @@ export function useWatchlist(userId) {
   const removeFromList = useCallback(async (tmdbId) => {
     if (!listId) return;
 
-    const { error } = await deleteListItem({ listId, tmdbId });
+    const { error } = await deleteListItem({ listId, tmdbId, userId });
 
     if (error) {
       console.error('[useWatchlist] DELETE list_items failed:', error);
@@ -192,5 +192,5 @@ export function useWatchlist(userId) {
     else await addToList(item);
   }, [isInList, addToList, removeFromList]);
 
-  return { items, loading, listError, isInList, addToList, removeFromList, toggle, reload: bootstrap };
+  return { items, loading, isInList, addToList, removeFromList, toggle, reload: bootstrap };
 }
