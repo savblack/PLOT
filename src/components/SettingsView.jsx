@@ -382,21 +382,57 @@ const FEEDBACK_TYPES = [
   { id: 'general', label: 'General Feedback 💬' },
 ];
 
+const FEEDBACK_MAX = 4000;
+const MAX_IMAGES   = 3;
+const MAX_IMAGE_MB = 5;
+
 function FeedbackPanel({ user, onClose }) {
   const [type,      setType]      = useState('bug');
   const [message,   setMessage]   = useState('');
+  const [images,    setImages]    = useState([]); // [{ file, preview }]
   const [status,    setStatus]    = useState('idle'); // idle | submitting | done | error
 
-  const FEEDBACK_MAX = 4000;
+  const addImages = (files) => {
+    const valid = [...files]
+      .filter(f => f.type.startsWith('image/') && f.size <= MAX_IMAGE_MB * 1024 * 1024)
+      .slice(0, MAX_IMAGES - images.length);
+    setImages(prev => [
+      ...prev,
+      ...valid.map(f => ({ file: f, preview: URL.createObjectURL(f) })),
+    ]);
+  };
+
+  const removeImage = (idx) => {
+    setImages(prev => {
+      URL.revokeObjectURL(prev[idx].preview);
+      return prev.filter((_, i) => i !== idx);
+    });
+  };
 
   const handleSubmit = async () => {
     if (!message.trim()) return;
     setStatus('submitting');
+
+    // Upload images to Storage
+    const attachmentUrls = [];
+    for (const { file } of images) {
+      const ext  = file.name.split('.').pop();
+      const path = `${user?.id ?? 'anon'}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from('feedback-attachments')
+        .upload(path, file, { contentType: file.type });
+      if (!upErr) {
+        const { data } = supabase.storage.from('feedback-attachments').getPublicUrl(path);
+        attachmentUrls.push(data.publicUrl);
+      }
+    }
+
     const { error } = await supabase.from('feedback').insert({
-      user_id:    user?.id ?? null,
-      user_email: user?.email ?? null,
+      user_id:     user?.id ?? null,
+      user_email:  user?.email ?? null,
       type,
-      message:    message.trim().slice(0, FEEDBACK_MAX),
+      message:     message.trim().slice(0, FEEDBACK_MAX),
+      attachments: attachmentUrls.length ? attachmentUrls : null,
     });
     setStatus(error ? 'error' : 'done');
   };
@@ -481,6 +517,34 @@ function FeedbackPanel({ user, onClose }) {
               onFocus={e => { e.currentTarget.style.borderColor = 'var(--accent)'; }}
               onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)'; }}
             />
+
+            {/* Image attachments */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+              {images.map((img, i) => (
+                <div key={i} style={{ position: 'relative', width: 64, height: 64, borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1.5px solid var(--border)', flexShrink: 0 }}>
+                  <img src={img.preview} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <button
+                    onClick={() => removeImage(i)}
+                    aria-label="Remove image"
+                    style={{ position: 'absolute', top: 2, right: 2, width: 18, height: 18, borderRadius: '50%', background: 'rgba(0,0,0,0.7)', border: 'none', color: '#fff', fontSize: '0.65rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}
+                  >✕</button>
+                </div>
+              ))}
+              {images.length < MAX_IMAGES && (
+                <label style={{ cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }} title="Attach image">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}>
+                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+                  </svg>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    style={{ display: 'none' }}
+                    onChange={e => { addImages(e.target.files); e.target.value = ''; }}
+                  />
+                </label>
+              )}
+            </div>
 
             {status === 'error' && (
               <p style={{ fontSize: '0.78rem', color: 'var(--chip-cinema)', margin: 0 }}>
