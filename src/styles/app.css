@@ -3197,8 +3197,7 @@ svg { stroke-width: 1.5; }
   font-family: var(--font-sans);
   font-size: 0.68rem;
   font-weight: 600;
-  min-height: 36px;
-  padding: 0.34rem 0.9rem;
+  padding: 0.3rem 1.2rem;
   border-radius: var(--radius-pill);
   border: none;
   background: var(--accent);
@@ -3225,8 +3224,7 @@ svg { stroke-width: 1.5; }
   font-family: var(--font-sans);
   font-size: 0.68rem;
   font-weight: 600;
-  min-height: 36px;
-  padding: 0.34rem 0.9rem;
+  padding: 0.3rem 1.2rem;
   border-radius: var(--radius-pill);
   border: 1px solid rgba(255,255,255,0.3);
   background: rgba(255,255,255,0.12);
@@ -3690,11 +3688,6 @@ svg { stroke-width: 1.5; }
   .btn,
   .btn-start-watching {
     min-height: 44px;
-  }
-
-  .discover-hero-save,
-  .discover-hero-info {
-    min-height: 36px;
   }
 
   .btn-xs {

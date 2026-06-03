@@ -407,7 +407,7 @@ function FeedbackPanel({ user, onClose }) {
       <div className="panel">
         <div style={{ padding: '1.25rem 1.1rem', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.4rem', fontWeight: 500 }}>Feedback</h2>
-          <button className="btn btn-ghost btn-sm" onClick={onClose}>Close</button>
+          <button className="btn btn-ghost btn-sm" onClick={onClose} aria-label="Close" style={{ fontSize: '1rem', lineHeight: 1, border: 'none' }}>✕</button>
         </div>
 
         {status === 'done' ? (
@@ -965,7 +965,7 @@ export default function SettingsView() {
             <div className="settings-row-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
             </div>
-            <span className="settings-row-label">Report a Bug / Leave Feedback</span>
+            <span className="settings-row-label">Report a Bug OR Leave Feedback</span>
           </div>
           <div className="settings-row-value">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ width: 14, height: 14, opacity: 0.4 }}><polyline points="9 18 15 12 9 6"/></svg>

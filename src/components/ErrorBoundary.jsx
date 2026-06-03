@@ -230,7 +230,7 @@ function ErrorScreen({ code, label, title, body, primaryLabel, primaryAction, gh
         <div className="plot-error-left">
           <div className="plot-error-logo">
             <div className="plot-error-logo-dot" />
-            <span className="plot-error-logo-text">Plot</span>
+            <span className="plot-error-logo-text">PLOT</span>
           </div>
           <div className="plot-error-label">Error · {label || code}</div>
           <div className="plot-error-number">{code}</div>
