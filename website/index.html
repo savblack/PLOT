@@ -41,7 +41,7 @@
       --serif:        'Instrument Serif', Georgia, serif;
       --sans:         'DM Sans', system-ui, sans-serif;
       --serif-stroke: 0px;
-      --serif-tracking: 0;
+      --serif-tracking: -0.03em;
       --serif-condense: 0.997;
       --dark:          #0c0c0c;
       --text-dark:     #f0efe8;
@@ -284,19 +284,19 @@
 
     .hero-headline {
       font-family: var(--serif);
-      font-size: clamp(2.6rem, 6.5vw, 5rem);
+      font-size: clamp(2rem, 5vw, 3.8rem);
       font-weight: 400;
       line-height: 0.88;
       letter-spacing: var(--serif-tracking);
       color: var(--text);
-      margin-bottom: 2rem;
+      margin-bottom: 1rem;
     }
 
     .hero-sub {
       font-size: 0.95rem;
       color: var(--muted);
       font-weight: 200;
-      margin-bottom: 2.5rem;
+      margin-bottom: 2.25rem;
       max-width: 480px;
       margin-left: auto;
       margin-right: auto;
@@ -326,8 +326,8 @@
       animation: filmstrip-scroll 20s linear infinite;
     }
     .hero-film-card {
-      width: 72px;
-      height: 108px;
+      width: 54px;
+      height: 81px;
       border-radius: 8px;
       flex-shrink: 0;
       background-size: cover;
@@ -581,11 +581,14 @@
 
     /* ── Timeline ───────────────────────────────────────────── */
     #timeline-section {
-      padding: 8rem 2rem 4rem;
-      text-align: center;
-      position: relative;
-      z-index: 2;
+      padding: 8rem 0 6rem;
       background: var(--bg);
+      overflow: hidden;
+    }
+
+    .timeline-header {
+      padding: 0 3rem;
+      margin-bottom: 3rem;
     }
 
     .timeline-headline {
@@ -595,92 +598,113 @@
       line-height: 0.95;
       letter-spacing: var(--serif-tracking);
       color: var(--text);
+      margin-bottom: 0.75rem;
     }
 
     .timeline-intro {
-      margin-top: 0.75rem;
-      max-width: 630px;
-      margin-left: auto;
-      margin-right: auto;
+      font-size: 0.875rem;
+      font-weight: 200;
+      color: var(--muted);
+      max-width: 400px;
+      line-height: 1.65;
     }
 
-    .timeline-entries {
-      position: relative;
-      max-width: 860px;
-      margin: 3rem auto 0;
+    /* horizontal scroll track */
+    .tl-scroll-outer {
+      overflow-x: auto;
+      padding: 2rem 3rem 3rem;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      cursor: grab;
     }
+    .tl-scroll-outer::-webkit-scrollbar { display: none; }
+    .tl-scroll-outer:active { cursor: grabbing; }
 
-    /* center vertical line */
-    .timeline-entries::before {
-      content: '';
-      position: absolute;
-      top: 0; bottom: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 1px;
-      background: rgba(0,0,0,0.1);
-    }
-
-    .tl-entry {
-      display: grid;
-      grid-template-columns: 1fr 160px 1fr;
-      align-items: center;
-      gap: 3rem;
-      margin-bottom: 5rem;
-      position: relative;
-    }
-
-    .tl-poster-wrap {
-      position: relative;
-      z-index: 2;
+    .tl-scroll-track {
       display: flex;
-      justify-content: center;
+      gap: 2rem;
+      align-items: flex-start;
+      width: max-content;
     }
 
-    /* dot on the line */
-    .tl-poster-wrap::after {
-      content: '';
-      position: absolute;
-      top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      width: 7px; height: 7px;
-      border-radius: 50%;
-      background: rgba(0,0,0,0.2);
-      z-index: -1;
+    /* year marker */
+    .tl-year {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 2rem;
+      flex-shrink: 0;
+      width: 36px;
     }
+
+    .tl-year-label {
+      font-size: 0.6rem;
+      font-weight: 300;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--pink);
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+      transform: rotate(180deg);
+    }
+
+    .tl-year-line {
+      width: 1px;
+      background: rgba(0,0,0,0.08);
+      margin-top: 0.75rem;
+      height: 220px;
+    }
+
+    /* poster card */
+    .tl-card {
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      width: 140px;
+    }
+    .tl-card:nth-child(3n+1) { padding-top: 0; }
+    .tl-card:nth-child(3n+2) { padding-top: 2.5rem; }
+    .tl-card:nth-child(3n)   { padding-top: 1.2rem; }
 
     .tl-poster {
-      width: 160px;
-      height: 240px;
+      width: 140px;
+      height: 210px;
       border-radius: 8px;
       background-size: cover;
       background-position: center;
-      background-color: #111;
-      box-shadow: 0 10px 36px rgba(0,0,0,0.15);
-      transition: transform 0.35s var(--ease), box-shadow 0.35s var(--ease);
+      background-color: #ccc;
+      margin-bottom: 0.75rem;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
     }
     .tl-poster:hover {
-      transform: translateY(-6px);
-      box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+      transform: translateY(-5px);
+      box-shadow: 0 12px 32px rgba(0,0,0,0.15);
+    }
+
+    .tl-date {
+      font-size: 0.62rem;
+      font-weight: 300;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--pink);
+      margin-bottom: 0.3rem;
+    }
+
+    .tl-title {
+      font-family: var(--serif);
+      font-size: 0.88rem;
+      color: var(--text);
+      margin-bottom: 0.25rem;
+      line-height: 1.25;
     }
 
     .tl-note {
-      font-family: var(--sans);
-      font-size: 1.5rem;
-      line-height: 1.15;
-      color: rgba(26,26,26,0.75);
-    }
-    .tl-note-left  { text-align: right; }
-    .tl-note-right { text-align: left;  }
-
-    .tl-date {
-      font-family: var(--sans);
-      font-size: 0.68rem;
-      font-weight: 200;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
+      font-family: var(--serif);
+      font-style: italic;
+      font-size: 0.75rem;
       color: var(--muted);
-      margin-bottom: 0.6rem;
+      line-height: 1.45;
     }
 
     /* ── Closing CTA (removed — merged into footer) ── */
@@ -688,7 +712,7 @@
     /* ── Live Ticker ─────────────────────────────────────────── */
     @keyframes ticker-scroll {
       from { transform: translateX(0); }
-      to   { transform: translateX(-50%); }
+      to   { transform: translateX(var(--ticker-loop, -33.333%)); }
     }
 
     .ticker-section {
@@ -749,7 +773,7 @@
       font-weight: 200;
       letter-spacing: 0.14em;
       text-transform: uppercase;
-      color: var(--muted);
+      color: var(--pink);
       padding: 0 1.25rem 0 2rem;
       white-space: nowrap;
     }
@@ -994,22 +1018,13 @@
         border-radius: 8px;
       }
 
-      /* Timeline — collapse to single centered column, show only first 3 entries */
-      #timeline-section { padding: 5rem 1.5rem; }
-      .timeline-entries { margin-top: 3rem; }
-      .timeline-entries::before { display: none; }
-      .tl-entry {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 1.2rem;
-        margin-bottom: 3rem;
-      }
-      .tl-entry:nth-child(n+4) { display: none; }
-      .tl-poster { width: 120px; height: 180px; }
-      .tl-empty { display: none; }
-      .tl-poster-wrap { order: 1; }
-      .tl-note { order: 2; text-align: center; font-size: 1.2rem; }
+      /* Timeline — tighten padding on mobile */
+      #timeline-section { padding: 5rem 0 4rem; }
+      .timeline-header { padding: 0 1.5rem; }
+      .tl-scroll-outer { padding: 1.5rem 1.5rem 2rem; }
+      .tl-poster { width: 110px; height: 165px; }
+      .tl-card { width: 110px; }
+      .tl-year-line { height: 165px; }
 
       /* CTA — stack vertically */
       #cta { padding: 5rem 1.5rem 4rem; }
@@ -1847,26 +1862,16 @@
   <!-- ── Hero ────────────────────────────────────────────────── -->
   <section id="hero">
     <div class="hero-content">
-      <h1 class="hero-headline reveal">Your film &amp; TV journal</h1>
-      <p class="hero-sub reveal reveal-delay-2">Every film. Every series. Every feeling.<br>In one beautiful place.</p>
+      <h1 class="hero-headline reveal">Your film &amp; TV companion</h1>
+      <p class="hero-sub reveal reveal-delay-2">Everything you've watched. Everything you want to watch.</p>
       <div class="hero-actions reveal reveal-delay-3">
-        <a href="https://app.theplot.tv/signup" class="btn btn-outline btn-large">Start your journal →</a>
+        <a href="https://app.theplot.tv/signup" class="btn btn-outline btn-large">Find your next watch →</a>
       </div>
       <div class="hero-filmstrip reveal reveal-delay-4">
-        <div class="hero-filmstrip-inner" aria-hidden="true">
+        <div class="hero-filmstrip-inner" id="heroFilmstrip" aria-hidden="true">
           <div class="hero-film-card" style="background-image:url('images/hero/saltburn.webp')"></div>
           <div class="hero-film-card" style="background-image:url('images/hero/anyone-but-you.webp')"></div>
           <div class="hero-film-card" style="background-image:url('images/hero/nosferatu.webp')"></div>
-          <div class="hero-film-card" style="background-image:url('images/hero/wuthering-heights.webp')"></div>
-          <div class="hero-film-card" style="background-image:url('images/hero/past-lives.webp')"></div>
-          <div class="hero-film-card" style="background-image:url('images/hero/aftersun.webp')"></div>
-          <div class="hero-film-card" style="background-image:url('images/hero/babygirl.webp')"></div>
-          <div class="hero-film-card" style="background-image:url('images/hero/the-substance.webp')"></div>
-          <!-- duplicate set for seamless loop -->
-          <div class="hero-film-card" style="background-image:url('images/hero/saltburn.webp')"></div>
-          <div class="hero-film-card" style="background-image:url('images/hero/anyone-but-you.webp')"></div>
-          <div class="hero-film-card" style="background-image:url('images/hero/nosferatu.webp')"></div>
-          <div class="hero-film-card" style="background-image:url('images/hero/wuthering-heights.webp')"></div>
           <div class="hero-film-card" style="background-image:url('images/hero/past-lives.webp')"></div>
           <div class="hero-film-card" style="background-image:url('images/hero/aftersun.webp')"></div>
           <div class="hero-film-card" style="background-image:url('images/hero/babygirl.webp')"></div>
@@ -1909,14 +1914,13 @@
   <section id="guide-demo">
     <div class="demo-split">
       <div class="demo-copy reveal">
-        <span class="section-eyebrow">The Guide</span>
         <h2 class="demo-headline">Everything new.<br><em>In one place.</em></h2>
         <p class="demo-body">
-          Theatrical releases, streaming premieres, new episodes — all on the same screen.
-          PLOT pulls together what's dropping today, this week, and what's on its way,
-          so you never have to check five different apps to find out where to watch it.
+          No more bouncing between apps. PLOT shows you the top 10 on every platform,
+          what's trending around the world, and every new release on the way.
+          You'll always know what's worth watching.
         </p>
-        <a href="https://app.theplot.tv/signup" class="demo-link">See what's on tonight &rarr;</a>
+        <a href="https://app.theplot.tv/signup" class="demo-link">Unify your entertainment universe &rarr;</a>
       </div>
       <div class="phone-wrap reveal">
         <div class="iphone-png-wrap">
@@ -2014,8 +2018,8 @@
       </div>
     </div>
   </section>
-  <!-- ── Features ─────────────────────────────────────────────── -->
-  <section id="features">
+  <!-- ── Features (removed) ───────────────────────────────────── -->
+  <section id="features" style="display:none">
     <div class="features-header reveal">
       <h2 class="section-title">Designed for your<br>viewing habits</h2>
     </div>
@@ -2059,6 +2063,104 @@
   </section>
 
 
+  <!-- ── Timeline ────────────────────────────────────────────────── -->
+  <section id="timeline-section">
+    <div class="timeline-header reveal">
+      <h2 class="timeline-headline">A timeline as rich<br>as your taste</h2>
+      <p class="timeline-intro">Scroll back through every film and series you've ever watched.</p>
+    </div>
+
+    <div class="tl-scroll-outer" id="tlScrollOuter">
+      <div class="tl-scroll-track">
+
+        <div class="tl-year">
+          <span class="tl-year-label">2023</span>
+          <div class="tl-year-line"></div>
+        </div>
+
+        <div class="tl-card">
+          <div class="tl-poster" style="background-image: url('images/timeline/adolescence.jpg')"></div>
+          <div class="tl-date">Oct 2023</div>
+          <div class="tl-title">Adolescence</div>
+          <div class="tl-note">"Four episodes. Changed everything."</div>
+        </div>
+
+        <div class="tl-card">
+          <div class="tl-poster" style="background-image: url('images/timeline/anniversary.jpg')"></div>
+          <div class="tl-date">Nov 2023</div>
+          <div class="tl-title">The Bear</div>
+          <div class="tl-note">"Stressful. Perfect. Both."</div>
+        </div>
+
+        <div class="tl-card">
+          <div class="tl-poster" style="background-image: url('images/timeline/saltburn.jpg')"></div>
+          <div class="tl-date">Dec 2023</div>
+          <div class="tl-title">Saltburn</div>
+          <div class="tl-note">"Unhinged in all the right ways."</div>
+        </div>
+
+        <div class="tl-year">
+          <span class="tl-year-label">2024</span>
+          <div class="tl-year-line"></div>
+        </div>
+
+        <div class="tl-card">
+          <div class="tl-poster" style="background-image: url('images/timeline/dumb-money.jpg')"></div>
+          <div class="tl-date">Feb 2024</div>
+          <div class="tl-title">Past Lives</div>
+          <div class="tl-note">"Quietly devastating."</div>
+        </div>
+
+        <div class="tl-card">
+          <div class="tl-poster" style="background-image: url('images/timeline/presumed-innocent.jpeg')"></div>
+          <div class="tl-date">Jun 2024</div>
+          <div class="tl-title">Presumed Innocent</div>
+          <div class="tl-note">"Did not trust a single character. I was right."</div>
+        </div>
+
+        <div class="tl-card">
+          <div class="tl-poster" style="background-image: url('images/timeline/top-gun-maverick.jpg')"></div>
+          <div class="tl-date">Sep 2024</div>
+          <div class="tl-title">The Substance</div>
+          <div class="tl-note">"Nothing prepares you."</div>
+        </div>
+
+        <div class="tl-card">
+          <div class="tl-poster" style="background-image: url('images/timeline/the-summer-i-turned-pretty.jpg')"></div>
+          <div class="tl-date">Dec 2024</div>
+          <div class="tl-title">Babygirl</div>
+          <div class="tl-note">"Nicole Kidman."</div>
+        </div>
+
+        <div class="tl-year">
+          <span class="tl-year-label">2025</span>
+          <div class="tl-year-line"></div>
+        </div>
+
+        <div class="tl-card">
+          <div class="tl-poster" style="background-image: url('images/timeline/top-gun-maverick.jpg')"></div>
+          <div class="tl-date">Jan 2025</div>
+          <div class="tl-title">Severance S2</div>
+          <div class="tl-note">"Worth the wait. Barely."</div>
+        </div>
+
+        <div class="tl-card">
+          <div class="tl-poster" style="background-image: url('images/timeline/saltburn.jpg')"></div>
+          <div class="tl-date">Mar 2025</div>
+          <div class="tl-title">Sinners</div>
+          <div class="tl-note">"Ryan Coogler does it again."</div>
+        </div>
+
+        <div class="tl-card">
+          <div class="tl-poster" style="background-image: url('images/timeline/top-gun-maverick.jpg')"></div>
+          <div class="tl-date">May 2025</div>
+          <div class="tl-title">Top Gun: Maverick</div>
+          <div class="tl-note">"Still the best sequel ever made."</div>
+        </div>
+
+      </div>
+    </div>
+  </section>
   <!-- ── My Lists Demo ────────────────────────────────────────── -->
   <section id="lists-demo">
     <div class="demo-split">
@@ -2122,107 +2224,12 @@
       </div>
       <div class="demo-copy reveal">
         <span class="section-eyebrow" style="color:var(--muted)">My Lists</span>
-        <h2 class="demo-headline" style="color:var(--text)">Make the lists<br>only <em style="font-style:italic">you</em> could make.</h2>
+        <h2 class="demo-headline" style="color:var(--text)">Make the lists<br>only <em style="font-style:italic">you</em> could curate.</h2>
         <p class="demo-body" style="color:var(--muted)">
           Organise by decade, director, or whatever mood you're in. Create and share film and TV collections that are unmistakably yours.
         </p>
         <a href="https://app.theplot.tv/signup" class="demo-link dark-link">Start creating &rarr;</a>
       </div>
-    </div>
-  </section>
-  <!-- ── Timeline ────────────────────────────────────────────────── -->
-  <section id="timeline-section">
-    <h2 class="timeline-headline reveal">A timeline as rich<br>as your taste</h2>
-    <p class="timeline-intro ftp-body reveal reveal-delay-2">
-      One day you'll scroll back and see the exact week you discovered your favourite director. Remember the month you watched nothing but comfort rewatches and the series that kept you up until 2am.
-    </p>
-
-    <div class="timeline-entries">
-
-      <!-- 1: note right -->
-      <div class="tl-entry">
-        <div class="tl-empty"></div>
-        <div class="tl-poster-wrap">
-          <div class="tl-poster reveal" style="background-image: url('images/timeline/adolescence.jpg')"></div>
-        </div>
-        <div class="tl-note tl-note-right reveal reveal-delay-2">
-          <div class="tl-date">October 2023</div>
-          <p>Four episodes.<br>Changed everything.</p>
-        </div>
-      </div>
-
-      <!-- 2: note left -->
-      <div class="tl-entry">
-        <div class="tl-note tl-note-left reveal reveal-delay-2">
-          <div class="tl-date">February 2024</div>
-          <p>What did I just watch...</p>
-        </div>
-        <div class="tl-poster-wrap">
-          <div class="tl-poster reveal" style="background-image: url('images/timeline/anniversary.jpg')"></div>
-        </div>
-        <div class="tl-empty"></div>
-      </div>
-
-      <!-- 3: note right -->
-      <div class="tl-entry">
-        <div class="tl-empty"></div>
-        <div class="tl-poster-wrap">
-          <div class="tl-poster reveal" style="background-image: url('images/timeline/saltburn.jpg')"></div>
-        </div>
-        <div class="tl-note tl-note-right reveal reveal-delay-2">
-          <div class="tl-date">June 2024</div>
-          <p>Unhinged in all<br>the right ways.</p>
-        </div>
-      </div>
-
-      <!-- 4: note left -->
-      <div class="tl-entry">
-        <div class="tl-note tl-note-left reveal reveal-delay-2">
-          <div class="tl-date">August 2024</div>
-          <p>Dumb Money ain't so dumb. Crypto Kitty 4ever.</p>
-        </div>
-        <div class="tl-poster-wrap">
-          <div class="tl-poster reveal" style="background-image: url('images/timeline/dumb-money.jpg')"></div>
-        </div>
-        <div class="tl-empty"></div>
-      </div>
-
-      <!-- 5: note right -->
-      <div class="tl-entry">
-        <div class="tl-empty"></div>
-        <div class="tl-poster-wrap">
-          <div class="tl-poster reveal" style="background-image: url('images/timeline/presumed-innocent.jpeg')"></div>
-        </div>
-        <div class="tl-note tl-note-right reveal reveal-delay-2">
-          <div class="tl-date">December 2024</div>
-          <p>Did not trust a single<br>character. I was right.</p>
-        </div>
-      </div>
-
-      <!-- 6: note left -->
-      <div class="tl-entry">
-        <div class="tl-note tl-note-left reveal reveal-delay-2">
-          <div class="tl-date">March 2025</div>
-          <p>Still the best sequel<br>ever made.</p>
-        </div>
-        <div class="tl-poster-wrap">
-          <div class="tl-poster reveal" style="background-image: url('images/timeline/top-gun-maverick.jpg')"></div>
-        </div>
-        <div class="tl-empty"></div>
-      </div>
-
-      <!-- 7: note right -->
-      <div class="tl-entry">
-        <div class="tl-empty"></div>
-        <div class="tl-poster-wrap">
-          <div class="tl-poster reveal" style="background-image: url('images/timeline/the-summer-i-turned-pretty.jpg')"></div>
-        </div>
-        <div class="tl-note tl-note-right reveal reveal-delay-2">
-          <div class="tl-date">September 2025</div>
-          <p>Team Conrad. Always.</p>
-        </div>
-      </div>
-
     </div>
   </section>
 
@@ -2409,123 +2416,151 @@
     // vy          → vertical position as fraction of viewport height (poster top)
     // restX       → distance from screen edge when fully in
     if (window.innerWidth >= 600) {
-    const sideData = [
-      // On load — four posters (2 left, 2 right)
-      { src: 'images/hero/saltburn.webp',              side: 'left',  vy: 0.51, showAt:  0, w: 217, h: 325, restX: 16, hold: 1000 },
-      { src: 'images/hero/anyone-but-you.webp',        side: 'left',  vy: 0.11, showAt: 40, w: 259, h: 353, restX: 34, hold: 1000 },
-      { src: 'images/hero/nosferatu.webp',             side: 'right', vy: 0.11, showAt: 20, w: 230, h: 344, restX: 22, hold: 1000 },
-      { src: 'images/hero/wuthering-heights.webp',     side: 'right', vy: 0.51, showAt: 60, w: 228, h: 342, restX: 58, hold: 1000 },
-      // Scroll reveals
-      { src: 'images/hero/aftersun.webp',              side: 'left',  vy: 0.24, showAt:  400, w: 228, h: 342, restX: 90 },
-      { src: 'images/hero/anatomy-of-a-fall.webp',     side: 'right', vy: 0.22, showAt:  440, w: 234, h: 351, restX: 85 },
-      { src: 'images/hero/babygirl.webp',              side: 'left',  vy: 0.50, showAt:  580, w: 221, h: 332, restX: 85 },
-      { src: 'images/hero/dont-worry-darling.webp',    side: 'right', vy: 0.48, showAt:  620, w: 228, h: 342, restX: 18 },
-      { src: 'images/hero/eternity.webp',              side: 'left',  vy: 0.09, showAt:  760, w: 240, h: 360, restX: 95 },
-      { src: 'images/hero/f1-the-movie.webp',          side: 'right', vy: 0.11, showAt:  800, w: 217, h: 325, restX: 90 },
-      { src: 'images/hero/frankenstein.webp',          side: 'left',  vy: 0.34, showAt:  940, w: 228, h: 342, restX: 88 },
-      { src: 'images/hero/heretic.webp',               side: 'right', vy: 0.30, showAt:  980, w: 240, h: 360, restX: 18 },
-      { src: 'images/hero/if-i-had-legs-id-kick-you.webp', side: 'left', vy: 0.52, showAt: 1120, w: 221, h: 332, restX: 88 },
-      { src: 'images/hero/longlegs.webp',              side: 'right', vy: 0.50, showAt: 1160, w: 217, h: 325, restX: 82 },
-      { src: 'images/hero/marty-supreme.webp',         side: 'left',  vy: 0.12, showAt: 1300, w: 240, h: 360, restX: 92 },
-      { src: 'images/hero/past-lives.webp',            side: 'right', vy: 0.09, showAt: 1340, w: 228, h: 342, restX: 16 },
-      { src: 'images/hero/people-we-meet-on-vacation.webp', side: 'left', vy: 0.38, showAt: 1480, w: 234, h: 351, restX: 92 },
-      { src: 'images/hero/priscilla.webp',             side: 'right', vy: 0.36, showAt: 1520, w: 221, h: 332, restX: 86 },
-      { src: 'images/hero/project-hail-mary.webp',     side: 'left',  vy: 0.52, showAt: 1660, w: 228, h: 342, restX: 20 },
-      { src: 'images/hero/sinners.webp',               side: 'right', vy: 0.50, showAt: 1700, w: 217, h: 325, restX: 86 },
-      { src: 'images/hero/the-drama.webp',             side: 'left',  vy: 0.14, showAt: 1840, w: 240, h: 360, restX: 88 },
-      { src: 'images/hero/the-housemaid.webp',         side: 'right', vy: 0.11, showAt: 1880, w: 228, h: 342, restX: 90 },
-      { src: 'images/hero/the-substance.webp',         side: 'left',  vy: 0.38, showAt: 2020, w: 221, h: 332, restX: 90 },
-      { src: 'images/hero/the-wolf-of-wall-street.webp', side: 'right', vy: 0.36, showAt: 2060, w: 234, h: 351, restX: 18 },
+    const sideLayout = [
+      // On load — four posters (2 left, 2 right) — reach well into centre
+      { side: 'left',  vy: 0.51, showAt:  0, w: 260, h: 390, restX:  8, hold: 1000 },
+      { side: 'left',  vy: 0.10, showAt: 40, w: 190, h: 285, restX: 120, hold: 1000 },
+      { side: 'right', vy: 0.09, showAt: 20, w: 300, h: 450, restX:  4, hold: 1000 },
+      { side: 'right', vy: 0.52, showAt: 60, w: 175, h: 263, restX: 140, hold: 1000 },
+      // Scroll reveals — wide range of restX (4 = nearly touching centre, 160 = tucked to edge)
+      { side: 'left',  vy: 0.24, showAt:  400, w: 320, h: 480, restX:  4 },
+      { side: 'right', vy: 0.20, showAt:  440, w: 165, h: 248, restX: 155 },
+      { side: 'left',  vy: 0.50, showAt:  580, w: 195, h: 293, restX: 130 },
+      { side: 'right', vy: 0.48, showAt:  620, w: 285, h: 428, restX:  6 },
+      { side: 'left',  vy: 0.08, showAt:  760, w: 155, h: 233, restX: 160 },
+      { side: 'right', vy: 0.12, showAt:  800, w: 310, h: 465, restX:  2 },
+      { side: 'left',  vy: 0.35, showAt:  940, w: 270, h: 405, restX: 10 },
+      { side: 'right', vy: 0.30, showAt:  980, w: 180, h: 270, restX: 145 },
+      { side: 'left',  vy: 0.55, showAt: 1120, w: 145, h: 218, restX: 165 },
+      { side: 'right', vy: 0.50, showAt: 1160, w: 295, h: 443, restX:  5 },
+      { side: 'left',  vy: 0.12, showAt: 1300, w: 240, h: 360, restX: 55 },
+      { side: 'right', vy: 0.08, showAt: 1340, w: 170, h: 255, restX: 150 },
+      { side: 'left',  vy: 0.40, showAt: 1480, w: 305, h: 458, restX:  3 },
+      { side: 'right', vy: 0.38, showAt: 1520, w: 200, h: 300, restX: 120 },
+      { side: 'left',  vy: 0.52, showAt: 1660, w: 160, h: 240, restX: 155 },
+      { side: 'right', vy: 0.50, showAt: 1700, w: 275, h: 413, restX:  8 },
+      { side: 'left',  vy: 0.15, showAt: 1840, w: 290, h: 435, restX:  6 },
+      { side: 'right', vy: 0.10, showAt: 1880, w: 185, h: 278, restX: 135 },
+      { side: 'left',  vy: 0.38, showAt: 2020, w: 215, h: 323, restX: 80 },
+      { side: 'right', vy: 0.36, showAt: 2060, w: 330, h: 495, restX:  2 },
     ];
 
+    const TMDB_KEY = '582b64eb4af90b01334906c1d5a38656';
+    const TMDB_BASE = 'https://api.themoviedb.org/3';
+    const TMDB_IMG  = 'https://image.tmdb.org/t/p/w500';
+
+    async function fetchSidePosters() {
+      const [trendingRes, nowPlayingRes, tvRes] = await Promise.all([
+        fetch(`${TMDB_BASE}/trending/movie/week?api_key=${TMDB_KEY}`),
+        fetch(`${TMDB_BASE}/movie/now_playing?api_key=${TMDB_KEY}`),
+        fetch(`${TMDB_BASE}/trending/tv/week?api_key=${TMDB_KEY}`),
+      ]);
+      const [trending, nowPlaying, tv] = await Promise.all([
+        trendingRes.json(), nowPlayingRes.json(), tvRes.json()
+      ]);
+      const all = [
+        ...trending.results, ...nowPlaying.results, ...tv.results
+      ].filter(r => r.poster_path);
+      // Shuffle and dedupe
+      const seen = new Set();
+      const unique = all.filter(r => {
+        if (seen.has(r.poster_path)) return false;
+        seen.add(r.poster_path);
+        return true;
+      });
+      for (let i = unique.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [unique[i], unique[j]] = [unique[j], unique[i]];
+      }
+      return unique.map(r => TMDB_IMG + r.poster_path);
+    }
+
     const posterSide = document.getElementById('posterSide');
-    const sidePosters = sideData.map(data => {
-      const el = document.createElement('div');
-      el.className = 'side-poster';
-      el.style.width  = data.w + 'px';
-      el.style.height = data.h + 'px';
-      el.style.backgroundImage = `url('${data.src}')`;
-      posterSide.appendChild(el);
-      return { el, data };
-    });
 
-    const SLIDE_IN  = 320;
-    const HOLD      = 600;
-    const SLIDE_OUT = 280;
+    fetchSidePosters().then(posters => {
+      const sideData = sideLayout.map((layout, i) => ({
+        ...layout,
+        src: posters[i % posters.length],
+      }));
 
-    // gentle ease-out quint
-    function easeOutQuint(t) {
-      return 1 - Math.pow(1 - t, 5);
-    }
-    // gentle ease-in cubic
-    function easeInCubic(t) {
-      return t * t * t;
-    }
-
-    // lerped scroll value for lag/smoothness
-    let smoothScrollY = window.scrollY;
-
-    function updateSide() {
-      // lerp scroll position — creates a slight lag that feels floaty
-      smoothScrollY += (window.scrollY - smoothScrollY) * 0.05;
-
-      const scrollY = smoothScrollY;
-      const vh      = window.innerHeight;
-
-      // Global fade as user approaches "PLOT does."
-      const plotDoes      = document.getElementById('plotDoes');
-      const plotDoesPageY = plotDoes ? plotDoes.getBoundingClientRect().top + window.scrollY : 999999;
-      const gFadeStart    = plotDoesPageY - vh * 0.9;
-      const gFadeEnd      = plotDoesPageY - vh * 0.15;
-      const globalOp      = Math.max(0, Math.min(1, 1 - (window.scrollY - gFadeStart) / (gFadeEnd - gFadeStart)));
-
-      posterSide.style.opacity = globalOp;
-
-      sidePosters.forEach(({ el, data }) => {
-        const { side, vy, showAt, w, restX } = data;
-        const hold     = data.hold !== undefined ? data.hold : HOLD;
-        const total    = SLIDE_IN + hold + SLIDE_OUT;
-        const progress = scrollY - showAt;
-        const slideAmt = restX + w + 40;
-        const dir      = side === 'left' ? -1 : 1;
-
-        let opacity, tx;
-
-        if (progress <= 0) {
-          opacity = 0;
-          tx = dir * slideAmt;
-        } else if (progress < SLIDE_IN) {
-          const e = easeOutQuint(progress / SLIDE_IN);
-          opacity = Math.min(1, e * 1.4); // fade in a touch faster than movement
-          tx = dir * slideAmt * (1 - e);
-        } else if (progress < SLIDE_IN + hold) {
-          opacity = 1;
-          tx = 0;
-        } else if (progress < total) {
-          const e = easeInCubic((progress - SLIDE_IN - hold) / SLIDE_OUT);
-          opacity = 1 - e;
-          tx = dir * slideAmt * e;
-        } else {
-          opacity = 0;
-          tx = dir * slideAmt;
-        }
-
-        el.style.top       = `${vy * vh}px`;
-        el.style.opacity   = opacity;
-        el.style.transform = `translateX(${tx.toFixed(1)}px)`;
-
-        if (side === 'left') {
-          el.style.left  = `${restX}px`;
-          el.style.right = '';
-        } else {
-          el.style.right = `${restX}px`;
-          el.style.left  = '';
-        }
+      const sidePosters = sideData.map(data => {
+        const el = document.createElement('div');
+        el.className = 'side-poster';
+        el.style.width  = data.w + 'px';
+        el.style.height = data.h + 'px';
+        el.style.backgroundImage = `url('${data.src}')`;
+        posterSide.appendChild(el);
+        return { el, data };
       });
 
+      const SLIDE_IN  = 320;
+      const HOLD      = 600;
+      const SLIDE_OUT = 280;
+
+      function easeOutQuint(t) { return 1 - Math.pow(1 - t, 5); }
+      function easeInCubic(t)  { return t * t * t; }
+
+      let smoothScrollY = window.scrollY;
+
+      function updateSide() {
+        smoothScrollY += (window.scrollY - smoothScrollY) * 0.05;
+        const scrollY = smoothScrollY;
+        const vh      = window.innerHeight;
+
+        const plotDoes      = document.getElementById('plotDoes');
+        const plotDoesPageY = plotDoes ? plotDoes.getBoundingClientRect().top + window.scrollY : 999999;
+        const gFadeStart    = plotDoesPageY - vh * 0.9;
+        const gFadeEnd      = plotDoesPageY - vh * 0.15;
+        const globalOp      = Math.max(0, Math.min(1, 1 - (window.scrollY - gFadeStart) / (gFadeEnd - gFadeStart)));
+
+        posterSide.style.opacity = globalOp;
+
+        sidePosters.forEach(({ el, data }) => {
+          const { side, vy, showAt, w, restX } = data;
+          const hold     = data.hold !== undefined ? data.hold : HOLD;
+          const total    = SLIDE_IN + hold + SLIDE_OUT;
+          const progress = scrollY - showAt;
+          const slideAmt = restX + w + 40;
+          const dir      = side === 'left' ? -1 : 1;
+
+          let opacity, tx;
+
+          if (progress <= 0) {
+            opacity = 0;
+            tx = dir * slideAmt;
+          } else if (progress < SLIDE_IN) {
+            const e = easeOutQuint(progress / SLIDE_IN);
+            opacity = Math.min(1, e * 1.4);
+            tx = dir * slideAmt * (1 - e);
+          } else if (progress < SLIDE_IN + hold) {
+            opacity = 1;
+            tx = 0;
+          } else if (progress < total) {
+            const e = easeInCubic((progress - SLIDE_IN - hold) / SLIDE_OUT);
+            opacity = 1 - e;
+            tx = dir * slideAmt * e;
+          } else {
+            opacity = 0;
+            tx = dir * slideAmt;
+          }
+
+          el.style.top       = `${vy * vh}px`;
+          el.style.opacity   = opacity;
+          el.style.transform = `translateX(${tx.toFixed(1)}px)`;
+
+          if (side === 'left') {
+            el.style.left  = `${restX}px`;
+            el.style.right = '';
+          } else {
+            el.style.right = `${restX}px`;
+            el.style.left  = '';
+          }
+        });
+
+        requestAnimationFrame(updateSide);
+      }
       requestAnimationFrame(updateSide);
-    }
-    requestAnimationFrame(updateSide);
+    }).catch(() => {}); // end fetchSidePosters
     } // end desktop-only poster system
 
     // ── Editorial poster layout ───────────────────────────────
@@ -2660,12 +2695,21 @@
 
       function populate(groups) {
         track.textContent = ''; // clear
+        // Add enough copies to always overfill the viewport before looping
         track.appendChild(buildNodes(groups));
-        track.appendChild(buildNodes(groups)); // duplicate for seamless loop
+        track.appendChild(buildNodes(groups));
+        track.appendChild(buildNodes(groups));
 
-        // Scale animation speed to content length (~60px/s)
-        const duration = (track.scrollWidth / 2) / 60;
-        track.style.animationDuration = `${Math.max(30, duration)}s`;
+        // Defer duration calc until after browser has laid out the content
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            // We have 3 copies; animate by -33.333% to loop seamlessly
+            const oneThird = track.scrollWidth / 3;
+            const duration = oneThird / 80; // px/s
+            track.style.animationDuration = `${Math.max(20, duration)}s`;
+            track.style.setProperty('--ticker-loop', '-33.333%');
+          });
+        });
       }
 
       const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1rZWd0c3NlZGp5cWxkeXN2emdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2MDgzMzUsImV4cCI6MjA4OTE4NDMzNX0.W-toEr3ftNeN0iTpRQ8Ord09sxBiwO2CQC6j2jszN6w';
@@ -2680,10 +2724,10 @@
         ]);
 
         populate([
-          { label: 'Trending Now', items: (trending.results  || []).slice(0, 8).map(r => r.title || r.name) },
-          { label: 'In Cinemas',   items: (nowPlaying.results || []).slice(0, 6).map(r => r.title) },
-          { label: 'Coming Soon',  items: (upcoming.results  || []).slice(0, 6).map(r => r.title) },
-          { label: 'Top Rated TV', items: (topTv.results     || []).slice(0, 6).map(r => r.name) },
+          { label: 'Trending Now', items: (trending.results  || []).slice(0, 12).map(r => r.title || r.name).filter(Boolean) },
+          { label: 'In Cinemas',   items: (nowPlaying.results || []).slice(0, 10).map(r => r.title).filter(Boolean) },
+          { label: 'Coming Soon',  items: (upcoming.results  || []).slice(0, 10).map(r => r.title).filter(Boolean) },
+          { label: 'Top Rated TV', items: (topTv.results     || []).slice(0, 10).map(r => r.name).filter(Boolean) },
         ]);
       } catch (err) {
         populate([
@@ -3031,6 +3075,74 @@
       else init();
     })();
 
+  </script>
+
+  <script>
+    // ── Timeline drag-to-scroll ───────────────────────────────
+    (function() {
+      const el = document.getElementById('tlScrollOuter');
+      if (!el) return;
+      let down = false, startX, scrollLeft;
+      el.addEventListener('mousedown', e => {
+        down = true; startX = e.pageX - el.offsetLeft; scrollLeft = el.scrollLeft;
+      });
+      el.addEventListener('mouseleave', () => { down = false; });
+      el.addEventListener('mouseup',    () => { down = false; });
+      el.addEventListener('mousemove',  e => {
+        if (!down) return;
+        e.preventDefault();
+        el.scrollLeft = scrollLeft - (e.pageX - el.offsetLeft - startX) * 1.5;
+      });
+    })();
+  </script>
+
+  <script>
+    (async function loadHeroPosters() {
+      const TMDB_KEY = '582b64eb4af90b01334906c1d5a38656';
+      const BASE = 'https://api.themoviedb.org/3';
+      const IMG = 'https://image.tmdb.org/t/p/w342';
+
+      try {
+        const [trendingRes, nowPlayingRes, tvRes] = await Promise.all([
+          fetch(`${BASE}/trending/movie/week?api_key=${TMDB_KEY}`),
+          fetch(`${BASE}/movie/now_playing?api_key=${TMDB_KEY}`),
+          fetch(`${BASE}/trending/tv/week?api_key=${TMDB_KEY}`),
+        ]);
+        const [trending, nowPlaying, tv] = await Promise.all([
+          trendingRes.json(), nowPlayingRes.json(), tvRes.json()
+        ]);
+
+        const pick = (arr, n) => arr.filter(r => r.poster_path).slice(0, n);
+        const posters = [
+          ...pick(trending.results, 5),
+          ...pick(nowPlaying.results, 5),
+          ...pick(tv.results, 6),
+        ].map(r => IMG + r.poster_path);
+
+        // Shuffle
+        for (let i = posters.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [posters[i], posters[j]] = [posters[j], posters[i]];
+        }
+
+        const strip = document.getElementById('heroFilmstrip');
+        if (!strip || !posters.length) return;
+
+        // Remove existing cards
+        while (strip.firstChild) strip.removeChild(strip.firstChild);
+
+        // Duplicate for seamless loop
+        [...posters, ...posters].forEach(url => {
+          const div = document.createElement('div');
+          div.className = 'hero-film-card';
+          // url is always https://image.tmdb.org/t/p/w342/... — safe, no user input
+          div.style.backgroundImage = `url('${url}')`;
+          strip.appendChild(div);
+        });
+      } catch (e) {
+        // Leave static fallback images in place
+      }
+    })();
   </script>
 </body>
 </html>
