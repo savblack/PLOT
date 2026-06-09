@@ -39,6 +39,7 @@ const PLATFORMS = [
     name: 'Netflix',
     color: '#E50914',
     format: 'CSV',
+    shortInstructions: 'Account → Profile & Parental Controls → Viewing activity → Download all',
     instructions: [
       'Go to netflix.com and sign in',
       'Click your profile icon → Account',
@@ -53,6 +54,7 @@ const PLATFORMS = [
     name: 'Amazon Prime',
     color: '#00A8E0',
     format: 'CSV',
+    shortInstructions: 'Account → Data & Privacy → Request your data → Digital content → Download ZIP',
     instructions: [
       'Go to amazon.com and sign in',
       'Go to Account → Data & Privacy → Request your data',
@@ -66,6 +68,7 @@ const PLATFORMS = [
     name: 'Disney+',
     color: '#113CCF',
     format: 'JSON',
+    shortInstructions: 'Go to privacy.disneyplus.com → Request your data → Download ZIP → upload JSON',
     instructions: [
       'Go to privacy.disneyplus.com and sign in',
       'Click "Request your data"',
@@ -79,6 +82,7 @@ const PLATFORMS = [
     name: 'Max (HBO)',
     color: '#002BE7',
     format: 'CSV or JSON',
+    shortInstructions: 'Go to privacycenter.max.com → Download your data → upload the file',
     instructions: [
       'Go to privacycenter.max.com and sign in',
       'Click "Download your data"',
@@ -91,6 +95,7 @@ const PLATFORMS = [
     name: 'Apple TV+',
     color: '#555555',
     format: 'JSON',
+    shortInstructions: 'privacy.apple.com → Request a copy → Apple TV & Purchases → Download ZIP → upload JSON',
     instructions: [
       'Go to privacy.apple.com and sign in',
       'Click "Request a copy of your data"',
@@ -547,18 +552,13 @@ export default function ImportView() {
       {/* ── Step 2: Upload file ── */}
       {step === 2 && platform && (
         <>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
-            <PlatformIcon id={platform.id} logoPath={providerLogos[platform.id]} size={28} />
-            <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{platform.name}</span>
-          </div>
-
-          <div style={{ background: 'var(--surface-raised)', borderRadius: 'var(--radius-lg)', padding: '1rem', marginBottom: '1.25rem', border: '1px solid var(--border)' }}>
-            <div style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', marginBottom: '0.6rem' }}>How to export</div>
-            <ol style={{ margin: 0, paddingLeft: '1.2rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-              {platform.instructions.map((step, i) => (
-                <li key={i} style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>{step}</li>
-              ))}
-            </ol>
+          {/* Header */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '1.5rem' }}>
+            <PlatformIcon id={platform.id} logoPath={providerLogos[platform.id]} size={32} />
+            <div>
+              <div style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--text-primary)' }}>{platform.name}</div>
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>Drop your viewing history</div>
+            </div>
           </div>
 
           {parseError && (
@@ -567,6 +567,7 @@ export default function ImportView() {
             </div>
           )}
 
+          {/* Drag-and-drop zone */}
           <input
             ref={fileRef}
             type="file"
@@ -574,16 +575,68 @@ export default function ImportView() {
             style={{ display: 'none' }}
             onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])}
           />
-          <button
+          <div
             onClick={() => fileRef.current?.click()}
+            onDragOver={e => { e.preventDefault(); e.currentTarget.setAttribute('data-drag', 'true'); }}
+            onDragLeave={e => e.currentTarget.removeAttribute('data-drag')}
+            onDrop={e => {
+              e.preventDefault();
+              e.currentTarget.removeAttribute('data-drag');
+              const file = e.dataTransfer.files?.[0];
+              if (file) handleFile(file);
+            }}
             style={{
-              width: '100%', padding: '0.85rem', borderRadius: 'var(--radius-lg)',
-              background: 'var(--accent)', color: '#fff', fontWeight: 600,
-              fontSize: '0.9rem', border: 'none', cursor: 'pointer',
+              border: '1.5px dashed var(--border)',
+              borderRadius: 'var(--radius-lg)',
+              padding: '2.5rem 1rem',
+              textAlign: 'center',
+              background: 'var(--surface)',
+              cursor: 'pointer',
+              marginBottom: '1.25rem',
             }}
           >
-            Choose file ({platform.format})
-          </button>
+            <div style={{
+              width: 40, height: 40, borderRadius: '50%',
+              background: 'var(--surface-raised)', border: '1.5px solid var(--border)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              margin: '0 auto 0.85rem',
+              color: 'var(--text-muted)',
+            }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>
+              </svg>
+            </div>
+            <div style={{ fontWeight: 600, fontSize: '0.88rem', color: 'var(--text-primary)', marginBottom: '0.3rem' }}>
+              Drop your {platform.format} here
+            </div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.9rem' }}>
+              {platform.id === 'netflix' ? 'NetflixViewingHistory.csv' : `Your ${platform.name} export file`}
+            </div>
+            <span style={{
+              fontSize: '0.78rem', fontWeight: 600,
+              color: 'var(--accent)',
+              textDecoration: 'underline', textUnderlineOffset: 3,
+            }}>
+              or browse files
+            </span>
+          </div>
+
+          {/* Condensed instructions */}
+          <div>
+            <div style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>
+              How to export from {platform.name}
+            </div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+              {platform.shortInstructions.split(' → ').map((part, i, arr) => (
+                <span key={i}>
+                  {i > 0 && <span style={{ color: 'var(--text-muted)', opacity: 0.4 }}> → </span>}
+                  {i === arr.length - 2 || i === arr.length - 1
+                    ? <strong style={{ color: 'var(--text-secondary)' }}>{part}</strong>
+                    : part}
+                </span>
+              ))}
+            </div>
+          </div>
         </>
       )}
 
