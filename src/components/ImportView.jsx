@@ -5,6 +5,66 @@ import { tmdb } from '../api/tmdb.js';
 import { supabase } from '../api/supabase.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 
+/* ─────────────────────────── Platform icons ─────────────────────────── */
+
+function NetflixIcon({ size = 28 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="28" height="28" rx="6" fill="#141414"/>
+      <path d="M8 5v18l4.5-12.6V23l7.5-18H16l-3.5 9.8V5H8z" fill="#E50914"/>
+    </svg>
+  );
+}
+
+function PrimeIcon({ size = 28 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="28" height="28" rx="6" fill="#00A8E0"/>
+      <text x="14" y="19" textAnchor="middle" fontSize="11" fontWeight="700" fill="white" fontFamily="sans-serif">prime</text>
+    </svg>
+  );
+}
+
+function DisneyIcon({ size = 28 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="28" height="28" rx="6" fill="#0C1445"/>
+      <text x="14" y="20" textAnchor="middle" fontSize="13" fontWeight="700" fill="#1CE4FF" fontFamily="Georgia, serif" fontStyle="italic">D+</text>
+    </svg>
+  );
+}
+
+function MaxIcon({ size = 28 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="28" height="28" rx="6" fill="#002BE7"/>
+      <text x="14" y="20" textAnchor="middle" fontSize="12" fontWeight="800" fill="white" fontFamily="sans-serif">max</text>
+    </svg>
+  );
+}
+
+function AppleIcon({ size = 28 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="28" height="28" rx="6" fill="#1C1C1E"/>
+      <path d="M14 7.5c.9 0 2 .6 2.6 1.6-.1.1-1.6.9-1.6 2.8 0 2.2 1.9 3 2 3-.1.1-.6 2.2-2.1 4.4-.9 1.5-1.9 3-3.4 3s-2-.9-3.7-.9c-1.6 0-2.2.9-3.6.9-1.4 0-2.4-1.5-3.4-3-1.2-1.7-2.2-4.4-2.2-7 0-4 2.6-6.1 5.2-6.1 1.4 0 2.5.9 3.4.9.8 0 2.2-1 3.8-1z" fill="white" transform="translate(7, 3) scale(0.85)"/>
+    </svg>
+  );
+}
+
+const PLATFORM_ICONS = {
+  netflix: NetflixIcon,
+  prime:   PrimeIcon,
+  disney:  DisneyIcon,
+  max:     MaxIcon,
+  apple:   AppleIcon,
+};
+
+function PlatformIcon({ id, size = 28 }) {
+  const Icon = PLATFORM_ICONS[id];
+  return Icon ? <Icon size={size} /> : null;
+}
+
 /* ─────────────────────────── Platform config ─────────────────────────── */
 
 const PLATFORMS = [
@@ -457,7 +517,7 @@ export default function ImportView() {
         >
           <BackIcon />
         </button>
-        <h1 style={{ fontSize: '1.1rem', fontWeight: 400, color: 'var(--text-primary)', margin: 0 }}>
+        <h1 style={{ fontSize: '1.55rem', fontWeight: 400, fontFamily: 'var(--font-serif)', letterSpacing: '-0.05em', color: 'var(--text-primary)', margin: 0 }}>
           Import Watch History
         </h1>
       </div>
@@ -493,10 +553,7 @@ export default function ImportView() {
                   cursor: 'pointer', textAlign: 'left', width: '100%',
                 }}
               >
-                <span style={{
-                  width: 10, height: 10, borderRadius: '50%',
-                  background: p.color, flexShrink: 0,
-                }} />
+                <PlatformIcon id={p.id} size={32} />
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-primary)' }}>{p.name}</div>
                   <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 1 }}>{p.format} export</div>
@@ -512,7 +569,7 @@ export default function ImportView() {
       {step === 2 && platform && (
         <>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
-            <span style={{ width: 10, height: 10, borderRadius: '50%', background: platform.color, flexShrink: 0 }} />
+            <PlatformIcon id={platform.id} size={28} />
             <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{platform.name}</span>
           </div>
 
