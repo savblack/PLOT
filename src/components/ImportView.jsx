@@ -627,12 +627,10 @@ export default function ImportView() {
               How to export from {platform.name}
             </div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
-              {platform.shortInstructions.split(' → ').map((part, i, arr) => (
+              {platform.shortInstructions.split(' → ').map((part, i) => (
                 <span key={i}>
-                  {i > 0 && <span style={{ color: 'var(--text-muted)', opacity: 0.4 }}> → </span>}
-                  {i === arr.length - 2 || i === arr.length - 1
-                    ? <strong style={{ color: 'var(--text-secondary)' }}>{part}</strong>
-                    : part}
+                  {i > 0 && <span style={{ opacity: 0.4 }}> → </span>}
+                  {part}
                 </span>
               ))}
             </div>
