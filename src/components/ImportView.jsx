@@ -457,7 +457,7 @@ export default function ImportView() {
         >
           <BackIcon />
         </button>
-        <h1 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
+        <h1 style={{ fontSize: '1.1rem', fontWeight: 400, color: 'var(--text-primary)', margin: 0 }}>
           Import Watch History
         </h1>
       </div>
