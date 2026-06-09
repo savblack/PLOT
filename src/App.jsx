@@ -30,8 +30,10 @@ export const logoUrl     = (path, size = 'w45')  =>
 /* ── Countdown chip helper ───────────── */
 export function countdownChip(dateStr) {
   if (!dateStr) return null;
+  // Parse YYYY-MM-DD as local midnight to avoid UTC offset shifting the date
+  const [y, m, day] = dateStr.split('-').map(Number);
   const today = new Date(); today.setHours(0, 0, 0, 0);
-  const d = new Date(dateStr); d.setHours(0, 0, 0, 0);
+  const d = new Date(y, m - 1, day);
   const diff = Math.round((d - today) / 86400000);
   if (diff < 0)   return { label: 'Released',    cls: 'chip-muted' };
   if (diff === 0) return { label: 'Today',        cls: 'chip-today' };

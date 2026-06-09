@@ -15,17 +15,26 @@ export function useHistory(userId) {
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const PAGE_SIZE = 200;
-
   const load = useCallback(async () => {
     if (!userId) { setLoading(false); return; }
-    const { data } = await supabase
-      .from('journal')
-      .select('*')
-      .eq('user_id', userId)
-      .order('watched_at', { ascending: false })
-      .limit(PAGE_SIZE);
-    setEntries(data || []);
+    // Fetch all entries — no cap, so isWatched() is always accurate
+    const PAGE_SIZE = 1000;
+    let all = [];
+    let page = 0;
+    let done = false;
+    while (!done) {
+      const from = page * PAGE_SIZE;
+      const { data } = await supabase
+        .from('journal')
+        .select('*')
+        .eq('user_id', userId)
+        .order('watched_at', { ascending: false })
+        .range(from, from + PAGE_SIZE - 1);
+      if (!data || data.length < PAGE_SIZE) done = true;
+      if (data) all = [...all, ...data];
+      page++;
+    }
+    setEntries(all);
     setLoading(false);
   }, [userId]);
 
@@ -70,11 +79,12 @@ export function useHistory(userId) {
 
   /* ── Remove entry ── */
   const removeEntry = useCallback(async (tmdbId) => {
-    await supabase
+    const { error } = await supabase
       .from('journal')
       .delete()
       .eq('user_id', userId)
       .eq('tmdb_id', Number(tmdbId));
+    if (error) return; // keep local state intact so the entry doesn't ghost-reappear
     setEntries(prev => prev.filter(e => e.tmdb_id !== Number(tmdbId)));
     notifyHistoryChanged();
   }, [userId]);

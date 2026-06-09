@@ -47,6 +47,7 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone }) {
   const [epLoading, setEpLoading] = useState(false);
   const [epError,   setEpError]   = useState(false);
   const [checkingEp, setCheckingEp] = useState(null); // ep number being toggled
+  const checkingEpRef = useRef(false); // sync guard to prevent double-tap race
 
   // Track whether user manually changed season (to suppress auto-follow)
   const userChangedSeason = useRef(false);
@@ -120,7 +121,8 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone }) {
 
   /* ── Toggle an episode's watched state ── */
   const handleCheckEp = useCallback(async (ep, watched) => {
-    if (!currentProgress || checkingEp !== null) return;
+    if (!currentProgress || checkingEpRef.current) return;
+    checkingEpRef.current = true;
     setCheckingEp(ep.episode_number);
 
     if (!watched) {
@@ -138,8 +140,9 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone }) {
       await watching.setProgress(tvId, selSeason, ep.episode_number);
     }
 
+    checkingEpRef.current = false;
     setCheckingEp(null);
-  }, [currentProgress, checkingEp, watching, tvId, selSeason, episodes.length]);
+  }, [currentProgress, watching, tvId, selSeason, episodes.length]);
 
   const isTracking = !!currentProgress;
 

@@ -681,6 +681,7 @@ export default function SettingsView() {
     setShowClearWatchlist(false);
     setClearingWatchlist(true);
     await supabase.from('list_items').delete().eq('user_id', user.id);
+    await watchlist.reload();
     setClearingWatchlist(false);
   };
 
@@ -691,6 +692,7 @@ export default function SettingsView() {
       supabase.from('list_items').delete().eq('user_id', user.id),
       supabase.from('watching_progress').delete().eq('user_id', user.id),
     ]);
+    await Promise.all([watchlist.reload(), watching.reload()]);
     setClearingWatchlist(false);
   };
 
