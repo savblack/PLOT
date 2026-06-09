@@ -610,64 +610,93 @@ export default function ImportView() {
       {/* ── Step 4: Preview ── */}
       {step === 4 && (
         <>
-          {/* Stat chips */}
-          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem' }}>
-            {[
-              { label: 'New', count: newCount, color: 'var(--accent)' },
-              { label: 'Already have', count: alreadyCount, color: 'var(--text-muted)' },
-              { label: 'Not matched', count: unmatchedCount, color: '#F59E0B' },
-            ].map(({ label, count, color }) => (
-              <div key={label} style={{
-                flex: 1, textAlign: 'center', padding: '0.6rem 0.5rem',
-                borderRadius: 'var(--radius-lg)', background: 'var(--surface-raised)',
-                border: '1px solid var(--border)',
-              }}>
-                <div style={{ fontSize: '1.15rem', fontWeight: 700, color }}>{count}</div>
-                <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: 2 }}>{label}</div>
-              </div>
-            ))}
+          {/* Editorial headline */}
+          <div style={{ marginBottom: '1.25rem' }}>
+            <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1.5rem', fontWeight: 400, lineHeight: 1.25, letterSpacing: '-0.03em', color: 'var(--text-primary)', marginBottom: '0.35rem' }}>
+              Found <span style={{ color: 'var(--accent)' }}>{newCount + alreadyCount + unmatchedCount} title{newCount + alreadyCount + unmatchedCount !== 1 ? 's' : ''}</span><br />
+              from {platform?.name}
+            </div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+              {alreadyCount > 0 && unmatchedCount > 0
+                ? `${alreadyCount} already in history · ${unmatchedCount} unmatched`
+                : alreadyCount > 0
+                  ? `${alreadyCount} already in your history`
+                  : unmatchedCount > 0
+                    ? `${unmatchedCount} couldn't be matched`
+                    : 'None already in your history'}
+            </div>
           </div>
 
+          {/* Divider */}
+          <div style={{ height: 1, background: 'var(--border)', marginBottom: '0.75rem' }} />
+
           {/* Results list */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1.25rem', maxHeight: '55vh', overflowY: 'auto' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', marginBottom: '1.5rem', maxHeight: '52vh', overflowY: 'auto' }}>
             {results.map((r, i) => {
               const alreadyHave = r.status === 'matched' && existingIds.has(r.tmdbId);
-              const dim = alreadyHave || r.status === 'unmatched';
+              const unmatched = r.status === 'unmatched';
+              const isNew = !alreadyHave && !unmatched;
               return (
                 <div key={i} style={{
                   display: 'flex', alignItems: 'center', gap: '0.75rem',
-                  padding: '0.6rem', borderRadius: 8,
-                  background: 'var(--surface-raised)',
-                  opacity: dim ? 0.45 : 1,
+                  padding: '0.65rem 0',
+                  borderBottom: '1px solid var(--border)',
+                  opacity: alreadyHave || unmatched ? 0.45 : 1,
                 }}>
+                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', width: 18, textAlign: 'right', flexShrink: 0 }}>{i + 1}</div>
                   <PosterThumb path={r.posterPath} />
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 600, fontSize: '0.82rem', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <div style={{ fontWeight: 500, fontSize: '0.82rem', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {r.status === 'matched' ? r.tmdbTitle : r.title}
                     </div>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: 2 }}>
-                      {r.status === 'unmatched' ? 'Not matched' : alreadyHave ? 'Already in history' : r.mediaType === 'tv' ? 'TV Series' : 'Movie'}
+                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
+                      {unmatched ? 'Not matched' : alreadyHave ? 'Already in history' : r.mediaType === 'tv' ? 'TV Series' : 'Movie'}
                       {r.date ? ` · ${r.date}` : ''}
                     </div>
                   </div>
+                  {isNew && (
+                    <div style={{
+                      fontSize: '0.58rem', fontWeight: 700, letterSpacing: '0.05em',
+                      padding: '0.2rem 0.45rem', borderRadius: 99,
+                      textTransform: 'uppercase', flexShrink: 0,
+                      background: 'rgba(224,90,122,0.12)', color: 'var(--accent)',
+                      border: '1px solid rgba(224,90,122,0.25)',
+                    }}>New</div>
+                  )}
+                  {alreadyHave && (
+                    <div style={{
+                      fontSize: '0.58rem', fontWeight: 700, letterSpacing: '0.05em',
+                      padding: '0.2rem 0.45rem', borderRadius: 99,
+                      textTransform: 'uppercase', flexShrink: 0,
+                      background: 'rgba(74,222,128,0.08)', color: '#4ade80',
+                      border: '1px solid rgba(74,222,128,0.2)',
+                    }}>Have</div>
+                  )}
                 </div>
               );
             })}
           </div>
 
-          <button
-            onClick={handleImport}
-            disabled={importing || newCount === 0}
-            style={{
-              width: '100%', padding: '0.85rem', borderRadius: 'var(--radius-lg)',
-              background: newCount === 0 ? 'var(--surface-raised)' : 'var(--accent)',
-              color: newCount === 0 ? 'var(--text-muted)' : '#fff',
-              fontWeight: 600, fontSize: '0.9rem', border: 'none',
-              cursor: newCount === 0 ? 'default' : 'pointer',
-            }}
-          >
-            {importing ? 'Importing…' : newCount === 0 ? 'Nothing new to import' : `Import ${newCount} title${newCount !== 1 ? 's' : ''}`}
-          </button>
+          {/* Footer */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div style={{ flex: 1, fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+              {newCount} new{alreadyCount > 0 ? ` · ${alreadyCount} skipped` : ''}{unmatchedCount > 0 ? ` · ${unmatchedCount} unmatched` : ''}
+            </div>
+            <button
+              onClick={handleImport}
+              disabled={importing || newCount === 0}
+              style={{
+                padding: '0.7rem 1.5rem', borderRadius: 99,
+                background: newCount === 0 ? 'var(--surface-raised)' : '#fff',
+                color: newCount === 0 ? 'var(--text-muted)' : '#000',
+                fontWeight: 700, fontSize: '0.85rem', border: 'none',
+                cursor: newCount === 0 ? 'default' : 'pointer',
+                flexShrink: 0,
+              }}
+            >
+              {importing ? 'Importing…' : newCount === 0 ? 'Nothing new' : `Import →`}
+            </button>
+          </div>
         </>
       )}
 
