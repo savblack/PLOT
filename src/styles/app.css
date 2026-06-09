@@ -2015,6 +2015,23 @@ svg { stroke-width: 1.5; }
   border-radius: 5px;
   object-fit: cover;
 }
+.provider-chip--cinema {
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+.provider-chip--rentbuy {
+  opacity: 0.8;
+}
+.providers-sublabel {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 0.5rem;
+  margin-bottom: 0.1rem;
+}
 
 .episode-list {
   display: flex;

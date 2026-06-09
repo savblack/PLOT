@@ -399,13 +399,22 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
   );
 }
 
+function dedupeProviders(list) {
+  const seen = new Set();
+  return list.filter(p => {
+    if (seen.has(p.provider_id)) return false;
+    seen.add(p.provider_id);
+    return true;
+  });
+}
+
 export default function MediaPanel({ itemId, itemType, closing, onClose }) {
   const { watchlist, watching, user, profile, favorites, customLists } = useApp();
   const timezone = profile?.timezone || null;
   const history = useHistory(user?.id);
 
   const [details,      setDetails]      = useState(null);
-  const [providers,    setProviders]    = useState([]);
+  const [whereToWatch, setWhereToWatch] = useState({ streaming: [], rentBuy: [], inCinemas: false });
   const [loading,      setLoading]      = useState(true);
   const [detailsError, setDetailsError] = useState(false);
 
@@ -466,7 +475,29 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
     } else {
       setDetails(det);
       const region = getTmdbRegion();
-      setProviders(prov?.results?.[region]?.flatrate || []);
+      const regionData = prov?.results?.[region] || {};
+      const streaming = regionData.flatrate || [];
+      const rentBuy = dedupeProviders([
+        ...(regionData.rent || []),
+        ...(regionData.buy  || []),
+      ]);
+      // Cinema detection: movie released within last 90 days with no digital availability yet
+      let inCinemas = false;
+      if (isMovie) {
+        const releaseDate = det.release_date ? new Date(det.release_date) : null;
+        const daysSinceRelease = releaseDate
+          ? (Date.now() - releaseDate.getTime()) / 86400000
+          : null;
+        const hasDigital = streaming.length > 0 || rentBuy.length > 0;
+        inCinemas = (
+          det.status === 'Released' &&
+          daysSinceRelease !== null &&
+          daysSinceRelease >= 0 &&
+          daysSinceRelease <= 90 &&
+          !hasDigital
+        );
+      }
+      setWhereToWatch({ streaming, rentBuy, inCinemas });
     }
     setLoading(false);
   }, [itemId, itemType, isMovie]);
@@ -521,7 +552,6 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
 
             {/* Meta row */}
             <div className="panel-meta-row">
-              {year && <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>{year}</span>}
               {isMovie ? (
                 <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Movie</span>
               ) : (
@@ -530,13 +560,18 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                 </span>
               )}
               {rating && <span style={{ fontSize: '0.8rem', color: '#F59E0B', fontWeight: 600 }}>{rating}</span>}
+              {date && (
+                <span style={{ fontSize: '0.76rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+                  {new Date(date).toLocaleDateString('en', { month: 'short', day: 'numeric', year: 'numeric' })}
+                </span>
+              )}
               {chip && chip.cls !== 'chip-muted' && (
                 <span className={`chip ${chip.cls}`}>{chip.label}</span>
               )}
             </div>
 
             {genres && (
-              <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>{genres}</div>
+              <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>{genres}</div>
             )}
 
             {/* Overview */}
@@ -770,19 +805,48 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
             )}
 
             {/* Where to watch */}
-            {providers.length > 0 && (
+            {(whereToWatch.streaming.length > 0 || whereToWatch.rentBuy.length > 0 || whereToWatch.inCinemas) && (
               <>
                 <div className="panel-section-title">Where to Watch</div>
-                <div className="providers-grid">
-                  {providers.map(p => (
-                    <div key={p.provider_id} className="provider-chip">
-                      {p.logo_path && (
-                        <img src={logoUrl(p.logo_path, 'w45')} alt={p.provider_name} />
-                      )}
-                      {p.provider_name}
+                {whereToWatch.inCinemas && (
+                  <div className="providers-grid">
+                    <div className="provider-chip provider-chip--cinema">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="2" y="7" width="20" height="15" rx="2"/><polyline points="17 2 12 7 7 2"/>
+                      </svg>
+                      In Cinemas
                     </div>
-                  ))}
-                </div>
+                  </div>
+                )}
+                {whereToWatch.streaming.length > 0 && (
+                  <div className="providers-grid">
+                    {whereToWatch.streaming.map(p => (
+                      <div key={p.provider_id} className="provider-chip">
+                        {p.logo_path && (
+                          <img src={logoUrl(p.logo_path, 'w45')} alt={p.provider_name} />
+                        )}
+                        {p.provider_name}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {whereToWatch.rentBuy.length > 0 && (
+                  <>
+                    {whereToWatch.streaming.length > 0 && (
+                      <div className="providers-sublabel">Rent or Buy</div>
+                    )}
+                    <div className="providers-grid">
+                      {whereToWatch.rentBuy.map(p => (
+                        <div key={p.provider_id} className="provider-chip provider-chip--rentbuy">
+                          {p.logo_path && (
+                            <img src={logoUrl(p.logo_path, 'w45')} alt={p.provider_name} />
+                          )}
+                          {p.provider_name}
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
               </>
             )}
 
