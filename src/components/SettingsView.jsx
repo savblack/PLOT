@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { useNavigate } from 'react-router-dom';
 import { useApp, logoUrl } from '../App.jsx';
 import { tmdb, setTmdbRegion } from '../api/tmdb.js';
 import { supabase } from '../api/supabase.js';
@@ -573,6 +574,7 @@ function FeedbackPanel({ user, onClose }) {
 ═══════════════════════════════════════ */
 export default function SettingsView() {
   const { profile, user, theme, setTheme, refreshProfile, watchlist, watching, reminders } = useApp();
+  const navigate = useNavigate();
   const sync  = useMediaSync(user?.id);
   const trakt = useTraktSync(user?.id);
   const { events: calEvents, loading: calLoading } = useCalendar(
@@ -951,6 +953,26 @@ export default function SettingsView() {
             {trakt.error}
           </div>
         )}
+
+        {/* ── Import watch history ── */}
+        <div className="settings-row" onClick={() => navigate('/import')} style={{ cursor: 'pointer' }}>
+          <div className="settings-row-left">
+            <div className="settings-row-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+            </div>
+            <div>
+              <div className="settings-row-label">Import Watch History</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                Import from Netflix, Prime, Disney+, Max or Apple TV+
+              </div>
+            </div>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
 
       </div>
 
