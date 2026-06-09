@@ -664,8 +664,7 @@ export default function ImportView() {
           {/* Editorial headline */}
           <div style={{ marginBottom: '1.25rem' }}>
             <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1.5rem', fontWeight: 400, lineHeight: 1.25, letterSpacing: '-0.03em', color: 'var(--text-primary)', marginBottom: '0.35rem' }}>
-              Found <span style={{ color: 'var(--accent)' }}>{newCount + alreadyCount + unmatchedCount} title{newCount + alreadyCount + unmatchedCount !== 1 ? 's' : ''}</span><br />
-              from {platform?.name}
+              Found <span style={{ color: 'var(--accent)' }}>{newCount + alreadyCount + unmatchedCount} title{newCount + alreadyCount + unmatchedCount !== 1 ? 's' : ''}</span> from {platform?.name}
             </div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
               {alreadyCount > 0 && unmatchedCount > 0
