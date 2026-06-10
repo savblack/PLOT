@@ -616,7 +616,7 @@ const hasProviders = (d) => d && (d.flatrate || d.free || d.ads || d.rent || d.b
                 <button
                   onClick={() => watchlist.toggle({ ...details, id: itemId, media_type: itemType })}
                   style={{
-                    flex: 1, padding: '0.72rem 0.5rem', borderRadius: '0.75rem',
+                    flex: 1, padding: '0.52rem 0.5rem', borderRadius: '0.75rem',
                     border: inList ? '1.5px solid rgba(74,222,128,0.2)' : '1.5px solid transparent',
                     cursor: 'pointer',
                     background: inList ? '#0d2d1a' : 'var(--accent)',
@@ -632,7 +632,7 @@ const hasProviders = (d) => d && (d.flatrate || d.free || d.ads || d.rent || d.b
                 {!watched ? (
                   <button
                     style={{
-                      flex: 1, padding: '0.72rem 0.5rem', borderRadius: '0.75rem',
+                      flex: 1, padding: '0.52rem 0.5rem', borderRadius: '0.75rem',
                       border: '1.5px solid var(--border)', background: 'transparent',
                       color: 'var(--text-secondary)',
                       fontWeight: 500, fontSize: '0.82rem', cursor: 'pointer',
@@ -649,7 +649,7 @@ const hasProviders = (d) => d && (d.flatrate || d.free || d.ads || d.rent || d.b
                   <button
                     onClick={() => history.removeEntry(itemId)}
                     style={{
-                      flex: 1, padding: '0.72rem 0.5rem', borderRadius: '0.75rem',
+                      flex: 1, padding: '0.52rem 0.5rem', borderRadius: '0.75rem',
                       border: '1.5px solid rgba(74,222,128,0.2)',
                       cursor: 'pointer', background: '#0d2d1a', color: '#4ade80',
                       fontWeight: 600, fontSize: '0.88rem', transition: 'all 0.2s',
@@ -666,7 +666,7 @@ const hasProviders = (d) => d && (d.flatrate || d.free || d.ads || d.rent || d.b
                 <button
                   onClick={() => favorites.toggleFavorite({ ...details, id: itemId, media_type: itemType })}
                   style={{
-                    flex: 1, padding: '0.72rem 0.5rem', borderRadius: '0.75rem',
+                    flex: 1, padding: '0.52rem 0.5rem', borderRadius: '0.75rem',
                     border: isFav ? '1.5px solid color-mix(in srgb, var(--accent) 40%, transparent)' : '1.5px solid var(--border)',
                     background: isFav ? 'var(--accent-dim)' : 'transparent',
                     color: isFav ? 'var(--accent)' : 'var(--text-secondary)',
@@ -681,7 +681,7 @@ const hasProviders = (d) => d && (d.flatrate || d.free || d.ads || d.rent || d.b
                 <button
                   onClick={() => setShowListSheet(true)}
                   style={{
-                    flex: 1, padding: '0.72rem 0.5rem', borderRadius: '0.75rem',
+                    flex: 1, padding: '0.52rem 0.5rem', borderRadius: '0.75rem',
                     border: isInAnyList ? '1.5px solid rgba(99,102,241,0.4)' : '1.5px solid var(--border)',
                     background: isInAnyList ? 'rgba(99,102,241,0.1)' : 'transparent',
                     color: isInAnyList ? '#818cf8' : 'var(--text-secondary)',
@@ -700,7 +700,7 @@ const hasProviders = (d) => d && (d.flatrate || d.free || d.ads || d.rent || d.b
               {!isMovie && !watched && (
                 <button
                   style={{
-                    width: '100%', padding: '0.62rem 0.5rem', borderRadius: '0.75rem',
+                    width: '100%', padding: '0.52rem 0.5rem', borderRadius: '0.75rem',
                     border: isWatching ? '1.5px solid rgba(99,102,241,0.45)' : '1.5px solid var(--border)',
                     background: isWatching ? 'rgba(99,102,241,0.12)' : 'transparent',
                     color: isWatching ? '#818cf8' : 'var(--text-secondary)',
