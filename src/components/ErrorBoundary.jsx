@@ -258,14 +258,35 @@ function ErrorScreen({ code, label, title, body, primaryLabel, primaryAction, gh
   );
 }
 
+function isChunkError(error) {
+  const msg = error?.message || '';
+  return (
+    msg.includes('Failed to fetch dynamically imported module') ||
+    msg.includes('Importing a module script failed') ||
+    msg.includes('error loading dynamically imported module') ||
+    error?.name === 'ChunkLoadError'
+  );
+}
+
+const RELOAD_KEY = 'plot_chunk_reload';
+
 export default class ErrorBoundary extends Component {
   state = { hasError: false };
 
-  static getDerivedStateFromError() {
+  static getDerivedStateFromError(error) {
+    if (isChunkError(error)) {
+      // Only auto-reload once per session to avoid infinite reload loops
+      if (!sessionStorage.getItem(RELOAD_KEY)) {
+        sessionStorage.setItem(RELOAD_KEY, '1');
+        window.location.reload();
+        return null; // stay mounted while reloading
+      }
+    }
     return { hasError: true };
   }
 
   componentDidCatch(error, info) {
+    if (isChunkError(error)) return; // already handled above
     console.error('Plot error:', error, info);
     posthog.captureException(error, { extra: info });
   }
