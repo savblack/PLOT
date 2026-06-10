@@ -623,7 +623,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
                   }}
                 >
-                  {inList ? <><CheckSmallIcon color="#4ade80" /> Saved</> : 'Save'}
+                  {inList ? 'Saved' : 'Save'}
                 </button>
 
                 {/* Mark watched / Watched (undo) */}
@@ -641,7 +641,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                       if (!isMovie && isWatching) await watching.stopWatching(itemId);
                     }}
                   >
-                    <CheckSmallIcon /> {!isMovie ? 'Mark watched' : 'Mark watched'}
+                    Mark watched
                   </button>
                 ) : (
                   <button
@@ -654,7 +654,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
                     }}
                   >
-                    <CheckSmallIcon color="#4ade80" /> Watched
+                    Watched
                   </button>
                 )}
               </div>
@@ -672,7 +672,6 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.38rem',
                   }}
                 >
-                  <HeartIcon filled={isFav} />
                   {isFav ? 'Favourited' : 'Favourite'}
                 </button>
 
@@ -687,10 +686,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.38rem',
                   }}
                 >
-                  {isInAnyList
-                    ? <><CheckSmallIcon color="#818cf8" /> On your list</>
-                    : <><PlusIcon /> Add to list</>
-                  }
+                  {isInAnyList ? 'On your list' : 'Add to list'}
                 </button>
               </div>
 
@@ -715,10 +711,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                     }
                   }}
                 >
-                  {isWatching
-                    ? <><StopSmallIcon /> Stop watching</>
-                    : <><PlaySmallIcon /> Start watching</>
-                  }
+                  {isWatching ? 'Stop watching' : 'Start watching'}
                 </button>
               )}
             </div>
