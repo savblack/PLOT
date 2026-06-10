@@ -644,14 +644,15 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                       <button
                         onClick={() => setShowStatusDropdown(v => !v)}
                         style={{
-                          width: '100%', padding: '0.52rem 0.75rem', borderRadius: '0.75rem',
-                          cursor: 'pointer', fontWeight: isActive ? 600 : 500, fontSize: '0.82rem',
-                          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.4rem',
+                          width: '100%', padding: '0.52rem 0.5rem', borderRadius: '0.75rem',
+                          cursor: 'pointer', fontWeight: isActive ? 600 : 500, fontSize: '0.88rem',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          position: 'relative',
                           transition: 'all 0.18s', boxSizing: 'border-box', ...statusStyle,
                         }}
                       >
                         <span>{statusLabel}</span>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.7, flexShrink: 0 }}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.7, flexShrink: 0, position: 'absolute', right: '0.6rem' }}>
                           <polyline points="6 9 12 15 18 9"/>
                         </svg>
                       </button>
