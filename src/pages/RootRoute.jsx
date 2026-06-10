@@ -1,9 +1,10 @@
-import { Suspense, lazy, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { supabase } from '../api/supabase';
 import PlotLoader from '../components/PlotLoader';
 
-const LandingPage = lazy(() => import('./LandingPage'));
+// The marketing site is the only landing page — the app never serves one.
+const MARKETING_URL = 'https://theplot.tv';
 
 export default function RootRoute() {
   const [loading,       setLoading]       = useState(true);
@@ -16,24 +17,19 @@ export default function RootRoute() {
     });
   }, []);
 
-  if (loading) {
-    return (
-      <div style={{ height: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <PlotLoader />
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (!loading && !authenticated) {
+      window.location.replace(MARKETING_URL);
+    }
+  }, [loading, authenticated]);
 
   // Authenticated users go to the discovery home.
-  if (authenticated) return <Navigate to="/home" replace />;
+  if (!loading && authenticated) return <Navigate to="/home" replace />;
 
+  // Loading, or logged out and about to leave for the marketing site.
   return (
-    <Suspense fallback={
-      <div style={{ height: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <PlotLoader />
-      </div>
-    }>
-      <LandingPage />
-    </Suspense>
+    <div style={{ height: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <PlotLoader />
+    </div>
   );
 }
