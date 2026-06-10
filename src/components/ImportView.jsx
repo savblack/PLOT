@@ -110,8 +110,6 @@ const PLATFORMS = [
 /* ─────────────────────────── CSV parser ─────────────────────────── */
 
 function parseCSV(text) {
-  const rows = [];
-  let i = 0;
   const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
 
   // Parse into array-of-arrays handling quoted fields and escaped ""
@@ -399,7 +397,7 @@ function PosterThumb({ path }) {
 /* ─────────────────────────── Main component ─────────────────────────── */
 
 export default function ImportView() {
-  const { user, history } = useApp();
+  const { user } = useApp();
   const navigate = useNavigate();
 
   const [step, setStep] = useState(1); // 1=platform 2=file 3=resolving 4=preview 5=done
