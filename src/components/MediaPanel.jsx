@@ -236,40 +236,40 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone }) {
 function HeartIcon({ filled }) {
   const path = "M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z";
   return (
-    <svg viewBox="0 0 24 24" width="14" height="14"
+    <svg viewBox="0 0 24 24" width="15" height="15"
       fill={filled ? 'var(--accent)' : 'none'}
       stroke={filled ? 'var(--accent)' : 'currentColor'}
-      strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
       <path d={path}/>
     </svg>
   );
 }
 function PlusIcon() {
   return (
-    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round">
       <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
     </svg>
   );
 }
 function CheckSmallIcon({ color } = {}) {
   return (
-    <svg viewBox="0 0 24 24" width="14" height="14" fill="none"
-      stroke={color || 'currentColor'} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+    <svg viewBox="0 0 24 24" width="15" height="15" fill="none"
+      stroke={color || 'currentColor'} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="20 6 9 17 4 12"/>
     </svg>
   );
 }
 function PlaySmallIcon() {
   return (
-    <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="0.9" strokeLinejoin="round">
-      <polygon points="4,3 12.75,8 4,13"/>
+    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="5,3 19,12 5,21"/>
     </svg>
   );
 }
 function StopSmallIcon() {
   return (
-    <svg viewBox="0 0 16 16" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="0.9" strokeLinejoin="round">
-      <rect x="3.25" y="3.25" width="9.5" height="9.5" rx="1"/>
+    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="4" y="4" width="16" height="16" rx="2"/>
     </svg>
   );
 }
