@@ -3,7 +3,7 @@ import { localDateStr, dateToLocalStr } from '../utils/date.js';
 const PROXY_URL       = import.meta.env.VITE_TMDB_PROXY_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-let userRegion = 'AU';
+let userRegion = 'US';
 export const setTmdbRegion = (region) => { userRegion = region; };
 export const getTmdbRegion = () => userRegion;
 
@@ -72,9 +72,9 @@ export const tmdb = {
 
   /* ── Details ── */
   getMovieDetails: (id) =>
-    fetchFromTMDB(`/movie/${id}`, { append_to_response: 'watch/providers,recommendations' }),
+    fetchFromTMDB(`/movie/${id}`, { append_to_response: 'watch/providers,recommendations,videos' }),
   getTVDetails: (id) =>
-    fetchFromTMDB(`/tv/${id}`, { append_to_response: 'watch/providers,recommendations' }),
+    fetchFromTMDB(`/tv/${id}`, { append_to_response: 'watch/providers,recommendations,videos' }),
 
   /* ── Digital (streaming) release date for a movie, by region ── */
   getDigitalReleaseDate: async (movieId) => {

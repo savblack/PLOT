@@ -608,7 +608,7 @@ svg { stroke-width: 1.5; }
   background: var(--chip-episode);
   color: #fff;
   border: 1px solid color-mix(in srgb, var(--chip-episode) 72%, rgba(255,255,255,0.36));
-  box-shadow: 0 2px 8px rgba(0,0,0,0.32);
+  box-shadow: none;
 }
 .card-chip-overlay .chip-cinema    { background: var(--chip-cinema);    border-color: color-mix(in srgb, var(--chip-cinema)    72%, rgba(255,255,255,0.36)); }
 .card-chip-overlay .chip-streaming { background: var(--chip-streaming); border-color: color-mix(in srgb, var(--chip-streaming) 72%, rgba(255,255,255,0.36)); }
@@ -1826,7 +1826,10 @@ svg { stroke-width: 1.5; }
   line-height: 1;
 }
 .half-star-empty {
-  color: var(--border-strong);
+  color: #d4d4d4;
+}
+.half-star-empty .half-star-svg {
+  stroke: none;
 }
 .half-star-fill {
   position: absolute;

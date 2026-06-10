@@ -478,8 +478,12 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
     } else {
       setDetails(det);
       const region = getTmdbRegion();
-      const regionData = prov?.results?.[region] || {};
-      const streaming = regionData.flatrate || [];
+      const regionData = prov?.results?.[region] || prov?.results?.['US'] || {};
+      const streaming = dedupeProviders([
+        ...(regionData.flatrate || []),
+        ...(regionData.free     || []),
+        ...(regionData.ads      || []),
+      ]);
       const rentBuy = dedupeProviders([
         ...(regionData.rent || []),
         ...(regionData.buy  || []),
@@ -581,15 +585,36 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
               <p className="panel-overview">{details.overview}</p>
             )}
 
-            {/* ── Action buttons ── */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '0.5rem' }}>
+            {/* Trailer */}
+            {(() => {
+              const videos = details?.videos?.results || [];
+              const trailer = videos.find(v => v.site === 'YouTube' && v.type === 'Trailer')
+                || videos.find(v => v.site === 'YouTube' && v.type === 'Teaser')
+                || videos.find(v => v.site === 'YouTube');
+              if (!trailer) return null;
+              return (
+                <div style={{ marginBottom: '1rem', borderRadius: '0.75rem', overflow: 'hidden', aspectRatio: '16/9' }}>
+                  <iframe
+                    src={`https://www.youtube.com/embed/${trailer.key}?rel=0`}
+                    title={trailer.name || 'Trailer'}
+                    style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
+              );
+            })()}
 
-              {/* Primary: Save / Saved — hidden while actively watching */}
-              {!isWatching && (
+            {/* ── Action buttons: 2×2 grid ── */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
+
+              {/* Row 1: Save + Mark watched */}
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                {/* Save / Saved */}
                 <button
                   onClick={() => watchlist.toggle({ ...details, id: itemId, media_type: itemType })}
                   style={{
-                    width: '100%', padding: '0.72rem', borderRadius: '0.75rem',
+                    flex: 1, padding: '0.72rem 0.5rem', borderRadius: '0.75rem',
                     border: inList ? '1.5px solid rgba(74,222,128,0.2)' : 'none',
                     cursor: 'pointer',
                     background: inList ? '#0d2d1a' : 'var(--accent)',
@@ -600,11 +625,42 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                 >
                   {inList ? <><CheckSmallIcon color="#4ade80" /> Saved</> : 'Save'}
                 </button>
-              )}
 
-              {/* Secondary row: Favourite + Add to list */}
+                {/* Mark watched / Watched (undo) */}
+                {!watched ? (
+                  <button
+                    style={{
+                      flex: 1, padding: '0.72rem 0.5rem', borderRadius: '0.75rem',
+                      border: '1.5px solid var(--border)', background: 'transparent',
+                      color: 'var(--text-secondary)',
+                      fontWeight: 500, fontSize: '0.82rem', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
+                    }}
+                    onClick={async () => {
+                      await history.logWatched({ ...details, id: itemId, media_type: itemType });
+                      if (!isMovie && isWatching) await watching.stopWatching(itemId);
+                    }}
+                  >
+                    <CheckSmallIcon /> {!isMovie ? 'Mark watched' : 'Mark watched'}
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => history.removeEntry(itemId)}
+                    style={{
+                      flex: 1, padding: '0.72rem 0.5rem', borderRadius: '0.75rem',
+                      border: '1.5px solid rgba(74,222,128,0.2)',
+                      cursor: 'pointer', background: '#0d2d1a', color: '#4ade80',
+                      fontWeight: 600, fontSize: '0.88rem', transition: 'all 0.2s',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
+                    }}
+                  >
+                    <CheckSmallIcon color="#4ade80" /> Watched
+                  </button>
+                )}
+              </div>
+
+              {/* Row 2: Favourite + Add to list */}
               <div style={{ display: 'flex', gap: '0.5rem' }}>
-                {/* Favourite */}
                 <button
                   onClick={() => favorites.toggleFavorite({ ...details, id: itemId, media_type: itemType })}
                   style={{
@@ -620,7 +676,6 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                   {isFav ? 'Favourited' : 'Favourite'}
                 </button>
 
-                {/* Add to list / On your list */}
                 <button
                   onClick={() => setShowListSheet(true)}
                   style={{
@@ -638,74 +693,39 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                   }
                 </button>
               </div>
-            </div>
 
-            {/* ── Watching / watched tracking (Option C) ── */}
-            {!watched ? (
-              <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
-                {/* Start / Stop watching — TV only */}
-                {!isMovie && (
-                  <button
-                    style={{
-                      flex: 1, padding: '0.62rem 0.5rem', borderRadius: '0.75rem',
-                      border: isWatching ? '1.5px solid rgba(99,102,241,0.45)' : '1.5px solid var(--border)',
-                      background: isWatching ? 'rgba(99,102,241,0.12)' : 'transparent',
-                      color: isWatching ? '#818cf8' : 'var(--text-secondary)',
-                      fontWeight: 500, fontSize: '0.82rem', cursor: 'pointer',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
-                      transition: 'all 0.18s',
-                    }}
-                    onClick={async () => {
-                      if (isWatching) {
-                        await watching.stopWatching(itemId);
-                      } else {
-                        await watching.startWatching({ ...details, id: itemId, media_type: 'tv' });
-                        if (inList) await watchlist.removeFromList(itemId);
-                      }
-                    }}
-                  >
-                    {isWatching
-                      ? <><StopSmallIcon /> Stop watching</>
-                      : <><PlaySmallIcon /> Start watching</>
-                    }
-                  </button>
-                )}
-
-                {/* Mark watched */}
+              {/* TV only: Start / Stop watching */}
+              {!isMovie && !watched && (
                 <button
                   style={{
-                    flex: 1, padding: '0.62rem 0.5rem', borderRadius: '0.75rem',
-                    border: '1.5px solid var(--border)', background: 'transparent',
-                    color: 'var(--text-secondary)',
+                    width: '100%', padding: '0.62rem 0.5rem', borderRadius: '0.75rem',
+                    border: isWatching ? '1.5px solid rgba(99,102,241,0.45)' : '1.5px solid var(--border)',
+                    background: isWatching ? 'rgba(99,102,241,0.12)' : 'transparent',
+                    color: isWatching ? '#818cf8' : 'var(--text-secondary)',
                     fontWeight: 500, fontSize: '0.82rem', cursor: 'pointer',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
+                    transition: 'all 0.18s',
                   }}
                   onClick={async () => {
-                    await history.logWatched({ ...details, id: itemId, media_type: itemType });
-                    if (!isMovie && isWatching) await watching.stopWatching(itemId);
+                    if (isWatching) {
+                      await watching.stopWatching(itemId);
+                    } else {
+                      await watching.startWatching({ ...details, id: itemId, media_type: 'tv' });
+                      if (inList) await watchlist.removeFromList(itemId);
+                    }
                   }}
                 >
-                  <CheckSmallIcon /> {!isMovie ? 'Mark all watched' : 'Mark watched'}
+                  {isWatching
+                    ? <><StopSmallIcon /> Stop watching</>
+                    : <><PlaySmallIcon /> Start watching</>
+                  }
                 </button>
-              </div>
-            ) : (
-              /* Watched state + review section */
-              <div style={{ marginBottom: '1rem' }}>
-                {/* Watched button — full-width, matches Saved style, click to undo */}
-                <button
-                  onClick={() => history.removeEntry(itemId)}
-                  style={{
-                    width: '100%', padding: '0.72rem', borderRadius: '0.75rem',
-                    border: '1.5px solid rgba(74,222,128,0.2)',
-                    cursor: 'pointer', background: '#0d2d1a', color: '#4ade80',
-                    fontWeight: 600, fontSize: '0.88rem', transition: 'all 0.2s',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
-                    marginBottom: '0.85rem',
-                  }}
-                >
-                  <CheckSmallIcon color="#4ade80" /> Watched
-                </button>
+              )}
+            </div>
 
+            {/* Review section (when watched) */}
+            {watched && (
+              <div style={{ marginBottom: '1rem' }}>
                 <div style={{ height: 1, marginBottom: '0.85rem' }} />
 
                 {/* Review section label */}
@@ -813,9 +833,6 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                 {whereToWatch.inCinemas && (
                   <div className="providers-grid">
                     <div className="provider-chip provider-chip--cinema">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="2" y="7" width="20" height="15" rx="2"/><polyline points="17 2 12 7 7 2"/>
-                      </svg>
                       In Cinemas
                     </div>
                   </div>
