@@ -478,9 +478,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
     } else {
       setDetails(det);
       const region = getTmdbRegion();
-      const results = prov?.results || {};
-const hasProviders = (d) => d && (d.flatrate || d.free || d.ads || d.rent || d.buy);
-      const regionData = (hasProviders(results[region]) ? results[region] : results['US']) || {};
+      const regionData = prov?.results?.[region] || {};
       const streaming = dedupeProviders([
         ...(regionData.flatrate || []),
         ...(regionData.free     || []),
