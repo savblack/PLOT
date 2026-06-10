@@ -74,6 +74,17 @@
 
     html { scroll-behavior: smooth; }
 
+    /* Animations collapse to their end state; looping tracks (ticker,
+       filmstrip) freeze mid-loop where content is still fully visible */
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
     html, body { overflow-x: hidden; max-width: 100%; }
 
     body {
@@ -250,6 +261,10 @@
       border-radius: 2px;
       transition: all 0.3s var(--ease);
     }
+    /* Open state: morph the bars into an X */
+    .nav-hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .nav-hamburger.open span:nth-child(2) { opacity: 0; }
+    .nav-hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
     /* ── Poster side-slides — float in from edges on scroll ── */
     #posterSide {
@@ -825,7 +840,9 @@
 
     .footer-wm {
       font-family: 'Instrument Serif', Georgia, serif;
-      font-size: clamp(10rem, calc((100vw - 6rem) * 0.507), 40rem);
+      /* 0.507 maps font-size to a rendered width of ~100vw - 6rem, so the
+         wordmark self-fits at every viewport; the 9rem floor still fits 320px */
+      font-size: clamp(9rem, calc((100vw - 6rem) * 0.507), 40rem);
       font-weight: 400;
       font-style: normal;
       letter-spacing: 0.03em;
@@ -903,6 +920,12 @@
         background-color: #ddd;
         border-radius: 8px;
       }
+    }
+
+    /* Short viewports (landscape phones) — the 16rem desktop hero padding
+       would push the headline below the fold */
+    @media (max-height: 500px) {
+      #hero { padding-top: 5rem; padding-bottom: 2rem; }
     }
 
     @media (max-width: 768px) {
@@ -1059,9 +1082,8 @@
         gap: 2.5rem;
       }
 
-      /* Footer */
+      /* Footer — watermark size comes from the self-fitting base formula */
       footer { padding-top: 1.25rem; }
-      .footer-wm { font-size: clamp(10rem, 54vw, 14.5rem); }
       .footer-meta { padding: 1rem 1.5rem 0; flex-wrap: wrap; gap: 1rem; }
       .footer-links { gap: 1rem; flex-wrap: wrap; }
       .footer-tag { display: none; }
@@ -1889,7 +1911,7 @@
       <li><a href="https://app.theplot.tv/login">Log in</a></li>
       <li><a href="https://app.theplot.tv/signup" class="nav-cta">Sign up</a></li>
     </ul>
-    <button class="nav-hamburger" id="hamburger" aria-label="Menu">
+    <button class="nav-hamburger" id="hamburger" aria-label="Menu" aria-expanded="false">
       <span></span><span></span><span></span>
     </button>
   </nav>
@@ -2398,12 +2420,23 @@
     // Mobile nav toggle
     const hamburger = document.getElementById('hamburger');
     const navLinks  = document.getElementById('navLinks');
+    function setNavOpen(open) {
+      navLinks.classList.toggle('open', open);
+      hamburger.classList.toggle('open', open);
+      hamburger.setAttribute('aria-expanded', open);
+    }
     hamburger.addEventListener('click', () => {
-      navLinks.classList.toggle('open');
+      setNavOpen(!navLinks.classList.contains('open'));
     });
     // Close nav on link click
     navLinks.querySelectorAll('a').forEach(a => {
-      a.addEventListener('click', () => navLinks.classList.remove('open'));
+      a.addEventListener('click', () => setNavOpen(false));
+    });
+    // Close nav on tap outside the nav bar / menu panel
+    document.addEventListener('click', e => {
+      if (navLinks.classList.contains('open') && !e.target.closest('nav') && !e.target.closest('.nav-links')) {
+        setNavOpen(false);
+      }
     });
 
     // Scroll reveal via IntersectionObserver
@@ -2504,14 +2537,18 @@
     // 1100px the CSS hides #posterSide again.
     let sidePostersStarted = false;
     function initSidePosters() {
+      // Purely decorative scroll-driven motion — skip for reduced-motion users
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
       if (sidePostersStarted || window.innerWidth < 1100) return;
       sidePostersStarted = true;
     const sideLayout = [
-      // On load — four posters (2 left, 2 right) — reach well into centre
-      { side: 'left',  vy: 0.51, showAt:  0, w: 260, h: 390, restX:  8, hold: 1000 },
-      { side: 'left',  vy: 0.10, showAt: 40, w: 190, h: 285, restX: 120, hold: 1000 },
-      { side: 'right', vy: 0.09, showAt: 20, w: 300, h: 450, restX:  4, hold: 1000 },
-      { side: 'right', vy: 0.52, showAt: 60, w: 175, h: 263, restX: 140, hold: 1000 },
+      // On load — four posters (2 left, 2 right) — reach well into centre.
+      // Negative showAt = already past the slide-in at scrollY 0, i.e. fully
+      // visible in the hold phase before the user scrolls.
+      { side: 'left',  vy: 0.51, showAt: -320, w: 260, h: 390, restX:  8, hold: 1000 },
+      { side: 'left',  vy: 0.10, showAt: -280, w: 190, h: 285, restX: 120, hold: 1000 },
+      { side: 'right', vy: 0.09, showAt: -300, w: 300, h: 450, restX:  4, hold: 1000 },
+      { side: 'right', vy: 0.52, showAt: -260, w: 175, h: 263, restX: 140, hold: 1000 },
       // Scroll reveals — wide range of restX (4 = nearly touching centre, 160 = tucked to edge)
       { side: 'left',  vy: 0.24, showAt:  400, w: 320, h: 480, restX:  4 },
       { side: 'right', vy: 0.20, showAt:  440, w: 165, h: 248, restX: 155 },
@@ -2820,7 +2857,9 @@
     // ── Feature cards auto-slide (mobile only) ────────────────
     (function initFeatSlider() {
       const bento = document.querySelector('.feat-bento');
-      if (!bento) return;
+      // offsetParent is null while #features is display:none — no point
+      // running a 3s interval for a hidden carousel
+      if (!bento || !bento.offsetParent) return;
 
       const getCards = () => Array.from(bento.querySelectorAll('.feat-tile'));
       const dots = Array.from(document.querySelectorAll('.feat-dot'));

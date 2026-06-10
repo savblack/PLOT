@@ -179,10 +179,19 @@
     .footer-links a:hover { color: rgba(255,255,255,0.8); }
     .footer-copy { color: rgba(255,255,255,0.2); font-size: 0.78rem; }
 
+    @media (max-width: 700px) {
+      /* Justified text creates rivers of whitespace in narrow columns */
+      .page-wrap p, .page-wrap ul { text-align: left; }
+    }
+
     @media (max-width: 600px) {
       .footer-meta { flex-direction: column; gap: 1.5rem; align-items: flex-start; }
       /* Only two short links — keep them reachable on mobile, just tighter */
       .nav-links { gap: 1rem; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
     }
   </style>
 </head>
@@ -271,8 +280,8 @@
     <div class="footer-meta">
       <span class="footer-tagline">YOUR FILM &amp; TV JOURNAL</span>
       <ul class="footer-links">
-        <li><a href="#">X</a></li>
-        <li><a href="#">Instagram</a></li>
+        <li><a href="https://app.theplot.tv/login">Log in</a></li>
+        <li><a href="https://app.theplot.tv/signup">Sign up</a></li>
         <li><a href="privacy.html">Privacy</a></li>
         <li><a href="terms.html">Terms</a></li>
       </ul>
