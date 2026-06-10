@@ -663,17 +663,17 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                           boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
                         }}>
                           {[
-                            { label: 'Watching', bg: 'rgba(99,102,241,0.12)', border: 'rgba(99,102,241,0.3)', color: '#818cf8', action: async () => {
+                            { label: 'Watching', action: async () => {
                               if (isWatching) { await watching.stopWatching(itemId); }
                               else { await watching.startWatching({ ...details, id: itemId, media_type: 'tv' }); if (inList) await watchlist.removeFromList(itemId); }
                               setShowStatusDropdown(false);
                             }, hidden: isMovie },
-                            { label: 'Watched', bg: '#0d2d1a', border: 'rgba(74,222,128,0.2)', color: '#4ade80', action: async () => {
+                            { label: 'Watched', action: async () => {
                               if (watched && !watchedEntry?.dnf) { await history.removeEntry(itemId); }
                               else { await history.logWatched({ ...details, id: itemId, media_type: itemType, dnf: false }); if (!isMovie && isWatching) await watching.stopWatching(itemId); }
                               setShowStatusDropdown(false);
                             }},
-                            { label: "Didn't finish", bg: 'rgba(251,191,36,0.1)', border: 'rgba(251,191,36,0.25)', color: '#fbbf24', action: async () => {
+                            { label: "Didn't finish", action: async () => {
                               if (watched && watchedEntry?.dnf) { await history.removeEntry(itemId); }
                               else { await history.logWatched({ ...details, id: itemId, media_type: itemType, dnf: true }); if (!isMovie && isWatching) await watching.stopWatching(itemId); }
                               setShowStatusDropdown(false);
@@ -684,14 +684,14 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                               onClick={opt.action}
                               style={{
                                 width: '100%', padding: '0.6rem 0.85rem',
-                                background: opt.bg,
-                                border: 'none', borderBottom: i < arr.length - 1 ? `1px solid ${opt.border}` : 'none',
-                                color: opt.color, fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer',
-                                display: 'flex', alignItems: 'center', gap: '0.6rem', textAlign: 'left',
-                                transition: 'filter 0.12s',
+                                background: 'transparent',
+                                border: 'none', borderBottom: i < arr.length - 1 ? '1px solid var(--border)' : 'none',
+                                color: 'var(--text-primary)', fontSize: '0.82rem', fontWeight: 500, cursor: 'pointer',
+                                display: 'flex', alignItems: 'center', textAlign: 'left',
+                                transition: 'background 0.12s',
                               }}
-                              onMouseEnter={e => e.currentTarget.style.filter = 'brightness(1.15)'}
-                              onMouseLeave={e => e.currentTarget.style.filter = 'brightness(1)'}
+                              onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-sunken)'}
+                              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                             >
                               {opt.label}
                             </button>
