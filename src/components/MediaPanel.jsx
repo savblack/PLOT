@@ -617,7 +617,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                   onClick={() => watchlist.toggle({ ...details, id: itemId, media_type: itemType })}
                   style={{
                     flex: 1, padding: '0.72rem 0.5rem', borderRadius: '0.75rem',
-                    border: inList ? '1.5px solid rgba(74,222,128,0.2)' : 'none',
+                    border: inList ? '1.5px solid rgba(74,222,128,0.2)' : '1.5px solid transparent',
                     cursor: 'pointer',
                     background: inList ? '#0d2d1a' : 'var(--accent)',
                     color: inList ? '#4ade80' : '#fff',
@@ -666,7 +666,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                 <button
                   onClick={() => favorites.toggleFavorite({ ...details, id: itemId, media_type: itemType })}
                   style={{
-                    flex: 1, padding: '0.6rem 0.5rem', borderRadius: '0.75rem',
+                    flex: 1, padding: '0.72rem 0.5rem', borderRadius: '0.75rem',
                     border: isFav ? '1.5px solid color-mix(in srgb, var(--accent) 40%, transparent)' : '1.5px solid var(--border)',
                     background: isFav ? 'var(--accent-dim)' : 'transparent',
                     color: isFav ? 'var(--accent)' : 'var(--text-secondary)',
@@ -681,7 +681,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                 <button
                   onClick={() => setShowListSheet(true)}
                   style={{
-                    flex: 1, padding: '0.6rem 0.5rem', borderRadius: '0.75rem',
+                    flex: 1, padding: '0.72rem 0.5rem', borderRadius: '0.75rem',
                     border: isInAnyList ? '1.5px solid rgba(99,102,241,0.4)' : '1.5px solid var(--border)',
                     background: isInAnyList ? 'rgba(99,102,241,0.1)' : 'transparent',
                     color: isInAnyList ? '#818cf8' : 'var(--text-secondary)',
