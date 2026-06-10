@@ -647,7 +647,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                           width: '100%', padding: '0.52rem 0.75rem', borderRadius: '0.75rem',
                           cursor: 'pointer', fontWeight: isActive ? 600 : 500, fontSize: '0.82rem',
                           display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.4rem',
-                          transition: 'all 0.18s', ...statusStyle,
+                          transition: 'all 0.18s', boxSizing: 'border-box', ...statusStyle,
                         }}
                       >
                         <span>{statusLabel}</span>
