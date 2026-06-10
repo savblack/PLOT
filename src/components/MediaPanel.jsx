@@ -421,7 +421,8 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
   const [loading,      setLoading]      = useState(true);
   const [detailsError, setDetailsError] = useState(false);
 
-  const [showListSheet,  setShowListSheet]  = useState(false);
+  const [showListSheet,     setShowListSheet]     = useState(false);
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [localRating,    setLocalRating]    = useState(0);
   const [localReview,    setLocalReview]    = useState('');
   const [localDnf,       setLocalDnf]       = useState(false);
@@ -626,37 +627,80 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                   {inList ? 'Saved' : 'Save'}
                 </button>
 
-                {/* Mark watched / Watched (undo) */}
-                {!watched ? (
-                  <button
-                    style={{
-                      flex: 1, padding: '0.52rem 0.5rem', borderRadius: '0.75rem',
-                      border: '1.5px solid var(--border)', background: 'transparent',
-                      color: 'var(--text-secondary)',
-                      fontWeight: 500, fontSize: '0.82rem', cursor: 'pointer',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
-                    }}
-                    onClick={async () => {
-                      await history.logWatched({ ...details, id: itemId, media_type: itemType });
-                      if (!isMovie && isWatching) await watching.stopWatching(itemId);
-                    }}
-                  >
-                    Mark watched
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => history.removeEntry(itemId)}
-                    style={{
-                      flex: 1, padding: '0.52rem 0.5rem', borderRadius: '0.75rem',
-                      border: '1.5px solid rgba(74,222,128,0.2)',
-                      cursor: 'pointer', background: '#0d2d1a', color: '#4ade80',
-                      fontWeight: 600, fontSize: '0.88rem', transition: 'all 0.2s',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
-                    }}
-                  >
-                    Watched
-                  </button>
-                )}
+                {/* Watch status dropdown */}
+                {(() => {
+                  const statusLabel = isWatching ? 'Watching'
+                    : watched && watchedEntry?.dnf ? "Didn't finish"
+                    : watched ? 'Watched'
+                    : 'Watch status';
+                  const isActive = isWatching || watched;
+                  const statusStyle = isWatching
+                    ? { background: 'rgba(99,102,241,0.12)', border: '1.5px solid rgba(99,102,241,0.45)', color: '#818cf8' }
+                    : watched
+                    ? { background: '#0d2d1a', border: '1.5px solid rgba(74,222,128,0.2)', color: '#4ade80' }
+                    : { background: 'transparent', border: '1.5px solid var(--border)', color: 'var(--text-secondary)' };
+                  return (
+                    <div style={{ flex: 1, position: 'relative' }} onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) setShowStatusDropdown(false); }}>
+                      <button
+                        onClick={() => setShowStatusDropdown(v => !v)}
+                        style={{
+                          width: '100%', padding: '0.52rem 0.75rem', borderRadius: '0.75rem',
+                          cursor: 'pointer', fontWeight: isActive ? 600 : 500, fontSize: '0.82rem',
+                          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.4rem',
+                          transition: 'all 0.18s', ...statusStyle,
+                        }}
+                      >
+                        <span>{statusLabel}</span>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.7, flexShrink: 0 }}>
+                          <polyline points="6 9 12 15 18 9"/>
+                        </svg>
+                      </button>
+                      {showStatusDropdown && (
+                        <div style={{
+                          position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0, zIndex: 100,
+                          background: 'var(--surface-raised)', border: '1px solid var(--border)',
+                          borderRadius: '0.75rem', overflow: 'hidden',
+                          boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
+                        }}>
+                          {[
+                            { label: 'Watching', color: '#818cf8', action: async () => {
+                              if (isWatching) { await watching.stopWatching(itemId); }
+                              else { await watching.startWatching({ ...details, id: itemId, media_type: 'tv' }); if (inList) await watchlist.removeFromList(itemId); }
+                              setShowStatusDropdown(false);
+                            }, hidden: isMovie },
+                            { label: 'Watched', color: '#4ade80', action: async () => {
+                              if (watched && !watchedEntry?.dnf) { await history.removeEntry(itemId); }
+                              else { await history.logWatched({ ...details, id: itemId, media_type: itemType, dnf: false }); if (!isMovie && isWatching) await watching.stopWatching(itemId); }
+                              setShowStatusDropdown(false);
+                            }},
+                            { label: "Didn't finish", color: '#fbbf24', action: async () => {
+                              if (watched && watchedEntry?.dnf) { await history.removeEntry(itemId); }
+                              else { await history.logWatched({ ...details, id: itemId, media_type: itemType, dnf: true }); if (!isMovie && isWatching) await watching.stopWatching(itemId); }
+                              setShowStatusDropdown(false);
+                            }},
+                          ].filter(o => !o.hidden).map((opt, i, arr) => (
+                            <button
+                              key={opt.label}
+                              onClick={opt.action}
+                              style={{
+                                width: '100%', padding: '0.6rem 0.85rem', background: 'transparent',
+                                border: 'none', borderBottom: i < arr.length - 1 ? '1px solid var(--border)' : 'none',
+                                color: 'var(--text-primary)', fontSize: '0.82rem', cursor: 'pointer',
+                                display: 'flex', alignItems: 'center', gap: '0.6rem', textAlign: 'left',
+                                transition: 'background 0.12s',
+                              }}
+                              onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-sunken)'}
+                              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                            >
+                              <span style={{ width: 8, height: 8, borderRadius: '50%', background: opt.color, flexShrink: 0, display: 'inline-block' }}/>
+                              {opt.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Row 2: Favourite + Add to list */}
@@ -690,30 +734,6 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                 </button>
               </div>
 
-              {/* TV only: Start / Stop watching */}
-              {!isMovie && !watched && (
-                <button
-                  style={{
-                    width: '100%', padding: '0.52rem 0.5rem', borderRadius: '0.75rem',
-                    border: isWatching ? '1.5px solid rgba(99,102,241,0.45)' : '1.5px solid var(--border)',
-                    background: isWatching ? 'rgba(99,102,241,0.12)' : 'transparent',
-                    color: isWatching ? '#818cf8' : 'var(--text-secondary)',
-                    fontWeight: 500, fontSize: '0.82rem', cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
-                    transition: 'all 0.18s',
-                  }}
-                  onClick={async () => {
-                    if (isWatching) {
-                      await watching.stopWatching(itemId);
-                    } else {
-                      await watching.startWatching({ ...details, id: itemId, media_type: 'tv' });
-                      if (inList) await watchlist.removeFromList(itemId);
-                    }
-                  }}
-                >
-                  {isWatching ? 'Stop watching' : 'Start watching'}
-                </button>
-              )}
             </div>
 
             {/* Review section (when watched) */}
