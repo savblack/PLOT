@@ -13,14 +13,16 @@
   <meta property="og:type" content="website" />
   <meta property="og:title" content="PLOT | Your Film &amp; TV Journal" />
   <meta property="og:description" content="The beautiful way to track what you watch. Log, rate, and share your film and TV taste." />
-  <meta property="og:image" content="og-image.png" />
+  <meta property="og:image" content="https://theplot.tv/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
   <meta property="og:url" content="https://theplot.tv" />
 
   <!-- Twitter / X card -->
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="PLOT | Your Film &amp; TV Journal" />
   <meta name="twitter:description" content="The beautiful way to track what you watch. Log, rate, and share your film and TV taste." />
-  <meta name="twitter:image" content="og-image.png" />
+  <meta name="twitter:image" content="https://theplot.tv/og-image.png" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -1940,7 +1942,7 @@
               <span class="demo-app-bar-title">PLOT</span>
               <span class="demo-app-icon">&#128269;</span>
             </div>
-            <div class="guide-date-hdr">Today &mdash; May 25</div>
+            <div class="guide-date-hdr" id="guideDateHdr">Today</div>
             <div class="guide-cards">
               <div class="guide-card">
                 <div class="guide-card-bg" style="background-image:url('images/hero/saltburn.webp')"></div>
@@ -2079,14 +2081,14 @@
         </div>
 
         <div class="tl-card">
-          <div class="tl-poster" style="background-image: url('images/timeline/adolescence.jpg')"></div>
+          <div class="tl-poster" style="background-image: url('images/timeline/oppenheimer.jpg')"></div>
           <div class="tl-date">Oct 2023</div>
-          <div class="tl-title">Adolescence</div>
-          <div class="tl-note">"Four episodes. Changed everything."</div>
+          <div class="tl-title">Oppenheimer</div>
+          <div class="tl-note">"Three hours. Felt like one."</div>
         </div>
 
         <div class="tl-card">
-          <div class="tl-poster" style="background-image: url('images/timeline/anniversary.jpg')"></div>
+          <div class="tl-poster" style="background-image: url('images/timeline/the-bear.jpg')"></div>
           <div class="tl-date">Nov 2023</div>
           <div class="tl-title">The Bear</div>
           <div class="tl-note">"Stressful. Perfect. Both."</div>
@@ -2105,7 +2107,7 @@
         </div>
 
         <div class="tl-card">
-          <div class="tl-poster" style="background-image: url('images/timeline/dumb-money.jpg')"></div>
+          <div class="tl-poster" style="background-image: url('images/timeline/past-lives.jpg')"></div>
           <div class="tl-date">Feb 2024</div>
           <div class="tl-title">Past Lives</div>
           <div class="tl-note">"Quietly devastating."</div>
@@ -2119,14 +2121,14 @@
         </div>
 
         <div class="tl-card">
-          <div class="tl-poster" style="background-image: url('images/timeline/top-gun-maverick.jpg')"></div>
+          <div class="tl-poster" style="background-image: url('images/timeline/the-substance.jpg')"></div>
           <div class="tl-date">Sep 2024</div>
           <div class="tl-title">The Substance</div>
           <div class="tl-note">"Nothing prepares you."</div>
         </div>
 
         <div class="tl-card">
-          <div class="tl-poster" style="background-image: url('images/timeline/the-summer-i-turned-pretty.jpg')"></div>
+          <div class="tl-poster" style="background-image: url('images/timeline/babygirl.jpg')"></div>
           <div class="tl-date">Dec 2024</div>
           <div class="tl-title">Babygirl</div>
           <div class="tl-note">"Nicole Kidman."</div>
@@ -2138,15 +2140,22 @@
         </div>
 
         <div class="tl-card">
-          <div class="tl-poster" style="background-image: url('images/timeline/top-gun-maverick.jpg')"></div>
+          <div class="tl-poster" style="background-image: url('images/timeline/severance.jpg')"></div>
           <div class="tl-date">Jan 2025</div>
           <div class="tl-title">Severance S2</div>
           <div class="tl-note">"Worth the wait. Barely."</div>
         </div>
 
         <div class="tl-card">
-          <div class="tl-poster" style="background-image: url('images/timeline/saltburn.jpg')"></div>
+          <div class="tl-poster" style="background-image: url('images/timeline/adolescence.jpg')"></div>
           <div class="tl-date">Mar 2025</div>
+          <div class="tl-title">Adolescence</div>
+          <div class="tl-note">"Four episodes. Changed everything."</div>
+        </div>
+
+        <div class="tl-card">
+          <div class="tl-poster" style="background-image: url('images/timeline/sinners.jpg')"></div>
+          <div class="tl-date">Apr 2025</div>
           <div class="tl-title">Sinners</div>
           <div class="tl-note">"Ryan Coogler does it again."</div>
         </div>
@@ -2247,7 +2256,7 @@
       <!-- Left: Guide list -->
       <div class="guide-panel">
         <div class="guide-hdr">
-          <span class="guide-hdr-title">Upcoming &middot; June 2026</span>
+          <span class="guide-hdr-title" id="guideHdrTitle">Upcoming</span>
           <span class="guide-hdr-hint">Tap + to save</span>
         </div>
         <div class="guide-list" id="guideList"></div>
@@ -2257,7 +2266,7 @@
       <div class="cal-mockup-int">
         <div class="cal-hdr">
           <div class="cal-nav">&#8249;</div>
-          <div class="cal-month">June 2026</div>
+          <div class="cal-month" id="calMonthLabel"></div>
           <div class="cal-nav">&#8250;</div>
         </div>
         <div class="cal-wdays">
@@ -2324,6 +2333,29 @@
 
   <script>
 
+    // All TMDB data is fetched through the Supabase edge proxy — the raw TMDB
+    // API key lives only in the edge function's environment, never client-side.
+    const TMDB_PROXY = 'https://mkegtssedjyqldysvzga.supabase.co/functions/v1/tmdb-proxy';
+    const TMDB_PROXY_HEADERS = { Authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1rZWd0c3NlZGp5cWxkeXN2emdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2MDgzMzUsImV4cCI6MjA4OTE4NDMzNX0.W-toEr3ftNeN0iTpRQ8Ord09sxBiwO2CQC6j2jszN6w' };
+    function tmdbProxy(path, params) {
+      var qs = '?path=' + encodeURIComponent(path) + (params ? '&' + params : '');
+      return fetch(TMDB_PROXY + qs, { headers: TMDB_PROXY_HEADERS }).then(function(r) { return r.json(); });
+    }
+
+    // The side posters (desktop) and hero filmstrip (mobile) want the same three
+    // result sets — fetch them once and share the promise.
+    let trendingSetsPromise = null;
+    function fetchTrendingSets() {
+      if (!trendingSetsPromise) {
+        trendingSetsPromise = Promise.all([
+          tmdbProxy('trending/movie/week'),
+          tmdbProxy('movie/now_playing'),
+          tmdbProxy('trending/tv/week'),
+        ]);
+      }
+      return trendingSetsPromise;
+    }
+
     // Navbar scroll effect
     const navbar = document.getElementById('navbar');
     window.addEventListener('scroll', () => {
@@ -2358,6 +2390,12 @@
     document.querySelectorAll('#hero .reveal').forEach(el => {
       el.classList.add('visible');
     });
+
+    // Guide demo date header — always today's date
+    const guideDateHdr = document.getElementById('guideDateHdr');
+    if (guideDateHdr) {
+      guideDateHdr.textContent = 'Today — ' + new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+    }
 
     // ── Manifesto mobile sequence ─────────────────────────────
     if (window.innerWidth < 600) {
@@ -2445,21 +2483,12 @@
       { side: 'right', vy: 0.36, showAt: 2060, w: 330, h: 495, restX:  2 },
     ];
 
-    const TMDB_KEY = '582b64eb4af90b01334906c1d5a38656';
-    const TMDB_BASE = 'https://api.themoviedb.org/3';
     const TMDB_IMG  = 'https://image.tmdb.org/t/p/w500';
 
     async function fetchSidePosters() {
-      const [trendingRes, nowPlayingRes, tvRes] = await Promise.all([
-        fetch(`${TMDB_BASE}/trending/movie/week?api_key=${TMDB_KEY}`),
-        fetch(`${TMDB_BASE}/movie/now_playing?api_key=${TMDB_KEY}`),
-        fetch(`${TMDB_BASE}/trending/tv/week?api_key=${TMDB_KEY}`),
-      ]);
-      const [trending, nowPlaying, tv] = await Promise.all([
-        trendingRes.json(), nowPlayingRes.json(), tvRes.json()
-      ]);
+      const [trending, nowPlaying, tv] = await fetchTrendingSets();
       const all = [
-        ...trending.results, ...nowPlaying.results, ...tv.results
+        ...(trending.results || []), ...(nowPlaying.results || []), ...(tv.results || [])
       ].filter(r => r.poster_path);
       // Shuffle and dedupe
       const seen = new Set();
@@ -2665,7 +2694,6 @@
 
     // ── Live ticker ───────────────────────────────────────────
     (async function initTicker() {
-      const PROXY = 'https://mkegtssedjyqldysvzga.supabase.co/functions/v1/tmdb-proxy';
       const track = document.getElementById('tickerTrack');
       if (!track) return;
 
@@ -2712,15 +2740,12 @@
         });
       }
 
-      const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1rZWd0c3NlZGp5cWxkeXN2emdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2MDgzMzUsImV4cCI6MjA4OTE4NDMzNX0.W-toEr3ftNeN0iTpRQ8Ord09sxBiwO2CQC6j2jszN6w';
-      const headers = { Authorization: `Bearer ${ANON_KEY}` };
-
       try {
         const [trending, nowPlaying, upcoming, topTv] = await Promise.all([
-          fetch(`${PROXY}?path=trending/all/week`, { headers }).then(r => r.json()),
-          fetch(`${PROXY}?path=movie/now_playing`, { headers }).then(r => r.json()),
-          fetch(`${PROXY}?path=movie/upcoming`,    { headers }).then(r => r.json()),
-          fetch(`${PROXY}?path=tv/top_rated`,      { headers }).then(r => r.json()),
+          tmdbProxy('trending/all/week'),
+          tmdbProxy('movie/now_playing'),
+          tmdbProxy('movie/upcoming'),
+          tmdbProxy('tv/top_rated'),
         ]);
 
         populate([
@@ -2869,10 +2894,6 @@
 
     // ── Interactive Calendar Demo ─────────────────────────────
     (function() {
-      var PROXY = 'https://mkegtssedjyqldysvzga.supabase.co/functions/v1/tmdb-proxy';
-      var KEY   = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1rZWd0c3NlZGp5cWxkeXN2emdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2MDgzMzUsImV4cCI6MjA4OTE4NDMzNX0.W-toEr3ftNeN0iTpRQ8Ord09sxBiwO2CQC6j2jszN6w';
-      var HDRS  = { 'Authorization': 'Bearer ' + KEY, 'apikey': KEY };
-
       // Fallback: shown while TMDB loads (or on error)
       var FALLBACK = [
         { id: 'f1',         title: 'F1: The Movie',     type: 'cinema',    day: 26, img: 'images/hero/f1-the-movie.webp' },
@@ -2888,16 +2909,23 @@
         episode:   { label: 'Episode',   color: '#4a90d9' },
       };
 
-      // June 2026: June 1 = Monday (col index 1, 0=Sun). 30 days. No today marker.
-      var GRID = [
-        {day:31,dim:true},
-        {day:1},{day:2},{day:3},{day:4},{day:5},{day:6},{day:7},
-        {day:8},{day:9},{day:10},{day:11},{day:12},{day:13},{day:14},
-        {day:15},{day:16},{day:17},{day:18},{day:19},{day:20},{day:21},
-        {day:22},{day:23},{day:24},{day:25},{day:26},{day:27},
-        {day:28},{day:29},{day:30},
-        {day:1,dim:true},{day:2,dim:true},{day:3,dim:true},{day:4,dim:true},
-      ];
+      var NOW = new Date();
+      var MONTH_NAME  = NOW.toLocaleString('en-US', { month: 'long' });
+      var MONTH_LABEL = MONTH_NAME + ' ' + NOW.getFullYear();
+
+      // Current month's grid — leading/trailing cells from adjacent months are dimmed
+      var GRID = (function() {
+        var y = NOW.getFullYear(), m = NOW.getMonth();
+        var firstDow    = new Date(y, m, 1).getDay(); // 0 = Sunday
+        var daysInMonth = new Date(y, m + 1, 0).getDate();
+        var daysInPrev  = new Date(y, m, 0).getDate();
+        var cells = [];
+        for (var i = firstDow - 1; i >= 0; i--) cells.push({ day: daysInPrev - i, dim: true });
+        for (var d = 1; d <= daysInMonth; d++) cells.push({ day: d, today: d === NOW.getDate() });
+        var next = 1;
+        while (cells.length % 7 !== 0) cells.push({ day: next++, dim: true });
+        return cells;
+      })();
 
       var RELEASES = FALLBACK.slice();
       var saved = {};
@@ -2913,7 +2941,7 @@
           html += '<div class="guide-poster" style="background-image:url(\'' + r.img + '\')"></div>';
           html += '<div class="guide-info">';
           html += '<div class="guide-item-title">' + r.title + '</div>';
-          html += '<div class="guide-item-meta">June ' + r.day + ' · ' + TYPE[r.type].label + '</div>';
+          html += '<div class="guide-item-meta">' + MONTH_NAME + ' ' + r.day + ' · ' + TYPE[r.type].label + '</div>';
           html += '</div>';
           html += '<button class="guide-add-btn' + (isAdded ? ' added' : '') + '" ';
           html += 'onclick="window._calDemo.toggle(\'' + r.id + '\')" ';
@@ -2935,7 +2963,7 @@
         GRID.forEach(function(cell) {
           var events = (!cell.dim && dayMap[cell.day]) ? dayMap[cell.day] : [];
           var sel = !cell.dim && cell.day === selectedDay;
-          var cls = 'cal-cell-int' + (cell.dim ? ' dim' : '') + (sel ? ' selected' : '');
+          var cls = 'cal-cell-int' + (cell.dim ? ' dim' : '') + (sel ? ' selected' : '') + (cell.today ? ' today' : '');
           var click = !cell.dim ? 'onclick="window._calDemo.selectDay(' + cell.day + ')"' : '';
           var dots = '';
           events.forEach(function(e) { dots += '<div class="cal-dot-int" style="background:' + TYPE[e.type].color + '"></div>'; });
@@ -2956,7 +2984,11 @@
         }
         var events = RELEASES.filter(function(r) { return r.day === selectedDay && saved[r.id]; });
         if (!events.length) {
-          panel.innerHTML = '<div class="cal-day-empty">June ' + selectedDay + ' — no saved releases</div>';
+          var empty = document.createElement('div');
+          empty.className = 'cal-day-empty';
+          empty.textContent = MONTH_NAME + ' ' + selectedDay + ' — no saved releases';
+          panel.textContent = '';
+          panel.appendChild(empty);
           return;
         }
         var html = '';
@@ -2965,7 +2997,7 @@
           html += '<div class="cal-day-event">';
           html += '<div class="cal-day-poster" style="background-image:url(\'' + e.img + '\')"></div>';
           html += '<div><div class="cal-day-title">' + e.title + '</div>';
-          html += '<div class="cal-day-meta">June ' + e.day + ' &middot; <span style="color:' + tc.color + '">' + tc.label + '</span></div></div>';
+          html += '<div class="cal-day-meta">' + MONTH_NAME + ' ' + e.day + ' &middot; <span style="color:' + tc.color + '">' + tc.label + '</span></div></div>';
           html += '</div>';
         });
         panel.innerHTML = html;
@@ -2993,7 +3025,7 @@
           } else {
             saved[id] = true;
             selectedDay = item.day;
-            showToast('✓ Added to June ' + item.day);
+            showToast('✓ Added to ' + MONTH_NAME + ' ' + item.day);
           }
           renderGuide(); renderCalendar(); renderDayPanel();
         },
@@ -3006,12 +3038,10 @@
       function fetchAndRender() {
         // 3 separate calls: trending TV (2), trending movies (2), upcoming cinema (1)
         Promise.all([
-          fetch(PROXY + '?path=trending%2Ftv%2Fweek&language=en-US&page=1', { headers: HDRS }),
-          fetch(PROXY + '?path=trending%2Fmovie%2Fweek&language=en-US&page=1', { headers: HDRS }),
-          fetch(PROXY + '?path=movie%2Fnow_playing&region=US&language=en-US&page=1', { headers: HDRS })
-        ]).then(function(responses) {
-          return Promise.all(responses.map(function(r) { return r.json(); }));
-        }).then(function(data) {
+          tmdbProxy('trending/tv/week', 'language=en-US&page=1'),
+          tmdbProxy('trending/movie/week', 'language=en-US&page=1'),
+          tmdbProxy('movie/now_playing', 'region=US&language=en-US&page=1')
+        ]).then(function(data) {
           var tvList       = (data[0] && data[0].results) ? data[0].results : [];
           var movieList    = (data[1] && data[1].results) ? data[1].results : [];
           var nowPlaying   = (data[2] && data[2].results) ? data[2].results : [];
@@ -3054,7 +3084,7 @@
             var tmp = items[i]; items[i] = items[j]; items[j] = tmp;
           }
 
-          // Assign spread-out June days in order after shuffle
+          // Assign spread-out days of the month in order after shuffle
           var days = [3, 8, 14, 20, 27];
           items.slice(0, 5).forEach(function(item, i) { item.day = days[i]; });
 
@@ -3065,6 +3095,10 @@
 
       function init() {
         if (document.getElementById('guideList')) {
+          var hdrTitle = document.getElementById('guideHdrTitle');
+          if (hdrTitle) hdrTitle.textContent = 'Upcoming · ' + MONTH_LABEL;
+          var monthLabel = document.getElementById('calMonthLabel');
+          if (monthLabel) monthLabel.textContent = MONTH_LABEL;
           renderGuide(); renderCalendar(); renderDayPanel();
           fetchAndRender();
         } else {
@@ -3098,21 +3132,12 @@
 
   <script>
     (async function loadHeroPosters() {
-      const TMDB_KEY = '582b64eb4af90b01334906c1d5a38656';
-      const BASE = 'https://api.themoviedb.org/3';
       const IMG = 'https://image.tmdb.org/t/p/w342';
 
       try {
-        const [trendingRes, nowPlayingRes, tvRes] = await Promise.all([
-          fetch(`${BASE}/trending/movie/week?api_key=${TMDB_KEY}`),
-          fetch(`${BASE}/movie/now_playing?api_key=${TMDB_KEY}`),
-          fetch(`${BASE}/trending/tv/week?api_key=${TMDB_KEY}`),
-        ]);
-        const [trending, nowPlaying, tv] = await Promise.all([
-          trendingRes.json(), nowPlayingRes.json(), tvRes.json()
-        ]);
+        const [trending, nowPlaying, tv] = await fetchTrendingSets();
 
-        const pick = (arr, n) => arr.filter(r => r.poster_path).slice(0, n);
+        const pick = (arr, n) => (arr || []).filter(r => r.poster_path).slice(0, n);
         const posters = [
           ...pick(trending.results, 5),
           ...pick(nowPlaying.results, 5),
