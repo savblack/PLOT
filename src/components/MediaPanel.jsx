@@ -479,6 +479,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
       setDetails(det);
       const region = getTmdbRegion();
       const results = prov?.results || {};
+      console.log('[PLOT] watch providers region:', region, 'keys:', Object.keys(results), 'US data:', results['US']);
       const hasProviders = (d) => d && (d.flatrate || d.free || d.ads || d.rent || d.buy);
       const regionData = (hasProviders(results[region]) ? results[region] : results['US']) || {};
       const streaming = dedupeProviders([
