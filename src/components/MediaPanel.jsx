@@ -508,7 +508,6 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
   useEffect(() => { loadDetails(); }, [loadDetails]);
 
   const title   = details?.title || details?.name || '';
-  const year    = (details?.release_date || details?.first_air_date || '').slice(0, 4);
   const rating  = details?.vote_average ? `${details.vote_average.toFixed(1)} ★` : '';
   const genres  = (details?.genres || []).slice(0, 3).map(g => g.name).join(' · ');
   const date    = details?.release_date || details?.first_air_date;
