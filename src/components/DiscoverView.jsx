@@ -34,7 +34,7 @@ function DiscoverSectionHeader({ kicker, title, open, onToggle, className = '' }
   return (
     <button
       className={`date-group-header date-group-collapsible discover-section-header${className ? ` ${className}` : ''}`}
-      style={{ paddingTop: '0.5rem' }}
+      style={{ paddingTop: '1rem', paddingBottom: '0.5rem' }}
       onClick={onToggle}
       aria-expanded={open}
       type="button"
