@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>PLOT | Your Film &amp; TV Journal</title>
   <meta name="description" content="The beautiful way to track what you watch. Log, rate, and share your film and TV taste." />
 
@@ -162,7 +162,12 @@
       gap: 2rem;
       list-style: none;
     }
+    /* Flex keeps the padded anchors vertically centered (baseline alignment
+       inside the list item pushes them above the nav midline otherwise) */
+    .nav-links li { display: flex; }
     .nav-links a {
+      display: inline-block;
+      padding: 0.75rem 0.25rem;
       text-decoration: none;
       color: var(--muted);
       font-size: 0.75rem;
@@ -225,13 +230,15 @@
     .feat-dots { display: none; }
     .ftp-mobile-posters { display: none; }
 
-    /* Mobile nav toggle */
+    /* Mobile nav toggle — padded to a ≥44px tap target, negative margin keeps
+       the icon optically aligned with the nav's right edge */
     .nav-hamburger {
       display: none;
       background: none;
       border: none;
       cursor: pointer;
-      padding: 4px;
+      padding: 14px 12px;
+      margin-right: -12px;
       flex-direction: column;
       gap: 5px;
     }
@@ -732,7 +739,12 @@
       overflow: hidden;
       display: flex;
       align-items: center;
-      height: var(--ticker-height);
+      /* Keep the ticker content above the iOS home indicator */
+      height: calc(var(--ticker-height) + env(safe-area-inset-bottom, 0px));
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      background: var(--glass-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
     }
 
     .ticker-badge {
@@ -806,7 +818,7 @@
       background: #1a1a1a;
       border-top: none;
       overflow: hidden;
-      padding: clamp(1.5rem, 3vw, 2.5rem) 0 calc(var(--ticker-height) + 1.25rem);
+      padding: clamp(1.5rem, 3vw, 2.5rem) 0 calc(var(--ticker-height) + env(safe-area-inset-bottom, 0px) + 1.25rem);
       position: relative;
       z-index: 3;
     }
@@ -853,6 +865,8 @@
     }
 
     .footer-links a {
+      display: inline-block;
+      padding: 0.8rem 0.25rem;
       text-decoration: none;
       color: rgba(240,239,232,0.22);
       font-size: 0.78rem;
@@ -871,8 +885,24 @@
 
     /* ── Responsive ─────────────────────────────────────────── */
     @media (max-width: 900px) {
-      /* Editorial poster stack uses absolute pixel positions — hide on smaller screens */
+      /* Editorial poster stack uses absolute pixel positions — hide on smaller screens
+         and show the simple poster grid in its place */
       #editorialWrap { display: none; }
+      .ftp-mobile-posters {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.5rem;
+        margin-top: 2rem;
+        border-radius: 16px;
+        overflow: hidden;
+      }
+      .ftp-mobile-poster {
+        aspect-ratio: 2/3;
+        background-size: cover;
+        background-position: center;
+        background-color: #ddd;
+        border-radius: 8px;
+      }
     }
 
     @media (max-width: 768px) {
@@ -896,14 +926,17 @@
         backdrop-filter: blur(16px);
         -webkit-backdrop-filter: blur(16px);
         border-bottom: 1px solid var(--glass-border);
-        padding: 1.5rem 2rem;
-        gap: 1.2rem;
+        padding: 1.25rem 2rem;
+        gap: 0.35rem;
+        align-items: stretch;
       }
+      .nav-links.open li { display: block; }
+      .nav-links.open a { display: block; padding: 0.85rem 0; text-align: center; }
       .nav-hamburger { display: flex; }
 
       /* Hero — show filmstrip */
       #hero { padding-top: 5rem; padding-bottom: 2rem; }
-      .btn-large { padding: 0.6rem 1.4rem; font-size: 0.75rem; min-height: unset; }
+      .btn-large { padding: 0.6rem 1.4rem; font-size: 0.75rem; }
       .hero-filmstrip { display: block; margin-left: -2rem; margin-right: -2rem; }
       .hero-film-card { width: 140px; height: 210px; border-radius: 12px; }
       .hero-filmstrip-inner { gap: 12px; }
@@ -1007,23 +1040,8 @@
       }
       .feat-dot.active { background: var(--text); }
 
-      /* For the Plot — section padding + mobile poster grid */
+      /* For the Plot — section padding (poster grid rules live in the 900px query) */
       #for-the-plot { padding: 5rem 1.5rem; }
-      .ftp-mobile-posters {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 0.5rem;
-        margin-top: 2rem;
-        border-radius: 16px;
-        overflow: hidden;
-      }
-      .ftp-mobile-poster {
-        aspect-ratio: 2/3;
-        background-size: cover;
-        background-position: center;
-        background-color: #ddd;
-        border-radius: 8px;
-      }
 
       /* Timeline — tighten padding on mobile */
       #timeline-section { padding: 5rem 0 4rem; }
@@ -1742,6 +1760,14 @@
       flex-shrink: 0;
       transition: all 0.18s;
       line-height: 1;
+      position: relative;
+    }
+    /* Invisible halo extends the 30px circle to a ~46px touch target */
+    .guide-add-btn::after {
+      content: '';
+      position: absolute;
+      inset: -8px;
+      border-radius: 50%;
     }
     .guide-add-btn:hover { border-color: #e05578; color: #e05578; background: rgba(224,85,120,0.08); }
     .guide-add-btn.added  { border-color: #3a9e6a; color: #3a9e6a; background: rgba(58,158,106,0.12); }
@@ -2405,9 +2431,15 @@
     }
 
     // ── Manifesto mobile sequence ─────────────────────────────
-    if (window.innerWidth < 600) {
+    // The sequence layout is CSS-gated at max-width: 600px, so the JS gate
+    // must match (<= 600) and re-check on resize/rotation rather than only
+    // once at load.
+    (function() {
       const seqLines = document.querySelectorAll('.mseq-line');
       const seqDots  = document.querySelectorAll('.mseq-dot');
+      const manifestoSection = document.getElementById('manifesto');
+      if (!manifestoSection || !seqLines.length) return;
+
       let seqIdx = 0;
       let started = false;
 
@@ -2428,16 +2460,23 @@
 
       const manifestoObserver = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
-          if (entry.isIntersecting) {
+          if (entry.isIntersecting && window.innerWidth <= 600) {
             startSequence();
             manifestoObserver.disconnect();
           }
         });
       }, { threshold: 0.5 });
 
-      const manifestoSection = document.getElementById('manifesto');
-      if (manifestoSection) manifestoObserver.observe(manifestoSection);
-    }
+      manifestoObserver.observe(manifestoSection);
+
+      // Rotation/resize into the mobile layout while the section is already
+      // on screen — the observer won't refire, so check directly.
+      window.addEventListener('resize', () => {
+        if (started || window.innerWidth > 600) return;
+        const r = manifestoSection.getBoundingClientRect();
+        if (r.top < window.innerHeight && r.bottom > 0) startSequence();
+      });
+    })();
 
     // ── Manifesto scroll-driven fade ──────────────────────────
     const manifestoLines = [...document.querySelectorAll('.manifesto-line')];
@@ -2460,7 +2499,13 @@
     // showAt < 0  → visible on load (negative puts us in hold phase at scrollY=0)
     // vy          → vertical position as fraction of viewport height (poster top)
     // restX       → distance from screen edge when fully in
-    if (window.innerWidth >= 1100) {
+    // Initialized lazily so a rotation/resize up past 1100px still gets
+    // posters even when the page loaded narrower. Runs at most once; below
+    // 1100px the CSS hides #posterSide again.
+    let sidePostersStarted = false;
+    function initSidePosters() {
+      if (sidePostersStarted || window.innerWidth < 1100) return;
+      sidePostersStarted = true;
     const sideLayout = [
       // On load — four posters (2 left, 2 right) — reach well into centre
       { side: 'left',  vy: 0.51, showAt:  0, w: 260, h: 390, restX:  8, hold: 1000 },
@@ -2597,7 +2642,9 @@
       }
       requestAnimationFrame(updateSide);
     }).catch(() => {}); // end fetchSidePosters
-    } // end desktop-only poster system
+    } // end initSidePosters
+    initSidePosters();
+    window.addEventListener('resize', initSidePosters);
 
     // ── Editorial poster layout ───────────────────────────────
     const editorialData = [

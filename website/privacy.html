@@ -36,6 +36,7 @@
       background: var(--bg);
       color: var(--text);
       font-family: var(--sans);
+      font-weight: 300;
       line-height: 1.6;
       -webkit-font-smoothing: antialiased;
     }
@@ -56,12 +57,25 @@
       border-bottom: 1px solid var(--glass-border);
     }
     .nav-logo { text-decoration: none; display: flex; align-items: center; }
-    .nav-logo img { height: 28px; display: block; }
+    .nav-logo span {
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-size: 2.5rem;
+      font-weight: 400;
+      letter-spacing: -0.05em;
+      color: var(--text);
+      line-height: 1;
+      user-select: none;
+    }
 
     .nav-links {
       display: flex; align-items: center; gap: 2rem; list-style: none;
     }
+    /* Flex keeps the padded anchors vertically centered (baseline alignment
+       inside the list item pushes them above the nav midline otherwise) */
+    .nav-links li { display: flex; }
     .nav-links a {
+      display: inline-block;
+      padding: 0.75rem 0.25rem;
       text-decoration: none;
       color: var(--muted);
       font-size: 0.75rem;
@@ -97,15 +111,6 @@
       margin-bottom: 0.5rem;
     }
 
-    .page-owner {
-      font-size: 0.75rem;
-      font-weight: 600;
-      color: #1a1a1a;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      margin-bottom: 0.75rem;
-    }
-
     .page-meta {
       font-size: 0.82rem;
       color: var(--muted);
@@ -129,13 +134,15 @@
       text-align: justify;
     }
 
-    ul {
+    /* Scoped to the content area — generic ul/li margins would otherwise
+       bleed into the nav and footer link lists and knock them off-center */
+    .page-wrap ul {
       font-size: 0.93rem;
       color: #333;
       margin: 0 0 1rem 1.5rem;
       text-align: justify;
     }
-    ul li { margin-bottom: 0.4rem; }
+    .page-wrap ul li { margin-bottom: 0.4rem; }
 
     a { color: var(--text); }
     a:hover { opacity: 0.7; }
@@ -174,14 +181,15 @@
 
     @media (max-width: 600px) {
       .footer-meta { flex-direction: column; gap: 1.5rem; align-items: flex-start; }
-      .nav-links { display: none; }
+      /* Only two short links — keep them reachable on mobile, just tighter */
+      .nav-links { gap: 1rem; }
     }
   </style>
 </head>
 <body>
 
   <nav>
-    <a href="index.html" class="nav-logo"><img src="plot-logo.svg" alt="PLOT"></a>
+    <a href="index.html" class="nav-logo"><span>PLOT</span></a>
     <ul class="nav-links">
       <li><a href="https://app.theplot.tv/login">Log in</a></li>
       <li><a href="https://app.theplot.tv/signup" class="nav-cta">Sign up</a></li>
@@ -191,7 +199,6 @@
   <main class="page-wrap">
     <p class="page-label">Legal</p>
     <h1>Privacy Policy</h1>
-    <p class="page-owner">A product of SUSUMU HOUSE</p>
     <p class="page-meta">Last updated: March 2026</p>
 
     <h2>1. Agreement to This Policy</h2>
@@ -220,11 +227,12 @@
     <p>We do not sell your personal data to third parties. We are not responsible for how you choose to use or expose your own data within the Service.</p>
 
     <h2>4. Third-Party Services &amp; Disclaimer</h2>
-    <p>The Service relies on third-party infrastructure and data providers. By using PLOT, you acknowledge and accept that your data will be processed by these third parties under their own terms and privacy policies, over which SUSUMU HOUSE has no control:</p>
+    <p>The Service relies on third-party infrastructure and data providers. By using PLOT, you acknowledge and accept that your data will be processed by these third parties under their own terms and privacy policies, over which we have no control:</p>
     <ul>
       <li><strong>Supabase</strong> — authentication and database. See <a href="https://supabase.com/privacy" target="_blank" rel="noopener">Supabase's Privacy Policy</a>.</li>
       <li><strong>The Movie Database (TMDB)</strong> — film and TV metadata. See <a href="https://www.themoviedb.org/privacy-policy" target="_blank" rel="noopener">TMDB's Privacy Policy</a>.</li>
       <li><strong>Vercel</strong> — website and application hosting. Your requests are routed through Vercel's infrastructure.</li>
+      <li><strong>PostHog</strong> — product analytics used to understand how the Service is used. See <a href="https://posthog.com/privacy" target="_blank" rel="noopener">PostHog's Privacy Policy</a>.</li>
       <li><strong>Google Fonts</strong> — typography loaded from Google's servers, which may log your IP address per Google's privacy policy.</li>
     </ul>
     <p>We are not liable for the acts or omissions of these third-party providers, including any data breaches, service outages, or loss of data that occurs on their infrastructure. Your use of the Service constitutes your acceptance of their respective policies.</p>
@@ -234,7 +242,7 @@
     <ul>
       <li>No internet transmission or electronic storage method is 100% secure</li>
       <li>You provide your data at your own risk</li>
-      <li>SUSUMU HOUSE shall not be liable for any unauthorised access, data breach, loss, theft, or disclosure of your information that is beyond our reasonable control</li>
+      <li>We shall not be liable for any unauthorised access, data breach, loss, theft, or disclosure of your information that is beyond our reasonable control</li>
       <li>In the event of a data breach, we will notify affected users as required by applicable law, but shall not be liable for any resulting damages</li>
     </ul>
 
@@ -254,7 +262,7 @@
     <p>We reserve the right to update this Privacy Policy at any time. Changes will be posted to this page with an updated "last updated" date. Your continued use of the Service after any changes constitutes your acceptance of the revised policy. We are not obligated to provide individual notice of changes beyond updating this page.</p>
 
     <h2>11. Contact</h2>
-    <p>PLOT is a product of SUSUMU HOUSE. This Privacy Policy is governed by the laws of New South Wales, Australia. Any disputes arising in connection with this policy are subject to the exclusive jurisdiction of the courts of New South Wales, Australia. For privacy-related enquiries, contact us at <a href="mailto:contact@susumuhouse.com">contact@susumuhouse.com</a> or via the app.</p>
+    <p>This Privacy Policy is governed by the laws of New South Wales, Australia. Any disputes arising in connection with this policy are subject to the exclusive jurisdiction of the courts of New South Wales, Australia. For privacy-related enquiries, contact us via the app.</p>
   </main>
 
   <!-- ── Footer ────────────────────────────────────────────────── -->
