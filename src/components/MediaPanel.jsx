@@ -608,20 +608,25 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
 
             {/* ── Action buttons: 2×2 grid ── */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
+              {(() => {
+                const btn = {
+                  flex: 1, padding: '0.5rem 0.5rem', borderRadius: '0.75rem',
+                  cursor: 'pointer', fontSize: '0.85rem', fontWeight: 500,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'all 0.18s', boxSizing: 'border-box',
+                };
+                return (<>
 
-              {/* Row 1: Save + Mark watched */}
+              {/* Row 1: Save + Watch status */}
               <div style={{ display: 'flex', gap: '0.5rem' }}>
                 {/* Save / Saved */}
                 <button
                   onClick={() => watchlist.toggle({ ...details, id: itemId, media_type: itemType })}
                   style={{
-                    flex: 1, padding: '0.52rem 0.5rem', borderRadius: '0.75rem',
+                    ...btn, fontWeight: 600,
                     border: inList ? '1.5px solid rgba(74,222,128,0.2)' : '1.5px solid transparent',
-                    cursor: 'pointer',
                     background: inList ? '#0d2d1a' : 'var(--accent)',
                     color: inList ? '#4ade80' : '#fff',
-                    fontWeight: 600, fontSize: '0.88rem', transition: 'all 0.2s',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
                   }}
                 >
                   {inList ? 'Saved' : 'Save'}
@@ -644,11 +649,8 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                       <button
                         onClick={() => setShowStatusDropdown(v => !v)}
                         style={{
-                          width: '100%', padding: '0.52rem 0.5rem', borderRadius: '0.75rem',
-                          cursor: 'pointer', fontWeight: isActive ? 600 : 500, fontSize: '0.88rem',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          position: 'relative',
-                          transition: 'all 0.18s', boxSizing: 'border-box', ...statusStyle,
+                          ...btn, fontWeight: isActive ? 600 : 500,
+                          position: 'relative', width: '100%', ...statusStyle,
                         }}
                       >
                         <span>{statusLabel}</span>
@@ -709,12 +711,10 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                 <button
                   onClick={() => favorites.toggleFavorite({ ...details, id: itemId, media_type: itemType })}
                   style={{
-                    flex: 1, padding: '0.52rem 0.5rem', borderRadius: '0.75rem',
+                    ...btn,
                     border: isFav ? '1.5px solid color-mix(in srgb, var(--accent) 40%, transparent)' : '1.5px solid var(--border)',
                     background: isFav ? 'var(--accent-dim)' : 'transparent',
                     color: isFav ? 'var(--accent)' : 'var(--text-secondary)',
-                    cursor: 'pointer', fontSize: '0.82rem', fontWeight: 500, transition: 'all 0.18s',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.38rem',
                   }}
                 >
                   {isFav ? 'Favourited' : 'Favourite'}
@@ -723,18 +723,17 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                 <button
                   onClick={() => setShowListSheet(true)}
                   style={{
-                    flex: 1, padding: '0.52rem 0.5rem', borderRadius: '0.75rem',
+                    ...btn,
                     border: isInAnyList ? '1.5px solid rgba(99,102,241,0.4)' : '1.5px solid var(--border)',
                     background: isInAnyList ? 'rgba(99,102,241,0.1)' : 'transparent',
                     color: isInAnyList ? '#818cf8' : 'var(--text-secondary)',
-                    cursor: 'pointer', fontSize: '0.82rem', fontWeight: 500, transition: 'all 0.18s',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.38rem',
                   }}
                 >
                   {isInAnyList ? 'On your list' : 'Add to list'}
                 </button>
               </div>
 
+            </>); })()}
             </div>
 
             {/* Review section (when watched) */}
