@@ -3205,54 +3205,41 @@ svg { stroke-width: 1.5; }
   font-weight: 500;
 }
 
-.discover-hero-actions {
-  display: flex;
-  gap: 0.5rem;
+.discover-hero-corner-btns {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.18s;
+}
+.discover-hero-corner-btns.visible {
+  opacity: 1;
+  pointer-events: auto;
 }
 
-.discover-hero-save {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-family: var(--font-sans);
-  font-size: 0.68rem;
-  font-weight: 600;
-  padding: 0.3rem 1.2rem;
-  border-radius: var(--radius-pill);
+.discover-hero-corner-btn {
+  position: absolute;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
   border: none;
-  background: var(--accent);
-  color: #fff;
-  cursor: pointer;
-  letter-spacing: 0.02em;
-  transition: opacity 0.15s;
-}
-.discover-hero-save svg {
-  width: 13px;
-  height: 13px;
-  stroke: #fff;
-  stroke-width: 2;
-  flex-shrink: 0;
-}
-.discover-hero-save.saved {
-  background: rgba(255,255,255,0.18);
-}
-.discover-hero-save:disabled { opacity: 0.6; }
-
-.discover-hero-info {
-  display: inline-flex;
-  align-items: center;
-  font-family: var(--font-sans);
-  font-size: 0.68rem;
-  font-weight: 600;
-  padding: 0.3rem 1.2rem;
-  border-radius: var(--radius-pill);
-  border: 1px solid rgba(255,255,255,0.3);
-  background: rgba(255,255,255,0.12);
-  color: #fff;
-  cursor: pointer;
-  letter-spacing: 0.02em;
+  background: rgba(0,0,0,0.45);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, transform 0.15s;
+  pointer-events: auto;
+}
+.discover-hero-corner-btn:hover {
+  background: rgba(0,0,0,0.65);
+  transform: scale(1.08);
+}
+.discover-hero-corner-btn.active {
+  background: var(--accent);
 }
 
 /* Rank badge overlaid on poster */

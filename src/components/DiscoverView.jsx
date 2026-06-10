@@ -119,14 +119,22 @@ function BingeCard({ item, openPanel }) {
 
 /* ── Hero card (#1 trending) ── */
 function HeroCard({ item, openPanel, watchlist }) {
+  const { favorites } = useApp();
+  const [hovered, setHovered] = useState(false);
   const title    = item.title || item.name;
   const backdrop = backdropUrl(item.backdrop_path, 'w780');
   const type     = item.media_type || 'movie';
   const year     = (item.release_date || item.first_air_date || '').slice(0, 4);
   const saved    = watchlist.isInList(item.id);
+  const fav      = favorites.isFavorite(item.id);
 
   return (
-    <div className="discover-hero" onClick={() => openPanel(item.id, type)}>
+    <div
+      className="discover-hero"
+      onClick={() => openPanel(item.id, type)}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
       {backdrop
         ? <img className="discover-hero-backdrop" src={backdrop} alt="" aria-hidden="true" />
         : <div className="discover-hero-backdrop discover-hero-backdrop-fallback" />
@@ -135,18 +143,37 @@ function HeroCard({ item, openPanel, watchlist }) {
         <span className="discover-hero-badge">Trending #1</span>
         <h2 className="discover-hero-title">{title}</h2>
         {year && <p className="discover-hero-meta">{year} · {type === 'tv' ? 'TV Series' : 'Movie'}</p>}
-        <div className="discover-hero-actions" onClick={e => e.stopPropagation()}>
-          <button
-            className={`discover-hero-save${saved ? ' saved' : ''}`}
-            onClick={() => watchlist.toggle({ ...item })}
-            disabled={watchlist.loading}
-          >
-            {saved ? 'Saved' : 'Save'}
-          </button>
-          <button className="discover-hero-info" onClick={() => openPanel(item.id, type)}>
-            More Info
-          </button>
-        </div>
+      </div>
+
+      {/* Corner action buttons — visible on hover or when active */}
+      <div
+        className={`discover-hero-corner-btns${hovered || saved || fav ? ' visible' : ''}`}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Top-left: Favourite */}
+        <button
+          className={`discover-hero-corner-btn${fav ? ' active' : ''}`}
+          style={{ position: 'absolute', top: 10, left: 10 }}
+          onClick={() => favorites.toggleFavorite({ ...item, media_type: type })}
+          aria-label={fav ? 'Unfavourite' : 'Favourite'}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill={fav ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          </svg>
+        </button>
+
+        {/* Top-right: Bookmark */}
+        <button
+          className={`discover-hero-corner-btn${saved ? ' active' : ''}`}
+          style={{ position: 'absolute', top: 10, right: 10 }}
+          onClick={() => watchlist.toggle({ ...item })}
+          disabled={watchlist.loading}
+          aria-label={saved ? 'Remove from watchlist' : 'Save to watchlist'}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill={saved ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+          </svg>
+        </button>
       </div>
     </div>
   );
