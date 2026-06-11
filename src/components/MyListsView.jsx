@@ -595,14 +595,17 @@ function CustomListsSection({ customLists: clHook, filterItems, hideHeader }) {
   const isOpen = (id) => openItems[id] ?? true;
 
   const handleCreate = useCallback(async (name) => {
-    await createList(name);
-    setCreatingList(false);
+    const created = await createList(name);
+    if (created) setCreatingList(false);
   }, [createList]);
 
   const handleRename = useCallback(async (id) => {
-    if (renameValue.trim()) await renameList(id, renameValue);
-    setRenamingId(null);
-    setRenameValue('');
+    if (!renameValue.trim()) return;
+    const renamed = await renameList(id, renameValue);
+    if (renamed) {
+      setRenamingId(null);
+      setRenameValue('');
+    }
   }, [renameList, renameValue]);
 
   return (
@@ -705,7 +708,10 @@ function CustomListsSection({ customLists: clHook, filterItems, hideHeader }) {
                     </button>
                     <button
                       style={{ display: 'block', width: '100%', padding: '0.6rem 0.8rem', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', fontSize: '0.8rem', color: '#ef4444' }}
-                      onClick={() => { deleteList(list.id); setMenuOpen(null); }}
+                      onClick={async () => {
+                        const deleted = await deleteList(list.id);
+                        if (deleted) setMenuOpen(null);
+                      }}
                       aria-label={`Delete ${list.name}`}
                     >
                       Delete list

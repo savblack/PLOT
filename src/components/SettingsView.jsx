@@ -595,6 +595,7 @@ export default function SettingsView() {
   const [generatingCalToken,  setGeneratingCalToken]  = useState(false);
   const [calTokenCopied,      setCalTokenCopied]      = useState(false);
   const [localCalToken,       setLocalCalToken]       = useState(null);
+  const [actionError,         setActionError]         = useState(null);
   const [confirmModal,        setConfirmModal]        = useState(null); // { title, message, confirmLabel, danger, onConfirm }
 
   const showConfirm = useCallback((opts) => setConfirmModal(opts), []);
@@ -659,8 +660,14 @@ export default function SettingsView() {
       message: 'Sign out of your account?',
       confirmLabel: 'Sign out',
       onConfirm: async () => {
-        await supabase.auth.signOut();
+        setActionError(null);
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+          setActionError(error.message || 'Failed to sign out.');
+          return false;
+        }
         window.location.href = '/';
+        return true;
       },
     });
   };
@@ -672,28 +679,47 @@ export default function SettingsView() {
       confirmLabel: 'Clear history',
       danger: true,
       onConfirm: async () => {
+        setActionError(null);
         setClearingHistory(true);
-        await supabase.from('journal').delete().eq('user_id', user.id);
+        const { error } = await supabase.from('journal').delete().eq('user_id', user.id);
         setClearingHistory(false);
+        if (error) {
+          setActionError(error.message || 'Failed to clear watch history.');
+          return false;
+        }
+        return true;
       },
     });
   };
 
   const handleClearListOnly = async () => {
+    setActionError(null);
     setShowClearWatchlist(false);
     setClearingWatchlist(true);
-    await supabase.from('list_items').delete().eq('user_id', user.id);
+    const { error } = await supabase.from('list_items').delete().eq('user_id', user.id);
+    if (error) {
+      setActionError(error.message || 'Failed to clear your watch list.');
+      setClearingWatchlist(false);
+      return;
+    }
     await watchlist.reload();
     setClearingWatchlist(false);
   };
 
   const handleClearListAndWatching = async () => {
+    setActionError(null);
     setShowClearWatchlist(false);
     setClearingWatchlist(true);
-    await Promise.all([
+    const results = await Promise.all([
       supabase.from('list_items').delete().eq('user_id', user.id),
       supabase.from('watching_progress').delete().eq('user_id', user.id),
     ]);
+    const firstError = results.find(result => result.error)?.error;
+    if (firstError) {
+      setActionError(firstError.message || 'Failed to clear your watch list.');
+      setClearingWatchlist(false);
+      return;
+    }
     await Promise.all([watchlist.reload(), watching.reload()]);
     setClearingWatchlist(false);
   };
@@ -705,16 +731,40 @@ export default function SettingsView() {
       confirmLabel: 'Delete account',
       danger: true,
       onConfirm: async () => {
+        setActionError(null);
         const { data: { session } } = await supabase.auth.getSession();
-        if (!session) return;
+        if (!session) {
+          setActionError('Your session has expired. Please sign in again before deleting your account.');
+          return false;
+        }
         const url = edgeFunctionUrl('delete-account');
-        if (!url) return;
-        await fetch(url, {
+        if (!url) {
+          setActionError('Delete account is not configured in this environment.');
+          return false;
+        }
+        const response = await fetch(url, {
           method:  'POST',
           headers: { Authorization: `Bearer ${session.access_token}` },
         });
-        await supabase.auth.signOut();
+        if (!response.ok) {
+          let message = 'Failed to delete your account.';
+          try {
+            const payload = await response.json();
+            if (payload?.error) message = payload.error;
+          } catch {
+            const text = await response.text();
+            if (text) message = text;
+          }
+          setActionError(message);
+          return false;
+        }
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+          setActionError(error.message || 'Your account was deleted, but sign out did not complete cleanly.');
+          return false;
+        }
         window.location.href = '/';
+        return true;
       },
     });
   };
@@ -756,6 +806,23 @@ export default function SettingsView() {
 
   return (
     <div style={{ paddingBottom: '2rem' }}>
+      {actionError && (
+        <div
+          role="alert"
+          style={{
+            margin: '0.75rem 0 1rem',
+            padding: '0.85rem 0.95rem',
+            borderRadius: 'var(--radius-md)',
+            border: '1px solid rgba(220, 38, 38, 0.18)',
+            background: 'rgba(220, 38, 38, 0.08)',
+            color: '#b91c1c',
+            fontSize: '0.82rem',
+            lineHeight: 1.5,
+          }}
+        >
+          {actionError}
+        </div>
+      )}
       {/* Account */}
       <div className="settings-group" style={{ marginTop: '0.75rem' }}>
         <div className="settings-group-title">Account</div>

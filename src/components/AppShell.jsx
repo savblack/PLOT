@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { PRIMARY_NAV_ITEMS, VIEW_TITLES } from '../navigation.js';
 
 /* ── SVG Icons ───────────────────────── */
@@ -33,6 +33,17 @@ function IconSearch() {
 export default function AppShell({ currentView, navigateTo, children }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
+  useEffect(() => {
+    if (!drawerOpen) return undefined;
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') setDrawerOpen(false);
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [drawerOpen]);
+
   const openDrawer  = () => setDrawerOpen(true);
   const closeDrawer = () => setDrawerOpen(false);
 
@@ -53,6 +64,8 @@ export default function AppShell({ currentView, navigateTo, children }) {
             className="icon-btn"
             onClick={openDrawer}
             aria-label="Open menu"
+            aria-expanded={drawerOpen}
+            aria-controls="app-nav-drawer"
           >
             <IconMenu />
           </button>
@@ -96,9 +109,13 @@ export default function AppShell({ currentView, navigateTo, children }) {
 
       {/* ── Nav Drawer ── */}
       {drawerOpen && (
-        <div className="nav-drawer-overlay" onClick={closeDrawer} />
+        <div className="nav-drawer-overlay" onClick={closeDrawer} aria-hidden="true" />
       )}
-      <div className={`nav-drawer${drawerOpen ? ' open' : ''}`}>
+      <div
+        id="app-nav-drawer"
+        className={`nav-drawer${drawerOpen ? ' open' : ''}`}
+        aria-hidden={!drawerOpen}
+      >
         <div className="nav-drawer-header">
           <span className="nav-drawer-logo">PLOT</span>
           <button type="button" className="icon-btn" onClick={closeDrawer} aria-label="Close menu">

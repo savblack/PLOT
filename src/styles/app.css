@@ -3725,8 +3725,8 @@ svg { stroke-width: 1.5; }
 
   /* Smaller header icon buttons on mobile */
   .icon-btn {
-    width: 30px;
-    height: 30px;
+    width: 44px;
+    height: 44px;
   }
   .icon-btn svg {
     width: 16px;

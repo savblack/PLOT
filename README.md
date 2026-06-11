@@ -41,6 +41,7 @@ PLOT is a private React/Vite app for discovering, logging, and sharing movies an
 - `npm run lint` runs ESLint.
 - `npm run check` runs lint and build together.
 - `npm run test:smoke` builds the app and runs Playwright route smoke tests.
+  Run `npx playwright install chromium` once first on a fresh machine if the Chromium test browser is not installed yet.
 - `npm run preview` serves the production build locally.
 
 ## Supabase Functions

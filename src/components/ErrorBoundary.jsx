@@ -1,29 +1,6 @@
 import { Component } from 'react';
 import posthog from 'posthog-js';
-
-const POSTERS = [
-  '/website-images/hero/challengers.webp',
-  '/website-images/hero/past-lives.jpg',
-  '/website-images/hero/saltburn.jpg',
-  '/website-images/hero/gone-girl.jpg',
-  '/website-images/hero/aftersun.jpg',
-  '/website-images/hero/clueless.jpg',
-  '/website-images/hero/the-summer-i-turned-pretty.jpg',
-  '/website-images/hero/love-story.webp',
-  '/website-images/hero/the-vampire-diaries.jpeg',
-  '/website-images/hero/nosferatu.jpg',
-  '/website-images/hero/scream.jpg',
-  '/website-images/hero/the-white-lotus.jpg',
-  '/website-images/hero/housemaid.jpg',
-  '/website-images/hero/anniversary.jpg',
-  '/website-images/hero/devil-wears-prada-two.jpg',
-  '/website-images/hero/oppenheimer.webp',
-  '/website-images/hero/squid-game-2.jpg',
-  '/website-images/hero/the-bear.jpg',
-  '/website-images/hero/the-wolf-of-wall-street.png',
-  '/website-images/hero/parasite.jpg',
-  '/website-images/hero/the-substance.avif',
-];
+import { HERO_POSTERS } from '../constants/heroPosters.js';
 
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Manrope:wght@400;500;600&display=swap');
@@ -246,7 +223,7 @@ function ErrorScreen({ code, label, title, body, primaryLabel, primaryAction, gh
         </div>
         <div className="plot-error-right">
           <div className="plot-error-poster-track">
-            {[...POSTERS, ...POSTERS].map((src, i) => (
+            {[...HERO_POSTERS, ...HERO_POSTERS].map((src, i) => (
               <div key={i} className="plot-error-poster-cell" style={{ backgroundImage: `url(${src})` }} />
             ))}
           </div>

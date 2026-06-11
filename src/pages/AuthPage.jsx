@@ -4,28 +4,7 @@ import { supabase } from '../api/supabase';
 import './AuthPage.css';
 import { usePostHog } from '@posthog/react';
 import { getAuthCallbackUrl } from '../utils/redirects.js';
-
-const POSTERS = [
-  '/website-images/hero/challengers.webp',
-  '/website-images/hero/past-lives.jpg',
-  '/website-images/hero/saltburn.jpg',
-  '/website-images/hero/gone-girl.jpg',
-  '/website-images/hero/aftersun.jpg',
-  '/website-images/hero/clueless.jpg',
-  '/website-images/hero/the-summer-i-turned-pretty.jpg',
-  '/website-images/hero/love-story.webp',
-  '/website-images/hero/the-vampire-diaries.jpeg',
-  '/website-images/hero/promising-young-woman.jpg',
-  '/website-images/hero/scream.jpg',
-  '/website-images/hero/the-white-lotus.jpg',
-  '/website-images/hero/housemaid.jpg',
-  '/website-images/hero/anniversary.jpg',
-  '/website-images/hero/devil-wears-prada-two.jpg',
-  '/website-images/hero/edward-scissorhands.jpg',
-  '/website-images/hero/my-neighbour-totoro.jpg',
-  '/website-images/hero/eternity.jpg',
-  '/website-images/hero/presumed-innocent.jpeg',
-];
+import { HERO_POSTERS } from '../constants/heroPosters.js';
 
 function friendlyError(msg) {
   if (!msg) return 'Something went wrong. Please try again.';
@@ -114,7 +93,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
     setResendStatus(error ? 'error' : 'sent');
   };
 
-  const scrollPosters = [...POSTERS, ...POSTERS];
+  const scrollPosters = [...HERO_POSTERS, ...HERO_POSTERS];
 
   const headings = {
     signup: 'Create your account',
@@ -244,8 +223,9 @@ export default function AuthPage({ initialMode = 'signup' }) {
                         type="button"
                         className="auth-show-pw"
                         onClick={() => setShowPassword(v => !v)}
-                        tabIndex={-1}
                         aria-label={showPassword ? 'Hide password' : 'Show password'}
+                        aria-pressed={showPassword}
+                        title={showPassword ? 'Hide password' : 'Show password'}
                       >
                         {showPassword ? 'Hide' : 'Show'}
                       </button>

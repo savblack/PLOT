@@ -22,24 +22,32 @@ export function useTopLists(userId) {
   useEffect(() => { load(); }, [load]);
 
   const setSlot = useCallback(async (listType, rank, item) => {
-    if (!userId) return;
+    if (!userId) return false;
     const tmdbId = Number(item.id || item.tmdb_id);
 
     // Remove any existing entry for this item in this list (same tmdb_id, different rank)
-    await supabase.from('user_top_lists')
+    const removeExisting = await supabase.from('user_top_lists')
       .delete()
       .eq('user_id', userId)
       .eq('list_type', listType)
       .eq('tmdb_id', tmdbId);
+    if (removeExisting.error) {
+      console.error('Failed to clear existing top-list slot', removeExisting.error);
+      return false;
+    }
 
     // Remove whatever is at the target rank
-    await supabase.from('user_top_lists')
+    const removeRank = await supabase.from('user_top_lists')
       .delete()
       .eq('user_id', userId)
       .eq('list_type', listType)
       .eq('rank', rank);
+    if (removeRank.error) {
+      console.error('Failed to clear target top-list rank', removeRank.error);
+      return false;
+    }
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('user_top_lists')
       .insert({
         user_id:     userId,
@@ -52,6 +60,11 @@ export function useTopLists(userId) {
       })
       .select()
       .single();
+    if (error) {
+      console.error('Failed to save top-list slot', error);
+      await load();
+      return false;
+    }
 
     if (data) {
       setLists(prev => {
@@ -59,40 +72,55 @@ export function useTopLists(userId) {
         return { ...prev, [listType]: [...updated, data].sort((a, b) => a.rank - b.rank) };
       });
     }
-  }, [userId]);
+    return true;
+  }, [load, userId]);
 
   const removeSlot = useCallback(async (listType, tmdbId) => {
-    if (!userId) return;
-    await supabase.from('user_top_lists')
+    if (!userId) return false;
+    const { error } = await supabase.from('user_top_lists')
       .delete()
       .eq('user_id', userId)
       .eq('list_type', listType)
       .eq('tmdb_id', Number(tmdbId));
+    if (error) {
+      console.error('Failed to remove top-list slot', error);
+      return false;
+    }
     setLists(prev => ({
       ...prev,
       [listType]: prev[listType].filter(i => i.tmdb_id !== Number(tmdbId)),
     }));
+    return true;
   }, [userId]);
 
   const swapRanks = useCallback(async (listType, rankA, rankB) => {
-    if (!userId) return;
+    if (!userId) return false;
     const items = lists[listType];
     const itemA = items.find(i => i.rank === rankA);
     const itemB = items.find(i => i.rank === rankB);
-    if (!itemA || !itemB) return;
+    if (!itemA || !itemB) return false;
 
     // Delete both, re-insert with swapped ranks
-    await supabase.from('user_top_lists')
+    const removeResult = await supabase.from('user_top_lists')
       .delete()
       .eq('user_id', userId)
       .eq('list_type', listType)
       .in('rank', [rankA, rankB]);
+    if (removeResult.error) {
+      console.error('Failed to swap top-list ranks', removeResult.error);
+      return false;
+    }
 
-    await supabase.from('user_top_lists')
+    const insertResult = await supabase.from('user_top_lists')
       .insert([
         { ...itemA, id: undefined, rank: rankB },
         { ...itemB, id: undefined, rank: rankA },
       ]);
+    if (insertResult.error) {
+      console.error('Failed to persist swapped top-list ranks', insertResult.error);
+      await load();
+      return false;
+    }
 
     setLists(prev => ({
       ...prev,
@@ -102,7 +130,8 @@ export function useTopLists(userId) {
         return i;
       }).sort((a, b) => a.rank - b.rank),
     }));
-  }, [userId, lists]);
+    return true;
+  }, [load, userId, lists]);
 
   const moveUp   = useCallback((listType, rank) => swapRanks(listType, rank, rank - 1), [swapRanks]);
   const moveDown = useCallback((listType, rank) => swapRanks(listType, rank, rank + 1), [swapRanks]);

@@ -74,7 +74,9 @@ export default function ResetPasswordPage() {
                       type="button"
                       className="auth-show-pw"
                       onClick={() => setShowPassword(v => !v)}
-                      tabIndex={-1}
+                      aria-label={showPassword ? 'Hide passwords' : 'Show passwords'}
+                      aria-pressed={showPassword}
+                      title={showPassword ? 'Hide passwords' : 'Show passwords'}
                     >
                       {showPassword ? 'Hide' : 'Show'}
                     </button>

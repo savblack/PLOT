@@ -4,6 +4,19 @@ import { supabase } from '../api/supabase';
 const POLL_INTERVAL_MS = 3000;
 const POLL_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 
+function normalizeStatus(status) {
+  if (status === 'active') return 'connected';
+  if (status === 'disabled') return 'disconnected';
+  return status ?? 'disconnected';
+}
+
+function usernameFromIntegration(integration) {
+  return integration?.plex_account?.username
+    ?? integration?.plex_account?.title
+    ?? integration?.display_name
+    ?? null;
+}
+
 async function callMediaSync(action, body) {
   const { data, error } = await supabase.functions.invoke(`media-sync?action=${action}`, {
     method: 'POST',
@@ -38,14 +51,14 @@ export function usePlexIntegration(user) {
     const load = async () => {
       const { data } = await supabase
         .from('media_integrations')
-        .select('sync_status, plex_username, plex_servers, last_synced_at, last_error')
+        .select('status, display_name, plex_account, plex_servers, last_sync_at, last_error')
         .eq('user_id', user.id)
         .eq('provider', 'plex')
         .maybeSingle();
       if (data) {
-        setStatus(data.sync_status ?? 'disconnected');
-        setPlexUsername(data.plex_username ?? null);
-        setLastSyncedAt(data.last_synced_at ?? null);
+        setStatus(normalizeStatus(data.status));
+        setPlexUsername(usernameFromIntegration(data));
+        setLastSyncedAt(data.last_sync_at ?? null);
         setLastError(data.last_error ?? null);
         setServers(data.plex_servers ?? []);
       }
@@ -76,10 +89,17 @@ export function usePlexIntegration(user) {
       }
       try {
         const result = await callMediaSync('poll-auth', { pinId });
-        if (result.status === 'connected' || result.status === 'needs_server') {
-          setStatus(result.status);
-          setPlexUsername(result.plexUsername ?? null);
-          if (result.servers?.length) setServers(result.servers);
+        if (result.status === 'authorized') {
+          const integration = result.integration ?? null;
+          setStatus(normalizeStatus(integration?.status));
+          setPlexUsername(usernameFromIntegration(integration));
+          setLastSyncedAt(integration?.last_sync_at ?? null);
+          setLastError(integration?.last_error ?? null);
+          setServers(integration?.plex_servers ?? []);
+          stopPolling();
+        } else if (result.status === 'expired') {
+          setStatus('error');
+          setLastError('Plex sign-in expired. Please try again.');
           stopPolling();
         } else {
           pollTimerRef.current = setTimeout(poll, POLL_INTERVAL_MS);
@@ -133,8 +153,9 @@ export function usePlexIntegration(user) {
     if (!user) return;
     setLoading(true);
     try {
-      await callMediaSync('select-server', { serverId });
+      await callMediaSync('sync', { serverId });
       setStatus('connected');
+      setLastSyncedAt(new Date().toISOString());
     } catch (err) {
       setLastError(err?.message ?? 'Failed to select server');
     } finally {

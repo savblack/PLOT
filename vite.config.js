@@ -1,3 +1,4 @@
+import process from 'node:process'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
@@ -11,5 +12,25 @@ export default defineConfig({
   },
   build: {
     sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return undefined
+          if (id.includes('/react/') || id.includes('/react-dom/') || id.includes('/scheduler/')) {
+            return 'vendor-react'
+          }
+          if (id.includes('/react-router/') || id.includes('/react-router-dom/')) {
+            return 'vendor-router'
+          }
+          if (id.includes('/@supabase/')) {
+            return 'vendor-supabase'
+          }
+          if (id.includes('/posthog-js/') || id.includes('/@posthog/')) {
+            return 'vendor-posthog'
+          }
+          return 'vendor'
+        },
+      },
+    },
   },
 })
