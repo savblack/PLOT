@@ -13,7 +13,7 @@
 
 const RESEND_API_URL = 'https://api.resend.com/emails';
 const TO_EMAIL       = 'feedback@theplot.tv';
-const FROM_EMAIL     = 'PLOT Feedback <feedback@plotapp.tv>'; // ← update to your verified Resend domain
+const FROM_EMAIL     = 'PLOT Feedback <feedback@theplot.tv>';
 
 const TYPE_LABELS: Record<string, string> = {
   bug:     '🐛 Bug Report',
