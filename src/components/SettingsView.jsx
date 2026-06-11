@@ -30,8 +30,10 @@ function RegionPicker({ current, onSave, onClose }) {
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
+    if (saving || chosen === current) return;
     setSaving(true);
-    await onSave(chosen);
+    const saved = await onSave(chosen).catch(() => false);
+    if (!saved) setSaving(false);
   };
 
   return createPortal(
@@ -644,10 +646,21 @@ export default function SettingsView() {
   };
 
   const saveRegion = async (code) => {
-    await supabase.from('profiles').update({ region: code }).eq('id', user.id);
+    setActionError(null);
+    const { error } = await supabase
+      .from('profiles')
+      .update({ region: code })
+      .eq('id', user.id);
+
+    if (error) {
+      setActionError(error.message || 'Failed to save your region.');
+      return false;
+    }
+
     setTmdbRegion(code);
     refreshProfile();
     setShowRegion(false);
+    return true;
   };
 
   const saveTimezone = async (tz) => {
@@ -896,8 +909,8 @@ export default function SettingsView() {
 
         <div
           className="settings-row interactive-surface"
-          onClick={() => setShowRegion(true)}
-          {...getButtonLikeProps({ onPress: () => setShowRegion(true), label: 'Open region settings' })}
+          onClick={() => { setActionError(null); setShowRegion(true); }}
+          {...getButtonLikeProps({ onPress: () => { setActionError(null); setShowRegion(true); }, label: 'Open region settings' })}
         >
           <div className="settings-row-left">
             <div className="settings-row-icon">
