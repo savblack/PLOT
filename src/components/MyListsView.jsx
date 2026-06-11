@@ -7,6 +7,7 @@ import { useGenres } from '../hooks/useGenres.js';
 import { localDateStr } from '../utils/date.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import GroupedFilterMenu from './GroupedFilterMenu.jsx';
+import { getButtonLikeProps } from '../utils/interactive.js';
 
 /* ── Heart icon ── */
 function HeartIcon({ filled }) {
@@ -337,15 +338,23 @@ function TopTenSection({ listType, title, topLists }) {
 
         const img   = posterUrl(item.poster_path, 'w92');
         const title = item.title;
+        const openDetails = () => {
+          if (!editMode) openPanel(item.tmdb_id, item.media_type);
+        };
 
         return (
           <div
             key={rank}
+            className={!editMode ? 'interactive-surface' : undefined}
             style={{
               display: 'flex', alignItems: 'center', gap: '0.75rem',
               padding: '0.6rem 1rem',
               borderBottom: '1px solid var(--border)',
             }}
+            onClick={!editMode ? openDetails : undefined}
+            {...(!editMode
+              ? getButtonLikeProps({ onPress: openDetails, label: `View details for ${title}` })
+              : {})}
           >
             <span style={{
               fontFamily: 'var(--font-serif)',
@@ -358,15 +367,13 @@ function TopTenSection({ listType, title, topLists }) {
             <div
               style={{
                 width: 40, height: 60, borderRadius: 4, overflow: 'hidden',
-                background: 'var(--surface-raised)', flexShrink: 0, cursor: 'pointer',
+                background: 'var(--surface-raised)', flexShrink: 0,
               }}
-              onClick={() => !editMode && openPanel(item.tmdb_id, item.media_type)}
             >
               {img && <img src={img} alt={title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
             </div>
             <div
-              style={{ flex: 1, cursor: editMode ? 'default' : 'pointer', minWidth: 0 }}
-              onClick={() => !editMode && openPanel(item.tmdb_id, item.media_type)}
+              style={{ flex: 1, minWidth: 0 }}
             >
               <div style={{ fontWeight: 500, fontSize: '0.875rem', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {title}
@@ -428,9 +435,12 @@ function PosterGrid({ items, onRemove, openPanel }) {
     }}>
       {items.map(item => {
         const img = posterUrl(item.poster_path, 'w185');
+        const title = item.title || 'Unknown';
+        const openDetails = () => openPanel(item.tmdb_id, item.media_type);
         return (
           <div key={item.id} style={{ position: 'relative' }}>
             <div
+              className="interactive-surface"
               style={{
                 aspectRatio: '2/3',
                 borderRadius: 6,
@@ -438,7 +448,8 @@ function PosterGrid({ items, onRemove, openPanel }) {
                 background: 'var(--surface-raised)',
                 cursor: 'pointer',
               }}
-              onClick={() => openPanel(item.tmdb_id, item.media_type)}
+              onClick={openDetails}
+              {...getButtonLikeProps({ onPress: openDetails, label: `View details for ${title}` })}
             >
               {img
                 ? <img src={img} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -820,8 +831,14 @@ function WatchingSection({ watching, hideHeader }) {
       {items.map(item => {
         const img    = posterUrl(item.poster_path, 'w92');
         const epCode = `S${String(item.current_season).padStart(2,'0')}E${String(item.current_episode).padStart(2,'0')}`;
+        const openDetails = () => openPanel(item.tmdb_id, 'tv');
         return (
-          <div key={item.tmdb_id} className="list-row" onClick={() => openPanel(item.tmdb_id, 'tv')}>
+          <div
+            key={item.tmdb_id}
+            className="list-row interactive-surface"
+            onClick={openDetails}
+            {...getButtonLikeProps({ onPress: openDetails, label: `View details for ${item.title}` })}
+          >
             <div className="list-row-poster">
               {img && <img src={img} alt={item.title} />}
             </div>
@@ -879,9 +896,15 @@ function WantToWatchSection({ watchlist, watching, hideHeader }) {
         const isTV          = item.media_type === 'tv';
         const chip          = item.release_date ? countdownChip(item.release_date) : null;
         const streamingChip = item.streaming_date ? countdownChip(item.streaming_date) : null;
+        const openDetails = () => openPanel(item.tmdb_id, item.media_type || 'movie');
 
         return (
-          <div key={item.id} className="list-row" onClick={() => openPanel(item.tmdb_id, item.media_type || 'movie')}>
+          <div
+            key={item.id}
+            className="list-row interactive-surface"
+            onClick={openDetails}
+            {...getButtonLikeProps({ onPress: openDetails, label: `View details for ${title}` })}
+          >
             <div className="list-row-poster">
               {img && <img src={img} alt={title} />}
             </div>
