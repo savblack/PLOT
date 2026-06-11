@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../api/supabase';
 import { tmdb } from '../api/tmdb';
 import { logoUrl, posterUrl } from '../App.jsx';
+import { getButtonLikeProps } from '../utils/interactive.js';
 
 /* ── Timezone → region guess ── */
 const TZ_MAP = {
@@ -283,8 +284,13 @@ export default function OnboardingFlow() {
                 {filteredProviders.map(p => (
                   <div
                     key={p.provider_id}
-                    className={`provider-select-card${providers.includes(p.provider_id) ? ' selected' : ''}`}
+                    className={`provider-select-card interactive-surface${providers.includes(p.provider_id) ? ' selected' : ''}`}
                     onClick={() => toggleProvider(p.provider_id)}
+                    {...getButtonLikeProps({
+                      onPress: () => toggleProvider(p.provider_id),
+                      label: `${providers.includes(p.provider_id) ? 'Deselect' : 'Select'} ${p.provider_name}`,
+                      pressed: providers.includes(p.provider_id),
+                    })}
                   >
                     <img src={logoUrl(p.logo_path, 'w92')} alt={p.provider_name} />
                     <span>{p.provider_name}</span>
@@ -325,7 +331,17 @@ export default function OnboardingFlow() {
                 {seedGridItems.map(item => {
                   const sel = seedSelected.some(i => i.id === item.id);
                   return (
-                    <div key={item.id} onClick={() => toggleSeed(item)} style={{ cursor: 'pointer', borderRadius: 'var(--radius-md)', overflow: 'hidden', border: sel ? '2px solid var(--accent)' : '2px solid transparent', position: 'relative', transition: 'border-color 0.15s ease' }}>
+                    <div
+                      key={item.id}
+                      className="interactive-surface"
+                      onClick={() => toggleSeed(item)}
+                      style={{ cursor: 'pointer', borderRadius: 'var(--radius-md)', overflow: 'hidden', border: sel ? '2px solid var(--accent)' : '2px solid transparent', position: 'relative', transition: 'border-color 0.15s ease' }}
+                      {...getButtonLikeProps({
+                        onPress: () => toggleSeed(item),
+                        label: `${sel ? 'Deselect' : 'Select'} ${item.title || item.name || 'title'}`,
+                        pressed: sel,
+                      })}
+                    >
                       <div style={{ aspectRatio: '2/3', background: 'var(--surface-raised)' }}>
                         <img src={posterUrl(item.poster_path, 'w185')} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                       </div>

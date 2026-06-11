@@ -2,6 +2,7 @@ import { useState, useMemo, useRef, useCallback } from 'react';
 import { useApp, posterUrl, TodayLabel } from '../App.jsx';
 import { useHistory } from '../hooks/useHistory.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
+import { getButtonLikeProps } from '../utils/interactive.js';
 
 function groupByMonth(entries) {
   const groups = [];
@@ -133,9 +134,14 @@ function HistoryRow({ entry, openPanel }) {
   const date  = entry.watched_at
     ? new Date(entry.watched_at).toLocaleDateString('en', { month: 'short', day: 'numeric' })
     : '';
+  const openDetails = () => openPanel(entry.tmdb_id, entry.media_type || 'movie');
 
   return (
-    <div className="list-row history-list-row" onClick={() => openPanel(entry.tmdb_id, entry.media_type || 'movie')}>
+    <div
+      className="list-row history-list-row interactive-surface"
+      onClick={openDetails}
+      {...getButtonLikeProps({ onPress: openDetails, label: `View details for ${title}` })}
+    >
       <div className="list-row-poster">
         {img && <img src={img} alt={title} />}
       </div>

@@ -9,6 +9,7 @@ import { useMediaSync } from '../hooks/useMediaSync.js';
 import { useTraktSync } from '../hooks/useTraktSync.js';
 import { useCalendar } from '../hooks/useCalendar.js';
 import { downloadICS } from '../utils/ics.js';
+import { getButtonLikeProps } from '../utils/interactive.js';
 import { IANA_TIMEZONES } from '../utils/timezones.js';
 import ConfirmModal from './ConfirmModal.jsx';
 
@@ -360,8 +361,13 @@ function ProviderPicker({ title, hint, region, selected, onSave, onClose, limit 
               {visible.map(p => (
                 <div
                   key={p.provider_id}
-                  className={`provider-select-card${chosen.includes(p.provider_id) ? ' selected' : ''}`}
+                  className={`provider-select-card interactive-surface${chosen.includes(p.provider_id) ? ' selected' : ''}`}
                   onClick={() => toggle(p.provider_id)}
+                  {...getButtonLikeProps({
+                    onPress: () => toggle(p.provider_id),
+                    label: `${chosen.includes(p.provider_id) ? 'Deselect' : 'Select'} ${p.provider_name}`,
+                    pressed: chosen.includes(p.provider_id),
+                  })}
                 >
                   <img src={logoUrl(p.logo_path, 'w92')} alt={p.provider_name} />
                   <span>{p.provider_name}</span>
@@ -835,7 +841,11 @@ export default function SettingsView() {
           </div>
         </div>
 
-        <div className="settings-row" onClick={handleSignOut}>
+        <div
+          className="settings-row interactive-surface"
+          onClick={handleSignOut}
+          {...getButtonLikeProps({ onPress: handleSignOut, label: 'Sign out' })}
+        >
           <div className="settings-row-left">
             <div className="settings-row-icon">
               <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
@@ -850,7 +860,11 @@ export default function SettingsView() {
       <div className="settings-group">
         <div className="settings-group-title">Viewing</div>
 
-        <div className="settings-row" onClick={() => setShowProviders(true)}>
+        <div
+          className="settings-row interactive-surface"
+          onClick={() => setShowProviders(true)}
+          {...getButtonLikeProps({ onPress: () => setShowProviders(true), label: 'Open streaming platforms' })}
+        >
           <div className="settings-row-left">
             <div className="settings-row-icon">
               <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
@@ -863,7 +877,11 @@ export default function SettingsView() {
           </div>
         </div>
 
-        <div className="settings-row" onClick={() => setShowGuideChannels(true)}>
+        <div
+          className="settings-row interactive-surface"
+          onClick={() => setShowGuideChannels(true)}
+          {...getButtonLikeProps({ onPress: () => setShowGuideChannels(true), label: 'Open my channels' })}
+        >
           <div className="settings-row-left">
             <div className="settings-row-icon">
               <svg viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
@@ -876,7 +894,11 @@ export default function SettingsView() {
           </div>
         </div>
 
-        <div className="settings-row" onClick={() => setShowRegion(true)}>
+        <div
+          className="settings-row interactive-surface"
+          onClick={() => setShowRegion(true)}
+          {...getButtonLikeProps({ onPress: () => setShowRegion(true), label: 'Open region settings' })}
+        >
           <div className="settings-row-left">
             <div className="settings-row-icon">
               <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
@@ -889,7 +911,11 @@ export default function SettingsView() {
           </div>
         </div>
 
-        <div className="settings-row" onClick={() => setShowTimezone(true)}>
+        <div
+          className="settings-row interactive-surface"
+          onClick={() => setShowTimezone(true)}
+          {...getButtonLikeProps({ onPress: () => setShowTimezone(true), label: 'Open timezone settings' })}
+        >
           <div className="settings-row-left">
             <div className="settings-row-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
@@ -1022,7 +1048,12 @@ export default function SettingsView() {
         )}
 
         {/* ── Import watch history ── */}
-        <div className="settings-row" onClick={() => navigate('/import')} style={{ cursor: 'pointer' }}>
+        <div
+          className="settings-row interactive-surface"
+          onClick={() => navigate('/import')}
+          style={{ cursor: 'pointer' }}
+          {...getButtonLikeProps({ onPress: () => navigate('/import'), label: 'Import watch history' })}
+        >
           <div className="settings-row-left">
             <div className="settings-row-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -1115,7 +1146,11 @@ export default function SettingsView() {
       {/* Support */}
       <div className="settings-group">
         <div className="settings-group-title">Support</div>
-        <div className="settings-row" onClick={() => setShowFeedback(true)}>
+        <div
+          className="settings-row interactive-surface"
+          onClick={() => setShowFeedback(true)}
+          {...getButtonLikeProps({ onPress: () => setShowFeedback(true), label: 'Report a bug or leave feedback' })}
+        >
           <div className="settings-row-left">
             <div className="settings-row-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
@@ -1132,7 +1167,16 @@ export default function SettingsView() {
       <div className="settings-group">
         <div className="settings-group-title">Danger Zone</div>
 
-        <div className="settings-row" onClick={clearingHistory ? undefined : handleClearHistory} style={{ cursor: clearingHistory ? 'default' : 'pointer' }}>
+        <div
+          className="settings-row interactive-surface"
+          onClick={clearingHistory ? undefined : handleClearHistory}
+          style={{ cursor: clearingHistory ? 'default' : 'pointer' }}
+          {...getButtonLikeProps({
+            onPress: handleClearHistory,
+            disabled: clearingHistory,
+            label: 'Clear watch history',
+          })}
+        >
           <div className="settings-row-left">
             <div className="settings-row-icon" style={{ borderColor: '#EF444433', color: 'var(--chip-cinema)' }}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
@@ -1143,7 +1187,16 @@ export default function SettingsView() {
           </div>
         </div>
 
-        <div className="settings-row" onClick={clearingWatchlist ? undefined : () => setShowClearWatchlist(true)} style={{ cursor: clearingWatchlist ? 'default' : 'pointer' }}>
+        <div
+          className="settings-row interactive-surface"
+          onClick={clearingWatchlist ? undefined : () => setShowClearWatchlist(true)}
+          style={{ cursor: clearingWatchlist ? 'default' : 'pointer' }}
+          {...getButtonLikeProps({
+            onPress: () => setShowClearWatchlist(true),
+            disabled: clearingWatchlist,
+            label: 'Clear watch list',
+          })}
+        >
           <div className="settings-row-left">
             <div className="settings-row-icon" style={{ borderColor: '#EF444433', color: 'var(--chip-cinema)' }}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
@@ -1154,7 +1207,12 @@ export default function SettingsView() {
           </div>
         </div>
 
-        <div className="settings-row" onClick={handleDeleteAccount} style={{ color: 'var(--chip-cinema)' }}>
+        <div
+          className="settings-row interactive-surface"
+          onClick={handleDeleteAccount}
+          style={{ color: 'var(--chip-cinema)' }}
+          {...getButtonLikeProps({ onPress: handleDeleteAccount, label: 'Delete account' })}
+        >
           <div className="settings-row-left">
             <div className="settings-row-icon" style={{ borderColor: '#EF444433', color: 'var(--chip-cinema)' }}>
               <svg viewBox="0 0 24 24"><polyline points="3,6 5,6 21,6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>

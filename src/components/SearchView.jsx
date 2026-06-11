@@ -3,6 +3,7 @@ import { useApp, posterUrl } from '../App.jsx';
 import { tmdb } from '../api/tmdb.js';
 import { useHistory } from '../hooks/useHistory.js';
 import { localDateStr } from '../utils/date.js';
+import { getButtonLikeProps } from '../utils/interactive.js';
 
 function BookmarkIcon({ filled }) {
   return (
@@ -53,11 +54,16 @@ function ResultRow({ item, openPanel, watchlist, favorites, history }) {
       await history.logWatched({ ...item, id, media_type: type });
     }
   };
+  const openDetails = () => openPanel(id, type);
 
   return (
-    <div className="list-row search-result-row">
+    <div
+      className="list-row search-result-row interactive-surface"
+      onClick={openDetails}
+      {...getButtonLikeProps({ onPress: openDetails, label: `View details for ${title}` })}
+    >
       {/* Poster */}
-      <div className="list-row-poster" onClick={() => openPanel(id, type)} style={{ cursor: 'pointer' }}>
+      <div className="list-row-poster">
         {img
           ? <img src={img} alt={title} />
           : <div style={{ width: '100%', height: '100%', background: 'var(--surface-raised)' }} />
@@ -65,7 +71,7 @@ function ResultRow({ item, openPanel, watchlist, favorites, history }) {
       </div>
 
       {/* Info */}
-      <div className="list-row-info" onClick={() => openPanel(id, type)} style={{ cursor: 'pointer' }}>
+      <div className="list-row-info">
         <div className="list-row-title">{title}</div>
         <div className="list-row-meta">
           <span style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>

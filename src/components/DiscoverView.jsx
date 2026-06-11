@@ -7,6 +7,7 @@ import { UpcomingContent } from './GuideView.jsx';
 import EpgView from './EpgView.jsx';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import GroupedFilterMenu from './GroupedFilterMenu.jsx';
+import { getButtonLikeProps } from '../utils/interactive.js';
 
 const ALL_TYPES = ['tv', 'cinema', 'movie'];
 
@@ -78,8 +79,13 @@ function RankedCard({ item, rank, showRank = true, openPanel, watchlist }) {
   const title = item.title || item.name;
   const img   = posterUrl(item.poster_path, 'w185');
   const type  = item.media_type || 'movie';
+  const openDetails = () => openPanel(item.id, type);
   return (
-    <div className="media-card" onClick={() => openPanel(item.id, type)}>
+    <div
+      className="media-card interactive-surface"
+      onClick={openDetails}
+      {...getButtonLikeProps({ onPress: openDetails, label: `View details for ${title}` })}
+    >
       <div className="media-card-img">
         {img
           ? <img src={img} alt={title} loading="lazy" />
@@ -127,13 +133,15 @@ function HeroCard({ item, openPanel, watchlist }) {
   const year     = (item.release_date || item.first_air_date || '').slice(0, 4);
   const saved    = watchlist.isInList(item.id);
   const fav      = favorites.isFavorite(item.id);
+  const openDetails = () => openPanel(item.id, type);
 
   return (
     <div
-      className="discover-hero"
-      onClick={() => openPanel(item.id, type)}
+      className="discover-hero interactive-surface"
+      onClick={openDetails}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      {...getButtonLikeProps({ onPress: openDetails, label: `View details for ${title}` })}
     >
       {backdrop
         ? <img className="discover-hero-backdrop" src={backdrop} alt="" aria-hidden="true" />
@@ -186,9 +194,14 @@ function ChartRow({ item, rank, openPanel, watchlist }) {
   const type  = item.media_type || 'movie';
   const year  = (item.release_date || item.first_air_date || '').slice(0, 4);
   const saved = watchlist.isInList(item.id);
+  const openDetails = () => openPanel(item.id, type);
 
   return (
-    <div className="discover-chart-row" onClick={() => openPanel(item.id, type)}>
+    <div
+      className="discover-chart-row interactive-surface"
+      onClick={openDetails}
+      {...getButtonLikeProps({ onPress: openDetails, label: `View details for ${title}` })}
+    >
       <span className={`discover-chart-rank${rank <= 10 ? ' glow' : ' dim'}`}>{rank}</span>
       <div className="discover-chart-poster">
         {img
@@ -246,7 +259,12 @@ function PlatformSection({ platform, openPanel, watchlist }) {
               <div className="discover-plat-type-label">Movies</div>
               <div className="discover-plat-grid">
                 {platform.movies.slice(0, 10).map((item, i) => (
-                  <div key={item.id} className="media-card" onClick={() => openPanel(item.id, 'movie')}>
+                  <div
+                    key={item.id}
+                    className="media-card interactive-surface"
+                    onClick={() => openPanel(item.id, 'movie')}
+                    {...getButtonLikeProps({ onPress: () => openPanel(item.id, 'movie'), label: `View details for ${item.title || item.name}` })}
+                  >
                     <div className="media-card-img">
                       {posterUrl(item.poster_path, 'w185')
                         ? <img src={posterUrl(item.poster_path, 'w185')} alt={item.title || item.name} loading="lazy" />
@@ -266,7 +284,12 @@ function PlatformSection({ platform, openPanel, watchlist }) {
               <div className="discover-plat-type-label">TV Shows</div>
               <div className="discover-plat-grid">
                 {platform.tv.slice(0, 10).map((item, i) => (
-                  <div key={item.id} className="media-card" onClick={() => openPanel(item.id, 'tv')}>
+                  <div
+                    key={item.id}
+                    className="media-card interactive-surface"
+                    onClick={() => openPanel(item.id, 'tv')}
+                    {...getButtonLikeProps({ onPress: () => openPanel(item.id, 'tv'), label: `View details for ${item.title || item.name}` })}
+                  >
                     <div className="media-card-img">
                       {posterUrl(item.poster_path, 'w185')
                         ? <img src={posterUrl(item.poster_path, 'w185')} alt={item.title || item.name} loading="lazy" />
