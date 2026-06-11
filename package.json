@@ -10,7 +10,14 @@
     "check": "npm run lint && npm run build",
     "test:unit": "node --test tests/unit/*.test.js",
     "test:smoke": "npm run build && playwright test",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "mkt:plan": "node marketing/planner/plan.mjs",
+    "mkt:generate": "node marketing/generate/generate.mjs",
+    "mkt:publish": "node marketing/publish/publish.mjs",
+    "mkt:metrics": "node marketing/metrics/collect.mjs",
+    "mkt:report": "node marketing/metrics/report.mjs",
+    "mkt:newsletter": "node marketing/newsletter/send-digest.mjs",
+    "mkt:preview": "node marketing/preview/build-preview.mjs"
   },
   "dependencies": {
     "@posthog/react": "^1.9.0",

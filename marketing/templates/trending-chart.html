@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@200;300;400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>/*INLINE_BASE_CSS*/</style>
+<style>
+  /* ── Chart card: dark editorial chart, #1's art glowing behind the header ──
+     Generous top padding: the PLOT mark and the header need air. */
+  .chart-card { justify-content: flex-start; padding-top: calc(var(--pad) + 150px); }
+  .hero-art {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 46%;
+    z-index: 0;
+    object-fit: cover;
+    width: 100%;
+    -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,0.85), transparent);
+            mask-image: linear-gradient(to bottom, rgba(0,0,0,0.85), transparent);
+    opacity: 0.45;
+  }
+  /* Hierarchy: dim caps week kicker -> hero headline -> the chart itself. */
+  .header { position: relative; z-index: 2; margin-bottom: 44px; }
+  .header .meta-caps { display: block; margin-bottom: 24px; }
+  .header .display { font-size: 104px; }
+  .rows {
+    position: relative; z-index: 2; flex: 1; min-height: 0;
+    display: flex; flex-direction: column; justify-content: space-between;
+    overflow: hidden;
+  }
+  .row {
+    display: flex; align-items: center; gap: 26px;
+    padding: 4px 0;
+    border-bottom: 1px solid rgba(250,250,250,0.10);
+  }
+  .row:last-child { border-bottom: none; }
+  /* Default sizing: five roomy rows per card (the IG/Threads carousel). */
+  .row .rank {
+    font-family: var(--font-serif);
+    font-size: 68px;
+    width: 100px;
+    text-align: right;
+    color: var(--text-faint);
+  }
+  .row.top-rank .rank { color: var(--accent); }
+  .row img.thumb { width: 76px; aspect-ratio: 2/3; border-radius: 10px; object-fit: cover; box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
+  .row .name {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: baseline;
+    font-size: 50px; font-weight: 400; color: var(--text);
+  }
+  .row .name .title-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .row .kind { flex-shrink: 0; font-size: 29px; font-weight: 300; color: var(--text-faint); margin-left: 18px; letter-spacing: 0.06em; }
+  .move { font-size: 38px; font-weight: 500; width: 130px; text-align: right; }
+
+  /* Ten-row variant (the X single image): tighter rows. */
+  .rows-10 .row { padding: 3px 0; gap: 24px; }
+  .rows-10 .row .rank { font-size: 48px; width: 70px; }
+  .rows-10 .row img.thumb { width: 46px; border-radius: 7px; }
+  .rows-10 .row .name { font-size: 37px; }
+  .rows-10 .row .kind { font-size: 23px; }
+  .rows-10 .move { font-size: 30px; width: 104px; }
+  .move.up   { color: #34D399; }
+  .move.down { color: #F87171; }
+  .move.same { color: var(--text-faint); }
+  .move.new  { color: var(--accent); font-size: 26px; letter-spacing: 0.14em; }
+
+  /* ── Detail card: full-bleed art. Hierarchy: dim caps kicker ->
+     hero title -> rank line beneath ("#3" accent + quiet movement note). ── */
+  .detail .content { display: flex; flex-direction: column; align-items: flex-start; gap: 28px; }
+  .detail .display { font-size: 150px; max-width: 96%; }
+  .rank-line {
+    font-family: var(--font-serif);
+    font-size: 120px;
+    line-height: 0.9;
+    letter-spacing: -0.02em;
+    color: var(--accent);
+    display: flex; align-items: baseline; gap: 26px;
+  }
+  .rank-line .of {
+    font-size: 100px; font-style: italic; color: var(--text-dim);
+    letter-spacing: 0; word-spacing: 0.08em;
+  }
+
+  @media (min-aspect-ratio: 4/3) {
+    .chart-card { padding-top: calc(var(--pad) + 110px); }
+    .header { margin-bottom: 26px; }
+    .header .meta-caps { margin-bottom: 14px; }
+    .header .display { font-size: 72px; }
+    .row { gap: 24px; padding: 0; }
+    .row .rank { font-size: 52px; width: 76px; }
+    .row img.thumb { width: 54px; }
+    .row .name { font-size: 40px; }
+    .row .kind { font-size: 24px; }
+    .move { font-size: 32px; width: 104px; }
+
+    /* Ten-row landscape: two columns (1-5 left, 6-10 right). */
+    .rows-10 {
+      display: grid;
+      grid-template-rows: repeat(5, 1fr);
+      grid-auto-flow: column;
+      column-gap: 72px;
+      align-items: center;
+    }
+    .rows-10 .row { gap: 22px; padding: 0; }
+    .rows-10 .row:nth-child(5n) { border-bottom: none; }
+    .rows-10 .row .rank { font-size: 42px; width: 60px; }
+    .rows-10 .row img.thumb { width: 46px; }
+    .rows-10 .row .name { font-size: 33px; }
+    .rows-10 .row .kind { font-size: 21px; }
+    .rows-10 .move { font-size: 27px; width: 90px; }
+
+    .rank-line { font-size: 100px; }
+    .rank-line .of { font-size: 84px; }
+    .detail .display { font-size: 118px; }
+  }
+</style>
+</head>
+<body>
+<div class="card" id="card"></div>
+<script>
+/*HELPERS_JS*/
+window.DATA = "/*DATA_JSON*/";
+const d = window.DATA;
+const card = document.getElementById('card');
+
+const moveNode = (m) => {
+  if (!m || m.dir === 'none') return el('span', 'move same', '');
+  if (m.dir === 'new') return el('span', 'move new', 'NEW');
+  if (m.dir === 'same') return el('span', 'move same', '·');
+  return el('span', `move ${m.dir}`, `${m.dir === 'up' ? '▲' : '▼'} ${m.delta}`);
+};
+
+if (d.kind === 'detail') {
+  const t = d.title || {};
+  card.classList.add('detail');
+  const art = pickArt(t);
+  if (art) card.append(img('backdrop', art));
+  card.append(el('div', 'scrim'));
+  const content = el('div', 'content');
+  content.append(el('div', 'meta-caps', 'Trending this week'));
+  content.append(el('h1', 'display', t.title));
+  const rank = el('div', 'rank-line', `#${t.rank}`);
+  if (t.movement_label) rank.append(el('span', 'of', t.movement_label));
+  content.append(rank);
+  card.append(content);
+} else {
+  card.classList.add('chart-card');
+  const heroArt = d.items?.[0]?.backdrop_data_uri || d.items?.[0]?.poster_data_uri;
+  if (heroArt) card.append(img('hero-art', heroArt));
+  const header = el('div', 'header');
+  header.append(el('div', 'meta-caps', 'Trending this week'));
+  const weekDate = String(d.week_label || '').replace(/^week of\s+/i, '');
+  const h = el('h1', 'display', 'Week of ');
+  h.append(el('em', null, weekDate));
+  header.append(h);
+  card.append(header);
+  const items = (d.items || []).slice(0, 10);
+  const rows = el('div', `rows${items.length > 5 ? ' rows-10' : ''}`);
+  items.forEach(item => {
+    const row = el('div', `row${item.rank === 1 ? ' top-rank' : ''}`);
+    row.append(el('div', 'rank', `${item.rank}`));
+    if (item.poster_data_uri) row.append(img('thumb', item.poster_data_uri));
+    const name = el('div', 'name');
+    name.append(el('span', 'title-text', item.title));
+    name.append(el('span', 'kind', item.media_type === 'tv' ? 'series' : 'film'));
+    row.append(name);
+    row.append(moveNode(item.movement));
+    rows.append(row);
+  });
+  card.append(rows);
+}
+card.append(plotMark());
+card.append(plotFooter());
+</script>
+</body>
+</html>

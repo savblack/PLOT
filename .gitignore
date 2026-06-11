@@ -40,3 +40,4 @@ mockup-*.html
 *-variants-*.html
 website/images/product/*.gif
 .vercel
+marketing/preview/out/
