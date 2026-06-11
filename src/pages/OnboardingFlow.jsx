@@ -91,6 +91,7 @@ export default function OnboardingFlow() {
   const [seedResults,  setSeedResults]  = useState([]);
   const [seedSelected, setSeedSelected] = useState([]);
   const [seedSearching, setSeedSearching] = useState(false);
+  const [trending,     setTrending]     = useState([]);
 
   const TOTAL = 3;
 
@@ -114,6 +115,17 @@ export default function OnboardingFlow() {
       setLoadingProv(false);
     });
   }, [step, region]);
+
+  /* ── Trending prefill for step 3 ── */
+  useEffect(() => {
+    if (step !== 3 || trending.length > 0) return;
+    tmdb.getTrending('all', 'week').then(data => {
+      const list = (data?.results || [])
+        .filter(r => (r.media_type === 'tv' || r.media_type === 'movie') && r.poster_path)
+        .slice(0, 12);
+      setTrending(list);
+    });
+  }, [step]);
 
   /* ── Seed search ── */
   useEffect(() => {
@@ -191,6 +203,8 @@ export default function OnboardingFlow() {
   const filteredProviders = allProviders.filter(p =>
     p.provider_name.toLowerCase().includes(provSearch.toLowerCase())
   );
+
+  const seedGridItems = seedQuery.trim() ? seedResults : trending;
 
   if (!user) return null;
 
@@ -301,9 +315,14 @@ export default function OnboardingFlow() {
               Skip this step
             </button>
             {seedSearching && <div className="loading-state" style={{ minHeight: 60 }}><div className="spinner" /></div>}
-            {seedResults.length > 0 && (
+            {!seedQuery.trim() && trending.length > 0 && (
+              <div style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-secondary)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+                Trending this week
+              </div>
+            )}
+            {seedGridItems.length > 0 && (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem', marginBottom: '0.75rem' }}>
-                {seedResults.map(item => {
+                {seedGridItems.map(item => {
                   const sel = seedSelected.some(i => i.id === item.id);
                   return (
                     <div key={item.id} onClick={() => toggleSeed(item)} style={{ cursor: 'pointer', borderRadius: 'var(--radius-md)', overflow: 'hidden', border: sel ? '2px solid var(--accent)' : '2px solid transparent', position: 'relative', transition: 'border-color 0.15s ease' }}>
