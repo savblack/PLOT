@@ -1,0 +1,55 @@
+name: Marketing — publish
+
+on:
+  schedule:
+    - cron: '30 23 * * *' # 9:30am AEST / ~6:30pm US ET
+  workflow_dispatch:
+    inputs:
+      retry_failed:
+        description: 'Re-queue failed publications first'
+        type: boolean
+        default: false
+      dry_run:
+        description: 'Log instead of posting'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: marketing-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Publish pending posts
+        env:
+          RETRY_FAILED: ${{ inputs.retry_failed }}
+          DRY_RUN: ${{ inputs.dry_run && '1' || '' }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
+          BUFFER_CHANNEL_ID: ${{ secrets.BUFFER_CHANNEL_ID }}
+        run: |
+          if [ "$RETRY_FAILED" = "true" ]; then
+            node marketing/publish/publish.mjs --retry-failed
+          else
+            node marketing/publish/publish.mjs
+          fi
+      - name: Alert on failure
+        if: failure()
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          ADMIN_EMAIL: ${{ secrets.MARKETING_ADMIN_EMAIL }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          WORKFLOW_NAME: publish
+        run: bash .github/scripts/marketing-alert.sh
