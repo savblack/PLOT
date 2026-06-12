@@ -190,32 +190,56 @@ ${head}
   .more .more-head { color: var(--ink); }
 
   footer.sitefoot {
-    background: #1a1a1a; overflow: hidden; position: relative; z-index: 3;
-    margin-top: 90px; padding: clamp(1.5rem, 3vw, 2.5rem) 0 1.5rem;
+    background: #ffffff; position: relative; z-index: 3;
+    margin-top: 90px; border-top: 1px solid rgba(0,0,0,0.07);
+    padding: 3.5rem 3rem 1.75rem;
   }
-  .footer-news { display: flex; flex-direction: column; align-items: center; gap: 0.9rem; padding: 0 3rem 2.5rem; text-align: center; }
-  .footer-news-title { font-family: var(--serif); font-size: 1.6rem; color: rgba(240,239,232,0.85); letter-spacing: -0.01em; }
-  .footer-news-sub { font-size: 0.85rem; color: rgba(240,239,232,0.4); margin-top: -0.5rem; }
-  .footer-news-form { display: flex; gap: 0.6rem; flex-wrap: wrap; justify-content: center; }
-  .footer-news-form input[type=email] { background: rgba(240,239,232,0.07); border: 1px solid rgba(240,239,232,0.15); border-radius: 9999px; padding: 0.75rem 1.3rem; font-size: 0.9rem; font-family: inherit; color: rgba(240,239,232,0.9); min-width: 16rem; outline: none; }
-  .footer-news-form input[type=email]::placeholder { color: rgba(240,239,232,0.3); }
-  .footer-news-form input[type=email]:focus { border-color: rgba(240,239,232,0.4); }
-  .footer-news-form button { background: var(--pink); color: #fff; border: none; border-radius: 9999px; padding: 0.75rem 1.6rem; font-size: 0.9rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .footer-inner { max-width: 1100px; margin: 0 auto; }
+  .footer-grid { display: flex; flex-wrap: wrap; gap: 2rem 3rem; }
+  .footer-brand { flex: 1.4; min-width: 200px; }
+  .footer-logo {
+    font-family: var(--serif); font-size: 2.6rem; font-weight: 400; letter-spacing: -0.05em;
+    line-height: 1; color: var(--ink); text-decoration: none; display: inline-block; user-select: none;
+  }
+  .footer-tagline { font-size: 0.82rem; font-weight: 400; color: var(--faint); margin-top: 0.6rem; }
+  .footer-col { flex: 1; min-width: 110px; }
+  .footer-col h4 {
+    font-size: 0.68rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--faint); margin-bottom: 0.7rem;
+  }
+  .footer-col ul { list-style: none; margin: 0; padding: 0; }
+  .footer-col a {
+    display: inline-block; padding: 0.22rem 0; font-size: 0.75rem; font-weight: 400;
+    color: #52525b; text-decoration: none; transition: color 0.2s; white-space: nowrap;
+  }
+  .footer-col a:hover { color: var(--pink); }
+  .footer-news {
+    display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; flex-wrap: wrap;
+    border-top: 1px solid rgba(0,0,0,0.07); margin-top: 2.25rem; padding: 2rem 0;
+  }
+  .footer-news-title { font-family: var(--serif); font-size: 1.5rem; font-weight: 400; letter-spacing: -0.01em; line-height: 1.2; color: var(--ink); }
+  .footer-news-sub { font-size: 0.82rem; color: var(--faint); margin-top: 0.4rem; }
+  .footer-news-right { display: flex; flex-direction: column; align-items: flex-end; gap: 0.45rem; }
+  .footer-news-form {
+    display: flex; align-items: center; background: #ffffff; border: 1px solid rgba(0,0,0,0.12);
+    border-radius: 20px; padding: 3px; height: 40px; width: 300px; max-width: 100%;
+  }
+  .footer-news-form input[type=email] {
+    flex: 1; min-width: 0; height: 32px; border: none; outline: none; background: transparent;
+    font-family: inherit; font-size: 0.82rem; color: var(--ink); padding: 0 6px 0 14px;
+  }
+  .footer-news-form input[type=email]::placeholder { color: var(--faint); }
+  .footer-news-form button {
+    flex-shrink: 0; height: 32px; padding: 0 18px; border: none; border-radius: 16px;
+    background: #1a1a1a; color: #fff; font-family: inherit; font-size: 0.82rem; font-weight: 600;
+    cursor: pointer; transition: opacity 0.2s ease;
+  }
+  .footer-news-form button:hover:not(:disabled) { opacity: 0.85; }
   .footer-news-form button:disabled { opacity: 0.6; cursor: default; }
-  .footer-news-msg { font-size: 0.82rem; color: rgba(240,239,232,0.55); min-height: 1.2em; }
+  .footer-news-msg { font-size: 0.78rem; color: #52525b; min-height: 1.1em; }
   .footer-news-form .fn-website { position: absolute; left: -9999px; opacity: 0; pointer-events: none; }
-  .footer-wm {
-    font-family: var(--serif); font-weight: 400; line-height: 1; text-align: center;
-    font-size: clamp(9rem, calc((100vw - 6rem) * 0.507), 40rem);
-    letter-spacing: 0.03em; color: #1a1a1a; user-select: none; white-space: nowrap;
-    text-shadow: 1px 1px 0 rgba(255,255,255,0.11), -1px -1px 0 rgba(0,0,0,0.7), 0 0 22px rgba(255,255,255,0.025);
-  }
-  .footer-meta { display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 3rem 0; flex-wrap: wrap; gap: 1rem; }
-  .footer-links { display: flex; gap: 2rem; list-style: none; }
-  .footer-links a { display: inline-block; padding: 0.8rem 0.25rem; text-decoration: none; color: rgba(240,239,232,0.22); font-size: 0.78rem; font-weight: 400; transition: color 0.2s; white-space: nowrap; }
-  .footer-links a:hover { color: rgba(240,239,232,0.65); }
-  .footer-attribution { font-size: 0.68rem; color: rgba(240,239,232,0.18); }
-  .footer-copy { font-size: 0.72rem; color: rgba(240,239,232,0.13); }
+  .footer-rail { border-top: 1px solid rgba(0,0,0,0.07); padding-top: 1.1rem; }
+  .footer-copy { font-size: 0.75rem; color: var(--faint); }
 
   @media (max-width: 760px) {
     .wrap { padding: 28px 20px 80px; }
@@ -229,9 +253,10 @@ ${head}
     .dex { overflow-x: auto; scrollbar-width: none; }
     .dex::-webkit-scrollbar { display: none; }
     .dex-links { flex-wrap: nowrap; }
-    .footer-meta { padding: 1rem 1.5rem 0; }
-    .footer-links { gap: 1rem; flex-wrap: wrap; }
-    .footer-news { padding: 0 1.5rem 2rem; }
+    footer.sitefoot { padding-left: 1.5rem; padding-right: 1.5rem; }
+    .footer-news { flex-direction: column; align-items: flex-start; }
+    .footer-news-right { width: 100%; align-items: stretch; }
+    .footer-news-form { width: 100%; }
   }
 </style>
 </head>
@@ -248,27 +273,46 @@ ${head}
 ${body}
 </div>
 <footer class="sitefoot">
-  <div class="footer-news">
-    <div class="footer-news-title">This week in film &amp; TV</div>
-    <div class="footer-news-sub">One email a week: what's coming, what's streaming, what's trending.</div>
-    <form class="footer-news-form" id="newsletterForm">
-      <input type="email" name="email" placeholder="you@example.com" required autocomplete="email">
-      <input type="text" name="website" class="fn-website" tabindex="-1" autocomplete="off" aria-hidden="true">
-      <button type="submit">Subscribe</button>
-    </form>
-    <div class="footer-news-msg" id="newsletterMsg"></div>
-  </div>
-  <div class="footer-wm">PLOT</div>
-  <div class="footer-meta">
-    <ul class="footer-links">
-      <li><a href="${FEED_PATH}">What's On</a></li>
-      <li><a href="https://app.theplot.tv/login">Log in</a></li>
-      <li><a href="https://app.theplot.tv/signup">Sign up</a></li>
-      <li><a href="${SITE}/privacy.html">Privacy</a></li>
-      <li><a href="${SITE}/terms.html">Terms</a></li>
-    </ul>
-    <span class="footer-attribution">This product uses the TMDB API but is not endorsed or certified by TMDB.</span>
-    <span class="footer-copy">&copy; ${new Date().getUTCFullYear()} PLOT</span>
+  <div class="footer-inner">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a class="footer-logo" href="${SITE}">PLOT</a>
+        <p class="footer-tagline">Your film &amp; TV companion.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Explore</h4>
+        <ul>
+          <li><a href="${SITE}">Home</a></li>
+          <li><a href="${FEED_PATH}">What's On</a></li>
+          <li><a href="https://app.theplot.tv/login">Log in</a></li>
+          <li><a href="https://app.theplot.tv/signup">Sign up</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Legal</h4>
+        <ul>
+          <li><a href="${SITE}/privacy.html">Privacy</a></li>
+          <li><a href="${SITE}/terms.html">Terms</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-news">
+      <div>
+        <div class="footer-news-title">What's On, in your inbox.</div>
+        <p class="footer-news-sub">The best of what's new and coming soon, once a week.</p>
+      </div>
+      <div class="footer-news-right">
+        <form class="footer-news-form" id="newsletterForm">
+          <input type="email" name="email" placeholder="your@email.com" required autocomplete="email" aria-label="Email address">
+          <input type="text" name="website" class="fn-website" tabindex="-1" autocomplete="off" aria-hidden="true">
+          <button type="submit">Subscribe</button>
+        </form>
+        <div class="footer-news-msg" id="newsletterMsg" role="status"></div>
+      </div>
+    </div>
+    <div class="footer-rail">
+      <span class="footer-copy">&copy; ${new Date().getUTCFullYear()} Plot</span>
+    </div>
   </div>
 </footer>
 <script>
