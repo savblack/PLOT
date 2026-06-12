@@ -8,6 +8,7 @@ import { edgeFunctionUrl } from '../api/functions.js';
 import { useMediaSync } from '../hooks/useMediaSync.js';
 import { useTraktSync } from '../hooks/useTraktSync.js';
 import { useCalendar } from '../hooks/useCalendar.js';
+import { deleteAccountAndSignOut } from '../utils/deleteAccount.js';
 import { buildFeedbackAttachmentPath } from '../utils/feedback.js';
 import { downloadICS } from '../utils/ics.js';
 import { getButtonLikeProps } from '../utils/interactive.js';
@@ -759,38 +760,20 @@ export default function SettingsView() {
       danger: true,
       onConfirm: async () => {
         setActionError(null);
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
-          setActionError('Your session has expired. Please sign in again before deleting your account.');
-          return false;
-        }
-        const url = edgeFunctionUrl('delete-account');
-        if (!url) {
-          setActionError('Delete account is not configured in this environment.');
-          return false;
-        }
-        const response = await fetch(url, {
-          method:  'POST',
-          headers: { Authorization: `Bearer ${session.access_token}` },
+        const result = await deleteAccountAndSignOut({
+          supabase,
+          fetchImpl: fetch,
+          deleteAccountUrl: edgeFunctionUrl('delete-account'),
+          onDeleted: async () => {
+            window.location.href = '/';
+          },
         });
-        if (!response.ok) {
-          let message = 'Failed to delete your account.';
-          try {
-            const payload = await response.json();
-            if (payload?.error) message = payload.error;
-          } catch {
-            const text = await response.text();
-            if (text) message = text;
-          }
-          setActionError(message);
+
+        if (!result.ok) {
+          setActionError(result.error);
           return false;
         }
-        const { error } = await supabase.auth.signOut();
-        if (error) {
-          setActionError(error.message || 'Your account was deleted, but sign out did not complete cleanly.');
-          return false;
-        }
-        window.location.href = '/';
+
         return true;
       },
     });
