@@ -36,11 +36,13 @@ function WatchingCard({ progress, watching, onOpen, onStop }) {
   const [viewSeason,  setViewSeason]  = useState(progress.current_season);
   const [seasonData,  setSeasonData]  = useState(null);
   const [loadingEp,   setLoadingEp]   = useState(null); // episode_number currently toggling
+  const [episodeError, setEpisodeError] = useState('');
 
   /* ── Re-fetch season whenever viewSeason changes ── */
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- clear stale season rows before the async fetch resolves
     setSeasonData(null);
+    setEpisodeError('');
     watching.fetchSeason(progress.tmdb_id, viewSeason).then(setSeasonData);
   }, [progress.tmdb_id, viewSeason]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -79,9 +81,13 @@ function WatchingCard({ progress, watching, onOpen, onStop }) {
   const handleToggle = async (ep) => {
     if (loadingEp !== null || !isAired(ep)) return;
     setLoadingEp(ep.episode_number);
+    setEpisodeError('');
     if (isWatched(ep)) {
       // Unmark: rewind progress to this episode
       await watching.setProgress(progress.tmdb_id, viewSeason, ep.episode_number);
+    } else if (viewSeason === progress.current_season && ep.episode_number === progress.current_episode) {
+      const result = await watching.markEpisodeWatched(progress.tmdb_id);
+      if (!result?.ok) setEpisodeError(result?.error || 'Could not update this episode right now. Please try again.');
     } else {
       // Mark watched: advance past this episode
       await watching.setProgress(progress.tmdb_id, viewSeason, ep.episode_number + 1);
@@ -161,6 +167,21 @@ function WatchingCard({ progress, watching, onOpen, onStop }) {
         )}
 
         {/* Episode list */}
+        {episodeError && (
+          <div style={{
+            marginBottom: '0.75rem',
+            padding: '0.7rem 0.85rem',
+            borderRadius: '0.85rem',
+            border: '1px solid rgba(248,113,113,0.22)',
+            background: 'rgba(127,29,29,0.22)',
+            color: '#fecaca',
+            fontSize: '0.78rem',
+            lineHeight: 1.45,
+          }}>
+            {episodeError}
+          </div>
+        )}
+
         {seasonData === null ? (
           <div style={{ padding: '1.25rem 0', display: 'flex', justifyContent: 'center' }}>
             <div className="spinner" />

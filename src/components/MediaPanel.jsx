@@ -50,6 +50,7 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone }) {
   const [epLoading, setEpLoading] = useState(false);
   const [epError,   setEpError]   = useState(false);
   const [checkingEp, setCheckingEp] = useState(null); // ep number being toggled
+  const [episodeActionError, setEpisodeActionError] = useState('');
   const checkingEpRef = useRef(false); // sync guard to prevent double-tap race
 
   // Track whether user manually changed season (to suppress auto-follow)
@@ -69,6 +70,7 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone }) {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- episode fetch toggles local loading/error state
     setEpLoading(true);
     setEpError(false);
+    setEpisodeActionError('');
     tmdb.getSeason(tvId, selSeason).then(data => {
       if (data?.episodes?.length) {
         setEpisodes(data.episodes);
@@ -128,10 +130,16 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone }) {
     if (!currentProgress || checkingEpRef.current) return;
     checkingEpRef.current = true;
     setCheckingEp(ep.episode_number);
+    setEpisodeActionError('');
 
     if (!watched) {
       // Mark watched: advance progress past this episode
-      if (ep.episode_number < episodes.length) {
+      if (selSeason === currentSeason && ep.episode_number === currentEp) {
+        const result = await watching.markEpisodeWatched(tvId);
+        if (!result?.ok) {
+          setEpisodeActionError(result?.error || 'Could not update this episode right now. Please try again.');
+        }
+      } else if (ep.episode_number < episodes.length) {
         await watching.setProgress(tvId, selSeason, ep.episode_number + 1);
       } else {
         // Last episode of season → advance to next season
@@ -146,7 +154,7 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone }) {
 
     checkingEpRef.current = false;
     setCheckingEp(null);
-  }, [currentProgress, watching, tvId, selSeason, episodes.length]);
+  }, [currentEp, currentProgress, currentSeason, watching, tvId, selSeason, episodes.length]);
 
   const isTracking = !!currentProgress;
 
@@ -166,6 +174,21 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone }) {
               S{s.season_number}
             </button>
           ))}
+        </div>
+      )}
+
+      {episodeActionError && (
+        <div style={{
+          marginBottom: '0.85rem',
+          padding: '0.7rem 0.85rem',
+          borderRadius: '0.85rem',
+          border: '1px solid rgba(248,113,113,0.22)',
+          background: 'rgba(127,29,29,0.22)',
+          color: '#fecaca',
+          fontSize: '0.78rem',
+          lineHeight: 1.45,
+        }}>
+          {episodeActionError}
         </div>
       )}
 

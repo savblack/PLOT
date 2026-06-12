@@ -4,6 +4,7 @@ import { tmdb } from '../api/tmdb.js';
 import { localDateStr } from '../utils/date.js';
 import { baseMediaRow, tmdbIdFromItem } from '../domain/media.js';
 import { logWatchedItem } from '../api/userMedia.js';
+import { getNextEpisodeProgress } from '../utils/watchingProgress.js';
 
 export function useWatching(userId) {
   const [items,   setItems]   = useState([]);
@@ -64,26 +65,26 @@ export function useWatching(userId) {
   /* ── Mark current episode watched (advance) ── */
   const markEpisodeWatched = useCallback(async (tmdbId) => {
     const progress = items.find(i => i.tmdb_id === Number(tmdbId));
-    if (!progress) return;
+    if (!progress) {
+      return {
+        ok: false,
+        code: 'missing-progress',
+        error: 'Could not find your current episode progress.',
+      };
+    }
 
     // Fetch current season to know episode count
     const season = await fetchSeason(tmdbId, progress.current_season);
-    const episodeCount = season?.episodes?.length || progress.total_episodes;
-    if (!episodeCount) return; // can't advance without knowing episode count
-
-    let nextSeason = progress.current_season;
-    let nextEp     = progress.current_episode + 1;
-
-    if (nextEp > episodeCount) {
-      nextSeason = progress.current_season + 1;
-      nextEp     = 1;
+    const nextProgress = getNextEpisodeProgress(progress, season);
+    if (!nextProgress.ok) {
+      return nextProgress;
     }
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('watching_progress')
       .update({
-        current_season:  nextSeason,
-        current_episode: nextEp,
+        current_season:  nextProgress.nextSeason,
+        current_episode: nextProgress.nextEpisode,
         updated_at:      new Date().toISOString(),
       })
       .eq('user_id', userId)
@@ -91,7 +92,15 @@ export function useWatching(userId) {
       .select()
       .single();
 
-    if (data) setItems(prev => prev.map(i => i.tmdb_id === Number(tmdbId) ? data : i));
+    if (error || !data) {
+      return {
+        ok: false,
+        code: 'save-failed',
+        error: 'Could not update this episode right now. Please try again.',
+      };
+    }
+
+    setItems(prev => prev.map(i => i.tmdb_id === Number(tmdbId) ? data : i));
 
     // Log completed episode to journal via shared helper (includes date validation)
     if (userId) {
@@ -102,7 +111,7 @@ export function useWatching(userId) {
       });
     }
 
-    return data;
+    return { ok: true, data };
   }, [items, userId, fetchSeason]);
 
   /* ── Set progress manually (jump to episode) ── */
