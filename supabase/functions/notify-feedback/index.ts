@@ -10,7 +10,7 @@
  *   SUPABASE_URL
  *   SUPABASE_SERVICE_ROLE_KEY
  *   LINEAR_API_KEY
- *   LINEAR_FEEDBACK_TEAM_ID
+ *   LINEAR_FEEDBACK_TEAM_ID   - accepts a team UUID, key (for example SUS), or exact team name
  *
  * Optional secrets:
  *   LINEAR_FEEDBACK_PROJECT_ID   - defaults to the linked PLOT Feedback project
@@ -29,6 +29,7 @@ const TO_EMAIL = 'feedback@theplot.tv'
 const FROM_EMAIL = 'PLOT Feedback <feedback@theplot.tv>'
 const LINEAR_API_URL = 'https://api.linear.app/graphql'
 const DEFAULT_LINEAR_FEEDBACK_PROJECT_ID = '200f6ebb-1cd4-4cd0-b7d6-0fb7e937f7ad'
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 function attachmentPathsFrom(value: unknown) {
   if (!Array.isArray(value)) return []
@@ -194,6 +195,63 @@ async function createLinearIssue({
   return issue
 }
 
+async function resolveLinearTeamId({
+  apiKey,
+  teamRef,
+}: {
+  apiKey: string
+  teamRef: string
+}) {
+  const normalizedRef = teamRef.trim()
+  if (UUID_PATTERN.test(normalizedRef)) {
+    return normalizedRef
+  }
+
+  const res = await fetch(LINEAR_API_URL, {
+    method: 'POST',
+    headers: {
+      Authorization: apiKey,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      query: `
+        query TeamLookup {
+          teams {
+            nodes {
+              id
+              key
+              name
+            }
+          }
+        }
+      `,
+    }),
+  })
+
+  const payload = await res.json().catch(() => null)
+  const errors = payload?.errors
+  const teams = payload?.data?.teams?.nodes
+
+  if (!res.ok || errors?.length || !Array.isArray(teams)) {
+    const message = errors?.map((entry: { message?: string }) => entry.message).filter(Boolean).join('; ')
+      || `Linear team lookup failed with status ${res.status}`
+    throw new Error(message)
+  }
+
+  const lowerRef = normalizedRef.toLowerCase()
+  const match = teams.find((team: { id?: string, key?: string, name?: string }) => {
+    const key = String(team.key ?? '').toLowerCase()
+    const name = String(team.name ?? '').toLowerCase()
+    return key === lowerRef || name === lowerRef
+  })
+
+  if (!match?.id) {
+    throw new Error(`No Linear team matched "${teamRef}"`)
+  }
+
+  return match.id
+}
+
 async function sendFeedbackEmail({
   resendKey,
   type,
@@ -264,7 +322,7 @@ Deno.serve(async (req) => {
   }
 
   const linearApiKey = Deno.env.get('LINEAR_API_KEY')
-  const linearTeamId = Deno.env.get('LINEAR_FEEDBACK_TEAM_ID')
+  const linearTeamRef = Deno.env.get('LINEAR_FEEDBACK_TEAM_ID')
   const linearProjectId = Deno.env.get('LINEAR_FEEDBACK_PROJECT_ID') || DEFAULT_LINEAR_FEEDBACK_PROJECT_ID
   const resendKey = Deno.env.get('RESEND_API_KEY')
 
@@ -273,7 +331,7 @@ Deno.serve(async (req) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
   )
 
-  if (!linearApiKey || !linearTeamId || !linearProjectId) {
+  if (!linearApiKey || !linearTeamRef || !linearProjectId) {
     const errorMessage = 'Linear feedback mirroring is not configured.'
     await updateFeedbackSyncState(supabaseAdmin, feedbackId, { linear_sync_error: errorMessage })
     console.error(errorMessage)
@@ -291,6 +349,10 @@ Deno.serve(async (req) => {
   })
 
   try {
+    const linearTeamId = await resolveLinearTeamId({
+      apiKey: linearApiKey,
+      teamRef: linearTeamRef,
+    })
     const archivedUrls = await archiveAttachments(supabaseAdmin, feedbackId, record.attachments)
     const issue = await createLinearIssue({
       apiKey: linearApiKey,
