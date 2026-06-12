@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useApp, backdropUrl, logoUrl, countdownChip, formatDate } from '../App.jsx';
 import { tmdb, getTmdbRegion } from '../api/tmdb.js';
+import { findDuplicateCustomList } from '../domain/customLists.js';
 import { useHistory } from '../hooks/useHistory.js';
 import { ratingFromPointer, ratingToStars, starFillPercent, STAR_COUNT } from '../utils/ratings.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
@@ -294,6 +295,8 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
   const { lists, createList, addItem, removeItem, isInList } = customLists;
   const [creatingName, setCreatingName] = useState('');
   const [showCreate,   setShowCreate]   = useState(false);
+  const [createError,  setCreateError]  = useState('');
+  const [isCreating,   setIsCreating]   = useState(false);
 
   const item = {
     id: itemId,
@@ -302,12 +305,35 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
     poster_path: details?.poster_path || null,
   };
 
+  const duplicateList = findDuplicateCustomList(lists, creatingName);
+
   const handleCreate = async () => {
-    if (!creatingName.trim()) return;
-    const newList = await createList(creatingName);
-    if (newList) await addItem(newList.id, item);
-    setCreatingName('');
-    setShowCreate(false);
+    if (!creatingName.trim() || isCreating) return;
+    if (duplicateList) {
+      setCreateError(`"${duplicateList.name}" already exists.`);
+      return;
+    }
+
+    setIsCreating(true);
+    setCreateError('');
+    try {
+      const newList = await createList(creatingName);
+      if (!newList) {
+        setCreateError('Could not create the list. Please try again.');
+        return;
+      }
+
+      const added = await addItem(newList.id, item);
+      if (!added) {
+        setCreateError('The list was created, but the title could not be added. Please try again.');
+        return;
+      }
+
+      setCreatingName('');
+      setShowCreate(false);
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   return (
@@ -364,27 +390,46 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
             );
           })}
           {showCreate ? (
-            <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--border)', display: 'flex', gap: '0.5rem' }}>
-              <input
-                type="text"
-                placeholder="List name…"
-                value={creatingName}
-                onChange={e => setCreatingName(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleCreate()}
-                autoFocus
-                style={{
-                  flex: 1, padding: '0.4rem 0.6rem',
-                  border: '1px solid var(--border)', borderRadius: 'var(--radius)',
-                  background: 'var(--bg)', color: 'var(--text-primary)',
-                  fontSize: '0.875rem', outline: 'none',
-                }}
-              />
-              <button className="btn btn-primary btn-xs" disabled={!creatingName.trim()} onClick={handleCreate}>Create</button>
-              <button className="btn btn-ghost btn-xs" onClick={() => setShowCreate(false)}>✕</button>
-            </div>
+            <>
+              <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--border)', display: 'flex', gap: '0.5rem' }}>
+                <input
+                  type="text"
+                  placeholder="List name…"
+                  value={creatingName}
+                  disabled={isCreating}
+                  onChange={e => {
+                    setCreatingName(e.target.value);
+                    if (createError) setCreateError('');
+                  }}
+                  onKeyDown={e => e.key === 'Enter' && !isCreating && handleCreate()}
+                  autoFocus
+                  style={{
+                    flex: 1, padding: '0.4rem 0.6rem',
+                    border: '1px solid var(--border)', borderRadius: 'var(--radius)',
+                    background: 'var(--bg)', color: 'var(--text-primary)',
+                    fontSize: '0.875rem', outline: 'none',
+                  }}
+                />
+                <button className="btn btn-primary btn-xs" disabled={!creatingName.trim() || isCreating} onClick={handleCreate}>
+                  {isCreating ? 'Creating…' : 'Create'}
+                </button>
+                <button className="btn btn-ghost btn-xs" disabled={isCreating} onClick={() => {
+                  setShowCreate(false);
+                  setCreateError('');
+                }}>✕</button>
+              </div>
+              {createError && (
+                <div style={{ padding: '0 1rem 0.75rem', color: '#ef4444', fontSize: '0.75rem' }}>
+                  {createError}
+                </div>
+              )}
+            </>
           ) : (
             <button
-              onClick={() => setShowCreate(true)}
+              onClick={() => {
+                setShowCreate(true);
+                setCreateError('');
+              }}
               style={{
                 display: 'flex', alignItems: 'center', gap: '0.5rem',
                 width: '100%', padding: '0.75rem 1rem',

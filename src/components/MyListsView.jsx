@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useApp, posterUrl, countdownChip } from '../App.jsx';
 import { tmdb } from '../api/tmdb.js';
+import { findDuplicateCustomList } from '../domain/customLists.js';
 import { useHistory } from '../hooks/useHistory.js';
 import { useGenres } from '../hooks/useGenres.js';
 import { localDateStr } from '../utils/date.js';
@@ -551,8 +552,31 @@ function FavoritesSection({ favorites: favsHook, filterItems, hideHeader }) {
 }
 
 /* ── Create list modal ── */
-function CreateListModal({ onConfirm, onClose }) {
+function CreateListModal({ lists, onConfirm, onClose }) {
   const [name, setName] = useState('');
+  const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const duplicateList = findDuplicateCustomList(lists, name);
+
+  const handleSubmit = async () => {
+    if (!name.trim() || isSubmitting) return;
+    if (duplicateList) {
+      setError(`"${duplicateList.name}" already exists.`);
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError('');
+    try {
+      const created = await onConfirm(name);
+      if (!created) {
+        setError('Could not create the list. Please try again.');
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 1000,
@@ -570,9 +594,13 @@ function CreateListModal({ onConfirm, onClose }) {
           type="text"
           placeholder="List name…"
           value={name}
-          onChange={e => setName(e.target.value)}
+          disabled={isSubmitting}
+          onChange={e => {
+            setName(e.target.value);
+            if (error) setError('');
+          }}
           autoFocus
-          onKeyDown={e => e.key === 'Enter' && name.trim() && onConfirm(name)}
+          onKeyDown={e => e.key === 'Enter' && name.trim() && !isSubmitting && handleSubmit()}
           style={{
             width: '100%', padding: '0.6rem 0.75rem', marginBottom: '0.75rem',
             border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
@@ -580,11 +608,16 @@ function CreateListModal({ onConfirm, onClose }) {
             fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box',
           }}
         />
+        {error && (
+          <div style={{ marginBottom: '0.75rem', color: '#ef4444', fontSize: '0.75rem' }}>
+            {error}
+          </div>
+        )}
         <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button className="btn btn-primary btn-sm" style={{ flex: 1 }} disabled={!name.trim()} onClick={() => onConfirm(name)}>
-            Create
+          <button className="btn btn-primary btn-sm" style={{ flex: 1 }} disabled={!name.trim() || isSubmitting} onClick={handleSubmit}>
+            {isSubmitting ? 'Creating…' : 'Create'}
           </button>
-          <button className="btn btn-ghost btn-sm" onClick={onClose}>Cancel</button>
+          <button className="btn btn-ghost btn-sm" disabled={isSubmitting} onClick={onClose}>Cancel</button>
         </div>
       </div>
     </div>
@@ -608,6 +641,7 @@ function CustomListsSection({ customLists: clHook, filterItems, hideHeader }) {
   const handleCreate = useCallback(async (name) => {
     const created = await createList(name);
     if (created) setCreatingList(false);
+    return created;
   }, [createList]);
 
   const handleRename = useCallback(async (id) => {
@@ -791,7 +825,7 @@ function CustomListsSection({ customLists: clHook, filterItems, hideHeader }) {
       ))}
 
       {creatingList && (
-        <CreateListModal onConfirm={handleCreate} onClose={() => setCreatingList(false)} />
+        <CreateListModal lists={lists} onConfirm={handleCreate} onClose={() => setCreatingList(false)} />
       )}
       {showAddToList && (
         <AddToFavoritesModal
