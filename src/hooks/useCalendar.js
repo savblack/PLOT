@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { localDateStr, dateToLocalStr } from '../utils/date.js';
+import { buildWatchlistMovieCalendarEvents } from '../utils/calendar.js';
 import { tmdb } from '../api/tmdb.js';
 
 /**
@@ -51,24 +52,7 @@ export function useCalendar(watchlistItems = [], watchingItems = [], fetchSeason
 
     // ── 1. Watchlist movies (synchronous, dates already stored) ─────────────
     for (const item of watchlistItems) {
-      if (item.media_type === 'tv') continue; // handled below in parallel
-      if (item.release_date && item.release_date >= todayStr) {
-        const isCinema = !!item.streaming_date;
-        all.push({
-          date:  item.release_date,
-          type:  isCinema ? 'cinema' : 'streaming',
-          label: isCinema ? 'Cinema' : 'Streaming',
-          item,
-        });
-      }
-      if (item.streaming_date && item.streaming_date >= todayStr) {
-        all.push({
-          date:  item.streaming_date,
-          type:  'streaming',
-          label: 'Streaming',
-          item,
-        });
-      }
+      all.push(...buildWatchlistMovieCalendarEvents(item, todayStr));
     }
 
     // ── 2. Watchlist TV shows — parallel fetch details + season ────────────
