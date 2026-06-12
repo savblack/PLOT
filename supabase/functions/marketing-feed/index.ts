@@ -181,7 +181,7 @@ ${head}
   .post-head .a-meta .d { color: var(--faint); }
   .post-head .a-meta .sep { width: 3px; height: 3px; border-radius: 50%; background: var(--faint); opacity: 0.6; }
   .post-head h1 { font-family: var(--serif); font-size: clamp(2.4rem, 5.6vw, 3.5rem); font-weight: 400; line-height: 1.0; letter-spacing: -0.02em; }
-  figure.hero { margin: 44px -70px 46px; }
+  figure.hero { margin: 44px 0 46px; }
   figure.hero img { width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; border: 1px solid var(--hair); }
   .post-body p { font-size: 1.06rem; font-weight: 300; color: #27272A; margin-bottom: 24px; }
   .post-body p.lede { font-weight: 600; color: var(--ink); margin-bottom: 30px; }
@@ -193,6 +193,7 @@ ${head}
   .cta:hover { background: var(--ink); color: #fff; transform: translateY(-1px); }
   .back { display: inline-block; margin-top: 40px; color: var(--mut); text-decoration: none; }
   .back:hover { color: var(--pink); }
+  .post-foot { max-width: 660px; margin: 0 auto; }
   .more { max-width: 660px; margin: 80px auto 0; border-top: 2px solid var(--ink); padding-top: 20px; }
   .more .more-head { display: block; color: var(--ink); margin-bottom: 26px; }
   .more-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px; }
@@ -256,9 +257,6 @@ ${head}
   .footer-rail { border-top: 1px solid rgba(0,0,0,0.07); padding-top: 1.1rem; }
   .footer-copy { font-size: 0.75rem; color: var(--faint); }
 
-  @media (max-width: 920px) {
-    figure.hero { margin-left: 0; margin-right: 0; }
-  }
   @media (max-width: 760px) {
     .wrap { padding: 28px 20px 80px; }
     .post { padding-top: 40px; }
@@ -590,8 +588,8 @@ ${hero ? `<meta property="og:image" content="${esc(hero)}">` : ''}
         </div>
         <a class="cta" href="https://app.theplot.tv/signup?utm_source=whats_on&utm_medium=site&utm_campaign=${esc(typed.post_type)}">Sign up &rarr;</a>
       </aside>
-      <a class="back sc" href="${FEED_PATH}">&larr; All updates</a>
     </article>
     ${more}
+    <div class="post-foot"><a class="back sc" href="${FEED_PATH}">&larr; All updates</a></div>
   `);
 });
