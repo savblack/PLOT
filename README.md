@@ -1,6 +1,6 @@
 # PLOT
 
-PLOT is a private React/Vite app for discovering, logging, and sharing movies and TV shows. It uses Supabase for auth, storage, database access, and edge functions, TMDB for media metadata, and PostHog for product analytics.
+PLOT is a private React/Vite app for discovering and logging movies and TV shows. Public profile sharing is deferred from the first public release while account-visibility rules are still being designed. It uses Supabase for auth, storage, database access, and edge functions, TMDB for media metadata, and PostHog for product analytics.
 
 ## Stack
 

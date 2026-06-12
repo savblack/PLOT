@@ -39,5 +39,6 @@ test('protected app route redirects anonymous users to login', async ({ page }) 
 
 test('public profile route is reachable without auth', async ({ page }) => {
   await page.goto('/u/smoke-test-user');
-  await expect(page.locator('#root')).toBeVisible();
+  await expect(page.getByRole('heading', { name: /public profiles aren't live yet/i })).toBeVisible();
+  await expect(page.getByText('The handle @smoke-test-user is reserved for a future public profile experience.')).toBeVisible();
 });
