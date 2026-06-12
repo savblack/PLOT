@@ -38,6 +38,7 @@ export function useHistory(userId) {
     setLoading(false);
   }, [userId]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- loading is delegated to the stable loader callback
   useEffect(() => { load(); }, [load]);
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;

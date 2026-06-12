@@ -247,6 +247,7 @@ export default function EpgView() {
   const boundaryWheelRef = useRef({ direction: 0, amount: 0, lastAt: 0 });
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- the portal target only exists after mount
     setFilterTarget(document.getElementById('guide-top-filters'));
   }, []);
 
@@ -260,7 +261,7 @@ export default function EpgView() {
       month:   d.toLocaleDateString('en', { month: 'short' }),
       num:     d.getDate(),
     };
-  }), [todayStr]);
+  }), []);
 
   const dayDateStrs = useMemo(() => days.map(d => d.dateStr), [days]);
   const dayDateKey = dayDateStrs.join('|');
@@ -271,6 +272,7 @@ export default function EpgView() {
   /* ── Fetch the visible week up front so day-to-day scroll feels local ── */
   useEffect(() => {
     let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- clear prior week data before async reload
     setScheduleByDate({});
 
     dayDateStrs.forEach(async (dateStr) => {

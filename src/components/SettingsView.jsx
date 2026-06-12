@@ -614,12 +614,20 @@ export default function SettingsView() {
 
   // Sync local token back to null once profile catches up (or if revoked elsewhere)
   useEffect(() => {
-    if (localCalToken && profile?.calendar_token === localCalToken) setLocalCalToken(null);
-    if (localCalToken && profile?.calendar_token === null) setLocalCalToken(null);
+    const shouldClearLocalToken = localCalToken && (
+      profile?.calendar_token === localCalToken ||
+      profile?.calendar_token === null
+    );
+    if (shouldClearLocalToken) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- local optimistic token should clear once persisted state catches up
+      setLocalCalToken(null);
+    }
   }, [profile?.calendar_token, localCalToken]);
 
   // Load integrations on mount
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- loadIntegration is provided by the integration controller
   useEffect(() => { sync.loadIntegration(); }, [sync.loadIntegration]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- loadIntegration is provided by the integration controller
   useEffect(() => { trakt.loadIntegration(); }, [trakt.loadIntegration]);
 
   const providers      = profile?.streaming_providers || [];

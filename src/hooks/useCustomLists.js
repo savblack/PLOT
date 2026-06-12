@@ -17,6 +17,7 @@ export function useCustomLists(userId) {
     setLoading(false);
   }, [userId]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- loading is delegated to the stable loader callback
   useEffect(() => { load(); }, [load]);
 
   const createList = useCallback(async (name) => {

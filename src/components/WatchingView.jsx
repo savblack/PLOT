@@ -39,12 +39,14 @@ function WatchingCard({ progress, watching, onOpen, onStop }) {
 
   /* ── Re-fetch season whenever viewSeason changes ── */
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- clear stale season rows before the async fetch resolves
     setSeasonData(null);
     watching.fetchSeason(progress.tmdb_id, viewSeason).then(setSeasonData);
   }, [progress.tmdb_id, viewSeason]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ── Keep viewSeason in sync if progress jumps to a new season ── */
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mirror external progress changes into the local selector
     setViewSeason(progress.current_season);
   }, [progress.current_season]);
 

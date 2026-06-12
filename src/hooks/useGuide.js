@@ -45,6 +45,7 @@ export function useGuide(providers = []) {
     setLoading(false);
   }, [JSON.stringify(providerIds)]); // eslint-disable-line
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- loading is delegated to the stable loader callback
   useEffect(() => { load(); }, [load]);
 
   return { airingToday, platformRails, newMovies, loading, reload: load };

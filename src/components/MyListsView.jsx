@@ -47,7 +47,11 @@ function AddToRankModal({ listType, rank, onAdd, onClose }) {
   );
 
   useEffect(() => {
-    if (tab !== 'search' || !query.trim()) { setResults([]); return; }
+    if (tab !== 'search' || !query.trim()) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reset transient search results when search mode closes
+      setResults([]);
+      return;
+    }
     setSearching(true);
     const timer = setTimeout(async () => {
       const data = await tmdb.search(query);
@@ -191,7 +195,11 @@ function AddToFavoritesModal({ title = 'Add to Favorites', onAdd, onClose }) {
   );
 
   useEffect(() => {
-    if (tab !== 'search' || !query.trim()) { setResults([]); return; }
+    if (tab !== 'search' || !query.trim()) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reset transient search results when search mode closes
+      setResults([]);
+      return;
+    }
     setSearching(true);
     const timer = setTimeout(async () => {
       const data = await tmdb.search(query);

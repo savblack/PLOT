@@ -65,6 +65,7 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone }) {
   }, [currentProgress?.current_season]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- episode fetch toggles local loading/error state
     setEpLoading(true);
     setEpError(false);
     tmdb.getSeason(tvId, selSeason).then(data => {
@@ -484,6 +485,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
   // Sync local review state when entry loads or changes
   useEffect(() => {
     if (watchedEntry) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrate draft state from the saved review entry
       setLocalRating(watchedEntry.rating || 0);
       setLocalReview(watchedEntry.note   || '');
       setLocalDnf(watchedEntry.dnf       || false);
@@ -534,6 +536,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
     setLoading(false);
   }, [itemId, itemType, isMovie]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- details loading is encapsulated in the stable callback
   useEffect(() => { loadDetails(); }, [loadDetails]);
 
   const title   = details?.title || details?.name || '';

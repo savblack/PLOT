@@ -102,11 +102,12 @@ export default function OnboardingFlow() {
       if (!session) navigate('/login', { replace: true });
       else setUser(session.user);
     });
-  }, []);
+  }, [navigate]);
 
   /* ── Load providers when moving to step 2 ── */
   useEffect(() => {
     if (step !== 2 || allProviders.length > 0) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- provider fetch toggles local loading state for this onboarding step
     setLoadingProv(true);
     tmdb.getWatchProvidersForRegion('tv', region).then(data => {
       const list = (data?.results || [])
@@ -115,7 +116,7 @@ export default function OnboardingFlow() {
       setAllProviders(list);
       setLoadingProv(false);
     });
-  }, [step, region]);
+  }, [step, region, allProviders.length]);
 
   /* ── Trending prefill for step 3 ── */
   useEffect(() => {
@@ -126,11 +127,15 @@ export default function OnboardingFlow() {
         .slice(0, 12);
       setTrending(list);
     });
-  }, [step]);
+  }, [step, trending.length]);
 
   /* ── Seed search ── */
   useEffect(() => {
-    if (step !== 3 || !seedQuery.trim()) { setSeedResults([]); return; }
+    if (step !== 3 || !seedQuery.trim()) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- clear transient onboarding search results when the query is empty
+      setSeedResults([]);
+      return;
+    }
     const t = setTimeout(async () => {
       setSeedSearching(true);
       const data = await tmdb.search(seedQuery);
