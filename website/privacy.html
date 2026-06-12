@@ -149,35 +149,111 @@
 
     /* ── Footer ─────────────────────────────────────────────── */
     footer {
-      background: #0e0e0e;
-      overflow: hidden;
+      background: var(--surface);
+      border-top: 1px solid rgba(0,0,0,0.07);
+      padding: 3.5rem 3rem 1.75rem;
     }
-    .footer-wordmark { display: block; width: 100%; padding: 0; user-select: none; }
-    .footer-wordmark img {
-      width: 92%;
-      display: block;
-      margin: 0 auto;
-      filter: brightness(0) invert(1);
-      opacity: 0.07;
-    }
-    .footer-meta {
-      display: flex;
-      align-items: flex-end;
-      justify-content: space-between;
-      padding: 3rem 3rem 3rem;
-    }
-    .footer-tagline { font-family: var(--sans); font-size: 0.75rem; color: rgba(255,255,255,0.3); }
-    .footer-links { display: flex; gap: 2rem; list-style: none; }
-    .footer-links a {
+    .footer-inner { max-width: 1100px; margin: 0 auto; }
+    .footer-grid { display: flex; flex-wrap: wrap; gap: 2rem 3rem; }
+    .footer-brand { flex: 1.4; min-width: 200px; }
+    .footer-logo {
+      font-family: var(--serif);
+      font-size: 2.6rem;
+      font-weight: 400;
+      letter-spacing: -0.05em;
+      line-height: 1;
+      color: var(--text);
       text-decoration: none;
-      color: rgba(255,255,255,0.3);
-      font-size: 0.8rem;
-      font-weight: 500;
-      letter-spacing: 0.04em;
-      transition: color 0.2s;
+      display: inline-block;
+      user-select: none;
     }
-    .footer-links a:hover { color: rgba(255,255,255,0.8); }
-    .footer-copy { color: rgba(255,255,255,0.2); font-size: 0.78rem; }
+    .footer-logo:hover { opacity: 1; }
+    .footer-tagline { font-size: 0.82rem; font-weight: 400; color: #a1a1aa; margin-top: 0.6rem; }
+    .footer-col { flex: 1; min-width: 110px; }
+    .footer-col h4 {
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #a1a1aa;
+      margin-bottom: 0.7rem;
+    }
+    .footer-col ul { list-style: none; }
+    .footer-col a {
+      display: inline-block;
+      padding: 0.22rem 0;
+      font-size: 0.75rem;
+      font-weight: 400;
+      color: #52525b;
+      text-decoration: none;
+      transition: color 0.2s;
+      white-space: nowrap;
+    }
+    .footer-col a:hover { color: #e05578; opacity: 1; }
+    .footer-news {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+      border-top: 1px solid rgba(0,0,0,0.07);
+      margin-top: 2.25rem;
+      padding: 2rem 0;
+    }
+    .footer-news-title {
+      font-family: var(--serif);
+      font-size: 1.5rem;
+      font-weight: 400;
+      letter-spacing: -0.01em;
+      line-height: 1.2;
+      color: var(--text);
+    }
+    .footer-news-sub { font-size: 0.82rem; color: #a1a1aa; margin-top: 0.4rem; }
+    .footer-news-right { display: flex; flex-direction: column; align-items: flex-end; gap: 0.45rem; }
+    .footer-news-form {
+      display: flex;
+      align-items: center;
+      background: var(--surface);
+      border: 1px solid rgba(0,0,0,0.12);
+      border-radius: 20px;
+      padding: 3px;
+      height: 40px;
+      width: 300px;
+      max-width: 100%;
+    }
+    .footer-news-form input[type="email"] {
+      flex: 1;
+      min-width: 0;
+      height: 32px;
+      border: none;
+      outline: none;
+      background: transparent;
+      font-family: var(--sans);
+      font-size: 0.82rem;
+      color: var(--text);
+      padding: 0 6px 0 14px;
+    }
+    .footer-news-form input[type="email"]::placeholder { color: #a1a1aa; }
+    .footer-news-form button {
+      flex-shrink: 0;
+      height: 32px;
+      padding: 0 18px;
+      border: none;
+      border-radius: 16px;
+      background: #1a1a1a;
+      color: #fff;
+      font-family: var(--sans);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s ease;
+    }
+    .footer-news-form button:hover:not(:disabled) { opacity: 0.85; }
+    .footer-news-form button:disabled { opacity: 0.6; cursor: default; }
+    .footer-news-msg { font-size: 0.78rem; color: #52525b; min-height: 1.1em; }
+    .footer-news-form .fn-website { position: absolute; left: -9999px; opacity: 0; pointer-events: none; }
+    .footer-rail { border-top: 1px solid rgba(0,0,0,0.07); padding-top: 1.1rem; }
+    .footer-copy { font-size: 0.75rem; color: #a1a1aa; }
 
     @media (max-width: 700px) {
       /* Justified text creates rivers of whitespace in narrow columns */
@@ -185,7 +261,10 @@
     }
 
     @media (max-width: 600px) {
-      .footer-meta { flex-direction: column; gap: 1.5rem; align-items: flex-start; }
+      footer { padding-left: 1.5rem; padding-right: 1.5rem; }
+      .footer-news { flex-direction: column; align-items: flex-start; }
+      .footer-news-right { width: 100%; align-items: stretch; }
+      .footer-news-form { width: 100%; }
       /* Only two short links — keep them reachable on mobile, just tighter */
       .nav-links { gap: 1rem; }
     }
@@ -239,7 +318,7 @@
     <p>The Service relies on third-party infrastructure and data providers. By using PLOT, you acknowledge and accept that your data will be processed by these third parties under their own terms and privacy policies, over which we have no control:</p>
     <ul>
       <li><strong>Supabase</strong> — authentication and database. See <a href="https://supabase.com/privacy" target="_blank" rel="noopener">Supabase's Privacy Policy</a>.</li>
-      <li><strong>The Movie Database (TMDB)</strong> — film and TV metadata. See <a href="https://www.themoviedb.org/privacy-policy" target="_blank" rel="noopener">TMDB's Privacy Policy</a>.</li>
+      <li><strong>The Movie Database (TMDB)</strong> — film and TV metadata. This product uses the TMDB API but is not endorsed or certified by TMDB. See <a href="https://www.themoviedb.org/privacy-policy" target="_blank" rel="noopener">TMDB's Privacy Policy</a>.</li>
       <li><strong>Vercel</strong> — website and application hosting. Your requests are routed through Vercel's infrastructure.</li>
       <li><strong>PostHog</strong> — product analytics used to understand how the Service is used. See <a href="https://posthog.com/privacy" target="_blank" rel="noopener">PostHog's Privacy Policy</a>.</li>
       <li><strong>Google Fonts</strong> — typography loaded from Google's servers, which may log your IP address per Google's privacy policy.</li>
@@ -274,20 +353,81 @@
     <p>This Privacy Policy is governed by the laws of New South Wales, Australia. Any disputes arising in connection with this policy are subject to the exclusive jurisdiction of the courts of New South Wales, Australia. For privacy-related enquiries, contact us via the app.</p>
   </main>
 
-  <!-- ── Footer ────────────────────────────────────────────────── -->
   <footer>
-    <div class="footer-wordmark"><img src="plot-logo.svg" alt="PLOT"></div>
-    <div class="footer-meta">
-      <span class="footer-tagline">YOUR FILM &amp; TV JOURNAL</span>
-      <ul class="footer-links">
-        <li><a href="https://app.theplot.tv/login">Log in</a></li>
-        <li><a href="https://app.theplot.tv/signup">Sign up</a></li>
-        <li><a href="privacy.html">Privacy</a></li>
-        <li><a href="terms.html">Terms</a></li>
-      </ul>
-      <span class="footer-copy">© 2026 PLOT</span>
+    <div class="footer-inner">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a class="footer-logo" href="index.html">PLOT</a>
+          <p class="footer-tagline">Your film &amp; TV companion.</p>
+        </div>
+        <div class="footer-col">
+          <h4>Explore</h4>
+          <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="/whats-on">What's On</a></li>
+            <li><a href="https://app.theplot.tv/login">Log in</a></li>
+            <li><a href="https://app.theplot.tv/signup">Sign up</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Legal</h4>
+          <ul>
+            <li><a href="privacy.html">Privacy</a></li>
+            <li><a href="terms.html">Terms</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-news">
+        <div>
+          <div class="footer-news-title">What's On, in your inbox.</div>
+          <p class="footer-news-sub">The best of what's new and coming soon, once a week.</p>
+        </div>
+        <div class="footer-news-right">
+          <form class="footer-news-form" id="newsletterForm">
+            <input type="email" name="email" placeholder="your@email.com" required autocomplete="email" aria-label="Email address">
+            <input type="text" name="website" class="fn-website" tabindex="-1" autocomplete="off" aria-hidden="true">
+            <button type="submit">Subscribe</button>
+          </form>
+          <div class="footer-news-msg" id="newsletterMsg" role="status"></div>
+        </div>
+      </div>
+      <div class="footer-rail">
+        <span class="footer-copy">&copy; 2026 Plot</span>
+      </div>
     </div>
   </footer>
+
+  <script>
+    // Newsletter signup (footer)
+    (function () {
+      var NEWSLETTER_URL = 'https://mkegtssedjyqldysvzga.supabase.co/functions/v1/newsletter-subscribe';
+      var form = document.getElementById('newsletterForm');
+      var msg = document.getElementById('newsletterMsg');
+      if (!form) return;
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var button = form.querySelector('button');
+        button.disabled = true;
+        msg.textContent = '';
+        fetch(NEWSLETTER_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: form.elements.email.value,
+            website: form.elements.website.value,
+          }),
+        }).then(function (r) {
+          if (!r.ok) throw new Error('bad status');
+          msg.textContent = "You're in — first digest this Sunday.";
+          form.reset();
+        }).catch(function () {
+          msg.textContent = "Something went wrong — try again in a minute.";
+        }).finally(function () {
+          button.disabled = false;
+        });
+      });
+    })();
+  </script>
 
 </body>
 </html>
