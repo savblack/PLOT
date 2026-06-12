@@ -23,6 +23,7 @@ const OnboardingFlow    = lazy(() => import('./pages/OnboardingFlow.jsx'));
 const NotFoundPage      = lazy(() => import('./pages/NotFoundPage.jsx'));
 const TermsPage         = lazy(() => import('./pages/TermsPage.jsx'));
 const PrivacyPage       = lazy(() => import('./pages/PrivacyPage.jsx'));
+const PublicProfilePage = lazy(() => import('./pages/PublicProfilePage.jsx'));
 const RootRoute         = lazy(() => import('./pages/RootRoute.jsx'));
 const DesignSystemPage  = lazy(() => import('./pages/DesignSystemPage.jsx'));
 
@@ -35,6 +36,7 @@ const router = createBrowserRouter([
   // Static
   { path: '/terms',          element: wrap(<TermsPage />) },
   { path: '/privacy',        element: wrap(<PrivacyPage />) },
+  { path: '/u/:username',    element: wrap(<PublicProfilePage />) },
 
   // Auth
   { path: '/login',          element: wrap(<AuthPage initialMode="login" />) },
