@@ -51,9 +51,9 @@ const TYPE_META: Record<string, { label: string; tone: string }> = {
 
 const FILTERS: { key: string | null; label: string }[] = [
   { key: null, label: 'Latest' },
-  { key: 'countdown', label: 'Coming soon' },
   { key: 'now_streaming', label: 'Now streaming' },
   { key: 'trending_chart', label: 'The charts' },
+  { key: 'countdown', label: 'Coming soon' },
   { key: 'trailer_drop', label: 'First look' },
 ];
 
@@ -131,9 +131,10 @@ ${head}
   .nav-links a:hover { color: var(--ink); }
   .nav-links a.current { color: var(--ink); font-weight: 500; }
 
-  .head { padding: 60px 0 0; }
-  .dateline { display: block; color: var(--faint); padding-bottom: 16px; margin-bottom: 22px; border-bottom: 1px solid var(--hair); }
-  h1.feed-title { font-family: var(--serif); font-size: clamp(3.4rem, 9vw, 5.4rem); font-weight: 400; line-height: 0.92; letter-spacing: -0.03em; }
+  .head { padding: 104px 0 0; }
+  .head-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; flex-wrap: wrap; }
+  .dateline { color: var(--faint); font-size: 0.84rem; white-space: nowrap; padding-top: 0.5em; }
+  h1.feed-title { font-family: var(--serif); font-size: clamp(2.8rem, 7vw, 4.4rem); font-weight: 400; line-height: 0.92; letter-spacing: -0.03em; }
   h1.feed-title em { font-style: italic; color: inherit; }
 
   nav.dex { display: flex; justify-content: space-between; align-items: baseline; gap: 24px; border-bottom: 1px solid var(--hair); margin: 40px 0 0; }
@@ -430,8 +431,10 @@ Deno.serve(async (req) => {
 
     return page(`${FEED_TITLE} · PLOT`, head, `
       <div class="head r2">
-        <div class="dateline sc">${esc(dateline)}</div>
-        <h1 class="feed-title">What's <em>on</em></h1>
+        <div class="head-row">
+          <h1 class="feed-title">What's <em>on</em></h1>
+          <div class="dateline sc">${esc(dateline)}</div>
+        </div>
       </div>
       <nav class="dex r2">
         <div class="dex-links">${dexLinks}</div>
