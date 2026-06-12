@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useApp, posterUrl, countdownChip, TodayLabel } from '../App.jsx';
 import { localDateStr } from '../utils/date.js';
 import { useGenres } from '../hooks/useGenres.js';
+import { getButtonLikeProps } from '../utils/interactive.js';
 import MultiSelect from './MultiSelect.jsx';
 import LoadingSpinner from './LoadingSpinner.jsx';
 
@@ -197,9 +198,14 @@ export default function WatchlistView() {
 function WatchingRow({ item, openPanel }) {
   const img    = posterUrl(item.poster_path, 'w92');
   const epCode = `S${String(item.current_season).padStart(2,'0')}E${String(item.current_episode).padStart(2,'0')}`;
+  const openDetails = () => openPanel(item.tmdb_id, 'tv');
 
   return (
-    <div className="list-row" onClick={() => openPanel(item.tmdb_id, 'tv')}>
+    <div
+      className="list-row interactive-surface"
+      onClick={openDetails}
+      {...getButtonLikeProps({ onPress: openDetails, label: `View details for ${item.title}` })}
+    >
       <div className="list-row-poster">
         {img && <img src={img} alt={item.title} />}
       </div>
@@ -221,6 +227,7 @@ function SavedRow({ item, openPanel, watchlist, watching }) {
   const isTV           = item.media_type === 'tv';
   const chip           = item.release_date ? countdownChip(item.release_date) : null;
   const streamingChip  = item.streaming_date ? countdownChip(item.streaming_date) : null;
+  const openDetails    = () => openPanel(item.tmdb_id, item.media_type || 'movie');
 
   const handleStartWatching = async (e) => {
     e.stopPropagation();
@@ -235,7 +242,11 @@ function SavedRow({ item, openPanel, watchlist, watching }) {
   };
 
   return (
-    <div className="list-row" onClick={() => openPanel(item.tmdb_id, item.media_type || 'movie')}>
+    <div
+      className="list-row interactive-surface"
+      onClick={openDetails}
+      {...getButtonLikeProps({ onPress: openDetails, label: `View details for ${title}` })}
+    >
       <div className="list-row-poster">
         {img && <img src={img} alt={title} />}
       </div>
