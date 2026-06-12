@@ -17,7 +17,8 @@
     "mkt:metrics": "node marketing/metrics/collect.mjs",
     "mkt:report": "node marketing/metrics/report.mjs",
     "mkt:newsletter": "node marketing/newsletter/send-digest.mjs",
-    "mkt:preview": "node marketing/preview/build-preview.mjs"
+    "mkt:preview": "node marketing/preview/build-preview.mjs",
+    "mkt:backfill": "node scripts/seed-marketing-backfill.mjs"
   },
   "dependencies": {
     "@posthog/react": "^1.10.1",

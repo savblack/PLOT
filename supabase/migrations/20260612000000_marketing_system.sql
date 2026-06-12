@@ -2,6 +2,13 @@
 -- tracked titles, trending snapshots, newsletter subscribers, platform tokens.
 -- All tables are service-role only (RLS enabled, no policies).
 
+-- Supabase installs extensions in the `extensions` schema, which is not on the
+-- migration search_path by default. Add it so the gen_random_bytes() token
+-- defaults and the citext type below resolve. (gen_random_uuid() is in core
+-- Postgres; gen_random_bytes() comes from pgcrypto.)
+SET search_path TO public, extensions;
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 -- ── Content calendar ─────────────────────────────────────────────
 CREATE TABLE public.marketing_posts (
   id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
