@@ -3,6 +3,7 @@ import { useApp, backdropUrl, logoUrl, countdownChip, formatDate } from '../App.
 import { tmdb, getTmdbRegion } from '../api/tmdb.js';
 import { useHistory } from '../hooks/useHistory.js';
 import { markMediaAsWatched, moveSavedShowToWatching } from '../utils/mediaStatus.js';
+import { resolveMediaPanelEscapeAction } from '../utils/mediaPanel.js';
 import { ratingFromPointer, ratingToStars, starFillPercent, STAR_COUNT } from '../utils/ratings.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 
@@ -459,6 +460,26 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
     : hasSavedReview
       ? ' review-textarea--saved'
       : '';
+
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key !== 'Escape') return;
+
+      const action = resolveMediaPanelEscapeAction({ closing, showListSheet });
+      if (!action) return;
+
+      event.preventDefault();
+      if (action === 'close-list-sheet') {
+        setShowListSheet(false);
+        return;
+      }
+
+      onClose();
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [closing, onClose, showListSheet]);
 
   // Sync local review state when entry loads or changes
   useEffect(() => {
