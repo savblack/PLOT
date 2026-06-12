@@ -20,6 +20,9 @@
   /* Accent */
   --accent:         #E05578;
   --accent-dim:     rgba(224,85,120,0.12);
+  --danger:         #B9384A;
+  --danger-dim:     rgba(185,56,74,0.1);
+  --danger-border:  rgba(185,56,74,0.22);
 
   /* EPG sidebar channel-type bars */
   --epg-bar-stream:    #F0AABC;  /* lighter pink — streaming */
@@ -84,6 +87,9 @@
 
   --accent:         #F06A88;
   --accent-dim:     rgba(240,106,136,0.15);
+  --danger:         #F18997;
+  --danger-dim:     rgba(241,137,151,0.16);
+  --danger-border:  rgba(241,137,151,0.26);
 
   --epg-bar-stream:    #9a4960;  /* muted rose — streaming in dark mode */
   --epg-bar-broadcast: #60a5fa;  /* blue-400 — live TV in dark mode */

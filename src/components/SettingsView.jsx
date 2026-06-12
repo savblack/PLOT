@@ -95,6 +95,20 @@ function Chevron() {
   return <svg viewBox="0 0 24 24" width="14" height="14" stroke="var(--text-muted)" fill="none" strokeWidth="2.5"><polyline points="9,18 15,12 9,6"/></svg>;
 }
 
+function SettingsTextAction({ children, onClick, disabled = false, tone = 'default' }) {
+  return (
+    <button
+      type="button"
+      className={`settings-text-action${tone === 'danger' ? ' settings-text-action--danger' : ''}`}
+      onClick={onClick}
+      disabled={disabled}
+    >
+      <span>{children}</span>
+      <span aria-hidden="true">›</span>
+    </button>
+  );
+}
+
 /* ── Clear Watchlist confirmation modal ── */
 function ClearWatchlistModal({ onClearList, onClearBoth, onClose }) {
   return createPortal(
@@ -903,9 +917,9 @@ export default function SettingsView() {
             margin: '0.75rem 0 1rem',
             padding: '0.85rem 0.95rem',
             borderRadius: 'var(--radius-md)',
-            border: '1px solid rgba(220, 38, 38, 0.18)',
-            background: 'rgba(220, 38, 38, 0.08)',
-            color: '#b91c1c',
+            border: '1px solid var(--danger-border)',
+            background: 'var(--danger-dim)',
+            color: 'var(--danger)',
             fontSize: '0.82rem',
             lineHeight: 1.5,
           }}
@@ -1022,11 +1036,14 @@ export default function SettingsView() {
             </div>
             <span className="settings-row-label">Appearance</span>
           </div>
-          <div style={{ display: 'flex', gap: '0.35rem' }}>
+          <div className="settings-theme-tabs" role="tablist" aria-label="Appearance options">
             {['light','dark','system'].map(t => (
               <button
                 key={t}
-                className={`btn btn-xs ${theme === t ? 'btn-primary' : 'btn-ghost'}`}
+                type="button"
+                role="tab"
+                aria-selected={theme === t}
+                className={`settings-theme-tab${theme === t ? ' is-active' : ''}`}
                 onClick={() => setTheme(t)}
               >
                 {t.charAt(0).toUpperCase() + t.slice(1)}
@@ -1052,35 +1069,25 @@ export default function SettingsView() {
               </div>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0 }}>
+          <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
             {sync.isConnected ? (
               <>
-                <button
-                  className="btn btn-secondary btn-xs"
-                  onClick={sync.sync}
-                  disabled={sync.syncing}
-                >
+                <SettingsTextAction onClick={sync.sync} disabled={sync.syncing}>
                   {sync.syncing ? 'Syncing…' : 'Sync now'}
-                </button>
-                <button
-                  className="btn btn-ghost btn-xs"
-                  onClick={sync.disconnect}
-                >
+                </SettingsTextAction>
+                <SettingsTextAction onClick={sync.disconnect} tone="danger">
                   Disconnect
-                </button>
+                </SettingsTextAction>
               </>
             ) : (
-              <button
-                className="btn btn-accent btn-xs"
-                onClick={sync.startPlexAuth}
-              >
+              <SettingsTextAction onClick={sync.startPlexAuth}>
                 Connect Plex
-              </button>
+              </SettingsTextAction>
             )}
           </div>
         </div>
         {sync.error && (
-          <div style={{ padding: '0.5rem 1rem', fontSize: '0.78rem', color: 'var(--chip-cinema)', background: '#EF444411', borderRadius: 8, margin: '0.25rem 1rem' }}>
+          <div style={{ padding: '0.5rem 1rem', fontSize: '0.78rem', color: 'var(--danger)', background: 'var(--danger-dim)', border: '1px solid var(--danger-border)', borderRadius: 8, margin: '0.25rem 1rem' }}>
             {sync.error}
           </div>
         )}
@@ -1101,32 +1108,25 @@ export default function SettingsView() {
               </div>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0 }}>
+          <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
             {trakt.isConnected ? (
               <>
-                <button
-                  className="btn btn-secondary btn-xs"
-                  onClick={trakt.sync}
-                  disabled={trakt.syncing}
-                >
+                <SettingsTextAction onClick={trakt.sync} disabled={trakt.syncing}>
                   {trakt.syncing ? 'Syncing…' : 'Sync now'}
-                </button>
-                <button
-                  className="btn btn-ghost btn-xs"
-                  onClick={trakt.disconnect}
-                >
+                </SettingsTextAction>
+                <SettingsTextAction onClick={trakt.disconnect} tone="danger">
                   Disconnect
-                </button>
+                </SettingsTextAction>
               </>
             ) : (
-              <button className="btn btn-accent btn-xs" onClick={trakt.connect}>
+              <SettingsTextAction onClick={trakt.connect}>
                 Connect Trakt
-              </button>
+              </SettingsTextAction>
             )}
           </div>
         </div>
         {trakt.error && (
-          <div style={{ padding: '0.5rem 1rem', fontSize: '0.78rem', color: 'var(--chip-cinema)', background: '#EF444411', borderRadius: 8, margin: '0.25rem 1rem' }}>
+          <div style={{ padding: '0.5rem 1rem', fontSize: '0.78rem', color: 'var(--danger)', background: 'var(--danger-dim)', border: '1px solid var(--danger-border)', borderRadius: 8, margin: '0.25rem 1rem' }}>
             {trakt.error}
           </div>
         )}
@@ -1178,24 +1178,20 @@ export default function SettingsView() {
               </div>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0 }}>
+          <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
             {calendarToken ? (
               <>
-                <button className="btn btn-secondary btn-xs" onClick={handleCopyCalUrl}>
+                <SettingsTextAction onClick={handleCopyCalUrl}>
                   {calTokenCopied ? 'Copied!' : 'Copy link'}
-                </button>
-                <button className="btn btn-ghost btn-xs" onClick={handleRevokeCalToken}>
+                </SettingsTextAction>
+                <SettingsTextAction onClick={handleRevokeCalToken} tone="danger">
                   Revoke
-                </button>
+                </SettingsTextAction>
               </>
             ) : (
-              <button
-                className="btn btn-accent btn-xs"
-                disabled={generatingCalToken}
-                onClick={handleGenerateCalToken}
-              >
+              <SettingsTextAction disabled={generatingCalToken} onClick={handleGenerateCalToken}>
                 {generatingCalToken ? 'Generating…' : 'Generate link'}
-              </button>
+              </SettingsTextAction>
             )}
           </div>
         </div>
@@ -1217,13 +1213,12 @@ export default function SettingsView() {
               </div>
             </div>
           </div>
-          <button
-            className="btn btn-secondary btn-xs"
+          <SettingsTextAction
             disabled={calLoading || calEvents.length === 0}
             onClick={() => downloadICS(calEvents)}
           >
             Download .ics
-          </button>
+          </SettingsTextAction>
         </div>
       </div>
 
@@ -1262,7 +1257,7 @@ export default function SettingsView() {
           })}
         >
           <div className="settings-row-left">
-            <div className="settings-row-icon" style={{ borderColor: '#EF444433', color: 'var(--chip-cinema)' }}>
+            <div className="settings-row-icon" style={{ borderColor: 'var(--danger-border)', color: 'var(--danger)' }}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
             </div>
             <span className="settings-row-label" style={{ color: clearingHistory ? 'var(--text-muted)' : undefined }}>
@@ -1282,7 +1277,7 @@ export default function SettingsView() {
           })}
         >
           <div className="settings-row-left">
-            <div className="settings-row-icon" style={{ borderColor: '#EF444433', color: 'var(--chip-cinema)' }}>
+            <div className="settings-row-icon" style={{ borderColor: 'var(--danger-border)', color: 'var(--danger)' }}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
             </div>
             <span className="settings-row-label" style={{ color: clearingWatchlist ? 'var(--text-muted)' : undefined }}>
@@ -1294,14 +1289,14 @@ export default function SettingsView() {
         <div
           className="settings-row interactive-surface"
           onClick={handleDeleteAccount}
-          style={{ color: 'var(--chip-cinema)' }}
+          style={{ color: 'var(--danger)' }}
           {...getButtonLikeProps({ onPress: handleDeleteAccount, label: 'Delete account' })}
         >
           <div className="settings-row-left">
-            <div className="settings-row-icon" style={{ borderColor: '#EF444433', color: 'var(--chip-cinema)' }}>
+            <div className="settings-row-icon" style={{ borderColor: 'var(--danger-border)', color: 'var(--danger)' }}>
               <svg viewBox="0 0 24 24"><polyline points="3,6 5,6 21,6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
             </div>
-            <span className="settings-row-label" style={{ color: 'var(--chip-cinema)' }}>Delete Account</span>
+            <span className="settings-row-label" style={{ color: 'var(--danger)' }}>Delete Account</span>
           </div>
         </div>
       </div>
