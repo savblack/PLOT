@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useApp, posterUrl, countdownChip, TodayLabel } from '../App.jsx';
 import { localDateStr } from '../utils/date.js';
 import { useGenres } from '../hooks/useGenres.js';
+import { itemMatchesPlatformFilters } from '../utils/watchlistFilters.js';
 import MultiSelect from './MultiSelect.jsx';
 import LoadingSpinner from './LoadingSpinner.jsx';
 
@@ -60,9 +61,7 @@ export default function WatchlistView() {
       out = out.filter(i => typeFilters.includes(i.media_type || 'movie'));
     }
     if (platformFilters.length) {
-      out = out.filter(i =>
-        !i.provider_ids?.length || i.provider_ids.some(id => platformFilters.includes(id))
-      );
+      out = out.filter(i => itemMatchesPlatformFilters(i, platformFilters));
     }
     if (genreFilters.length) {
       out = out.filter(i =>
