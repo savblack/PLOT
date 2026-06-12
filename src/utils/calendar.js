@@ -38,6 +38,41 @@ export function buildWatchlistMovieCalendarEvents(item, todayStr) {
   return events;
 }
 
+function buildSortedSignature(items) {
+  return items.slice().sort().join('||');
+}
+
+export function buildWatchlistCalendarSignature(items = []) {
+  return buildSortedSignature(items.map(item => [
+    item.tmdb_id ?? '',
+    item.media_type ?? '',
+    item.title ?? item.name ?? '',
+    item.poster_path ?? '',
+    item.release_date ?? '',
+    item.streaming_date ?? '',
+  ].join('|')));
+}
+
+export function buildWatchingCalendarSignature(items = []) {
+  return buildSortedSignature(items.map(item => [
+    item.tmdb_id ?? '',
+    item.current_season ?? '',
+    item.current_episode ?? '',
+    item.title ?? '',
+    item.poster_path ?? '',
+  ].join('|')));
+}
+
+export function buildReminderCalendarSignature(items = []) {
+  return buildSortedSignature(items.map(item => [
+    item.tvmaze_ep_id ?? '',
+    item.show_name ?? '',
+    item.network_name ?? '',
+    item.air_date ?? '',
+    item.air_time ?? '',
+  ].join('|')));
+}
+
 export function getCalendarRelativeLabel(selectedDate, todayStr) {
   if (selectedDate === todayStr) return 'Today';
 

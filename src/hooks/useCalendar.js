@@ -1,6 +1,11 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { localDateStr, dateToLocalStr } from '../utils/date.js';
-import { buildWatchlistMovieCalendarEvents } from '../utils/calendar.js';
+import {
+  buildReminderCalendarSignature,
+  buildWatchingCalendarSignature,
+  buildWatchlistCalendarSignature,
+  buildWatchlistMovieCalendarEvents,
+} from '../utils/calendar.js';
 import { tmdb } from '../api/tmdb.js';
 
 /**
@@ -17,6 +22,25 @@ export function useCalendar(watchlistItems = [], watchingItems = [], fetchSeason
   const hasLoadedOnce = useRef(false);
   const buildInFlight = useRef(false);
   const cancelledRef  = useRef(false);
+  const stableWatchlistItemsRef = useRef(watchlistItems);
+  const stableWatchingItemsRef = useRef(watchingItems);
+  const stableRemindersRef = useRef(reminders);
+
+  const watchlistSignature = useMemo(() => buildWatchlistCalendarSignature(watchlistItems), [watchlistItems]);
+  const watchingSignature = useMemo(() => buildWatchingCalendarSignature(watchingItems), [watchingItems]);
+  const remindersSignature = useMemo(() => buildReminderCalendarSignature(reminders), [reminders]);
+
+  useEffect(() => {
+    stableWatchlistItemsRef.current = watchlistItems;
+  }, [watchlistSignature, watchlistItems]);
+
+  useEffect(() => {
+    stableWatchingItemsRef.current = watchingItems;
+  }, [watchingSignature, watchingItems]);
+
+  useEffect(() => {
+    stableRemindersRef.current = reminders;
+  }, [remindersSignature, reminders]);
 
   const buildEvents = useCallback(async () => {
     // Prevent concurrent builds
@@ -30,7 +54,7 @@ export function useCalendar(watchlistItems = [], watchingItems = [], fetchSeason
     const all = [];
 
     // ── 0. EPG reminders (synchronous, no fetches needed) ──────────────────
-    for (const rem of reminders) {
+    for (const rem of stableRemindersRef.current) {
       const dateStr = typeof rem.air_date === 'string'
         ? rem.air_date
         : (rem.air_date instanceof Date ? dateToLocalStr(rem.air_date) : null);
@@ -51,12 +75,12 @@ export function useCalendar(watchlistItems = [], watchingItems = [], fetchSeason
     }
 
     // ── 1. Watchlist movies (synchronous, dates already stored) ─────────────
-    for (const item of watchlistItems) {
+    for (const item of stableWatchlistItemsRef.current) {
       all.push(...buildWatchlistMovieCalendarEvents(item, todayStr));
     }
 
     // ── 2. Watchlist TV shows — parallel fetch details + season ────────────
-    const watchlistTv = watchlistItems.filter(i => i.media_type === 'tv');
+    const watchlistTv = stableWatchlistItemsRef.current.filter(i => i.media_type === 'tv');
 
     const tvEpisodes = await Promise.all(
       watchlistTv.map(async (item) => {
@@ -92,7 +116,7 @@ export function useCalendar(watchlistItems = [], watchingItems = [], fetchSeason
 
     // ── 3. In-progress shows — parallel fetch seasons ──────────────────────
     const watchingEpisodes = await Promise.all(
-      watchingItems.map(async (progress) => {
+      stableWatchingItemsRef.current.map(async (progress) => {
         try {
           const season = await fetchSeason?.(progress.tmdb_id, progress.current_season);
           if (!season?.episodes) return [];
@@ -135,12 +159,12 @@ export function useCalendar(watchlistItems = [], watchingItems = [], fetchSeason
       setLoading(false);
     }
     buildInFlight.current = false;
-  }, [watchlistItems, watchingItems, fetchSeason, reminders]);
+  }, [fetchSeason]);
 
   useEffect(() => {
     buildEvents();
     return () => { cancelledRef.current = true; buildInFlight.current = false; };
-  }, [buildEvents]);
+  }, [buildEvents, remindersSignature, watchlistSignature, watchingSignature]);
 
   const eventsForDate = useCallback(
     (dateStr) => events.filter(e => e.date === dateStr),
