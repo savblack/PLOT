@@ -1,83 +1,189 @@
 import { Link, useParams } from 'react-router-dom';
+import { HERO_POSTERS } from '../constants/heroPosters.js';
 
 const styles = `
-  @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Manrope:wght@400;500;600;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Manrope:wght@400;500;600;700&display=swap');
 
   .public-profile-page {
+    display: flex;
     min-height: 100dvh;
-    display: grid;
-    place-items: center;
-    padding: 2rem;
-    background:
-      radial-gradient(circle at top left, rgba(224, 85, 120, 0.14), transparent 28rem),
-      radial-gradient(circle at bottom right, rgba(22, 25, 34, 0.12), transparent 24rem),
-      linear-gradient(180deg, #f7f3ec 0%, #f1ece3 100%);
+    background: #ffffff;
     font-family: 'Manrope', system-ui, sans-serif;
-    color: #181512;
+    color: #1a1a1a;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
   }
 
-  .public-profile-shell {
-    width: min(100%, 66rem);
-    display: grid;
-    grid-template-columns: minmax(0, 1.1fr) minmax(16rem, 0.72fr);
-    border: 1px solid rgba(24, 21, 18, 0.08);
-    border-radius: 2rem;
+  .public-profile-visual {
+    position: relative;
+    width: 45%;
+    min-height: 100dvh;
     overflow: hidden;
-    background: rgba(255, 251, 245, 0.82);
-    box-shadow: 0 24px 80px rgba(24, 21, 18, 0.09);
-    backdrop-filter: blur(18px);
+    background: #0a0a0a;
+    flex-shrink: 0;
+  }
+
+  .public-profile-poster-track {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 5px;
+    animation: publicProfileScroll 40s linear infinite;
+    will-change: transform;
+  }
+
+  @keyframes publicProfileScroll {
+    from { transform: translateY(0); }
+    to   { transform: translateY(-50%); }
+  }
+
+  .public-profile-poster-cell {
+    aspect-ratio: 2 / 3;
+    background-size: cover;
+    background-position: center;
+    background-color: #1a1a1a;
+  }
+
+  .public-profile-visual-gradient {
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(to bottom, #0a0a0a 0%, transparent 20%, transparent 75%, #0a0a0a 100%);
+    pointer-events: none;
+  }
+
+  .public-profile-visual-brand {
+    position: absolute;
+    bottom: 2.5rem;
+    left: 0;
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    pointer-events: none;
+  }
+
+  .public-profile-logo-text {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 2rem;
+    letter-spacing: -0.04em;
+    color: #ffffff;
+  }
+
+  .public-profile-visual-tagline {
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.45);
+  }
+
+  .public-profile-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 100dvh;
+    background: #ffffff;
+  }
+
+  .public-profile-panel-logo {
+    display: block;
+    padding: clamp(1.25rem, 2.5vh, 2rem) 2.5rem;
+    text-decoration: none;
+    flex-shrink: 0;
+  }
+
+  .public-profile-panel-logo .public-profile-logo-text {
+    color: #1a1a1a;
+  }
+
+  .public-profile-panel-logo:hover {
+    opacity: 0.6;
+  }
+
+  .public-profile-panel-body {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 2.5rem;
   }
 
   .public-profile-copy {
-    padding: clamp(2rem, 5vw, 4.5rem);
+    width: 100%;
+    max-width: 430px;
   }
 
   .public-profile-label {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.55rem;
-    margin: 0 0 1.4rem;
-    font-size: 0.76rem;
-    font-weight: 700;
-    letter-spacing: 0.16em;
+    margin: 0 0 0.85rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: #7a6b60;
-  }
-
-  .public-profile-label::before {
-    content: '';
-    width: 0.55rem;
-    height: 0.55rem;
-    border-radius: 999px;
-    background: #e05578;
+    color: #7c7c7c;
   }
 
   .public-profile-title {
     margin: 0;
-    font-family: 'Instrument Serif', serif;
-    font-size: clamp(2.4rem, 6vw, 4.5rem);
-    font-weight: 400;
-    line-height: 0.94;
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: clamp(2.4rem, 4.2vw, 3.25rem);
+    font-weight: 500;
     letter-spacing: -0.04em;
+    line-height: 0.96;
+    color: #1a1a1a;
   }
 
   .public-profile-title em {
     font-style: italic;
+    font-weight: 500;
   }
 
   .public-profile-body {
-    max-width: 32rem;
-    margin: 1.4rem 0 0;
-    font-size: 1rem;
-    line-height: 1.75;
-    color: #5d534b;
+    margin: 0.85rem 0 0;
+    font-size: 0.95rem;
+    line-height: 1.7;
+    color: #7b7b7b;
+  }
+
+  .public-profile-status-card {
+    margin-top: 1.5rem;
+    padding: 1rem 1rem 1.05rem;
+    border: 1px solid #ece7e1;
+    border-radius: 16px;
+    background: #faf8f4;
+  }
+
+  .public-profile-status-kicker {
+    margin: 0;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #9a7c56;
+  }
+
+  .public-profile-status-handle {
+    margin: 0.45rem 0 0;
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 1.6rem;
+    font-weight: 500;
+    letter-spacing: -0.03em;
+    color: #1a1a1a;
+    word-break: break-word;
+  }
+
+  .public-profile-status-copy {
+    margin: 0.55rem 0 0;
+    font-size: 0.88rem;
+    line-height: 1.65;
+    color: #6f655c;
   }
 
   .public-profile-actions {
     display: flex;
+    gap: 0.8rem;
     flex-wrap: wrap;
-    gap: 0.85rem;
-    margin-top: 2rem;
+    margin-top: 1.6rem;
   }
 
   .public-profile-button,
@@ -85,98 +191,67 @@ const styles = `
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: 2.9rem;
-    padding: 0.8rem 1.25rem;
+    min-height: 48px;
+    padding: 0.85rem 1.4rem;
     border-radius: 999px;
     text-decoration: none;
-    font-size: 0.92rem;
-    font-weight: 700;
-    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+    font-size: 0.94rem;
+    font-weight: 600;
+    transition: opacity 0.2s ease, transform 0.15s ease;
   }
 
   .public-profile-button {
-    background: #181512;
-    color: #fff9f2;
-    box-shadow: 0 14px 30px rgba(24, 21, 18, 0.14);
-  }
-
-  .public-profile-button:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 18px 34px rgba(24, 21, 18, 0.18);
+    background: #1a1a1a;
+    color: #ffffff;
+    border: none;
   }
 
   .public-profile-button-secondary {
-    border: 1px solid rgba(24, 21, 18, 0.12);
-    color: #3b312a;
-    background: rgba(255, 255, 255, 0.66);
+    background: transparent;
+    color: #1a1a1a;
+    border: 0.75px solid #1a1a1a;
   }
 
+  .public-profile-button:hover,
   .public-profile-button-secondary:hover {
-    transform: translateY(-1px);
-    border-color: rgba(24, 21, 18, 0.24);
+    opacity: 0.85;
+    transform: scale(0.99);
   }
 
   .public-profile-note {
-    margin-top: 2rem;
-    font-size: 0.84rem;
-    line-height: 1.7;
-    color: #786c63;
+    margin-top: 1.25rem;
+    font-size: 0.82rem;
+    line-height: 1.65;
+    color: #9a9a9a;
   }
 
-  .public-profile-card {
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    min-height: 100%;
-    padding: clamp(1.6rem, 4vw, 2.6rem);
-    background:
-      linear-gradient(180deg, rgba(24, 21, 18, 0.1) 0%, rgba(24, 21, 18, 0.8) 100%),
-      linear-gradient(140deg, #e8856a 0%, #df5f7f 46%, #2e3144 100%);
-    color: #fff7ef;
+  .public-profile-panel-footer {
+    flex-shrink: 0;
+    padding: clamp(1rem, 2vh, 1.5rem) 2rem;
+    text-align: center;
+    font-size: 0.75rem;
+    color: #bbb;
   }
 
-  .public-profile-badge {
-    width: fit-content;
-    padding: 0.55rem 0.85rem;
-    border: 1px solid rgba(255, 247, 239, 0.2);
-    border-radius: 999px;
-    background: rgba(255, 247, 239, 0.08);
-    font-size: 0.76rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+  .public-profile-panel-footer a {
+    color: #999;
+    text-decoration: underline;
+    text-underline-offset: 2px;
   }
 
-  .public-profile-handle {
-    margin: 1rem 0 0;
-    font-family: 'Instrument Serif', serif;
-    font-size: clamp(2rem, 5vw, 3.2rem);
-    font-weight: 400;
-    line-height: 1;
-    letter-spacing: -0.04em;
-    word-break: break-word;
+  @media (max-width: 768px) {
+    .public-profile-visual { display: none; }
+    .public-profile-panel-logo { padding: 1.75rem; }
+    .public-profile-panel-body { padding: 0 1.75rem; }
+    .public-profile-title { font-size: 2.35rem; }
   }
 
-  .public-profile-card-copy {
-    max-width: 17rem;
-    margin: 0.9rem 0 0;
-    font-size: 0.92rem;
-    line-height: 1.7;
-    color: rgba(255, 247, 239, 0.82);
-  }
-
-  @media (max-width: 760px) {
-    .public-profile-page {
-      padding: 1rem;
-    }
-
-    .public-profile-shell {
-      grid-template-columns: 1fr;
-      border-radius: 1.5rem;
-    }
-
-    .public-profile-card {
-      min-height: 15rem;
+  @media (max-width: 480px) {
+    .public-profile-panel-logo { padding: 1.5rem 1.25rem; }
+    .public-profile-panel-body { padding: 0 1.25rem; }
+    .public-profile-title { font-size: 2rem; }
+    .public-profile-actions > * {
+      width: 100%;
     }
   }
 `;
@@ -184,39 +259,62 @@ const styles = `
 export default function PublicProfilePage() {
   const { username = 'plot-user' } = useParams();
   const handle = username.startsWith('@') ? username : `@${username}`;
+  const posters = [...HERO_POSTERS, ...HERO_POSTERS];
 
   return (
     <>
       <style>{styles}</style>
       <main className="public-profile-page">
-        <section className="public-profile-shell" aria-labelledby="public-profile-title">
+        <div className="public-profile-visual" aria-hidden="true">
+          <div className="public-profile-poster-track">
+            {posters.map((src, i) => (
+              <div key={i} className="public-profile-poster-cell" style={{ backgroundImage: `url('${src}')` }} />
+            ))}
+          </div>
+          <div className="public-profile-visual-gradient" />
+          <div className="public-profile-visual-brand">
+            <span className="public-profile-logo-text">PLOT</span>
+            <span className="public-profile-visual-tagline">Your film &amp; TV journal</span>
+          </div>
+        </div>
+
+        <section className="public-profile-panel" aria-labelledby="public-profile-title">
+          <Link to="/" className="public-profile-panel-logo">
+            <span className="public-profile-logo-text">PLOT</span>
+          </Link>
+
+          <div className="public-profile-panel-body">
           <div className="public-profile-copy">
-            <p className="public-profile-label">Public profile status</p>
+            <p className="public-profile-label">Profile route placeholder</p>
             <h1 id="public-profile-title" className="public-profile-title">
-              Public profiles <em>aren&apos;t live</em> yet.
+              PLOT <em>doesn&apos;t have profiles</em> yet.
             </h1>
             <p className="public-profile-body">
-              PLOT&apos;s first public release keeps accounts private while we finish the visibility,
-              moderation, and sharing controls needed for a real profile launch.
+              There are no in-app user profiles or public profile pages in the product right now.
+              This URL exists only so profile links resolve to a clear placeholder instead of a broken page.
             </p>
             <div className="public-profile-actions">
               <Link to="/signup" className="public-profile-button">Create an account</Link>
               <Link to="/login" className="public-profile-button-secondary">Sign in</Link>
             </div>
+            <div className="public-profile-status-card" aria-label="Profile launch note">
+              <p className="public-profile-status-kicker">Not in product</p>
+              <p className="public-profile-status-handle">{handle}</p>
+              <p className="public-profile-status-copy">
+                This is a route-level placeholder, not a hidden profile. PLOT will need actual profile
+                features before this URL can show anything user-specific.
+              </p>
+            </div>
             <p className="public-profile-note">
-              The handle <strong>{handle}</strong> is reserved for a future public profile experience.
-              Until that ships, shared profile links intentionally land on this holding page instead of a
-              broken or misleading route.
+              If someone opens <strong>{handle}</strong>, they should land on this holding page until
+              profiles are actually designed and built into the app.
             </p>
           </div>
-          <aside className="public-profile-card" aria-label="Profile launch note">
-            <div className="public-profile-badge">Coming later</div>
-            <p className="public-profile-handle">{handle}</p>
-            <p className="public-profile-card-copy">
-              When sharing launches, this page will be replaced with a real public profile that respects
-              account privacy and content visibility rules.
-            </p>
-          </aside>
+          </div>
+
+          <p className="public-profile-panel-footer">
+            By continuing you agree to our <Link to="/terms">Terms</Link> and <Link to="/privacy">Privacy Policy</Link>.
+          </p>
         </section>
       </main>
     </>
