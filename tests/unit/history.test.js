@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { entriesForMonth, historyMonthEmptyCopy, monthKey, monthLabel } from '../../src/utils/history.js';
+import { entriesForMonth, historyMonthEmptyCopy, historyRatingLabel, monthKey, monthLabel } from '../../src/utils/history.js';
 
 test('monthKey pads calendar months for stable comparisons', () => {
   assert.equal(monthKey(2026, 0), '2026-01');
@@ -30,4 +30,14 @@ test('historyMonthEmptyCopy is contextual to the selected month', () => {
     historyMonthEmptyCopy({ year: 2026, month: 5, isCurrentMonth: true }).body,
     'Try another month or mark a title as watched to start filling your history.'
   );
+});
+
+test('historyRatingLabel returns an empty string when no rating is saved', () => {
+  assert.equal(historyRatingLabel(null), '');
+  assert.equal(historyRatingLabel(0), '');
+});
+
+test('historyRatingLabel preserves half-star ratings for history rows', () => {
+  assert.equal(historyRatingLabel(9), '4.5 ★');
+  assert.equal(historyRatingLabel(8), '4 ★');
 });

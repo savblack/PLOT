@@ -28,3 +28,10 @@ export function historyMonthEmptyCopy({ year, month, isCurrentMonth }) {
 
   return { title, body };
 }
+
+export function historyRatingLabel(value) {
+  if (!value) return '';
+
+  const stars = value / 2;
+  return `${Number.isInteger(stars) ? stars.toFixed(0) : stars.toFixed(1)} ★`;
+}

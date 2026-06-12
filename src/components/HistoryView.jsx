@@ -3,7 +3,7 @@ import { useApp, posterUrl, TodayLabel } from '../App.jsx';
 import { useHistory } from '../hooks/useHistory.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import { getButtonLikeProps } from '../utils/interactive.js';
-import { entriesForMonth, historyMonthEmptyCopy, monthLabel } from '../utils/history.js';
+import { entriesForMonth, historyMonthEmptyCopy, historyRatingLabel, monthLabel } from '../utils/history.js';
 
 export default function HistoryView() {
   const { openPanel, user } = useApp();
@@ -92,6 +92,7 @@ function HistoryRow({ entry, openPanel }) {
   const date  = entry.watched_at
     ? new Date(entry.watched_at).toLocaleDateString('en', { month: 'short', day: 'numeric' })
     : '';
+  const ratingLabel = historyRatingLabel(entry.rating);
   const openDetails = () => openPanel(entry.tmdb_id, entry.media_type || 'movie');
 
   return (
@@ -107,6 +108,7 @@ function HistoryRow({ entry, openPanel }) {
         <div className="list-row-title">{title}</div>
         <div className="list-row-meta">
           {date && <span>{date}</span>}
+          {ratingLabel && <span className="history-row-rating">{ratingLabel}</span>}
         </div>
       </div>
       {entry.note && <div className="history-row-review">{entry.note}</div>}
