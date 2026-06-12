@@ -24,13 +24,11 @@ function PlayIcon() {
    from Saved → Watching.
 ═══════════════════════════════════════ */
 export default function WatchlistView() {
-  const { openPanel, watchlist, watching, profile } = useApp();
+  const { openPanel, watchlist, watching } = useApp();
   const genres   = useGenres();
-  const providers = profile?.streaming_providers || [];
 
   const [tab,              setTab]              = useState('all');
   const [typeFilters,      setTypeFilters]      = useState([]);
-  const [platformFilters,  setPlatformFilters]  = useState([]);
   const [genreFilters,     setGenreFilters]     = useState([]);
   const [watchingOpen,     setWatchingOpen]     = useState(true);
   const [savedOpen,        setSavedOpen]        = useState(true);
@@ -58,11 +56,6 @@ export default function WatchlistView() {
     let out = items;
     if (typeFilters.length) {
       out = out.filter(i => typeFilters.includes(i.media_type || 'movie'));
-    }
-    if (platformFilters.length) {
-      out = out.filter(i =>
-        !i.provider_ids?.length || i.provider_ids.some(id => platformFilters.includes(id))
-      );
     }
     if (genreFilters.length) {
       out = out.filter(i =>
@@ -110,14 +103,6 @@ export default function WatchlistView() {
             value={typeFilters}
             onChange={setTypeFilters}
           />
-          {providers.length > 0 && (
-            <MultiSelect
-              placeholder="Platforms"
-              options={providers.map(p => ({ id: p.id, label: p.name }))}
-              value={platformFilters}
-              onChange={setPlatformFilters}
-            />
-          )}
           {genres.length > 0 && (
             <MultiSelect
               placeholder="Genre"
