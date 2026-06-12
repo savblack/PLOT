@@ -118,12 +118,14 @@ export function useWatching(userId) {
 
   /* ── Stop watching ── */
   const stopWatching = useCallback(async (tmdbId) => {
-    await supabase
+    const { error } = await supabase
       .from('watching_progress')
       .delete()
       .eq('user_id', userId)
       .eq('tmdb_id', Number(tmdbId));
+    if (error) return false;
     setItems(prev => prev.filter(i => i.tmdb_id !== Number(tmdbId)));
+    return true;
   }, [userId]);
 
   /* ── Check if watching ── */

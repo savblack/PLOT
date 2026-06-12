@@ -118,12 +118,12 @@ export function useWatchlist(userId) {
   const addToList = useCallback(async (item) => {
     if (!listId || !userId) {
       if (import.meta.env.DEV) console.warn('[useWatchlist] addToList: not ready', { listId, userId });
-      return;
+      return null;
     }
 
     const tmdb_id = tmdbIdFromItem(item);
-    if (!tmdb_id) return;
-    if (isInList(tmdb_id)) return;
+    if (!tmdb_id) return null;
+    if (isInList(tmdb_id)) return null;
 
     // Extract provider IDs for the user's current region
     const region = getTmdbRegion();
@@ -145,7 +145,7 @@ export function useWatchlist(userId) {
 
     if (error) {
       console.error('[useWatchlist] INSERT list_items failed:', error);
-      return;
+      return null;
     }
     if (data) {
       setItems(prev => [data, ...prev]);
@@ -163,13 +163,13 @@ export function useWatchlist(userId) {
 
   /* ── Remove item ── */
   const removeFromList = useCallback(async (tmdbId) => {
-    if (!listId) return;
+    if (!listId) return false;
 
     const { error } = await deleteListItem({ listId, tmdbId, userId });
 
     if (error) {
       console.error('[useWatchlist] DELETE list_items failed:', error);
-      return;
+      return false;
     }
     setItems(prev => prev.filter(i => i.tmdb_id !== Number(tmdbId)));
 
@@ -182,6 +182,7 @@ export function useWatchlist(userId) {
         title:      removed?.title ?? null,
       });
     }
+    return true;
   }, [listId, userId, items]);
 
   /* ── Toggle ── */
