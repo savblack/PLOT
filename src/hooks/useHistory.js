@@ -47,14 +47,14 @@ export function useHistory(userId) {
 
   /* ── Log a watched item ── */
   const logWatched = useCallback(async (item, { rating, note, dnf } = {}) => {
-    if (!userId) return;
+    if (!userId) return null;
     const { data, row } = await logWatchedItem({ userId, item, rating, note, dnf });
 
     if (data) {
       setEntries(prev => [data, ...prev.filter(e => e.tmdb_id !== row.tmdb_id)]);
       notifyHistoryChanged();
     }
-    return data;
+    return data ?? null;
   }, [userId]);
 
   /* ── Update rating / note ── */
@@ -84,9 +84,10 @@ export function useHistory(userId) {
       .delete()
       .eq('user_id', userId)
       .eq('tmdb_id', Number(tmdbId));
-    if (error) return; // keep local state intact so the entry doesn't ghost-reappear
+    if (error) return false; // keep local state intact so the entry doesn't ghost-reappear
     setEntries(prev => prev.filter(e => e.tmdb_id !== Number(tmdbId)));
     notifyHistoryChanged();
+    return true;
   }, [userId]);
 
   const isWatched = useCallback(

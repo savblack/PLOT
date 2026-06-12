@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useApp, backdropUrl, logoUrl, countdownChip, formatDate } from '../App.jsx';
 import { tmdb, getTmdbRegion } from '../api/tmdb.js';
 import { useHistory } from '../hooks/useHistory.js';
+import { markMediaAsWatched, moveSavedShowToWatching } from '../utils/mediaStatus.js';
 import { ratingFromPointer, ratingToStars, starFillPercent, STAR_COUNT } from '../utils/ratings.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 
@@ -427,6 +428,8 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
   const [localReview,    setLocalReview]    = useState('');
   const [localDnf,       setLocalDnf]       = useState(false);
   const [reviewSaving,   setReviewSaving]   = useState(false);
+  const [statusActionPending, setStatusActionPending] = useState('');
+  const [statusActionError, setStatusActionError] = useState('');
   const reviewInputRef = useRef(null);
 
   const isMovie    = itemType === 'movie';
@@ -517,6 +520,55 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
   const genres  = (details?.genres || []).slice(0, 3).map(g => g.name).join(' · ');
   const date    = details?.release_date || details?.first_air_date;
   const chip    = date ? countdownChip(date) : null;
+
+  const runStatusAction = useCallback(async (actionLabel, action) => {
+    if (statusActionPending) return;
+    setStatusActionPending(actionLabel);
+    setStatusActionError('');
+    try {
+      const result = await action();
+      if (!result?.ok) {
+        setStatusActionError(result?.error || 'Could not update watch status. Please try again.');
+      }
+    } finally {
+      setStatusActionPending('');
+      setShowStatusDropdown(false);
+    }
+  }, [statusActionPending]);
+
+  const handleWatchingStatus = useCallback(async () => {
+    if (isWatching) {
+      const stopped = await watching.stopWatching(itemId);
+      return stopped
+        ? { ok: true }
+        : { ok: false, error: 'Could not clear the active watching state. Please try again.' };
+    }
+
+    return moveSavedShowToWatching({
+      startWatching: () => watching.startWatching({ ...details, id: itemId, media_type: 'tv' }),
+      removeFromSaved: () => inList ? watchlist.removeFromList(itemId) : Promise.resolve(true),
+      rollbackWatching: () => watching.stopWatching(itemId),
+    });
+  }, [details, inList, isWatching, itemId, watchlist, watching]);
+
+  const handleWatchedStatus = useCallback(async (dnf) => {
+    const isSameWatchedState = watched && (!!watchedEntry?.dnf === dnf);
+    if (isSameWatchedState) {
+      const removed = await history.removeEntry(itemId);
+      return removed
+        ? { ok: true }
+        : { ok: false, error: 'Could not clear watch status. Please try again.' };
+    }
+
+    return markMediaAsWatched({
+      logWatched: () => history.logWatched({ ...details, id: itemId, media_type: itemType, dnf }),
+      clearWatching: () => watching.stopWatching(itemId),
+      removeFromSaved: () => watchlist.removeFromList(itemId),
+      rollbackHistory: () => history.removeEntry(itemId),
+      shouldClearWatching: !isMovie && isWatching,
+      shouldRemoveFromSaved: !isMovie && !isWatching && inList,
+    });
+  }, [details, history, inList, isMovie, isWatching, itemId, itemType, watched, watchedEntry?.dnf, watchlist, watching]);
 
   return (
     <>
@@ -648,12 +700,14 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                     <div style={{ flex: 1, position: 'relative' }} onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) setShowStatusDropdown(false); }}>
                       <button
                         onClick={() => setShowStatusDropdown(v => !v)}
+                        disabled={!!statusActionPending}
                         style={{
                           ...btn, fontWeight: isActive ? 600 : 500,
                           position: 'relative', width: '100%', ...statusStyle,
+                          opacity: statusActionPending ? 0.7 : 1,
                         }}
                       >
-                        <span>{statusLabel}</span>
+                        <span>{statusActionPending || statusLabel}</span>
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.7, flexShrink: 0, position: 'absolute', right: '0.6rem' }}>
                           <polyline points="6 9 12 15 18 9"/>
                         </svg>
@@ -666,25 +720,14 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                           boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
                         }}>
                           {[
-                            { label: 'Watching', action: async () => {
-                              if (isWatching) { await watching.stopWatching(itemId); }
-                              else { await watching.startWatching({ ...details, id: itemId, media_type: 'tv' }); if (inList) await watchlist.removeFromList(itemId); }
-                              setShowStatusDropdown(false);
-                            }, hidden: isMovie },
-                            { label: 'Watched', action: async () => {
-                              if (watched && !watchedEntry?.dnf) { await history.removeEntry(itemId); }
-                              else { await history.logWatched({ ...details, id: itemId, media_type: itemType, dnf: false }); if (!isMovie && isWatching) await watching.stopWatching(itemId); }
-                              setShowStatusDropdown(false);
-                            }},
-                            { label: "Didn't finish", action: async () => {
-                              if (watched && watchedEntry?.dnf) { await history.removeEntry(itemId); }
-                              else { await history.logWatched({ ...details, id: itemId, media_type: itemType, dnf: true }); if (!isMovie && isWatching) await watching.stopWatching(itemId); }
-                              setShowStatusDropdown(false);
-                            }},
+                            { label: 'Watching', action: () => runStatusAction('Updating…', handleWatchingStatus), hidden: isMovie },
+                            { label: 'Watched', action: () => runStatusAction('Updating…', () => handleWatchedStatus(false)) },
+                            { label: "Didn't finish", action: () => runStatusAction('Updating…', () => handleWatchedStatus(true)) },
                           ].filter(o => !o.hidden).map((opt, i, arr) => (
                             <button
                               key={opt.label}
                               onClick={opt.action}
+                              disabled={!!statusActionPending}
                               style={{
                                 width: '100%', padding: '0.6rem 0.85rem',
                                 background: 'transparent',
@@ -692,6 +735,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                                 color: 'var(--text-primary)', fontSize: '0.82rem', fontWeight: 500, cursor: 'pointer',
                                 display: 'flex', alignItems: 'center', textAlign: 'left',
                                 transition: 'background 0.12s',
+                                opacity: statusActionPending ? 0.6 : 1,
                               }}
                               onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-sunken)'}
                               onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
@@ -735,6 +779,22 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
 
             </>); })()}
             </div>
+
+            {statusActionError && (
+              <div style={{
+                marginTop: '-0.25rem',
+                marginBottom: '1rem',
+                padding: '0.7rem 0.85rem',
+                borderRadius: '0.85rem',
+                border: '1px solid rgba(248,113,113,0.22)',
+                background: 'rgba(127,29,29,0.22)',
+                color: '#fecaca',
+                fontSize: '0.8rem',
+                lineHeight: 1.45,
+              }}>
+                {statusActionError}
+              </div>
+            )}
 
             {/* Review section (when watched) */}
             {watched && (
