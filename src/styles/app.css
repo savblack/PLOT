@@ -1750,6 +1750,10 @@ svg { stroke-width: 1.5; }
 .history-list-row .list-row-info {
   flex: 0 0 clamp(240px, 42vw, 560px);
 }
+.history-row-rating {
+  color: #f59e0b;
+  font-weight: 600;
+}
 .history-row-review {
   flex: 1 1 auto;
   min-width: 120px;
