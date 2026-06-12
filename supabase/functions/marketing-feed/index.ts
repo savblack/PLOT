@@ -131,13 +131,10 @@ ${head}
   .nav-links a:hover { color: var(--ink); }
   .nav-links a.current { color: var(--ink); font-weight: 500; }
 
-  .head { padding: 64px 0 0; }
-  .head-meta { display: flex; justify-content: space-between; align-items: baseline; gap: 24px; flex-wrap: wrap; margin-top: 18px; }
-  .dateline { color: var(--faint); }
-  h1.feed-title { font-family: var(--serif); font-size: clamp(3.2rem, 8vw, 5rem); font-weight: 400; line-height: 0.95; letter-spacing: -0.025em; }
+  .head { padding: 60px 0 0; }
+  .dateline { display: block; color: var(--faint); padding-bottom: 16px; margin-bottom: 22px; border-bottom: 1px solid var(--hair); }
+  h1.feed-title { font-family: var(--serif); font-size: clamp(3.4rem, 9vw, 5.4rem); font-weight: 400; line-height: 0.92; letter-spacing: -0.03em; }
   h1.feed-title em { font-style: italic; color: inherit; }
-  .feed-sub { color: var(--mut); font-size: 1.02rem; font-weight: 300; max-width: 52ch; }
-  .feed-sub em { font-family: var(--serif); font-style: italic; font-size: 1.12em; }
 
   nav.dex { display: flex; justify-content: space-between; align-items: baseline; gap: 24px; border-bottom: 1px solid var(--hair); margin: 40px 0 0; }
   .dex-links { display: flex; gap: 26px; flex-wrap: wrap; }
@@ -418,7 +415,7 @@ Deno.serve(async (req) => {
       : '';
 
     const empty = visible.length === 0
-      ? `<p class="feed-sub" style="margin-top:40px;">${type || pageNum > 1 ? 'No updates here yet.' : 'First update lands soon.'}</p>`
+      ? `<p style="margin-top:48px;color:var(--mut);font-weight:300;">${type || pageNum > 1 ? 'No updates here yet.' : 'First update lands soon.'}</p>`
       : '';
 
     const dateline = new Date().toLocaleDateString('en-US', {
@@ -433,11 +430,8 @@ Deno.serve(async (req) => {
 
     return page(`${FEED_TITLE} · PLOT`, head, `
       <div class="head r2">
+        <div class="dateline sc">${esc(dateline)}</div>
         <h1 class="feed-title">What's <em>on</em></h1>
-        <div class="head-meta">
-          <p class="feed-sub">Your daily <em>what to watch</em>.</p>
-          <div class="dateline sc">${esc(dateline)}</div>
-        </div>
       </div>
       <nav class="dex r2">
         <div class="dex-links">${dexLinks}</div>
