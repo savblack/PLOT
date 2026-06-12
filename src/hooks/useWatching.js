@@ -22,6 +22,7 @@ export function useWatching(userId) {
     setLoading(false);
   }, [userId]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- loading is delegated to the stable loader callback
   useEffect(() => { loadWatching(); }, [loadWatching]);
 
   /* ── Fetch season data (ref-cached — stable identity, no re-render on write) ── */

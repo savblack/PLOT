@@ -51,6 +51,6 @@ export function baseMediaRow(item, { fallbackType = 'movie' } = {}) {
 export function mediaIdentityRow(item, options) {
   const row = baseMediaRow(item, options);
   if (!row) return null;
-  const { release_date: _release_date, ...identityRow } = row; // eslint-disable-line no-unused-vars
+  const { release_date: _release_date, ...identityRow } = row;
   return identityRow;
 }

@@ -41,6 +41,7 @@ export function usePlexIntegration(user) {
   // Load integration status on mount / user change
   useEffect(() => {
     if (!user) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reset local integration state when the signed-in user disappears
       setStatus('disconnected');
       setPlexUsername(null);
       setLastSyncedAt(null);

@@ -106,6 +106,7 @@ export function useWatchlist(userId) {
     setLoading(false);
   }, [userId]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- bootstrap encapsulates the staged local state updates
   useEffect(() => { bootstrap(); }, [bootstrap]);
 
   /* ── Check membership ── */
