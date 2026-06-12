@@ -8,6 +8,7 @@ import { edgeFunctionUrl } from '../api/functions.js';
 import { useMediaSync } from '../hooks/useMediaSync.js';
 import { useTraktSync } from '../hooks/useTraktSync.js';
 import { useCalendar } from '../hooks/useCalendar.js';
+import { buildFeedbackAttachmentPath } from '../utils/feedback.js';
 import { downloadICS } from '../utils/ics.js';
 import { getButtonLikeProps } from '../utils/interactive.js';
 import { IANA_TIMEZONES } from '../utils/timezones.js';
@@ -425,8 +426,7 @@ function FeedbackPanel({ user, onClose }) {
     // Upload images to Storage
     const attachmentUrls = [];
     for (const { file } of images) {
-      const ext  = file.name.split('.').pop();
-      const path = `${user?.id ?? 'anon'}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const path = buildFeedbackAttachmentPath(file.name);
       const { error: upErr } = await supabase.storage
         .from('feedback-attachments')
         .upload(path, file, { contentType: file.type });
