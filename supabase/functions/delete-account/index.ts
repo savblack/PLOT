@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { runAccountCleanup } from './cleanup.js'
 
 function attachmentPathsFrom(value: unknown) {
   if (!Array.isArray(value)) return []
@@ -9,6 +10,13 @@ function attachmentPathsFrom(value: unknown) {
     const index = entry.indexOf(marker)
     if (index === -1) return []
     return [decodeURIComponent(entry.slice(index + marker.length))]
+  })
+}
+
+function jsonError(message: string, status = 500, extra: Record<string, unknown> = {}) {
+  return new Response(JSON.stringify({ error: message, ...extra }), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
   })
 }
 
@@ -34,44 +42,33 @@ Deno.serve(async (req) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
   )
 
-  const { data: feedbackRows } = await supabaseClient
+  const { data: feedbackRows, error: feedbackError } = await supabaseClient
     .from('feedback')
     .select('attachments')
     .eq('user_id', userId)
+
+  if (feedbackError) return jsonError(feedbackError.message || 'Failed to load feedback attachments.')
 
   const attachmentPaths = (feedbackRows ?? [])
     .flatMap((row) => attachmentPathsFrom(row.attachments))
     .filter(Boolean)
 
-  // Delete all user data
-  await supabaseClient.from('integration_outbox').delete().eq('user_id', userId)
-  await supabaseClient.from('integration_items').delete().eq('user_id', userId)
-  await supabaseClient.from('media_integrations').delete().eq('user_id', userId)
-  await supabaseClient.from('watching_progress').delete().eq('user_id', userId)
-  await supabaseClient.from('reminders').delete().eq('user_id', userId)
-  await supabaseClient.from('user_favourites').delete().eq('user_id', userId)
-  await supabaseClient.from('user_top_lists').delete().eq('user_id', userId)
-  await supabaseClient.from('user_custom_list_items').delete().eq('user_id', userId)
-  await supabaseClient.from('user_custom_lists').delete().eq('user_id', userId)
-  await supabaseClient.from('feedback').delete().eq('user_id', userId)
-  await supabaseClient.from('journal').delete().eq('user_id', userId)
-  await supabaseClient.from('list_items').delete().eq('user_id', userId)
-  await supabaseClient.from('lists').delete().eq('user_id', userId)
-  await supabaseClient.from('journal_board').delete().eq('user_id', userId)
-  await supabaseClient.from('follows').delete().or(`follower_id.eq.${userId},following_id.eq.${userId}`)
-  await supabaseClient.from('profiles').delete().eq('id', userId)
-
   if (attachmentPaths.length > 0) {
-    await supabaseAdmin.storage.from('feedback-attachments').remove(attachmentPaths)
+    const { error: storageError } = await supabaseAdmin.storage.from('feedback-attachments').remove(attachmentPaths)
+    if (storageError) return jsonError(storageError.message || 'Failed to delete feedback attachments.')
+  }
+
+  const cleanupError = await runAccountCleanup(supabaseClient, userId)
+  if (cleanupError) {
+    return jsonError(
+      cleanupError.error?.message || `Failed to delete rows from ${cleanupError.table}.`,
+      500,
+      { table: cleanupError.table },
+    )
   }
 
   const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId)
-  if (deleteError) {
-    return new Response(JSON.stringify({ error: deleteError.message }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  }
+  if (deleteError) return jsonError(deleteError.message)
 
   return new Response(JSON.stringify({ success: true }), {
     headers: { 'Content-Type': 'application/json' },
