@@ -850,12 +850,13 @@
       text-decoration: none;
       display: inline-flex;
       align-items: center;
+      font-family: var(--serif);
+      font-size: 2.5rem;
+      font-weight: 400;
+      letter-spacing: var(--serif-tracking);
+      color: var(--text);
+      line-height: 1;
       user-select: none;
-    }
-    .footer-logo img {
-      display: block;
-      width: auto;
-      height: 40px;
     }
 
     .footer-tagline {
@@ -898,7 +899,6 @@
       justify-content: space-between;
       gap: 1.5rem;
       flex-wrap: wrap;
-      border-top: 1px solid rgba(0,0,0,0.07);
       margin-top: 2.25rem;
       padding: 2rem 0;
     }
@@ -977,8 +977,8 @@
 
     /* Bottom rail */
     .footer-rail {
-      border-top: 1px solid rgba(0,0,0,0.07);
       padding-top: 1.1rem;
+      text-align: center;
     }
 
     .footer-copy {
@@ -1622,7 +1622,7 @@
     }
 
     /* Calendar */
-    #calendar-demo { background: var(--dark); padding: 10rem 2rem 12rem; text-align: center; }
+    #calendar-demo { background: var(--dark); padding: 10rem 2rem 8rem; text-align: center; }
     .cal-headline {
       font-family: var(--serif);
       font-size: clamp(2.8rem, 6.5vw, 5rem);
@@ -2097,11 +2097,11 @@
   <section id="guide-demo">
     <div class="demo-split">
       <div class="demo-copy reveal">
-        <h2 class="demo-headline">Everything new.<br><em>In one place.</em></h2>
+        <h2 class="demo-headline">Everything.<br><em>In one place.</em></h2>
         <p class="demo-body">
-          No more bouncing between apps. PLOT shows you the top 10 on every platform,
-          what's trending around the world, and every new release on the way.
-          You'll always know what's worth watching.
+          Always know what's worth watching. PLOT pulls the top 10 from
+          every platform, what's trending worldwide, and every release on
+          the way into a single feed. <em>Your</em> feed.
         </p>
         <a href="https://app.theplot.tv/signup" class="demo-link">Unify your entertainment universe &rarr;</a>
       </div>
@@ -2250,7 +2250,7 @@
   <section id="timeline-section">
     <div class="timeline-header reveal">
       <h2 class="timeline-headline">A timeline as rich as your taste</h2>
-      <p class="timeline-intro">Your watch history is a story. This is where it's written.</p>
+      <p class="timeline-intro">Your watch history is a story and every story needs a PLOT.</p>
     </div>
 
     <div class="tl-scroll-outer" id="tlScrollOuter">
@@ -2355,8 +2355,8 @@
   <section id="calendar-demo">
     <h2 class="cal-headline reveal">Never miss <em>a drop.</em></h2>
     <p class="cal-sub reveal">
-      That new show, movie or cinema release. Save what you're
-      excited for and let your calendar do the remembering.
+      Save that new show, movie or cinema release. Whatever you're
+      excited for, let your calendar do the remembering.
     </p>
 
     <div class="cal-interactive reveal">
@@ -2431,7 +2431,7 @@
         </div>
       </div>
       <div class="demo-copy reveal">
-        <h2 class="demo-headline" style="color:var(--text)">Make the lists<br>only <em style="font-style:italic">you</em> could curate.</h2>
+        <h2 class="demo-headline" style="color:var(--text)">The lists<br>only <em style="font-style:italic">you</em> could curate.</h2>
         <p class="demo-body" style="color:var(--muted)">
           Organise by decade, director, or whatever mood you're in. Create and share film and TV collections that are unmistakably yours.
         </p>
@@ -2454,7 +2454,7 @@
     <div class="footer-inner">
       <div class="footer-grid">
         <div class="footer-brand">
-          <a class="footer-logo" href="/"><img src="PLOT.png" alt="PLOT"></a>
+          <a class="footer-logo" href="/">PLOT</a>
           <p class="footer-tagline">Your film &amp; TV companion.</p>
         </div>
         <div class="footer-col">
@@ -2476,7 +2476,7 @@
       </div>
       <div class="footer-news">
         <div>
-          <div class="footer-news-title">What's On, in your inbox.</div>
+          <div class="footer-news-title">What's on, in your inbox.</div>
           <p class="footer-news-sub">The best of what's new and coming soon, once a week.</p>
         </div>
         <div class="footer-news-right">
@@ -2489,7 +2489,7 @@
         </div>
       </div>
       <div class="footer-rail">
-        <span class="footer-copy">&copy; 2026 Plot</span>
+        <span class="footer-copy">&copy; 2026 PLOT</span>
       </div>
     </div>
   </footer>
