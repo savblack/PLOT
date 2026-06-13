@@ -59,7 +59,7 @@ const FILTERS: { key: string | null; label: string }[] = [
 
 type FeedPost = {
   slug: string;
-  copy: { page_title?: string; page_body?: string[] } | null;
+  copy: { page_title?: string; page_body?: string[]; hero_image?: string } | null;
   media: { portrait_path?: string; landscape_path?: string }[] | null;
   post_type: string;
   scheduled_for: string;
@@ -67,8 +67,14 @@ type FeedPost = {
 };
 
 const postTitle = (p: FeedPost) => p.copy?.page_title || TYPE_META[p.post_type]?.label || p.post_type;
-const postImage = (p: FeedPost) =>
-  p.media?.[0]?.landscape_path ? mediaUrl(p.media[0].landscape_path) : null;
+// Feed/article hero. Most posts use the plain TMDB still (no PLOT branding) set
+// in copy.hero_image; the branded render (media[0]) is for social channels.
+// Trending charts have no hero_image, so they keep their branded chart render.
+const postImage = (p: FeedPost) => {
+  const hero = p.copy?.hero_image;
+  if (typeof hero === 'string' && /^https?:\/\//.test(hero)) return hero;
+  return p.media?.[0]?.landscape_path ? mediaUrl(p.media[0].landscape_path) : null;
+};
 const postBody = (p: FeedPost) => (Array.isArray(p.copy?.page_body) ? p.copy.page_body : []);
 const entryUrl = (p: FeedPost) => `${SITE}${FEED_PATH}/${p.slug}`;
 
@@ -145,8 +151,8 @@ ${head}
 
   .feature { display: grid; grid-template-columns: 7fr 5fr; gap: 44px; align-items: center; padding: 48px 0; text-decoration: none; color: inherit; }
   .feature + .group { border-top: none; }
-  .f-media img { width: 100%; aspect-ratio: 16/10; object-fit: cover; display: block; border: 1px solid var(--hair); }
-  .f-media .ph { width: 100%; aspect-ratio: 16/10; background: var(--ink); display: flex; align-items: flex-end; padding: 26px; }
+  .f-media img { width: 100%; aspect-ratio: 16/10; object-fit: cover; display: block; border: 1px solid var(--hair); border-radius: 14px; }
+  .f-media .ph { width: 100%; aspect-ratio: 16/10; background: var(--ink); display: flex; align-items: flex-end; padding: 26px; border-radius: 14px; }
   .f-media .ph span { font-family: var(--serif); font-size: 1.8rem; color: #f0efe8; line-height: 1.05; }
   .feature h2 { font-family: var(--serif); font-size: clamp(1.9rem, 3.6vw, 2.6rem); font-weight: 400; line-height: 1.04; letter-spacing: -0.015em; margin: 12px 0 14px; }
   .feature:hover h2 { color: var(--pink); }
@@ -165,9 +171,9 @@ ${head}
   .group { border-top: 1px solid var(--hair); }
   .row-t { display: block; font-family: var(--serif); font-size: 1.45rem; line-height: 1.12; letter-spacing: -0.01em; margin-top: 6px; transition: color 0.25s var(--ease); }
   .row:hover .row-t { color: var(--pink); }
-  .row img { width: 104px; aspect-ratio: 3/2; object-fit: cover; flex-shrink: 0; border: 1px solid var(--hair); filter: grayscale(1) contrast(1.04); transition: filter 0.45s var(--ease); }
+  .row img { width: 104px; aspect-ratio: 3/2; object-fit: cover; flex-shrink: 0; border: 1px solid var(--hair); border-radius: 8px; filter: grayscale(1) contrast(1.04); transition: filter 0.45s var(--ease); }
   .row:hover img { filter: grayscale(0) contrast(1); }
-  .row .ph { width: 104px; aspect-ratio: 3/2; flex-shrink: 0; background: var(--ink); }
+  .row .ph { width: 104px; aspect-ratio: 3/2; flex-shrink: 0; background: var(--ink); border-radius: 8px; }
   .kick { font-size: 0.62rem; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; }
   .row .kick { display: block; }
 
@@ -175,35 +181,19 @@ ${head}
   .older { color: var(--mut); text-decoration: none; }
   .older:hover { color: var(--pink); }
 
-  /* entry page */
-  .post { max-width: 660px; margin: 0 auto; padding-top: 64px; }
-  .post-head .a-meta { display: flex; gap: 14px; align-items: center; margin-bottom: 20px; }
-  .post-head .a-meta .d { color: var(--faint); }
-  .post-head .a-meta .sep { width: 3px; height: 3px; border-radius: 50%; background: var(--faint); opacity: 0.6; }
-  .post-head h1 { font-family: var(--serif); font-size: clamp(2.4rem, 5.6vw, 3.5rem); font-weight: 400; line-height: 1.0; letter-spacing: -0.02em; }
-  figure.hero { margin: 44px 0 46px; }
-  figure.hero img { width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; border: 1px solid var(--hair); }
-  .post-body p { font-size: 1.06rem; font-weight: 300; color: #27272A; margin-bottom: 24px; }
-  .post-body p.lede { font-weight: 600; color: var(--ink); margin-bottom: 30px; }
-  .endcta { display: flex; align-items: center; justify-content: space-between; gap: 32px; margin-top: 52px; padding-top: 36px; border-top: 1px solid var(--hair); }
-  .endcta .ec-title { display: block; font-family: var(--serif); font-size: 2rem; line-height: 1.04; letter-spacing: -0.015em; }
-  .endcta .ec-sub { display: block; color: var(--mut); font-weight: 300; font-size: 0.85rem; margin-top: 8px; }
-  /* CTA button — mirrors the home page hero's "btn btn-outline btn-large" */
-  .cta { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.85rem 2.2rem; min-height: 44px; border: 1px solid var(--ink); border-radius: 9999px; background: transparent; color: var(--ink); text-decoration: none; font-weight: 300; font-size: 0.85rem; white-space: nowrap; transition: all 0.25s var(--ease); }
-  .cta:hover { background: var(--ink); color: #fff; transform: translateY(-1px); }
-  .back { display: inline-block; margin-top: 40px; color: var(--mut); text-decoration: none; }
+  article { max-width: 700px; padding-top: 46px; }
+  article .a-meta { display: flex; gap: 18px; align-items: baseline; margin-bottom: 18px; }
+  article .a-meta .d { color: var(--faint); }
+  article h1 { font-family: var(--serif); font-size: clamp(2.4rem, 6vw, 3.4rem); font-weight: 400; line-height: 1.02; letter-spacing: -0.02em; margin-bottom: 34px; }
+  article img.hero { width: 100%; display: block; border: 1px solid var(--hair); border-radius: 14px; margin-bottom: 38px; }
+  article p { font-size: 1.04rem; font-weight: 300; color: #27272A; margin-bottom: 22px; max-width: 62ch; }
+  article p.lede { font-size: 1.22rem; color: var(--ink); line-height: 1.55; }
+  .cta { display: inline-block; margin-top: 20px; background: var(--ink); color: #fff; text-decoration: none; padding: 14px 30px; border-radius: 9999px; font-weight: 500; font-size: 0.92rem; transition: background 0.25s var(--ease); }
+  .cta:hover { background: var(--pink); }
+  .back { display: inline-block; margin-top: 44px; color: var(--mut); text-decoration: none; }
   .back:hover { color: var(--pink); }
-  .post-foot { max-width: 660px; margin: 0 auto; }
-  .more { max-width: 660px; margin: 80px auto 0; border-top: 2px solid var(--ink); padding-top: 20px; }
-  .more .more-head { display: block; color: var(--ink); margin-bottom: 26px; }
-  .more-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px; }
-  .mcard { display: block; text-decoration: none; color: inherit; }
-  .mcard img { width: 100%; aspect-ratio: 3/2; object-fit: cover; display: block; border: 1px solid var(--hair); filter: grayscale(1) contrast(1.04); transition: filter 0.45s var(--ease); }
-  .mcard:hover img { filter: none; }
-  .mcard .ph { display: block; width: 100%; aspect-ratio: 3/2; background: var(--ink); }
-  .mcard .kick { display: block; margin: 13px 0 5px; }
-  .mcard .mc-t { display: block; font-family: var(--serif); font-size: 1.18rem; line-height: 1.14; letter-spacing: -0.01em; transition: color 0.25s var(--ease); }
-  .mcard:hover .mc-t { color: var(--pink); }
+  .more { margin-top: 70px; border-top: 2px solid var(--ink); padding-top: 14px; }
+  .more .more-head { color: var(--ink); }
 
   footer.sitefoot {
     background: #ffffff; position: relative; z-index: 3;
@@ -259,12 +249,6 @@ ${head}
 
   @media (max-width: 760px) {
     .wrap { padding: 28px 20px 80px; }
-    .post { padding-top: 40px; }
-    .more-grid { grid-template-columns: 1fr; gap: 22px; }
-    .mcard { display: grid; grid-template-columns: 96px 1fr; gap: 16px; align-items: center; }
-    .mcard .kick { margin: 0 0 5px; }
-    .mcard .mc-t { font-size: 1.15rem; }
-    .endcta { flex-direction: column; align-items: flex-start; gap: 22px; }
     .feature { grid-template-columns: 1fr; gap: 22px; padding: 34px 0; }
     .group { grid-template-columns: 1fr; gap: 0; }
     .g-date { padding-top: 26px; display: flex; gap: 10px; align-items: baseline; }
@@ -386,15 +370,6 @@ const entryRow = (p: FeedPost) => {
     <span class="row-main">${kicker(p.post_type)}
     <span class="row-t">${esc(postTitle(p))}</span></span>
     ${img ? `<img src="${esc(img)}" alt="" loading="lazy">` : '<span class="ph"></span>'}
-  </a>`;
-};
-
-const moreCard = (p: FeedPost) => {
-  const img = postImage(p);
-  return `<a class="mcard" href="${FEED_PATH}/${esc(p.slug)}">
-    ${img ? `<img src="${esc(img)}" alt="" loading="lazy">` : '<span class="ph"></span>'}
-    ${kicker(p.post_type)}
-    <span class="mc-t">${esc(postTitle(p))}</span>
   </a>`;
 };
 
@@ -524,11 +499,9 @@ Deno.serve(async (req) => {
   const { data: post } = await baseQuery().eq('slug', slug).maybeSingle();
   if (!post) {
     return page('Not found · PLOT', '', `
-      <article class="post r2">
-        <header class="post-head"><h1>Nothing here yet</h1></header>
-        <div class="post-body"><p>This update does not exist or has not been published.</p></div>
-        <a class="back sc" href="${FEED_PATH}">&larr; All updates</a>
-      </article>`, 404);
+      <article><h1>Nothing here yet</h1>
+      <p>This update does not exist or has not been published.</p>
+      <a class="back sc" href="${FEED_PATH}">&larr; All updates</a></article>`, 404);
   }
 
   const typed = post as FeedPost;
@@ -546,7 +519,7 @@ Deno.serve(async (req) => {
   const more = (others || []).length
     ? `<div class="more r4">
         <span class="more-head sc">More from ${FEED_TITLE}</span>
-        <div class="more-grid">${(others as FeedPost[]).map(moreCard).join('')}</div>
+        ${(others as FeedPost[]).map(entryRow).join('')}
       </div>`
     : '';
 
@@ -570,26 +543,15 @@ ${hero ? `<meta property="og:image" content="${esc(hero)}">` : ''}
 <meta name="twitter:card" content="summary_large_image">
 <script type="application/ld+json">${jsonLd}</script>`;
 
-  const k = kicker(typed.post_type);
   return page(`${title} · PLOT`, head, `
-    <article class="post r2">
-      <header class="post-head">
-        <div class="a-meta">${k}${k ? '<span class="sep"></span>' : ''}<span class="d sc">${esc(fmtDate(typed.scheduled_for))}</span></div>
-        <h1>${esc(title)}</h1>
-      </header>
-      ${hero ? `<figure class="hero"><img src="${esc(hero)}" alt=""></figure>` : ''}
-      <div class="post-body">
-        ${body.map((p, i) => `<p${i === 0 ? ' class="lede"' : ''}>${esc(p)}</p>`).join('')}
-      </div>
-      <aside class="endcta">
-        <div class="ec-copy">
-          <span class="ec-title">Watch more. Forget less.</span>
-          <span class="ec-sub">Track upcoming releases and get reminded the day they drop.</span>
-        </div>
-        <a class="cta" href="https://app.theplot.tv/signup?utm_source=whats_on&utm_medium=site&utm_campaign=${esc(typed.post_type)}">Sign up &rarr;</a>
-      </aside>
+    <article class="r2">
+      <div class="a-meta">${kicker(typed.post_type)}<span class="d sc">${esc(fmtDate(typed.scheduled_for))}</span></div>
+      <h1>${esc(title)}</h1>
+      ${hero ? `<img class="hero" src="${esc(hero)}" alt="">` : ''}
+      ${body.map((p, i) => `<p${i === 0 ? ' class="lede"' : ''}>${esc(p)}</p>`).join('')}
+      <a class="cta" href="https://app.theplot.tv/signup?utm_source=whats_on&utm_medium=site&utm_campaign=${esc(typed.post_type)}">Find what's on tonight</a>
+      <br><a class="back sc" href="${FEED_PATH}">&larr; All updates</a>
     </article>
     ${more}
-    <div class="post-foot"><a class="back sc" href="${FEED_PATH}">&larr; All updates</a></div>
   `);
 });

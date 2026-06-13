@@ -8,6 +8,7 @@ import { renderCard, closeBrowser } from '../lib/render.mjs';
 import { uploadMedia, publicUrl } from '../lib/storage.mjs';
 import { sendEmail, ADMIN_EMAIL } from '../lib/email.mjs';
 import { POST_TYPES } from '../lib/post-types.mjs';
+import { feedHeroUrl } from '../lib/images.mjs';
 import { postSlug, entryUrl } from '../lib/feed.mjs';
 
 const PLATFORMS = ['x', 'instagram', 'threads'];
@@ -17,6 +18,9 @@ const generatePost = async (supabase, post) => {
   if (!spec) throw new Error(`Unknown post type ${post.post_type}`);
 
   const copy = await generateCopy(post);
+  // Feed/article hero is the plain TMDB still (no branding); charts keep their
+  // branded render. The branded media below is still used on the social channels.
+  copy.hero_image = feedHeroUrl(post.post_type, post.payload);
   const cards = await spec.cards(post.payload);
 
   const media = [];
