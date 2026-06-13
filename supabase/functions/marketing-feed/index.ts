@@ -11,7 +11,9 @@
  * Entries become visible at their scheduled publish time (same moment the
  * social publisher runs); vetoed/failed posts never appear.
  *
- * Deploy with --no-verify-jwt.
+ * Public function: must be reachable without a Supabase JWT. This is pinned in
+ * supabase/config.toml (verify_jwt = false), so a plain `supabase functions
+ * deploy marketing-feed` keeps it public — no need to remember --no-verify-jwt.
  */
 import { createClient } from 'npm:@supabase/supabase-js@2';
 

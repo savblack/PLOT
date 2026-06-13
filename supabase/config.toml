@@ -1,0 +1,53 @@
+# Supabase CLI configuration.
+#
+# Primary purpose of committing this file: pin `verify_jwt` per Edge Function so
+# `supabase functions deploy <name>` reproduces the intended public/private
+# state even if someone forgets the `--no-verify-jwt` flag. Forgetting that flag
+# on a redeploy is exactly what took theplot.tv/whats-on down — Supabase's
+# gateway rejected the request with UNAUTHORIZED_NO_AUTH_HEADER before the
+# function ran. See marketing/README.md.
+
+project_id = "mkegtssedjyqldysvzga"
+
+# --- Public functions: reachable without a Supabase JWT ---------------------
+# These either serve fully public content (marketing-feed) or do their own
+# token / service-role auth internally (calendar-feed uses a URL token). With
+# verify_jwt left at its default of true, the gateway rejects unauthenticated
+# requests before the function runs.
+
+[functions.marketing-feed]
+verify_jwt = false
+
+[functions.marketing-veto]
+verify_jwt = false
+
+[functions.newsletter-subscribe]
+verify_jwt = false
+
+[functions.calendar-feed]
+verify_jwt = false
+
+# --- Authenticated functions: require a Supabase JWT ------------------------
+# Declared explicitly (verify_jwt = true is the CLI default) so this file is a
+# complete source of truth and no function silently relies on the default.
+
+[functions.tmdb-proxy]
+verify_jwt = true
+
+[functions.generate-journal]
+verify_jwt = true
+
+[functions.generate-taste-profile]
+verify_jwt = true
+
+[functions.delete-account]
+verify_jwt = true
+
+[functions.media-sync]
+verify_jwt = true
+
+[functions.notify-feedback]
+verify_jwt = true
+
+[functions.trakt-sync]
+verify_jwt = true
