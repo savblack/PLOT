@@ -156,11 +156,12 @@
       text-decoration: none;
       display: flex;
       align-items: center;
-    }
-    .nav-logo img {
-      display: block;
-      width: auto;
-      height: 28px;
+      font-family: var(--serif);
+      font-size: 1.7rem;
+      font-weight: 400;
+      letter-spacing: var(--serif-tracking);
+      color: var(--text);
+      line-height: 1;
       user-select: none;
     }
 
@@ -830,7 +831,6 @@
     /* ── Footer ─────────────────────────────────────────────── */
     footer {
       background: var(--surface) !important;
-      border-top: 1px solid rgba(0,0,0,0.07);
       padding: 3.5rem 3rem calc(var(--ticker-height) + env(safe-area-inset-bottom, 0px) + 1.25rem);
       position: relative;
       z-index: 3;
@@ -2031,7 +2031,7 @@
 
   <!-- ── Navbar ──────────────────────────────────────────────── -->
   <nav id="navbar">
-    <a href="#" class="nav-logo"><img src="PLOT.png" alt="PLOT"></a>
+    <a href="#" class="nav-logo">PLOT</a>
     <ul class="nav-links" id="navLinks">
       <li><a href="/whats-on">What's On</a></li>
       <li><a href="https://app.theplot.tv/login">Log in</a></li>
