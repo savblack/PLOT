@@ -337,9 +337,9 @@
       flex-wrap: wrap;
     }
 
-    @keyframes filmstrip-scroll {
-      from { transform: translateX(0); }
-      to   { transform: translateX(-50%); }
+    @keyframes hero-card-in {
+      from { opacity: 0; transform: translateX(48px); }
+      to   { opacity: 1; transform: none; }
     }
 
     .hero-filmstrip {
@@ -351,7 +351,7 @@
       display: flex;
       gap: 8px;
       width: max-content;
-      animation: filmstrip-scroll 20s linear infinite;
+      margin: 0 auto;
     }
     .hero-film-card {
       width: 54px;
@@ -361,10 +361,17 @@
       background-size: cover;
       background-position: center;
       background-color: #ddd;
+      opacity: 0;
+      animation: hero-card-in 0.7s var(--ease) forwards;
     }
+    .hero-film-card:nth-child(1) { animation-delay: 0.05s; }
+    .hero-film-card:nth-child(2) { animation-delay: 0.13s; }
+    .hero-film-card:nth-child(3) { animation-delay: 0.21s; }
+    .hero-film-card:nth-child(4) { animation-delay: 0.29s; }
+    .hero-film-card:nth-child(5) { animation-delay: 0.37s; }
+    .hero-film-card:nth-child(6) { animation-delay: 0.45s; }
+    .hero-film-card:nth-child(n+7) { animation-delay: 0.53s; }
 
-    /* Manifesto mobile sequence — hidden on desktop */
-    .manifesto-seq { display: none; }
 
     #manifesto, #for-the-plot, #value, #features, #cta, footer {
       position: relative;
@@ -401,6 +408,8 @@
     .manifesto-line.no-fade.passed {
       color: var(--text);
     }
+    /* Poster interludes — mobile only (desktop uses edge side-posters) */
+    .manifesto-poster { display: none; }
 
     #plotDoes {
       margin-top: 20rem;
@@ -635,7 +644,7 @@
       font-size: 1rem;
       font-weight: 300;
       color: var(--muted);
-      max-width: 400px;
+      max-width: 640px;
       line-height: 1.45;
     }
 
@@ -1051,54 +1060,29 @@
       .hero-film-card { width: 140px; height: 210px; border-radius: 12px; }
       .hero-filmstrip-inner { gap: 12px; }
 
-      /* Manifesto — sequence mode on mobile */
-      #manifesto { padding: 0; gap: 0; min-height: 90vh; min-height: 90svh; }
-      .manifesto-line { display: none; }
-      .manifesto-seq {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-        min-height: 90vh;
-        min-height: 90svh;
-        padding: 4rem 2.5rem;
-      }
-      .mseq-stage {
-        position: relative;
-        width: 100%;
-        height: 220px;
-      }
-      .mseq-line {
-        position: absolute;
-        inset: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+      /* Manifesto — scroll-driven reveal with poster interludes on mobile */
+      #manifesto {
+        padding: 22vh 1.5rem;
+        gap: 18vh;
         text-align: center;
-        font-family: var(--serif);
-        font-size: clamp(1.6rem, 7vw, 2.2rem);
-        font-weight: 400;
-        letter-spacing: var(--serif-tracking);
-        line-height: 1.1;
-        color: var(--text);
-        opacity: 0;
-        transition: opacity 0.7s ease;
       }
-      .mseq-line.active { opacity: 1; }
-      .mseq-dots {
-        display: flex;
-        gap: 6px;
-        margin-top: 2.5rem;
+      .manifesto-line {
+        display: block;
+        font-size: clamp(1.8rem, 7.5vw, 2.6rem);
+        max-width: 100%;
       }
-      .mseq-dot {
-        width: 6px;
-        height: 6px;
-        border-radius: 50%;
-        background: rgba(0,0,0,0.15);
-        transition: background 0.4s;
+      .manifesto-poster {
+        display: block;
+        align-self: center;
+        width: 160px;
+        height: 240px;
+        border-radius: 10px;
+        background-color: rgba(0,0,0,0.05);
+        background-size: cover;
+        background-position: center;
+        box-shadow: 0 16px 34px rgba(0,0,0,0.16);
       }
-      .mseq-dot.active { background: var(--text); }
+      #plotDoes { margin-top: 12vh; margin-bottom: 24vh; }
 
       /* Features — horizontal scroll cards */
       #features { padding: 3rem 0 3rem 1.5rem; }
@@ -2067,29 +2051,16 @@
   <!-- ── Manifesto ────────────────────────────────────────────── -->
   <section id="manifesto">
     <p class="manifesto-line reveal">You don't just watch things.</p>
+    <div class="manifesto-poster reveal"></div>
     <p class="manifesto-line reveal">You think about them.</p>
+    <div class="manifesto-poster reveal"></div>
     <p class="manifesto-line reveal">You talk about them.</p>
+    <div class="manifesto-poster reveal"></div>
     <p class="manifesto-line reveal">You carry them with you.</p>
+    <div class="manifesto-poster reveal"></div>
     <p class="manifesto-line reveal">But no app has ever cared<br>as much as you do.</p>
+    <div class="manifesto-poster reveal"></div>
     <p class="manifesto-line no-fade reveal" id="plotDoes"><span style="font-family:'Instrument Serif',Georgia,serif;font-weight:400;letter-spacing:-0.02em;">PLOT</span> <em>does.</em></p>
-    <div class="manifesto-seq">
-      <div class="mseq-stage">
-        <div class="mseq-line active">You don't just watch things.</div>
-        <div class="mseq-line">You think about them.</div>
-        <div class="mseq-line">You talk about them.</div>
-        <div class="mseq-line">You carry them with you.</div>
-        <div class="mseq-line">But no app has ever cared<br>as much as you do.</div>
-        <div class="mseq-line"><span style="font-family:'Instrument Serif',Georgia,serif;font-weight:400;letter-spacing:-0.02em;">PLOT</span> does.</div>
-      </div>
-      <div class="mseq-dots">
-        <span class="mseq-dot active"></span>
-        <span class="mseq-dot"></span>
-        <span class="mseq-dot"></span>
-        <span class="mseq-dot"></span>
-        <span class="mseq-dot"></span>
-        <span class="mseq-dot"></span>
-      </div>
-    </div>
   </section>
 
 
@@ -2601,54 +2572,6 @@
       guideDateHdr.textContent = 'Today — ' + new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
     }
 
-    // ── Manifesto mobile sequence ─────────────────────────────
-    // The sequence layout is CSS-gated at max-width: 600px, so the JS gate
-    // must match (<= 600) and re-check on resize/rotation rather than only
-    // once at load.
-    (function() {
-      const seqLines = document.querySelectorAll('.mseq-line');
-      const seqDots  = document.querySelectorAll('.mseq-dot');
-      const manifestoSection = document.getElementById('manifesto');
-      if (!manifestoSection || !seqLines.length) return;
-
-      let seqIdx = 0;
-      let started = false;
-
-      function startSequence() {
-        if (started) return;
-        started = true;
-        // Hold on first line for 2s, then begin cycling
-        setTimeout(() => {
-          setInterval(() => {
-            seqLines[seqIdx].classList.remove('active');
-            seqDots[seqIdx].classList.remove('active');
-            seqIdx = (seqIdx + 1) % seqLines.length;
-            seqLines[seqIdx].classList.add('active');
-            seqDots[seqIdx].classList.add('active');
-          }, 2400);
-        }, 2000);
-      }
-
-      const manifestoObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting && window.innerWidth <= 600) {
-            startSequence();
-            manifestoObserver.disconnect();
-          }
-        });
-      }, { threshold: 0.5 });
-
-      manifestoObserver.observe(manifestoSection);
-
-      // Rotation/resize into the mobile layout while the section is already
-      // on screen — the observer won't refire, so check directly.
-      window.addEventListener('resize', () => {
-        if (started || window.innerWidth > 600) return;
-        const r = manifestoSection.getBoundingClientRect();
-        if (r.top < window.innerHeight && r.bottom > 0) startSequence();
-      });
-    })();
-
     // ── Manifesto scroll-driven fade ──────────────────────────
     const manifestoLines = [...document.querySelectorAll('.manifesto-line')];
 
@@ -2820,6 +2743,28 @@
     } // end initSidePosters
     initSidePosters();
     window.addEventListener('resize', initSidePosters);
+
+    // Manifesto poster interludes — populate with live TMDB posters (mobile).
+    // Uses the same trending/now-playing source as the hero side-posters.
+    (function() {
+      const posterEls = document.querySelectorAll('.manifesto-poster');
+      if (!posterEls.length) return;
+      fetchTrendingSets().then(function(sets) {
+        const IMG = 'https://image.tmdb.org/t/p/w500';
+        const seen = {};
+        const paths = [];
+        sets.forEach(function(set) {
+          ((set && set.results) || []).forEach(function(r) {
+            if (r.poster_path && !seen[r.poster_path]) { seen[r.poster_path] = 1; paths.push(r.poster_path); }
+          });
+        });
+        if (!paths.length) return;
+        // Stride through the pool so adjacent posters differ.
+        posterEls.forEach(function(el, i) {
+          el.style.backgroundImage = "url('" + IMG + paths[(i * 5) % paths.length] + "')";
+        });
+      }).catch(function() {});
+    })();
 
     // ── Live ticker ───────────────────────────────────────────
     (async function initTicker() {
@@ -3267,8 +3212,7 @@
         // Remove existing cards
         while (strip.firstChild) strip.removeChild(strip.firstChild);
 
-        // Duplicate for seamless loop
-        [...posters, ...posters].forEach(url => {
+        posters.forEach(url => {
           const div = document.createElement('div');
           div.className = 'hero-film-card';
           // url is always https://image.tmdb.org/t/p/w342/... — safe, no user input
