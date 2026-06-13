@@ -631,6 +631,10 @@ export default function SettingsView() {
 
   const [showProviders,       setShowProviders]       = useState(false);
   const [showGuideChannels,   setShowGuideChannels]   = useState(false);
+  const [savingProviders,     setSavingProviders]     = useState(false);
+  const [savingGuideChannels, setSavingGuideChannels] = useState(false);
+  const [providerDraft,       setProviderDraft]       = useState(null);
+  const [guideChannelDraft,   setGuideChannelDraft]   = useState(null);
   const [showRegion,          setShowRegion]          = useState(false);
   const [showTimezone,        setShowTimezone]        = useState(false);
   const [showFeedback,        setShowFeedback]        = useState(false);
@@ -661,33 +665,73 @@ export default function SettingsView() {
     }
   }, [profile?.calendar_token, localCalToken]);
 
+  useEffect(() => {
+    if (!providerDraft) return;
+    if (JSON.stringify(profile?.streaming_providers ?? []) !== JSON.stringify(providerDraft)) return;
+    setProviderDraft(null);
+    setSavingProviders(false);
+  }, [profile?.streaming_providers, providerDraft]);
+
+  useEffect(() => {
+    if (!guideChannelDraft) return;
+    if (JSON.stringify(profile?.guide_channels ?? []) !== JSON.stringify(guideChannelDraft)) return;
+    setGuideChannelDraft(null);
+    setSavingGuideChannels(false);
+  }, [profile?.guide_channels, guideChannelDraft]);
+
   // Load integrations on mount
   // eslint-disable-next-line react-hooks/exhaustive-deps -- loadIntegration is provided by the integration controller
   useEffect(() => { sync.loadIntegration(); }, [sync.loadIntegration]);
   // eslint-disable-next-line react-hooks/exhaustive-deps -- loadIntegration is provided by the integration controller
   useEffect(() => { trakt.loadIntegration(); }, [trakt.loadIntegration]);
 
-  const providers      = profile?.streaming_providers || [];
-  const guideChannels  = profile?.guide_channels || [];
+  const providers      = providerDraft ?? profile?.streaming_providers ?? [];
+  const guideChannels  = guideChannelDraft ?? profile?.guide_channels ?? [];
   const region         = profile?.region || 'US';
   const timezone  = profile?.timezone || '';
 
   const saveProviders = async (newProviders) => {
-    await supabase
+    setActionError(null);
+    setProviderDraft(newProviders);
+    setSavingProviders(true);
+    setShowProviders(false);
+
+    const { error } = await supabase
       .from('profiles')
       .update({ streaming_providers: newProviders })
       .eq('id', user.id);
+
+    if (error) {
+      setActionError(error.message || 'Failed to save your streaming platforms.');
+      setShowProviders(true);
+      setSavingProviders(false);
+      return false;
+    }
+
     refreshProfile();
-    setShowProviders(false);
+    return true;
   };
 
   const saveGuideChannels = async (newChannels) => {
-    await supabase
+    setActionError(null);
+    setGuideChannelDraft(newChannels);
+    setSavingGuideChannels(true);
+    setShowGuideChannels(false);
+
+    const { error } = await supabase
       .from('profiles')
       .update({ guide_channels: newChannels })
       .eq('id', user.id);
+
+    if (error) {
+      setActionError(error.message || 'Failed to save your channels.');
+      setShowGuideChannels(true);
+      setSavingGuideChannels(false);
+      return false;
+    }
+
     refreshProfile();
-    setShowGuideChannels(false);
+    return true;
   };
 
   const saveRegion = async (code) => {
@@ -902,8 +946,8 @@ export default function SettingsView() {
 
         <div
           className="settings-row interactive-surface"
-          onClick={() => setShowProviders(true)}
-          {...getButtonLikeProps({ onPress: () => setShowProviders(true), label: 'Open streaming platforms' })}
+          onClick={() => { if (!savingProviders) setShowProviders(true); }}
+          {...getButtonLikeProps({ onPress: () => { if (!savingProviders) setShowProviders(true); }, label: 'Open streaming platforms', disabled: savingProviders })}
         >
           <div className="settings-row-left">
             <div className="settings-row-icon">
@@ -912,15 +956,15 @@ export default function SettingsView() {
             <span className="settings-row-label">Streaming Platforms</span>
           </div>
           <div className="settings-row-value">
-            <span>{providers.length > 0 ? `${providers.length} selected` : 'None'}</span>
+            <span>{savingProviders ? 'Saving…' : providers.length > 0 ? `${providers.length} selected` : 'None'}</span>
             <Chevron />
           </div>
         </div>
 
         <div
           className="settings-row interactive-surface"
-          onClick={() => setShowGuideChannels(true)}
-          {...getButtonLikeProps({ onPress: () => setShowGuideChannels(true), label: 'Open my channels' })}
+          onClick={() => { if (!savingGuideChannels) setShowGuideChannels(true); }}
+          {...getButtonLikeProps({ onPress: () => { if (!savingGuideChannels) setShowGuideChannels(true); }, label: 'Open my channels', disabled: savingGuideChannels })}
         >
           <div className="settings-row-left">
             <div className="settings-row-icon">
@@ -929,7 +973,7 @@ export default function SettingsView() {
             <span className="settings-row-label">My Channels</span>
           </div>
           <div className="settings-row-value">
-            <span>{guideChannels.length > 0 ? `${guideChannels.length} selected` : 'None'}</span>
+            <span>{savingGuideChannels ? 'Saving…' : guideChannels.length > 0 ? `${guideChannels.length} selected` : 'None'}</span>
             <Chevron />
           </div>
         </div>
@@ -1269,7 +1313,10 @@ export default function SettingsView() {
           region={region}
           selected={providers}
           onSave={saveProviders}
-          onClose={() => setShowProviders(false)}
+          onClose={() => {
+            setShowProviders(false);
+            if (!savingProviders) setProviderDraft(null);
+          }}
         />
       )}
 
@@ -1281,7 +1328,10 @@ export default function SettingsView() {
           selected={guideChannels}
           channelsOnly
           onSave={saveGuideChannels}
-          onClose={() => setShowGuideChannels(false)}
+          onClose={() => {
+            setShowGuideChannels(false);
+            if (!savingGuideChannels) setGuideChannelDraft(null);
+          }}
         />
       )}
 
