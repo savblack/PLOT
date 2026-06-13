@@ -54,6 +54,7 @@ export default function AppShell({ currentView, navigateTo, children }) {
   };
 
   const pageTitle = VIEW_TITLES[currentView] ?? 'PLOT';
+  const showHomeLogo = currentView === 'home';
 
   return (
     <div className="app-shell">
@@ -72,7 +73,18 @@ export default function AppShell({ currentView, navigateTo, children }) {
           </button>
         </div>
 
-        <span className="app-page-title">{pageTitle}</span>
+        {showHomeLogo ? (
+          <button
+            type="button"
+            className="app-header-logo"
+            onClick={() => navigateTo('home')}
+            aria-label="Go to home"
+          >
+            <PlotLogo className="app-header-logo-image" />
+          </button>
+        ) : (
+          <span className="app-page-title">{pageTitle}</span>
+        )}
 
         <div className="header-end">
           <button
