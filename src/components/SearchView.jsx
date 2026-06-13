@@ -5,6 +5,7 @@ import { useHistory } from '../hooks/useHistory.js';
 import { localDateStr } from '../utils/date.js';
 import { getButtonLikeProps } from '../utils/interactive.js';
 import PlotLoader from './PlotLoader.jsx';
+import { classifySearchResults } from '../utils/search.js';
 
 function BookmarkIcon({ filled }) {
   return (
@@ -139,7 +140,7 @@ export default function SearchView() {
   const [query,   setQuery]   = useState('');
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [empty,   setEmpty]   = useState(false);
+  const [emptyMode, setEmptyMode] = useState('none');
 
   const timerRef = useRef(null);
 
@@ -147,15 +148,13 @@ export default function SearchView() {
     const v = e.target.value;
     setQuery(v);
     clearTimeout(timerRef.current);
-    if (!v.trim()) { setResults([]); setEmpty(false); return; }
+    if (!v.trim()) { setResults([]); setEmptyMode('none'); return; }
     timerRef.current = setTimeout(async () => {
       setLoading(true);
       const data = await tmdb.search(v);
-      const filtered = (data?.results || [])
-        .filter(r => r.media_type === 'movie' || r.media_type === 'tv')
-        .filter(r => r.poster_path || r.name || r.title);
+      const { filtered, emptyMode: nextEmptyMode } = classifySearchResults(data?.results || []);
       setResults(filtered);
-      setEmpty(filtered.length === 0);
+      setEmptyMode(nextEmptyMode);
       setLoading(false);
     }, 350);
   };
@@ -184,14 +183,21 @@ export default function SearchView() {
         <div className="loading-state"><PlotLoader size="sm" /></div>
       )}
 
-      {!loading && empty && (
+      {!loading && emptyMode === 'generic' && (
         <div className="empty-state">
           <div className="empty-title">No results</div>
           <div className="empty-body">Try a different title or spelling.</div>
         </div>
       )}
 
-      {!loading && results.length === 0 && !empty && (
+      {!loading && emptyMode === 'title-guidance' && (
+        <div className="empty-state">
+          <div className="empty-title">Try searching by title</div>
+          <div className="empty-body">Search works best with a movie or TV title rather than a director, cast member, or creator name.</div>
+        </div>
+      )}
+
+      {!loading && results.length === 0 && emptyMode === 'none' && (
         <div className="empty-state" style={{ paddingTop: '2rem' }}>
           <div className="empty-title">Find anything</div>
           <div className="empty-body">
