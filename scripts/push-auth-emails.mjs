@@ -13,6 +13,7 @@ import { fileURLToPath } from 'node:url';
 
 const PROJECT_REF = 'mkegtssedjyqldysvzga';
 const TEMPLATES_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'supabase', 'templates');
+const EMAIL_LOGO_URL = process.env.PLOT_EMAIL_LOGO_URL || 'https://theplot.tv/PLOT.png';
 
 // ── Design tokens (mirrors src/styles/tokens.css, light mode) ──
 const t = {
@@ -26,26 +27,27 @@ const t = {
   accent: '#E05578',
   accentSoft: '#F7C7D3',
   serif: "'Instrument Serif', Georgia, 'Times New Roman', serif",
+  siteSans: "'DM Sans', -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif",
   sans: "'Manrope', -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif",
 };
 
 const button = (href, label) => `
-<table role="presentation" cellpadding="0" cellspacing="0" border="0">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin: 0 auto;">
   <tr>
-    <td style="border-radius: 9999px; background-color: ${t.accent};">
-      <a href="${href}" target="_blank" style="display: inline-block; padding: 13px 30px; font-family: ${t.sans}; font-size: 15px; font-weight: 600; color: #FFFFFF; text-decoration: none; border-radius: 9999px;">${label}</a>
+    <td style="border-radius: 9999px; background-color: transparent; border: 1px solid ${t.textPrimary};">
+      <a href="${href}" target="_blank" style="display: inline-block; padding: 13px 30px; font-family: ${t.siteSans}; font-size: 14px; font-weight: 300; color: ${t.textPrimary}; text-decoration: none; border-radius: 9999px; line-height: 1.2;">${label}</a>
     </td>
   </tr>
 </table>`;
 
 const fallbackLink = (href) => `
-<p style="margin: 28px 0 0; font-family: ${t.sans}; font-size: 12px; line-height: 1.6; color: ${t.textMuted};">
+<p style="margin: 28px 0 0; font-family: ${t.sans}; font-size: 12px; line-height: 1.6; color: ${t.textMuted}; text-align: center;">
   Prefer to paste the link manually?<br>
   <a href="${href}" target="_blank" style="color: ${t.textMuted}; text-decoration: underline; word-break: break-all;">${href}</a>
 </p>`;
 
 const noteBlock = (note) => note ? `
-<div style="margin-top: 22px; padding: 14px 16px; border-radius: 12px; background-color: ${t.surfaceTint}; border: 1px solid ${t.accentSoft};">
+<div style="margin-top: 22px; padding: 14px 16px; border-radius: 12px; background-color: ${t.surfaceTint}; border: 1px solid ${t.accentSoft}; text-align: center;">
   <p style="margin: 0; font-family: ${t.sans}; font-size: 12px; line-height: 1.65; color: ${t.textSecondary};">${note}</p>
 </div>` : '';
 
@@ -58,7 +60,7 @@ const layout = ({ preheader, eyebrow, heading, intro, content, note, safety }) =
   <meta name="supported-color-schemes" content="light">
   <title>PLOT</title>
   <!--[if !mso]><!-->
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Manrope:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=Instrument+Serif&family=Manrope:wght@400;600&display=swap" rel="stylesheet">
   <!--<![endif]-->
 </head>
 <body style="margin: 0; padding: 0; background-color: ${t.bg};">
@@ -70,13 +72,14 @@ const layout = ({ preheader, eyebrow, heading, intro, content, note, safety }) =
 
           <tr>
             <td align="center" style="padding: 0 0 28px;">
-              <a href="https://theplot.tv" target="_blank" style="font-family: ${t.serif}; font-size: 30px; letter-spacing: 7px; color: ${t.textPrimary}; text-decoration: none;">PLOT</a>
-              <div style="margin-top: 7px; font-family: ${t.sans}; font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: ${t.textMuted};">Film and TV journal</div>
+              <a href="https://theplot.tv" target="_blank" style="display: inline-block; text-decoration: none;">
+                <img src="${EMAIL_LOGO_URL}" alt="PLOT" width="100" style="display: block; width: 100px; max-width: 100%; height: auto; border: 0;">
+              </a>
             </td>
           </tr>
 
           <tr>
-            <td style="background-color: ${t.surface}; border: 1px solid ${t.border}; border-radius: 16px; padding: 40px 36px;">
+            <td style="background-color: ${t.surface}; border: 1px solid ${t.border}; border-radius: 16px; padding: 40px 36px; text-align: center;">
               <div style="display: inline-block; margin: 0 0 16px; padding: 6px 10px; border-radius: 9999px; background-color: ${t.surfaceTint}; border: 1px solid ${t.accentSoft}; font-family: ${t.sans}; font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: ${t.accent};">${eyebrow}</div>
               <h1 style="margin: 0 0 14px; font-family: ${t.serif}; font-weight: 400; font-size: 27px; line-height: 1.25; color: ${t.textPrimary};">${heading}</h1>
               <p style="margin: 0 0 28px; font-family: ${t.sans}; font-size: 15px; line-height: 1.65; color: ${t.textSecondary};">${intro}</p>
@@ -90,7 +93,7 @@ const layout = ({ preheader, eyebrow, heading, intro, content, note, safety }) =
               <p style="margin: 0 0 6px; font-family: ${t.sans}; font-size: 12px; line-height: 1.6; color: ${t.textMuted};">${safety}</p>
               <p style="margin: 0; font-family: ${t.sans}; font-size: 12px; line-height: 1.6; color: ${t.textMuted};">
                 <a href="https://theplot.tv" target="_blank" style="color: ${t.textMuted}; text-decoration: underline;">PLOT</a>
-                &nbsp;&middot;&nbsp; track what you watched, plan what to watch next
+                &middot; Your film and TV companion.
               </p>
             </td>
           </tr>
@@ -129,7 +132,7 @@ const emails = {
       intro: 'We received a request to reset your PLOT password. If that was you, set a new one below.',
       content: button(URL, 'Set a new password') + fallbackLink(URL),
       note: 'For security, only use the latest reset email you requested.',
-      safety: "Didn't request this? You can safely ignore this email — your password won't change.",
+      safety: "Didn't request this? You can safely ignore this email, your password won't change.",
     }),
   },
   magic_link: {
@@ -165,7 +168,7 @@ const emails = {
       preheader: 'A journal for everything you watch.',
       eyebrow: 'Invite',
       heading: "You're invited",
-      intro: "You've been invited to join PLOT, the journal for everything you've watched and everything you want to watch.",
+      intro: "You’ve been invited to join PLOT, where you’ll always know what to watch next.",
       content: button(URL, 'Accept invite') + fallbackLink(URL),
       note: 'Open the invite, set up your account, and start building your watch history.',
       safety: "Not expecting this invite? You can safely ignore this email.",
@@ -187,7 +190,7 @@ const emails = {
     </td>
   </tr>
 </table>`,
-      note: 'Codes are best for high-friction confirmation steps where a link would be awkward or easy to miss.',
+      note: 'Use this code to finish signing in or confirming your action in PLOT.',
       safety: "Didn't request a code? You can safely ignore this email.",
     }),
   },
