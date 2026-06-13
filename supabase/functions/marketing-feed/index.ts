@@ -181,12 +181,12 @@ ${head}
   .older { color: var(--mut); text-decoration: none; }
   .older:hover { color: var(--pink); }
 
-  article { max-width: 700px; padding-top: 46px; }
+  article { padding-top: 46px; }
   article .a-meta { display: flex; gap: 18px; align-items: baseline; margin-bottom: 18px; }
   article .a-meta .d { color: var(--faint); }
   article h1 { font-family: var(--serif); font-size: clamp(2.4rem, 6vw, 3.4rem); font-weight: 400; line-height: 1.02; letter-spacing: -0.02em; margin-bottom: 34px; }
   article img.hero { width: 100%; display: block; border: 1px solid var(--hair); border-radius: 14px; margin-bottom: 38px; }
-  article p { font-size: 1.04rem; font-weight: 300; color: #27272A; margin-bottom: 22px; max-width: 62ch; }
+  article p { font-size: 1.04rem; font-weight: 300; color: #27272A; margin-bottom: 22px; }
   article p.lede { font-size: 1.22rem; color: var(--ink); line-height: 1.55; }
   .cta { display: inline-block; margin-top: 20px; background: var(--ink); color: #fff; text-decoration: none; padding: 14px 30px; border-radius: 9999px; font-weight: 500; font-size: 0.92rem; transition: background 0.25s var(--ease); }
   .cta:hover { background: var(--pink); }
