@@ -3,6 +3,7 @@ import { useApp, backdropUrl, TodayLabel } from '../App.jsx';
 import { localDateStr } from '../utils/date.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import ConfirmModal from './ConfirmModal.jsx';
+import PlotLoader from './PlotLoader.jsx';
 
 /* ── Icons ── */
 function CheckCircleIcon() {
@@ -184,7 +185,7 @@ function WatchingCard({ progress, watching, onOpen, onStop }) {
 
         {seasonData === null ? (
           <div style={{ padding: '1.25rem 0', display: 'flex', justifyContent: 'center' }}>
-            <div className="spinner" />
+            <PlotLoader size="sm" />
           </div>
         ) : episodes.length === 0 ? (
           <div style={{ padding: '0.5rem 0', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
@@ -216,7 +217,7 @@ function WatchingCard({ progress, watching, onOpen, onStop }) {
                     aria-label={watched ? 'Mark unwatched' : 'Mark watched'}
                   >
                     {isLoading
-                      ? <span className="ep-spinner" />
+                      ? <PlotLoader size={14} ariaHidden />
                       : watched
                         ? <CheckCircleIcon />
                         : <EmptyCircleIcon />

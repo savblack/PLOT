@@ -689,36 +689,6 @@
 
 .onboarding-seed-loading { display: flex; justify-content: center; padding: 1.5rem 0; }
 
-/* ── Spinner ─────────────────────────────────────────────── */
-.onboarding-spinner {
-  width: 20px;
-  height: 20px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top-color: #fff;
-  border-radius: 50%;
-  animation: ob-spin 0.7s linear infinite;
-}
-
-.onboarding-spinner-dark {
-  width: 20px;
-  height: 20px;
-  border: 2px solid #e8e8e8;
-  border-top-color: #1a1a1a;
-  border-radius: 50%;
-  animation: ob-spin 0.7s linear infinite;
-}
-
-.onboarding-spinner-lg {
-  width: 32px;
-  height: 32px;
-  border: 2.5px solid #e8e8e8;
-  border-top-color: #1a1a1a;
-  border-radius: 50%;
-  animation: ob-spin 0.8s linear infinite;
-}
-
-@keyframes ob-spin { to { transform: rotate(360deg); } }
-
 /* ── Personalizing loading logo ──────────────────────────── */
 .onboarding-plot-loading {
   width: 70px;

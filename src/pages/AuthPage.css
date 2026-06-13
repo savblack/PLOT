@@ -276,18 +276,6 @@
 .auth-cta:hover:not(:disabled) { opacity: 0.85; transform: scale(0.99); }
 .auth-cta:disabled { background: #ccc; cursor: not-allowed; }
 
-/* Spinner */
-.auth-spinner {
-  width: 18px;
-  height: 18px;
-  border: 2px solid rgba(255,255,255,0.35);
-  border-top-color: #fff;
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-}
-
-@keyframes spin { to { transform: rotate(360deg); } }
-
 /* Toggle mode */
 .auth-toggle {
   text-align: center;

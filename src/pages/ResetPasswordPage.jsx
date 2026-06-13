@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../api/supabase';
 import './AuthPage.css';
 import PlotLogo from '../components/PlotLogo.jsx';
+import PlotLoader from '../components/PlotLoader.jsx';
 
 function friendlyError(msg) {
   if (!msg) return 'Something went wrong. Please try again.';
@@ -97,8 +98,14 @@ export default function ResetPasswordPage() {
                   />
                 </div>
 
-                <button type="submit" className="auth-cta" disabled={loading}>
-                  {loading ? <span className="auth-spinner" /> : 'Update password'}
+                <button
+                  type="submit"
+                  className="auth-cta"
+                  disabled={loading}
+                  aria-busy={loading}
+                  aria-label={loading ? 'Updating password' : 'Update password'}
+                >
+                  {loading ? <PlotLoader size="button" tone="dark" ariaHidden /> : 'Update password'}
                 </button>
               </form>
             </>

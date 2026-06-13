@@ -8,6 +8,7 @@ import { useGenres } from '../hooks/useGenres.js';
 import { localDateStr } from '../utils/date.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import GroupedFilterMenu from './GroupedFilterMenu.jsx';
+import PlotLoader from './PlotLoader.jsx';
 import { getButtonLikeProps } from '../utils/interactive.js';
 
 /* ── Heart icon ── */
@@ -124,7 +125,7 @@ function AddToRankModal({ listType, rank, onAdd, onClose }) {
 
         <div style={{ overflowY: 'auto', flex: 1 }}>
           {searching && (
-            <div className="loading-state" style={{ minHeight: 80 }}><div className="spinner" /></div>
+            <div className="loading-state" style={{ minHeight: 80 }}><PlotLoader size="sm" /></div>
           )}
           {tab === 'history' && historyFiltered.map(entry => (
             <ModalResultRow key={entry.id} item={entry} onSelect={handleSelect} />
@@ -254,7 +255,7 @@ function AddToFavoritesModal({ title = 'Add to Favorites', onAdd, onClose }) {
           />
         </div>
         <div style={{ overflowY: 'auto', flex: 1 }}>
-          {searching && <div className="loading-state" style={{ minHeight: 80 }}><div className="spinner" /></div>}
+          {searching && <div className="loading-state" style={{ minHeight: 80 }}><PlotLoader size="sm" /></div>}
           {tab === 'history' && historyFiltered.map(entry => (
             <ModalResultRow key={entry.id} item={entry} onSelect={handleSelect} />
           ))}

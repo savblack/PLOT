@@ -14,6 +14,7 @@ import { downloadICS } from '../utils/ics.js';
 import { getButtonLikeProps } from '../utils/interactive.js';
 import { IANA_TIMEZONES } from '../utils/timezones.js';
 import ConfirmModal from './ConfirmModal.jsx';
+import PlotLoader from './PlotLoader.jsx';
 
 const REGIONS = [
   { code: 'US', name: 'United States' }, { code: 'AU', name: 'Australia' },
@@ -343,7 +344,7 @@ function ProviderPicker({ title, hint, region, selected, onSave, onClose, limit 
 
         {/* Scrollable content */}
         {loading ? (
-          <div className="loading-state"><div className="spinner" /></div>
+          <div className="loading-state"><PlotLoader size="sm" /></div>
         ) : (
           <div style={{ padding: '1rem' }}>
             {hint && (

@@ -7,6 +7,7 @@ import { markMediaAsWatched, moveSavedShowToWatching } from '../utils/mediaStatu
 import { resolveMediaPanelEscapeAction } from '../utils/mediaPanel.js';
 import { ratingFromPointer, ratingToStars, starFillPercent, STAR_COUNT } from '../utils/ratings.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
+import PlotLoader from './PlotLoader.jsx';
 
 /* ── Close icon ── */
 function CloseIcon() {
@@ -235,7 +236,7 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone }) {
                 {/* Check button — only shown when tracking progress */}
                 {isTracking && (
                   isChecking ? (
-                    <span className="ep-spinner" />
+                    <PlotLoader size={14} ariaHidden />
                   ) : (
                     <button
                       className={`ep-check-btn${watched ? ' checked' : ''}`}

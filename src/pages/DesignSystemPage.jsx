@@ -482,7 +482,12 @@ export default function DesignSystemPage() {
               <div className="empty-title">Nothing saved</div>
               <div className="empty-body">Saved titles will appear here.</div>
             </div>
-            <div className="ds-loader-sample"><PlotLoader /></div>
+            <div className="ds-loader-sample" style={{ gap: '1rem' }}>
+              <PlotLoader />
+              <div style={{ background: '#141418', borderRadius: '1.25rem', padding: '1.1rem 1.35rem', display: 'grid', placeItems: 'center' }}>
+                <PlotLoader tone="dark" />
+              </div>
+            </div>
             <button className="btn btn-ghost btn-sm">Refresh</button>
           </div>
         </div>

@@ -4,6 +4,7 @@ import { tmdb } from '../api/tmdb.js';
 import { useHistory } from '../hooks/useHistory.js';
 import { localDateStr } from '../utils/date.js';
 import { getButtonLikeProps } from '../utils/interactive.js';
+import PlotLoader from './PlotLoader.jsx';
 
 function BookmarkIcon({ filled }) {
   return (
@@ -180,7 +181,7 @@ export default function SearchView() {
 
       {/* Results */}
       {loading && (
-        <div className="loading-state"><div className="spinner" /></div>
+        <div className="loading-state"><PlotLoader size="sm" /></div>
       )}
 
       {!loading && empty && (

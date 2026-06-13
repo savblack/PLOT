@@ -6,6 +6,7 @@ import { usePostHog } from '@posthog/react';
 import { getAuthCallbackUrl } from '../utils/redirects.js';
 import { HERO_POSTERS } from '../constants/heroPosters.js';
 import PlotLogo from '../components/PlotLogo.jsx';
+import PlotLoader from '../components/PlotLoader.jsx';
 
 function friendlyError(msg) {
   if (!msg) return 'Something went wrong. Please try again.';
@@ -234,8 +235,14 @@ export default function AuthPage({ initialMode = 'signup' }) {
                   </div>
                 )}
 
-                <button type="submit" className="auth-cta" disabled={loading}>
-                  {loading ? <span className="auth-spinner" /> : ctaLabels[mode]}
+                <button
+                  type="submit"
+                  className="auth-cta"
+                  disabled={loading}
+                  aria-busy={loading}
+                  aria-label={loading ? `${ctaLabels[mode]} in progress` : ctaLabels[mode]}
+                >
+                  {loading ? <PlotLoader size="button" tone="dark" ariaHidden /> : ctaLabels[mode]}
                 </button>
               </form>
 

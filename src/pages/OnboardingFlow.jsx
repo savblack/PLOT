@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../api/supabase';
 import { tmdb } from '../api/tmdb';
 import { logoUrl, posterUrl } from '../App.jsx';
+import PlotLoader from '../components/PlotLoader.jsx';
 import { getButtonLikeProps } from '../utils/interactive.js';
 
 /* ── Timezone → region guess ── */
@@ -283,7 +284,7 @@ export default function OnboardingFlow() {
               onChange={e => setProvSearch(e.target.value)}
             />
             {loadingProv ? (
-              <div className="loading-state"><div className="spinner" /></div>
+              <div className="loading-state"><PlotLoader size="sm" /></div>
             ) : (
               <div className="providers-select-grid" style={{ padding: 0, paddingBottom: '1rem' }}>
                 {filteredProviders.map(p => (
@@ -325,7 +326,7 @@ export default function OnboardingFlow() {
             <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '0.72rem', textAlign: 'center', padding: '0.2rem 0', marginBottom: '0.75rem', width: '100%' }} onClick={finish}>
               Skip this step
             </button>
-            {seedSearching && <div className="loading-state" style={{ minHeight: 60 }}><div className="spinner" /></div>}
+            {seedSearching && <div className="loading-state" style={{ minHeight: 60 }}><PlotLoader size="sm" /></div>}
             {!seedQuery.trim() && trending.length > 0 && (
               <div style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-secondary)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
                 Trending this week
