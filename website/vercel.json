@@ -2,11 +2,11 @@
   "rewrites": [
     {
       "source": "/whats-on",
-      "destination": "https://mkegtssedjyqldysvzga.supabase.co/functions/v1/marketing-feed"
+      "destination": "/api/whats-on"
     },
     {
       "source": "/whats-on/:slug",
-      "destination": "https://mkegtssedjyqldysvzga.supabase.co/functions/v1/marketing-feed/:slug"
+      "destination": "/api/whats-on?slug=:slug"
     }
   ]
 }
