@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useApp, posterUrl, TodayLabel } from '../App.jsx';
 import { localDateStr, dateToLocalStr } from '../utils/date.js';
+import { getCalendarRelativeLabel, msUntilNextLocalMidnight } from '../utils/calendar.js';
 import { useCalendar } from '../hooks/useCalendar.js';
 import { tmdb } from '../api/tmdb.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
@@ -54,7 +55,6 @@ const CHIP_COLORS = {
 };
 
 const MAX_PILLS_MONTH = 3;
-
 /* ═══════════════════════════════════════
    Shared event row list
 ═══════════════════════════════════════ */
@@ -140,12 +140,12 @@ function EventRowList({ events, openPanel }) {
 export default function CalendarView() {
   const { openPanel, watchlist, watching, reminders } = useApp();
 
-  const today    = useMemo(() => new Date(), []);
-  const todayStr = useMemo(() => dateToLocalStr(today), [today]);
+  const [todayStr, setTodayStr] = useState(() => localDateStr());
+  const todayDate = useMemo(() => new Date(`${todayStr}T00:00:00`), [todayStr]);
 
-  const [year,  setYear]  = useState(today.getFullYear());
-  const [month, setMonth] = useState(today.getMonth());
-  const [weekStart, setWeekStart] = useState(() => startOfWeek(today));
+  const [year,  setYear]  = useState(todayDate.getFullYear());
+  const [month, setMonth] = useState(todayDate.getMonth());
+  const [weekStart, setWeekStart] = useState(() => startOfWeek(todayDate));
   const [selectedDate, setSelectedDate] = useState(todayStr);
   const [view, setView]   = useState('agenda'); // 'grid' | 'week' | 'agenda'
 
@@ -209,15 +209,32 @@ export default function CalendarView() {
 
   /* ── Agenda days — from today onwards within the displayed month ── */
   const agendaDays = useMemo(() => {
-    const isCurrentMonth = year === today.getFullYear() && month === today.getMonth();
+    const isCurrentMonth = year === todayDate.getFullYear() && month === todayDate.getMonth();
     return days
       .filter(({ current }) => current)
       .filter(({ date }) => !isCurrentMonth || dateToLocalStr(date) >= todayStr)
       .map(({ date }) => { const ds = dateToLocalStr(date); return { date, ds, events: filterEvs(eventsForDate(ds)) }; })
       .filter(({ events }) => events.length > 0);
-  }, [days, eventsForDate, filterEvs, year, month, today, todayStr]);
+  }, [days, eventsForDate, filterEvs, year, month, todayDate, todayStr]);
 
   const dayEvents = filterEvs(eventsForDate(selectedDate));
+
+  useEffect(() => {
+    let timerId = null;
+
+    const scheduleMidnightRefresh = () => {
+      timerId = window.setTimeout(() => {
+        setTodayStr(localDateStr());
+        scheduleMidnightRefresh();
+      }, msUntilNextLocalMidnight());
+    };
+
+    scheduleMidnightRefresh();
+
+    return () => {
+      if (timerId) window.clearTimeout(timerId);
+    };
+  }, []);
 
   /* ── Jump back to today ── */
   const goToToday = () => {
@@ -276,11 +293,7 @@ export default function CalendarView() {
 
   /* ── Selected day label ── */
   const selectedLabel = (() => {
-    const d    = new Date(selectedDate + 'T00:00:00');
-    const diff = Math.round((d - today) / 86400000);
-    if (diff === 0) return 'Today';
-    if (diff === 1) return 'Tomorrow';
-    return d.toLocaleDateString('en', { weekday: 'long', month: 'short', day: 'numeric' });
+    return getCalendarRelativeLabel(selectedDate, todayStr);
   })();
 
   return (
