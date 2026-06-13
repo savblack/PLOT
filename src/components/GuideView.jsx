@@ -4,21 +4,81 @@ import { localDateStr, dateToLocalStr } from '../utils/date.js';
 import { useDragScroll } from '../hooks/useDragScroll.js';
 import { useGenres } from '../hooks/useGenres.js';
 import { tmdb, getTmdbRegion } from '../api/tmdb.js';
+import { buildProviderLogoCacheKey, collectPendingProviderLogoRequests } from '../utils/providerLogos.js';
 import EpgView from './EpgView.jsx';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import GroupedFilterMenu from './GroupedFilterMenu.jsx';
 
 /* ── Module-level provider logo cache (keyed with region to avoid stale logos after region change) ── */
 const _providerCache = new Map();
-async function getProviderLogo(id, type) {
-  const region = getTmdbRegion();
-  const key = `${type}-${id}-${region}`;
+const _providerInflight = new Map();
+
+function getProviderLogo(id, type, region = getTmdbRegion()) {
+  const key = buildProviderLogoCacheKey({ id, type, region });
+  return _providerCache.get(key) ?? null;
+}
+
+async function loadProviderLogo(id, type, region = getTmdbRegion()) {
+  const key = buildProviderLogoCacheKey({ id, type, region });
   if (_providerCache.has(key)) return _providerCache.get(key);
-  const data = await tmdb.getWatchProviders(id, type);
-  const providers = data?.results?.[region]?.flatrate || [];
-  const logo = providers[0]?.logo_path || null;
-  _providerCache.set(key, logo);
-  return logo;
+  if (_providerInflight.has(key)) return _providerInflight.get(key);
+
+  const request = tmdb.getWatchProviders(id, type).then(data => {
+    const providers = data?.results?.[region]?.flatrate || [];
+    const logo = providers[0]?.logo_path || null;
+    _providerCache.set(key, logo);
+    _providerInflight.delete(key);
+    return logo;
+  }).catch(error => {
+    _providerInflight.delete(key);
+    throw error;
+  });
+
+  _providerInflight.set(key, request);
+  return request;
+}
+
+async function warmProviderLogoCache(items, region) {
+  const requests = collectPendingProviderLogoRequests(items, region, _providerCache);
+  const loaded = {};
+
+  for (let i = 0; i < requests.length; i += 4) {
+    const chunk = requests.slice(i, i + 4);
+    const results = await Promise.all(
+      chunk.map(async request => {
+        const logo = await loadProviderLogo(request.id, request.type, region);
+        return [request.key, logo];
+      })
+    );
+
+    results.forEach(([key, logo]) => {
+      if (logo) loaded[key] = logo;
+    });
+  }
+
+  return loaded;
+}
+
+function flattenGuideItems(data) {
+  return [
+    ...data.today,
+    ...data.recentDates.flatMap(date => data.recentGrouped[date] || []),
+    ...data.upcomingDates.flatMap(date => data.upcomingGrouped[date] || []),
+  ];
+}
+
+function buildProviderLogoState(items, region) {
+  return items.reduce((acc, item) => {
+    const id = item?.id || item?.tmdb_id;
+    const type = item?.media_type || 'movie';
+    if (!id) return acc;
+
+    const logo = getProviderLogo(id, type, region);
+    if (logo) {
+      acc[buildProviderLogoCacheKey({ id, type, region })] = logo;
+    }
+    return acc;
+  }, {});
 }
 
 /* ── Type filter helper ── */
@@ -82,19 +142,10 @@ function TypeBadge({ type, cinema }) {
   return                    <span className="chip chip-streaming">Movie</span>;
 }
 
-function MediaCard({ item, openPanel, watchlist }) {
+function MediaCard({ item, openPanel, providerLogo, watchlist }) {
   const img   = posterUrl(item.poster_path, 'w185');
   const type  = item.media_type || 'movie';
   const title = item.title || item.name;
-  const [providerLogo, setProviderLogo] = useState(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    getProviderLogo(item.id || item.tmdb_id, type).then(logo => {
-      if (!cancelled && logo) setProviderLogo(logo);
-    });
-    return () => { cancelled = true; };
-  }, [item.id, item.tmdb_id, type]);
 
   return (
     <div className="media-card" onClick={() => openPanel(item.id, type)}>
@@ -130,8 +181,9 @@ function formatDayLabel(dateStr) {
 }
 
 /* ── Collapsible date group ── */
-function DateGroup({ label, items, openPanel, watchlist, defaultOpen = true }) {
+function DateGroup({ label, items, openPanel, providerLogos, watchlist, defaultOpen = true }) {
   const [open, setOpen] = useState(defaultOpen);
+  const region = getTmdbRegion();
   if (!items.length) return null;
   return (
     <div className="date-group">
@@ -142,7 +194,17 @@ function DateGroup({ label, items, openPanel, watchlist, defaultOpen = true }) {
       {open && (
         <Rail style={{ paddingLeft: '1rem', paddingRight: '1rem', paddingTop: '1.25rem', paddingBottom: '1.5rem' }}>
           {items.map(item => (
-            <MediaCard key={`${item.media_type}-${item.id}`} item={item} openPanel={openPanel} watchlist={watchlist} />
+            <MediaCard
+              key={`${item.media_type}-${item.id}`}
+              item={item}
+              openPanel={openPanel}
+              providerLogo={providerLogos[buildProviderLogoCacheKey({
+                id: item.id || item.tmdb_id,
+                type: item.media_type || 'movie',
+                region,
+              })] || null}
+              watchlist={watchlist}
+            />
           ))}
         </Rail>
       )}
@@ -154,6 +216,7 @@ function DateGroup({ label, items, openPanel, watchlist, defaultOpen = true }) {
 export function UpcomingContent({ typeFilters, genreFilters, providers, openPanel, watchlist }) {
   const [data,       setData]       = useState({ today: [], recentGrouped: {}, recentDates: [], upcomingGrouped: {}, upcomingDates: [] });
   const [loading,    setLoading]    = useState(true);
+  const [loadedProviderLogos, setLoadedProviderLogos] = useState({});
   const [recentOpen, setRecentOpen] = useState(false);
 
   const providerIds = providers.map(p => p.id);
@@ -239,6 +302,23 @@ export function UpcomingContent({ typeFilters, genreFilters, providers, openPane
     load();
   }, [providerIds.join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => {
+    const items = flattenGuideItems(data);
+    const region = getTmdbRegion();
+    if (!items.length) return;
+
+    let cancelled = false;
+
+    (async () => {
+      const loaded = await warmProviderLogoCache(items, region);
+      if (!cancelled && Object.keys(loaded).length) {
+        setLoadedProviderLogos(prev => ({ ...prev, ...loaded }));
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [data]);
+
   if (loading) return <LoadingSpinner />;
 
   const { today, recentGrouped, recentDates, upcomingGrouped, upcomingDates } = data;
@@ -258,6 +338,11 @@ export function UpcomingContent({ typeFilters, genreFilters, providers, openPane
     if (arr.length) { filteredUpcoming[d] = arr; return true; }
     return false;
   });
+  const currentRegion = getTmdbRegion();
+  const providerLogos = {
+    ...buildProviderLogoState(flattenGuideItems(data), currentRegion),
+    ...loadedProviderLogos,
+  };
 
   const hasContent = filteredToday.length > 0 || filteredRecDates.length > 0 || filteredUpDates.length > 0;
 
@@ -289,18 +374,36 @@ export function UpcomingContent({ typeFilters, genreFilters, providers, openPane
               <div className="date-group-subheader">{formatDayLabel(date)}</div>
               <Rail style={{ paddingLeft: '1rem', paddingRight: '1rem', paddingTop: '1.25rem', paddingBottom: '1.5rem' }}>
                 {filteredRecent[date].map(item => (
-                <MediaCard key={`${item.media_type}-${item.id}`} item={item} openPanel={openPanel} watchlist={watchlist} />
-              ))}
+                  <MediaCard
+                    key={`${item.media_type}-${item.id}`}
+                    item={item}
+                    openPanel={openPanel}
+                    providerLogo={providerLogos[buildProviderLogoCacheKey({
+                      id: item.id || item.tmdb_id,
+                      type: item.media_type || 'movie',
+                      region: currentRegion,
+                    })] || null}
+                    watchlist={watchlist}
+                  />
+                ))}
               </Rail>
             </div>
           ))}
         </div>
       )}
 
-      <DateGroup label="Today"   items={filteredToday} openPanel={openPanel} watchlist={watchlist} defaultOpen />
+      <DateGroup label="Today" items={filteredToday} openPanel={openPanel} providerLogos={providerLogos} watchlist={watchlist} defaultOpen />
 
       {filteredUpDates.map(date => (
-        <DateGroup key={date} label={formatDayLabel(date)} items={filteredUpcoming[date]} openPanel={openPanel} watchlist={watchlist} defaultOpen />
+        <DateGroup
+          key={date}
+          label={formatDayLabel(date)}
+          items={filteredUpcoming[date]}
+          openPanel={openPanel}
+          providerLogos={providerLogos}
+          watchlist={watchlist}
+          defaultOpen
+        />
       ))}
     </div>
   );
