@@ -337,41 +337,6 @@
       flex-wrap: wrap;
     }
 
-    @keyframes hero-card-in {
-      from { opacity: 0; transform: translateX(48px); }
-      to   { opacity: 1; transform: none; }
-    }
-
-    .hero-filmstrip {
-      display: none;
-      overflow: hidden;
-      margin-top: 4rem;
-    }
-    .hero-filmstrip-inner {
-      display: flex;
-      gap: 8px;
-      width: max-content;
-      margin: 0 auto;
-    }
-    .hero-film-card {
-      width: 54px;
-      height: 81px;
-      border-radius: 8px;
-      flex-shrink: 0;
-      background-size: cover;
-      background-position: center;
-      background-color: #ddd;
-      opacity: 0;
-      animation: hero-card-in 0.7s var(--ease) forwards;
-    }
-    .hero-film-card:nth-child(1) { animation-delay: 0.05s; }
-    .hero-film-card:nth-child(2) { animation-delay: 0.13s; }
-    .hero-film-card:nth-child(3) { animation-delay: 0.21s; }
-    .hero-film-card:nth-child(4) { animation-delay: 0.29s; }
-    .hero-film-card:nth-child(5) { animation-delay: 0.37s; }
-    .hero-film-card:nth-child(6) { animation-delay: 0.45s; }
-    .hero-film-card:nth-child(n+7) { animation-delay: 0.53s; }
-
 
     #manifesto, #for-the-plot, #value, #features, #cta, footer {
       position: relative;
@@ -1053,12 +1018,9 @@
       .nav-links.open a { display: block; padding: 0.85rem 0; text-align: center; }
       .nav-hamburger { display: flex; }
 
-      /* Hero — show filmstrip */
+      /* Hero — compact spacing on mobile */
       #hero { padding-top: 5rem; padding-bottom: 2rem; }
       .btn-large { padding: 0.6rem 1.4rem; font-size: 0.75rem; }
-      .hero-filmstrip { display: block; margin-left: -2rem; margin-right: -2rem; }
-      .hero-film-card { width: 140px; height: 210px; border-radius: 12px; }
-      .hero-filmstrip-inner { gap: 12px; }
 
       /* Manifesto — scroll-driven reveal with poster interludes on mobile */
       #manifesto {
@@ -2033,17 +1995,6 @@
       <p class="hero-sub reveal reveal-delay-2">Everything you've watched. Everything you want to watch.</p>
       <div class="hero-actions reveal reveal-delay-3">
         <a href="https://app.theplot.tv/signup" class="btn btn-outline btn-large">Start your PLOT →</a>
-      </div>
-      <div class="hero-filmstrip reveal reveal-delay-4">
-        <div class="hero-filmstrip-inner" id="heroFilmstrip" aria-hidden="true">
-          <div class="hero-film-card" style="background-image:url('images/hero/saltburn.webp')"></div>
-          <div class="hero-film-card" style="background-image:url('images/hero/anyone-but-you.webp')"></div>
-          <div class="hero-film-card" style="background-image:url('images/hero/nosferatu.webp')"></div>
-          <div class="hero-film-card" style="background-image:url('images/hero/past-lives.webp')"></div>
-          <div class="hero-film-card" style="background-image:url('images/hero/aftersun.webp')"></div>
-          <div class="hero-film-card" style="background-image:url('images/hero/babygirl.webp')"></div>
-          <div class="hero-film-card" style="background-image:url('images/hero/the-substance.webp')"></div>
-        </div>
       </div>
     </div>
   </section>
@@ -3183,45 +3134,6 @@
         e.preventDefault();
         el.scrollLeft = scrollLeft - (e.pageX - el.offsetLeft - startX) * 1.5;
       });
-    })();
-  </script>
-
-  <script>
-    (async function loadHeroPosters() {
-      const IMG = 'https://image.tmdb.org/t/p/w342';
-
-      try {
-        const [trending, nowPlaying, tv] = await fetchTrendingSets();
-
-        const pick = (arr, n) => (arr || []).filter(r => r.poster_path).slice(0, n);
-        const posters = [
-          ...pick(trending.results, 5),
-          ...pick(nowPlaying.results, 5),
-          ...pick(tv.results, 6),
-        ].map(r => IMG + r.poster_path);
-
-        // Shuffle
-        for (let i = posters.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [posters[i], posters[j]] = [posters[j], posters[i]];
-        }
-
-        const strip = document.getElementById('heroFilmstrip');
-        if (!strip || !posters.length) return;
-
-        // Remove existing cards
-        while (strip.firstChild) strip.removeChild(strip.firstChild);
-
-        posters.forEach(url => {
-          const div = document.createElement('div');
-          div.className = 'hero-film-card';
-          // url is always https://image.tmdb.org/t/p/w342/... — safe, no user input
-          div.style.backgroundImage = `url('${url}')`;
-          strip.appendChild(div);
-        });
-      } catch (e) {
-        // Leave static fallback images in place
-      }
     })();
   </script>
 </body>
