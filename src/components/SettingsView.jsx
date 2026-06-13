@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useApp, logoUrl } from '../App.jsx';
@@ -388,9 +388,24 @@ function ProviderPicker({ title, hint, region, selected, onSave, onClose, limit 
 
 /* ── Feedback panel ── */
 const FEEDBACK_TYPES = [
-  { id: 'bug',     label: 'Bug Report 🐛' },
-  { id: 'feature', label: 'Feature Request 💡' },
-  { id: 'general', label: 'General Feedback 💬' },
+  {
+    id: 'bug',
+    label: 'Bug report',
+    icon: '✦',
+    description: 'Something broke, behaved oddly, or felt unreliable.',
+  },
+  {
+    id: 'feature',
+    label: 'Feature request',
+    icon: '✳',
+    description: 'An idea that would make PLOT more useful or more delightful.',
+  },
+  {
+    id: 'general',
+    label: 'General feedback',
+    icon: '✺',
+    description: 'Anything else about the experience, product, or taste of the app.',
+  },
 ];
 
 const FEEDBACK_MAX = 4000;
@@ -402,6 +417,9 @@ function FeedbackPanel({ user, onClose }) {
   const [message,   setMessage]   = useState('');
   const [images,    setImages]    = useState([]); // [{ file, preview }]
   const [status,    setStatus]    = useState('idle'); // idle | submitting | done | error
+  const imagesRef = useRef([]);
+  const selectedType = FEEDBACK_TYPES.find(entry => entry.id === type) || FEEDBACK_TYPES[0];
+  const messageCount = message.length;
 
   const addImages = (files) => {
     const valid = [...files]
@@ -419,6 +437,14 @@ function FeedbackPanel({ user, onClose }) {
       return prev.filter((_, i) => i !== idx);
     });
   };
+
+  useEffect(() => {
+    imagesRef.current = images;
+  }, [images]);
+
+  useEffect(() => () => {
+    imagesRef.current.forEach(image => URL.revokeObjectURL(image.preview));
+  }, []);
 
   const handleSubmit = async () => {
     if (!message.trim()) return;
@@ -451,100 +477,98 @@ function FeedbackPanel({ user, onClose }) {
     <>
       <div className="panel-overlay" onClick={onClose} />
       <div className="panel">
-        <div style={{ padding: '1.25rem 1.1rem', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.4rem', fontWeight: 500 }}>Feedback</h2>
+        <div className="feedback-panel-header">
+          <div>
+            <div className="feedback-panel-kicker">PLOT Inbox</div>
+            <h2 className="feedback-panel-title">Send feedback</h2>
+          </div>
           <button className="btn btn-ghost btn-sm" onClick={onClose} aria-label="Close" style={{ fontSize: '1rem', lineHeight: 1, border: 'none' }}>✕</button>
         </div>
 
         {status === 'done' ? (
-          <div style={{ padding: '2.5rem 1.5rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
-            <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'var(--accent-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="feedback-success">
+            <div className="feedback-success-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 22, height: 22 }}>
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             </div>
-            <div style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--text-primary)' }}>Thanks for your feedback!</div>
-            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>We read every submission and use it to improve PLOT.</div>
+            <div className="feedback-success-title">Feedback received</div>
+            <div className="feedback-success-body">
+              Thanks. This has been captured for the product backlog, and any attachments will stay linked to the report.
+            </div>
             <button className="btn btn-primary btn-sm" style={{ marginTop: '0.5rem' }} onClick={onClose}>Done</button>
           </div>
         ) : (
-          <div style={{ padding: '1.25rem 1.1rem', display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
-            <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0 }}>
-              Found a bug or have an idea? We'd love to hear it.
-            </p>
+          <div className="feedback-panel-body">
+            <div className="feedback-panel-intro">
+              <p>
+                Found a bug, have a feature idea, or want to sharpen the product taste? Send it here.
+              </p>
+              <div className="feedback-privacy-pill">Mirrored anonymously into the PLOT feedback backlog</div>
+            </div>
 
-            {/* Type chips */}
-            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-              {FEEDBACK_TYPES.map(t => (
+            <div className="feedback-type-grid">
+              {FEEDBACK_TYPES.map(entry => (
                 <button
-                  key={t.id}
-                  onClick={() => setType(t.id)}
-                  style={{
-                    padding: '0.4rem 0.85rem',
-                    borderRadius: 'var(--radius-pill)',
-                    border: type === t.id ? '2px solid var(--accent)' : '1.5px solid var(--border)',
-                    background: type === t.id ? 'var(--accent-dim)' : 'var(--surface)',
-                    color: type === t.id ? 'var(--accent)' : 'var(--text-secondary)',
-                    fontWeight: type === t.id ? 700 : 500,
-                    fontSize: '0.78rem',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease',
-                  }}
+                  key={entry.id}
+                  onClick={() => setType(entry.id)}
+                  className={`feedback-type-card${type === entry.id ? ' is-active' : ''}`}
                 >
-                  {t.label}
+                  <span className="feedback-type-icon" aria-hidden="true">{entry.icon}</span>
+                  <span className="feedback-type-label">{entry.label}</span>
+                  <span className="feedback-type-description">{entry.description}</span>
                 </button>
               ))}
             </div>
 
-            {/* Message */}
-            <textarea
-              value={message}
-              onChange={e => setMessage(e.target.value.slice(0, 4000))}
-              maxLength={4000}
-              placeholder={
-                type === 'bug'
-                  ? 'Describe what happened and how to reproduce it…'
-                  : type === 'feature'
-                    ? 'What would you like to see in PLOT?'
-                    : 'Share your thoughts…'
-              }
-              rows={6}
-              style={{
-                width: '100%',
-                padding: '0.75rem',
-                borderRadius: 'var(--radius-md)',
-                border: '1.5px solid var(--border)',
-                background: 'var(--surface)',
-                color: 'var(--text-primary)',
-                fontSize: '0.85rem',
-                lineHeight: 1.55,
-                resize: 'vertical',
-                outline: 'none',
-                fontFamily: 'var(--font-sans)',
-                boxSizing: 'border-box',
-                transition: 'border-color 0.15s ease',
-              }}
-              onFocus={e => { e.currentTarget.style.borderColor = 'var(--accent)'; }}
-              onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)'; }}
-            />
+            <div className="feedback-composer">
+              <div className="feedback-composer-top">
+                <div>
+                  <div className="feedback-composer-label">{selectedType.label}</div>
+                  <div className="feedback-composer-hint">
+                    {type === 'bug'
+                      ? 'Tell us what happened, where it happened, and how to reproduce it.'
+                      : type === 'feature'
+                        ? 'Describe the capability you want and the job it would help you do.'
+                        : 'Share anything about the product, writing, pacing, or overall feel.'}
+                  </div>
+                </div>
+                <div className="feedback-count">{messageCount} / {FEEDBACK_MAX}</div>
+              </div>
 
-            {/* Image attachments */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <textarea
+                value={message}
+                onChange={e => setMessage(e.target.value.slice(0, FEEDBACK_MAX))}
+                maxLength={FEEDBACK_MAX}
+                className="feedback-textarea"
+                placeholder={
+                  type === 'bug'
+                    ? 'Describe what happened and what you expected instead…'
+                    : type === 'feature'
+                      ? 'Describe the idea, the flow, and why it matters…'
+                      : 'Share your thoughts on what feels strong, weak, missing, or unfinished…'
+                }
+                rows={7}
+              />
+            </div>
+
+            <div className="feedback-attachments">
               {images.map((img, i) => (
-                <div key={i} style={{ position: 'relative', width: 64, height: 64, borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1.5px solid var(--border)', flexShrink: 0 }}>
-                  <img src={img.preview} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <div key={i} className="feedback-attachment">
+                  <img src={img.preview} alt="" />
                   <button
                     onClick={() => removeImage(i)}
                     aria-label="Remove image"
-                    style={{ position: 'absolute', top: 2, right: 2, width: 18, height: 18, borderRadius: '50%', background: 'rgba(0,0,0,0.7)', border: 'none', color: '#fff', fontSize: '0.65rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}
+                    className="feedback-attachment-remove"
                   >✕</button>
                 </div>
               ))}
               {images.length < MAX_IMAGES && (
-                <label style={{ cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }} title="Attach image">
+                <label className="feedback-attach-btn" title="Attach image">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}>
                     <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
                   </svg>
+                  <span>Add screenshots</span>
                   <input
                     type="file"
                     accept="image/*"
@@ -555,21 +579,28 @@ function FeedbackPanel({ user, onClose }) {
                 </label>
               )}
             </div>
+            <div className="feedback-helper">
+              Up to {MAX_IMAGES} images, {MAX_IMAGE_MB}MB each. Helpful for bugs, optional for everything else.
+            </div>
 
             {status === 'error' && (
-              <p style={{ fontSize: '0.78rem', color: 'var(--chip-cinema)', margin: 0 }}>
+              <p className="feedback-error">
                 Something went wrong — please try again.
               </p>
             )}
 
-            <button
-              className="btn btn-primary btn-sm"
-              onClick={handleSubmit}
-              disabled={!message.trim() || status === 'submitting'}
-              style={{ alignSelf: 'flex-end' }}
-            >
-              {status === 'submitting' ? 'Sending…' : 'Send Feedback'}
-            </button>
+            <div className="feedback-actions">
+              <button className="btn btn-ghost btn-sm" onClick={onClose} disabled={status === 'submitting'}>
+                Cancel
+              </button>
+              <button
+                className="btn btn-primary btn-sm"
+                onClick={handleSubmit}
+                disabled={!message.trim() || status === 'submitting'}
+              >
+                {status === 'submitting' ? 'Sending…' : 'Send Feedback'}
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -1159,7 +1190,7 @@ export default function SettingsView() {
             <div className="settings-row-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
             </div>
-            <span className="settings-row-label">Report a Bug OR Leave Feedback</span>
+            <span className="settings-row-label">Report a Bug or Leave Feedback</span>
           </div>
           <div className="settings-row-value">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ width: 14, height: 14, opacity: 0.4 }}><polyline points="9 18 15 12 9 6"/></svg>

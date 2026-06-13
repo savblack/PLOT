@@ -18,11 +18,13 @@ const TEMPLATES_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'supab
 const t = {
   bg: '#F4F4F5',
   surface: '#FFFFFF',
+  surfaceTint: '#FFF5F7',
   textPrimary: '#09090B',
   textSecondary: '#52525B',
   textMuted: '#A1A1AA',
   border: '#E4E4E7',
   accent: '#E05578',
+  accentSoft: '#F7C7D3',
   serif: "'Instrument Serif', Georgia, 'Times New Roman', serif",
   sans: "'Manrope', -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif",
 };
@@ -38,11 +40,16 @@ const button = (href, label) => `
 
 const fallbackLink = (href) => `
 <p style="margin: 28px 0 0; font-family: ${t.sans}; font-size: 12px; line-height: 1.6; color: ${t.textMuted};">
-  If the button doesn't work, copy and paste this link into your browser:<br>
+  Prefer to paste the link manually?<br>
   <a href="${href}" target="_blank" style="color: ${t.textMuted}; text-decoration: underline; word-break: break-all;">${href}</a>
 </p>`;
 
-const layout = ({ preheader, heading, intro, content, safety }) => `<!doctype html>
+const noteBlock = (note) => note ? `
+<div style="margin-top: 22px; padding: 14px 16px; border-radius: 12px; background-color: ${t.surfaceTint}; border: 1px solid ${t.accentSoft};">
+  <p style="margin: 0; font-family: ${t.sans}; font-size: 12px; line-height: 1.65; color: ${t.textSecondary};">${note}</p>
+</div>` : '';
+
+const layout = ({ preheader, eyebrow, heading, intro, content, note, safety }) => `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -64,14 +71,17 @@ const layout = ({ preheader, heading, intro, content, safety }) => `<!doctype ht
           <tr>
             <td align="center" style="padding: 0 0 28px;">
               <a href="https://theplot.tv" target="_blank" style="font-family: ${t.serif}; font-size: 30px; letter-spacing: 7px; color: ${t.textPrimary}; text-decoration: none;">PLOT</a>
+              <div style="margin-top: 7px; font-family: ${t.sans}; font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: ${t.textMuted};">Film and TV journal</div>
             </td>
           </tr>
 
           <tr>
             <td style="background-color: ${t.surface}; border: 1px solid ${t.border}; border-radius: 16px; padding: 40px 36px;">
+              <div style="display: inline-block; margin: 0 0 16px; padding: 6px 10px; border-radius: 9999px; background-color: ${t.surfaceTint}; border: 1px solid ${t.accentSoft}; font-family: ${t.sans}; font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: ${t.accent};">${eyebrow}</div>
               <h1 style="margin: 0 0 14px; font-family: ${t.serif}; font-weight: 400; font-size: 27px; line-height: 1.25; color: ${t.textPrimary};">${heading}</h1>
               <p style="margin: 0 0 28px; font-family: ${t.sans}; font-size: 15px; line-height: 1.65; color: ${t.textSecondary};">${intro}</p>
               ${content}
+              ${noteBlock(note)}
             </td>
           </tr>
 
@@ -80,7 +90,7 @@ const layout = ({ preheader, heading, intro, content, safety }) => `<!doctype ht
               <p style="margin: 0 0 6px; font-family: ${t.sans}; font-size: 12px; line-height: 1.6; color: ${t.textMuted};">${safety}</p>
               <p style="margin: 0; font-family: ${t.sans}; font-size: 12px; line-height: 1.6; color: ${t.textMuted};">
                 <a href="https://theplot.tv" target="_blank" style="color: ${t.textMuted}; text-decoration: underline;">PLOT</a>
-                &nbsp;&middot;&nbsp; everything you've watched, everything you want to watch
+                &nbsp;&middot;&nbsp; track what you watched, plan what to watch next
               </p>
             </td>
           </tr>
@@ -97,13 +107,15 @@ const URL = '{{ .ConfirmationURL }}';
 
 const emails = {
   confirmation: {
-    subject: 'Confirm your email',
+    subject: 'Confirm your email for PLOT',
     file: 'confirmation.html',
     html: layout({
       preheader: 'One click and your film & TV journal is ready.',
+      eyebrow: 'New account',
       heading: 'Welcome to PLOT',
-      intro: "You're one click away from your film & TV journal. Confirm your email and start logging.",
+      intro: "Confirm your email to start logging, rating, and lining up what to watch next.",
       content: button(URL, 'Confirm email') + fallbackLink(URL),
+      note: 'This is the email most new PLOT members see first, so we kept it simple: one step in, then straight to your watch journal.',
       safety: "Didn't sign up for PLOT? You can safely ignore this email.",
     }),
   },
@@ -112,42 +124,50 @@ const emails = {
     file: 'recovery.html',
     html: layout({
       preheader: 'Set a new password for your PLOT account.',
+      eyebrow: 'Account security',
       heading: 'Reset your password',
-      intro: 'We received a request to reset the password for your PLOT account. If that was you, set a new one below.',
+      intro: 'We received a request to reset your PLOT password. If that was you, set a new one below.',
       content: button(URL, 'Set a new password') + fallbackLink(URL),
+      note: 'For security, only use the latest reset email you requested.',
       safety: "Didn't request this? You can safely ignore this email — your password won't change.",
     }),
   },
   magic_link: {
-    subject: 'Your sign-in link',
+    subject: 'Your PLOT sign-in link',
     file: 'magic-link.html',
     html: layout({
       preheader: 'Your one-time sign-in link for PLOT.',
+      eyebrow: 'Sign in',
       heading: 'Sign in to PLOT',
       intro: "Here's your one-time sign-in link. It only works once and expires in an hour.",
       content: button(URL, 'Sign in') + fallbackLink(URL),
+      note: 'If you requested multiple sign-in links, use the newest one.',
       safety: "Didn't try to sign in? You can safely ignore this email.",
     }),
   },
   email_change: {
-    subject: 'Confirm your new email',
+    subject: 'Confirm your new PLOT email',
     file: 'email-change.html',
     html: layout({
       preheader: 'Confirm the new email address for your PLOT account.',
+      eyebrow: 'Account change',
       heading: 'Confirm your new email',
-      intro: 'Follow the link below to change the email on your PLOT account from {{ .Email }} to {{ .NewEmail }}.',
+      intro: 'Follow the link below to update the email on your PLOT account from {{ .Email }} to {{ .NewEmail }}.',
       content: button(URL, 'Confirm change') + fallbackLink(URL),
+      note: 'Nothing changes until you confirm this new address.',
       safety: "Didn't request this change? You can safely ignore this email.",
     }),
   },
   invite: {
-    subject: "You've been invited to PLOT",
+    subject: "You're invited to PLOT",
     file: 'invite.html',
     html: layout({
       preheader: 'A journal for everything you watch.',
+      eyebrow: 'Invite',
       heading: "You're invited",
-      intro: "You've been invited to join PLOT — a journal for everything you've watched and everything you want to watch.",
+      intro: "You've been invited to join PLOT, the journal for everything you've watched and everything you want to watch.",
       content: button(URL, 'Accept invite') + fallbackLink(URL),
+      note: 'Open the invite, set up your account, and start building your watch history.',
       safety: "Not expecting this invite? You can safely ignore this email.",
     }),
   },
@@ -156,8 +176,9 @@ const emails = {
     file: 'reauthentication.html',
     html: layout({
       preheader: 'Your one-time confirmation code.',
+      eyebrow: 'Security check',
       heading: "Confirm it's you",
-      intro: 'Enter this code in PLOT to confirm your identity. It expires in an hour.',
+      intro: 'Enter this code in PLOT to confirm your identity before finishing this action. It expires in an hour.',
       content: `
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
   <tr>
@@ -166,6 +187,7 @@ const emails = {
     </td>
   </tr>
 </table>`,
+      note: 'Codes are best for high-friction confirmation steps where a link would be awkward or easy to miss.',
       safety: "Didn't request a code? You can safely ignore this email.",
     }),
   },
