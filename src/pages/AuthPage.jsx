@@ -5,6 +5,7 @@ import './AuthPage.css';
 import { usePostHog } from '@posthog/react';
 import { getAuthCallbackUrl } from '../utils/redirects.js';
 import { HERO_POSTERS } from '../constants/heroPosters.js';
+import PlotLogo from '../components/PlotLogo.jsx';
 
 function friendlyError(msg) {
   if (!msg) return 'Something went wrong. Please try again.';
@@ -125,7 +126,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
         </div>
         <div className="auth-visual-gradient" />
         <div className="auth-visual-brand">
-          <span className="logo-text" style={{ color: '#fff' }}>PLOT</span>
+          <PlotLogo className="auth-visual-logo" white />
           <span className="auth-visual-tagline">Your film &amp; TV journal</span>
         </div>
       </div>
@@ -133,7 +134,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
       {/* ── Right: form panel ── */}
       <div className="auth-panel">
         <Link to="/" className="auth-panel-logo">
-          <span className="logo-text">PLOT</span>
+          <PlotLogo />
         </Link>
 
         <div className="auth-panel-body">

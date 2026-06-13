@@ -214,14 +214,11 @@ svg { stroke-width: 1.5; }
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
-.nav-drawer-logo {
-  font-family: var(--font-serif);
-  font-size: 1.45rem;
-  font-weight: 400;
-  letter-spacing: -0.05em;
-  color: var(--text-primary);
+.nav-drawer-logo-image {
+  display: block;
+  width: auto;
+  height: 24px;
   user-select: none;
-  line-height: 1;
 }
 
 .nav-drawer-nav {

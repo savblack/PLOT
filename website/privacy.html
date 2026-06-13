@@ -57,13 +57,10 @@
       border-bottom: 1px solid var(--glass-border);
     }
     .nav-logo { text-decoration: none; display: flex; align-items: center; }
-    .nav-logo span {
-      font-family: 'Instrument Serif', Georgia, serif;
-      font-size: 2.5rem;
-      font-weight: 400;
-      letter-spacing: -0.05em;
-      color: var(--text);
-      line-height: 1;
+    .nav-logo img {
+      display: block;
+      width: auto;
+      height: 34px;
       user-select: none;
     }
 
@@ -157,15 +154,15 @@
     .footer-grid { display: flex; flex-wrap: wrap; gap: 2rem 3rem; }
     .footer-brand { flex: 1.4; min-width: 200px; }
     .footer-logo {
-      font-family: var(--serif);
-      font-size: 2.6rem;
-      font-weight: 400;
-      letter-spacing: -0.05em;
-      line-height: 1;
-      color: var(--text);
       text-decoration: none;
-      display: inline-block;
+      display: inline-flex;
+      align-items: center;
       user-select: none;
+    }
+    .footer-logo img {
+      display: block;
+      width: auto;
+      height: 40px;
     }
     .footer-logo:hover { opacity: 1; }
     .footer-tagline { font-size: 0.82rem; font-weight: 400; color: #a1a1aa; margin-top: 0.6rem; }
@@ -277,7 +274,7 @@
 <body>
 
   <nav>
-    <a href="index.html" class="nav-logo"><span>PLOT</span></a>
+    <a href="index.html" class="nav-logo"><img src="PLOT.png" alt="PLOT"></a>
     <ul class="nav-links">
       <li><a href="https://app.theplot.tv/login">Log in</a></li>
       <li><a href="https://app.theplot.tv/signup" class="nav-cta">Sign up</a></li>
@@ -357,7 +354,7 @@
     <div class="footer-inner">
       <div class="footer-grid">
         <div class="footer-brand">
-          <a class="footer-logo" href="index.html">PLOT</a>
+          <a class="footer-logo" href="index.html"><img src="PLOT.png" alt="PLOT"></a>
           <p class="footer-tagline">Your film &amp; TV companion.</p>
         </div>
         <div class="footer-col">

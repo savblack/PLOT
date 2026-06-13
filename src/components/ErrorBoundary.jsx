@@ -1,6 +1,7 @@
 import { Component } from 'react';
 import posthog from 'posthog-js';
 import { HERO_POSTERS } from '../constants/heroPosters.js';
+import PlotLogo from './PlotLogo.jsx';
 
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Manrope:wght@400;500;600&display=swap');
@@ -30,22 +31,12 @@ const styles = `
     left: 6rem;
     display: flex;
     align-items: center;
-    gap: 7px;
   }
 
-  .plot-error-logo-dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: #E05578;
-    flex-shrink: 0;
-  }
-
-  .plot-error-logo-text {
-    font-family: 'Instrument Serif', serif;
-    font-size: 1.1rem;
-    letter-spacing: 0.04em;
-    color: #1a1a1a;
+  .plot-error-logo-image {
+    width: 100px;
+    height: auto;
+    display: block;
   }
 
   .plot-error-label {
@@ -206,8 +197,7 @@ function ErrorScreen({ code, label, title, body, primaryLabel, primaryAction, gh
       <div className="plot-error-page">
         <div className="plot-error-left">
           <div className="plot-error-logo">
-            <div className="plot-error-logo-dot" />
-            <span className="plot-error-logo-text">PLOT</span>
+            <PlotLogo className="plot-error-logo-image" />
           </div>
           <div className="plot-error-label">Error · {label || code}</div>
           <div className="plot-error-number">{code}</div>

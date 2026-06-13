@@ -1,5 +1,6 @@
 import { Link, useParams } from 'react-router-dom';
 import { HERO_POSTERS } from '../constants/heroPosters.js';
+import PlotLogo from '../components/PlotLogo.jsx';
 
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Manrope:wght@400;500;600;700&display=swap');
@@ -63,11 +64,14 @@ const styles = `
     pointer-events: none;
   }
 
-  .public-profile-logo-text {
-    font-family: 'Cormorant Garamond', Georgia, serif;
-    font-size: 2rem;
-    letter-spacing: -0.04em;
-    color: #ffffff;
+  .public-profile-logo-image {
+    display: block;
+    width: auto;
+    height: 42px;
+  }
+
+  .public-profile-panel-logo .public-profile-logo-image {
+    height: 28px;
   }
 
   .public-profile-visual-tagline {
@@ -91,10 +95,6 @@ const styles = `
     padding: clamp(1.25rem, 2.5vh, 2rem) 2.5rem;
     text-decoration: none;
     flex-shrink: 0;
-  }
-
-  .public-profile-panel-logo .public-profile-logo-text {
-    color: #1a1a1a;
   }
 
   .public-profile-panel-logo:hover {
@@ -273,14 +273,14 @@ export default function PublicProfilePage() {
           </div>
           <div className="public-profile-visual-gradient" />
           <div className="public-profile-visual-brand">
-            <span className="public-profile-logo-text">PLOT</span>
+            <PlotLogo className="public-profile-logo-image" white />
             <span className="public-profile-visual-tagline">Your film &amp; TV journal</span>
           </div>
         </div>
 
         <section className="public-profile-panel" aria-labelledby="public-profile-title">
           <Link to="/" className="public-profile-panel-logo">
-            <span className="public-profile-logo-text">PLOT</span>
+            <PlotLogo className="public-profile-logo-image" />
           </Link>
 
           <div className="public-profile-panel-body">

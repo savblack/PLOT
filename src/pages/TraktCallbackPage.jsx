@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../api/supabase';
 import { callAuthenticatedFunction, edgeFunctionUrl } from '../api/functions.js';
 import { getTraktCallbackUrl } from '../utils/redirects.js';
+import PlotLogo from '../components/PlotLogo.jsx';
 
 export default function TraktCallbackPage() {
   const navigate = useNavigate();
@@ -61,7 +62,7 @@ export default function TraktCallbackPage() {
         padding: '2rem',
         textAlign: 'center',
       }}>
-        <span style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: '2rem', letterSpacing: '-0.04em' }}>PLOT</span>
+        <PlotLogo style={{ width: '100px', height: 'auto' }} />
         <p style={{ color: '#c0392b', fontSize: '0.95rem', maxWidth: 360 }}>{error}</p>
         <a href="/settings" style={{ color: '#1a1a1a', fontWeight: 600, fontSize: '0.9rem' }}>Back to settings</a>
       </div>
@@ -78,7 +79,7 @@ export default function TraktCallbackPage() {
       fontFamily: "'Manrope', system-ui, sans-serif",
       gap: '0.75rem',
     }}>
-      <span style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: '2rem', letterSpacing: '-0.04em' }}>PLOT</span>
+      <PlotLogo style={{ width: '100px', height: 'auto' }} />
       <p style={{ fontSize: '0.9rem', color: '#666', margin: 0 }}>Connecting Trakt…</p>
     </div>
   );

@@ -130,7 +130,7 @@ ${head}
   }
   nav.topnav.scrolled { background: rgba(244,244,245,0.8); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
   .nav-logo { text-decoration: none; display: flex; align-items: center; }
-  .nav-logo span { font-family: var(--serif); font-size: 2.5rem; font-weight: 400; letter-spacing: -0.05em; color: var(--ink); line-height: 1; user-select: none; }
+  .nav-logo img { display: block; width: auto; height: 34px; user-select: none; }
   .nav-links { display: flex; align-items: center; gap: 2rem; list-style: none; }
   .nav-links li { display: flex; }
   .nav-links a { display: inline-block; padding: 0.75rem 0.25rem; text-decoration: none; color: var(--mut); font-size: 0.7rem; font-weight: 200; letter-spacing: 0.12em; text-transform: uppercase; transition: color 0.2s; }
@@ -220,9 +220,9 @@ ${head}
   .footer-grid { display: flex; flex-wrap: wrap; gap: 2rem 3rem; }
   .footer-brand { flex: 1.4; min-width: 200px; }
   .footer-logo {
-    font-family: var(--serif); font-size: 2.6rem; font-weight: 400; letter-spacing: -0.05em;
-    line-height: 1; color: var(--ink); text-decoration: none; display: inline-block; user-select: none;
+    text-decoration: none; display: inline-flex; align-items: center; user-select: none;
   }
+  .footer-logo img { display: block; width: auto; height: 40px; }
   .footer-tagline { font-size: 0.82rem; font-weight: 400; color: var(--faint); margin-top: 0.6rem; }
   .footer-col { flex: 1; min-width: 110px; }
   .footer-col h4 {
@@ -290,7 +290,7 @@ ${head}
 </head>
 <body>
 <nav class="topnav" id="topnav">
-  <a href="${SITE}" class="nav-logo"><span>PLOT</span></a>
+  <a href="${SITE}" class="nav-logo"><img src="${SITE}/PLOT.png" alt="PLOT"></a>
   <ul class="nav-links">
     <li><a href="${FEED_PATH}" class="current">What's On</a></li>
     <li><a href="https://app.theplot.tv/login">Log in</a></li>
@@ -304,7 +304,7 @@ ${body}
   <div class="footer-inner">
     <div class="footer-grid">
       <div class="footer-brand">
-        <a class="footer-logo" href="${SITE}">PLOT</a>
+        <a class="footer-logo" href="${SITE}"><img src="${SITE}/PLOT.png" alt="PLOT"></a>
         <p class="footer-tagline">Your film &amp; TV companion.</p>
       </div>
       <div class="footer-col">
