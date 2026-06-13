@@ -32,7 +32,7 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:           #f8f8f8;
+      --bg:           #ffffff;
       --surface:      #ffffff;
       --text:         #1a1a1a;
       --muted:        #666666;
@@ -43,7 +43,7 @@
       --serif:        'Instrument Serif', Georgia, serif;
       --sans:         'DM Sans', system-ui, sans-serif;
       --serif-stroke: 0px;
-      --serif-tracking: -0.03em;
+      --serif-tracking: -0.05em;
       --serif-condense: 0.997;
       --dark:          #0c0c0c;
       --text-dark:     #f0efe8;
@@ -311,7 +311,7 @@
 
     .hero-headline {
       font-family: var(--serif);
-      font-size: clamp(2rem, 5vw, 3.8rem);
+      font-size: clamp(2.8rem, 6.5vw, 5rem);
       font-weight: 400;
       line-height: 0.88;
       letter-spacing: var(--serif-tracking);
@@ -422,7 +422,7 @@
 
     .ftp-headline {
       font-family: var(--serif);
-      font-size: clamp(1.8rem, 3.5vw, 2.8rem);
+      font-size: clamp(2.8rem, 6.5vw, 5rem);
       font-weight: 400;
       letter-spacing: var(--serif-tracking);
       line-height: 1;
@@ -520,7 +520,7 @@
 
     .section-title {
       font-family: var(--serif);
-      font-size: clamp(1.8rem, 4.2vw, 3.2rem);
+      font-size: clamp(2.8rem, 6.5vw, 5rem);
       font-weight: 400;
       letter-spacing: var(--serif-tracking);
       line-height: 0.95;
@@ -542,6 +542,7 @@
 
     .feat-tile {
       background: white;
+      border: 1px solid rgba(0,0,0,0.06);
       border-radius: 20px;
       padding: 2.75rem;
       display: flex;
@@ -566,7 +567,7 @@
 
     .feat-title {
       font-family: var(--serif);
-      font-size: clamp(1.8rem, 2.8vw, 2.8rem);
+      font-size: clamp(2.8rem, 6.5vw, 5rem);
       font-weight: 400;
       letter-spacing: var(--serif-tracking);
       line-height: 0.92;
@@ -575,15 +576,15 @@
     }
 
     .feat-body {
-      font-size: 0.88rem;
+      font-size: 1rem;
       color: var(--muted);
-      line-height: 1.65;
+      line-height: 1.45;
     }
 
     .feat-body-more {
-      font-size: 0.88rem;
+      font-size: 1rem;
       color: var(--muted);
-      line-height: 1.65;
+      line-height: 1.45;
       overflow: hidden;
       max-height: 0;
       opacity: 0;
@@ -621,7 +622,7 @@
 
     .timeline-headline {
       font-family: var(--serif);
-      font-size: clamp(1.8rem, 4.2vw, 3.2rem);
+      font-size: clamp(2.8rem, 6.5vw, 5rem);
       font-weight: 400;
       line-height: 0.95;
       letter-spacing: var(--serif-tracking);
@@ -634,7 +635,7 @@
       font-weight: 300;
       color: var(--muted);
       max-width: 400px;
-      line-height: 1.65;
+      line-height: 1.45;
     }
 
     /* horizontal scroll track */
@@ -749,7 +750,6 @@
       left: 0;
       right: 0;
       z-index: 50;
-      border-top: 1px solid rgba(0,0,0,0.08);
       overflow: hidden;
       display: flex;
       align-items: center;
@@ -859,7 +859,7 @@
     }
 
     .footer-tagline {
-      font-size: 0.82rem;
+      font-size: 1rem;
       font-weight: 400;
       color: #a1a1aa;
       margin-top: 0.6rem;
@@ -913,7 +913,7 @@
     }
 
     .footer-news-sub {
-      font-size: 0.82rem;
+      font-size: 1rem;
       color: #a1a1aa;
       margin-top: 0.4rem;
     }
@@ -1103,7 +1103,6 @@
       /* Features — horizontal scroll cards */
       #features { padding: 3rem 0 3rem 1.5rem; }
       .features-header { margin-bottom: 2rem; padding-right: 1.5rem; }
-      .feat-title { font-size: 1.5rem; }
       .feat-bento {
         display: flex;
         flex-direction: row;
@@ -1209,7 +1208,7 @@
     .demo-copy { position: sticky; top: 10rem; }
     .demo-headline {
       font-family: var(--serif);
-      font-size: clamp(2.2rem, 4.5vw, 4rem);
+      font-size: clamp(2.8rem, 6.5vw, 5rem);
       font-weight: 400;
       letter-spacing: var(--serif-tracking);
       line-height: 0.92;
@@ -1221,7 +1220,7 @@
       font-size: 1rem;
       font-weight: 300;
       color: rgba(240,239,232,0.5);
-      line-height: 1.85;
+      line-height: 1.45;
       max-width: 380px;
     }
     .demo-link {
@@ -1504,7 +1503,7 @@
     }
 
     /* My Lists screen */
-    #lists-demo { background: #f4f4f0; padding: 10rem 2rem; }
+    #lists-demo { background: var(--bg); padding: 10rem 2rem; }
     .lists-screen {
       display: flex;
       flex-direction: column;
@@ -1626,7 +1625,7 @@
     #calendar-demo { background: var(--dark); padding: 10rem 2rem 12rem; text-align: center; }
     .cal-headline {
       font-family: var(--serif);
-      font-size: clamp(3rem, 6.5vw, 7rem);
+      font-size: clamp(2.8rem, 6.5vw, 5rem);
       font-weight: 400;
       letter-spacing: var(--serif-tracking);
       line-height: 0.88;
@@ -1640,7 +1639,7 @@
       color: rgba(240,239,232,0.45);
       max-width: 440px;
       margin: 0 auto 5rem;
-      line-height: 1.85;
+      line-height: 1.45;
     }
     .cal-mockup {
       max-width: 560px;
@@ -1655,7 +1654,7 @@
     .cal-hdr {
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      justify-content: center;
       padding: 16px 20px;
       border-bottom: 1px solid rgba(255,255,255,0.06);
     }
@@ -1665,17 +1664,6 @@
       font-weight: 400;
       color: var(--text-dark);
       letter-spacing: var(--serif-tracking);
-    }
-    .cal-nav {
-      width: 28px; height: 28px;
-      border-radius: 50%;
-      border: 1px solid rgba(255,255,255,0.1);
-      background: transparent;
-      color: rgba(240,239,232,0.45);
-      font-size: 0.8rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
     }
     .cal-wdays { display: grid; grid-template-columns: repeat(7, 1fr); padding: 8px 12px 4px; }
     .cal-wd {
@@ -1742,9 +1730,6 @@
     .ev-pill { display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; border-radius: 4px; font-size: 0.52rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
     .cinema-pill    { background: rgba(224,85,120,0.18); color: var(--pink); }
     .streaming-pill { background: rgba(58,158,106,0.18); color: var(--streaming); }
-    .cal-legend { display: flex; justify-content: center; gap: 1.5rem; margin-top: 2.5rem; flex-wrap: wrap; }
-    .leg-item { display: flex; align-items: center; gap: 6px; font-size: 0.72rem; color: rgba(240,239,232,0.45); }
-    .leg-dot  { width: 8px; height: 8px; border-radius: 50%; }
     .cal-mc { animation: cal-mc 5s ease-in-out infinite; animation-play-state: paused; }
     .cal-mockup.animating .cal-mc { animation-play-state: running; }
     @keyframes cal-mc {
@@ -1932,6 +1917,7 @@
     }
     .guide-add-btn:hover { border-color: #e05578; color: #e05578; background: rgba(224,85,120,0.08); }
     .guide-add-btn.added  { border-color: #3a9e6a; color: #3a9e6a; background: rgba(58,158,106,0.12); }
+    .guide-check { width: 14px; height: 14px; display: block; }
 
     /* Interactive calendar mockup */
     .cal-mockup-int {
@@ -2365,6 +2351,44 @@
       </div>
     </div>
   </section>
+  <!-- ── Calendar Demo ────────────────────────────────────────── -->
+  <section id="calendar-demo">
+    <h2 class="cal-headline reveal">Never miss <em>a drop.</em></h2>
+    <p class="cal-sub reveal">
+      That new show, movie or cinema release. Save what you're
+      excited for and let your calendar do the remembering.
+    </p>
+
+    <div class="cal-interactive reveal">
+      <!-- Left: Guide list -->
+      <div class="guide-panel">
+        <div class="guide-hdr">
+          <span class="guide-hdr-title" id="guideHdrTitle">Upcoming</span>
+          <span class="guide-hdr-hint">Tap + to save</span>
+        </div>
+        <div class="guide-list" id="guideList"></div>
+      </div>
+
+      <!-- Right: Interactive calendar -->
+      <div class="cal-mockup-int">
+        <div class="cal-hdr">
+          <div class="cal-month" id="calMonthLabel"></div>
+        </div>
+        <div class="cal-wdays">
+          <div class="cal-wd">Su</div><div class="cal-wd">Mo</div><div class="cal-wd">Tu</div>
+          <div class="cal-wd">We</div><div class="cal-wd">Th</div><div class="cal-wd">Fr</div><div class="cal-wd">Sa</div>
+        </div>
+        <div class="cal-grid-int" id="calGridInt"></div>
+        <div class="cal-day-panel" id="calDayPanel">
+          <div class="cal-day-empty">Add releases from the guide to see them here</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cal-toast" id="calToastInt"></div>
+  </section>
+
+
   <!-- ── My Lists Demo ────────────────────────────────────────── -->
   <section id="lists-demo">
     <div class="demo-split">
@@ -2414,51 +2438,6 @@
         <a href="https://app.theplot.tv/signup" class="demo-link dark-link">Start creating &rarr;</a>
       </div>
     </div>
-  </section>
-
-
-  <!-- ── Calendar Demo ────────────────────────────────────────── -->
-  <section id="calendar-demo">
-    <h2 class="cal-headline reveal">Never miss <em>a release.</em></h2>
-    <p class="cal-sub reveal">
-      Every episode, cinema release, and streaming premiere —
-      add it to your calendar and it appears on the right date.
-    </p>
-
-    <div class="cal-interactive reveal">
-      <!-- Left: Guide list -->
-      <div class="guide-panel">
-        <div class="guide-hdr">
-          <span class="guide-hdr-title" id="guideHdrTitle">Upcoming</span>
-          <span class="guide-hdr-hint">Tap + to save</span>
-        </div>
-        <div class="guide-list" id="guideList"></div>
-      </div>
-
-      <!-- Right: Interactive calendar -->
-      <div class="cal-mockup-int">
-        <div class="cal-hdr">
-          <div class="cal-nav">&#8249;</div>
-          <div class="cal-month" id="calMonthLabel"></div>
-          <div class="cal-nav">&#8250;</div>
-        </div>
-        <div class="cal-wdays">
-          <div class="cal-wd">Su</div><div class="cal-wd">Mo</div><div class="cal-wd">Tu</div>
-          <div class="cal-wd">We</div><div class="cal-wd">Th</div><div class="cal-wd">Fr</div><div class="cal-wd">Sa</div>
-        </div>
-        <div class="cal-grid-int" id="calGridInt"></div>
-        <div class="cal-day-panel" id="calDayPanel">
-          <div class="cal-day-empty">Add releases from the guide to see them here</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="cal-legend reveal">
-      <div class="leg-item"><div class="leg-dot" style="background:var(--episode)"></div>Episode</div>
-      <div class="leg-item"><div class="leg-dot" style="background:var(--pink)"></div>Cinema</div>
-      <div class="leg-item"><div class="leg-dot" style="background:var(--streaming)"></div>Streaming</div>
-    </div>
-    <div class="cal-toast" id="calToastInt"></div>
   </section>
   <!-- ── Live Ticker ──────────────────────────────────────────── -->
   <div class="ticker-section">
@@ -2688,7 +2667,7 @@
     // Each poster floats in from its screen edge at a scroll trigger,
     // holds, then floats back out. Pairs stagger left/right for rhythm.
     //
-    // showAt < 0  → visible on load (negative puts us in hold phase at scrollY=0)
+    // showAt      → scrollY (px) at which the poster begins sliding in
     // vy          → vertical position as fraction of viewport height (poster top)
     // restX       → distance from screen edge when fully in
     // Initialized lazily so a rotation/resize up past 1100px still gets
@@ -2701,13 +2680,13 @@
       if (sidePostersStarted || window.innerWidth < 1100) return;
       sidePostersStarted = true;
     const sideLayout = [
-      // On load — four posters (2 left, 2 right) — reach well into centre.
-      // Negative showAt = already past the slide-in at scrollY 0, i.e. fully
-      // visible in the hold phase before the user scrolls.
-      { side: 'left',  vy: 0.51, showAt: -320, w: 260, h: 390, restX:  8, hold: 1000 },
-      { side: 'left',  vy: 0.10, showAt: -280, w: 190, h: 285, restX: 120, hold: 1000 },
-      { side: 'right', vy: 0.09, showAt: -300, w: 300, h: 450, restX:  4, hold: 1000 },
-      { side: 'right', vy: 0.52, showAt: -260, w: 175, h: 263, restX: 140, hold: 1000 },
+      // First four posters (2 left, 2 right) — reach well into centre.
+      // Small positive showAt keeps the hero clean on load; they slide in as
+      // soon as the user starts to scroll, staggered left/right for rhythm.
+      { side: 'left',  vy: 0.51, showAt:  40, w: 260, h: 390, restX:  8, hold: 1000 },
+      { side: 'left',  vy: 0.10, showAt: 120, w: 190, h: 285, restX: 120, hold: 1000 },
+      { side: 'right', vy: 0.09, showAt:  70, w: 300, h: 450, restX:  4, hold: 1000 },
+      { side: 'right', vy: 0.52, showAt: 150, w: 175, h: 263, restX: 140, hold: 1000 },
       // Scroll reveals — wide range of restX (4 = nearly touching centre, 160 = tucked to edge)
       { side: 'left',  vy: 0.24, showAt:  400, w: 320, h: 480, restX:  4 },
       { side: 'right', vy: 0.20, showAt:  440, w: 165, h: 248, restX: 155 },
@@ -3078,7 +3057,7 @@
           html += '<button class="guide-add-btn' + (isAdded ? ' added' : '') + '" ';
           html += 'onclick="window._calDemo.toggle(\'' + r.id + '\')" ';
           html += 'title="' + (isAdded ? 'Remove' : 'Add to calendar') + '">';
-          html += isAdded ? '&#10003;' : '+';
+          html += isAdded ? '<svg class="guide-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.2 4.2L19 7"/></svg>' : '+';
           html += '</button></div>';
         });
         list.innerHTML = html;
@@ -3228,7 +3207,7 @@
       function init() {
         if (document.getElementById('guideList')) {
           var hdrTitle = document.getElementById('guideHdrTitle');
-          if (hdrTitle) hdrTitle.textContent = 'Upcoming · ' + MONTH_LABEL;
+          if (hdrTitle) hdrTitle.textContent = 'Upcoming';
           var monthLabel = document.getElementById('calMonthLabel');
           if (monthLabel) monthLabel.textContent = MONTH_LABEL;
           renderGuide(); renderCalendar(); renderDayPanel();
