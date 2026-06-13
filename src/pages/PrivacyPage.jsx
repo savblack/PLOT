@@ -10,7 +10,7 @@ export default function PrivacyPage() {
         <p className="legal-label">Legal</p>
         <h1>Privacy Policy</h1>
         <p className="legal-owner">A product of SUSUMU HOUSE</p>
-        <p className="legal-meta">Last updated: March 2026</p>
+        <p className="legal-meta">Last updated: June 2026</p>
 
         <h2>1. Agreement to This Policy</h2>
         <p><strong>By creating an account or using PLOT in any way, you acknowledge that you have read, understood, and agree to this Privacy Policy in full. If you do not agree, you must not use the Service.</strong></p>
@@ -20,29 +20,35 @@ export default function PrivacyPage() {
         <p>When you use PLOT, we may collect:</p>
         <ul>
           <li><strong>Account information</strong> — your email address and hashed password (managed via Supabase Auth)</li>
-          <li><strong>Profile data</strong> — your username, display name, and optional bio</li>
-          <li><strong>Activity data</strong> — films and TV shows you log, rate, or add to lists</li>
+          <li><strong>Profile and preference data</strong> — your username, display name, optional bio, region, timezone, and channel/provider preferences</li>
+          <li><strong>Activity data</strong> — films and TV shows you log, rate, save, add to lists, or track in progress</li>
           <li><strong>Journal entries</strong> — notes and reviews you write about content you've watched</li>
-          <li><strong>Usage data</strong> — basic analytics collected in aggregate and anonymised form</li>
-          <li><strong>Technical data</strong> — IP address, browser type, and device information collected automatically</li>
+          <li><strong>Integration and utility data</strong> — calendar feed tokens, reminder settings, and optional Plex/Trakt integration records where enabled</li>
+          <li><strong>Support data</strong> — feedback messages and optional screenshot attachments you submit through the app</li>
+          <li><strong>Usage data</strong> — product analytics about pages viewed and features used</li>
+          <li><strong>Technical data</strong> — IP address, browser type, and device information collected automatically when you access the Service</li>
         </ul>
 
         <h2>3. How We Use Your Data</h2>
         <p>We use your data to operate, maintain, and improve the Service, including:</p>
         <ul>
           <li>Providing and personalising your PLOT experience</li>
-          <li>Displaying your watch history, lists, and journal (publicly or privately, per your settings)</li>
+          <li>Displaying your watch history, lists, journal, reminders, and watch progress inside your account</li>
           <li>Sending transactional emails (account confirmation, password reset)</li>
-          <li>Analysing usage patterns in anonymised, aggregate form to improve the product</li>
+          <li>Operating calendar links, support workflows, and optional media integrations</li>
+          <li>Analysing usage patterns to improve the product and monitor launch health</li>
         </ul>
-        <p>We do not sell your personal data to third parties. We are not responsible for how you choose to use or expose your own data within the Service.</p>
+        <p>We do not sell your personal data to third parties.</p>
 
         <h2>4. Third-Party Services &amp; Disclaimer</h2>
-        <p>The Service relies on third-party infrastructure. By using PLOT, you acknowledge and accept that your data will be processed by these third parties under their own policies, over which SUSUMU HOUSE has no control:</p>
+        <p>The Service relies on third-party infrastructure and data providers. By using PLOT, you acknowledge and accept that your data may be processed by these third parties under their own policies, over which SUSUMU HOUSE has no control:</p>
         <ul>
-          <li><strong>Supabase</strong> — authentication and database hosting</li>
-          <li><strong>The Movie Database (TMDB)</strong> — film and TV metadata</li>
+          <li><strong>Supabase</strong> — authentication, database, storage, and edge functions</li>
+          <li><strong>The Movie Database (TMDB)</strong> — film and TV metadata. This product uses the TMDB API but is not endorsed or certified by TMDB.</li>
           <li><strong>Vercel</strong> — website and application hosting. Your requests are routed through Vercel's infrastructure.</li>
+          <li><strong>PostHog</strong> — product analytics used to understand how the Service is used.</li>
+          <li><strong>Linear</strong> — anonymised in-app feedback can be mirrored into our product backlog for support and planning.</li>
+          <li><strong>Resend</strong> — feedback email delivery and transactional notification support where applicable.</li>
           <li><strong>Google Fonts</strong> — typography loaded from Google's servers, which may log your IP address per Google's privacy policy.</li>
         </ul>
         <p>We are not liable for the acts or omissions of these third-party providers, including any data breaches, service outages, or loss of data that occurs on their infrastructure. Your use of the Service constitutes your acceptance of their respective policies.</p>
@@ -57,13 +63,13 @@ export default function PrivacyPage() {
         </ul>
 
         <h2>6. Data Retention &amp; Deletion</h2>
-        <p>Your data is retained for as long as your account remains active. You may request deletion of your account and associated data at any time through account settings. We will make reasonable efforts to remove your personal data in a timely manner, subject to any legal obligations to retain it. We are not liable for residual copies that may persist temporarily in backup systems during normal operations.</p>
+        <p>Your data is retained for as long as your account remains active. You may request deletion of your account and associated app data at any time through account settings. Account deletion removes the current app records tied to your user account, including lists, favourites, reminders, journal/history, integration records, feedback rows, and the original feedback attachment objects associated with your account. We may retain operational logs, anonymised analytics, and temporary backup copies for a limited period where required for security, debugging, or normal infrastructure recovery.</p>
 
         <h2>7. Cookies &amp; Local Storage</h2>
-        <p>PLOT uses cookies and local storage solely for session management and authentication. We do not use tracking or advertising cookies. By using the Service, you consent to this use.</p>
+        <p>PLOT uses cookies and local storage for session management, authentication, and limited product analytics state. We do not use advertising cookies. By using the Service, you consent to this use.</p>
 
         <h2>8. Your Rights</h2>
-        <p>Depending on your jurisdiction, you may have rights regarding your personal data. To exercise any such rights, contact us via the app. We will respond to reasonable requests in accordance with applicable law but are not liable for any inability to fully comply where doing so conflicts with our legal obligations or technical constraints.</p>
+        <p>Depending on your jurisdiction, you may have rights regarding your personal data. To exercise any such rights, contact us via the app. We will respond to reasonable requests in accordance with applicable law but are not liable for any inability to fully comply where doing so conflicts with our legal obligations or technical constraints. A self-serve data export is not part of the first public release.</p>
 
         <h2>9. Children's Privacy</h2>
         <p>The Service is not directed at children under the age of 13. We do not knowingly collect personal data from children under 13. If we become aware that we have collected such data, we will delete it immediately.</p>

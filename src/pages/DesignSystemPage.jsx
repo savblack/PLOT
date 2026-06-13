@@ -36,6 +36,36 @@ const layoutRules = [
   ['Full-width bands', 'Bars and section headers run edge to edge inside their section; cards hold the rounded surfaces.'],
 ];
 
+const spacingScale = [
+  ['4px', 'Hairline gaps inside chips, icon rows, and tight metadata pairs.'],
+  ['8px', 'Default internal breathing room between labels, helper copy, and card atoms.'],
+  ['12px', 'Dense stacked controls, compact cards, and small toolbars.'],
+  ['16px', 'Default card padding, form rhythm, and section spacing.'],
+  ['24px', 'Large panel padding, grouped sections, and major content breaks.'],
+  ['32px+', 'Hero spacing, wide gutters, and high-emphasis layout moments.'],
+];
+
+const shadowTokens = [
+  ['--shadow-xs', 'Default lift', 'Ordinary cards and bounded content sections.'],
+  ['--shadow-sm', 'Hover lift', 'Raised controls and floating surfaces that need a subtle step up.'],
+  ['--shadow-md', 'Panel depth', 'Drawers, sheets, and high-priority overlays.'],
+  ['--shadow-lg', 'Hero depth', 'Rare emphasis for bold spotlights or dramatic art framing.'],
+];
+
+const motionRules = [
+  ['Keep motion structural', 'Transitions should explain state changes, not decorate them.'],
+  ['Use fast feedback first', 'Buttons, chips, and tabs should resolve within the fast transition token.'],
+  ['Reserve bounce for delight', 'The bounce curve is for special arrivals, never baseline navigation.'],
+  ['Fade loaders sequentially', 'The PLOT loader should stay centered and animate letter-by-letter in order.'],
+];
+
+const surfaceOwnership = [
+  ['Always shared', 'Logo assets, typography, color roles, spacing rhythm, radius, borders, loader behavior, buttons, form controls, and legal/support page tone.'],
+  ['Shared with art direction freedom', 'Poster walls, hero cards, empty states, and editorial copy can vary as long as they still sit on the shared token system.'],
+  ['App-specific', 'Fixed app shell, drawer, tab bars, guide rails, calendar controls, and media-status chips.'],
+  ['Marketing-specific', 'Campaign storytelling, large hero layouts, and conversion-focused sections can differ in composition, but should still inherit the same logo, typography, and color roles.'],
+];
+
 function IconMenu() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -89,6 +119,15 @@ function Section({ eyebrow, title, children }) {
       </div>
       {children}
     </section>
+  );
+}
+
+function RuleCard({ label, children }) {
+  return (
+    <div className="ds-rule-card">
+      <strong>{label}</strong>
+      <div>{children}</div>
+    </div>
   );
 }
 
@@ -493,7 +532,71 @@ export default function DesignSystemPage() {
         </div>
       </Section>
 
-      <Section eyebrow="08" title="Layout Rules">
+      <Section eyebrow="08" title="Spacing, Shadows, and Motion">
+        <div className="ds-utility-grid">
+          <RuleCard label="Spacing scale">
+            <div className="ds-scale-list">
+              {spacingScale.map(([value, purpose]) => (
+                <div key={value} className="ds-scale-row">
+                  <span className="ds-scale-pill">{value}</span>
+                  <p>{purpose}</p>
+                </div>
+              ))}
+            </div>
+          </RuleCard>
+
+          <RuleCard label="Shadow tokens">
+            <div className="ds-note-list">
+              {shadowTokens.map(([token, label, purpose]) => (
+                <div key={token} className="ds-note-row">
+                  <code>{token}</code>
+                  <p><strong>{label}</strong> {purpose}</p>
+                </div>
+              ))}
+            </div>
+          </RuleCard>
+
+          <RuleCard label="Motion principles">
+            <div className="ds-note-list">
+              {motionRules.map(([label, purpose]) => (
+                <div key={label} className="ds-note-row">
+                  <strong>{label}</strong>
+                  <p>{purpose}</p>
+                </div>
+              ))}
+            </div>
+          </RuleCard>
+
+          <RuleCard label="Icon and mark usage">
+            <div className="ds-note-list">
+              <div className="ds-note-row">
+                <strong>Logo images</strong>
+                <p>Use the shared raster mark through <code>PlotLogo</code>; do not redraw or typeset the wordmark ad hoc.</p>
+              </div>
+              <div className="ds-note-row">
+                <strong>Navigation icons</strong>
+                <p>Stroke-based UI icons stay light, monochrome, and secondary until hover, focus, or active state.</p>
+              </div>
+              <div className="ds-note-row">
+                <strong>Status color</strong>
+                <p>Accent and chip colors communicate selection and media context, not arbitrary decoration.</p>
+              </div>
+            </div>
+          </RuleCard>
+        </div>
+      </Section>
+
+      <Section eyebrow="09" title="Shared vs Surface-Specific">
+        <div className="ds-utility-grid">
+          {surfaceOwnership.map(([label, copy]) => (
+            <RuleCard key={label} label={label}>
+              <p>{copy}</p>
+            </RuleCard>
+          ))}
+        </div>
+      </Section>
+
+      <Section eyebrow="10" title="Layout Rules">
         <p className="ds-section-note">
           These are not visual components by themselves. They are guardrails for where components live.
         </p>

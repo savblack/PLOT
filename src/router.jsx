@@ -3,6 +3,7 @@ import { createBrowserRouter, Navigate } from 'react-router-dom';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import LoadingSpinner from './components/LoadingSpinner.jsx';
+import { SHOW_MEDIA_SYNC_INTEGRATIONS } from './launchFeatures.js';
 
 // Layout + views
 const App         = lazy(() => import('./App.jsx'));
@@ -42,7 +43,7 @@ const router = createBrowserRouter([
   { path: '/login',          element: wrap(<AuthPage initialMode="login" />) },
   { path: '/signup',         element: wrap(<AuthPage initialMode="signup" />) },
   { path: '/auth/callback',  element: wrap(<AuthCallbackPage />) },
-  { path: '/auth/trakt',     element: wrap(<TraktCallbackPage />) },
+  { path: '/auth/trakt',     element: SHOW_MEDIA_SYNC_INTEGRATIONS ? wrap(<TraktCallbackPage />) : <Navigate to="/settings" replace /> },
   { path: '/reset-password', element: wrap(<ResetPasswordPage />) },
 
   // Onboarding (protected, skip onboarding check)

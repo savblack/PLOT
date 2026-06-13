@@ -1690,6 +1690,10 @@ svg { stroke-width: 1.5; }
   background: var(--accent);
   color: #fff;
 }
+.btn-start-watching:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
 
 .list-row {
   display: flex;
@@ -1732,6 +1736,12 @@ svg { stroke-width: 1.5; }
   align-items: center;
   gap: 0.4rem;
   flex-wrap: wrap;
+}
+.list-row-status-message {
+  margin-top: 0.35rem;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  color: var(--danger);
 }
 
 .list-row-end {

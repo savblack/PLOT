@@ -3,14 +3,12 @@ import { HERO_POSTERS } from '../constants/heroPosters.js';
 import PlotLogo from '../components/PlotLogo.jsx';
 
 const styles = `
-  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Manrope:wght@400;500;600;700&display=swap');
-
   .public-profile-page {
     display: flex;
     min-height: 100dvh;
-    background: #ffffff;
-    font-family: 'Manrope', system-ui, sans-serif;
-    color: #1a1a1a;
+    background: var(--surface);
+    font-family: var(--font-sans);
+    color: var(--text-primary);
     overflow: hidden;
     -webkit-font-smoothing: antialiased;
   }
@@ -87,7 +85,7 @@ const styles = `
     display: flex;
     flex-direction: column;
     min-height: 100dvh;
-    background: #ffffff;
+    background: var(--surface);
   }
 
   .public-profile-panel-logo {
@@ -120,17 +118,17 @@ const styles = `
     font-weight: 600;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: #7c7c7c;
+    color: var(--text-muted);
   }
 
   .public-profile-title {
     margin: 0;
-    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-family: var(--font-serif);
     font-size: clamp(2.4rem, 4.2vw, 3.25rem);
     font-weight: 500;
     letter-spacing: -0.04em;
     line-height: 0.96;
-    color: #1a1a1a;
+    color: var(--text-primary);
   }
 
   .public-profile-title em {
@@ -142,15 +140,15 @@ const styles = `
     margin: 0.85rem 0 0;
     font-size: 0.95rem;
     line-height: 1.7;
-    color: #7b7b7b;
+    color: var(--text-secondary);
   }
 
   .public-profile-status-card {
     margin-top: 1.5rem;
     padding: 1rem 1rem 1.05rem;
-    border: 1px solid #ece7e1;
-    border-radius: 16px;
-    background: #faf8f4;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: color-mix(in srgb, var(--surface-raised) 82%, var(--accent-dim));
   }
 
   .public-profile-status-kicker {
@@ -159,16 +157,16 @@ const styles = `
     font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: #9a7c56;
+    color: var(--accent);
   }
 
   .public-profile-status-handle {
     margin: 0.45rem 0 0;
-    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-family: var(--font-serif);
     font-size: 1.6rem;
     font-weight: 500;
     letter-spacing: -0.03em;
-    color: #1a1a1a;
+    color: var(--text-primary);
     word-break: break-word;
   }
 
@@ -176,7 +174,7 @@ const styles = `
     margin: 0.55rem 0 0;
     font-size: 0.88rem;
     line-height: 1.65;
-    color: #6f655c;
+    color: var(--text-secondary);
   }
 
   .public-profile-actions {
@@ -193,7 +191,7 @@ const styles = `
     justify-content: center;
     min-height: 48px;
     padding: 0.85rem 1.4rem;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     text-decoration: none;
     font-size: 0.94rem;
     font-weight: 600;
@@ -201,15 +199,15 @@ const styles = `
   }
 
   .public-profile-button {
-    background: #1a1a1a;
-    color: #ffffff;
+    background: var(--text-primary);
+    color: var(--surface);
     border: none;
   }
 
   .public-profile-button-secondary {
     background: transparent;
-    color: #1a1a1a;
-    border: 0.75px solid #1a1a1a;
+    color: var(--text-primary);
+    border: 0.75px solid var(--text-primary);
   }
 
   .public-profile-button:hover,
@@ -222,7 +220,7 @@ const styles = `
     margin-top: 1.25rem;
     font-size: 0.82rem;
     line-height: 1.65;
-    color: #9a9a9a;
+    color: var(--text-muted);
   }
 
   .public-profile-panel-footer {
@@ -230,11 +228,11 @@ const styles = `
     padding: clamp(1rem, 2vh, 1.5rem) 2rem;
     text-align: center;
     font-size: 0.75rem;
-    color: #bbb;
+    color: var(--text-muted);
   }
 
   .public-profile-panel-footer a {
-    color: #999;
+    color: var(--text-secondary);
     text-decoration: underline;
     text-underline-offset: 2px;
   }

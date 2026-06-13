@@ -10,7 +10,7 @@ export default function TermsPage() {
         <p className="legal-label">Legal</p>
         <h1>Terms of Service</h1>
         <p className="legal-owner">A product of SUSUMU HOUSE</p>
-        <p className="legal-meta">Last updated: March 2026</p>
+        <p className="legal-meta">Last updated: June 2026</p>
 
         <h2>1. Acceptance of Terms</h2>
         <p><strong>By creating an account, accessing, or using PLOT in any way, you agree to be legally bound by these Terms of Service in their entirety. Your use of the Service constitutes your full and unconditional acceptance of these Terms and all risk associated with that use. If you do not agree to every provision of these Terms, you must immediately stop using the Service and delete your account.</strong></p>
@@ -56,7 +56,7 @@ export default function TermsPage() {
         <p>You expressly acknowledge and agree that your use of the Service is at your sole and exclusive risk. You assume full responsibility for all risks associated with your use of the Service, including any reliance on the accuracy of content, any interactions with other users, and any decisions made based on information obtained through the Service. SUSUMU HOUSE shall not be responsible for any harm, loss, or damage of any kind that may result from your use of the Service.</p>
 
         <h2>10. Account Termination</h2>
-        <p>You may delete your account at any time. We reserve the right to suspend or permanently terminate your account at any time, for any reason or no reason, with or without notice, and without liability to you. Upon termination, your right to use the Service immediately ceases.</p>
+        <p>You may delete your account at any time. We reserve the right to suspend or permanently terminate your account at any time, for any reason or no reason, with or without notice, and without liability to you. Upon termination, your right to use the Service immediately ceases. We are not required to provide a self-serve export of your data as part of the first public release.</p>
 
         <h2>11. Modifications to the Service</h2>
         <p>We reserve the right to modify, suspend, or discontinue the Service (or any part thereof) at any time, permanently or temporarily, with or without notice. You agree that SUSUMU HOUSE shall not be liable to you or any third party for any modification, suspension, or discontinuation of the Service.</p>

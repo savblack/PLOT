@@ -1,3 +1,0 @@
--- Legacy placeholder retained for environments that already applied it.
--- Fresh installs rely on 20260426000000_add_media_integrations.sql and the
--- follow-up migrations that extend the final schema.
