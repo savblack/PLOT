@@ -527,6 +527,7 @@ const main = async () => {
   // Dynamic import AFTER the SUPABASE_URL fallback is set (libs read it at import).
   const { tmdb, fetchTMDB } = await import('../marketing/lib/tmdb.mjs');
   const { POST_TYPES } = await import('../marketing/lib/post-types.mjs');
+  const { feedHeroUrl } = await import('../marketing/lib/images.mjs');
 
   const now = new Date();
   const schedule = buildSchedule(now);
@@ -545,6 +546,9 @@ const main = async () => {
     if (!cand) cand = await builder.on_this_day(slot, { relaxed: true });
     if (!cand) { console.warn(`  ! ${isoDate(slot.date)} ${slot.plan.type}: no content, skipped`); continue; }
     const copy = buildCopy(cand.post_type, cand.payload, i);
+    // Feed/article hero = plain TMDB still (no branding) for every type except
+    // trending_chart, which keeps its branded chart render (hero_image = null).
+    copy.hero_image = feedHeroUrl(cand.post_type, cand.payload);
     const scheduledFor = slot.date.toISOString();
     candidates.push({ ...cand, copy, scheduledFor, slug: postSlug(copy.page_title, scheduledFor) });
   }
@@ -616,16 +620,21 @@ const main = async () => {
       }
       const id = inserted.id;
 
-      // 2) Render the hero (card 0, landscape) and upload to the marketing bucket.
-      const cards = await POST_TYPES[c.post_type].cards(c.payload);
-      const buf = await renderCard(POST_TYPES[c.post_type].template, cards[0].data, { size: 'landscape' });
-      const landscapePath = await uploadMedia(`${id}/card-0-landscape.jpg`, buf);
+      // 2) Only trending charts get a branded render (their hero IS the chart).
+      // Every other type leads with copy.hero_image (plain TMDB), so no render.
+      let media = null;
+      if (c.post_type === 'trending_chart') {
+        const cards = await POST_TYPES[c.post_type].cards(c.payload);
+        const buf = await renderCard(POST_TYPES[c.post_type].template, cards[0].data, { size: 'landscape' });
+        const landscapePath = await uploadMedia(`${id}/card-0-landscape.jpg`, buf);
+        media = [{ portrait_path: null, landscape_path: landscapePath, channels: null }];
+      }
 
       // 3) Publish: set media + slug + status so the feed shows it.
       const { error: updErr } = await supabase
         .from('marketing_posts')
         .update({
-          media: [{ portrait_path: null, landscape_path: landscapePath, channels: null }],
+          media,
           slug: c.slug,
           status: 'published',
           updated_at: new Date().toISOString(),

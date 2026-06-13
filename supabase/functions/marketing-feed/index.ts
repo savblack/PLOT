@@ -59,7 +59,7 @@ const FILTERS: { key: string | null; label: string }[] = [
 
 type FeedPost = {
   slug: string;
-  copy: { page_title?: string; page_body?: string[] } | null;
+  copy: { page_title?: string; page_body?: string[]; hero_image?: string } | null;
   media: { portrait_path?: string; landscape_path?: string }[] | null;
   post_type: string;
   scheduled_for: string;
@@ -67,8 +67,14 @@ type FeedPost = {
 };
 
 const postTitle = (p: FeedPost) => p.copy?.page_title || TYPE_META[p.post_type]?.label || p.post_type;
-const postImage = (p: FeedPost) =>
-  p.media?.[0]?.landscape_path ? mediaUrl(p.media[0].landscape_path) : null;
+// Feed/article hero. Most posts use the plain TMDB still (no PLOT branding) set
+// in copy.hero_image; the branded render (media[0]) is for social channels.
+// Trending charts have no hero_image, so they keep their branded chart render.
+const postImage = (p: FeedPost) => {
+  const hero = p.copy?.hero_image;
+  if (typeof hero === 'string' && /^https?:\/\//.test(hero)) return hero;
+  return p.media?.[0]?.landscape_path ? mediaUrl(p.media[0].landscape_path) : null;
+};
 const postBody = (p: FeedPost) => (Array.isArray(p.copy?.page_body) ? p.copy.page_body : []);
 const entryUrl = (p: FeedPost) => `${SITE}${FEED_PATH}/${p.slug}`;
 
