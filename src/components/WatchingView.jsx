@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useApp, backdropUrl, TodayLabel } from '../App.jsx';
 import { localDateStr } from '../utils/date.js';
+import { getEpisodeGuideState } from '../utils/episodeProgress.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import ConfirmModal from './ConfirmModal.jsx';
 import PlotLoader from './PlotLoader.jsx';
@@ -60,11 +61,12 @@ function WatchingCard({ progress, watching, onOpen, onStop }) {
   const isAired   = (ep) => Boolean(ep.air_date) && ep.air_date <= today;
 
   /* Watched = depends on which season we're viewing vs where progress is */
-  const isWatched = (ep) => {
-    if (viewSeason < progress.current_season) return true;
-    if (viewSeason > progress.current_season) return false;
-    return ep.episode_number < progress.current_episode;
-  };
+  const isWatched = (ep) => getEpisodeGuideState({
+    currentEpisode: progress.current_episode,
+    currentSeason: progress.current_season,
+    episodeNumber: ep.episode_number,
+    selectedSeason: viewSeason,
+  }).isWatched;
 
   const airedEps      = episodes.filter(isAired);
   const watchedCount  = viewSeason < progress.current_season
@@ -195,9 +197,12 @@ function WatchingCard({ progress, watching, onOpen, onStop }) {
           <div className="watching-ep-list">
             {episodes.map(ep => {
               const aired    = isAired(ep);
-              const watched  = isWatched(ep);
-              const isCurrent = viewSeason === progress.current_season
-                && ep.episode_number === progress.current_episode;
+              const { isActive, isCurrent, isWatched: watched } = getEpisodeGuideState({
+                currentEpisode: progress.current_episode,
+                currentSeason: progress.current_season,
+                episodeNumber: ep.episode_number,
+                selectedSeason: viewSeason,
+              });
               const isLoading = loadingEp === ep.episode_number;
 
               return (
@@ -211,14 +216,14 @@ function WatchingCard({ progress, watching, onOpen, onStop }) {
                   ].filter(Boolean).join(' ')}
                 >
                   <button
-                    className="ep-check-btn"
+                    className={`ep-check-btn${isActive ? ' checked' : ''}`}
                     onClick={() => handleToggle(ep)}
                     disabled={!aired || isLoading}
                     aria-label={watched ? 'Mark unwatched' : 'Mark watched'}
                   >
                     {isLoading
                       ? <PlotLoader size={14} ariaHidden />
-                      : watched
+                      : isActive
                         ? <CheckCircleIcon />
                         : <EmptyCircleIcon />
                     }

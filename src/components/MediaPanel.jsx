@@ -3,9 +3,11 @@ import { useApp, backdropUrl, logoUrl, countdownChip, formatDate } from '../App.
 import { tmdb, getTmdbRegion } from '../api/tmdb.js';
 import { findDuplicateCustomList } from '../domain/customLists.js';
 import { useHistory } from '../hooks/useHistory.js';
+import { getEpisodeGuideState } from '../utils/episodeProgress.js';
 import { markMediaAsWatched, moveSavedShowToWatching } from '../utils/mediaStatus.js';
 import { resolveMediaPanelEscapeAction } from '../utils/mediaPanel.js';
 import { ratingFromPointer, ratingToStars, starFillPercent, STAR_COUNT } from '../utils/ratings.js';
+import { pickBestTvmazeShowMatch } from '../utils/tvmaze.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import PlotLoader from './PlotLoader.jsx';
 
@@ -90,14 +92,20 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone }) {
     let cancelled = false;
     (async () => {
       try {
-        const searchRes = await fetch(
-          `https://api.tvmaze.com/singlesearch/shows?q=${encodeURIComponent(name)}`
-        );
+        const searchRes = await fetch(`https://api.tvmaze.com/search/shows?q=${encodeURIComponent(name)}`);
         if (!searchRes.ok || cancelled) return;
-        const show = await searchRes.json();
-        if (!show?.id || cancelled) return;
+        const results = await searchRes.json();
+        if (!Array.isArray(results) || cancelled) return;
 
-        const epRes = await fetch(`https://api.tvmaze.com/shows/${show.id}/episodes`);
+        const { match, reason } = pickBestTvmazeShowMatch(results, details);
+        if (!match?.id || cancelled) {
+          if (import.meta.env.DEV && reason === 'ambiguous-match') {
+            console.debug('[MediaPanel] Skipping ambiguous TVMaze match for', name, details?.first_air_date);
+          }
+          return;
+        }
+
+        const epRes = await fetch(`https://api.tvmaze.com/shows/${match.id}/episodes`);
         if (!epRes.ok || cancelled) return;
         const eps = await epRes.json();
         if (!Array.isArray(eps) || cancelled) return;
@@ -111,20 +119,11 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone }) {
       } catch { /* silent — times are best-effort */ }
     })();
     return () => { cancelled = true; };
-  }, [details?.name]);
+  }, [details]);
 
   /* ── Determine per-episode watched state ── */
   const currentSeason = currentProgress?.current_season || 0;
   const currentEp     = currentProgress?.current_episode || 0;
-
-  const isEpWatched = (ep) => {
-    if (selSeason < currentSeason) return true;
-    if (selSeason > currentSeason) return false;
-    return ep.episode_number < currentEp;
-  };
-
-  const isCurrentEp = (ep) =>
-    selSeason === currentSeason && ep.episode_number === currentEp;
 
   /* ── Toggle an episode's watched state ── */
   const handleCheckEp = useCallback(async (ep, watched) => {
@@ -202,8 +201,12 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone }) {
       ) : (
         <div className="episode-list">
           {episodes.map(ep => {
-            const watched    = isEpWatched(ep);
-            const isCurrent  = isCurrentEp(ep);
+            const { isActive, isCurrent, isWatched: watched } = getEpisodeGuideState({
+              currentEpisode: currentEp,
+              currentSeason,
+              episodeNumber: ep.episode_number,
+              selectedSeason: selSeason,
+            });
             const chip       = ep.air_date ? countdownChip(ep.air_date) : null;
             const isUpcoming = chip && chip.cls !== 'chip-muted';
             const airstamp   = isUpcoming ? tvmazeTimes[`${selSeason}-${ep.episode_number}`] : null;
@@ -239,7 +242,7 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone }) {
                     <PlotLoader size={14} ariaHidden />
                   ) : (
                     <button
-                      className={`ep-check-btn${watched ? ' checked' : ''}`}
+                      className={`ep-check-btn${isActive ? ' checked' : ''}`}
                       onClick={(e) => { e.stopPropagation(); handleCheckEp(ep, watched); }}
                       aria-label={watched ? 'Mark unwatched' : 'Mark watched'}
                       title={watched ? 'Unmark as watched' : 'Mark as watched'}
