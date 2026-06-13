@@ -13,11 +13,11 @@ const WHITE_LETTERS = [
 ];
 
 const SIZE_MAP = {
-  xs: 9,
-  sm: 14,
-  md: 24,
-  lg: 36,
-  button: 9,
+  xs: 8,
+  sm: 12,
+  md: 20,
+  lg: 28,
+  button: 8,
 };
 
 function resolveTone(tone) {

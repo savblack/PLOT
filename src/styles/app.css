@@ -2749,16 +2749,20 @@ svg { stroke-width: 1.5; }
 }
 
 .plot-loader {
-  --plot-loader-letter-height: 36px;
-  --plot-loader-letter-o-height: 36.97px;
-  --plot-loader-p-gap: 2.92px;
-  --plot-loader-l-gap: -3.41px;
-  --plot-loader-o-gap: -2.43px;
+  --plot-loader-letter-height: 28px;
+  --plot-loader-letter-o-height: 28.76px;
+  --plot-loader-p-gap: 2.27px;
+  --plot-loader-l-gap: -2.65px;
+  --plot-loader-o-gap: -1.89px;
   display: inline-flex;
   align-items: flex-end;
+  justify-content: center;
   gap: 0;
+  width: fit-content;
   line-height: 0;
   user-select: none;
+  vertical-align: middle;
+  margin-inline: auto;
 }
 
 .plot-loader__letter {
@@ -2787,11 +2791,11 @@ svg { stroke-width: 1.5; }
 @media (max-width: 720px) {
   .page-loader .plot-loader,
   .app-boot-loader .plot-loader {
-    --plot-loader-letter-height: 32px;
-    --plot-loader-letter-o-height: 32.86px;
-    --plot-loader-p-gap: 2.59px;
-    --plot-loader-l-gap: -3.03px;
-    --plot-loader-o-gap: -2.16px;
+    --plot-loader-letter-height: 24px;
+    --plot-loader-letter-o-height: 24.65px;
+    --plot-loader-p-gap: 1.95px;
+    --plot-loader-l-gap: -2.27px;
+    --plot-loader-o-gap: -1.62px;
   }
 }
 
