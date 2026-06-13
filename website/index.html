@@ -1761,6 +1761,53 @@
       100% { top: 28%; left: -8%; opacity: 0; }
     }
 
+    /* My Lists — poster stacks that dissolve through each collection */
+    .lists-stacks {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.3rem;
+      width: 100%;
+      max-width: 460px;
+      margin: 0 auto;
+    }
+    .lstk-cell { display: flex; flex-direction: column; align-items: center; }
+    .lstk {
+      position: relative;
+      width: 100%;
+      max-width: 140px;
+      aspect-ratio: 2 / 3;
+    }
+    .lstk-peek, .lstk-face {
+      position: absolute;
+      inset: 0;
+      border-radius: 11px;
+      background-size: cover;
+      background-position: center;
+    }
+    .lstk-peek { box-shadow: 0 8px 18px -10px rgba(0,0,0,0.45); }
+    .lstk-peek.p2 { transform: rotate(7deg)  translate(8px, 9px);  z-index: 1; }
+    .lstk-peek.p1 { transform: rotate(-5deg) translate(-6px, 6px); z-index: 2; }
+    .lstk-face {
+      z-index: 5;
+      box-shadow: 0 18px 34px -14px rgba(0,0,0,0.5);
+      transition: opacity 0.9s ease;
+    }
+    .lstk-face.fb { z-index: 6; }
+    .lstk-nm {
+      font-family: var(--serif);
+      font-size: 1.2rem;
+      margin-top: 1rem;
+      text-align: center;
+      color: var(--text);
+    }
+    .lstk-ct {
+      font-size: 0.64rem;
+      color: var(--muted);
+      margin-top: 0.15rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
     @media (max-width: 900px) {
       .demo-split { grid-template-columns: 1fr; gap: 3.5rem; }
       .demo-copy { position: static; order: 1 !important; }
@@ -1768,6 +1815,11 @@
       .iphone-png-wrap { width: 280px; height: 574px; }
       .iphone-png-frame { width: 944px; left: -333px; top: -67px; }
       .phone-frame { left: 14px; top: 35px; width: 253px; height: 526px; }
+    }
+
+    @media (max-width: 420px) {
+      .lists-stacks { gap: 0.7rem; max-width: 330px; }
+      .lstk { max-width: 108px; }
     }
 
     /* ── Interactive Calendar Demo ──────────────────────────────── */
@@ -2317,62 +2369,42 @@
   <section id="lists-demo">
     <div class="demo-split">
       <div class="phone-wrap reveal">
-        <div class="iphone-png-wrap">
-          <img class="iphone-png-frame" src="images/iphone-mockup.png" alt="">
-          <div class="phone-frame light-frame" id="listsFrame">
-          <div class="iphone-status-bar light-status">
-            <span class="status-time">9:41</span>
-            <div class="status-icons">
-              <svg class="status-icon" width="16" height="11" viewBox="0 0 16 11" fill="currentColor"><rect x="0" y="4" width="3" height="7" rx="0.5"/><rect x="4.5" y="2.5" width="3" height="8.5" rx="0.5"/><rect x="9" y="0.5" width="3" height="10.5" rx="0.5"/><rect x="13.5" y="0" width="2.5" height="11" rx="0.5" opacity="0.3"/></svg>
-              <svg class="status-icon" width="15" height="11" viewBox="0 0 15 11" fill="currentColor"><path d="M7.5 2.2C9.8 2.2 11.9 3.1 13.4 4.6L15 3C13.1 1.1 10.4 0 7.5 0S1.9 1.1 0 3l1.6 1.6C3.1 3.1 5.2 2.2 7.5 2.2z"/><path d="M7.5 5.5c1.4 0 2.7.6 3.6 1.5L12.7 5.4C11.4 4.2 9.5 3.4 7.5 3.4S3.6 4.2 2.3 5.4L3.9 7C4.8 6.1 6.1 5.5 7.5 5.5z"/><circle cx="7.5" cy="9.5" r="1.5"/></svg>
-              <svg class="status-icon" width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="currentColor" stroke-opacity="0.35"/><rect x="1.5" y="1.5" width="16" height="9" rx="2.5" fill="currentColor"/><path d="M23 4v4a2 2 0 000-4z" fill="currentColor" opacity="0.4"/></svg>
+        <div class="lists-stacks">
+
+          <div class="lstk-cell">
+            <div class="lstk" data-posters='["images/timeline/oppenheimer.jpg","images/hero/the-wolf-of-wall-street.webp","images/hero/marty-supreme.webp","images/hero/the-drama.webp","images/timeline/severance.jpg"]'>
+              <div class="lstk-peek p2" style="background-image:url('images/timeline/presumed-innocent.jpeg')"></div>
+              <div class="lstk-peek p1" style="background-image:url('images/hero/project-hail-mary.webp')"></div>
+              <div class="lstk-face fa" style="background-image:url('images/timeline/oppenheimer.jpg');opacity:1"></div>
+              <div class="lstk-face fb" style="opacity:0"></div>
             </div>
+            <div class="lstk-nm">Award winners</div>
+            <div class="lstk-ct">20 films</div>
           </div>
-          <div class="lists-screen">
-            <div class="demo-app-bar light-bar">
-              <span class="demo-app-icon dark-icon">&#8592;</span>
-              <span class="demo-app-bar-title dark-title">My Lists</span>
-              <span class="demo-app-icon dark-icon">&#8943;</span>
+
+          <div class="lstk-cell">
+            <div class="lstk" data-posters='["images/hero/past-lives.webp","images/hero/anyone-but-you.webp","images/hero/wuthering-heights.webp","images/hero/people-we-meet-on-vacation.webp","images/hero/priscilla.webp"]'>
+              <div class="lstk-peek p2" style="background-image:url('images/hero/aftersun.webp')"></div>
+              <div class="lstk-peek p1" style="background-image:url('images/hero/eternity.webp')"></div>
+              <div class="lstk-face fa" style="background-image:url('images/hero/past-lives.webp');opacity:1"></div>
+              <div class="lstk-face fb" style="opacity:0"></div>
             </div>
-            <div class="lists-tabs">
-              <div class="l-tab">All</div>
-              <div class="l-tab">Watching</div>
-              <div class="l-tab">Want to Watch</div>
-              <div class="l-tab active" id="lTabTop10">Top 10</div>
-              <div class="l-tab" id="lTabFavs">Favorites</div>
-              <div class="l-tab">Lists</div>
-            </div>
-            <div class="top10-panel" id="top10Panel">
-              <div class="top10-row" style="transition-delay:.04s"><span class="top10-num">1</span><div class="top10-img" style="background-image:url('images/hero/saltburn.webp')"></div><span class="top10-name">Saltburn</span></div>
-              <div class="top10-row" style="transition-delay:.09s"><span class="top10-num">2</span><div class="top10-img" style="background-image:url('images/hero/past-lives.webp')"></div><span class="top10-name">Past Lives</span></div>
-              <div class="top10-row" style="transition-delay:.14s"><span class="top10-num">3</span><div class="top10-img" style="background-image:url('images/hero/aftersun.webp')"></div><span class="top10-name">Aftersun</span></div>
-              <div class="top10-row" style="transition-delay:.19s"><span class="top10-num">4</span><div class="top10-img" style="background-image:url('images/timeline/adolescence.jpg')"></div><span class="top10-name">Adolescence</span></div>
-              <div class="top10-row" style="transition-delay:.24s"><span class="top10-num">5</span><div class="top10-img" style="background-image:url('images/hero/the-substance.webp')"></div><span class="top10-name">The Substance</span></div>
-              <div class="top10-row" style="transition-delay:.29s"><span class="top10-num">6</span><div class="top10-img" style="background-image:url('images/hero/nosferatu.webp')"></div><span class="top10-name">Nosferatu</span></div>
-              <div class="top10-row" style="transition-delay:.34s"><span class="top10-num">7</span><div class="top10-img" style="background-image:url('images/hero/sinners.webp')"></div><span class="top10-name">Sinners</span></div>
-            </div>
-            <div class="favs-panel" id="favsPanel">
-              <div class="fav-cell" style="background-image:url('images/hero/saltburn.webp');transition-delay:.03s"><div class="fav-h on" id="fh1">&#9829;</div></div>
-              <div class="fav-cell" style="background-image:url('images/hero/aftersun.webp');transition-delay:.07s"><div class="fav-h on">&#9829;</div></div>
-              <div class="fav-cell" style="background-image:url('images/hero/past-lives.webp');transition-delay:.11s"><div class="fav-h on">&#9829;</div></div>
-              <div class="fav-cell" style="background-image:url('images/hero/nosferatu.webp');transition-delay:.15s"><div class="fav-h off">&#9825;</div></div>
-              <div class="fav-cell" style="background-image:url('images/hero/the-substance.webp');transition-delay:.19s"><div class="fav-h off">&#9825;</div></div>
-              <div class="fav-cell" style="background-image:url('images/hero/sinners.webp');transition-delay:.23s"><div class="fav-h off">&#9825;</div></div>
-            </div>
-            <div class="demo-tab-bar light-tabs">
-              <div class="demo-tab-item"><span class="demo-tab-icon" style="color:#888;opacity:1">&#8962;</span><span class="demo-tab-label" style="color:#888">Home</span></div>
-              <div class="demo-tab-item"><span class="demo-tab-icon" style="color:#888;opacity:1">&#9633;</span><span class="demo-tab-label" style="color:#888">Calendar</span></div>
-              <div class="demo-tab-item tab-active-l"><span class="demo-tab-icon" style="color:#1a1a1a;opacity:1">&#9776;</span><span class="demo-tab-label" style="color:#1a1a1a">My Lists</span></div>
-              <div class="demo-tab-item"><span class="demo-tab-icon" style="color:#888;opacity:1">&#9711;</span><span class="demo-tab-label" style="color:#888">History</span></div>
-            </div>
+            <div class="lstk-nm">Date night</div>
+            <div class="lstk-ct">12 films</div>
           </div>
-          <div class="mock-cursor lists-mc" id="listsMC">
-            <svg viewBox="0 0 18 20" fill="none">
-              <path d="M2 2l14 8-8 1.5-3.5 8z" fill="#1a1a1a" stroke="rgba(255,255,255,0.25)" stroke-width="0.8"/>
-            </svg>
+
+          <div class="lstk-cell">
+            <div class="lstk" data-posters='["images/hero/nosferatu.webp","images/hero/longlegs.webp","images/hero/heretic.webp","images/hero/frankenstein.webp","images/hero/if-i-had-legs-id-kick-you.webp"]'>
+              <div class="lstk-peek p2" style="background-image:url('images/hero/the-housemaid.webp')"></div>
+              <div class="lstk-peek p1" style="background-image:url('images/hero/dont-worry-darling.webp')"></div>
+              <div class="lstk-face fa" style="background-image:url('images/hero/nosferatu.webp');opacity:1"></div>
+              <div class="lstk-face fb" style="opacity:0"></div>
+            </div>
+            <div class="lstk-nm">Spooky season</div>
+            <div class="lstk-ct">13 films</div>
           </div>
-        </div><!-- /phone-frame -->
-        </div><!-- /iphone-png-wrap -->
+
+        </div>
       </div>
       <div class="demo-copy reveal">
         <span class="section-eyebrow" style="color:var(--muted)">My Lists</span>
@@ -3077,62 +3109,42 @@
       }, { threshold: 0.4 }).observe(guideFrame);
     }
 
-    // ── Lists phone animation ─────────────────────────────────
-    const listsFrame = document.getElementById('listsFrame');
-    const listsMC    = document.getElementById('listsMC');
-    const top10Panel = document.getElementById('top10Panel');
-    const favsPanel  = document.getElementById('favsPanel');
-    const lTabTop10  = document.getElementById('lTabTop10');
-    const lTabFavs   = document.getElementById('lTabFavs');
-    const fh1        = document.getElementById('fh1');
-    let listsTimer   = null;
+    // ── My Lists — poster stacks dissolve through each collection ──
+    (function() {
+      const stacks = document.querySelectorAll('.lstk');
+      if (!stacks.length) return;
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    function showTop10() {
-      if (!favsPanel || !top10Panel) return;
-      favsPanel.style.display = 'none';
-      top10Panel.style.display = 'flex';
-      lTabTop10.classList.add('active');
-      lTabFavs.classList.remove('active');
-      top10Panel.querySelectorAll('.top10-row').forEach((r, i) => {
-        r.classList.remove('show');
-        setTimeout(() => r.classList.add('show'), 30 + i * 55);
-      });
-    }
-    function showFavs() {
-      if (!favsPanel || !top10Panel) return;
-      top10Panel.style.display = 'none';
-      favsPanel.style.display = 'grid';
-      lTabFavs.classList.add('active');
-      lTabTop10.classList.remove('active');
-      favsPanel.querySelectorAll('.fav-cell').forEach((c, i) => {
-        c.classList.remove('show');
-        setTimeout(() => c.classList.add('show'), 30 + i * 60);
-      });
-    }
-    function runLists() {
-      if (!top10Panel) return;
-      top10Panel.querySelectorAll('.top10-row').forEach(r => r.classList.remove('show'));
-      favsPanel.querySelectorAll('.fav-cell').forEach(c => c.classList.remove('show'));
-      showTop10();
-      listsTimer = setTimeout(() => {
-        showFavs();
-        listsTimer = setTimeout(() => {
-          if (fh1) { fh1.style.transform = 'scale(1.5)'; setTimeout(() => { fh1.style.transform = ''; }, 280); }
-          listsTimer = setTimeout(runLists, 1400);
-        }, 1650);
-      }, 2100);
-    }
+      stacks.forEach((stk, si) => {
+        let posters;
+        try { posters = JSON.parse(stk.dataset.posters || '[]'); } catch (e) { return; }
+        if (posters.length < 2) return;
+        const fa = stk.querySelector('.lstk-face.fa');
+        const fb = stk.querySelector('.lstk-face.fb');
+        if (!fa || !fb) return;
 
-    if (listsFrame) {
-      new IntersectionObserver(entries => {
-        entries.forEach(e => {
-          listsFrame.classList.toggle('animating', e.isIntersecting);
-          listsMC.classList.toggle('visible', e.isIntersecting);
-          if (e.isIntersecting) runLists();
-          else clearTimeout(listsTimer);
-        });
-      }, { threshold: 0.4 }).observe(listsFrame);
-    }
+        // preload so the crossfade never flashes an unloaded poster
+        posters.forEach(src => { const im = new Image(); im.src = src; });
+
+        let idx = 0;
+        let visible = fa;
+        fa.style.backgroundImage = "url('" + posters[0] + "')";
+
+        function tick() {
+          idx = (idx + 1) % posters.length;
+          const hidden = (visible === fa) ? fb : fa;
+          hidden.style.backgroundImage = "url('" + posters[idx] + "')";
+          hidden.style.opacity = 1;
+          visible.style.opacity = 0;
+          visible = hidden;
+        }
+
+        // infinite dissolve loop, staggered so the stacks don't change in unison
+        if (!reduce) {
+          setTimeout(() => setInterval(tick, 2600), si * 700 + 900);
+        }
+      });
+    })();
 
     // ── Interactive Calendar Demo ─────────────────────────────
     (function() {
