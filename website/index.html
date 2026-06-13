@@ -2407,7 +2407,6 @@
         </div>
       </div>
       <div class="demo-copy reveal">
-        <span class="section-eyebrow" style="color:var(--muted)">My Lists</span>
         <h2 class="demo-headline" style="color:var(--text)">Make the lists<br>only <em style="font-style:italic">you</em> could curate.</h2>
         <p class="demo-body" style="color:var(--muted)">
           Organise by decade, director, or whatever mood you're in. Create and share film and TV collections that are unmistakably yours.
@@ -2420,8 +2419,7 @@
 
   <!-- ── Calendar Demo ────────────────────────────────────────── -->
   <section id="calendar-demo">
-    <span class="section-eyebrow reveal" style="color:rgba(240,239,232,0.4)">The Calendar</span>
-    <h2 class="cal-headline reveal">Never miss<br><em>a release.</em></h2>
+    <h2 class="cal-headline reveal">Never miss <em>a release.</em></h2>
     <p class="cal-sub reveal">
       Every episode, cinema release, and streaming premiere —
       add it to your calendar and it appears on the right date.
@@ -2462,26 +2460,6 @@
     </div>
     <div class="cal-toast" id="calToastInt"></div>
   </section>
-  <!-- ── For the Plot ─────────────────────────────────────────── -->
-  <section id="for-the-plot">
-    <div class="ftp-inner">
-      <div class="ftp-left reveal">
-        <h2 class="ftp-headline">Your journal.<br>Your rules.</h2>
-        <p class="ftp-body">Your top ten. All the series you binged in a weekend. The one dropping next month you've already cleared your schedule for. Make a list for anything.</p>
-        <a href="https://app.theplot.tv/signup" class="btn btn-outline btn-large">Make it yours →</a>
-        <div class="ftp-mobile-posters">
-          <div class="ftp-mobile-poster" style="background-image:url('images/hero/saltburn.webp')"></div>
-          <div class="ftp-mobile-poster" style="background-image:url('images/hero/past-lives.webp')"></div>
-          <div class="ftp-mobile-poster" style="background-image:url('images/hero/nosferatu.webp')"></div>
-          <div class="ftp-mobile-poster" style="background-image:url('images/hero/aftersun.webp')"></div>
-          <div class="ftp-mobile-poster" style="background-image:url('images/hero/babygirl.webp')"></div>
-          <div class="ftp-mobile-poster" style="background-image:url('images/hero/the-substance.webp')"></div>
-        </div>
-      </div>
-      <div class="editorial-wrap" id="editorialWrap"></div>
-    </div>
-  </section>
-
   <!-- ── Live Ticker ──────────────────────────────────────────── -->
   <div class="ticker-section">
     <div class="ticker-badge">Plot Live</div>
@@ -2863,106 +2841,6 @@
     } // end initSidePosters
     initSidePosters();
     window.addEventListener('resize', initSidePosters);
-
-    // ── Editorial poster layout ───────────────────────────────
-    const editorialData = [
-      { img: 'images/journal/fallout.webp',                         label: 'Sci-Fi',   title: 'Weekend watch',       w: 200, h: 300, top:  80, left: -40, rot: -5, z: 2 },
-      { img: 'images/journal/10-things-i-hate-about-you.jpg',       label: 'Romance',  title: 'Date night picks',    w: 218, h: 327, top: 115, left: 110, rot:  4, z: 4 },
-      { img: 'images/journal/monsters.jpg',                         label: 'Thriller', title: 'Must see',       w: 230, h: 345, top:  60, left: 260, rot: -2, z: 5 },
-      { img: 'images/journal/landman.jpg',                          label: 'Drama',    title: "Can't stop watching", w: 205, h: 308, top: 110, left: 410, rot:  5, z: 3 },
-      { img: 'images/journal/napoleon-dynamite.jpg',                label: 'Comedy',   title: 'Feel good movies',    w: 188, h: 282, top: 155, left: 552, rot: -3, z: 2 },
-    ];
-
-    const editorialWrap = document.getElementById('editorialWrap');
-
-    const edInner = document.createElement('div');
-    edInner.className = 'ed-inner';
-    editorialWrap.appendChild(edInner);
-
-    editorialData.forEach(item => {
-      const poster = document.createElement('div');
-      poster.className = 'ed-poster';
-      poster.style.cssText = [
-        `width:${item.w}px`,
-        `height:${item.h}px`,
-        `top:${item.top}px`,
-        `left:${item.left}px`,
-        `z-index:${item.z}`,
-        `background-image:url('${item.img}')`,
-        `--rot:${item.rot}deg`,
-      ].join(';');
-
-      const label = document.createElement('div');
-      label.className = 'ed-label';
-
-      const genre = document.createElement('span');
-      genre.textContent = item.label;
-
-      const title = document.createElement('strong');
-      title.textContent = item.title;
-
-      poster.dataset.origZ = item.z;
-      label.appendChild(genre);
-      label.appendChild(title);
-      poster.appendChild(label);
-      edInner.appendChild(poster);
-    });
-
-    // Scale the card fan to fit the container width
-    const DESIGN_W = 760;
-    const DESIGN_H = 580;
-    new ResizeObserver(([entry]) => {
-      const scale = Math.min(1, entry.contentRect.width / DESIGN_W);
-      editorialWrap.style.setProperty('--ed-scale', scale);
-      editorialWrap.style.height = (DESIGN_H * scale) + 'px';
-    }).observe(editorialWrap);
-
-    // Container-level hover tracking — avoids enter/leave chaos on overlapping cards
-    let edHovered = null;
-    let edRaf = false;
-
-    function pickTopCard(e) {
-      const cards = editorialWrap.querySelectorAll('.ed-poster');
-      let topCard = null, topZ = -1;
-      cards.forEach(card => {
-        const r = card.getBoundingClientRect();
-        if (e.clientX >= r.left && e.clientX <= r.right &&
-            e.clientY >= r.top  && e.clientY <= r.bottom) {
-          const z = parseInt(card.style.zIndex) || 0;
-          if (z > topZ) { topZ = z; topCard = card; }
-        }
-      });
-      return topCard;
-    }
-
-    function setHovered(card) {
-      if (card === edHovered) return;
-      if (edHovered) {
-        edHovered.classList.remove('lifted');
-      }
-      edHovered = card;
-      if (card) {
-        editorialWrap.querySelectorAll('.ed-poster').forEach(c => {
-          if (c !== card) c.style.zIndex = c.dataset.origZ;
-        });
-        card.style.zIndex = 20;
-        card.classList.add('lifted');
-      }
-    }
-
-    editorialWrap.addEventListener('mousemove', e => {
-      if (edRaf) return;
-      edRaf = true;
-      requestAnimationFrame(() => { setHovered(pickTopCard(e)); edRaf = false; });
-    });
-
-    editorialWrap.addEventListener('mouseleave', () => {
-      if (edHovered) {
-        edHovered.classList.remove('lifted');
-        edHovered.style.zIndex = edHovered.dataset.origZ;
-      }
-      edHovered = null;
-    });
 
     // ── Live ticker ───────────────────────────────────────────
     (async function initTicker() {
