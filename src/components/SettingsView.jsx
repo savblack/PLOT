@@ -78,8 +78,10 @@ function RegionPicker({ current, onSave, onClose }) {
             style={{ width: '100%' }}
             onClick={handleSave}
             disabled={saving || chosen === current}
+            aria-busy={saving}
+            aria-label={saving ? 'Saving region' : 'Save region'}
           >
-            {saving ? 'Saving…' : 'Save Region'}
+            {saving ? <PlotLoader size="button" tone="dark" ariaHidden /> : 'Save Region'}
           </button>
         </div>
       </div>
@@ -274,8 +276,10 @@ function TimezonePicker({ current, onSave, onClose }) {
             style={{ width: '100%' }}
             onClick={handleSave}
             disabled={!chosen || saving}
+            aria-busy={saving}
+            aria-label={saving ? 'Saving timezone' : 'Save timezone'}
           >
-            {saving ? 'Saving…' : 'Save'}
+            {saving ? <PlotLoader size="button" tone="dark" ariaHidden /> : 'Save'}
           </button>
         </div>
       </div>

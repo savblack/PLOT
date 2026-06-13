@@ -393,8 +393,10 @@ export default function OnboardingFlow() {
               style={{ flex: 1 }}
               onClick={step === 3 ? finish : () => setStep(s => s + 1)}
               disabled={saving}
+              aria-busy={saving}
+              aria-label={saving ? 'Setting up account' : step === 3 ? 'Start watching' : 'Continue'}
             >
-              {step === 3 ? (saving ? 'Setting up…' : 'Start watching →') : 'Continue →'}
+              {step === 3 ? (saving ? <PlotLoader size="button" tone="dark" ariaHidden /> : 'Start watching →') : 'Continue →'}
             </button>
           </div>
         </div>

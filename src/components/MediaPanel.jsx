@@ -967,6 +967,8 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                   <button
                     className={`review-action-btn${reviewDirty || (!hasSavedReview && hasReviewDraft) ? ' review-action-btn--active' : hasSavedReview ? ' review-action-btn--saved' : ''}`}
                     disabled={reviewSaving}
+                    aria-busy={reviewSaving}
+                    aria-label={reviewSaving ? 'Saving review' : hasSavedReview ? (reviewDirty ? 'Save changes' : 'Edit review') : 'Save review'}
                     onClick={async () => {
                       if (hasSavedReview && !reviewDirty) {
                         reviewInputRef.current?.focus();
@@ -982,7 +984,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                     }}
                   >
                     {reviewSaving
-                      ? 'Saving…'
+                      ? <PlotLoader size="button" ariaHidden />
                       : hasSavedReview
                         ? reviewDirty ? 'Save changes' : 'Edit review'
                         : 'Save review'
