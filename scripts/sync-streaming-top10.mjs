@@ -8,9 +8,10 @@
 // there's no title search to do; we only fetch TMDB details to get a poster_path
 // and canonical title so rows render identically to the Netflix ones.
 //
-// Free tier is 100 requests/day. We make ONE call per (service × region) — omitting
-// show_type returns both movies and series — so cost = services(3) × regions. Keep
-// regions ~30 or fewer. Override the region set with CHART_REGIONS="us,gb,au".
+// Free tier is 500 requests/month. We make ONE call per (service × region) — omitting
+// show_type returns both movies and series — so cost = services(4) × regions per run.
+// At a weekly cadence, 4 × 12 regions × ~4.3 runs ≈ 206/month. Override the region
+// set with CHART_REGIONS="us,gb,au".
 //
 // Usage (needs deps):
 //   RAPIDAPI_KEY=… TMDB_API_KEY=… SUPABASE_SERVICE_ROLE_KEY=… node scripts/sync-streaming-top10.mjs
@@ -31,9 +32,10 @@ const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABAS
 
 // Our canonical platform key → Streaming Availability service id (Max = "hbo").
 const SERVICES = [
-  { platform: 'prime', service: 'prime' },
-  { platform: 'max',   service: 'hbo'   },
-  { platform: 'apple', service: 'apple' },
+  { platform: 'prime',  service: 'prime'  },
+  { platform: 'max',    service: 'hbo'    },
+  { platform: 'apple',  service: 'apple'  },
+  { platform: 'disney', service: 'disney' },
 ];
 const REGIONS = (process.env.CHART_REGIONS || 'us,gb,au,ca,de,fr,es,it,br,mx,in,jp')
   .split(',').map(s => s.trim().toLowerCase()).filter(Boolean);

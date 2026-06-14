@@ -49,12 +49,13 @@ export function usePlatformCharts() {
 }
 
 // Map a TMDB watch-provider display name to our canonical chart platform key.
-// Returns null for platforms that publish no official chart anywhere
-// (Disney+, Hulu, Paramount+, …), which keep the TMDB-popularity proxy.
+// Returns null for platforms we have no official chart feed for (Hulu,
+// Paramount+, Peacock, …), which keep the TMDB-popularity proxy.
 export function chartKeyForProvider(name = '') {
   if (/netflix/i.test(name)) return 'netflix';
   if (/prime|amazon/i.test(name)) return 'prime';
   if (/\bmax\b|hbo/i.test(name)) return 'max';
   if (/apple/i.test(name)) return 'apple';
+  if (/disney/i.test(name)) return 'disney';
   return null;
 }
