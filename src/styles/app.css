@@ -82,10 +82,13 @@ svg { stroke-width: 1.5; }
   cursor: pointer;
 }
 
-.app-header-logo-image {
-  display: block;
-  width: auto;
-  height: 28px;
+.app-header-logo-text {
+  font-family: var(--font-serif);
+  font-size: 1.7rem;
+  font-weight: 400;
+  letter-spacing: -0.05em;
+  line-height: 1;
+  color: var(--text-primary);
   user-select: none;
 }
 
@@ -2834,26 +2837,23 @@ svg { stroke-width: 1.5; }
 }
 
 .plot-loader {
-  --plot-loader-letter-height: 28px;
-  --plot-loader-letter-o-height: 28.76px;
-  --plot-loader-p-gap: 2.27px;
-  --plot-loader-l-gap: -2.65px;
-  --plot-loader-o-gap: -1.89px;
-  display: inline-flex;
-  align-items: flex-end;
-  justify-content: center;
-  gap: 0;
+  --plot-loader-font-size: 28px;
+  --plot-loader-color: #0a0a0a;
+  display: inline-block;
   width: fit-content;
-  line-height: 0;
+  font-family: var(--font-serif);
+  font-size: var(--plot-loader-font-size);
+  font-weight: 400;
+  letter-spacing: -0.05em;
+  line-height: 1;
+  color: var(--plot-loader-color);
   user-select: none;
   vertical-align: middle;
   margin-inline: auto;
 }
 
 .plot-loader__letter {
-  display: flex;
-  align-items: flex-end;
-  flex-shrink: 0;
+  display: inline-block;
   opacity: 0.18;
   animation: plot-letter-pulse 2s ease-in-out infinite;
 }
@@ -2862,25 +2862,10 @@ svg { stroke-width: 1.5; }
 .plot-loader__letter:nth-child(3) { animation-delay: 0.6s; }
 .plot-loader__letter:nth-child(4) { animation-delay: 0.9s; }
 
-.plot-loader__letter img {
-  display: block;
-  width: auto;
-  height: var(--plot-loader-letter-height);
-}
-
-.plot-loader__letter--p { margin-right: var(--plot-loader-p-gap); }
-.plot-loader__letter--l { margin-right: var(--plot-loader-l-gap); }
-.plot-loader__letter--o { margin-right: var(--plot-loader-o-gap); }
-.plot-loader__letter--o img { height: var(--plot-loader-letter-o-height); }
-
 @media (max-width: 720px) {
   .page-loader .plot-loader,
   .app-boot-loader .plot-loader {
-    --plot-loader-letter-height: 24px;
-    --plot-loader-letter-o-height: 24.65px;
-    --plot-loader-p-gap: 1.95px;
-    --plot-loader-l-gap: -2.27px;
-    --plot-loader-o-gap: -1.62px;
+    --plot-loader-font-size: 24px;
   }
 }
 
@@ -3545,6 +3530,10 @@ svg { stroke-width: 1.5; }
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 0.5s var(--ease);
+}
+.discover-hero:hover .discover-hero-backdrop {
+  transform: scale(1.045);
 }
 
 .discover-hero-backdrop-fallback {
@@ -3554,7 +3543,9 @@ svg { stroke-width: 1.5; }
 .discover-hero-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.35) 55%, transparent 100%);
+  background:
+    linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.58) 30%, rgba(0,0,0,0.14) 62%, transparent 100%),
+    linear-gradient(to bottom, rgba(0,0,0,0.30) 0%, transparent 30%);
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
@@ -3584,13 +3575,15 @@ svg { stroke-width: 1.5; }
   letter-spacing: -0.03em;
   line-height: 1.05;
   margin-bottom: 0.25rem;
+  text-shadow: 0 2px 16px rgba(0,0,0,0.5), 0 1px 2px rgba(0,0,0,0.45);
 }
 
 .discover-hero-meta {
   font-size: 0.68rem;
-  color: rgba(255,255,255,0.6);
+  color: rgba(255,255,255,0.72);
   margin-bottom: 0.65rem;
   font-weight: 500;
+  text-shadow: 0 1px 8px rgba(0,0,0,0.55);
 }
 
 .discover-hero-corner-btns {
@@ -3650,8 +3643,8 @@ svg { stroke-width: 1.5; }
 .discover-chart-row {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.6rem 1rem;
+  gap: 0.85rem;
+  padding: 0.5rem 1rem;
   border-bottom: 1px solid var(--border);
   cursor: pointer;
   transition: background 0.12s;
@@ -3664,14 +3657,19 @@ svg { stroke-width: 1.5; }
   font-family: var(--font-serif);
   font-size: 1.55rem;
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
   color: var(--accent);
   width: 2rem;
-  text-align: right;
+  text-align: center;
   flex-shrink: 0;
   line-height: 1;
 }
 .discover-chart-rank.glow {
   text-shadow: 0 0 14px var(--accent-dim);
+}
+.discover-chart-rank.top3 {
+  font-size: 1.95rem;
+  text-shadow: 0 0 18px var(--accent-dim), 0 1px 2px rgba(0,0,0,0.3);
 }
 .discover-chart-rank.dim {
   color: var(--text-muted);
@@ -3679,13 +3677,19 @@ svg { stroke-width: 1.5; }
 }
 
 .discover-chart-poster {
-  width: 38px;
+  width: 40px;
   aspect-ratio: 2/3;
   border-radius: 6px;
   overflow: hidden;
   flex-shrink: 0;
   background: var(--surface-sunken);
   box-shadow: var(--shadow-xs);
+}
+.discover-chart-poster img {
+  transition: transform 0.25s var(--ease);
+}
+.discover-chart-row:hover .discover-chart-poster img {
+  transform: scale(1.08);
 }
 
 .discover-chart-info {
@@ -3713,6 +3717,32 @@ svg { stroke-width: 1.5; }
   display: flex;
   align-items: center;
 }
+
+/* Poster card hover-lift — scoped to Discover so shared media-card
+   usage elsewhere keeps its existing press behaviour */
+.discover-section .media-card:hover {
+  transform: translateY(-4px);
+}
+.discover-section .media-card:active {
+  transform: translateY(-1px) scale(0.97);
+}
+.discover-section .media-card .media-card-img {
+  transition: box-shadow 0.2s var(--ease);
+}
+.discover-section .media-card:hover .media-card-img {
+  box-shadow: var(--shadow-md);
+}
+
+/* Staggered section load-in */
+.discover-hero,
+.discover-section {
+  animation: fadeUp 0.45s var(--ease) both;
+}
+.discover-hero          { animation-delay: 0.02s; }
+.discover-section:nth-of-type(1) { animation-delay: 0.09s; }
+.discover-section:nth-of-type(2) { animation-delay: 0.16s; }
+.discover-section:nth-of-type(3) { animation-delay: 0.23s; }
+.discover-section:nth-of-type(4) { animation-delay: 0.30s; }
 
 /* Landscape TV rail */
 .discover-section {
@@ -3763,16 +3793,17 @@ svg { stroke-width: 1.5; }
   padding: 0;
   text-align: left;
   box-shadow: var(--shadow-xs);
-  transition: transform 0.2s var(--ease);
+  transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
   -webkit-tap-highlight-color: transparent;
 }
 
 .discover-binge-card:hover {
-  transform: scale(0.985);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
 }
 
 .discover-binge-card:active {
-  transform: scale(0.965);
+  transform: translateY(-1px) scale(0.99);
 }
 
 .discover-binge-card-shade {
@@ -3947,8 +3978,16 @@ svg { stroke-width: 1.5; }
 }
 
 @media (hover: none), (pointer: coarse) {
-  .media-card:hover {
+  .media-card:hover,
+  .discover-section .media-card:hover {
     transform: none;
+  }
+  .discover-section .media-card:hover .media-card-img {
+    box-shadow: var(--shadow-xs);
+  }
+  .discover-binge-card:hover {
+    transform: none;
+    box-shadow: var(--shadow-xs);
   }
 
   .media-card:active {

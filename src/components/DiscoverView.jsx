@@ -202,7 +202,7 @@ function ChartRow({ item, rank, openPanel, watchlist }) {
       onClick={openDetails}
       {...getButtonLikeProps({ onPress: openDetails, label: `View details for ${title}` })}
     >
-      <span className={`discover-chart-rank${rank <= 10 ? ' glow' : ' dim'}`}>{rank}</span>
+      <span className={`discover-chart-rank${rank <= 10 ? ' glow' : ' dim'}${rank <= 3 ? ' top3' : ''}`}>{rank}</span>
       <div className="discover-chart-poster">
         {img
           ? <img src={img} alt={title} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />

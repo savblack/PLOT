@@ -80,7 +80,7 @@ export default function AppShell({ currentView, navigateTo, children }) {
             onClick={() => navigateTo('home')}
             aria-label="Go to home"
           >
-            <PlotLogo className="app-header-logo-image" />
+            <span className="app-header-logo-text">PLOT</span>
           </button>
         ) : (
           <span className="app-page-title">{pageTitle}</span>

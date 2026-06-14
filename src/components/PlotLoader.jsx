@@ -1,16 +1,4 @@
-const BLACK_LETTERS = [
-  { key: 'p', src: '/P.png' },
-  { key: 'l', src: '/L.png' },
-  { key: 'o', src: '/O.png' },
-  { key: 't', src: '/T.png' },
-];
-
-const WHITE_LETTERS = [
-  { key: 'p', src: '/P-white.png' },
-  { key: 'l', src: '/L-white.png' },
-  { key: 'o', src: '/O-white.png' },
-  { key: 't', src: '/T-white.png' },
-];
+const LETTERS = ['P', 'L', 'O', 'T'];
 
 const SIZE_MAP = {
   xs: 8,
@@ -28,13 +16,9 @@ function resolveTone(tone) {
     : 'light';
 }
 
-function resolveHeight(size) {
+function resolveSize(size) {
   if (typeof size === 'number') return size;
   return SIZE_MAP[size] ?? SIZE_MAP.lg;
-}
-
-function scale(value, height) {
-  return `${Number(((value / 74) * height).toFixed(2))}px`;
 }
 
 export default function PlotLoader({
@@ -45,8 +29,8 @@ export default function PlotLoader({
   className = '',
   style,
 }) {
-  const height = resolveHeight(size);
-  const letters = resolveTone(tone) === 'dark' ? WHITE_LETTERS : BLACK_LETTERS;
+  const fontSize = resolveSize(size);
+  const color = resolveTone(tone) === 'dark' ? '#ffffff' : '#0a0a0a';
   const classes = ['plot-loader', className].filter(Boolean).join(' ');
   const ariaProps = ariaHidden
     ? { 'aria-hidden': true }
@@ -56,19 +40,14 @@ export default function PlotLoader({
     <span
       className={classes}
       style={{
-        '--plot-loader-letter-height': `${height}px`,
-        '--plot-loader-letter-o-height': scale(76, height),
-        '--plot-loader-p-gap': scale(6, height),
-        '--plot-loader-l-gap': scale(-7, height),
-        '--plot-loader-o-gap': scale(-5, height),
+        '--plot-loader-font-size': `${fontSize}px`,
+        '--plot-loader-color': color,
         ...style,
       }}
       {...ariaProps}
     >
-      {letters.map(({ key, src }) => (
-        <span key={key} className={`plot-loader__letter plot-loader__letter--${key}`}>
-          <img src={src} alt="" aria-hidden="true" />
-        </span>
+      {LETTERS.map((letter, i) => (
+        <span key={i} className="plot-loader__letter">{letter}</span>
       ))}
     </span>
   );
