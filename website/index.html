@@ -61,8 +61,6 @@
     .hero-headline,
     .manifesto-line,
     .ftp-headline,
-    .section-title,
-    .feat-title,
     .timeline-headline,
     .footer-cta-headline,
     .footer-cta-sub {
@@ -238,7 +236,6 @@
     }
 
     /* Mobile-only elements hidden by default */
-    .feat-dots { display: none; }
     .ftp-mobile-posters { display: none; }
 
     /* Mobile nav toggle — padded to a ≥44px tap target, negative margin keeps
@@ -338,7 +335,7 @@
     }
 
 
-    #manifesto, #for-the-plot, #value, #features, #cta, footer {
+    #manifesto, #for-the-plot, #value, #cta {
       position: relative;
       z-index: 2;
       background: var(--bg);
@@ -487,103 +484,6 @@
       font-size: 1.05rem;
       font-style: italic;
       margin-top: 2px;
-    }
-
-    /* ── Features ───────────────────────────────────────────── */
-    #features {
-      padding: 8rem 2rem;
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-
-    .section-title {
-      font-family: var(--serif);
-      font-size: clamp(2.8rem, 6.5vw, 5rem);
-      font-weight: 400;
-      letter-spacing: var(--serif-tracking);
-      line-height: 0.95;
-      margin-bottom: 1.5rem;
-    }
-
-    .features-header {
-      margin-bottom: 2.5rem;
-    }
-
-    .feat-bento {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      grid-template-areas:
-        "one  two  two"
-        "three three four";
-      gap: 1rem;
-    }
-
-    .feat-tile {
-      background: white;
-      border: 1px solid rgba(0,0,0,0.06);
-      border-radius: 20px;
-      padding: 2.75rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0;
-      min-height: 260px;
-    }
-
-    .feat-tile:nth-child(1) { grid-area: one; }
-    .feat-tile:nth-child(2) { grid-area: two; }
-    .feat-tile:nth-child(3) { grid-area: three; }
-    .feat-tile:nth-child(4) { grid-area: four; }
-
-    .feat-num {
-      font-family: var(--sans);
-      font-size: 1.9rem;
-      color: var(--muted);
-      opacity: 0.45;
-      margin-bottom: auto;
-      text-align: right;
-    }
-
-    .feat-title {
-      font-family: var(--serif);
-      font-size: clamp(2.8rem, 6.5vw, 5rem);
-      font-weight: 400;
-      letter-spacing: var(--serif-tracking);
-      line-height: 0.92;
-      color: var(--text);
-      margin-bottom: 0.3rem;
-    }
-
-    .feat-body {
-      font-size: 1rem;
-      color: var(--muted);
-      line-height: 1.45;
-    }
-
-    .feat-body-more {
-      font-size: 1rem;
-      color: var(--muted);
-      line-height: 1.45;
-      overflow: hidden;
-      max-height: 0;
-      opacity: 0;
-      transition: max-height 0.4s ease, opacity 0.3s ease;
-    }
-
-    .feat-tile {
-      transition: box-shadow 0.3s ease;
-      cursor: default;
-    }
-
-    .feat-tile:hover .feat-body-more {
-      max-height: 10rem;
-      opacity: 1;
-    }
-
-    @media (max-width: 700px) {
-      .feat-bento {
-        grid-template-columns: 1fr;
-        grid-template-areas: "one" "two" "three" "four";
-      }
     }
 
     /* ── Timeline ───────────────────────────────────────────── */
@@ -806,161 +706,190 @@
     }
 
     /* ── Footer ─────────────────────────────────────────────── */
-    footer {
-      background: var(--surface) !important;
-      padding: 3.5rem 3rem calc(var(--ticker-height) + env(safe-area-inset-bottom, 0px) + 1.25rem);
+    /* What's On — closing CTA over a poster wall */
+    #whats-on-cta {
       position: relative;
+      background: var(--dark);
+      color: var(--text-dark);
+      padding: 8rem 2rem;
+      overflow: hidden;
+      isolation: isolate;
       z-index: 3;
     }
 
-    .footer-inner { max-width: 1100px; margin: 0 auto; }
-
-    .footer-grid {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 2rem 3rem;
+    .woc-wall {
+      position: absolute;
+      inset: -6% -2% 0;
+      z-index: -2;
+      display: grid;
+      grid-template-columns: repeat(9, 1fr);
+      gap: 12px;
+      opacity: 0.5;
+      transform: rotate(-4deg) scale(1.18);
+      transform-origin: center;
     }
 
-    .footer-brand { flex: 1.4; min-width: 200px; }
+    .woc-tile {
+      aspect-ratio: 2 / 3;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #1c1c1f;
+    }
 
-    .footer-logo {
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
+    .woc-tile img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      opacity: 0;
+      transition: opacity 0.6s var(--ease);
+    }
+
+    .woc-tile img.loaded { opacity: 1; }
+
+    .woc-scrim {
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background:
+        linear-gradient(to bottom, transparent 62%, var(--dark) 99%),
+        radial-gradient(ellipse 72% 78% at 50% 50%, rgba(12,12,12,0.46) 0%, rgba(12,12,12,0.82) 52%, rgba(12,12,12,0.96) 100%);
+    }
+
+    .woc-inner { max-width: 720px; margin: 0 auto; text-align: center; }
+
+    .woc-headline {
       font-family: var(--serif);
-      font-size: 2.5rem;
       font-weight: 400;
       letter-spacing: var(--serif-tracking);
-      color: var(--text);
-      line-height: 1;
-      user-select: none;
+      font-size: clamp(2.8rem, 6vw, 4.8rem);
+      line-height: 0.95;
+      margin-bottom: 1.1rem;
+      color: var(--text-dark);
+    }
+    .woc-headline em { font-style: italic; }
+
+    .woc-sub {
+      font-size: 1.05rem;
+      font-weight: 300;
+      color: rgba(240,239,232,0.72);
+      max-width: 44ch;
+      margin: 0 auto 2.4rem;
+      line-height: 1.5;
     }
 
-    .footer-tagline {
-      font-size: 1rem;
-      font-weight: 400;
-      color: #a1a1aa;
-      margin-top: 0.6rem;
-    }
-
-    .footer-col { flex: 1; min-width: 110px; }
-
-    .footer-col h4 {
-      font-size: 0.68rem;
-      font-weight: 600;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: #a1a1aa;
-      margin-bottom: 0.7rem;
-    }
-
-    .footer-col ul { list-style: none; }
-
-    .footer-col a {
-      display: inline-block;
-      padding: 0.22rem 0;
-      font-size: 0.75rem;
-      font-weight: 400;
-      color: #52525b;
-      text-decoration: none;
-      transition: color 0.2s;
-      white-space: nowrap;
-    }
-
-    .footer-col a:hover { color: var(--pink); }
-
-    /* Newsletter band */
-    .footer-news {
+    .woc-actions {
       display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1.5rem;
+      align-items: flex-start;
+      justify-content: center;
+      gap: 1rem;
       flex-wrap: wrap;
-      margin-top: 2.25rem;
-      padding: 2rem 0;
     }
 
-    .footer-news-title {
-      font-family: var(--serif);
-      font-size: 1.5rem;
-      font-weight: 400;
-      letter-spacing: -0.01em;
-      line-height: 1.2;
-      color: var(--text);
-    }
+    .woc-sub-wrap { display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-start; }
 
-    .footer-news-sub {
-      font-size: 1rem;
-      color: #a1a1aa;
-      margin-top: 0.4rem;
-    }
-
-    .footer-news-right {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 0.45rem;
-    }
-
-    .footer-news-form {
+    .woc-form {
       display: flex;
       align-items: center;
-      background: var(--surface);
-      border: 1px solid rgba(0,0,0,0.12);
-      border-radius: 20px;
-      padding: 3px;
-      height: 40px;
-      width: 300px;
+      border: 1px solid rgba(255,255,255,0.22);
+      border-radius: var(--r-pill);
+      padding: 4px;
+      height: 48px;
+      width: 340px;
       max-width: 100%;
     }
 
-    .footer-news-form input[type="email"] {
+    .woc-form input[type="email"] {
       flex: 1;
       min-width: 0;
-      height: 32px;
       border: none;
       outline: none;
       background: transparent;
       font-family: var(--sans);
-      font-size: 0.82rem;
-      color: var(--text);
-      padding: 0 6px 0 14px;
+      font-size: 0.88rem;
+      padding: 0 6px 0 16px;
+      color: #fff;
     }
+    .woc-form input[type="email"]::placeholder { color: rgba(240,239,232,0.45); }
 
-    .footer-news-form input[type="email"]::placeholder { color: #a1a1aa; }
-
-    .footer-news-form button {
-      flex-shrink: 0;
-      height: 32px;
+    .woc-form button {
+      height: 40px;
       padding: 0 18px;
-      border: none;
-      border-radius: 16px;
-      background: #1a1a1a;
+      border: 1px solid rgba(255,255,255,0.6);
+      border-radius: var(--r-pill);
+      background: transparent;
       color: #fff;
       font-family: var(--sans);
       font-size: 0.82rem;
       font-weight: 600;
       cursor: pointer;
-      transition: opacity 0.2s ease;
+      white-space: nowrap;
+      transition: all 0.25s var(--ease);
     }
+    .woc-form button:hover:not(:disabled) { background: #fff; color: #0e0e0e; }
+    .woc-form button:disabled { opacity: 0.6; cursor: default; }
 
-    .footer-news-form button:hover:not(:disabled) { opacity: 0.85; }
-    .footer-news-form button:disabled { opacity: 0.6; cursor: default; }
-
-    .footer-news-msg { font-size: 0.78rem; color: #52525b; min-height: 1.1em; }
+    .woc-hint { font-size: 0.76rem; font-weight: 300; color: rgba(240,239,232,0.5); padding-left: 0.5rem; }
+    .woc-msg { font-size: 0.78rem; color: rgba(240,239,232,0.6); min-height: 1.1em; padding-left: 0.5rem; }
 
     /* Honeypot: invisible to humans, tempting to bots */
-    .footer-news-form .fn-website { position: absolute; left: -9999px; opacity: 0; pointer-events: none; }
+    .woc-form .fn-website { position: absolute; left: -9999px; opacity: 0; pointer-events: none; }
 
-    /* Bottom rail */
-    .footer-rail {
-      padding-top: 1.1rem;
-      text-align: center;
+    /* Footer — lean nav rail, continuous with the dark section above */
+    footer {
+      background: var(--dark);
+      color: var(--text-dark);
+      padding: 2.6rem 3rem calc(2.6rem + var(--ticker-height) + env(safe-area-inset-bottom, 0px));
+      margin-top: -1px;
+      position: relative;
+      z-index: 3;
     }
 
+    .footer-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem 2rem;
+      flex-wrap: wrap;
+    }
+
+    .footer-logo {
+      text-decoration: none;
+      font-family: var(--serif);
+      font-weight: 400;
+      letter-spacing: var(--serif-tracking);
+      font-size: 1.8rem;
+      line-height: 1;
+      color: var(--text-dark);
+      user-select: none;
+    }
+
+    .footer-nav { display: flex; gap: 1.3rem; flex-wrap: wrap; }
+
+    .footer-nav a {
+      font-size: 0.82rem;
+      color: rgba(240,239,232,0.6);
+      text-decoration: none;
+      transition: color 0.2s;
+      white-space: nowrap;
+    }
+    .footer-nav a:hover { color: #fff; }
+
     .footer-copy {
+      width: 100%;
+      padding-top: 1.2rem;
+      margin-top: 0.4rem;
+      border-top: 1px solid rgba(255,255,255,0.08);
       font-size: 0.75rem;
-      color: #a1a1aa;
+      color: var(--muted-dark);
+    }
+
+    @media (max-width: 820px) { .woc-wall { grid-template-columns: repeat(6, 1fr); } }
+    @media (max-width: 600px) {
+      #whats-on-cta { padding-left: 1.5rem; padding-right: 1.5rem; }
+      footer { padding-left: 1.5rem; padding-right: 1.5rem; }
     }
 
 
@@ -1094,55 +1023,6 @@
       .manifesto-poster-row.passed { opacity: 0.22; }
       #plotDoes { margin-top: 12vh; margin-bottom: 24vh; }
 
-      /* Features — horizontal scroll cards */
-      #features { padding: 3rem 0 3rem 1.5rem; }
-      .features-header { margin-bottom: 2rem; padding-right: 1.5rem; }
-      .feat-bento {
-        display: flex;
-        flex-direction: row;
-        overflow-x: auto;
-        scroll-snap-type: x mandatory;
-        -webkit-overflow-scrolling: touch;
-        gap: 0.75rem;
-        padding-right: 1.5rem;
-        scrollbar-width: none;
-      }
-      .feat-bento::-webkit-scrollbar { display: none; }
-      .feat-tile {
-        width: 72vw;
-        min-height: unset;
-        padding: 1.75rem;
-        scroll-snap-align: start;
-        flex-shrink: 0;
-        overflow: hidden;
-      }
-      .feat-tile .feat-body {
-        word-wrap: break-word;
-        overflow-wrap: break-word;
-      }
-      .feat-tile .feat-body-more {
-        max-height: 10rem;
-        opacity: 1;
-      }
-
-      /* Feature carousel dots */
-      .feat-dots {
-        display: flex;
-        gap: 6px;
-        justify-content: center;
-        margin-top: 1.25rem;
-        padding-right: 1.5rem;
-      }
-      .feat-dot {
-        width: 6px;
-        height: 6px;
-        border-radius: 50%;
-        background: rgba(0,0,0,0.15);
-        transition: background 0.3s;
-        flex-shrink: 0;
-      }
-      .feat-dot.active { background: var(--text); }
-
       /* For the Plot — section padding (poster grid rules live in the 900px query) */
       #for-the-plot { padding: 5rem 1.5rem; }
 
@@ -1162,11 +1042,8 @@
         gap: 2.5rem;
       }
 
-      /* Footer — stack the newsletter band and stretch the form */
+      /* Footer — tighten side padding on narrow screens */
       footer { padding-left: 1.5rem; padding-right: 1.5rem; }
-      .footer-news { flex-direction: column; align-items: flex-start; }
-      .footer-news-right { width: 100%; align-items: stretch; }
-      .footer-news-form { width: 100%; }
     }
 
     /* ═══════════════════════════════════════════════════════════
@@ -2186,49 +2063,6 @@
       </div>
     </div>
   </section>
-  <!-- ── Features (removed) ───────────────────────────────────── -->
-  <section id="features" style="display:none">
-    <div class="features-header reveal">
-      <h2 class="section-title">Designed for your<br>viewing habits</h2>
-    </div>
-    <div class="feat-bento">
-
-      <div class="feat-tile reveal">
-        <span class="feat-num">01</span>
-        <div class="feat-title">Discover</div>
-        <p class="feat-body">Know what's new, trending, and coming soon.</p>
-        <p class="feat-body-more">Find out where you can watch it, all in one place. PLOT is your starting point for finding something to watch tonight.</p>
-      </div>
-
-      <div class="feat-tile reveal">
-        <span class="feat-num">02</span>
-        <div class="feat-title">Journal</div>
-        <p class="feat-body">Save it. Rate it. Write about it.</p>
-        <p class="feat-body-more">Every film and series you watch becomes part of your timeline. Look back and see it take shape like a story you didn't know you were writing.</p>
-      </div>
-
-      <div class="feat-tile reveal">
-        <span class="feat-num">03</span>
-        <div class="feat-title">Personalise</div>
-        <p class="feat-body">No two feeds look the same, and they shouldn't.</p>
-        <p class="feat-body-more">Yours is shaped by every film you've rated, every series you've logged and every list you've made. The more you use PLOT, the more it gets you.</p>
-      </div>
-
-      <div class="feat-tile reveal">
-        <span class="feat-num">04</span>
-        <div class="feat-title">Share</div>
-        <p class="feat-body">Drop your top ten list in the group chat.</p>
-        <p class="feat-body-more">Check if your flatmate's TV taste is grounds for moving out. Share your profile like a love letter. Or a <em>warning.</em> What's the point of great taste if nobody knows?</p>
-      </div>
-
-    </div>
-    <div class="feat-dots">
-      <span class="feat-dot active"></span>
-      <span class="feat-dot"></span>
-      <span class="feat-dot"></span>
-      <span class="feat-dot"></span>
-    </div>
-  </section>
 
 
   <!-- ── Timeline ────────────────────────────────────────────────── -->
@@ -2434,48 +2268,41 @@
     </div>
   </div>
 
-  <!-- ── Footer ────────────────────────────────────────────────── -->
-  <footer>
-    <div class="footer-inner">
-      <div class="footer-grid">
-        <div class="footer-brand">
-          <a class="footer-logo" href="/">PLOT</a>
-          <p class="footer-tagline">Your film &amp; TV companion.</p>
-        </div>
-        <div class="footer-col">
-          <h4>Explore</h4>
-          <ul>
-            <li><a href="/">Home</a></li>
-            <li><a href="/whats-on">What's On</a></li>
-            <li><a href="https://app.theplot.tv/login">Log in</a></li>
-            <li><a href="https://app.theplot.tv/signup">Sign up</a></li>
-          </ul>
-        </div>
-        <div class="footer-col">
-          <h4>Legal</h4>
-          <ul>
-            <li><a href="privacy.html">Privacy</a></li>
-            <li><a href="terms.html">Terms</a></li>
-          </ul>
-        </div>
-      </div>
-      <div class="footer-news">
-        <div>
-          <div class="footer-news-title">What's on, in your inbox.</div>
-          <p class="footer-news-sub">The best of what's new and coming soon, once a week.</p>
-        </div>
-        <div class="footer-news-right">
-          <form class="footer-news-form" id="newsletterForm">
+  <!-- ── What's On — closing CTA ──────────────────────────────── -->
+  <section id="whats-on-cta">
+    <div class="woc-wall" id="wocWall" aria-hidden="true"></div>
+    <div class="woc-scrim"></div>
+    <div class="woc-inner">
+      <h2 class="woc-headline">What's on, <em>daily.</em></h2>
+      <p class="woc-sub">Your daily briefing on everything worth watching.</p>
+      <div class="woc-actions">
+        <a href="/whats-on" class="btn btn-outline-white btn-large">Browse What's On &rarr;</a>
+        <div class="woc-sub-wrap">
+          <form class="woc-form" id="newsletterForm">
             <input type="email" name="email" placeholder="your@email.com" required autocomplete="email" aria-label="Email address">
             <input type="text" name="website" class="fn-website" tabindex="-1" autocomplete="off" aria-hidden="true">
             <button type="submit">Subscribe</button>
           </form>
-          <div class="footer-news-msg" id="newsletterMsg" role="status"></div>
+          <span class="woc-hint">Or get it in your inbox, weekly</span>
+          <div class="woc-msg" id="newsletterMsg" role="status"></div>
         </div>
       </div>
-      <div class="footer-rail">
-        <span class="footer-copy">&copy; 2026 PLOT</span>
+    </div>
+  </section>
+
+  <!-- ── Footer ────────────────────────────────────────────────── -->
+  <footer>
+    <div class="footer-inner">
+      <a class="footer-logo" href="/">PLOT</a>
+      <div class="footer-nav">
+        <a href="/">Home</a>
+        <a href="/whats-on">What's On</a>
+        <a href="https://app.theplot.tv/login">Log in</a>
+        <a href="https://app.theplot.tv/signup">Sign up</a>
+        <a href="privacy.html">Privacy</a>
+        <a href="terms.html">Terms</a>
       </div>
+      <div class="footer-copy">&copy; 2026 PLOT</div>
     </div>
   </footer>
 
@@ -2533,6 +2360,39 @@
       }
       return trendingSetsPromise;
     }
+
+    // What's On closing section — poster wall (reuses the shared trending sets)
+    (function () {
+      var wall = document.getElementById('wocWall');
+      if (!wall) return;
+      var IMG = 'https://image.tmdb.org/t/p/w500';
+      var COUNT = 27;
+      fetchTrendingSets().then(function (sets) {
+        var seen = {}, urls = [];
+        sets.forEach(function (s) {
+          ((s && s.results) || []).forEach(function (r) {
+            if (r.poster_path && !seen[r.poster_path]) { seen[r.poster_path] = 1; urls.push(IMG + r.poster_path); }
+          });
+        });
+        if (!urls.length) return;
+        for (var i = urls.length - 1; i > 0; i--) {
+          var j = Math.floor(Math.random() * (i + 1));
+          var t = urls[i]; urls[i] = urls[j]; urls[j] = t;
+        }
+        for (var k = 0; k < COUNT; k++) {
+          var tile = document.createElement('div');
+          tile.className = 'woc-tile';
+          var img = new Image();
+          img.loading = 'lazy';
+          img.decoding = 'async';
+          img.alt = '';
+          img.onload = (function (im) { return function () { im.classList.add('loaded'); }; })(img);
+          img.src = urls[k % urls.length];
+          tile.appendChild(img);
+          wall.appendChild(tile);
+        }
+      }).catch(function () {});
+    })();
 
     // Navbar scroll effect
     const navbar = document.getElementById('navbar');
@@ -2908,68 +2768,6 @@
         ]);
       }
     })();
-
-    // ── Feature cards auto-slide (mobile only) ────────────────
-    (function initFeatSlider() {
-      const bento = document.querySelector('.feat-bento');
-      // offsetParent is null while #features is display:none — no point
-      // running a 3s interval for a hidden carousel
-      if (!bento || !bento.offsetParent) return;
-
-      const getCards = () => Array.from(bento.querySelectorAll('.feat-tile'));
-      const dots = Array.from(document.querySelectorAll('.feat-dot'));
-      let current = 0;
-      let timer = null;
-      let paused = false;
-
-      function updateDots(index) {
-        dots.forEach((d, i) => d.classList.toggle('active', i === index));
-      }
-
-      function slideTo(index) {
-        const cards = getCards();
-        if (!cards.length) return;
-        current = index % cards.length;
-        bento.scrollTo({ left: cards[current].offsetLeft - bento.offsetLeft, behavior: 'smooth' });
-        updateDots(current);
-      }
-
-      function start() {
-        if (window.innerWidth > 600) return;
-        timer = setInterval(() => {
-          if (!paused) slideTo(current + 1);
-        }, 3000);
-      }
-
-      // Pause on touch, resume after 5s of inactivity
-      bento.addEventListener('touchstart', () => {
-        paused = true;
-      }, { passive: true });
-      bento.addEventListener('touchend', () => {
-        setTimeout(() => { paused = false; }, 5000);
-      }, { passive: true });
-
-      // Update current index when user manually scrolls
-      bento.addEventListener('scrollend', () => {
-        const cards = getCards();
-        const scrollLeft = bento.scrollLeft;
-        let closest = 0;
-        let minDist = Infinity;
-        cards.forEach((card, i) => {
-          const dist = Math.abs(card.offsetLeft - bento.offsetLeft - scrollLeft);
-          if (dist < minDist) { minDist = dist; closest = i; }
-        });
-        current = closest;
-        updateDots(current);
-      });
-
-      start();
-      window.addEventListener('resize', () => {
-        clearInterval(timer);
-        start();
-      });
-    })();
-
 
     // ── Guide phone animation ─────────────────────────────────
     const guideFrame = document.getElementById('guideFrame');
