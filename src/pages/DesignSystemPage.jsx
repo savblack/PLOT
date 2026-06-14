@@ -1,6 +1,5 @@
 import './DesignSystemPage.css';
 import PlotLoader from '../components/PlotLoader.jsx';
-import PlotLogo from '../components/PlotLogo.jsx';
 
 const colorTokens = [
   ['--bg', 'App background', 'The quiet canvas behind every primary view.'],
@@ -484,7 +483,7 @@ export default function DesignSystemPage() {
             <span className="ds-example-label">Navigation drawer</span>
             <div className="ds-drawer-sample">
               <div className="nav-drawer-header">
-                <PlotLogo className="nav-drawer-logo-image" />
+                <span className="nav-drawer-logo-text">PLOT</span>
               </div>
               <div className="nav-drawer-nav">
                 <button className="nav-drawer-item active"><span className="nav-drawer-label">Home</span></button>

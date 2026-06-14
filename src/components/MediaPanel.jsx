@@ -666,6 +666,22 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
     });
   }, [details, history, inList, isMovie, isWatching, itemId, itemType, watched, watchedEntry?.dnf, watchlist, watching]);
 
+  const handleClearStatus = useCallback(async () => {
+    if (isWatching) {
+      const stopped = await watching.stopWatching(itemId);
+      return stopped
+        ? { ok: true }
+        : { ok: false, error: 'Could not clear watch status. Please try again.' };
+    }
+    if (watched) {
+      const removed = await history.removeEntry(itemId);
+      return removed
+        ? { ok: true }
+        : { ok: false, error: 'Could not clear watch status. Please try again.' };
+    }
+    return { ok: true };
+  }, [history, isWatching, itemId, watched, watching]);
+
   return (
     <>
       {showListSheet && details && (
@@ -819,6 +835,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                             { label: 'Watching', action: () => runStatusAction('Updating…', handleWatchingStatus), hidden: isMovie },
                             { label: 'Watched', action: () => runStatusAction('Updating…', () => handleWatchedStatus(false)) },
                             { label: "Didn't finish", action: () => runStatusAction('Updating…', () => handleWatchedStatus(true)) },
+                            { label: 'Clear status', action: () => runStatusAction('Clearing…', handleClearStatus), hidden: !isActive, muted: true },
                           ].filter(o => !o.hidden).map((opt, i, arr) => (
                             <button
                               key={opt.label}
@@ -828,7 +845,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                                 width: '100%', padding: '0.6rem 0.85rem',
                                 background: 'transparent',
                                 border: 'none', borderBottom: i < arr.length - 1 ? '1px solid var(--border)' : 'none',
-                                color: 'var(--text-primary)', fontSize: '0.82rem', fontWeight: 500, cursor: 'pointer',
+                                color: opt.muted ? 'var(--text-muted)' : 'var(--text-primary)', fontSize: '0.82rem', fontWeight: 500, cursor: 'pointer',
                                 display: 'flex', alignItems: 'center', textAlign: 'left',
                                 transition: 'background 0.12s',
                                 opacity: statusActionPending ? 0.6 : 1,

@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { PRIMARY_NAV_ITEMS, VIEW_TITLES } from '../navigation.js';
-import PlotLogo from './PlotLogo.jsx';
 
 /* ── SVG Icons ───────────────────────── */
 function IconMenu() {
@@ -130,7 +129,7 @@ export default function AppShell({ currentView, navigateTo, children }) {
         aria-hidden={!drawerOpen}
       >
         <div className="nav-drawer-header">
-          <PlotLogo className="nav-drawer-logo-image" />
+          <span className="nav-drawer-logo-text">PLOT</span>
           <button type="button" className="icon-btn" onClick={closeDrawer} aria-label="Close menu">
             <IconClose />
           </button>

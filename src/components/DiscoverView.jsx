@@ -16,7 +16,7 @@ function Rail({ children }) {
   const { ref, handlers } = useDragScroll();
   return (
     <div className="rail-scroll" ref={ref} {...handlers}
-      style={{ paddingLeft: '1rem', paddingRight: '1rem', paddingTop: '0.75rem', paddingBottom: '1rem' }}>
+      style={{ paddingLeft: '1rem', paddingRight: '1rem', paddingTop: '2rem', paddingBottom: '0.15rem' }}>
       {children}
     </div>
   );
@@ -383,7 +383,7 @@ function DiscoverContent({ openPanel, watchlist, providers }) {
       )}
 
       {weekly.length > 0 && (
-        <section className="discover-section">
+        <section className="discover-section discover-section--list">
           <DiscoverSectionHeader
             kicker="Global ranking"
             title="Top 20 This Week"
@@ -397,7 +397,7 @@ function DiscoverContent({ openPanel, watchlist, providers }) {
       )}
 
       {platformList.length > 0 && (
-        <section className="discover-section">
+        <section className="discover-section discover-section--list">
           <DiscoverSectionHeader
             kicker="Your Streaming Services"
             title="Top 10 On Your Platforms"

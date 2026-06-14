@@ -236,10 +236,13 @@ svg { stroke-width: 1.5; }
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
-.nav-drawer-logo-image {
-  display: block;
-  width: auto;
-  height: 20px;
+.nav-drawer-logo-text {
+  font-family: var(--font-serif);
+  font-size: 1.7rem;
+  font-weight: 400;
+  letter-spacing: -0.05em;
+  line-height: 1;
+  color: var(--text-primary);
   user-select: none;
 }
 
@@ -3526,7 +3529,7 @@ svg { stroke-width: 1.5; }
 .discover-hero {
   position: relative;
   height: 240px;
-  margin: 0.75rem 1rem 0;
+  margin: 2rem 1rem 0;
   border-radius: var(--radius-md);
   overflow: hidden;
   cursor: pointer;
@@ -3756,12 +3759,25 @@ svg { stroke-width: 1.5; }
 
 /* Landscape TV rail */
 .discover-section {
-  margin: 0;
+  margin: 0 0 2rem;
   padding: 0;
 }
 
 .discover-binge-section {
   padding: 0;
+}
+
+/* Black gap above each grey section header (outside the header band) */
+.discover-section-header {
+  margin-top: 2rem;
+}
+
+/* List sections (chart rows, platforms) sit flush — no framing gap */
+.discover-section--list {
+  margin-bottom: 0;
+}
+.discover-section--list + .discover-section .discover-section-header {
+  margin-top: 0;
 }
 
 .discover-binge-header {
@@ -3774,7 +3790,7 @@ svg { stroke-width: 1.5; }
   overflow-x: auto;
   overscroll-behavior-x: contain;
   scrollbar-width: none;
-  padding: 0.75rem 1rem 0.15rem;
+  padding: 2rem 1rem 0.15rem;
   cursor: grab;
   user-select: none;
   -webkit-overflow-scrolling: touch;
