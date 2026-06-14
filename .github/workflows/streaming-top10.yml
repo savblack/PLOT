@@ -1,0 +1,32 @@
+name: Streaming Top 10 — weekly sync (Prime / Max / Apple)
+
+on:
+  schedule:
+    - cron: '30 12 * * 3' # Wednesday 12:30 UTC, just after the Netflix sync
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: streaming-top10
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Sync Prime / Max / Apple Top 10
+        run: node scripts/sync-streaming-top10.mjs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
+          RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
+          CHART_REGIONS: ${{ vars.CHART_REGIONS }}

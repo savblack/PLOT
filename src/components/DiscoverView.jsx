@@ -3,6 +3,7 @@ import { useApp, posterUrl, backdropUrl, TodayLabel } from '../App.jsx';
 import { useDragScroll } from '../hooks/useDragScroll.js';
 import { useGenres } from '../hooks/useGenres.js';
 import { useDiscover } from '../hooks/useDiscover.js';
+import { usePlatformCharts, chartKeyForProvider } from '../hooks/usePlatformCharts.js';
 import { UpcomingContent } from './GuideView.jsx';
 import EpgView from './EpgView.jsx';
 import LoadingSpinner from './LoadingSpinner.jsx';
@@ -243,6 +244,7 @@ function PlatformSection({ platform, openPanel, watchlist }) {
             : <div className="discover-plat-logo discover-plat-logo-fallback">{platform.name.slice(0, 2)}</div>
           }
           <span className="discover-plat-name">{platform.name}</span>
+          {platform.official && <span className="discover-plat-official">Official Top 10</span>}
         </div>
         <svg
           className={`discover-plat-chevron${open ? ' open' : ''}`}
@@ -260,7 +262,7 @@ function PlatformSection({ platform, openPanel, watchlist }) {
               <div className="discover-plat-grid">
                 {platform.movies.slice(0, 10).map((item, i) => (
                   <div
-                    key={item.id}
+                    key={`${item.id}-${i}`}
                     className="media-card interactive-surface"
                     onClick={() => openPanel(item.id, 'movie')}
                     {...getButtonLikeProps({ onPress: () => openPanel(item.id, 'movie'), label: `View details for ${item.title || item.name}` })}
@@ -271,7 +273,7 @@ function PlatformSection({ platform, openPanel, watchlist }) {
                         : <div className="media-card-img-placeholder" />
                       }
                       <SaveBtn item={item} watchlist={watchlist} />
-                      <span className="discover-rank-badge">{i + 1}</span>
+                      <span className="discover-rank-badge">{item._rank ?? i + 1}</span>
                     </div>
                     <div className="media-card-title">{item.title || item.name}</div>
                   </div>
@@ -285,7 +287,7 @@ function PlatformSection({ platform, openPanel, watchlist }) {
               <div className="discover-plat-grid">
                 {platform.tv.slice(0, 10).map((item, i) => (
                   <div
-                    key={item.id}
+                    key={`${item.id}-${i}`}
                     className="media-card interactive-surface"
                     onClick={() => openPanel(item.id, 'tv')}
                     {...getButtonLikeProps({ onPress: () => openPanel(item.id, 'tv'), label: `View details for ${item.title || item.name}` })}
@@ -296,7 +298,7 @@ function PlatformSection({ platform, openPanel, watchlist }) {
                         : <div className="media-card-img-placeholder" />
                       }
                       <SaveBtn item={item} watchlist={watchlist} />
-                      <span className="discover-rank-badge">{i + 1}</span>
+                      <span className="discover-rank-badge">{item._rank ?? i + 1}</span>
                     </div>
                     <div className="media-card-title">{item.title || item.name}</div>
                   </div>
@@ -313,6 +315,7 @@ function PlatformSection({ platform, openPanel, watchlist }) {
 /* ── Discover tab content ── */
 function DiscoverContent({ openPanel, watchlist, providers }) {
   const { data, loading } = useDiscover(providers);
+  const officialCharts = usePlatformCharts();
   const [openSections, setOpenSections] = useState({
     hot: true,
     binge: true,
@@ -325,7 +328,15 @@ function DiscoverContent({ openPanel, watchlist, providers }) {
   }
 
   const { hero, hotRail, weekly, bingedShows, platforms } = data;
-  const platformList = Object.values(platforms);
+  // For platforms that publish a real chart (Netflix, Prime, Max, Apple), prefer
+  // the official data over the TMDB-popularity proxy whenever the sync has it.
+  const platformList = Object.values(platforms).map(platform => {
+    const chart = officialCharts[chartKeyForProvider(platform.name)];
+    if (chart && (chart.movies.length || chart.tv.length)) {
+      return { ...platform, movies: chart.movies, tv: chart.tv, official: true };
+    }
+    return platform;
+  });
   const hasContent = hero || hotRail.length > 0 || weekly.length > 0 || bingedShows.length > 0 || platformList.length > 0;
 
   if (!hasContent) {
