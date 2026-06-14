@@ -870,7 +870,7 @@
 
     .footer-nav a {
       font-size: 0.82rem;
-      color: rgba(240,239,232,0.6);
+      color: rgba(240,239,232,0.82);
       text-decoration: none;
       transition: color 0.2s;
       white-space: nowrap;
@@ -883,7 +883,7 @@
       margin-top: 0.4rem;
       border-top: 1px solid rgba(255,255,255,0.08);
       font-size: 0.75rem;
-      color: var(--muted-dark);
+      color: rgba(240,239,232,0.7);
     }
 
     @media (max-width: 820px) { .woc-wall { grid-template-columns: repeat(6, 1fr); } }
@@ -1882,6 +1882,16 @@
     .cal-cell-int:hover:not(.dim) { background: rgba(255,255,255,0.06); }
     .cal-cell-int.dim  { opacity: 0.28; pointer-events: none; }
     .cal-cell-int.selected { background: rgba(255,255,255,0.09); }
+    /* Interactive day cells render as <button> — reset native chrome and give a
+       clear keyboard focus ring (SUS-79). */
+    button.cal-cell-int {
+      appearance: none; -webkit-appearance: none;
+      border: 0; background: none; font: inherit; color: inherit; width: 100%;
+    }
+    .cal-cell-int:focus-visible {
+      outline: 2px solid rgba(240,239,232,0.85);
+      outline-offset: -2px;
+    }
     .cal-cell-int.today .cal-dn-int {
       background: rgba(240,239,232,0.92);
       color: #0c0c0c;
@@ -2330,7 +2340,7 @@
     </div>
   </section>
   <!-- ── Live Ticker ──────────────────────────────────────────── -->
-  <div class="ticker-section">
+  <div class="ticker-section" aria-hidden="true">
     <div class="ticker-badge">Plot Live</div>
     <div class="ticker-outer">
       <div class="ticker-track" id="tickerTrack">
@@ -3008,13 +3018,22 @@
           var events = (!cell.dim && dayMap[cell.day]) ? dayMap[cell.day] : [];
           var sel = !cell.dim && cell.day === selectedDay;
           var cls = 'cal-cell-int' + (cell.dim ? ' dim' : '') + (sel ? ' selected' : '') + (cell.today ? ' today' : '');
-          var click = !cell.dim ? 'onclick="window._calDemo.selectDay(' + cell.day + ')"' : '';
           var dots = '';
           events.forEach(function(e) { dots += '<div class="cal-dot-int" style="background:' + TYPE[e.type].color + '"></div>'; });
-          html += '<div class="' + cls + '" ' + click + '>';
-          html += '<div class="cal-dn-int">' + cell.day + '</div>';
-          if (dots) html += '<div class="cal-dots-int">' + dots + '</div>';
-          html += '</div>';
+          if (cell.dim) {
+            // Adjacent-month padding cells: decorative, skipped by keyboard + SR.
+            html += '<div class="' + cls + '" aria-hidden="true"><div class="cal-dn-int">' + cell.day + '</div></div>';
+          } else {
+            var label = MONTH_NAME + ' ' + cell.day +
+              (events.length ? ', ' + events.length + ' saved release' + (events.length > 1 ? 's' : '') : '');
+            html += '<button type="button" class="' + cls + '" data-day="' + cell.day + '" ' +
+              'aria-pressed="' + (sel ? 'true' : 'false') + '" ' +
+              'aria-label="' + esc(label) + '" ' +
+              'onclick="window._calDemo.selectDay(' + cell.day + ')">';
+            html += '<div class="cal-dn-int">' + cell.day + '</div>';
+            if (dots) html += '<div class="cal-dots-int" aria-hidden="true">' + dots + '</div>';
+            html += '</button>';
+          }
         });
         grid.innerHTML = html;
       }
@@ -3076,6 +3095,11 @@
         selectDay: function(day) {
           selectedDay = (selectedDay === day) ? null : day;
           renderCalendar(); renderDayPanel();
+          // Re-render replaces the grid, so move focus back to the day just
+          // activated — keeps keyboard users in place (SUS-79).
+          var grid = document.getElementById('calGridInt');
+          var btn = grid && grid.querySelector('[data-day="' + day + '"]');
+          if (btn) btn.focus();
         }
       };
 
