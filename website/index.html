@@ -774,17 +774,17 @@
       font-weight: 300;
       color: rgba(240,239,232,0.72);
       max-width: 44ch;
-      margin: 0 auto 2.4rem;
+      margin: 0 auto 1.6rem;
       line-height: 1.5;
     }
 
     .woc-actions {
       display: flex;
-      align-items: flex-start;
-      justify-content: center;
-      gap: 1rem;
-      flex-wrap: wrap;
+      flex-direction: column;
+      align-items: center;
+      gap: 2.4rem;
     }
+    .woc-actions .demo-link { margin-top: 0; }
 
     .woc-sub-wrap { display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-start; }
 
@@ -2329,7 +2329,7 @@
       <h2 class="woc-headline">What's on, <em>daily.</em></h2>
       <p class="woc-sub">Your daily briefing on everything worth watching.</p>
       <div class="woc-actions">
-        <a href="/whats-on" class="btn btn-outline-white btn-large">Browse What's On &rarr;</a>
+        <a href="/whats-on" class="demo-link">Browse What's On &rarr;</a>
         <div class="woc-sub-wrap">
           <form class="woc-form" id="newsletterForm">
             <input type="email" name="email" placeholder="your@email.com" required autocomplete="email" aria-label="Email address">
