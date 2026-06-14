@@ -394,10 +394,11 @@
     </div>
   </footer>
 
+  <script src="js/config.js"></script>
   <script>
     // Newsletter signup (footer)
     (function () {
-      var NEWSLETTER_URL = 'https://mkegtssedjyqldysvzga.supabase.co/functions/v1/newsletter-subscribe';
+      var NEWSLETTER_URL = window.PLOT.SUPABASE_FN + '/newsletter-subscribe';
       var form = document.getElementById('newsletterForm');
       var msg = document.getElementById('newsletterMsg');
       if (!form) return;
