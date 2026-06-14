@@ -20,6 +20,7 @@ const AuthPage          = lazy(() => import('./pages/AuthPage.jsx'));
 const AuthCallbackPage  = lazy(() => import('./pages/AuthCallbackPage.jsx'));
 const TraktCallbackPage = lazy(() => import('./pages/TraktCallbackPage.jsx'));
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage.jsx'));
+const LogoutPage        = lazy(() => import('./pages/LogoutPage.jsx'));
 const OnboardingFlow    = lazy(() => import('./pages/OnboardingFlow.jsx'));
 const NotFoundPage      = lazy(() => import('./pages/NotFoundPage.jsx'));
 const TermsPage         = lazy(() => import('./pages/TermsPage.jsx'));
@@ -42,6 +43,7 @@ const router = createBrowserRouter([
   // Auth
   { path: '/login',          element: wrap(<AuthPage initialMode="login" />) },
   { path: '/signup',         element: wrap(<AuthPage initialMode="signup" />) },
+  { path: '/logout',         element: wrap(<LogoutPage />) },
   { path: '/auth/callback',  element: wrap(<AuthCallbackPage />) },
   { path: '/auth/trakt',     element: SHOW_MEDIA_SYNC_INTEGRATIONS ? wrap(<TraktCallbackPage />) : <Navigate to="/settings" replace /> },
   { path: '/reset-password', element: wrap(<ResetPasswordPage />) },

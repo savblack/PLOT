@@ -287,6 +287,15 @@ svg { stroke-width: 1.5; }
   letter-spacing: -0.01em;
 }
 
+/* Sign out — a terminal action, set apart from navigation items */
+.nav-drawer-item--signout {
+  color: var(--text-muted);
+}
+.nav-drawer-item--signout:hover {
+  color: var(--danger);
+  background: var(--danger-dim);
+}
+
 /* ═══════════════════════════════════════
    PLATFORM CHIPS
 ═══════════════════════════════════════ */
