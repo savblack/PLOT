@@ -219,14 +219,18 @@ export const tmdb = {
       .sort((a, b) => a.display_priority - b.display_priority);
   },
 
-  /* ── Discover by provider ── */
+  /* ── Discover by provider ──
+     TV popularity is dominated by daily/long-running programming (news, talk,
+     soaps, reality), so for TV we exclude those genres and raise the vote floor
+     to keep each platform's list to actual notable shows. Movies don't need it. */
   discoverByProviders: (type, providerIds, region, extra = {}) =>
     fetchFromTMDB(`/discover/${type}`, {
       watch_region: region || userRegion,
       with_watch_providers: Array.isArray(providerIds) ? providerIds.join('|') : providerIds,
       with_watch_monetization_types: 'flatrate',
       sort_by: 'popularity.desc',
-      'vote_count.gte': 20,
+      'vote_count.gte': type === 'tv' ? 50 : 20,
+      ...(type === 'tv' ? { without_genres: '10763,10767,10764,10766,10762' } : {}),
       ...extra,
     }),
 

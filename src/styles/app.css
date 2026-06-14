@@ -3932,6 +3932,18 @@ svg { stroke-width: 1.5; }
   color: var(--text-primary);
 }
 
+.discover-plat-official {
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: var(--accent-dim);
+  padding: 0.15rem 0.45rem;
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+}
+
 .discover-plat-chevron {
   width: 16px;
   height: 16px;
