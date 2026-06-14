@@ -3944,6 +3944,16 @@ svg { stroke-width: 1.5; }
   white-space: nowrap;
 }
 
+.discover-plat-attribution {
+  margin: 0.75rem 0 0;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+.discover-plat-attribution a {
+  color: var(--text-muted);
+  text-decoration: underline;
+}
+
 .discover-plat-chevron {
   width: 16px;
   height: 16px;
