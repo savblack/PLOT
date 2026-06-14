@@ -86,3 +86,9 @@ Never hardcode TMDB movie or TV IDs. Resolve titles through TMDB search at runti
 ## GitHub Hygiene
 
 Pull requests should pass CI before merging. The repository is private, so required branch protection may depend on the GitHub plan; keep CI, Dependabot, and security alerts enabled as the practical guardrails.
+
+## Launch Docs
+
+- Public launch playbook: [docs/launch/public-launch-readiness.md](/Users/savannahblack/.codex/worktrees/122d/PLOT/docs/launch/public-launch-readiness.md)
+- Signed-in QA checklist: [docs/qa/public-launch-checklist.md](/Users/savannahblack/.codex/worktrees/122d/PLOT/docs/qa/public-launch-checklist.md)
+- Shared design system: [docs/design/shared-design-system.md](/Users/savannahblack/.codex/worktrees/122d/PLOT/docs/design/shared-design-system.md)

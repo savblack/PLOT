@@ -3,6 +3,7 @@ import { useApp, posterUrl, countdownChip, TodayLabel } from '../App.jsx';
 import { localDateStr } from '../utils/date.js';
 import { useGenres } from '../hooks/useGenres.js';
 import { getButtonLikeProps } from '../utils/interactive.js';
+import { moveSavedShowToWatching } from '../utils/mediaStatus.js';
 import MultiSelect from './MultiSelect.jsx';
 import LoadingSpinner from './LoadingSpinner.jsx';
 
@@ -228,17 +229,33 @@ function SavedRow({ item, openPanel, watchlist, watching }) {
   const chip           = item.release_date ? countdownChip(item.release_date) : null;
   const streamingChip  = item.streaming_date ? countdownChip(item.streaming_date) : null;
   const openDetails    = () => openPanel(item.tmdb_id, item.media_type || 'movie');
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState('');
 
   const handleStartWatching = async (e) => {
+    e.preventDefault();
     e.stopPropagation();
-    // Move: Saved → Watching
-    await watching.startWatching({
-      id:          item.tmdb_id,
-      title:       item.title || item.name,
-      poster_path: item.poster_path,
-      media_type:  'tv',
+    if (pending) return;
+
+    setPending(true);
+    setError('');
+
+    const result = await moveSavedShowToWatching({
+      startWatching: () => watching.startWatching({
+        id:          item.tmdb_id,
+        title:       item.title || item.name,
+        poster_path: item.poster_path,
+        media_type:  'tv',
+      }),
+      removeFromSaved: () => watchlist.removeFromList(item.tmdb_id),
+      rollbackWatching: () => watching.stopWatching(item.tmdb_id),
     });
-    await watchlist.removeFromList(item.tmdb_id);
+
+    if (!result.ok) {
+      setError(result.error);
+    }
+
+    setPending(false);
   };
 
   return (
@@ -263,16 +280,27 @@ function SavedRow({ item, openPanel, watchlist, watching }) {
             </span>
           )}
         </div>
+        {error && (
+          <div className="list-row-status-message" role="status" aria-live="polite">
+            {error}
+          </div>
+        )}
       </div>
       {isTV && (
         <div className="list-row-end">
           <button
             className="btn-start-watching"
             onClick={handleStartWatching}
-            title="Start watching"
+            title={pending ? 'Moving to Watching' : 'Start watching'}
+            disabled={pending}
+            aria-busy={pending}
           >
-            <PlayIcon />
-            Watch
+            {pending ? 'Moving…' : (
+              <>
+                <PlayIcon />
+                Watch
+              </>
+            )}
           </button>
         </div>
       )}

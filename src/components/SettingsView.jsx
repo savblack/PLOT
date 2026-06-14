@@ -13,6 +13,7 @@ import { buildFeedbackAttachmentPath } from '../utils/feedback.js';
 import { downloadICS } from '../utils/ics.js';
 import { getButtonLikeProps } from '../utils/interactive.js';
 import { IANA_TIMEZONES } from '../utils/timezones.js';
+import { SHOW_MEDIA_SYNC_INTEGRATIONS } from '../launchFeatures.js';
 import ConfirmModal from './ConfirmModal.jsx';
 import PlotLoader from './PlotLoader.jsx';
 
@@ -436,6 +437,7 @@ function FeedbackPanel({ user, onClose }) {
   const [message,   setMessage]   = useState('');
   const [images,    setImages]    = useState([]); // [{ file, preview }]
   const [status,    setStatus]    = useState('idle'); // idle | submitting | done | error
+  const [errorMessage, setErrorMessage] = useState('');
   const imagesRef = useRef([]);
   const selectedType = FEEDBACK_TYPES.find(entry => entry.id === type) || FEEDBACK_TYPES[0];
   const messageCount = message.length;
@@ -468,18 +470,29 @@ function FeedbackPanel({ user, onClose }) {
   const handleSubmit = async () => {
     if (!message.trim()) return;
     setStatus('submitting');
+    setErrorMessage('');
 
-    // Upload images to Storage
+    // Upload first so we can keep the feedback row and attachment set in sync.
+    const attachmentPaths = [];
     const attachmentUrls = [];
     for (const { file } of images) {
       const path = buildFeedbackAttachmentPath(file.name);
       const { error: upErr } = await supabase.storage
         .from('feedback-attachments')
         .upload(path, file, { contentType: file.type });
-      if (!upErr) {
-        const { data } = supabase.storage.from('feedback-attachments').getPublicUrl(path);
-        attachmentUrls.push(data.publicUrl);
+
+      if (upErr) {
+        if (attachmentPaths.length > 0) {
+          await supabase.storage.from('feedback-attachments').remove(attachmentPaths);
+        }
+        setStatus('error');
+        setErrorMessage('We could not upload one of your screenshots. Remove it or try again.');
+        return;
       }
+
+      attachmentPaths.push(path);
+      const { data } = supabase.storage.from('feedback-attachments').getPublicUrl(path);
+      attachmentUrls.push(data.publicUrl);
     }
 
     const { error } = await supabase.from('feedback').insert({
@@ -489,7 +502,17 @@ function FeedbackPanel({ user, onClose }) {
       message:     message.trim().slice(0, FEEDBACK_MAX),
       attachments: attachmentUrls.length ? attachmentUrls : null,
     });
-    setStatus(error ? 'error' : 'done');
+
+    if (error) {
+      if (attachmentPaths.length > 0) {
+        await supabase.storage.from('feedback-attachments').remove(attachmentPaths);
+      }
+      setStatus('error');
+      setErrorMessage('Your feedback was not saved. Please try again.');
+      return;
+    }
+
+    setStatus('done');
   };
 
   return createPortal(
@@ -604,7 +627,7 @@ function FeedbackPanel({ user, onClose }) {
 
             {status === 'error' && (
               <p className="feedback-error">
-                Something went wrong — please try again.
+                {errorMessage || 'Something went wrong. Please try again.'}
               </p>
             )}
 
@@ -1056,78 +1079,85 @@ export default function SettingsView() {
       {/* Plex */}
       <div className="settings-group">
         <div className="settings-group-title">Integrations</div>
-        <div className="settings-row" style={{ cursor: 'default' }}>
-          <div className="settings-row-left">
-            <div>
-              <div className="settings-row-label">Plex</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                {sync.isConnected ? `Connected · Last synced ${
-                  sync.integration?.last_sync_at
-                    ? new Date(sync.integration.last_sync_at).toLocaleDateString()
-                    : 'never'
-                }` : 'Not connected'}
-              </div>
-            </div>
-          </div>
-          <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
-            {sync.isConnected ? (
-              <>
-                <SettingsTextAction onClick={sync.sync} disabled={sync.syncing}>
-                  {sync.syncing ? 'Syncing…' : 'Sync now'}
-                </SettingsTextAction>
-                <SettingsTextAction onClick={sync.disconnect} tone="danger">
-                  Disconnect
-                </SettingsTextAction>
-              </>
-            ) : (
-              <SettingsTextAction onClick={sync.startPlexAuth}>
-                Connect Plex
-              </SettingsTextAction>
-            )}
-          </div>
-        </div>
-        {sync.error && (
-          <div style={{ padding: '0.5rem 1rem', fontSize: '0.78rem', color: 'var(--danger)', background: 'var(--danger-dim)', border: '1px solid var(--danger-border)', borderRadius: 8, margin: '0.25rem 1rem' }}>
-            {sync.error}
-          </div>
-        )}
-
-        {/* ── Trakt ── */}
-        <div className="settings-row" style={{ cursor: 'default' }}>
-          <div className="settings-row-left">
-            <div>
-              <div className="settings-row-label">Trakt</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                {trakt.isConnected
-                  ? `Connected · Last synced ${
-                      trakt.integration?.last_sync_at
-                        ? new Date(trakt.integration.last_sync_at).toLocaleDateString()
+        {SHOW_MEDIA_SYNC_INTEGRATIONS ? (
+          <>
+            <div className="settings-row" style={{ cursor: 'default' }}>
+              <div className="settings-row-left">
+                <div>
+                  <div className="settings-row-label">Plex</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    {sync.isConnected ? `Connected · Last synced ${
+                      sync.integration?.last_sync_at
+                        ? new Date(sync.integration.last_sync_at).toLocaleDateString()
                         : 'never'
-                    }`
-                  : 'Connect to sync Netflix, Prime, Disney+ & more'}
+                    }` : 'Not connected'}
+                  </div>
+                </div>
+              </div>
+              <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
+                {sync.isConnected ? (
+                  <>
+                    <SettingsTextAction onClick={sync.sync} disabled={sync.syncing}>
+                      {sync.syncing ? 'Syncing…' : 'Sync now'}
+                    </SettingsTextAction>
+                    <SettingsTextAction onClick={sync.disconnect} tone="danger">
+                      Disconnect
+                    </SettingsTextAction>
+                  </>
+                ) : (
+                  <SettingsTextAction onClick={sync.startPlexAuth}>
+                    Connect Plex
+                  </SettingsTextAction>
+                )}
               </div>
             </div>
-          </div>
-          <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
-            {trakt.isConnected ? (
-              <>
-                <SettingsTextAction onClick={trakt.sync} disabled={trakt.syncing}>
-                  {trakt.syncing ? 'Syncing…' : 'Sync now'}
-                </SettingsTextAction>
-                <SettingsTextAction onClick={trakt.disconnect} tone="danger">
-                  Disconnect
-                </SettingsTextAction>
-              </>
-            ) : (
-              <SettingsTextAction onClick={trakt.connect}>
-                Connect Trakt
-              </SettingsTextAction>
+            {sync.error && (
+              <div style={{ padding: '0.5rem 1rem', fontSize: '0.78rem', color: 'var(--danger)', background: 'var(--danger-dim)', border: '1px solid var(--danger-border)', borderRadius: 8, margin: '0.25rem 1rem' }}>
+                {sync.error}
+              </div>
             )}
-          </div>
-        </div>
-        {trakt.error && (
-          <div style={{ padding: '0.5rem 1rem', fontSize: '0.78rem', color: 'var(--danger)', background: 'var(--danger-dim)', border: '1px solid var(--danger-border)', borderRadius: 8, margin: '0.25rem 1rem' }}>
-            {trakt.error}
+
+            <div className="settings-row" style={{ cursor: 'default' }}>
+              <div className="settings-row-left">
+                <div>
+                  <div className="settings-row-label">Trakt</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    {trakt.isConnected
+                      ? `Connected · Last synced ${
+                          trakt.integration?.last_sync_at
+                            ? new Date(trakt.integration.last_sync_at).toLocaleDateString()
+                            : 'never'
+                        }`
+                      : 'Connect to sync Netflix, Prime, Disney+ & more'}
+                  </div>
+                </div>
+              </div>
+              <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
+                {trakt.isConnected ? (
+                  <>
+                    <SettingsTextAction onClick={trakt.sync} disabled={trakt.syncing}>
+                      {trakt.syncing ? 'Syncing…' : 'Sync now'}
+                    </SettingsTextAction>
+                    <SettingsTextAction onClick={trakt.disconnect} tone="danger">
+                      Disconnect
+                    </SettingsTextAction>
+                  </>
+                ) : (
+                  <SettingsTextAction onClick={trakt.connect}>
+                    Connect Trakt
+                  </SettingsTextAction>
+                )}
+              </div>
+            </div>
+            {trakt.error && (
+              <div style={{ padding: '0.5rem 1rem', fontSize: '0.78rem', color: 'var(--danger)', background: 'var(--danger-dim)', border: '1px solid var(--danger-border)', borderRadius: 8, margin: '0.25rem 1rem' }}>
+                {trakt.error}
+              </div>
+            )}
+          </>
+        ) : (
+          <div style={{ padding: '0 1rem 0.75rem', fontSize: '0.78rem', lineHeight: 1.45, color: 'var(--text-muted)' }}>
+            Direct Plex and Trakt account sync is being held for post-launch while the full production credential set and support runbook are completed.
           </div>
         )}
 
@@ -1239,6 +1269,13 @@ export default function SettingsView() {
           <div className="settings-row-value">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ width: 14, height: 14, opacity: 0.4 }}><polyline points="9 18 15 12 9 6"/></svg>
           </div>
+        </div>
+        <div style={{ marginTop: '0.75rem', fontSize: '0.76rem', lineHeight: 1.45, color: 'var(--text-muted)' }}>
+          Metadata and some artwork are provided by{' '}
+          <a href="https://www.themoviedb.org" target="_blank" rel="noreferrer" style={{ color: 'inherit', textDecoration: 'underline' }}>
+            TMDB
+          </a>
+          . This product uses the TMDB API but is not endorsed or certified by TMDB.
         </div>
       </div>
 

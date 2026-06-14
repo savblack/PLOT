@@ -19,6 +19,22 @@ test('moveSavedShowToWatching rolls back watching progress when saved removal fa
   assert.equal(rolledBack, true);
 });
 
+test('moveSavedShowToWatching fails cleanly when watching progress cannot start', async () => {
+  let removed = false;
+
+  const result = await moveSavedShowToWatching({
+    startWatching: async () => null,
+    removeFromSaved: async () => {
+      removed = true;
+      return true;
+    },
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.error, 'Could not start watching. Please try again.');
+  assert.equal(removed, false);
+});
+
 test('markMediaAsWatched rolls back history when saved removal fails after logging', async () => {
   let rolledBack = false;
 
