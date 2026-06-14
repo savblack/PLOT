@@ -1287,16 +1287,16 @@
       display: flex; flex-direction: column; justify-content: flex-end; padding: 11px;
     }
     .disc-hero-grad { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.15) 52%, transparent 100%); }
-    .disc-trend { position: absolute; top: 11px; left: 11px; font-size: 0.42rem; font-weight: 700; letter-spacing: 0.06em; color: #fff; background: rgba(224,85,120,0.92); padding: 3px 7px; border-radius: 20px; }
+    .disc-trend { position: absolute; top: 11px; left: 11px; font-size: 0.42rem; font-weight: 600; letter-spacing: 0.06em; color: #fff; background: rgba(224,85,120,0.92); padding: 3px 7px; border-radius: 20px; }
     .disc-hero-title { position: relative; font-family: var(--serif); font-size: 1.2rem; line-height: 1; color: #fff; letter-spacing: -0.02em; }
     .disc-hero-meta { position: relative; font-size: 0.5rem; color: rgba(255,255,255,0.72); margin-top: 4px; }
     .disc-sec { padding: 13px 0 9px; }
     .disc-sec-sub { font-size: 0.42rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(240,239,232,0.3); }
-    .disc-sec-t { font-size: 0.74rem; font-weight: 700; color: #f0efe8; margin-top: 2px; }
+    .disc-sec-t { font-size: 0.74rem; font-weight: 600; color: #f0efe8; margin-top: 2px; }
     .disc-row { display: flex; gap: 9px; }
     .disc-card { width: 79px; flex-shrink: 0; }
     .disc-poster { position: relative; width: 79px; height: 118px; border-radius: 8px; background-size: cover; background-position: center; }
-    .disc-tag { position: absolute; top: 5px; left: 5px; font-size: 0.36rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #fff; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); padding: 2px 5px; border-radius: 20px; }
+    .disc-tag { position: absolute; top: 5px; left: 5px; font-size: 0.36rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #fff; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); padding: 2px 5px; border-radius: 20px; }
     .disc-tag-tv { background: rgba(74,144,217,0.9); }
     .disc-bk { position: absolute; top: 5px; right: 6px; width: 9px; height: 11px; color: #fff; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.55)); }
     .disc-card-t { font-size: 0.55rem; color: #f0efe8; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -1964,10 +1964,9 @@
       .cal-interactive { grid-template-columns: 1fr; }
     }
   </style>
-  <link rel="preload" as="image" href="images/hero/saltburn.webp" />
-  <link rel="preload" as="image" href="images/hero/anyone-but-you.webp" />
-  <link rel="preload" as="image" href="images/hero/nosferatu.webp" />
-  <link rel="preload" as="image" href="images/hero/wuthering-heights.webp" />
+  <!-- No eager image preloads: the hero uses live TMDB posters, and these
+       local images appear only in below-the-fold demo sections (discover
+       mockup, My Lists) where they are lazy/overwritten. (SUS-89) -->
 </head>
 <body>
 
@@ -2043,7 +2042,7 @@
       </div>
       <div class="phone-wrap reveal">
         <div class="iphone-png-wrap">
-          <img class="iphone-png-frame" src="images/iphone-mockup.png" alt="">
+          <img class="iphone-png-frame" src="images/iphone-mockup.webp" alt="">
           <div class="phone-frame" id="guideFrame">
           <div class="guide-screen disc">
             <div class="disc-bar">
@@ -2423,9 +2422,16 @@
       });
     })();
     const TMDB_PROXY_HEADERS = { Authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1rZWd0c3NlZGp5cWxkeXN2emdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2MDgzMzUsImV4cCI6MjA4OTE4NDMzNX0.W-toEr3ftNeN0iTpRQ8Ord09sxBiwO2CQC6j2jszN6w' };
+    // Cache by full query string so identical calls across the page (e.g.
+    // movie/now_playing requested by both the trending sets and the ticker)
+    // share a single network request. (SUS-85)
+    var tmdbCache = {};
     function tmdbProxy(path, params) {
       var qs = '?path=' + encodeURIComponent(path) + (params ? '&' + params : '');
-      return fetch(TMDB_PROXY + qs, { headers: TMDB_PROXY_HEADERS }).then(function(r) { return r.json(); });
+      if (!tmdbCache[qs]) {
+        tmdbCache[qs] = fetch(TMDB_PROXY + qs, { headers: TMDB_PROXY_HEADERS }).then(function(r) { return r.json(); });
+      }
+      return tmdbCache[qs];
     }
 
     // The side posters (desktop) and hero filmstrip (mobile) want the same three
@@ -2645,6 +2651,7 @@
       function easeInCubic(t)  { return t * t * t; }
 
       let smoothScrollY = window.scrollY;
+      let rafId = null;
 
       function updateSide() {
         smoothScrollY += (window.scrollY - smoothScrollY) * 0.05;
@@ -2701,9 +2708,22 @@
           }
         });
 
-        requestAnimationFrame(updateSide);
+        // Keep ticking only while the smoothed scroll is still catching up to
+        // the real position; otherwise stop until the next scroll/resize so the
+        // rAF loop isn't running perpetually while idle. (SUS-84)
+        if (Math.abs(window.scrollY - smoothScrollY) > 0.4) {
+          rafId = requestAnimationFrame(updateSide);
+        } else {
+          smoothScrollY = window.scrollY;
+          rafId = null;
+        }
       }
-      requestAnimationFrame(updateSide);
+      function requestSideTick() {
+        if (rafId === null) rafId = requestAnimationFrame(updateSide);
+      }
+      window.addEventListener('scroll', requestSideTick, { passive: true });
+      window.addEventListener('resize', requestSideTick, { passive: true });
+      requestSideTick(); // initial positioning
     }).catch(() => {}); // end fetchSidePosters
     } // end initSidePosters
     initSidePosters();
@@ -2715,6 +2735,11 @@
       const posterEls = document.querySelectorAll('.manifesto-poster');
       const peekEls   = document.querySelectorAll('.hpk');
       if (!posterEls.length && !peekEls.length) return;
+      // These strips are mobile-only (display:none on desktop). Skip building
+      // them — and downloading their posters — when none are actually shown. (SUS-85)
+      var anyVisible = [].some.call([].concat([].slice.call(posterEls), [].slice.call(peekEls)),
+        function(el) { return el.offsetParent !== null; });
+      if (!anyVisible) return;
       fetchTrendingSets().then(function(sets) {
         const IMG = 'https://image.tmdb.org/t/p/w500';
         const seen = {};
