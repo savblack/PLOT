@@ -1081,11 +1081,11 @@
         gap: 16px;
       }
       .manifesto-poster-row .manifesto-poster { align-self: center; }
-      /* Entrance — fade + drift up + slight scale as they scroll into view. */
+      /* Entrance — slow, clear fade + drift up + scale as they scroll in. */
       .manifesto-poster.reveal,
       .manifesto-poster-row.reveal {
-        transform: translateY(48px) scale(0.9);
-        transition: opacity 0.9s var(--ease), transform 0.9s var(--ease);
+        transform: translateY(70px) scale(0.82);
+        transition: opacity 1.3s var(--ease), transform 1.3s var(--ease);
       }
       .manifesto-poster.reveal.visible,
       .manifesto-poster-row.reveal.visible { transform: none; }
