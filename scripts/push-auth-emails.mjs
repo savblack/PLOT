@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 
 const PROJECT_REF = 'mkegtssedjyqldysvzga';
 const TEMPLATES_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'supabase', 'templates');
-const EMAIL_LOGO_URL = process.env.PLOT_EMAIL_LOGO_URL || 'https://theplot.tv/PLOT.png';
+const SITE_URL = 'https://theplot.tv';
 
 // ── Design tokens (mirrors src/styles/tokens.css, light mode) ──
 const t = {
@@ -51,6 +51,11 @@ const noteBlock = (note) => note ? `
   <p style="margin: 0; font-family: ${t.sans}; font-size: 12px; line-height: 1.65; color: ${t.textSecondary};">${note}</p>
 </div>` : '';
 
+const wordmark = () => `
+<a href="${SITE_URL}" target="_blank" style="display: inline-block; text-decoration: none; font-family: ${t.serif}; font-size: 46px; font-weight: 400; letter-spacing: -0.05em; line-height: 1; color: ${t.textPrimary}; white-space: nowrap;">
+  PLOT
+</a>`;
+
 const layout = ({ preheader, eyebrow, heading, intro, content, note, safety }) => `<!doctype html>
 <html lang="en">
 <head>
@@ -72,9 +77,7 @@ const layout = ({ preheader, eyebrow, heading, intro, content, note, safety }) =
 
           <tr>
             <td align="center" style="padding: 0 0 28px;">
-              <a href="https://theplot.tv" target="_blank" style="display: inline-block; text-decoration: none;">
-                <img src="${EMAIL_LOGO_URL}" alt="PLOT" width="100" style="display: block; width: 100px; max-width: 100%; height: auto; border: 0;">
-              </a>
+              ${wordmark()}
             </td>
           </tr>
 
@@ -92,7 +95,7 @@ const layout = ({ preheader, eyebrow, heading, intro, content, note, safety }) =
             <td align="center" style="padding: 28px 24px 0;">
               <p style="margin: 0 0 6px; font-family: ${t.sans}; font-size: 12px; line-height: 1.6; color: ${t.textMuted};">${safety}</p>
               <p style="margin: 0; font-family: ${t.sans}; font-size: 12px; line-height: 1.6; color: ${t.textMuted};">
-                <a href="https://theplot.tv" target="_blank" style="color: ${t.textMuted}; text-decoration: underline;">PLOT</a>
+                <a href="${SITE_URL}" target="_blank" style="color: ${t.textMuted}; text-decoration: underline;">PLOT</a>
                 &middot; Your film and TV companion.
               </p>
             </td>
