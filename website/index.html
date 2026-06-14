@@ -375,6 +375,9 @@
     }
     /* Poster interludes — mobile only (desktop uses edge side-posters) */
     .manifesto-poster { display: none; }
+    .manifesto-poster-row { display: none; }
+    .tl-mbreak { display: none; }
+    .hero-peek { display: none; }
 
     #plotDoes {
       margin-top: 20rem;
@@ -1022,12 +1025,38 @@
       #hero { padding-top: 5rem; padding-bottom: 2rem; }
       .btn-large { padding: 0.6rem 1.4rem; font-size: 0.75rem; }
 
+      /* Scroll teaser — posters peeking up from the bottom of the fold */
+      .hero-peek {
+        display: flex;
+        gap: 14px;
+        justify-content: center;
+        align-items: center;
+        position: absolute;
+        left: 1.5rem;
+        right: 1.5rem;
+        bottom: calc(var(--ticker-height) + env(safe-area-inset-bottom, 0px));
+        transform: translateY(62%);
+        pointer-events: none;
+        z-index: 5;
+      }
+      .hpk {
+        width: 30%;            /* JS overrides width/height for varied sizes */
+        aspect-ratio: 2 / 3;
+        flex-shrink: 0;
+        border-radius: 12px;
+        background-color: rgba(0,0,0,0.05);
+        background-size: cover;
+        background-position: center;
+        box-shadow: 0 -10px 30px rgba(0,0,0,0.12);
+      }
+
       /* Manifesto — scroll-driven reveal with poster interludes on mobile */
       #manifesto {
         padding: 22vh 1.5rem;
-        gap: 18vh;
+        gap: 13vh;
         text-align: center;
       }
+      .tl-mbreak { display: inline; }
       .manifesto-line {
         display: block;
         font-size: clamp(1.8rem, 7.5vw, 2.6rem);
@@ -1044,6 +1073,25 @@
         background-position: center;
         box-shadow: 0 16px 34px rgba(0,0,0,0.16);
       }
+      .manifesto-poster-row {
+        display: flex;
+        align-self: center;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+      }
+      .manifesto-poster-row .manifesto-poster { align-self: center; }
+      /* Entrance — fade + drift up + slight scale as they scroll into view. */
+      .manifesto-poster.reveal,
+      .manifesto-poster-row.reveal {
+        transform: translateY(48px) scale(0.9);
+        transition: opacity 0.9s var(--ease), transform 0.9s var(--ease);
+      }
+      .manifesto-poster.reveal.visible,
+      .manifesto-poster-row.reveal.visible { transform: none; }
+      /* Dim out once scrolled past, mirroring the text's fade. */
+      .manifesto-poster.passed,
+      .manifesto-poster-row.passed { opacity: 0.22; }
       #plotDoes { margin-top: 12vh; margin-bottom: 24vh; }
 
       /* Features — horizontal scroll cards */
@@ -1997,20 +2045,35 @@
         <a href="https://app.theplot.tv/signup" class="btn btn-outline btn-large">Start your PLOT →</a>
       </div>
     </div>
+    <div class="hero-peek" aria-hidden="true">
+      <div class="hpk"></div>
+      <div class="hpk"></div>
+      <div class="hpk"></div>
+    </div>
   </section>
 
   <!-- ── Manifesto ────────────────────────────────────────────── -->
   <section id="manifesto">
     <p class="manifesto-line reveal">You don't just watch things.</p>
-    <div class="manifesto-poster reveal"></div>
+    <div class="manifesto-poster-row reveal">
+      <div class="manifesto-poster"></div>
+      <div class="manifesto-poster"></div>
+    </div>
     <p class="manifesto-line reveal">You think about them.</p>
     <div class="manifesto-poster reveal"></div>
     <p class="manifesto-line reveal">You talk about them.</p>
-    <div class="manifesto-poster reveal"></div>
+    <div class="manifesto-poster-row reveal">
+      <div class="manifesto-poster"></div>
+      <div class="manifesto-poster"></div>
+    </div>
     <p class="manifesto-line reveal">You carry them with you.</p>
     <div class="manifesto-poster reveal"></div>
     <p class="manifesto-line reveal">But no app has ever cared<br>as much as you do.</p>
-    <div class="manifesto-poster reveal"></div>
+    <div class="manifesto-poster-row reveal">
+      <div class="manifesto-poster"></div>
+      <div class="manifesto-poster"></div>
+      <div class="manifesto-poster"></div>
+    </div>
     <p class="manifesto-line no-fade reveal" id="plotDoes"><span style="font-family:'Instrument Serif',Georgia,serif;font-weight:400;letter-spacing:-0.02em;">PLOT</span> <em>does.</em></p>
   </section>
 
@@ -2171,7 +2234,7 @@
   <!-- ── Timeline ────────────────────────────────────────────────── -->
   <section id="timeline-section">
     <div class="timeline-header reveal">
-      <h2 class="timeline-headline">A timeline as rich as your taste</h2>
+      <h2 class="timeline-headline">A timeline as rich <br class="tl-mbreak">as your taste</h2>
       <p class="timeline-intro">Your watch history is a story and every story needs a PLOT.</p>
     </div>
 
@@ -2525,12 +2588,21 @@
 
     // ── Manifesto scroll-driven fade ──────────────────────────
     const manifestoLines = [...document.querySelectorAll('.manifesto-line')];
+    // Posters/rows dim out the same way the text does once scrolled past.
+    const manifestoFaders = [
+      ...document.querySelectorAll('#manifesto > .manifesto-poster'),
+      ...document.querySelectorAll('#manifesto .manifesto-poster-row'),
+    ];
 
     function updateManifesto() {
       const threshold = window.innerHeight * 0.4;
       manifestoLines.forEach(line => {
         const rect = line.getBoundingClientRect();
         line.classList.toggle('passed', rect.bottom < threshold);
+      });
+      manifestoFaders.forEach(el => {
+        const rect = el.getBoundingClientRect();
+        el.classList.toggle('passed', rect.bottom < threshold);
       });
     }
 
@@ -2695,11 +2767,12 @@
     initSidePosters();
     window.addEventListener('resize', initSidePosters);
 
-    // Manifesto poster interludes — populate with live TMDB posters (mobile).
-    // Uses the same trending/now-playing source as the hero side-posters.
+    // Manifesto poster interludes + hero scroll-teaser — populate with live
+    // TMDB posters (mobile). Same trending/now-playing source as the hero.
     (function() {
       const posterEls = document.querySelectorAll('.manifesto-poster');
-      if (!posterEls.length) return;
+      const peekEls   = document.querySelectorAll('.hpk');
+      if (!posterEls.length && !peekEls.length) return;
       fetchTrendingSets().then(function(sets) {
         const IMG = 'https://image.tmdb.org/t/p/w500';
         const seen = {};
@@ -2710,9 +2783,57 @@
           });
         });
         if (!paths.length) return;
-        // Stride through the pool so adjacent posters differ.
-        posterEls.forEach(function(el, i) {
-          el.style.backgroundImage = "url('" + IMG + paths[(i * 5) % paths.length] + "')";
+        // Hero teaser posters — varied sizes + slight vertical scatter.
+        var pAvail = Math.min(window.innerWidth, 420) - 48;
+        var pN = peekEls.length;
+        var pSlot = (pAvail - 14 * (pN - 1)) / pN;
+        var pFactors = [0.82, 0.97, 1.12];
+        for (var p = pFactors.length - 1; p > 0; p--) {       // shuffle which is big
+          var pt = Math.floor(Math.random() * (p + 1));
+          var ptmp = pFactors[p]; pFactors[p] = pFactors[pt]; pFactors[pt] = ptmp;
+        }
+        peekEls.forEach(function(el, i) {
+          el.style.backgroundImage = "url('" + IMG + paths[i % paths.length] + "')";
+          var w = Math.round(pSlot * (pFactors[i] || 1));
+          el.style.width = w + 'px';
+          el.style.height = Math.round(w * 1.5) + 'px'; // fixed 2:3 poster ratio
+        });
+        // Manifesto interludes — randomise size for a scattered, organic feel.
+        var GAP = 16;
+        var avail = Math.min(window.innerWidth, 600) - 48; // content width minus 1.5rem padding
+        var pick = 3;
+        function dress(el, w) {
+          el.style.backgroundImage = "url('" + IMG + paths[(pick += 4) % paths.length] + "')";
+          el.style.width = w + 'px';
+          el.style.height = Math.round(w * 1.5) + 'px'; // fixed 2:3 poster ratio
+        }
+        // Solo posters — big, wide spread.
+        document.querySelectorAll('#manifesto > .manifesto-poster').forEach(function(el) {
+          dress(el, Math.round(120 + Math.random() * (avail - 120)));   // 120px → full width
+        });
+        // Rows — give each member a deliberately contrasting size (clear
+        // small/large split), shuffled so the big one isn't always first.
+        var rowIdx = 0;
+        document.querySelectorAll('#manifesto .manifesto-poster-row').forEach(function(row) {
+          var kids = Array.prototype.slice.call(row.children);
+          var n = kids.length;
+          var slot = (avail - GAP * (n - 1)) / n;
+          // Contrast the sizes, but keep the smallest readable. Pairs get a
+          // bigger spread; trios stay closer to even so none gets tiny.
+          var lo = n === 3 ? 0.9 : 0.82;
+          var hi = n === 3 ? 1.0 : 1.06;
+          var minW = n === 3 ? 96 : 132;
+          var factors = [];
+          for (var j = 0; j < n; j++) {
+            var t = n > 1 ? j / (n - 1) : 0;
+            factors.push(lo + t * (hi - lo) + (Math.random() - 0.5) * 0.05);
+          }
+          // Alternate which side is big so consecutive rows mirror each other.
+          if (rowIdx % 2 === 1) factors.reverse();
+          rowIdx++;
+          kids.forEach(function(el, ci) {
+            dress(el, Math.max(minW, Math.round(slot * factors[ci])));
+          });
         });
       }).catch(function() {});
     })();
