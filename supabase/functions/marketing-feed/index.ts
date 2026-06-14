@@ -511,7 +511,7 @@ Deno.serve(async (req) => {
 <meta property="og:description" content="What's coming, what's streaming, what's trending.">
 <meta property="og:url" content="${SITE}${FEED_PATH}">`;
 
-    return page(`${FEED_TITLE} · PLOT`, head, `
+    return page(`PLOT | ${FEED_TITLE}`, head, `
       <div class="head r2">
         <div class="head-row">
           <h1 class="feed-title">What's <em>on</em></h1>
