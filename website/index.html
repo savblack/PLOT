@@ -938,10 +938,12 @@
         position: fixed;
         top: 64px;
         left: 0; right: 0;
-        background: var(--glass-bg);
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
-        border-bottom: 1px solid var(--glass-border);
+        /* Translucent but opaque enough to keep the links legible over the
+           hero headline. The navbar matches this when open (see below) so the
+           top of the panel reads as one seamless surface. */
+        background: rgba(255,255,255,0.92);
+        backdrop-filter: blur(30px);
+        -webkit-backdrop-filter: blur(30px);
         padding: 1.25rem 2rem;
         gap: 0.35rem;
         align-items: stretch;
@@ -950,9 +952,25 @@
       .nav-links.open a { display: block; padding: 0.85rem 0; text-align: center; }
       .nav-hamburger { display: flex; }
 
+      /* When the menu is open, match the navbar to the panel background so the
+         top reads as one seamless surface (regardless of scroll position). */
+      nav.nav-open {
+        background: rgba(255,255,255,0.92);
+        backdrop-filter: blur(30px);
+        -webkit-backdrop-filter: blur(30px);
+      }
+
       /* Hero — compact spacing on mobile */
       #hero { padding-top: 5rem; padding-bottom: 2rem; }
       .btn-large { padding: 0.6rem 1.4rem; font-size: 0.75rem; }
+
+      /* Unify the mobile gutter — the interactive demo sections default to a
+         2rem side padding while the editorial sections (manifesto, closing,
+         footer) use 1.5rem. Match them so section edges line up on scroll. */
+      section#hero, section#guide-demo, section#calendar-demo, section#lists-demo {
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+      }
 
       /* Scroll teaser — posters peeking up from the bottom of the fold */
       .hero-peek {
@@ -2459,6 +2477,7 @@
     function setNavOpen(open) {
       navLinks.classList.toggle('open', open);
       hamburger.classList.toggle('open', open);
+      navbar.classList.toggle('nav-open', open);
       hamburger.setAttribute('aria-expanded', open);
     }
     hamburger.addEventListener('click', () => {
