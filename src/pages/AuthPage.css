@@ -284,6 +284,9 @@
 .auth-cta:hover:not(:disabled) { opacity: 0.85; transform: scale(0.99); }
 .auth-cta:disabled { background: var(--text-muted); cursor: not-allowed; }
 
+/* CTA rendered as a link (e.g. sign-out page) shouldn't be underlined */
+a.auth-cta { text-decoration: none; }
+
 /* Toggle mode */
 .auth-toggle {
   text-align: center;

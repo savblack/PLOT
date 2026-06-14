@@ -802,16 +802,13 @@ export default function SettingsView() {
 
   const handleSignOut = () => {
     showConfirm({
-      message: 'Sign out of your account?',
+      title: 'Sign out?',
+      message: `You're signed in as ${user?.email}. You can sign back in anytime.`,
       confirmLabel: 'Sign out',
-      onConfirm: async () => {
-        setActionError(null);
-        const { error } = await supabase.auth.signOut();
-        if (error) {
-          setActionError(error.message || 'Failed to sign out.');
-          return false;
-        }
-        window.location.href = '/';
+      onConfirm: () => {
+        // The /logout page ends the session and confirms the user is signed
+        // out, rather than bouncing straight out to the marketing site.
+        navigate('/logout');
         return true;
       },
     });
