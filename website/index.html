@@ -2948,6 +2948,14 @@
       var saved = {};
       var selectedDay = null;
 
+      // Escape TMDB-supplied strings (titles, poster paths) before they go into
+      // innerHTML — defends against HTML/attribute injection from third-party data.
+      function esc(s) {
+        return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) {
+          return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+      }
+
       function renderGuide() {
         var list = document.getElementById('guideList');
         if (!list) return;
@@ -2955,9 +2963,9 @@
         RELEASES.slice(0, 5).forEach(function(r) {
           var isAdded = !!saved[r.id];
           html += '<div class="guide-item" data-type="' + r.type + '">';
-          html += '<div class="guide-poster" style="background-image:url(\'' + r.img + '\')"></div>';
+          html += '<div class="guide-poster" style="background-image:url(\'' + esc(r.img) + '\')"></div>';
           html += '<div class="guide-info">';
-          html += '<div class="guide-item-title">' + r.title + '</div>';
+          html += '<div class="guide-item-title">' + esc(r.title) + '</div>';
           html += '<div class="guide-item-meta">' + MONTH_NAME + ' ' + r.day + ' · ' + TYPE[r.type].label + '</div>';
           html += '</div>';
           html += '<button class="guide-add-btn' + (isAdded ? ' added' : '') + '" ';
@@ -3012,8 +3020,8 @@
         events.forEach(function(e) {
           var tc = TYPE[e.type];
           html += '<div class="cal-day-event">';
-          html += '<div class="cal-day-poster" style="background-image:url(\'' + e.img + '\')"></div>';
-          html += '<div><div class="cal-day-title">' + e.title + '</div>';
+          html += '<div class="cal-day-poster" style="background-image:url(\'' + esc(e.img) + '\')"></div>';
+          html += '<div><div class="cal-day-title">' + esc(e.title) + '</div>';
           html += '<div class="cal-day-meta">' + MONTH_NAME + ' ' + e.day + ' &middot; <span style="color:' + tc.color + '">' + tc.label + '</span></div></div>';
           html += '</div>';
         });

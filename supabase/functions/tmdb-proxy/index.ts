@@ -58,12 +58,14 @@ Deno.serve(async (req) => {
     });
   }
 
-  // Forward all query params except 'path' to TMDB
+  // Forward all query params except 'path' to TMDB.
+  // Never forward a client-supplied 'api_key': the server key is set last so a
+  // caller cannot override it via ?api_key=.
   const tmdbUrl = new URL(`${BASE}/${cleanPath}`);
-  tmdbUrl.searchParams.set('api_key', key);
   url.searchParams.forEach((v, k) => {
-    if (k !== 'path') tmdbUrl.searchParams.set(k, v);
+    if (k !== 'path' && k !== 'api_key') tmdbUrl.searchParams.set(k, v);
   });
+  tmdbUrl.searchParams.set('api_key', key);
 
   try {
     const res = await fetch(tmdbUrl.toString());
