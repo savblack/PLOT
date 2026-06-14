@@ -418,6 +418,14 @@ function DiscoverContent({ openPanel, watchlist, providers }) {
           {openSections.platforms && platformList.map(platform => (
             <PlatformSection key={platform.id} platform={platform} openPanel={openPanel} watchlist={watchlist} />
           ))}
+          {openSections.platforms && platformList.some(p => p.official) && (
+            <p className="discover-plat-attribution">
+              Official Top 10 data from Netflix and the{' '}
+              <a href="https://www.movieofthenight.com/about/api" target="_blank" rel="noopener noreferrer">
+                Streaming Availability API
+              </a>.
+            </p>
+          )}
         </section>
       )}
 
