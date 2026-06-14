@@ -1154,11 +1154,11 @@
 
     /* Status bar — sits in the notch shoulder area */
     .iphone-status-bar {
-      height: 42px;
+      height: 28px;
       display: flex;
-      align-items: flex-end;
+      align-items: flex-start;
       justify-content: space-between;
-      padding: 0 18px 7px;
+      padding: 1px 18px 0;
       flex-shrink: 0;
     }
     .status-time {
@@ -1241,7 +1241,53 @@
       flex-direction: column;
       height: 100%;
       overflow: hidden;
+      position: relative;
     }
+    /* Discover screen mockup — mirrors the app's mobile Discover UI */
+    #guideFrame { background: #0c0c0c; }
+    .disc { background: #0c0c0c; }
+    .disc-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 13px; height: 34px; flex-shrink: 0;
+    }
+    .disc-ham { display: flex; flex-direction: column; gap: 3px; width: 13px; }
+    .disc-ham span { height: 1.4px; background: rgba(240,239,232,0.7); border-radius: 1px; }
+    .disc-logo { font-family: var(--serif); font-size: 0.98rem; letter-spacing: 0.04em; color: #f0efe8; }
+    .disc-search { width: 14px; height: 14px; color: rgba(240,239,232,0.7); }
+    .disc-tabs {
+      display: flex; align-items: flex-end; gap: 11px;
+      padding: 0 13px 7px; border-bottom: 1px solid rgba(255,255,255,0.07); flex-shrink: 0;
+    }
+    .disc-date { font-size: 0.42rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(240,239,232,0.32); margin-right: 1px; }
+    .disc-tab { font-size: 0.62rem; color: rgba(240,239,232,0.4); position: relative; padding-bottom: 6px; }
+    .disc-tab-on { color: #f0efe8; }
+    .disc-tab-on::after { content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 1.5px; background: var(--pink); border-radius: 2px; }
+    .disc-scroll { flex: 1; overflow: hidden; padding: 9px 13px 0; }
+    .disc-hero {
+      position: relative; height: 152px; border-radius: 11px; overflow: hidden;
+      background-size: cover; background-position: center 22%;
+      display: flex; flex-direction: column; justify-content: flex-end; padding: 11px;
+    }
+    .disc-hero-grad { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.15) 52%, transparent 100%); }
+    .disc-trend { position: absolute; top: 11px; left: 11px; font-size: 0.42rem; font-weight: 700; letter-spacing: 0.06em; color: #fff; background: rgba(224,85,120,0.92); padding: 3px 7px; border-radius: 20px; }
+    .disc-hero-title { position: relative; font-family: var(--serif); font-size: 1.2rem; line-height: 1; color: #fff; letter-spacing: -0.02em; }
+    .disc-hero-meta { position: relative; font-size: 0.5rem; color: rgba(255,255,255,0.72); margin-top: 4px; }
+    .disc-sec { padding: 13px 0 9px; }
+    .disc-sec-sub { font-size: 0.42rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(240,239,232,0.3); }
+    .disc-sec-t { font-size: 0.74rem; font-weight: 700; color: #f0efe8; margin-top: 2px; }
+    .disc-row { display: flex; gap: 9px; }
+    .disc-card { width: 79px; flex-shrink: 0; }
+    .disc-poster { position: relative; width: 79px; height: 118px; border-radius: 8px; background-size: cover; background-position: center; }
+    .disc-tag { position: absolute; top: 5px; left: 5px; font-size: 0.36rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #fff; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); padding: 2px 5px; border-radius: 20px; }
+    .disc-tag-tv { background: rgba(74,144,217,0.9); }
+    .disc-bk { position: absolute; top: 5px; right: 6px; width: 9px; height: 11px; color: #fff; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.55)); }
+    .disc-card-t { font-size: 0.55rem; color: #f0efe8; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .disc-nav {
+      display: flex; align-items: center; justify-content: space-around;
+      padding: 9px 4px; border-top: 1px solid rgba(255,255,255,0.07); flex-shrink: 0;
+    }
+    .disc-nav span { font-size: 0.5rem; color: rgba(240,239,232,0.35); }
+    .disc-nav-on { color: var(--pink) !important; }
     .guide-date-hdr {
       padding: 9px 14px 6px;
       font-size: 0.58rem;
@@ -1971,92 +2017,99 @@
         <div class="iphone-png-wrap">
           <img class="iphone-png-frame" src="images/iphone-mockup.png" alt="">
           <div class="phone-frame" id="guideFrame">
-          <div class="iphone-status-bar">
-            <span class="status-time">9:41</span>
-            <div class="status-icons">
-              <svg class="status-icon" width="16" height="11" viewBox="0 0 16 11" fill="currentColor"><rect x="0" y="4" width="3" height="7" rx="0.5"/><rect x="4.5" y="2.5" width="3" height="8.5" rx="0.5"/><rect x="9" y="0.5" width="3" height="10.5" rx="0.5"/><rect x="13.5" y="0" width="2.5" height="11" rx="0.5" opacity="0.3"/></svg>
-              <svg class="status-icon" width="15" height="11" viewBox="0 0 15 11" fill="currentColor"><path d="M7.5 2.2C9.8 2.2 11.9 3.1 13.4 4.6L15 3C13.1 1.1 10.4 0 7.5 0S1.9 1.1 0 3l1.6 1.6C3.1 3.1 5.2 2.2 7.5 2.2z"/><path d="M7.5 5.5c1.4 0 2.7.6 3.6 1.5L12.7 5.4C11.4 4.2 9.5 3.4 7.5 3.4S3.6 4.2 2.3 5.4L3.9 7C4.8 6.1 6.1 5.5 7.5 5.5z"/><circle cx="7.5" cy="9.5" r="1.5"/></svg>
-              <svg class="status-icon" width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="currentColor" stroke-opacity="0.35"/><rect x="1.5" y="1.5" width="16" height="9" rx="2.5" fill="currentColor"/><path d="M23 4v4a2 2 0 000-4z" fill="currentColor" opacity="0.4"/></svg>
+          <div class="guide-screen disc">
+            <div class="disc-bar">
+              <span class="disc-ham"><span></span><span></span><span></span></span>
+              <span class="disc-logo">PLOT</span>
+              <svg class="disc-search" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="8" cy="8" r="5.5"/><path d="M12.5 12.5L16 16"/></svg>
             </div>
-          </div>
-          <div class="guide-screen">
-            <div class="demo-app-bar">
-              <span class="demo-app-icon">&#9776;</span>
-              <span class="demo-app-bar-title">PLOT</span>
-              <span class="demo-app-icon">&#128269;</span>
+            <div class="disc-tabs">
+              <span class="disc-tab disc-tab-on">Discover</span>
+              <span class="disc-tab">Releases</span>
+              <span class="disc-tab">Guide</span>
             </div>
-            <div class="guide-date-hdr" id="guideDateHdr">Today</div>
-            <div class="guide-cards">
-              <div class="guide-card">
-                <div class="guide-card-bg" style="background-image:url('images/hero/saltburn.webp')"></div>
-                <div class="guide-card-grad"></div>
-                <div class="guide-badge badge-movie">Movie</div>
-                <div class="guide-stream">PRIME</div>
-                <div class="guide-bk anim-bk" id="gBk">
-                  <svg viewBox="0 0 12 14" fill="none"><path class="bk-path" d="M1 1h10v12l-5-3-5 3V1z"/></svg>
+            <div class="disc-scroll">
+              <div class="disc-hero" style="background-image:url('images/hero/sinners.webp')">
+                <div class="disc-hero-grad"></div>
+                <span class="disc-trend">TRENDING #1</span>
+                <div class="disc-hero-title">Sinners</div>
+                <div class="disc-hero-meta">2025 &middot; Film</div>
+              </div>
+              <div class="disc-sec">
+                <div class="disc-sec-sub">Trending today</div>
+                <div class="disc-sec-t">Hot right now</div>
+              </div>
+              <div class="disc-row">
+                <div class="disc-card">
+                  <div class="disc-poster" style="background-image:url('images/hero/saltburn.webp')">
+                    <span class="disc-tag">Movie</span>
+                    <svg class="disc-bk" viewBox="0 0 12 14" fill="currentColor"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg>
+                  </div>
+                  <div class="disc-card-t">Saltburn</div>
+                </div>
+                <div class="disc-card">
+                  <div class="disc-poster" style="background-image:url('images/hero/nosferatu.webp')">
+                    <span class="disc-tag">Movie</span>
+                    <svg class="disc-bk" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg>
+                  </div>
+                  <div class="disc-card-t">Nosferatu</div>
+                </div>
+                <div class="disc-card">
+                  <div class="disc-poster" style="background-image:url('images/hero/the-substance.webp')">
+                    <span class="disc-tag">Movie</span>
+                    <svg class="disc-bk" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg>
+                  </div>
+                  <div class="disc-card-t">The Substance</div>
+                </div>
+                <div class="disc-card">
+                  <div class="disc-poster" style="background-image:url('images/hero/anyone-but-you.webp')">
+                    <span class="disc-tag">Movie</span>
+                    <svg class="disc-bk" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg>
+                  </div>
+                  <div class="disc-card-t">Anyone But You</div>
                 </div>
               </div>
-              <div class="guide-card">
-                <div class="guide-card-bg" style="background-image:url('images/hero/nosferatu.webp')"></div>
-                <div class="guide-card-grad"></div>
-                <div class="guide-badge badge-movie">Movie</div>
-                <div class="guide-stream">MAX</div>
-                <div class="guide-bk">
-                  <svg viewBox="0 0 12 14" fill="none"><path class="bk-path" d="M1 1h10v12l-5-3-5 3V1z"/></svg>
-                </div>
+              <div class="disc-sec">
+                <div class="disc-sec-sub">Popular TV</div>
+                <div class="disc-sec-t">Most binged shows</div>
               </div>
-              <div class="guide-card">
-                <div class="guide-card-bg" style="background-image:url('images/hero/the-substance.webp')"></div>
-                <div class="guide-card-grad"></div>
-                <div class="guide-badge badge-tv">TV</div>
-                <div class="guide-stream">MUBI</div>
-                <div class="guide-bk">
-                  <svg viewBox="0 0 12 14" fill="none"><path class="bk-path" d="M1 1h10v12l-5-3-5 3V1z"/></svg>
+              <div class="disc-row">
+                <div class="disc-card">
+                  <div class="disc-poster" style="background-image:url('images/timeline/severance.jpg')">
+                    <span class="disc-tag disc-tag-tv">TV</span>
+                    <svg class="disc-bk" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg>
+                  </div>
+                  <div class="disc-card-t">Severance</div>
                 </div>
-              </div>
-              <div class="guide-card">
-                <div class="guide-card-bg" style="background-image:url('images/hero/sinners.webp')"></div>
-                <div class="guide-card-grad"></div>
-                <div class="guide-badge badge-movie">Movie</div>
-                <div class="guide-stream">A24</div>
-                <div class="guide-bk">
-                  <svg viewBox="0 0 12 14" fill="none"><path class="bk-path" d="M1 1h10v12l-5-3-5 3V1z"/></svg>
+                <div class="disc-card">
+                  <div class="disc-poster" style="background-image:url('images/timeline/the-bear.jpg')">
+                    <span class="disc-tag disc-tag-tv">TV</span>
+                    <svg class="disc-bk" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg>
+                  </div>
+                  <div class="disc-card-t">The Bear</div>
                 </div>
-              </div>
-              <div class="guide-card">
-                <div class="guide-card-bg" style="background-image:url('images/hero/babygirl.webp')"></div>
-                <div class="guide-card-grad"></div>
-                <div class="guide-badge badge-movie">Movie</div>
-                <div class="guide-stream">NFLX</div>
-                <div class="guide-bk">
-                  <svg viewBox="0 0 12 14" fill="none"><path class="bk-path" d="M1 1h10v12l-5-3-5 3V1z"/></svg>
+                <div class="disc-card">
+                  <div class="disc-poster" style="background-image:url('images/timeline/adolescence.jpg')">
+                    <span class="disc-tag disc-tag-tv">TV</span>
+                    <svg class="disc-bk" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg>
+                  </div>
+                  <div class="disc-card-t">Adolescence</div>
                 </div>
-              </div>
-              <div class="guide-card">
-                <div class="guide-card-bg" style="background-image:url('images/hero/wuthering-heights.webp')"></div>
-                <div class="guide-card-grad"></div>
-                <div class="guide-badge badge-movie">Movie</div>
-                <div class="guide-stream">HULU</div>
-                <div class="guide-bk">
-                  <svg viewBox="0 0 12 14" fill="none"><path class="bk-path" d="M1 1h10v12l-5-3-5 3V1z"/></svg>
+                <div class="disc-card">
+                  <div class="disc-poster" style="background-image:url('images/timeline/presumed-innocent.jpeg')">
+                    <span class="disc-tag disc-tag-tv">TV</span>
+                    <svg class="disc-bk" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg>
+                  </div>
+                  <div class="disc-card-t">Presumed Innocent</div>
                 </div>
               </div>
             </div>
-            <div class="demo-toast guide-toast">
-              <div class="toast-dot"></div>
-              Saved to Want to Watch
+            <div class="disc-nav">
+              <span class="disc-nav-on">Home</span>
+              <span>Calendar</span>
+              <span>My Lists</span>
+              <span>History</span>
             </div>
-            <div class="demo-tab-bar">
-              <div class="demo-tab-item tab-active"><span class="demo-tab-icon">&#8962;</span><span class="demo-tab-label">Home</span></div>
-              <div class="demo-tab-item"><span class="demo-tab-icon">&#9633;</span><span class="demo-tab-label">Calendar</span></div>
-              <div class="demo-tab-item"><span class="demo-tab-icon">&#9776;</span><span class="demo-tab-label">My Lists</span></div>
-              <div class="demo-tab-item"><span class="demo-tab-icon">&#9711;</span><span class="demo-tab-label">History</span></div>
-            </div>
-          </div>
-          <div class="mock-cursor guide-mc" id="guideMC">
-            <svg viewBox="0 0 18 20" fill="none">
-              <path d="M2 2l14 8-8 1.5-3.5 8z" fill="white" stroke="rgba(0,0,0,0.35)" stroke-width="0.8"/>
-            </svg>
           </div>
         </div><!-- /phone-frame -->
         </div><!-- /iphone-png-wrap -->
@@ -2698,6 +2751,44 @@
       }).catch(function() {});
     })();
 
+    // Discover phone mockup — populate with live TMDB content (real titles,
+    // posters and Movie/TV badges). Local images stay as a fallback.
+    (function() {
+      var hero = document.querySelector('.disc-hero');
+      var rows = document.querySelectorAll('.disc-row');
+      if (!hero || rows.length < 2) return;
+      fetchTrendingSets().then(function(sets) {
+        var POSTER = 'https://image.tmdb.org/t/p/w500';
+        var BACK = 'https://image.tmdb.org/t/p/w780';
+        var trending = (sets[0] && sets[0].results) || [];
+        var nowPlaying = (sets[1] && sets[1].results) || [];
+        var tv = (sets[2] && sets[2].results) || [];
+        var movies = nowPlaying.filter(function(r){ return r.poster_path; });
+        var shows = tv.filter(function(r){ return r.poster_path; });
+        // Hero — top trending title, using its landscape backdrop.
+        var top = trending.filter(function(r){ return r.backdrop_path || r.poster_path; })[0];
+        if (top) {
+          hero.style.backgroundImage = "url('" + (top.backdrop_path ? BACK + top.backdrop_path : POSTER + top.poster_path) + "')";
+          var date = top.release_date || top.first_air_date || '';
+          var isTv = top.media_type === 'tv' || (!top.title && !!top.name);
+          var t = hero.querySelector('.disc-hero-title'); if (t) t.textContent = top.title || top.name || t.textContent;
+          var m = hero.querySelector('.disc-hero-meta'); if (m) m.textContent = (date ? date.slice(0,4) + ' · ' : '') + (isTv ? 'TV Series' : 'Film');
+        }
+        function fill(row, list, isTv) {
+          [].slice.call(row.querySelectorAll('.disc-card')).forEach(function(card, i) {
+            var item = list[i % list.length];
+            if (!item) return;
+            card.querySelector('.disc-poster').style.backgroundImage = "url('" + POSTER + item.poster_path + "')";
+            var tag = card.querySelector('.disc-tag');
+            if (tag) { tag.textContent = isTv ? 'TV' : 'Movie'; tag.className = 'disc-tag' + (isTv ? ' disc-tag-tv' : ''); }
+            var title = card.querySelector('.disc-card-t'); if (title) title.textContent = item.title || item.name || title.textContent;
+          });
+        }
+        if (movies.length) fill(rows[0], movies, false);
+        if (shows.length) fill(rows[1], shows, true);
+      }).catch(function() {});
+    })();
+
     // ── Live ticker ───────────────────────────────────────────
     (async function initTicker() {
       const track = document.getElementById('tickerTrack');
@@ -2776,7 +2867,7 @@
       new IntersectionObserver(entries => {
         entries.forEach(e => {
           guideFrame.classList.toggle('animating', e.isIntersecting);
-          guideMC.classList.toggle('visible', e.isIntersecting);
+          if (guideMC) guideMC.classList.toggle('visible', e.isIntersecting);
         });
       }, { threshold: 0.4 }).observe(guideFrame);
     }
