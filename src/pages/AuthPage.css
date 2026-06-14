@@ -62,9 +62,14 @@
 }
 
 .auth-visual-logo {
-  height: 42px;
-  width: auto;
   display: block;
+  font-family: var(--font-serif);
+  font-size: 2.5rem;
+  font-weight: 400;
+  letter-spacing: -0.05em;
+  line-height: 1;
+  color: #fff;
+  user-select: none;
 }
 
 .auth-visual-tagline {
@@ -87,16 +92,18 @@
 
 /* PLOT link at top */
 .auth-panel-logo {
-  display: block;
+  display: inline-block;
+  width: fit-content;
   padding: clamp(1.25rem, 2.5vh, 2rem) 2.5rem;
   text-decoration: none;
   flex-shrink: 0;
-}
-
-.auth-panel-logo img {
-  height: 28px;
-  width: auto;
-  display: block;
+  font-family: var(--font-serif);
+  font-size: 1.7rem;
+  font-weight: 400;
+  letter-spacing: -0.05em;
+  line-height: 1;
+  color: var(--text-primary);
+  user-select: none;
 }
 
 .auth-panel-logo:hover { opacity: 0.6; }

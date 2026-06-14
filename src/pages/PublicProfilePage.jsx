@@ -272,7 +272,7 @@ export default function PublicProfilePage() {
           <div className="public-profile-visual-gradient" />
           <div className="public-profile-visual-brand">
             <PlotLogo className="public-profile-logo-image" white />
-            <span className="public-profile-visual-tagline">Your film &amp; TV journal</span>
+            <span className="public-profile-visual-tagline">Your film &amp; TV companion</span>
           </div>
         </div>
 

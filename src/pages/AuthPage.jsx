@@ -5,7 +5,6 @@ import './AuthPage.css';
 import { usePostHog } from '@posthog/react';
 import { getAuthCallbackUrl } from '../utils/redirects.js';
 import { HERO_POSTERS } from '../constants/heroPosters.js';
-import PlotLogo from '../components/PlotLogo.jsx';
 import PlotLoader from '../components/PlotLoader.jsx';
 
 function friendlyError(msg) {
@@ -127,15 +126,15 @@ export default function AuthPage({ initialMode = 'signup' }) {
         </div>
         <div className="auth-visual-gradient" />
         <div className="auth-visual-brand">
-          <PlotLogo className="auth-visual-logo" white />
-          <span className="auth-visual-tagline">Your film &amp; TV journal</span>
+          <span className="auth-visual-logo">PLOT</span>
+          <span className="auth-visual-tagline">Your film &amp; TV companion</span>
         </div>
       </div>
 
       {/* ── Right: form panel ── */}
       <div className="auth-panel">
-        <Link to="/" className="auth-panel-logo">
-          <PlotLogo />
+        <Link to="/" className="auth-panel-logo" aria-label="PLOT">
+          PLOT
         </Link>
 
         <div className="auth-panel-body">
