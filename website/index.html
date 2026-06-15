@@ -107,6 +107,19 @@
       }
     }
 
+    /* Touch devices: bring interactive targets up to ~44px (SUS-107) */
+    @media (pointer: coarse) {
+      .footer-nav a,
+      .demo-link {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+      }
+      .nav-links.open a { min-height: 44px; }
+      .woc-form button { min-height: 44px; }
+      .woc-form input[type="email"] { min-height: 44px; }
+    }
+
     html, body { overflow-x: hidden; max-width: 100%; }
 
     body {
