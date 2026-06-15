@@ -54,3 +54,25 @@ posthog.init('phc_uS3JEJC7s6T2WdsQToCZA3eRjLNakgc3EF3YPbza9Q6U', {
     forwardAttribution();
   }
 })();
+
+/* ── CTA conversion events (SUS-99) ────────────────────────────────────
+   Explicit, decision-useful events for the commercial CTAs so the
+   visit → signup/login funnel reads cleanly (rather than leaning on
+   generic autocapture labels). One delegated listener fires a named
+   event with a `placement` property from each link's data-cta tag. */
+(function () {
+  document.addEventListener('click', function (ev) {
+    var a = ev.target && ev.target.closest && ev.target.closest('a[href*="app.theplot.tv/"]');
+    if (!a) return;
+    var path;
+    try { path = new URL(a.href).pathname; } catch { return; }
+    var action = path.indexOf('/signup') === 0 ? 'signup_click'
+               : path.indexOf('/login') === 0 ? 'login_click'
+               : null;
+    if (!action) return;
+    posthog.capture(action, {
+      placement: a.getAttribute('data-cta') || 'unknown',
+      source: 'marketing',
+    });
+  }, true);
+})();
