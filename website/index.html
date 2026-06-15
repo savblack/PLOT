@@ -5,17 +5,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>PLOT | Your Film &amp; TV Companion</title>
   <meta name="description" content="The beautiful way to track what you watch. Log, rate, and share your film and TV taste." />
+  <link rel="canonical" href="https://theplot.tv/" />
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#0c0c0c" media="(prefers-color-scheme: dark)" />
 
-  <!-- Favicon -->
+  <!-- Favicon / app icon -->
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="apple-touch-icon" href="favicon.svg" />
+  <link rel="manifest" href="site.webmanifest" />
 
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="PLOT" />
   <meta property="og:title" content="PLOT | Your Film &amp; TV Companion" />
   <meta property="og:description" content="The beautiful way to track what you watch. Log, rate, and share your film and TV taste." />
   <meta property="og:image" content="https://theplot.tv/og-image.png" />
+  <meta property="og:image:type" content="image/png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="PLOT — your film &amp; TV companion" />
   <meta property="og:url" content="https://theplot.tv" />
 
   <!-- Twitter / X card -->
@@ -23,6 +31,30 @@
   <meta name="twitter:title" content="PLOT | Your Film &amp; TV Companion" />
   <meta name="twitter:description" content="The beautiful way to track what you watch. Log, rate, and share your film and TV taste." />
   <meta name="twitter:image" content="https://theplot.tv/og-image.png" />
+
+  <!-- Structured data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://theplot.tv/#organization",
+        "name": "PLOT",
+        "url": "https://theplot.tv/",
+        "logo": "https://theplot.tv/og-image.png"
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://theplot.tv/#website",
+        "url": "https://theplot.tv/",
+        "name": "PLOT",
+        "description": "The beautiful way to track what you watch. Log, rate, and share your film and TV taste.",
+        "publisher": { "@id": "https://theplot.tv/#organization" }
+      }
+    ]
+  }
+  </script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

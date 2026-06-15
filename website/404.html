@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Page not found — PLOT</title>
+  <meta name="description" content="The page you were looking for isn't here." />
+  <meta name="robots" content="noindex" />
+  <link rel="canonical" href="https://theplot.tv/" />
+  <meta name="theme-color" content="#0c0c0c" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="apple-touch-icon" href="favicon.svg" />
+  <link rel="manifest" href="site.webmanifest" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --dark: #0c0c0c;
+      --text-dark: #f0efe8;
+      --serif: 'Instrument Serif', Georgia, serif;
+      --sans: 'DM Sans', system-ui, sans-serif;
+    }
+    html, body { height: 100%; }
+    body {
+      background: var(--dark);
+      color: var(--text-dark);
+      font-family: var(--sans);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 1.5rem;
+      padding: 2rem;
+      min-height: 100vh;
+    }
+    .wordmark {
+      font-family: var(--serif);
+      font-weight: 400;
+      letter-spacing: -0.05em;
+      font-size: 2.4rem;
+      line-height: 1;
+      text-decoration: none;
+      color: var(--text-dark);
+    }
+    .code {
+      font-family: var(--serif);
+      font-size: clamp(4rem, 18vw, 8rem);
+      line-height: 0.9;
+      letter-spacing: -0.04em;
+    }
+    .headline { font-size: 1.35rem; font-weight: 300; }
+    .sub { font-size: 0.95rem; font-weight: 300; color: rgba(240,239,232,0.55); max-width: 26rem; line-height: 1.5; }
+    .home {
+      margin-top: 0.5rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: var(--dark);
+      background: var(--text-dark);
+      text-decoration: none;
+      padding: 0.7rem 1.4rem;
+      border-radius: 9999px;
+      transition: opacity 0.2s;
+    }
+    .home:hover { opacity: 0.85; }
+  </style>
+</head>
+<body>
+  <a class="wordmark" href="/">PLOT</a>
+  <div class="code">404</div>
+  <p class="headline">This scene didn't make the final cut.</p>
+  <p class="sub">The page you were looking for isn't here — it may have moved or never existed.</p>
+  <a class="home" href="/">← Back to PLOT</a>
+</body>
+</html>
