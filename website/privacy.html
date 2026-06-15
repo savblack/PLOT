@@ -157,6 +157,12 @@
     }
     .page-wrap ul li { margin-bottom: 0.4rem; }
 
+    /* Justify reads fine on wide columns but creates whitespace rivers on
+       phones — left-align below tablet width. (SUS-102) */
+    @media (max-width: 768px) {
+      p, .page-wrap ul { text-align: left; }
+    }
+
     a { color: var(--text); }
     a:hover { opacity: 0.7; }
 
