@@ -1897,7 +1897,7 @@
       <li><a href="https://app.theplot.tv/login">Log in</a></li>
       <li><a href="https://app.theplot.tv/signup" class="nav-cta">Sign up</a></li>
     </ul>
-    <button class="nav-hamburger" id="hamburger" aria-label="Menu" aria-expanded="false">
+    <button class="nav-hamburger" id="hamburger" aria-label="Menu" aria-expanded="false" aria-controls="navLinks">
       <span></span><span></span><span></span>
     </button>
   </nav>
@@ -2425,6 +2425,13 @@
     document.addEventListener('click', e => {
       if (navLinks.classList.contains('open') && !e.target.closest('nav') && !e.target.closest('.nav-links')) {
         setNavOpen(false);
+      }
+    });
+    // Close nav on Escape and return focus to the toggle (SUS-80)
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && navLinks.classList.contains('open')) {
+        setNavOpen(false);
+        hamburger.focus();
       }
     });
 
