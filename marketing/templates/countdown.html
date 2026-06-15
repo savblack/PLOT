@@ -7,32 +7,11 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@200;300;400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
 <style>/*INLINE_BASE_CSS*/</style>
 <style>
-  /* Hierarchy: caps kicker (kind + date) -> hero title -> count beneath
-     (accent number + italic unit, same treatment as the trending rank). */
+  /* Hierarchy: caps kicker (kind + date) -> hero title -> stat (count). */
   .content { display: flex; flex-direction: column; align-items: flex-start; gap: 28px; }
   .display { font-size: 150px; max-width: 96%; }
-  .count {
-    font-family: var(--font-serif);
-    font-size: 130px;
-    line-height: 0.9;
-    letter-spacing: -0.02em;
-    color: var(--accent);
-    display: flex;
-    align-items: baseline;
-    gap: 26px;
-  }
-  .count .unit {
-    font-family: var(--font-serif);
-    font-style: italic;
-    font-size: 108px;
-    letter-spacing: 0;
-    word-spacing: 0.08em;
-    color: var(--text-dim);
-  }
   @media (min-aspect-ratio: 4/3) {
     .display { font-size: 118px; }
-    .count { font-size: 108px; }
-    .count .unit { font-size: 90px; }
   }
 </style>
 </head>
@@ -53,9 +32,10 @@ card.append(el('div', 'scrim'));
 const content = el('div', 'content');
 content.append(metaCaps(d.kind, d.when_label));
 content.append(el('h1', 'display', t.title));
-const count = el('div', 'count', String(days));
-count.append(el('span', 'unit', days === 1 ? 'day to go' : 'days to go'));
-content.append(count);
+const stat = el('div', 'subline');
+stat.append(el('span', 'n', String(days)));
+stat.append(el('span', 'lbl', days === 1 ? 'day to go' : 'days to go'));
+content.append(stat);
 card.append(content);
 card.append(plotMark());
 card.append(plotFooter());

@@ -17,14 +17,10 @@ const img = (className, src) => {
   return node;
 };
 
-// Best full-bleed art for the current canvas: posters suit the 4:5 portrait
-// card, backdrops suit 16:9 — fall back to whichever exists.
-const pickArt = (title) => {
-  const portrait = window.innerHeight > window.innerWidth;
-  return portrait
-    ? (title.poster_data_uri || title.backdrop_data_uri)
-    : (title.backdrop_data_uri || title.poster_data_uri);
-};
+// Full-bleed art: prefer the backdrop in BOTH orientations — it's cinematic
+// key art, reads cleanly behind type, and avoids posters' baked-in titles and
+// odd crops. Poster is only a fallback when no backdrop exists.
+const pickArt = (title) => title.backdrop_data_uri || title.poster_data_uri;
 
 // A display headline with an italic accent segment: serifLine('7', ' days to go')
 const accentLine = (plain, italic) => {
@@ -51,8 +47,9 @@ const plotMark = () => el('div', 'plot-mark', 'PLOT');
 
 const plotFooter = () => {
   const footer = el('div', 'plot-footer');
-  const site = el('span', 'site', 'theplot');
-  site.append(el('b', null, '.tv'));
+  const site = el('span', 'site', 'the');
+  site.append(el('b', null, 'plot'));
+  site.append(document.createTextNode('.tv'));
   footer.append(site);
   return footer;
 };

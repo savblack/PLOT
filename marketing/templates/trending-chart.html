@@ -22,26 +22,29 @@
     opacity: 0.45;
   }
   /* Hierarchy: dim caps week kicker -> hero headline -> the chart itself. */
-  .header { position: relative; z-index: 2; margin-bottom: 44px; }
-  .header .meta-caps { display: block; margin-bottom: 24px; }
-  .header .display { font-size: 104px; }
+  .header { position: relative; z-index: 2; margin-bottom: 72px; }
+  .header .meta-caps { display: block; margin-bottom: 20px; font-size: 28px; }
+  .header .display { font-size: 84px; }
+  .header .display .wk { color: var(--accent); font-style: normal; }
   .rows {
     position: relative; z-index: 2; flex: 1; min-height: 0;
     display: flex; flex-direction: column; justify-content: space-between;
     overflow: hidden;
   }
   .row {
-    display: flex; align-items: center; gap: 26px;
+    display: flex; align-items: center; gap: 28px;
     padding: 4px 0;
     border-bottom: 1px solid rgba(250,250,250,0.10);
   }
   .row:last-child { border-bottom: none; }
-  /* Default sizing: five roomy rows per card (the IG/Threads carousel). */
+  /* Default sizing: five roomy rows per card (the IG/Threads carousel).
+     Rank sits in a snug box (fits "10") with a tight gap to the poster. */
+  /* Natural-width rank pulled snug to its poster (negative margin offsets the
+     row gap). Left edge still aligns with the header text above. */
   .row .rank {
     font-family: var(--font-serif);
     font-size: 68px;
-    width: 100px;
-    text-align: right;
+    margin-right: -4px;
     color: var(--text-faint);
   }
   .row.top-rank .rank { color: var(--accent); }
@@ -51,18 +54,18 @@
     min-width: 0;
     display: flex;
     align-items: baseline;
-    font-size: 50px; font-weight: 400; color: var(--text);
+    font-size: 42px; font-weight: 400; color: var(--text);
   }
   .row .name .title-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .row .kind { flex-shrink: 0; font-size: 29px; font-weight: 300; color: var(--text-faint); margin-left: 18px; letter-spacing: 0.06em; }
+  .row .kind { flex-shrink: 0; font-size: 25px; font-weight: 300; color: var(--text-faint); margin-left: 16px; letter-spacing: 0.06em; }
   .move { font-size: 38px; font-weight: 500; width: 130px; text-align: right; }
 
   /* Ten-row variant (the X single image): tighter rows. */
   .rows-10 .row { padding: 3px 0; gap: 24px; }
-  .rows-10 .row .rank { font-size: 48px; width: 70px; }
+  .rows-10 .row .rank { font-size: 48px; }
   .rows-10 .row img.thumb { width: 46px; border-radius: 7px; }
-  .rows-10 .row .name { font-size: 37px; }
-  .rows-10 .row .kind { font-size: 23px; }
+  .rows-10 .row .name { font-size: 33px; }
+  .rows-10 .row .kind { font-size: 21px; }
   .rows-10 .move { font-size: 30px; width: 104px; }
   .move.up   { color: #34D399; }
   .move.down { color: #F87171; }
@@ -73,32 +76,21 @@
      hero title -> rank line beneath ("#3" accent + quiet movement note). ── */
   .detail .content { display: flex; flex-direction: column; align-items: flex-start; gap: 28px; }
   .detail .display { font-size: 150px; max-width: 96%; }
-  .rank-line {
-    font-family: var(--font-serif);
-    font-size: 120px;
-    line-height: 0.9;
-    letter-spacing: -0.02em;
-    color: var(--accent);
-    display: flex; align-items: baseline; gap: 26px;
-  }
-  .rank-line .of {
-    font-size: 100px; font-style: italic; color: var(--text-dim);
-    letter-spacing: 0; word-spacing: 0.08em;
-  }
 
   @media (min-aspect-ratio: 4/3) {
     .chart-card { padding-top: calc(var(--pad) + 110px); }
-    .header { margin-bottom: 26px; }
-    .header .meta-caps { margin-bottom: 14px; }
+    .header { margin-bottom: 48px; }
+    .header .meta-caps { margin-bottom: 12px; font-size: 24px; }
     .header .display { font-size: 72px; }
     .row { gap: 24px; padding: 0; }
-    .row .rank { font-size: 52px; width: 76px; }
+    .row .rank { font-size: 52px; }
     .row img.thumb { width: 54px; }
-    .row .name { font-size: 40px; }
-    .row .kind { font-size: 24px; }
+    .row .name { font-size: 34px; }
+    .row .kind { font-size: 21px; }
     .move { font-size: 32px; width: 104px; }
 
-    /* Ten-row landscape: two columns (1-5 left, 6-10 right). */
+    /* Ten-row landscape: two columns (1-5 left, 6-10 right), spread across
+       the full width. */
     .rows-10 {
       display: grid;
       grid-template-rows: repeat(5, 1fr);
@@ -108,14 +100,12 @@
     }
     .rows-10 .row { gap: 22px; padding: 0; }
     .rows-10 .row:nth-child(5n) { border-bottom: none; }
-    .rows-10 .row .rank { font-size: 42px; width: 60px; }
+    .rows-10 .row .rank { font-size: 42px; }
     .rows-10 .row img.thumb { width: 46px; }
     .rows-10 .row .name { font-size: 33px; }
     .rows-10 .row .kind { font-size: 21px; }
     .rows-10 .move { font-size: 27px; width: 90px; }
 
-    .rank-line { font-size: 100px; }
-    .rank-line .of { font-size: 84px; }
     .detail .display { font-size: 118px; }
   }
 </style>
@@ -144,9 +134,10 @@ if (d.kind === 'detail') {
   const content = el('div', 'content');
   content.append(el('div', 'meta-caps', 'Trending this week'));
   content.append(el('h1', 'display', t.title));
-  const rank = el('div', 'rank-line', `#${t.rank}`);
-  if (t.movement_label) rank.append(el('span', 'of', t.movement_label));
-  content.append(rank);
+  const stat = el('div', 'subline');
+  stat.append(el('span', 'n', `${t.rank}`));
+  if (t.movement_label) stat.append(el('span', 'lbl', t.movement_label));
+  content.append(stat);
   card.append(content);
 } else {
   card.classList.add('chart-card');
@@ -156,7 +147,7 @@ if (d.kind === 'detail') {
   header.append(el('div', 'meta-caps', 'Trending this week'));
   const weekDate = String(d.week_label || '').replace(/^week of\s+/i, '');
   const h = el('h1', 'display', 'Week of ');
-  h.append(el('em', null, weekDate));
+  h.append(el('span', 'wk', weekDate));
   header.append(h);
   card.append(header);
   const items = (d.items || []).slice(0, 10);
@@ -167,7 +158,6 @@ if (d.kind === 'detail') {
     if (item.poster_data_uri) row.append(img('thumb', item.poster_data_uri));
     const name = el('div', 'name');
     name.append(el('span', 'title-text', item.title));
-    name.append(el('span', 'kind', item.media_type === 'tv' ? 'series' : 'film'));
     row.append(name);
     row.append(moveNode(item.movement));
     rows.append(row);

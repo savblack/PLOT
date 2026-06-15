@@ -141,7 +141,7 @@ const main = async () => {
 
   const groups = [...new Set(entries.map(e => e.type))].map(type => {
     const imgs = entries.filter(e => e.type === type).map(e =>
-      `<figure><img src="${e.file}" loading="lazy"><figcaption><b>${e.channel}</b><br>${e.size === 'portrait' ? '1080×1350' : '1600×900'}</figcaption></figure>`
+      `<figure><img src="${e.file}"><figcaption><b>${e.channel}</b><br>${e.size === 'portrait' ? '1080×1350' : '1600×900'}</figcaption></figure>`
     ).join('');
     return `<section><h2>${type.replace(/_/g, ' ')}</h2><div class="grid">${imgs}</div></section>`;
   }).join('');
