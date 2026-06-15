@@ -158,8 +158,7 @@ body::before {
   letter-spacing: 0.03em;
   text-shadow: 0 1px 12px rgba(0,0,0,0.5);
 }
-.plot-footer .site b { font-weight: 300; }
-.plot-footer .site b { color: var(--accent); font-weight: 500; }
+.plot-footer .site b { color: var(--accent); font-weight: 300; }
 
 @media (min-aspect-ratio: 4/3) {
   :root { --pad: 80px; --footer-h: 100px; }

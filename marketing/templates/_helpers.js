@@ -47,8 +47,9 @@ const plotMark = () => el('div', 'plot-mark', 'PLOT');
 
 const plotFooter = () => {
   const footer = el('div', 'plot-footer');
-  const site = el('span', 'site', 'theplot');
-  site.append(el('b', null, '.tv'));
+  const site = el('span', 'site', 'the');
+  site.append(el('b', null, 'plot'));
+  site.append(document.createTextNode('.tv'));
   footer.append(site);
   return footer;
 };
