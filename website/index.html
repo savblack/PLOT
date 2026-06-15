@@ -694,6 +694,12 @@
       border-right: 1px solid rgba(0,0,0,0.12);
       white-space: nowrap;
     }
+    .ticker-badge-mark {
+      font-family: var(--serif);
+      font-weight: 400;
+      font-size: 1.05rem;
+      letter-spacing: 0.02em;
+    }
 
     .ticker-outer {
       flex: 1;
@@ -868,7 +874,7 @@
     .woc-form button:hover:not(:disabled) { background: #fff; color: #0e0e0e; }
     .woc-form button:disabled { opacity: 0.6; cursor: default; }
 
-    .woc-hint { font-size: 0.76rem; font-weight: 300; color: rgba(240,239,232,0.5); padding-left: 0.5rem; }
+    .woc-hint { font-size: 0.76rem; font-weight: 300; color: rgba(240,239,232,0.5); align-self: stretch; text-align: center; }
     .woc-msg { font-size: 0.78rem; color: rgba(240,239,232,0.6); min-height: 1.1em; padding-left: 0.5rem; }
 
     /* Honeypot: invisible to humans, tempting to bots */
@@ -2272,7 +2278,7 @@
   </section>
   <!-- ── Live Ticker ──────────────────────────────────────────── -->
   <div class="ticker-section" aria-hidden="true">
-    <div class="ticker-badge">Plot Live</div>
+    <div class="ticker-badge"><span class="ticker-badge-mark">Plot</span> Live</div>
     <div class="ticker-outer">
       <div class="ticker-track" id="tickerTrack">
         <!-- populated by JS -->
@@ -2295,7 +2301,7 @@
             <input type="text" name="website" class="fn-website" tabindex="-1" autocomplete="off" aria-hidden="true">
             <button type="submit">Subscribe</button>
           </form>
-          <span class="woc-hint">Or get it in your inbox, weekly</span>
+          <span class="woc-hint">Or get it in your inbox, weekly.</span>
           <div class="woc-msg" id="newsletterMsg" role="status"></div>
         </div>
       </div>
