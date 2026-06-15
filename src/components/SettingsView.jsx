@@ -8,6 +8,7 @@ import { edgeFunctionUrl } from '../api/functions.js';
 import { useMediaSync } from '../hooks/useMediaSync.js';
 import { useTraktSync } from '../hooks/useTraktSync.js';
 import { useCalendar } from '../hooks/useCalendar.js';
+import { SHOW_MEDIA_INTEGRATIONS } from '../constants/launchFeatures.js';
 import { deleteAccountAndSignOut } from '../utils/deleteAccount.js';
 import { buildFeedbackAttachmentPath } from '../utils/feedback.js';
 import { downloadICS } from '../utils/ics.js';
@@ -612,6 +613,8 @@ export default function SettingsView() {
   // Use optimistic local value so the URL appears immediately after generation
   const calendarToken = localCalToken ?? profile?.calendar_token ?? null;
   const calFeedUrl = calendarToken ? edgeFunctionUrl('calendar-feed', { token: calendarToken }) : null;
+  const loadPlexIntegration = sync.loadIntegration;
+  const loadTraktIntegration = trakt.loadIntegration;
 
   // Sync local token back to null once profile catches up (or if revoked elsewhere)
   useEffect(() => {
@@ -626,10 +629,14 @@ export default function SettingsView() {
   }, [profile?.calendar_token, localCalToken]);
 
   // Load integrations on mount
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- loadIntegration is provided by the integration controller
-  useEffect(() => { sync.loadIntegration(); }, [sync.loadIntegration]);
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- loadIntegration is provided by the integration controller
-  useEffect(() => { trakt.loadIntegration(); }, [trakt.loadIntegration]);
+  useEffect(() => {
+    if (!SHOW_MEDIA_INTEGRATIONS) return;
+    loadPlexIntegration();
+  }, [loadPlexIntegration]);
+  useEffect(() => {
+    if (!SHOW_MEDIA_INTEGRATIONS) return;
+    loadTraktIntegration();
+  }, [loadTraktIntegration]);
 
   const providers      = profile?.streaming_providers || [];
   const guideChannels  = profile?.guide_channels || [];
@@ -956,102 +963,104 @@ export default function SettingsView() {
         </div>
       </div>
 
-      {/* Plex */}
+      {SHOW_MEDIA_INTEGRATIONS && (
+        <div className="settings-group">
+          <div className="settings-group-title">Integrations</div>
+          <div className="settings-row" style={{ cursor: 'default' }}>
+            <div className="settings-row-left">
+              <div>
+                <div className="settings-row-label">Plex</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                  {sync.isConnected ? `Connected · Last synced ${
+                    sync.integration?.last_sync_at
+                      ? new Date(sync.integration.last_sync_at).toLocaleDateString()
+                      : 'never'
+                  }` : 'Not connected'}
+                </div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0 }}>
+              {sync.isConnected ? (
+                <>
+                  <button
+                    className="btn btn-secondary btn-xs"
+                    onClick={sync.sync}
+                    disabled={sync.syncing}
+                  >
+                    {sync.syncing ? 'Syncing…' : 'Sync now'}
+                  </button>
+                  <button
+                    className="btn btn-ghost btn-xs"
+                    onClick={sync.disconnect}
+                  >
+                    Disconnect
+                  </button>
+                </>
+              ) : (
+                <button
+                  className="btn btn-accent btn-xs"
+                  onClick={sync.startPlexAuth}
+                >
+                  Connect Plex
+                </button>
+              )}
+            </div>
+          </div>
+          {sync.error && (
+            <div style={{ padding: '0.5rem 1rem', fontSize: '0.78rem', color: 'var(--chip-cinema)', background: '#EF444411', borderRadius: 8, margin: '0.25rem 1rem' }}>
+              {sync.error}
+            </div>
+          )}
+
+          <div className="settings-row" style={{ cursor: 'default' }}>
+            <div className="settings-row-left">
+              <div>
+                <div className="settings-row-label">Trakt</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                  {trakt.isConnected
+                    ? `Connected · Last synced ${
+                        trakt.integration?.last_sync_at
+                          ? new Date(trakt.integration.last_sync_at).toLocaleDateString()
+                          : 'never'
+                      }`
+                    : 'Connect to sync Netflix, Prime, Disney+ & more'}
+                </div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0 }}>
+              {trakt.isConnected ? (
+                <>
+                  <button
+                    className="btn btn-secondary btn-xs"
+                    onClick={trakt.sync}
+                    disabled={trakt.syncing}
+                  >
+                    {trakt.syncing ? 'Syncing…' : 'Sync now'}
+                  </button>
+                  <button
+                    className="btn btn-ghost btn-xs"
+                    onClick={trakt.disconnect}
+                  >
+                    Disconnect
+                  </button>
+                </>
+              ) : (
+                <button className="btn btn-accent btn-xs" onClick={trakt.connect}>
+                  Connect Trakt
+                </button>
+              )}
+            </div>
+          </div>
+          {trakt.error && (
+            <div style={{ padding: '0.5rem 1rem', fontSize: '0.78rem', color: 'var(--chip-cinema)', background: '#EF444411', borderRadius: 8, margin: '0.25rem 1rem' }}>
+              {trakt.error}
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="settings-group">
-        <div className="settings-group-title">Integrations</div>
-        <div className="settings-row" style={{ cursor: 'default' }}>
-          <div className="settings-row-left">
-            <div>
-              <div className="settings-row-label">Plex</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                {sync.isConnected ? `Connected · Last synced ${
-                  sync.integration?.last_sync_at
-                    ? new Date(sync.integration.last_sync_at).toLocaleDateString()
-                    : 'never'
-                }` : 'Not connected'}
-              </div>
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0 }}>
-            {sync.isConnected ? (
-              <>
-                <button
-                  className="btn btn-secondary btn-xs"
-                  onClick={sync.sync}
-                  disabled={sync.syncing}
-                >
-                  {sync.syncing ? 'Syncing…' : 'Sync now'}
-                </button>
-                <button
-                  className="btn btn-ghost btn-xs"
-                  onClick={sync.disconnect}
-                >
-                  Disconnect
-                </button>
-              </>
-            ) : (
-              <button
-                className="btn btn-accent btn-xs"
-                onClick={sync.startPlexAuth}
-              >
-                Connect Plex
-              </button>
-            )}
-          </div>
-        </div>
-        {sync.error && (
-          <div style={{ padding: '0.5rem 1rem', fontSize: '0.78rem', color: 'var(--chip-cinema)', background: '#EF444411', borderRadius: 8, margin: '0.25rem 1rem' }}>
-            {sync.error}
-          </div>
-        )}
-
-        {/* ── Trakt ── */}
-        <div className="settings-row" style={{ cursor: 'default' }}>
-          <div className="settings-row-left">
-            <div>
-              <div className="settings-row-label">Trakt</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                {trakt.isConnected
-                  ? `Connected · Last synced ${
-                      trakt.integration?.last_sync_at
-                        ? new Date(trakt.integration.last_sync_at).toLocaleDateString()
-                        : 'never'
-                    }`
-                  : 'Connect to sync Netflix, Prime, Disney+ & more'}
-              </div>
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0 }}>
-            {trakt.isConnected ? (
-              <>
-                <button
-                  className="btn btn-secondary btn-xs"
-                  onClick={trakt.sync}
-                  disabled={trakt.syncing}
-                >
-                  {trakt.syncing ? 'Syncing…' : 'Sync now'}
-                </button>
-                <button
-                  className="btn btn-ghost btn-xs"
-                  onClick={trakt.disconnect}
-                >
-                  Disconnect
-                </button>
-              </>
-            ) : (
-              <button className="btn btn-accent btn-xs" onClick={trakt.connect}>
-                Connect Trakt
-              </button>
-            )}
-          </div>
-        </div>
-        {trakt.error && (
-          <div style={{ padding: '0.5rem 1rem', fontSize: '0.78rem', color: 'var(--chip-cinema)', background: '#EF444411', borderRadius: 8, margin: '0.25rem 1rem' }}>
-            {trakt.error}
-          </div>
-        )}
-
-        {/* ── Import watch history ── */}
+        <div className="settings-group-title">Imports</div>
         <div
           className="settings-row interactive-surface"
           onClick={() => navigate('/import')}
@@ -1075,7 +1084,6 @@ export default function SettingsView() {
           </div>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
         </div>
-
       </div>
 
       {/* Calendar */}

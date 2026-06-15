@@ -3,6 +3,7 @@ import { createBrowserRouter, Navigate } from 'react-router-dom';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import LoadingSpinner from './components/LoadingSpinner.jsx';
+import { SHOW_MEDIA_INTEGRATIONS, SHOW_PUBLIC_PROFILES } from './constants/launchFeatures.js';
 
 // Layout + views
 const App         = lazy(() => import('./App.jsx'));
@@ -36,13 +37,13 @@ const router = createBrowserRouter([
   // Static
   { path: '/terms',          element: wrap(<TermsPage />) },
   { path: '/privacy',        element: wrap(<PrivacyPage />) },
-  { path: '/u/:username',    element: wrap(<PublicProfilePage />) },
+  ...(SHOW_PUBLIC_PROFILES ? [{ path: '/u/:username', element: wrap(<PublicProfilePage />) }] : []),
 
   // Auth
   { path: '/login',          element: wrap(<AuthPage initialMode="login" />) },
   { path: '/signup',         element: wrap(<AuthPage initialMode="signup" />) },
   { path: '/auth/callback',  element: wrap(<AuthCallbackPage />) },
-  { path: '/auth/trakt',     element: wrap(<TraktCallbackPage />) },
+  ...(SHOW_MEDIA_INTEGRATIONS ? [{ path: '/auth/trakt', element: wrap(<TraktCallbackPage />) }] : []),
   { path: '/reset-password', element: wrap(<ResetPasswordPage />) },
 
   // Onboarding (protected, skip onboarding check)

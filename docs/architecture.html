@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plot — System Architecture</title>
+<style>
+  :root {
+    --bg: #fbfbfa;
+    --surface: #ffffff;
+    --surface-2: #f4f4f2;
+    --text: #1d1d1b;
+    --text-2: #5c5c57;
+    --text-3: #8a8a82;
+    --border: #e4e4df;
+    --border-2: #cfcfc8;
+    --blue: #2f6df0;   --blue-bg: #eef3fe;
+    --green: #1f9d6b;  --green-bg: #eafaf3;
+    --amber: #b9791b;  --amber-bg: #fbf3e3;
+    --rose: #c0445f;   --rose-bg: #fcecf0;
+    --radius: 12px;
+    --radius-sm: 8px;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #17171a;
+      --surface: #1f1f23;
+      --surface-2: #26262b;
+      --text: #ececec;
+      --text-2: #a9a9a4;
+      --text-3: #7b7b76;
+      --border: #34343a;
+      --border-2: #45454c;
+      --blue: #6ea0ff;   --blue-bg: #1c2740;
+      --green: #57c79a;  --green-bg: #15301f;
+      --amber: #e0a94e;  --amber-bg: #352815;
+      --rose: #e88aa0;   --rose-bg: #361922;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    line-height: 1.6;
+    font-size: 16px;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 40px 24px 80px; }
+  header.page { margin-bottom: 8px; }
+  .eyebrow { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--text-3); font-weight: 600; }
+  h1 { font-size: 30px; font-weight: 600; margin: 6px 0 4px; letter-spacing: -.01em; }
+  .lede { color: var(--text-2); font-size: 17px; max-width: 70ch; margin: 0 0 14px; }
+  nav.toc { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 36px; }
+  nav.toc a {
+    text-decoration: none; color: var(--text-2); font-size: 13px; font-weight: 500;
+    border: 1px solid var(--border); border-radius: 999px; padding: 6px 13px; background: var(--surface);
+  }
+  nav.toc a:hover { border-color: var(--border-2); color: var(--text); }
+
+  section { margin: 0 0 44px; scroll-margin-top: 20px; }
+  h2 { font-size: 21px; font-weight: 600; margin: 0 0 4px; letter-spacing: -.01em; }
+  section > p { color: var(--text-2); max-width: 74ch; margin: 4px 0 20px; }
+
+  /* generic node card */
+  .zone { border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; background: var(--surface); }
+  .zlab { font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; margin-bottom: 12px; display: flex; align-items: center; gap: 7px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+  .grid { display: grid; gap: 10px; }
+  .node { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 11px 13px; background: var(--surface); }
+  .nt { font-size: 14px; font-weight: 600; color: var(--text); }
+  .ns { font-size: 12.5px; color: var(--text-2); margin-top: 2px; }
+  .flow { display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--text-3); font-size: 12.5px; padding: 9px 0; }
+  .flow svg { width: 16px; height: 16px; stroke: var(--text-3); fill: none; stroke-width: 1.6; }
+  .stack { display: flex; flex-direction: column; gap: 8px; }
+
+  /* tier accents */
+  .t-blue .dot { background: var(--blue); }   .t-blue .zlab { color: var(--blue); }
+  .t-green .dot { background: var(--green); }  .t-green .zlab { color: var(--green); }
+  .t-amber .dot { background: var(--amber); }  .t-amber .zlab { color: var(--amber); }
+  .t-rose .dot { background: var(--rose); }    .t-rose .zlab { color: var(--rose); }
+  .t-neutral .dot { background: var(--text-3); } .t-neutral .zlab { color: var(--text-2); }
+
+  .cols-2 { grid-template-columns: 1fr 1fr; }
+  .cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+
+  /* sitemap rows */
+  .col { border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; background: var(--surface); }
+  .r { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--border); }
+  .r:last-child { border-bottom: 0; }
+  .path { font-family: var(--mono); font-size: 13px; color: var(--text); }
+  .desc { font-size: 12.5px; color: var(--text-2); text-align: right; }
+
+  /* pills */
+  .pill { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--border); border-radius: 999px; padding: 4px 11px; font-size: 12.5px; color: var(--text-2); background: var(--surface); }
+  .pills { display: flex; flex-wrap: wrap; gap: 7px; }
+
+  /* pipeline step */
+  .step { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 14px; background: var(--surface); }
+  .step.dashed { border-style: dashed; }
+  .st { font-size: 13.5px; font-weight: 600; }
+  .sc { font-family: var(--mono); font-size: 11px; color: var(--text-3); margin-top: 1px; }
+  .sd { font-size: 12.5px; color: var(--text-2); margin-top: 4px; }
+
+  .badge { font-family: var(--mono); font-size: 12px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 5px; padding: 1px 6px; color: var(--text-2); }
+  .prose p { color: var(--text-2); max-width: 74ch; }
+  .prose strong { color: var(--text); font-weight: 600; }
+  .callout { border: 1px solid var(--border); border-left: 3px solid var(--green); border-radius: var(--radius-sm); background: var(--green-bg); padding: 12px 16px; font-size: 14px; color: var(--text); margin: 16px 0; }
+  footer { color: var(--text-3); font-size: 13px; border-top: 1px solid var(--border); padding-top: 18px; margin-top: 40px; }
+
+  @media (max-width: 640px) {
+    .cols-2, .cols-3 { grid-template-columns: 1fr; }
+    .wrap { padding: 28px 16px 60px; }
+    h1 { font-size: 25px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="page">
+    <div class="eyebrow">Plot</div>
+    <h1>System architecture</h1>
+    <p class="lede">How the marketing site, the marketing automation, and the web app fit together — one product across three surfaces, sharing a single Supabase backend.</p>
+  </header>
+
+  <nav class="toc">
+    <a href="#overview">Overview</a>
+    <a href="#sitemap">Web app sitemap</a>
+    <a href="#marketing">Marketing automation</a>
+    <a href="#how">How it works</a>
+  </nav>
+
+  <!-- ============ OVERVIEW ============ -->
+  <section id="overview">
+    <h2>System overview</h2>
+    <p>Clients reach two Vercel-hosted surfaces, which both talk to one Supabase project. Supabase holds the secrets and makes all the server-side calls to external services.</p>
+
+    <div class="stack">
+
+      <div class="zone t-neutral">
+        <div class="zlab"><span class="dot"></span> Clients</div>
+        <div class="grid cols-2">
+          <div class="node"><div class="nt">Browser</div><div class="ns">React 19 single-page app</div></div>
+          <div class="node"><div class="nt">Mobile</div><div class="ns">PWA / deep links</div></div>
+        </div>
+      </div>
+
+      <div class="flow">
+        <svg viewBox="0 0 24 24"><path d="M12 4v16M6 14l6 6 6-6"/></svg> HTTPS
+      </div>
+
+      <div class="zone t-blue">
+        <div class="zlab"><span class="dot"></span> Vercel hosting</div>
+        <div class="grid cols-2">
+          <div class="node"><div class="nt">theplot.tv</div><div class="ns">Static marketing site + <span class="badge">/whats-on</span> proxy</div></div>
+          <div class="node"><div class="nt">app.theplot.tv</div><div class="ns">React + Vite web app</div></div>
+        </div>
+      </div>
+
+      <div class="flow">
+        <svg viewBox="0 0 24 24"><path d="M8 4v16M5 17l3 3 3-3M16 20V4m3 3-3-3-3 3"/></svg>
+        Supabase JS · REST · edge functions
+      </div>
+
+      <div class="zone t-green">
+        <div class="zlab"><span class="dot"></span> Supabase backend</div>
+        <div class="grid cols-3" style="margin-bottom:12px">
+          <div class="node"><div class="nt">Auth</div><div class="ns">Email + OAuth, custom templates</div></div>
+          <div class="node"><div class="nt">Postgres</div><div class="ns">Profiles, journal, lists · RLS</div></div>
+          <div class="node"><div class="nt">Storage</div><div class="ns">Avatars, card images</div></div>
+        </div>
+        <div class="zlab" style="margin:6px 0 10px"><span class="dot"></span> Edge functions <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-3)">— 11 total</span></div>
+        <div class="grid cols-2">
+          <div class="node"><div class="nt">tmdb-proxy</div><div class="ns">Keeps TMDB key server-side</div></div>
+          <div class="node"><div class="nt">media-sync · trakt-sync</div><div class="ns">Plex + Trakt import / queue</div></div>
+          <div class="node"><div class="nt">generate-* (AI)</div><div class="ns">Taste profile + journal via Claude</div></div>
+          <div class="node"><div class="nt">calendar · delete · feedback</div><div class="ns">ICS feed, account delete, Linear mirror</div></div>
+          <div class="node" style="grid-column:1/3"><div class="nt">marketing-feed · veto · newsletter-subscribe</div><div class="ns">Public: What's On feed, post veto, subscribe</div></div>
+        </div>
+      </div>
+
+      <div class="flow">
+        <svg viewBox="0 0 24 24"><path d="M8 4v16M5 17l3 3 3-3M16 20V4m3 3-3-3-3 3"/></svg>
+        server-side API calls
+      </div>
+
+      <div class="zone t-amber">
+        <div class="zlab"><span class="dot"></span> External services</div>
+        <div class="grid cols-3">
+          <div class="node"><div class="nt">TMDB</div><div class="ns">Media metadata</div></div>
+          <div class="node"><div class="nt">Plex</div><div class="ns">Watchlist + history</div></div>
+          <div class="node"><div class="nt">Trakt</div><div class="ns">Sync</div></div>
+          <div class="node"><div class="nt">Anthropic</div><div class="ns">AI copy + profiles</div></div>
+          <div class="node"><div class="nt">PostHog</div><div class="ns">Analytics</div></div>
+          <div class="node"><div class="nt">Resend · Linear</div><div class="ns">Email + feedback tickets</div></div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============ SITEMAP ============ -->
+  <section id="sitemap">
+    <h2>Web app sitemap</h2>
+    <p>Every route in the React app, grouped by access level. The protected shell requires both a session and completed onboarding.</p>
+
+    <div class="grid cols-2">
+      <div class="col t-green">
+        <div class="zlab"><span class="dot"></span> Public</div>
+        <div class="r"><span class="path">/</span><span class="desc">landing / auth redirect</span></div>
+        <div class="r"><span class="path">/u/:username</span><span class="desc">public profile (deferred)</span></div>
+        <div class="r"><span class="path">/terms</span><span class="desc">terms</span></div>
+        <div class="r"><span class="path">/privacy</span><span class="desc">privacy</span></div>
+      </div>
+      <div class="col t-blue">
+        <div class="zlab"><span class="dot"></span> Auth</div>
+        <div class="r"><span class="path">/login</span><span class="desc">sign in</span></div>
+        <div class="r"><span class="path">/signup</span><span class="desc">register</span></div>
+        <div class="r"><span class="path">/auth/callback</span><span class="desc">OAuth return</span></div>
+        <div class="r"><span class="path">/auth/trakt</span><span class="desc">Trakt OAuth return</span></div>
+        <div class="r"><span class="path">/reset-password</span><span class="desc">recovery</span></div>
+      </div>
+    </div>
+
+    <div class="col t-amber" style="margin-top:10px">
+      <div class="zlab"><span class="dot"></span> Protected — app shell <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-3)">(session + onboarding)</span></div>
+      <div class="r"><span class="path">/onboarding</span><span class="desc">first-run flow (session, pre-onboarding)</span></div>
+      <div class="grid cols-3" style="margin-top:4px">
+        <div class="r"><span class="path">/home</span><span class="desc">Discover</span></div>
+        <div class="r"><span class="path">/calendar</span><span class="desc">releases</span></div>
+        <div class="r"><span class="path">/my-lists</span><span class="desc">watchlist + lists</span></div>
+        <div class="r"><span class="path">/history</span><span class="desc">journal</span></div>
+        <div class="r"><span class="path">/search</span><span class="desc">find titles</span></div>
+        <div class="r"><span class="path">/settings</span><span class="desc">account</span></div>
+        <div class="r"><span class="path">/import</span><span class="desc">Plex / Trakt</span></div>
+        <div class="r"><span class="path">/design-system</span><span class="desc">dev only</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ MARKETING ============ -->
+  <section id="marketing">
+    <h2>Marketing automation pipeline</h2>
+    <p>No UI — five GitHub Actions cron jobs drive Node scripts, coordinated through the <span class="badge">marketing_*</span> Postgres tables. The daily loop plans one post, generates it, emails a veto digest, then publishes ~12h later. Designed to cost $0/month.</p>
+
+    <div class="zone t-blue" style="margin-bottom:10px">
+      <div class="zlab"><span class="dot"></span> Daily post pipeline — GitHub Actions cron</div>
+      <div class="grid cols-2">
+        <div class="step"><div class="st">1 · plan</div><div class="sc">11:00 UTC · generate.yml</div><div class="sd">Evaluate triggers → insert ONE post row</div></div>
+        <div class="step"><div class="st">2 · generate</div><div class="sc">+ generate.mjs</div><div class="sd">Claude copy + Playwright cards → storage → veto email</div></div>
+      </div>
+      <div class="flow">
+        <svg viewBox="0 0 24 24"><path d="M12 5v14M7 14l5 5 5-5"/></svg>
+        status: pending_review · fail-closed if digest didn't send
+      </div>
+      <div class="step dashed"><div class="st">3 · veto window</div><div class="sd">Admin can kill the post via the digest link until publish</div></div>
+      <div class="flow"><svg viewBox="0 0 24 24"><path d="M12 5v14M7 14l5 5 5-5"/></svg></div>
+      <div class="step"><div class="st">4 · publish</div><div class="sc">23:30 UTC · publish.yml</div><div class="sd">Push to every channel + go live on What's On</div></div>
+      <div class="flow"><svg viewBox="0 0 24 24"><path d="M12 5v14M7 14l5 5 5-5"/></svg></div>
+      <div class="pills">
+        <span class="pill">X · via Buffer</span>
+        <span class="pill">Instagram · Meta API</span>
+        <span class="pill">Threads · Meta API</span>
+        <span class="pill">What's On · theplot.tv/whats-on</span>
+      </div>
+    </div>
+
+    <div class="grid cols-3">
+      <div class="step t-green"><div class="zlab" style="margin:0 0 6px"><span class="dot"></span> metrics</div><div class="sc">13:00 UTC daily</div><div class="sd">IG/Threads insights → marketing_metrics</div></div>
+      <div class="step t-green"><div class="zlab" style="margin:0 0 6px"><span class="dot"></span> weekly</div><div class="sc">Sun 20:00 UTC</div><div class="sd">Perf report + subscriber newsletter</div></div>
+      <div class="step t-green"><div class="zlab" style="margin:0 0 6px"><span class="dot"></span> tokens</div><div class="sc">Mon 02:00 UTC</div><div class="sd">Refresh IG/Threads (&lt;21d left)</div></div>
+    </div>
+
+    <div class="zone t-amber" style="margin-top:10px">
+      <div class="zlab"><span class="dot"></span> State (Supabase) &amp; outbound services</div>
+      <div class="pills">
+        <span class="pill">marketing_posts</span>
+        <span class="pill">post_publications</span>
+        <span class="pill">metrics</span>
+        <span class="pill">tracked_titles</span>
+        <span class="pill">trending_snapshots</span>
+        <span class="pill">subscribers</span>
+        <span class="pill">tokens</span>
+        <span class="pill">→ Anthropic · TMDB · Buffer · Meta · Resend</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ HOW IT WORKS ============ -->
+  <section id="how" class="prose">
+    <h2>How it works</h2>
+
+    <p><strong>Three surfaces, one product.</strong> The <strong>marketing site</strong> (<span class="badge">theplot.tv</span>) is a hand-built static site — hero filmstrip, manifesto, interactive guide/lists/calendar demos, and a newsletter signup. Its one dynamic piece is <span class="badge">/whats-on</span>, a serverless proxy that fetches the <span class="badge">marketing-feed</span> edge function and re-serves it with proper HTML headers. The <strong>web app</strong> (<span class="badge">app.theplot.tv</span>) is the React/Vite SPA: a landing redirect, public/auth routes, and a protected shell whose child views are the product. The <strong>distribution channels</strong> — X, Instagram, Threads, the What's On feed, and the newsletter — are all fed by automation, never touched by hand.</p>
+
+    <p><strong>Supabase is the shared backbone.</strong> Both surfaces lean on one Supabase project: auth with custom email templates, a Postgres schema with row-level security (profiles, journal, lists, watchlist, reminders, follows, Plex/Trakt integrations, and the marketing tables), storage for avatars and rendered cards, and 11 edge functions. The edge functions are where secrets live — <span class="badge">tmdb-proxy</span> keeps the TMDB key out of the browser, <span class="badge">notify-feedback</span> mirrors feedback into Linear off a Postgres webhook, and the AI features call Anthropic server-side.</p>
+
+    <p><strong>Marketing runs itself.</strong> Five cron jobs drive Node scripts coordinated through the marketing tables. The daily loop plans exactly one post, generates Claude copy plus Playwright-rendered cards, emails a veto digest, and — only if that digest sent (fail-closed) — publishes ~12h later to every channel. X goes through Buffer's free tier, IG/Threads use the free Meta APIs, so the whole thing costs nothing per month.</p>
+
+    <div class="callout">Worth noting from the code: Plex and Trakt are first-class sync integrations (not just imports); <span class="badge">marketing-feed</span> is a public edge function but a marketing surface rather than an app feature; and public profiles (<span class="badge">/u/:username</span>) exist as a route but sharing is deferred for the first release.</div>
+  </section>
+
+  <footer>
+    Plot — generated from the codebase (router, edge functions, marketing scripts, and GitHub Actions workflows). This product uses the TMDB API but is not endorsed or certified by TMDB.
+  </footer>
+
+</div>
+</body>
+</html>

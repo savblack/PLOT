@@ -3,6 +3,7 @@ import { supabase } from '../api/supabase.js';
 import { tmdb, getTmdbRegion } from '../api/tmdb.js';
 import { providerIdsForRegion, tmdbIdFromItem } from '../domain/media.js';
 import { deleteListItem, saveListItem } from '../api/userMedia.js';
+import { SHOW_MEDIA_INTEGRATIONS } from '../constants/launchFeatures.js';
 
 const LIST_NAME = 'My List';
 
@@ -30,7 +31,8 @@ export function useWatchlist(userId) {
   // Cache the active Trakt integration ID so add/remove can enqueue outbox rows.
   const traktIntegrationId = useRef(null);
   useEffect(() => {
-    if (!userId) return;
+    traktIntegrationId.current = null;
+    if (!SHOW_MEDIA_INTEGRATIONS || !userId) return;
     supabase
       .from('media_integrations')
       .select('id')
@@ -151,7 +153,7 @@ export function useWatchlist(userId) {
     if (data) {
       setItems(prev => [data, ...prev]);
       // Queue add to Trakt if connected
-      if (traktIntegrationId.current) {
+      if (SHOW_MEDIA_INTEGRATIONS && traktIntegrationId.current) {
         enqueueTraktAction(userId, traktIntegrationId.current, 'trakt_watchlist_add', {
           tmdb_id:    row.tmdb_id,
           media_type: row.media_type,
@@ -175,7 +177,7 @@ export function useWatchlist(userId) {
     setItems(prev => prev.filter(i => i.tmdb_id !== Number(tmdbId)));
 
     // Queue remove from Trakt if connected
-    if (traktIntegrationId.current) {
+    if (SHOW_MEDIA_INTEGRATIONS && traktIntegrationId.current) {
       const removed = items.find(i => i.tmdb_id === Number(tmdbId));
       enqueueTraktAction(userId, traktIntegrationId.current, 'trakt_watchlist_remove', {
         tmdb_id:    Number(tmdbId),
