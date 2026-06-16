@@ -424,7 +424,7 @@ const renderChart = async (supabase: ReturnType<typeof createClient>) => {
 <meta property="og:description" content="The twenty titles the world is watching this week, ranked. Updated weekly.">
 <meta property="og:url" content="${pageUrl}">`;
 
-  const cta = `<aside class="endcta">
+  const cta = `<aside class="endcta" style="border-top:none;padding-top:0">
       <div class="ec-copy">
         <span class="ec-title">Watch more. Forget less.</span>
         <span class="ec-sub">Track what's trending and get reminded the day it drops.</span>
