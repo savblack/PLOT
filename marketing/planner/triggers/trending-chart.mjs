@@ -10,7 +10,10 @@
 // live and write this week's snapshot now, so neither the Friday post nor the
 // chart page is left empty.
 import { isoDate, formatDayMonth, daysBetween } from '../../lib/dates.mjs';
-import { fetchTrendingTop10, recentSnapshots, withMovement } from '../../lib/trending.mjs';
+import { fetchTrendingTop, recentSnapshots, withMovement } from '../../lib/trending.mjs';
+
+// The snapshot/page hold 20; the social carousel + newsletter use the top 10.
+const SOCIAL_SIZE = 10;
 
 export const evaluate = async (ctx) => {
   if (ctx.weekday !== 'Friday') return null;
@@ -24,15 +27,16 @@ export const evaluate = async (ctx) => {
   // the weekly job didn't run — fetch live, write it now, keep movement honest.
   const stale = !latest || daysBetween(latest.snapshot_date, today) > 6;
   if (stale) {
-    const items = await fetchTrendingTop10();
-    if (items.length < 10) return null;
-    await ctx.supabase.from('marketing_trending_snapshots').upsert({ snapshot_date: today, items });
+    const fresh = await fetchTrendingTop();
+    if (fresh.length < SOCIAL_SIZE) return null;
+    await ctx.supabase.from('marketing_trending_snapshots').upsert({ snapshot_date: today, items: fresh });
     prior = latest; // the most recent existing snapshot becomes the comparison week
-    latest = { snapshot_date: today, items };
+    latest = { snapshot_date: today, items: fresh };
   }
 
   const weekDate = latest.snapshot_date;
-  const items = withMovement(latest.items, prior?.items || null);
+  // Social + newsletter use the top 10; movement is vs the full prior week.
+  const items = withMovement(latest.items.slice(0, SOCIAL_SIZE), prior?.items || null);
 
   return {
     post_type: 'trending_chart',

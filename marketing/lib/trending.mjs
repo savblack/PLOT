@@ -30,12 +30,14 @@ export const movementLabel = (movement, rank) => {
   return null;
 };
 
-// This week's TMDB "trending" top 10 (movies + TV with a poster), as snapshot
+// This week's TMDB "trending" titles (movies + TV with a poster), as snapshot
 // rows: { rank, tmdb_id, media_type, title, poster_path, backdrop_path }.
-export const fetchTrendingTop10 = async () => {
+// Defaults to 20 — the chart PAGE shows all of them; social/newsletter slice
+// the top 10 from the same snapshot.
+export const fetchTrendingTop = async (limit = 20) => {
   const trending = (await tmdb.getTrending('all', 'week'))
     .filter(item => ['movie', 'tv'].includes(item.media_type) && item.poster_path)
-    .slice(0, 10);
+    .slice(0, limit);
   return trending.map((item, i) => ({
     rank: i + 1,
     tmdb_id: item.id,

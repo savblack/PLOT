@@ -60,7 +60,7 @@ const TYPE_META: Record<string, { label: string; tone: string }> = {
 const FILTERS: { key: string | null; label: string; href?: string }[] = [
   { key: null, label: 'Latest' },
   { key: 'now_streaming', label: 'Now streaming' },
-  { key: 'chart', label: 'The charts', href: `${FEED_PATH}/chart` },
+  { key: 'chart', label: 'The chart', href: `${FEED_PATH}/chart` },
   { key: 'countdown', label: 'Coming soon' },
   { key: 'trailer_drop', label: 'First look' },
 ];
@@ -418,10 +418,10 @@ const renderChart = async (supabase: ReturnType<typeof createClient>) => {
   const pageUrl = `${SITE}${FEED_PATH}/chart`;
 
   const head = `<style>${CHART_CSS}</style>
-<meta name="description" content="The ten film and TV titles the world is watching this week, ranked. Updated weekly by PLOT.">
+<meta name="description" content="The twenty film and TV titles the world is watching this week, ranked. Updated weekly by PLOT.">
 <link rel="canonical" href="${pageUrl}">
 <meta property="og:title" content="The chart · PLOT">
-<meta property="og:description" content="The ten titles the world is watching this week, ranked. Updated weekly.">
+<meta property="og:description" content="The twenty titles the world is watching this week, ranked. Updated weekly.">
 <meta property="og:url" content="${pageUrl}">`;
 
   const cta = `<aside class="endcta">
@@ -460,7 +460,7 @@ const renderChart = async (supabase: ReturnType<typeof createClient>) => {
         <h1 class="feed-title">The <em>chart</em></h1>
         <div class="dateline sc">Week of ${esc(fmtMonthDay(latest.snapshot_date))}</div>
       </div>
-      <p class="chart-intro">The ten most-watched titles this week. We track the rises, the falls, and the new arrivals.</p>
+      <p class="chart-intro">The twenty most-watched titles this week. We track the rises, the falls, and the new arrivals.</p>
     </div>
     <ol class="chart r3">${rows}</ol>
     ${cta}

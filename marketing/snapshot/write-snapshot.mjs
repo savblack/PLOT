@@ -10,14 +10,16 @@
 //   TMDB_API_KEY=… SUPABASE_URL=… SUPABASE_SERVICE_ROLE_KEY=… npm run mkt:snapshot
 import { getSupabase } from '../lib/supabase.mjs';
 import { isoDate } from '../lib/dates.mjs';
-import { fetchTrendingTop10 } from '../lib/trending.mjs';
+import { fetchTrendingTop } from '../lib/trending.mjs';
+
+const CHART_SIZE = 20; // the page shows 20; social/newsletter slice the top 10
 
 const main = async () => {
   const supabase = getSupabase();
   const today = isoDate(new Date());
 
-  const items = await fetchTrendingTop10();
-  if (items.length < 10) {
+  const items = await fetchTrendingTop(CHART_SIZE);
+  if (items.length < CHART_SIZE) {
     throw new Error(`Only ${items.length} trending titles returned — refusing to write a partial chart.`);
   }
 
