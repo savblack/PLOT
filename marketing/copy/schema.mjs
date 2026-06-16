@@ -1,0 +1,96 @@
+// The copy contract — the single source of truth for what an AI worker must
+// produce for each post, and the validation boundary every worker's output
+// must pass before it touches the database.
+//
+// This is deliberately model-agnostic. Claude Code, Codex, or any other agent
+// produces the same JSON shape; save.mjs validates it here identically, so a
+// weaker model can never corrupt the pipeline. Swapping the worker changes who
+// fills these fields, never what "valid copy" means.
+
+export const CTA_VARIANTS = ['track_it', 'whats_on_tonight', 'journal_it', 'none'];
+
+// Field-by-field spec, rendered into every brief so the worker sees the exact
+// contract it must satisfy. Keep this in lockstep with validateCopy below.
+export const COPY_FIELDS = [
+  ['x', 'string', 'X post text. <=280 characters. NO URLs. No hashtags.'],
+  ['instagram', 'string', 'Instagram caption, 1-3 short paragraphs. Do NOT put the hashtags here — they go in the hashtags array.'],
+  ['threads', 'string', 'Threads post text, one conversational thought. NO URLs (the system appends the article link). No hashtags.'],
+  ['hashtags', 'string[]', '3-5 niche hashtags for Instagram only, WITHOUT the # prefix, no spaces (e.g. "A24", "mikeflanagan").'],
+  ['alt_text', 'string', 'One-sentence literal description of the image for accessibility.'],
+  ['cta_variant', `enum: ${CTA_VARIANTS.join(' | ')}`, 'Which approved CTA this post uses (or "none").'],
+  ['page_title', 'string', 'Headline for the theplot.tv article. Plain, specific, sentence case, no clickbait, no dashes.'],
+  ['page_body', 'string[]', '2-4 short paragraphs for the article. Same voice, facts only from the payload, no links, no hashtags, no dashes of any kind.'],
+];
+
+// Per-post-type guidance. Moved here (was inline in the old Claude client) so
+// the brief generator and any future tooling share one definition.
+export const POST_TYPE_BRIEFS = {
+  weekly_slate:
+    'A "coming this week" roundup. Instagram and Threads get a carousel with one card per title ' +
+    '(most popular first), so their captions can tease the 2-3 most exciting titles. X gets ONLY the ' +
+    'top title\'s image — the X text must carry the rest: lead with the top title, then name the other ' +
+    'titles compactly (e.g. "Also this week: A, B, and C"). Fit 280 characters; drop titles before truncating mid-name.',
+  countdown: 'A countdown post. The payload says how many days remain until the release. Lead with the anticipation; the big number is on the image.',
+  now_streaming: 'This title is available to stream at home starting today. Say where it\'s streaming if the payload includes providers.',
+  trending_chart:
+    'The weekly top-10 trending chart. Comment on the most interesting movement (a new entry, a big climb, a stubborn #1). ' +
+    'X gets the full top-10 chart as its single image. ' +
+    'Instagram and Threads get a carousel: chart 1-5, chart 6-10, then detail cards for the top 3.',
+  trailer_drop: 'A new official trailer just dropped for this title. React to the trailer existing; never describe scenes you haven\'t been given.',
+  on_this_day: 'A release anniversary. The payload says how many years. Invite reflection or a rewatch; no spoilers.',
+};
+
+const hasUrl = (s) => /https?:\/\/|www\.|\b[a-z0-9-]+\.(com|tv|net|org|io|co)\b/i.test(s);
+
+/**
+ * Validate and normalize a worker's copy output.
+ * Returns { valid, errors: string[], copy } — `copy` is the normalized object
+ * (safe to persist) when valid. Hard failures reject the post; normalization
+ * silently fixes mechanical issues (trailing whitespace, # prefixes, over-length X).
+ */
+export const validateCopy = (raw) => {
+  const errors = [];
+  if (!raw || typeof raw !== 'object') {
+    return { valid: false, errors: ['copy is not an object'], copy: null };
+  }
+
+  const str = (v) => (typeof v === 'string' ? v.trim() : '');
+  const copy = {
+    x: str(raw.x),
+    instagram: str(raw.instagram),
+    threads: str(raw.threads),
+    hashtags: Array.isArray(raw.hashtags)
+      ? raw.hashtags.map(h => String(h).trim().replace(/^#/, '').replace(/\s+/g, '')).filter(Boolean)
+      : [],
+    alt_text: str(raw.alt_text),
+    cta_variant: str(raw.cta_variant),
+    page_title: str(raw.page_title),
+    page_body: Array.isArray(raw.page_body)
+      ? raw.page_body.map(str).filter(Boolean)
+      : (str(raw.page_body) ? [str(raw.page_body)] : []),
+  };
+
+  // Required, non-empty.
+  for (const field of ['x', 'instagram', 'threads', 'alt_text', 'page_title']) {
+    if (!copy[field]) errors.push(`${field} is empty`);
+  }
+  if (!copy.page_body.length) errors.push('page_body is empty');
+
+  // Hard platform guarantees — the same ones the API path enforced.
+  if (hasUrl(copy.x)) errors.push('x contains a URL (never allowed on X)');
+  if (hasUrl(copy.threads)) errors.push('threads contains a URL (system appends the link)');
+  if (/#\w/.test(copy.x)) errors.push('x contains a hashtag (not allowed on X)');
+  if (/#\w/.test(copy.threads)) errors.push('threads contains a hashtag (not allowed on Threads)');
+
+  if (copy.hashtags.length < 3 || copy.hashtags.length > 5) {
+    errors.push(`hashtags must be 3-5 items (got ${copy.hashtags.length})`);
+  }
+  if (!CTA_VARIANTS.includes(copy.cta_variant)) {
+    errors.push(`cta_variant must be one of ${CTA_VARIANTS.join(', ')} (got "${copy.cta_variant}")`);
+  }
+
+  // Normalization that can't fail: keep X within the hard limit.
+  if (copy.x.length > 280) copy.x = `${copy.x.slice(0, 279)}…`;
+
+  return { valid: errors.length === 0, errors, copy };
+};

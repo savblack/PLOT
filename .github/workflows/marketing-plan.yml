@@ -1,0 +1,42 @@
+name: Marketing — plan
+
+# Step 1 of the daily pipeline: refresh tracked titles and plan the day's post.
+# No LLM and no API key — just TMDB + Supabase. The copy worker (Claude Code /
+# Codex) runs after this and writes the copy; rendering follows.
+on:
+  schedule:
+    - cron: '0 11 * * *' # 9pm AEST, ~12h before publish
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: marketing-plan
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Plan today's post
+        run: node marketing/planner/plan.mjs
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
+      - name: Alert on failure
+        if: failure()
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          ADMIN_EMAIL: ${{ secrets.MARKETING_ADMIN_EMAIL }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          WORKFLOW_NAME: plan
+          FAILURE_NOTE: 'No post was planned today, so nothing downstream will run.'
+        run: bash .github/scripts/marketing-alert.sh

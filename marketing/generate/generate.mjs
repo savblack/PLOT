@@ -1,9 +1,9 @@
-// Generation step: for each planned post, produce copy (Claude) and media
-// (Playwright renders), upload to storage, create publication rows, then send
-// the veto digest email. Posts only become publishable once digest_sent_at is
-// set — the fail-closed gate.
+// Generation step: for each post whose copy is ready, render media (Playwright),
+// upload to storage, create publication rows, then send the veto digest email.
+// Copy is written upstream by the AI copy worker (see marketing/copy/) and read
+// off the row here — this step is API-key-free. Posts only become publishable
+// once digest_sent_at is set — the fail-closed gate.
 import { getSupabase, supabaseUrl } from '../lib/supabase.mjs';
-import { generateCopy } from '../lib/claude.mjs';
 import { renderCard, closeBrowser } from '../lib/render.mjs';
 import { uploadMedia, publicUrl } from '../lib/storage.mjs';
 import { sendEmail, ADMIN_EMAIL } from '../lib/email.mjs';
@@ -17,7 +17,8 @@ const generatePost = async (supabase, post) => {
   const spec = POST_TYPES[post.post_type];
   if (!spec) throw new Error(`Unknown post type ${post.post_type}`);
 
-  const copy = await generateCopy(post);
+  if (!post.copy) throw new Error('Post has no copy — the copy worker has not run for it yet');
+  const copy = { ...post.copy };
   // Feed/article hero is the plain TMDB still (no branding); charts keep their
   // branded render. The branded media below is still used on the social channels.
   copy.hero_image = feedHeroUrl(post.post_type, post.payload);
@@ -150,10 +151,12 @@ const sendDigest = async (supabase, posts, skipped) => {
 const main = async () => {
   const supabase = getSupabase();
 
+  // Only posts whose copy is ready (or already rendered on a prior run whose
+  // digest failed). Posts still in 'planned' are waiting on the copy worker.
   const { data: planned, error } = await supabase
     .from('marketing_posts')
     .select('*')
-    .in('status', ['planned', 'generated'])
+    .in('status', ['copy_ready', 'generated'])
     .lte('scheduled_for', new Date(Date.now() + 24 * 3600000).toISOString())
     .order('scheduled_for');
   if (error) throw new Error(error.message);
