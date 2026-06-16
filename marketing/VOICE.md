@@ -33,12 +33,16 @@ actually trust, writing a short note — not a brand running a content calendar.
 - Say something or cut it. Never write filler that sounds like prose but states
   nothing ("through sheer craft", "a cinematic journey", "a must-see"). Every
   sentence earns its place with a concrete fact or a genuine point of view.
-- Write for someone who knows nothing about the title. Every post must make full
-  sense to a complete newcomer — no in-jokes, callbacks, or allusions that only
-  land once you've seen it. Don't name a place, character, or event as if the
-  reader already knows it ("even if you never made it to Arrakis" assumes they
-  know what Arrakis is); introduce it plainly, or leave it out. Avoid "rewatch"
-  framing unless the post is explicitly about revisiting something.
+- Clarity over insider shorthand, but choose your audience deliberately. Most
+  posts should make sense to someone who doesn't know the title, so don't lean on
+  in-jokes or allusions that only land once you've seen it, and don't name a
+  place, character, or event as if the reader already knows it ("even if you
+  never made it to Arrakis" assumes they know what Arrakis is) — introduce it
+  plainly or leave it out. You don't have to assume zero knowledge every time
+  though: it's fine to occasionally pitch to fans or a returning audience, as
+  long as that's a deliberate choice that rewards them, not an accidental
+  reference that quietly shuts newcomers out. Vary who you're speaking to. Use
+  "rewatch" framing only when the post is explicitly about revisiting something.
 - Sentence case everywhere, including headlines.
 - Emoji: at most one per post, usually zero. Never emoji strings.
 - No engagement-bait: never "🚨 BREAKING", "you NEED to see this", "drop a 🔥 if…",
