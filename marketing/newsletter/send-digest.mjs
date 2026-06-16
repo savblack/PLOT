@@ -9,6 +9,7 @@ const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<':
 const SITE = 'https://theplot.tv';
 const utm = (campaign) => `${SITE}?utm_source=newsletter&utm_medium=email&utm_campaign=${campaign}`;
 const CHART_URL = `${SITE}/whats-on/chart?utm_source=newsletter&utm_medium=email&utm_campaign=chart`;
+const DRY_RUN = process.env.DRY_RUN === '1'; // build + print the HTML, send to no one
 
 // Small week-over-week movement tag for the trending list.
 const moveTag = (m) => {
@@ -85,6 +86,12 @@ const main = async () => {
 
   if (!slate && !chart.length && !nowStreaming.length) {
     console.log('No content this week — skipping newsletter.');
+    return;
+  }
+
+  // Preview: print the rendered email to stdout and send to no one.
+  if (DRY_RUN) {
+    process.stdout.write(buildHtml({ slate, nowStreaming, chart }, `${SITE}/?unsubscribe_preview`));
     return;
   }
 
