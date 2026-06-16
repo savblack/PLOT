@@ -2,7 +2,7 @@ name: Marketing — trending snapshot
 
 on:
   schedule:
-    - cron: '0 8 * * 1' # Monday 08:00 UTC — refreshes the weekly chart before the generate/publish cycle
+    - cron: '0 8 * * 4' # Thursday 08:00 UTC — refreshes the weekly chart ahead of the Thursday newsletter + Friday social
   workflow_dispatch:
 
 permissions:

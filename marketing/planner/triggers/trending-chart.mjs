@@ -1,6 +1,6 @@
 // Friday anchor: the weekly top-10 social carousel.
 //
-// The snapshot is written by the Monday job (marketing/snapshot/write-snapshot.mjs),
+// The snapshot is written by the Thursday job (marketing/snapshot/write-snapshot.mjs),
 // which is the source of truth for the chart page. Here we READ the latest
 // snapshot and rebuild the full payload (poster/backdrop/movement) the carousel
 // render (post-types.mjs) and the subscriber newsletter (send-digest.mjs) need.
@@ -23,7 +23,7 @@ export const evaluate = async (ctx) => {
   let latest = snaps[0] || null;
   let prior = snaps[1] || null;
 
-  // Use this week's snapshot if it's recent (Monday's, ~4 days ago). Otherwise
+  // Use this week's snapshot if it's recent (Thursday's, ~1 day ago). Otherwise
   // the weekly job didn't run — fetch live, write it now, keep movement honest.
   const stale = !latest || daysBetween(latest.snapshot_date, today) > 6;
   if (stale) {
