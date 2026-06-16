@@ -11,6 +11,8 @@
     "test:unit": "node --test tests/unit/*.test.js",
     "test:smoke": "npm run build && playwright test",
     "preview": "vite preview",
+    "footer": "node scripts/build-footer.mjs",
+    "footer:check": "node scripts/build-footer.mjs --check",
     "mkt:plan": "node marketing/planner/plan.mjs",
     "mkt:generate": "node marketing/generate/generate.mjs",
     "mkt:publish": "node marketing/publish/publish.mjs",
