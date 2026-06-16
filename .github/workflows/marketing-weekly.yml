@@ -2,7 +2,9 @@ name: Marketing — weekly report + newsletter
 
 on:
   schedule:
-    - cron: '0 20 * * 0' # Sunday ~4pm US ET / Monday 6am AEST
+    # Monday 13:00 UTC — after the Monday trending snapshot (08:00) and that
+    # morning's generate (11:00), so the newsletter features the fresh chart.
+    - cron: '0 13 * * 1'
   workflow_dispatch:
 
 permissions:
