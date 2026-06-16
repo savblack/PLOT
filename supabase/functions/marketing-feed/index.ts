@@ -460,7 +460,7 @@ const renderChart = async (supabase: ReturnType<typeof createClient>) => {
         <h1 class="feed-title">The <em>chart</em></h1>
         <div class="dateline sc">Week of ${esc(fmtMonthDay(latest.snapshot_date))}</div>
       </div>
-      <p class="chart-intro">The ten titles the world is watching this week, ranked &mdash; with how they moved since last week.</p>
+      <p class="chart-intro">The ten most-watched titles this week. We track the rises, the falls, and the new arrivals.</p>
     </div>
     <ol class="chart r3">${rows}</ol>
     ${cta}
