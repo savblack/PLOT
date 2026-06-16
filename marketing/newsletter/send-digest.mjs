@@ -77,7 +77,7 @@ const main = async () => {
 
   // The chart section comes from the latest weekly snapshot (top 5, with
   // movement vs the prior week) rather than a trending_chart post, so the
-  // Monday newsletter reflects that morning's fresh chart.
+  // Thursday newsletter reflects that morning's fresh chart.
   const snaps = await recentSnapshots(supabase, 2);
   const chart = snaps[0]?.items
     ? withMovement(snaps[0].items, snaps[1]?.items || null).slice(0, 5)
