@@ -17,6 +17,16 @@
 //   SUPABASE_SERVICE_KEY=… TMDB_API_KEY=… node scripts/seed-marketing-backfill.mjs --reset
 //   SUPABASE_SERVICE_KEY=… TMDB_API_KEY=… node scripts/seed-marketing-backfill.mjs
 //   node scripts/seed-marketing-backfill.mjs --selftest   (offline copy check, no network)
+//
+// Target a specific inclusive date range instead of the default 50-day window
+// (one post per day, same anchors/cycle). Use it to fill a gap the daily
+// automation missed. A same-day --to is scheduled just behind now() so it shows
+// on the feed immediately. Only trending_chart days (Fridays) render a card, so
+// a gap with no Friday in it needs no browser:
+//   TMDB_API_KEY=… node scripts/seed-marketing-backfill.mjs --from=2026-06-13 --to=2026-06-16 --dry-run
+//   SUPABASE_SERVICE_KEY=… TMDB_API_KEY=… node scripts/seed-marketing-backfill.mjs --from=2026-06-13 --to=2026-06-16
+// NOTE: do NOT pass --reset with a range — --reset deletes ALL backfill:% posts
+// (the whole seeded history), not just the range.
 
 import { writeFile } from 'node:fs/promises';
 // Pure helpers (no external deps) — safe to import at top level for --selftest.
@@ -27,6 +37,16 @@ const args = new Set(process.argv.slice(2));
 const DRY_RUN = args.has('--dry-run');
 const RESET = args.has('--reset');
 const SELFTEST = args.has('--selftest');
+
+// Optional inclusive date range (YYYY-MM-DD). When set, seed exactly these days
+// instead of the default 50-day window.
+const getArg = (name) => {
+  const prefix = `--${name}=`;
+  const hit = process.argv.slice(2).find((a) => a.startsWith(prefix));
+  return hit ? hit.slice(prefix.length) : null;
+};
+const FROM = getArg('from');
+const TO = getArg('to');
 
 const POST_COUNT = 50;
 const ANNIVERSARY_MARKS = [50, 30, 25, 20, 10];
@@ -242,6 +262,18 @@ const NON_ANCHOR_CYCLE = [
   { type: 'countdown', days: 1 },
 ];
 
+// Monday -> weekly_slate, Friday -> trending_chart (the planner's anchors);
+// every other day cycles the priority ladder for a realistic mix.
+const assignPlans = (days) => {
+  let cycleIdx = 0;
+  return days.map((date) => {
+    const weekday = weekdayInTz(date);
+    if (weekday === 'Monday') return { date, plan: { type: 'weekly_slate' } };
+    if (weekday === 'Friday') return { date, plan: { type: 'trending_chart' } };
+    return { date, plan: NON_ANCHOR_CYCLE[cycleIdx++ % NON_ANCHOR_CYCLE.length] };
+  });
+};
+
 const buildSchedule = (now) => {
   // 50 days, one per day, noon UTC, ending yesterday (newest strictly < now).
   const startOfToday = new Date(now);
@@ -252,13 +284,17 @@ const buildSchedule = (now) => {
     d.setUTCDate(d.getUTCDate() - i);
     days.push(d);
   }
-  let cycleIdx = 0;
-  return days.map((date) => {
-    const weekday = weekdayInTz(date);
-    if (weekday === 'Monday') return { date, plan: { type: 'weekly_slate' } };
-    if (weekday === 'Friday') return { date, plan: { type: 'trending_chart' } };
-    return { date, plan: NON_ANCHOR_CYCLE[cycleIdx++ % NON_ANCHOR_CYCLE.length] };
-  });
+  return assignPlans(days);
+};
+
+// Inclusive [fromISO, toISO] range, one day per date at noon UTC.
+const buildScheduleRange = (fromISO, toISO) => {
+  const days = [];
+  const end = new Date(`${toISO}T12:00:00.000Z`);
+  for (let d = new Date(`${fromISO}T12:00:00.000Z`); d <= end; d.setUTCDate(d.getUTCDate() + 1)) {
+    days.push(new Date(d));
+  }
+  return assignPlans(days);
 };
 
 // ── TMDB sourcing helpers ────────────────────────────────────────────────────
@@ -530,7 +566,23 @@ const main = async () => {
   const { feedHeroUrl } = await import('../marketing/lib/images.mjs');
 
   const now = new Date();
-  const schedule = buildSchedule(now);
+  if ((FROM && !TO) || (TO && !FROM)) {
+    console.error('Provide both --from=YYYY-MM-DD and --to=YYYY-MM-DD (inclusive), or neither.');
+    process.exit(1);
+  }
+  if (FROM && !(/^\d{4}-\d{2}-\d{2}$/.test(FROM) && /^\d{4}-\d{2}-\d{2}$/.test(TO))) {
+    console.error('--from/--to must be YYYY-MM-DD.');
+    process.exit(1);
+  }
+  if (FROM && TO < FROM) {
+    console.error('--to must be on or after --from.');
+    process.exit(1);
+  }
+  if (FROM && RESET) {
+    console.error('Refusing --reset with a date range: --reset deletes ALL backfill:% posts, not just the range.');
+    process.exit(1);
+  }
+  const schedule = FROM ? buildScheduleRange(FROM, TO) : buildSchedule(now);
   const builder = makePayloadBuilder(tmdb, fetchTMDB);
 
   console.log(`Building ${schedule.length} backdated posts (${isoDate(schedule[0].date)} → ${isoDate(schedule[schedule.length - 1].date)})…`);
@@ -549,7 +601,10 @@ const main = async () => {
     // Feed/article hero = plain TMDB still (no branding) for every type except
     // trending_chart, which keeps its branded chart render (hero_image = null).
     copy.hero_image = feedHeroUrl(cand.post_type, cand.payload);
-    const scheduledFor = slot.date.toISOString();
+    // Past days post at noon UTC (pipeline convention); a same-day backfill whose
+    // noon UTC is still ahead of now() is clamped just behind now so the feed
+    // (scheduled_for <= now) shows it immediately rather than later today.
+    const scheduledFor = (slot.date > now ? new Date(now.getTime() - 60_000) : slot.date).toISOString();
     candidates.push({ ...cand, copy, scheduledFor, slug: postSlug(copy.page_title, scheduledFor) });
   }
 
@@ -567,19 +622,24 @@ const main = async () => {
     const slugs = new Set(candidates.map((c) => c.slug));
     console.log(`Unique slugs: ${slugs.size}/${candidates.length}`);
 
-    // Smoke test: render the first post's hero card to a temp file.
-    try {
-      const { renderCard, closeBrowser } = await import('../marketing/lib/render.mjs');
-      const first = candidates[0];
-      const cards = await POST_TYPES[first.post_type].cards(first.payload);
-      const buf = await renderCard(POST_TYPES[first.post_type].template, cards[0].data, { size: 'landscape' });
-      const out = `/tmp/backfill-smoke-${first.post_type}.jpg`;
-      await writeFile(out, buf);
-      await closeBrowser();
-      console.log(`\nRender smoke test OK → ${out} (${(buf.length / 1024).toFixed(0)} KB). Open it to eyeball the card.`);
-    } catch (err) {
-      console.warn(`\nRender smoke test skipped/failed: ${err.message}`);
-      console.warn('(Install a browser with: npx playwright install chromium)');
+    // Smoke test: only trending_chart days get a branded card render in the live
+    // seed (every other type leads with a plain TMDB hero image, no browser).
+    const renderTarget = candidates.find((c) => c.post_type === 'trending_chart');
+    if (!renderTarget) {
+      console.log('\nNo trending_chart in this range — no card render needed (other types use a plain TMDB hero image, so the live seed needs no browser).');
+    } else {
+      try {
+        const { renderCard, closeBrowser } = await import('../marketing/lib/render.mjs');
+        const cards = await POST_TYPES[renderTarget.post_type].cards(renderTarget.payload);
+        const buf = await renderCard(POST_TYPES[renderTarget.post_type].template, cards[0].data, { size: 'landscape' });
+        const out = `/tmp/backfill-smoke-${renderTarget.post_type}.jpg`;
+        await writeFile(out, buf);
+        await closeBrowser();
+        console.log(`\nRender smoke test OK → ${out} (${(buf.length / 1024).toFixed(0)} KB). Open it to eyeball the chart card.`);
+      } catch (err) {
+        console.warn(`\nRender smoke test skipped/failed: ${err.message}`);
+        console.warn('(trending_chart needs a browser: npx playwright install chromium)');
+      }
     }
     console.log('\nDry run complete — no database writes. Re-run without --dry-run to seed.');
     return;
