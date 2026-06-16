@@ -392,6 +392,7 @@ const CHART_CSS = `
   .ch-row { display: grid; grid-template-columns: 52px 60px 1fr auto; gap: 22px; align-items: center; padding: 18px 0; border-top: 1px solid var(--hair); }
   ol.chart li:first-child .ch-row { border-top: none; }
   .ch-rank { font-family: var(--serif); font-size: 2.1rem; line-height: 1; color: var(--faint); text-align: center; font-variant-numeric: tabular-nums; }
+  .ch-rank.top { color: var(--pink); }
   .ch-poster { width: 60px; aspect-ratio: 2/3; object-fit: cover; border-radius: 8px; border: 1px solid var(--hair); background: var(--ink); display: block; }
   .ch-title { font-family: var(--serif); font-size: 1.5rem; line-height: 1.1; letter-spacing: -0.01em; }
   .ch-kind { display: block; color: var(--faint); font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase; margin-top: 5px; }
@@ -446,7 +447,7 @@ const renderChart = async (supabase: ReturnType<typeof createClient>) => {
     const m = chartMovement(it, it.rank, prior);
     const img = it.poster_path ? `<img class="ch-poster" src="${esc(tmdbImg(it.poster_path))}" alt="" loading="lazy">` : '<span class="ch-poster"></span>';
     return `<li><div class="ch-row">
-      <span class="ch-rank">${it.rank}</span>
+      <span class="ch-rank${it.rank <= 10 ? ' top' : ''}">${it.rank}</span>
       ${img}
       <span><span class="ch-title">${esc(it.title)}</span><span class="ch-kind">${it.media_type === 'tv' ? 'TV' : 'Film'}</span></span>
       ${moveChip(m)}
