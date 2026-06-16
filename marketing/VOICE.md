@@ -18,9 +18,24 @@ actually trust, writing a short note — not a brand running a content calendar.
   "A captivating…". Lead with the title, then go straight into the premise and
   cast: "Now streaming: Michael. From the Jackson Five to global superstardom —
   with Jaafar Jackson in the title role."
-- Name the cast in the body, not the director. A director can appear in the
-  hashtags (#antoinefuqua) but stays out of the caption text unless the director
-  is genuinely the story.
+- Vary the angle, deliberately. Don't open every post the same way: sometimes
+  lead with the premise, sometimes a single notable actor, sometimes the
+  director, sometimes the hook of the story itself. Rotate so the feed never
+  feels formulaic.
+- Go easy on names. A wall of names is tiring to read. In a social post, name
+  two people at most, and don't pair an actor with their character more than once
+  — "Timothée Chalamet's Paul, Zendaya's Chani, …" reads like a cast list. Often
+  the story lands hardest with barely any names at all.
+- The director is fair game when they add value (a distinctive or notable
+  filmmaker): lead with them sometimes, fold them into the latter half other
+  times, leave them out when the story is the draw. Never make naming the
+  director a reflex. They're also welcome as a hashtag (#denisvilleneuve).
+- Say something or cut it. Never write filler that sounds like prose but states
+  nothing ("through sheer craft", "a cinematic journey", "a must-see"). Every
+  sentence earns its place with a concrete fact or a genuine point of view.
+- Don't assume the reader has already seen it. Write so a newcomer and a
+  returning fan both have a way in; avoid "rewatch" framing unless the post is
+  explicitly about revisiting something.
 - Sentence case everywhere, including headlines.
 - Emoji: at most one per post, usually zero. Never emoji strings.
 - No engagement-bait: never "🚨 BREAKING", "you NEED to see this", "drop a 🔥 if…",
@@ -29,12 +44,13 @@ actually trust, writing a short note — not a brand running a content calendar.
 - Never imply PLOT is affiliated with, endorsed by, or partnered with any studio,
   network, or streamer. We write about their work; we don't speak for them.
 - It's fine to have taste. Gentle enthusiasm and a point of view beat neutrality.
-- Keep it short. The image does the heavy lifting; the copy is the caption, not
-  the essay.
+- Keep social copy short. The image does the heavy lifting; the caption is not
+  the essay. (The theplot.tv article is the long-form piece — see below.)
 
 ## Platform constraints
 
-- **X**: ≤ 280 characters. **Never include a URL.** CTA via "link in bio" pattern.
+- **X**: ≤ 280 characters. **Never include a URL.** No hashtags. CTA built around
+  the product ("Save it to your watchlist with PLOT"), never "link in bio".
 - **Instagram**: caption 1–3 short paragraphs max. 3–5 hashtags, niche over
   generic (#A24 beats #movies). The profile link is live, so point to it
   directly in the CTA ("at theplot.tv") rather than "link in bio". A director
@@ -43,8 +59,19 @@ actually trust, writing a short note — not a brand running a content calendar.
   system appends the theplot.tv article link automatically.
 - **alt_text**: literal description of the image for accessibility, one sentence.
 - **Article (page_title + page_body)**: every post is originally published on
-  theplot.tv/whats-on. Plain specific headline; 2–4 short paragraphs in the
-  same voice; facts only from the payload; no links, hashtags, or dashes.
+  theplot.tv/whats-on. Plain specific headline; a short-to-medium blog post of
+  4–8 short paragraphs in the same voice; draw on the research pack and your own
+  web research, always paraphrased (never quote reviews or copy synopsis text);
+  no links, hashtags, or dashes.
+
+## Ratings
+
+- When you cite scores, use the three Google surfaces: **IMDb, Rotten Tomatoes,
+  and Amazon**. Pull them from your web research.
+- **Never cite TMDB scores or vote counts**, and never describe how many people
+  voted. TMDB figures in the research pack are an internal signal only.
+- Only include ratings when they add something. A standout score is worth a line;
+  a middling one usually isn't the story. Don't force them in to fill space.
 
 ## CTAs
 

@@ -56,6 +56,9 @@ ${sourceList(research)}
 Write a short-to-medium blog post (4-8 short paragraphs) for theplot.tv/whats-on.
 - Use the research pack above, AND do your own light web research for current
   critical reception, cast/production context, and recent news.
+- Ratings: if you cite scores, use IMDb, Rotten Tomatoes and Amazon (from your
+  web research). Never cite TMDB scores or vote counts — the tmdb.vote_average
+  and vote_count in the pack are an internal signal only, never for publication.
 - Always paraphrase in PLOT's voice. Never quote reviews verbatim, never copy
   Wikipedia sentences, never reproduce a synopsis word-for-word. No spoilers.
 - Put every source you actually used or browsed into the \`sources\` array
