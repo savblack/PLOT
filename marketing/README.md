@@ -41,10 +41,23 @@ other agent**). The repo exposes a fixed, model-agnostic contract in
 `marketing/copy/`:
 
 - `mkt:copy:pull` writes a self-contained brief per planned post (voice guide +
-  payload facts + the exact output schema) to `marketing/copy/jobs/`.
+  payload facts + a **research pack** + the exact output schema) to
+  `marketing/copy/jobs/`.
 - the worker writes one `<post_id>.copy.json` per brief.
 - `mkt:copy:save` validates every answer against `schema.mjs` (the safety
   boundary — identical for every model) and persists the valid ones.
+
+**Research enrichment (for the theplot.tv/whats-on article).** Each brief carries
+a $0 research pack built by `marketing/copy/enrich.mjs` from the post's
+`tmdb_refs`: extended TMDB (`getEnrichment` — full cast/crew, genres, keywords,
+similar titles, user reviews, IMDb/Wikidata ids) plus a Wikipedia background
+extract (`lib/wikipedia.mjs`, no key). The worker writes the social copy from the
+tight social-facts payload, then writes a short-to-medium **blog post**
+(`page_body`, 4–8 paras) using the research pack and its own web browsing for
+current reception — always paraphrased, never quoted. It returns the `sources` it
+used; those are stored and shown in the veto digest for attribution review but are
+**not** rendered on the public page. No paid search APIs — TMDB + Wikipedia are
+free and the worker browses on its subscription.
 
 `marketing/copy/AGENT.md` is the runner-agnostic task spec. Swapping the worker
 changes only *which agent runs that spec*, never the pipeline or the validation.
@@ -76,8 +89,9 @@ Every card renders twice: **portrait 1080×1350** and **landscape 1600×900**.
 
 Every post is originally published as an article on **theplot.tv/whats-on**
 (the `marketing-feed` edge function, proxied via `website/vercel.json`
-rewrites). The generate step writes a `slug` and Claude produces
-`page_title`/`page_body` alongside the social copy. Entries become visible at
+rewrites). The copy worker produces `page_title`/`page_body` (a short-to-medium,
+research-backed blog post) alongside the social copy, and the render step writes
+the `slug`. Entries become visible at
 their scheduled publish time and vetoed posts never appear, so there's nothing
 extra to manage. Threads posts automatically append the article link
 (UTM-tagged); X and Instagram point to it via link-in-bio. The veto digest

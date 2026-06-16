@@ -8,6 +8,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { getSupabase } from '../lib/supabase.mjs';
 import { buildBrief } from './brief.mjs';
+import { enrichPost } from './enrich.mjs';
 
 export const JOBS_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), 'jobs');
 
@@ -18,7 +19,7 @@ const main = async () => {
   // worker re-run can retry a post a previous run couldn't complete.
   const { data: posts, error } = await supabase
     .from('marketing_posts')
-    .select('id, post_type, payload, scheduled_for, status')
+    .select('id, post_type, payload, tmdb_refs, scheduled_for, status')
     .in('status', ['planned', 'failed'])
     .is('copy', null)
     .lte('scheduled_for', new Date(Date.now() + 24 * 3600000).toISOString())
@@ -36,8 +37,11 @@ const main = async () => {
   const todo = (posts || []).filter(p => p.payload && Object.keys(p.payload).length);
   const manifest = [];
   for (const post of todo) {
+    // Enrich from free sources (extended TMDB + Wikipedia). Best-effort: a
+    // failed lookup still yields a brief, just without the research pack.
+    const research = await enrichPost(post).catch(() => []);
     const briefPath = path.join(JOBS_DIR, `${post.id}.brief.md`);
-    await writeFile(briefPath, await buildBrief(post));
+    await writeFile(briefPath, await buildBrief(post, research));
     manifest.push({
       post_id: post.id,
       post_type: post.post_type,

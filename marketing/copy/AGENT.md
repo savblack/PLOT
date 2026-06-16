@@ -17,8 +17,14 @@ same steps. Nothing here depends on which model you are.
 2. **Write the copy.** For each entry in `manifest.json`, read its `brief` file and
    write the answer to its `output` path (`marketing/copy/jobs/<post_id>.copy.json`).
    The answer is a single JSON object with exactly the fields the brief lists. Follow
-   the embedded voice guide exactly. Use **only** facts present in the brief's payload
-   — never invent dates, cast, or streaming platforms.
+   the embedded voice guide exactly.
+   - **Social fields** (`x` / `instagram` / `threads`): use only facts in the brief's
+     social-facts payload — never invent dates, cast, or streaming platforms.
+   - **Article** (`page_body`): write a short-to-medium blog post (4–8 paragraphs).
+     Use the brief's research pack AND **do your own web research** (you may browse)
+     for current reception, context, and recent news. Always **paraphrase** in PLOT's
+     voice — never quote reviews or copy Wikipedia/synopsis text. List every source
+     you used in the `sources` array (kept internal, not shown publicly).
 
 3. **Save:**
    ```bash

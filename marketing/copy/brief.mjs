@@ -16,14 +16,21 @@ const fieldTable = COPY_FIELDS
   .map(([name, type, desc]) => `- \`${name}\` (${type}): ${desc}`)
   .join('\n');
 
+const sourceList = (research) => {
+  const urls = research.flatMap(r => r.sources || []);
+  if (!urls.length) return '(none resolved — search the web yourself)';
+  return urls.map(s => `- ${s.title}: ${s.url}`).join('\n');
+};
+
 /**
  * @returns {string} markdown brief for a single planned post.
  * @param {object} post  a marketing_posts row (needs id, post_type, payload)
- * @param {string} outPath  where the worker must write its JSON answer
+ * @param {Array}  research  research pack from enrichPost() (may be empty)
  */
-export const buildBrief = async (post) => {
+export const buildBrief = async (post, research = []) => {
   const brief = POST_TYPE_BRIEFS[post.post_type] || '';
   const outFile = `${post.id}.copy.json`;
+  const hasResearch = research.length > 0;
   return `# Copy job: ${post.post_type}
 
 Post id: \`${post.id}\`
@@ -32,10 +39,30 @@ Write your answer to: \`marketing/copy/jobs/${outFile}\`
 ## What this post is
 ${brief}
 
-## The facts (this is ALL you may state as true — never add dates, cast, or platforms not present here)
+## Social facts (for x / instagram / threads: state ONLY what is here — never add dates, cast, or platforms not present)
 \`\`\`json
 ${JSON.stringify(post.payload, null, 2)}
 \`\`\`
+
+## Research pack for the article (extended TMDB + Wikipedia — free, pre-fetched)
+${hasResearch
+    ? `\`\`\`json\n${JSON.stringify(research.map(r => ({ title: r.title, tmdb: r.tmdb, wikipedia: r.wikipedia })), null, 2)}\n\`\`\``
+    : '(no structured research resolved for this post — rely on web research)'}
+
+### Starting sources to consult / browse further
+${sourceList(research)}
+
+## How to write the article (page_body)
+Write a short-to-medium blog post (4-8 short paragraphs) for theplot.tv/whats-on.
+- Use the research pack above, AND do your own light web research for current
+  critical reception, cast/production context, and recent news.
+- Always paraphrase in PLOT's voice. Never quote reviews verbatim, never copy
+  Wikipedia sentences, never reproduce a synopsis word-for-word. No spoilers.
+- Put every source you actually used or browsed into the \`sources\` array
+  (the links above plus anything you found). It is stored for our review only,
+  not shown on the page.
+- The social copy (x/instagram/threads) stays tight and caption-length — the
+  article is the long-form piece, not the captions.
 
 ## Output — a single JSON object with exactly these fields
 ${fieldTable}

@@ -100,6 +100,10 @@ const digestHtml = (posts, skipped) => {
         ${copyBlock('X', post.copy?.x)}
         ${copyBlock('Instagram', post.copy?.instagram)}
         ${copyBlock('Threads', post.copy?.threads)}
+        ${(post.copy?.sources?.length)
+          ? `<p style="margin:10px 0 2px;font-size:12px;color:#888;text-transform:uppercase;letter-spacing:0.06em;">Sources used (article)</p>
+             <div style="font-size:12px;line-height:1.6;">${post.copy.sources.map(s => `<a href="${s.url}" style="color:#888;">${escapeHtml(s.title)}</a>`).join(' &middot; ')}</div>`
+          : ''}
         <p style="margin:18px 0 0;">
           <a href="${vetoUrl}" style="display:inline-block;background:#E05578;color:#fff;text-decoration:none;padding:10px 22px;border-radius:9999px;font-size:14px;font-weight:600;">Veto this post</a>
           <span style="font-size:12px;color:#888;margin-left:12px;">Do nothing and it publishes automatically.</span>

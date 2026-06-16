@@ -19,7 +19,8 @@ export const COPY_FIELDS = [
   ['alt_text', 'string', 'One-sentence literal description of the image for accessibility.'],
   ['cta_variant', `enum: ${CTA_VARIANTS.join(' | ')}`, 'Which approved CTA this post uses (or "none").'],
   ['page_title', 'string', 'Headline for the theplot.tv article. Plain, specific, sentence case, no clickbait, no dashes.'],
-  ['page_body', 'string[]', '2-4 short paragraphs for the article. Same voice, facts only from the payload, no links, no hashtags, no dashes of any kind.'],
+  ['page_body', 'string[]', '4-8 short paragraphs forming a short-to-medium blog post for theplot.tv/whats-on. Same voice. Draw on the research pack in this brief AND your own web research; always paraphrase in PLOT\'s voice, never quote reviews or copy Wikipedia sentences. No spoilers, no links, no hashtags, no dashes of any kind.'],
+  ['sources', 'array of {title, url}', 'The sources you actually used or consulted (the TMDB/Wikipedia/IMDb links in the brief, plus anything you browsed). Stored for our review only, never shown publicly. Use [] if you used none.'],
 ];
 
 // Per-post-type guidance. Moved here (was inline in the old Claude client) so
@@ -68,13 +69,23 @@ export const validateCopy = (raw) => {
     page_body: Array.isArray(raw.page_body)
       ? raw.page_body.map(str).filter(Boolean)
       : (str(raw.page_body) ? [str(raw.page_body)] : []),
+    // Optional, internal-only: the sources the worker used. Kept off the public
+    // page; surfaced in the veto digest for attribution review.
+    sources: Array.isArray(raw.sources)
+      ? raw.sources
+          .map(s => ({ title: str(s?.title) || str(s?.url), url: str(s?.url) }))
+          .filter(s => /^https?:\/\//i.test(s.url))
+      : [],
   };
 
   // Required, non-empty.
   for (const field of ['x', 'instagram', 'threads', 'alt_text', 'page_title']) {
     if (!copy[field]) errors.push(`${field} is empty`);
   }
-  if (!copy.page_body.length) errors.push('page_body is empty');
+  // The article must read like a short-to-medium blog post, not a caption.
+  if (copy.page_body.length < 3) {
+    errors.push(`page_body needs at least 3 paragraphs (got ${copy.page_body.length})`);
+  }
 
   // Hard platform guarantees — the same ones the API path enforced.
   if (hasUrl(copy.x)) errors.push('x contains a URL (never allowed on X)');

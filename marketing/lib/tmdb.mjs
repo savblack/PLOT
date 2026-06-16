@@ -122,6 +122,42 @@ export const tmdb = {
 
   getDetails: (mediaType, id) => fetchTMDB(`/${mediaType}/${id}`),
 
+  // Everything TMDB knows about a title in one call — the raw material for a
+  // blog post. Trimmed to a compact, paraphrasable research pack (no full
+  // review text dumped wholesale: excerpts only, to be reworded, never quoted).
+  getEnrichment: async (mediaType, id) => {
+    const d = await fetchTMDB(`/${mediaType}/${id}`,
+      { append_to_response: 'credits,keywords,reviews,similar,external_ids' });
+    if (!d) return null;
+    const crew = d.credits?.crew || [];
+    const byJob = (jobs) => [...new Set(crew.filter(c => jobs.includes(c.job)).map(c => c.name))].slice(0, 3);
+    const kw = d.keywords?.keywords || d.keywords?.results || [];
+    return {
+      tagline: d.tagline || null,
+      overview: d.overview || null,
+      genres: (d.genres || []).map(g => g.name),
+      runtime: d.runtime || d.episode_run_time?.[0] || null,
+      release_date: d.release_date || d.first_air_date || null,
+      vote_average: d.vote_average || null,
+      vote_count: d.vote_count || null,
+      directors: byJob(['Director']),
+      writers: byJob(['Writer', 'Screenplay', 'Story']),
+      creators: (d.created_by || []).map(c => c.name),
+      cast: (d.credits?.cast || []).slice(0, 8).map(c => ({ name: c.name, as: c.character || null })),
+      keywords: kw.slice(0, 12).map(k => k.name),
+      similar: (d.similar?.results || []).slice(0, 6).map(s => s.title || s.name).filter(Boolean),
+      reviews: (d.reviews?.results || []).slice(0, 2).map(r => ({
+        author: r.author,
+        rating: r.author_details?.rating ?? null,
+        excerpt: (r.content || '').replace(/\s+/g, ' ').trim().slice(0, 240),
+        url: r.url || null,
+      })),
+      imdb_id: d.external_ids?.imdb_id || null,
+      wikidata_id: d.external_ids?.wikidata_id || null,
+      homepage: d.homepage || null,
+    };
+  },
+
   getWatchProviders: async (mediaType, id) => {
     const data = await fetchTMDB(`/${mediaType}/${id}/watch/providers`);
     const regionData = data?.results?.[REGION] || data?.results?.US;
