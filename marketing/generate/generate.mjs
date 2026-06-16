@@ -13,6 +13,16 @@ import { postSlug, entryUrl } from '../lib/feed.mjs';
 
 const PLATFORMS = ['x', 'instagram', 'threads'];
 
+// Friendly labels for the admin veto digest (keeps internal type ids unchanged).
+const TYPE_LABELS = {
+  weekly_slate: 'Upcoming this week',
+  trending_chart: 'Trending top 10',
+  countdown: 'Countdown',
+  now_streaming: 'Now streaming',
+  trailer_drop: 'Trailer drop',
+  on_this_day: 'On this day',
+};
+
 const generatePost = async (supabase, post) => {
   const spec = POST_TYPES[post.post_type];
   if (!spec) throw new Error(`Unknown post type ${post.post_type}`);
@@ -91,7 +101,7 @@ const digestHtml = (posts, skipped) => {
     });
     return `
       <div style="border:1px solid #e5e3e0;border-radius:12px;padding:20px;margin-bottom:24px;">
-        <h2 style="margin:0 0 2px;font-size:1.05rem;">${escapeHtml(post.post_type.replace(/_/g, ' '))}</h2>
+        <h2 style="margin:0 0 2px;font-size:1.05rem;">${escapeHtml(TYPE_LABELS[post.post_type] || post.post_type.replace(/_/g, ' '))}</h2>
         <p style="margin:0 0 14px;font-size:0.8rem;color:#888;">
           Publishes ${scheduledAEST} (AEST) · CTA: ${escapeHtml(post.copy?.cta_variant || 'none')}
           ${post.slug ? ` · <a href="${entryUrl(post.slug)}" style="color:#888;">article</a>` : ''}

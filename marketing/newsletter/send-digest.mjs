@@ -10,7 +10,7 @@ const utm = (campaign) => `${SITE}?utm_source=newsletter&utm_medium=email&utm_ca
 
 const buildHtml = ({ slate, nowStreaming, trending }, unsubscribeUrl) => {
   const slateBlock = slate ? `
-    <h2 style="font-size:1.05rem;margin:26px 0 10px;">Coming this week</h2>
+    <h2 style="font-size:1.05rem;margin:26px 0 10px;">Upcoming this week</h2>
     ${(slate.payload.titles || []).slice(0, 5).map(t => `
       <p style="margin:0 0 10px;font-size:0.95rem;line-height:1.5;">
         <b>${esc(t.title)}</b> — ${esc(t.when_label)}${t.where ? ` · ${esc(t.where)}` : ''}

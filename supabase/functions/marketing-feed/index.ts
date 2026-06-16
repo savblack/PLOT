@@ -50,12 +50,13 @@ const TYPE_META: Record<string, { label: string; tone: string }> = {
   now_streaming: { label: 'Now streaming', tone: '#0F6E56' },
   trending_chart: { label: 'Trending', tone: '#534AB7' },
   trailer_drop: { label: 'Trailer drop', tone: '#8A5410' },
-  weekly_slate: { label: 'The slate', tone: '#185FA5' },
+  weekly_slate: { label: 'Upcoming this week', tone: '#185FA5' },
   on_this_day: { label: 'On this day', tone: '#6b6b70' },
 };
 
 const FILTERS: { key: string | null; label: string }[] = [
   { key: null, label: 'Latest' },
+  { key: 'weekly_slate', label: 'This week' },
   { key: 'now_streaming', label: 'Now streaming' },
   { key: 'trending_chart', label: 'The charts' },
   { key: 'countdown', label: 'Coming soon' },

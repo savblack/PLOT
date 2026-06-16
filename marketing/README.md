@@ -1,14 +1,16 @@
 # PLOT — Marketing Automation
 
 Fully-automated organic social content for **X, Instagram, and Threads**, plus a
-**weekly subscriber newsletter**. One post per day, generated ~12 hours ahead,
-previewed to the admin by email (veto window), then published automatically.
+**weekly subscriber newsletter**. A single themed post on Mon/Fri and up to four
+posts on the other days (see Cadence below), generated ~12 hours ahead, previewed
+to the admin by email (veto window), then published automatically.
 
 ## How a post happens
 
 ```
 11:00 UTC  marketing-plan.yml
-           plan.mjs      — evaluate triggers, insert ONE marketing_posts row
+           plan.mjs      — compose the day's posts (1 on Mon/Fri, up to 4 other
+                           days), insert one marketing_posts row each
                            -> status planned (no LLM, no API key)
 
 ~11:20 UTC AI copy worker (Claude Code / Codex — see marketing/copy/AGENT.md)
@@ -68,16 +70,26 @@ search APIs.
 `marketing/copy/AGENT.md` is the runner-agnostic task spec. Swapping the worker
 changes only *which agent runs that spec*, never the pipeline or the validation.
 
-## Post types & triggers
+## Cadence & post types
 
-| Type | Trigger | Media |
+**Monday** and **Friday** are single themed anchor posts. **Tue/Wed/Thu/Sat/Sun**
+target **up to 4 posts/day** (all in the one publish run), composed in this order
+and never padded — thin days simply post fewer, and a title never repeats in a day:
+
+1. `on_this_day` anniversary — every non-anchor day
+2. `now_streaming` — the release-day spotlight (a tracked title hitting home today)
+3. fill toward 4 from `countdown` T-1, `trailer_drop`, `countdown` T-7, `countdown` T-14
+
+So a day with a spotlight runs 2 dynamic fills; a day without runs 3.
+
+| Type | When | Media |
 |---|---|---|
-| `weekly_slate` | Monday (AEST) | carousel: one card per title, most popular first |
-| `trending_chart` | Friday (AEST) | IG/Threads carousel: chart 1-5, chart 6-10, top-3 detail cards; X gets one full top-10 chart |
-| `countdown` | tracked title at T-14/T-7/T-1 | single card, big day count |
-| `now_streaming` | tracked title's digital date = today | single backdrop card |
-| `trailer_drop` | new official trailer on a tracked title | single backdrop card |
-| `on_this_day` | 10/20/25/30/50-year anniversary | single card; also the fallback |
+| `weekly_slate` ("Upcoming this week") | Monday (AEST), single post | carousel: one card per title, most popular first |
+| `trending_chart` | Friday (AEST), single post | IG/Threads carousel: chart 1-5, chart 6-10, top-3 detail cards; X gets one full top-10 chart |
+| `on_this_day` | every non-anchor day (anniversary) | single card |
+| `now_streaming` | non-anchor days — tracked title's digital date = today | single backdrop card (the release-day spotlight) |
+| `countdown` | non-anchor days — tracked title at T-1/T-7/T-14 | single card, big day count |
+| `trailer_drop` | non-anchor days — new official trailer on a tracked title | single backdrop card |
 
 ## Channel mapping (which render goes where)
 
@@ -88,7 +100,7 @@ Every card renders twice: **portrait 1080×1350** and **landscape 1600×900**.
 | **Instagram** | all portrait cards, in order | yes — native carousel (cover first) |
 | **Threads** | all landscape cards, in order | yes — native carousel |
 | **X** | exactly ONE landscape image — card 0 (`xCardIndex` in post-types.mjs overrides if ever needed) | no — X renders multi-image as a collage grid, so we never send more than one; the X copy carries what the other cards said (e.g. "Also this week: …") |
-| **Email digest** | the top slate card (portrait) embedded in Sunday's newsletter, plus text lists | n/a |
+| **Email digest** | the top "Upcoming this week" card (portrait) embedded in Sunday's newsletter, plus text lists | n/a |
 | **What's On** (theplot.tv/whats-on) | the canonical article: `copy.page_title` + `copy.page_body` + the hero card, server-rendered with OG tags | n/a |
 
 ## The "What's On" feed
@@ -108,9 +120,11 @@ Deploy: `supabase functions deploy marketing-feed --no-verify-jwt`. The
 if the site is hosted elsewhere, replicate the two rewrites from
 `website/vercel.json` there.
 
-Non-anchored-day priority: T-1 → now streaming → trailer → T-7 → T-14 → on this
-day. `marketing_tracked_titles` (top ~25 upcoming by TMDB popularity) carries
-the announced/known-trailer state so nothing is announced twice. `topic_key`
+Non-anchor days compose up to 4 posts: anniversary (always) → release-day
+spotlight (now streaming) → countdown T-1 → trailer → T-7 → T-14, stopping at 4
+and never padding. `marketing_tracked_titles` (top ~25 upcoming by TMDB
+popularity) carries the announced/known-trailer state so nothing is announced
+twice. `topic_key`
 is unique — re-running the planner is always a no-op.
 
 ## Voice & CTAs

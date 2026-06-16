@@ -27,7 +27,7 @@ export const COPY_FIELDS = [
 // the brief generator and any future tooling share one definition.
 export const POST_TYPE_BRIEFS = {
   weekly_slate:
-    'A "coming this week" roundup. Instagram and Threads get a carousel with one card per title ' +
+    'An "Upcoming this week" roundup. Instagram and Threads get a carousel with one card per title ' +
     '(most popular first), so their captions can tease the 2-3 most exciting titles. X gets ONLY the ' +
     'top title\'s image — the X text must carry the rest: lead with the top title, then name the other ' +
     'titles compactly (e.g. "Also this week: A, B, and C"). Fit 280 characters; drop titles before truncating mid-name.',
