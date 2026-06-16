@@ -46,7 +46,7 @@ ${JSON.stringify(post.payload, null, 2)}
 
 ## Research pack for the article (extended TMDB + Wikipedia — free, pre-fetched)
 ${hasResearch
-    ? `\`\`\`json\n${JSON.stringify(research.map(r => ({ title: r.title, tmdb: r.tmdb, wikipedia: r.wikipedia })), null, 2)}\n\`\`\``
+    ? `\`\`\`json\n${JSON.stringify(research.map(r => ({ title: r.title, ratings: r.ratings, tmdb: r.tmdb, wikipedia: r.wikipedia })), null, 2)}\n\`\`\``
     : '(no structured research resolved for this post — rely on web research)'}
 
 ### Starting sources to consult / browse further
@@ -56,9 +56,11 @@ ${sourceList(research)}
 Write a short-to-medium blog post (4-8 short paragraphs) for theplot.tv/whats-on.
 - Use the research pack above, AND do your own light web research for current
   critical reception, cast/production context, and recent news.
-- Ratings: if you cite scores, use IMDb, Rotten Tomatoes and Amazon (from your
-  web research). Never cite TMDB scores or vote counts — the tmdb.vote_average
-  and vote_count in the pack are an internal signal only, never for publication.
+- Ratings: cite ONLY the pre-fetched \`ratings\` block above (IMDb, Rotten
+  Tomatoes, Metacritic) — it is reliable, so do not scrape or web-search for
+  scores. If a rating is null, omit it; only include ratings when they add value.
+  Never cite TMDB scores or vote counts (tmdb.vote_average / vote_count are an
+  internal signal only), and never describe how many people voted.
 - Always paraphrase in PLOT's voice. Never quote reviews verbatim, never copy
   Wikipedia sentences, never reproduce a synopsis word-for-word. No spoilers.
 - Put every source you actually used or browsed into the \`sources\` array

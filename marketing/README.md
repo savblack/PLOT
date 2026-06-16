@@ -49,15 +49,21 @@ other agent**). The repo exposes a fixed, model-agnostic contract in
 
 **Research enrichment (for the theplot.tv/whats-on article).** Each brief carries
 a $0 research pack built by `marketing/copy/enrich.mjs` from the post's
-`tmdb_refs`: extended TMDB (`getEnrichment` — full cast/crew, genres, keywords,
-similar titles, user reviews, IMDb/Wikidata ids) plus a Wikipedia background
-extract (`lib/wikipedia.mjs`, no key). The worker writes the social copy from the
-tight social-facts payload, then writes a short-to-medium **blog post**
-(`page_body`, 4–8 paras) using the research pack and its own web browsing for
-current reception — always paraphrased, never quoted. It returns the `sources` it
-used; those are stored and shown in the veto digest for attribution review but are
-**not** rendered on the public page. No paid search APIs — TMDB + Wikipedia are
-free and the worker browses on its subscription.
+`tmdb_refs`:
+- extended TMDB (`getEnrichment` — full cast/crew, genres, keywords, similar
+  titles, user reviews, IMDb/Wikidata ids),
+- a Wikipedia background extract (`lib/wikipedia.mjs`, no key), and
+- reliable **ratings** — IMDb, Rotten Tomatoes, Metacritic — from OMDb
+  (`lib/omdb.mjs`), keyed by the IMDb id. One structured call, no scraping.
+
+The worker writes the social copy from the tight social-facts payload, then writes
+a short-to-medium **blog post** (`page_body`, 4–8 paras) using the research pack
+plus its own web browsing for current reception — always paraphrased, never
+quoted, and citing only the pre-fetched ratings (never TMDB scores). It returns
+the `sources` it used; those show in the veto digest for attribution review but
+are **not** rendered on the public page. Stays $0: TMDB + Wikipedia are free,
+OMDb's free tier is 1,000/day, and the worker browses on its subscription. No paid
+search APIs.
 
 `marketing/copy/AGENT.md` is the runner-agnostic task spec. Swapping the worker
 changes only *which agent runs that spec*, never the pipeline or the validation.
@@ -145,9 +151,11 @@ reads are paid) — the learning loop runs on IG/Threads metrics.
    (optional `BUFFER_CHANNEL_ID`). No LLM API key — copy is written by the
    scheduled AI worker on a subscription (see *Copy generation* above).
 6. **Copy worker**: schedule a coding agent (Claude Code / Codex) to run
-   `marketing/copy/AGENT.md` daily after the plan workflow, with `SUPABASE_URL`
-   + `SUPABASE_SERVICE_ROLE_KEY` in its env and `gh` authenticated (it dispatches
-   the render workflow).
+   `marketing/copy/AGENT.md` daily after the plan workflow, with `SUPABASE_URL`,
+   `SUPABASE_SERVICE_ROLE_KEY`, `TMDB_API_KEY` and `OMDB_API_KEY` in its env and
+   `gh` authenticated (it dispatches the render workflow). `OMDB_API_KEY` is a
+   free key from omdbapi.com used for reliable ratings; without it, posts simply
+   omit ratings.
 7. **Profile bios** (all three platforms): add
    *"This product uses the TMDB API but is not endorsed or certified by TMDB."*
    and a link to theplot.tv.

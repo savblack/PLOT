@@ -66,12 +66,13 @@ actually trust, writing a short note — not a brand running a content calendar.
 
 ## Ratings
 
-- When you cite scores, use the three Google surfaces: **IMDb, Rotten Tomatoes,
-  and Amazon**. Pull them from your web research.
+- Cite only the **pre-fetched `ratings` block** in the brief: **IMDb, Rotten
+  Tomatoes, Metacritic** (from OMDb, keyed by the IMDb id). These are reliable —
+  do not scrape sites or web-search for scores, and don't trust a stale number.
 - **Never cite TMDB scores or vote counts**, and never describe how many people
   voted. TMDB figures in the research pack are an internal signal only.
-- Only include ratings when they add something. A standout score is worth a line;
-  a middling one usually isn't the story. Don't force them in to fill space.
+- Only include ratings when they add something, and skip any that come back null.
+  A standout score is worth a line; a middling one usually isn't the story.
 
 ## CTAs
 
