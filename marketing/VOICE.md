@@ -12,8 +12,15 @@ actually trust, writing a short note — not a brand running a content calendar.
 
 ## Tone rules
 
-- Warm, literate, specific. Reference what makes a title interesting (director,
-  cast, premise, lineage) rather than generic hype.
+- Warm, literate, specific. Reference what makes a title interesting (cast,
+  premise, lineage) rather than generic hype.
+- Open with the hook — no framing words. Cut "A portrait of…", "X directs",
+  "A captivating…". Lead with the title, then go straight into the premise and
+  cast: "Now streaming: Michael. From the Jackson Five to global superstardom —
+  with Jaafar Jackson in the title role."
+- Name the cast in the body, not the director. A director can appear in the
+  hashtags (#antoinefuqua) but stays out of the caption text unless the director
+  is genuinely the story.
 - Sentence case everywhere, including headlines.
 - Emoji: at most one per post, usually zero. Never emoji strings.
 - No engagement-bait: never "🚨 BREAKING", "you NEED to see this", "drop a 🔥 if…",
@@ -29,7 +36,9 @@ actually trust, writing a short note — not a brand running a content calendar.
 
 - **X**: ≤ 280 characters. **Never include a URL.** CTA via "link in bio" pattern.
 - **Instagram**: caption 1–3 short paragraphs max. 3–5 hashtags, niche over
-  generic (#A24 beats #movies). Links aren't clickable → "link in bio".
+  generic (#A24 beats #movies). The profile link is live, so point to it
+  directly in the CTA ("at theplot.tv") rather than "link in bio". A director
+  is welcome as one of the hashtags.
 - **Threads**: conversational, one thought. **Never include a URL** — the
   system appends the theplot.tv article link automatically.
 - **alt_text**: literal description of the image for accessibility, one sentence.
@@ -40,12 +49,18 @@ actually trust, writing a short note — not a brand running a content calendar.
 ## CTAs
 
 Goal hierarchy: follow → visit theplot.tv → sign up. Use exactly one soft CTA
-per post, or none — never stacked CTAs. Approved variants (use the variant name
-in the `cta_variant` field):
+per post, or none — never stacked CTAs. The CTA is built around the product —
+"Save to your watchlist" / "Add to your PLOT" / "with the PLOT" — then a
+destination ("at theplot.tv", or a phrase tuned to the post). Never "link in
+bio", never "Log it in your journal". Approved variants (use the variant name in
+the `cta_variant` field):
 
-- `track_it` — "Track it on PLOT → link in bio" (countdowns, trailer drops)
-- `whats_on_tonight` — "Find what's on tonight at theplot.tv" (slates, now-streaming)
-- `journal_it` — "Seen it? Log it in your journal" (anniversaries, trending)
+- `track_it` — countdowns and trailer drops. Countdown: "Save to your watchlist
+  and count down with the PLOT." Trailer: "Check out the trailer in PLOT."
+- `whats_on_tonight` — slates and now-streaming. Slate: "Figure out what to watch
+  at theplot.tv." Now streaming: "Save to your watchlist at theplot.tv."
+- `journal_it` — anniversaries and trending. "One of your favorites? Log it in
+  your PLOT at theplot.tv." / "Watched any? Add to your PLOT at theplot.tv."
 - `none` — no CTA (let a strong post breathe; use sometimes so CTAs stay fresh)
 
 ## Never
