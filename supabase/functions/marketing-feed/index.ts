@@ -16,6 +16,9 @@
  * deploy marketing-feed` keeps it public — no need to remember --no-verify-jwt.
  */
 import { createClient } from 'npm:@supabase/supabase-js@2';
+// Shared site footer markup — generated from website/_partials/footer.html.
+// Run `npm run footer` to regenerate after editing the partial.
+import { FOOTER_HTML } from './footer.generated.ts';
 
 const SITE = 'https://theplot.tv';
 const FEED_TITLE = "What's On";
@@ -212,57 +215,34 @@ ${head}
   .mcard .mc-t { display: block; font-family: var(--serif); font-size: 1.18rem; line-height: 1.14; letter-spacing: -0.01em; transition: color 0.25s var(--ease); }
   .mcard:hover .mc-t { color: var(--pink); }
 
-  footer.sitefoot {
-    background: #ffffff; position: relative; z-index: 3;
-    margin-top: 90px; border-top: 1px solid rgba(0,0,0,0.07);
-    padding: 3.5rem 3rem 1.75rem;
+  footer {
+    background: #0c0c0c; color: #f0efe8; position: relative; z-index: 3;
+    margin-top: 90px; padding: 2.6rem 3rem;
   }
-  .footer-inner { max-width: 1100px; margin: 0 auto; }
-  .footer-grid { display: flex; flex-wrap: wrap; gap: 2rem 3rem; }
-  .footer-brand { flex: 1.4; min-width: 200px; }
+  .footer-inner {
+    max-width: 1100px; margin: 0 auto; display: flex; align-items: center;
+    justify-content: space-between; gap: 1.5rem 2rem; flex-wrap: wrap;
+  }
   .footer-logo {
-    text-decoration: none; display: inline-flex; align-items: center; user-select: none;
-    font-family: var(--serif); font-size: 2rem; font-weight: 400; letter-spacing: -0.05em; color: var(--ink); line-height: 1;
+    text-decoration: none; font-family: var(--serif); font-weight: 400; letter-spacing: -0.05em;
+    font-size: 1.8rem; line-height: 1; color: #f0efe8; user-select: none;
   }
-  .footer-tagline { font-size: 0.82rem; font-weight: 400; color: var(--faint); margin-top: 0.6rem; }
-  .footer-col { flex: 1; min-width: 110px; }
-  .footer-col h4 {
-    font-size: 0.68rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase;
-    color: var(--faint); margin-bottom: 0.7rem;
+  .footer-nav { display: flex; gap: 1.3rem; flex-wrap: wrap; }
+  .footer-nav a {
+    font-size: 0.82rem; color: rgba(240,239,232,0.82); text-decoration: none;
+    transition: color 0.2s; white-space: nowrap;
   }
-  .footer-col ul { list-style: none; margin: 0; padding: 0; }
-  .footer-col a {
-    display: inline-block; padding: 0.22rem 0; font-size: 0.75rem; font-weight: 400;
-    color: #52525b; text-decoration: none; transition: color 0.2s; white-space: nowrap;
+  .footer-nav a:hover { color: #fff; }
+  .footer-bottom {
+    width: 100%; padding-top: 1.2rem; margin-top: 0.4rem;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
   }
-  .footer-col a:hover { color: var(--pink); }
-  .footer-news {
-    display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; flex-wrap: wrap;
-    border-top: 1px solid rgba(0,0,0,0.07); margin-top: 2.25rem; padding: 2rem 0;
-  }
-  .footer-news-title { font-family: var(--serif); font-size: 1.5rem; font-weight: 400; letter-spacing: -0.01em; line-height: 1.2; color: var(--ink); }
-  .footer-news-sub { font-size: 0.82rem; color: var(--faint); margin-top: 0.4rem; }
-  .footer-news-right { display: flex; flex-direction: column; align-items: flex-end; gap: 0.45rem; }
-  .footer-news-form {
-    display: flex; align-items: center; background: #ffffff; border: 1px solid rgba(0,0,0,0.12);
-    border-radius: 20px; padding: 3px; height: 40px; width: 300px; max-width: 100%;
-  }
-  .footer-news-form input[type=email] {
-    flex: 1; min-width: 0; height: 32px; border: none; outline: none; background: transparent;
-    font-family: inherit; font-size: 0.82rem; color: var(--ink); padding: 0 6px 0 14px;
-  }
-  .footer-news-form input[type=email]::placeholder { color: var(--faint); }
-  .footer-news-form button {
-    flex-shrink: 0; height: 32px; padding: 0 18px; border: none; border-radius: 16px;
-    background: #1a1a1a; color: #fff; font-family: inherit; font-size: 0.82rem; font-weight: 600;
-    cursor: pointer; transition: opacity 0.2s ease;
-  }
-  .footer-news-form button:hover:not(:disabled) { opacity: 0.85; }
-  .footer-news-form button:disabled { opacity: 0.6; cursor: default; }
-  .footer-news-msg { font-size: 0.78rem; color: #52525b; min-height: 1.1em; }
-  .footer-news-form .fn-website { position: absolute; left: -9999px; opacity: 0; pointer-events: none; }
-  .footer-rail { border-top: 1px solid rgba(0,0,0,0.07); padding-top: 1.1rem; }
-  .footer-copy { font-size: 0.75rem; color: var(--faint); }
+  .footer-copy { font-size: 0.75rem; color: rgba(240,239,232,0.7); }
+  .footer-social { display: flex; gap: 1rem; align-items: center; }
+  .footer-social a { color: rgba(240,239,232,0.7); display: inline-flex; transition: color 0.2s; }
+  .footer-social a:hover { color: #fff; }
+  .footer-social svg { width: 19px; height: 19px; display: block; }
 
   @media (max-width: 760px) {
     .wrap { padding: 28px 20px 80px; }
@@ -282,10 +262,7 @@ ${head}
     .dex { overflow-x: auto; scrollbar-width: none; }
     .dex::-webkit-scrollbar { display: none; }
     .dex-links { flex-wrap: nowrap; }
-    footer.sitefoot { padding-left: 1.5rem; padding-right: 1.5rem; }
-    .footer-news { flex-direction: column; align-items: flex-start; }
-    .footer-news-right { width: 100%; align-items: stretch; }
-    .footer-news-form { width: 100%; }
+    footer { padding-left: 1.5rem; padding-right: 1.5rem; }
   }
 </style>
 </head>
@@ -301,79 +278,13 @@ ${head}
 <div class="wrap">
 ${body}
 </div>
-<footer class="sitefoot">
-  <div class="footer-inner">
-    <div class="footer-grid">
-      <div class="footer-brand">
-        <a class="footer-logo" href="${SITE}" aria-label="PLOT">PLOT</a>
-        <p class="footer-tagline">Your film &amp; TV companion.</p>
-      </div>
-      <div class="footer-col">
-        <h4>Explore</h4>
-        <ul>
-          <li><a href="${SITE}">Home</a></li>
-          <li><a href="${FEED_PATH}">What's On</a></li>
-          <li><a href="https://app.theplot.tv/login">Log in</a></li>
-          <li><a href="https://app.theplot.tv/signup">Sign up</a></li>
-        </ul>
-      </div>
-      <div class="footer-col">
-        <h4>Legal</h4>
-        <ul>
-          <li><a href="${SITE}/privacy.html">Privacy</a></li>
-          <li><a href="${SITE}/terms.html">Terms</a></li>
-        </ul>
-      </div>
-    </div>
-    <div class="footer-news">
-      <div>
-        <div class="footer-news-title">What's On, in your inbox.</div>
-        <p class="footer-news-sub">The best of what's new and coming soon, once a week.</p>
-      </div>
-      <div class="footer-news-right">
-        <form class="footer-news-form" id="newsletterForm">
-          <input type="email" name="email" placeholder="your@email.com" required autocomplete="email" aria-label="Email address">
-          <input type="text" name="website" class="fn-website" tabindex="-1" autocomplete="off" aria-hidden="true">
-          <button type="submit">Subscribe</button>
-        </form>
-        <div class="footer-news-msg" id="newsletterMsg" role="status"></div>
-      </div>
-    </div>
-    <div class="footer-rail">
-      <span class="footer-copy">&copy; ${new Date().getUTCFullYear()} Plot</span>
-    </div>
-  </div>
-</footer>
+${FOOTER_HTML}
 <script>
   (function () {
     var nav = document.getElementById('topnav');
     var update = function () { nav.classList.toggle('scrolled', window.scrollY > 8); };
     window.addEventListener('scroll', update, { passive: true });
     update();
-  })();
-  (function () {
-    var form = document.getElementById('newsletterForm');
-    var msg = document.getElementById('newsletterMsg');
-    if (!form) return;
-    form.addEventListener('submit', function (e) {
-      e.preventDefault();
-      var button = form.querySelector('button');
-      button.disabled = true;
-      msg.textContent = '';
-      fetch('${Deno.env.get('SUPABASE_URL')}/functions/v1/newsletter-subscribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: form.elements.email.value, website: form.elements.website.value }),
-      }).then(function (r) {
-        if (!r.ok) throw new Error('bad status');
-        msg.textContent = "You're in — first digest this Sunday.";
-        form.reset();
-      }).catch(function () {
-        msg.textContent = 'Something went wrong — try again in a minute.';
-      }).finally(function () {
-        button.disabled = false;
-      });
-    });
   })();
 </script>
 </body>
