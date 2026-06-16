@@ -9,7 +9,7 @@ import { uploadMedia, publicUrl } from '../lib/storage.mjs';
 import { sendEmail, ADMIN_EMAIL } from '../lib/email.mjs';
 import { POST_TYPES } from '../lib/post-types.mjs';
 import { feedHeroUrl } from '../lib/images.mjs';
-import { postSlug, entryUrl } from '../lib/feed.mjs';
+import { postSlug, entryUrl, chartUrl } from '../lib/feed.mjs';
 
 const PLATFORMS = ['x', 'instagram', 'threads'];
 
@@ -93,7 +93,9 @@ const digestHtml = (posts, skipped) => {
         <h2 style="margin:0 0 2px;font-size:1.05rem;">${escapeHtml(post.post_type.replace(/_/g, ' '))}</h2>
         <p style="margin:0 0 14px;font-size:0.8rem;color:#888;">
           Publishes ${scheduledAEST} (AEST) · CTA: ${escapeHtml(post.copy?.cta_variant || 'none')}
-          ${post.slug ? ` · <a href="${entryUrl(post.slug)}" style="color:#888;">article</a>` : ''}
+          ${post.post_type === 'trending_chart'
+            ? ` · <a href="${chartUrl()}" style="color:#888;">chart</a>`
+            : post.slug ? ` · <a href="${entryUrl(post.slug)}" style="color:#888;">article</a>` : ''}
         </p>
         <div>${cardsHtml}</div>
         ${copyBlock('X', post.copy?.x)}

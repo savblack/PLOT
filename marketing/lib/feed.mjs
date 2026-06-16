@@ -21,3 +21,11 @@ export const entryUrl = (slug, utmSource = null) => {
   const base = `${SITE_URL}/${FEED_PATH}/${slug}`;
   return utmSource ? `${base}?utm_source=${utmSource}&utm_medium=organic_social` : base;
 };
+
+// The persistent trending-chart page (theplot.tv/whats-on/chart). Unlike a
+// dated entry, the chart isn't a per-week article — it's one URL that updates
+// weekly, so trending_chart social posts link here instead of an entryUrl.
+export const chartUrl = (utmSource = null) => {
+  const base = `${SITE_URL}/${FEED_PATH}/chart`;
+  return utmSource ? `${base}?utm_source=${utmSource}&utm_medium=organic_social` : base;
+};
