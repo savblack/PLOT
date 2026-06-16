@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@200;300;400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 1500px; height: 500px; overflow: hidden;
+    background: #F0EFE8; color: #0C0C0E;
+    font-family: 'DM Sans', system-ui, sans-serif; position: relative;
+  }
+  /* warm wash: a faint coral bloom upper-right, gentle cream falloff at edges */
+  .glow { position: absolute; inset: 0; z-index: 0;
+    background: radial-gradient(58% 120% at 72% 26%, rgba(224,85,120,0.10) 0%, rgba(224,85,120,0) 56%); }
+  .vignette { position: absolute; inset: 0; z-index: 1;
+    background: radial-gradient(125% 135% at 50% 44%, rgba(214,210,196,0) 46%, rgba(206,201,184,0.55) 100%); }
+  .grain { position: absolute; inset: 0; z-index: 5; pointer-events: none; opacity: 0.045;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    background-size: 200px 200px; }
+  .wrap { position: absolute; inset: 0; z-index: 3;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    text-align: center; padding: 0 140px; }
+  .kicker { font-size: 22px; font-weight: 500; letter-spacing: 0.30em;
+    text-transform: uppercase; color: rgba(20,18,16,0.50); margin-bottom: 30px; }
+  .headline { font-family: 'Instrument Serif', Georgia, serif; font-weight: 400;
+    font-size: 110px; line-height: 0.96; letter-spacing: -0.02em; text-wrap: balance; }
+  .headline em { font-style: italic; color: #E05578; letter-spacing: -0.01em; word-spacing: 0.05em; }
+  .url { position: absolute; right: 64px; bottom: 40px; z-index: 4;
+    font-size: 25px; font-weight: 300; letter-spacing: 0.04em; color: rgba(20,18,16,0.62); }
+  .url b { color: #E05578; font-weight: 500; }
+</style>
+</head>
+<body>
+  <div class="glow"></div>
+  <div class="vignette"></div>
+  <div class="wrap">
+    <div class="kicker">Film&nbsp;&nbsp;·&nbsp;&nbsp;Television&nbsp;&nbsp;·&nbsp;&nbsp;Your Watchlist</div>
+    <div class="headline">Every story needs a <em>plot</em>.</div>
+  </div>
+  <div class="url"><b>◆</b>&nbsp; theplot.tv</div>
+  <div class="grain"></div>
+</body>
+</html>

@@ -1,0 +1,10 @@
+<svg width="1080" height="1080" viewBox="0 0 1080 1080" xmlns="http://www.w3.org/2000/svg">
+  <!-- PLOT Instagram profile picture — "P" monogram variant, 1080×1080.
+       Same Instrument Serif "P" glyph from public/favicon.svg, recoloured
+       #FAFAFA on brand dark #0C0C0E. A single letter reads far better than the
+       full wordmark at tiny avatar sizes (32–110px). -->
+  <rect width="1080" height="1080" fill="#F0EFE8"/>
+  <g transform="translate(540,540) scale(0.7778) translate(-230.5,360)" fill="#0C0C0E">
+    <path d="M34 0 Q19 0 19 -11 Q19 -20 32 -23 L55 -27 Q76 -31 82.5 -38 Q89 -45 89 -66 L89 -654 Q89 -675 82.5 -682 Q76 -689 55 -693 L32 -697 Q19 -700 19 -709 Q19 -720 34 -720 L243 -720 Q302 -720 347 -694.5 Q392 -669 417 -624 Q442 -579 442 -520 Q442 -463 417 -419 Q392 -375 348 -350.5 Q304 -326 246 -326 L174 -326 Q160 -326 160 -312 L160 -70 Q160 -49 168 -41.5 Q176 -34 204 -29 L241 -23 Q252 -21 252 -12 Q252 0 237 0 L34 0Z M160 -406 Q160 -351 227 -351 Q292 -351 329.5 -397 Q367 -443 367 -523 Q367 -605 329 -650 Q291 -695 221 -695 Q160 -695 160 -655 L160 -406Z"/>
+  </g>
+</svg>
