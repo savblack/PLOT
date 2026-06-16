@@ -3,22 +3,22 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Privacy Policy — PLOT</title>
-  <meta name="description" content="Privacy Policy for PLOT, your film and TV journal." />
-  <link rel="canonical" href="https://theplot.tv/privacy.html" />
+  <title>About — PLOT</title>
+  <meta name="description" content="PLOT is a film and TV journal built for anyone who loves movies and TV. A note from the solo builder behind it." />
+  <link rel="canonical" href="https://theplot.tv/about.html" />
   <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
   <meta name="theme-color" content="#0c0c0c" media="(prefers-color-scheme: dark)" />
 
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="PLOT" />
-  <meta property="og:title" content="Privacy Policy — PLOT" />
-  <meta property="og:description" content="Privacy Policy for PLOT, your film and TV journal." />
+  <meta property="og:title" content="About — PLOT" />
+  <meta property="og:description" content="PLOT is a film and TV journal built for anyone who loves movies and TV. A note from the solo builder behind it." />
   <meta property="og:image" content="https://theplot.tv/og-image.png" />
   <meta property="og:image:type" content="image/png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
-  <meta property="og:url" content="https://theplot.tv/privacy.html" />
+  <meta property="og:url" content="https://theplot.tv/about.html" />
 
   <!-- Favicon / app icon -->
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
@@ -38,6 +38,7 @@
       --text:         #1a1a1a;
       --muted:        #666666;
       --accent:       #000000;
+      --pink:         #e05578;
       --glass-bg:     rgba(255,255,255,0.8);
       --glass-border: rgba(0,0,0,0.05);
       --serif:        'Instrument Serif', Georgia, serif;
@@ -74,7 +75,7 @@
     }
     .nav-logo { text-decoration: none; display: flex; align-items: center; }
     .nav-logo span {
-      font-family: var(--serif);
+      font-family: 'Instrument Serif', Georgia, serif;
       font-size: 2.5rem;
       font-weight: 400;
       letter-spacing: -0.05em;
@@ -103,7 +104,7 @@
 
     /* ── Content ─────────────────────────────────────────────── */
     .page-wrap {
-      max-width: 720px;
+      max-width: 680px;
       margin: 0 auto;
       padding: 120px 2rem 80px;
     }
@@ -119,57 +120,40 @@
 
     h1 {
       font-family: var(--serif);
-      font-size: clamp(2rem, 4vw, 2.8rem);
+      font-size: clamp(2.4rem, 6vw, 3.4rem);
       font-weight: 400;
       letter-spacing: -0.02em;
-      line-height: 1.15;
+      line-height: 1.1;
       color: var(--text);
       margin-bottom: 0.5rem;
     }
 
     .page-meta {
-      font-size: 0.82rem;
+      font-size: 0.95rem;
+      font-style: italic;
+      font-family: var(--serif);
       color: var(--muted);
       margin-bottom: 3rem;
       padding-bottom: 2rem;
       border-bottom: 1px solid rgba(0,0,0,0.08);
     }
 
-    h2 {
-      font-family: var(--sans);
-      font-size: 1rem;
-      font-weight: 600;
-      color: var(--text);
-      margin: 2.5rem 0 0.75rem;
-    }
-
+    /* Narrative prose reads as a letter — left-aligned, roomy, no justify
+       rivers. The lead paragraph gets a touch more size to pull you in. */
     p {
-      font-size: 0.93rem;
+      font-size: 1rem;
       color: #333;
-      margin-bottom: 1rem;
-      text-align: justify;
+      line-height: 1.75;
+      margin-bottom: 1.35rem;
+      text-align: left;
     }
-
-    /* Scoped to the content area — generic ul/li margins would otherwise
-       bleed into the nav and footer link lists and knock them off-center */
-    .page-wrap ul {
-      font-size: 0.93rem;
-      color: #333;
-      margin: 0 0 1rem 1.5rem;
-      text-align: justify;
-    }
-    .page-wrap ul li { margin-bottom: 0.4rem; }
-
-    /* Justify reads fine on wide columns but creates whitespace rivers on
-       phones — left-align below tablet width. (SUS-102) */
-    @media (max-width: 768px) {
-      p, .page-wrap ul { text-align: left; }
-    }
+    .lead { font-size: 1.12rem; color: #1a1a1a; line-height: 1.6; }
+    p strong { color: var(--text); font-weight: 600; }
 
     a { color: var(--text); }
     a:hover { opacity: 0.7; }
 
-    /* ── Footer ───────────────────────── */
+    /* ── Footer ─────────────────────────────────────────────── */
     footer {
       background: #0c0c0c;
       color: #f0efe8;
@@ -230,13 +214,9 @@
     .footer-social a:hover { color: #fff; }
     .footer-social svg { width: 19px; height: 19px; display: block; }
 
-    @media (max-width: 700px) {
-      /* Justified text creates rivers of whitespace in narrow columns */
-      .page-wrap p, .page-wrap ul { text-align: left; }
-    }
-
     @media (max-width: 600px) {
       footer { padding-left: 1.5rem; padding-right: 1.5rem; }
+      .nav-links { gap: 1rem; }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -251,72 +231,31 @@
   </nav>
 
   <main class="page-wrap">
-    <p class="page-label">Legal</p>
-    <h1>Privacy Policy</h1>
-    <p class="page-meta">Last updated: March 2026</p>
+    <p class="page-label">About</p>
+    <h1>About PLOT</h1>
+    <p class="page-meta">A note from the person building it.</p>
 
-    <h2>1. Agreement to This Policy</h2>
-    <p><strong>By creating an account or using PLOT in any way, you acknowledge that you have read, understood, and agree to this Privacy Policy in full. If you do not agree, you must not use the Service.</strong></p>
-    <p>You use the Service at your own risk. While we take reasonable steps to protect your data, no method of transmission over the internet or electronic storage is completely secure. We cannot guarantee the absolute security of your information, and by using the Service you accept this inherent risk.</p>
+    <p class="lead">You don't have to call yourself a cinephile to belong here. PLOT is built for anyone who just genuinely loves movies and TV. That's it.</p>
 
-    <h2>2. What We Collect</h2>
-    <p>When you use PLOT, we may collect:</p>
-    <ul>
-      <li><strong>Account information</strong> — your email address and hashed password (managed via Supabase Auth)</li>
-      <li><strong>Profile data</strong> — your username, display name, and optional bio</li>
-      <li><strong>Activity data</strong> — films and TV shows you log, rate, or add to lists</li>
-      <li><strong>Journal entries</strong> — notes and reviews you write about content you've watched</li>
-      <li><strong>Usage data</strong> — basic analytics such as pages visited and features used, collected in aggregate and anonymised form</li>
-      <li><strong>Technical data</strong> — IP address, browser type, and device information collected automatically when you access the Service</li>
-    </ul>
+    <p>PLOT started because of a real lack of enthusiasm for the apps that already exist. They're clunky, seemingly only ever in dark mode, and bluntly, no fun to look at. A place to track what you watch shouldn't have to be hard on the eyes or a chore to use.</p>
 
-    <h2>3. How We Use Your Data</h2>
-    <p>We use your data to operate, maintain, and improve the Service. This includes:</p>
-    <ul>
-      <li>Providing and personalising your PLOT experience</li>
-      <li>Displaying your watch history, lists, and journal (publicly or privately, per your settings)</li>
-      <li>Sending transactional emails (account confirmation, password reset)</li>
-      <li>Analysing usage patterns in anonymised, aggregate form to improve the product</li>
-    </ul>
-    <p>We do not sell your personal data to third parties. We are not responsible for how you choose to use or expose your own data within the Service.</p>
+    <p>Then there was the pressure. The pressure of writing reviews, of performing how you felt about something in the "right" way. PLOT is for people who love TV, who love movies, who love the cinema and aren't afraid to say exactly how something made them feel. If all you have to say about a movie is that it made you cry 14 separate times, firstly, shout out to my emotional baddies, and secondly, thanks for the heads up! That one's getting saved for when a good cry is needed. Sometimes the only review worth writing is "I fucking loved that", and then moving on.</p>
 
-    <h2>4. Third-Party Services &amp; Disclaimer</h2>
-    <p>The Service relies on third-party infrastructure and data providers. By using PLOT, you acknowledge and accept that your data will be processed by these third parties under their own terms and privacy policies, over which we have no control:</p>
-    <ul>
-      <li><strong>Supabase</strong> — authentication and database. See <a href="https://supabase.com/privacy" target="_blank" rel="noopener">Supabase's Privacy Policy</a>.</li>
-      <li><strong>The Movie Database (TMDB)</strong> — film and TV metadata. This product uses the TMDB API but is not endorsed or certified by TMDB. See <a href="https://www.themoviedb.org/privacy-policy" target="_blank" rel="noopener">TMDB's Privacy Policy</a>.</li>
-      <li><strong>Vercel</strong> — website and application hosting. Your requests are routed through Vercel's infrastructure.</li>
-      <li><strong>PostHog</strong> — product analytics used to understand how the Service is used. See <a href="https://posthog.com/privacy" target="_blank" rel="noopener">PostHog's Privacy Policy</a>.</li>
-      <li><strong>Google Fonts</strong> — typography loaded from Google's servers, which may log your IP address per Google's privacy policy.</li>
-    </ul>
-    <p>We are not liable for the acts or omissions of these third-party providers, including any data breaches, service outages, or loss of data that occurs on their infrastructure. Your use of the Service constitutes your acceptance of their respective policies.</p>
+    <p>That's why PLOT caps the characters in your reviews. The point is to capture your immediate, true reaction, the way you would in a journal. Nobody delivers a measured critique the second the credits roll. You have a feeling. That's what films and TV are designed to give us. They're not made to be picked apart frame by frame.</p>
 
-    <h2>5. Data Security &amp; Limitation of Liability</h2>
-    <p>We implement commercially reasonable technical and organisational measures to protect your data. However, <strong>we cannot guarantee that your data will be completely secure at all times.</strong> You acknowledge and agree that:</p>
-    <ul>
-      <li>No internet transmission or electronic storage method is 100% secure</li>
-      <li>You provide your data at your own risk</li>
-      <li>We shall not be liable for any unauthorised access, data breach, loss, theft, or disclosure of your information that is beyond our reasonable control</li>
-      <li>In the event of a data breach, we will notify affected users as required by applicable law, but shall not be liable for any resulting damages</li>
-    </ul>
+    <p>PLOT is here to bring the feeling back. The joy of watching and weeding out the performance of it.</p>
 
-    <h2>6. Data Retention &amp; Deletion</h2>
-    <p>Your data is retained for as long as your account remains active. You may request deletion of your account and associated data at any time through the account settings screen. We will make reasonable efforts to remove your personal data in a timely manner, subject to any legal obligations to retain it. We are not liable for residual copies of data that may persist temporarily in backup systems during normal operations.</p>
+    <p>But that's only half the story. Building in this space, you notice the small frustrations you'd usually ignore. Never knowing when a show drops or the next episode lands. Forgetting the film a friend swore by. The nightly hunt across seven platforms only to give up and pick the first thing on Netflix.</p>
 
-    <h2>7. Cookies &amp; Local Storage</h2>
-    <p>PLOT uses cookies and local storage for session management and authentication, and for privacy-respecting product analytics. Our analytics provider (PostHog) sets a first-party cookie and uses local storage to measure how the marketing site and Service are used — for example, which pages are viewed and how visitors reach signup — so we can improve them. We do not use third-party advertising cookies and we do not sell your data. By using the Service, you consent to this use.</p>
+    <p>PLOT remembers all of it. It builds you your own film and TV calendar, so there's always something to look forward to. Share it with your family so they know not to call you during the Summer House reunion. And when you don't know what to watch, search your PLOT to see what's hot across platforms in one place. No loading screens. No logging in. That's the old way. PLOT is the way forward.</p>
 
-    <h2>8. Your Rights</h2>
-    <p>Depending on your jurisdiction, you may have rights regarding your personal data (such as access, correction, deletion, or portability). To exercise any such rights, contact us via the app. We will respond to reasonable requests in accordance with applicable law but are not liable for any inability to fully comply where doing so conflicts with our legal obligations or technical constraints.</p>
+    <p>PLOT is built by one person. A solo builder. Someone who wanted a better way to track what I love. Building PLOT is both exciting and scary, and I've got a lot more I want to do: AI-powered recommendations, a fully personalised feed, PLOT profiles to share what you're watching with friends, and eventually PLOT watch parties to watch together in real time. I'm building as fast as I can and as best as I can around a full-time job.</p>
 
-    <h2>9. Children's Privacy</h2>
-    <p>The Service is not directed at children under the age of 13. We do not knowingly collect personal data from children under 13. If we become aware that we have collected such data, we will delete it immediately. Parents or guardians who believe their child has provided personal data to us should contact us via the app.</p>
+    <p>I value each and every person who takes the time to sign up and use PLOT. Any feedback, good or bad, and any feature request or bug you spot is incredibly helpful to me. It's the core driver behind every improvement I make in the app. You can share your thoughts anytime via the settings.</p>
 
-    <h2>10. Changes to This Policy</h2>
-    <p>We reserve the right to update this Privacy Policy at any time. Changes will be posted to this page with an updated "last updated" date. Your continued use of the Service after any changes constitutes your acceptance of the revised policy. We are not obligated to provide individual notice of changes beyond updating this page.</p>
+    <p>To show my appreciation for the early users who bear with me through all the bugs, my promise is this: <strong>PLOT stays free, forever.</strong> One day PLOT will need to make money to cover what it costs to build and run. That day won't matter for early users. <strong>You were here first, and you stay free.</strong></p>
 
-    <h2>11. Contact</h2>
-    <p>This Privacy Policy is governed by the laws of New South Wales, Australia. Any disputes arising in connection with this policy are subject to the exclusive jurisdiction of the courts of New South Wales, Australia. For privacy-related enquiries, contact us via the app.</p>
+    <p>Thank you for reading this. Thank you for considering PLOT. And if you're already a user, thank you for backing a solo builder trying to make a life out of building beautiful things.</p>
   </main>
 
   <footer>
@@ -346,8 +285,6 @@
       </div>
     </div>
   </footer>
-
-  <script src="js/config.js"></script>
 
 </body>
 </html>
