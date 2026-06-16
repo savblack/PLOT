@@ -11,7 +11,7 @@ import { publicUrl } from '../lib/storage.mjs';
 import { publishToBuffer } from './buffer.mjs';
 import { publishToInstagram } from './instagram.mjs';
 import { publishToThreads } from './threads.mjs';
-import { entryUrl } from '../lib/feed.mjs';
+import { entryUrl, chartUrl } from '../lib/feed.mjs';
 
 const DRY_RUN = process.env.DRY_RUN === '1';
 
@@ -66,10 +66,12 @@ const publishOne = async (supabase, post, pub) => {
       result = await publishToInstagram(token, { caption, imageUrls });
     } else if (pub.platform === 'threads') {
       const token = await getToken(supabase, 'threads');
-      // Threads is the one platform with clickable links: point at the article.
-      const text = post.slug
-        ? `${post.copy.threads}\n\n${entryUrl(post.slug, 'threads')}`
-        : post.copy.threads;
+      // Threads is the one platform with clickable links. The trending chart
+      // links to its persistent page; everything else to its article.
+      const link = post.post_type === 'trending_chart'
+        ? chartUrl('threads')
+        : (post.slug ? entryUrl(post.slug, 'threads') : null);
+      const text = link ? `${post.copy.threads}\n\n${link}` : post.copy.threads;
       const imageUrls = cardsFor(media, 'threads').map(m => publicUrl(m.landscape_path));
       result = await publishToThreads(token, { text, imageUrls });
     } else {

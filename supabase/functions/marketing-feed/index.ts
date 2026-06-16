@@ -54,10 +54,13 @@ const TYPE_META: Record<string, { label: string; tone: string }> = {
   on_this_day: { label: 'On this day', tone: '#6b6b70' },
 };
 
-const FILTERS: { key: string | null; label: string }[] = [
+// `href` overrides the default `?type=<key>` link — the charts tab points at
+// the standalone chart page. Its key ('chart') never matches a post type, so
+// it's never marked active on the feed index.
+const FILTERS: { key: string | null; label: string; href?: string }[] = [
   { key: null, label: 'Latest' },
   { key: 'now_streaming', label: 'Now streaming' },
-  { key: 'trending_chart', label: 'The charts' },
+  { key: 'chart', label: 'The charts', href: `${FEED_PATH}/chart` },
   { key: 'countdown', label: 'Coming soon' },
   { key: 'trailer_drop', label: 'First look' },
 ];
@@ -353,6 +356,117 @@ const dailyWire = (posts: FeedPost[]) => {
     </section>`).join('');
 };
 
+// ── Trending chart page (theplot.tv/whats-on/chart) ──────────────
+// A persistent page that re-renders from the latest weekly snapshot
+// (marketing_trending_snapshots, written each Monday by the snapshot job)
+// instead of minting a dated article. Movement is computed on read against
+// the prior week. Mirrors marketing/lib/trending.mjs (Deno can't import it).
+type ChartItem = {
+  rank: number; tmdb_id: number; media_type: string; title: string;
+  poster_path?: string | null; backdrop_path?: string | null;
+};
+type Movement = { dir: 'none' | 'new' | 'same' | 'up' | 'down'; delta?: number };
+
+const tmdbImg = (path: string, size = 'w185') => `https://image.tmdb.org/t/p/${size}${path}`;
+
+const chartMovement = (item: ChartItem, rank: number, prior: ChartItem[] | null): Movement => {
+  if (!prior) return { dir: 'none' };
+  const prev = prior.find((p) => p.tmdb_id === item.tmdb_id && p.media_type === item.media_type);
+  if (!prev) return { dir: 'new' };
+  if (prev.rank === rank) return { dir: 'same' };
+  return prev.rank > rank
+    ? { dir: 'up', delta: prev.rank - rank }
+    : { dir: 'down', delta: rank - prev.rank };
+};
+
+const moveChip = (m: Movement) => {
+  if (m.dir === 'new') return `<span class="ch-move mv-new">New this week</span>`;
+  if (m.dir === 'up') return `<span class="ch-move mv-up" title="Up ${m.delta} this week">&#9650; ${m.delta}</span>`;
+  if (m.dir === 'down') return `<span class="ch-move mv-down" title="Down ${m.delta} this week">&#9660; ${m.delta}</span>`;
+  if (m.dir === 'same') return `<span class="ch-move mv-same" title="Holding steady">Holding</span>`;
+  return '';
+};
+
+const CHART_CSS = `
+  .chart-intro { color: var(--mut); font-weight: 300; font-size: 1.05rem; max-width: 52ch; margin-top: 16px; }
+  ol.chart { list-style: none; margin: 38px 0 0; }
+  .ch-row { display: grid; grid-template-columns: 52px 60px 1fr auto; gap: 22px; align-items: center; padding: 18px 0; border-top: 1px solid var(--hair); }
+  ol.chart li:first-child .ch-row { border-top: none; }
+  .ch-rank { font-family: var(--serif); font-size: 2.1rem; line-height: 1; color: var(--faint); text-align: center; font-variant-numeric: tabular-nums; }
+  .ch-poster { width: 60px; aspect-ratio: 2/3; object-fit: cover; border-radius: 8px; border: 1px solid var(--hair); background: var(--ink); display: block; }
+  .ch-title { font-family: var(--serif); font-size: 1.5rem; line-height: 1.1; letter-spacing: -0.01em; }
+  .ch-kind { display: block; color: var(--faint); font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase; margin-top: 5px; }
+  .ch-move { font-size: 0.64rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; white-space: nowrap; }
+  .mv-up { color: #0F6E56; } .mv-down { color: #B03A5E; } .mv-new { color: var(--pink); } .mv-same { color: var(--faint); }
+  @media (max-width: 600px) {
+    .ch-row { grid-template-columns: 34px 48px 1fr; gap: 14px; }
+    .ch-rank { font-size: 1.6rem; }
+    .ch-title { font-size: 1.2rem; }
+    .ch-move { grid-column: 2 / -1; }
+  }
+`;
+
+const renderChart = async (supabase: ReturnType<typeof createClient>) => {
+  const { data: snaps } = await supabase
+    .from('marketing_trending_snapshots')
+    .select('snapshot_date, items')
+    .order('snapshot_date', { ascending: false })
+    .limit(2);
+
+  const latest = snaps?.[0] || null;
+  const prior = snaps?.[1]?.items as ChartItem[] | undefined || null;
+  const pageUrl = `${SITE}${FEED_PATH}/chart`;
+
+  const head = `<style>${CHART_CSS}</style>
+<meta name="description" content="The ten film and TV titles the world is watching this week, ranked. Updated weekly by PLOT.">
+<link rel="canonical" href="${pageUrl}">
+<meta property="og:title" content="The chart · PLOT">
+<meta property="og:description" content="The ten titles the world is watching this week, ranked. Updated weekly.">
+<meta property="og:url" content="${pageUrl}">`;
+
+  const cta = `<aside class="endcta">
+      <div class="ec-copy">
+        <span class="ec-title">Watch more. Forget less.</span>
+        <span class="ec-sub">Track what's trending and get reminded the day it drops.</span>
+      </div>
+      <a class="cta" href="https://app.theplot.tv/signup?utm_source=whats_on&utm_medium=site&utm_campaign=trending_chart">Sign up &rarr;</a>
+    </aside>`;
+
+  if (!latest) {
+    return page('The chart · PLOT', head, `
+      <div class="head r2"><div class="head-row">
+        <h1 class="feed-title">The <em>chart</em></h1>
+      </div></div>
+      <p class="chart-intro r2">The first chart lands soon.</p>
+      ${cta}
+    `);
+  }
+
+  const items = (latest.items as ChartItem[]) || [];
+  const rows = items.map((it) => {
+    const m = chartMovement(it, it.rank, prior);
+    const img = it.poster_path ? `<img class="ch-poster" src="${esc(tmdbImg(it.poster_path))}" alt="" loading="lazy">` : '<span class="ch-poster"></span>';
+    return `<li><div class="ch-row">
+      <span class="ch-rank">${it.rank}</span>
+      ${img}
+      <span><span class="ch-title">${esc(it.title)}</span><span class="ch-kind">${it.media_type === 'tv' ? 'TV' : 'Film'}</span></span>
+      ${moveChip(m)}
+    </div></li>`;
+  }).join('');
+
+  return page('The chart · PLOT', head, `
+    <div class="head r2">
+      <div class="head-row">
+        <h1 class="feed-title">The <em>chart</em></h1>
+        <div class="dateline sc">Week of ${esc(fmtMonthDay(latest.snapshot_date))}</div>
+      </div>
+      <p class="chart-intro">The ten titles the world is watching this week, ranked &mdash; with how they moved since last week.</p>
+    </div>
+    <ol class="chart r3">${rows}</ol>
+    ${cta}
+  `);
+};
+
 Deno.serve(async (req) => {
   if (req.method !== 'GET' && req.method !== 'HEAD') {
     return new Response('Method not allowed', { status: 405 });
@@ -373,8 +487,14 @@ Deno.serve(async (req) => {
     .from('marketing_posts')
     .select('slug, copy, media, post_type, scheduled_for, status')
     .not('slug', 'is', null)
+    // The trending chart lives on its own page (/whats-on/chart), not as a
+    // dated article — keep it out of every feed surface.
+    .neq('post_type', 'trending_chart')
     .in('status', VISIBLE_STATUSES)
     .lte('scheduled_for', new Date().toISOString());
+
+  // Reserved keyword: the persistent trending-chart page.
+  if (slug === 'chart') return await renderChart(supabase);
 
   if (!slug) {
     const type = TYPE_META[url.searchParams.get('type') || ''] ? url.searchParams.get('type') : null;
@@ -397,7 +517,7 @@ Deno.serve(async (req) => {
 
     const dexLinks = FILTERS.map((f) => {
       const active = f.key === type;
-      const href = f.key ? `${FEED_PATH}?type=${f.key}` : FEED_PATH;
+      const href = f.href ?? (f.key ? `${FEED_PATH}?type=${f.key}` : FEED_PATH);
       return `<a class="sc${active ? ' active' : ''}" href="${href}">${esc(f.label)}</a>`;
     }).join('');
 
@@ -441,6 +561,16 @@ Deno.serve(async (req) => {
 
   const { data: post } = await baseQuery().eq('slug', slug).maybeSingle();
   if (!post) {
+    // Old per-week chart articles now live on the persistent chart page. Serve
+    // it in place (canonical points at /whats-on/chart) so already-published
+    // social links keep working — the proxy doesn't forward 3xx Location.
+    const { data: legacyChart } = await supabase
+      .from('marketing_posts')
+      .select('post_type')
+      .eq('slug', slug)
+      .eq('post_type', 'trending_chart')
+      .maybeSingle();
+    if (legacyChart) return await renderChart(supabase);
     return page('Not found · PLOT', '', `
       <article class="post r2">
         <header class="post-head"><h1>Nothing here yet</h1></header>
