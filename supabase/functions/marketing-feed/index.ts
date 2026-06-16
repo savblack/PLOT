@@ -54,13 +54,11 @@ const TYPE_META: Record<string, { label: string; tone: string }> = {
   on_this_day: { label: 'On this day', tone: '#6b6b70' },
 };
 
-// `href` overrides the default `?type=<key>` link — the charts tab points at
-// the standalone chart page. Its key ('chart') never matches a post type, so
-// it's never marked active on the feed index.
-const FILTERS: { key: string | null; label: string; href?: string }[] = [
+// Content-type filters for the feed. The chart is its own page, linked from the
+// top nav (not a feed filter).
+const FILTERS: { key: string | null; label: string }[] = [
   { key: null, label: 'Latest' },
   { key: 'now_streaming', label: 'Now streaming' },
-  { key: 'chart', label: 'The chart', href: `${FEED_PATH}/chart` },
   { key: 'countdown', label: 'Coming soon' },
   { key: 'trailer_drop', label: 'First look' },
 ];
@@ -92,7 +90,7 @@ const kicker = (type: string) => {
   return `<span class="kick" style="color:${m.tone};">${esc(m.label)}</span>`;
 };
 
-const page = (title: string, head: string, body: string, status = 200) =>
+const page = (title: string, head: string, body: string, status = 200, nav = 'whats-on') =>
   new Response(
     `<!DOCTYPE html>
 <html lang="en">
@@ -273,7 +271,8 @@ ${head}
 <nav class="topnav" id="topnav">
   <a href="${SITE}" class="nav-logo" aria-label="PLOT">PLOT</a>
   <ul class="nav-links">
-    <li><a href="${FEED_PATH}" class="current">What's On</a></li>
+    <li><a href="${FEED_PATH}"${nav === 'whats-on' ? ' class="current"' : ''}>What's On</a></li>
+    <li><a href="${FEED_PATH}/chart"${nav === 'chart' ? ' class="current"' : ''}>The chart</a></li>
     <li><a href="https://app.theplot.tv/login">Log in</a></li>
     <li><a href="https://app.theplot.tv/signup">Sign up</a></li>
   </ul>
@@ -439,7 +438,7 @@ const renderChart = async (supabase: ReturnType<typeof createClient>) => {
       </div></div>
       <p class="chart-intro r2">The first chart lands soon.</p>
       ${cta}
-    `);
+    `, 200, 'chart');
   }
 
   const items = (latest.items as ChartItem[]) || [];
@@ -464,7 +463,7 @@ const renderChart = async (supabase: ReturnType<typeof createClient>) => {
     </div>
     <ol class="chart r3">${rows}</ol>
     ${cta}
-  `);
+  `, 200, 'chart');
 };
 
 Deno.serve(async (req) => {
@@ -517,7 +516,7 @@ Deno.serve(async (req) => {
 
     const dexLinks = FILTERS.map((f) => {
       const active = f.key === type;
-      const href = f.href ?? (f.key ? `${FEED_PATH}?type=${f.key}` : FEED_PATH);
+      const href = f.key ? `${FEED_PATH}?type=${f.key}` : FEED_PATH;
       return `<a class="sc${active ? ' active' : ''}" href="${href}">${esc(f.label)}</a>`;
     }).join('');
 
