@@ -3,12 +3,24 @@
 import { getSupabase, supabaseUrl } from '../lib/supabase.mjs';
 import { publicUrl } from '../lib/storage.mjs';
 import { sendBatch, FROM_MARKETING } from '../lib/email.mjs';
+import { recentSnapshots, withMovement } from '../lib/trending.mjs';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const SITE = 'https://theplot.tv';
 const utm = (campaign) => `${SITE}?utm_source=newsletter&utm_medium=email&utm_campaign=${campaign}`;
+const CHART_URL = `${SITE}/whats-on/chart?utm_source=newsletter&utm_medium=email&utm_campaign=chart`;
+const DRY_RUN = process.env.DRY_RUN === '1'; // build + print the HTML, send to no one
 
-const buildHtml = ({ slate, nowStreaming, trending }, unsubscribeUrl) => {
+// Small week-over-week movement tag for the trending list.
+const moveTag = (m) => {
+  if (!m || m.dir === 'none' || m.dir === 'same') return '';
+  if (m.dir === 'new') return ` <span style="color:#E05578;font-size:0.82em;">new</span>`;
+  if (m.dir === 'up') return ` <span style="color:#0F6E56;font-size:0.82em;">&#9650;${m.delta}</span>`;
+  if (m.dir === 'down') return ` <span style="color:#B03A5E;font-size:0.82em;">&#9660;${m.delta}</span>`;
+  return '';
+};
+
+const buildHtml = ({ slate, nowStreaming, chart }, unsubscribeUrl) => {
   const slateBlock = slate ? `
     <h2 style="font-size:1.05rem;margin:26px 0 10px;">Upcoming this week</h2>
     ${(slate.payload.titles || []).slice(0, 5).map(t => `
@@ -26,11 +38,12 @@ const buildHtml = ({ slate, nowStreaming, trending }, unsubscribeUrl) => {
       </p>`).join('')}
   ` : '';
 
-  const trendingBlock = trending ? `
+  const trendingBlock = chart.length ? `
     <h2 style="font-size:1.05rem;margin:26px 0 10px;">Trending this week</h2>
     <ol style="margin:0;padding-left:22px;font-size:0.95rem;line-height:1.8;">
-      ${(trending.payload.items || []).slice(0, 5).map(i => `<li>${esc(i.title)}</li>`).join('')}
+      ${chart.map(i => `<li>${esc(i.title)}${moveTag(i.movement)}</li>`).join('')}
     </ol>
+    <p style="margin:8px 0 0;font-size:0.9rem;"><a href="${CHART_URL}" style="color:#E05578;">See the full top 20 &rarr;</a></p>
   ` : '';
 
   return `<div style="font-family:Georgia,serif;max-width:560px;margin:0 auto;color:#1a1a1a;">
@@ -61,11 +74,24 @@ const main = async () => {
     .order('created_at', { ascending: false });
 
   const slate = (weekPosts || []).find(p => p.post_type === 'weekly_slate') || null;
-  const trending = (weekPosts || []).find(p => p.post_type === 'trending_chart') || null;
   const nowStreaming = (weekPosts || []).filter(p => p.post_type === 'now_streaming');
 
-  if (!slate && !trending && !nowStreaming.length) {
+  // The chart section comes from the latest weekly snapshot (top 5, with
+  // movement vs the prior week) rather than a trending_chart post, so the
+  // Thursday newsletter reflects that morning's fresh chart.
+  const snaps = await recentSnapshots(supabase, 2);
+  const chart = snaps[0]?.items
+    ? withMovement(snaps[0].items, snaps[1]?.items || null).slice(0, 5)
+    : [];
+
+  if (!slate && !chart.length && !nowStreaming.length) {
     console.log('No content this week — skipping newsletter.');
+    return;
+  }
+
+  // Preview: print the rendered email to stdout and send to no one.
+  if (DRY_RUN) {
+    process.stdout.write(buildHtml({ slate, nowStreaming, chart }, `${SITE}/?unsubscribe_preview`));
     return;
   }
 
@@ -85,7 +111,7 @@ const main = async () => {
       from: FROM_MARKETING,
       to: [sub.email],
       subject: 'This week in film & TV — PLOT',
-      html: buildHtml({ slate, nowStreaming, trending }, unsubscribeUrl),
+      html: buildHtml({ slate, nowStreaming, chart }, unsubscribeUrl),
       headers: {
         'List-Unsubscribe': `<${unsubscribeUrl}>`,
         'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',

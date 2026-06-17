@@ -2,7 +2,9 @@ name: Marketing — weekly report + newsletter
 
 on:
   schedule:
-    - cron: '0 20 * * 0' # Sunday ~4pm US ET / Monday 6am AEST
+    # Thursday 13:00 UTC — after the Thursday trending snapshot (08:00), so the
+    # newsletter features the fresh chart and lands before the weekend (not Friday).
+    - cron: '0 13 * * 4'
   workflow_dispatch:
 
 permissions:
@@ -29,7 +31,11 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           MARKETING_ADMIN_EMAIL: ${{ secrets.MARKETING_ADMIN_EMAIL }}
+      # HELD: the newsletter only sends on a manual run (workflow_dispatch),
+      # not on the Thursday cron, until the first Thursday edition is reviewed.
+      # Re-enable auto-send by removing this `if:`.
       - name: Subscriber newsletter
+        if: github.event_name == 'workflow_dispatch'
         run: node marketing/newsletter/send-digest.mjs
         env:
           SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
