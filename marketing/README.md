@@ -177,12 +177,14 @@ reads are paid) — the learning loop runs on IG/Threads metrics.
    `TMDB_API_KEY`, `RESEND_API_KEY`, `MARKETING_ADMIN_EMAIL`, `BUFFER_API_KEY`
    (optional `BUFFER_CHANNEL_ID`). No LLM API key — copy is written by the
    scheduled AI worker on a subscription (see *Copy generation* above).
-6. **Copy worker**: schedule a coding agent (Claude Code / Codex) to run
-   `marketing/copy/AGENT.md` daily after the plan workflow, with `SUPABASE_URL`,
-   `SUPABASE_SERVICE_ROLE_KEY`, `TMDB_API_KEY` and `OMDB_API_KEY` in its env and
-   `gh` authenticated (it dispatches the render workflow). `OMDB_API_KEY` is a
-   free key from omdbapi.com used for reliable ratings; without it, posts simply
-   omit ratings.
+6. **Copy worker**: the runner is `.github/workflows/marketing-copy.yml` (Claude
+   Code, headless, daily after plan). It's inert until you add one secret —
+   **`CLAUDE_CODE_OAUTH_TOKEN`** (subscription, *not* an API key; generate via
+   `claude setup-token`). It reuses the existing `VITE_SUPABASE_URL`,
+   `SUPABASE_SERVICE_ROLE_KEY`, `TMDB_API_KEY`, `OMDB_API_KEY` secrets. To run it
+   with Codex instead, swap the agent step + token; the `AGENT.md` contract is
+   unchanged. (`OMDB_API_KEY` is a free omdbapi.com key for ratings; without it,
+   posts just omit ratings.)
 7. **Profile bios** (all three platforms): add
    *"This product uses the TMDB API but is not endorsed or certified by TMDB."*
    and a link to theplot.tv.
