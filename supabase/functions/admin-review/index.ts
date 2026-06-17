@@ -59,7 +59,7 @@ const postForm = (p: any, key: string) => {
   const body = Array.isArray(c.page_body) ? c.page_body.join('\n\n') : (c.page_body || '');
   const tags = Array.isArray(c.hashtags) ? c.hashtags.join(', ') : '';
   const isConvo = p.post_type === 'conversation';
-  return `<form class="post" method="POST" action="/">
+  return `<form class="post" method="POST" action="/api/admin">
     <input type="hidden" name="key" value="${esc(key)}">
     <input type="hidden" name="id" value="${esc(p.id)}">
     <div class="meta"><span class="kind">${esc(p.post_type.replace(/_/g, ' '))}</span><span class="day">${esc(fmtDay(p.scheduled_for))}</span></div>

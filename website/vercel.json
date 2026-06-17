@@ -1,10 +1,13 @@
 {
-  "rewrites": [
+  "redirects": [
     {
-      "source": "/(.*)",
+      "source": "/",
       "has": [{ "type": "host", "value": "admin.theplot.tv" }],
-      "destination": "/api/admin?path=$1"
-    },
+      "destination": "/api/admin",
+      "permanent": false
+    }
+  ],
+  "rewrites": [
     {
       "source": "/whats-on",
       "destination": "/api/whats-on"
