@@ -16,10 +16,17 @@ the rendered cards as `.jpg`, plus one combined copy doc `<date>.md`.
                 with empty <copy> blocks (one section per scheduled post).
 
 2. write      Fill every TODO in <date>.md following marketing/VOICE.md.
-                One <copy> block each for X / Instagram / Threads / Alt text /
-                What's On title / What's On body. Delete any post you don't want.
+                Feed posts: X / Instagram / Threads / Alt text / What's On title +
+                body. Social-only posts: a Card block (the title to feature, or the
+                question to print on the image) + X / Instagram / Threads / Alt text.
+                Delete any post you don't want.
 
-3. publish    npm run mkt:manual:publish -- [YYYY-MM-DD] [--dry-run]
+3. media      npm run mkt:manual:media -- [YYYY-MM-DD]
+                renders the social-only cards from their Card blocks: a feature
+                card for the named title (resolved via TMDB search), or a
+                typographic question card. Feed posts already got media at build.
+
+4. publish    npm run mkt:manual:publish -- [YYYY-MM-DD] [--dry-run]
                 validates and upserts the feed-eligible posts to
                 theplot.tv/whats-on as status='published'. Social-only posts are
                 skipped (post their images/copy by hand). --dry-run validates only.
@@ -44,24 +51,25 @@ The run **date's weekday** decides the post mix (`schedule.mjs`):
 
 Each label maps to a post type:
 
-| Type | Renders a card? | Goes to What's On? | Notes |
-|------|:---:|:---:|---|
-| `weekly_slate` (Upcoming this week) | ✓ | ✓ | carousel of the week's titles |
-| `trending_chart` (Trending top 10) | ✓ | ✓ | the weekly chart |
-| `on_this_day` (Anniversary) | ✓ | ✓ | milestone anniversary |
-| `countdown` | ✓ | ✓ | nearest upcoming tracked title |
-| `spotlight` | — | — | single-title feature; agent picks the title |
-| `hidden_gem` | — | — | under-seen pick; agent picks the title |
-| `what_to_watch_tonight` | — | — | recommendation; agent picks the title |
-| `text_question` | — | — | text-only engagement post |
-| `question_of_week` | — | — | text-only engagement post |
+| Type | Card | When rendered | Goes to What's On? |
+|------|---|---|:---:|
+| `weekly_slate` (Upcoming this week) | titles carousel | build | ✓ |
+| `trending_chart` (Trending top 10) | the weekly chart | build | ✓ |
+| `on_this_day` (Anniversary) | title over backdrop | build | ✓ |
+| `countdown` | title + day count | build | ✓ |
+| `spotlight` | feature (title over backdrop) | media | — |
+| `hidden_gem` | feature | media | — |
+| `what_to_watch_tonight` | feature | media | — |
+| `text_question` | typographic question | media | — |
+| `question_of_week` | typographic question | media | — |
 
-The four renderable types have card templates and are published to the feed.
-The rest are **social-only** for now: the build scaffolds a copy section for each
-(no image), the agent writes the copy, and they're posted to social by hand —
-`publish.mjs` skips them. Giving them branded cards (and feed support) needs new
-templates plus a migration to widen the `marketing_posts.post_type` check
-constraint and the feed's type metadata.
+All nine types get branded media. The four feed types render at **build** from
+the planner payload. The five social-only types render at the **media** step
+from the Card block (`feature.html` for the title-based ones, `question.html`
+for the questions). The social-only types are **not** published to What's On —
+`publish.mjs` skips them; post their images + copy to social by hand. Giving
+them feed articles too would need a migration to widen the
+`marketing_posts.post_type` check constraint and the feed's type metadata.
 
 ## Curating / overriding
 

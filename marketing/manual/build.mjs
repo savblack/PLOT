@@ -40,11 +40,12 @@ const factsFor = (c) => {
   const p = c.payload || {}, t = p.title || {};
   const f = [];
   if (c.copyOnly) {
-    if (c.post_type === 'spotlight') f.push('Pick a US title worth a spotlight, then write the copy.');
-    else if (c.post_type === 'hidden_gem') f.push('Pick an under-seen US title (a hidden gem) and write the copy.');
-    else if (c.post_type === 'what_to_watch_tonight') f.push('Pick a US title to recommend for tonight and write the copy.');
-    else if (c.post_type === 'text_question') f.push('Write one short, text-only question for the audience (no image, no article).');
-    else if (c.post_type === 'question_of_week') f.push('Write the question of the week (text-only, no image, no article).');
+    if (c.post_type === 'spotlight') f.push('Put the US title to spotlight in the Card block (it goes on the image).');
+    else if (c.post_type === 'hidden_gem') f.push('Put the under-seen US title in the Card block (it goes on the image).');
+    else if (c.post_type === 'what_to_watch_tonight') f.push('Put the US title to recommend tonight in the Card block (it goes on the image).');
+    else if (c.post_type === 'text_question') f.push('Put the question in the Card block (it is printed on the image).');
+    else if (c.post_type === 'question_of_week') f.push('Put the question of the week in the Card block (it is printed on the image).');
+    f.push('Then render the image:  npm run mkt:manual:media -- <date>');
     return f;
   }
   if (c.post_type === 'countdown') {

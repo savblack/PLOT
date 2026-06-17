@@ -1,20 +1,22 @@
 // The weekly content calendar for the manual flow. One source of truth for
 // which post types run on which day, and how each type behaves.
 //
-//   render  — has a card template (build.mjs renders portrait + landscape)
+//   render  — build.mjs renders its card from the planner payload at build time
 //   feed    — eligible for theplot.tv/whats-on (an existing marketing_posts type)
-//   title   — about one title the agent picks editorially (copy-only, no template yet)
-//   (neither render/feed/title) — a pure text post (e.g. a question)
+//   card    — how media.mjs renders it after the copy doc is filled:
+//             'title' = feature card for a title the agent names in the Card block
+//             'question' = typographic card of the question the agent writes
+//   kicker  — the accent caps label printed on a 'card' image
 export const TYPES = {
   weekly_slate:          { label: 'Upcoming this week',     render: true,  feed: true },
   trending_chart:        { label: 'Trending top 10',        render: true,  feed: true },
   on_this_day:           { label: 'Anniversary',            render: true,  feed: true },
   countdown:             { label: 'Countdown',              render: true,  feed: true },
-  spotlight:             { label: 'Spotlight',              render: false, feed: false, title: true },
-  hidden_gem:            { label: 'Hidden gem',             render: false, feed: false, title: true },
-  what_to_watch_tonight: { label: 'What to watch tonight',  render: false, feed: false, title: true },
-  text_question:         { label: 'Text question',          render: false, feed: false },
-  question_of_week:      { label: 'Question of the week',   render: false, feed: false },
+  spotlight:             { label: 'Spotlight',              feed: false, card: 'title',    kicker: 'Spotlight' },
+  hidden_gem:            { label: 'Hidden gem',             feed: false, card: 'title',    kicker: 'Hidden gem' },
+  what_to_watch_tonight: { label: 'What to watch tonight',  feed: false, card: 'title',    kicker: 'Tonight on PLOT' },
+  text_question:         { label: 'Text question',          feed: false, card: 'question', kicker: 'Question' },
+  question_of_week:      { label: 'Question of the week',   feed: false, card: 'question', kicker: 'Question of the week' },
 };
 
 // Ordered so the most "featured" post is first (build.mjs sorts it newest).
