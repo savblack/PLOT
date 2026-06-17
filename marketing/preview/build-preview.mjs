@@ -11,6 +11,8 @@ import { tmdb } from '../lib/tmdb.mjs';
 import { renderCard, closeBrowser, SIZES } from '../lib/render.mjs';
 import { POST_TYPES } from '../lib/post-types.mjs';
 import { isoDate, addDays, formatWeekRange, formatWeekdayDayMonth, formatDayMonth } from '../lib/dates.mjs';
+import * as watchTonight from '../planner/triggers/watch-tonight.mjs';
+import * as hiddenGem from '../planner/triggers/hidden-gem.mjs';
 
 const OUT_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), 'out');
 
@@ -57,6 +59,14 @@ const samplePayloads = async () => {
     where: 'Netflix',
   };
 
+  // Editorial picks come from the real selection triggers (streaming-available),
+  // so the contact sheet shows genuine choices. No DB in preview -> no dedupe.
+  const previewCtx = { publishAt: new Date(), supabase: null };
+  const [wt, hg] = await Promise.all([
+    watchTonight.evaluate(previewCtx).catch(() => null),
+    hiddenGem.evaluate(previewCtx).catch(() => null),
+  ]);
+
   const anniversaries = await tmdb.getAnniversaries(25, 50).catch(() => []);
   const otd = anniversaries.find(m => m.poster_path)
     || trending.find(t => t.media_type === 'movie' && t.poster_path);
@@ -88,6 +98,8 @@ const samplePayloads = async () => {
         backdrop_path: otd?.backdrop_path,
       },
     },
+    watch_tonight: wt?.payload || { title: hypedTitle },
+    hidden_gem: hg?.payload || { year: 2009, title: hypedTitle },
   };
 };
 

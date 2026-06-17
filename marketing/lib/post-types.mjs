@@ -100,4 +100,19 @@ export const POST_TYPES = {
       },
     }],
   },
+
+  watch_tonight: {
+    template: 'watch-tonight',
+    cards: async (payload) => [{
+      // providers/genre stay in the payload for copy; never on the image
+      data: { title: await hydrateTitle(payload.title) },
+    }],
+  },
+
+  hidden_gem: {
+    template: 'hidden-gem',
+    cards: async (payload) => [{
+      data: { year: payload.year || null, title: await hydrateTitle(payload.title) },
+    }],
+  },
 };

@@ -122,6 +122,13 @@ export const tmdb = {
 
   getDetails: (mediaType, id) => fetchTMDB(`/${mediaType}/${id}`),
 
+  // Generic discover. Pass watch_region + with_watch_monetization_types:'flatrate'
+  // to constrain to titles streamable on a subscription service in the region.
+  discover: async (mediaType, params = {}) => {
+    const data = await fetchTMDB(`/discover/${mediaType}`, params);
+    return (data?.results || []).map(m => ({ ...m, media_type: mediaType }));
+  },
+
   // Everything TMDB knows about a title in one call — the raw material for a
   // blog post. Trimmed to a compact, paraphrasable research pack (no full
   // review text dumped wholesale: excerpts only, to be reworded, never quoted).

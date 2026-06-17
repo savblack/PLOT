@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@200;300;400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>/*INLINE_BASE_CSS*/</style>
+<style>
+  /* Editorial pick: accent kicker -> hero title. Same clean hierarchy as the
+     now-streaming/trailer cards. */
+  .content { display: flex; flex-direction: column; align-items: flex-start; gap: 28px; }
+  .display { font-size: 150px; max-width: 96%; }
+  @media (min-aspect-ratio: 4/3) {
+    .display { font-size: 118px; }
+  }
+</style>
+</head>
+<body>
+<div class="card" id="card"></div>
+<script>
+/*HELPERS_JS*/
+window.DATA = "/*DATA_JSON*/";
+const d = window.DATA;
+const card = document.getElementById('card');
+const t = d.title || {};
+
+const art = pickArt(t);
+if (art) card.append(img('backdrop', art));
+card.append(el('div', 'scrim'));
+
+const content = el('div', 'content');
+const kicker = el('div', 'meta-caps');
+kicker.append(el('span', 'kind', 'What to watch tonight'));
+content.append(kicker);
+content.append(el('h1', 'display', t.title));
+card.append(content);
+card.append(plotMark());
+card.append(plotFooter());
+</script>
+</body>
+</html>
