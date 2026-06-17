@@ -171,6 +171,15 @@ export const tmdb = {
     return regionData?.flatrate || [];
   },
 
+  // Subscription (flatrate) providers across our audience regions, from the one
+  // /watch/providers response (no extra calls). Returns
+  // { US:[names], UK:[names], AU:[names] } — top 2 each, US is the default.
+  getStreamingRegions: async (mediaType, id) => {
+    const data = await fetchTMDB(`/${mediaType}/${id}/watch/providers`);
+    const names = (code) => (data?.results?.[code]?.flatrate || []).slice(0, 2).map(p => p.provider_name);
+    return { US: names('US'), UK: names('GB'), AU: names('AU') };
+  },
+
   // Films released exactly `years` ago today, by vote count.
   getAnniversaries: async (years, minVotes = 2000) => {
     const target = new Date();

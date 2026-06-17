@@ -55,6 +55,21 @@ actually trust, writing a short note — not a brand running a content calendar.
 - Keep social copy short. The image does the heavy lifting; the caption is not
   the essay. (The theplot.tv article is the long-form piece — see below.)
 
+## Audience & regions
+
+PLOT's audience is **US, UK and Australia**. Default to **US** framing (dates,
+spelling-light, "this week") unless a post is clearly about another region.
+
+**Always say where to watch a streaming title.** On any "now streaming", "what to
+watch tonight" or "hidden gem" post — across social, the whats-on article, and the
+newsletter — name the platform it's on. The payload provides a `streaming` object
+with providers per region: `{ US: [...], UK: [...], AU: [...] }`.
+- Lead with the **US** platform ("now on Netflix").
+- If UK/AU differ meaningfully, you may add them briefly ("on Netflix, or Prime
+  Video in the UK"). Don't list all three if they're the same.
+- Only name a platform that's in the provided `streaming` data — never guess.
+- If a region's list is empty, just leave that region out.
+
 ## Platform constraints
 
 - **X**: ≤ 280 characters. **Never include a URL.** No hashtags. CTA built around

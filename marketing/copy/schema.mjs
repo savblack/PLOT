@@ -32,13 +32,15 @@ export const POST_TYPE_BRIEFS = {
     'top title\'s image — the X text must carry the rest: lead with the top title, then name the other ' +
     'titles compactly (e.g. "Also this week: A, B, and C"). Fit 280 characters; drop titles before truncating mid-name.',
   countdown: 'A countdown post. The payload says how many days remain until the release. Lead with the anticipation; the big number is on the image.',
-  now_streaming: 'This title is available to stream at home starting today. Say where it\'s streaming if the payload includes providers.',
+  now_streaming: 'This title is available to stream at home starting today. ALWAYS name the platform it\'s on — lead with the US provider from the payload\'s `streaming` object (US default), adding UK/AU only if they differ. Never guess a platform that isn\'t in the data.',
   trending_chart:
     'The weekly top-10 trending chart. Comment on the most interesting movement (a new entry, a big climb, a stubborn #1). ' +
     'X gets the full top-10 chart as its single image. ' +
     'Instagram and Threads get a carousel: chart 1-5, chart 6-10, then detail cards for the top 3.',
   trailer_drop: 'A new official trailer just dropped for this title. React to the trailer existing; never describe scenes you haven\'t been given.',
   on_this_day: 'A release anniversary. The payload says how many years. Invite reflection or a rewatch; no spoilers.',
+  watch_tonight: 'A "what to watch tonight" pick — a title streaming right now. Make a quick, genuine case for tonight, and ALWAYS name the platform it\'s on (US default from the payload\'s `streaming` object).',
+  hidden_gem: 'A "hidden gem" — an older film (1980s onwards) worth resurfacing, streamable now. Briefly say why it holds up; ALWAYS name the platform it\'s on (US default). No spoilers.',
 };
 
 const hasUrl = (s) => /https?:\/\/|www\.|\b[a-z0-9-]+\.(com|tv|net|org|io|co)\b/i.test(s);

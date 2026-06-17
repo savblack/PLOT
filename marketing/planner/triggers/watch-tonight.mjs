@@ -24,13 +24,13 @@ export const evaluate = async (ctx) => {
   if (!streamable.length) return null;
 
   const pick = streamable[Math.floor(Math.random() * streamable.length)]; // current + watchable now
-  const providers = pick._providers;
+  const streaming = await tmdb.getStreamingRegions(pick.media_type, pick.id).catch(() => ({}));
   return {
     post_type: 'watch_tonight',
     topic_key: `watch_tonight:${isoDate(ctx.publishAt)}`,
     tmdb_refs: [{ media_type: pick.media_type, id: pick.id, title: pick.title || pick.name }],
     payload: {
-      where: providers.slice(0, 2).map(p => p.provider_name).join(' · ') || null,
+      streaming, // { US:[…], UK:[…], AU:[…] } — name the platform (US default)
       title: {
         tmdb_id: pick.id,
         media_type: pick.media_type,

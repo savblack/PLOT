@@ -22,7 +22,7 @@ const buildHtml = ({ slate, nowStreaming, trending }, unsubscribeUrl) => {
     <h2 style="font-size:1.05rem;margin:26px 0 10px;">Now on streaming</h2>
     ${nowStreaming.map(p => `
       <p style="margin:0 0 10px;font-size:0.95rem;">
-        <b>${esc(p.payload.title?.title)}</b>${p.payload.providers?.length ? ` — ${esc(p.payload.providers.join(' · '))}` : ''}
+        <b>${esc(p.payload.title?.title)}</b>${p.payload.streaming?.US?.length ? ` — ${esc(p.payload.streaming.US.join(' · '))}` : ''}
       </p>`).join('')}
   ` : '';
 

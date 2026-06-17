@@ -38,13 +38,13 @@ export const evaluate = async (ctx) => {
   if (!pool.length) return null;
   const pick = pool[Math.floor(Math.random() * pool.length)]; // mix classics + deep cuts
 
-  const providers = await tmdb.getWatchProviders('movie', pick.id).catch(() => []);
+  const streaming = await tmdb.getStreamingRegions('movie', pick.id).catch(() => ({}));
   return {
     post_type: 'hidden_gem',
     topic_key: `hidden_gem:${isoDate(ctx.publishAt)}`,
     tmdb_refs: [{ media_type: 'movie', id: pick.id, title: pick.title }],
     payload: {
-      where: providers.slice(0, 2).map(p => p.provider_name).join(' · ') || null,
+      streaming, // { US:[…], UK:[…], AU:[…] } — name the platform (US default)
       year: pick.release_date ? Number(pick.release_date.slice(0, 4)) : null,
       title: {
         tmdb_id: pick.id,
