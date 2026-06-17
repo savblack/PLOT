@@ -105,3 +105,21 @@ export const validateCopy = (raw) => {
 
   return { valid: errors.length === 0, errors, copy };
 };
+
+// Conversation posts are text-only (Threads + X): a single genuine question, no
+// image, no article, no hashtags. The worker returns { question }. We store it
+// as x + threads so the publish path is unchanged.
+export const validateConversation = (raw) => {
+  const errors = [];
+  const question = String(raw?.question ?? raw?.x ?? '').trim();
+  if (!question) errors.push('question is empty');
+  if (hasUrl(question)) errors.push('question contains a URL (not allowed)');
+  if (/#\w/.test(question)) errors.push('question contains a hashtag (not allowed)');
+
+  const q = question.length > 280 ? `${question.slice(0, 279)}…` : question;
+  return {
+    valid: errors.length === 0,
+    errors,
+    copy: { x: q, threads: q, cta_variant: 'none', hashtags: [], alt_text: null },
+  };
+};

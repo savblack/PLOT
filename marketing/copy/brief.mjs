@@ -22,6 +22,37 @@ const sourceList = (research) => {
   return urls.map(s => `- ${s.title}: ${s.url}`).join('\n');
 };
 
+// Conversation posts get their own short brief: one tight question, no card,
+// no article. Text-only for Threads + X.
+export const buildConversationBrief = async (post) => {
+  const topic = post.payload?.topic || { mode: 'general' };
+  const angle = topic.mode === 'trending' && topic.title
+    ? `Hook it to a title that's in the conversation right now: "${topic.title}". The question must still make sense to someone who hasn't seen it.`
+    : 'Make it general — a question any film/TV lover can answer (a comfort watch, a hot take, a first-time-again pick).';
+  return `# Copy job: conversation (text-only, Threads + X)
+
+Post id: \`${post.id}\`
+Write your answer to: \`marketing/copy/jobs/${post.id}.copy.json\`
+
+## What to write
+One genuine question that sparks replies — the kind of thing a film lover would
+actually want to answer. ${angle}
+
+Keep it TIGHT: a sharp question, then at most one short line. End on the question
+or a brief closer ("No wrong answers."); never an explanatory trailer like
+"…just genuinely curious what everyone thinks". No hashtags, no links, no emoji
+strings. Must fit 280 characters.
+
+## Output — a single JSON object
+- \`question\` (string): the post text, used verbatim on both Threads and X.
+
+Write ONLY the JSON object to the output file. No markdown fences, no commentary.
+
+## Voice guide (follow exactly — see the "Conversation posts" section)
+${await voice()}
+`;
+};
+
 /**
  * @returns {string} markdown brief for a single planned post.
  * @param {object} post  a marketing_posts row (needs id, post_type, payload)

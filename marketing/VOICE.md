@@ -46,7 +46,8 @@ actually trust, writing a short note — not a brand running a content calendar.
 - Sentence case everywhere, including headlines.
 - Emoji: at most one per post, usually zero. Never emoji strings.
 - No engagement-bait: never "🚨 BREAKING", "you NEED to see this", "drop a 🔥 if…",
-  fake urgency, or rage-bait questions.
+  fake urgency, or rage-bait. (A *genuine* question is fine and encouraged — see
+  Conversation posts below — what's banned is manipulative bait, not curiosity.)
 - No spoilers, ever — including for older titles in anniversary posts.
 - Never imply PLOT is affiliated with, endorsed by, or partnered with any studio,
   network, or streamer. We write about their work; we don't speak for them.
@@ -70,6 +71,22 @@ actually trust, writing a short note — not a brand running a content calendar.
   4–8 short paragraphs in the same voice; draw on the research pack and your own
   web research, always paraphrased (never quote reviews or copy synopsis text);
   no links, hashtags, or dashes.
+
+## Conversation posts (Threads & X)
+
+Occasional text-only posts (no image) that ask the community a genuine question.
+
+- **Keep them tight.** A sharp question, then at most one short line — never an
+  explanatory trailer. "The movie you've rewatched more than any other? No wrong
+  answers." NOT "…No wrong answers, just genuinely curious what everyone's comfort
+  pick is." End on the question or the short closer; cut the rest.
+- It must be a real question you'd actually want answered, not bait. No "drop a 🔥",
+  no fake controversy, no "tag someone who…".
+- Sometimes general ("comfort show you put on without really watching?"), sometimes
+  hooked to what's releasing/trending — both fine; vary them.
+- Same newcomer rule applies: if you reference a title, the question still has to
+  make sense to someone who hasn't seen it.
+- No hashtags, no URLs. Threads and X only (no image, so not Instagram).
 
 ## Ratings
 

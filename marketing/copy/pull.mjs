@@ -7,7 +7,7 @@ import { mkdir, writeFile, readdir, rm } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { getSupabase } from '../lib/supabase.mjs';
-import { buildBrief } from './brief.mjs';
+import { buildBrief, buildConversationBrief } from './brief.mjs';
 import { enrichPost } from './enrich.mjs';
 
 export const JOBS_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), 'jobs');
@@ -37,11 +37,16 @@ const main = async () => {
   const todo = (posts || []).filter(p => p.payload && Object.keys(p.payload).length);
   const manifest = [];
   for (const post of todo) {
-    // Enrich from free sources (extended TMDB + Wikipedia). Best-effort: a
-    // failed lookup still yields a brief, just without the research pack.
-    const research = await enrichPost(post).catch(() => []);
     const briefPath = path.join(JOBS_DIR, `${post.id}.brief.md`);
-    await writeFile(briefPath, await buildBrief(post, research));
+    if (post.post_type === 'conversation') {
+      // Text-only question: no research pack, its own short brief.
+      await writeFile(briefPath, await buildConversationBrief(post));
+    } else {
+      // Enrich from free sources (extended TMDB + Wikipedia). Best-effort: a
+      // failed lookup still yields a brief, just without the research pack.
+      const research = await enrichPost(post).catch(() => []);
+      await writeFile(briefPath, await buildBrief(post, research));
+    }
     manifest.push({
       post_id: post.id,
       post_type: post.post_type,

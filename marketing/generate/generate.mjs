@@ -23,7 +23,31 @@ const TYPE_LABELS = {
   on_this_day: 'On this day',
 };
 
+const CONVERSATION_PLATFORMS = ['x', 'threads']; // text-only — no Instagram
+
+// Text-only conversation post: no card to render, no article. Just the question
+// (already on the row as copy), published to X + Threads.
+const generateConversation = async (supabase, post) => {
+  if (!post.copy) throw new Error('Conversation post has no copy yet');
+  const copy = { ...post.copy };
+  const { error } = await supabase
+    .from('marketing_posts')
+    .update({ copy, media: [], status: 'generated', updated_at: new Date().toISOString() })
+    .eq('id', post.id);
+  if (error) throw new Error(`Post update failed: ${error.message}`);
+
+  const pubs = CONVERSATION_PLATFORMS.map(platform => ({ post_id: post.id, platform }));
+  const { error: pubError } = await supabase
+    .from('marketing_post_publications')
+    .upsert(pubs, { onConflict: 'post_id,platform', ignoreDuplicates: true });
+  if (pubError) throw new Error(`Publication rows failed: ${pubError.message}`);
+
+  return { ...post, copy, media: [], slug: null };
+};
+
 const generatePost = async (supabase, post) => {
+  if (post.post_type === 'conversation') return generateConversation(supabase, post);
+
   const spec = POST_TYPES[post.post_type];
   if (!spec) throw new Error(`Unknown post type ${post.post_type}`);
 
@@ -107,9 +131,9 @@ const digestHtml = (posts, skipped) => {
           ${post.slug ? ` · <a href="${entryUrl(post.slug)}" style="color:#888;">article</a>` : ''}
         </p>
         <div>${cardsHtml}</div>
-        ${copyBlock('X', post.copy?.x)}
-        ${copyBlock('Instagram', post.copy?.instagram)}
-        ${copyBlock('Threads', post.copy?.threads)}
+        ${post.copy?.x ? copyBlock('X', post.copy.x) : ''}
+        ${post.copy?.instagram ? copyBlock('Instagram', post.copy.instagram) : ''}
+        ${post.copy?.threads ? copyBlock('Threads', post.copy.threads) : ''}
         ${(post.copy?.sources?.length)
           ? `<p style="margin:10px 0 2px;font-size:12px;color:#888;text-transform:uppercase;letter-spacing:0.06em;">Sources used (article)</p>
              <div style="font-size:12px;line-height:1.6;">${post.copy.sources.map(s => `<a href="${s.url}" style="color:#888;">${escapeHtml(s.title)}</a>`).join(' &middot; ')}</div>`

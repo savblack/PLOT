@@ -6,8 +6,19 @@
 import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { getSupabase } from '../lib/supabase.mjs';
-import { validateCopy } from './schema.mjs';
+import { validateCopy, validateConversation } from './schema.mjs';
 import { JOBS_DIR } from './pull.mjs';
+
+// post_id -> post_type, from the manifest pull.mjs wrote, so we validate each
+// answer against the right contract (conversation posts are text-only).
+const loadTypes = async () => {
+  try {
+    const manifest = JSON.parse(await readFile(path.join(JOBS_DIR, 'manifest.json'), 'utf8'));
+    return new Map(manifest.map(m => [m.post_id, m.post_type]));
+  } catch {
+    return new Map();
+  }
+};
 
 const main = async () => {
   const supabase = getSupabase();
@@ -24,6 +35,7 @@ const main = async () => {
     return;
   }
 
+  const types = await loadTypes();
   let saved = 0, rejected = 0;
   for (const file of entries) {
     const postId = file.replace(/\.copy\.json$/, '');
@@ -36,7 +48,8 @@ const main = async () => {
       continue;
     }
 
-    const { valid, errors, copy } = validateCopy(parsed);
+    const validate = types.get(postId) === 'conversation' ? validateConversation : validateCopy;
+    const { valid, errors, copy } = validate(parsed);
     if (!valid) {
       console.error(`✗ ${postId}: rejected —\n    ${errors.join('\n    ')}`);
       rejected++;

@@ -15,6 +15,7 @@ import * as trailerDrop from './triggers/trailer-drop.mjs';
 import * as onThisDay from './triggers/on-this-day.mjs';
 import * as watchTonight from './triggers/watch-tonight.mjs';
 import * as hiddenGem from './triggers/hidden-gem.mjs';
+import * as conversation from './triggers/conversation.mjs';
 
 const TRACK_LIMIT = 25;
 
@@ -127,9 +128,12 @@ const main = async () => {
   if (!isAnchor || candidates.length === 0) {
     if (weekday === 'Wednesday') await consider(watchTonight.evaluate);    // fixed feature
     else if (weekday === 'Saturday') await consider(hiddenGem.evaluate);   // fixed feature
+    else if (weekday === 'Sunday') await consider(conversation.evaluate);  // question of the week leads
     await consider((c) => onThisDay.evaluate(c));                          // anniversary (every day)
     if (!candidates.length) await consider((c) => onThisDay.evaluate(c, { minVotes: 500 }));
     await consider(nowStreaming.evaluate);                                 // release-day spotlight
+    // Text question on the other two question days (Sunday already led with one).
+    if (weekday === 'Tuesday' || weekday === 'Thursday') await consider(conversation.evaluate);
     await consider(makeCountdown(1));                                      // additional dynamic posts
     await consider(trailerDrop.evaluate);
     await consider(makeCountdown(7));
