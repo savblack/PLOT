@@ -6,12 +6,12 @@
 //   DRY_RUN=1        log what would be posted; mark nothing published
 //   --retry-failed   re-queue failed publications of recent posts first
 import { getSupabase } from '../lib/supabase.mjs';
-import { getToken } from '../lib/tokens.mjs';
 import { publicUrl } from '../lib/storage.mjs';
 import { publishToBuffer } from './buffer.mjs';
-import { publishToInstagram } from './instagram.mjs';
-import { publishToThreads } from './threads.mjs';
-import { entryUrl, chartUrl } from '../lib/feed.mjs';
+import { chartUrl } from '../lib/feed.mjs';
+
+// Every platform now publishes through Buffer.
+const SERVICE = { x: 'twitter', instagram: 'instagram', threads: 'threads' };
 
 const DRY_RUN = process.env.DRY_RUN === '1';
 
@@ -45,37 +45,31 @@ const publishOne = async (supabase, post, pub) => {
   const media = post.media || [];
 
   try {
+    const service = SERVICE[pub.platform];
+    if (!service) throw new Error(`Unknown platform ${pub.platform}`);
+
+    let text, imageUrls;
+    if (pub.platform === 'x') {
+      // X has no carousels — send exactly one image (first card targeting X).
+      const hero = cardsFor(media, 'x')[0] || media[0];
+      text = post.copy.x;
+      imageUrls = hero ? [publicUrl(hero.landscape_path)] : [];
+    } else if (pub.platform === 'instagram') {
+      const hashtags = (post.copy.hashtags || []).map(h => `#${h.replace(/^#/, '')}`).join(' ');
+      text = hashtags ? `${post.copy.instagram}\n\n${hashtags}` : post.copy.instagram;
+      imageUrls = cardsFor(media, 'instagram').map(m => publicUrl(m.portrait_path));
+    } else { // threads — chart posts keep their chart-page link; no article links
+      const link = post.post_type === 'trending_chart' ? chartUrl('threads') : null;
+      text = link ? `${post.copy.threads}\n\n${link}` : post.copy.threads;
+      imageUrls = cardsFor(media, 'threads').map(m => publicUrl(m.landscape_path));
+    }
+
     let result;
     if (DRY_RUN) {
-      console.log(`[DRY_RUN] would publish to ${pub.platform}:`, post.copy?.[pub.platform]);
+      console.log(`[DRY_RUN] ${pub.platform} via Buffer (${service}):`, text);
       result = { platform_post_id: null, permalink: null };
-    } else if (pub.platform === 'x') {
-      // X has no carousels — multi-image posts render as a collage grid.
-      // Send exactly one image: the first card that targets X.
-      const hero = cardsFor(media, 'x')[0] || media[0];
-      result = await publishToBuffer({
-        text: post.copy.x,
-        imageUrls: hero ? [publicUrl(hero.landscape_path)] : [],
-        altText: post.copy.alt_text,
-      });
-    } else if (pub.platform === 'instagram') {
-      const token = await getToken(supabase, 'instagram');
-      const hashtags = (post.copy.hashtags || []).map(h => `#${h.replace(/^#/, '')}`).join(' ');
-      const caption = hashtags ? `${post.copy.instagram}\n\n${hashtags}` : post.copy.instagram;
-      const imageUrls = cardsFor(media, 'instagram').map(m => publicUrl(m.portrait_path));
-      result = await publishToInstagram(token, { caption, imageUrls });
-    } else if (pub.platform === 'threads') {
-      const token = await getToken(supabase, 'threads');
-      // Threads is the one platform with clickable links. The trending chart
-      // links to its persistent page; everything else to its article.
-      const link = post.post_type === 'trending_chart'
-        ? chartUrl('threads')
-        : (post.slug ? entryUrl(post.slug, 'threads') : null);
-      const text = link ? `${post.copy.threads}\n\n${link}` : post.copy.threads;
-      const imageUrls = cardsFor(media, 'threads').map(m => publicUrl(m.landscape_path));
-      result = await publishToThreads(token, { text, imageUrls });
     } else {
-      throw new Error(`Unknown platform ${pub.platform}`);
+      result = await publishToBuffer({ service, text, imageUrls, altText: post.copy.alt_text });
     }
 
     await supabase.from('marketing_post_publications').update({
