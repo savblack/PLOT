@@ -18,6 +18,11 @@ project_id = "mkegtssedjyqldysvzga"
 [functions.marketing-feed]
 verify_jwt = false
 
+# Admin review desk — public at the gateway (reachable via admin.theplot.tv),
+# gated by ADMIN_TOKEN inside the function.
+[functions.admin-review]
+verify_jwt = false
+
 [functions.marketing-veto]
 verify_jwt = false
 
