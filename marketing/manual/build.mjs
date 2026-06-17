@@ -1,10 +1,12 @@
 // Manual flow — build step.
 //   node marketing/manual/build.mjs [YYYY-MM-DD] [--countdown="A,B"] [--otd=ID:YEARS]
 //
-// Renders every selected post's cards (portrait + landscape) into
-// plot-posts/<date>/ and writes ONE combined copy doc, <date>.md, with the
-// payload facts and empty <copy> blocks. A human/agent then writes the copy
-// (never the Anthropic API — see marketing/VOICE.md) and runs publish.mjs.
+// With no flags it follows the weekly schedule (marketing/manual/schedule.mjs)
+// for the run date's weekday. Renderable posts get their cards (portrait +
+// landscape) written into plot-posts/<date>/; copy-only posts (spotlight,
+// questions, ...) get a section with no image. Everything lands in one combined
+// copy doc, <date>.md, with empty <copy> blocks for a human/agent to fill
+// (never the Anthropic API — see marketing/VOICE.md). Then run publish.mjs.
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -13,17 +15,12 @@ import { renderCard, closeBrowser } from '../lib/render.mjs';
 import { POST_TYPES } from '../lib/post-types.mjs';
 import { feedHeroUrl } from '../lib/images.mjs';
 import { slugify } from '../lib/feed.mjs';
-import { nextPublishAt, weekdayInTz, isoDate } from '../lib/dates.mjs';
+import { nextPublishAt, isoDate } from '../lib/dates.mjs';
 import { selectCandidates } from './select.mjs';
 import { serialize } from './format.mjs';
+import { TYPES, CTA, SCHEDULE, weekdayOf } from './schedule.mjs';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'plot-posts');
-
-const CTA = {
-  countdown: 'track_it', trailer_drop: 'track_it',
-  weekly_slate: 'whats_on_tonight', now_streaming: 'whats_on_tonight',
-  on_this_day: 'journal_it', trending_chart: 'journal_it',
-};
 
 const parseArgs = (argv) => {
   const opts = { countdown: [] };
@@ -36,24 +33,26 @@ const parseArgs = (argv) => {
   return { date, opts };
 };
 
-const titleOf = (c) => c.payload?.title?.title || c.payload?.titles?.[0]?.title || c.post_type;
+const titleOf = (c) =>
+  c.payload?.title?.title || c.payload?.titles?.[0]?.title || TYPES[c.post_type]?.label || c.post_type;
 
 const factsFor = (c) => {
-  const p = c.payload, t = p.title || {};
+  const p = c.payload || {}, t = p.title || {};
   const f = [];
+  if (c.copyOnly) {
+    if (c.post_type === 'spotlight') f.push('Pick a US title worth a spotlight, then write the copy.');
+    else if (c.post_type === 'hidden_gem') f.push('Pick an under-seen US title (a hidden gem) and write the copy.');
+    else if (c.post_type === 'what_to_watch_tonight') f.push('Pick a US title to recommend for tonight and write the copy.');
+    else if (c.post_type === 'text_question') f.push('Write one short, text-only question for the audience (no image, no article).');
+    else if (c.post_type === 'question_of_week') f.push('Write the question of the week (text-only, no image, no article).');
+    return f;
+  }
   if (c.post_type === 'countdown') {
     f.push(`When: ${p.when_label} (${p.days_until} days to go) · ${p.kind}`);
     if (t.where) f.push(`Where: ${t.where}`);
     if (t.overview) f.push(`Premise: ${t.overview}`);
   } else if (c.post_type === 'on_this_day') {
     f.push(`Anniversary: ${p.years} years${p.release_year ? ` (released ${p.release_year})` : ''}`);
-    if (t.overview) f.push(`Premise: ${t.overview}`);
-  } else if (c.post_type === 'now_streaming') {
-    if (p.providers?.length) f.push(`Streaming on: ${p.providers.join(', ')}`);
-    if (p.from_label) f.push(p.from_label);
-  } else if (c.post_type === 'trailer_drop') {
-    if (p.when_label) f.push(`Releases: ${p.when_label}`);
-    if (p.trailer_url) f.push(`Trailer: ${p.trailer_url}`);
     if (t.overview) f.push(`Premise: ${t.overview}`);
   } else if (c.post_type === 'weekly_slate') {
     f.push(`Titles: ${(p.titles || []).map(x => x.title).join(', ')}`);
@@ -67,18 +66,18 @@ const main = async () => {
   const { date: argDate, opts } = parseArgs(process.argv.slice(2));
   const publishAt = nextPublishAt();
   const date = argDate || isoDate(publishAt);
+  const weekday = weekdayOf(date);
   const supabase = getSupabase();
   const { data: tracked } = await supabase.from('marketing_tracked_titles').select('*');
-  const ctx = { supabase, publishAt, weekday: weekdayInTz(publishAt), tracked: tracked || [] };
+  const ctx = { supabase, publishAt, today: date, weekday, tracked: tracked || [] };
 
+  console.log(`${date} (${weekday}) — schedule: ${(SCHEDULE[weekday] || []).join(', ') || '(none)'}`);
   const candidates = await selectCandidates(ctx, opts);
   if (!candidates.length) { console.error('No candidates selected.'); process.exit(1); }
 
   const outDir = path.join(ROOT, date);
   await mkdir(outDir, { recursive: true });
-
-  // scheduled_for: group under <date> at noon UTC, but never in the future, and
-  // staggered so the first post sorts newest (the feed features the newest).
+  // Group under <date> at noon UTC, never future, staggered so the first sorts newest.
   const base = Math.min(Date.parse(`${date}T12:00:00Z`), Date.now());
 
   const posts = [];
@@ -86,22 +85,25 @@ const main = async () => {
     const c = candidates[i];
     const title = titleOf(c);
     const slug = slugify(title) || c.post_type;
-    const spec = POST_TYPES[c.post_type];
-    const cards = await spec.cards(c.payload);
+    const renderable = !c.copyOnly && TYPES[c.post_type]?.render && POST_TYPES[c.post_type] && c.payload;
 
     const images = { portrait: [], landscape: [] };
-    for (let n = 0; n < cards.length; n++) {
-      const suffix = cards.length > 1 ? `-${n}` : '';
-      const [portrait, landscape] = await Promise.all([
-        renderCard(spec.template, cards[n].data, { size: 'portrait' }),
-        renderCard(spec.template, cards[n].data, { size: 'landscape' }),
-      ]);
-      const pName = `${slug}${suffix}-portrait.jpg`;
-      const lName = `${slug}${suffix}-landscape.jpg`;
-      await writeFile(path.join(outDir, pName), portrait);
-      await writeFile(path.join(outDir, lName), landscape);
-      images.portrait.push(pName);
-      images.landscape.push(lName);
+    if (renderable) {
+      const spec = POST_TYPES[c.post_type];
+      const cards = await spec.cards(c.payload);
+      for (let n = 0; n < cards.length; n++) {
+        const suffix = cards.length > 1 ? `-${n}` : '';
+        const [portrait, landscape] = await Promise.all([
+          renderCard(spec.template, cards[n].data, { size: 'portrait' }),
+          renderCard(spec.template, cards[n].data, { size: 'landscape' }),
+        ]);
+        const pName = `${slug}${suffix}-portrait.jpg`;
+        const lName = `${slug}${suffix}-landscape.jpg`;
+        await writeFile(path.join(outDir, pName), portrait);
+        await writeFile(path.join(outDir, lName), landscape);
+        images.portrait.push(pName);
+        images.landscape.push(lName);
+      }
     }
 
     posts.push({
@@ -111,19 +113,21 @@ const main = async () => {
         post_type: c.post_type,
         topic_key: `manual:${c.post_type}:${date}:${slug}`,
         scheduled_for: new Date(base - i * 60000).toISOString(),
-        hero_image: feedHeroUrl(c.post_type, c.payload),
         cta_variant: CTA[c.post_type] || 'none',
-        tmdb_refs: c.tmdb_refs,
-        payload: c.payload,
+        feed: !!TYPES[c.post_type]?.feed,
+        ...(renderable ? {
+          hero_image: feedHeroUrl(c.post_type, c.payload),
+          tmdb_refs: c.tmdb_refs,
+          payload: c.payload,
+        } : {}),
         images,
       },
     });
-    console.log(`rendered ${c.post_type} · ${title} (${images.portrait.length} card${images.portrait.length > 1 ? 's' : ''})`);
+    console.log(`  ${c.post_type}${renderable ? ` · ${title} (${images.portrait.length} card${images.portrait.length > 1 ? 's' : ''})` : ' · copy-only'}`);
   }
   await closeBrowser();
 
-  const docPath = path.join(outDir, `${date}.md`);
-  await writeFile(docPath, serialize(date, posts));
+  await writeFile(path.join(outDir, `${date}.md`), serialize(date, posts));
   console.log(`\n${posts.length} post(s) → ${path.relative(process.cwd(), outDir)}/`);
   console.log(`Next: write the copy in ${date}.md, then  npm run mkt:manual:publish ${date}`);
 };

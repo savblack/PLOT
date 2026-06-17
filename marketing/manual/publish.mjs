@@ -34,8 +34,15 @@ const main = async () => {
   const date = args.find(a => /^\d{4}-\d{2}-\d{2}$/.test(a)) || isoDate(nextPublishAt());
   const file = path.join(ROOT, date, `${date}.md`);
 
-  const posts = parse(await readFile(file, 'utf8'));
-  if (!posts.length) { console.error(`No posts found in ${file}`); process.exit(1); }
+  const all = parse(await readFile(file, 'utf8'));
+  if (!all.length) { console.error(`No posts found in ${file}`); process.exit(1); }
+
+  // Only feed-eligible types go to What's On; social-only posts (spotlight,
+  // questions, ...) are saved locally and posted to social by hand.
+  const posts = all.filter(p => p.meta.feed);
+  const skipped = all.filter(p => !p.meta.feed);
+  for (const p of skipped) console.log(`skip (social-only): ${p.meta.post_type}`);
+  if (!posts.length) { console.log('\nNo feed-eligible posts for this date.'); return; }
 
   const errors = validate(posts);
   if (errors.length) {
