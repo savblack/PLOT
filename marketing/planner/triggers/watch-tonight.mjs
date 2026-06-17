@@ -5,6 +5,7 @@
 import { tmdb } from '../../lib/tmdb.mjs';
 import { isoDate } from '../../lib/dates.mjs';
 import { recentlyUsed } from './_used.mjs';
+import { coverageTier, regionsWithProviders, bestTier } from './_regions.mjs';
 
 export const evaluate = async (ctx) => {
   const used = await recentlyUsed(ctx.supabase, 'watch_tonight');
@@ -13,18 +14,20 @@ export const evaluate = async (ctx) => {
     .filter(m => ['movie', 'tv'].includes(m.media_type))
     .filter(m => m.poster_path && m.backdrop_path && (m.vote_average || 0) >= 7 && !used.has(m.id));
 
-  // Keep only what's actually streamable tonight (a flatrate provider here).
-  // Bounded scan: stop once we have a healthy pool.
-  const streamable = [];
-  for (const m of trending.slice(0, 25)) {
-    const providers = await tmdb.getWatchProviders(m.media_type, m.id).catch(() => []);
-    if (providers.length) streamable.push({ ...m, _providers: providers });
-    if (streamable.length >= 8) break;
+  // Look up where each is streamable across US/UK/AU (one call each), then prefer
+  // the broadest availability: all-3 > any-2 > US-only. Bounded scan.
+  const scanned = [];
+  for (const m of trending.slice(0, 20)) {
+    const streaming = await tmdb.getStreamingRegions(m.media_type, m.id).catch(() => ({}));
+    const tier = coverageTier(regionsWithProviders(streaming));
+    if (tier > 0) scanned.push({ m, streaming, tier });
   }
-  if (!streamable.length) return null;
+  const pool = bestTier(scanned);
+  if (!pool.length) return null;
 
-  const pick = streamable[Math.floor(Math.random() * streamable.length)]; // current + watchable now
-  const streaming = await tmdb.getStreamingRegions(pick.media_type, pick.id).catch(() => ({}));
+  const chosen = pool[Math.floor(Math.random() * pool.length)]; // random within the best tier
+  const pick = chosen.m;
+  const streaming = chosen.streaming;
   return {
     post_type: 'watch_tonight',
     topic_key: `watch_tonight:${isoDate(ctx.publishAt)}`,

@@ -95,6 +95,9 @@ release today isn't caught yet.)
 | `trending_chart` | Friday (AEST), single post | IG/Threads carousel: chart 1-5, chart 6-10, top-3 detail cards; X gets one full top-10 chart |
 | `watch_tonight` | Wednesday — trending ∩ streamable now, rating ≥ 7 (movies + TV) | single card |
 | `hidden_gem` | Saturday — 1980+ movie on streaming, rating ≥ 7.2, ≥ 5000 votes | single card |
+
+Both editorial picks prefer the **broadest regional availability** — a title
+streamable in all of US/UK/AU beats one in any two beats US-only (`_regions.mjs`).
 | `on_this_day` | every non-anchor day (anniversary) | single card |
 | `now_streaming` | non-anchor days — tracked title's digital date = today | single backdrop card (the release-day spotlight) |
 | `countdown` | non-anchor days — tracked title at T-1/T-7/T-14 | single card, big day count |
