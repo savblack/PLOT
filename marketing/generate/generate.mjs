@@ -1,27 +1,17 @@
-// Generation step: for each post whose copy is ready, render media (Playwright),
-// upload to storage, create publication rows, then send the veto digest email.
-// Copy is written upstream by the AI copy worker (see marketing/copy/) and read
-// off the row here — this step is API-key-free. Posts only become publishable
-// once digest_sent_at is set — the fail-closed gate.
-import { getSupabase, supabaseUrl } from '../lib/supabase.mjs';
+// Render step (weekly batch): for each post whose copy is ready, render media
+// (Playwright), upload to storage, create publication rows, and move it to
+// status 'needs_review' — onto the admin review desk (admin.theplot.tv). Copy is
+// written upstream by the AI copy worker (see marketing/copy/), so this step is
+// API-key-free. Approved posts are sent to Buffer by the daily push.
+import { getSupabase } from '../lib/supabase.mjs';
 import { renderCard, closeBrowser } from '../lib/render.mjs';
-import { uploadMedia, publicUrl } from '../lib/storage.mjs';
+import { uploadMedia } from '../lib/storage.mjs';
 import { sendEmail, ADMIN_EMAIL } from '../lib/email.mjs';
 import { POST_TYPES } from '../lib/post-types.mjs';
 import { feedHeroUrl } from '../lib/images.mjs';
-import { postSlug, entryUrl, chartUrl } from '../lib/feed.mjs';
+import { postSlug } from '../lib/feed.mjs';
 
 const PLATFORMS = ['x', 'instagram', 'threads'];
-
-// Friendly labels for the admin veto digest (keeps internal type ids unchanged).
-const TYPE_LABELS = {
-  weekly_slate: 'Upcoming this week',
-  trending_chart: 'Trending top 10',
-  countdown: 'Countdown',
-  now_streaming: 'Now streaming',
-  trailer_drop: 'Trailer drop',
-  on_this_day: 'On this day',
-};
 
 const CONVERSATION_PLATFORMS = ['x', 'threads']; // text-only — no Instagram
 
@@ -32,7 +22,7 @@ const generateConversation = async (supabase, post) => {
   const copy = { ...post.copy };
   const { error } = await supabase
     .from('marketing_posts')
-    .update({ copy, media: [], status: 'generated', updated_at: new Date().toISOString() })
+    .update({ copy, media: [], status: 'needs_review', updated_at: new Date().toISOString() })
     .eq('id', post.id);
   if (error) throw new Error(`Post update failed: ${error.message}`);
 
@@ -42,6 +32,7 @@ const generateConversation = async (supabase, post) => {
     .upsert(pubs, { onConflict: 'post_id,platform', ignoreDuplicates: true });
   if (pubError) throw new Error(`Publication rows failed: ${pubError.message}`);
 
+  await applyAnnounceState(supabase, post);
   return { ...post, copy, media: [], slug: null };
 };
 
@@ -75,7 +66,7 @@ const generatePost = async (supabase, post) => {
   const slug = postSlug(copy.page_title || post.post_type, post.scheduled_for);
   const { error } = await supabase
     .from('marketing_posts')
-    .update({ copy, media, slug, status: 'generated', updated_at: new Date().toISOString() })
+    .update({ copy, media, slug, status: 'needs_review', updated_at: new Date().toISOString() })
     .eq('id', post.id);
   if (error) throw new Error(`Post update failed: ${error.message}`);
 
@@ -85,6 +76,7 @@ const generatePost = async (supabase, post) => {
     .upsert(pubs, { onConflict: 'post_id,platform', ignoreDuplicates: true });
   if (pubError) throw new Error(`Publication rows failed: ${pubError.message}`);
 
+  await applyAnnounceState(supabase, post);
   return { ...post, copy, media, slug };
 };
 
@@ -109,112 +101,51 @@ const applyAnnounceState = async (supabase, post) => {
   await supabase.from('marketing_tracked_titles').update(update).eq('id', announce.tracked_id);
 };
 
-const escapeHtml = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const REVIEW_URL = 'https://admin.theplot.tv';
 
-const digestHtml = (posts, skipped) => {
-  const sections = posts.map(post => {
-    const vetoUrl = `${supabaseUrl}/functions/v1/marketing-veto?post=${post.id}&token=${post.veto_token}`;
-    const cardsHtml = (post.media || []).map(m =>
-      `<img src="${publicUrl(m.portrait_path)}" width="240" style="border-radius:10px;margin:0 8px 8px 0;vertical-align:top;" />`
-    ).join('');
-    const copyBlock = (label, text) =>
-      `<p style="margin:10px 0 2px;font-size:12px;color:#888;text-transform:uppercase;letter-spacing:0.06em;">${label}</p>
-       <div style="background:#f5f4f2;border-radius:8px;padding:12px;font-size:14px;line-height:1.55;white-space:pre-wrap;">${escapeHtml(text)}</div>`;
-    const scheduledAEST = new Date(post.scheduled_for).toLocaleString('en-AU', {
-      timeZone: 'Australia/Sydney', weekday: 'long', hour: 'numeric', minute: '2-digit', day: 'numeric', month: 'long',
-    });
-    return `
-      <div style="border:1px solid #e5e3e0;border-radius:12px;padding:20px;margin-bottom:24px;">
-        <h2 style="margin:0 0 2px;font-size:1.05rem;">${escapeHtml(TYPE_LABELS[post.post_type] || post.post_type.replace(/_/g, ' '))}</h2>
-        <p style="margin:0 0 14px;font-size:0.8rem;color:#888;">
-          Publishes ${scheduledAEST} (AEST) · CTA: ${escapeHtml(post.copy?.cta_variant || 'none')}
-          ${post.post_type === 'trending_chart'
-            ? ` · <a href="${chartUrl()}" style="color:#888;">chart</a>`
-            : post.slug ? ` · <a href="${entryUrl(post.slug)}" style="color:#888;">article</a>` : ''}
-        </p>
-        <div>${cardsHtml}</div>
-        ${post.copy?.x ? copyBlock('X', post.copy.x) : ''}
-        ${post.copy?.instagram ? copyBlock('Instagram', post.copy.instagram) : ''}
-        ${post.copy?.threads ? copyBlock('Threads', post.copy.threads) : ''}
-        ${(post.copy?.sources?.length)
-          ? `<p style="margin:10px 0 2px;font-size:12px;color:#888;text-transform:uppercase;letter-spacing:0.06em;">Sources used (article)</p>
-             <div style="font-size:12px;line-height:1.6;">${post.copy.sources.map(s => `<a href="${s.url}" style="color:#888;">${escapeHtml(s.title)}</a>`).join(' &middot; ')}</div>`
-          : ''}
-        <p style="margin:18px 0 0;">
-          <a href="${vetoUrl}" style="display:inline-block;background:#E05578;color:#fff;text-decoration:none;padding:10px 22px;border-radius:9999px;font-size:14px;font-weight:600;">Veto this post</a>
-          <span style="font-size:12px;color:#888;margin-left:12px;">Do nothing and it publishes automatically.</span>
-        </p>
-      </div>`;
-  }).join('');
-
-  const skippedNote = skipped.length
-    ? `<p style="font-size:0.9rem;color:#888;">No content triggered for ${skipped.length} slot(s) today — nothing will be posted for those.</p>`
-    : '';
-
-  return `<div style="font-family:sans-serif;max-width:640px;color:#1a1a1a;">
-    <h1 style="font-size:1.3rem;margin:0 0 18px;">Tomorrow on PLOT's socials</h1>
-    ${sections || '<p>Nothing queued.</p>'}
-    ${skippedNote}
+// Ping the admin that the week's posts are ready to review — replaces the old
+// per-post veto email. Review / edit / approve now happens on the admin desk.
+const notifyReview = async (count) => {
+  if (!count) return;
+  const html = `<div style="font-family:sans-serif;max-width:520px;color:#1a1a1a;">
+    <h1 style="font-size:1.25rem;">${count} post${count > 1 ? 's' : ''} ready to review</h1>
+    <p style="font-size:.95rem;line-height:1.6;">This week's marketing posts are generated and waiting on the review desk. Approve, edit, or reject each one.</p>
+    <p style="margin:22px 0;"><a href="${REVIEW_URL}" style="background:#E05578;color:#fff;text-decoration:none;padding:11px 24px;border-radius:9999px;font-weight:600;">Open the review desk</a></p>
   </div>`;
-};
-
-const sendDigest = async (supabase, posts, skipped) => {
-  if (!posts.length && !skipped.length) return;
-  const subject = posts.length
-    ? `PLOT marketing: ${posts.length} post${posts.length > 1 ? 's' : ''} queued — veto window open`
-    : 'PLOT marketing: nothing queued today';
-  const html = digestHtml(posts, skipped);
-
-  let lastErr;
-  for (let attempt = 0; attempt < 2; attempt++) {
-    try {
-      await sendEmail({ to: ADMIN_EMAIL, subject, html });
-      lastErr = null;
-      break;
-    } catch (err) {
-      lastErr = err;
-      await new Promise(r => setTimeout(r, 3000));
-    }
-  }
-  if (lastErr) throw lastErr;
-
-  const now = new Date().toISOString();
-  for (const post of posts) {
-    await supabase
-      .from('marketing_posts')
-      .update({ digest_sent_at: now, status: 'pending_review', updated_at: now })
-      .eq('id', post.id);
-    await applyAnnounceState(supabase, post);
+  try {
+    await sendEmail({ to: ADMIN_EMAIL, subject: `PLOT marketing: ${count} post(s) ready to review`, html });
+  } catch (err) {
+    console.error('Review notification email failed:', err.message);
   }
 };
 
 const main = async () => {
   const supabase = getSupabase();
 
-  // Only posts whose copy is ready (or already rendered on a prior run whose
-  // digest failed). Posts still in 'planned' are waiting on the copy worker.
-  const { data: planned, error } = await supabase
+  // Render every post whose copy is ready (the copy worker has run), across the
+  // whole upcoming week, onto the review desk (status needs_review).
+  const horizon = new Date(Date.now() + 8 * 86400000).toISOString();
+  const { data: pending, error } = await supabase
     .from('marketing_posts')
     .select('*')
     .in('status', ['copy_ready', 'generated'])
-    .lte('scheduled_for', new Date(Date.now() + 24 * 3600000).toISOString())
+    .lte('scheduled_for', horizon)
     .order('scheduled_for');
   if (error) throw new Error(error.message);
 
-  const { data: skipped } = await supabase
-    .from('marketing_posts')
-    .select('id')
-    .eq('status', 'skipped')
-    .gte('scheduled_for', new Date().toISOString());
-
-  const generated = [];
-  for (const post of planned || []) {
+  let count = 0;
+  for (const post of pending || []) {
     try {
-      // status 'generated' = media already produced on a previous run whose digest failed
-      const ready = post.status === 'generated' && post.copy && post.media
-        ? post
-        : await generatePost(supabase, post);
-      generated.push(ready);
+      if (post.status === 'generated' && post.copy && post.media) {
+        // Already rendered on a prior run — just move it onto the desk.
+        await supabase.from('marketing_posts')
+          .update({ status: 'needs_review', updated_at: new Date().toISOString() })
+          .eq('id', post.id);
+        await applyAnnounceState(supabase, post);
+      } else {
+        await generatePost(supabase, post);
+      }
+      count++;
     } catch (err) {
       console.error(`Generation failed for ${post.topic_key}:`, err.message);
       await supabase.from('marketing_posts')
@@ -224,8 +155,8 @@ const main = async () => {
   }
 
   await closeBrowser();
-  await sendDigest(supabase, generated, skipped || []);
-  console.log(`Generated ${generated.length} post(s); digest sent to ${ADMIN_EMAIL}.`);
+  await notifyReview(count);
+  console.log(`Rendered ${count} post(s) -> needs_review; notified ${ADMIN_EMAIL}.`);
 };
 
 main().catch(async (err) => { console.error(err); await closeBrowser(); process.exit(1); });

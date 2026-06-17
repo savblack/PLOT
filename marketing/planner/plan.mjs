@@ -87,13 +87,10 @@ const insertPost = async (supabase, candidate, publishAt) => {
   return true;
 };
 
-const main = async () => {
-  const supabase = getSupabase();
-  const publishAt = nextPublishAt();
+// Plan one publish slot (one day). Reused for a single day or every day of the
+// weekly batch (MARKETING_PLAN_DAYS).
+const planSlot = async (supabase, publishAt, tracked) => {
   const weekday = weekdayInTz(publishAt);
-  console.log(`Planning for publish slot ${publishAt.toISOString()} (${weekday} AEST)`);
-
-  const tracked = await maintainTrackedTitles(supabase);
   const ctx = { supabase, publishAt, weekday, tracked };
 
   // Compose the day's posts.
@@ -186,6 +183,20 @@ const main = async () => {
     if (inserted) { planned++; console.log(`Planned ${c.post_type} (${c.topic_key})`); }
   }
   console.log(`Planned ${planned} post(s) for ${isoDate(publishAt)} (${weekday} AEST).`);
+};
+
+const main = async () => {
+  const supabase = getSupabase();
+  const tracked = await maintainTrackedTitles(supabase);
+  // MARKETING_PLAN_DAYS=7 plans the whole upcoming week in one batch; default 1.
+  const days = Math.max(1, Math.min(14, Number(process.env.MARKETING_PLAN_DAYS) || 1));
+  const base = nextPublishAt();
+  for (let i = 0; i < days; i++) {
+    const publishAt = new Date(base);
+    publishAt.setUTCDate(publishAt.getUTCDate() + i);
+    console.log(`\n── ${weekdayInTz(publishAt)} ${isoDate(publishAt)} ──`);
+    await planSlot(supabase, publishAt, tracked);
+  }
 };
 
 main().catch((err) => { console.error(err); process.exit(1); });
