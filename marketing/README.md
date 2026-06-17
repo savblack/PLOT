@@ -28,7 +28,8 @@ on dispatch marketing-render.yml  (cron 18:00 UTC = safety net)
 …veto window: click the link in the digest to kill a post…
 
 23:30 UTC  marketing-publish.yml      (9:30am AEST / ~6:30pm US ET)
-           publish.mjs   — X via Buffer, IG + Threads via direct Meta APIs
+           publish.mjs   — X, Instagram + Threads all via Buffer
+                           (Meta tokens kept only for metrics insights)
 
 13:00 UTC  marketing-metrics.yml      — daily IG/Threads insights -> marketing_metrics
 Sun 20:00  marketing-weekly.yml       — performance report + subscriber newsletter

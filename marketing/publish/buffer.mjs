@@ -1,9 +1,12 @@
-// X publisher via Buffer's GraphQL API (free plan; Buffer absorbs X's
-// pay-per-use API costs — the only verified $0 route to X).
+// Buffer publisher for ALL channels (X, Instagram, Threads) via Buffer's GraphQL
+// API — the $0 route, and the single publishing path now that scheduling is
+// centralised in Buffer.
 //
 // Endpoint: POST https://api.buffer.com  {query}  with Bearer BUFFER_API_KEY.
-// createPost(input: {channelId, schedulingType: automatic, mode: shareNow,
-// text, assets: [{image: {url, metadata: {altText}}}]}).
+// createPost(input: {channelId, schedulingType: automatic, mode, dueAt?,
+//   saveToDraft?, text, assets: [{image:{url, metadata:{altText}}}]}).
+//   mode: shareNow (post immediately) | customScheduled (+dueAt, a specific time)
+//   saveToDraft: true  -> a draft you approve in Buffer before it sends
 // No idempotency key exists — publish.mjs's atomic claim prevents duplicates.
 const API_URL = 'https://api.buffer.com';
 
@@ -24,39 +27,65 @@ const gql = async (query) => {
 
 const str = (s) => JSON.stringify(String(s ?? ''));
 
-// Resolve the X channel id once per run (or use BUFFER_CHANNEL_ID directly).
-let channelIdPromise = null;
-const getXChannelId = () => (channelIdPromise ??= (async () => {
-  if (process.env.BUFFER_CHANNEL_ID) return process.env.BUFFER_CHANNEL_ID;
+// Resolve channel ids by Buffer service ('twitter' | 'instagram' | 'threads'),
+// cached for the run. Override any with BUFFER_CHANNEL_<SERVICE> if ever needed.
+let channelsPromise = null;
+const getChannels = () => (channelsPromise ??= (async () => {
   const { account } = await gql('query { account { organizations { id } } }');
+  const map = {};
   for (const org of account?.organizations || []) {
     const { channels } = await gql(
       `query { channels(input: { organizationId: ${str(org.id)} }) { id service isLocked isDisconnected } }`);
-    const x = (channels || []).find(c => c.service === 'twitter' && !c.isLocked && !c.isDisconnected);
-    if (x) return x.id;
+    for (const c of channels || []) {
+      if (!c.isLocked && !c.isDisconnected && !map[c.service]) map[c.service] = c.id;
+    }
   }
-  throw new Error('No connected X (twitter) channel found in Buffer');
+  return map;
 })());
 
+const channelFor = async (service) => {
+  const override = process.env[`BUFFER_CHANNEL_${service.toUpperCase()}`];
+  if (override) return override;
+  const id = (await getChannels())[service];
+  if (!id) throw new Error(`No connected Buffer channel for service "${service}"`);
+  return id;
+};
+
 /**
- * @param {object} content {text, imageUrls (1-4 public URLs) | imageUrl, altText}
+ * Publish (or schedule, or draft) one post to one Buffer channel.
+ * @param {object} content
+ *   service:     'twitter' | 'instagram' | 'threads'
+ *   text:        post body
+ *   imageUrls:   public image URLs (1 for X, carousel for IG/Threads) — [] = text-only
+ *   altText:     alt text for the first image
+ *   scheduledAt: ISO/Date — if set, schedule at that time (else post now)
+ *   draft:       true -> save as a Buffer draft to approve there
  * @returns {{platform_post_id, permalink}}
  */
-export const publishToBuffer = async ({ text, imageUrls, imageUrl, altText }) => {
-  // VOICE.md forbids URLs on X (downranking; also keeps a future direct-X
-  // fallback at the cheap non-link rate). Hard-fail rather than quietly post.
-  if (/https?:\/\/|www\./i.test(text)) throw new Error('X copy contains a URL — refusing to publish');
+export const publishToBuffer = async ({
+  service = 'twitter', text, imageUrls, imageUrl, altText, scheduledAt, draft = false,
+}) => {
+  // VOICE.md forbids URLs on X (downranking). IG/Threads captions may say
+  // "theplot.tv", so the guard is X-only.
+  if (service === 'twitter' && /https?:\/\/|www\./i.test(text)) {
+    throw new Error('X copy contains a URL — refusing to publish');
+  }
 
-  const urls = (imageUrls || (imageUrl ? [imageUrl] : [])).slice(0, 4); // X caps at 4 images
+  const cap = service === 'twitter' ? 4 : 10; // X caps at 4 images; IG/Threads carousels
+  const urls = (imageUrls || (imageUrl ? [imageUrl] : [])).slice(0, cap);
   const assets = urls.map((url, i) =>
     `{ image: { url: ${str(url)}${i === 0 && altText ? `, metadata: { altText: ${str(altText)} }` : ''} } }`);
 
-  const channelId = await getXChannelId();
+  const mode = scheduledAt ? 'customScheduled' : 'shareNow';
+  const dueAt = scheduledAt ? `, dueAt: ${str(new Date(scheduledAt).toISOString())}` : '';
+  const draftField = draft ? ', saveToDraft: true' : '';
+  const channelId = await channelFor(service);
+
   const mutation = `mutation {
     createPost(input: {
       channelId: ${str(channelId)},
       schedulingType: automatic,
-      mode: shareNow,
+      mode: ${mode}${dueAt}${draftField},
       text: ${str(text)},
       assets: [${assets.join(', ')}]
     }) {
