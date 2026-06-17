@@ -120,24 +120,52 @@ const main = async () => {
   };
 
   const isAnchor = weekday === 'Monday' || weekday === 'Friday';
-  if (weekday === 'Monday') await consider(weeklySlate.evaluate);
-  else if (weekday === 'Friday') await consider(trendingChart.evaluate);
 
-  // Non-anchor days — and anchor days whose theme found nothing — get the
-  // feature + anniversary + spotlight + dynamic-fill composition.
-  if (!isAnchor || candidates.length === 0) {
-    if (weekday === 'Wednesday') await consider(watchTonight.evaluate);    // fixed feature
-    else if (weekday === 'Saturday') await consider(hiddenGem.evaluate);   // fixed feature
-    else if (weekday === 'Sunday') await consider(conversation.evaluate);  // question of the week leads
-    await consider((c) => onThisDay.evaluate(c));                          // anniversary (every day)
-    if (!candidates.length) await consider((c) => onThisDay.evaluate(c, { minVotes: 500 }));
-    await consider(nowStreaming.evaluate);                                 // release-day spotlight
-    // Text question on the other two question days (Sunday already led with one).
-    if (weekday === 'Tuesday' || weekday === 'Thursday') await consider(conversation.evaluate);
-    await consider(makeCountdown(1));                                      // additional dynamic posts
-    await consider(trailerDrop.evaluate);
-    await consider(makeCountdown(7));
-    await consider(makeCountdown(14));
+  // Release-day spotlight, evaluated once so we can both detect a "major" release
+  // and (otherwise) reuse it as the spotlight slot without a second TMDB call.
+  const release = isAnchor ? null : await nowStreaming.evaluate(ctx);
+
+  // Major release = a top-tier tracked title (top 3 by popularity) hitting home
+  // today. On those days we focus the day on it instead of the usual mix:
+  // the release + a conversation about it + the day's anniversary (3 posts).
+  const pops = tracked.map(t => t.popularity || 0).sort((a, b) => b - a);
+  const majorBar = pops.length >= 3 ? pops[2] : Infinity;
+  const popOf = (id) => tracked.find(t => t.tmdb_id === id)?.popularity || 0;
+  const releaseId = release?.tmdb_refs?.[0]?.id;
+  const isMajorRelease = !isAnchor && release && majorBar !== Infinity && popOf(releaseId) >= majorBar;
+
+  if (isMajorRelease) {
+    const ref = release.tmdb_refs[0];
+    candidates.push(release, {                                             // lead + related conversation
+      post_type: 'conversation',
+      topic_key: `conversation:${isoDate(publishAt)}`,
+      tmdb_refs: [ref],
+      payload: { topic: { mode: 'trending', title: ref.title, media_type: ref.media_type } },
+    });
+    chosenIds.add(releaseId);
+    await consider((c) => onThisDay.evaluate(c));                          // one unrelated post
+    if (candidates.length < 3) await consider((c) => onThisDay.evaluate(c, { minVotes: 500 }));
+    console.log(`Major release detected (${ref.title}) — focusing the day.`);
+  } else {
+    if (weekday === 'Monday') await consider(weeklySlate.evaluate);
+    else if (weekday === 'Friday') await consider(trendingChart.evaluate);
+
+    // Non-anchor days — and anchor days whose theme found nothing — get the
+    // feature + anniversary + spotlight + dynamic-fill composition.
+    if (!isAnchor || candidates.length === 0) {
+      if (weekday === 'Wednesday') await consider(watchTonight.evaluate);  // fixed feature
+      else if (weekday === 'Saturday') await consider(hiddenGem.evaluate); // fixed feature
+      else if (weekday === 'Sunday') await consider(conversation.evaluate);// question of the week leads
+      await consider((c) => onThisDay.evaluate(c));                        // anniversary (every day)
+      if (!candidates.length) await consider((c) => onThisDay.evaluate(c, { minVotes: 500 }));
+      await consider(() => release);                                       // release-day spotlight (reused)
+      // Text question on the other two question days (Sunday already led with one).
+      if (weekday === 'Tuesday' || weekday === 'Thursday') await consider(conversation.evaluate);
+      await consider(makeCountdown(1));                                    // additional dynamic posts
+      await consider(trailerDrop.evaluate);
+      await consider(makeCountdown(7));
+      await consider(makeCountdown(14));
+    }
   }
 
   if (!candidates.length) {

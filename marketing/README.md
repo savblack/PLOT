@@ -81,6 +81,14 @@ and never padded — thin days simply post fewer, and a title never repeats in a
 3. `now_streaming` — the release-day spotlight (a tracked title hitting home today)
 4. fill toward 4 from `countdown` T-1, `trailer_drop`, `countdown` T-7, `countdown` T-14
 
+`conversation` text questions run Tue/Thu (a mid slot) and Sun (leads) — 3×/week.
+
+**Major-release override:** when a top-tier tracked title (top 3 by popularity)
+hits home on a non-anchor day, that day focuses instead of mixing: the release
+(lead) + a `conversation` about it (related) + the day's anniversary (unrelated)
+— 3 posts, not 4. (Detected via the streaming spotlight; a major *cinema*-only
+release today isn't caught yet.)
+
 | Type | When | Media |
 |---|---|---|
 | `weekly_slate` ("Upcoming this week") | Monday (AEST), single post | carousel: one card per title, most popular first |
