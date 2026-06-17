@@ -7,6 +7,19 @@ locally instead of auto-published.
 Output lands in `plot-posts/<YYYY-MM-DD>/` at the repo root (git-ignored):
 the rendered cards as `.jpg`, plus one combined copy doc `<date>.md`.
 
+## Triggering with `/whats-on`
+
+The whole flow runs from one command in **either** agent — same scripts, same
+steps, just a per-tool wrapper (both user-level, not in this repo):
+
+- **Claude Code** — `~/.claude/commands/whats-on.md`
+- **Codex** — `~/.codex/prompts/whats-on.md`
+
+Type `/whats-on` (today), `/whats-on 2026-06-18` (a date), or
+`/whats-on --countdown="A,B" --otd=ID:YEARS` (curate) in either tool. The
+wrapper just drives the `npm run mkt:manual…` steps below, so the scripts stay
+the single source of truth — edit them, not the command, to change behaviour.
+
 ## The loop
 
 ```
