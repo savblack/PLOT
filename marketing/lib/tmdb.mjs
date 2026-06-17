@@ -171,6 +171,36 @@ export const tmdb = {
     return regionData?.flatrate || [];
   },
 
+  // One call: details + imdb id + credits + regional watch providers.
+  // Used to enrich the newsletter's featured title.
+  getTitleDetails: (mediaType, id) =>
+    fetchTMDB(`/${mediaType}/${id}`, { append_to_response: 'external_ids,credits,watch/providers' }),
+
+  // Highly-rated movies that hit digital since `sinceDate` (YYYY-MM-DD), best
+  // first. vote_count floor keeps out thinly-rated titles. For "weekend watch".
+  getTopRatedDigital: async (sinceDate) => {
+    const data = await fetchTMDB('/discover/movie', {
+      'release_date.gte': sinceDate,
+      'release_date.lte': dateStr(0),
+      with_release_type: '4',
+      'vote_count.gte': '80',
+      sort_by: 'vote_average.desc',
+    });
+    return (data?.results || []).map(m => ({ ...m, media_type: 'movie' }));
+  },
+
+  // TV shows that premiered since `sinceDate`, most popular first. Caller checks
+  // each one's details for "all episodes available" (bingeable).
+  getRecentPopularTV: async (sinceDate) => {
+    const data = await fetchTMDB('/discover/tv', {
+      'first_air_date.gte': sinceDate,
+      'first_air_date.lte': dateStr(0),
+      'vote_count.gte': '30',
+      sort_by: 'popularity.desc',
+    });
+    return (data?.results || []).map(s => ({ ...s, media_type: 'tv' }));
+  },
+
   // Subscription (flatrate) providers across our audience regions, from the one
   // /watch/providers response (no extra calls). Returns
   // { US:[names], UK:[names], AU:[names] } — top 2 each, US is the default.
