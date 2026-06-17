@@ -12,9 +12,9 @@ export const evaluate = async (ctx) => {
   if (!candidates.length) return null;
 
   const pick = candidates[0];
-  const [details, providers] = await Promise.all([
+  const [details, streaming] = await Promise.all([
     tmdb.getDetails('movie', pick.tmdb_id),
-    tmdb.getWatchProviders('movie', pick.tmdb_id).catch(() => []),
+    tmdb.getStreamingRegions('movie', pick.tmdb_id).catch(() => ({})),
   ]);
 
   return {
@@ -23,7 +23,7 @@ export const evaluate = async (ctx) => {
     tmdb_refs: [{ media_type: 'movie', id: pick.tmdb_id, title: pick.title }],
     announce: { tracked_id: pick.id, key: 'now_streaming' },
     payload: {
-      providers: providers.slice(0, 3).map(p => p.provider_name),
+      streaming, // { US:[…], UK:[…], AU:[…] } — name the platform in the copy (US default)
       from_label: pick.release_date ? `In cinemas since ${formatDayMonth(pick.release_date)}` : null,
       title: {
         tmdb_id: pick.tmdb_id,

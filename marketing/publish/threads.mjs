@@ -24,14 +24,21 @@ const waitForContainer = async (containerId, accessToken) => {
 
 /**
  * @param {object} token   {account_id, access_token} from marketing_tokens
- * @param {object} content {text, imageUrls} (1 = single image, 2+ = carousel)
+ * @param {object} content {text, imageUrls} (0 = text-only, 1 = single image, 2+ = carousel)
  * @returns {{platform_post_id, permalink}}
  */
-export const publishToThreads = async (token, { text, imageUrls }) => {
+export const publishToThreads = async (token, { text, imageUrls = [] }) => {
   const { account_id: userId, access_token: accessToken } = token;
   let creationId;
 
-  if (imageUrls.length === 1) {
+  if (!imageUrls.length) {
+    // Text-only post (conversation type).
+    const { id } = await thFetch(`${userId}/threads`, {
+      media_type: 'TEXT', text, access_token: accessToken,
+    }, { method: 'POST' });
+    await waitForContainer(id, accessToken);
+    creationId = id;
+  } else if (imageUrls.length === 1) {
     const { id } = await thFetch(`${userId}/threads`, {
       media_type: 'IMAGE', image_url: imageUrls[0], text, access_token: accessToken,
     }, { method: 'POST' });

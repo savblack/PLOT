@@ -1,9 +1,9 @@
-// Generation step: for each planned post, produce copy (Claude) and media
-// (Playwright renders), upload to storage, create publication rows, then send
-// the veto digest email. Posts only become publishable once digest_sent_at is
-// set — the fail-closed gate.
+// Generation step: for each post whose copy is ready, render media (Playwright),
+// upload to storage, create publication rows, then send the veto digest email.
+// Copy is written upstream by the AI copy worker (see marketing/copy/) and read
+// off the row here — this step is API-key-free. Posts only become publishable
+// once digest_sent_at is set — the fail-closed gate.
 import { getSupabase, supabaseUrl } from '../lib/supabase.mjs';
-import { generateCopy } from '../lib/claude.mjs';
 import { renderCard, closeBrowser } from '../lib/render.mjs';
 import { uploadMedia, publicUrl } from '../lib/storage.mjs';
 import { sendEmail, ADMIN_EMAIL } from '../lib/email.mjs';
@@ -13,11 +13,46 @@ import { postSlug, entryUrl, chartUrl } from '../lib/feed.mjs';
 
 const PLATFORMS = ['x', 'instagram', 'threads'];
 
+// Friendly labels for the admin veto digest (keeps internal type ids unchanged).
+const TYPE_LABELS = {
+  weekly_slate: 'Upcoming this week',
+  trending_chart: 'Trending top 10',
+  countdown: 'Countdown',
+  now_streaming: 'Now streaming',
+  trailer_drop: 'Trailer drop',
+  on_this_day: 'On this day',
+};
+
+const CONVERSATION_PLATFORMS = ['x', 'threads']; // text-only — no Instagram
+
+// Text-only conversation post: no card to render, no article. Just the question
+// (already on the row as copy), published to X + Threads.
+const generateConversation = async (supabase, post) => {
+  if (!post.copy) throw new Error('Conversation post has no copy yet');
+  const copy = { ...post.copy };
+  const { error } = await supabase
+    .from('marketing_posts')
+    .update({ copy, media: [], status: 'generated', updated_at: new Date().toISOString() })
+    .eq('id', post.id);
+  if (error) throw new Error(`Post update failed: ${error.message}`);
+
+  const pubs = CONVERSATION_PLATFORMS.map(platform => ({ post_id: post.id, platform }));
+  const { error: pubError } = await supabase
+    .from('marketing_post_publications')
+    .upsert(pubs, { onConflict: 'post_id,platform', ignoreDuplicates: true });
+  if (pubError) throw new Error(`Publication rows failed: ${pubError.message}`);
+
+  return { ...post, copy, media: [], slug: null };
+};
+
 const generatePost = async (supabase, post) => {
+  if (post.post_type === 'conversation') return generateConversation(supabase, post);
+
   const spec = POST_TYPES[post.post_type];
   if (!spec) throw new Error(`Unknown post type ${post.post_type}`);
 
-  const copy = await generateCopy(post);
+  if (!post.copy) throw new Error('Post has no copy — the copy worker has not run for it yet');
+  const copy = { ...post.copy };
   // Feed/article hero is the plain TMDB still (no branding); charts keep their
   // branded render. The branded media below is still used on the social channels.
   copy.hero_image = feedHeroUrl(post.post_type, post.payload);
@@ -90,7 +125,7 @@ const digestHtml = (posts, skipped) => {
     });
     return `
       <div style="border:1px solid #e5e3e0;border-radius:12px;padding:20px;margin-bottom:24px;">
-        <h2 style="margin:0 0 2px;font-size:1.05rem;">${escapeHtml(post.post_type.replace(/_/g, ' '))}</h2>
+        <h2 style="margin:0 0 2px;font-size:1.05rem;">${escapeHtml(TYPE_LABELS[post.post_type] || post.post_type.replace(/_/g, ' '))}</h2>
         <p style="margin:0 0 14px;font-size:0.8rem;color:#888;">
           Publishes ${scheduledAEST} (AEST) · CTA: ${escapeHtml(post.copy?.cta_variant || 'none')}
           ${post.post_type === 'trending_chart'
@@ -98,9 +133,13 @@ const digestHtml = (posts, skipped) => {
             : post.slug ? ` · <a href="${entryUrl(post.slug)}" style="color:#888;">article</a>` : ''}
         </p>
         <div>${cardsHtml}</div>
-        ${copyBlock('X', post.copy?.x)}
-        ${copyBlock('Instagram', post.copy?.instagram)}
-        ${copyBlock('Threads', post.copy?.threads)}
+        ${post.copy?.x ? copyBlock('X', post.copy.x) : ''}
+        ${post.copy?.instagram ? copyBlock('Instagram', post.copy.instagram) : ''}
+        ${post.copy?.threads ? copyBlock('Threads', post.copy.threads) : ''}
+        ${(post.copy?.sources?.length)
+          ? `<p style="margin:10px 0 2px;font-size:12px;color:#888;text-transform:uppercase;letter-spacing:0.06em;">Sources used (article)</p>
+             <div style="font-size:12px;line-height:1.6;">${post.copy.sources.map(s => `<a href="${s.url}" style="color:#888;">${escapeHtml(s.title)}</a>`).join(' &middot; ')}</div>`
+          : ''}
         <p style="margin:18px 0 0;">
           <a href="${vetoUrl}" style="display:inline-block;background:#E05578;color:#fff;text-decoration:none;padding:10px 22px;border-radius:9999px;font-size:14px;font-weight:600;">Veto this post</a>
           <span style="font-size:12px;color:#888;margin-left:12px;">Do nothing and it publishes automatically.</span>
@@ -152,10 +191,12 @@ const sendDigest = async (supabase, posts, skipped) => {
 const main = async () => {
   const supabase = getSupabase();
 
+  // Only posts whose copy is ready (or already rendered on a prior run whose
+  // digest failed). Posts still in 'planned' are waiting on the copy worker.
   const { data: planned, error } = await supabase
     .from('marketing_posts')
     .select('*')
-    .in('status', ['planned', 'generated'])
+    .in('status', ['copy_ready', 'generated'])
     .lte('scheduled_for', new Date(Date.now() + 24 * 3600000).toISOString())
     .order('scheduled_for');
   if (error) throw new Error(error.message);

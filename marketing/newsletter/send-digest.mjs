@@ -22,7 +22,7 @@ const moveTag = (m) => {
 
 const buildHtml = ({ slate, nowStreaming, chart }, unsubscribeUrl) => {
   const slateBlock = slate ? `
-    <h2 style="font-size:1.05rem;margin:26px 0 10px;">Coming this week</h2>
+    <h2 style="font-size:1.05rem;margin:26px 0 10px;">Upcoming this week</h2>
     ${(slate.payload.titles || []).slice(0, 5).map(t => `
       <p style="margin:0 0 10px;font-size:0.95rem;line-height:1.5;">
         <b>${esc(t.title)}</b> — ${esc(t.when_label)}${t.where ? ` · ${esc(t.where)}` : ''}
@@ -34,7 +34,7 @@ const buildHtml = ({ slate, nowStreaming, chart }, unsubscribeUrl) => {
     <h2 style="font-size:1.05rem;margin:26px 0 10px;">Now on streaming</h2>
     ${nowStreaming.map(p => `
       <p style="margin:0 0 10px;font-size:0.95rem;">
-        <b>${esc(p.payload.title?.title)}</b>${p.payload.providers?.length ? ` — ${esc(p.payload.providers.join(' · '))}` : ''}
+        <b>${esc(p.payload.title?.title)}</b>${p.payload.streaming?.US?.length ? ` — ${esc(p.payload.streaming.US.join(' · '))}` : ''}
       </p>`).join('')}
   ` : '';
 

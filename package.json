@@ -14,6 +14,8 @@
     "footer": "node scripts/build-footer.mjs",
     "footer:check": "node scripts/build-footer.mjs --check",
     "mkt:plan": "node marketing/planner/plan.mjs",
+    "mkt:copy:pull": "node marketing/copy/pull.mjs",
+    "mkt:copy:save": "node marketing/copy/save.mjs",
     "mkt:generate": "node marketing/generate/generate.mjs",
     "mkt:publish": "node marketing/publish/publish.mjs",
     "mkt:metrics": "node marketing/metrics/collect.mjs",
