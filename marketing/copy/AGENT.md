@@ -51,7 +51,10 @@ same steps. Nothing here depends on which model you are.
 ## Environment this task needs (whatever runner executes it)
 - Repo checked out, `npm ci` run.
 - `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` (pull/save read & write the DB).
-- `gh` authenticated with `workflow` scope (step 4 dispatches the render job).
+- `TMDB_API_KEY` + `OMDB_API_KEY` (pull enriches briefs with TMDB + ratings).
+- `gh` authenticated (e.g. `GH_TOKEN`) able to dispatch workflows (step 4).
+- Agent auth on a subscription: Claude Code uses `CLAUDE_CODE_OAUTH_TOKEN`
+  (`claude setup-token`) — never an Anthropic API key. (.github/workflows/marketing-copy.yml.)
 
 ## Swapping the worker
 To run this with Codex (or another agent) instead of Claude Code, point that agent's
