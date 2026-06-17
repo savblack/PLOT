@@ -13,6 +13,8 @@ import { makeEvaluator as makeCountdown } from './triggers/countdown.mjs';
 import * as nowStreaming from './triggers/now-streaming.mjs';
 import * as trailerDrop from './triggers/trailer-drop.mjs';
 import * as onThisDay from './triggers/on-this-day.mjs';
+import * as watchTonight from './triggers/watch-tonight.mjs';
+import * as hiddenGem from './triggers/hidden-gem.mjs';
 
 const TRACK_LIMIT = 25;
 
@@ -96,10 +98,13 @@ const main = async () => {
   // Compose the day's posts.
   //   Monday  -> "Upcoming this week" (single themed post)
   //   Friday  -> Trending top 10      (single themed post)
-  //   Tue/Wed/Thu/Sat/Sun -> up to 4: a daily anniversary, a release-day
-  //     spotlight (a title hitting home today), then countdowns + a trailer
-  //     drop to fill. We never pad: thin days simply post fewer. A title never
-  //     appears twice in one day. All posts share the slot (one publish run).
+  //   Wed/Sat lead with a fixed feature (what to watch tonight / hidden gem),
+  //     then fill like any other non-anchor day.
+  //   Tue/Wed/Thu/Sat/Sun -> up to 4: the day's feature (if any), a daily
+  //     anniversary, a release-day spotlight (a title hitting home today), then
+  //     countdowns + a trailer drop to fill. We never pad: thin days simply post
+  //     fewer. A title never appears twice in one day. All posts share the slot
+  //     (one publish run).
   const DAILY_TARGET = 4;
   const candidates = [];
   const chosenIds = new Set();
@@ -118,8 +123,10 @@ const main = async () => {
   else if (weekday === 'Friday') await consider(trendingChart.evaluate);
 
   // Non-anchor days — and anchor days whose theme found nothing — get the
-  // anniversary + spotlight + dynamic-fill composition.
+  // feature + anniversary + spotlight + dynamic-fill composition.
   if (!isAnchor || candidates.length === 0) {
+    if (weekday === 'Wednesday') await consider(watchTonight.evaluate);    // fixed feature
+    else if (weekday === 'Saturday') await consider(hiddenGem.evaluate);   // fixed feature
     await consider((c) => onThisDay.evaluate(c));                          // anniversary (every day)
     if (!candidates.length) await consider((c) => onThisDay.evaluate(c, { minVotes: 500 }));
     await consider(nowStreaming.evaluate);                                 // release-day spotlight

@@ -52,6 +52,9 @@ const TYPE_META: Record<string, { label: string; tone: string }> = {
   trailer_drop: { label: 'Trailer drop', tone: '#8A5410' },
   weekly_slate: { label: 'Upcoming this week', tone: '#185FA5' },
   on_this_day: { label: 'On this day', tone: '#6b6b70' },
+  watch_tonight: { label: 'What to watch tonight', tone: '#0F6E56' },
+  hidden_gem: { label: 'Hidden gem', tone: '#534AB7' },
+  conversation: { label: 'Let’s talk', tone: '#8A5410' },
 };
 
 const FILTERS: { key: string | null; label: string }[] = [

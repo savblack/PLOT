@@ -76,20 +76,22 @@ changes only *which agent runs that spec*, never the pipeline or the validation.
 target **up to 4 posts/day** (all in the one publish run), composed in this order
 and never padded — thin days simply post fewer, and a title never repeats in a day:
 
-1. `on_this_day` anniversary — every non-anchor day
-2. `now_streaming` — the release-day spotlight (a tracked title hitting home today)
-3. fill toward 4 from `countdown` T-1, `trailer_drop`, `countdown` T-7, `countdown` T-14
-
-So a day with a spotlight runs 2 dynamic fills; a day without runs 3.
+1. the day's **fixed feature**, if any — Wed `watch_tonight`, Sat `hidden_gem`
+2. `on_this_day` anniversary — every non-anchor day
+3. `now_streaming` — the release-day spotlight (a tracked title hitting home today)
+4. fill toward 4 from `countdown` T-1, `trailer_drop`, `countdown` T-7, `countdown` T-14
 
 | Type | When | Media |
 |---|---|---|
 | `weekly_slate` ("Upcoming this week") | Monday (AEST), single post | carousel: one card per title, most popular first |
 | `trending_chart` | Friday (AEST), single post | IG/Threads carousel: chart 1-5, chart 6-10, top-3 detail cards; X gets one full top-10 chart |
+| `watch_tonight` | Wednesday — trending ∩ streamable now, rating ≥ 7 (movies + TV) | single card |
+| `hidden_gem` | Saturday — 1980+ movie on streaming, rating ≥ 7.2, ≥ 5000 votes | single card |
 | `on_this_day` | every non-anchor day (anniversary) | single card |
 | `now_streaming` | non-anchor days — tracked title's digital date = today | single backdrop card (the release-day spotlight) |
 | `countdown` | non-anchor days — tracked title at T-1/T-7/T-14 | single card, big day count |
 | `trailer_drop` | non-anchor days — new official trailer on a tracked title | single backdrop card |
+| `conversation` | text question on Threads/X (3×/week) — *pipeline pending* | none (text-only) |
 
 ## Channel mapping (which render goes where)
 
