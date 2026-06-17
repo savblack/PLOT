@@ -28,6 +28,7 @@ const PrivacyPage       = lazy(() => import('./pages/PrivacyPage.jsx'));
 const PublicProfilePage = lazy(() => import('./pages/PublicProfilePage.jsx'));
 const RootRoute         = lazy(() => import('./pages/RootRoute.jsx'));
 const DesignSystemPage  = lazy(() => import('./pages/DesignSystemPage.jsx'));
+const SavePage          = lazy(() => import('./pages/SavePage.jsx'));
 
 const wrap = (el) => <Suspense fallback={<LoadingSpinner />}>{el}</Suspense>;
 
@@ -39,6 +40,9 @@ const router = createBrowserRouter([
   { path: '/terms',          element: wrap(<TermsPage />) },
   { path: '/privacy',        element: wrap(<PrivacyPage />) },
   { path: '/u/:username',    element: wrap(<PublicProfilePage />) },
+
+  // Deep link: "Save to watchlist" from outside the app (newsletter, chart page)
+  { path: '/save',           element: wrap(<SavePage />) },
 
   // Auth
   { path: '/login',          element: wrap(<AuthPage initialMode="login" />) },

@@ -13,6 +13,7 @@ import { getRatings } from '../lib/omdb.mjs';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const SITE = 'https://theplot.tv';
+const APP = 'https://app.theplot.tv';
 const REGION = 'US';
 const utm = (campaign) => `${SITE}?utm_source=newsletter&utm_medium=email&utm_campaign=${campaign}`;
 const CHART_URL = `${SITE}/whats-on/chart?utm_source=newsletter&utm_medium=email&utm_campaign=chart`;
@@ -39,6 +40,27 @@ const INK = '#0c0c0c', MUT = '#6b6b70', FAINT = '#a1a1a6', PINK = '#E05578';
 const HAIR = '#e7e6e3', PAPER = '#f4f4f5';
 const SERIF = "'Instrument Serif', Georgia, 'Times New Roman', serif";
 const SANS = "'Helvetica Neue', Helvetica, Arial, sans-serif";
+
+// One-click "Save to watchlist" deep link. Returns '' for anything that isn't a
+// valid movie/tv title, so callers can drop it in unconditionally. Logged-out
+// readers are routed through login and the save completes on return (handled by
+// the app's /save route). `src=newsletter` tags the PostHog event.
+const saveUrl = ({ tmdb_id, media_type } = {}) => {
+  const id = Number(tmdb_id);
+  if (!Number.isInteger(id) || id <= 0) return '';
+  if (media_type !== 'movie' && media_type !== 'tv') return '';
+  return `${APP}/save?media_type=${media_type}&tmdb_id=${id}&src=newsletter`;
+};
+// Small inline "+ Save" text link for compact rows.
+const saveTextLink = (item, px = 13) => {
+  const u = saveUrl(item);
+  return u ? `<a href="${u}" style="font-family:${SANS};font-size:${px}px;font-weight:600;color:${PINK};text-decoration:none;white-space:nowrap;">+ Save</a>` : '';
+};
+// Filled pill button for the featured title.
+const saveButton = (item) => {
+  const u = saveUrl(item);
+  return u ? `<a href="${u}" style="display:inline-block;background:${INK};color:#ffffff;text-decoration:none;font-family:${SANS};font-size:14px;font-weight:500;padding:12px 28px;border-radius:9999px;">+ Save to your watchlist</a>` : '';
+};
 
 const moveChip = (m) => {
   if (!m || m.dir === 'none' || m.dir === 'same') return '';
@@ -68,6 +90,7 @@ const chartTwoColumn = (items) => {
       <td valign="middle" style="padding-left:11px;">
         <div style="font-family:${SERIF};font-size:16px;line-height:1.12;color:${INK};">${esc(i.title)}</div>
         <div style="font-family:${SANS};font-size:12px;line-height:1.3;color:${MUT};margin-top:3px;">${i.media_type === 'tv' ? 'TV' : 'Film'}${mv ? ` &middot; ${mv}` : ''}</div>
+        ${saveTextLink(i, 12) ? `<div style="margin-top:5px;">${saveTextLink(i, 12)}</div>` : ''}
       </td>
     </tr></table>`;
   };
@@ -103,6 +126,7 @@ const featuredBlock = (f, kicker) => {
       ${f.overview ? `<div style="font-family:${SANS};font-size:15px;line-height:1.6;color:#27272a;margin-top:14px;">${esc(trim(f.overview, 280))}</div>` : ''}
       ${credits ? `<div style="font-family:${SANS};font-size:13px;line-height:1.5;color:${MUT};margin-top:12px;">${credits}</div>` : ''}
       ${f.providers?.length ? `<div style="font-family:${SANS};font-size:13px;color:${MUT};margin-top:16px;">Where to watch: <b style="color:${INK};">${esc(f.providers.slice(0, 3).join(', '))}</b></div>` : ''}
+      ${saveButton(f) ? `<div style="margin-top:22px;">${saveButton(f)}</div>` : ''}
     </td></tr>`;
 };
 
@@ -118,6 +142,7 @@ const weekendBlock = (picks) => {
           <div style="font-family:${SANS};font-size:11px;font-weight:700;letter-spacing:0.13em;text-transform:uppercase;color:${PINK};">${esc(p.label)}</div>
           <div style="font-family:${SERIF};font-size:21px;line-height:1.12;color:${INK};margin-top:5px;">${esc(p.title)}</div>
           <div style="font-family:${SANS};font-size:13px;line-height:1.45;color:${MUT};margin-top:7px;">${p.meta}</div>
+          ${saveTextLink(p) ? `<div style="margin-top:9px;">${saveTextLink(p)}</div>` : ''}
         </td>
       </tr></table>
     </td></tr>`;
@@ -132,6 +157,7 @@ const streamingGallery = (items) => {
       <img src="${esc(tmdbImg(t.poster_path, 'w342'))}" width="166" height="249" alt="" style="display:block;width:100%;height:249px;object-fit:cover;border-radius:8px;border:1px solid ${HAIR};background:#ececec;">
       <div style="font-family:${SERIF};font-size:17px;line-height:1.12;color:${INK};margin-top:9px;">${esc(t.title)}</div>
       <div style="font-family:${SANS};font-size:12px;line-height:1.4;color:${MUT};margin-top:4px;">${t.vote ? `&#9733; ${t.vote.toFixed(1)} &middot; ` : ''}${esc(t.providers[0])}</div>
+      ${saveTextLink(t, 12) ? `<div style="margin-top:6px;">${saveTextLink(t, 12)}</div>` : ''}
     </td>` : '<td width="33.33%" style="font-size:0;line-height:0;">&nbsp;</td>';
   const rows = [];
   for (let i = 0; i < items.length; i += 3) rows.push([items[i], items[i + 1], items[i + 2]]);
@@ -240,7 +266,7 @@ const main = async () => {
     const provs = await providerNames('movie', m.id);
     if (!provs.length) continue;
     seen.add(m.id);
-    weekend.push({ label: "The movie everyone's talking about", title: m.title || m.name, poster_path: m.poster_path, meta: `${star(m.vote_average)}${esc(provs[0])}` });
+    weekend.push({ label: "The movie everyone's talking about", title: m.title || m.name, poster_path: m.poster_path, meta: `${star(m.vote_average)}${esc(provs[0])}`, tmdb_id: m.id, media_type: 'movie' });
     break;
   }
 
@@ -254,7 +280,7 @@ const main = async () => {
     const provs = await providerNames('tv', s.id);
     if (!provs.length) continue;
     seen.add(s.id);
-    weekend.push({ label: 'The series to binge', title: s.name || s.title, poster_path: s.poster_path, meta: `${star(det.vote_average)}All ${det.number_of_episodes} episodes on ${esc(provs[0])}` });
+    weekend.push({ label: 'The series to binge', title: s.name || s.title, poster_path: s.poster_path, meta: `${star(det.vote_average)}All ${det.number_of_episodes} episodes on ${esc(provs[0])}`, tmdb_id: s.id, media_type: 'tv' });
     break;
   }
 
@@ -273,7 +299,7 @@ const main = async () => {
     const provs = await providerNames(c.media_type, c.id);
     if (!provs.length) continue;
     seen.add(c.id);
-    streaming.push({ title: c.title || c.name, poster_path: c.poster_path, providers: provs, vote: c.vote_average });
+    streaming.push({ title: c.title || c.name, poster_path: c.poster_path, providers: provs, vote: c.vote_average, tmdb_id: c.id, media_type: c.media_type });
   }
 
   if (!featured && !chart.length && !weekend.length && !streaming.length) {

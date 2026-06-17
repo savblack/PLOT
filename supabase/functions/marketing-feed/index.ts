@@ -21,6 +21,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 import { FOOTER_HTML } from './footer.generated.ts';
 
 const SITE = 'https://theplot.tv';
+const APP = 'https://app.theplot.tv';
 const FEED_TITLE = "What's On";
 const FEED_PATH = '/whats-on';
 const PAGE_SIZE = 30;
@@ -402,11 +403,19 @@ const CHART_CSS = `
   .ch-kind { display: block; color: var(--faint); font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase; margin-top: 5px; }
   .ch-move { font-size: 0.64rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; white-space: nowrap; }
   .mv-up { color: #0F6E56; } .mv-down { color: #B03A5E; } .mv-new { color: var(--pink); } .mv-same { color: var(--faint); }
+  .ch-actions { display: flex; align-items: center; justify-content: flex-end; gap: 16px; }
+  .ch-save {
+    display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.5rem 1.05rem; min-height: 38px;
+    border: 1px solid var(--ink); border-radius: 9999px; background: transparent; color: var(--ink);
+    text-decoration: none; font-size: 0.72rem; font-weight: 500; letter-spacing: 0.04em; white-space: nowrap;
+    transition: background 0.2s var(--ease), color 0.2s var(--ease), transform 0.2s var(--ease);
+  }
+  .ch-save:hover { background: var(--ink); color: #fff; transform: translateY(-1px); }
   @media (max-width: 600px) {
-    .ch-row { grid-template-columns: 34px 48px 1fr; gap: 14px; }
+    .ch-row { grid-template-columns: 34px 48px 1fr; gap: 14px 14px; }
     .ch-rank { font-size: 1.6rem; }
     .ch-title { font-size: 1.2rem; }
-    .ch-move { grid-column: 2 / -1; }
+    .ch-actions { grid-column: 2 / -1; justify-content: flex-start; margin-top: 2px; }
   }
 `;
 
@@ -450,11 +459,14 @@ const renderChart = async (supabase: ReturnType<typeof createClient>) => {
   const rows = items.map((it) => {
     const m = chartMovement(it, it.rank, prior);
     const img = it.poster_path ? `<img class="ch-poster" src="${esc(tmdbImg(it.poster_path))}" alt="" loading="lazy">` : '<span class="ch-poster"></span>';
+    // One-click "Save to watchlist": logged-out users get routed through login
+    // and the save completes on return (handled by the app's /save deep link).
+    const saveHref = `${APP}/save?media_type=${esc(it.media_type)}&tmdb_id=${it.tmdb_id}&src=chart`;
     return `<li><div class="ch-row">
       <span class="ch-rank${it.rank <= 10 ? ' top' : ''}">${it.rank}</span>
       ${img}
       <span><span class="ch-title">${esc(it.title)}</span><span class="ch-kind">${it.media_type === 'tv' ? 'TV' : 'Film'}</span></span>
-      ${moveChip(m)}
+      <span class="ch-actions">${moveChip(m)}<a class="ch-save" href="${saveHref}">+ Save</a></span>
     </div></li>`;
   }).join('');
 

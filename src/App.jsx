@@ -6,6 +6,7 @@ import AppShell from './components/AppShell.jsx';
 import MediaPanel from './components/MediaPanel.jsx';
 import { useTheme } from './hooks/useTheme.js';
 import { useWatchlist }    from './hooks/useWatchlist.js';
+import { usePendingSave }  from './hooks/usePendingSave.js';
 import { useWatching }     from './hooks/useWatching.js';
 import { useReminders }    from './hooks/useReminders.js';
 import { useTopLists }     from './hooks/useTopLists.js';
@@ -97,6 +98,42 @@ function TimezoneBanner({ deviceTz, onUpdate, onDismiss }) {
   );
 }
 
+/* ── Save-to-watchlist confirmation toast ───── */
+function SaveToast({ toast, onClose }) {
+  const isError = toast.status === 'error';
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      onClick={onClose}
+      style={{
+        position: 'fixed',
+        top: 'calc(env(safe-area-inset-top, 0px) + 0.75rem)',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        maxWidth: 'min(92vw, 420px)',
+        background: 'var(--surface-raised)',
+        border: `1px solid ${isError ? 'rgba(248,113,113,0.4)' : 'rgba(74,222,128,0.35)'}`,
+        borderRadius: 'var(--radius-lg)',
+        padding: '0.7rem 1rem',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.6rem',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.28)',
+        zIndex: 1200,
+        cursor: 'pointer',
+      }}
+    >
+      <span aria-hidden="true" style={{ color: isError ? '#f87171' : '#4ade80', fontSize: '1rem', flexShrink: 0 }}>
+        {isError ? '✕' : '✓'}
+      </span>
+      <span style={{ fontSize: '0.85rem', color: 'var(--text-primary)', lineHeight: 1.4 }}>
+        {toast.message}
+      </span>
+    </div>
+  );
+}
+
 /* ═══════════════════════════════════════
    App Component (layout shell)
 ═══════════════════════════════════════ */
@@ -114,6 +151,9 @@ export default function App() {
   const [panelClosing, setPanelClosing] = useState(false);
 
   const [tzCheckTime, setTzCheckTime] = useState(() => Date.now());
+
+  // Confirmation toast for "save to watchlist" deep links
+  const [saveToast, setSaveToast] = useState(null);
 
   /* ── Profile loader ── */
   const loadProfile = useCallback(async (userId) => {
@@ -200,6 +240,19 @@ export default function App() {
   const favorites    = useFavorites(user?.id);
   const customLists  = useCustomLists(user?.id);
 
+  /* ── Pending "save to watchlist" deep link (newsletter / chart page) ── */
+  const handleSaveResult = useCallback((result) => {
+    setSaveToast(result);
+  }, []);
+  usePendingSave({ user, watchlist, openPanel, onResult: handleSaveResult });
+
+  // Auto-dismiss the save confirmation toast
+  useEffect(() => {
+    if (!saveToast) return;
+    const t = setTimeout(() => setSaveToast(null), 4500);
+    return () => clearTimeout(t);
+  }, [saveToast]);
+
   const refreshProfile = useCallback(() => {
     if (user?.id) loadProfile(user.id);
   }, [user, loadProfile]);
@@ -242,6 +295,10 @@ export default function App() {
           closing={panelClosing}
           onClose={closePanel}
         />
+      )}
+
+      {saveToast && (
+        <SaveToast toast={saveToast} onClose={() => setSaveToast(null)} />
       )}
 
       {tzBanner && (
