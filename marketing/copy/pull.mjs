@@ -15,14 +15,14 @@ export const JOBS_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), 
 const main = async () => {
   const supabase = getSupabase();
 
-  // Posts due in the next ~24h that still need copy. We include 'failed' so a
-  // worker re-run can retry a post a previous run couldn't complete.
+  // Posts in the upcoming week that still need copy (the weekly batch plans the
+  // whole week up front). 'failed' is included so a re-run can retry.
   const { data: posts, error } = await supabase
     .from('marketing_posts')
     .select('id, post_type, payload, tmdb_refs, scheduled_for, status')
     .in('status', ['planned', 'failed'])
     .is('copy', null)
-    .lte('scheduled_for', new Date(Date.now() + 24 * 3600000).toISOString())
+    .lte('scheduled_for', new Date(Date.now() + 8 * 86400000).toISOString())
     .order('scheduled_for');
   if (error) throw new Error(error.message);
 
