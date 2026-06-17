@@ -40,12 +40,11 @@ const factsFor = (c) => {
   const p = c.payload || {}, t = p.title || {};
   const f = [];
   if (c.copyOnly) {
-    if (c.post_type === 'spotlight') f.push('Put the US title to spotlight in the Card block (it goes on the image).');
-    else if (c.post_type === 'hidden_gem') f.push('Put the under-seen US title in the Card block (it goes on the image).');
-    else if (c.post_type === 'what_to_watch_tonight') f.push('Put the US title to recommend tonight in the Card block (it goes on the image).');
-    else if (c.post_type === 'text_question') f.push('Put the question in the Card block (it is printed on the image).');
-    else if (c.post_type === 'question_of_week') f.push('Put the question of the week in the Card block (it is printed on the image).');
-    f.push('Then render the image:  npm run mkt:manual:media -- <date>');
+    if (c.post_type === 'spotlight') f.push('Put the US title to spotlight in the Card block, then: npm run mkt:manual:media -- <date>');
+    else if (c.post_type === 'hidden_gem') f.push('Put the under-seen US title in the Card block, then: npm run mkt:manual:media -- <date>');
+    else if (c.post_type === 'what_to_watch_tonight') f.push('Put the US title to recommend tonight in the Card block, then: npm run mkt:manual:media -- <date>');
+    else if (c.post_type === 'text_question') f.push('Text-only post (no image): write one short question for the audience.');
+    else if (c.post_type === 'question_of_week') f.push('Text-only post (no image): write the question of the week.');
     return f;
   }
   if (c.post_type === 'countdown') {
@@ -116,6 +115,7 @@ const main = async () => {
         scheduled_for: new Date(base - i * 60000).toISOString(),
         cta_variant: CTA[c.post_type] || 'none',
         feed: !!TYPES[c.post_type]?.feed,
+        ...(TYPES[c.post_type]?.card ? { card: TYPES[c.post_type].card } : {}),
         ...(renderable ? {
           hero_image: feedHeroUrl(c.post_type, c.payload),
           tmdb_refs: c.tmdb_refs,

@@ -17,14 +17,14 @@ the rendered cards as `.jpg`, plus one combined copy doc `<date>.md`.
 
 2. write      Fill every TODO in <date>.md following marketing/VOICE.md.
                 Feed posts: X / Instagram / Threads / Alt text / What's On title +
-                body. Social-only posts: a Card block (the title to feature, or the
-                question to print on the image) + X / Instagram / Threads / Alt text.
-                Delete any post you don't want.
+                body. Feature posts: a Card block (the title to feature) + X /
+                Instagram / Threads / Alt text. Question posts: text-only — just
+                X / Instagram / Threads. Delete any post you don't want.
 
 3. media      npm run mkt:manual:media -- [YYYY-MM-DD]
-                renders the social-only cards from their Card blocks: a feature
-                card for the named title (resolved via TMDB search), or a
-                typographic question card. Feed posts already got media at build.
+                renders a feature card for each title-based social post from the
+                title named in its Card block (resolved via TMDB search). Feed
+                posts already got media at build; question posts have no image.
 
 4. publish    npm run mkt:manual:publish -- [YYYY-MM-DD] [--dry-run]
                 validates and upserts the feed-eligible posts to
@@ -60,14 +60,14 @@ Each label maps to a post type:
 | `spotlight` | feature (title over backdrop) | media | — |
 | `hidden_gem` | feature | media | — |
 | `what_to_watch_tonight` | feature | media | — |
-| `text_question` | typographic question | media | — |
-| `question_of_week` | typographic question | media | — |
+| `text_question` | none — text only | — | — |
+| `question_of_week` | none — text only | — | — |
 
-All nine types get branded media. The four feed types render at **build** from
-the planner payload. The five social-only types render at the **media** step
-from the Card block (`feature.html` for the title-based ones, `question.html`
-for the questions). The social-only types are **not** published to What's On —
-`publish.mjs` skips them; post their images + copy to social by hand. Giving
+The four feed types render at **build** from the planner payload. The three
+feature types render a card at the **media** step (`feature.html`) from the
+title in their Card block. The two question types are **text only** — no image.
+None of the five social-only types are published to What's On — `publish.mjs`
+skips them; post their copy (and any feature image) to social by hand. Giving
 them feed articles too would need a migration to widen the
 `marketing_posts.post_type` check constraint and the feed's type metadata.
 

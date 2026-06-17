@@ -13,17 +13,23 @@ const FEED_FIELDS = [
   ['page_title', "What's On — title"],
   ['page_body', "What's On — body"],
 ];
-// Social-only posts: a Card block (title to feature, or the question to print on
-// the image) drives media.mjs; no What's On article.
-const SOCIAL_FIELDS = [
-  ['card', 'Card (title to feature / question to print)'],
+// Feature posts (a title card): a Card block names the title media.mjs renders.
+const FEATURE_FIELDS = [
+  ['card', 'Card (title to feature)'],
   ['x', 'X'],
   ['instagram', 'Instagram'],
   ['threads', 'Threads'],
   ['alt_text', 'Alt text'],
 ];
+// Text-only posts (questions): no image, no article — just the social copy.
+const TEXT_FIELDS = [
+  ['x', 'X'],
+  ['instagram', 'Instagram'],
+  ['threads', 'Threads'],
+];
 
-const fieldsFor = (meta) => (meta.feed ? FEED_FIELDS : SOCIAL_FIELDS);
+const fieldsFor = (meta) =>
+  meta.feed ? FEED_FIELDS : meta.card === 'title' ? FEATURE_FIELDS : TEXT_FIELDS;
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 // posts: [{ title, facts: string[], meta: object, copy?: {...} }]
