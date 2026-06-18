@@ -1,6 +1,8 @@
-// Publish step. Takes posts that are pending_review, past their scheduled time,
-// AND had their veto digest delivered (digest_sent_at — the fail-closed gate),
-// then fans out to each platform independently.
+// Publish step. Takes posts the admin has APPROVED on the review desk
+// (status 'approved'), past their scheduled time, then fans out to each platform
+// independently. The gate is fail-closed by design: a post that's never approved
+// stays 'needs_review' and is never sent. Honours a global pause switch
+// (marketing_settings.publishing_paused) so the whole push can be halted.
 //
 // Flags:
 //   DRY_RUN=1        log what would be posted; mark nothing published
@@ -15,15 +17,25 @@ const SERVICE = { x: 'twitter', instagram: 'instagram', threads: 'threads' };
 
 const DRY_RUN = process.env.DRY_RUN === '1';
 
-// Re-check the post row right before sending: a veto can land between the
-// query and the publish call.
+// Re-check the post row right before sending: a reject/unapprove can land
+// between the query and the publish call.
 const stillPublishable = async (supabase, postId) => {
   const { data } = await supabase
     .from('marketing_posts')
-    .select('status, digest_sent_at')
+    .select('status')
     .eq('id', postId)
     .single();
-  return data?.status === 'pending_review' && !!data?.digest_sent_at;
+  return data?.status === 'approved';
+};
+
+// Global kill switch from the review desk — halts the whole push when on.
+const publishingPaused = async (supabase) => {
+  const { data } = await supabase
+    .from('marketing_settings')
+    .select('publishing_paused')
+    .limit(1)
+    .maybeSingle();
+  return !!data?.publishing_paused;
 };
 
 const claim = async (supabase, pub) => {
@@ -101,6 +113,11 @@ const finalStatus = (outcomes) => {
 const main = async () => {
   const supabase = getSupabase();
 
+  if (await publishingPaused(supabase)) {
+    console.log('Publishing is paused (marketing_settings.publishing_paused) — nothing sent.');
+    return;
+  }
+
   if (process.argv.includes('--retry-failed')) {
     const { data: requeued } = await supabase
       .from('marketing_post_publications')
@@ -111,16 +128,14 @@ const main = async () => {
     // Their posts need to be publishable again too.
     await supabase
       .from('marketing_posts')
-      .update({ status: 'pending_review' })
-      .in('status', ['partially_published', 'failed'])
-      .not('digest_sent_at', 'is', null);
+      .update({ status: 'approved' })
+      .in('status', ['partially_published', 'failed']);
   }
 
   const { data: posts, error } = await supabase
     .from('marketing_posts')
     .select('*, marketing_post_publications(*)')
-    .eq('status', 'pending_review')
-    .not('digest_sent_at', 'is', null)
+    .eq('status', 'approved')
     .lte('scheduled_for', new Date().toISOString());
   if (error) throw new Error(error.message);
 
@@ -144,7 +159,7 @@ const main = async () => {
     await supabase.from('marketing_posts')
       .update({ status, updated_at: new Date().toISOString() })
       .eq('id', post.id)
-      .eq('status', 'pending_review');
+      .eq('status', 'approved');
     console.log(`${post.topic_key}: ${status} (${outcomes.join(', ')})`);
   }
 };

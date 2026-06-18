@@ -1,9 +1,12 @@
 # PLOT — Marketing Automation
 
-Fully-automated organic social content for **X, Instagram, and Threads**, plus a
+Automated organic social content for **X, Instagram, and Threads**, plus a
 **weekly subscriber newsletter**. A single themed post on Mon/Fri and up to four
-posts on the other days (see Cadence below), generated ~12 hours ahead, previewed
-to the admin by email (veto window), then published automatically.
+posts on the other days (see Cadence below). The whole week is generated ahead in
+one Saturday batch and lands on the **review desk / control room**
+(admin.theplot.tv); you approve (or edit / reject / reschedule) there, and the
+daily push sends only **approved** posts to Buffer on their day. Nothing publishes
+without approval — silence keeps a post in review.
 
 ## How a post happens
 
@@ -55,7 +58,7 @@ The worker writes the social copy from the tight social-facts payload, then writ
 a short-to-medium **blog post** (`page_body`, 4–8 paras) using the research pack
 plus its own web browsing for current reception — always paraphrased, never
 quoted, and citing only the pre-fetched ratings (never TMDB scores). It returns
-the `sources` it used; those show in the veto digest for attribution review but
+the `sources` it used; those show on the review desk for attribution review but
 are **not** rendered on the public page. Stays $0: TMDB + Wikipedia are free,
 OMDb's free tier is 1,000/day, and the worker browses on its subscription. No paid
 search APIs.
@@ -115,11 +118,11 @@ Every post is originally published as an article on **theplot.tv/whats-on**
 (the `marketing-feed` edge function, proxied via `website/vercel.json`
 rewrites). The copy worker produces `page_title`/`page_body` (a short-to-medium,
 research-backed blog post) alongside the social copy, and the render step writes
-the `slug`. Entries become visible at
-their scheduled publish time and vetoed posts never appear, so there's nothing
+the `slug`. Entries become visible once a post is **approved** (and stay through
+publish); posts still in review, or rejected, never appear — so there's nothing
 extra to manage. Threads posts automatically append the article link
-(UTM-tagged); X and Instagram point to it via link-in-bio. The veto digest
-includes each post's article URL for preview.
+(UTM-tagged); X and Instagram point to it via link-in-bio. The review desk links
+each post's article for preview.
 
 Deploy: `supabase functions deploy marketing-feed --no-verify-jwt`. The
 `/whats-on` rewrite only works on the Vercel project that serves theplot.tv —
@@ -152,10 +155,12 @@ reads are paid) — the learning loop runs on IG/Threads metrics.
 1. **Apply the migration + deploy functions**
    ```sh
    supabase db push
-   supabase functions deploy marketing-veto --no-verify-jwt
+   supabase functions deploy admin-review --no-verify-jwt
    supabase functions deploy newsletter-subscribe --no-verify-jwt
    supabase functions deploy marketing-feed --no-verify-jwt
    ```
+   (`admin-review` is the review desk / control room at admin.theplot.tv. The old
+   `marketing-veto` email path is retired — approvals happen on the desk now.)
 2. **Buffer (X)**: free account at buffer.com, connect the PLOT X account,
    create a personal API key (Settings → API) → GH secret `BUFFER_API_KEY`.
 3. **Instagram**: convert the PLOT IG account to Professional. In the Meta dev
@@ -170,6 +175,10 @@ reads are paid) — the learning loop runs on IG/Threads metrics.
    `TMDB_API_KEY`, `RESEND_API_KEY`, `MARKETING_ADMIN_EMAIL`, `BUFFER_API_KEY`
    (optional `BUFFER_CHANNEL_ID`). No LLM API key — copy is written by the
    scheduled AI worker on a subscription (see *Copy generation* above).
+   **Control-room login**: set `ADMIN_PASSWORD` (any memorable phrase) on the
+   `admin-review` function — that's what you type on the sign-in page at
+   admin.theplot.tv. `ADMIN_TOKEN` (a long random string) is also still accepted,
+   and works as a `?key=<ADMIN_TOKEN>` bookmark. Set at least one of the two.
 6. **Copy worker**: the runner is `.github/workflows/marketing-copy.yml` (Claude
    Code, headless, daily after plan). It's inert until you add one secret —
    **`CLAUDE_CODE_OAUTH_TOKEN`** (subscription, *not* an API key; generate via
@@ -186,15 +195,21 @@ reads are paid) — the learning loop runs on IG/Threads metrics.
 
 - **Preview templates** (no DB needed): `TMDB_API_KEY=... npm run mkt:preview`,
   then open `marketing/preview/out/index.html`. Run after any template change.
+- **Review & approve the week**: open the control room at **admin.theplot.tv**
+  and sign in with your `ADMIN_PASSWORD`. It shows the upcoming week grouped by day with the
+  reason each post was planned, the cards, the copy, the article link and each
+  post's per-platform publish state, plus a recent-published history. Per post:
+  edit, **Approve** / **Reject** / **Unapprove**, **Reschedule**, **Publish now**,
+  **Retry failed**. Top of page: **Approve the week** (one click) and a global
+  **Pause all publishing** switch.
+- **Only approved posts publish.** The daily push (`publish.mjs`) sends posts with
+  status `approved` whose `scheduled_for` has passed. A post left in review is
+  never sent (fail-closed). Pause halts the whole push regardless of approvals.
 - **Dry run a publish**: dispatch *Marketing — publish* with `dry_run` checked,
   or locally `DRY_RUN=1 npm run mkt:publish`.
-- **Missed/failed digest**: nothing publishes (fail closed). Re-dispatch
-  *Marketing — render* from the Actions tab — it reuses already-rendered
-  media for `generated` posts and just re-sends the digest.
-- **Retry a failed platform**: dispatch *Marketing — publish* with
-  `retry_failed` checked.
-- **Kill a post**: click *Veto this post* in the digest email any time before
-  23:30 UTC.
+- **Retry a failed platform**: use **Retry failed** on the desk, or dispatch
+  *Marketing — publish* with `retry_failed` checked.
+- **Kill a post**: **Reject** it on the desk any time before its publish day.
 - All workflows email `MARKETING_ADMIN_EMAIL` on failure.
 
 ## TMDB usage guardrails
