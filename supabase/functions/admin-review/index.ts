@@ -315,7 +315,10 @@ Deno.serve(async (req) => {
     }
   }
 
-  const key = url.searchParams.get('key') || cookieToken(req) || '';
+  // Embed the authenticating secret in every form so actions stay authed even if
+  // the session cookie doesn't survive the proxy. After a password sign-in the
+  // cookie isn't in the request yet, so fall back to the just-submitted password.
+  const key = url.searchParams.get('key') || cookieToken(req) || (passwordOk ? submitted : '');
 
   // Settings (pause switch).
   const { data: settings } = await supabase.from('marketing_settings').select('publishing_paused').limit(1).maybeSingle();
