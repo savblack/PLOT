@@ -36,29 +36,26 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
 
-      # AI copy worker = Codex (subscription via CODEX_AUTH = ~/.codex/auth.json,
-      # or OPENAI_API_KEY for the paid API). Inert until one of those is set:
-      # posts stay 'planned' and nothing reaches the desk. Swappable — only this
-      # step + secret change; marketing/copy/AGENT.md is the fixed contract.
-      - name: Generate copy (Codex)
+      # AI copy worker = Claude Code (subscription, not an API key). Generate a
+      # token with `claude setup-token` and store it as CLAUDE_CODE_OAUTH_TOKEN.
+      # Inert until that secret is set: posts stay 'planned' and nothing reaches
+      # the desk. Swappable — only this step + secret change; marketing/copy/AGENT.md
+      # is the fixed contract. Claude Code runs tools directly (no bubblewrap), so
+      # no sandbox workaround is needed on the runner.
+      - name: Generate copy (Claude Code)
         env:
-          CODEX_AUTH: ${{ secrets.CODEX_AUTH }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
           OMDB_API_KEY: ${{ secrets.OMDB_API_KEY }}
         run: |
-          if [ -z "$CODEX_AUTH" ] && [ -z "$OPENAI_API_KEY" ]; then
-            echo "No Codex auth set (CODEX_AUTH or OPENAI_API_KEY) — skipping copy; posts stay 'planned'."
+          if [ -z "$CLAUDE_CODE_OAUTH_TOKEN" ]; then
+            echo "No Claude Code token set (CLAUDE_CODE_OAUTH_TOKEN) — skipping copy; posts stay 'planned'."
             exit 0
           fi
-          if [ -n "$CODEX_AUTH" ]; then mkdir -p "$HOME/.codex"; printf '%s' "$CODEX_AUTH" > "$HOME/.codex/auth.json"; fi
-          npm i -g @openai/codex
-          # The GitHub runner is already an isolated, throwaway VM, and Codex's own
-          # bubblewrap sandbox can't start here (bwrap loopback RTM_NEWADDR is denied),
-          # which blocks every shell command. Bypass it so Codex can run the pull/save.
-          codex exec --dangerously-bypass-approvals-and-sandbox "Read marketing/copy/AGENT.md and do steps 1-3 only: run 'npm run mkt:copy:pull', then write each post's copy JSON exactly per its brief, then run 'npm run mkt:copy:save'. Do NOT dispatch any workflow — CI renders next."
+          npm i -g @anthropic-ai/claude-code
+          claude -p "Read marketing/copy/AGENT.md and do steps 1-3 only: run 'npm run mkt:copy:pull', then write each post's copy JSON exactly per its brief, then run 'npm run mkt:copy:save'. Do NOT dispatch any workflow — CI renders next." --allowedTools "Bash,Read,Write,WebSearch,WebFetch"
 
       - name: Render to the review desk
         run: |
