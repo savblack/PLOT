@@ -43,8 +43,9 @@ const fmtMonthDay = (iso: string) =>
 
 const utcDay = (iso: string) => new Date(iso).toISOString().slice(0, 10);
 
-// Visible = past its publish moment and not vetoed/failed/skipped.
-const VISIBLE_STATUSES = ['pending_review', 'published', 'partially_published'];
+// Visible = approved (cleared to publish on its day) or already published; never
+// while still under review, vetoed, failed or skipped.
+const VISIBLE_STATUSES = ['approved', 'published', 'partially_published'];
 
 const TYPE_META: Record<string, { label: string; tone: string }> = {
   countdown: { label: 'Countdown', tone: '#B03A5E' },
