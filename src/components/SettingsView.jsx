@@ -9,6 +9,7 @@ import { useMediaSync } from '../hooks/useMediaSync.js';
 import { useTraktSync } from '../hooks/useTraktSync.js';
 import { useCalendar } from '../hooks/useCalendar.js';
 import { deleteAccountAndSignOut } from '../utils/deleteAccount.js';
+import { fetchUserDataExport, downloadDataExport } from '../utils/exportData.js';
 import { buildFeedbackAttachmentPath } from '../utils/feedback.js';
 import { downloadICS } from '../utils/ics.js';
 import { getButtonLikeProps } from '../utils/interactive.js';
@@ -679,6 +680,7 @@ export default function SettingsView() {
   const [clearingHistory,     setClearingHistory]     = useState(false);
   const [clearingWatchlist,   setClearingWatchlist]   = useState(false);
   const [generatingCalToken,  setGeneratingCalToken]  = useState(false);
+  const [exportingData,       setExportingData]       = useState(false);
   const [calTokenCopied,      setCalTokenCopied]      = useState(false);
   const [localCalToken,       setLocalCalToken]       = useState(null);
   const [actionError,         setActionError]         = useState(null);
@@ -891,6 +893,28 @@ export default function SettingsView() {
         return true;
       },
     });
+  };
+
+  const handleExportData = async () => {
+    if (exportingData) return;
+    setActionError(null);
+    setExportingData(true);
+    try {
+      const result = await fetchUserDataExport({
+        supabase,
+        fetchImpl: fetch,
+        exportUrl: edgeFunctionUrl('export-user-data'),
+      });
+      if (!result.ok) {
+        setActionError(result.error);
+        return;
+      }
+      downloadDataExport(result.payload);
+    } catch (err) {
+      setActionError(err?.message || 'Failed to export your data.');
+    } finally {
+      setExportingData(false);
+    }
   };
 
   const handleGenerateCalToken = async () => {
@@ -1245,6 +1269,30 @@ export default function SettingsView() {
             onClick={() => downloadICS(calEvents)}
           >
             Download .ics
+          </SettingsTextAction>
+        </div>
+
+        {/* Export all data */}
+        <div className="settings-row" style={{ cursor: 'default' }}>
+          <div className="settings-row-left">
+            <div className="settings-row-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+            </div>
+            <div>
+              <div className="settings-row-label">Export Your Data</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                Watchlist, history, lists and more as a JSON file
+              </div>
+            </div>
+          </div>
+          <SettingsTextAction
+            disabled={exportingData}
+            onClick={handleExportData}
+          >
+            {exportingData ? 'Preparing…' : 'Download .json'}
           </SettingsTextAction>
         </div>
       </div>

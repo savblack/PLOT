@@ -56,7 +56,7 @@ export default function TermsPage() {
         <p>You expressly acknowledge and agree that your use of the Service is at your sole and exclusive risk. You assume full responsibility for all risks associated with your use of the Service, including any reliance on the accuracy of content, any interactions with other users, and any decisions made based on information obtained through the Service. SUSUMU HOUSE shall not be responsible for any harm, loss, or damage of any kind that may result from your use of the Service.</p>
 
         <h2>10. Account Termination</h2>
-        <p>You may delete your account at any time. We reserve the right to suspend or permanently terminate your account at any time, for any reason or no reason, with or without notice, and without liability to you. Upon termination, your right to use the Service immediately ceases. We are not required to provide a self-serve export of your data as part of the first public release.</p>
+        <p>You may delete your account at any time. We reserve the right to suspend or permanently terminate your account at any time, for any reason or no reason, with or without notice, and without liability to you. Upon termination, your right to use the Service immediately ceases. You can download a copy of your data from Settings before deleting your account.</p>
 
         <h2>11. Modifications to the Service</h2>
         <p>We reserve the right to modify, suspend, or discontinue the Service (or any part thereof) at any time, permanently or temporarily, with or without notice. You agree that SUSUMU HOUSE shall not be liable to you or any third party for any modification, suspension, or discontinuation of the Service.</p>
