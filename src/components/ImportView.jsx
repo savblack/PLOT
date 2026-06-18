@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '../App.jsx';
 import { tmdb } from '../api/tmdb.js';
 import { supabase } from '../api/supabase.js';
+import { parseCSV, findCol, normaliseDate, parseLetterboxd } from '../domain/importParsing.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 
 /* ─────────────────────────── Platform icons ─────────────────────────── */
@@ -27,7 +28,7 @@ function PlatformIcon({ id, logoPath, size = 32 }) {
     );
   }
   // Fallback: colored square while loading
-  const colors = { netflix: '#E50914', prime: '#00A8E0', disney: '#113CCF', max: '#002BE7', apple: '#555' };
+  const colors = { netflix: '#E50914', prime: '#00A8E0', disney: '#113CCF', max: '#002BE7', apple: '#555', letterboxd: '#00E054' };
   return <div style={{ width: size, height: size, borderRadius: 8, background: colors[id] || '#333', flexShrink: 0 }} />;
 }
 
@@ -105,77 +106,21 @@ const PLATFORMS = [
       'Upload the JSON file here',
     ],
   },
+  {
+    id: 'letterboxd',
+    name: 'Letterboxd',
+    color: '#00E054',
+    format: 'CSV',
+    shortInstructions: 'Settings → Data → Export your data → unzip → upload diary.csv',
+    instructions: [
+      'Go to letterboxd.com and sign in',
+      'Open Settings → Data (letterboxd.com/settings/data)',
+      'Click "Export your data" to download the ZIP',
+      'Unzip it and find diary.csv (or watched.csv)',
+      'Upload that CSV file here — your ratings and reviews come across too',
+    ],
+  },
 ];
-
-/* ─────────────────────────── CSV parser ─────────────────────────── */
-
-function parseCSV(text) {
-  const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-
-  // Parse into array-of-arrays handling quoted fields and escaped ""
-  const rawRows = [];
-  let row = [];
-  let field = '';
-  let inQuotes = false;
-
-  for (let ci = 0; ci < lines.length; ci++) {
-    const ch = lines[ci];
-    if (inQuotes) {
-      if (ch === '"') {
-        if (lines[ci + 1] === '"') { field += '"'; ci++; }
-        else inQuotes = false;
-      } else {
-        field += ch;
-      }
-    } else {
-      if (ch === '"') { inQuotes = true; }
-      else if (ch === ',') { row.push(field); field = ''; }
-      else if (ch === '\n') { row.push(field); rawRows.push(row); row = []; field = ''; }
-      else { field += ch; }
-    }
-  }
-  if (field || row.length) { row.push(field); rawRows.push(row); }
-
-  return rawRows;
-}
-
-function fuzzyCol(header) {
-  return header.toLowerCase().replace(/[^a-z0-9]/g, '');
-}
-
-function findCol(headers, ...candidates) {
-  const fuzzed = headers.map(fuzzyCol);
-  for (const c of candidates) {
-    const idx = fuzzed.findIndex(h => h.includes(fuzzyCol(c)));
-    if (idx !== -1) return idx;
-  }
-  return -1;
-}
-
-/* ─────────────────────────── Date normalisation ─────────────────────────── */
-
-function normaliseDate(raw) {
-  if (!raw) return null;
-  const s = raw.trim();
-
-  // ISO: YYYY-MM-DD or YYYY-MM-DDTHH...
-  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
-
-  // DD/MM/YYYY or MM/DD/YYYY
-  const slashMatch = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-  if (slashMatch) {
-    const [, a, b, y] = slashMatch;
-    // If first segment > 12 it must be a day
-    if (parseInt(a) > 12) return `${y}-${b.padStart(2,'0')}-${a.padStart(2,'0')}`;
-    // Otherwise assume MM/DD/YYYY (Netflix default)
-    return `${y}-${a.padStart(2,'0')}-${b.padStart(2,'0')}`;
-  }
-
-  // Try native parse as last resort
-  const d = new Date(s);
-  if (!isNaN(d)) return d.toISOString().slice(0, 10);
-  return null;
-}
 
 /* ─────────────────────────── Netflix TV detection ─────────────────────────── */
 
@@ -288,12 +233,13 @@ function parseApple(text) {
 
 function parsePlatform(platformId, text) {
   switch (platformId) {
-    case 'netflix': return parseNetflix(text);
-    case 'prime':   return parsePrime(text);
-    case 'disney':  return parseDisney(text);
-    case 'max':     return parseMax(text);
-    case 'apple':   return parseApple(text);
-    default:        return [];
+    case 'netflix':    return parseNetflix(text);
+    case 'prime':      return parsePrime(text);
+    case 'disney':     return parseDisney(text);
+    case 'max':        return parseMax(text);
+    case 'apple':      return parseApple(text);
+    case 'letterboxd': return parseLetterboxd(text);
+    default:           return [];
   }
 }
 
@@ -316,11 +262,22 @@ function dedupeEntries(entries) {
 async function resolveTitle(entry) {
   try {
     const res = await tmdb.search(entry.title);
-    const results = res?.results || [];
-    // Prefer hint match, then by popularity
-    const preferred = entry.hint !== 'unknown'
-      ? results.find(r => r.media_type === entry.hint) || results[0]
-      : results[0];
+    let results = res?.results || [];
+    // Narrow to the hinted media type when we have one (falls back to all results)
+    if (entry.hint && entry.hint !== 'unknown') {
+      const typed = results.filter(r => r.media_type === entry.hint);
+      if (typed.length) results = typed;
+    }
+    // Default to the most popular match, but if we know the release year
+    // (Letterboxd) prefer an exact year match to disambiguate remakes/same titles
+    let preferred = results[0];
+    if (entry.year) {
+      const yearMatch = results.find(r => {
+        const d = r.release_date || r.first_air_date || '';
+        return d.slice(0, 4) === String(entry.year);
+      });
+      if (yearMatch) preferred = yearMatch;
+    }
     if (!preferred) return { ...entry, status: 'unmatched' };
     return {
       ...entry,
@@ -465,16 +422,22 @@ export default function ImportView() {
     setImporting(true);
     const toInsert = results
       .filter(r => r.status === 'matched' && !existingIds.has(r.tmdbId))
-      .map(r => ({
-        user_id:    user.id,
-        tmdb_id:    r.tmdbId,
-        media_type: r.mediaType,
-        title:      r.tmdbTitle,
-        poster_path: r.posterPath || null,
-        watched_at: r.date
-          ? new Date(r.date + 'T12:00:00').toISOString().slice(0, 10)
-          : new Date().toISOString().slice(0, 10),
-      }));
+      .map(r => {
+        const row = {
+          user_id:    user.id,
+          tmdb_id:    r.tmdbId,
+          media_type: r.mediaType,
+          title:      r.tmdbTitle,
+          poster_path: r.posterPath || null,
+          watched_at: r.date
+            ? new Date(r.date + 'T12:00:00').toISOString().slice(0, 10)
+            : new Date().toISOString().slice(0, 10),
+        };
+        // Letterboxd carries ratings/reviews; clamp to the 1–10 journal scale
+        if (r.rating != null) row.rating = Math.min(10, Math.max(1, Math.round(r.rating)));
+        if (r.note) row.note = r.note;
+        return row;
+      });
 
     const count = await bulkInsert(user.id, toInsert);
     // Notify history hook to reload
@@ -608,7 +571,7 @@ export default function ImportView() {
               Drop your {platform.format} here
             </div>
             <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.9rem' }}>
-              {platform.id === 'netflix' ? 'NetflixViewingHistory.csv' : `Your ${platform.name} export file`}
+              {platform.id === 'netflix' ? 'NetflixViewingHistory.csv' : platform.id === 'letterboxd' ? 'diary.csv' : `Your ${platform.name} export file`}
             </div>
             <span style={{
               fontSize: '0.78rem', fontWeight: 600,
