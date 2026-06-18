@@ -22,6 +22,9 @@
     "mkt:report": "node marketing/metrics/report.mjs",
     "mkt:newsletter": "node marketing/newsletter/send-digest.mjs",
     "mkt:snapshot": "node marketing/snapshot/write-snapshot.mjs",
+    "mkt:manual": "node marketing/manual/build.mjs",
+    "mkt:manual:media": "node marketing/manual/media.mjs",
+    "mkt:manual:publish": "node marketing/manual/publish.mjs",
     "mkt:preview": "node marketing/preview/build-preview.mjs",
     "mkt:backfill": "node scripts/seed-marketing-backfill.mjs"
   },

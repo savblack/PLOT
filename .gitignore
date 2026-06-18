@@ -41,3 +41,5 @@ mockup-*.html
 website/images/product/*.gif
 .vercel
 marketing/preview/out/
+# Manually generated marketing posts (media + per-day copy docs)
+plot-posts/
