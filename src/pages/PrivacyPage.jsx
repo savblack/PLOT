@@ -69,7 +69,7 @@ export default function PrivacyPage() {
         <p>PLOT uses cookies and local storage for session management, authentication, and limited product analytics state. We do not use advertising cookies. By using the Service, you consent to this use.</p>
 
         <h2>8. Your Rights</h2>
-        <p>Depending on your jurisdiction, you may have rights regarding your personal data. To exercise any such rights, contact us via the app. We will respond to reasonable requests in accordance with applicable law but are not liable for any inability to fully comply where doing so conflicts with our legal obligations or technical constraints. A self-serve data export is not part of the first public release.</p>
+        <p>Depending on your jurisdiction, you may have rights regarding your personal data. To exercise any such rights, contact us via the app. We will respond to reasonable requests in accordance with applicable law but are not liable for any inability to fully comply where doing so conflicts with our legal obligations or technical constraints. You can download a copy of your data at any time from Settings.</p>
 
         <h2>9. Children's Privacy</h2>
         <p>The Service is not directed at children under the age of 13. We do not knowingly collect personal data from children under 13. If we become aware that we have collected such data, we will delete it immediately.</p>
