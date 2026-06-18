@@ -24,8 +24,13 @@ export default async function handler(req, res) {
     const text = await up.text();
     res.status(up.status);
     res.setHeader('content-type', 'text/html; charset=utf-8');
-    const setCookie = up.headers.get('set-cookie');
-    if (setCookie) res.setHeader('set-cookie', setCookie);
+    // Relay each Set-Cookie as its own header — get('set-cookie') comma-joins
+    // multiple cookies (the upstream also sets __cf_bm), which corrupts our
+    // admin_token cookie so the browser never stores a usable session.
+    const cookies = typeof up.headers.getSetCookie === 'function'
+      ? up.headers.getSetCookie()
+      : (up.headers.get('set-cookie') ? [up.headers.get('set-cookie')] : []);
+    if (cookies.length) res.setHeader('set-cookie', cookies);
     res.send(text);
   } catch {
     res.status(502).setHeader('content-type', 'text/html; charset=utf-8');
