@@ -89,14 +89,15 @@ const articleLink = (p: Row): string | null => {
 const GH_REPO = Deno.env.get('GH_REPO') ?? 'savblack/PLOT';
 const GH_TOKEN = Deno.env.get('GH_DISPATCH_TOKEN') ?? '';
 
-// Optional: kick the weekly-batch workflow so a regenerated post rebuilds now
-// rather than waiting for the Saturday run. Needs a GH_DISPATCH_TOKEN secret
-// (a PAT with Actions: write). Without it, regeneration waits for the next batch.
-const triggerRegen = async (): Promise<boolean> => {
+// Optional: dispatch a GitHub Actions workflow so an action takes effect now
+// instead of waiting for its cron — Regenerate kicks the weekly batch, Publish
+// now kicks the publish run. Needs a GH_DISPATCH_TOKEN secret (a PAT with
+// Actions: write). Without it, the action just waits for the scheduled run.
+const dispatchWorkflow = async (workflow: string): Promise<boolean> => {
   if (!GH_TOKEN) return false;
   try {
     const res = await fetch(
-      `https://api.github.com/repos/${GH_REPO}/actions/workflows/marketing-weekly-batch.yml/dispatches`,
+      `https://api.github.com/repos/${GH_REPO}/actions/workflows/${workflow}/dispatches`,
       {
         method: 'POST',
         headers: {
@@ -252,7 +253,7 @@ const postForm = (p: Row, key: string) => {
       <span style="flex:1"></span>
       ${!isVetoed ? `<input type="date" name="scheduled_date" value="${esc(dayKey(p.scheduled_for))}">
       <button class="ghost" name="action" value="reschedule">Reschedule</button>` : ''}
-      ${p.status === 'approved' ? `<button class="ghost" name="action" value="publish_now">Publish now</button>` : ''}
+      ${showEdit ? `<button class="ghost" name="action" value="publish_now">Publish now</button>` : ''}
       ${(p.marketing_post_publications || []).some((x: Row) => x.status === 'failed')
         ? `<button class="ghost" name="action" value="retry">Retry failed</button>` : ''}
     </div>
@@ -331,9 +332,14 @@ Deno.serve(async (req) => {
         flash = `Rescheduled to ${d}.`;
       } else flash = 'Reschedule needs a valid date.';
     } else if (id && action === 'publish_now') {
+      // Approve + bring the schedule forward so the publisher will pick it up,
+      // then kick the publish run so it sends within minutes (if a token is set).
       await supabase.from('marketing_posts')
         .update({ status: 'approved', scheduled_for: now(), updated_at: now() }).eq('id', id);
-      flash = 'Marked to publish now — it goes out on the next publish run (or dispatch “Marketing — publish”).';
+      const triggered = await dispatchWorkflow('marketing-publish.yml');
+      flash = triggered
+        ? 'Publishing now — sending to X / Instagram / Threads; it’ll show as published in a few minutes.'
+        : 'Approved & queued — it sends on the next publish run. Set GH_DISPATCH_TOKEN for instant send, or dispatch “Marketing — publish”.';
     } else if (id && action === 'retry') {
       await supabase.from('marketing_post_publications')
         .update({ status: 'queued', error: null }).eq('post_id', id).eq('status', 'failed');
@@ -344,7 +350,7 @@ Deno.serve(async (req) => {
       // (keep media/slug — the render overwrites them). It stays visible as "Queued".
       await supabase.from('marketing_posts')
         .update({ status: 'planned', copy: null, updated_at: now() }).eq('id', id);
-      const triggered = await triggerRegen();
+      const triggered = await dispatchWorkflow('marketing-weekly-batch.yml');
       flash = triggered
         ? 'Regenerating — the worker will rewrite this post. Refresh in a few minutes.'
         : 'Marked for regeneration — it rebuilds on the next weekly batch (or dispatch “Marketing — weekly batch”).';
