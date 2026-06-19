@@ -85,6 +85,15 @@ ${sourceList(research)}
 
 ## How to write the article (page_body)
 Write a short-to-medium blog post (4-8 short paragraphs) for theplot.tv/whats-on.
+- Write a FINISHED editorial article in PLOT's own voice — NEVER narrate your
+  sources or research. Banned phrasings (do not write these or anything like
+  them): "the research pack", "pre-fetched ratings", "the ratings block", "in
+  wider reporting", "recent coverage", "sources say", "reports suggest",
+  "according to", "it's been reported", "the data shows". State facts directly as
+  PLOT's own knowledge and weave them in naturally — e.g. write "Obsession holds a
+  95% on Rotten Tomatoes and an 8.2 on IMDb" NOT "the pre-fetched ratings are
+  strong: 95% on Rotten Tomatoes". The reader must never sense a research pack
+  existed. Make it a confident editorial take, not a recap of what the sources say.
 - Use the research pack above, AND do your own light web research for current
   critical reception, cast/production context, and recent news.
 - Ratings: cite ONLY the pre-fetched \`ratings\` block above (IMDb, Rotten
