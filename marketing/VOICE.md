@@ -85,7 +85,12 @@ with providers per region: `{ US: [...], UK: [...], AU: [...] }`.
   theplot.tv/whats-on. Plain specific headline; a short-to-medium blog post of
   4–8 short paragraphs in the same voice; draw on the research pack and your own
   web research, always paraphrased (never quote reviews or copy synopsis text);
-  no links, hashtags, or dashes.
+  no links, hashtags, or dashes. Write it as a **finished article in PLOT's own
+  voice** — state facts directly and confidently; never narrate your sources or
+  the research. Don't write "the research pack", "pre-fetched ratings", "in wider
+  reporting", "recent coverage", "sources say", or "according to" — the reader
+  should never sense there was research behind it. It's an editorial take, not a
+  summary of what the sources say.
 
 ## Conversation posts (Threads & X)
 
