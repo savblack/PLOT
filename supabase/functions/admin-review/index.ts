@@ -6,7 +6,8 @@
  *     rendered cards, the copy, the article link and its per-platform publish state;
  *   • a recent-history section (what published where, with light metrics);
  *   • per-post actions: edit, Approve / Reject / Unapprove, Reschedule, Publish now,
- *     Retry failed; plus top-level Approve-the-week and a global Pause switch.
+ *     Regenerate (rebuild via the worker), Retry failed; plus top-level
+ *     Approve-the-week and a global Pause switch. Card images open full-size.
  *
  * The publish gate is approval-based: only status 'approved' posts are sent to
  * Buffer (by the daily push), on their scheduled day. Silence = never published.
@@ -27,7 +28,8 @@ const validSecret = (s: string | null | undefined): boolean => !!s && SECRETS.in
 const SITE_URL = 'https://theplot.tv';
 
 // The week in progress (everything still decidable / editable), oldest first.
-const ACTIVE = ['needs_review', 'copy_ready', 'generated', 'approved', 'vetoed'];
+// 'planned' is included so a post being regenerated stays visible as "Queued".
+const ACTIVE = ['planned', 'needs_review', 'copy_ready', 'generated', 'approved', 'vetoed'];
 // Recently resolved, for the read-only history panel.
 const HISTORY = ['published', 'partially_published', 'failed'];
 
@@ -84,7 +86,36 @@ const articleLink = (p: Row): string | null => {
   return p.slug ? `${SITE_URL}/whats-on/${p.slug}` : null;
 };
 
+const GH_REPO = Deno.env.get('GH_REPO') ?? 'savblack/PLOT';
+const GH_TOKEN = Deno.env.get('GH_DISPATCH_TOKEN') ?? '';
+
+// Optional: kick the weekly-batch workflow so a regenerated post rebuilds now
+// rather than waiting for the Saturday run. Needs a GH_DISPATCH_TOKEN secret
+// (a PAT with Actions: write). Without it, regeneration waits for the next batch.
+const triggerRegen = async (): Promise<boolean> => {
+  if (!GH_TOKEN) return false;
+  try {
+    const res = await fetch(
+      `https://api.github.com/repos/${GH_REPO}/actions/workflows/marketing-weekly-batch.yml/dispatches`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${GH_TOKEN}`,
+          Accept: 'application/vnd.github+json',
+          'X-GitHub-Api-Version': '2022-11-28',
+          'User-Agent': 'plot-control-room',
+        },
+        body: JSON.stringify({ ref: 'main' }),
+      },
+    );
+    return res.ok;
+  } catch {
+    return false;
+  }
+};
+
 const STATUS_BADGE: Record<string, { label: string; cls: string }> = {
+  planned: { label: 'Queued', cls: 'b-wait' },
   needs_review: { label: 'Needs review', cls: 'b-review' },
   copy_ready: { label: 'Awaiting render', cls: 'b-wait' },
   generated: { label: 'Awaiting render', cls: 'b-wait' },
@@ -173,13 +204,21 @@ const pubLine = (pubs: Row[]) => {
 
 const postForm = (p: Row, key: string) => {
   const c = p.copy || {};
-  const media = (p.media || []) as { portrait_path?: string }[];
-  const imgs = media.map((m) => (m.portrait_path ? `<img src="${esc(mediaUrl(m.portrait_path))}" alt="">` : '')).join('');
+  const media = (p.media || []) as { portrait_path?: string; landscape_path?: string }[];
+  // Each thumbnail links to the full-size image (opens in a new tab).
+  const imgs = media.map((m) => {
+    const full = m.portrait_path || m.landscape_path;
+    return full
+      ? `<a href="${esc(mediaUrl(full))}" target="_blank" rel="noopener" title="Open full size"><img src="${esc(mediaUrl(full))}" alt=""></a>`
+      : '';
+  }).join('');
   const body = Array.isArray(c.page_body) ? c.page_body.join('\n\n') : (c.page_body || '');
   const tags = Array.isArray(c.hashtags) ? c.hashtags.join(', ') : '';
   const isConvo = p.post_type === 'conversation';
   const link = articleLink(p);
-  const editable = p.status !== 'vetoed';
+  const isVetoed = p.status === 'vetoed';
+  const hasCopy = !!(c.x || c.instagram || c.threads || c.page_title);
+  const showEdit = !isVetoed && hasCopy; // edit fields + Save/Approve/Regenerate
   return `<form class="post" method="POST" action="/api/admin">
     <input type="hidden" name="key" value="${esc(key)}">
     <input type="hidden" name="id" value="${esc(p.id)}">
@@ -191,7 +230,7 @@ const postForm = (p: Row, key: string) => {
     </div>
     <p class="why">${esc(reason(p))}${c.cta_variant && c.cta_variant !== 'none' ? ` · CTA: ${esc(c.cta_variant)}` : ''}</p>
     <div class="imgs">${imgs}</div>
-    ${editable ? `
+    ${showEdit ? `
     ${field('X', 'x', c.x || '')}
     ${isConvo ? '' : field('Instagram', 'instagram', c.instagram || '', 3)}
     ${isConvo ? '' : field('Threads', 'threads', c.threads || '')}
@@ -203,15 +242,16 @@ const postForm = (p: Row, key: string) => {
       : ''}
     ${pubLine(p.marketing_post_publications)}
     <div class="row">
-      ${editable ? `<button class="save" name="action" value="save">Save edits</button>` : ''}
+      ${showEdit ? `<button class="save" name="action" value="save">Save edits</button>` : ''}
       ${p.status === 'approved'
         ? `<button class="ghost" name="action" value="unapprove">Unapprove</button>`
-        : editable ? `<button class="approve" name="action" value="approve">Approve</button>` : ''}
-      ${editable ? `<button class="reject" name="action" value="reject">Reject</button>` : ''}
-      ${p.status === 'vetoed' ? `<button class="ghost" name="action" value="unapprove">Restore to review</button>` : ''}
+        : showEdit ? `<button class="approve" name="action" value="approve">Approve</button>` : ''}
+      ${showEdit ? `<button class="ghost" name="action" value="regenerate">Regenerate</button>` : ''}
+      ${!isVetoed ? `<button class="reject" name="action" value="reject">Reject</button>` : ''}
+      ${isVetoed ? `<button class="ghost" name="action" value="unapprove">Restore to review</button>` : ''}
       <span style="flex:1"></span>
-      <input type="date" name="scheduled_date" value="${esc(dayKey(p.scheduled_for))}">
-      <button class="ghost" name="action" value="reschedule">Reschedule</button>
+      ${!isVetoed ? `<input type="date" name="scheduled_date" value="${esc(dayKey(p.scheduled_for))}">
+      <button class="ghost" name="action" value="reschedule">Reschedule</button>` : ''}
       ${p.status === 'approved' ? `<button class="ghost" name="action" value="publish_now">Publish now</button>` : ''}
       ${(p.marketing_post_publications || []).some((x: Row) => x.status === 'failed')
         ? `<button class="ghost" name="action" value="retry">Retry failed</button>` : ''}
@@ -299,6 +339,15 @@ Deno.serve(async (req) => {
         .update({ status: 'queued', error: null }).eq('post_id', id).eq('status', 'failed');
       await supabase.from('marketing_posts').update({ status: 'approved', updated_at: now() }).eq('id', id);
       flash = 'Failed platforms re-queued — they retry on the next publish run.';
+    } else if (id && action === 'regenerate') {
+      // Send it back to the start of the pipeline so the copy worker rewrites it
+      // (keep media/slug — the render overwrites them). It stays visible as "Queued".
+      await supabase.from('marketing_posts')
+        .update({ status: 'planned', copy: null, updated_at: now() }).eq('id', id);
+      const triggered = await triggerRegen();
+      flash = triggered
+        ? 'Regenerating — the worker will rewrite this post. Refresh in a few minutes.'
+        : 'Marked for regeneration — it rebuilds on the next weekly batch (or dispatch “Marketing — weekly batch”).';
     } else if (id) {
       const copyPatch: Record<string, unknown> = { x: String(form.get('x') || '') };
       if (form.has('instagram')) copyPatch.instagram = String(form.get('instagram') || '');
