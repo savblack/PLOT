@@ -4,13 +4,13 @@
 // (Claude Code, Codex, …) then writes one <post_id>.copy.json per job and
 // runs save.mjs. This script reads only — it never mutates the database.
 import { mkdir, writeFile, readdir, rm } from 'node:fs/promises';
+import { realpathSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { getSupabase } from '../lib/supabase.mjs';
 import { buildBrief, buildConversationBrief } from './brief.mjs';
 import { enrichPost } from './enrich.mjs';
-
-export const JOBS_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), 'jobs');
+import { JOBS_DIR } from './paths.mjs';
 
 const main = async () => {
   const supabase = getSupabase();
@@ -65,4 +65,9 @@ const main = async () => {
   console.log('\nNext: write each <post_id>.copy.json, then run `npm run mkt:copy:save`.');
 };
 
-main().catch((err) => { console.error(err); process.exit(1); });
+// Only run when invoked directly (`node …/pull.mjs`) — never as a side-effect of
+// being imported. save.mjs used to import a constant from here, which silently
+// re-ran this pull (DB query + jobs-dir wipe) and raced the answers it was saving.
+const runDirectly = process.argv[1] &&
+  realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url));
+if (runDirectly) main().catch((err) => { console.error(err); process.exit(1); });
