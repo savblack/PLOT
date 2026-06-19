@@ -81,11 +81,15 @@ export const publishToBuffer = async ({
   const draftField = draft ? ', saveToDraft: true' : '';
   const channelId = await channelFor(service);
 
+  // Instagram requires the post type (post | story | reel) or Buffer rejects it
+  // ("Instagram posts require a type"). We always publish a normal feed post.
+  const metaField = service === 'instagram' ? ', metadata: { instagram: { type: post } }' : '';
+
   const mutation = `mutation {
     createPost(input: {
       channelId: ${str(channelId)},
       schedulingType: automatic,
-      mode: ${mode}${dueAt}${draftField},
+      mode: ${mode}${dueAt}${draftField}${metaField},
       text: ${str(text)},
       assets: [${assets.join(', ')}]
     }) {

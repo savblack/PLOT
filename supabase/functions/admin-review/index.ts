@@ -300,6 +300,13 @@ Deno.serve(async (req) => {
   const setCookie = sessionSecret
     ? { 'set-cookie': `admin_token=${encodeURIComponent(sessionSecret)}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=2592000` } : {};
   const now = () => new Date().toISOString();
+  // Re-arm a post's publication rows so the publisher will actually send them.
+  // Rejecting a post sets its rows to 'skipped'; re-approving must reset them to
+  // 'queued' (the publisher only sends 'queued'), or it silently does nothing.
+  const requeuePubs = (ids: string[]) =>
+    supabase.from('marketing_post_publications')
+      .update({ status: 'queued', error: null })
+      .in('post_id', ids).in('status', ['skipped', 'failed']);
 
   let flash = '';
   if (form && form.get('action')) {
@@ -314,6 +321,8 @@ Deno.serve(async (req) => {
       const { data } = await supabase.from('marketing_posts')
         .update({ status: 'approved', updated_at: now() })
         .eq('status', 'needs_review').select('id');
+      const ids = (data || []).map((d) => d.id);
+      if (ids.length) await requeuePubs(ids);
       flash = `Approved the week — ${data?.length || 0} post(s) cleared to publish.`;
     } else if (id && action === 'reject') {
       await supabase.from('marketing_posts').update({ status: 'vetoed', updated_at: now() }).eq('id', id);
@@ -336,6 +345,7 @@ Deno.serve(async (req) => {
       // then kick the publish run so it sends within minutes (if a token is set).
       await supabase.from('marketing_posts')
         .update({ status: 'approved', scheduled_for: now(), updated_at: now() }).eq('id', id);
+      await requeuePubs([id]);
       const triggered = await dispatchWorkflow('marketing-publish.yml');
       flash = triggered
         ? 'Publishing now — sending to X / Instagram / Threads; it’ll show as published in a few minutes.'
@@ -366,6 +376,7 @@ Deno.serve(async (req) => {
       const patch: Record<string, unknown> = { copy: merged, updated_at: now() };
       if (action === 'approve') patch.status = 'approved';
       await supabase.from('marketing_posts').update(patch).eq('id', id);
+      if (action === 'approve') await requeuePubs([id]);
       flash = action === 'approve' ? 'Approved — it will publish on its day.' : 'Saved.';
     }
   }
