@@ -7,7 +7,7 @@ import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { getSupabase } from '../lib/supabase.mjs';
 import { validateCopy, validateConversation } from './schema.mjs';
-import { JOBS_DIR } from './pull.mjs';
+import { JOBS_DIR } from './paths.mjs';
 
 // post_id -> post_type, from the manifest pull.mjs wrote, so we validate each
 // answer against the right contract (conversation posts are text-only).
