@@ -204,6 +204,17 @@ const STYLE = `
   .login { max-width:320px; margin:60px auto 0; } .login button { margin-top:14px; width:100%; }
   #lightbox { position:fixed; inset:0; z-index:50; background:rgba(20,18,14,.86); display:none; align-items:center; justify-content:center; padding:24px; cursor:zoom-out; }
   #lightbox.on { display:flex; } #lightbox img { max-width:100%; max-height:100%; border-radius:10px; }
+  .tabs { display:flex; gap:6px; margin-top:11px; flex-wrap:wrap; }
+  .tab { font:inherit; font-size:.76rem; font-weight:600; padding:5px 12px; border-radius:9999px; background:var(--soft); color:var(--mut); border:0; cursor:pointer; }
+  .tab.on { background:var(--ink); color:#fff; }
+  @keyframes hi { 0%{ background:#fff7e3; } 100%{ background:#fff; } }
+  .post.hi { animation:hi 2.4s ease-out; }
+  @media (max-width:560px) {
+    body { padding:0 12px 80px; }
+    h1 { font-size:1.1rem; } .when { display:block; margin:2px 0 0; }
+    .actions, .toprow { gap:6px; } button { padding:9px 13px; }
+    .resched, .resched input { width:auto; }
+  }
 `;
 
 const SCRIPT = `
@@ -221,6 +232,25 @@ const SCRIPT = `
     lb.addEventListener('click',function(){ lb.classList.remove('on'); img.src=''; });
     document.addEventListener('keydown',function(e){ if(e.key==='Escape'){ lb.classList.remove('on'); img.src=''; } });
   }
+  // Filter tabs: show only posts in the chosen state, and hide day sections that
+  // end up empty. Pure display toggling — no reload, degrades to "show all".
+  var tabs=[].slice.call(document.querySelectorAll('.tab'));
+  function filter(show){
+    document.querySelectorAll('.post').forEach(function(p){
+      var s=p.getAttribute('data-status');
+      var ok = show==='all' || (show==='review'&&s==='needs_review') || (show==='approved'&&s==='approved') || (show==='rejected'&&s==='vetoed');
+      p.style.display = ok ? '' : 'none';
+    });
+    document.querySelectorAll('section.day').forEach(function(sec){
+      var vis=[].some.call(sec.querySelectorAll('.post'), function(p){ return p.style.display!=='none'; });
+      sec.style.display = vis ? '' : 'none';
+    });
+    tabs.forEach(function(t){ t.classList.toggle('on', t.getAttribute('data-show')===show); });
+  }
+  tabs.forEach(function(t){ t.addEventListener('click', function(){ filter(t.getAttribute('data-show')); }); });
+  // Jump back to the post you just acted on (the page reloads to the top on POST).
+  var acted=document.getElementById('acted');
+  if(acted){ var el=document.getElementById(acted.getAttribute('data-target')); if(el){ el.scrollIntoView({block:'center'}); el.classList.add('hi'); } }
 })();
 `;
 
@@ -273,7 +303,7 @@ const postForm = (p: Row, key: string) => {
   const media = (p.media || []) as { portrait_path?: string; landscape_path?: string }[];
   const imgs = media.map((m) => {
     const full = m.portrait_path || m.landscape_path;
-    return full ? `<img class="lb" src="${esc(mediaUrl(full))}" data-full="${esc(mediaUrl(full))}" alt="" loading="lazy">` : '';
+    return full ? `<img class="lb" src="${esc(mediaUrl(full))}" data-full="${esc(mediaUrl(full))}" alt="${esc(c.alt_text || '')}" loading="lazy">` : '';
   }).join('');
   const body = Array.isArray(c.page_body) ? c.page_body.join('\n\n') : (c.page_body || '');
   const tags = Array.isArray(c.hashtags) ? c.hashtags.join(', ') : '';
@@ -285,7 +315,7 @@ const postForm = (p: Row, key: string) => {
   const hasFailed = (p.marketing_post_publications || []).some((x: Row) => x.status === 'failed');
   const plats = platformsFor(p).map((s) => `<span class="chip">${PLAT_LABEL[s] || s}</span>`).join('');
   const preview = c.x || c.instagram || c.threads || '';
-  return `<form class="post ${ACCENT[p.status] || 'p-wait'}" method="POST" action="/api/admin">
+  return `<form id="p-${esc(p.id)}" data-status="${esc(p.status)}" class="post ${ACCENT[p.status] || 'p-wait'}" method="POST" action="/api/admin">
     <input type="hidden" name="key" value="${esc(key)}">
     <input type="hidden" name="id" value="${esc(p.id)}">
     <div class="phead">
@@ -301,8 +331,8 @@ const postForm = (p: Row, key: string) => {
     ${preview && !showEdit ? `<div class="preview">${esc(preview)}</div>` : ''}
     ${showEdit ? `<details class="edit"${p.status === 'needs_review' ? ' open' : ''}><summary>Edit copy</summary>
       <div class="field"><label>X <span class="cc"></span></label><textarea name="x" rows="2" data-max="280">${esc(c.x || '')}</textarea></div>
-      ${isConvo ? '' : field('Instagram', 'instagram', c.instagram || '', 3)}
-      ${isConvo ? '' : field('Threads', 'threads', c.threads || '')}
+      ${isConvo ? '' : `<div class="field"><label>Instagram <span class="cc"></span></label><textarea name="instagram" rows="3" data-max="2200">${esc(c.instagram || '')}</textarea></div>`}
+      ${isConvo ? '' : `<div class="field"><label>Threads <span class="cc"></span></label><textarea name="threads" rows="2" data-max="500">${esc(c.threads || '')}</textarea></div>`}
       ${isConvo ? '' : `<div class="field"><label>Hashtags (comma separated)</label><input name="hashtags" value="${esc(tags)}"></div>`}
       ${isConvo ? '' : field('Article title', 'page_title', c.page_title || '')}
       ${isConvo ? '' : field('Article body (blank line between paragraphs)', 'page_body', body, 8)}
@@ -378,9 +408,11 @@ Deno.serve(async (req) => {
       .in('post_id', ids).in('status', ['skipped', 'failed']);
 
   let flash = '';
+  let acted = ''; // the post just acted on — we scroll back to it after the reload
   if (form && form.get('action')) {
     const id = String(form.get('id') || '');
     const action = String(form.get('action') || '');
+    if (id) acted = id;
 
     if (action === 'pause' || action === 'resume') {
       await supabase.from('marketing_settings')
@@ -500,7 +532,7 @@ Deno.serve(async (req) => {
     (byDay.get(k) || byDay.set(k, []).get(k)!).push(p);
   }
   const dayBlocks = [...byDay.entries()].map(([, list]) =>
-    `<div class="dayhead">${esc(fmtDay(list[0].scheduled_for))}</div>${list.map((p) => postForm(p, key)).join('')}`
+    `<section class="day"><div class="dayhead">${esc(fmtDay(list[0].scheduled_for))}</div>${list.map((p) => postForm(p, key)).join('')}</section>`
   ).join('');
 
   const keyInput = `<input type="hidden" name="key" value="${esc(key)}">`;
@@ -515,10 +547,11 @@ Deno.serve(async (req) => {
         <button class="${paused ? 'resume' : 'pause'}" name="action" value="${paused ? 'resume' : 'pause'}"${paused ? '' : confirm('Pause all publishing? Approved posts will not be sent until you resume.')}>${paused ? 'Resume' : 'Pause'}</button>
       </form>
     </div>
-    <div class="stats">
-      <span class="stat ${counts.review ? 'has-review' : ''}">${counts.review} awaiting review</span>
-      <span class="stat">${counts.approved} approved</span>
-      <span class="stat">${counts.rejected} rejected</span>
+    <div class="tabs">
+      <button type="button" class="tab on" data-show="all">All ${active.length}</button>
+      <button type="button" class="tab" data-show="review">Needs review ${counts.review}</button>
+      <button type="button" class="tab" data-show="approved">Approved ${counts.approved}</button>
+      <button type="button" class="tab" data-show="rejected">Rejected ${counts.rejected}</button>
     </div>
   </div>`;
 
@@ -533,6 +566,7 @@ Deno.serve(async (req) => {
     `${topbar}
      ${paused ? '<div class="paused-note">⏸ Publishing is paused — approved posts will not be sent until you resume.</div>' : ''}
      ${flash ? `<div class="flash">${esc(flash)}</div>` : ''}
+     ${acted ? `<span id="acted" data-target="p-${esc(acted)}"></span>` : ''}
      ${list}
      ${historyHtml}`);
   return new Response(html, { headers: { 'content-type': 'text/html; charset=utf-8', ...setCookie } });
