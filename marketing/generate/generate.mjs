@@ -17,7 +17,6 @@ import { postSlug } from '../lib/feed.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const REVIEW_BUCKET = 'marketing-review';
-const SHEET_TTL = 60 * 60 * 24 * 30; // 30 days — refreshed each batch
 
 const PLATFORMS = ['x', 'instagram', 'threads'];
 
@@ -111,9 +110,10 @@ const applyAnnounceState = async (supabase, post) => {
 
 const REVIEW_URL = 'https://admin.theplot.tv';
 
-// Build the readable week sheet (week.mjs) and host it: upload to a PRIVATE bucket
-// and return a signed URL. Private + signed so unpublished copy isn't world-
-// readable; refreshed every batch so each email's link is always current.
+// Build the readable week sheet (week.mjs) and store it in a PRIVATE bucket. The
+// admin-review function serves it as real HTML at REVIEW_URL/?view=sheet (Supabase
+// storage itself serves stored HTML as text/plain, so it must be proxied). Private
+// so unpublished copy isn't world-readable; refreshed every batch.
 const hostReviewSheet = async (supabase) => {
   try {
     execFileSync('node', ['marketing/preview/week.mjs'], {
@@ -124,9 +124,7 @@ const hostReviewSheet = async (supabase) => {
     const up = await supabase.storage.from(REVIEW_BUCKET)
       .upload('week.html', html, { upsert: true, contentType: 'text/html; charset=utf-8' });
     if (up.error) throw up.error;
-    const signed = await supabase.storage.from(REVIEW_BUCKET).createSignedUrl('week.html', SHEET_TTL);
-    if (signed.error) throw signed.error;
-    return signed.data?.signedUrl || null;
+    return `${REVIEW_URL}/?view=sheet`;
   } catch (err) {
     console.error('Review sheet hosting failed:', err.message);
     return null;
@@ -141,7 +139,7 @@ const notifyReview = async (count, sheetUrl) => {
     <h1 style="font-size:1.25rem;">${count} post${count > 1 ? 's' : ''} ready to review</h1>
     <p style="font-size:.95rem;line-height:1.6;">This week's marketing posts (and the newsletter) are generated and waiting.</p>
     ${sheetUrl ? `<p style="margin:20px 0 6px;"><a href="${sheetUrl}" style="background:#E05578;color:#fff;text-decoration:none;padding:11px 24px;border-radius:9999px;font-weight:600;">📄 Read the full week</a></p>
-    <p style="font-size:.83rem;line-height:1.5;color:#666;margin:0 0 18px;">Every post's copy + cards and the newsletter on one page (link valid 30 days).</p>` : ''}
+    <p style="font-size:.83rem;line-height:1.5;color:#666;margin:0 0 18px;">Every post's copy + cards and the newsletter on one page (sign in with your admin password if asked).</p>` : ''}
     <p style="font-size:.95rem;line-height:1.6;margin:0;">To edit or approve:</p>
     <p style="font-size:.95rem;line-height:1.6;margin:4px 0 0;">• In Claude: run <code>/marketing-week</code> — preview and edit by chatting.</p>
     <p style="font-size:.95rem;line-height:1.6;margin:4px 0 0;">• On the web: <a href="${REVIEW_URL}">the review desk</a>.</p>

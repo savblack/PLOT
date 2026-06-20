@@ -9,6 +9,8 @@ export default async function handler(req, res) {
   const url = new URL(UPSTREAM);
   const key = req.query?.key || req.body?.key;
   if (key) url.searchParams.set('key', Array.isArray(key) ? key[0] : key);
+  const view = req.query?.view;
+  if (view) url.searchParams.set('view', Array.isArray(view) ? view[0] : view);
 
   const headers = { Authorization: `Bearer ${ANON_KEY}`, apikey: ANON_KEY };
   if (req.headers.cookie) headers.cookie = req.headers.cookie;
