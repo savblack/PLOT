@@ -38,7 +38,7 @@ const main = async () => {
   const manifest = [];
   for (const post of todo) {
     const briefPath = path.join(JOBS_DIR, `${post.id}.brief.md`);
-    if (post.post_type === 'conversation') {
+    if (post.post_type === 'question') {
       // Text-only question: no research pack, its own short brief.
       await writeFile(briefPath, await buildConversationBrief(post));
     } else {

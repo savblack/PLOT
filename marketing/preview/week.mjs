@@ -33,7 +33,7 @@ try {
   writeFileSync(join(OUT, 'newsletter.html'), nl);
 } catch { nlOk = false; }
 
-const TL = { upcoming: 'Upcoming this week', trending: 'Trending top 10', watch_tonight: 'What to watch tonight', hidden_gem: 'Hidden gem', on_this_day: 'On this day', now_streaming: 'Now streaming', countdown: 'Countdown', trailer_drop: 'Trailer drop', conversation: 'Conversation' };
+const TL = { upcoming: 'Upcoming this week', trending: 'Trending top 10', watch_tonight: 'What to watch tonight', hidden_gem: 'Hidden gem', on_this_day: 'On this day', now_streaming: 'Now streaming', countdown: 'Countdown', trailer: 'Trailer drop', question: 'Question' };
 const PLAT = { x: 'X', instagram: 'Instagram', threads: 'Threads' };
 const BADGE = { planned: ['Queued', '#6b6b70', '#f1efe8'], needs_review: ['Needs review', '#9a6a00', '#fff2dd'], copy_ready: ['Rendering', '#6b6b70', '#f1efe8'], generated: ['Rendering', '#6b6b70', '#f1efe8'], approved: ['Approved', '#0F6E56', '#eaf5ef'], vetoed: ['Rejected', '#c23d63', '#fbeaef'], published: ['Published', '#0F6E56', '#eaf5ef'], partially_published: ['Partly published', '#9a6a00', '#fff2dd'], failed: ['Failed', '#c23d63', '#fbeaef'] };
 const day = (iso) => new Date(iso).toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'short', timeZone: 'Australia/Sydney' });
@@ -42,7 +42,7 @@ const dkey = (iso) => new Date(iso).toLocaleDateString('en-CA', { timeZone: 'Aus
 const title = (p) => p.tmdb_refs?.[0]?.title || p.payload?.title || p.payload?.topic?.title || '';
 const platforms = (p) => {
   const pubs = p.marketing_post_publications || [];
-  const set = pubs.length ? [...new Set(pubs.map((x) => x.platform))] : (p.post_type === 'conversation' ? ['x', 'threads'] : ['x', 'instagram', 'threads']);
+  const set = pubs.length ? [...new Set(pubs.map((x) => x.platform))] : (p.post_type === 'question' ? ['x', 'threads'] : ['x', 'instagram', 'threads']);
   return set.map((s) => PLAT[s] || s).join(' · ');
 };
 // Mirror admin-review's reason(): one line on why this post exists.
@@ -56,8 +56,8 @@ const reason = (p) => {
     case 'on_this_day': return t ? `Anniversary: ${t}` : 'On this day in film/TV';
     case 'now_streaming': return t ? `Hits streaming today: ${t}` : 'New on streaming today';
     case 'countdown': { const m = String(p.topic_key || '').match(/:t(\d+):/); const nn = m ? m[1] : (p.payload?.days ?? ''); return t ? `T-${nn} countdown to ${t}` : `Countdown (T-${nn})`; }
-    case 'trailer_drop': return t ? `New trailer dropped: ${t}` : 'New trailer';
-    case 'conversation': return t ? `Conversation about ${t}` : 'Conversation starter';
+    case 'trailer': return t ? `New trailer dropped: ${t}` : 'New trailer';
+    case 'question': return t ? `Question about ${t}` : 'Question';
     default: return p.post_type.replace(/_/g, ' ');
   }
 };

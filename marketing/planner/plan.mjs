@@ -1,9 +1,13 @@
 // Daily content planner. Evaluates triggers for the next publish slot and
-// inserts exactly one marketing_posts row (cadence: 1/day).
+// inserts the day's marketing_posts rows (up to 4/day).
 //
-// Anchors: Monday (AEST) = weekly slate, Friday (AEST) = trending chart.
-// Other days, priority ladder: countdown T-1 -> now streaming -> trailer drop
-// -> T-7 -> T-14 -> on this day (relaxed threshold as final fallback).
+// Fixed weekly features (Sydney/AEST day):
+//   Monday          -> "Upcoming this week" + the trending top 10 (two anchors)
+//   Tue/Wed/Thu/Fri -> the daily anniversary ("on this day") leads
+//   Saturday        -> "what to watch tonight"
+//   Sunday          -> "hidden gem"
+// Every non-Monday day then fills with a release-day spotlight, countdowns, a
+// trailer, and a question (events take priority; question fills the remainder).
 import { getSupabase } from '../lib/supabase.mjs';
 import { tmdb } from '../lib/tmdb.mjs';
 import { nextPublishAt, weekdayInTz, isoDate } from '../lib/dates.mjs';
@@ -94,15 +98,15 @@ const planSlot = async (supabase, publishAt, tracked) => {
   const ctx = { supabase, publishAt, weekday, tracked };
 
   // Compose the day's posts.
-  //   Monday  -> "Upcoming this week" (single themed post)
-  //   Friday  -> Trending top 10      (single themed post)
-  //   Wed/Sat lead with a fixed feature (what to watch tonight / hidden gem),
-  //     then fill like any other non-anchor day.
-  //   Tue/Wed/Thu/Sat/Sun -> up to 4: the day's feature (if any), a daily
-  //     anniversary, a release-day spotlight (a title hitting home today), then
-  //     countdowns + a trailer drop to fill. We never pad: thin days simply post
-  //     fewer. A title never appears twice in one day. All posts share the slot
-  //     (one publish run).
+  //   Monday          -> "Upcoming this week" + the trending top 10 (two anchors)
+  //   Tue/Wed/Thu/Fri -> the daily anniversary leads; then fill
+  //   Saturday        -> "what to watch tonight"; then fill
+  //   Sunday          -> "hidden gem"; then fill
+  //   Fill (every non-Monday day, up to 4): a release-day spotlight (a title
+  //     hitting home today), countdowns, a trailer, and a question. Events take
+  //     fill priority; the question takes any remaining slot. We never pad: thin
+  //     days simply post fewer. A title never appears twice in one day. All posts
+  //     share the slot (one publish run).
   const DAILY_TARGET = 4;
   const candidates = [];
   const chosenIds = new Set();
@@ -116,7 +120,9 @@ const planSlot = async (supabase, publishAt, tracked) => {
     if (id) chosenIds.add(id);
   };
 
-  const isAnchor = weekday === 'Monday' || weekday === 'Friday';
+  // Monday is the only anchor day — it carries the two themed weekly posts and
+  // skips the daily fill.
+  const isAnchor = weekday === 'Monday';
 
   // Release-day spotlight, evaluated once so we can both detect a "major" release
   // and (otherwise) reuse it as the spotlight slot without a second TMDB call.
@@ -124,7 +130,7 @@ const planSlot = async (supabase, publishAt, tracked) => {
 
   // Major release = a top-tier tracked title (top 3 by popularity) hitting home
   // today. On those days we focus the day on it instead of the usual mix:
-  // the release + a conversation about it + the day's anniversary (3 posts).
+  // the release + a question about it + the day's anniversary (3 posts).
   const pops = tracked.map(t => t.popularity || 0).sort((a, b) => b - a);
   const majorBar = pops.length >= 3 ? pops[2] : Infinity;
   const popOf = (id) => tracked.find(t => t.tmdb_id === id)?.popularity || 0;
@@ -133,8 +139,8 @@ const planSlot = async (supabase, publishAt, tracked) => {
 
   if (isMajorRelease) {
     const ref = release.tmdb_refs[0];
-    candidates.push(release, {                                             // lead + related conversation
-      post_type: 'conversation',
+    candidates.push(release, {                                             // lead + related question
+      post_type: 'question',
       topic_key: `conversation:${isoDate(publishAt)}`,
       tmdb_refs: [ref],
       payload: { topic: { mode: 'trending', title: ref.title, media_type: ref.media_type } },
@@ -144,24 +150,26 @@ const planSlot = async (supabase, publishAt, tracked) => {
     if (candidates.length < 3) await consider((c) => onThisDay.evaluate(c, { minVotes: 500 }));
     console.log(`Major release detected (${ref.title}) — focusing the day.`);
   } else {
-    if (weekday === 'Monday') await consider(weeklySlate.evaluate);
-    else if (weekday === 'Friday') await consider(trendingChart.evaluate);
+    if (weekday === 'Monday') {
+      await consider(weeklySlate.evaluate);                                // "Upcoming this week"
+      await consider(trendingChart.evaluate);                             // trending top 10
+    }
 
-    // Non-anchor days — and anchor days whose theme found nothing — get the
+    // Every non-Monday day — and Monday if both anchors found nothing — gets the
     // feature + anniversary + spotlight + dynamic-fill composition.
     if (!isAnchor || candidates.length === 0) {
-      if (weekday === 'Wednesday') await consider(watchTonight.evaluate);  // fixed feature
-      else if (weekday === 'Saturday') await consider(hiddenGem.evaluate); // fixed feature
-      else if (weekday === 'Sunday') await consider(conversation.evaluate);// question of the week leads
-      await consider((c) => onThisDay.evaluate(c));                        // anniversary (every day)
+      if (weekday === 'Saturday') await consider(watchTonight.evaluate);   // fixed feature
+      else if (weekday === 'Sunday') await consider(hiddenGem.evaluate);   // fixed feature
+      // Tue–Fri have no other feature, so the anniversary leads there; on Sat/Sun
+      // it follows the feature.
+      await consider((c) => onThisDay.evaluate(c));                        // anniversary / Tue–Fri feature
       if (!candidates.length) await consider((c) => onThisDay.evaluate(c, { minVotes: 500 }));
       await consider(() => release);                                       // release-day spotlight (reused)
-      // Text question on the other two question days (Sunday already led with one).
-      if (weekday === 'Tuesday' || weekday === 'Thursday') await consider(conversation.evaluate);
-      await consider(makeCountdown(1));                                    // additional dynamic posts
+      await consider(makeCountdown(1));                                    // event posts take fill priority
       await consider(trailerDrop.evaluate);
       await consider(makeCountdown(7));
       await consider(makeCountdown(14));
+      await consider(conversation.evaluate);                              // question — daily fill (remainder)
     }
   }
 

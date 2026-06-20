@@ -48,7 +48,7 @@ const main = async () => {
       continue;
     }
 
-    const validate = types.get(postId) === 'conversation' ? validateConversation : validateCopy;
+    const validate = types.get(postId) === 'question' ? validateConversation : validateCopy;
     const { valid, errors, copy } = validate(parsed);
     if (!valid) {
       console.error(`✗ ${postId}: rejected —\n    ${errors.join('\n    ')}`);

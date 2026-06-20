@@ -84,7 +84,7 @@ const samplePayloads = async () => {
       providers: ['Netflix', 'Prime Video'], // payload-only: copy may use it, the image won't
       title: hypedTitle,
     },
-    trailer_drop: {
+    trailer: {
       kind: 'cinema',
       when_label: formatWeekdayDayMonth(hyped.release_date || addDays(today, 30)),
       title: hypedTitle,

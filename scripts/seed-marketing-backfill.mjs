@@ -116,7 +116,7 @@ const COPY = {
     };
   },
 
-  trailer_drop: (p, i) => {
+  trailer: (p, i) => {
     const t = p.title.title;
     const when = p.when_label ? ` It arrives ${p.when_label}.` : '';
     return {
@@ -209,7 +209,7 @@ const runSelfTest = () => {
   const synthetic = {
     countdown: { days_until: 7, kind: 'cinema', when_label: 'Friday 12 June', title: { title: 'The Quiet Year' } },
     now_streaming: { providers: ['Netflix', 'Max'], from_label: 'In cinemas since 1 May', title: { title: 'The Quiet Year' } },
-    trailer_drop: { kind: 'cinema', when_label: 'Friday 12 June', title: { title: 'The Quiet Year' } },
+    trailer: { kind: 'cinema', when_label: 'Friday 12 June', title: { title: 'The Quiet Year' } },
     on_this_day: { years: 25, release_year: 2001, title: { title: 'The Quiet Year' } },
     upcoming: { week_label: '8 – 14 June', titles: [{ title: 'Alpha' }, { title: 'Beta' }, { title: 'Gamma' }, { title: 'Delta' }] },
     trending: {
@@ -253,11 +253,11 @@ const runSelfTest = () => {
 const NON_ANCHOR_CYCLE = [
   { type: 'countdown', days: 7 },
   { type: 'now_streaming' },
-  { type: 'trailer_drop' },
+  { type: 'trailer' },
   { type: 'on_this_day' },
   { type: 'countdown', days: 14 },
   { type: 'now_streaming' },
-  { type: 'trailer_drop' },
+  { type: 'trailer' },
   { type: 'on_this_day' },
   { type: 'countdown', days: 1 },
 ];
@@ -442,7 +442,7 @@ const makePayloadBuilder = (tmdb, fetchTMDB) => {
       };
     },
 
-    trailer_drop: async ({ date }) => {
+    trailer: async ({ date }) => {
       const { upcoming } = await loadPools();
       // Find a title that actually has an official trailer.
       for (const it of upcoming) {
@@ -452,8 +452,8 @@ const makePayloadBuilder = (tmdb, fetchTMDB) => {
         markUsed(it);
         const rel = (it.media_type === 'tv' ? it.first_air_date : it.release_date) || null;
         return {
-          post_type: 'trailer_drop',
-          topic_key: `backfill:trailer_drop:${isoDate(date)}`,
+          post_type: 'trailer',
+          topic_key: `backfill:trailer:${isoDate(date)}`,
           tmdb_refs: [{ media_type: it.media_type, id: it.id, title: it.title || it.name }],
           payload: {
             kind: it.media_type === 'tv' ? 'tv' : 'cinema',
