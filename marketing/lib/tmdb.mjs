@@ -211,8 +211,10 @@ export const tmdb = {
   },
 
   // Films released exactly `years` ago today, by vote count.
-  getAnniversaries: async (years, minVotes = 2000) => {
-    const target = new Date();
+  getAnniversaries: async (years, minVotes = 2000, baseDate) => {
+    // baseDate = the day the post will PUBLISH (not when the planner runs); the
+    // anniversary is years-ago-that-day. Defaults to today for one-off callers.
+    const target = baseDate ? new Date(baseDate) : new Date();
     target.setUTCFullYear(target.getUTCFullYear() - years);
     const day = target.toISOString().slice(0, 10);
     const data = await fetchTMDB('/discover/movie', {

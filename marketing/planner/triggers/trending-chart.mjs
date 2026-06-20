@@ -1,14 +1,13 @@
-// Friday anchor: the weekly top-10 social carousel.
+// Monday anchor: the weekly top-10 social carousel. The planner decides the day;
+// this trigger just builds the chart whenever it's asked.
 //
-// The snapshot is written by the Thursday job (marketing/snapshot/write-snapshot.mjs),
-// which is the source of truth for the chart page. Here we READ the latest
+// The snapshot is the source of truth for the chart page. Here we READ the latest
 // snapshot and rebuild the full payload (poster/backdrop/movement) the carousel
 // render (post-types.mjs) and the subscriber newsletter (send-digest.mjs) need.
 // Movement is computed on read against the prior week's snapshot.
 //
-// Fallback: if Monday's snapshot is missing or stale (the job failed), fetch
-// live and write this week's snapshot now, so neither the Friday post nor the
-// chart page is left empty.
+// Fallback: if the latest snapshot is missing or stale, fetch live and write this
+// week's snapshot now, so neither the post nor the chart page is left empty.
 import { isoDate, formatDayMonth, daysBetween } from '../../lib/dates.mjs';
 import { fetchTrendingTop, recentSnapshots, withMovement } from '../../lib/trending.mjs';
 
@@ -16,7 +15,6 @@ import { fetchTrendingTop, recentSnapshots, withMovement } from '../../lib/trend
 const SOCIAL_SIZE = 10;
 
 export const evaluate = async (ctx) => {
-  if (ctx.weekday !== 'Friday') return null;
 
   const today = isoDate(ctx.publishAt);
   const snaps = await recentSnapshots(ctx.supabase, 2);
