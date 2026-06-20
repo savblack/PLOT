@@ -25,18 +25,16 @@ const sourceList = (research) => {
 // Conversation posts get their own short brief: one tight question, no card,
 // no article. Text-only for Threads + X.
 export const buildConversationBrief = async (post) => {
-  const topic = post.payload?.topic || { mode: 'general' };
-  const angle = topic.mode === 'trending' && topic.title
-    ? `Hook it to a title that's in the conversation right now: "${topic.title}". The question must still make sense to someone who hasn't seen it.`
-    : 'Make it general — a question any film/TV lover can answer (a comfort watch, a hot take, a first-time-again pick).';
-  return `# Copy job: conversation (text-only, Threads + X)
+  return `# Copy job: question (text-only, Threads + X)
 
 Post id: \`${post.id}\`
 Write your answer to: \`marketing/copy/jobs/${post.id}.copy.json\`
 
 ## What to write
-One genuine question that sparks replies — the kind of thing a film lover would
-actually want to answer. ${angle}
+One genuine, GENERIC question that sparks replies — the kind any film/TV lover
+can answer (a comfort watch, a hot take, an underrated pick, a guilty pleasure).
+It must be evergreen: NEVER tied to a specific film/show, a new release, or
+whatever is trending right now. No title names at all.
 
 Keep it TIGHT: a sharp question, then at most one short line. End on the question
 or a brief closer ("No wrong answers."); never an explanatory trailer like
