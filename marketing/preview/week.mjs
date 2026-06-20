@@ -63,7 +63,7 @@ const n = (s) => rows.filter((p) => p.status === s).length;
 
 const html = `<!doctype html><meta charset=utf-8><title>PLOT — week review</title><style>
 body{font-family:'DM Sans',system-ui,sans-serif;color:#15140f;max-width:760px;margin:0 auto;padding:24px 18px 80px;background:#fbfaf8}
-h1{font-size:1.5rem;margin:0 0 4px}h2{font-size:.85rem;text-transform:uppercase;letter-spacing:.05em;color:#76746c;margin:30px 0 12px;border-bottom:1px solid #e7e3dc;padding-bottom:6px}
+h1{font-size:1.5rem;font-weight:400;margin:0 0 4px}h2{font-size:.85rem;text-transform:uppercase;letter-spacing:.05em;color:#76746c;margin:30px 0 12px;border-bottom:1px solid #e7e3dc;padding-bottom:6px}
 .sub{color:#76746c;margin:0 0 8px}
 .post{background:#fff;border:1px solid #e7e3dc;border-radius:14px;padding:16px 18px;margin-bottom:14px}
 .ph{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px}.kind{font-weight:700}.meta{color:#76746c;font-size:.85rem}
@@ -75,7 +75,7 @@ h1{font-size:1.5rem;margin:0 0 4px}h2{font-size:.85rem;text-transform:uppercase;
 iframe{width:100%;height:760px;border:1px solid #e7e3dc;border-radius:12px;background:#fff}
 a{color:#0F6E56}
 </style>
-<h1>PLOT — week review</h1>
+<h1>PLOT: Week Review</h1>
 <p class=sub>${rows.length} posts · ${n('needs_review')} need review · ${n('approved')} approved · ${n('vetoed')} rejected</p>
 ${days || '<p class=sub>Nothing in the pipeline yet.</p>'}
 <h2>Subscriber newsletter</h2>
