@@ -20,16 +20,25 @@ Sat 22:00 UTC (~8am Sun AEST)  marketing-weekly-batch.yml
            generate.mjs  — read copy + Playwright render + storage upload
                            -> status needs_review  +  "ready to review" email
 
-…review desk (admin.theplot.tv): edit / Approve (-> approved) / Reject (-> vetoed)…
+…review: run `/marketing-week` in Claude (the primary cockpit — preview, edit,
+   regenerate, approve, publish, send the newsletter, all conversational) OR the
+   web desk at admin.theplot.tv. Both read/write the same database…
 
 DAILY      marketing-publish.yml — send that day's APPROVED posts to Buffer
                            (X, Instagram + Threads all via Buffer; ≤4/day keeps
                             under Buffer free's 10 scheduled-post cap)
-
-13:00 UTC  marketing-metrics.yml      — IG/Threads insights -> marketing_metrics
-Thu 22:00  marketing-newsletter (TODO) — draft newsletter -> review desk -> send
-Mon 02:00  marketing-token-refresh.yml — Meta 60-day token refresh (metrics only)
 ```
+
+**Just two GitHub workflows** now: `marketing-weekly-batch.yml` (generate the week)
+and `marketing-publish.yml` (daily publish). Everything else is review-driven from
+`/marketing-week` (or the web desk):
+- **Newsletter**: built by `marketing/newsletter/send-digest.mjs`; preview/send on
+  demand from the skill (`node --env-file=.env marketing/newsletter/send-digest.mjs`).
+- **Trending snapshot**: the Friday chart writes its own (see `trending-chart.mjs`
+  fallback), so no separate snapshot job is needed.
+- **Metrics / token-refresh were removed** to keep the footprint to two jobs — IG/
+  Threads engagement is no longer auto-collected. Re-add a metrics job if you want
+  the learning loop back.
 
 ### Copy generation is a swappable AI worker
 
