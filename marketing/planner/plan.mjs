@@ -139,11 +139,11 @@ const planSlot = async (supabase, publishAt, tracked) => {
 
   if (isMajorRelease) {
     const ref = release.tmdb_refs[0];
-    candidates.push(release, {                                             // lead + related question
+    candidates.push(release, {                                             // lead + a generic question
       post_type: 'question',
       topic_key: `conversation:${isoDate(publishAt)}`,
-      tmdb_refs: [ref],
-      payload: { topic: { mode: 'trending', title: ref.title, media_type: ref.media_type } },
+      tmdb_refs: [],
+      payload: { topic: { mode: 'general' } },
     });
     chosenIds.add(releaseId);
     await consider((c) => onThisDay.evaluate(c));                          // one unrelated post

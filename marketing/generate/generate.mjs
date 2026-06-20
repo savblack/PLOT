@@ -3,6 +3,10 @@
 // status 'needs_review' — onto the admin review desk (admin.theplot.tv). Copy is
 // written upstream by the AI copy worker (see marketing/copy/), so this step is
 // API-key-free. Approved posts are sent to Buffer by the daily push.
+import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { getSupabase } from '../lib/supabase.mjs';
 import { renderCard, closeBrowser } from '../lib/render.mjs';
 import { uploadMedia } from '../lib/storage.mjs';
@@ -10,6 +14,10 @@ import { sendEmail, ADMIN_EMAIL } from '../lib/email.mjs';
 import { POST_TYPES } from '../lib/post-types.mjs';
 import { feedHeroUrl } from '../lib/images.mjs';
 import { postSlug } from '../lib/feed.mjs';
+
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
+const REVIEW_BUCKET = 'marketing-review';
+const SHEET_TTL = 60 * 60 * 24 * 30; // 30 days — refreshed each batch
 
 const PLATFORMS = ['x', 'instagram', 'threads'];
 
@@ -103,16 +111,40 @@ const applyAnnounceState = async (supabase, post) => {
 
 const REVIEW_URL = 'https://admin.theplot.tv';
 
+// Build the readable week sheet (week.mjs) and host it: upload to a PRIVATE bucket
+// and return a signed URL. Private + signed so unpublished copy isn't world-
+// readable; refreshed every batch so each email's link is always current.
+const hostReviewSheet = async (supabase) => {
+  try {
+    execFileSync('node', ['marketing/preview/week.mjs'], {
+      cwd: ROOT, env: process.env, stdio: ['ignore', 'ignore', 'inherit'], maxBuffer: 64 * 1024 * 1024,
+    });
+    const html = readFileSync(join(ROOT, 'marketing/preview/out/week.html'), 'utf8');
+    await supabase.storage.createBucket(REVIEW_BUCKET, { public: false }).catch(() => {}); // no-op if it exists
+    const up = await supabase.storage.from(REVIEW_BUCKET)
+      .upload('week.html', html, { upsert: true, contentType: 'text/html; charset=utf-8' });
+    if (up.error) throw up.error;
+    const signed = await supabase.storage.from(REVIEW_BUCKET).createSignedUrl('week.html', SHEET_TTL);
+    if (signed.error) throw signed.error;
+    return signed.data?.signedUrl || null;
+  } catch (err) {
+    console.error('Review sheet hosting failed:', err.message);
+    return null;
+  }
+};
+
 // Ping the admin that the week's posts are ready to review — replaces the old
 // per-post veto email. Review / edit / approve now happens on the admin desk.
-const notifyReview = async (count) => {
+const notifyReview = async (count, sheetUrl) => {
   if (!count) return;
   const html = `<div style="font-family:sans-serif;max-width:520px;color:#1a1a1a;">
     <h1 style="font-size:1.25rem;">${count} post${count > 1 ? 's' : ''} ready to review</h1>
-    <p style="font-size:.95rem;line-height:1.6;">This week's marketing posts (and the newsletter) are generated and waiting. Two ways to review, edit, and approve:</p>
-    <p style="font-size:.95rem;line-height:1.6;margin:0;">• In Claude: open the PLOT repo and run <code>/marketing-week</code> — preview everything and edit by chatting.</p>
-    <p style="font-size:.95rem;line-height:1.6;margin:6px 0 0;">• On the web: the review desk below.</p>
-    <p style="margin:22px 0;"><a href="${REVIEW_URL}" style="background:#E05578;color:#fff;text-decoration:none;padding:11px 24px;border-radius:9999px;font-weight:600;">Open the review desk</a></p>
+    <p style="font-size:.95rem;line-height:1.6;">This week's marketing posts (and the newsletter) are generated and waiting.</p>
+    ${sheetUrl ? `<p style="margin:20px 0 6px;"><a href="${sheetUrl}" style="background:#E05578;color:#fff;text-decoration:none;padding:11px 24px;border-radius:9999px;font-weight:600;">📄 Read the full week</a></p>
+    <p style="font-size:.83rem;line-height:1.5;color:#666;margin:0 0 18px;">Every post's copy + cards and the newsletter on one page (link valid 30 days).</p>` : ''}
+    <p style="font-size:.95rem;line-height:1.6;margin:0;">To edit or approve:</p>
+    <p style="font-size:.95rem;line-height:1.6;margin:4px 0 0;">• In Claude: run <code>/marketing-week</code> — preview and edit by chatting.</p>
+    <p style="font-size:.95rem;line-height:1.6;margin:4px 0 0;">• On the web: <a href="${REVIEW_URL}">the review desk</a>.</p>
   </div>`;
   try {
     await sendEmail({ to: ADMIN_EMAIL, subject: `PLOT marketing: ${count} post(s) ready to review`, html });
@@ -157,8 +189,9 @@ const main = async () => {
   }
 
   await closeBrowser();
-  await notifyReview(count);
-  console.log(`Rendered ${count} post(s) -> needs_review; notified ${ADMIN_EMAIL}.`);
+  const sheetUrl = count ? await hostReviewSheet(supabase) : null;
+  await notifyReview(count, sheetUrl);
+  console.log(`Rendered ${count} post(s) -> needs_review; notified ${ADMIN_EMAIL}.${sheetUrl ? ' Sheet hosted.' : ''}`);
 };
 
 main().catch(async (err) => { console.error(err); await closeBrowser(); process.exit(1); });

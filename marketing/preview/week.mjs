@@ -22,15 +22,17 @@ if (!SB || !KEY) { console.error('Missing SUPABASE_URL / SUPABASE_SERVICE_ROLE_K
 const H = { apikey: KEY, Authorization: `Bearer ${KEY}` };
 const api = async (path) => (await fetch(`${SB}/rest/v1/${path}`, { headers: H })).json();
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+// For an iframe srcdoc attribute: escape only & and " so the HTML still parses.
+const escAttr = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;');
 
-// Newsletter HTML (dry-run build) -> out/newsletter.html, embedded via iframe.
+// Newsletter HTML (dry-run build), inlined via iframe srcdoc so the sheet is a
+// single self-contained file (hostable / uploadable, no sibling newsletter.html).
 // execFileSync (no shell) with a fixed command — no injection surface.
-let nlOk = true;
+let nlOk = true, nlHtml = '';
 try {
-  const nl = execFileSync('node', ['marketing/newsletter/send-digest.mjs'], {
+  nlHtml = execFileSync('node', ['marketing/newsletter/send-digest.mjs'], {
     cwd: ROOT, env: { ...process.env, DRY_RUN: '1' }, encoding: 'utf8', maxBuffer: 32 * 1024 * 1024, stdio: ['ignore', 'pipe', 'ignore'],
   });
-  writeFileSync(join(OUT, 'newsletter.html'), nl);
 } catch { nlOk = false; }
 
 const TL = { upcoming: 'Upcoming this week', trending: 'Trending top 10', watch_tonight: 'What to watch tonight', hidden_gem: 'Hidden gem', on_this_day: 'On this day', now_streaming: 'Now streaming', countdown: 'Countdown', trailer: 'Trailer drop', question: 'Question' };
@@ -122,6 +124,6 @@ ${paused ? '<div class=paused>⏸ Publishing is paused — approved posts will n
 ${days || '<p class=sub>Nothing in the pipeline yet.</p>'}
 ${hist.length ? `<h2>Recently published</h2>${hist.map(histLine).join('')}` : ''}
 <h2>Subscriber newsletter</h2>
-${nlOk ? '<iframe src="newsletter.html"></iframe>' : '<p class=sub>Newsletter preview unavailable (run from a checkout on main).</p>'}`;
+${nlOk ? `<iframe srcdoc="${escAttr(nlHtml)}"></iframe>` : '<p class=sub>Newsletter preview unavailable (run from a checkout on main).</p>'}`;
 writeFileSync(join(OUT, 'week.html'), html);
 console.log(`Wrote ${join(OUT, 'week.html')} (${rows.length} posts, ${hist.length} recently published${paused ? ', PAUSED' : ''}). Open it in a browser.`);
