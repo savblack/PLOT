@@ -109,7 +109,9 @@ const notifyReview = async (count) => {
   if (!count) return;
   const html = `<div style="font-family:sans-serif;max-width:520px;color:#1a1a1a;">
     <h1 style="font-size:1.25rem;">${count} post${count > 1 ? 's' : ''} ready to review</h1>
-    <p style="font-size:.95rem;line-height:1.6;">This week's marketing posts are generated and waiting on the review desk. Approve, edit, or reject each one.</p>
+    <p style="font-size:.95rem;line-height:1.6;">This week's marketing posts (and the newsletter) are generated and waiting. Two ways to review, edit, and approve:</p>
+    <p style="font-size:.95rem;line-height:1.6;margin:0;">• In Claude: open the PLOT repo and run <code>/marketing-week</code> — preview everything and edit by chatting.</p>
+    <p style="font-size:.95rem;line-height:1.6;margin:6px 0 0;">• On the web: the review desk below.</p>
     <p style="margin:22px 0;"><a href="${REVIEW_URL}" style="background:#E05578;color:#fff;text-decoration:none;padding:11px 24px;border-radius:9999px;font-weight:600;">Open the review desk</a></p>
   </div>`;
   try {
