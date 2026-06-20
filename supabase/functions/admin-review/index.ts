@@ -398,6 +398,20 @@ Deno.serve(async (req) => {
     : (validSecret(url.searchParams.get('key')) ? url.searchParams.get('key')! : '');
   const setCookie = sessionSecret
     ? { 'set-cookie': `admin_token=${encodeURIComponent(sessionSecret)}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=2592000` } : {};
+
+  // Readable week sheet: the weekly batch pre-builds week.html and stores it in
+  // the private `marketing-review` bucket. Supabase serves stored HTML as
+  // text/plain (anti-XSS), so it won't render if opened directly — we proxy it
+  // through here as real text/html (auth-gated, since it holds unpublished copy).
+  if (url.searchParams.get('view') === 'sheet') {
+    const dl = await supabase.storage.from('marketing-review').download('week.html');
+    if (dl.error || !dl.data) {
+      return new Response('<!doctype html><meta charset=utf-8><p style="font-family:sans-serif;padding:40px">The week sheet hasn’t been generated yet — it’s built by the weekly batch.</p>',
+        { status: 404, headers: { 'content-type': 'text/html; charset=utf-8', ...setCookie } });
+    }
+    return new Response(await dl.data.text(), { headers: { 'content-type': 'text/html; charset=utf-8', ...setCookie } });
+  }
+
   const now = () => new Date().toISOString();
   // Re-arm a post's publication rows so the publisher will actually send them.
   // Rejecting a post sets its rows to 'skipped'; re-approving must reset them to
