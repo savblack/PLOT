@@ -15,3 +15,12 @@ const match = results?.results?.find(r => r.media_type === 'movie' /* or 'tv' */
 Or fetch by known ID only if the ID came directly from a previous TMDB API response — never from memory.
 
 This applies to: sample data, tests, fixtures, hardcoded lists, and any other static data that references TMDB content.
+
+## Marketing
+
+- **Weekly review / control room** — to review, edit, approve, or publish the week's
+  marketing posts and newsletter, follow **`marketing/REVIEW.md`** start to finish.
+- **Writing post copy** (the weekly batch's copy step) — follow **`marketing/copy/AGENT.md`**.
+
+Both are model-agnostic runbooks. Run from the repo root on `main` with `.env` present;
+never use a paid API for copy; confirm before anything that posts publicly.
