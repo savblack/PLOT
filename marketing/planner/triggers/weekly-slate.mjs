@@ -23,8 +23,16 @@ export const evaluate = async (ctx) => {
   const { theatrical, digital, tv } = await tmdb.getReleasesInWindow(from, to);
 
   const seen = new Set();
+  // Only titles actually releasing in THIS week's window — the source query can
+  // over-return already-released titles, which would put a stale past date on an
+  // "Upcoming this week" card (e.g. a film that started streaming months ago).
+  const inWindow = (item) => {
+    const d = item.media_type === 'tv' ? item.first_air_date : item.release_date;
+    return d && d >= from && d <= to;
+  };
   const pool = [...theatrical, ...digital, ...tv]
     .filter(item => item.poster_path)
+    .filter(inWindow)
     .filter(item => (seen.has(`${item.media_type}:${item.id}`) ? false : seen.add(`${item.media_type}:${item.id}`)))
     .sort((a, b) => (b.popularity || 0) - (a.popularity || 0))
     .slice(0, 6);
