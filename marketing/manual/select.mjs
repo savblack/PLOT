@@ -80,8 +80,8 @@ const copyOnly = (type, date) => ({ post_type: type, topic_key: `manual:${type}:
 // One scheduled type -> a candidate (or null if nothing fired).
 const buildScheduled = async (ctx, type) => {
   switch (type) {
-    case 'weekly_slate': return weeklySlate.evaluate(ctx).catch(() => null);
-    case 'trending_chart': return trendingChart.evaluate(ctx).catch(() => null);
+    case 'upcoming': return weeklySlate.evaluate(ctx).catch(() => null);
+    case 'trending': return trendingChart.evaluate(ctx).catch(() => null);
     case 'countdown': return nearestCountdown(ctx);
     case 'on_this_day':
       return (await onThisDay.evaluate(ctx).catch(() => null))

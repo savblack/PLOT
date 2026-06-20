@@ -50,8 +50,8 @@ const compact = (n: number | null | undefined) =>
   n == null ? '–' : n >= 1000 ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k` : String(n);
 
 const TYPE_LABELS: Record<string, string> = {
-  weekly_slate: 'Upcoming this week',
-  trending_chart: 'Trending top 10',
+  upcoming: 'Upcoming this week',
+  trending: 'Trending top 10',
   watch_tonight: 'What to watch tonight',
   hidden_gem: 'Hidden gem',
   on_this_day: 'On this day',
@@ -66,8 +66,8 @@ const PLAT_LABEL: Record<string, string> = { x: 'X', instagram: 'Instagram', thr
 const reason = (p: Row): string => {
   const title = p.tmdb_refs?.[0]?.title || p.payload?.title || p.payload?.topic?.title || '';
   switch (p.post_type) {
-    case 'weekly_slate': return 'Monday slate — the week’s most-anticipated titles';
-    case 'trending_chart': return 'Friday chart — this week’s trending top 10';
+    case 'upcoming': return 'Monday slate — the week’s most-anticipated titles';
+    case 'trending': return 'Friday chart — this week’s trending top 10';
     case 'watch_tonight': return title ? `Trending & streamable now: ${title}` : 'What to watch tonight';
     case 'hidden_gem': return title ? `Highly-rated, lesser-seen: ${title}` : 'Hidden gem of the week';
     case 'on_this_day': return title ? `Anniversary: ${title}` : 'On this day in film/TV';
@@ -84,7 +84,7 @@ const reason = (p: Row): string => {
 };
 
 const articleLink = (p: Row): string | null => {
-  if (p.post_type === 'trending_chart') return `${SITE_URL}/whats-on/chart`;
+  if (p.post_type === 'trending') return `${SITE_URL}/whats-on/chart`;
   return p.slug ? `${SITE_URL}/whats-on/${p.slug}` : null;
 };
 

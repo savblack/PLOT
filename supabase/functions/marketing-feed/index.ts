@@ -50,9 +50,9 @@ const VISIBLE_STATUSES = ['approved', 'published', 'partially_published'];
 const TYPE_META: Record<string, { label: string; tone: string }> = {
   countdown: { label: 'Countdown', tone: '#B03A5E' },
   now_streaming: { label: 'Now streaming', tone: '#0F6E56' },
-  trending_chart: { label: 'Trending', tone: '#534AB7' },
+  trending: { label: 'Trending', tone: '#534AB7' },
   trailer_drop: { label: 'Trailer drop', tone: '#8A5410' },
-  weekly_slate: { label: 'Upcoming this week', tone: '#185FA5' },
+  upcoming: { label: 'Upcoming this week', tone: '#185FA5' },
   on_this_day: { label: 'On this day', tone: '#6b6b70' },
   watch_tonight: { label: 'What to watch tonight', tone: '#0F6E56' },
   hidden_gem: { label: 'Hidden gem', tone: '#534AB7' },
@@ -63,7 +63,7 @@ const TYPE_META: Record<string, { label: string; tone: string }> = {
 // top nav (not a feed filter).
 const FILTERS: { key: string | null; label: string }[] = [
   { key: null, label: 'Latest' },
-  { key: 'weekly_slate', label: 'This week' },
+  { key: 'upcoming', label: 'This week' },
   { key: 'now_streaming', label: 'Now streaming' },
   { key: 'countdown', label: 'Coming soon' },
   { key: 'trailer_drop', label: 'First look' },
@@ -506,7 +506,7 @@ Deno.serve(async (req) => {
     .not('slug', 'is', null)
     // The trending chart lives on its own page (/whats-on/chart), not as a
     // dated article — keep it out of every feed surface.
-    .neq('post_type', 'trending_chart')
+    .neq('post_type', 'trending')
     .in('status', VISIBLE_STATUSES)
     .lte('scheduled_for', new Date().toISOString());
 
@@ -585,7 +585,7 @@ Deno.serve(async (req) => {
       .from('marketing_posts')
       .select('post_type')
       .eq('slug', slug)
-      .eq('post_type', 'trending_chart')
+      .eq('post_type', 'trending')
       .maybeSingle();
     if (legacyChart) return await renderChart(supabase);
     return page('Not found · PLOT', '', `

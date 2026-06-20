@@ -54,7 +54,7 @@ export const evaluate = async (ctx) => {
   }));
 
   return {
-    post_type: 'weekly_slate',
+    post_type: 'upcoming',
     topic_key: `weekly_slate:${from}`,
     tmdb_refs: titles.map(t => ({ media_type: t.media_type, id: t.tmdb_id, title: t.title })),
     payload: { week_label: formatWeekRange(from, to), titles },

@@ -21,7 +21,7 @@
 // Target a specific inclusive date range instead of the default 50-day window
 // (one post per day, same anchors/cycle). Use it to fill a gap the daily
 // automation missed. A same-day --to is scheduled just behind now() so it shows
-// on the feed immediately. Only trending_chart days (Fridays) render a card, so
+// on the feed immediately. Only trending days (Fridays) render a card, so
 // a gap with no Friday in it needs no browser:
 //   TMDB_API_KEY=… node scripts/seed-marketing-backfill.mjs --from=2026-06-13 --to=2026-06-16 --dry-run
 //   SUPABASE_SERVICE_KEY=… TMDB_API_KEY=… node scripts/seed-marketing-backfill.mjs --from=2026-06-13 --to=2026-06-16
@@ -152,7 +152,7 @@ const COPY = {
     };
   },
 
-  weekly_slate: (p, i) => {
+  upcoming: (p, i) => {
     const names = (p.titles || []).map((t) => t.title);
     const lead = names.slice(0, 3);
     // week_label is rendered with an en dash ("8 – 14 June"); page prose stays dash-free.
@@ -173,7 +173,7 @@ const COPY = {
     };
   },
 
-  trending_chart: (p, i) => {
+  trending: (p, i) => {
     const items = p.items || [];
     const top = items[0]?.title;
     const climber = items.find((it) => it.movement?.dir === 'up');
@@ -211,8 +211,8 @@ const runSelfTest = () => {
     now_streaming: { providers: ['Netflix', 'Max'], from_label: 'In cinemas since 1 May', title: { title: 'The Quiet Year' } },
     trailer_drop: { kind: 'cinema', when_label: 'Friday 12 June', title: { title: 'The Quiet Year' } },
     on_this_day: { years: 25, release_year: 2001, title: { title: 'The Quiet Year' } },
-    weekly_slate: { week_label: '8 – 14 June', titles: [{ title: 'Alpha' }, { title: 'Beta' }, { title: 'Gamma' }, { title: 'Delta' }] },
-    trending_chart: {
+    upcoming: { week_label: '8 – 14 June', titles: [{ title: 'Alpha' }, { title: 'Beta' }, { title: 'Gamma' }, { title: 'Delta' }] },
+    trending: {
       week_label: 'Week of 12 June',
       items: [
         { rank: 1, title: 'Alpha', media_type: 'movie', movement: { dir: 'same' } },
@@ -248,7 +248,7 @@ const runSelfTest = () => {
 };
 
 // ── Planning: assign a post type to each backdated day ───────────────────────
-// Monday -> weekly_slate, Friday -> trending_chart (the planner's anchors);
+// Monday -> upcoming, Friday -> trending (the planner's anchors);
 // every other day cycles the priority-ladder types for a realistic mix.
 const NON_ANCHOR_CYCLE = [
   { type: 'countdown', days: 7 },
@@ -262,14 +262,14 @@ const NON_ANCHOR_CYCLE = [
   { type: 'countdown', days: 1 },
 ];
 
-// Monday -> weekly_slate, Friday -> trending_chart (the planner's anchors);
+// Monday -> upcoming, Friday -> trending (the planner's anchors);
 // every other day cycles the priority ladder for a realistic mix.
 const assignPlans = (days) => {
   let cycleIdx = 0;
   return days.map((date) => {
     const weekday = weekdayInTz(date);
-    if (weekday === 'Monday') return { date, plan: { type: 'weekly_slate' } };
-    if (weekday === 'Friday') return { date, plan: { type: 'trending_chart' } };
+    if (weekday === 'Monday') return { date, plan: { type: 'upcoming' } };
+    if (weekday === 'Friday') return { date, plan: { type: 'trending' } };
     return { date, plan: NON_ANCHOR_CYCLE[cycleIdx++ % NON_ANCHOR_CYCLE.length] };
   });
 };
@@ -489,7 +489,7 @@ const makePayloadBuilder = (tmdb, fetchTMDB) => {
       return null;
     },
 
-    weekly_slate: async ({ date }) => {
+    upcoming: async ({ date }) => {
       const from = isoDate(date);
       const to = addDays(from, 6);
       const { theatrical, digital, tv } = await tmdb.getReleasesInWindow(from, to);
@@ -510,14 +510,14 @@ const makePayloadBuilder = (tmdb, fetchTMDB) => {
         });
       });
       return {
-        post_type: 'weekly_slate',
-        topic_key: `backfill:weekly_slate:${from}`,
+        post_type: 'upcoming',
+        topic_key: `backfill:upcoming:${from}`,
         tmdb_refs: titles.map(refOf),
         payload: { week_label: formatWeekRange(from, to), titles },
       };
     },
 
-    trending_chart: async ({ date }) => {
+    trending: async ({ date }) => {
       const { trendingClean } = await loadPools();
       if (trendingClean.length < 10) return null;
       // Rotate the pool by the chart-week index, then take a top ten.
@@ -538,8 +538,8 @@ const makePayloadBuilder = (tmdb, fetchTMDB) => {
       priorChart = items.map(({ rank, tmdb_id, media_type, title }) => ({ rank, tmdb_id, media_type, title }));
       chartWeek++;
       return {
-        post_type: 'trending_chart',
-        topic_key: `backfill:trending_chart:${isoDate(date)}`,
+        post_type: 'trending',
+        topic_key: `backfill:trending:${isoDate(date)}`,
         tmdb_refs: items.map((it) => ({ media_type: it.media_type, id: it.tmdb_id, title: it.title })),
         payload: { week_label: `Week of ${formatDayMonth(isoDate(date))}`, items },
       };
@@ -599,7 +599,7 @@ const main = async () => {
     if (!cand) { console.warn(`  ! ${isoDate(slot.date)} ${slot.plan.type}: no content, skipped`); continue; }
     const copy = buildCopy(cand.post_type, cand.payload, i);
     // Feed/article hero = plain TMDB still (no branding) for every type except
-    // trending_chart, which keeps its branded chart render (hero_image = null).
+    // trending, which keeps its branded chart render (hero_image = null).
     copy.hero_image = feedHeroUrl(cand.post_type, cand.payload);
     // Past days post at noon UTC (pipeline convention); a same-day backfill whose
     // noon UTC is still ahead of now() is clamped just behind now so the feed
@@ -622,11 +622,11 @@ const main = async () => {
     const slugs = new Set(candidates.map((c) => c.slug));
     console.log(`Unique slugs: ${slugs.size}/${candidates.length}`);
 
-    // Smoke test: only trending_chart days get a branded card render in the live
+    // Smoke test: only trending days get a branded card render in the live
     // seed (every other type leads with a plain TMDB hero image, no browser).
-    const renderTarget = candidates.find((c) => c.post_type === 'trending_chart');
+    const renderTarget = candidates.find((c) => c.post_type === 'trending');
     if (!renderTarget) {
-      console.log('\nNo trending_chart in this range — no card render needed (other types use a plain TMDB hero image, so the live seed needs no browser).');
+      console.log('\nNo trending in this range — no card render needed (other types use a plain TMDB hero image, so the live seed needs no browser).');
     } else {
       try {
         const { renderCard, closeBrowser } = await import('../marketing/lib/render.mjs');
@@ -638,7 +638,7 @@ const main = async () => {
         console.log(`\nRender smoke test OK → ${out} (${(buf.length / 1024).toFixed(0)} KB). Open it to eyeball the chart card.`);
       } catch (err) {
         console.warn(`\nRender smoke test skipped/failed: ${err.message}`);
-        console.warn('(trending_chart needs a browser: npx playwright install chromium)');
+        console.warn('(trending needs a browser: npx playwright install chromium)');
       }
     }
     console.log('\nDry run complete — no database writes. Re-run without --dry-run to seed.');
@@ -683,7 +683,7 @@ const main = async () => {
       // 2) Only trending charts get a branded render (their hero IS the chart).
       // Every other type leads with copy.hero_image (plain TMDB), so no render.
       let media = null;
-      if (c.post_type === 'trending_chart') {
+      if (c.post_type === 'trending') {
         const cards = await POST_TYPES[c.post_type].cards(c.payload);
         const buf = await renderCard(POST_TYPES[c.post_type].template, cards[0].data, { size: 'landscape' });
         const landscapePath = await uploadMedia(`${id}/card-0-landscape.jpg`, buf);

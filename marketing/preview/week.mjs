@@ -33,7 +33,7 @@ try {
   writeFileSync(join(OUT, 'newsletter.html'), nl);
 } catch { nlOk = false; }
 
-const TL = { weekly_slate: 'Upcoming this week', trending_chart: 'Trending top 10', watch_tonight: 'What to watch tonight', hidden_gem: 'Hidden gem', on_this_day: 'On this day', now_streaming: 'Now streaming', countdown: 'Countdown', trailer_drop: 'Trailer drop', conversation: 'Conversation' };
+const TL = { upcoming: 'Upcoming this week', trending: 'Trending top 10', watch_tonight: 'What to watch tonight', hidden_gem: 'Hidden gem', on_this_day: 'On this day', now_streaming: 'Now streaming', countdown: 'Countdown', trailer_drop: 'Trailer drop', conversation: 'Conversation' };
 const PLAT = { x: 'X', instagram: 'Instagram', threads: 'Threads' };
 const BADGE = { planned: ['Queued', '#6b6b70', '#f1efe8'], needs_review: ['Needs review', '#9a6a00', '#fff2dd'], copy_ready: ['Rendering', '#6b6b70', '#f1efe8'], generated: ['Rendering', '#6b6b70', '#f1efe8'], approved: ['Approved', '#0F6E56', '#eaf5ef'], vetoed: ['Rejected', '#c23d63', '#fbeaef'], published: ['Published', '#0F6E56', '#eaf5ef'], partially_published: ['Partly published', '#9a6a00', '#fff2dd'], failed: ['Failed', '#c23d63', '#fbeaef'] };
 const day = (iso) => new Date(iso).toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'short', timeZone: 'Australia/Sydney' });
@@ -49,8 +49,8 @@ const platforms = (p) => {
 const reason = (p) => {
   const t = title(p);
   switch (p.post_type) {
-    case 'weekly_slate': return 'Monday slate — the week’s most-anticipated titles';
-    case 'trending_chart': return 'Friday chart — this week’s trending top 10';
+    case 'upcoming': return 'Monday slate — the week’s most-anticipated titles';
+    case 'trending': return 'Friday chart — this week’s trending top 10';
     case 'watch_tonight': return t ? `Trending & streamable now: ${t}` : 'What to watch tonight';
     case 'hidden_gem': return t ? `Highly-rated, lesser-seen: ${t}` : 'Hidden gem of the week';
     case 'on_this_day': return t ? `Anniversary: ${t}` : 'On this day in film/TV';

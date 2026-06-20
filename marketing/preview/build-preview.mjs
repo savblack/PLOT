@@ -72,8 +72,8 @@ const samplePayloads = async () => {
     || trending.find(t => t.media_type === 'movie' && t.poster_path);
 
   return {
-    weekly_slate: { week_label: formatWeekRange(today, addDays(today, 6)), titles: slateTitles },
-    trending_chart: { week_label: `Week of ${formatDayMonth(today)}`, items: trendItems },
+    upcoming: { week_label: formatWeekRange(today, addDays(today, 6)), titles: slateTitles },
+    trending: { week_label: `Week of ${formatDayMonth(today)}`, items: trendItems },
     countdown: {
       days_until: 7,
       kind: 'cinema',
@@ -123,7 +123,7 @@ const main = async () => {
     if (size === 'portrait') {
       if (allows(card, 'instagram')) {
         parts.push(`Instagram${seq('instagram')}`);
-        if (type === 'weekly_slate' && cardIndex === 0) parts.push('email digest');
+        if (type === 'upcoming' && cardIndex === 0) parts.push('email digest');
       }
     } else {
       if (allows(card, 'x') && cards.findIndex(c => allows(c, 'x')) === cardIndex) {
