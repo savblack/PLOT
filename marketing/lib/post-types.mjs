@@ -23,7 +23,7 @@ const hydrateTitle = async (title, { poster = POSTER_HERO } = {}) => ({
 //   X         -> ONE landscape image only (no carousel support — multi-image
 //                renders as a collage grid): the FIRST card that allows 'x'.
 export const POST_TYPES = {
-  weekly_slate: {
+  upcoming: {
     template: 'weekly-slate',
     // One card per title, most popular first — a real carousel on IG/Threads.
     // X gets only card 0; the X copy names the rest of the week's titles.
@@ -35,7 +35,7 @@ export const POST_TYPES = {
     },
   },
 
-  trending_chart: {
+  trending: {
     template: 'trending-chart',
     // X gets the full top-10 chart as its single image. IG/Threads get a
     // carousel: chart 1-5, chart 6-10, then detail cards for the top 3.

@@ -71,7 +71,7 @@ const publishOne = async (supabase, post, pub) => {
       text = hashtags ? `${post.copy.instagram}\n\n${hashtags}` : post.copy.instagram;
       imageUrls = cardsFor(media, 'instagram').map(m => publicUrl(m.portrait_path));
     } else { // threads — chart posts keep their chart-page link; no article links
-      const link = post.post_type === 'trending_chart' ? chartUrl('threads') : null;
+      const link = post.post_type === 'trending' ? chartUrl('threads') : null;
       text = link ? `${post.copy.threads}\n\n${link}` : post.copy.threads;
       imageUrls = cardsFor(media, 'threads').map(m => publicUrl(m.landscape_path));
     }

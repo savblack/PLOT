@@ -26,14 +26,14 @@ export const COPY_FIELDS = [
 // Per-post-type guidance. Moved here (was inline in the old Claude client) so
 // the brief generator and any future tooling share one definition.
 export const POST_TYPE_BRIEFS = {
-  weekly_slate:
+  upcoming:
     'An "Upcoming this week" roundup. Instagram and Threads get a carousel with one card per title ' +
     '(most popular first), so their captions can tease the 2-3 most exciting titles. X gets ONLY the ' +
     'top title\'s image — the X text must carry the rest: lead with the top title, then name the other ' +
     'titles compactly (e.g. "Also this week: A, B, and C"). Fit 280 characters; drop titles before truncating mid-name.',
   countdown: 'A countdown post. The payload says how many days remain until the release. Lead with the anticipation; the big number is on the image.',
   now_streaming: 'This title is available to stream at home starting today. ALWAYS name the platform it\'s on — lead with the US provider from the payload\'s `streaming` object (US default), adding UK/AU only if they differ. Never guess a platform that isn\'t in the data.',
-  trending_chart:
+  trending:
     'The weekly top-10 trending chart. Comment on the most interesting movement (a new entry, a big climb, a stubborn #1). ' +
     'X gets the full top-10 chart as its single image. ' +
     'Instagram and Threads get a carousel: chart 1-5, chart 6-10, then detail cards for the top 3.',

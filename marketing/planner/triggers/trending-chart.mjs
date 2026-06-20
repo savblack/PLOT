@@ -39,7 +39,7 @@ export const evaluate = async (ctx) => {
   const items = withMovement(latest.items.slice(0, SOCIAL_SIZE), prior?.items || null);
 
   return {
-    post_type: 'trending_chart',
+    post_type: 'trending',
     topic_key: `trending:${weekDate}`,
     tmdb_refs: items.map(i => ({ media_type: i.media_type, id: i.tmdb_id, title: i.title })),
     payload: { week_label: `Week of ${formatDayMonth(weekDate)}`, items },

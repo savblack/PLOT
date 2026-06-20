@@ -54,9 +54,9 @@ const factsFor = (c) => {
   } else if (c.post_type === 'on_this_day') {
     f.push(`Anniversary: ${p.years} years${p.release_year ? ` (released ${p.release_year})` : ''}`);
     if (t.overview) f.push(`Premise: ${t.overview}`);
-  } else if (c.post_type === 'weekly_slate') {
+  } else if (c.post_type === 'upcoming') {
     f.push(`Titles: ${(p.titles || []).map(x => x.title).join(', ')}`);
-  } else if (c.post_type === 'trending_chart') {
+  } else if (c.post_type === 'trending') {
     f.push(`Top: ${(p.items || []).slice(0, 5).map((x, i) => `${i + 1}. ${x.title}`).join('  ')}`);
   }
   return f;

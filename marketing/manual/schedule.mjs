@@ -8,8 +8,8 @@
 //             (no image at all).
 //   kicker  — the accent caps label printed on a 'title' card image
 export const TYPES = {
-  weekly_slate:          { label: 'Upcoming this week',     render: true,  feed: true },
-  trending_chart:        { label: 'Trending top 10',        render: true,  feed: true },
+  upcoming:          { label: 'Upcoming this week',     render: true,  feed: true },
+  trending:        { label: 'Trending top 10',        render: true,  feed: true },
   on_this_day:           { label: 'Anniversary',            render: true,  feed: true },
   countdown:             { label: 'Countdown',              render: true,  feed: true },
   spotlight:             { label: 'Spotlight',              feed: false, card: 'title', kicker: 'Spotlight' },
@@ -21,18 +21,18 @@ export const TYPES = {
 
 // Ordered so the most "featured" post is first (build.mjs sorts it newest).
 export const SCHEDULE = {
-  Monday:    ['weekly_slate'],
+  Monday:    ['upcoming'],
   Tuesday:   ['on_this_day', 'spotlight', 'text_question', 'countdown'],
   Wednesday: ['what_to_watch_tonight', 'on_this_day', 'spotlight', 'countdown'],
   Thursday:  ['on_this_day', 'spotlight', 'text_question', 'countdown'],
-  Friday:    ['trending_chart'],
+  Friday:    ['trending'],
   Saturday:  ['hidden_gem', 'on_this_day', 'spotlight', 'countdown'],
   Sunday:    ['question_of_week', 'on_this_day', 'spotlight', 'countdown'],
 };
 
 export const CTA = {
-  weekly_slate: 'whats_on_tonight',
-  trending_chart: 'journal_it',
+  upcoming: 'whats_on_tonight',
+  trending: 'journal_it',
   on_this_day: 'journal_it',
   countdown: 'track_it',
   spotlight: 'journal_it',
