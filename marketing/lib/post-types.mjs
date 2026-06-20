@@ -79,7 +79,7 @@ export const POST_TYPES = {
     }],
   },
 
-  trailer_drop: {
+  trailer: {
     template: 'trailer-drop',
     cards: async (payload) => [{
       data: {

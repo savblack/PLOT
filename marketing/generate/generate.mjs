@@ -37,7 +37,7 @@ const generateConversation = async (supabase, post) => {
 };
 
 const generatePost = async (supabase, post) => {
-  if (post.post_type === 'conversation') return generateConversation(supabase, post);
+  if (post.post_type === 'question') return generateConversation(supabase, post);
 
   const spec = POST_TYPES[post.post_type];
   if (!spec) throw new Error(`Unknown post type ${post.post_type}`);

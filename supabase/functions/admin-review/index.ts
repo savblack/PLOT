@@ -57,8 +57,8 @@ const TYPE_LABELS: Record<string, string> = {
   on_this_day: 'On this day',
   now_streaming: 'Now streaming',
   countdown: 'Countdown',
-  trailer_drop: 'Trailer drop',
-  conversation: 'Conversation',
+  trailer: 'Trailer drop',
+  question: 'Question',
 };
 const PLAT_LABEL: Record<string, string> = { x: 'X', instagram: 'Instagram', threads: 'Threads' };
 
@@ -77,8 +77,8 @@ const reason = (p: Row): string => {
       const n = m ? m[1] : (p.payload?.days ?? '');
       return title ? `T-${n} countdown to ${title}` : `Countdown (T-${n})`;
     }
-    case 'trailer_drop': return title ? `New trailer dropped: ${title}` : 'New trailer';
-    case 'conversation': return title ? `Conversation about ${title}` : 'Conversation starter';
+    case 'trailer': return title ? `New trailer dropped: ${title}` : 'New trailer';
+    case 'question': return title ? `Question about ${title}` : 'Question';
     default: return p.post_type.replace(/_/g, ' ');
   }
 };
@@ -93,7 +93,7 @@ const articleLink = (p: Row): string | null => {
 const platformsFor = (p: Row): string[] => {
   const pubs = (p.marketing_post_publications || []) as Row[];
   if (pubs.length) return [...new Set(pubs.map((x) => x.platform))];
-  return p.post_type === 'conversation' ? ['x', 'threads'] : ['x', 'instagram', 'threads'];
+  return p.post_type === 'question' ? ['x', 'threads'] : ['x', 'instagram', 'threads'];
 };
 
 const GH_REPO = Deno.env.get('GH_REPO') ?? 'savblack/PLOT';
@@ -307,7 +307,7 @@ const postForm = (p: Row, key: string) => {
   }).join('');
   const body = Array.isArray(c.page_body) ? c.page_body.join('\n\n') : (c.page_body || '');
   const tags = Array.isArray(c.hashtags) ? c.hashtags.join(', ') : '';
-  const isConvo = p.post_type === 'conversation';
+  const isConvo = p.post_type === 'question';
   const link = articleLink(p);
   const isVetoed = p.status === 'vetoed';
   const hasCopy = !!(c.x || c.instagram || c.threads || c.page_title);

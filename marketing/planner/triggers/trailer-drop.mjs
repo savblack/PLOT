@@ -16,7 +16,7 @@ export const evaluate = async (ctx) => {
 
     const details = await tmdb.getDetails(t.media_type, t.tmdb_id);
     return {
-      post_type: 'trailer_drop',
+      post_type: 'trailer',
       topic_key: `trailer:${t.media_type}:${t.tmdb_id}:${fresh.key}`,
       tmdb_refs: [{ media_type: t.media_type, id: t.tmdb_id, title: t.title }],
       announce: { tracked_id: t.id, key: 'trailer', trailer_key: fresh.key },

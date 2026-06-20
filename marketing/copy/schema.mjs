@@ -37,7 +37,7 @@ export const POST_TYPE_BRIEFS = {
     'The weekly top-10 trending chart. Comment on the most interesting movement (a new entry, a big climb, a stubborn #1). ' +
     'X gets the full top-10 chart as its single image. ' +
     'Instagram and Threads get a carousel: chart 1-5, chart 6-10, then detail cards for the top 3.',
-  trailer_drop: 'A new official trailer just dropped for this title. React to the trailer existing; never describe scenes you haven\'t been given.',
+  trailer: 'A new official trailer just dropped for this title. React to the trailer existing; never describe scenes you haven\'t been given.',
   on_this_day: 'A release anniversary. The payload says how many years. Invite reflection or a rewatch; no spoilers.',
   watch_tonight: 'A "what to watch tonight" pick — a title streaming right now. Make a quick, genuine case for tonight, and ALWAYS name the platform it\'s on (US default from the payload\'s `streaming` object).',
   hidden_gem: 'A "hidden gem" — an older film (1980s onwards) worth resurfacing, streamable now. Briefly say why it holds up; ALWAYS name the platform it\'s on (US default). No spoilers.',
