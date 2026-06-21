@@ -77,6 +77,32 @@ jobs:
           echo "ARTIFACT=${FILE}.gpg" >> "$GITHUB_ENV"
           ls -lh "${FILE}.gpg"
 
+      - name: DEBUG R2 readable
+        env:
+          AWS_ACCESS_KEY_ID:     ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION:    auto
+        run: |
+          set +e
+          ACCT=6143964fcde2d7c381f189ae2645e563.r2.cloudflarestorage.com
+          EP=https://$ACCT
+          BKT=plot-db-backups
+          echo "### openssl ACCOUNT host (1 label) ###"
+          echo | timeout 20 openssl s_client -connect $ACCT:443 -servername $ACCT 2>&1 | grep -iE 'CONNECTED|verify return|alert|Cipher is|subject=|issuer=|Protocol' | head
+          echo "### openssl BUCKET.ACCOUNT host (2 labels) ###"
+          echo | timeout 20 openssl s_client -connect $BKT.$ACCT:443 -servername $BKT.$ACCT 2>&1 | grep -iE 'CONNECTED|verify return|alert|Cipher is|subject=|issuer=|Protocol' | head
+          echo "### curl account host ###"
+          curl -sS -o /dev/null -w 'http=%{http_code}\n' --max-time 20 $EP; echo "curl_rc=$?"
+          echo "### aws config ###"
+          aws configure set default.s3.addressing_style path
+          echo "get=$(aws configure get default.s3.addressing_style)"
+          echo "--- ~/.aws/config ---"; cat ~/.aws/config 2>&1
+          echo "### aws cp --debug (connection host + result) ###"
+          echo hi > /tmp/t.txt
+          aws s3 cp /tmp/t.txt s3://$BKT/db-backups/_conntest.txt --endpoint-url $EP --debug 2>&1 \
+            | grep -iE 'Starting new HTTPS connection|Making request|host=|SSLError|HTTPSConnectionPool|handshake|<Code>|response code|InvalidAccessKey|SignatureDoesNot|upload' | head -25
+          echo "### done ###"
+
       - name: Upload to R2
         run: |
           set -euo pipefail
