@@ -569,8 +569,8 @@ export default function DesignSystemPage() {
           <RuleCard label="Icon and mark usage">
             <div className="ds-note-list">
               <div className="ds-note-row">
-                <strong>Logo images</strong>
-                <p>Use the shared raster mark through <code>PlotLogo</code>; do not redraw or typeset the wordmark ad hoc.</p>
+                <strong>Wordmark</strong>
+                <p>Render the PLOT wordmark as Instrument Serif text through <code>PlotLogo</code> (<code>var(--font-serif)</code>, weight 400, <code>-0.05em</code> tracking). Never use raster or letter-image logos; size it with <code>fontSize</code>.</p>
               </div>
               <div className="ds-note-row">
                 <strong>Navigation icons</strong>
