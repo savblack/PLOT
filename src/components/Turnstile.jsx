@@ -70,5 +70,11 @@ export default function Turnstile({ siteKey, onToken, resetSignal = 0 }) {
   }, [resetSignal]);
 
   if (!siteKey) return null;
-  return <div ref={containerRef} className="auth-turnstile" style={{ minHeight: 65 }} />;
+  return (
+    <div
+      ref={containerRef}
+      className="auth-turnstile"
+      style={{ minHeight: 65, display: 'flex', justifyContent: 'center' }}
+    />
+  );
 }
