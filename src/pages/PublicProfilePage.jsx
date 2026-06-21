@@ -200,11 +200,6 @@ const styles = `
 
   .public-profile-note { margin-top: 1.25rem; font-size: 0.82rem; line-height: 1.65; color: var(--text-muted); }
 
-  .public-profile-panel-footer {
-    flex-shrink: 0; padding: clamp(1rem, 2vh, 1.5rem) 2rem; text-align: center;
-    font-size: 0.75rem; color: var(--text-muted);
-  }
-  .public-profile-panel-footer a { color: var(--text-secondary); text-decoration: underline; text-underline-offset: 2px; }
 
   /* ── Real profile ── */
   .pp-header { display: flex; align-items: center; gap: 1rem; }
@@ -467,10 +462,6 @@ export default function PublicProfilePage() {
               </div>
             )}
           </div>
-
-          <p className="public-profile-panel-footer">
-            Made with <Link to="/">PLOT</Link> · your film &amp; TV companion
-          </p>
         </section>
       </main>
 
