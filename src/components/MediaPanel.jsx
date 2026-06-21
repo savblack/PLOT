@@ -8,6 +8,7 @@ import { markMediaAsWatched, moveSavedShowToWatching } from '../utils/mediaStatu
 import { resolveMediaPanelEscapeAction } from '../utils/mediaPanel.js';
 import { ratingFromPointer, ratingToStars, starFillPercent, STAR_COUNT } from '../utils/ratings.js';
 import { pickBestTvmazeShowMatch } from '../utils/tvmaze.js';
+import { useShareTitle } from '../hooks/useShareTitle.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import PlotLoader from './PlotLoader.jsx';
 
@@ -16,6 +17,45 @@ function CloseIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" stroke="currentColor" fill="none" strokeWidth="2.5">
       <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+    </svg>
+  );
+}
+
+/* ── Action-cluster icons (1.25rem tray glyphs + Save affordance) ── */
+function ShareIcon({ size = 18 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+      <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+    </svg>
+  );
+}
+function BookmarkIcon({ size = 15 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+    </svg>
+  );
+}
+function CheckIcon({ size = 15 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="20 6 9 17 4 12"/>
+    </svg>
+  );
+}
+function StatusIcon({ size = 18 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/>
+    </svg>
+  );
+}
+function ListIcon({ size = 18 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="14" y2="18"/>
+      <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
     </svg>
   );
 }
@@ -264,12 +304,12 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone }) {
    MediaPanel
 ═══════════════════════════════════════ */
 /* ── Heart icon ── */
-function HeartIcon({ filled }) {
+function HeartIcon({ filled, size = 15 }) {
   const path = "M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z";
   return (
-    <svg viewBox="0 0 24 24" width="15" height="15"
-      fill={filled ? 'var(--accent)' : 'none'}
-      stroke={filled ? 'var(--accent)' : 'currentColor'}
+    <svg viewBox="0 0 24 24" width={size} height={size}
+      fill={filled ? 'currentColor' : 'none'}
+      stroke="currentColor"
       strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
       <path d={path}/>
     </svg>
@@ -490,6 +530,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
   const { watchlist, watching, user, profile, favorites, customLists } = useApp();
   const timezone = profile?.timezone || null;
   const history = useHistory(user?.id);
+  const { shareTitle, copied: shareCopied } = useShareTitle();
 
   const [details,      setDetails]      = useState(null);
   const [whereToWatch, setWhereToWatch] = useState({ streaming: [], rentBuy: [], inCinemas: false });
@@ -770,123 +811,135 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
               );
             })()}
 
-            {/* ── Action buttons: 2×2 grid ── */}
+            {/* ── Action cluster: hero Save + secondary tray (Status · Favourite · List · Share) ── */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
               {(() => {
-                const btn = {
-                  flex: 1, padding: '0.5rem 0.5rem', borderRadius: '0.75rem',
-                  cursor: 'pointer', fontSize: '0.85rem', fontWeight: 500,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  transition: 'all 0.18s', boxSizing: 'border-box',
+                // Compact icon-over-label button for the secondary tray.
+                const trayBtn = {
+                  flex: 1, minWidth: 0, padding: '0.55rem 0.25rem', borderRadius: '0.75rem',
+                  cursor: 'pointer', fontSize: '0.68rem', fontWeight: 500, lineHeight: 1.2,
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                  gap: '0.3rem', textAlign: 'center', transition: 'all 0.18s', boxSizing: 'border-box',
                 };
+
+                const statusLabel = statusActionPending ? statusActionPending
+                  : isWatching ? 'Watching'
+                  : watched && watchedEntry?.dnf ? "Didn't finish"
+                  : watched ? 'Watched'
+                  : 'Status';
+                const statusActive = isWatching || watched;
+                const statusColors = isWatching
+                  ? { background: 'rgba(99,102,241,0.12)', border: '1.5px solid rgba(99,102,241,0.45)', color: '#818cf8' }
+                  : watched
+                  ? { background: '#0d2d1a', border: '1.5px solid rgba(74,222,128,0.2)', color: '#4ade80' }
+                  : { background: 'transparent', border: '1.5px solid var(--border)', color: 'var(--text-secondary)' };
+
                 return (<>
 
-              {/* Row 1: Save + Watch status */}
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                {/* Save / Saved */}
-                <button
-                  onClick={() => watchlist.toggle({ ...details, id: itemId, media_type: itemType })}
-                  style={{
-                    ...btn, fontWeight: 600,
-                    border: inList ? '1.5px solid rgba(74,222,128,0.2)' : '1.5px solid transparent',
-                    background: inList ? '#0d2d1a' : 'var(--accent)',
-                    color: inList ? '#4ade80' : '#fff',
-                  }}
-                >
-                  {inList ? 'Saved' : 'Save'}
-                </button>
+              {/* Primary: Save (full width) */}
+              <button
+                onClick={() => watchlist.toggle({ ...details, id: itemId, media_type: itemType })}
+                style={{
+                  padding: '0.6rem 0.5rem', borderRadius: '0.75rem', cursor: 'pointer',
+                  fontSize: '0.9rem', fontWeight: 600, transition: 'all 0.18s', boxSizing: 'border-box',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
+                  border: inList ? '1.5px solid rgba(74,222,128,0.2)' : '1.5px solid transparent',
+                  background: inList ? '#0d2d1a' : 'var(--accent)',
+                  color: inList ? '#4ade80' : '#fff',
+                }}
+              >
+                {inList ? <CheckIcon /> : <BookmarkIcon />}
+                {inList ? 'Saved' : 'Save'}
+              </button>
 
-                {/* Watch status dropdown */}
-                {(() => {
-                  const statusLabel = isWatching ? 'Watching'
-                    : watched && watchedEntry?.dnf ? "Didn't finish"
-                    : watched ? 'Watched'
-                    : 'Watch status';
-                  const isActive = isWatching || watched;
-                  const statusStyle = isWatching
-                    ? { background: 'rgba(99,102,241,0.12)', border: '1.5px solid rgba(99,102,241,0.45)', color: '#818cf8' }
-                    : watched
-                    ? { background: '#0d2d1a', border: '1.5px solid rgba(74,222,128,0.2)', color: '#4ade80' }
-                    : { background: 'transparent', border: '1.5px solid var(--border)', color: 'var(--text-secondary)' };
-                  return (
-                    <div style={{ flex: 1, position: 'relative' }} onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) setShowStatusDropdown(false); }}>
-                      <button
-                        onClick={() => setShowStatusDropdown(v => !v)}
-                        disabled={!!statusActionPending}
-                        style={{
-                          ...btn, fontWeight: isActive ? 600 : 500,
-                          position: 'relative', width: '100%', ...statusStyle,
-                          opacity: statusActionPending ? 0.7 : 1,
-                        }}
-                      >
-                        <span>{statusActionPending || statusLabel}</span>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.7, flexShrink: 0, position: 'absolute', right: '0.6rem' }}>
-                          <polyline points="6 9 12 15 18 9"/>
-                        </svg>
-                      </button>
-                      {showStatusDropdown && (
-                        <div style={{
-                          position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0, zIndex: 100,
-                          background: 'var(--surface-raised)', border: '1px solid var(--border)',
-                          borderRadius: '0.75rem', overflow: 'hidden',
-                          boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
-                        }}>
-                          {[
-                            { label: 'Watching', action: () => runStatusAction('Updating…', handleWatchingStatus), hidden: isMovie },
-                            { label: 'Watched', action: () => runStatusAction('Updating…', () => handleWatchedStatus(false)) },
-                            { label: "Didn't finish", action: () => runStatusAction('Updating…', () => handleWatchedStatus(true)) },
-                            { label: 'Clear status', action: () => runStatusAction('Clearing…', handleClearStatus), hidden: !isActive, muted: true },
-                          ].filter(o => !o.hidden).map((opt, i, arr) => (
-                            <button
-                              key={opt.label}
-                              onClick={opt.action}
-                              disabled={!!statusActionPending}
-                              style={{
-                                width: '100%', padding: '0.6rem 0.85rem',
-                                background: 'transparent',
-                                border: 'none', borderBottom: i < arr.length - 1 ? '1px solid var(--border)' : 'none',
-                                color: opt.muted ? 'var(--text-muted)' : 'var(--text-primary)', fontSize: '0.82rem', fontWeight: 500, cursor: 'pointer',
-                                display: 'flex', alignItems: 'center', textAlign: 'left',
-                                transition: 'background 0.12s',
-                                opacity: statusActionPending ? 0.6 : 1,
-                              }}
-                              onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-sunken)'}
-                              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                            >
-                              {opt.label}
-                            </button>
-                          ))}
-                        </div>
-                      )}
+              {/* Secondary tray */}
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                {/* Watch status (with dropdown) */}
+                <div style={{ flex: 1, minWidth: 0, position: 'relative' }} onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) setShowStatusDropdown(false); }}>
+                  <button
+                    onClick={() => setShowStatusDropdown(v => !v)}
+                    disabled={!!statusActionPending}
+                    style={{ ...trayBtn, width: '100%', ...statusColors, fontWeight: statusActive ? 600 : 500, opacity: statusActionPending ? 0.7 : 1 }}
+                  >
+                    <StatusIcon />
+                    <span style={{ maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis' }}>{statusLabel}</span>
+                  </button>
+                  {showStatusDropdown && (
+                    <div style={{
+                      position: 'absolute', top: 'calc(100% + 6px)', left: 0, minWidth: '160px', zIndex: 100,
+                      background: 'var(--surface-raised)', border: '1px solid var(--border)',
+                      borderRadius: '0.75rem', overflow: 'hidden',
+                      boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
+                    }}>
+                      {[
+                        { label: 'Watching', action: () => runStatusAction('Updating…', handleWatchingStatus), hidden: isMovie },
+                        { label: 'Watched', action: () => runStatusAction('Updating…', () => handleWatchedStatus(false)) },
+                        { label: "Didn't finish", action: () => runStatusAction('Updating…', () => handleWatchedStatus(true)) },
+                        { label: 'Clear status', action: () => runStatusAction('Clearing…', handleClearStatus), hidden: !statusActive, muted: true },
+                      ].filter(o => !o.hidden).map((opt, i, arr) => (
+                        <button
+                          key={opt.label}
+                          onClick={opt.action}
+                          disabled={!!statusActionPending}
+                          style={{
+                            width: '100%', padding: '0.6rem 0.85rem',
+                            background: 'transparent', whiteSpace: 'nowrap',
+                            border: 'none', borderBottom: i < arr.length - 1 ? '1px solid var(--border)' : 'none',
+                            color: opt.muted ? 'var(--text-muted)' : 'var(--text-primary)', fontSize: '0.82rem', fontWeight: 500, cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', textAlign: 'left',
+                            transition: 'background 0.12s',
+                            opacity: statusActionPending ? 0.6 : 1,
+                          }}
+                          onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-sunken)'}
+                          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
                     </div>
-                  );
-                })()}
-              </div>
+                  )}
+                </div>
 
-              {/* Row 2: Favourite + Add to list */}
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                {/* Favourite */}
                 <button
                   onClick={() => favorites.toggleFavorite({ ...details, id: itemId, media_type: itemType })}
                   style={{
-                    ...btn,
+                    ...trayBtn,
                     border: isFav ? '1.5px solid color-mix(in srgb, var(--accent) 40%, transparent)' : '1.5px solid var(--border)',
                     background: isFav ? 'var(--accent-dim)' : 'transparent',
                     color: isFav ? 'var(--accent)' : 'var(--text-secondary)',
                   }}
                 >
+                  <HeartIcon filled={isFav} size={18} />
                   {isFav ? 'Favourited' : 'Favourite'}
                 </button>
 
+                {/* Add to list */}
                 <button
                   onClick={() => setShowListSheet(true)}
                   style={{
-                    ...btn,
+                    ...trayBtn,
                     border: isInAnyList ? '1.5px solid rgba(99,102,241,0.4)' : '1.5px solid var(--border)',
                     background: isInAnyList ? 'rgba(99,102,241,0.1)' : 'transparent',
                     color: isInAnyList ? '#818cf8' : 'var(--text-secondary)',
                   }}
                 >
-                  {isInAnyList ? 'On your list' : 'Add to list'}
+                  <ListIcon />
+                  {isInAnyList ? 'On list' : 'List'}
+                </button>
+
+                {/* Share */}
+                <button
+                  onClick={() => shareTitle({ tmdbId: itemId, mediaType: itemType, title })}
+                  style={{
+                    ...trayBtn,
+                    border: shareCopied ? '1.5px solid color-mix(in srgb, var(--accent) 40%, transparent)' : '1.5px solid var(--border)',
+                    background: shareCopied ? 'var(--accent-dim)' : 'transparent',
+                    color: shareCopied ? 'var(--accent)' : 'var(--text-secondary)',
+                  }}
+                >
+                  <ShareIcon />
+                  {shareCopied ? 'Copied!' : 'Share'}
                 </button>
               </div>
 
