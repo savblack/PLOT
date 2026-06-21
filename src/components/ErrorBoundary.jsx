@@ -34,8 +34,7 @@ const styles = `
   }
 
   .plot-error-logo-image {
-    width: 100px;
-    height: auto;
+    font-size: 1.9rem;
     display: block;
   }
 
