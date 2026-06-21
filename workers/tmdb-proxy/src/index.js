@@ -38,6 +38,11 @@ export default {
       method: request.method,
       headers: forwardHeaders(request.headers),
     });
-    return new Response(resp.body, { status: resp.status, headers: resp.headers });
+    // The Workers runtime has already decoded the body, so passing the upstream
+    // content-encoding/content-length through makes the browser fail to decode.
+    // Drop those (and the upstream's set-cookie) and keep content-type + CORS.
+    const headers = new Headers(resp.headers);
+    ['content-encoding', 'content-length', 'transfer-encoding', 'set-cookie'].forEach((h) => headers.delete(h));
+    return new Response(resp.body, { status: resp.status, headers });
   },
 };
