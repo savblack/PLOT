@@ -50,9 +50,9 @@ export function FollowButton({ targetId, isPublic, status: initial = null, viewe
       style={{
         flexShrink: 0, minHeight: 34, padding: '0.4rem 0.9rem', borderRadius: 'var(--radius-pill)',
         fontSize: '0.82rem', fontWeight: 600, cursor: busy ? 'default' : 'pointer',
-        border: filled ? 'none' : '0.75px solid var(--border)',
-        background: filled ? 'var(--text-primary)' : 'transparent',
-        color: filled ? 'var(--surface)' : 'var(--text-secondary)',
+        background: 'transparent',
+        border: filled ? '0.75px solid var(--text-primary)' : '0.75px solid var(--border)',
+        color: filled ? 'var(--text-primary)' : 'var(--text-secondary)',
         opacity: busy ? 0.6 : 1,
       }}
     >
