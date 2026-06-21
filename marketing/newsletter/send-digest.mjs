@@ -10,6 +10,8 @@ import { sendBatch, FROM_MARKETING } from '../lib/email.mjs';
 import { recentSnapshots, withMovement } from '../lib/trending.mjs';
 import { tmdb } from '../lib/tmdb.mjs';
 import { getRatings } from '../lib/omdb.mjs';
+import { addDays } from '../lib/dates.mjs';
+import { tzDateParts } from '../learning/window.mjs';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const SITE = 'https://theplot.tv';
@@ -29,6 +31,7 @@ const cleanProvider = (n) => {
   return /^netflix/i.test(s) ? 'Netflix' : s;
 };
 const normProviders = (names) => [...new Set((names || []).map(cleanProvider))];
+const ISSUE_WEEK_OFFSET = { Monday: 0, Tuesday: 1, Wednesday: 2, Thursday: 3, Friday: 4, Saturday: 5, Sunday: 6 };
 
 const providersOf = (details) => {
   const r = details?.['watch/providers']?.results || {};
@@ -309,9 +312,13 @@ const main = async () => {
 
   const dateLabel = now.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
   const data = { dateLabel, featured, kicker: "This week's No.1", chart, weekend, streaming };
+  const issueHtml = buildHtml(data, `${SITE}/?unsubscribe_preview`);
+  const subject = 'This week in film & TV — PLOT';
+  const localIssueDate = tzDateParts(now);
+  const weekStart = addDays(localIssueDate.date, -ISSUE_WEEK_OFFSET[localIssueDate.weekday]);
 
   if (DRY_RUN) {
-    process.stdout.write(buildHtml(data, `${SITE}/?unsubscribe_preview`));
+    process.stdout.write(issueHtml);
     return;
   }
 
@@ -330,7 +337,7 @@ const main = async () => {
     return {
       from: FROM_MARKETING,
       to: [sub.email],
-      subject: 'This week in film & TV — PLOT',
+      subject,
       html: buildHtml(data, unsubscribeUrl),
       headers: {
         'List-Unsubscribe': `<${unsubscribeUrl}>`,
@@ -342,6 +349,16 @@ const main = async () => {
   for (let i = 0; i < messages.length; i += 100) {
     await sendBatch(messages.slice(i, i + 100));
   }
+  const { error: issueError } = await supabase.from('marketing_newsletter_issues').upsert({
+    week_start: weekStart,
+    issue_date: localIssueDate.date,
+    subject,
+    html: issueHtml,
+    snapshot: data,
+    recipient_count: messages.length,
+    sent_at: new Date().toISOString(),
+  }, { onConflict: 'week_start' });
+  if (issueError) throw new Error(issueError.message);
   console.log(`Newsletter sent to ${messages.length} subscriber(s).`);
 };
 

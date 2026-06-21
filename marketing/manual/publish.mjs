@@ -1,19 +1,17 @@
 // Manual flow — publish step.
 //   node marketing/manual/publish.mjs [YYYY-MM-DD] [--dry-run]
 //
-// Reads plot-posts/<date>/<date>.md, validates the copy, and upserts each post
+// Reads marketing/plot-posts/<date>/<date>.md, validates the copy, and upserts each post
 // to marketing_posts as status='published' so it appears on theplot.tv/whats-on.
 // status='published' means the auto-publisher (which only touches
 // 'pending_review') will NOT re-post these to social. Idempotent by topic_key.
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { getSupabase } from '../lib/supabase.mjs';
 import { postSlug } from '../lib/feed.mjs';
 import { nextPublishAt, isoDate } from '../lib/dates.mjs';
 import { parse } from './format.mjs';
-
-const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'plot-posts');
+import { MANUAL_OUTPUT_ROOT } from './paths.mjs';
 const REQUIRED = ['x', 'instagram', 'threads', 'page_title'];
 
 const validate = (posts) => {
@@ -32,7 +30,7 @@ const main = async () => {
   const args = process.argv.slice(2);
   const dryRun = args.includes('--dry-run');
   const date = args.find(a => /^\d{4}-\d{2}-\d{2}$/.test(a)) || isoDate(nextPublishAt());
-  const file = path.join(ROOT, date, `${date}.md`);
+  const file = path.join(MANUAL_OUTPUT_ROOT, date, `${date}.md`);
 
   const all = parse(await readFile(file, 'utf8'));
   if (!all.length) { console.error(`No posts found in ${file}`); process.exit(1); }
@@ -61,6 +59,7 @@ const main = async () => {
     payload: p.meta.payload || {},
     // slug from the article title (matches the automated pipeline).
     slug: postSlug(p.copy.page_title, p.meta.scheduled_for),
+    generated_copy: { ...p.copy, hero_image: p.meta.hero_image },
     copy: { ...p.copy, hero_image: p.meta.hero_image },
   }));
 

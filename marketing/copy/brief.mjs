@@ -25,16 +25,17 @@ const sourceList = (research) => {
 // Conversation posts get their own short brief: one tight question, no card,
 // no article. Text-only for Threads + X.
 export const buildConversationBrief = async (post) => {
+  const prompt = `One genuine, GENERIC question that sparks replies — the kind any film/TV lover
+can answer (a comfort watch, a hot take, an underrated pick, a guilty pleasure).
+It must be evergreen: NEVER tied to a specific film/show, a new release, or
+whatever is trending right now. No title names at all.`;
   return `# Copy job: question (text-only, Threads + X)
 
 Post id: \`${post.id}\`
 Write your answer to: \`marketing/copy/jobs/${post.id}.copy.json\`
 
 ## What to write
-One genuine, GENERIC question that sparks replies — the kind any film/TV lover
-can answer (a comfort watch, a hot take, an underrated pick, a guilty pleasure).
-It must be evergreen: NEVER tied to a specific film/show, a new release, or
-whatever is trending right now. No title names at all.
+${prompt}
 
 Keep it TIGHT: a sharp question, then at most one short line. End on the question
 or a brief closer ("No wrong answers."); never an explanatory trailer like

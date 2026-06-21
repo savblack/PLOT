@@ -120,7 +120,7 @@ const hostReviewSheet = async (supabase) => {
       cwd: ROOT, env: process.env, stdio: ['ignore', 'ignore', 'inherit'], maxBuffer: 64 * 1024 * 1024,
     });
     const html = readFileSync(join(ROOT, 'marketing/preview/out/week.html'), 'utf8');
-    await supabase.storage.createBucket(REVIEW_BUCKET, { public: false }).catch(() => {}); // no-op if it exists
+    await supabase.storage.createBucket(REVIEW_BUCKET, { public: false }).catch(() => {});
     const up = await supabase.storage.from(REVIEW_BUCKET)
       .upload('week.html', html, { upsert: true, contentType: 'text/html; charset=utf-8' });
     if (up.error) throw up.error;
@@ -169,7 +169,6 @@ const main = async () => {
   for (const post of pending || []) {
     try {
       if (post.status === 'generated' && post.copy && post.media) {
-        // Already rendered on a prior run — just move it onto the desk.
         await supabase.from('marketing_posts')
           .update({ status: 'needs_review', updated_at: new Date().toISOString() })
           .eq('id', post.id);

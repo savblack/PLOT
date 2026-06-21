@@ -1,5 +1,5 @@
-// Monday anchor: the weekly top-10 social carousel. The planner decides the day;
-// this trigger just builds the chart whenever it's asked.
+// Weekly top-10 social carousel. The planner decides the day; this trigger just
+// builds the chart whenever it's asked.
 //
 // The snapshot is the source of truth for the chart page. Here we READ the latest
 // snapshot and rebuild the full payload (poster/backdrop/movement) the carousel
@@ -8,7 +8,7 @@
 //
 // Fallback: if the latest snapshot is missing or stale, fetch live and write this
 // week's snapshot now, so neither the post nor the chart page is left empty.
-import { isoDate, formatDayMonth, daysBetween } from '../../lib/dates.mjs';
+import { isoDate, formatDayMonth, daysBetween, mondayOfWeekInTz } from '../../lib/dates.mjs';
 import { fetchTrendingTop, recentSnapshots, withMovement } from '../../lib/trending.mjs';
 
 // The snapshot/page hold 20; the social carousel + newsletter use the top 10.
@@ -32,12 +32,13 @@ export const evaluate = async (ctx) => {
     latest = { snapshot_date: today, items: fresh };
   }
 
-  const weekDate = latest.snapshot_date;
+  const weekDate = mondayOfWeekInTz(ctx.publishAt);
   // Social + newsletter use the top 10; movement is vs the full prior week.
   const items = withMovement(latest.items.slice(0, SOCIAL_SIZE), prior?.items || null);
 
   return {
     post_type: 'trending',
+    // Key the weekly chart to the Monday of the Australia week the post belongs to.
     topic_key: `trending:${weekDate}`,
     tmdb_refs: items.map(i => ({ media_type: i.media_type, id: i.tmdb_id, title: i.title })),
     payload: { week_label: `Week of ${formatDayMonth(weekDate)}`, items },

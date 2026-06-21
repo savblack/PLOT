@@ -8,6 +8,6 @@ export const evaluate = async (ctx) => {
     post_type: 'question',
     topic_key: `conversation:${isoDate(ctx.publishAt)}`,
     tmdb_refs: [],
-    payload: { topic: { mode: 'general' } },
+    payload: { topic: { mode: 'generic' } },
   };
 };

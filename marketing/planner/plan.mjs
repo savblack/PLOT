@@ -1,13 +1,16 @@
 // Daily content planner. Evaluates triggers for the next publish slot and
 // inserts the day's marketing_posts rows (up to 4/day).
 //
-// Fixed weekly features (Sydney/AEST day):
-//   Monday          -> "Upcoming this week" + the trending top 10 (two anchors)
-//   Tue/Wed/Thu/Fri -> the daily anniversary ("on this day") leads
-//   Saturday        -> "what to watch tonight"
-//   Sunday          -> "hidden gem"
-// Every non-Monday day then fills with a release-day spotlight, countdowns, a
-// trailer, and a question (events take priority; question fills the remainder).
+// Weekly cadence (Sydney publish day):
+//   Monday    -> upcoming
+//   Tuesday   -> anniversary / spotlight / question / fill
+//   Wednesday -> watch_tonight / anniversary / spotlight / fill
+//   Thursday  -> anniversary / spotlight / question / fill
+//   Friday    -> trending
+//   Saturday  -> hidden_gem / anniversary / spotlight / fill
+//   Sunday    -> question / anniversary / spotlight / fill
+// Fill order is: now_streaming -> countdown T-1 -> trailer -> countdown T-7 ->
+// countdown T-14. Thin days simply publish fewer posts.
 import { getSupabase } from '../lib/supabase.mjs';
 import { tmdb } from '../lib/tmdb.mjs';
 import { nextPublishAt, weekdayInTz, isoDate } from '../lib/dates.mjs';
@@ -20,8 +23,22 @@ import * as onThisDay from './triggers/on-this-day.mjs';
 import * as watchTonight from './triggers/watch-tonight.mjs';
 import * as hiddenGem from './triggers/hidden-gem.mjs';
 import * as conversation from './triggers/conversation.mjs';
+import { anchorPostForDay, fixedFeatureForDay, isAnchorDay, questionSlotForDay } from './cadence.mjs';
 
 const TRACK_LIMIT = 25;
+const EVALUATORS = {
+  upcoming: weeklySlate.evaluate,
+  trending: trendingChart.evaluate,
+  watch_tonight: watchTonight.evaluate,
+  hidden_gem: hiddenGem.evaluate,
+};
+
+const genericQuestion = (publishAt) => ({
+  post_type: 'question',
+  topic_key: `conversation:${isoDate(publishAt)}`,
+  tmdb_refs: [],
+  payload: { topic: { mode: 'generic' } },
+});
 
 // Keep marketing_tracked_titles fresh: top upcoming titles by popularity, with
 // region release dates. New rows get known_trailers seeded with the trailers
@@ -96,17 +113,12 @@ const insertPost = async (supabase, candidate, publishAt) => {
 const planSlot = async (supabase, publishAt, tracked) => {
   const weekday = weekdayInTz(publishAt);
   const ctx = { supabase, publishAt, weekday, tracked };
+  const anchorType = anchorPostForDay(weekday);
+  const featureType = fixedFeatureForDay(weekday);
+  const questionSlot = questionSlotForDay(weekday);
 
-  // Compose the day's posts.
-  //   Monday          -> "Upcoming this week" + the trending top 10 (two anchors)
-  //   Tue/Wed/Thu/Fri -> the daily anniversary leads; then fill
-  //   Saturday        -> "what to watch tonight"; then fill
-  //   Sunday          -> "hidden gem"; then fill
-  //   Fill (every non-Monday day, up to 4): a release-day spotlight (a title
-  //     hitting home today), countdowns, a trailer, and a question. Events take
-  //     fill priority; the question takes any remaining slot. We never pad: thin
-  //     days simply post fewer. A title never appears twice in one day. All posts
-  //     share the slot (one publish run).
+  // Compose the day's posts. Anchors are single themed posts; non-anchor days can
+  // publish up to 4. A title never appears twice in one day.
   const DAILY_TARGET = 4;
   const candidates = [];
   const chosenIds = new Set();
@@ -120,9 +132,7 @@ const planSlot = async (supabase, publishAt, tracked) => {
     if (id) chosenIds.add(id);
   };
 
-  // Monday is the only anchor day — it carries the two themed weekly posts and
-  // skips the daily fill.
-  const isAnchor = weekday === 'Monday';
+  const isAnchor = isAnchorDay(weekday);
 
   // Release-day spotlight, evaluated once so we can both detect a "major" release
   // and (otherwise) reuse it as the spotlight slot without a second TMDB call.
@@ -138,38 +148,34 @@ const planSlot = async (supabase, publishAt, tracked) => {
   const isMajorRelease = !isAnchor && release && majorBar !== Infinity && popOf(releaseId) >= majorBar;
 
   if (isMajorRelease) {
-    const ref = release.tmdb_refs[0];
-    candidates.push(release, {                                             // lead + a generic question
+    candidates.push(release, { // lead + a related question
       post_type: 'question',
       topic_key: `conversation:${isoDate(publishAt)}`,
       tmdb_refs: [],
-      payload: { topic: { mode: 'general' } },
+      payload: { topic: { mode: 'generic' } },
     });
     chosenIds.add(releaseId);
-    await consider((c) => onThisDay.evaluate(c));                          // one unrelated post
+    await consider((c) => onThisDay.evaluate(c)); // one unrelated post
     if (candidates.length < 3) await consider((c) => onThisDay.evaluate(c, { minVotes: 500 }));
-    console.log(`Major release detected (${ref.title}) — focusing the day.`);
+    console.log(`Major release detected (${release.tmdb_refs[0].title}) — focusing the day.`);
   } else {
-    if (weekday === 'Monday') {
-      await consider(weeklySlate.evaluate);                                // "Upcoming this week"
-      await consider(trendingChart.evaluate);                             // trending top 10
+    if (anchorType) {
+      await consider(EVALUATORS[anchorType]);
     }
 
-    // Every non-Monday day — and Monday if both anchors found nothing — gets the
-    // feature + anniversary + spotlight + dynamic-fill composition.
+    // Non-anchor days follow the weekly cadence. Sunday questions lead; Tue/Thu
+    // questions sit in the middle of the mix.
     if (!isAnchor || candidates.length === 0) {
-      if (weekday === 'Saturday') await consider(watchTonight.evaluate);   // fixed feature
-      else if (weekday === 'Sunday') await consider(hiddenGem.evaluate);   // fixed feature
-      // Tue–Fri have no other feature, so the anniversary leads there; on Sat/Sun
-      // it follows the feature.
-      await consider((c) => onThisDay.evaluate(c));                        // anniversary / Tue–Fri feature
+      if (questionSlot === 'lead') await consider(() => genericQuestion(publishAt));
+      if (featureType) await consider(EVALUATORS[featureType]);
+      await consider((c) => onThisDay.evaluate(c));
       if (!candidates.length) await consider((c) => onThisDay.evaluate(c, { minVotes: 500 }));
-      await consider(() => release);                                       // release-day spotlight (reused)
-      await consider(makeCountdown(1));                                    // event posts take fill priority
+      await consider(() => release);
+      if (questionSlot === 'mid') await consider(conversation.evaluate);
+      await consider(makeCountdown(1));
       await consider(trailerDrop.evaluate);
       await consider(makeCountdown(7));
       await consider(makeCountdown(14));
-      await consider(conversation.evaluate);                              // question — daily fill (remainder)
     }
   }
 

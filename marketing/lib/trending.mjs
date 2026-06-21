@@ -1,10 +1,10 @@
 // Shared trending-chart helpers used by the weekly snapshot writer
-// (marketing/snapshot/write-snapshot.mjs), the Friday social trigger
+// (marketing/snapshot/write-snapshot.mjs), the trending social trigger
 // (marketing/planner/triggers/trending-chart.mjs), and — re-implemented in TS —
 // the chart page in the marketing-feed edge function.
 //
-// The weekly snapshot is the source of truth: the Monday job writes the top-10
-// ranks (+ poster paths) for the week; everything else reads it and computes
+// The weekly snapshot is the source of truth: the snapshot job writes the ranks
+// (+ poster paths) for the week; everything else reads it and computes
 // week-over-week movement against the prior week's snapshot.
 import { tmdb } from './tmdb.mjs';
 

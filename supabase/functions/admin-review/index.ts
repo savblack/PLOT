@@ -78,7 +78,7 @@ const reason = (p: Row): string => {
       return title ? `T-${n} countdown to ${title}` : `Countdown (T-${n})`;
     }
     case 'trailer': return title ? `New trailer dropped: ${title}` : 'New trailer';
-    case 'question': return title ? `Question about ${title}` : 'Question';
+    case 'question': return 'Generic audience question';
     default: return p.post_type.replace(/_/g, ' ');
   }
 };
@@ -463,8 +463,8 @@ Deno.serve(async (req) => {
       await requeuePubs([id]);
       const triggered = await dispatchWorkflow('marketing-publish.yml');
       flash = triggered
-        ? 'Publishing now — sending to X / Instagram / Threads; it’ll show as published in a few minutes.'
-        : 'Approved & queued — it sends on the next publish run. Set GH_DISPATCH_TOKEN for instant send, or dispatch “Marketing — publish”.';
+        ? 'Publishing now — sending approved copy to X / Instagram / Threads; it’ll show as published in a few minutes.'
+        : 'Approved and queued — it sends on the next publish run. Set GH_DISPATCH_TOKEN for instant send, or dispatch “Marketing — publish”.';
     } else if (id && action === 'retry') {
       await supabase.from('marketing_post_publications')
         .update({ status: 'queued', error: null }).eq('post_id', id).eq('status', 'failed');
@@ -477,8 +477,8 @@ Deno.serve(async (req) => {
         .update({ status: 'planned', copy: null, updated_at: now() }).eq('id', id);
       const triggered = await dispatchWorkflow('marketing-weekly-batch.yml');
       flash = triggered
-        ? 'Regenerating — the worker will rewrite this post. Refresh in a few minutes.'
-        : 'Marked for regeneration — it rebuilds on the next weekly batch (or dispatch “Marketing — weekly batch”).';
+        ? 'Regenerating — the Codex weekly worker will rewrite this post. Refresh in a few minutes.'
+        : 'Marked for regeneration — it rebuilds on the next weekly batch.';
     } else if (id) {
       const copyPatch: Record<string, unknown> = { x: String(form.get('x') || '') };
       if (form.has('instagram')) copyPatch.instagram = String(form.get('instagram') || '');
