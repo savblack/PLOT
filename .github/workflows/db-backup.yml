@@ -51,6 +51,11 @@ jobs:
           curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/pgdg.gpg
           sudo apt-get update
           sudo apt-get install -y postgresql-client-17
+          # The runner ships pg_dump 16 on PATH by default; Supabase is on PG 17 and
+          # pg_dump refuses to dump a newer server. Put the v17 binaries first on PATH
+          # for subsequent steps and confirm the version.
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
+          /usr/lib/postgresql/17/bin/pg_dump --version
 
       - name: Dump + encrypt
         env:
