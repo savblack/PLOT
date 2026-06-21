@@ -80,6 +80,11 @@ jobs:
       - name: Upload to R2
         run: |
           set -euo pipefail
+          # R2's TLS cert is *.r2.cloudflarestorage.com (single wildcard). The AWS CLI
+          # defaults to virtual-hosted addressing (<bucket>.<account>.r2.cloudflarestorage.com),
+          # which is two labels deep and fails TLS validation. Force path-style. This
+          # persists to ~/.aws/config for the prune step too.
+          aws configure set default.s3.addressing_style path
           aws s3 cp "$ARTIFACT" "s3://${R2_BUCKET}/db-backups/${ARTIFACT}" \
             --endpoint-url "$R2_ENDPOINT" --only-show-errors
           echo "Uploaded db-backups/${ARTIFACT}"
