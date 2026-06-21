@@ -97,10 +97,14 @@ jobs:
           aws configure set default.s3.addressing_style path
           echo "get=$(aws configure get default.s3.addressing_style)"
           echo "--- ~/.aws/config ---"; cat ~/.aws/config 2>&1
-          echo "### aws cp --debug (connection host + result) ###"
-          echo hi > /tmp/t.txt
-          aws s3 cp /tmp/t.txt s3://$BKT/db-backups/_conntest.txt --endpoint-url $EP --debug 2>&1 \
-            | grep -iE 'Starting new HTTPS connection|Making request|host=|SSLError|HTTPSConnectionPool|handshake|<Code>|response code|InvalidAccessKey|SignatureDoesNot|upload' | head -25
+          echo "### DNS account host ###"; getent ahosts $ACCT
+          echo "### DNS bare ###"; getent ahosts r2.cloudflarestorage.com | head -4
+          echo "### curl BARE domain ###"; curl -sS -o /dev/null -w 'bare http=%{http_code}\n' --max-time 15 https://r2.cloudflarestorage.com; echo "rc=$?"
+          echo "### curl account default -v ###"
+          curl -v --max-time 15 https://$ACCT -o /dev/null 2>&1 | grep -iE 'Trying|Connected to|ALPN|SSL connection|subject:|issuer:|TLSv|alert|HTTP/|curl: \(' | head -25
+          echo "### curl account --ipv4 ###"; curl -sS -o /dev/null --ipv4 -w 'ipv4 http=%{http_code}\n' --max-time 15 https://$ACCT; echo "rc=$?"
+          echo "### curl account --tlsv1.2 ###"; curl -sS -o /dev/null --tlsv1.2 --tls-max 1.2 -w 'tls12 http=%{http_code}\n' --max-time 15 https://$ACCT; echo "rc=$?"
+          echo "### openssl tls1_3 ###"; echo | timeout 15 openssl s_client -tls1_3 -connect $ACCT:443 -servername $ACCT 2>&1 | grep -iE 'CONNECTED|alert|Cipher|Protocol|subject=|issuer=|verify return' | head
           echo "### done ###"
 
       - name: Upload to R2
