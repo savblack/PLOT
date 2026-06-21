@@ -53,15 +53,12 @@ Deploy functions with the Supabase CLI after configuring project secrets:
 ```sh
 supabase functions deploy tmdb-proxy
 supabase functions deploy media-sync
-supabase functions deploy generate-taste-profile
-supabase functions deploy generate-journal
 supabase functions deploy delete-account
 ```
 
 Required function secrets:
 
 - `TMDB_API_KEY`
-- `ANTHROPIC_API_KEY` or `CLAUDE_API_KEY`, depending on the function
 - `SUPABASE_URL`
 - `SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`

@@ -39,12 +39,6 @@ verify_jwt = false
 [functions.tmdb-proxy]
 verify_jwt = true
 
-[functions.generate-journal]
-verify_jwt = true
-
-[functions.generate-taste-profile]
-verify_jwt = true
-
 [functions.delete-account]
 verify_jwt = true
 

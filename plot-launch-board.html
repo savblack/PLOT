@@ -461,6 +461,13 @@
         <div class="card-footer"><span class="card-file">public/robots.txt</span><span class="card-badge badge-code">Code</span></div>
       </div>
 
+      <div class="card priority-done" draggable="true">
+        <div class="card-tag"><span class="card-tag-dot tag-dot-done"></span><span class="card-tag-label">Shipped</span></div>
+        <div class="card-title">Removed all in-app AI</div>
+        <div class="card-note">Deleted the orphaned generate-journal + generate-taste-profile Edge Functions and their config; dropped ai_usage, increment_ai_usage, and profiles.taste_profile. No AI in the product. Marketing pipeline untouched.</div>
+        <div class="card-footer"><span class="card-file">supabase/functions · supabase/migrations</span><span class="card-badge badge-code">Code</span></div>
+      </div>
+
       <div class="add-form" id="form-done">
         <input type="text" id="form-done-title" placeholder="Task title…" maxlength="120" />
         <textarea id="form-done-note" placeholder="Note (optional)…" rows="2" maxlength="300"></textarea>
@@ -492,24 +499,10 @@
     <div class="col-cards" data-col="later">
 
       <div class="card priority-low" draggable="true">
-        <div class="card-tag"><span class="card-tag-dot tag-dot-low"></span><span class="card-tag-label">Nice to have</span></div>
-        <div class="card-title">Remove unused generate-journal Edge Function</div>
-        <div class="card-note">Never deployed — Gemini called client-side instead. Delete or keep for reference.</div>
-        <div class="card-footer"><span class="card-file">supabase/functions/generate-journal</span><span class="card-badge badge-code">Code</span></div>
-      </div>
-
-      <div class="card priority-low" draggable="true">
-        <div class="card-tag"><span class="card-tag-dot tag-dot-low"></span><span class="card-tag-label">Nice to have</span></div>
-        <div class="card-title">Test Letterboxd import end-to-end</div>
-        <div class="card-note">Export CSV from Letterboxd, run through ImportModal, confirm TMDB title resolution is accurate.</div>
-        <div class="card-footer"><span class="card-file">src/components/ImportModal.jsx</span><span class="card-badge badge-code">Code</span></div>
-      </div>
-
-      <div class="card priority-low" draggable="true">
-        <div class="card-tag"><span class="card-tag-dot tag-dot-low"></span><span class="card-tag-label">Nice to have</span></div>
-        <div class="card-title">Verify "Journal for me" AI text quality</div>
-        <div class="card-note">Once Gemini key is live, confirm prompt generates personality-style reads — not rule-based fallback.</div>
-        <div class="card-footer"><span class="card-file">src/components/JournalBoardTab.jsx</span><span class="card-badge badge-qa">QA</span></div>
+        <div class="card-tag"><span class="card-tag-dot tag-dot-low"></span><span class="card-tag-label">QA</span></div>
+        <div class="card-title">Letterboxd import — manual end-to-end QA</div>
+        <div class="card-note">Unit coverage already exists (tests/unit/letterboxd.test.js). Remaining is manual: export a real Letterboxd CSV, run through the import UI, confirm live TMDB title resolution is accurate.</div>
+        <div class="card-footer"><span class="card-file">src/components/ImportView.jsx · src/domain/importParsing.js</span><span class="card-badge badge-qa">QA</span></div>
       </div>
 
       <div class="card priority-low" draggable="true">

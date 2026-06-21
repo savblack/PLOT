@@ -12,7 +12,6 @@ Code changes (this repo):
 
 - **Bot-signup protection.** Auth forms now render a Cloudflare Turnstile widget and pass `captchaToken` on signup, login, password reset, and resend (`src/components/Turnstile.jsx`, `src/pages/AuthPage.jsx`). The widget is a no-op until `VITE_TURNSTILE_SITE_KEY` is set, so it stays inert in local dev and CI.
 - **`tmdb-proxy` lockdown.** CORS is restricted to `*.theplot.tv`, localhost, and `*.vercel.app`; cross-site browser origins get a 403 (`supabase/functions/tmdb-proxy/index.ts`). An earlier in-memory per-IP rate limit was **removed** as ineffective — Supabase spreads a burst across isolates, each with its own empty counter (verified: 400 concurrent requests all returned 200). Rate limiting is handled upstream by a Cloudflare Worker fronting the proxy (`workers/tmdb-proxy/`); the app reaches the Worker via `VITE_TMDB_PROXY_URL`.
-- **Per-user daily cap on Claude functions.** `generate-taste-profile` and `generate-journal` call the `increment_ai_usage` RPC (migration `20260621000000_add_ai_usage_limit.sql`) and return 429 past 20 uses/user/day; CORS tightened to match the proxy. Fails open if the RPC is absent so onboarding never breaks.
 - **CI now runs `node --test tests/unit/*.test.js`** so the existing unit coverage gates merges (`.github/workflows/ci.yml`).
 
 Ops / dashboard steps required before flipping signups open (NOT in code):
@@ -20,7 +19,7 @@ Ops / dashboard steps required before flipping signups open (NOT in code):
 - Supabase Auth → Bot & Abuse Protection: enable Cloudflare Turnstile and set the **secret** key (the **site** key goes in Vercel as `VITE_TURNSTILE_SITE_KEY`).
 - Supabase Auth → SMTP: point at Resend (`RESEND_API_KEY` + verified `theplot.tv` already exist). The built-in Supabase email sender is rate-limited and not for production — confirmation and reset emails will throttle under public volume without this.
 - Confirm Supabase Auth's built-in rate limits (sign-in / sign-up / email) are at production-appropriate values.
-- Vercel: add `VITE_TURNSTILE_SITE_KEY`. Redeploy `tmdb-proxy`, `generate-taste-profile`, `generate-journal`, and apply the new migration.
+- Vercel: add `VITE_TURNSTILE_SITE_KEY`. Redeploy `tmdb-proxy`.
 
 ## Production configuration snapshot
 
@@ -55,8 +54,6 @@ Production functions expected for launch:
   - `calendar-feed`
 - Authenticated:
   - `tmdb-proxy`
-  - `generate-journal`
-  - `generate-taste-profile`
   - `delete-account`
   - `media-sync`
   - `notify-feedback`
@@ -138,7 +135,6 @@ Launch review cadence:
   - `trakt-sync`
   - `calendar-feed`
   - `delete-account`
-  - `generate-taste-profile`
 
 Alert policy for first launch:
 
