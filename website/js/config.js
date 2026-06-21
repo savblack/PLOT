@@ -23,6 +23,21 @@ posthog.init('phc_uS3JEJC7s6T2WdsQToCZA3eRjLNakgc3EF3YPbza9Q6U', {
   autocapture: true,
 });
 
+/* ── Web performance — Vercel Speed Insights ───────────────────────────
+   Real-user Core Web Vitals (LCP / CLS / INP) for theplot.tv, which feed
+   SEO ranking and landing-page conversion. This is a static HTML site
+   (no bundler), so we inject Vercel's script directly rather than using
+   the @vercel/speed-insights npm package. The /_vercel/speed-insights/
+   endpoint is served automatically once Speed Insights is enabled for the
+   project in the Vercel dashboard. */
+(function () {
+  window.si = window.si || function () { (window.siq = window.siq || []).push(arguments); };
+  var s = document.createElement('script');
+  s.defer = true;
+  s.src = '/_vercel/speed-insights/script.js';
+  document.head.appendChild(s);
+})();
+
 /* ── Acquisition attribution (SUS-115) ─────────────────────────────────
    Forward UTM / click-id params and the original referrer from this visit
    onto the app signup & login links so attribution survives the hop to
