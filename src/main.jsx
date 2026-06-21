@@ -5,6 +5,7 @@ import router from './router.jsx';
 import './index.css';
 import posthog from 'posthog-js';
 import { PostHogProvider } from '@posthog/react';
+import { Analytics } from '@vercel/analytics/react';
 
 posthog.init(import.meta.env.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN, {
   api_host: import.meta.env.VITE_PUBLIC_POSTHOG_HOST,
@@ -19,6 +20,7 @@ createRoot(document.getElementById('root')).render(
   <StrictMode>
     <PostHogProvider client={posthog}>
       <RouterProvider router={router} />
+      <Analytics />
     </PostHogProvider>
   </StrictMode>,
 );
