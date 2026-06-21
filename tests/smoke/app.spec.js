@@ -39,6 +39,7 @@ test('protected app route redirects anonymous users to login', async ({ page }) 
 
 test('public profile route is reachable without auth', async ({ page }) => {
   await page.goto('/u/smoke-test-user');
-  await expect(page.getByRole('heading', { name: /plot doesn't have profiles yet/i })).toBeVisible();
-  await expect(page.getByText('If someone opens @smoke-test-user, they should land on this holding page until profiles are actually designed and built into the app.')).toBeVisible();
+  // A non-existent (or private, to an anon viewer) profile shows the placeholder.
+  await expect(page.getByRole('heading', { name: /isn't public/i })).toBeVisible();
+  await expect(page.getByText(/either doesn't exist or hasn't made their profile public yet/i)).toBeVisible();
 });
