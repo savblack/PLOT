@@ -38,7 +38,6 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [confirmSignOut, setConfirmSignOut] = useState(false);
 
-  const isPrivate = profile?.is_public === false;
   const { unread, refreshCount } = useNotifications(user?.id);
 
   // Keep the bell badge fresh as the user navigates (e.g. after viewing the feed).
@@ -184,28 +183,26 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
               <span className="nav-drawer-label">{label}</span>
             </button>
           ))}
-        </nav>
-
-        <div className="nav-drawer-footer">
           {profile?.username && (
             <button
               type="button"
               className="nav-drawer-item"
               onClick={() => { closeDrawer(); navigate(`/u/${profile.username}`); }}
             >
-              <span className="nav-drawer-label">Your profile</span>
+              <span className="nav-drawer-label">Profile</span>
             </button>
           )}
-          {isPrivate && (
-            <button
-              type="button"
-              className={`nav-drawer-item${currentView === 'requests' ? ' active' : ''}`}
-              onClick={() => handleNav('requests')}
-              aria-current={currentView === 'requests' ? 'page' : undefined}
-            >
-              <span className="nav-drawer-label">Follow requests</span>
-            </button>
-          )}
+          <button
+            type="button"
+            className={`nav-drawer-item${currentView === 'notifications' ? ' active' : ''}`}
+            onClick={() => handleNav('notifications')}
+            aria-current={currentView === 'notifications' ? 'page' : undefined}
+          >
+            <span className="nav-drawer-label">Notifications</span>
+          </button>
+        </nav>
+
+        <div className="nav-drawer-footer">
           <button
             type="button"
             className={`nav-drawer-item${currentView === 'settings' ? ' active' : ''}`}

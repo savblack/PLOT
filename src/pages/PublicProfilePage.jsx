@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { HERO_POSTERS } from '../constants/heroPosters.js';
 import { supabase } from '../api/supabase.js';
 import { usePublicProfile } from '../hooks/usePublicProfile.js';
@@ -77,8 +77,8 @@ const styles = `
     color: var(--text-primary);
   }
   .public-profile-visual-brand .public-profile-wordmark { font-size: 2.2rem; color: #fff; }
-  .public-profile-panel-logo .public-profile-wordmark { font-size: 1.7rem; }
-  .public-profile-panel-logo:hover .public-profile-wordmark { opacity: 0.6; }
+  .pp-topbar-logo { font-size: 1.7rem; text-decoration: none; justify-self: center; }
+  .pp-topbar-logo:hover { opacity: 0.6; }
 
   .public-profile-visual-tagline {
     font-size: 0.75rem;
@@ -96,13 +96,22 @@ const styles = `
     background: var(--surface);
   }
 
-  .public-profile-panel-logo {
-    display: block;
-    padding: clamp(1.25rem, 2.5vh, 2rem) 2.5rem;
-    text-decoration: none;
+  .pp-topbar {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    padding: clamp(1rem, 2.5vh, 1.5rem) 1.25rem;
     flex-shrink: 0;
   }
-  .public-profile-panel-logo:hover { opacity: 0.6; }
+  .pp-topbar-side { display: flex; align-items: center; gap: 0.15rem; }
+  .pp-topbar-side--right { justify-content: flex-end; }
+  .pp-topbar-icon {
+    display: flex; align-items: center; justify-content: center;
+    width: 40px; height: 40px; border: none; background: none;
+    color: var(--text-primary); cursor: pointer; border-radius: 8px;
+  }
+  .pp-topbar-icon svg { width: 22px; height: 22px; }
+  .pp-topbar-icon:hover { background: var(--surface-raised); }
 
   .public-profile-panel-body {
     flex: 1;
@@ -234,12 +243,11 @@ const styles = `
 
   @media (max-width: 768px) {
     .public-profile-visual { display: none; }
-    .public-profile-panel-logo { padding: 1.75rem; }
     .public-profile-panel-body { padding: 0 1.75rem; }
     .public-profile-title { font-size: 2.35rem; }
   }
   @media (max-width: 480px) {
-    .public-profile-panel-logo { padding: 1.5rem 1.25rem; }
+    .pp-topbar { padding: 0.85rem 0.75rem; }
     .public-profile-panel-body { padding: 0 1.25rem; }
     .public-profile-title { font-size: 2rem; }
     .public-profile-actions > * { width: 100%; }
@@ -293,6 +301,7 @@ export default function PublicProfilePage() {
   const handle = username.startsWith('@') ? username : `@${username}`;
   const posters = [...HERO_POSTERS, ...HERO_POSTERS];
 
+  const navigate = useNavigate();
   const [viewer, setViewer] = useState(null);
   useEffect(() => {
     let cancelled = false;
@@ -328,9 +337,28 @@ export default function PublicProfilePage() {
         </div>
 
         <section className="public-profile-panel" aria-labelledby="public-profile-title">
-          <Link to="/" className="public-profile-panel-logo">
-            <span className="public-profile-wordmark">PLOT</span>
-          </Link>
+          <header className="pp-topbar">
+            <div className="pp-topbar-side">
+              {viewer && (
+                <button type="button" className="pp-topbar-icon" onClick={() => navigate('/home')} aria-label="Menu">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                </button>
+              )}
+            </div>
+            <Link to="/" className="public-profile-wordmark pp-topbar-logo">PLOT</Link>
+            <div className="pp-topbar-side pp-topbar-side--right">
+              {viewer && (
+                <>
+                  <button type="button" className="pp-topbar-icon" onClick={() => navigate('/notifications')} aria-label="Notifications">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                  </button>
+                  <button type="button" className="pp-topbar-icon" onClick={() => navigate('/search')} aria-label="Search">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
+                  </button>
+                </>
+              )}
+            </div>
+          </header>
 
           <div className={`public-profile-panel-body${found ? ' has-content' : ''}`}>
             {!found ? (
@@ -368,8 +396,11 @@ export default function PublicProfilePage() {
                     <p className="pp-handle">@{profile.username}</p>
                     {profile.is_supporter && (
                       <span className="pp-supporter">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 7.4H22l-6 4.6 2.3 7.4-6.3-4.6L5.7 21l2.3-7.4-6-4.6h7.6z"/></svg>
-                        Supporter
+                        <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
+                          <circle cx="12" cy="12" r="10" fill="currentColor"/>
+                          <path d="M7.5 12.5l3 3 6-6.5" fill="none" stroke="var(--surface)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                        Verified
                       </span>
                     )}
                   </div>

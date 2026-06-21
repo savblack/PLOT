@@ -75,7 +75,12 @@ export function UserRow({ user, viewerId, onNavigate }) {
         <div style={{ minWidth: 0 }}>
           <div style={{ fontWeight: 600, fontSize: '0.92rem', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {user.display_name || user.username}
-            {user.is_supporter && <span title="Supporter" style={{ color: 'var(--accent)', marginLeft: 6, fontSize: '0.8rem' }}>★</span>}
+            {user.is_supporter && (
+              <svg width="13" height="13" viewBox="0 0 24 24" aria-label="Verified" style={{ marginLeft: 5, verticalAlign: '-2px', color: 'var(--accent)' }}>
+                <circle cx="12" cy="12" r="10" fill="currentColor"/>
+                <path d="M7.5 12.5l3 3 6-6.5" fill="none" stroke="var(--surface)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            )}
           </div>
           <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>@{user.username}</div>
         </div>
