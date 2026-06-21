@@ -3,13 +3,12 @@
 //
 // With no flags it follows the weekly schedule (marketing/manual/schedule.mjs)
 // for the run date's weekday. Renderable posts get their cards (portrait +
-// landscape) written into plot-posts/<date>/; copy-only posts (spotlight,
-// questions, ...) get a section with no image. Everything lands in one combined
-// copy doc, <date>.md, with empty <copy> blocks for a human/agent to fill
-// (never the Anthropic API — see marketing/VOICE.md). Then run publish.mjs.
+// landscape) written into marketing/plot-posts/<date>/; copy-only posts
+// (spotlight, questions, ...) get a section with no image. Everything lands in
+// one combined copy doc, <date>.md, with empty <copy> blocks for a human/agent
+// to fill. Then run publish.mjs.
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { getSupabase } from '../lib/supabase.mjs';
 import { renderCard, closeBrowser } from '../lib/render.mjs';
 import { POST_TYPES } from '../lib/post-types.mjs';
@@ -19,8 +18,7 @@ import { nextPublishAt, isoDate } from '../lib/dates.mjs';
 import { selectCandidates } from './select.mjs';
 import { serialize } from './format.mjs';
 import { TYPES, CTA, SCHEDULE, weekdayOf } from './schedule.mjs';
-
-const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'plot-posts');
+import { MANUAL_OUTPUT_ROOT } from './paths.mjs';
 
 const parseArgs = (argv) => {
   const opts = { countdown: [] };
@@ -75,7 +73,7 @@ const main = async () => {
   const candidates = await selectCandidates(ctx, opts);
   if (!candidates.length) { console.error('No candidates selected.'); process.exit(1); }
 
-  const outDir = path.join(ROOT, date);
+  const outDir = path.join(MANUAL_OUTPUT_ROOT, date);
   await mkdir(outDir, { recursive: true });
   // Group under <date> at noon UTC, never future, staggered so the first sorts newest.
   const base = Math.min(Date.parse(`${date}T12:00:00Z`), Date.now());

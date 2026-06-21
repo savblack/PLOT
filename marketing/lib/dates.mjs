@@ -14,6 +14,21 @@ export const nextPublishAt = (now = new Date()) => {
 export const weekdayInTz = (date, tz = 'Australia/Sydney') =>
   new Intl.DateTimeFormat('en-AU', { weekday: 'long', timeZone: tz }).format(date);
 
+export const datePartsInTz = (date, tz = 'Australia/Sydney') => {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: tz,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    weekday: 'long',
+  }).formatToParts(date);
+  const pick = (type) => parts.find((part) => part.type === type)?.value;
+  return {
+    date: `${pick('year')}-${pick('month')}-${pick('day')}`,
+    weekday: pick('weekday'),
+  };
+};
+
 // Whole days between two YYYY-MM-DD strings (b - a).
 export const daysBetween = (a, b) =>
   Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 86400000);
@@ -47,4 +62,19 @@ export const addDays = (dateStr, days) => {
   const d = new Date(`${dateStr}T00:00:00Z`);
   d.setUTCDate(d.getUTCDate() + days);
   return isoDate(d);
+};
+
+const MONDAY_OFFSET = {
+  Monday: 0,
+  Tuesday: 1,
+  Wednesday: 2,
+  Thursday: 3,
+  Friday: 4,
+  Saturday: 5,
+  Sunday: 6,
+};
+
+export const mondayOfWeekInTz = (date, tz = 'Australia/Sydney') => {
+  const local = datePartsInTz(date, tz);
+  return addDays(local.date, -(MONDAY_OFFSET[local.weekday] ?? 0));
 };

@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { tmdb } from '../lib/tmdb.mjs';
 import { renderCard, closeBrowser, SIZES } from '../lib/render.mjs';
 import { POST_TYPES } from '../lib/post-types.mjs';
-import { isoDate, addDays, formatWeekRange, formatWeekdayDayMonth, formatDayMonth } from '../lib/dates.mjs';
+import { isoDate, addDays, formatWeekRange, formatWeekdayDayMonth, formatDayMonth, mondayOfWeekInTz } from '../lib/dates.mjs';
 import * as watchTonight from '../planner/triggers/watch-tonight.mjs';
 import * as hiddenGem from '../planner/triggers/hidden-gem.mjs';
 
@@ -73,7 +73,7 @@ const samplePayloads = async () => {
 
   return {
     upcoming: { week_label: formatWeekRange(today, addDays(today, 6)), titles: slateTitles },
-    trending: { week_label: `Week of ${formatDayMonth(today)}`, items: trendItems },
+    trending: { week_label: `Week of ${formatDayMonth(mondayOfWeekInTz(new Date()))}`, items: trendItems },
     countdown: {
       days_until: 7,
       kind: 'cinema',

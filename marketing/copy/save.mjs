@@ -60,7 +60,7 @@ const main = async () => {
     // has already advanced (rendered, reviewed, published).
     const { data, error } = await supabase
       .from('marketing_posts')
-      .update({ copy, status: 'copy_ready', updated_at: new Date().toISOString() })
+      .update({ copy, generated_copy: copy, status: 'copy_ready', updated_at: new Date().toISOString() })
       .eq('id', postId)
       .in('status', ['planned', 'failed'])
       .select('id');

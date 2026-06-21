@@ -1,4 +1,4 @@
-// Weekly trending snapshot writer (Thursday job). Fetches this week's TMDB
+// Weekly trending snapshot writer. Fetches this week's TMDB
 // trending top 10 and upserts it into marketing_trending_snapshots so the
 // chart page (theplot.tv/whats-on/chart) and the Friday social carousel can
 // render it and compute week-over-week movement against the prior week.

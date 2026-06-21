@@ -55,12 +55,14 @@ const publishOne = async (supabase, post, pub) => {
   if (!(await claim(supabase, pub))) return null; // someone else has it
 
   const media = post.media || [];
+  let text = '';
+  let imageUrls = [];
+  let sentPayload = null;
 
   try {
     const service = SERVICE[pub.platform];
     if (!service) throw new Error(`Unknown platform ${pub.platform}`);
 
-    let text, imageUrls;
     if (pub.platform === 'x') {
       // X has no carousels — send exactly one image (first card targeting X).
       const hero = cardsFor(media, 'x')[0] || media[0];
@@ -75,6 +77,7 @@ const publishOne = async (supabase, post, pub) => {
       text = link ? `${post.copy.threads}\n\n${link}` : post.copy.threads;
       imageUrls = cardsFor(media, 'threads').map(m => publicUrl(m.landscape_path));
     }
+    sentPayload = { service, text, image_urls: imageUrls, alt_text: post.copy.alt_text || null };
 
     let result;
     if (DRY_RUN) {
@@ -90,6 +93,8 @@ const publishOne = async (supabase, post, pub) => {
       permalink: result.permalink,
       published_at: DRY_RUN ? null : new Date().toISOString(),
       error: DRY_RUN ? 'DRY_RUN' : null,
+      sent_text: DRY_RUN ? null : text,
+      sent_payload: DRY_RUN ? null : sentPayload,
     }).eq('id', pub.id);
     return DRY_RUN ? 'skipped' : 'published';
   } catch (err) {
@@ -97,6 +102,8 @@ const publishOne = async (supabase, post, pub) => {
     await supabase.from('marketing_post_publications').update({
       status: 'failed',
       error: String(err.message).slice(0, 500),
+      sent_text: null,
+      sent_payload: sentPayload,
     }).eq('id', pub.id);
     return 'failed';
   }

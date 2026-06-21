@@ -1,0 +1,22 @@
+{
+  "name": "plot-marketing",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "doctor": "node scripts/automation.mjs doctor",
+    "weekly": "node scripts/automation.mjs weekly",
+    "publish": "node scripts/automation.mjs publish",
+    "newsletter": "node scripts/automation.mjs newsletter",
+    "snapshot": "node scripts/automation.mjs snapshot",
+    "learn:prepare": "node scripts/automation.mjs learn:prepare",
+    "learn:apply": "node scripts/automation.mjs learn:apply",
+    "learn:assert": "node scripts/automation.mjs learn:assert",
+    "preview": "node preview/build-preview.mjs",
+    "review-sheet": "node preview/week.mjs",
+    "plan": "node planner/plan.mjs",
+    "copy:pull": "node copy/pull.mjs",
+    "copy:save": "node copy/save.mjs",
+    "generate": "node generate/generate.mjs",
+    "test": "node --test tests/*.test.mjs"
+  }
+}

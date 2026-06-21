@@ -7,7 +7,6 @@
 // the copy doc; feed posts already got their media at build.
 import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { tmdb } from '../lib/tmdb.mjs';
 import { renderCard, closeBrowser } from '../lib/render.mjs';
 import { slugify } from '../lib/feed.mjs';
@@ -15,8 +14,7 @@ import { nextPublishAt, isoDate } from '../lib/dates.mjs';
 import { parse } from './format.mjs';
 import { TYPES } from './schedule.mjs';
 import { featureData } from './cards.mjs';
-
-const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'plot-posts');
+import { MANUAL_OUTPUT_ROOT } from './paths.mjs';
 
 const renderBoth = async (outDir, template, data, slug) => {
   const [portrait, landscape] = await Promise.all([
@@ -29,7 +27,7 @@ const renderBoth = async (outDir, template, data, slug) => {
 
 const main = async () => {
   const date = process.argv.slice(2).find(a => /^\d{4}-\d{2}-\d{2}$/.test(a)) || isoDate(nextPublishAt());
-  const outDir = path.join(ROOT, date);
+  const outDir = path.join(MANUAL_OUTPUT_ROOT, date);
   const posts = parse(await readFile(path.join(outDir, `${date}.md`), 'utf8'));
 
   const features = posts.filter(p => TYPES[p.meta.post_type]?.card === 'title');
