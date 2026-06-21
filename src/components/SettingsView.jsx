@@ -683,6 +683,9 @@ export default function SettingsView() {
   const [exportingData,       setExportingData]       = useState(false);
   const [calTokenCopied,      setCalTokenCopied]      = useState(false);
   const [localCalToken,       setLocalCalToken]       = useState(null);
+  const [usernameDraft,       setUsernameDraft]       = useState(null);
+  const [usernameStatus,      setUsernameStatus]      = useState(null); // null|checking|available|taken|invalid|saving|saved|error
+  const [profileUrlCopied,    setProfileUrlCopied]    = useState(false);
   const [actionError,         setActionError]         = useState(null);
   const [confirmModal,        setConfirmModal]        = useState(null); // { title, message, confirmLabel, danger, onConfirm }
 
@@ -691,6 +694,13 @@ export default function SettingsView() {
   // Use optimistic local value so the URL appears immediately after generation
   const calendarToken = localCalToken ?? profile?.calendar_token ?? null;
   const calFeedUrl = calendarToken ? edgeFunctionUrl('calendar-feed', { token: calendarToken }) : null;
+
+  const username      = profile?.username || '';
+  const isPublic      = !!profile?.is_public;
+  const usernameValue = usernameDraft ?? username;
+  const usernameDirty = usernameValue.trim().toLowerCase() !== username.toLowerCase();
+  const profileUrl    = username ? `${window.location.origin}/u/${username}` : null;
+  const USERNAME_RE   = /^[a-z0-9](?:[a-z0-9-]{1,28}[a-z0-9])$/;
 
   // Sync local token back to null once profile catches up (or if revoked elsewhere)
   useEffect(() => {
@@ -952,6 +962,52 @@ export default function SettingsView() {
     setTimeout(() => setCalTokenCopied(false), 2000);
   };
 
+  // Debounced username availability check while editing.
+  useEffect(() => {
+    if (usernameDraft === null) return;          // not editing
+    if (!usernameDirty) { setUsernameStatus(null); return; }
+    const candidate = usernameDraft.trim().toLowerCase();
+    if (!USERNAME_RE.test(candidate)) { setUsernameStatus('invalid'); return; }
+    let cancelled = false;
+    setUsernameStatus('checking');
+    const t = setTimeout(async () => {
+      const { data, error } = await supabase.rpc('username_available', { p_username: candidate });
+      if (cancelled) return;
+      setUsernameStatus(error ? 'error' : (data ? 'available' : 'taken'));
+    }, 350);
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [usernameDraft, usernameDirty]);
+
+  const handleSaveUsername = async () => {
+    const candidate = usernameValue.trim().toLowerCase();
+    if (!usernameDirty) { setUsernameDraft(null); return; }
+    if (!USERNAME_RE.test(candidate)) { setUsernameStatus('invalid'); return; }
+    setUsernameStatus('saving');
+    const { data: free, error: chkErr } = await supabase.rpc('username_available', { p_username: candidate });
+    if (chkErr) { setUsernameStatus('error'); return; }
+    if (!free) { setUsernameStatus('taken'); return; }
+    const { error } = await supabase.from('profiles').update({ username: candidate }).eq('id', user.id);
+    if (error) { setUsernameStatus(error.code === '23505' ? 'taken' : 'error'); return; }
+    setUsernameDraft(null);
+    setUsernameStatus('saved');
+    setTimeout(() => setUsernameStatus(null), 2000);
+    refreshProfile();
+  };
+
+  const handleTogglePublic = async () => {
+    if (!user) return;
+    const { error } = await supabase.from('profiles').update({ is_public: !isPublic }).eq('id', user.id);
+    if (error) { setActionError(error.message); return; }
+    refreshProfile();
+  };
+
+  const handleCopyProfileUrl = async () => {
+    if (!profileUrl) return;
+    await navigator.clipboard.writeText(profileUrl);
+    setProfileUrlCopied(true);
+    setTimeout(() => setProfileUrlCopied(false), 2000);
+  };
+
   return (
     <div style={{ paddingBottom: '2rem' }}>
       {actionError && (
@@ -996,6 +1052,117 @@ export default function SettingsView() {
           </div>
           <Chevron />
         </div>
+      </div>
+
+      {/* Public profile */}
+      <div className="settings-group">
+        <div className="settings-group-title">Public profile</div>
+
+        {/* Visibility */}
+        <div className="settings-row" style={{ cursor: 'default' }}>
+          <div className="settings-row-left">
+            <div className="settings-row-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+              </svg>
+            </div>
+            <div>
+              <div className="settings-row-label">{isPublic ? 'Profile is public' : 'Profile is private'}</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                {isPublic
+                  ? 'Anyone with your link can see your watch count, recent watches and public lists.'
+                  : 'Only you can see your activity. Make it public to share a profile link.'}
+              </div>
+            </div>
+          </div>
+          <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
+            <SettingsTextAction onClick={handleTogglePublic} tone={isPublic ? 'danger' : 'default'}>
+              {isPublic ? 'Make private' : 'Make public'}
+            </SettingsTextAction>
+          </div>
+        </div>
+
+        {/* Username */}
+        <div className="settings-row" style={{ cursor: 'default', alignItems: 'flex-start' }}>
+          <div className="settings-row-left" style={{ flex: 1, minWidth: 0 }}>
+            <div className="settings-row-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+              </svg>
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div className="settings-row-label">Username</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.35rem' }}>
+                <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>/u/</span>
+                <input
+                  type="text"
+                  value={usernameValue}
+                  spellCheck={false}
+                  autoCapitalize="none"
+                  maxLength={30}
+                  aria-label="Username"
+                  onChange={(e) => setUsernameDraft(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                  style={{
+                    flex: 1, minWidth: 0, padding: '0.45rem 0.6rem',
+                    borderRadius: 'var(--radius-sm, 8px)', border: '1px solid var(--border)',
+                    background: 'var(--surface)', color: 'var(--text-primary)', fontSize: '0.9rem',
+                  }}
+                />
+              </div>
+              <div style={{
+                fontSize: '0.72rem', marginTop: '0.3rem', minHeight: '1rem',
+                color: usernameStatus === 'available' || usernameStatus === 'saved' ? 'var(--accent)'
+                  : usernameStatus === 'taken' || usernameStatus === 'invalid' || usernameStatus === 'error' ? 'var(--danger)'
+                  : 'var(--text-muted)',
+              }}>
+                {usernameStatus === 'checking' && 'Checking availability…'}
+                {usernameStatus === 'available' && 'Available'}
+                {usernameStatus === 'taken' && 'That username is taken'}
+                {usernameStatus === 'invalid' && '3–30 chars · lowercase letters, numbers, hyphens'}
+                {usernameStatus === 'saving' && 'Saving…'}
+                {usernameStatus === 'saved' && 'Saved'}
+                {usernameStatus === 'error' && 'Something went wrong — try again'}
+              </div>
+            </div>
+          </div>
+          <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
+            <SettingsTextAction
+              disabled={!usernameDirty || usernameStatus === 'checking' || usernameStatus === 'saving' || usernameStatus === 'invalid' || usernameStatus === 'taken'}
+              onClick={handleSaveUsername}
+            >
+              Save
+            </SettingsTextAction>
+          </div>
+        </div>
+
+        {/* Shareable link */}
+        {isPublic && profileUrl && (
+          <div className="settings-row" style={{ cursor: 'default' }}>
+            <div className="settings-row-left" style={{ minWidth: 0 }}>
+              <div className="settings-row-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                </svg>
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <div className="settings-row-label">Your profile link</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {profileUrl.replace(/^https?:\/\//, '')}
+                </div>
+              </div>
+            </div>
+            <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
+              <SettingsTextAction onClick={handleCopyProfileUrl}>
+                {profileUrlCopied ? 'Copied!' : 'Copy link'}
+              </SettingsTextAction>
+              <a className="settings-text-action" href={profileUrl} target="_blank" rel="noreferrer">
+                <span>View</span><span aria-hidden="true">›</span>
+              </a>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Viewing */}
