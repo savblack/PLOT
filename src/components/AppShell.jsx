@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PRIMARY_NAV_ITEMS, VIEW_TITLES } from '../navigation.js';
+import { useFollowRequests } from '../hooks/useFollowRequests.js';
 import ConfirmModal from './ConfirmModal.jsx';
 
 /* ── SVG Icons ───────────────────────── */
@@ -32,10 +33,17 @@ function IconSearch() {
   );
 }
 
-export default function AppShell({ currentView, navigateTo, children }) {
+export default function AppShell({ currentView, navigateTo, children, profile, user }) {
   const navigate = useNavigate();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [confirmSignOut, setConfirmSignOut] = useState(false);
+
+  // Only private-profile owners receive follow requests.
+  const isPrivate = profile?.is_public === false;
+  const { count: requestCount, refresh: refreshRequests } = useFollowRequests(isPrivate ? user?.id : null);
+
+  // Keep the header badge fresh as the user navigates (e.g. after approving in the inbox).
+  useEffect(() => { refreshRequests(); }, [currentView, refreshRequests]);
 
   useEffect(() => {
     if (!drawerOpen) return undefined;
@@ -95,6 +103,30 @@ export default function AppShell({ currentView, navigateTo, children }) {
         )}
 
         <div className="header-end">
+          {isPrivate && (
+            <button
+              type="button"
+              className="icon-btn"
+              onClick={() => navigateTo('requests')}
+              aria-label={`Follow requests${requestCount ? ` (${requestCount} pending)` : ''}`}
+              title="Follow requests"
+              aria-current={currentView === 'requests' ? 'page' : undefined}
+              style={{ position: 'relative' }}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/>
+              </svg>
+              {requestCount > 0 && (
+                <span aria-hidden="true" style={{
+                  position: 'absolute', top: 1, right: 1, minWidth: 16, height: 16, padding: '0 4px',
+                  borderRadius: 8, background: 'var(--accent)', color: '#fff', fontSize: 10,
+                  fontWeight: 700, lineHeight: '16px', textAlign: 'center',
+                }}>{requestCount > 9 ? '9+' : requestCount}</span>
+              )}
+            </button>
+          )}
           <button
             type="button"
             className="icon-btn"

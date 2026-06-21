@@ -279,13 +279,14 @@ export default function PublicProfilePage() {
     return () => { cancelled = true; };
   }, []);
 
-  const { loading, profile, watchCount, avgRating, recent, topMovies, topTv, favourites } =
+  const { loading, profile, locked, watchCount, avgRating, recent, topMovies, topTv, favourites } =
     usePublicProfile(username);
-  const { followers, following, isFollowing, toggle, busy, canFollow } =
-    useFollows(profile?.id, viewer?.id);
+  const { followers, following, status, follow, unfollow, busy, canFollow } =
+    useFollows(profile?.id, viewer?.id, profile?.follow_status ?? null);
 
   const isOwn = viewer?.id && profile?.id && viewer.id === profile.id;
   const found = !loading && !!profile;
+  const isPrivate = !!profile && !profile.is_public;
 
   return (
     <>
@@ -356,32 +357,47 @@ export default function PublicProfilePage() {
                 <div className="public-profile-actions" style={{ marginTop: '1.25rem' }}>
                   {isOwn ? (
                     <Link to="/settings" className="public-profile-button-secondary">Edit profile</Link>
-                  ) : canFollow ? (
-                    <button
-                      type="button"
-                      className={isFollowing ? 'public-profile-button-secondary' : 'public-profile-button'}
-                      onClick={toggle}
-                      disabled={busy}
-                    >
-                      {isFollowing ? 'Following' : 'Follow'}
-                    </button>
-                  ) : (
-                    <Link to="/login" className="public-profile-button">Sign in to follow</Link>
+                  ) : !viewer ? (
+                    <Link to="/login" className="public-profile-button">
+                      {isPrivate ? 'Sign in to request' : 'Sign in to follow'}
+                    </Link>
+                  ) : canFollow && (
+                    status === 'accepted' ? (
+                      <button type="button" className="public-profile-button-secondary" onClick={unfollow} disabled={busy}>Following</button>
+                    ) : status === 'pending' ? (
+                      <button type="button" className="public-profile-button-secondary" onClick={unfollow} disabled={busy}>Requested</button>
+                    ) : (
+                      <button type="button" className="public-profile-button" onClick={follow} disabled={busy}>
+                        {isPrivate ? 'Request to follow' : 'Follow'}
+                      </button>
+                    )
                   )}
                 </div>
 
                 {/* Stats */}
                 <div className="pp-stats">
-                  <div><span className="pp-stat-num">{watchCount}</span><span className="pp-stat-label">Watched</span></div>
-                  {avgRating != null && (
+                  {!locked && <div><span className="pp-stat-num">{watchCount}</span><span className="pp-stat-label">Watched</span></div>}
+                  {!locked && avgRating != null && (
                     <div><span className="pp-stat-num">{avgRating}</span><span className="pp-stat-label">Avg rating</span></div>
                   )}
                   <div><span className="pp-stat-num">{followers}</span><span className="pp-stat-label">Followers</span></div>
                   <div><span className="pp-stat-num">{following}</span><span className="pp-stat-label">Following</span></div>
                 </div>
 
+                {/* Private — locked */}
+                {locked && (
+                  <div className="public-profile-status-card" style={{ marginTop: '1.6rem' }}>
+                    <p className="public-profile-status-kicker">Private account</p>
+                    <p className="public-profile-status-copy">
+                      {status === 'pending'
+                        ? 'Your follow request is pending. You’ll see their watches and lists once they approve it.'
+                        : `Follow ${profile.display_name || profile.username} to see their watch count, recent watches and lists.`}
+                    </p>
+                  </div>
+                )}
+
                 {/* Recent watches */}
-                {recent.length > 0 && (
+                {!locked && recent.length > 0 && (
                   <div className="pp-section">
                     <h2 className="pp-section-title">Recently watched</h2>
                     <PosterGrid items={recent} />
@@ -412,7 +428,7 @@ export default function PublicProfilePage() {
                   </div>
                 )}
 
-                {watchCount === 0 && recent.length === 0 && topMovies.length === 0 && topTv.length === 0 && favourites.length === 0 && (
+                {!locked && watchCount === 0 && recent.length === 0 && topMovies.length === 0 && topTv.length === 0 && favourites.length === 0 && (
                   <p className="public-profile-body" style={{ marginTop: '1.6rem' }}>
                     {profile.display_name || profile.username} hasn&apos;t logged anything public yet.
                   </p>
