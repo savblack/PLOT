@@ -284,7 +284,7 @@ export default function App() {
 
   return (
     <AppContext.Provider value={ctx}>
-      <AppShell currentView={currentView} navigateTo={navigateTo} profile={profile}>
+      <AppShell currentView={currentView} navigateTo={navigateTo} profile={profile} user={user}>
         <Outlet />
       </AppShell>
 

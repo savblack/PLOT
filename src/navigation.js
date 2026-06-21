@@ -14,6 +14,7 @@ export const VIEW_TITLES = APP_NAV_ITEMS.reduce(
   {
     guide: 'Guide',
     'design-system': 'Design System',
+    requests: 'Follow requests',
   },
 );
 
