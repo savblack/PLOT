@@ -1,6 +1,8 @@
 // Only browser origins we actually serve from may call the proxy. Requests
-// with no Origin header (curl, server-to-server) are allowed through but still
-// rate-limited below. Cross-site browser requests are rejected with 403.
+// with no Origin header (curl, server-to-server) are allowed through. Cross-site
+// browser requests are rejected with 403. Rate limiting is handled upstream by a
+// Cloudflare Worker (in-isolate limiting here was ineffective: Supabase spreads a
+// burst across isolates, each with its own empty counter).
 function isAllowedOrigin(origin: string | null): boolean {
   if (!origin) return true;
   try {
@@ -21,23 +23,6 @@ function corsHeaders(origin: string | null): Record<string, string> {
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
     'Vary': 'Origin',
   };
-}
-
-// Best-effort in-memory per-IP rate limit. Edge isolates are ephemeral and may
-// scale horizontally, so this throttles a hammering client within one isolate
-// rather than guaranteeing a global limit — defense in depth on the TMDB quota.
-const RATE_WINDOW_MS = 10_000;
-const RATE_MAX = 100;
-const hits = new Map<string, { count: number; reset: number }>();
-function rateLimited(ip: string): boolean {
-  const now = Date.now();
-  const entry = hits.get(ip);
-  if (!entry || now > entry.reset) {
-    hits.set(ip, { count: 1, reset: now + RATE_WINDOW_MS });
-    return false;
-  }
-  entry.count += 1;
-  return entry.count > RATE_MAX;
 }
 
 const BASE = 'https://api.themoviedb.org/3';
@@ -77,14 +62,6 @@ Deno.serve(async (req) => {
   if (req.method !== 'GET') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), {
       status: 405,
-      headers: { ...CORS, 'Content-Type': 'application/json' },
-    });
-  }
-
-  const ip = (req.headers.get('x-forwarded-for') ?? '').split(',')[0].trim() || 'unknown';
-  if (rateLimited(ip)) {
-    return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), {
-      status: 429,
       headers: { ...CORS, 'Content-Type': 'application/json' },
     });
   }

@@ -11,7 +11,7 @@ The original launch shape was an invite-only beta (≤50). For an **open** publi
 Code changes (this repo):
 
 - **Bot-signup protection.** Auth forms now render a Cloudflare Turnstile widget and pass `captchaToken` on signup, login, password reset, and resend (`src/components/Turnstile.jsx`, `src/pages/AuthPage.jsx`). The widget is a no-op until `VITE_TURNSTILE_SITE_KEY` is set, so it stays inert in local dev and CI.
-- **`tmdb-proxy` lockdown.** CORS is restricted to `*.theplot.tv`, localhost, and `*.vercel.app`; cross-site browser origins get a 403; a best-effort in-memory per-IP rate limit (100 req / 10s) guards the shared TMDB quota (`supabase/functions/tmdb-proxy/index.ts`).
+- **`tmdb-proxy` lockdown.** CORS is restricted to `*.theplot.tv`, localhost, and `*.vercel.app`; cross-site browser origins get a 403 (`supabase/functions/tmdb-proxy/index.ts`). An earlier in-memory per-IP rate limit was **removed** as ineffective — Supabase spreads a burst across isolates, each with its own empty counter (verified: 400 concurrent requests all returned 200). Rate limiting is handled upstream by a Cloudflare Worker fronting the proxy (`workers/tmdb-proxy/`); the app reaches the Worker via `VITE_TMDB_PROXY_URL`.
 - **Per-user daily cap on Claude functions.** `generate-taste-profile` and `generate-journal` call the `increment_ai_usage` RPC (migration `20260621000000_add_ai_usage_limit.sql`) and return 429 past 20 uses/user/day; CORS tightened to match the proxy. Fails open if the RPC is absent so onboarding never breaks.
 - **CI now runs `node --test tests/unit/*.test.js`** so the existing unit coverage gates merges (`.github/workflows/ci.yml`).
 
