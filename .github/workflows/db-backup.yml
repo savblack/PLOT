@@ -77,22 +77,6 @@ jobs:
           echo "ARTIFACT=${FILE}.gpg" >> "$GITHUB_ENV"
           ls -lh "${FILE}.gpg"
 
-      - name: DEBUG R2 connectivity
-        run: |
-          set -uo pipefail
-          HOST="$(printf '%s' "$R2_ENDPOINT" | sed -E 's#https?://##; s#/.*##')"
-          echo "== aws --version =="; aws --version
-          echo "== openssl s_client to account host (cert + negotiation) =="
-          echo | timeout 25 openssl s_client -connect "${HOST}:443" -servername "${HOST}" 2>&1 \
-            | grep -iE 'CONNECTED|verify return|alert|New, TLS|Cipher is|Protocol|subject=|issuer=' | head -25
-          echo "== curl to endpoint =="
-          curl -sS -o /dev/null -w 'http=%{http_code} ssl_verify=%{ssl_verify_result}\n' --max-time 25 "$R2_ENDPOINT" 2>&1 | head
-          echo "== aws s3 cp --debug (addressing/endpoint resolution) =="
-          aws configure set default.s3.addressing_style path
-          aws s3 cp "$ARTIFACT" "s3://${R2_BUCKET}/db-backups/${ARTIFACT}" \
-            --endpoint-url "$R2_ENDPOINT" --debug 2>&1 \
-            | grep -iE 'Endpoint provider|endpoint_url|Making request|Sending http|host=|addressing|s3.us|connection:|SSLError|handshake' | head -40 || true
-
       - name: Upload to R2
         run: |
           set -euo pipefail
