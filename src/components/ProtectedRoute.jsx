@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { supabase } from '../api/supabase';
 import PlotLoader from './PlotLoader';
 
-export default function ProtectedRoute({ children, skipOnboardingCheck = false }) {
+export default function ProtectedRoute({ children, skipOnboardingCheck = false, publicPrefixes = [] }) {
+  const location = useLocation();
   const [loading, setLoading] = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
@@ -50,7 +51,11 @@ export default function ProtectedRoute({ children, skipOnboardingCheck = false }
     );
   }
 
-  if (!authenticated) return <Navigate to="/login" replace />;
-  if (needsOnboarding) return <Navigate to="/onboarding" replace />;
+  // Some routes (e.g. public profiles) render inside the app shell but must stay
+  // reachable without auth so they're shareable.
+  const isPublic = publicPrefixes.some((p) => location.pathname.startsWith(p));
+
+  if (!authenticated && !isPublic) return <Navigate to="/login" replace />;
+  if (needsOnboarding && !isPublic) return <Navigate to="/onboarding" replace />;
   return children;
 }

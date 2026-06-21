@@ -68,7 +68,7 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
   };
 
   const pageTitle = VIEW_TITLES[currentView] ?? 'PLOT';
-  const showHomeLogo = currentView === 'home';
+  const showHomeLogo = currentView === 'home' || (currentView || '').startsWith('u/');
 
   return (
     <div className="app-shell">
@@ -101,6 +101,7 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
         )}
 
         <div className="header-end">
+          {user && (
           <button
             type="button"
             className="icon-btn"
@@ -122,6 +123,7 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
               }}>{unread > 9 ? '9+' : unread}</span>
             )}
           </button>
+          )}
           <button
             type="button"
             className="icon-btn"
