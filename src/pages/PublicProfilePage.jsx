@@ -4,6 +4,7 @@ import { HERO_POSTERS } from '../constants/heroPosters.js';
 import { supabase } from '../api/supabase.js';
 import { usePublicProfile } from '../hooks/usePublicProfile.js';
 import { useFollows } from '../hooks/useFollows.js';
+import UserList from '../components/UserList.jsx';
 
 const posterUrl = (path, size = 'w342') =>
   path ? `https://image.tmdb.org/t/p/${size}${path}` : null;
@@ -224,6 +225,8 @@ const styles = `
   .pp-stats { display: flex; gap: 1.6rem; margin: 1.6rem 0 0; flex-wrap: wrap; }
   .pp-stat-num { font-family: var(--font-serif); font-size: 1.5rem; font-weight: 500; color: var(--text-primary); line-height: 1; }
   .pp-stat-label { display: block; margin-top: 0.25rem; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
+  .pp-stat-btn { display: flex; flex-direction: column; align-items: flex-start; background: none; border: none; padding: 0; cursor: pointer; font: inherit; }
+  .pp-stat-btn:hover .pp-stat-num { opacity: 0.65; }
 
   .pp-section { margin-top: 2.2rem; }
   .pp-section-title { margin: 0 0 0.9rem; font-size: 0.78rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); }
@@ -267,6 +270,29 @@ function PosterGrid({ items, ranked = false }) {
   );
 }
 
+function FollowListModal({ kind, targetId, viewerId, onClose }) {
+  const [users, setUsers] = useState(null);
+  useEffect(() => {
+    let cancelled = false;
+    const rpc = kind === 'followers' ? 'list_followers' : 'list_following';
+    supabase.rpc(rpc, { p_target: targetId }).then(({ data }) => { if (!cancelled) setUsers(data || []); });
+    return () => { cancelled = true; };
+  }, [kind, targetId]);
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ background: 'var(--surface)', width: '100%', maxWidth: 520, maxHeight: '75vh', borderTopLeftRadius: 16, borderTopRightRadius: 16, overflowY: 'auto', padding: '1.25rem 1.25rem 2rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+          <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.3rem', fontWeight: 500, margin: 0, textTransform: 'capitalize' }}>{kind}</h2>
+          <button type="button" onClick={onClose} aria-label="Close" style={{ background: 'none', border: 'none', fontSize: '1.6rem', lineHeight: 1, color: 'var(--text-muted)', cursor: 'pointer' }}>×</button>
+        </div>
+        {users === null
+          ? <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '2rem' }}>Loading…</p>
+          : <UserList users={users} viewerId={viewerId} onNavigate={onClose} empty={kind === 'followers' ? 'No followers yet.' : 'Not following anyone yet.'} />}
+      </div>
+    </div>
+  );
+}
+
 export default function PublicProfilePage() {
   const { username = '' } = useParams();
   const handle = username.startsWith('@') ? username : `@${username}`;
@@ -280,7 +306,8 @@ export default function PublicProfilePage() {
   }, []);
 
   const { loading, profile, locked, watchCount, avgRating, recent, topMovies, topTv, favourites } =
-    usePublicProfile(username);
+    usePublicProfile(username, viewer?.id);
+  const [followList, setFollowList] = useState(null); // 'followers' | 'following' | null
   const { followers, following, status, follow, unfollow, busy, canFollow } =
     useFollows(profile?.id, viewer?.id, profile?.follow_status ?? null);
 
@@ -380,8 +407,12 @@ export default function PublicProfilePage() {
                   {!locked && avgRating != null && (
                     <div><span className="pp-stat-num">{avgRating}</span><span className="pp-stat-label">Avg rating</span></div>
                   )}
-                  <div><span className="pp-stat-num">{followers}</span><span className="pp-stat-label">Followers</span></div>
-                  <div><span className="pp-stat-num">{following}</span><span className="pp-stat-label">Following</span></div>
+                  <button type="button" className="pp-stat-btn" onClick={() => setFollowList('followers')}>
+                    <span className="pp-stat-num">{followers}</span><span className="pp-stat-label">Followers</span>
+                  </button>
+                  <button type="button" className="pp-stat-btn" onClick={() => setFollowList('following')}>
+                    <span className="pp-stat-num">{following}</span><span className="pp-stat-label">Following</span>
+                  </button>
                 </div>
 
                 {/* Private — locked */}
@@ -442,6 +473,15 @@ export default function PublicProfilePage() {
           </p>
         </section>
       </main>
+
+      {followList && profile && (
+        <FollowListModal
+          kind={followList}
+          targetId={profile.id}
+          viewerId={viewer?.id}
+          onClose={() => setFollowList(null)}
+        />
+      )}
     </>
   );
 }

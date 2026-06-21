@@ -1,10 +1,12 @@
 import { useState, useRef } from 'react';
 import { useApp, posterUrl } from '../App.jsx';
 import { tmdb } from '../api/tmdb.js';
+import { supabase } from '../api/supabase.js';
 import { useHistory } from '../hooks/useHistory.js';
 import { localDateStr } from '../utils/date.js';
 import { getButtonLikeProps } from '../utils/interactive.js';
 import PlotLoader from './PlotLoader.jsx';
+import UserList from './UserList.jsx';
 import { classifySearchResults } from '../utils/search.js';
 
 function BookmarkIcon({ filled }) {
@@ -137,27 +139,42 @@ function ResultRow({ item, openPanel, watchlist, favorites, history }) {
 export default function SearchView() {
   const { openPanel, watchlist, favorites, user } = useApp();
   const history = useHistory(user?.id);
+  const [mode,    setMode]    = useState('titles'); // 'titles' | 'people'
   const [query,   setQuery]   = useState('');
   const [results, setResults] = useState([]);
+  const [users,   setUsers]   = useState([]);
   const [loading, setLoading] = useState(false);
   const [emptyMode, setEmptyMode] = useState('none');
 
   const timerRef = useRef(null);
 
-  const handleChange = (e) => {
-    const v = e.target.value;
-    setQuery(v);
+  const runSearch = (v, searchMode) => {
     clearTimeout(timerRef.current);
-    if (!v.trim()) { setResults([]); setEmptyMode('none'); return; }
+    if (!v.trim()) { setResults([]); setUsers([]); setEmptyMode('none'); return; }
     timerRef.current = setTimeout(async () => {
       setLoading(true);
-      const data = await tmdb.search(v);
-      const { filtered, emptyMode: nextEmptyMode } = classifySearchResults(data?.results || []);
-      setResults(filtered);
-      setEmptyMode(nextEmptyMode);
+      if (searchMode === 'people') {
+        const { data } = await supabase.rpc('search_users', { p_query: v.trim() });
+        setUsers(data || []);
+      } else {
+        const data = await tmdb.search(v);
+        const { filtered, emptyMode: nextEmptyMode } = classifySearchResults(data?.results || []);
+        setResults(filtered);
+        setEmptyMode(nextEmptyMode);
+      }
       setLoading(false);
     }, 350);
   };
+
+  const handleChange = (e) => { const v = e.target.value; setQuery(v); runSearch(v, mode); };
+  const switchMode = (m) => { if (m === mode) return; setMode(m); runSearch(query, m); };
+
+  const tabStyle = (active) => ({
+    flex: 1, padding: '0.5rem', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer',
+    background: 'none', border: 'none',
+    borderBottom: active ? '2px solid var(--accent)' : '2px solid transparent',
+    color: active ? 'var(--text-primary)' : 'var(--text-muted)',
+  });
 
   return (
     <div>
@@ -170,7 +187,7 @@ export default function SearchView() {
           <input
             className="search-input"
             type="search"
-            placeholder="Search TV shows, movies and cinema..."
+            placeholder={mode === 'people' ? 'Search people by username or name…' : 'Search TV shows, movies and cinema...'}
             value={query}
             onChange={handleChange}
             autoFocus
@@ -178,47 +195,68 @@ export default function SearchView() {
         </div>
       </div>
 
-      {/* Results */}
+      {/* Titles / People toggle */}
+      <div style={{ display: 'flex', maxWidth: 360, margin: '0 auto 0.5rem' }}>
+        <button type="button" style={tabStyle(mode === 'titles')} onClick={() => switchMode('titles')}>Titles</button>
+        <button type="button" style={tabStyle(mode === 'people')} onClick={() => switchMode('people')}>People</button>
+      </div>
+
       {loading && (
         <div className="loading-state"><PlotLoader size="sm" /></div>
       )}
 
-      {!loading && emptyMode === 'generic' && (
-        <div className="empty-state">
-          <div className="empty-title">No results</div>
-          <div className="empty-body">Try a different title or spelling.</div>
-        </div>
-      )}
-
-      {!loading && emptyMode === 'title-guidance' && (
-        <div className="empty-state">
-          <div className="empty-title">Try searching by title</div>
-          <div className="empty-body">Search works best with a movie or TV title rather than a director, cast member, or creator name.</div>
-        </div>
-      )}
-
-      {!loading && results.length === 0 && emptyMode === 'none' && (
-        <div className="empty-state" style={{ paddingTop: '2rem' }}>
-          <div className="empty-title">Find anything</div>
-          <div className="empty-body">
-            Search for a movie or TV show to add it to your list, start watching, or mark it as watched.
+      {/* People results */}
+      {!loading && mode === 'people' && (
+        query.trim().length < 2 ? (
+          <div className="empty-state" style={{ paddingTop: '2rem' }}>
+            <div className="empty-title">Find people</div>
+            <div className="empty-body">Search by username or name to follow other film &amp; TV fans.</div>
           </div>
-        </div>
+        ) : (
+          <div style={{ maxWidth: 560, margin: '0 auto', padding: '0 1rem' }}>
+            <UserList users={users} viewerId={user?.id} empty="No people found. Try a different name." />
+          </div>
+        )
       )}
 
-      {results.length > 0 && (
-        <div>
-          {results.map(item => (
-            <ResultRow
-              key={`${item.media_type}-${item.id}`}
-              item={item}
-              openPanel={openPanel}
-              watchlist={watchlist}
-              favorites={favorites}
-              history={history}
-            />
-          ))}
-        </div>
+      {/* Title results */}
+      {!loading && mode === 'titles' && (
+        <>
+          {emptyMode === 'generic' && (
+            <div className="empty-state">
+              <div className="empty-title">No results</div>
+              <div className="empty-body">Try a different title or spelling.</div>
+            </div>
+          )}
+          {emptyMode === 'title-guidance' && (
+            <div className="empty-state">
+              <div className="empty-title">Try searching by title</div>
+              <div className="empty-body">Search works best with a movie or TV title rather than a director, cast member, or creator name.</div>
+            </div>
+          )}
+          {results.length === 0 && emptyMode === 'none' && (
+            <div className="empty-state" style={{ paddingTop: '2rem' }}>
+              <div className="empty-title">Find anything</div>
+              <div className="empty-body">
+                Search for a movie or TV show to add it to your list, start watching, or mark it as watched.
+              </div>
+            </div>
+          )}
+          {results.length > 0 && (
+            <div>
+              {results.map(item => (
+                <ResultRow
+                  key={`${item.media_type}-${item.id}`}
+                  item={item}
+                  openPanel={openPanel}
+                  watchlist={watchlist}
+                  favorites={favorites}
+                  history={history}
+                />
+              ))}
+            </div>
+          )}
+        </>
       )}
     </div>
   );

@@ -15,6 +15,7 @@ const SearchView  = lazy(() => import('./components/SearchView.jsx'));
 const SettingsView= lazy(() => import('./components/SettingsView.jsx'));
 const ImportView  = lazy(() => import('./components/ImportView.jsx'));
 const RequestsView= lazy(() => import('./components/RequestsView.jsx'));
+const NotificationsView = lazy(() => import('./components/NotificationsView.jsx'));
 
 // Standalone pages
 const AuthPage          = lazy(() => import('./pages/AuthPage.jsx'));
@@ -81,6 +82,7 @@ const router = createBrowserRouter([
       { path: 'search',   element: wrap(<SearchView />) },
       { path: 'settings', element: wrap(<SettingsView />) },
       { path: 'requests', element: wrap(<RequestsView />) },
+      { path: 'notifications', element: wrap(<NotificationsView />) },
       { path: 'import',   element: wrap(<ImportView />) },
       // Design system only available in dev builds
       ...(import.meta.env.DEV ? [{ path: 'design-system', element: wrap(<DesignSystemPage />) }] : []),

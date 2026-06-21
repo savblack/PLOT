@@ -14,7 +14,7 @@ import { supabase } from '../api/supabase.js';
  * `profile: null` after loading means the handle didn't resolve (no such user,
  * or private and the viewer isn't logged in) → placeholder.
  */
-export function usePublicProfile(username) {
+export function usePublicProfile(username, viewerId = null) {
   const [loading, setLoading]       = useState(true);
   const [profile, setProfile]       = useState(null);
   const [watchCount, setWatchCount] = useState(0);
@@ -37,7 +37,8 @@ export function usePublicProfile(username) {
     if (!card) { setProfile(null); setLoading(false); return; }
     setProfile(card);
 
-    const viewable = card.is_public || card.follow_status === 'accepted';
+    const isOwn = viewerId && card.id === viewerId;
+    const viewable = card.is_public || card.follow_status === 'accepted' || isOwn;
     if (!viewable) { setLoading(false); return; }   // private + not following → locked
 
     const uid = card.id;
@@ -72,7 +73,8 @@ export function usePublicProfile(username) {
     return () => { cancelled = true; };
   }, [load]);
 
-  const locked = !!profile && !profile.is_public && profile.follow_status !== 'accepted';
+  const locked = !!profile && !profile.is_public && profile.follow_status !== 'accepted'
+    && !(viewerId && profile.id === viewerId);
 
   return { loading, profile, locked, watchCount, avgRating, recent, topMovies, topTv, favourites };
 }
