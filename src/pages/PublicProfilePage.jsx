@@ -1,11 +1,17 @@
+import { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { HERO_POSTERS } from '../constants/heroPosters.js';
-import PlotLogo from '../components/PlotLogo.jsx';
+import { supabase } from '../api/supabase.js';
+import { usePublicProfile } from '../hooks/usePublicProfile.js';
+import { useFollows } from '../hooks/useFollows.js';
+
+const posterUrl = (path, size = 'w342') =>
+  path ? `https://image.tmdb.org/t/p/${size}${path}` : null;
 
 const styles = `
   .public-profile-page {
     display: flex;
-    min-height: 100dvh;
+    height: 100dvh;
     background: var(--surface);
     font-family: var(--font-sans);
     color: var(--text-primary);
@@ -62,15 +68,16 @@ const styles = `
     pointer-events: none;
   }
 
-  .public-profile-logo-image {
-    display: block;
-    width: auto;
-    height: 42px;
+  .public-profile-wordmark {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    letter-spacing: -0.05em;
+    line-height: 1;
+    color: var(--text-primary);
   }
-
-  .public-profile-panel-logo .public-profile-logo-image {
-    height: 28px;
-  }
+  .public-profile-visual-brand .public-profile-wordmark { font-size: 2.2rem; color: #fff; }
+  .public-profile-panel-logo .public-profile-wordmark { font-size: 1.7rem; }
+  .public-profile-panel-logo:hover .public-profile-wordmark { opacity: 0.6; }
 
   .public-profile-visual-tagline {
     font-size: 0.75rem;
@@ -94,23 +101,27 @@ const styles = `
     text-decoration: none;
     flex-shrink: 0;
   }
-
-  .public-profile-panel-logo:hover {
-    opacity: 0.6;
-  }
+  .public-profile-panel-logo:hover { opacity: 0.6; }
 
   .public-profile-panel-body {
     flex: 1;
+    min-height: 0;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 0 2.5rem;
   }
 
-  .public-profile-copy {
-    width: 100%;
-    max-width: 430px;
+  /* Scrollable when there's real profile content */
+  .public-profile-panel-body.has-content {
+    align-items: flex-start;
+    overflow-y: auto;
+    padding-top: 1rem;
+    padding-bottom: 2rem;
   }
+
+  .public-profile-copy { width: 100%; max-width: 430px; }
+  .public-profile-content { width: 100%; max-width: 560px; }
 
   .public-profile-label {
     margin: 0 0 0.85rem;
@@ -130,11 +141,7 @@ const styles = `
     line-height: 0.96;
     color: var(--text-primary);
   }
-
-  .public-profile-title em {
-    font-style: italic;
-    font-weight: 500;
-  }
+  .public-profile-title em { font-style: italic; font-weight: 500; }
 
   .public-profile-body {
     margin: 0.85rem 0 0;
@@ -150,7 +157,6 @@ const styles = `
     border-radius: var(--radius-md);
     background: color-mix(in srgb, var(--surface-raised) 82%, var(--accent-dim));
   }
-
   .public-profile-status-kicker {
     margin: 0;
     font-size: 0.72rem;
@@ -159,7 +165,6 @@ const styles = `
     text-transform: uppercase;
     color: var(--accent);
   }
-
   .public-profile-status-handle {
     margin: 0.45rem 0 0;
     font-family: var(--font-serif);
@@ -169,7 +174,6 @@ const styles = `
     color: var(--text-primary);
     word-break: break-word;
   }
-
   .public-profile-status-copy {
     margin: 0.55rem 0 0;
     font-size: 0.88rem;
@@ -177,65 +181,58 @@ const styles = `
     color: var(--text-secondary);
   }
 
-  .public-profile-actions {
-    display: flex;
-    gap: 0.8rem;
-    flex-wrap: wrap;
-    margin-top: 1.6rem;
-  }
-
+  .public-profile-actions { display: flex; gap: 0.8rem; flex-wrap: wrap; margin-top: 1.6rem; }
   .public-profile-button,
   .public-profile-button-secondary {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 48px;
-    padding: 0.85rem 1.4rem;
-    border-radius: var(--radius-pill);
-    text-decoration: none;
-    font-size: 0.94rem;
-    font-weight: 600;
+    display: inline-flex; align-items: center; justify-content: center;
+    min-height: 48px; padding: 0.85rem 1.4rem;
+    border-radius: var(--radius-pill); text-decoration: none;
+    font-size: 0.94rem; font-weight: 600;
     transition: opacity 0.2s ease, transform 0.15s ease;
+    cursor: pointer;
   }
-
-  .public-profile-button {
-    background: var(--text-primary);
-    color: var(--surface);
-    border: none;
-  }
-
-  .public-profile-button-secondary {
-    background: transparent;
-    color: var(--text-primary);
-    border: 0.75px solid var(--text-primary);
-  }
-
+  .public-profile-button { background: var(--text-primary); color: var(--surface); border: none; }
+  .public-profile-button-secondary { background: transparent; color: var(--text-primary); border: 0.75px solid var(--text-primary); }
   .public-profile-button:hover,
-  .public-profile-button-secondary:hover {
-    opacity: 0.85;
-    transform: scale(0.99);
-  }
+  .public-profile-button-secondary:hover { opacity: 0.85; transform: scale(0.99); }
+  .public-profile-button:disabled { opacity: 0.55; cursor: default; transform: none; }
 
-  .public-profile-note {
-    margin-top: 1.25rem;
-    font-size: 0.82rem;
-    line-height: 1.65;
-    color: var(--text-muted);
-  }
+  .public-profile-note { margin-top: 1.25rem; font-size: 0.82rem; line-height: 1.65; color: var(--text-muted); }
 
   .public-profile-panel-footer {
-    flex-shrink: 0;
-    padding: clamp(1rem, 2vh, 1.5rem) 2rem;
-    text-align: center;
-    font-size: 0.75rem;
-    color: var(--text-muted);
+    flex-shrink: 0; padding: clamp(1rem, 2vh, 1.5rem) 2rem; text-align: center;
+    font-size: 0.75rem; color: var(--text-muted);
+  }
+  .public-profile-panel-footer a { color: var(--text-secondary); text-decoration: underline; text-underline-offset: 2px; }
+
+  /* ── Real profile ── */
+  .pp-header { display: flex; align-items: center; gap: 1rem; }
+  .pp-avatar {
+    width: 72px; height: 72px; border-radius: 50%; flex-shrink: 0;
+    object-fit: cover; background: var(--surface-raised);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-serif); font-size: 1.8rem; color: var(--text-muted);
+  }
+  .pp-name { margin: 0; font-family: var(--font-serif); font-size: 1.9rem; font-weight: 500; letter-spacing: -0.03em; line-height: 1.05; word-break: break-word; }
+  .pp-handle { margin: 0.2rem 0 0; font-size: 0.9rem; color: var(--text-muted); }
+  .pp-supporter {
+    display: inline-flex; align-items: center; gap: 0.3rem; margin-top: 0.4rem;
+    font-size: 0.72rem; font-weight: 600; letter-spacing: 0.04em; color: var(--accent);
   }
 
-  .public-profile-panel-footer a {
-    color: var(--text-secondary);
-    text-decoration: underline;
-    text-underline-offset: 2px;
-  }
+  .pp-stats { display: flex; gap: 1.6rem; margin: 1.6rem 0 0; flex-wrap: wrap; }
+  .pp-stat-num { font-family: var(--font-serif); font-size: 1.5rem; font-weight: 500; color: var(--text-primary); line-height: 1; }
+  .pp-stat-label { display: block; margin-top: 0.25rem; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
+
+  .pp-section { margin-top: 2.2rem; }
+  .pp-section-title { margin: 0 0 0.9rem; font-size: 0.78rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); }
+
+  .pp-poster-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 0.6rem; }
+  .pp-poster { position: relative; aspect-ratio: 2 / 3; border-radius: var(--radius-sm, 8px); overflow: hidden; background: var(--surface-raised); border: 1px solid var(--border); }
+  .pp-poster img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .pp-poster-fallback { display: flex; align-items: center; justify-content: center; height: 100%; padding: 0.4rem; font-size: 0.66rem; line-height: 1.3; text-align: center; color: var(--text-muted); }
+  .pp-poster-rank { position: absolute; top: 0; left: 0; min-width: 1.4rem; padding: 0.1rem 0.35rem; font-family: var(--font-serif); font-size: 0.85rem; font-weight: 600; color: #fff; background: rgba(0,0,0,0.6); border-bottom-right-radius: 8px; }
 
   @media (max-width: 768px) {
     .public-profile-visual { display: none; }
@@ -243,21 +240,52 @@ const styles = `
     .public-profile-panel-body { padding: 0 1.75rem; }
     .public-profile-title { font-size: 2.35rem; }
   }
-
   @media (max-width: 480px) {
     .public-profile-panel-logo { padding: 1.5rem 1.25rem; }
     .public-profile-panel-body { padding: 0 1.25rem; }
     .public-profile-title { font-size: 2rem; }
-    .public-profile-actions > * {
-      width: 100%;
-    }
+    .public-profile-actions > * { width: 100%; }
   }
 `;
 
+function PosterGrid({ items, ranked = false }) {
+  if (!items?.length) return null;
+  return (
+    <div className="pp-poster-grid">
+      {items.map((it, i) => {
+        const img = posterUrl(it.poster_path, 'w185');
+        return (
+          <div className="pp-poster" key={`${it.tmdb_id}-${it.rank ?? i}`} title={it.title}>
+            {ranked && <span className="pp-poster-rank">{it.rank}</span>}
+            {img
+              ? <img src={img} alt={it.title} loading="lazy" />
+              : <div className="pp-poster-fallback">{it.title}</div>}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function PublicProfilePage() {
-  const { username = 'plot-user' } = useParams();
+  const { username = '' } = useParams();
   const handle = username.startsWith('@') ? username : `@${username}`;
   const posters = [...HERO_POSTERS, ...HERO_POSTERS];
+
+  const [viewer, setViewer] = useState(null);
+  useEffect(() => {
+    let cancelled = false;
+    supabase.auth.getSession().then(({ data }) => { if (!cancelled) setViewer(data.session?.user ?? null); });
+    return () => { cancelled = true; };
+  }, []);
+
+  const { loading, profile, watchCount, avgRating, recent, topMovies, topTv, favourites } =
+    usePublicProfile(username);
+  const { followers, following, isFollowing, toggle, busy, canFollow } =
+    useFollows(profile?.id, viewer?.id);
+
+  const isOwn = viewer?.id && profile?.id && viewer.id === profile.id;
+  const found = !loading && !!profile;
 
   return (
     <>
@@ -271,47 +299,130 @@ export default function PublicProfilePage() {
           </div>
           <div className="public-profile-visual-gradient" />
           <div className="public-profile-visual-brand">
-            <PlotLogo className="public-profile-logo-image" white />
+            <span className="public-profile-wordmark">PLOT</span>
             <span className="public-profile-visual-tagline">Your film &amp; TV companion</span>
           </div>
         </div>
 
         <section className="public-profile-panel" aria-labelledby="public-profile-title">
           <Link to="/" className="public-profile-panel-logo">
-            <PlotLogo className="public-profile-logo-image" />
+            <span className="public-profile-wordmark">PLOT</span>
           </Link>
 
-          <div className="public-profile-panel-body">
-          <div className="public-profile-copy">
-            <p className="public-profile-label">Profile route placeholder</p>
-            <h1 id="public-profile-title" className="public-profile-title">
-              PLOT <em>doesn&apos;t have profiles</em> yet.
-            </h1>
-            <p className="public-profile-body">
-              There are no in-app user profiles or public profile pages in the product right now.
-              This URL exists only so profile links resolve to a clear placeholder instead of a broken page.
-            </p>
-            <div className="public-profile-actions">
-              <Link to="/signup" className="public-profile-button">Create an account</Link>
-              <Link to="/login" className="public-profile-button-secondary">Sign in</Link>
-            </div>
-            <div className="public-profile-status-card" aria-label="Profile launch note">
-              <p className="public-profile-status-kicker">Not in product</p>
-              <p className="public-profile-status-handle">{handle}</p>
-              <p className="public-profile-status-copy">
-                This is a route-level placeholder, not a hidden profile. PLOT will need actual profile
-                features before this URL can show anything user-specific.
-              </p>
-            </div>
-            <p className="public-profile-note">
-              If someone opens <strong>{handle}</strong>, they should land on this holding page until
-              profiles are actually designed and built into the app.
-            </p>
-          </div>
+          <div className={`public-profile-panel-body${found ? ' has-content' : ''}`}>
+            {!found ? (
+              <div className="public-profile-copy">
+                <p className="public-profile-label">{loading ? 'Loading profile' : 'Profile'}</p>
+                <h1 id="public-profile-title" className="public-profile-title">
+                  {loading ? <>One moment…</> : <>This profile <em>isn&apos;t public</em>.</>}
+                </h1>
+                {!loading && (
+                  <>
+                    <p className="public-profile-body">
+                      <strong>{handle}</strong> either doesn&apos;t exist or hasn&apos;t made their
+                      profile public yet. Profiles are private until their owner turns sharing on.
+                    </p>
+                    <div className="public-profile-actions">
+                      <Link to="/signup" className="public-profile-button">Create an account</Link>
+                      <Link to="/login" className="public-profile-button-secondary">Sign in</Link>
+                    </div>
+                    <p className="public-profile-note">
+                      Have an account? Turn on <strong>Public profile</strong> in Settings to share your
+                      watch count, recent watches and lists at a link like this one.
+                    </p>
+                  </>
+                )}
+              </div>
+            ) : (
+              <div className="public-profile-content">
+                {/* Header */}
+                <div className="pp-header">
+                  {profile.avatar_url
+                    ? <img className="pp-avatar" src={profile.avatar_url} alt="" />
+                    : <div className="pp-avatar">{(profile.display_name || profile.username || '?').charAt(0).toUpperCase()}</div>}
+                  <div style={{ minWidth: 0 }}>
+                    <h1 id="public-profile-title" className="pp-name">{profile.display_name || profile.username}</h1>
+                    <p className="pp-handle">@{profile.username}</p>
+                    {profile.is_supporter && (
+                      <span className="pp-supporter">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 7.4H22l-6 4.6 2.3 7.4-6.3-4.6L5.7 21l2.3-7.4-6-4.6h7.6z"/></svg>
+                        Supporter
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="public-profile-actions" style={{ marginTop: '1.25rem' }}>
+                  {isOwn ? (
+                    <Link to="/settings" className="public-profile-button-secondary">Edit profile</Link>
+                  ) : canFollow ? (
+                    <button
+                      type="button"
+                      className={isFollowing ? 'public-profile-button-secondary' : 'public-profile-button'}
+                      onClick={toggle}
+                      disabled={busy}
+                    >
+                      {isFollowing ? 'Following' : 'Follow'}
+                    </button>
+                  ) : (
+                    <Link to="/login" className="public-profile-button">Sign in to follow</Link>
+                  )}
+                </div>
+
+                {/* Stats */}
+                <div className="pp-stats">
+                  <div><span className="pp-stat-num">{watchCount}</span><span className="pp-stat-label">Watched</span></div>
+                  {avgRating != null && (
+                    <div><span className="pp-stat-num">{avgRating}</span><span className="pp-stat-label">Avg rating</span></div>
+                  )}
+                  <div><span className="pp-stat-num">{followers}</span><span className="pp-stat-label">Followers</span></div>
+                  <div><span className="pp-stat-num">{following}</span><span className="pp-stat-label">Following</span></div>
+                </div>
+
+                {/* Recent watches */}
+                {recent.length > 0 && (
+                  <div className="pp-section">
+                    <h2 className="pp-section-title">Recently watched</h2>
+                    <PosterGrid items={recent} />
+                  </div>
+                )}
+
+                {/* Top 10 movies */}
+                {topMovies.length > 0 && (
+                  <div className="pp-section">
+                    <h2 className="pp-section-title">Top 10 films</h2>
+                    <PosterGrid items={topMovies} ranked />
+                  </div>
+                )}
+
+                {/* Top 10 TV */}
+                {topTv.length > 0 && (
+                  <div className="pp-section">
+                    <h2 className="pp-section-title">Top 10 TV</h2>
+                    <PosterGrid items={topTv} ranked />
+                  </div>
+                )}
+
+                {/* Favourites */}
+                {favourites.length > 0 && (
+                  <div className="pp-section">
+                    <h2 className="pp-section-title">Favourites</h2>
+                    <PosterGrid items={favourites} />
+                  </div>
+                )}
+
+                {watchCount === 0 && recent.length === 0 && topMovies.length === 0 && topTv.length === 0 && favourites.length === 0 && (
+                  <p className="public-profile-body" style={{ marginTop: '1.6rem' }}>
+                    {profile.display_name || profile.username} hasn&apos;t logged anything public yet.
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           <p className="public-profile-panel-footer">
-            By continuing you agree to our <Link to="/terms">Terms</Link> and <Link to="/privacy">Privacy Policy</Link>.
+            Made with <Link to="/">PLOT</Link> · your film &amp; TV companion
           </p>
         </section>
       </main>
