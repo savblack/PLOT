@@ -1,7 +1,44 @@
-const CORS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+// Only browser origins we actually serve from may call the proxy. Requests
+// with no Origin header (curl, server-to-server) are allowed through but still
+// rate-limited below. Cross-site browser requests are rejected with 403.
+function isAllowedOrigin(origin: string | null): boolean {
+  if (!origin) return true;
+  try {
+    const { hostname, protocol } = new URL(origin);
+    if (protocol === 'http:' && (hostname === 'localhost' || hostname === '127.0.0.1')) return true;
+    if (hostname === 'theplot.tv' || hostname.endsWith('.theplot.tv')) return true;
+    if (hostname.endsWith('.vercel.app')) return true; // preview deploys
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+const CANONICAL_ORIGIN = 'https://app.theplot.tv';
+function corsHeaders(origin: string | null): Record<string, string> {
+  return {
+    'Access-Control-Allow-Origin': origin && isAllowedOrigin(origin) ? origin : CANONICAL_ORIGIN,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Vary': 'Origin',
+  };
+}
+
+// Best-effort in-memory per-IP rate limit. Edge isolates are ephemeral and may
+// scale horizontally, so this throttles a hammering client within one isolate
+// rather than guaranteeing a global limit — defense in depth on the TMDB quota.
+const RATE_WINDOW_MS = 10_000;
+const RATE_MAX = 100;
+const hits = new Map<string, { count: number; reset: number }>();
+function rateLimited(ip: string): boolean {
+  const now = Date.now();
+  const entry = hits.get(ip);
+  if (!entry || now > entry.reset) {
+    hits.set(ip, { count: 1, reset: now + RATE_WINDOW_MS });
+    return false;
+  }
+  entry.count += 1;
+  return entry.count > RATE_MAX;
+}
 
 const BASE = 'https://api.themoviedb.org/3';
 const ALLOWED_PATHS = [
@@ -22,13 +59,32 @@ const ALLOWED_PATHS = [
 ];
 
 Deno.serve(async (req) => {
+  const origin = req.headers.get('Origin');
+  const CORS = corsHeaders(origin);
+
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: CORS });
+  }
+
+  // Reject cross-site browser requests outright (an Origin we don't serve).
+  if (origin && !isAllowedOrigin(origin)) {
+    return new Response(JSON.stringify({ error: 'Origin not allowed' }), {
+      status: 403,
+      headers: { ...CORS, 'Content-Type': 'application/json' },
+    });
   }
 
   if (req.method !== 'GET') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), {
       status: 405,
+      headers: { ...CORS, 'Content-Type': 'application/json' },
+    });
+  }
+
+  const ip = (req.headers.get('x-forwarded-for') ?? '').split(',')[0].trim() || 'unknown';
+  if (rateLimited(ip)) {
+    return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), {
+      status: 429,
       headers: { ...CORS, 'Content-Type': 'application/json' },
     });
   }

@@ -1,14 +1,43 @@
 import Anthropic from 'npm:@anthropic-ai/sdk';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+function isAllowedOrigin(origin: string | null): boolean {
+  if (!origin) return true;
+  try {
+    const { hostname, protocol } = new URL(origin);
+    if (protocol === 'http:' && (hostname === 'localhost' || hostname === '127.0.0.1')) return true;
+    if (hostname === 'theplot.tv' || hostname.endsWith('.theplot.tv')) return true;
+    if (hostname.endsWith('.vercel.app')) return true;
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+const CANONICAL_ORIGIN = 'https://app.theplot.tv';
+function cors(origin: string | null): Record<string, string> {
+  return {
+    'Access-Control-Allow-Origin': origin && isAllowedOrigin(origin) ? origin : CANONICAL_ORIGIN,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Vary': 'Origin',
+  };
+}
+
+const DAILY_LIMIT = 20;
 
 Deno.serve(async (req) => {
+  const origin = req.headers.get('Origin');
+  const corsHeaders = cors(origin);
+
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
+  }
+
+  if (origin && !isAllowedOrigin(origin)) {
+    return new Response(JSON.stringify({ error: 'Origin not allowed' }), {
+      status: 403,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 
   try {
@@ -30,6 +59,19 @@ Deno.serve(async (req) => {
     if (authError || !user) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Per-user daily cap. Fails open if the RPC is unavailable so a missing
+    // migration never blocks onboarding.
+    const { data: allowed, error: limitError } = await anonClient.rpc('increment_ai_usage', {
+      p_feature: 'taste_profile',
+      p_limit: DAILY_LIMIT,
+    });
+    if (!limitError && allowed === false) {
+      return new Response(JSON.stringify({ error: 'Daily limit reached' }), {
+        status: 429,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }

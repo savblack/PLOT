@@ -6,6 +6,9 @@ import { usePostHog } from '@posthog/react';
 import { getAuthCallbackUrl } from '../utils/redirects.js';
 import { HERO_POSTERS } from '../constants/heroPosters.js';
 import PlotLoader from '../components/PlotLoader.jsx';
+import Turnstile from '../components/Turnstile.jsx';
+
+const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY;
 
 function friendlyError(msg) {
   if (!msg) return 'Something went wrong. Please try again.';
@@ -27,8 +30,16 @@ export default function AuthPage({ initialMode = 'signup' }) {
   const [error, setError]             = useState(null);
   const [success, setSuccess]         = useState(false);
   const [resendStatus, setResendStatus] = useState(null); // null | 'sending' | 'sent' | 'error'
+  const [captchaToken, setCaptchaToken] = useState(null);
+  const [captchaNonce, setCaptchaNonce] = useState(0); // bump to force a fresh Turnstile token
   const navigate = useNavigate();
   const posthog = usePostHog();
+
+  // Turnstile tokens are single-use; clear and re-issue after every auth attempt.
+  const resetCaptcha = () => { setCaptchaToken(null); setCaptchaNonce((n) => n + 1); };
+
+  // When no site key is configured the widget never renders, so don't gate on it.
+  const captchaReady = !TURNSTILE_SITE_KEY || !!captchaToken;
 
   // Auto-redirect if already logged in
   useEffect(() => {
@@ -45,8 +56,9 @@ export default function AuthPage({ initialMode = 'signup' }) {
     if (mode === 'forgot') {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: getAuthCallbackUrl(),
+        captchaToken,
       });
-      if (error) { setError(friendlyError(error.message)); setLoading(false); }
+      if (error) { setError(friendlyError(error.message)); setLoading(false); resetCaptcha(); }
       else {
         posthog?.capture('password_reset_requested');
         setSuccess(true);
@@ -55,8 +67,12 @@ export default function AuthPage({ initialMode = 'signup' }) {
     }
 
     if (mode === 'login') {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) { setError(friendlyError(error.message)); setLoading(false); }
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+        options: { captchaToken },
+      });
+      if (error) { setError(friendlyError(error.message)); setLoading(false); resetCaptcha(); }
       else {
         posthog?.identify(data.user.id, { email: data.user.email });
         posthog?.capture('user_logged_in');
@@ -66,9 +82,9 @@ export default function AuthPage({ initialMode = 'signup' }) {
       const { error } = await supabase.auth.signUp({
         email,
         password,
-        options: { emailRedirectTo: getAuthCallbackUrl() },
+        options: { emailRedirectTo: getAuthCallbackUrl(), captchaToken },
       });
-      if (error) { setError(friendlyError(error.message)); setLoading(false); }
+      if (error) { setError(friendlyError(error.message)); setLoading(false); resetCaptcha(); }
       else {
         posthog?.capture('user_signed_up');
         setSuccess(true);
@@ -89,7 +105,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
     const { error } = await supabase.auth.resend({
       type: 'signup',
       email,
-      options: { emailRedirectTo: getAuthCallbackUrl() },
+      options: { emailRedirectTo: getAuthCallbackUrl(), captchaToken },
     });
     setResendStatus(error ? 'error' : 'sent');
   };
@@ -234,10 +250,16 @@ export default function AuthPage({ initialMode = 'signup' }) {
                   </div>
                 )}
 
+                <Turnstile
+                  siteKey={TURNSTILE_SITE_KEY}
+                  onToken={setCaptchaToken}
+                  resetSignal={captchaNonce}
+                />
+
                 <button
                   type="submit"
                   className="auth-cta"
-                  disabled={loading}
+                  disabled={loading || !captchaReady}
                   aria-busy={loading}
                   aria-label={loading ? `${ctaLabels[mode]} in progress` : ctaLabels[mode]}
                 >
