@@ -221,10 +221,7 @@ const styles = `
   }
   .pp-name { margin: 0; font-family: var(--font-serif); font-size: 1.9rem; font-weight: 500; letter-spacing: -0.03em; line-height: 1.05; word-break: break-word; }
   .pp-handle { margin: 0.2rem 0 0; font-size: 0.9rem; color: var(--text-muted); }
-  .pp-supporter {
-    display: inline-flex; align-items: center; gap: 0.3rem; margin-top: 0.4rem;
-    font-size: 0.72rem; font-weight: 600; letter-spacing: 0.04em; color: var(--accent);
-  }
+  .pp-verified { width: 1.4rem; height: 1.4rem; margin-left: 0.4rem; vertical-align: -0.22rem; flex-shrink: 0; }
 
   .pp-stats { display: flex; gap: 1.6rem; margin: 1.6rem 0 0; flex-wrap: wrap; }
   .pp-stat-num { font-family: var(--font-serif); font-size: 1.5rem; font-weight: 500; color: var(--text-primary); line-height: 1; }
@@ -392,17 +389,16 @@ export default function PublicProfilePage() {
                     ? <img className="pp-avatar" src={profile.avatar_url} alt="" />
                     : <div className="pp-avatar">{(profile.display_name || profile.username || '?').charAt(0).toUpperCase()}</div>}
                   <div style={{ minWidth: 0 }}>
-                    <h1 id="public-profile-title" className="pp-name">{profile.display_name || profile.username}</h1>
-                    <p className="pp-handle">@{profile.username}</p>
-                    {profile.is_supporter && (
-                      <span className="pp-supporter">
-                        <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
-                          <circle cx="12" cy="12" r="10" fill="currentColor"/>
-                          <path d="M7.5 12.5l3 3 6-6.5" fill="none" stroke="var(--surface)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <h1 id="public-profile-title" className="pp-name">
+                      {profile.display_name || profile.username}
+                      {profile.is_supporter && (
+                        <svg className="pp-verified" viewBox="0 0 24 24" aria-label="Verified">
+                          <circle cx="12" cy="12" r="10" fill="#1d9bf0"/>
+                          <path d="M7.5 12.5l3 3 6-6.5" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/>
                         </svg>
-                        Verified
-                      </span>
-                    )}
+                      )}
+                    </h1>
+                    <p className="pp-handle">@{profile.username}</p>
                   </div>
                 </div>
 
