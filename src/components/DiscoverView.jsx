@@ -9,6 +9,7 @@ import EpgView from './EpgView.jsx';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import GroupedFilterMenu from './GroupedFilterMenu.jsx';
 import { getButtonLikeProps } from '../utils/interactive.js';
+import { useShareTitle } from '../hooks/useShareTitle.js';
 
 const ALL_TYPES = ['tv', 'cinema', 'movie'];
 
@@ -68,6 +69,30 @@ function SaveBtn({ item, watchlist }) {
   );
 }
 
+/* ── Poster-card quick share (desktop hover) ── */
+function ShareBtn({ item }) {
+  const id    = item.id || item.tmdb_id;
+  const type  = item.media_type || 'movie';
+  const title = item.title || item.name;
+  const { shareTitle, copied } = useShareTitle();
+  return (
+    <button
+      className={`card-share-btn${copied ? ' copied' : ''}`}
+      onClick={e => { e.stopPropagation(); shareTitle({ tmdbId: id, mediaType: type, title, source: 'discover_card' }); }}
+      aria-label={copied ? 'Link copied' : `Share ${title}`}
+    >
+      {copied ? (
+        <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+      ) : (
+        <svg viewBox="0 0 24 24">
+          <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+        </svg>
+      )}
+    </button>
+  );
+}
+
 /* ── Type chip ── */
 function TypeChip({ item }) {
   if (item.media_type === 'tv') return <span className="chip chip-episode">TV</span>;
@@ -94,6 +119,7 @@ function RankedCard({ item, rank, showRank = true, openPanel, watchlist }) {
         }
         <div className="card-chip-overlay"><TypeChip item={item} /></div>
         <SaveBtn item={item} watchlist={watchlist} />
+        <ShareBtn item={item} />
         {showRank && <span className="discover-rank-badge">{rank}</span>}
       </div>
       <div className="media-card-title">{title}</div>
@@ -273,6 +299,7 @@ function PlatformSection({ platform, openPanel, watchlist }) {
                         : <div className="media-card-img-placeholder" />
                       }
                       <SaveBtn item={item} watchlist={watchlist} />
+                      <ShareBtn item={item} />
                       <span className="discover-rank-badge">{item._rank ?? i + 1}</span>
                     </div>
                     <div className="media-card-title">{item.title || item.name}</div>
@@ -298,6 +325,7 @@ function PlatformSection({ platform, openPanel, watchlist }) {
                         : <div className="media-card-img-placeholder" />
                       }
                       <SaveBtn item={item} watchlist={watchlist} />
+                      <ShareBtn item={item} />
                       <span className="discover-rank-badge">{item._rank ?? i + 1}</span>
                     </div>
                     <div className="media-card-title">{item.title || item.name}</div>

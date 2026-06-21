@@ -712,6 +712,41 @@ svg { stroke-width: 1.5; }
   stroke: white;
 }
 
+/* Poster-card quick share — desktop hover only (mobile uses the panel's Share) */
+.card-share-btn {
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s ease, color 0.15s ease;
+  padding: 0;
+}
+.card-share-btn svg {
+  width: 13px;
+  height: 13px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2.5;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.65));
+}
+.media-card:hover .card-share-btn,
+.card-share-btn:focus-visible { opacity: 1; }
+.card-share-btn.copied { opacity: 1; color: var(--accent); }
+@media (hover: none) {
+  .card-share-btn { display: none; }
+}
+
 .media-card-title {
   font-size: 0.78rem;
   font-weight: 600;

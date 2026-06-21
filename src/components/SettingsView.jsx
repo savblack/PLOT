@@ -8,6 +8,7 @@ import { edgeFunctionUrl } from '../api/functions.js';
 import { useMediaSync } from '../hooks/useMediaSync.js';
 import { useTraktSync } from '../hooks/useTraktSync.js';
 import { useCalendar } from '../hooks/useCalendar.js';
+import { useShare } from '../hooks/useShare.js';
 import { deleteAccountAndSignOut } from '../utils/deleteAccount.js';
 import { fetchUserDataExport, downloadDataExport } from '../utils/exportData.js';
 import { buildFeedbackAttachmentPath } from '../utils/feedback.js';
@@ -685,7 +686,6 @@ export default function SettingsView() {
   const [localCalToken,       setLocalCalToken]       = useState(null);
   const [usernameDraft,       setUsernameDraft]       = useState(null);
   const [usernameStatus,      setUsernameStatus]      = useState(null); // null|checking|available|taken|invalid|saving|saved|error
-  const [profileUrlCopied,    setProfileUrlCopied]    = useState(false);
   const [actionError,         setActionError]         = useState(null);
   const [confirmModal,        setConfirmModal]        = useState(null); // { title, message, confirmLabel, danger, onConfirm }
 
@@ -694,6 +694,8 @@ export default function SettingsView() {
   // Use optimistic local value so the URL appears immediately after generation
   const calendarToken = localCalToken ?? profile?.calendar_token ?? null;
   const calFeedUrl = calendarToken ? edgeFunctionUrl('calendar-feed', { token: calendarToken }) : null;
+
+  const { share: shareProfileLink, copied: profileUrlCopied } = useShare();
 
   const username      = profile?.username || '';
   const isPublic      = !!profile?.is_public;
@@ -1001,11 +1003,15 @@ export default function SettingsView() {
     refreshProfile();
   };
 
-  const handleCopyProfileUrl = async () => {
+  const handleShareProfile = () => {
     if (!profileUrl) return;
-    await navigator.clipboard.writeText(profileUrl);
-    setProfileUrlCopied(true);
-    setTimeout(() => setProfileUrlCopied(false), 2000);
+    // Native share sheet where available, clipboard fallback otherwise.
+    return shareProfileLink({
+      url: profileUrl,
+      title: username ? `@${username} on PLOT` : 'My PLOT profile',
+      text: 'My film & TV profile on PLOT',
+      event: 'profile_shared',
+    });
   };
 
   return (
@@ -1094,7 +1100,6 @@ export default function SettingsView() {
             <div style={{ flex: 1, minWidth: 0 }}>
               <div className="settings-row-label">Username</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.35rem' }}>
-                <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>/u/</span>
                 <input
                   type="text"
                   value={usernameValue}
@@ -1154,8 +1159,8 @@ export default function SettingsView() {
               </div>
             </div>
             <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
-              <SettingsTextAction onClick={handleCopyProfileUrl}>
-                {profileUrlCopied ? 'Copied!' : 'Copy link'}
+              <SettingsTextAction onClick={handleShareProfile}>
+                {profileUrlCopied ? 'Copied!' : 'Share'}
               </SettingsTextAction>
               <a className="settings-text-action" href={profileUrl} target="_blank" rel="noreferrer">
                 <span>View</span><span aria-hidden="true">›</span>

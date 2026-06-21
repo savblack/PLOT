@@ -1,51 +1,30 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { usePostHog } from '@posthog/react';
-import { buildTitleShareUrl, shareUrl } from '../utils/share.js';
-
-const COPIED_RESET_MS = 2000;
+import { useCallback } from 'react';
+import { useShare } from './useShare.js';
+import { buildTitleShareUrl } from '../utils/share.js';
 
 /**
- * Share a title (movie or show) from any surface.
+ * Share a title (movie or show) from any surface. Thin wrapper over useShare
+ * that builds the canonical /save deep link and tags a `title_shared` event.
  *
  * Returns { shareTitle, copied }:
  *  - shareTitle({ tmdbId, mediaType, title, source }) opens the native share
- *    sheet or copies the link, and fires a `title_shared` analytics event.
- *  - copied flips true for a couple of seconds after a clipboard fallback, so
- *    the caller can show a transient "Copied!" state.
+ *    sheet or copies the link.
+ *  - copied flips true briefly after a clipboard fallback (transient "Copied!").
  */
 export function useShareTitle() {
-  const posthog = usePostHog();
-  const [copied, setCopied] = useState(false);
-  const timer = useRef(null);
+  const { share, copied } = useShare();
 
-  useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
-
-  const shareTitle = useCallback(async ({ tmdbId, mediaType, title, source = 'share' } = {}) => {
+  const shareTitle = useCallback(({ tmdbId, mediaType, title, source = 'share' } = {}) => {
     const url = buildTitleShareUrl({ tmdbId, mediaType, source });
-    if (!url) return { ok: false, method: 'unavailable' };
-
-    const result = await shareUrl({
+    if (!url) return Promise.resolve({ ok: false, method: 'unavailable' });
+    return share({
       url,
       title: title || undefined,
       text: title ? `${title} — found on PLOT` : undefined,
+      event: 'title_shared',
+      eventProps: { tmdb_id: Number(tmdbId), media_type: mediaType, source },
     });
-
-    if (result.ok) {
-      posthog?.capture('title_shared', {
-        tmdb_id: Number(tmdbId),
-        media_type: mediaType,
-        method: result.method,
-        source,
-      });
-      if (result.method === 'copy') {
-        setCopied(true);
-        if (timer.current) clearTimeout(timer.current);
-        timer.current = setTimeout(() => setCopied(false), COPIED_RESET_MS);
-      }
-    }
-
-    return result;
-  }, [posthog]);
+  }, [share]);
 
   return { shareTitle, copied };
 }
