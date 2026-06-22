@@ -11,6 +11,7 @@ import { mediaIdentityRow, tmdbIdFromItem } from './media.js';
  *   createList: (name: string) => Promise<any>;
  *   deleteList: (listId: string) => Promise<any>;
  *   renameList: (listId: string, name: string) => Promise<any>;
+ *   setListPublic: (listId: string, isPublic: boolean) => Promise<any>;
  *   addItem: (listId: string, item: any) => Promise<any>;
  *   removeItem: (listId: string, tmdbId: number) => Promise<any>;
  *   isInList: (listId: string, tmdbId: number) => boolean;
@@ -80,6 +81,23 @@ export function useCustomLists(userId) {
     return data;
   }, [userId]);
 
+  const setListPublic = useCallback(async (listId, isPublic) => {
+    if (!userId) return null;
+    const { data, error } = await supabase
+      .from('user_custom_lists')
+      .update({ is_public: !!isPublic })
+      .eq('id', listId)
+      .eq('user_id', userId)
+      .select()
+      .single();
+    if (error) {
+      console.error('Failed to update custom list visibility', error);
+      return null;
+    }
+    if (data) setLists(prev => prev.map(l => l.id === listId ? { ...l, is_public: data.is_public } : l));
+    return data;
+  }, [userId]);
+
   const addItem = useCallback(async (listId, item) => {
     if (!userId) return null;
     const tmdbId = tmdbIdFromItem(item);
@@ -134,5 +152,5 @@ export function useCustomLists(userId) {
     return list?.items?.some(i => i.tmdb_id === Number(tmdbId)) ?? false;
   }, [lists]);
 
-  return { lists, loading, createList, deleteList, renameList, addItem, removeItem, isInList };
+  return { lists, loading, createList, deleteList, renameList, setListPublic, addItem, removeItem, isInList };
 }

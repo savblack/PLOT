@@ -64,6 +64,48 @@ async function loadProfile(handle) {
   return { ...profile, watchCount, reviews, followers, avgRating, backdrop };
 }
 
+async function loadList(id) {
+  const h2 = { apikey: ANON_KEY, authorization: `Bearer ${ANON_KEY}` };
+  const lRes = await fetch(`${SUPABASE_URL}/rest/v1/user_custom_lists?id=eq.${encodeURIComponent(id)}&is_public=eq.true&select=name,user_id&limit=1`, { headers: h2 });
+  const list = (await lRes.json())?.[0];
+  if (!list) return null;
+  const [iRes, oRes] = await Promise.all([
+    fetch(`${SUPABASE_URL}/rest/v1/user_custom_list_items?list_id=eq.${encodeURIComponent(id)}&select=poster_path&order=added_at.asc&limit=5`, { headers: h2 }),
+    fetch(`${SUPABASE_URL}/rest/v1/public_profiles?id=eq.${encodeURIComponent(list.user_id)}&select=username&limit=1`, { headers: h2 }),
+  ]);
+  const items = await iRes.json().catch(() => []);
+  const owner = (await oRes.json().catch(() => []))?.[0] || null;
+  return {
+    name: list.name,
+    owner: owner ? owner.username : null,
+    posters: (Array.isArray(items) ? items : []).map((i) => TMDB_IMG(i.poster_path, 'w185')).filter(Boolean),
+  };
+}
+
+function listCard(list, fonts) {
+  const opts = { width: 1200, height: 630, fonts, headers: { 'cache-control': 'public, max-age=300, s-maxage=300' } };
+  if (!list) {
+    return new ImageResponse(
+      h('div', { style: { width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: BG, color: '#fafafa', fontFamily: 'Instrument Serif' } },
+        h('div', { style: { display: 'flex', fontSize: 120, letterSpacing: -3 } }, 'PLOT'),
+        h('div', { style: { display: 'flex', fontSize: 36, color: '#9a9aa2', marginTop: 10 } }, 'A list on PLOT')),
+      opts);
+  }
+  const n = (list.name || 'A list').length;
+  const nameSize = n <= 18 ? 96 : n <= 30 ? 76 : 60;
+  const el = h('div', { style: { width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', position: 'relative', background: BG, color: '#e8e8ec', padding: 70, fontFamily: 'Instrument Serif' } },
+    h('div', { style: { display: 'flex', position: 'absolute', top: 56, right: 70, fontSize: 58, color: '#fafafa', letterSpacing: -2 } }, 'PLOT'),
+    h('div', { style: { display: 'flex', fontFamily: 'Manrope', fontWeight: 500, fontSize: 28, color: ACCENT, letterSpacing: 4, textTransform: 'uppercase' } }, 'A list on PLOT'),
+    h('div', { style: { display: 'flex', fontSize: nameSize, lineHeight: 1, color: '#fff', letterSpacing: -1, marginTop: 18, maxWidth: 1010 } }, list.name),
+    list.owner ? h('div', { style: { display: 'flex', fontFamily: 'Manrope', fontWeight: 400, fontSize: 34, color: '#9a9aa2', marginTop: 16 } }, '@' + list.owner) : null,
+    list.posters.length
+      ? h('div', { style: { display: 'flex', gap: 18, marginTop: 48 } },
+          ...list.posters.map((src, i) => h('img', { key: i, src, width: 150, height: 225, style: { borderRadius: 10, objectFit: 'cover', boxShadow: '0 12px 30px rgba(0,0,0,0.6)' } })))
+      : null,
+  );
+  return new ImageResponse(el, opts);
+}
+
 async function loadFont(host, file) {
   try {
     const r = await fetch(`https://${host}/fonts/${file}`);
@@ -119,6 +161,15 @@ function titleCard(t, fonts) {
 
 export default async function handler(req) {
   const { searchParams } = new URL(req.url);
+
+  // List card — /api/og?list=<uuid>
+  const listId = searchParams.get('list');
+  if (listId) {
+    let list = null;
+    try { list = await loadList(listId); } catch { /* branded fallback */ }
+    const fonts = await loadFonts(req);
+    return listCard(list, fonts);
+  }
 
   // Title card — /api/og?type=movie&id=123
   const id = searchParams.get('id');

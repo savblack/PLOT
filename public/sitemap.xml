@@ -6,4 +6,7 @@
   <sitemap>
     <loc>https://app.theplot.tv/sitemap-profiles.xml</loc>
   </sitemap>
+  <sitemap>
+    <loc>https://app.theplot.tv/sitemap-lists.xml</loc>
+  </sitemap>
 </sitemapindex>

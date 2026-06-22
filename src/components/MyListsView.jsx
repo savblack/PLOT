@@ -10,6 +10,8 @@ import LoadingSpinner from './LoadingSpinner.jsx';
 import GroupedFilterMenu from './GroupedFilterMenu.jsx';
 import PlotLoader from './PlotLoader.jsx';
 import { getButtonLikeProps } from '../utils/interactive.js';
+import { useShare } from '../hooks/useShare.js';
+import { EVENTS } from '../lib/analytics.js';
 
 /* ── Heart icon ── */
 function HeartIcon({ filled }) {
@@ -636,7 +638,16 @@ function CreateListModal({ lists, onConfirm, onClose }) {
 /* ── Custom lists section ── */
 function CustomListsSection({ customLists: clHook, filterItems, hideHeader }) {
   const { openPanel } = useApp();
-  const { lists, createList, deleteList, renameList, addItem, removeItem } = clHook;
+  const { lists, createList, deleteList, renameList, setListPublic, addItem, removeItem } = clHook;
+  const { share } = useShare();
+
+  const shareList = useCallback((list) => share({
+    url: `${window.location.origin}/list/${list.id}`,
+    title: `${list.name} · PLOT`,
+    text: `My list "${list.name}" on PLOT`,
+    event: EVENTS.LIST_SHARED,
+    eventProps: { list_id: list.id },
+  }), [share]);
   const [openItems, setOpenItems] = useState({});
   const [creatingList, setCreatingList] = useState(false);
   const [renamingId,   setRenamingId]   = useState(null);
@@ -727,6 +738,11 @@ function CustomListsSection({ customLists: clHook, filterItems, hideHeader }) {
               <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
                 {(list.items || []).length}
               </span>
+              {list.is_public && (
+                <span style={{ fontSize: '0.6rem', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--accent)', border: '1px solid color-mix(in srgb, var(--accent) 40%, transparent)', borderRadius: 'var(--radius-pill)', padding: '0.1rem 0.4rem' }}>
+                  Public
+                </span>
+              )}
             </button>
 
             <div style={{ position: 'relative' }}>
@@ -760,6 +776,25 @@ function CustomListsSection({ customLists: clHook, filterItems, hideHeader }) {
                     >
                       Rename
                     </button>
+                    <button
+                      style={{ display: 'block', width: '100%', padding: '0.6rem 0.8rem', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', fontSize: '0.8rem', color: 'var(--text-primary)' }}
+                      onClick={async () => {
+                        await setListPublic(list.id, !list.is_public);
+                        setMenuOpen(null);
+                      }}
+                      aria-label={list.is_public ? `Make ${list.name} private` : `Make ${list.name} public`}
+                    >
+                      {list.is_public ? 'Make private' : 'Make public'}
+                    </button>
+                    {list.is_public && (
+                      <button
+                        style={{ display: 'block', width: '100%', padding: '0.6rem 0.8rem', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', fontSize: '0.8rem', color: 'var(--text-primary)' }}
+                        onClick={() => { shareList(list); setMenuOpen(null); }}
+                        aria-label={`Share ${list.name}`}
+                      >
+                        Share link
+                      </button>
+                    )}
                     <button
                       style={{ display: 'block', width: '100%', padding: '0.6rem 0.8rem', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', fontSize: '0.8rem', color: '#ef4444' }}
                       onClick={async () => {

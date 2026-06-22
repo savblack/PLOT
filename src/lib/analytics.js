@@ -23,6 +23,7 @@ export const EVENTS = Object.freeze({
   ONBOARDING_COMPLETED: 'onboarding_completed',
   ACTIVATED: 'activated',
   TITLE_SHARED: 'title_shared',
+  LIST_SHARED: 'list_shared',
 });
 
 export function track(event, props) {
