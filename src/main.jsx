@@ -1,12 +1,23 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { RouterProvider } from 'react-router-dom';
+import { configure } from './core/config.js';
 import router from './router.jsx';
 import './index.css';
 import posthog from 'posthog-js';
 import { PostHogProvider } from '@posthog/react';
 import { Analytics } from '@vercel/analytics/react';
 import { captureAttribution } from './utils/attribution.js';
+
+// Inject web env into the shared core before anything renders or fetches.
+// Core modules read these via getConfig() — never import.meta.env directly.
+configure({
+  supabaseUrl: import.meta.env.VITE_SUPABASE_URL,
+  supabaseAnonKey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+  tmdbProxyUrl: import.meta.env.VITE_TMDB_PROXY_URL,
+  traktClientId: import.meta.env.VITE_TRAKT_CLIENT_ID,
+  isDev: import.meta.env.DEV,
+});
 
 posthog.init(import.meta.env.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN, {
   api_host: import.meta.env.VITE_PUBLIC_POSTHOG_HOST,
