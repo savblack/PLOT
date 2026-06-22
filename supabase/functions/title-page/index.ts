@@ -80,8 +80,8 @@ h1.title{font-family:var(--serif);font-size:clamp(2.2rem,5vw,3.4rem);font-weight
 .meta .dot{margin:0 .5em;color:var(--faint);}
 .genres{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:18px;}
 .genre{font-size:.72rem;letter-spacing:.04em;text-transform:uppercase;color:var(--mut);border:1px solid var(--hair);border-radius:999px;padding:.25rem .7rem;}
-.cta{display:inline-block;background:var(--pink);color:#fff;text-decoration:none;font-weight:600;font-size:.92rem;padding:.7rem 1.3rem;border-radius:999px;transition:transform .15s var(--ease),opacity .15s;}
-.cta:hover{transform:translateY(-1px);opacity:.95;}
+.cta{display:inline-block;background:transparent;color:var(--ink);border:1.5px solid var(--ink);text-decoration:none;font-weight:600;font-size:.92rem;padding:.68rem 1.3rem;border-radius:999px;transition:background .15s var(--ease),color .15s var(--ease);}
+.cta:hover{background:var(--ink);color:#fff;}
 .section{margin-top:44px;}
 .section h2{font-family:var(--serif);font-size:1.6rem;font-weight:400;margin-bottom:16px;letter-spacing:-.01em;}
 .overview{font-size:1.05rem;color:#2a2a2e;max-width:64ch;}
@@ -355,7 +355,7 @@ ${backdrop ? `<div class="hero"><img src="${esc(backdrop)}" alt="" fetchpriority
 </div>
 
 <div class="section">
-  <h2>Where to watch in ${esc(regionName(region))}</h2>
+  <h2>Where to watch</h2>
   <div class="watch">${watchHtml}</div>
   <p class="disclaimer">Availability from JustWatch via TMDB. Varies by region and changes over time.</p>
 </div>
