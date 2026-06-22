@@ -356,13 +356,13 @@ ${backdrop ? `<div class="hero"><img src="${esc(backdrop)}" alt="" fetchpriority
 
 ${overview ? `<div class="section"><h2>${isMovie ? 'Synopsis' : 'About'}</h2><p class="overview">${esc(overview)}</p></div>` : ''}
 ${castHtml}
-${relHtml}
 
 <div class="section">
   <h2>Where to watch</h2>
   <div class="watch">${watchHtml}</div>
   <p class="disclaimer">Availability from JustWatch via TMDB. Varies by region and changes over time.</p>
 </div>
+${relHtml}
 `;
 
   return page(metaTitle, head, body);
