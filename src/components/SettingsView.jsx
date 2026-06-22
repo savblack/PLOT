@@ -1003,13 +1003,22 @@ export default function SettingsView() {
     refreshProfile();
   };
 
+  // A little personality for profile shares — one picked at random (the card
+  // already carries the avatar, stats and PLOT branding).
+  const PROFILE_SHARE_LINES = [
+    'This is where my evenings and weekends go.',
+    'Everything I love to watch, in one place.',
+    'A curated view of my screen time.',
+    "Keep up with what I'm watching, on PLOT.",
+  ];
+
   const handleShareProfile = () => {
     if (!profileUrl) return;
     // Native share sheet where available, clipboard fallback otherwise.
     return shareProfileLink({
       url: profileUrl,
       title: username ? `@${username} on PLOT` : 'My PLOT profile',
-      text: 'My film & TV profile on PLOT',
+      text: PROFILE_SHARE_LINES[Math.floor(Math.random() * PROFILE_SHARE_LINES.length)],
       event: 'profile_shared',
     });
   };
