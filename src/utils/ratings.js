@@ -1,27 +1,3 @@
-export const MAX_RATING = 10;
-export const STAR_COUNT = 5;
-
-export function normalizeRating(value) {
-  const rating = Number(value);
-  if (!Number.isFinite(rating) || rating <= 0) return 0;
-  return Math.min(MAX_RATING, Math.max(1, Math.round(rating)));
-}
-
-export function ratingToStars(value) {
-  const rating = normalizeRating(value);
-  return rating ? rating / 2 : 0;
-}
-
-export function starFillPercent(ratingValue, starIndex) {
-  const rating = normalizeRating(ratingValue);
-  const fullStep = starIndex * 2;
-  if (rating >= fullStep) return 100;
-  if (rating === fullStep - 1) return 50;
-  return 0;
-}
-
-export function ratingFromPointer(event, starIndex) {
-  const rect = event.currentTarget.getBoundingClientRect();
-  const isLeftHalf = event.clientX - rect.left < rect.width / 2;
-  return starIndex * 2 - (isLeftHalf ? 1 : 0);
-}
+// Moved to src/core/ratings.js (shared, platform-agnostic core).
+// Re-export keeps existing `../utils/ratings` import sites working.
+export * from '../core/ratings.js';

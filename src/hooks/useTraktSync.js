@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { supabase } from '../api/supabase.js';
 import { callAuthenticatedFunction } from '../api/functions.js';
 import { buildTraktAuthorizeUrl, redirectToExternal } from '../utils/redirects.js';
+import { getConfig } from '../core/config.js';
 
 async function callTraktSync(action, body = {}) {
   const { data: { session } } = await supabase.auth.getSession();
@@ -28,9 +29,9 @@ export function useTraktSync(userId) {
 
   /* ── Connect: redirect to Trakt OAuth ── */
   const connect = useCallback(() => {
-    const clientId = import.meta.env.VITE_TRAKT_CLIENT_ID;
+    const clientId = getConfig().traktClientId;
     if (!clientId) {
-      setError('Trakt client ID is not configured (VITE_TRAKT_CLIENT_ID)');
+      setError('Trakt client ID is not configured');
       return;
     }
     redirectToExternal(buildTraktAuthorizeUrl(clientId));
