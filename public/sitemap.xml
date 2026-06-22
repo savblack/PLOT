@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- app.theplot.tv sitemap index. The app's only indexable content is public
+     user profiles (/u/<username>), enumerated by the dynamic sitemap-profiles.xml.
+     Marketing pages and title pages live on theplot.tv (its own robots + sitemaps). -->
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <sitemap>
+    <loc>https://app.theplot.tv/sitemap-profiles.xml</loc>
+  </sitemap>
+</sitemapindex>
