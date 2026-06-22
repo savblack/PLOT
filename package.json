@@ -11,6 +11,8 @@
     "test:unit": "node --test tests/unit/*.test.js",
     "test:smoke": "npm run build && playwright test",
     "preview": "vite preview",
+    "mirror:core": "node scripts/mirror-core.mjs",
+    "mirror:core:check": "node scripts/mirror-core.mjs --check",
     "footer": "node scripts/build-footer.mjs",
     "footer:check": "node scripts/build-footer.mjs --check",
     "mkt:plan": "node marketing/planner/plan.mjs",
