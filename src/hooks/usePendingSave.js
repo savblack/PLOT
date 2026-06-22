@@ -1,7 +1,13 @@
 import { useEffect, useRef } from 'react';
 import { tmdb } from '../api/tmdb.js';
 import { readPendingSave, clearPendingSave } from '../utils/pendingSave.js';
+import { drainPendingSave } from '../utils/drainPendingSave.js';
 import { track, markActivated, EVENTS } from '../lib/analytics.js';
+
+// Give the watchlist + the first Discover load a beat to settle so the
+// deep-link's single detail fetch isn't competing inside the initial
+// proxy-request burst (which is what triggers the per-IP 429s).
+const PROCESS_DELAY_MS = 600;
 
 /**
  * Drains a pending "save to watchlist" intent left by the /save deep link.
@@ -12,6 +18,11 @@ import { track, markActivated, EVENTS } from '../lib/analytics.js';
  * fires a PostHog event, then opens the title so the user lands on it.
  *
  * Idempotent: saving an already-saved title is a no-op confirmation, not an error.
+ *
+ * Resilient to the tmdb-proxy's per-IP rate limit. The decision tree lives in
+ * drainPendingSave(); this hook only owns timing + the re-entrancy guard. The
+ * intent is cleared ONLY on a terminal outcome (success / already-saved /
+ * non-retryable error) — a transient 429 leaves it in place for the next load.
  *
  * @param {object}   args
  * @param {object}   args.user        Supabase auth user (or null)
@@ -33,61 +44,49 @@ export function usePendingSave({ user, watchlist, openPanel, onResult }) {
     if (!intent) return;
 
     processing.current = true;
-    // Clear up front so a transient failure or re-render can't double-apply it.
-    clearPendingSave();
 
-    (async () => {
-      const { tmdb_id, media_type, source } = intent;
-      try {
-        const alreadySaved = isInList(tmdb_id);
-
-        // Resolve the full TMDB record at runtime (id came from the link, never guessed).
-        const details = alreadySaved
-          ? null
-          : media_type === 'tv'
-            ? await tmdb.getTVDetails(tmdb_id)
-            : await tmdb.getMovieDetails(tmdb_id);
-
-        let added = false;
-        if (!alreadySaved && details?.id) {
-          const item = {
-            ...details,
-            media_type,
-            // Detail responses carry `genres` objects; the add path wants `genre_ids`.
-            genre_ids: Array.isArray(details.genres) ? details.genres.map(g => g.id) : [],
-          };
-          added = !!(await addToList(item));
+    // Defer slightly so the deep-link detail fetch doesn't race the initial
+    // Discover burst.
+    let cancelled = false;
+    let started = false;
+    const timer = setTimeout(() => {
+      started = true;
+      (async () => {
+        try {
+          const { terminal } = await drainPendingSave(
+            { intent },
+            {
+              getDetails: tmdb.getDetails,
+              isInList,
+              addToList,
+              // Side-effects are no-ops once the effect has torn down.
+              openPanel: (...a) => { if (!cancelled) openPanel(...a); },
+              track,
+              markActivated,
+              EVENTS,
+              onResult: (...a) => { if (!cancelled) onResult?.(...a); },
+            },
+          );
+          // Only drop the intent on a terminal outcome; a transient failure is
+          // preserved for the next load to retry.
+          if (terminal) clearPendingSave();
+        } catch (e) {
+          // Unexpected throw — keep the intent so a reload can retry.
+          console.error('[usePendingSave] failed to complete pending save:', e);
+        } finally {
+          processing.current = false;
         }
+      })();
+    }, PROCESS_DELAY_MS);
 
-        const title = details?.title || details?.name || '';
-        const ok = alreadySaved || added || isInList(tmdb_id);
-
-        if (ok) {
-          track(EVENTS.WATCHLIST_SAVED, {
-            tmdb_id,
-            media_type,
-            source: source || 'deep_link',
-            already_saved: alreadySaved,
-          });
-          // A genuinely new save is an activation signal (first-of wins).
-          if (!alreadySaved) markActivated('first_save', { source: source || 'deep_link' });
-          openPanel(tmdb_id, media_type);
-          onResult?.({
-            status: 'success',
-            title,
-            message: alreadySaved
-              ? `${title || 'This title'} is already on your watchlist`
-              : `Saved${title ? ` ${title}` : ''} to your watchlist`,
-          });
-        } else {
-          onResult?.({ status: 'error', message: "Couldn't save that title. Please try again." });
-        }
-      } catch (e) {
-        console.error('[usePendingSave] failed to complete pending save:', e);
-        onResult?.({ status: 'error', message: "Couldn't save that title. Please try again." });
-      } finally {
-        processing.current = false;
-      }
-    })();
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+      // If we tore down before the deferred run even started, release the guard
+      // so a later mount can pick the (still-stored) intent back up. If the run
+      // already started, leave the guard alone — its own finally{} clears it,
+      // preserving the "can't double-apply" invariant.
+      if (!started) processing.current = false;
+    };
   }, [user?.id, loading, addToList, isInList, openPanel, onResult]);
 }

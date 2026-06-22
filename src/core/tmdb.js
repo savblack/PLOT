@@ -8,7 +8,24 @@ export const getTmdbRegion = () => userRegion;
 const RETRY_STATUSES = new Set([429, 500, 502, 503, 504]);
 const RETRY_DELAYS   = [400, 1200]; // ms — 2 retries with backoff
 
-const fetchFromTMDB = async (endpoint, params = {}) => {
+const sleep = (ms) => new Promise(res => setTimeout(res, ms));
+
+/**
+ * Low-level proxy fetch that surfaces *why* it failed instead of collapsing
+ * everything to null. Callers that need to tell "rate-limited / transient"
+ * apart from "this id doesn't exist" use this; the convenience wrappers below
+ * keep the historic null-on-anything behaviour.
+ *
+ * @param {string} endpoint
+ * @param {object} [params]
+ * @param {object} [opts]
+ * @param {number[]} [opts.retryDelays]  Backoff schedule in ms (length = retry count).
+ * @returns {Promise<{ ok: boolean, data: any, status: number|null, retryable: boolean }>}
+ *   ok=true → data is the parsed JSON.
+ *   ok=false + retryable=true  → transient (429 / 5xx / network) after exhausting retries.
+ *   ok=false + retryable=false → terminal (e.g. 404 not found, bad id, misconfig).
+ */
+const fetchFromTMDBResolved = async (endpoint, params = {}, { retryDelays = RETRY_DELAYS } = {}) => {
   const { tmdbProxyUrl: PROXY_URL, supabaseAnonKey: SUPABASE_ANON_KEY } = getConfig();
   const queryParams = new URLSearchParams({
     path: endpoint.replace(/^\//, ''),
@@ -19,7 +36,7 @@ const fetchFromTMDB = async (endpoint, params = {}) => {
 
   if (!PROXY_URL) {
     console.error('TMDB Fetch Error: tmdbProxyUrl is not configured');
-    return null;
+    return { ok: false, data: null, status: null, retryable: false };
   }
 
   const url = `${PROXY_URL}?${queryParams}`;
@@ -28,29 +45,39 @@ const fetchFromTMDB = async (endpoint, params = {}) => {
     'apikey': SUPABASE_ANON_KEY,
   };
 
-  for (let attempt = 0; attempt <= RETRY_DELAYS.length; attempt++) {
+  for (let attempt = 0; attempt <= retryDelays.length; attempt++) {
     try {
       const response = await fetch(url, { headers });
       if (!response.ok) {
-        if (RETRY_STATUSES.has(response.status) && attempt < RETRY_DELAYS.length) {
-          await new Promise(res => setTimeout(res, RETRY_DELAYS[attempt]));
+        const retryable = RETRY_STATUSES.has(response.status);
+        if (retryable && attempt < retryDelays.length) {
+          await sleep(retryDelays[attempt]);
           continue;
         }
         console.error(`TMDB Proxy Error: ${response.status} ${endpoint}`);
-        return null;
+        return { ok: false, data: null, status: response.status, retryable };
       }
-      return await response.json();
+      return { ok: true, data: await response.json(), status: response.status, retryable: false };
     } catch (error) {
-      if (attempt < RETRY_DELAYS.length) {
-        await new Promise(res => setTimeout(res, RETRY_DELAYS[attempt]));
+      // Network/abort errors are transient — retry, then report as retryable.
+      if (attempt < retryDelays.length) {
+        await sleep(retryDelays[attempt]);
         continue;
       }
       console.error('TMDB Fetch Error:', error);
-      return null;
+      return { ok: false, data: null, status: null, retryable: true };
     }
   }
-  return null;
+  return { ok: false, data: null, status: null, retryable: true };
 };
+
+const fetchFromTMDB = async (endpoint, params = {}) => {
+  const { data } = await fetchFromTMDBResolved(endpoint, params);
+  return data;
+};
+
+// Exported so other proxy reads can opt into retryable/terminal disambiguation.
+export { fetchFromTMDBResolved };
 
 export const tmdb = {
   /* ── Search ── */
@@ -74,6 +101,20 @@ export const tmdb = {
     fetchFromTMDB(`/movie/${id}`, { append_to_response: 'watch/providers,recommendations,videos' }),
   getTVDetails: (id) =>
     fetchFromTMDB(`/tv/${id}`, { append_to_response: 'watch/providers,recommendations,videos' }),
+
+  /**
+   * Resolve a movie/TV detail record, surfacing transient vs. terminal failure
+   * so callers (e.g. the /save deep-link processor) can retry on a rate-limit
+   * burst instead of hard-failing on the very first 429.
+   *
+   * @param {'movie'|'tv'} mediaType
+   * @param {number|string} id
+   * @returns {Promise<{ ok: boolean, data: any, status: number|null, retryable: boolean }>}
+   */
+  getDetails: (mediaType, id) => {
+    const path = mediaType === 'tv' ? `/tv/${id}` : `/movie/${id}`;
+    return fetchFromTMDBResolved(path, { append_to_response: 'watch/providers,recommendations,videos' });
+  },
 
   /* ── Digital (streaming) release date for a movie, by region ── */
   getDigitalReleaseDate: async (movieId) => {
