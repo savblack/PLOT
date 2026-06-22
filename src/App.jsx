@@ -159,7 +159,7 @@ export default function App() {
   const loadProfile = useCallback(async (userId) => {
     const { data } = await supabase
       .from('profiles')
-      .select('id, region, timezone, onboarding_complete, guide_channels, streaming_providers, calendar_token, username, display_name, is_public, is_supporter')
+      .select('id, region, timezone, onboarding_complete, guide_channels, streaming_providers, calendar_token, username, display_name, is_public, is_supporter, avatar_url')
       .eq('id', userId)
       .maybeSingle();
     setProfile(data);

@@ -408,6 +408,259 @@ function ProviderPicker({ title, hint, region, selected, onSave, onClose, limit 
   );
 }
 
+/* ── Profile photo ── */
+const AVATAR_MAX_MB = 5;
+const AVATAR_VIEW = 288;   // crop viewport size (css px)
+const AVATAR_OUT = 512;    // exported avatar size (px)
+
+function clampNum(v, min, max) { return Math.min(max, Math.max(min, v)); }
+
+/* Crop + zoom modal — pan by dragging, zoom with the slider, exported as a square JPEG. */
+function AvatarCropModal({ src, saving, onCancel, onSave }) {
+  const imgRef = useRef(null);
+  const dragRef = useRef(null);
+  const [nat, setNat] = useState(null); // natural { w, h }
+  const [zoom, setZoom] = useState(1);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+
+  const baseScale = nat ? Math.max(AVATAR_VIEW / nat.w, AVATAR_VIEW / nat.h) : 1;
+  const scale = baseScale * zoom;
+  const dw = nat ? nat.w * scale : 0;
+  const dh = nat ? nat.h * scale : 0;
+
+  const clampOffset = (o, w, h) => ({
+    x: clampNum(o.x, AVATAR_VIEW - w, 0),
+    y: clampNum(o.y, AVATAR_VIEW - h, 0),
+  });
+
+  const onImgLoad = (e) => {
+    const w = e.target.naturalWidth, h = e.target.naturalHeight;
+    const bs = Math.max(AVATAR_VIEW / w, AVATAR_VIEW / h);
+    const ndw = w * bs, ndh = h * bs;
+    setNat({ w, h });
+    setZoom(1);
+    setOffset({ x: (AVATAR_VIEW - ndw) / 2, y: (AVATAR_VIEW - ndh) / 2 });
+  };
+
+  const handleZoom = (next) => {
+    if (!nat) { setZoom(next); return; }
+    const prev = baseScale * zoom;
+    const ns = baseScale * next;
+    const c = AVATAR_VIEW / 2;
+    const ix = (c - offset.x) / prev;
+    const iy = (c - offset.y) / prev;
+    setOffset(clampOffset({ x: c - ix * ns, y: c - iy * ns }, nat.w * ns, nat.h * ns));
+    setZoom(next);
+  };
+
+  const onPointerDown = (e) => {
+    if (saving) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    dragRef.current = { px: e.clientX, py: e.clientY, ox: offset.x, oy: offset.y };
+  };
+  const onPointerMove = (e) => {
+    if (!dragRef.current || !nat) return;
+    const nx = dragRef.current.ox + (e.clientX - dragRef.current.px);
+    const ny = dragRef.current.oy + (e.clientY - dragRef.current.py);
+    setOffset(clampOffset({ x: nx, y: ny }, dw, dh));
+  };
+  const onPointerUp = (e) => {
+    dragRef.current = null;
+    try { e.currentTarget.releasePointerCapture(e.pointerId); } catch { /* not captured */ }
+  };
+
+  const handleSave = () => {
+    if (!nat || saving || !imgRef.current) return;
+    const sx = -offset.x / scale;
+    const sy = -offset.y / scale;
+    const sSize = AVATAR_VIEW / scale;
+    const canvas = document.createElement('canvas');
+    canvas.width = AVATAR_OUT;
+    canvas.height = AVATAR_OUT;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(imgRef.current, sx, sy, sSize, sSize, 0, 0, AVATAR_OUT, AVATAR_OUT);
+    canvas.toBlob((blob) => { if (blob) onSave(blob); }, 'image/jpeg', 0.9);
+  };
+
+  return createPortal(
+    <>
+      <div className="panel-overlay" onClick={saving ? undefined : onCancel} />
+      <div
+        role="dialog"
+        aria-label="Crop your photo"
+        style={{
+          position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+          width: 'min(360px, calc(100vw - 2rem))', zIndex: 1001,
+          background: 'var(--surface)', border: '1px solid var(--border)',
+          borderRadius: 'var(--radius-lg)', padding: '1.1rem',
+          boxShadow: '0 20px 50px rgba(0,0,0,0.4)',
+        }}
+      >
+        <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.3rem', fontWeight: 500, marginBottom: '0.25rem' }}>
+          Crop photo
+        </h2>
+        <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '0.85rem' }}>
+          Drag to reposition, use the slider to zoom.
+        </p>
+
+        <div
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          style={{
+            position: 'relative', width: AVATAR_VIEW, maxWidth: '100%', height: AVATAR_VIEW,
+            margin: '0 auto', borderRadius: 'var(--radius-md)', overflow: 'hidden',
+            background: '#000', cursor: saving ? 'default' : 'grab', touchAction: 'none', userSelect: 'none',
+          }}
+        >
+          <img
+            ref={imgRef}
+            src={src}
+            alt=""
+            onLoad={onImgLoad}
+            draggable={false}
+            style={{ position: 'absolute', left: offset.x, top: offset.y, width: dw, height: dh, maxWidth: 'none', pointerEvents: 'none' }}
+          />
+          {/* Circular crop guide — dims everything outside the circle. */}
+          <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', boxShadow: '0 0 0 9999px rgba(0,0,0,0.55)', pointerEvents: 'none' }} />
+        </div>
+
+        <input
+          type="range" min="1" max="3" step="0.01" value={zoom}
+          onChange={(e) => handleZoom(parseFloat(e.target.value))}
+          disabled={saving || !nat}
+          aria-label="Zoom"
+          style={{ width: '100%', marginTop: '0.9rem', accentColor: 'var(--accent)' }}
+        />
+
+        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.9rem', justifyContent: 'flex-end' }}>
+          <button className="btn btn-ghost btn-sm" onClick={onCancel} disabled={saving}>Cancel</button>
+          <button
+            className="btn btn-primary btn-sm"
+            onClick={handleSave}
+            disabled={saving || !nat}
+            aria-busy={saving}
+          >
+            {saving ? <PlotLoader size="button" tone="dark" ariaHidden /> : 'Save photo'}
+          </button>
+        </div>
+      </div>
+    </>,
+    document.body,
+  );
+}
+
+function AvatarSetting({ user, profile, refreshProfile, onError }) {
+  const inputRef = useRef(null);
+  const [busy, setBusy] = useState(false);
+  const [cropSrc, setCropSrc] = useState(null);
+  const avatarUrl = profile?.avatar_url || null;
+  const initial = (profile?.display_name || profile?.username || user?.email || '?').trim().charAt(0).toUpperCase();
+
+  const handlePick = () => { if (!busy) inputRef.current?.click(); };
+
+  const handleFile = (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    onError(null);
+    if (!file.type.startsWith('image/')) { onError('Please choose an image file.'); return; }
+    if (file.size > AVATAR_MAX_MB * 1024 * 1024) { onError(`Profile photos must be under ${AVATAR_MAX_MB}MB.`); return; }
+    setCropSrc(URL.createObjectURL(file));
+  };
+
+  const closeCrop = () => {
+    setCropSrc((prev) => { if (prev) URL.revokeObjectURL(prev); return null; });
+  };
+
+  const handleCropped = async (blob) => {
+    setBusy(true);
+    const path = `${user.id}/avatar.jpg`;
+    const { error: upErr } = await supabase.storage
+      .from('avatars')
+      .upload(path, blob, { upsert: true, contentType: 'image/jpeg' });
+    if (upErr) { setBusy(false); onError(upErr.message || 'We could not upload your photo. Please try again.'); return; }
+
+    const { data } = supabase.storage.from('avatars').getPublicUrl(path);
+    // Cache-bust so a replaced photo at the same path refreshes immediately.
+    const publicUrl = `${data.publicUrl}?v=${Date.now()}`;
+    const { error: dbErr } = await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', user.id);
+    setBusy(false);
+    closeCrop();
+    if (dbErr) { onError(dbErr.message || 'We could not save your photo. Please try again.'); return; }
+    refreshProfile();
+  };
+
+  const handleRemove = async () => {
+    if (busy || !avatarUrl) return;
+    onError(null);
+    setBusy(true);
+    // Best-effort cleanup of any stored object for this user (extension may vary).
+    const { data: files } = await supabase.storage.from('avatars').list(user.id);
+    if (files?.length) {
+      await supabase.storage.from('avatars').remove(files.map((f) => `${user.id}/${f.name}`));
+    }
+    const { error } = await supabase.from('profiles').update({ avatar_url: null }).eq('id', user.id);
+    setBusy(false);
+    if (error) { onError(error.message || 'We could not remove your photo. Please try again.'); return; }
+    refreshProfile();
+  };
+
+  return (
+    <>
+      <div className="settings-row" style={{ cursor: 'default' }}>
+        <div className="settings-row-left">
+          <div
+            aria-hidden="true"
+            style={{
+              width: 32, height: 32, borderRadius: '50%', overflow: 'hidden',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'var(--accent-dim)', color: 'var(--accent)',
+              fontFamily: 'var(--font-serif)', fontSize: '0.85rem', fontWeight: 600,
+              flexShrink: 0,
+            }}
+          >
+            {avatarUrl
+              ? <img src={avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              : initial}
+          </div>
+          <div>
+            <div className="settings-row-label">Profile Photo</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+              {busy ? 'Saving…' : avatarUrl ? 'Shown on your public profile' : `JPG or PNG · up to ${AVATAR_MAX_MB}MB`}
+            </div>
+          </div>
+        </div>
+        <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
+          <SettingsTextAction onClick={handlePick} disabled={busy}>
+            {avatarUrl ? 'Change' : 'Add photo'}
+          </SettingsTextAction>
+          {avatarUrl && (
+            <SettingsTextAction onClick={handleRemove} disabled={busy} tone="danger">
+              Remove
+            </SettingsTextAction>
+          )}
+        </div>
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*"
+          style={{ display: 'none' }}
+          onChange={handleFile}
+        />
+      </div>
+      {cropSrc && (
+        <AvatarCropModal
+          src={cropSrc}
+          saving={busy}
+          onCancel={busy ? () => {} : closeCrop}
+          onSave={handleCropped}
+        />
+      )}
+    </>
+  );
+}
+
 /* ── Feedback panel ── */
 const FEEDBACK_TYPES = [
   {
@@ -814,20 +1067,6 @@ export default function SettingsView() {
     try { localStorage.removeItem('plot_tz_dismissed'); } catch { /* storage unavailable */ }
   };
 
-  const handleSignOut = () => {
-    showConfirm({
-      title: 'Sign out?',
-      message: `You're signed in as ${user?.email}. You can sign back in anytime.`,
-      confirmLabel: 'Sign out',
-      onConfirm: () => {
-        // The /logout page ends the session and confirms the user is signed
-        // out, rather than bouncing straight out to the marketing site.
-        navigate('/logout');
-        return true;
-      },
-    });
-  };
-
   const handleClearHistory = () => {
     showConfirm({
       title: 'Clear watch history?',
@@ -1053,25 +1292,17 @@ export default function SettingsView() {
             <span className="settings-row-label">{user?.email}</span>
           </div>
         </div>
-
-        <div
-          className="settings-row interactive-surface"
-          onClick={handleSignOut}
-          {...getButtonLikeProps({ onPress: handleSignOut, label: 'Sign out' })}
-        >
-          <div className="settings-row-left">
-            <div className="settings-row-icon">
-              <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-            </div>
-            <span className="settings-row-label">Sign out</span>
-          </div>
-          <Chevron />
-        </div>
       </div>
 
       {/* Public profile */}
       <div className="settings-group">
         <div className="settings-group-title">Public profile</div>
+        <AvatarSetting
+          user={user}
+          profile={profile}
+          refreshProfile={refreshProfile}
+          onError={setActionError}
+        />
 
         {/* Visibility */}
         <div className="settings-row" style={{ cursor: 'default' }}>
@@ -1141,12 +1372,14 @@ export default function SettingsView() {
             </div>
           </div>
           <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
-            <SettingsTextAction
-              disabled={!usernameDirty || usernameStatus === 'checking' || usernameStatus === 'saving' || usernameStatus === 'invalid' || usernameStatus === 'taken'}
-              onClick={handleSaveUsername}
-            >
-              Save
-            </SettingsTextAction>
+            {usernameDirty && (
+              <SettingsTextAction
+                disabled={usernameStatus === 'checking' || usernameStatus === 'saving' || usernameStatus === 'invalid' || usernameStatus === 'taken'}
+                onClick={handleSaveUsername}
+              >
+                Save
+              </SettingsTextAction>
+            )}
           </div>
         </div>
 
@@ -1496,13 +1729,6 @@ export default function SettingsView() {
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ width: 14, height: 14, opacity: 0.4 }}><polyline points="9 18 15 12 9 6"/></svg>
           </div>
         </div>
-        <div style={{ marginTop: '0.75rem', fontSize: '0.76rem', lineHeight: 1.45, color: 'var(--text-muted)' }}>
-          Metadata and some artwork are provided by{' '}
-          <a href="https://www.themoviedb.org" target="_blank" rel="noreferrer" style={{ color: 'inherit', textDecoration: 'underline' }}>
-            TMDB
-          </a>
-          . This product uses the TMDB API but is not endorsed or certified by TMDB.
-        </div>
       </div>
 
       {/* Danger zone */}
@@ -1563,6 +1789,11 @@ export default function SettingsView() {
           </div>
         </div>
       </div>
+
+      <p style={{ margin: '1.75rem 0 0', padding: '0 0.25rem', fontSize: '0.74rem', lineHeight: 1.5, color: 'var(--text-muted)', textAlign: 'center' }}>
+        Metadata and some artwork are provided by{' '}
+        <a href="https://www.themoviedb.org" target="_blank" rel="noreferrer" style={{ color: 'inherit', textDecoration: 'underline' }}>TMDB</a>. This product uses the TMDB API but is not endorsed or certified by TMDB.
+      </p>
 
       {/* Provider picker modal */}
       {showProviders && (

@@ -22,7 +22,7 @@ const styles = `
   .public-profile-status-kicker { margin: 0; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
   .public-profile-status-copy { margin: 0.55rem 0 0; font-size: 0.88rem; line-height: 1.65; color: var(--text-secondary); }
 
-  .public-profile-actions { display: flex; gap: 0.8rem; flex-wrap: wrap; margin-top: 1.25rem; }
+  .public-profile-actions { display: flex; justify-content: center; gap: 0.8rem; flex-wrap: wrap; margin-top: 1.25rem; }
   .public-profile-button,
   .public-profile-button-secondary {
     display: inline-flex; align-items: center; justify-content: center;
@@ -36,21 +36,31 @@ const styles = `
   .public-profile-button-secondary:hover { opacity: 0.85; transform: scale(0.99); }
   .public-profile-button:disabled { opacity: 0.55; cursor: default; transform: none; }
 
-  .pp-header { display: flex; align-items: center; gap: 1rem; padding-top: 0.5rem; }
+  .pp-header { display: flex; justify-content: center; align-items: center; gap: 1.15rem; padding-top: 1.75rem; }
   .pp-avatar {
-    width: 72px; height: 72px; border-radius: 50%; flex-shrink: 0;
+    width: 80px; height: 80px; border-radius: 50%; flex-shrink: 0;
     object-fit: cover; background: var(--surface-raised); border: 1px solid var(--border);
     display: flex; align-items: center; justify-content: center;
-    font-family: var(--font-serif); font-size: 1.8rem; color: var(--text-muted);
+    font-family: var(--font-serif); font-size: 2rem; color: var(--text-muted);
   }
-  .pp-name { margin: 0; font-family: var(--font-serif); font-size: 1.9rem; font-weight: 500; letter-spacing: -0.03em; line-height: 1.05; word-break: break-word; }
-  .pp-handle { margin: 0.2rem 0 0; font-size: 0.9rem; color: var(--text-muted); }
-  .pp-verified { width: 1.4rem; height: 1.4rem; margin-left: 0.4rem; vertical-align: -0.22rem; flex-shrink: 0; }
+  .pp-name { margin: 0; font-family: var(--font-serif); font-size: 1.95rem; font-weight: 500; letter-spacing: -0.03em; line-height: 1.05; word-break: break-word; }
+  .pp-handle { margin: 0.25rem 0 0; font-size: 0.9rem; color: var(--text-muted); }
+  .pp-verified { width: 1.35rem; height: 1.35rem; margin-left: 0.35rem; vertical-align: -0.2rem; flex-shrink: 0; }
 
-  .pp-stats { display: flex; gap: 1.6rem; margin: 1.6rem 0 0; flex-wrap: wrap; }
+  .pp-edit {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 0.4rem 1.15rem; border-radius: var(--radius-pill);
+    font-size: 0.8rem; font-weight: 600; letter-spacing: 0.01em;
+    color: var(--text-muted); background: transparent; border: 1px solid var(--border);
+    text-decoration: none; transition: color 0.15s ease, border-color 0.15s ease;
+  }
+  .pp-edit:hover { color: var(--text-secondary); border-color: var(--text-muted); }
+
+  .pp-stats { display: flex; justify-content: center; gap: 2rem; margin: 1.9rem 0 0; flex-wrap: wrap; }
+  .pp-stat { display: flex; flex-direction: column; align-items: center; text-align: center; }
   .pp-stat-num { font-family: var(--font-serif); font-size: 1.5rem; font-weight: 500; color: var(--text-primary); line-height: 1; }
-  .pp-stat-label { display: block; margin-top: 0.25rem; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
-  .pp-stat-btn { display: flex; flex-direction: column; align-items: flex-start; background: none; border: none; padding: 0; cursor: pointer; font: inherit; }
+  .pp-stat-label { display: block; margin-top: 0.3rem; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
+  .pp-stat-btn { background: none; border: none; padding: 0; cursor: pointer; font: inherit; }
   .pp-stat-btn:hover .pp-stat-num { opacity: 0.65; }
 
   .pp-section { margin-top: 2.2rem; }
@@ -167,7 +177,7 @@ export default function PublicProfilePage() {
             {/* Actions */}
             <div className="public-profile-actions">
               {isOwn ? (
-                <Link to="/settings" className="public-profile-button-secondary">Edit profile</Link>
+                <Link to="/settings" className="pp-edit">Edit profile</Link>
               ) : !viewer ? (
                 <Link to="/login" className="public-profile-button">
                   {isPrivate ? 'Sign in to request' : 'Sign in to follow'}
@@ -187,14 +197,14 @@ export default function PublicProfilePage() {
 
             {/* Stats */}
             <div className="pp-stats">
-              {!locked && <div><span className="pp-stat-num">{watchCount}</span><span className="pp-stat-label">Watched</span></div>}
+              {!locked && <div className="pp-stat"><span className="pp-stat-num">{watchCount}</span><span className="pp-stat-label">Watched</span></div>}
               {!locked && avgRating != null && (
-                <div><span className="pp-stat-num">{avgRating}</span><span className="pp-stat-label">Avg rating</span></div>
+                <div className="pp-stat"><span className="pp-stat-num">{avgRating}</span><span className="pp-stat-label">Avg rating</span></div>
               )}
-              <button type="button" className="pp-stat-btn" onClick={() => setFollowList('followers')}>
+              <button type="button" className="pp-stat pp-stat-btn" onClick={() => setFollowList('followers')}>
                 <span className="pp-stat-num">{followers}</span><span className="pp-stat-label">Followers</span>
               </button>
-              <button type="button" className="pp-stat-btn" onClick={() => setFollowList('following')}>
+              <button type="button" className="pp-stat pp-stat-btn" onClick={() => setFollowList('following')}>
                 <span className="pp-stat-num">{following}</span><span className="pp-stat-label">Following</span>
               </button>
             </div>
@@ -237,7 +247,7 @@ export default function PublicProfilePage() {
             )}
 
             {!locked && watchCount === 0 && recent.length === 0 && topMovies.length === 0 && topTv.length === 0 && favourites.length === 0 && (
-              <p className="public-profile-body" style={{ marginTop: '1.6rem' }}>
+              <p className="public-profile-body" style={{ marginTop: '1.6rem', textAlign: 'center' }}>
                 {profile.display_name || profile.username} hasn&apos;t logged anything public yet.
               </p>
             )}
