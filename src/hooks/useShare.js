@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { usePostHog } from '@posthog/react';
 import { shareUrl } from '../utils/share.js';
+import { track } from '../lib/analytics.js';
 
 const COPIED_RESET_MS = 2000;
 
@@ -17,7 +17,6 @@ const COPIED_RESET_MS = 2000;
  *    sheet is its own feedback.)
  */
 export function useShare() {
-  const posthog = usePostHog();
   const [copied, setCopied] = useState(false);
   const timer = useRef(null);
 
@@ -26,7 +25,7 @@ export function useShare() {
   const share = useCallback(async ({ url, title, text, event, eventProps } = {}) => {
     const result = await shareUrl({ url, title, text });
     if (result.ok) {
-      if (event) posthog?.capture(event, { method: result.method, ...eventProps });
+      if (event) track(event, { method: result.method, ...eventProps });
       if (result.method === 'copy') {
         setCopied(true);
         if (timer.current) clearTimeout(timer.current);
@@ -34,7 +33,7 @@ export function useShare() {
       }
     }
     return result;
-  }, [posthog]);
+  }, []);
 
   return { share, copied };
 }

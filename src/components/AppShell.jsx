@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PRIMARY_NAV_ITEMS, VIEW_TITLES } from '../navigation.js';
-import { useFollowRequests } from '../hooks/useFollowRequests.js';
+import { useNotifications } from '../hooks/useNotifications.js';
 import ConfirmModal from './ConfirmModal.jsx';
 
 /* ── SVG Icons ───────────────────────── */
@@ -38,12 +38,10 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [confirmSignOut, setConfirmSignOut] = useState(false);
 
-  // Only private-profile owners receive follow requests.
-  const isPrivate = profile?.is_public === false;
-  const { count: requestCount, refresh: refreshRequests } = useFollowRequests(isPrivate ? user?.id : null);
+  const { unread, refreshCount } = useNotifications(user?.id);
 
-  // Keep the header badge fresh as the user navigates (e.g. after approving in the inbox).
-  useEffect(() => { refreshRequests(); }, [currentView, refreshRequests]);
+  // Keep the bell badge fresh as the user navigates (e.g. after viewing the feed).
+  useEffect(() => { refreshCount(); }, [currentView, refreshCount]);
 
   useEffect(() => {
     if (!drawerOpen) return undefined;
@@ -70,7 +68,7 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
   };
 
   const pageTitle = VIEW_TITLES[currentView] ?? 'PLOT';
-  const showHomeLogo = currentView === 'home';
+  const showHomeLogo = currentView === 'home' || (currentView || '').startsWith('u/');
 
   return (
     <div className="app-shell">
@@ -103,29 +101,28 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
         )}
 
         <div className="header-end">
-          {isPrivate && (
-            <button
-              type="button"
-              className="icon-btn"
-              onClick={() => navigateTo('requests')}
-              aria-label={`Follow requests${requestCount ? ` (${requestCount} pending)` : ''}`}
-              title="Follow requests"
-              aria-current={currentView === 'requests' ? 'page' : undefined}
-              style={{ position: 'relative' }}
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-                <circle cx="9" cy="7" r="4"/>
-                <line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/>
-              </svg>
-              {requestCount > 0 && (
-                <span aria-hidden="true" style={{
-                  position: 'absolute', top: 1, right: 1, minWidth: 16, height: 16, padding: '0 4px',
-                  borderRadius: 8, background: 'var(--accent)', color: '#fff', fontSize: 10,
-                  fontWeight: 700, lineHeight: '16px', textAlign: 'center',
-                }}>{requestCount > 9 ? '9+' : requestCount}</span>
-              )}
-            </button>
+          {user && (
+          <button
+            type="button"
+            className="icon-btn"
+            onClick={() => navigateTo('notifications')}
+            aria-label={`Notifications${unread ? ` (${unread} unread)` : ''}`}
+            title="Notifications"
+            aria-current={currentView === 'notifications' ? 'page' : undefined}
+            style={{ position: 'relative' }}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: 'translateY(8%) scale(0.92)' }}>
+              <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+            {unread > 0 && (
+              <span aria-hidden="true" style={{
+                position: 'absolute', top: 1, right: 1, minWidth: 16, height: 16, padding: '0 4px',
+                borderRadius: 8, background: 'var(--accent)', color: '#fff', fontSize: 10,
+                fontWeight: 700, lineHeight: '16px', textAlign: 'center',
+              }}>{unread > 9 ? '9+' : unread}</span>
+            )}
+          </button>
           )}
           <button
             type="button"
@@ -188,6 +185,23 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
               <span className="nav-drawer-label">{label}</span>
             </button>
           ))}
+          {profile?.username && (
+            <button
+              type="button"
+              className="nav-drawer-item"
+              onClick={() => { closeDrawer(); navigate(`/u/${profile.username}`); }}
+            >
+              <span className="nav-drawer-label">Profile</span>
+            </button>
+          )}
+          <button
+            type="button"
+            className={`nav-drawer-item${currentView === 'notifications' ? ' active' : ''}`}
+            onClick={() => handleNav('notifications')}
+            aria-current={currentView === 'notifications' ? 'page' : undefined}
+          >
+            <span className="nav-drawer-label">Notifications</span>
+          </button>
         </nav>
 
         <div className="nav-drawer-footer">

@@ -11,15 +11,26 @@
 //
 // This file is intended to be shared byte-identically between both repos.
 
+/**
+ * @typedef {Object} PlotCoreConfig
+ * @property {string} supabaseUrl
+ * @property {string} supabaseAnonKey
+ * @property {string} tmdbProxyUrl
+ * @property {string} traktClientId
+ * @property {boolean} isDev
+ * @property {Record<string, any>} [supabaseClientOptions] Optional createClient()
+ *   options. Web leaves this undefined (default localStorage session); mobile
+ *   injects `{ auth: { storage: AsyncStorage, … } }` so Supabase persists the
+ *   session via AsyncStorage. This is the storage seam.
+ */
+
+/** @type {PlotCoreConfig} */
 const defaults = {
   supabaseUrl: '',
   supabaseAnonKey: '',
   tmdbProxyUrl: '',
   traktClientId: '',
   isDev: false,
-  // Optional createClient() options. Web leaves this undefined (default
-  // localStorage session). Mobile injects { auth: { storage: AsyncStorage, … } }
-  // so Supabase persists the session via AsyncStorage. This is the storage seam.
   supabaseClientOptions: undefined,
 };
 
@@ -28,15 +39,18 @@ let config = { ...defaults };
 /**
  * Merge platform config into the shared store. Call once at app startup,
  * before any core module makes a network/auth call.
- * @param {Partial<typeof defaults>} next
- * @returns {typeof defaults} the resolved config
+ * @param {Partial<PlotCoreConfig>} next
+ * @returns {PlotCoreConfig} the resolved config
  */
 export function configure(next = {}) {
   config = { ...config, ...next };
   return config;
 }
 
-/** Read the current resolved config. */
+/**
+ * Read the current resolved config.
+ * @returns {PlotCoreConfig}
+ */
 export function getConfig() {
   return config;
 }
