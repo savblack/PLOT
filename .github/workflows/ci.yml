@@ -33,6 +33,9 @@ jobs:
       - name: Check shared footer is in sync
         run: npm run footer:check
 
+      - name: Check design tokens are in sync (web ↔ core ↔ mobile)
+        run: npm run tokens:check
+
       - name: Unit tests
         run: node --test tests/unit/*.test.js
 
