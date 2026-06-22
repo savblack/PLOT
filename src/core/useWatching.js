@@ -6,6 +6,22 @@ import { baseMediaRow, tmdbIdFromItem } from './media.js';
 import { logWatchedItem } from './userMedia.js';
 import { getNextEpisodeProgress } from './watchingProgress.js';
 
+/**
+ * Currently-watching shows + episode progress for a user.
+ * @param {string|null|undefined} userId
+ * @returns {{
+ *   items: any[];
+ *   loading: boolean;
+ *   startWatching: (item: any) => Promise<any>;
+ *   markEpisodeWatched: (tmdbId: number) => Promise<any>;
+ *   stopWatching: (tmdbId: number) => Promise<any>;
+ *   setProgress: (tmdbId: number, season: number, episode: number) => Promise<any>;
+ *   fetchSeason: (tmdbId: number, seasonNum: number) => Promise<any>;
+ *   isWatching: (tmdbId: number) => boolean;
+ *   getProgress: (tmdbId: number) => any;
+ *   reload: () => Promise<void>;
+ * }}
+ */
 export function useWatching(userId) {
   const [items,   setItems]   = useState([]);
   const [loading, setLoading] = useState(true);

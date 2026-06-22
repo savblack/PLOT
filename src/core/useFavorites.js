@@ -2,6 +2,16 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from './supabase.js';
 import { mediaIdentityRow, tmdbIdFromItem } from './media.js';
 
+/**
+ * Favourited titles for a user.
+ * @param {string|null|undefined} userId
+ * @returns {{
+ *   favorites: any[];
+ *   loading: boolean;
+ *   isFavorite: (tmdbId: number) => boolean;
+ *   toggleFavorite: (item: any) => Promise<any>;
+ * }}
+ */
 export function useFavorites(userId) {
   const [favorites, setFavorites] = useState([]);
   const [loading,   setLoading]   = useState(true);

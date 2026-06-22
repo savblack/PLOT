@@ -22,6 +22,19 @@ function enqueueTraktAction(userId, integrationId, action, payload) {
     .catch(e => console.warn('[useWatchlist] trakt outbox insert failed:', e));
 }
 
+/**
+ * "My List" watchlist for a user.
+ * @param {string|null|undefined} userId
+ * @returns {{
+ *   items: any[];
+ *   loading: boolean;
+ *   isInList: (tmdbId: number) => boolean;
+ *   addToList: (item: any) => Promise<any>;
+ *   removeFromList: (tmdbId: number) => Promise<any>;
+ *   toggle: (item: any) => Promise<any>;
+ *   reload: () => Promise<void>;
+ * }}
+ */
 export function useWatchlist(userId) {
   const [listId,    setListId]    = useState(null);
   const [items,     setItems]     = useState([]);
