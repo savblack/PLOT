@@ -43,8 +43,24 @@ const generateConversation = async (supabase, post) => {
   return { ...post, copy, media: [], slug: null };
 };
 
+// Web-only long-form guide: no social cards, no publication rows. Attach the
+// slug and send it to the review desk; it appears on /whats-on once approved and
+// is never dispatched to social (publish.mjs only acts on posts with pubs).
+const generateGuide = async (supabase, post) => {
+  if (!post.copy) throw new Error('Guide has no copy — the copy worker has not run for it yet');
+  const copy = { ...post.copy };
+  const slug = postSlug(copy.page_title || 'guide', post.scheduled_for);
+  const { error } = await supabase
+    .from('marketing_posts')
+    .update({ copy, media: [], slug, status: 'needs_review', updated_at: new Date().toISOString() })
+    .eq('id', post.id);
+  if (error) throw new Error(`Guide update failed: ${error.message}`);
+  return { ...post, copy, media: [], slug };
+};
+
 const generatePost = async (supabase, post) => {
   if (post.post_type === 'question') return generateConversation(supabase, post);
+  if (post.post_type === 'guide') return generateGuide(supabase, post);
 
   const spec = POST_TYPES[post.post_type];
   if (!spec) throw new Error(`Unknown post type ${post.post_type}`);

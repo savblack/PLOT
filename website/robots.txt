@@ -3,3 +3,4 @@ Allow: /
 
 Sitemap: https://theplot.tv/sitemap.xml
 Sitemap: https://theplot.tv/sitemap-titles.xml
+Sitemap: https://theplot.tv/sitemap-articles.xml

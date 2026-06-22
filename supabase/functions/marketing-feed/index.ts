@@ -77,6 +77,7 @@ const FILTERS: { key: string | null; label: string }[] = [
   { key: 'trailer', label: 'First look' },
 ];
 
+type TmdbRef = { media_type: string; tmdb_id: number; title: string; poster_path?: string | null };
 type FeedPost = {
   slug: string;
   copy: { page_title?: string; page_body?: string[]; hero_image?: string } | null;
@@ -84,6 +85,7 @@ type FeedPost = {
   post_type: string;
   scheduled_for: string;
   status: string;
+  tmdb_refs?: TmdbRef[] | null;
 };
 
 const postTitle = (p: FeedPost) => p.copy?.page_title || TYPE_META[p.post_type]?.label || p.post_type;
@@ -526,13 +528,26 @@ Deno.serve(async (req) => {
 
   const baseQuery = () => supabase
     .from('marketing_posts')
-    .select('slug, copy, media, post_type, scheduled_for, status')
+    .select('slug, copy, media, post_type, scheduled_for, status, tmdb_refs')
     .not('slug', 'is', null)
     // The trending chart lives on its own page (/whats-on/chart), not as a
     // dated article — keep it out of every feed surface.
     .neq('post_type', 'trending')
     .in('status', VISIBLE_STATUSES)
     .lte('scheduled_for', new Date().toISOString());
+
+  // Articles sitemap: every visible /whats-on entry (proxied to theplot.tv/
+  // sitemap-articles.xml). Mirrors the title-page sitemap mode.
+  if (url.searchParams.get('sitemap') === '1') {
+    const { data: posts } = await baseQuery().order('scheduled_for', { ascending: false }).limit(5000);
+    const urls = (posts || [])
+      .map((p) => `<url><loc>${esc(`${SITE}${FEED_PATH}/${p.slug}`)}</loc><changefreq>weekly</changefreq></url>`)
+      .join('\n');
+    return new Response(
+      `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>`,
+      { headers: { 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=604800' } },
+    );
+  }
 
   // Reserved keyword: the persistent trending-chart page.
   if (slug === 'chart') return await renderChart(supabase);
@@ -659,6 +674,19 @@ ${hero ? `<meta property="og:image" content="${esc(hero)}">` : ''}
 <meta name="twitter:card" content="summary_large_image">
 <script type="application/ld+json">${jsonLd}</script>`;
 
+  // Guides (and any entry carrying tmdb_refs) get a poster grid linking each
+  // featured title to its public title page — the internal-linking payoff.
+  const refs = Array.isArray(typed.tmdb_refs) ? typed.tmdb_refs : [];
+  const titlesSection = refs.length
+    ? `<section style="margin:48px 0 0">
+        <h2 style="font-family:var(--serif);font-size:1.7rem;font-weight:400;margin:0 0 18px">Titles in this guide</h2>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:18px">${refs.map((r) => {
+          const poster = r.poster_path ? `https://image.tmdb.org/t/p/w185${esc(r.poster_path)}` : null;
+          return `<a href="${esc(titleHref(r.media_type, r.tmdb_id, r.title))}" style="text-decoration:none;color:inherit">${poster ? `<img src="${poster}" alt="${esc(r.title)}" loading="lazy" style="width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:10px;border:1px solid var(--hair);display:block">` : '<span style="display:block;width:100%;aspect-ratio:2/3;border-radius:10px;background:var(--ink)"></span>'}<span style="display:block;font-size:0.82rem;margin-top:8px;line-height:1.3">${esc(r.title)}</span></a>`;
+        }).join('')}</div>
+      </section>`
+    : '';
+
   const k = kicker(typed.post_type);
   return page(`${title} · PLOT`, head, `
     <article class="post r2">
@@ -670,6 +698,7 @@ ${hero ? `<meta property="og:image" content="${esc(hero)}">` : ''}
       <div class="post-body">
         ${body.map((p, i) => `<p${i === 0 ? ' class="lede"' : ''}>${esc(p)}</p>`).join('')}
       </div>
+      ${titlesSection}
       <aside class="endcta">
         <div class="ec-copy">
           <span class="ec-title">Watch more. Forget less.</span>

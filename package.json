@@ -17,6 +17,7 @@
     "footer:check": "node scripts/build-footer.mjs --check",
     "tokens:check": "node scripts/build-tokens.mjs --check",
     "mkt:plan": "node marketing/planner/plan.mjs",
+    "mkt:guides": "node marketing/planner/guides.mjs",
     "mkt:copy:pull": "node marketing/copy/pull.mjs",
     "mkt:copy:save": "node marketing/copy/save.mjs",
     "mkt:generate": "node marketing/generate/generate.mjs",

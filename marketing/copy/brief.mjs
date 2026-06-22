@@ -5,7 +5,7 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { COPY_FIELDS, POST_TYPE_BRIEFS } from './schema.mjs';
+import { COPY_FIELDS, POST_TYPE_BRIEFS, GUIDE_FIELDS, GUIDE_ARCHETYPE_BRIEFS } from './schema.mjs';
 
 const VOICE_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'VOICE.md');
 
@@ -48,6 +48,57 @@ strings. Must fit 280 characters.
 Write ONLY the JSON object to the output file. No markdown fences, no commentary.
 
 ## Voice guide (follow exactly — see the "Conversation posts" section)
+${await voice()}
+`;
+};
+
+// Guide posts: a web-only long-form SEO article. The titles to cover are in
+// tmdb_refs; the worker writes a listicle-style page_body about them. No social
+// copy. The picks' links to title pages are added at render time, not by the
+// worker — so the worker just names the titles in prose.
+const guideFieldTable = GUIDE_FIELDS
+  .map(([name, type, desc]) => `- \`${name}\` (${type}): ${desc}`)
+  .join('\n');
+
+export const buildGuideBrief = async (post) => {
+  const archetype = post.payload?.archetype || 'best_of';
+  const guidance = GUIDE_ARCHETYPE_BRIEFS[archetype] || GUIDE_ARCHETYPE_BRIEFS.best_of;
+  const refs = Array.isArray(post.tmdb_refs) ? post.tmdb_refs : [];
+  const titleList = refs.length
+    ? refs.map((r, i) => `${i + 1}. ${r.title} (${r.media_type === 'tv' ? 'TV' : 'film'})`).join('\n')
+    : '(none — skip and leave this post for the next run)';
+  return `# Copy job: guide (web-only long-form article for theplot.tv/whats-on)
+
+Post id: \`${post.id}\`
+Write your answer to: \`marketing/copy/jobs/${post.id}.copy.json\`
+
+## What this guide is
+${guidance}
+
+## Context (facts — do not invent platforms, genres, or titles not listed here)
+\`\`\`json
+${JSON.stringify(post.payload, null, 2)}
+\`\`\`
+
+## Titles to cover (in this order unless a better order is obvious)
+${titleList}
+
+## How to write it
+- A finished editorial guide in PLOT's voice — never narrate your sources or research.
+- Intro paragraph that frames the list, then ONE short paragraph per title above
+  (name the title, make the case, name where it streams when you know it), then a
+  one-line close. ${refs.length ? `Aim for ~${Math.min(refs.length, 12) + 2} paragraphs.` : ''}
+- Do your own light web research for current reception/context, but only feature
+  the titles listed above. Paraphrase always; never quote reviews or copy synopses.
+- No spoilers, no links (we add the title-page links), no hashtags, no dashes.
+- Put every source you consulted into \`sources\` (review-only, never shown).
+
+## Output — a single JSON object with exactly these fields
+${guideFieldTable}
+
+Write ONLY the JSON object to the output file. No markdown fences, no commentary.
+
+## Voice guide (follow exactly)
 ${await voice()}
 `;
 };

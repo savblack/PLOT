@@ -27,6 +27,10 @@
     {
       "source": "/sitemap-titles.xml",
       "destination": "/api/sitemap-titles"
+    },
+    {
+      "source": "/sitemap-articles.xml",
+      "destination": "/api/sitemap-articles"
     }
   ],
   "headers": [
