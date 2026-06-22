@@ -6,6 +6,7 @@ import './index.css';
 import posthog from 'posthog-js';
 import { PostHogProvider } from '@posthog/react';
 import { Analytics } from '@vercel/analytics/react';
+import { captureAttribution } from './utils/attribution.js';
 
 posthog.init(import.meta.env.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN, {
   api_host: import.meta.env.VITE_PUBLIC_POSTHOG_HOST,
@@ -15,6 +16,15 @@ posthog.init(import.meta.env.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN, {
   persistence: 'localStorage+cookie',
   cross_subdomain_cookie: true,
 });
+
+// Read the acquisition attribution the marketing site forwarded onto this link
+// (utm_*, click ids, referrer, src) and attach it to every event + the person,
+// so signup / activation stay traceable to their source. First-touch wins.
+const attribution = captureAttribution();
+if (Object.keys(attribution).length > 0) {
+  posthog.register(attribution);
+  posthog.setPersonProperties(undefined, attribution);
+}
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

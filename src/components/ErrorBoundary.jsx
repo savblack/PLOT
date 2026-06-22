@@ -1,5 +1,5 @@
 import { Component } from 'react';
-import posthog from 'posthog-js';
+import { captureException } from '../lib/analytics.js';
 import { HERO_POSTERS } from '../constants/heroPosters.js';
 import PlotLogo from './PlotLogo.jsx';
 
@@ -254,7 +254,7 @@ export default class ErrorBoundary extends Component {
   componentDidCatch(error, info) {
     if (isChunkError(error)) return; // already handled above
     console.error('Plot error:', error, info);
-    posthog.captureException(error, { extra: info });
+    captureException(error, { extra: info });
   }
 
   render() {

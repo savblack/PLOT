@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
-import { usePostHog } from '@posthog/react';
 import { tmdb } from '../api/tmdb.js';
 import { readPendingSave, clearPendingSave } from '../utils/pendingSave.js';
+import { track, markActivated, EVENTS } from '../lib/analytics.js';
 
 /**
  * Drains a pending "save to watchlist" intent left by the /save deep link.
@@ -20,7 +20,6 @@ import { readPendingSave, clearPendingSave } from '../utils/pendingSave.js';
  * @param {function} [args.onResult]  ({ status, message, title }) => void  (toast)
  */
 export function usePendingSave({ user, watchlist, openPanel, onResult }) {
-  const posthog = usePostHog();
   const processing = useRef(false);
 
   const { loading, addToList, isInList } = watchlist;
@@ -64,12 +63,14 @@ export function usePendingSave({ user, watchlist, openPanel, onResult }) {
         const ok = alreadySaved || added || isInList(tmdb_id);
 
         if (ok) {
-          posthog?.capture('watchlist_saved', {
+          track(EVENTS.WATCHLIST_SAVED, {
             tmdb_id,
             media_type,
             source: source || 'deep_link',
             already_saved: alreadySaved,
           });
+          // A genuinely new save is an activation signal (first-of wins).
+          if (!alreadySaved) markActivated('first_save', { source: source || 'deep_link' });
           openPanel(tmdb_id, media_type);
           onResult?.({
             status: 'success',
@@ -88,5 +89,5 @@ export function usePendingSave({ user, watchlist, openPanel, onResult }) {
         processing.current = false;
       }
     })();
-  }, [user?.id, loading, addToList, isInList, openPanel, onResult, posthog]);
+  }, [user?.id, loading, addToList, isInList, openPanel, onResult]);
 }

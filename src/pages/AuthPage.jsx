@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../api/supabase';
 import './AuthPage.css';
-import { usePostHog } from '@posthog/react';
+import { track, identifyUser, EVENTS } from '../lib/analytics.js';
 import { getAuthCallbackUrl } from '../utils/redirects.js';
 import { HERO_POSTERS } from '../constants/heroPosters.js';
 import PlotLoader from '../components/PlotLoader.jsx';
@@ -33,7 +33,6 @@ export default function AuthPage({ initialMode = 'signup' }) {
   const [captchaToken, setCaptchaToken] = useState(null);
   const [captchaNonce, setCaptchaNonce] = useState(0); // bump to force a fresh Turnstile token
   const navigate = useNavigate();
-  const posthog = usePostHog();
 
   // Turnstile tokens are single-use; clear and re-issue after every auth attempt.
   const resetCaptcha = () => { setCaptchaToken(null); setCaptchaNonce((n) => n + 1); };
@@ -60,7 +59,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
       });
       if (error) { setError(friendlyError(error.message)); setLoading(false); resetCaptcha(); }
       else {
-        posthog?.capture('password_reset_requested');
+        track(EVENTS.PASSWORD_RESET_REQUESTED);
         setSuccess(true);
       }
       return;
@@ -74,19 +73,22 @@ export default function AuthPage({ initialMode = 'signup' }) {
       });
       if (error) { setError(friendlyError(error.message)); setLoading(false); resetCaptcha(); }
       else {
-        posthog?.identify(data.user.id, { email: data.user.email });
-        posthog?.capture('user_logged_in');
+        identifyUser(data.user.id, { email: data.user.email });
+        track(EVENTS.USER_LOGGED_IN);
         navigate('/app');
       }
     } else {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: { emailRedirectTo: getAuthCallbackUrl(), captchaToken },
       });
       if (error) { setError(friendlyError(error.message)); setLoading(false); resetCaptcha(); }
       else {
-        posthog?.capture('user_signed_up');
+        // Identify on signup (not just login) so the anonymous pre-signup
+        // session — carrying first-touch attribution — stitches to this user.
+        identifyUser(data.user?.id, { email: data.user?.email || email });
+        track(EVENTS.USER_SIGNED_UP, { method: 'email' });
         setSuccess(true);
       }
     }
