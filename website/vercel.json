@@ -15,6 +15,18 @@
     {
       "source": "/whats-on/:slug",
       "destination": "/api/whats-on?slug=:slug"
+    },
+    {
+      "source": "/movie/:slug",
+      "destination": "/api/title?type=movie&slug=:slug"
+    },
+    {
+      "source": "/tv/:slug",
+      "destination": "/api/title?type=tv&slug=:slug"
+    },
+    {
+      "source": "/sitemap-titles.xml",
+      "destination": "/api/sitemap-titles"
     }
   ],
   "headers": [

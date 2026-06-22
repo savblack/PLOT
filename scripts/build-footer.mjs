@@ -31,6 +31,7 @@ const WEB = join(ROOT, 'website');
 const PARTIAL = join(WEB, '_partials', 'footer.html');
 const PAGES = ['index.html', 'about.html', 'privacy.html', 'terms.html'];
 const EDGE_TS = join(ROOT, 'supabase', 'functions', 'marketing-feed', 'footer.generated.ts');
+const EDGE_TS_TITLE = join(ROOT, 'supabase', 'functions', 'title-page', 'footer.generated.ts');
 
 const START = '  <!-- footer:start (generated from _partials/footer.html — edit there, then run `npm run footer`) -->';
 const END = '  <!-- footer:end -->';
@@ -90,6 +91,7 @@ for (const page of PAGES) {
 }
 
 sync(EDGE_TS, () => tsModule);
+sync(EDGE_TS_TITLE, () => tsModule);
 
 if (check && drift.length) {
   console.error(`\n${drift.length} file(s) out of sync. Run \`npm run footer\` and commit.`);
