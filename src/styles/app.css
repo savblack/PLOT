@@ -112,6 +112,11 @@ svg { stroke-width: 1.5; }
   min-width: 34px;
 }
 
+/* Group the right-hand actions (bell + search) tightly together. */
+.header-end {
+  gap: 0.1rem;
+}
+
 .icon-btn {
   width: 34px;
   height: 34px;
