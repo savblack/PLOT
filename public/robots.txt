@@ -16,3 +16,4 @@ Disallow: /signup
 Disallow: /reset-password
 
 Sitemap: https://app.theplot.tv/sitemap.xml
+Sitemap: https://app.theplot.tv/sitemap-profiles.xml

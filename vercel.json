@@ -2,6 +2,7 @@
   "rewrites": [
     { "source": "/u/:username", "destination": "/api/profile?username=:username" },
     { "source": "/save", "destination": "/api/save" },
+    { "source": "/sitemap-profiles.xml", "destination": "/api/sitemap-profiles" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }
