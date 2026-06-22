@@ -129,6 +129,17 @@ const dispatchWorkflow = async (workflow: string): Promise<{ ok: boolean; reason
   }
 };
 
+const mergeCopyFromForm = async (supabase: ReturnType<typeof createClient>, postId: string, form: FormData) => {
+  const copyPatch: Record<string, unknown> = { x: String(form.get('x') || '') };
+  if (form.has('instagram')) copyPatch.instagram = String(form.get('instagram') || '');
+  if (form.has('threads')) copyPatch.threads = String(form.get('threads') || '');
+  if (form.has('hashtags')) copyPatch.hashtags = String(form.get('hashtags') || '').split(',').map((s) => s.trim().replace(/^#/, '')).filter(Boolean);
+  if (form.has('page_title')) copyPatch.page_title = String(form.get('page_title') || '');
+  if (form.has('page_body')) copyPatch.page_body = String(form.get('page_body') || '').split(/\n\s*\n/).map((s) => s.trim()).filter(Boolean);
+  const { data: cur } = await supabase.from('marketing_posts').select('copy').eq('id', postId).single();
+  return { ...(cur?.copy || {}), ...copyPatch };
+};
+
 const STATUS_BADGE: Record<string, { label: string; cls: string }> = {
   planned: { label: 'Queued', cls: 'b-wait' },
   needs_review: { label: 'Needs review', cls: 'b-review' },
@@ -462,12 +473,13 @@ Deno.serve(async (req) => {
     } else if (id && action === 'publish_now') {
       // Approve + bring the schedule forward so the publisher will pick it up,
       // then kick the publish run so it sends within minutes (if a token is set).
+      const merged = await mergeCopyFromForm(supabase, id, form);
       await supabase.from('marketing_posts')
-        .update({ status: 'approved', scheduled_for: now(), updated_at: now() }).eq('id', id);
+        .update({ copy: merged, status: 'approved', scheduled_for: now(), updated_at: now() }).eq('id', id);
       await requeuePubs([id]);
       const triggered = await dispatchWorkflow('marketing-publish.yml');
       flash = triggered.ok
-        ? 'Publishing now — sending approved copy to X / Instagram / Threads; it’ll show as published in a few minutes.'
+        ? 'Saved edits and publishing now — sending approved copy to X / Instagram / Threads; it’ll show as published in a few minutes.'
         : `Approved and queued — the 5-minute publish runner will pick it up automatically. Instant trigger did not fire${triggered.reason ? ` (${triggered.reason})` : ''}.`;
     } else if (id && action === 'retry') {
       await supabase.from('marketing_post_publications')
@@ -484,14 +496,7 @@ Deno.serve(async (req) => {
         ? 'Regenerating — the Codex weekly worker will rewrite this post. Refresh in a few minutes.'
         : 'Marked for regeneration — it rebuilds on the next weekly batch.';
     } else if (id) {
-      const copyPatch: Record<string, unknown> = { x: String(form.get('x') || '') };
-      if (form.has('instagram')) copyPatch.instagram = String(form.get('instagram') || '');
-      if (form.has('threads')) copyPatch.threads = String(form.get('threads') || '');
-      if (form.has('hashtags')) copyPatch.hashtags = String(form.get('hashtags') || '').split(',').map((s) => s.trim().replace(/^#/, '')).filter(Boolean);
-      if (form.has('page_title')) copyPatch.page_title = String(form.get('page_title') || '');
-      if (form.has('page_body')) copyPatch.page_body = String(form.get('page_body') || '').split(/\n\s*\n/).map((s) => s.trim()).filter(Boolean);
-      const { data: cur } = await supabase.from('marketing_posts').select('copy').eq('id', id).single();
-      const merged = { ...(cur?.copy || {}), ...copyPatch };
+      const merged = await mergeCopyFromForm(supabase, id, form);
       const patch: Record<string, unknown> = { copy: merged, updated_at: now() };
       if (action === 'approve') patch.status = 'approved';
       await supabase.from('marketing_posts').update(patch).eq('id', id);
