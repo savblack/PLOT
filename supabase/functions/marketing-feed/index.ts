@@ -29,6 +29,14 @@ const PAGE_SIZE = 30;
 const esc = (s: unknown) =>
   String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] as string));
 
+// Link a charted title to its public title page (theplot.tv/movie|tv/<slug>),
+// matching the slug the title-page function canonicalises to.
+const slugify = (s: string) =>
+  String(s || '').toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80) || 'title';
+const titleHref = (mediaType: string, tmdbId: number | string, title: string) =>
+  `${SITE}/${mediaType === 'tv' ? 'tv' : 'movie'}/${slugify(title)}-${tmdbId}`;
+
 const mediaUrl = (path: string) =>
   `${Deno.env.get('SUPABASE_URL')}/storage/v1/object/public/marketing/${path}`;
 
@@ -470,14 +478,19 @@ const renderChart = async (supabase: ReturnType<typeof createClient>) => {
   const items = (latest.items as ChartItem[]) || [];
   const rows = items.map((it) => {
     const m = chartMovement(it, it.rank, prior);
-    const img = it.poster_path ? `<img class="ch-poster" src="${esc(tmdbImg(it.poster_path))}" alt="" loading="lazy">` : '<span class="ch-poster"></span>';
+    // Link the poster + title through to the public title page (internal links
+    // that feed crawl + give readers the full "where to watch" page).
+    const tUrl = titleHref(it.media_type, it.tmdb_id, it.title);
+    const img = it.poster_path
+      ? `<a href="${esc(tUrl)}" style="display:contents"><img class="ch-poster" src="${esc(tmdbImg(it.poster_path))}" alt="${esc(it.title)}" loading="lazy"></a>`
+      : '<span class="ch-poster"></span>';
     // One-click "Save to watchlist": logged-out users get routed through login
     // and the save completes on return (handled by the app's /save deep link).
     const saveHref = `${APP}/save?media_type=${esc(it.media_type)}&tmdb_id=${it.tmdb_id}&src=chart`;
     return `<li><div class="ch-row">
       <span class="ch-rank${it.rank <= 10 ? ' top' : ''}">${it.rank}</span>
       ${img}
-      <span><span class="ch-title">${esc(it.title)}</span><span class="ch-kind">${it.media_type === 'tv' ? 'TV' : 'Film'}</span></span>
+      <span><a class="ch-title-link" href="${esc(tUrl)}" style="color:inherit;text-decoration:none"><span class="ch-title">${esc(it.title)}</span></a><span class="ch-kind">${it.media_type === 'tv' ? 'TV' : 'Film'}</span></span>
       <span class="ch-actions">${moveChip(m)}<a class="ch-save" href="${saveHref}">+ Save</a></span>
     </div></li>`;
   }).join('');
