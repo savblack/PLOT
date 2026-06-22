@@ -2,6 +2,6 @@
   "rewrites": [
     { "source": "/u/:username", "destination": "/api/profile?username=:username" },
     { "source": "/save", "destination": "/api/save" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }
