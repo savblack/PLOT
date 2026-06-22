@@ -9,9 +9,15 @@ updates:
       timezone: Australia/Sydney
     open-pull-requests-limit: 5
     groups:
-      app-dependencies:
+      # Minor + patch bundle into ONE PR -> one CI run -> one auto-merge.
+      # Majors are deliberately left ungrouped so each arrives as its own PR
+      # and gets held for human review by dependabot-automerge.yml.
+      app-minor-patch:
         patterns:
           - "*"
+        update-types:
+          - "minor"
+          - "patch"
 
   - package-ecosystem: github-actions
     directory: /
