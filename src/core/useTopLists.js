@@ -1,6 +1,18 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from './supabase.js';
 
+/**
+ * Ranked Top-10 lists (movies + tv) for a user.
+ * @param {string|null|undefined} userId
+ * @returns {{
+ *   lists: { movies: any[]; tv: any[] };
+ *   loading: boolean;
+ *   setSlot: (listType: string, rank: number, item: any) => Promise<any>;
+ *   removeSlot: (listType: string, tmdbId: number) => Promise<any>;
+ *   moveUp: (listType: string, rank: number) => any;
+ *   moveDown: (listType: string, rank: number) => any;
+ * }}
+ */
 export function useTopLists(userId) {
   const [lists,   setLists]   = useState({ movies: [], tv: [] });
   const [loading, setLoading] = useState(true);

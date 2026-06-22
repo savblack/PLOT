@@ -2,6 +2,20 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from './supabase.js';
 import { mediaIdentityRow, tmdbIdFromItem } from './media.js';
 
+/**
+ * User-created custom lists.
+ * @param {string|null|undefined} userId
+ * @returns {{
+ *   lists: any[];
+ *   loading: boolean;
+ *   createList: (name: string) => Promise<any>;
+ *   deleteList: (listId: string) => Promise<any>;
+ *   renameList: (listId: string, name: string) => Promise<any>;
+ *   addItem: (listId: string, item: any) => Promise<any>;
+ *   removeItem: (listId: string, tmdbId: number) => Promise<any>;
+ *   isInList: (listId: string, tmdbId: number) => boolean;
+ * }}
+ */
 export function useCustomLists(userId) {
   const [lists,   setLists]   = useState([]);
   const [loading, setLoading] = useState(true);

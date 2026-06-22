@@ -10,6 +10,19 @@ function notifyHistoryChanged() {
   emit(HISTORY_CHANGED_EVENT);
 }
 
+/**
+ * Watch-history journal for a user.
+ * @param {string|null|undefined} userId
+ * @returns {{
+ *   entries: any[];
+ *   loading: boolean;
+ *   logWatched: (item: any, opts?: { rating?: number; note?: string; dnf?: boolean }) => Promise<any>;
+ *   updateEntry: (tmdbId: number, updates: any) => Promise<any>;
+ *   removeEntry: (tmdbId: number) => Promise<boolean>;
+ *   isWatched: (tmdbId: number) => boolean;
+ *   reload: () => Promise<void>;
+ * }}
+ */
 export function useHistory(userId) {
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
