@@ -4,7 +4,7 @@ This system now runs in one primary path:
 
 1. GitHub prepares the week.
 2. You review and approve in `admin.theplot.tv`.
-3. The daily publish job sends only approved posts.
+3. The publish job checks every 5 minutes and sends only approved posts.
 4. On Sunday, the learning loop compares generated copy with what actually shipped.
 5. That learning updates the voice/spec before the next weekly generation runs.
 
@@ -20,7 +20,7 @@ Sunday morning publish finishes
   -> marketing-weekly-batch.yml generates the next week with the updated rules
 
 Every day
-  -> marketing-publish.yml sends only approved posts
+  -> marketing-publish.yml checks every 5 minutes and sends only approved posts
 ```
 
 ## Operator surfaces
@@ -84,7 +84,7 @@ against half-updated rules.
 - Weekly generation renders posts onto the admin desk with status `needs_review`.
 - The admin desk is the source of truth for approve, reject, reschedule,
   unapprove, retry failed, publish now, and pause-all actions.
-- The daily publish job sends only posts with status `approved`.
+- The publish job checks every 5 minutes and sends only posts with status `approved`.
 - Leaving a post untouched in review means it does not publish.
 
 ## Cadence

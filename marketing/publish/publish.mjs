@@ -51,6 +51,14 @@ const claim = async (supabase, pub) => {
 // Cards can be limited to specific platforms (media[i].channels); null = all.
 const cardsFor = (media, channel) => media.filter(m => !m.channels || m.channels.includes(channel));
 
+const updatePublication = async (supabase, publicationId, patch) => {
+  const { error } = await supabase
+    .from('marketing_post_publications')
+    .update(patch)
+    .eq('id', publicationId);
+  if (error) throw new Error(`Publication row update failed: ${error.message}`);
+};
+
 const publishOne = async (supabase, post, pub) => {
   if (!(await claim(supabase, pub))) return null; // someone else has it
 
@@ -72,7 +80,7 @@ const publishOne = async (supabase, post, pub) => {
       const hashtags = (post.copy.hashtags || []).map(h => `#${h.replace(/^#/, '')}`).join(' ');
       text = hashtags ? `${post.copy.instagram}\n\n${hashtags}` : post.copy.instagram;
       imageUrls = cardsFor(media, 'instagram').map(m => publicUrl(m.portrait_path));
-    } else { // threads — chart posts keep their chart-page link; no article links
+    } else { // threads — trending uses the full chart image; no article links
       const link = post.post_type === 'trending' ? chartUrl('threads') : null;
       text = link ? `${post.copy.threads}\n\n${link}` : post.copy.threads;
       imageUrls = cardsFor(media, 'threads').map(m => publicUrl(m.landscape_path));
@@ -87,7 +95,7 @@ const publishOne = async (supabase, post, pub) => {
       result = await publishToBuffer({ service, text, imageUrls, altText: post.copy.alt_text });
     }
 
-    await supabase.from('marketing_post_publications').update({
+    await updatePublication(supabase, pub.id, {
       status: DRY_RUN ? 'skipped' : 'published',
       platform_post_id: result.platform_post_id,
       permalink: result.permalink,
@@ -95,16 +103,20 @@ const publishOne = async (supabase, post, pub) => {
       error: DRY_RUN ? 'DRY_RUN' : null,
       sent_text: DRY_RUN ? null : text,
       sent_payload: DRY_RUN ? null : sentPayload,
-    }).eq('id', pub.id);
+    });
     return DRY_RUN ? 'skipped' : 'published';
   } catch (err) {
     console.error(`Publish to ${pub.platform} failed for ${post.topic_key}:`, err.message);
-    await supabase.from('marketing_post_publications').update({
-      status: 'failed',
-      error: String(err.message).slice(0, 500),
-      sent_text: null,
-      sent_payload: sentPayload,
-    }).eq('id', pub.id);
+    try {
+      await updatePublication(supabase, pub.id, {
+        status: 'failed',
+        error: String(err.message).slice(0, 500),
+        sent_text: null,
+        sent_payload: sentPayload,
+      });
+    } catch (updateErr) {
+      console.error(`Could not mark ${pub.id} failed:`, updateErr.message);
+    }
     return 'failed';
   }
 };

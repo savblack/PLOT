@@ -103,8 +103,8 @@ const GH_TOKEN = Deno.env.get('GH_DISPATCH_TOKEN') ?? '';
 // instead of waiting for its cron — Regenerate kicks the weekly batch, Publish
 // now kicks the publish run. Needs a GH_DISPATCH_TOKEN secret (a PAT with
 // Actions: write). Without it, the action just waits for the scheduled run.
-const dispatchWorkflow = async (workflow: string): Promise<boolean> => {
-  if (!GH_TOKEN) return false;
+const dispatchWorkflow = async (workflow: string): Promise<{ ok: boolean; reason?: string }> => {
+  if (!GH_TOKEN) return { ok: false, reason: 'GH_DISPATCH_TOKEN is not set' };
   try {
     const res = await fetch(
       `https://api.github.com/repos/${GH_REPO}/actions/workflows/${workflow}/dispatches`,
@@ -119,9 +119,13 @@ const dispatchWorkflow = async (workflow: string): Promise<boolean> => {
         body: JSON.stringify({ ref: 'main' }),
       },
     );
-    return res.ok;
-  } catch {
-    return false;
+    if (res.ok) return { ok: true };
+    const body = await res.text().catch(() => '');
+    console.error(`Workflow dispatch failed for ${workflow}: ${res.status} ${body}`);
+    return { ok: false, reason: `GitHub dispatch failed (${res.status})` };
+  } catch (err) {
+    console.error(`Workflow dispatch errored for ${workflow}:`, err);
+    return { ok: false, reason: 'GitHub dispatch errored' };
   }
 };
 
@@ -448,9 +452,9 @@ Deno.serve(async (req) => {
         .update({ status: 'approved', scheduled_for: now(), updated_at: now() }).eq('id', id);
       await requeuePubs([id]);
       const triggered = await dispatchWorkflow('marketing-publish.yml');
-      flash = triggered
+      flash = triggered.ok
         ? 'Publishing now — sending approved copy to X / Instagram / Threads; it’ll show as published in a few minutes.'
-        : 'Approved and queued — it sends on the next publish run. Set GH_DISPATCH_TOKEN for instant send, or dispatch “Marketing — publish”.';
+        : `Approved and queued — the 5-minute publish runner will pick it up automatically. Instant trigger did not fire${triggered.reason ? ` (${triggered.reason})` : ''}.`;
     } else if (id && action === 'retry') {
       await supabase.from('marketing_post_publications')
         .update({ status: 'queued', error: null }).eq('post_id', id).eq('status', 'failed');
@@ -462,7 +466,7 @@ Deno.serve(async (req) => {
       await supabase.from('marketing_posts')
         .update({ status: 'planned', copy: null, updated_at: now() }).eq('id', id);
       const triggered = await dispatchWorkflow('marketing-weekly-batch.yml');
-      flash = triggered
+      flash = triggered.ok
         ? 'Regenerating — the Codex weekly worker will rewrite this post. Refresh in a few minutes.'
         : 'Marked for regeneration — it rebuilds on the next weekly batch.';
     } else if (id) {
