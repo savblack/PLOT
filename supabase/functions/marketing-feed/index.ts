@@ -420,7 +420,7 @@ const CHART_CSS = `
   ol.chart li:first-child .ch-row { border-top: none; }
   .ch-rank { font-family: var(--serif); font-size: 2.1rem; line-height: 1; color: var(--faint); text-align: center; font-variant-numeric: tabular-nums; }
   .ch-rank.top { color: var(--pink); }
-  .ch-poster { width: 60px; aspect-ratio: 2/3; object-fit: cover; border-radius: 8px; border: 1px solid var(--hair); background: var(--ink); display: block; }
+  .ch-poster { width: 60px; aspect-ratio: 2/3; object-fit: cover; border-radius: 8px; background: var(--ink); display: block; }
   .ch-title { font-family: var(--serif); font-size: 1.5rem; line-height: 1.1; letter-spacing: -0.01em; }
   .ch-kind { display: block; color: var(--faint); font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase; margin-top: 5px; }
   .ch-move { font-size: 0.64rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; white-space: nowrap; }
