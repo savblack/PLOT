@@ -1,6 +1,7 @@
 import { Suspense, lazy } from 'react';
-import { createBrowserRouter, Navigate } from 'react-router-dom';
+import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
+import RouteErrorBoundary from './components/RouteErrorBoundary.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import LoadingSpinner from './components/LoadingSpinner.jsx';
 import { SHOW_MEDIA_SYNC_INTEGRATIONS } from './launchFeatures.js';
@@ -35,6 +36,13 @@ const SavePage          = lazy(() => import('./pages/SavePage.jsx'));
 const wrap = (el) => <Suspense fallback={<LoadingSpinner />}>{el}</Suspense>;
 
 const router = createBrowserRouter([
+  // Top-level layout route: its errorElement catches anything thrown while
+  // routing, rendering, or lazy-loading any route below — so a crash shows the
+  // branded error screen instead of React Router's raw developer page.
+  {
+    element: <Outlet />,
+    errorElement: <RouteErrorBoundary />,
+    children: [
   // Landing / auth redirect
   { path: '/', element: wrap(<RootRoute />) },
 
@@ -91,6 +99,8 @@ const router = createBrowserRouter([
 
   // 404
   { path: '*', element: wrap(<NotFoundPage />) },
+    ],
+  },
 ]);
 
 export default router;
