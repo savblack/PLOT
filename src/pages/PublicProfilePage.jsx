@@ -49,12 +49,11 @@ const styles = `
 
   .pp-edit {
     display: inline-flex; align-items: center; justify-content: center;
-    padding: 0.4rem 1.15rem; border-radius: var(--radius-pill);
-    font-size: 0.8rem; font-weight: 600; letter-spacing: 0.01em;
-    color: var(--text-muted); background: transparent; border: 1px solid var(--border);
-    text-decoration: none; transition: color 0.15s ease, border-color 0.15s ease;
+    padding: 0.2rem 0; border: none; background: transparent; cursor: pointer;
+    font-size: 0.78rem; font-weight: 500; letter-spacing: 0.02em;
+    color: var(--text-muted); text-decoration: none; transition: color 0.15s ease;
   }
-  .pp-edit:hover { color: var(--text-secondary); border-color: var(--text-muted); }
+  .pp-edit:hover { color: var(--text-secondary); text-decoration: underline; text-underline-offset: 3px; }
 
   .pp-stats { display: flex; justify-content: center; gap: 2rem; margin: 1.9rem 0 0; flex-wrap: wrap; }
   .pp-stat { display: flex; flex-direction: column; align-items: center; text-align: center; }
