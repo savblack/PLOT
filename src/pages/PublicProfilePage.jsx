@@ -178,9 +178,14 @@ export default function PublicProfilePage() {
               {isOwn ? (
                 <Link to="/settings" className="pp-edit">Edit profile</Link>
               ) : !viewer ? (
-                <Link to="/login" className="public-profile-button">
-                  {isPrivate ? 'Sign in to request' : 'Sign in to follow'}
-                </Link>
+                <>
+                  {/* New visitor: sign up tagged with ?ref so they auto-follow
+                      this profile after signup (every public profile = an invite). */}
+                  <Link to={`/signup?ref=${encodeURIComponent(profile.username)}&src=profile`} className="public-profile-button">
+                    Join to follow
+                  </Link>
+                  <Link to="/login" className="public-profile-button-secondary">Sign in</Link>
+                </>
               ) : canFollow && (
                 status === 'accepted' ? (
                   <button type="button" className="public-profile-button-secondary" onClick={unfollow} disabled={busy}>Following</button>

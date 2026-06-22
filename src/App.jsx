@@ -7,6 +7,7 @@ import MediaPanel from './components/MediaPanel.jsx';
 import { useTheme } from './hooks/useTheme.js';
 import { useWatchlist }    from './hooks/useWatchlist.js';
 import { usePendingSave }  from './hooks/usePendingSave.js';
+import { usePendingReferral } from './hooks/usePendingReferral.js';
 import { useWatching }     from './hooks/useWatching.js';
 import { useReminders }    from './hooks/useReminders.js';
 import { useTopLists }     from './hooks/useTopLists.js';
@@ -245,6 +246,7 @@ export default function App() {
     setSaveToast(result);
   }, []);
   usePendingSave({ user, watchlist, openPanel, onResult: handleSaveResult });
+  usePendingReferral({ user });
 
   // Auto-dismiss the save confirmation toast
   useEffect(() => {

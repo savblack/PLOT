@@ -24,6 +24,8 @@ export const EVENTS = Object.freeze({
   ACTIVATED: 'activated',
   TITLE_SHARED: 'title_shared',
   LIST_SHARED: 'list_shared',
+  INVITE_SHARED: 'invite_shared',
+  REFERRAL_COMPLETED: 'referral_completed',
 });
 
 export function track(event, props) {

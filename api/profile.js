@@ -91,7 +91,7 @@ function seoSnapshot(p) {
   <div style="display:flex;gap:40px;margin-top:28px">${stat(p.followers, 'Followers')}${stat(p.watchCount, 'Watched')}${stat(p.reviews, 'Reviews')}${stat(p.avgRating, 'Avg rating')}</div>
   ${posterRow('Top films', p.topMovies)}
   ${posterRow('Top TV', p.topTv)}
-  <p style="margin-top:40px"><a href="/signup" data-cta="profile_ssr" style="display:inline-block;border:1.5px solid #e8e8ec;color:#e8e8ec;text-decoration:none;font-weight:600;padding:0.7rem 1.3rem;border-radius:999px">Build your own PLOT →</a></p>
+  <p style="margin-top:40px"><a href="/signup?ref=${encodeURIComponent(p.username)}&amp;src=profile" data-cta="profile_ssr" style="display:inline-block;border:1.5px solid #e8e8ec;color:#e8e8ec;text-decoration:none;font-weight:600;padding:0.7rem 1.3rem;border-radius:999px">Follow ${esc(name)} on PLOT →</a></p>
 </div>`;
 }
 
