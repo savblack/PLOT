@@ -8,7 +8,7 @@
  *
  * Env:
  *   POSTHOG_PERSONAL_API_KEY  (required, scope: query:read)
- *   POSTHOG_PROJECT_ID        (default 31387)
+ *   POSTHOG_PROJECT_ID        (default 471234 = PLOT)
  *   POSTHOG_HOST              (default https://us.posthog.com)
  *   ERROR_LOOKBACK_DAYS       (default 7)
  *   ERROR_MIN_COUNT           (default 5)
@@ -20,7 +20,7 @@
 import { createHash } from 'node:crypto';
 
 const HOST = (process.env.POSTHOG_HOST || 'https://us.posthog.com').replace(/\/$/, '');
-const PROJECT_ID = process.env.POSTHOG_PROJECT_ID || '31387';
+const PROJECT_ID = process.env.POSTHOG_PROJECT_ID || '471234'; // PLOT project (NOT 31387 = Summ)
 const LOOKBACK_DAYS = Number(process.env.ERROR_LOOKBACK_DAYS || 7);
 const MIN_COUNT = Number(process.env.ERROR_MIN_COUNT || 5);
 const MAX_PER_RUN = Number(process.env.ERROR_MAX_PER_RUN || 1);
@@ -59,19 +59,24 @@ export async function fetchTopErrors() {
   const apiKey = process.env.POSTHOG_PERSONAL_API_KEY;
   if (!apiKey) throw new Error('POSTHOG_PERSONAL_API_KEY is not set');
 
+  // PostHog stores exception type/message as JSON-string arrays ($exception_types /
+  // $exception_values) and exposes its own grouping key ($exception_fingerprint).
+  // localhost is excluded so dev errors never reach the fix loop.
   // Column order is fixed by the SELECT below.
   const query = `
     SELECT
-      properties.$exception_type AS type,
-      any(properties.$exception_message) AS message,
+      JSONExtractString(properties.$exception_types, 1) AS type,
+      JSONExtractString(properties.$exception_values, 1) AS message,
+      properties.$exception_fingerprint AS ph_fingerprint,
       count() AS occurrences,
       max(timestamp) AS last_seen,
       any(properties.$current_url) AS sample_url
     FROM events
     WHERE event = '$exception'
       AND timestamp > now() - INTERVAL ${LOOKBACK_DAYS} DAY
-      AND properties.$exception_type IS NOT NULL
-    GROUP BY type, properties.$exception_message
+      AND coalesce(properties.$current_url, '') NOT ILIKE '%localhost%'
+      AND coalesce(properties.$current_url, '') NOT ILIKE '%127.0.0.1%'
+    GROUP BY type, message, ph_fingerprint
     ORDER BY occurrences DESC
     LIMIT 50
   `;
@@ -79,13 +84,14 @@ export async function fetchTopErrors() {
   const rows = await runHogQL(apiKey, query);
 
   const candidates = rows
-    .map(([type, message, occurrences, lastSeen, sampleUrl]) => ({
+    .map(([type, message, phFingerprint, occurrences, lastSeen, sampleUrl]) => ({
       type: String(type || 'Error'),
       message: String(message || ''),
       occurrences: Number(occurrences) || 0,
       lastSeen: lastSeen ? String(lastSeen) : null,
       sampleUrl: sampleUrl ? String(sampleUrl) : null,
-      fingerprint: fingerprintFor(type, message),
+      // Prefer PostHog's own fingerprint; fall back to our normalized hash.
+      fingerprint: phFingerprint ? String(phFingerprint) : fingerprintFor(type, message),
     }))
     .filter((c) => c.occurrences >= MIN_COUNT)
     // Collapse rows that normalize to the same fingerprint, summing counts.

@@ -49,7 +49,7 @@ jobs:
           DRY_RUN: ${{ inputs.dry_run && '1' || '' }}
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           POSTHOG_PERSONAL_API_KEY: ${{ secrets.POSTHOG_PERSONAL_API_KEY }}
-          POSTHOG_PROJECT_ID: '31387'
+          POSTHOG_PROJECT_ID: '471234'
           GH_TOKEN: ${{ secrets.GH_DISPATCH_TOKEN }}
           GH_REPO: ${{ github.repository }}
         run: node scripts/ops/error-autofix.mjs
