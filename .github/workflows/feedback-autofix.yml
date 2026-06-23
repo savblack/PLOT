@@ -27,6 +27,9 @@ concurrency:
 jobs:
   autofix:
     runs-on: ubuntu-latest
+    # Fail-closed: scheduled runs only fire once armed via repo variable
+    # AUTOFIX_ENABLED=true. Manual workflow_dispatch always runs (defaults to dry_run).
+    if: github.event_name != 'schedule' || vars.AUTOFIX_ENABLED == 'true'
     steps:
       - uses: actions/checkout@v6
         with:
