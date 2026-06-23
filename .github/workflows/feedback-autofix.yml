@@ -1,0 +1,66 @@
+name: Feedback autofix
+
+# Daily: read new Linear bug reports, triage them (read-only Claude), and open ONE
+# scoped fix PR per reproducible in-scope bug for human review. Feature requests /
+# ambiguous reports get labelled `autofix:needs-human` instead. Never merges.
+#
+# GH_DISPATCH_TOKEN must be a PAT with repo scope (push + open PRs) so the fix PR
+# triggers CI. LINEAR_API_KEY + LINEAR_FEEDBACK_TEAM_ID match notify-feedback.
+
+on:
+  schedule:
+    - cron: '0 18 * * *' # ~4am AEST, offset from error-autofix
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Triage + attempt fixes but mutate nothing in Linear/GitHub'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: feedback-autofix
+  cancel-in-progress: false
+
+jobs:
+  autofix:
+    runs-on: ubuntu-latest
+    # Fail-closed: scheduled runs only fire once armed via repo variable
+    # AUTOFIX_ENABLED=true. Manual workflow_dispatch always runs (defaults to dry_run).
+    if: github.event_name != 'schedule' || vars.AUTOFIX_ENABLED == 'true'
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GH_DISPATCH_TOKEN }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Install Claude Code CLI
+        run: npm install -g @anthropic-ai/claude-code
+      - name: Configure git identity
+        run: |
+          git config user.name "plot-autofix[bot]"
+          git config user.email "autofix@theplot.tv"
+      - name: Run feedback autofix
+        env:
+          DRY_RUN: ${{ inputs.dry_run && '1' || '' }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          LINEAR_FEEDBACK_TEAM_ID: ${{ secrets.LINEAR_FEEDBACK_TEAM_ID }}
+          LINEAR_FEEDBACK_PROJECT_ID: ${{ secrets.LINEAR_FEEDBACK_PROJECT_ID }}
+          GH_TOKEN: ${{ secrets.GH_DISPATCH_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: node scripts/ops/feedback-autofix.mjs
+      - name: Alert on failure
+        if: failure()
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          ADMIN_EMAIL: ${{ secrets.MARKETING_ADMIN_EMAIL }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          WORKFLOW_NAME: feedback autofix
+        run: bash .github/scripts/marketing-alert.sh
