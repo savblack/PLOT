@@ -34,7 +34,9 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          token: ${{ secrets.GH_DISPATCH_TOKEN }}
+          # PAT so live-mode pushes/PRs trigger CI; falls back to the built-in
+          # token (fine for checkout + dry-run). Live mode needs GH_DISPATCH_TOKEN set.
+          token: ${{ secrets.GH_DISPATCH_TOKEN || github.token }}
           fetch-depth: 0
       - uses: actions/setup-node@v6
         with:
@@ -53,7 +55,7 @@ jobs:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           POSTHOG_PERSONAL_API_KEY: ${{ secrets.POSTHOG_PERSONAL_API_KEY }}
           POSTHOG_PROJECT_ID: '471234'
-          GH_TOKEN: ${{ secrets.GH_DISPATCH_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_DISPATCH_TOKEN || github.token }}
           GH_REPO: ${{ github.repository }}
         run: node scripts/ops/error-autofix.mjs
       - name: Alert on failure
