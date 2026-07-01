@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import './DesignSystemPage.css';
 import PlotLoader from '../components/PlotLoader.jsx';
 
@@ -10,13 +11,25 @@ const colorTokens = [
   ['--text-secondary', 'Secondary text', 'Descriptions, row supporting copy, and inactive nav.'],
   ['--text-muted', 'Muted text', 'Metadata, hints, timestamps, and quiet counters.'],
   ['--border', 'Standard border', 'Separates structural surfaces without heavy outlines.'],
+  ['--border-strong', 'Strong border', 'Higher-contrast separator for overlays, focused inputs, and modals.'],
   ['--accent', 'Accent', 'Active state, selected tabs, saves, and focused attention.'],
+  ['--accent-dim', 'Accent dim', 'Tinted accent fill for save confirmations and selected state backgrounds.'],
+  ['--danger', 'Danger', 'Destructive actions, error states, and delete confirmations.'],
+  ['--danger-dim', 'Danger dim', 'Danger background tint for warning banners and error input fills.'],
+  ['--danger-border', 'Danger border', 'Error input outlines and alert borders.'],
+  ['--glass-bg', 'Glass background', 'Frosted-glass overlay background for panel overlays and headers when scrolled.'],
+  ['--glass-border', 'Glass border', 'Edge line for frosted glass surfaces.'],
 ];
 
 const guideTokens = [
   ['--chip-cinema', 'Cinema', 'Theatrical release and cinema calendar context.'],
   ['--chip-streaming', 'Movie', 'Streaming movie availability and guide release context.'],
   ['--chip-episode', 'TV', 'Television, episode, season, and watching context.'],
+  ['--chip-now', 'Now', 'Airing right now — immediate real-time context.'],
+  ['--chip-today', 'Today', 'Airs or releases today.'],
+  ['--chip-tomorrow', 'Tomorrow', 'Airs or releases tomorrow.'],
+  ['--chip-soon', 'Soon', 'Coming in the next few days.'],
+  ['--chip-muted', 'Muted', 'Saved, watched, and neutral state chips with no time or type context.'],
   ['--epg-bar-broadcast', 'Broadcast bar', 'Left edge marker for live TV guide channels.'],
   ['--epg-bar-stream', 'Streaming bar', 'Left edge marker for streaming guide channels.'],
 ];
@@ -26,13 +39,6 @@ const radiusTokens = [
   ['--radius-lg', 'Large panel radius', 'Sheets, watching cards, and elevated containers.'],
   ['--radius-badge', 'Badge radius', 'Small status chips and media-type badges with flatter sides than pill controls.'],
   ['--radius-pill', 'Pill radius', 'Large pill buttons, filter chips, and segmented actions.'],
-];
-
-const layoutRules = [
-  ['Fixed app frame', 'Header and bottom tabs stay fixed; content scrolls inside the app surface.'],
-  ['Side reading panel', 'Media details open in a right-side sheet capped by the panel width token.'],
-  ['Focused content width', 'Legal, settings, and onboarding flows use the content max width for readable forms.'],
-  ['Full-width bands', 'Bars and section headers run edge to edge inside their section; cards hold the rounded surfaces.'],
 ];
 
 const spacingScale = [
@@ -54,7 +60,7 @@ const shadowTokens = [
 const motionRules = [
   ['Keep motion structural', 'Transitions should explain state changes, not decorate them.'],
   ['Use fast feedback first', 'Buttons, chips, and tabs should resolve within the fast transition token.'],
-  ['Reserve bounce for delight', 'The bounce curve is for special arrivals, never baseline navigation.'],
+  ['Reserve bounce for delight', '--ease-bounce (cubic-bezier 0.34, 1.56, 0.64, 1) is for special arrivals like sheets and modals — never routine navigation.'],
   ['Fade loaders sequentially', 'The PLOT loader should stay centered and animate letter-by-letter in order.'],
 ];
 
@@ -67,8 +73,24 @@ const surfaceOwnership = [
 
 function IconMenu() {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M4 7h16M4 12h16M4 17h16" />
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+      <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+    </svg>
+  );
+}
+
+function IconSearch() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/>
+    </svg>
+  );
+}
+
+function IconClose() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
+      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
     </svg>
   );
 }
@@ -81,10 +103,13 @@ function IconBookmark() {
   );
 }
 
-function TokenCard({ token, label, purpose }) {
+function TokenCard({ token, label, purpose, glassy }) {
   return (
     <div className="ds-token-card">
-      <span className="ds-swatch" style={{ background: `var(${token})` }} />
+      <span
+        className={`ds-swatch${glassy ? ' ds-swatch--glassy' : ''}`}
+        style={{ background: `var(${token})` }}
+      />
       <div>
         <strong>{label}</strong>
         <code>{token}</code>
@@ -131,6 +156,13 @@ function RuleCard({ label, children }) {
 }
 
 export default function DesignSystemPage() {
+  const [dark, setDark] = useState(true);
+
+  useEffect(() => {
+    const page = document.querySelector('.design-system-page');
+    if (page) page.setAttribute('data-theme', dark ? 'dark' : 'light');
+  }, [dark]);
+
   return (
     <div className="design-system-page">
       <header className="ds-hero">
@@ -139,6 +171,13 @@ export default function DesignSystemPage() {
           <h1>PLOT</h1>
           <p>A living inventory of the app's fonts, colors, borders, bars, buttons, chips, and layout rules.</p>
         </div>
+        <button
+          className="ds-theme-toggle"
+          onClick={() => setDark(d => !d)}
+          aria-label="Toggle light/dark theme"
+        >
+          {dark ? '☀ Light' : '☽ Dark'}
+        </button>
       </header>
 
       <Section eyebrow="01" title="Typography">
@@ -156,19 +195,19 @@ export default function DesignSystemPage() {
         </div>
         <div className="ds-type-scale">
           <div>
-            <span>Page title</span>
+            <span>Page title · Instrument Serif · 1.6rem / 400 / 1.1 lh / −0.02em ls</span>
             <h3>Calendar</h3>
           </div>
           <div>
-            <span>Rail label</span>
+            <span>Rail label · Manrope · 0.75rem / 700 / 1.2 lh / 0.08em ls / uppercase</span>
             <strong className="ds-rail-sample">Upcoming releases</strong>
           </div>
           <div>
-            <span>Body copy</span>
+            <span>Body copy · Manrope · 0.875rem / 400 / 1.6 lh</span>
             <p>Track what is streaming, airing, saved, watched, and coming soon.</p>
           </div>
           <div>
-            <span>Metadata</span>
+            <span>Metadata · Manrope · 0.75rem / 400 / 1.4 lh · --text-muted</span>
             <small>Season 2 · 8 episodes · Streaming</small>
           </div>
         </div>
@@ -177,7 +216,13 @@ export default function DesignSystemPage() {
       <Section eyebrow="02" title="Color Tokens">
         <div className="ds-token-grid">
           {colorTokens.map(([token, label, purpose]) => (
-            <TokenCard key={token} token={token} label={label} purpose={purpose} />
+            <TokenCard
+              key={token}
+              token={token}
+              label={label}
+              purpose={purpose}
+              glassy={token === '--glass-bg' || token === '--glass-border'}
+            />
           ))}
         </div>
       </Section>
@@ -192,6 +237,10 @@ export default function DesignSystemPage() {
           <span className="chip chip-cinema">Cinema</span>
           <span className="chip chip-streaming">Movie</span>
           <span className="chip chip-episode">TV</span>
+          <span className="chip chip-now">Now</span>
+          <span className="chip chip-today">Today</span>
+          <span className="chip chip-tomorrow">Tomorrow</span>
+          <span className="chip chip-soon">Soon</span>
           <span className="chip chip-muted">Saved</span>
         </div>
       </Section>
@@ -324,21 +373,59 @@ export default function DesignSystemPage() {
         <div className="ds-control-grid">
           <div className="ds-control-card">
             <strong>Action buttons</strong>
-            <p>Primary confirms the main action. Accent is for app-specific positive emphasis. Ghost stays quiet.</p>
+            <p>Primary confirms the main action. Accent is for positive app emphasis. Ghost stays quiet. Danger is for destructive confirms only.</p>
             <div className="ds-button-row">
               <button className="btn btn-primary">Primary</button>
               <button className="btn btn-accent">Accent</button>
               <button className="btn btn-secondary">Secondary</button>
               <button className="btn btn-ghost">Ghost</button>
+              <button className="btn ds-btn-danger">Danger</button>
+            </div>
+          </div>
+          <div className="ds-control-card">
+            <strong>Size variants</strong>
+            <p>Default for standalone actions. sm for compact toolbars and inline confirmations. xs for dense list rows and tight badges.</p>
+            <div className="ds-button-row">
+              <button className="btn btn-secondary">Default</button>
+              <button className="btn btn-secondary btn-sm">Small</button>
+              <button className="btn btn-secondary btn-xs">X-Small</button>
+            </div>
+          </div>
+          <div className="ds-control-card">
+            <strong>Accent outline (.btn-start-watching)</strong>
+            <p>Transparent background with accent border. Used for "Start watching" in list rows. Fills on hover.</p>
+            <div className="ds-button-row">
+              <button className="btn-start-watching">Start watching</button>
             </div>
           </div>
           <div className="ds-control-card">
             <strong>Icon buttons</strong>
-            <div className="ds-icon-row">
-              <button className="icon-btn" aria-label="Menu sample"><IconMenu /></button>
-              <button className="card-save-btn saved ds-save-sample" aria-label="Saved sample"><IconBookmark /></button>
-              <button className="season-nav-btn" aria-label="Previous sample">‹</button>
-              <button className="season-nav-btn" aria-label="Next sample">›</button>
+            <p>Monochrome, stroke-based. Secondary colour until hover/active. Each button has an aria-label — no visible text.</p>
+            <div className="ds-icon-labeled-grid">
+              <div className="ds-icon-cell">
+                <button className="icon-btn" aria-label="Open menu"><IconMenu /></button>
+                <span>Menu</span>
+              </div>
+              <div className="ds-icon-cell">
+                <button className="icon-btn" aria-label="Open search"><IconSearch /></button>
+                <span>Search</span>
+              </div>
+              <div className="ds-icon-cell">
+                <button className="icon-btn" aria-label="Close"><IconClose /></button>
+                <span>Close</span>
+              </div>
+              <div className="ds-icon-cell">
+                <button className="icon-btn ds-icon-bookmark" aria-label="Save"><IconBookmark /></button>
+                <span>Save</span>
+              </div>
+              <div className="ds-icon-cell">
+                <button className="season-nav-btn" aria-label="Previous">‹</button>
+                <span>Prev</span>
+              </div>
+              <div className="ds-icon-cell">
+                <button className="season-nav-btn" aria-label="Next">›</button>
+                <span>Next</span>
+              </div>
             </div>
           </div>
         </div>
@@ -388,10 +475,7 @@ export default function DesignSystemPage() {
                 <span className="discover-hero-badge">Trending #1</span>
                 <h2 className="discover-hero-title">Sample feature</h2>
                 <p className="discover-hero-meta">2026 · Movie</p>
-                <div className="discover-hero-actions">
-                  <button className="discover-hero-save">Save</button>
-                  <button className="discover-hero-info">Details</button>
-                </div>
+
               </div>
             </div>
           </div>
@@ -453,8 +537,14 @@ export default function DesignSystemPage() {
                 <div className="panel-meta-row"><span>2026</span><span className="chip chip-streaming">Movie</span></div>
                 <p className="panel-overview">Use for overview, save actions, providers, notes, and episode lists.</p>
                 <div className="providers-grid">
-                  <span className="provider-chip"><span className="ds-provider-mark">N</span>Netflix</span>
-                  <span className="provider-chip"><span className="ds-provider-mark">P</span>Prime</span>
+                  <span className="provider-chip">
+                    <img src="https://image.tmdb.org/t/p/w92/t2yyOv40HZeVlLjYsCsPHnWLk4W.jpg" alt="Netflix" className="ds-provider-logo" />
+                    Netflix
+                  </span>
+                  <span className="provider-chip">
+                    <img src="https://image.tmdb.org/t/p/w92/emthp39XA2YScoYL1p0sdbAH2WA.jpg" alt="Prime Video" className="ds-provider-logo" />
+                    Prime
+                  </span>
                 </div>
               </div>
             </div>
@@ -463,7 +553,7 @@ export default function DesignSystemPage() {
           <div className="ds-card-example">
             <span className="ds-example-label">Provider select card</span>
             <button className="provider-select-card selected ds-provider-select-sample">
-              <span className="discover-plat-logo discover-plat-logo-fallback">N</span>
+              <img src="https://image.tmdb.org/t/p/w92/t2yyOv40HZeVlLjYsCsPHnWLk4W.jpg" alt="Netflix" />
               <span>Netflix</span>
             </button>
           </div>
@@ -531,7 +621,184 @@ export default function DesignSystemPage() {
         </div>
       </Section>
 
-      <Section eyebrow="08" title="Spacing, Shadows, and Motion">
+      <Section eyebrow="08" title="Interactive States">
+        <p className="ds-section-note">
+          These behaviors apply across all tappable surfaces. Hover a card or press Tab to see the states live.
+        </p>
+        <div className="ds-bar-catalog">
+          <div className="ds-bar-item">
+            <div className="ds-bar-copy">
+              <strong>Card press (.interactive-surface)</strong>
+              <p>All tappable cards scale to 0.97 on hover and 0.93 on active. Applied via the .interactive-surface class on media cards, list rows, and settings rows.</p>
+            </div>
+            <div className="ds-interactive-demo">
+              <div className="media-card interactive-surface ds-interactive-card">
+                <div className="media-card-img">
+                  <div className="ds-poster-art"><span>PLOT</span></div>
+                </div>
+                <div className="media-card-title">Hover me</div>
+                <div className="media-card-meta">Card press demo</div>
+              </div>
+            </div>
+          </div>
+          <div className="ds-bar-item">
+            <div className="ds-bar-copy">
+              <strong>Focus-visible ring</strong>
+              <p>Keyboard navigation shows a 2px accent outline on all interactive elements. Rows get --surface-raised background; cards get a glow shadow instead.</p>
+            </div>
+            <div className="ds-focus-demo">
+              <button className="btn btn-secondary">Tab to me</button>
+              <div className="list-row interactive-surface ds-list-row-sample" tabIndex={0}>
+                <div className="list-row-poster"><div className="ds-mini-poster" /></div>
+                <div className="list-row-info">
+                  <div className="list-row-title">Tab to this row</div>
+                  <div className="list-row-meta"><span>Focus ring demo</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="ds-bar-item">
+            <div className="ds-bar-copy">
+              <strong>Filter button open state</strong>
+              <p>Filter and multi-select trigger buttons pick up an accent border when open. The caret rotates 180° to indicate the menu is expanded.</p>
+            </div>
+            <div className="ds-focus-demo">
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <button className="multi-select-btn">Closed</button>
+                <button className="multi-select-btn open">
+                  Open
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Section>
+
+      <Section eyebrow="09" title="Overlays, Glass, and Menus">
+        <div className="ds-bar-catalog">
+          <div className="ds-bar-item">
+            <div className="ds-bar-copy">
+              <strong>Confirm modal</strong>
+              <p>Shared destructive-action confirmation. Normal variant uses --accent; danger variant uses --danger. Scrim uses backdrop-filter blur. Dismisses on Esc or overlay tap.</p>
+            </div>
+            <div className="ds-modal-demos">
+              <div className="ds-modal-card">
+                <p className="ds-modal-title">Save to My List?</p>
+                <p className="ds-modal-message">This title will appear in your saved list.</p>
+                <div className="ds-modal-actions">
+                  <button className="btn btn-secondary ds-modal-btn">Cancel</button>
+                  <button className="btn btn-accent ds-modal-btn">Save</button>
+                </div>
+              </div>
+              <div className="ds-modal-card">
+                <p className="ds-modal-title">Remove from list?</p>
+                <p className="ds-modal-message">This title will be removed from your saved list.</p>
+                <div className="ds-modal-actions">
+                  <button className="btn btn-secondary ds-modal-btn">Cancel</button>
+                  <button className="btn ds-modal-btn ds-btn-danger">Remove</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="ds-bar-item">
+            <div className="ds-bar-copy">
+              <strong>Filter dropdown</strong>
+              <p>Floating menu triggered by a filter button. Used in the guide and calendar toolbar for type and genre selection. Position absolute, z-index 300.</p>
+            </div>
+            <div className="ds-filter-demo">
+              <div className="multi-select ds-filter-wrap">
+                <button className="multi-select-btn open">
+                  Genre
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+                <div className="multi-select-menu ds-menu-static">
+                  <label className="multi-select-option"><input type="checkbox" defaultChecked readOnly /> Drama</label>
+                  <label className="multi-select-option"><input type="checkbox" readOnly /> Comedy</label>
+                  <label className="multi-select-option"><input type="checkbox" readOnly /> Thriller</label>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="ds-bar-item">
+            <div className="ds-bar-copy">
+              <strong>Glass surface</strong>
+              <p>--glass-bg + backdrop-filter: blur(12px) used on panel overlays and app headers when content scrolls beneath them. --glass-border defines the edge.</p>
+            </div>
+            <div className="ds-glass-demo">
+              <div className="ds-glass-art" />
+              <div className="ds-glass-panel">
+                <span className="ds-glass-label">Glass surface</span>
+                <code>--glass-bg · backdrop-filter: blur(12px)</code>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Section>
+
+      <Section eyebrow="10" title="Forms and Validation">
+        <p className="ds-section-note">
+          Input states follow a consistent pattern across onboarding, search, and settings. Only one state applies per field at a time.
+        </p>
+        <div className="ds-pattern-grid">
+          <div className="ds-form-card">
+            <span className="ds-example-label">Input states</span>
+            <label>Default<input type="text" defaultValue="Severance" readOnly /></label>
+            <label>Error
+              <div className="ds-state-wrap">
+                <input type="text" defaultValue="bad@email" readOnly className="ds-input-error" />
+                <span className="ds-error-msg">Enter a valid email address</span>
+              </div>
+            </label>
+            <label>Valid
+              <div className="ds-state-wrap">
+                <input type="text" defaultValue="savannah@theplot.tv" readOnly className="ds-input-valid" />
+                <span className="ds-valid-mark">✓</span>
+              </div>
+            </label>
+          </div>
+          <div className="ds-form-card">
+            <span className="ds-example-label">Password field</span>
+            <label>Password
+              <div className="ds-state-wrap">
+                <input type="password" defaultValue="mysecret" readOnly />
+                <button className="ds-pw-toggle" aria-label="Show password">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+              </div>
+            </label>
+            <div className="ds-form-note">Show/hide toggle sits on the trailing edge inside the input.</div>
+          </div>
+          <div className="ds-form-card">
+            <span className="ds-example-label">Search input</span>
+            <div className="search-input-inner ds-search-wrap">
+              <span className="search-input-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              </span>
+              <input type="search" className="search-input ds-search-input" placeholder="Search titles…" readOnly />
+            </div>
+            <div className="ds-form-note">Full-width, icon-leading. Font size ≥16px prevents iOS auto-zoom on focus.</div>
+          </div>
+          <div className="ds-form-card">
+            <span className="ds-example-label">Review — stars + textarea</span>
+            <div className="ds-star-row">
+              {[1,2,3,4,5].map(i => (
+                <button key={i} className="review-star-btn" aria-label={`${i} star`}>
+                  <svg viewBox="0 0 24 24" width="22" height="22"
+                    fill={i <= 3 ? 'var(--accent)' : 'none'}
+                    stroke="var(--accent)" strokeWidth="1.5">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                  </svg>
+                </button>
+              ))}
+            </div>
+            <textarea className="review-textarea review-textarea--active" rows={3} defaultValue="Gripping from start to finish." readOnly />
+            <div className="ds-form-note">Stars use --accent fill. Textarea gets an accent border on active state.</div>
+          </div>
+        </div>
+      </Section>
+
+      <Section eyebrow="11" title="Spacing, Shadows, and Motion">
         <div className="ds-utility-grid">
           <RuleCard label="Spacing scale">
             <div className="ds-scale-list">
@@ -585,7 +852,7 @@ export default function DesignSystemPage() {
         </div>
       </Section>
 
-      <Section eyebrow="09" title="Shared vs Surface-Specific">
+      <Section eyebrow="12" title="Shared vs Surface-Specific">
         <div className="ds-utility-grid">
           {surfaceOwnership.map(([label, copy]) => (
             <RuleCard key={label} label={label}>
@@ -595,22 +862,59 @@ export default function DesignSystemPage() {
         </div>
       </Section>
 
-      <Section eyebrow="10" title="Layout Rules">
+      <Section eyebrow="13" title="Layout Rules">
         <p className="ds-section-note">
           These are not visual components by themselves. They are guardrails for where components live.
         </p>
         <div className="ds-layout-grid">
-          {layoutRules.map(([label, purpose]) => (
-            <div key={label} className="ds-layout-rule">
-              <div className="ds-layout-rule-art">
-                <span />
-                <strong />
-                <em />
+          {/* Fixed app frame: top bar + scrolling content + bottom bar */}
+          <div className="ds-layout-rule">
+            <div className="ds-layout-rule-art ds-layout-art--fixed">
+              <span className="ds-la-bar ds-la-bar--top" />
+              <div className="ds-la-scroll">
+                <span /><span /><span />
               </div>
-              <strong>{label}</strong>
-              <p>{purpose}</p>
+              <span className="ds-la-bar ds-la-bar--bottom" />
             </div>
-          ))}
+            <strong>Fixed app frame</strong>
+            <p>Header and bottom tabs stay fixed; content scrolls inside the app surface.</p>
+          </div>
+          {/* Side reading panel: content + right panel */}
+          <div className="ds-layout-rule">
+            <div className="ds-layout-rule-art ds-layout-art--panel">
+              <span className="ds-la-bar ds-la-bar--top" />
+              <div className="ds-la-body">
+                <span className="ds-la-main" />
+                <span className="ds-la-aside" />
+              </div>
+              <span className="ds-la-bar ds-la-bar--bottom" />
+            </div>
+            <strong>Side reading panel</strong>
+            <p>Media details open in a right-side sheet capped by the panel width token.</p>
+          </div>
+          {/* Focused content width: narrow centred column */}
+          <div className="ds-layout-rule">
+            <div className="ds-layout-rule-art ds-layout-art--focused">
+              <span className="ds-la-bar ds-la-bar--top" />
+              <div className="ds-la-center">
+                <span /><span /><span />
+              </div>
+              <span className="ds-la-bar ds-la-bar--bottom" />
+            </div>
+            <strong>Focused content width</strong>
+            <p>Legal, settings, and onboarding flows use the content max width for readable forms.</p>
+          </div>
+          {/* Full-width bands: edge-to-edge headers over full-width rows */}
+          <div className="ds-layout-rule">
+            <div className="ds-layout-rule-art ds-layout-art--bands">
+              <span className="ds-la-band" />
+              <span className="ds-la-band ds-la-band--dim" />
+              <span className="ds-la-band" />
+              <span className="ds-la-band ds-la-band--dim" />
+            </div>
+            <strong>Full-width bands</strong>
+            <p>Bars and section headers run edge to edge inside their section; cards hold the rounded surfaces.</p>
+          </div>
         </div>
       </Section>
     </div>
