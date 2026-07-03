@@ -97,6 +97,19 @@ const postImage = (p: FeedPost) => {
   if (typeof hero === 'string' && /^https?:\/\//.test(hero)) return hero;
   return p.media?.[0]?.landscape_path ? mediaUrl(p.media[0].landscape_path) : null;
 };
+// Static branded 1200×630 fallback (PLOT wordmark + tagline) for pages with no
+// per-post image, so every shared PLOT link previews on-brand.
+const OG_FALLBACK = `${SITE}/og-image.png`;
+// Link-preview image: prefer the branded per-post social render, then a branded
+// /api/og title card for a single-title post, then the plain hero still, then
+// the static brand image. (The on-page hero keeps using postImage's plain still.)
+const postShareImage = (p: FeedPost) => {
+  if (p.media?.[0]?.landscape_path) return mediaUrl(p.media[0].landscape_path);
+  const ref = p.tmdb_refs?.[0];
+  if (ref?.tmdb_id && ref.media_type) return `${APP}/api/og?type=${ref.media_type === 'tv' ? 'tv' : 'movie'}&id=${ref.tmdb_id}`;
+  const hero = p.copy?.hero_image;
+  return typeof hero === 'string' && /^https?:\/\//.test(hero) ? hero : OG_FALLBACK;
+};
 const postBody = (p: FeedPost) => (Array.isArray(p.copy?.page_body) ? p.copy.page_body : []);
 const entryUrl = (p: FeedPost) => `${SITE}${FEED_PATH}/${p.slug}`;
 
@@ -457,7 +470,12 @@ const renderChart = async (supabase: ReturnType<typeof createClient>) => {
 <link rel="canonical" href="${pageUrl}">
 <meta property="og:title" content="The chart · PLOT">
 <meta property="og:description" content="The twenty titles the world is watching this week, ranked. Updated weekly.">
-<meta property="og:url" content="${pageUrl}">`;
+<meta property="og:url" content="${pageUrl}">
+<meta property="og:image" content="${OG_FALLBACK}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="${OG_FALLBACK}">`;
 
   const cta = `<aside class="endcta" style="border-top:none;padding-top:0">
       <div class="ec-copy">
@@ -596,7 +614,12 @@ Deno.serve(async (req) => {
 <link rel="canonical" href="${SITE}${FEED_PATH}">
 <meta property="og:title" content="${FEED_TITLE} · PLOT">
 <meta property="og:description" content="What's coming, what's streaming, what's trending.">
-<meta property="og:url" content="${SITE}${FEED_PATH}">`;
+<meta property="og:url" content="${SITE}${FEED_PATH}">
+<meta property="og:image" content="${OG_FALLBACK}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="${OG_FALLBACK}">`;
 
     return page(`PLOT | ${FEED_TITLE}`, head, `
       <div class="head r2">
@@ -637,6 +660,7 @@ Deno.serve(async (req) => {
 
   const typed = post as FeedPost;
   const hero = postImage(typed);
+  const shareImg = postShareImage(typed);
   const title = postTitle(typed);
   const body = postBody(typed);
   const description = body[0] ? String(body[0]).slice(0, 160) : `Film & TV updates from PLOT.`;
@@ -670,8 +694,9 @@ Deno.serve(async (req) => {
 <meta property="og:title" content="${esc(title)}">
 <meta property="og:description" content="${esc(description)}">
 <meta property="og:url" content="${esc(pageUrl)}">
-${hero ? `<meta property="og:image" content="${esc(hero)}">` : ''}
+<meta property="og:image" content="${esc(shareImg)}">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="${esc(shareImg)}">
 <script type="application/ld+json">${jsonLd}</script>`;
 
   // Guides (and any entry carrying tmdb_refs) get a poster grid linking each

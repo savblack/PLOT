@@ -285,6 +285,7 @@ export default function OnboardingFlow() {
                     transition: 'all 0.15s ease',
                   }}
                   onClick={() => setRegion(r.code)}
+                  aria-pressed={region === r.code}
                 >
                   {r.name}
                 </button>

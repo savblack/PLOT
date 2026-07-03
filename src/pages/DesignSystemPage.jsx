@@ -1174,7 +1174,7 @@ export default function DesignSystemPage() {
             <img src="/ds/share-list.jpg" alt="List share card" />
             <figcaption>
               <strong>List card</strong>
-              <p>List name, owner, and up to five posters. "A list on PLOT" eyebrow. <code>/api/og?list=…</code></p>
+              <p>List name, owner, and up to five posters. "PLOT LISTS" eyebrow. <code>/api/og?list=…</code></p>
             </figcaption>
           </figure>
         </div>
@@ -1197,10 +1197,58 @@ export default function DesignSystemPage() {
           </RuleCard>
         </div>
 
-        <h3 className="ds-subsection-title">Known inconsistency to reconcile</h3>
+        <h3 className="ds-subsection-title">One card, every surface</h3>
         <p className="ds-section-note" style={{ marginTop: '0.25rem' }}>
-          The same title can unfurl two different ways. Shared via the app's <code>/save</code> link it gets the branded card above; shared via the marketing <code>theplot.tv/movie/:slug</code> page (<code>supabase/functions/title-page</code>) it currently gets a bare, unbranded TMDB backdrop at a non-standard size. The <code>/whats-on</code> article pages likewise use plain stills, and the <code>/whats-on</code> index + chart emit no <code>og:image</code> at all. These marketing-domain surfaces should adopt the branded <code>/api/og</code> card so every shared PLOT link looks like PLOT.
+          A title now unfurls identically wherever its link is shared: the app's <code>/save</code> link and the marketing <code>theplot.tv/movie/:slug</code> page (<code>supabase/functions/title-page</code>) both point <code>og:image</code> at the same branded <code>/api/og</code> card. <code>/whats-on</code> articles use their branded per-post render, and the <code>/whats-on</code> index + chart carry the branded fallback image. The real poster still backs the JSON-LD for SEO rich results.
         </p>
+      </Section>
+
+      <Section eyebrow="17" title="Marketing Collateral">
+        <p className="ds-section-note">
+          Outbound assets we publish — social posts, channel art, avatars. Unlike the share cards in §16, these aren't link previews; they're posted to Instagram, X, and Threads. They still inherit the same wordmark, Instrument Serif display, DM Sans labels, accent, and dark palette.
+        </p>
+
+        <h3 className="ds-subsection-title">Social post templates</h3>
+        <p className="ds-section-note" style={{ marginTop: '0.25rem' }}>
+          Nine per-post templates (now-streaming, watch-tonight, trending chart, countdown, feature, hidden-gem, on-this-day, trailer-drop, weekly-slate) rendered from live title art by the weekly pipeline — portrait 1080×1350 for Instagram, landscape 1600×900 for X / Threads.
+        </p>
+        <div className="ds-collateral-row">
+          <figure className="ds-collateral-item ds-ci--portrait">
+            <img src="/ds/collateral-post-streaming.jpg" alt="Now streaming social post" />
+            <figcaption><strong>Now streaming · portrait</strong>Instagram 1080×1350</figcaption>
+          </figure>
+          <figure className="ds-collateral-item ds-ci--landscape">
+            <img src="/ds/collateral-post-tonight.jpg" alt="Watch tonight social post" />
+            <figcaption><strong>Watch tonight · landscape</strong>X / Threads 1600×900</figcaption>
+          </figure>
+          <figure className="ds-collateral-item ds-ci--landscape">
+            <img src="/ds/collateral-post-chart.jpg" alt="Trending chart social post" />
+            <figcaption><strong>Trending chart · landscape</strong>The weekly top-10 ranking</figcaption>
+          </figure>
+        </div>
+
+        <h3 className="ds-subsection-title">Channel &amp; profile art</h3>
+        <p className="ds-section-note" style={{ marginTop: '0.25rem' }}>
+          Hand-made brand collateral — account headers, decorative covers, and avatars. Static, rendered once from <code>marketing/assets/</code>.
+        </p>
+        <div className="ds-collateral-row">
+          <figure className="ds-collateral-item ds-ci--wide">
+            <img src="/ds/collateral-x-header.jpg" alt="X header and brand cover — centered PLOT wordmark on cream" />
+            <figcaption><strong>X / Twitter header &amp; brand cover</strong>Centered Instrument Serif wordmark, ink on cream · 1500×500 · used for both</figcaption>
+          </figure>
+          <figure className="ds-collateral-item ds-ci--landscape">
+            <img src="/ds/collateral-cover-billing.jpg" alt="Brand cover, billing block" />
+            <figcaption><strong>Brand cover · billing</strong>Poster-style promo variant</figcaption>
+          </figure>
+          <figure className="ds-collateral-item ds-ci--square">
+            <img src="/ds/collateral-ig-wordmark.jpg" alt="Instagram avatar, wordmark" />
+            <figcaption><strong>Avatar · wordmark</strong>1080²</figcaption>
+          </figure>
+          <figure className="ds-collateral-item ds-ci--square">
+            <img src="/ds/collateral-ig-monogram.jpg" alt="Instagram avatar, monogram" />
+            <figcaption><strong>Avatar · monogram</strong>Tiny sizes</figcaption>
+          </figure>
+        </div>
       </Section>
     </div>
   );

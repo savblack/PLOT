@@ -1378,6 +1378,49 @@
   color: var(--text-secondary);
 }
 
+/* Marketing collateral gallery (§17) */
+.ds-collateral-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.ds-collateral-item {
+  margin: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.ds-collateral-item img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-bottom: 1px solid var(--border);
+}
+
+.ds-collateral-item figcaption {
+  padding: 0.55rem 0.7rem;
+  font-size: 0.74rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.ds-collateral-item figcaption strong {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--text-primary);
+  margin-bottom: 0.15rem;
+}
+
+.ds-ci--portrait { flex: 0 1 200px; }
+.ds-ci--landscape { flex: 1 1 320px; max-width: 460px; }
+.ds-ci--wide { flex: 1 1 100%; }
+.ds-ci--square { flex: 0 1 132px; }
+
 /* Editorial display sample (§01) */
 .ds-editorial-display {
   margin-top: 0.75rem;
