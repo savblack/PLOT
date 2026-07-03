@@ -8,7 +8,6 @@ const targets = [
   ['x-header-b.html', 'x-header-b.png'],
   ['x-header-light-a.html', 'x-header-light-a.png'],
   ['x-header-light-b.html', 'x-header-light-b.png'],
-  ['x-cover-billing.html', 'x-cover-billing.png'],
 ];
 
 const browser = await chromium.launch();

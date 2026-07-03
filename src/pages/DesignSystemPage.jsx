@@ -1236,10 +1236,6 @@ export default function DesignSystemPage() {
             <img src="/ds/collateral-x-header.jpg" alt="X header and brand cover — centered PLOT wordmark on cream" />
             <figcaption><strong>X / Twitter header &amp; brand cover</strong>Centered Instrument Serif wordmark, ink on cream · 1500×500 · used for both</figcaption>
           </figure>
-          <figure className="ds-collateral-item ds-ci--landscape">
-            <img src="/ds/collateral-cover-billing.jpg" alt="Brand cover, billing block" />
-            <figcaption><strong>Brand cover · billing</strong>Poster-style promo variant</figcaption>
-          </figure>
           <figure className="ds-collateral-item ds-ci--square">
             <img src="/ds/collateral-ig-wordmark.jpg" alt="Instagram avatar, wordmark" />
             <figcaption><strong>Avatar · wordmark</strong>1080²</figcaption>
