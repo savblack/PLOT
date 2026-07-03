@@ -625,7 +625,7 @@ export default function DesignSystemPage() {
             </div>
             <div className="ds-loader-sample" style={{ gap: '1rem' }}>
               <PlotLoader />
-              <div style={{ background: '#141418', borderRadius: '1.25rem', padding: '1.1rem 1.35rem', display: 'grid', placeItems: 'center' }}>
+              <div style={{ background: '#0c0c0c', borderRadius: '1.25rem', padding: '1.1rem 1.35rem', display: 'grid', placeItems: 'center' }}>
                 <PlotLoader tone="dark" />
               </div>
             </div>
