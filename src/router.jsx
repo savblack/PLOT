@@ -50,6 +50,9 @@ const router = createBrowserRouter([
   { path: '/terms',          element: wrap(<TermsPage />) },
   { path: '/privacy',        element: wrap(<PrivacyPage />) },
 
+  // Design system — standalone, no auth, dev builds only
+  ...(import.meta.env.DEV ? [{ path: '/design-system', element: wrap(<DesignSystemPage />) }] : []),
+
   // Deep link: "Save to watchlist" from outside the app (newsletter, chart page)
   { path: '/save',           element: wrap(<SavePage />) },
 
@@ -92,8 +95,6 @@ const router = createBrowserRouter([
       { path: 'requests', element: wrap(<RequestsView />) },
       { path: 'notifications', element: wrap(<NotificationsView />) },
       { path: 'import',   element: wrap(<ImportView />) },
-      // Design system only available in dev builds
-      ...(import.meta.env.DEV ? [{ path: 'design-system', element: wrap(<DesignSystemPage />) }] : []),
     ],
   },
 
