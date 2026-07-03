@@ -7,10 +7,10 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 :root {
-  --bg:           #0C0C0E;
-  --text:         #FAFAFA;
-  --text-dim:     rgba(250,250,250,0.72);
-  --text-faint:   rgba(250,250,250,0.45);
+  --bg:           #0c0c0c;        /* shared brand/editorial dark (colors.dark.bg) */
+  --text:         #f0efe8;        /* colors.dark.textPrimary */
+  --text-dim:     rgba(240,239,232,0.72);
+  --text-faint:   rgba(240,239,232,0.45);
   --accent:       #F06A88;        /* dark-mode accent from the app */
   --chip-cinema:    #E16A73;
   --chip-streaming: #78BDB7;

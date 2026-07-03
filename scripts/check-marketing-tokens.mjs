@@ -51,6 +51,8 @@ const eq = (label, actual, expected) => {
 // 2. marketing/templates/base.css — dark accent + media chips for social cards.
 {
   const v = vars(rootBlock(read('marketing/templates/base.css')));
+  eq('base.css --bg', v['--bg'], colors.dark.bg);
+  eq('base.css --text', v['--text'], colors.dark.textPrimary);
   eq('base.css --accent', v['--accent'], colors.dark.accent);
   eq('base.css --chip-cinema', v['--chip-cinema'], colors.dark.chipCinema);
   eq('base.css --chip-streaming', v['--chip-streaming'], colors.dark.chipStreaming);
