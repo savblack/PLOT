@@ -1231,22 +1231,33 @@ export default function DesignSystemPage() {
         <p className="ds-section-note" style={{ marginTop: '0.25rem' }}>
           Hand-made brand collateral — account headers, decorative covers, and avatars. Static, rendered once from <code>marketing/assets/</code>.
         </p>
+        <p className="ds-section-note" style={{ marginTop: '-0.35rem' }}>
+          Each comes in both directions: ink on cream and its inverse, warm off-white on the brand dark.
+        </p>
         <div className="ds-collateral-row">
           <figure className="ds-collateral-item ds-ci--wide">
-            <img src="/ds/collateral-x-header.jpg" alt="X header and brand cover — centered PLOT wordmark on cream" />
-            <figcaption><strong>X / Twitter header &amp; brand cover</strong>Centered Instrument Serif wordmark, ink on cream · 1500×500 · used for both</figcaption>
+            <img src="/ds/collateral-x-header.jpg" alt="X header and brand cover — ink PLOT wordmark on cream" />
+            <figcaption><strong>X header &amp; brand cover · cream</strong>Centered Instrument Serif wordmark, ink on cream · 1500×500 · used for both</figcaption>
           </figure>
-          <figure className="ds-collateral-item ds-ci--landscape">
-            <img src="/ds/collateral-cover-billing.jpg" alt="Brand cover, billing block" />
-            <figcaption><strong>Brand cover · billing</strong>Poster-style promo variant</figcaption>
-          </figure>
-          <figure className="ds-collateral-item ds-ci--square">
-            <img src="/ds/collateral-ig-wordmark.jpg" alt="Instagram avatar, wordmark" />
-            <figcaption><strong>Avatar · wordmark</strong>1080²</figcaption>
+          <figure className="ds-collateral-item ds-ci--wide">
+            <img src="/ds/collateral-x-header-dark.jpg" alt="X header and brand cover — off-white PLOT wordmark on dark" />
+            <figcaption><strong>X header &amp; brand cover · dark</strong>Inverted — warm off-white on <code>#0C0C0E</code></figcaption>
           </figure>
           <figure className="ds-collateral-item ds-ci--square">
-            <img src="/ds/collateral-ig-monogram.jpg" alt="Instagram avatar, monogram" />
-            <figcaption><strong>Avatar · monogram</strong>Tiny sizes</figcaption>
+            <img src="/ds/collateral-ig-wordmark.jpg" alt="Instagram avatar, wordmark on dark" />
+            <figcaption><strong>Avatar · wordmark, dark</strong>1080²</figcaption>
+          </figure>
+          <figure className="ds-collateral-item ds-ci--square">
+            <img src="/ds/collateral-ig-wordmark-cream.jpg" alt="Instagram avatar, wordmark on cream" />
+            <figcaption><strong>Avatar · wordmark, cream</strong>Inverted</figcaption>
+          </figure>
+          <figure className="ds-collateral-item ds-ci--square">
+            <img src="/ds/collateral-ig-monogram.jpg" alt="Instagram avatar, monogram on dark" />
+            <figcaption><strong>Avatar · monogram, dark</strong>Tiny sizes</figcaption>
+          </figure>
+          <figure className="ds-collateral-item ds-ci--square">
+            <img src="/ds/collateral-ig-monogram-cream.jpg" alt="Instagram avatar, monogram on cream" />
+            <figcaption><strong>Avatar · monogram, cream</strong>Inverted</figcaption>
           </figure>
         </div>
       </Section>
