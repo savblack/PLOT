@@ -63,6 +63,20 @@ const motionRules = [
   ['Fade loaders sequentially', 'The PLOT loader should stay centered and animate letter-by-letter in order.'],
 ];
 
+const motionTokens = [
+  ['--ease', 'cubic-bezier(0.23, 1, 0.32, 1)', 'Standard ease-out for structural transitions.'],
+  ['--ease-bounce', 'cubic-bezier(0.34, 1.56, 0.64, 1)', 'Overshoot curve reserved for sheet and modal arrivals.'],
+  ['--transition', 'all 0.3s var(--ease)', 'Default transition for panels and surfaces.'],
+  ['--transition-fast', 'all 0.15s ease', 'Quick feedback for buttons, chips, and tabs.'],
+];
+
+const layoutTokens = [
+  ['--content-max', '680px', 'Focused reading width for legal, settings, and forms.'],
+  ['--panel-w', '460px', 'Fixed width of the right-side media reading panel.'],
+  ['--header-h', '56px', 'Height of the fixed app header.'],
+  ['--tabbar-h', '58px', 'Height of the fixed bottom tab bar.'],
+];
+
 const surfaceOwnership = [
   ['Always shared', 'Logo assets, typography, color roles, spacing rhythm, radius, borders, loader behavior, buttons, form controls, and legal/support page tone.'],
   ['Shared with art direction freedom', 'Poster walls, hero cards, empty states, and editorial copy can vary as long as they still sit on the shared token system.'],
@@ -832,11 +846,22 @@ export default function DesignSystemPage() {
             </div>
           </RuleCard>
 
+          <RuleCard label="Motion tokens">
+            <div className="ds-note-list">
+              {motionTokens.map(([token, value, purpose]) => (
+                <div key={token} className="ds-note-row">
+                  <code>{token}</code>
+                  <p><span className="ds-token-value">{value}</span> {purpose}</p>
+                </div>
+              ))}
+            </div>
+          </RuleCard>
+
           <RuleCard label="Icon and mark usage">
             <div className="ds-note-list">
               <div className="ds-note-row">
-                <strong>Logo images</strong>
-                <p>Use the shared raster mark through <code>PlotLogo</code>; do not redraw or typeset the wordmark ad hoc.</p>
+                <strong>Wordmark</strong>
+                <p>Render the PLOT wordmark as Instrument Serif text through <code>PlotLogo</code> (<code>var(--font-serif)</code>, weight 400, <code>-0.05em</code> tracking). Never use raster or letter-image logos; size it with <code>fontSize</code>.</p>
               </div>
               <div className="ds-note-row">
                 <strong>Navigation icons</strong>
@@ -895,11 +920,25 @@ export default function DesignSystemPage() {
             <p>Bars and section headers run edge to edge inside their section; cards hold the rounded surfaces.</p>
           </div>
         </div>
+
+        <h3 className="ds-subsection-title">Layout dimension tokens</h3>
+        <p className="ds-section-note" style={{ marginTop: '0.25rem' }}>
+          The fixed dimensions these rules lean on, defined once in <code>tokens.css</code>.
+        </p>
+        <div className="ds-layout-token-grid">
+          {layoutTokens.map(([token, value, purpose]) => (
+            <div key={token} className="ds-layout-token">
+              <span className="ds-layout-token-value">{value}</span>
+              <code>{token}</code>
+              <p>{purpose}</p>
+            </div>
+          ))}
+        </div>
       </Section>
 
-      <Section eyebrow="14" title="Error and Empty States">
+      <Section eyebrow="14" title="Error, Empty, and Loading States">
         <p className="ds-section-note">
-          All full-page error screens share one dark centered design. In-app empty states use a minimal inline pattern.
+          All full-page error screens share one dark centered design. In-app empty states use a minimal inline pattern, and loading falls back to the animated PLOT mark.
         </p>
 
         {/* Full-page error screens */}
@@ -1021,6 +1060,26 @@ export default function DesignSystemPage() {
         </div>
         <div className="ds-code-note">
           <code>{`<div className="empty-state">\n  <div className="empty-icon">…</div>\n  <div className="empty-title">Nothing saved yet</div>\n  <div className="empty-body">Browse the Guide or search for titles.</div>\n</div>`}</code>
+        </div>
+
+        {/* Loading state */}
+        <h3 className="ds-subsection-title">Loading state</h3>
+        <p className="ds-section-note" style={{ marginTop: '0.25rem' }}>
+          While a route or panel resolves, the app shows the PLOT wordmark with its letters pulsing in sequence — centered on the surface, never a spinner.
+        </p>
+        <div className="ds-loader-grid">
+          <div className="ds-loader-card">
+            <div className="ds-loader-demo">
+              <PlotLoader size="lg" tone={dark ? 'dark' : 'light'} />
+            </div>
+            <div className="ds-loader-label">Route fallback · <code>&lt;LoadingSpinner /&gt;</code> → <code>PlotLoader</code></div>
+          </div>
+          <div className="ds-loader-card">
+            <div className="ds-loader-demo">
+              <PlotLoader size="sm" tone={dark ? 'dark' : 'light'} />
+            </div>
+            <div className="ds-loader-label">Inline / button scale · <code>size="sm"</code></div>
+          </div>
         </div>
       </Section>
     </div>

@@ -1286,6 +1286,86 @@
   padding: 1rem 1.25rem;
 }
 
+/* Motion token values (§11) */
+.ds-token-value {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.76rem;
+  color: var(--text-primary);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-badge);
+  padding: 0.05rem 0.35rem;
+  margin-right: 0.35rem;
+  white-space: nowrap;
+}
+
+/* Layout dimension tokens (§13) */
+.ds-layout-token-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.ds-layout-token {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  padding: 1rem;
+}
+
+.ds-layout-token-value {
+  display: block;
+  font-family: var(--font-serif);
+  font-size: 1.6rem;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.ds-layout-token code {
+  font-size: 0.76rem;
+  color: var(--accent);
+}
+
+.ds-layout-token p {
+  margin: 0.35rem 0 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* Loading state (§14) */
+.ds-loader-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.ds-loader-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.ds-loader-demo {
+  padding: 2.5rem 1rem;
+  background: var(--surface-sunken);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ds-loader-label {
+  padding: 0.6rem 0.85rem;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  border-top: 1px solid var(--border);
+}
+
 .ds-code-note code {
   font-size: 0.78rem;
   line-height: 1.7;
@@ -1304,7 +1384,9 @@
   .ds-utility-grid,
   .ds-layout-grid,
   .ds-error-screen-demo,
-  .ds-empty-states-grid {
+  .ds-empty-states-grid,
+  .ds-layout-token-grid,
+  .ds-loader-grid {
     grid-template-columns: 1fr;
   }
 
