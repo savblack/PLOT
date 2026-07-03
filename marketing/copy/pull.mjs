@@ -8,7 +8,7 @@ import { realpathSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { getSupabase } from '../lib/supabase.mjs';
-import { buildBrief, buildConversationBrief } from './brief.mjs';
+import { buildBrief, buildConversationBrief, buildGuideBrief } from './brief.mjs';
 import { enrichPost } from './enrich.mjs';
 import { JOBS_DIR } from './paths.mjs';
 
@@ -41,6 +41,10 @@ const main = async () => {
     if (post.post_type === 'question') {
       // Text-only question: no research pack, its own short brief.
       await writeFile(briefPath, await buildConversationBrief(post));
+    } else if (post.post_type === 'guide') {
+      // Web-only guide: its titles are already in tmdb_refs; the worker does its
+      // own light web research, so no pre-fetched research pack.
+      await writeFile(briefPath, await buildGuideBrief(post));
     } else {
       // Enrich from free sources (extended TMDB + Wikipedia). Best-effort: a
       // failed lookup still yields a brief, just without the research pack.

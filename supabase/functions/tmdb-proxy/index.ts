@@ -1,7 +1,29 @@
-const CORS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+// Only browser origins we actually serve from may call the proxy. Requests
+// with no Origin header (curl, server-to-server) are allowed through. Cross-site
+// browser requests are rejected with 403. Rate limiting is handled upstream by a
+// Cloudflare Worker (in-isolate limiting here was ineffective: Supabase spreads a
+// burst across isolates, each with its own empty counter).
+function isAllowedOrigin(origin: string | null): boolean {
+  if (!origin) return true;
+  try {
+    const { hostname, protocol } = new URL(origin);
+    if (protocol === 'http:' && (hostname === 'localhost' || hostname === '127.0.0.1')) return true;
+    if (hostname === 'theplot.tv' || hostname.endsWith('.theplot.tv')) return true;
+    if (hostname.endsWith('.vercel.app')) return true; // preview deploys
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+const CANONICAL_ORIGIN = 'https://app.theplot.tv';
+function corsHeaders(origin: string | null): Record<string, string> {
+  return {
+    'Access-Control-Allow-Origin': origin && isAllowedOrigin(origin) ? origin : CANONICAL_ORIGIN,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Vary': 'Origin',
+  };
+}
 
 const BASE = 'https://api.themoviedb.org/3';
 const ALLOWED_PATHS = [
@@ -22,8 +44,19 @@ const ALLOWED_PATHS = [
 ];
 
 Deno.serve(async (req) => {
+  const origin = req.headers.get('Origin');
+  const CORS = corsHeaders(origin);
+
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: CORS });
+  }
+
+  // Reject cross-site browser requests outright (an Origin we don't serve).
+  if (origin && !isAllowedOrigin(origin)) {
+    return new Response(JSON.stringify({ error: 'Origin not allowed' }), {
+      status: 403,
+      headers: { ...CORS, 'Content-Type': 'application/json' },
+    });
   }
 
   if (req.method !== 'GET') {

@@ -1,0 +1,104 @@
+# Nightly encrypted Postgres backup → Cloudflare R2.
+#
+# WHY: the Supabase project is on the free plan (no managed backups / PITR), so a
+# destructive write is otherwise unrecoverable. This takes a nightly logical dump
+# of the public + auth + storage schemas (auth includes password hashes, so a
+# clobbered credential can be restored), encrypts it, and stores it in R2 for 30 days.
+#
+# The dump contains password hashes and PII — it is ALWAYS gpg-encrypted before it
+# leaves the runner. Never store or commit an unencrypted dump.
+#
+# Required repo secrets (Settings → Secrets and variables → Actions):
+#   SUPABASE_DB_URL        Session-pooler connection string incl. password, e.g.
+#                          postgresql://postgres.<ref>:<pw>@aws-0-<region>.pooler.supabase.com:5432/postgres
+#                          (Dashboard → Project Settings → Database → Connection string → "Session pooler".
+#                           Use the pooler host — GitHub runners are IPv4 and can't reach the IPv6 direct host.)
+#   BACKUP_GPG_PASSPHRASE  Strong passphrase used to encrypt/decrypt dumps. Store it somewhere safe
+#                          OUTSIDE this repo (a password manager) — without it the backups are useless.
+#   R2_ENDPOINT            https://<account-id>.r2.cloudflarestorage.com
+#   R2_BUCKET              R2 bucket name (e.g. plot-db-backups)
+#   R2_ACCESS_KEY_ID       R2 API token access key (Object Read & Write on the bucket)
+#   R2_SECRET_ACCESS_KEY   R2 API token secret
+#
+# Restore: see docs/ops/db-restore.md
+
+name: DB backup (nightly → R2)
+
+on:
+  schedule:
+    - cron: '17 3 * * *'   # 03:17 UTC nightly
+  workflow_dispatch: {}     # allow manual runs to test
+
+concurrency:
+  group: db-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      AWS_ACCESS_KEY_ID:     ${{ secrets.R2_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION:    auto
+      R2_ENDPOINT:           ${{ secrets.R2_ENDPOINT }}
+      R2_BUCKET:             ${{ secrets.R2_BUCKET }}
+      # aws-cli v2.30+ adds CRC64NVME integrity checksums (aws-chunked trailers) by
+      # default, which Cloudflare R2 rejects. Only send checksums when the API requires
+      # them. https://github.com/aws/aws-cli/issues/9214
+      AWS_REQUEST_CHECKSUM_CALCULATION:  when_required
+      AWS_RESPONSE_CHECKSUM_VALIDATION:  when_required
+    steps:
+      - name: Install pg_dump 17 (match server major version)
+        run: |
+          set -euo pipefail
+          sudo sh -c 'echo "deb https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/pgdg.gpg
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-17
+          # The runner ships pg_dump 16 on PATH by default; Supabase is on PG 17 and
+          # pg_dump refuses to dump a newer server. Put the v17 binaries first on PATH
+          # for subsequent steps and confirm the version.
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
+          /usr/lib/postgresql/17/bin/pg_dump --version
+
+      - name: Dump + encrypt
+        env:
+          SUPABASE_DB_URL:       ${{ secrets.SUPABASE_DB_URL }}
+          BACKUP_GPG_PASSPHRASE: ${{ secrets.BACKUP_GPG_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          STAMP="$(date -u +%Y-%m-%dT%H%M%SZ)"
+          FILE="plot-${STAMP}.dump"
+          # Custom format (-Fc) is compressed and restorable with pg_restore.
+          # Limit to the schemas we actually need to recover (avoids noise/permission
+          # errors on Supabase-internal schemas).
+          pg_dump -Fc --no-owner --no-privileges \
+            -n public -n auth -n storage \
+            -d "$SUPABASE_DB_URL" -f "$FILE"
+          gpg --batch --yes --symmetric --cipher-algo AES256 \
+            --passphrase "$BACKUP_GPG_PASSPHRASE" -o "${FILE}.gpg" "$FILE"
+          rm -f "$FILE"
+          echo "ARTIFACT=${FILE}.gpg" >> "$GITHUB_ENV"
+          ls -lh "${FILE}.gpg"
+
+      - name: Upload to R2
+        run: |
+          set -euo pipefail
+          aws configure set default.s3.addressing_style path
+          aws s3 cp "$ARTIFACT" "s3://${R2_BUCKET}/db-backups/${ARTIFACT}" \
+            --endpoint-url "$R2_ENDPOINT" --only-show-errors
+          echo "Uploaded db-backups/${ARTIFACT}"
+
+      - name: Prune backups older than 30 days
+        run: |
+          set -euo pipefail
+          CUTOFF="$(date -u -d '30 days ago' +%Y-%m-%d)"
+          aws s3 ls "s3://${R2_BUCKET}/db-backups/" --endpoint-url "$R2_ENDPOINT" \
+            | awk '{print $4}' | grep -E '^plot-.*\.dump\.gpg$' | while read -r key; do
+              fdate="$(echo "$key" | sed -E 's/^plot-([0-9]{4}-[0-9]{2}-[0-9]{2}).*/\1/')"
+              if [[ "$fdate" < "$CUTOFF" ]]; then
+                echo "Pruning $key (dated $fdate < $CUTOFF)"
+                aws s3 rm "s3://${R2_BUCKET}/db-backups/${key}" --endpoint-url "$R2_ENDPOINT" --only-show-errors
+              fi
+            done

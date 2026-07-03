@@ -6,9 +6,8 @@ export default function NotFoundPage() {
   return (
     <ErrorScreen
       code="404"
-      label="Page not found"
       title="Looks like we've hit a plot hole."
-      body="Luckily, there's a lot more worth watching."
+      body="Let's get you back to something worth watching."
       primaryLabel="Go home"
       primaryAction={() => navigate('/')}
       ghostLabel="Search titles"

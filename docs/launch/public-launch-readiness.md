@@ -1,8 +1,25 @@
 # PLOT Public Launch Readiness
 
-Last reviewed: 2026-06-13
+Last reviewed: 2026-06-21
 
 This document is the launch source of truth for the remaining public-release tickets in the `PLOT Web App` Linear project. It records the production checks that were verified live, the release decisions made for first launch, and the rollback/support plan.
+
+## Open public launch hardening (2026-06-21)
+
+The original launch shape was an invite-only beta (≤50). For an **open** public launch — anyone can sign up — the following abuse/scale gaps were closed in code and must be paired with the dashboard/ops steps below.
+
+Code changes (this repo):
+
+- **Bot-signup protection.** Auth forms now render a Cloudflare Turnstile widget and pass `captchaToken` on signup, login, password reset, and resend (`src/components/Turnstile.jsx`, `src/pages/AuthPage.jsx`). The widget is a no-op until `VITE_TURNSTILE_SITE_KEY` is set, so it stays inert in local dev and CI.
+- **`tmdb-proxy` lockdown.** CORS is restricted to `*.theplot.tv`, localhost, and `*.vercel.app`; cross-site browser origins get a 403 (`supabase/functions/tmdb-proxy/index.ts`). An earlier in-memory per-IP rate limit was **removed** as ineffective — Supabase spreads a burst across isolates, each with its own empty counter (verified: 400 concurrent requests all returned 200). Rate limiting is handled upstream by a Cloudflare Worker fronting the proxy (`workers/tmdb-proxy/`); the app reaches the Worker via `VITE_TMDB_PROXY_URL`.
+- **CI now runs `node --test tests/unit/*.test.js`** so the existing unit coverage gates merges (`.github/workflows/ci.yml`).
+
+Ops / dashboard steps required before flipping signups open (NOT in code):
+
+- Supabase Auth → Bot & Abuse Protection: enable Cloudflare Turnstile and set the **secret** key (the **site** key goes in Vercel as `VITE_TURNSTILE_SITE_KEY`).
+- Supabase Auth → SMTP: point at Resend (`RESEND_API_KEY` + verified `theplot.tv` already exist). The built-in Supabase email sender is rate-limited and not for production — confirmation and reset emails will throttle under public volume without this.
+- Confirm Supabase Auth's built-in rate limits (sign-in / sign-up / email) are at production-appropriate values.
+- Vercel: add `VITE_TURNSTILE_SITE_KEY`. Redeploy `tmdb-proxy`.
 
 ## Production configuration snapshot
 
@@ -37,8 +54,6 @@ Production functions expected for launch:
   - `calendar-feed`
 - Authenticated:
   - `tmdb-proxy`
-  - `generate-journal`
-  - `generate-taste-profile`
   - `delete-account`
   - `media-sync`
   - `notify-feedback`
@@ -120,7 +135,6 @@ Launch review cadence:
   - `trakt-sync`
   - `calendar-feed`
   - `delete-account`
-  - `generate-taste-profile`
 
 Alert policy for first launch:
 

@@ -57,12 +57,12 @@ export default function TraktCallbackPage() {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        fontFamily: "'Manrope', system-ui, sans-serif",
+        fontFamily: 'var(--font-sans)',
         gap: '1rem',
         padding: '2rem',
         textAlign: 'center',
       }}>
-        <PlotLogo style={{ width: '100px', height: 'auto' }} />
+        <PlotLogo style={{ fontSize: '2rem' }} />
         <p style={{ color: '#c0392b', fontSize: '0.95rem', maxWidth: 360 }}>{error}</p>
         <a href="/settings" style={{ color: '#1a1a1a', fontWeight: 600, fontSize: '0.9rem' }}>Back to settings</a>
       </div>
@@ -76,10 +76,10 @@ export default function TraktCallbackPage() {
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      fontFamily: "'Manrope', system-ui, sans-serif",
+      fontFamily: 'var(--font-sans)',
       gap: '0.75rem',
     }}>
-      <PlotLogo style={{ width: '100px', height: 'auto' }} />
+      <PlotLogo style={{ fontSize: '2rem' }} />
       <p style={{ fontSize: '0.9rem', color: '#666', margin: 0 }}>Connecting Trakt…</p>
     </div>
   );

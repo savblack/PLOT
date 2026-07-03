@@ -34,6 +34,16 @@ export default defineConfig([
     },
   },
   {
+    // Vercel serverless / edge functions for the app (app.theplot.tv/api/*)
+    files: ['api/**/*.{js,jsx,mjs}'],
+    languageOptions: {
+      globals: { ...globals.node, ...globals.browser },
+    },
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
+  {
     files: ['src/router.jsx', 'src/App.jsx'],
     rules: {
       'react-refresh/only-export-components': 'off',

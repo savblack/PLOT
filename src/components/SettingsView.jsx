@@ -8,6 +8,7 @@ import { edgeFunctionUrl } from '../api/functions.js';
 import { useMediaSync } from '../hooks/useMediaSync.js';
 import { useTraktSync } from '../hooks/useTraktSync.js';
 import { useCalendar } from '../hooks/useCalendar.js';
+import { useShare } from '../hooks/useShare.js';
 import { deleteAccountAndSignOut } from '../utils/deleteAccount.js';
 import { fetchUserDataExport, downloadDataExport } from '../utils/exportData.js';
 import { buildFeedbackAttachmentPath } from '../utils/feedback.js';
@@ -409,41 +410,183 @@ function ProviderPicker({ title, hint, region, selected, onSave, onClose, limit 
 
 /* ── Profile photo ── */
 const AVATAR_MAX_MB = 5;
+const AVATAR_VIEW = 288;   // crop viewport size (css px)
+const AVATAR_OUT = 512;    // exported avatar size (px)
 
-function avatarStoragePath(userId, file) {
-  const ext = file?.name?.includes('.') ? file.name.split('.').pop().toLowerCase() : 'jpg';
-  return `${userId}/avatar.${ext}`;
+function clampNum(v, min, max) { return Math.min(max, Math.max(min, v)); }
+
+/* Crop + zoom modal — pan by dragging, zoom with the slider, exported as a square JPEG. */
+function AvatarCropModal({ src, saving, onCancel, onSave }) {
+  const imgRef = useRef(null);
+  const dragRef = useRef(null);
+  const [nat, setNat] = useState(null); // natural { w, h }
+  const [zoom, setZoom] = useState(1);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+
+  const baseScale = nat ? Math.max(AVATAR_VIEW / nat.w, AVATAR_VIEW / nat.h) : 1;
+  const scale = baseScale * zoom;
+  const dw = nat ? nat.w * scale : 0;
+  const dh = nat ? nat.h * scale : 0;
+
+  const clampOffset = (o, w, h) => ({
+    x: clampNum(o.x, AVATAR_VIEW - w, 0),
+    y: clampNum(o.y, AVATAR_VIEW - h, 0),
+  });
+
+  const onImgLoad = (e) => {
+    const w = e.target.naturalWidth, h = e.target.naturalHeight;
+    const bs = Math.max(AVATAR_VIEW / w, AVATAR_VIEW / h);
+    const ndw = w * bs, ndh = h * bs;
+    setNat({ w, h });
+    setZoom(1);
+    setOffset({ x: (AVATAR_VIEW - ndw) / 2, y: (AVATAR_VIEW - ndh) / 2 });
+  };
+
+  const handleZoom = (next) => {
+    if (!nat) { setZoom(next); return; }
+    const prev = baseScale * zoom;
+    const ns = baseScale * next;
+    const c = AVATAR_VIEW / 2;
+    const ix = (c - offset.x) / prev;
+    const iy = (c - offset.y) / prev;
+    setOffset(clampOffset({ x: c - ix * ns, y: c - iy * ns }, nat.w * ns, nat.h * ns));
+    setZoom(next);
+  };
+
+  const onPointerDown = (e) => {
+    if (saving) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    dragRef.current = { px: e.clientX, py: e.clientY, ox: offset.x, oy: offset.y };
+  };
+  const onPointerMove = (e) => {
+    if (!dragRef.current || !nat) return;
+    const nx = dragRef.current.ox + (e.clientX - dragRef.current.px);
+    const ny = dragRef.current.oy + (e.clientY - dragRef.current.py);
+    setOffset(clampOffset({ x: nx, y: ny }, dw, dh));
+  };
+  const onPointerUp = (e) => {
+    dragRef.current = null;
+    try { e.currentTarget.releasePointerCapture(e.pointerId); } catch { /* not captured */ }
+  };
+
+  const handleSave = () => {
+    if (!nat || saving || !imgRef.current) return;
+    const sx = -offset.x / scale;
+    const sy = -offset.y / scale;
+    const sSize = AVATAR_VIEW / scale;
+    const canvas = document.createElement('canvas');
+    canvas.width = AVATAR_OUT;
+    canvas.height = AVATAR_OUT;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(imgRef.current, sx, sy, sSize, sSize, 0, 0, AVATAR_OUT, AVATAR_OUT);
+    canvas.toBlob((blob) => { if (blob) onSave(blob); }, 'image/jpeg', 0.9);
+  };
+
+  return createPortal(
+    <>
+      <div className="panel-overlay" onClick={saving ? undefined : onCancel} />
+      <div
+        role="dialog"
+        aria-label="Crop your photo"
+        style={{
+          position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+          width: 'min(360px, calc(100vw - 2rem))', zIndex: 1001,
+          background: 'var(--surface)', border: '1px solid var(--border)',
+          borderRadius: 'var(--radius-lg)', padding: '1.1rem',
+          boxShadow: '0 20px 50px rgba(0,0,0,0.4)',
+        }}
+      >
+        <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.3rem', fontWeight: 500, marginBottom: '0.25rem' }}>
+          Crop photo
+        </h2>
+        <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '0.85rem' }}>
+          Drag to reposition, use the slider to zoom.
+        </p>
+
+        <div
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          style={{
+            position: 'relative', width: AVATAR_VIEW, maxWidth: '100%', height: AVATAR_VIEW,
+            margin: '0 auto', borderRadius: 'var(--radius-md)', overflow: 'hidden',
+            background: '#000', cursor: saving ? 'default' : 'grab', touchAction: 'none', userSelect: 'none',
+          }}
+        >
+          <img
+            ref={imgRef}
+            src={src}
+            alt=""
+            onLoad={onImgLoad}
+            draggable={false}
+            style={{ position: 'absolute', left: offset.x, top: offset.y, width: dw, height: dh, maxWidth: 'none', pointerEvents: 'none' }}
+          />
+          {/* Circular crop guide — dims everything outside the circle. */}
+          <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', boxShadow: '0 0 0 9999px rgba(0,0,0,0.55)', pointerEvents: 'none' }} />
+        </div>
+
+        <input
+          type="range" min="1" max="3" step="0.01" value={zoom}
+          onChange={(e) => handleZoom(parseFloat(e.target.value))}
+          disabled={saving || !nat}
+          aria-label="Zoom"
+          style={{ width: '100%', marginTop: '0.9rem', accentColor: 'var(--accent)' }}
+        />
+
+        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.9rem', justifyContent: 'flex-end' }}>
+          <button className="btn btn-ghost btn-sm" onClick={onCancel} disabled={saving}>Cancel</button>
+          <button
+            className="btn btn-primary btn-sm"
+            onClick={handleSave}
+            disabled={saving || !nat}
+            aria-busy={saving}
+          >
+            {saving ? <PlotLoader size="button" tone="dark" ariaHidden /> : 'Save photo'}
+          </button>
+        </div>
+      </div>
+    </>,
+    document.body,
+  );
 }
 
 function AvatarSetting({ user, profile, refreshProfile, onError }) {
   const inputRef = useRef(null);
   const [busy, setBusy] = useState(false);
+  const [cropSrc, setCropSrc] = useState(null);
   const avatarUrl = profile?.avatar_url || null;
-  const initial = (user?.email?.trim()?.[0] || '?').toUpperCase();
+  const initial = (profile?.display_name || profile?.username || user?.email || '?').trim().charAt(0).toUpperCase();
 
   const handlePick = () => { if (!busy) inputRef.current?.click(); };
 
-  const handleFile = async (e) => {
+  const handleFile = (e) => {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
     onError(null);
     if (!file.type.startsWith('image/')) { onError('Please choose an image file.'); return; }
     if (file.size > AVATAR_MAX_MB * 1024 * 1024) { onError(`Profile photos must be under ${AVATAR_MAX_MB}MB.`); return; }
+    setCropSrc(URL.createObjectURL(file));
+  };
 
+  const closeCrop = () => {
+    setCropSrc((prev) => { if (prev) URL.revokeObjectURL(prev); return null; });
+  };
+
+  const handleCropped = async (blob) => {
     setBusy(true);
-    const path = avatarStoragePath(user.id, file);
+    const path = `${user.id}/avatar.jpg`;
     const { error: upErr } = await supabase.storage
       .from('avatars')
-      .upload(path, file, { upsert: true, contentType: file.type });
+      .upload(path, blob, { upsert: true, contentType: 'image/jpeg' });
     if (upErr) { setBusy(false); onError(upErr.message || 'We could not upload your photo. Please try again.'); return; }
 
     const { data } = supabase.storage.from('avatars').getPublicUrl(path);
     // Cache-bust so a replaced photo at the same path refreshes immediately.
     const publicUrl = `${data.publicUrl}?v=${Date.now()}`;
-
     const { error: dbErr } = await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', user.id);
     setBusy(false);
+    closeCrop();
     if (dbErr) { onError(dbErr.message || 'We could not save your photo. Please try again.'); return; }
     refreshProfile();
   };
@@ -455,7 +598,7 @@ function AvatarSetting({ user, profile, refreshProfile, onError }) {
     // Best-effort cleanup of any stored object for this user (extension may vary).
     const { data: files } = await supabase.storage.from('avatars').list(user.id);
     if (files?.length) {
-      await supabase.storage.from('avatars').remove(files.map(f => `${user.id}/${f.name}`));
+      await supabase.storage.from('avatars').remove(files.map((f) => `${user.id}/${f.name}`));
     }
     const { error } = await supabase.from('profiles').update({ avatar_url: null }).eq('id', user.id);
     setBusy(false);
@@ -464,47 +607,57 @@ function AvatarSetting({ user, profile, refreshProfile, onError }) {
   };
 
   return (
-    <div className="settings-row" style={{ cursor: 'default' }}>
-      <div className="settings-row-left">
-        <div
-          aria-hidden="true"
-          style={{
-            width: 44, height: 44, borderRadius: '50%', overflow: 'hidden',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: 'var(--accent-dim)', color: 'var(--accent)',
-            fontFamily: 'var(--font-serif)', fontSize: '1.15rem', fontWeight: 600,
-            flexShrink: 0,
-          }}
-        >
-          {avatarUrl
-            ? <img src={avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            : initial}
-        </div>
-        <div>
-          <div className="settings-row-label">Profile Photo</div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-            {busy ? 'Saving…' : avatarUrl ? 'Visible on your profile' : `JPG or PNG · up to ${AVATAR_MAX_MB}MB`}
+    <>
+      <div className="settings-row" style={{ cursor: 'default' }}>
+        <div className="settings-row-left">
+          <div
+            aria-hidden="true"
+            style={{
+              width: 32, height: 32, borderRadius: '50%', overflow: 'hidden',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'var(--accent-dim)', color: 'var(--accent)',
+              fontFamily: 'var(--font-serif)', fontSize: '0.85rem', fontWeight: 600,
+              flexShrink: 0,
+            }}
+          >
+            {avatarUrl
+              ? <img src={avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              : initial}
+          </div>
+          <div>
+            <div className="settings-row-label">Profile Photo</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+              {busy ? 'Saving…' : avatarUrl ? 'Shown on your public profile' : `JPG or PNG · up to ${AVATAR_MAX_MB}MB`}
+            </div>
           </div>
         </div>
-      </div>
-      <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
-        <SettingsTextAction onClick={handlePick} disabled={busy}>
-          {avatarUrl ? 'Change' : 'Add photo'}
-        </SettingsTextAction>
-        {avatarUrl && (
-          <SettingsTextAction onClick={handleRemove} disabled={busy} tone="danger">
-            Remove
+        <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
+          <SettingsTextAction onClick={handlePick} disabled={busy}>
+            {avatarUrl ? 'Change' : 'Add photo'}
           </SettingsTextAction>
-        )}
+          {avatarUrl && (
+            <SettingsTextAction onClick={handleRemove} disabled={busy} tone="danger">
+              Remove
+            </SettingsTextAction>
+          )}
+        </div>
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*"
+          style={{ display: 'none' }}
+          onChange={handleFile}
+        />
       </div>
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*"
-        style={{ display: 'none' }}
-        onChange={handleFile}
-      />
-    </div>
+      {cropSrc && (
+        <AvatarCropModal
+          src={cropSrc}
+          saving={busy}
+          onCancel={busy ? () => {} : closeCrop}
+          onSave={handleCropped}
+        />
+      )}
+    </>
   );
 }
 
@@ -784,6 +937,8 @@ export default function SettingsView() {
   const [exportingData,       setExportingData]       = useState(false);
   const [calTokenCopied,      setCalTokenCopied]      = useState(false);
   const [localCalToken,       setLocalCalToken]       = useState(null);
+  const [usernameDraft,       setUsernameDraft]       = useState(null);
+  const [usernameStatus,      setUsernameStatus]      = useState(null); // null|checking|available|taken|invalid|saving|saved|error
   const [actionError,         setActionError]         = useState(null);
   const [confirmModal,        setConfirmModal]        = useState(null); // { title, message, confirmLabel, danger, onConfirm }
 
@@ -792,6 +947,20 @@ export default function SettingsView() {
   // Use optimistic local value so the URL appears immediately after generation
   const calendarToken = localCalToken ?? profile?.calendar_token ?? null;
   const calFeedUrl = calendarToken ? edgeFunctionUrl('calendar-feed', { token: calendarToken }) : null;
+
+  const { share: shareProfileLink, copied: profileUrlCopied } = useShare();
+  const { share: shareInvite, copied: inviteCopied } = useShare();
+
+  const username      = profile?.username || '';
+  const isPublic      = !!profile?.is_public;
+  const usernameValue = usernameDraft ?? username;
+  const usernameDirty = usernameValue.trim().toLowerCase() !== username.toLowerCase();
+  const profileUrl    = username ? `${window.location.origin}/u/${username}` : null;
+  // Invite link: the profile URL tagged with ?ref=<me>. attribution.js captures
+  // ref on the new visitor; after they sign up, usePendingReferral auto-follows
+  // me (and the follows trigger notifies me).
+  const inviteUrl     = username ? `${profileUrl}?ref=${encodeURIComponent(username)}` : null;
+  const USERNAME_RE   = /^[a-z0-9](?:[a-z0-9-]{1,28}[a-z0-9])$/;
 
   // Sync local token back to null once profile catches up (or if revoked elsewhere)
   useEffect(() => {
@@ -901,20 +1070,6 @@ export default function SettingsView() {
     setShowTimezone(false);
     // Clear any pending nudge dismissal so the banner doesn't re-appear
     try { localStorage.removeItem('plot_tz_dismissed'); } catch { /* storage unavailable */ }
-  };
-
-  const handleSignOut = () => {
-    showConfirm({
-      title: 'Sign out?',
-      message: `You're signed in as ${user?.email}. You can sign back in anytime.`,
-      confirmLabel: 'Sign out',
-      onConfirm: () => {
-        // The /logout page ends the session and confirms the user is signed
-        // out, rather than bouncing straight out to the marketing site.
-        navigate('/logout');
-        return true;
-      },
-    });
   };
 
   const handleClearHistory = () => {
@@ -1053,6 +1208,75 @@ export default function SettingsView() {
     setTimeout(() => setCalTokenCopied(false), 2000);
   };
 
+  // Debounced username availability check while editing.
+  useEffect(() => {
+    if (usernameDraft === null) return;          // not editing
+    if (!usernameDirty) { setUsernameStatus(null); return; }
+    const candidate = usernameDraft.trim().toLowerCase();
+    if (!USERNAME_RE.test(candidate)) { setUsernameStatus('invalid'); return; }
+    let cancelled = false;
+    setUsernameStatus('checking');
+    const t = setTimeout(async () => {
+      const { data, error } = await supabase.rpc('username_available', { p_username: candidate });
+      if (cancelled) return;
+      setUsernameStatus(error ? 'error' : (data ? 'available' : 'taken'));
+    }, 350);
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [usernameDraft, usernameDirty]);
+
+  const handleSaveUsername = async () => {
+    const candidate = usernameValue.trim().toLowerCase();
+    if (!usernameDirty) { setUsernameDraft(null); return; }
+    if (!USERNAME_RE.test(candidate)) { setUsernameStatus('invalid'); return; }
+    setUsernameStatus('saving');
+    const { data: free, error: chkErr } = await supabase.rpc('username_available', { p_username: candidate });
+    if (chkErr) { setUsernameStatus('error'); return; }
+    if (!free) { setUsernameStatus('taken'); return; }
+    const { error } = await supabase.from('profiles').update({ username: candidate }).eq('id', user.id);
+    if (error) { setUsernameStatus(error.code === '23505' ? 'taken' : 'error'); return; }
+    setUsernameDraft(null);
+    setUsernameStatus('saved');
+    setTimeout(() => setUsernameStatus(null), 2000);
+    refreshProfile();
+  };
+
+  const handleTogglePublic = async () => {
+    if (!user) return;
+    const { error } = await supabase.from('profiles').update({ is_public: !isPublic }).eq('id', user.id);
+    if (error) { setActionError(error.message); return; }
+    refreshProfile();
+  };
+
+  // A little personality for profile shares — one picked at random (the card
+  // already carries the avatar, stats and PLOT branding).
+  const PROFILE_SHARE_LINES = [
+    'This is where my evenings and weekends go.',
+    'Everything I love to watch, in one place.',
+    'A curated view of my screen time.',
+    "Keep up with what I'm watching, on PLOT.",
+  ];
+
+  const handleShareProfile = () => {
+    if (!profileUrl) return;
+    // Native share sheet where available, clipboard fallback otherwise.
+    return shareProfileLink({
+      url: profileUrl,
+      title: username ? `@${username} on PLOT` : 'My PLOT profile',
+      text: PROFILE_SHARE_LINES[Math.floor(Math.random() * PROFILE_SHARE_LINES.length)],
+      event: 'profile_shared',
+    });
+  };
+
+  const handleInvite = () => {
+    if (!inviteUrl) return;
+    return shareInvite({
+      url: inviteUrl,
+      title: 'Join me on PLOT',
+      text: "Join me on PLOT — here's what I'm watching.",
+      event: 'invite_shared',
+    });
+  };
+
   return (
     <div style={{ paddingBottom: '2rem' }}>
       {actionError && (
@@ -1075,12 +1299,6 @@ export default function SettingsView() {
       {/* Account */}
       <div className="settings-group" style={{ marginTop: '0.75rem' }}>
         <div className="settings-group-title">Account</div>
-        <AvatarSetting
-          user={user}
-          profile={profile}
-          refreshProfile={refreshProfile}
-          onError={setActionError}
-        />
         <div className="settings-row" style={{ cursor: 'default' }}>
           <div className="settings-row-left">
             <div className="settings-row-icon">
@@ -1089,20 +1307,151 @@ export default function SettingsView() {
             <span className="settings-row-label">{user?.email}</span>
           </div>
         </div>
+      </div>
 
-        <div
-          className="settings-row interactive-surface"
-          onClick={handleSignOut}
-          {...getButtonLikeProps({ onPress: handleSignOut, label: 'Sign out' })}
-        >
+      {/* Public profile */}
+      <div className="settings-group">
+        <div className="settings-group-title">Public profile</div>
+        <AvatarSetting
+          user={user}
+          profile={profile}
+          refreshProfile={refreshProfile}
+          onError={setActionError}
+        />
+
+        {/* Visibility */}
+        <div className="settings-row" style={{ cursor: 'default' }}>
           <div className="settings-row-left">
             <div className="settings-row-icon">
-              <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+              </svg>
             </div>
-            <span className="settings-row-label">Sign out</span>
+            <div>
+              <div className="settings-row-label">{isPublic ? 'Profile is public' : 'Profile is private'}</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                {isPublic
+                  ? 'Anyone with your link can see your watch count, recent watches and public lists.'
+                  : 'Only you can see your activity. Make it public to share a profile link.'}
+              </div>
+            </div>
           </div>
-          <Chevron />
+          <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
+            <SettingsTextAction onClick={handleTogglePublic} tone={isPublic ? 'danger' : 'default'}>
+              {isPublic ? 'Make private' : 'Make public'}
+            </SettingsTextAction>
+          </div>
         </div>
+
+        {/* Username */}
+        <div className="settings-row" style={{ cursor: 'default', alignItems: 'flex-start' }}>
+          <div className="settings-row-left" style={{ flex: 1, minWidth: 0 }}>
+            <div className="settings-row-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+              </svg>
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div className="settings-row-label">Username</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.35rem' }}>
+                <input
+                  type="text"
+                  value={usernameValue}
+                  spellCheck={false}
+                  autoCapitalize="none"
+                  maxLength={30}
+                  aria-label="Username"
+                  onChange={(e) => setUsernameDraft(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                  style={{
+                    flex: 1, minWidth: 0, padding: '0.45rem 0.6rem',
+                    borderRadius: 'var(--radius-sm, 8px)', border: '1px solid var(--border)',
+                    background: 'var(--surface)', color: 'var(--text-primary)', fontSize: '0.9rem',
+                  }}
+                />
+              </div>
+              <div style={{
+                fontSize: '0.72rem', marginTop: '0.3rem', minHeight: '1rem',
+                color: usernameStatus === 'available' || usernameStatus === 'saved' ? 'var(--accent)'
+                  : usernameStatus === 'taken' || usernameStatus === 'invalid' || usernameStatus === 'error' ? 'var(--danger)'
+                  : 'var(--text-muted)',
+              }}>
+                {usernameStatus === 'checking' && 'Checking availability…'}
+                {usernameStatus === 'available' && 'Available'}
+                {usernameStatus === 'taken' && 'That username is taken'}
+                {usernameStatus === 'invalid' && '3–30 chars · lowercase letters, numbers, hyphens'}
+                {usernameStatus === 'saving' && 'Saving…'}
+                {usernameStatus === 'saved' && 'Saved'}
+                {usernameStatus === 'error' && 'Something went wrong — try again'}
+              </div>
+            </div>
+          </div>
+          <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
+            {usernameDirty && (
+              <SettingsTextAction
+                disabled={usernameStatus === 'checking' || usernameStatus === 'saving' || usernameStatus === 'invalid' || usernameStatus === 'taken'}
+                onClick={handleSaveUsername}
+              >
+                Save
+              </SettingsTextAction>
+            )}
+          </div>
+        </div>
+
+        {/* Shareable link */}
+        {isPublic && profileUrl && (
+          <div className="settings-row" style={{ cursor: 'default' }}>
+            <div className="settings-row-left" style={{ minWidth: 0 }}>
+              <div className="settings-row-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                </svg>
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <div className="settings-row-label">Your profile link</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {profileUrl.replace(/^https?:\/\//, '')}
+                </div>
+              </div>
+            </div>
+            <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
+              <SettingsTextAction onClick={handleShareProfile}>
+                {profileUrlCopied ? 'Copied!' : 'Share'}
+              </SettingsTextAction>
+              <a className="settings-text-action" href={profileUrl} target="_blank" rel="noreferrer">
+                <span>View</span><span aria-hidden="true">›</span>
+              </a>
+            </div>
+          </div>
+        )}
+
+        {/* Invite friends — shares your profile tagged with ?ref so new signups
+            attribute to you and auto-follow you (notification fires). */}
+        {isPublic && inviteUrl && (
+          <div className="settings-row" style={{ cursor: 'default' }}>
+            <div className="settings-row-left" style={{ minWidth: 0 }}>
+              <div className="settings-row-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                  <circle cx="9" cy="7" r="4"/>
+                  <line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/>
+                </svg>
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <div className="settings-row-label">Invite friends</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  They join from your profile &amp; start following you
+                </div>
+              </div>
+            </div>
+            <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
+              <SettingsTextAction onClick={handleInvite}>
+                {inviteCopied ? 'Copied!' : 'Invite'}
+              </SettingsTextAction>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Viewing */}
@@ -1422,13 +1771,6 @@ export default function SettingsView() {
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ width: 14, height: 14, opacity: 0.4 }}><polyline points="9 18 15 12 9 6"/></svg>
           </div>
         </div>
-        <div style={{ marginTop: '0.75rem', fontSize: '0.76rem', lineHeight: 1.45, color: 'var(--text-muted)' }}>
-          Metadata and some artwork are provided by{' '}
-          <a href="https://www.themoviedb.org" target="_blank" rel="noreferrer" style={{ color: 'inherit', textDecoration: 'underline' }}>
-            TMDB
-          </a>
-          . This product uses the TMDB API but is not endorsed or certified by TMDB.
-        </div>
       </div>
 
       {/* Danger zone */}
@@ -1489,6 +1831,11 @@ export default function SettingsView() {
           </div>
         </div>
       </div>
+
+      <p style={{ margin: '1.75rem 0 0', padding: '0 0.25rem', fontSize: '0.74rem', lineHeight: 1.5, color: 'var(--text-muted)', textAlign: 'center' }}>
+        Metadata and some artwork are provided by{' '}
+        <a href="https://www.themoviedb.org" target="_blank" rel="noreferrer" style={{ color: 'inherit', textDecoration: 'underline' }}>TMDB</a>. This product uses the TMDB API but is not endorsed or certified by TMDB.
+      </p>
 
       {/* Provider picker modal */}
       {showProviders && (

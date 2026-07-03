@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PRIMARY_NAV_ITEMS, VIEW_TITLES } from '../navigation.js';
+import { useNotifications } from '../hooks/useNotifications.js';
 import ConfirmModal from './ConfirmModal.jsx';
 
 /* ── SVG Icons ───────────────────────── */
@@ -32,10 +33,15 @@ function IconSearch() {
   );
 }
 
-export default function AppShell({ currentView, navigateTo, children }) {
+export default function AppShell({ currentView, navigateTo, children, profile, user }) {
   const navigate = useNavigate();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [confirmSignOut, setConfirmSignOut] = useState(false);
+
+  const { unread, refreshCount } = useNotifications(user?.id);
+
+  // Keep the bell badge fresh as the user navigates (e.g. after viewing the feed).
+  useEffect(() => { refreshCount(); }, [currentView, refreshCount]);
 
   useEffect(() => {
     if (!drawerOpen) return undefined;
@@ -62,7 +68,7 @@ export default function AppShell({ currentView, navigateTo, children }) {
   };
 
   const pageTitle = VIEW_TITLES[currentView] ?? 'PLOT';
-  const showHomeLogo = currentView === 'home';
+  const showHomeLogo = currentView === 'home' || (currentView || '').startsWith('u/');
 
   return (
     <div className="app-shell">
@@ -95,6 +101,29 @@ export default function AppShell({ currentView, navigateTo, children }) {
         )}
 
         <div className="header-end">
+          {user && (
+          <button
+            type="button"
+            className="icon-btn"
+            onClick={() => navigateTo('notifications')}
+            aria-label={`Notifications${unread ? ` (${unread} unread)` : ''}`}
+            title="Notifications"
+            aria-current={currentView === 'notifications' ? 'page' : undefined}
+            style={{ position: 'relative' }}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: 'translateY(8%) scale(0.92)' }}>
+              <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+            {unread > 0 && (
+              <span aria-hidden="true" style={{
+                position: 'absolute', top: 1, right: 1, minWidth: 16, height: 16, padding: '0 4px',
+                borderRadius: 8, background: 'var(--accent)', color: '#fff', fontSize: 10,
+                fontWeight: 700, lineHeight: '16px', textAlign: 'center',
+              }}>{unread > 9 ? '9+' : unread}</span>
+            )}
+          </button>
+          )}
           <button
             type="button"
             className="icon-btn"
@@ -156,6 +185,23 @@ export default function AppShell({ currentView, navigateTo, children }) {
               <span className="nav-drawer-label">{label}</span>
             </button>
           ))}
+          {profile?.username && (
+            <button
+              type="button"
+              className="nav-drawer-item"
+              onClick={() => { closeDrawer(); navigate(`/u/${profile.username}`); }}
+            >
+              <span className="nav-drawer-label">Profile</span>
+            </button>
+          )}
+          <button
+            type="button"
+            className={`nav-drawer-item${currentView === 'notifications' ? ' active' : ''}`}
+            onClick={() => handleNav('notifications')}
+            aria-current={currentView === 'notifications' ? 'page' : undefined}
+          >
+            <span className="nav-drawer-label">Notifications</span>
+          </button>
         </nav>
 
         <div className="nav-drawer-footer">

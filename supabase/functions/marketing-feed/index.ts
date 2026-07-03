@@ -29,6 +29,14 @@ const PAGE_SIZE = 30;
 const esc = (s: unknown) =>
   String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] as string));
 
+// Link a charted title to its public title page (theplot.tv/movie|tv/<slug>),
+// matching the slug the title-page function canonicalises to.
+const slugify = (s: string) =>
+  String(s || '').toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80) || 'title';
+const titleHref = (mediaType: string, tmdbId: number | string, title: string) =>
+  `${SITE}/${mediaType === 'tv' ? 'tv' : 'movie'}/${slugify(title)}-${tmdbId}`;
+
 const mediaUrl = (path: string) =>
   `${Deno.env.get('SUPABASE_URL')}/storage/v1/object/public/marketing/${path}`;
 
@@ -69,6 +77,7 @@ const FILTERS: { key: string | null; label: string }[] = [
   { key: 'trailer', label: 'First look' },
 ];
 
+type TmdbRef = { media_type: string; tmdb_id: number; title: string; poster_path?: string | null };
 type FeedPost = {
   slug: string;
   copy: { page_title?: string; page_body?: string[]; hero_image?: string } | null;
@@ -76,6 +85,7 @@ type FeedPost = {
   post_type: string;
   scheduled_for: string;
   status: string;
+  tmdb_refs?: TmdbRef[] | null;
 };
 
 const postTitle = (p: FeedPost) => p.copy?.page_title || TYPE_META[p.post_type]?.label || p.post_type;
@@ -96,6 +106,16 @@ const kicker = (type: string) => {
   return `<span class="kick" style="color:${m.tone};">${esc(m.label)}</span>`;
 };
 
+// PostHog snippet for the server-rendered /whats-on pages. Same project token
+// as the app and marketing site (phc_uS3J…) with cross_subdomain_cookie so a
+// visit here joins the same landing → signup funnel; the delegated click
+// listener fires signup_click / login_click to match website/js/config.js.
+const POSTHOG = `<script>
+!function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="init capture register register_once register_for_session unregister unregister_for_session getFeatureFlag getFeatureFlagPayload isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey getNextSurveyStep identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException loadToolbar get_property getSessionProperty createPersonProfile opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing clear_opt_in_out_capturing debug getPageViewId".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
+posthog.init('phc_uS3JEJC7s6T2WdsQToCZA3eRjLNakgc3EF3YPbza9Q6U',{api_host:'https://us.i.posthog.com',person_profiles:'identified_only',persistence:'localStorage+cookie',cross_subdomain_cookie:true,capture_pageview:true,autocapture:true});
+document.addEventListener('click',function(ev){var a=ev.target&&ev.target.closest&&ev.target.closest('a[href*="app.theplot.tv/"]');if(!a)return;var path;try{path=new URL(a.href).pathname;}catch(e){return;}var action=path.indexOf('/signup')===0?'signup_click':path.indexOf('/login')===0?'login_click':null;if(!action)return;posthog.capture(action,{placement:a.getAttribute('data-cta')||'whats_on',source:'whats_on'});},true);
+</script>`;
+
 const page = (title: string, head: string, body: string, status = 200, nav = 'whats-on') =>
   new Response(
     `<!DOCTYPE html>
@@ -104,6 +124,7 @@ const page = (title: string, head: string, body: string, status = 200, nav = 'wh
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(title)}</title>
+${POSTHOG}
 ${head}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -399,7 +420,7 @@ const CHART_CSS = `
   ol.chart li:first-child .ch-row { border-top: none; }
   .ch-rank { font-family: var(--serif); font-size: 2.1rem; line-height: 1; color: var(--faint); text-align: center; font-variant-numeric: tabular-nums; }
   .ch-rank.top { color: var(--pink); }
-  .ch-poster { width: 60px; aspect-ratio: 2/3; object-fit: cover; border-radius: 8px; border: 1px solid var(--hair); background: var(--ink); display: block; }
+  .ch-poster { width: 60px; aspect-ratio: 2/3; object-fit: cover; border-radius: 8px; background: var(--ink); display: block; }
   .ch-title { font-family: var(--serif); font-size: 1.5rem; line-height: 1.1; letter-spacing: -0.01em; }
   .ch-kind { display: block; color: var(--faint); font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase; margin-top: 5px; }
   .ch-move { font-size: 0.64rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; white-space: nowrap; }
@@ -459,14 +480,19 @@ const renderChart = async (supabase: ReturnType<typeof createClient>) => {
   const items = (latest.items as ChartItem[]) || [];
   const rows = items.map((it) => {
     const m = chartMovement(it, it.rank, prior);
-    const img = it.poster_path ? `<img class="ch-poster" src="${esc(tmdbImg(it.poster_path))}" alt="" loading="lazy">` : '<span class="ch-poster"></span>';
+    // Link the poster + title through to the public title page (internal links
+    // that feed crawl + give readers the full "where to watch" page).
+    const tUrl = titleHref(it.media_type, it.tmdb_id, it.title);
+    const img = it.poster_path
+      ? `<a href="${esc(tUrl)}" style="display:contents"><img class="ch-poster" src="${esc(tmdbImg(it.poster_path))}" alt="${esc(it.title)}" loading="lazy"></a>`
+      : '<span class="ch-poster"></span>';
     // One-click "Save to watchlist": logged-out users get routed through login
     // and the save completes on return (handled by the app's /save deep link).
     const saveHref = `${APP}/save?media_type=${esc(it.media_type)}&tmdb_id=${it.tmdb_id}&src=chart`;
     return `<li><div class="ch-row">
       <span class="ch-rank${it.rank <= 10 ? ' top' : ''}">${it.rank}</span>
       ${img}
-      <span><span class="ch-title">${esc(it.title)}</span><span class="ch-kind">${it.media_type === 'tv' ? 'TV' : 'Film'}</span></span>
+      <span><a class="ch-title-link" href="${esc(tUrl)}" style="color:inherit;text-decoration:none"><span class="ch-title">${esc(it.title)}</span></a><span class="ch-kind">${it.media_type === 'tv' ? 'TV' : 'Film'}</span></span>
       <span class="ch-actions">${moveChip(m)}<a class="ch-save" href="${saveHref}">+ Save</a></span>
     </div></li>`;
   }).join('');
@@ -502,13 +528,26 @@ Deno.serve(async (req) => {
 
   const baseQuery = () => supabase
     .from('marketing_posts')
-    .select('slug, copy, media, post_type, scheduled_for, status')
+    .select('slug, copy, media, post_type, scheduled_for, status, tmdb_refs')
     .not('slug', 'is', null)
     // The trending chart lives on its own page (/whats-on/chart), not as a
     // dated article — keep it out of every feed surface.
     .neq('post_type', 'trending')
     .in('status', VISIBLE_STATUSES)
     .lte('scheduled_for', new Date().toISOString());
+
+  // Articles sitemap: every visible /whats-on entry (proxied to theplot.tv/
+  // sitemap-articles.xml). Mirrors the title-page sitemap mode.
+  if (url.searchParams.get('sitemap') === '1') {
+    const { data: posts } = await baseQuery().order('scheduled_for', { ascending: false }).limit(5000);
+    const urls = (posts || [])
+      .map((p) => `<url><loc>${esc(`${SITE}${FEED_PATH}/${p.slug}`)}</loc><changefreq>weekly</changefreq></url>`)
+      .join('\n');
+    return new Response(
+      `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>`,
+      { headers: { 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=604800' } },
+    );
+  }
 
   // Reserved keyword: the persistent trending-chart page.
   if (slug === 'chart') return await renderChart(supabase);
@@ -635,6 +674,19 @@ ${hero ? `<meta property="og:image" content="${esc(hero)}">` : ''}
 <meta name="twitter:card" content="summary_large_image">
 <script type="application/ld+json">${jsonLd}</script>`;
 
+  // Guides (and any entry carrying tmdb_refs) get a poster grid linking each
+  // featured title to its public title page — the internal-linking payoff.
+  const refs = Array.isArray(typed.tmdb_refs) ? typed.tmdb_refs : [];
+  const titlesSection = refs.length
+    ? `<section style="margin:48px 0 0">
+        <h2 style="font-family:var(--serif);font-size:1.7rem;font-weight:400;margin:0 0 18px">Titles in this guide</h2>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:18px">${refs.map((r) => {
+          const poster = r.poster_path ? `https://image.tmdb.org/t/p/w185${esc(r.poster_path)}` : null;
+          return `<a href="${esc(titleHref(r.media_type, r.tmdb_id, r.title))}" style="text-decoration:none;color:inherit">${poster ? `<img src="${poster}" alt="${esc(r.title)}" loading="lazy" style="width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:10px;border:1px solid var(--hair);display:block">` : '<span style="display:block;width:100%;aspect-ratio:2/3;border-radius:10px;background:var(--ink)"></span>'}<span style="display:block;font-size:0.82rem;margin-top:8px;line-height:1.3">${esc(r.title)}</span></a>`;
+        }).join('')}</div>
+      </section>`
+    : '';
+
   const k = kicker(typed.post_type);
   return page(`${title} · PLOT`, head, `
     <article class="post r2">
@@ -646,6 +698,7 @@ ${hero ? `<meta property="og:image" content="${esc(hero)}">` : ''}
       <div class="post-body">
         ${body.map((p, i) => `<p${i === 0 ? ' class="lede"' : ''}>${esc(p)}</p>`).join('')}
       </div>
+      ${titlesSection}
       <aside class="endcta">
         <div class="ec-copy">
           <span class="ec-title">Watch more. Forget less.</span>

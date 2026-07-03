@@ -14,14 +14,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/theme.css" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --dark: #0c0c0c;
-      --text-dark: #f0efe8;
-      --serif: 'Instrument Serif', Georgia, serif;
-      --sans: 'DM Sans', system-ui, sans-serif;
-    }
+    /* Brand tokens (--dark, --text-dark, --serif, --sans) come from /theme.css */
     html, body { height: 100%; }
     body {
       background: var(--dark);
@@ -59,22 +55,23 @@
       align-items: center;
       gap: 0.4rem;
       font-size: 0.95rem;
-      font-weight: 500;
-      color: var(--dark);
-      background: var(--text-dark);
+      font-weight: 300;
+      color: var(--text-dark);
+      background: transparent;
+      border: 1px solid rgba(240, 239, 232, 0.25);
       text-decoration: none;
       padding: 0.7rem 1.4rem;
       border-radius: 9999px;
-      transition: opacity 0.2s;
+      transition: border-color 0.2s, transform 0.2s;
     }
-    .home:hover { opacity: 0.85; }
+    .home:hover { border-color: rgba(240, 239, 232, 0.5); transform: translateY(-1px); }
   </style>
 </head>
 <body>
   <a class="wordmark" href="/">PLOT</a>
   <div class="code">404</div>
-  <p class="headline">This scene didn't make the final cut.</p>
-  <p class="sub">The page you were looking for isn't here — it may have moved or never existed.</p>
+  <p class="headline">Looks like we've hit a plot hole.</p>
+  <p class="sub">Let's get you back to something worth watching.</p>
   <a class="home" href="/">← Back to PLOT</a>
 </body>
 </html>

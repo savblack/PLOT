@@ -7,6 +7,7 @@ import MediaPanel from './components/MediaPanel.jsx';
 import { useTheme } from './hooks/useTheme.js';
 import { useWatchlist }    from './hooks/useWatchlist.js';
 import { usePendingSave }  from './hooks/usePendingSave.js';
+import { usePendingReferral } from './hooks/usePendingReferral.js';
 import { useWatching }     from './hooks/useWatching.js';
 import { useReminders }    from './hooks/useReminders.js';
 import { useTopLists }     from './hooks/useTopLists.js';
@@ -159,7 +160,7 @@ export default function App() {
   const loadProfile = useCallback(async (userId) => {
     const { data } = await supabase
       .from('profiles')
-      .select('id, region, timezone, onboarding_complete, guide_channels, streaming_providers, calendar_token, avatar_url')
+      .select('id, region, timezone, onboarding_complete, guide_channels, streaming_providers, calendar_token, username, display_name, is_public, is_supporter, avatar_url')
       .eq('id', userId)
       .maybeSingle();
     setProfile(data);
@@ -245,6 +246,7 @@ export default function App() {
     setSaveToast(result);
   }, []);
   usePendingSave({ user, watchlist, openPanel, onResult: handleSaveResult });
+  usePendingReferral({ user });
 
   // Auto-dismiss the save confirmation toast
   useEffect(() => {
@@ -284,7 +286,7 @@ export default function App() {
 
   return (
     <AppContext.Provider value={ctx}>
-      <AppShell currentView={currentView} navigateTo={navigateTo} profile={profile}>
+      <AppShell currentView={currentView} navigateTo={navigateTo} profile={profile} user={user}>
         <Outlet />
       </AppShell>
 

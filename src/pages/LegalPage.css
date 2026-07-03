@@ -5,7 +5,7 @@
   display: flex;
   justify-content: center;
   padding: 3rem 1.5rem 5rem;
-  font-family: 'Manrope', system-ui, sans-serif;
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -68,7 +68,7 @@
 }
 
 .legal-panel h2 {
-  font-family: 'Manrope', system-ui, sans-serif;
+  font-family: var(--font-sans);
   font-size: 1rem;
   font-weight: 600;
   color: #1a1a1a;

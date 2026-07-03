@@ -29,7 +29,6 @@ const guideTokens = [
   ['--chip-today', 'Today', 'Airs or releases today.'],
   ['--chip-tomorrow', 'Tomorrow', 'Airs or releases tomorrow.'],
   ['--chip-soon', 'Soon', 'Coming in the next few days.'],
-  ['--chip-muted', 'Muted', 'Saved, watched, and neutral state chips with no time or type context.'],
   ['--epg-bar-broadcast', 'Broadcast bar', 'Left edge marker for live TV guide channels.'],
   ['--epg-bar-stream', 'Streaming bar', 'Left edge marker for streaming guide channels.'],
 ];
@@ -62,6 +61,20 @@ const motionRules = [
   ['Use fast feedback first', 'Buttons, chips, and tabs should resolve within the fast transition token.'],
   ['Reserve bounce for delight', '--ease-bounce (cubic-bezier 0.34, 1.56, 0.64, 1) is for special arrivals like sheets and modals — never routine navigation.'],
   ['Fade loaders sequentially', 'The PLOT loader should stay centered and animate letter-by-letter in order.'],
+];
+
+const motionTokens = [
+  ['--ease', 'cubic-bezier(0.23, 1, 0.32, 1)', 'Standard ease-out for structural transitions.'],
+  ['--ease-bounce', 'cubic-bezier(0.34, 1.56, 0.64, 1)', 'Overshoot curve reserved for sheet and modal arrivals.'],
+  ['--transition', 'all 0.3s var(--ease)', 'Default transition for panels and surfaces.'],
+  ['--transition-fast', 'all 0.15s ease', 'Quick feedback for buttons, chips, and tabs.'],
+];
+
+const layoutTokens = [
+  ['--content-max', '680px', 'Focused reading width for legal, settings, and forms.'],
+  ['--panel-w', '460px', 'Fixed width of the right-side media reading panel.'],
+  ['--header-h', '56px', 'Height of the fixed app header.'],
+  ['--tabbar-h', '58px', 'Height of the fixed bottom tab bar.'],
 ];
 
 const surfaceOwnership = [
@@ -189,7 +202,7 @@ export default function DesignSystemPage() {
           </div>
           <div className="ds-type-card ds-type-card--sans">
             <span>Interface and data</span>
-            <strong>Manrope</strong>
+            <strong>DM Sans</strong>
             <p>Use for buttons, dense rows, metadata, settings, navigation, forms, and repeated controls.</p>
           </div>
         </div>
@@ -199,17 +212,25 @@ export default function DesignSystemPage() {
             <h3>Calendar</h3>
           </div>
           <div>
-            <span>Rail label · Manrope · 0.75rem / 700 / 1.2 lh / 0.08em ls / uppercase</span>
+            <span>Rail label · DM Sans · 0.75rem / 700 / 1.2 lh / 0.08em ls / uppercase</span>
             <strong className="ds-rail-sample">Upcoming releases</strong>
           </div>
           <div>
-            <span>Body copy · Manrope · 0.875rem / 400 / 1.6 lh</span>
+            <span>Body copy · DM Sans · 0.875rem / 400 / 1.6 lh</span>
             <p>Track what is streaming, airing, saved, watched, and coming soon.</p>
           </div>
           <div>
-            <span>Metadata · Manrope · 0.75rem / 400 / 1.4 lh · --text-muted</span>
+            <span>Metadata · DM Sans · 0.75rem / 400 / 1.4 lh · --text-muted</span>
             <small>Season 2 · 8 episodes · Streaming</small>
           </div>
+        </div>
+
+        <h3 className="ds-subsection-title">Editorial display · marketing surface</h3>
+        <p className="ds-section-note" style={{ marginTop: '0.25rem' }}>
+          Marketing hero and manifesto headlines push Instrument Serif large and tight — weight 400, <code>−0.05em</code> tracking, a <code>0.997</code> horizontal condense, at a fluid <code>clamp(2.8rem, 6.5vw, 5rem)</code>. Same font as the app; editorial scale.
+        </p>
+        <div className="ds-editorial-display">
+          <span>Your film &amp; TV companion</span>
         </div>
       </Section>
 
@@ -612,7 +633,7 @@ export default function DesignSystemPage() {
             </div>
             <div className="ds-loader-sample" style={{ gap: '1rem' }}>
               <PlotLoader />
-              <div style={{ background: '#141418', borderRadius: '1.25rem', padding: '1.1rem 1.35rem', display: 'grid', placeItems: 'center' }}>
+              <div style={{ background: '#0c0c0c', borderRadius: '1.25rem', padding: '1.1rem 1.35rem', display: 'grid', placeItems: 'center' }}>
                 <PlotLoader tone="dark" />
               </div>
             </div>
@@ -833,11 +854,22 @@ export default function DesignSystemPage() {
             </div>
           </RuleCard>
 
+          <RuleCard label="Motion tokens">
+            <div className="ds-note-list">
+              {motionTokens.map(([token, value, purpose]) => (
+                <div key={token} className="ds-note-row">
+                  <code>{token}</code>
+                  <p><span className="ds-token-value">{value}</span> {purpose}</p>
+                </div>
+              ))}
+            </div>
+          </RuleCard>
+
           <RuleCard label="Icon and mark usage">
             <div className="ds-note-list">
               <div className="ds-note-row">
-                <strong>Logo images</strong>
-                <p>Use the shared raster mark through <code>PlotLogo</code>; do not redraw or typeset the wordmark ad hoc.</p>
+                <strong>Wordmark</strong>
+                <p>Render the PLOT wordmark as Instrument Serif text through <code>PlotLogo</code> (<code>var(--font-serif)</code>, weight 400, <code>-0.05em</code> tracking). Never use raster or letter-image logos; size it with <code>fontSize</code>.</p>
               </div>
               <div className="ds-note-row">
                 <strong>Navigation icons</strong>
@@ -867,55 +899,308 @@ export default function DesignSystemPage() {
           These are not visual components by themselves. They are guardrails for where components live.
         </p>
         <div className="ds-layout-grid">
-          {/* Fixed app frame: top bar + scrolling content + bottom bar */}
           <div className="ds-layout-rule">
-            <div className="ds-layout-rule-art ds-layout-art--fixed">
-              <span className="ds-la-bar ds-la-bar--top" />
-              <div className="ds-la-scroll">
-                <span /><span /><span />
-              </div>
-              <span className="ds-la-bar ds-la-bar--bottom" />
+            <div className="ds-layout-rule-art">
+              <img src="/ds/layout-fixed-frame.jpg" alt="Fixed app frame" />
             </div>
             <strong>Fixed app frame</strong>
             <p>Header and bottom tabs stay fixed; content scrolls inside the app surface.</p>
           </div>
-          {/* Side reading panel: content + right panel */}
           <div className="ds-layout-rule">
-            <div className="ds-layout-rule-art ds-layout-art--panel">
-              <span className="ds-la-bar ds-la-bar--top" />
-              <div className="ds-la-body">
-                <span className="ds-la-main" />
-                <span className="ds-la-aside" />
-              </div>
-              <span className="ds-la-bar ds-la-bar--bottom" />
+            <div className="ds-layout-rule-art">
+              <img src="/ds/layout-panel.jpg" alt="Side reading panel" />
             </div>
             <strong>Side reading panel</strong>
             <p>Media details open in a right-side sheet capped by the panel width token.</p>
           </div>
-          {/* Focused content width: narrow centred column */}
           <div className="ds-layout-rule">
-            <div className="ds-layout-rule-art ds-layout-art--focused">
-              <span className="ds-la-bar ds-la-bar--top" />
-              <div className="ds-la-center">
-                <span /><span /><span />
-              </div>
-              <span className="ds-la-bar ds-la-bar--bottom" />
+            <div className="ds-layout-rule-art">
+              <img src="/ds/layout-focused.jpg" alt="Focused content width" />
             </div>
             <strong>Focused content width</strong>
             <p>Legal, settings, and onboarding flows use the content max width for readable forms.</p>
           </div>
-          {/* Full-width bands: edge-to-edge headers over full-width rows */}
           <div className="ds-layout-rule">
-            <div className="ds-layout-rule-art ds-layout-art--bands">
-              <span className="ds-la-band" />
-              <span className="ds-la-band ds-la-band--dim" />
-              <span className="ds-la-band" />
-              <span className="ds-la-band ds-la-band--dim" />
+            <div className="ds-layout-rule-art">
+              <img src="/ds/layout-bands.jpg" alt="Full-width bands" />
             </div>
             <strong>Full-width bands</strong>
             <p>Bars and section headers run edge to edge inside their section; cards hold the rounded surfaces.</p>
           </div>
         </div>
+
+        <h3 className="ds-subsection-title">Layout dimension tokens</h3>
+        <p className="ds-section-note" style={{ marginTop: '0.25rem' }}>
+          The fixed dimensions these rules lean on, defined once in <code>tokens.css</code>.
+        </p>
+        <div className="ds-layout-token-grid">
+          {layoutTokens.map(([token, value, purpose]) => (
+            <div key={token} className="ds-layout-token">
+              <span className="ds-layout-token-value">{value}</span>
+              <code>{token}</code>
+              <p>{purpose}</p>
+            </div>
+          ))}
+        </div>
+      </Section>
+
+      <Section eyebrow="14" title="Error, Empty, and Loading States">
+        <p className="ds-section-note">
+          All full-page error screens share one dark centered design — including the marketing site's 404, which shares this exact layout and copy. In-app empty states use a minimal inline pattern, and loading falls back to the animated PLOT mark.
+        </p>
+
+        {/* Full-page error screens */}
+        <div className="ds-error-screens">
+          {/* Crash screen */}
+          <div className="ds-error-screen-demo">
+            <div className="ds-error-preview ds-error-preview--crash">
+              <div className="ds-ep-logo">
+                <svg viewBox="0 0 100 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: 48, height: 12 }}>
+                  <text x="0" y="20" fontFamily="'Instrument Serif', Georgia, serif" fontSize="22" fill="#f0efe8" letterSpacing="-1">PLOT</text>
+                </svg>
+              </div>
+              <div className="ds-ep-code">Oops</div>
+              <div className="ds-ep-title">That scene didn't quite load.</div>
+              <div className="ds-ep-body">An unexpected error interrupted things. A quick reload usually gets you back on track.</div>
+              <div className="ds-ep-actions">
+                <span className="ds-ep-btn-primary">Reload</span>
+                <span className="ds-ep-btn-ghost">Go home</span>
+              </div>
+            </div>
+            <div className="ds-error-screen-meta">
+              <strong>Crash screen</strong>
+              <p>Shown by <code>ErrorBoundary</code> when a JS runtime error interrupts rendering. Background <code>#0c0c0c</code>, code rendered in Instrument Serif at fluid 4–8rem, body in DM Sans 300.</p>
+              <div className="ds-error-tokens">
+                <span className="ds-chip ds-chip--meta">ErrorBoundary → CrashScreen</span>
+              </div>
+            </div>
+          </div>
+
+          {/* 404 screen */}
+          <div className="ds-error-screen-demo">
+            <div className="ds-error-preview ds-error-preview--crash">
+              <div className="ds-ep-logo">
+                <svg viewBox="0 0 100 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: 48, height: 12 }}>
+                  <text x="0" y="20" fontFamily="'Instrument Serif', Georgia, serif" fontSize="22" fill="#f0efe8" letterSpacing="-1">PLOT</text>
+                </svg>
+              </div>
+              <div className="ds-ep-code">404</div>
+              <div className="ds-ep-title">Looks like we've hit a plot hole.</div>
+              <div className="ds-ep-body">Let's get you back to something worth watching.</div>
+              <div className="ds-ep-actions">
+                <span className="ds-ep-btn-primary">Go home</span>
+                <span className="ds-ep-btn-ghost">Search titles</span>
+              </div>
+            </div>
+            <div className="ds-error-screen-meta">
+              <strong>404 — Not found</strong>
+              <p>Rendered by <code>NotFoundPage</code> via the shared <code>ErrorScreen</code> component — the exact same dark centered layout as the crash screen, only the code and copy differ.</p>
+              <div className="ds-error-tokens">
+                <span className="ds-chip ds-chip--meta">router * → NotFoundPage</span>
+                <span className="ds-chip ds-chip--meta">ErrorScreen component</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* In-app empty states */}
+        <h3 className="ds-subsection-title">In-app empty states</h3>
+        <p className="ds-section-note" style={{ marginTop: '0.25rem' }}>
+          Used inside views when a list is empty. Icon + title + body stack, centered, muted.
+        </p>
+        <div className="ds-empty-states-grid">
+          <div className="ds-empty-state-card">
+            <div className="ds-empty-state-demo">
+              <div className="empty-state">
+                <div className="empty-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 36, height: 36, opacity: 0.35 }}>
+                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                  </svg>
+                </div>
+                <div className="empty-title">Nothing saved yet</div>
+                <div className="empty-body">Browse the Guide or search for titles and tap the bookmark to save them here.</div>
+              </div>
+            </div>
+            <div className="ds-empty-state-label">Watchlist · <code>.empty-state</code></div>
+          </div>
+          <div className="ds-empty-state-card">
+            <div className="ds-empty-state-demo">
+              <div className="empty-state">
+                <div className="empty-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 36, height: 36, opacity: 0.35 }}>
+                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                  </svg>
+                </div>
+                <div className="empty-title">No results</div>
+                <div className="empty-body">Try searching by title, cast, or genre.</div>
+              </div>
+            </div>
+            <div className="ds-empty-state-label">Search · <code>.empty-state</code></div>
+          </div>
+          <div className="ds-empty-state-card">
+            <div className="ds-empty-state-demo">
+              <div className="empty-state">
+                <div className="empty-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 36, height: 36, opacity: 0.35 }}>
+                    <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                  </svg>
+                </div>
+                <div className="empty-title">Nothing in progress</div>
+                <div className="empty-body">Start watching a series and it'll appear here.</div>
+              </div>
+            </div>
+            <div className="ds-empty-state-label">Watching · <code>.empty-state</code></div>
+          </div>
+          <div className="ds-empty-state-card">
+            <div className="ds-empty-state-demo">
+              <div className="empty-state">
+                <div className="empty-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 36, height: 36, opacity: 0.35 }}>
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                  </svg>
+                </div>
+                <div className="empty-title">Nothing watched yet</div>
+                <div className="empty-body">Mark titles as watched from your Saved list or from Search.</div>
+              </div>
+            </div>
+            <div className="ds-empty-state-label">History · <code>.empty-state</code></div>
+          </div>
+        </div>
+        <div className="ds-code-note">
+          <code>{`<div className="empty-state">\n  <div className="empty-icon">…</div>\n  <div className="empty-title">Nothing saved yet</div>\n  <div className="empty-body">Browse the Guide or search for titles.</div>\n</div>`}</code>
+        </div>
+
+        {/* Loading state */}
+        <h3 className="ds-subsection-title">Loading state</h3>
+        <p className="ds-section-note" style={{ marginTop: '0.25rem' }}>
+          While a route or panel resolves, the app shows the PLOT wordmark with its letters pulsing in sequence — centered on the surface, never a spinner.
+        </p>
+        <div className="ds-loader-grid">
+          <div className="ds-loader-card">
+            <div className="ds-loader-demo">
+              <PlotLoader size="lg" tone={dark ? 'dark' : 'light'} />
+            </div>
+            <div className="ds-loader-label">Route fallback · <code>&lt;LoadingSpinner /&gt;</code> → <code>PlotLoader</code></div>
+          </div>
+          <div className="ds-loader-card">
+            <div className="ds-loader-demo">
+              <PlotLoader size="sm" tone={dark ? 'dark' : 'light'} />
+            </div>
+            <div className="ds-loader-label">Inline / button scale · <code>size="sm"</code></div>
+          </div>
+        </div>
+      </Section>
+
+      <Section eyebrow="15" title="Cross-Surface & Token Architecture">
+        <p className="ds-section-note">
+          One brand, three surfaces — the app, the marketing site (theplot.tv), and transactional email. They stay consistent because they all resolve to a single source of truth.
+        </p>
+        <div className="ds-utility-grid">
+          <RuleCard label="Source of truth">
+            <div className="ds-note-list">
+              <div className="ds-note-row">
+                <strong>core/tokens.js</strong>
+                <p>Canonical colors + radii for every surface. The app CSS (<code>tokens.css</code>) and the marketing site (<code>website/theme.css</code>) both derive from it; email generators import it at build time.</p>
+              </div>
+              <div className="ds-note-row">
+                <strong>Enforced in CI</strong>
+                <p><code>tokens:check</code> guards the app CSS, <code>tokens:marketing</code> guards the website + social cards + collateral, and <code>emails:check</code> guards the auth templates. Drift fails the build, not review.</p>
+              </div>
+              <div className="ds-note-row">
+                <strong>One dark palette</strong>
+                <p>The app dark theme, marketing dark sections, and every error screen share <code>#0c0c0c</code> / <code>#f0efe8</code>. There is no separate "error dark".</p>
+              </div>
+            </div>
+          </RuleCard>
+          <RuleCard label="Marketing-surface tokens">
+            <div className="ds-note-list">
+              <div className="ds-note-row ds-cross-swatch-row">
+                <span className="ds-swatch" style={{ background: 'var(--accent)' }} />
+                <p><strong>--accent</strong> — brand pink, identical value on the app and the site (name and semantics now match).</p>
+              </div>
+              <div className="ds-note-row ds-cross-swatch-row">
+                <span className="ds-swatch" style={{ background: '#000000' }} />
+                <p><strong>--ink</strong> — near-black CTA fill, marketing-only. The app's primary button uses <code>--text-primary</code> instead.</p>
+              </div>
+              <div className="ds-note-row ds-cross-swatch-row">
+                <span className="ds-swatch" style={{ background: '#059669' }} />
+                <p><strong>--success</strong> — "saved / added" confirmation; the same green as the app's <code>--chip-now</code>.</p>
+              </div>
+            </div>
+          </RuleCard>
+        </div>
+
+        <h3 className="ds-subsection-title">Marketing-only patterns</h3>
+        <p className="ds-section-note" style={{ marginTop: '0.25rem' }}>
+          These live only on the marketing site by design. They inherit the shared tokens, fonts, and wordmark — but their composition is editorial, not product UI.
+        </p>
+        <div className="ds-utility-grid">
+          <RuleCard label="Editorial display headlines">
+            <p>Oversized, condensed Instrument Serif (see §01) for hero and manifesto moments. The app never sets type this large.</p>
+          </RuleCard>
+          <RuleCard label="Black CTA button">
+            <p>The marketing primary button fills with <code>--ink</code>; the app keeps its quieter <code>--text-primary</code> button.</p>
+          </RuleCard>
+          <RuleCard label="Grain + poster wall">
+            <p>A fixed film-grain overlay and a rotating editorial poster wall set the marketing tone; the app surface stays clean.</p>
+          </RuleCard>
+          <RuleCard label="Live ticker">
+            <p>The scrolling "what's on" ticker is a marketing-home device, not part of the fixed app shell.</p>
+          </RuleCard>
+        </div>
+      </Section>
+
+      <Section eyebrow="16" title="Share & Social Cards">
+        <p className="ds-section-note">
+          When a PLOT link is shared — a title texted to a friend, a profile or list posted — it unfurls as a 1200×630 card generated on the fly by <code>/api/og</code>. All three variants share the brand dark, Instrument Serif titles, DM Sans meta, the accent eyebrow, and the PLOT wordmark. (Samples below are the real rendered output.)
+        </p>
+
+        <div className="ds-share-grid">
+          <figure className="ds-share-card">
+            <img src="/ds/share-title.jpg" alt="Title share card — Dune: Part Two" />
+            <figcaption>
+              <strong>Title card</strong>
+              <p>Sent when someone shares a movie or show. Backdrop + poster, "Found on PLOT" eyebrow, year · type · rating. <code>/api/og?type=movie&amp;id=…</code></p>
+            </figcaption>
+          </figure>
+          <figure className="ds-share-card">
+            <img src="/ds/share-profile.jpg" alt="Profile share card" />
+            <figcaption>
+              <strong>Profile card</strong>
+              <p>Avatar, name, supporter seal, and watch stats over a backdrop from a recent watch. <code>/api/og?u=…</code></p>
+            </figcaption>
+          </figure>
+          <figure className="ds-share-card">
+            <img src="/ds/share-list.jpg" alt="List share card" />
+            <figcaption>
+              <strong>List card</strong>
+              <p>List name, owner, and up to five posters. "A list on PLOT" eyebrow. <code>/api/og?list=…</code></p>
+            </figcaption>
+          </figure>
+        </div>
+
+        <div className="ds-utility-grid">
+          <RuleCard label="How a link becomes a card">
+            <div className="ds-note-list">
+              <div className="ds-note-row"><strong>Title</strong><p>An in-app Share button builds a <code>/save</code> link; <code>api/save.js</code> rewrites the page head so <code>og:image</code> points at <code>/api/og?type=&amp;id=</code>.</p></div>
+              <div className="ds-note-row"><strong>Profile</strong><p><code>/u/&lt;username&gt;</code> → <code>api/profile.js</code> → <code>og:image = /api/og?u=</code>.</p></div>
+              <div className="ds-note-row"><strong>List</strong><p><code>/list/&lt;id&gt;</code> → <code>api/list.js</code> → <code>og:image = /api/og?list=</code>.</p></div>
+              <div className="ds-note-row"><strong>Fallback</strong><p>Bare-domain links use the static 1200×630 <code>og-image</code>. Each card also has a branded no-data fallback (wordmark + tagline).</p></div>
+            </div>
+          </RuleCard>
+          <RuleCard label="Shared spec">
+            <div className="ds-note-list">
+              <div className="ds-note-row"><strong>Canvas</strong><p>1200×630, brand dark, PLOT wordmark, accent eyebrow — <code>--accent</code> sourced from <code>core/tokens.js</code>.</p></div>
+              <div className="ds-note-row"><strong>Type</strong><p>Instrument Serif titles (fluid 58–106px by length), DM Sans meta + labels. The same two families as every other surface.</p></div>
+              <div className="ds-note-row"><strong>Source</strong><p>Rendered by <code>api/og.js</code> via @vercel/og. These samples come from the real builders via <code>scripts/gen-share-samples.mjs</code>.</p></div>
+            </div>
+          </RuleCard>
+        </div>
+
+        <h3 className="ds-subsection-title">Known inconsistency to reconcile</h3>
+        <p className="ds-section-note" style={{ marginTop: '0.25rem' }}>
+          The same title can unfurl two different ways. Shared via the app's <code>/save</code> link it gets the branded card above; shared via the marketing <code>theplot.tv/movie/:slug</code> page (<code>supabase/functions/title-page</code>) it currently gets a bare, unbranded TMDB backdrop at a non-standard size. The <code>/whats-on</code> article pages likewise use plain stills, and the <code>/whats-on</code> index + chart emit no <code>og:image</code> at all. These marketing-domain surfaces should adopt the branded <code>/api/og</code> card so every shared PLOT link looks like PLOT.
+        </p>
       </Section>
     </div>
   );

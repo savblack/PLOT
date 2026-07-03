@@ -1,241 +1,139 @@
 import { Component } from 'react';
-import posthog from 'posthog-js';
-import { HERO_POSTERS } from '../constants/heroPosters.js';
+import { captureException } from '../lib/analytics.js';
+import { isChunkError, RELOAD_KEY } from '../utils/chunkError.js';
 import PlotLogo from './PlotLogo.jsx';
 
+// Dark, centered, minimal error design — matches the marketing site's
+// website/404.html so the app and theplot.tv share one error aesthetic.
 const styles = `
-  @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Manrope:wght@400;500;600&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap');
 
   .plot-error-page {
-    width: 100vw;
-    height: 100vh;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    background: #f5f4f0;
-    font-family: 'Manrope', system-ui, sans-serif;
-    overflow: hidden;
-  }
-
-  .plot-error-left {
+    min-height: 100vh;
+    min-height: 100dvh;
+    width: 100%;
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    padding: 5rem 4rem 5rem 6rem;
-    position: relative;
-    z-index: 2;
-  }
-
-  .plot-error-logo {
-    position: absolute;
-    top: 2.5rem;
-    left: 6rem;
-    display: flex;
     align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 1.5rem;
+    padding: 2rem;
+    background: #0c0c0c;
+    color: #f0efe8;
+    font-family: 'DM Sans', system-ui, sans-serif;
   }
 
   .plot-error-logo-image {
-    width: 100px;
-    height: auto;
+    font-size: 2.4rem;
     display: block;
   }
 
-  .plot-error-label {
-    font-size: 0.68rem;
-    font-weight: 600;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: #aaa;
-    margin-bottom: 1.25rem;
-  }
-
   .plot-error-number {
-    font-family: 'Instrument Serif', serif;
-    font-size: clamp(6rem, 12vw, 10rem);
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-size: clamp(4rem, 18vw, 8rem);
     font-weight: 400;
     line-height: 0.9;
-    color: #1a1a1a;
     letter-spacing: -0.04em;
-    margin-bottom: 1.25rem;
   }
 
   .plot-error-title {
-    font-family: 'Instrument Serif', serif;
-    font-size: clamp(1.6rem, 2.8vw, 2.2rem);
-    font-weight: 400;
-    font-style: italic;
-    color: #1a1a1a;
-    line-height: 1.2;
-    margin-bottom: 0.75rem;
-  }
-
-  .plot-error-divider {
-    width: 32px;
-    height: 1.5px;
-    background: #E05578;
-    margin: 1.25rem 0;
-    border-radius: 2px;
+    font-size: 1.35rem;
+    font-weight: 300;
+    line-height: 1.3;
+    margin: 0;
   }
 
   .plot-error-body {
-    font-size: 0.875rem;
-    color: #888;
-    line-height: 1.7;
-    font-weight: 400;
-    max-width: 300px;
-    margin-bottom: 2rem;
+    font-size: 0.95rem;
+    font-weight: 300;
+    color: rgba(240, 239, 232, 0.55);
+    max-width: 26rem;
+    line-height: 1.5;
+    margin: 0;
   }
 
   .plot-error-actions {
     display: flex;
     gap: 0.75rem;
     align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 0.5rem;
   }
 
   .plot-error-btn-primary {
-    background: #E05578;
-    color: #fff;
+    background: #f0efe8;
+    color: #0c0c0c;
     border: none;
-    padding: 0.7rem 1.75rem;
-    font-family: 'Manrope', system-ui, sans-serif;
-    font-size: 0.8rem;
-    font-weight: 600;
+    padding: 0.7rem 1.5rem;
+    font-family: 'DM Sans', system-ui, sans-serif;
+    font-size: 0.95rem;
+    font-weight: 500;
     cursor: pointer;
-    border-radius: 100px;
-    transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+    border-radius: 9999px;
+    transition: opacity 0.2s, transform 0.2s;
     white-space: nowrap;
-    letter-spacing: 0.01em;
   }
   .plot-error-btn-primary:hover {
-    background: #ea6f8a;
+    opacity: 0.85;
     transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(224,85,120,0.3);
   }
 
   .plot-error-btn-ghost {
     background: transparent;
-    color: #999;
-    border: 1px solid #d0d0d0;
+    color: #f0efe8;
+    border: 1px solid rgba(240, 239, 232, 0.25);
     padding: 0.7rem 1.5rem;
-    font-family: 'Manrope', system-ui, sans-serif;
-    font-size: 0.8rem;
-    font-weight: 500;
+    font-family: 'DM Sans', system-ui, sans-serif;
+    font-size: 0.95rem;
+    font-weight: 400;
     cursor: pointer;
-    border-radius: 100px;
-    transition: border-color 0.2s, color 0.2s, transform 0.2s;
+    border-radius: 9999px;
+    transition: border-color 0.2s, transform 0.2s;
     white-space: nowrap;
   }
   .plot-error-btn-ghost:hover {
-    border-color: #aaa;
-    color: #555;
+    border-color: rgba(240, 239, 232, 0.5);
     transform: translateY(-1px);
-  }
-
-  .plot-error-right {
-    position: relative;
-    background: #0a0a0a;
-    overflow: hidden;
-    height: 100vh;
-  }
-
-  .plot-error-poster-track {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 4px;
-    animation: plotErrorScroll 40s linear infinite;
-    will-change: transform;
-  }
-
-  @keyframes plotErrorScroll {
-    from { transform: translateY(0); }
-    to   { transform: translateY(-50%); }
-  }
-
-  .plot-error-poster-cell {
-    aspect-ratio: 2 / 3;
-    background-size: cover;
-    background-position: center;
-    background-color: #1a1a1a;
-  }
-
-  .plot-error-right-overlay {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(to bottom, #0a0a0a 0%, transparent 18%, transparent 78%, #0a0a0a 100%),
-                linear-gradient(to right, rgba(245,244,240,0.12) 0%, transparent 30%);
-    z-index: 1;
-    pointer-events: none;
-  }
-
-  .plot-error-right-num {
-    position: absolute;
-    bottom: 2rem;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 2;
-    font-family: 'Instrument Serif', serif;
-    font-size: 9rem;
-    font-weight: 400;
-    color: rgba(255,255,255,0.06);
-    line-height: 1;
-    letter-spacing: -0.05em;
-    pointer-events: none;
-    white-space: nowrap;
-  }
-
-  @media (max-width: 700px) {
-    .plot-error-page { grid-template-columns: 1fr; }
-    .plot-error-right { display: none; }
-    .plot-error-left { padding: 4rem 2rem 4rem 2rem; }
-    .plot-error-logo { left: 2rem; }
   }
 `;
 
-function ErrorScreen({ code, label, title, body, primaryLabel, primaryAction, ghostLabel, ghostAction }) {
+function ErrorScreen({ code, title, body, primaryLabel, primaryAction, ghostLabel, ghostAction }) {
   return (
     <>
       <style>{styles}</style>
       <div className="plot-error-page">
-        <div className="plot-error-left">
-          <div className="plot-error-logo">
-            <PlotLogo className="plot-error-logo-image" />
-          </div>
-          <div className="plot-error-label">Error · {label || code}</div>
-          <div className="plot-error-number">{code}</div>
-          <h1 className="plot-error-title">{title}</h1>
-          <div className="plot-error-divider" />
-          <p className="plot-error-body">{body}</p>
-          <div className="plot-error-actions">
-            <button className="plot-error-btn-primary" onClick={primaryAction}>{primaryLabel}</button>
-            {ghostLabel && (
-              <button className="plot-error-btn-ghost" onClick={ghostAction}>{ghostLabel}</button>
-            )}
-          </div>
-        </div>
-        <div className="plot-error-right">
-          <div className="plot-error-poster-track">
-            {[...HERO_POSTERS, ...HERO_POSTERS].map((src, i) => (
-              <div key={i} className="plot-error-poster-cell" style={{ backgroundImage: `url(${src})` }} />
-            ))}
-          </div>
-          <div className="plot-error-right-overlay" />
-          <div className="plot-error-right-num">{code}</div>
+        <PlotLogo className="plot-error-logo-image" white />
+        <div className="plot-error-number">{code}</div>
+        <h1 className="plot-error-title">{title}</h1>
+        <p className="plot-error-body">{body}</p>
+        <div className="plot-error-actions">
+          <button className="plot-error-btn-primary" onClick={primaryAction}>{primaryLabel}</button>
+          {ghostLabel && (
+            <button className="plot-error-btn-ghost" onClick={ghostAction}>{ghostLabel}</button>
+          )}
         </div>
       </div>
     </>
   );
 }
 
-function isChunkError(error) {
-  const msg = error?.message || '';
+// Generic "something went wrong" screen for unexpected runtime crashes.
+// A render crash is NOT a 404 — give it its own honest messaging + a reload.
+function CrashScreen() {
   return (
-    msg.includes('Failed to fetch dynamically imported module') ||
-    msg.includes('Importing a module script failed') ||
-    msg.includes('error loading dynamically imported module') ||
-    error?.name === 'ChunkLoadError'
+    <ErrorScreen
+      code="Oops"
+      title="That scene didn't quite load."
+      body="An unexpected error interrupted things. A quick reload usually gets you back on track."
+      primaryLabel="Reload"
+      primaryAction={() => { window.location.reload(); }}
+      ghostLabel="Go home"
+      ghostAction={() => { window.location.href = '/'; }}
+    />
   );
 }
-
-const RELOAD_KEY = 'plot_chunk_reload';
 
 export default class ErrorBoundary extends Component {
   state = { hasError: false };
@@ -255,26 +153,15 @@ export default class ErrorBoundary extends Component {
   componentDidCatch(error, info) {
     if (isChunkError(error)) return; // already handled above
     console.error('Plot error:', error, info);
-    posthog.captureException(error, { extra: info });
+    captureException(error, { extra: info });
   }
 
   render() {
     if (this.state.hasError) {
-      return (
-        <ErrorScreen
-          code="404"
-          label="Page not found"
-          title="Looks like we hit a plot hole."
-          body="Luckily, there's a lot more worth watching."
-          primaryLabel="Go home"
-          primaryAction={() => { window.location.href = '/'; }}
-          ghostLabel="Search titles"
-          ghostAction={() => { window.location.href = '/search'; }}
-        />
-      );
+      return <CrashScreen />;
     }
     return this.props.children;
   }
 }
 
-export { ErrorScreen };
+export { ErrorScreen, CrashScreen };

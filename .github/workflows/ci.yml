@@ -33,6 +33,18 @@ jobs:
       - name: Check shared footer is in sync
         run: npm run footer:check
 
+      - name: Check design tokens are in sync (web ↔ core ↔ mobile)
+        run: npm run tokens:check
+
+      - name: Check marketing tokens are in sync (website + email + collateral)
+        run: npm run tokens:marketing
+
+      - name: Check auth email templates are in sync
+        run: npm run emails:check
+
+      - name: Unit tests
+        run: node --test tests/unit/*.test.js
+
       - name: Build
         run: npm run build
         env:
@@ -53,3 +65,41 @@ jobs:
           VITE_TMDB_PROXY_URL: ${{ secrets.VITE_TMDB_PROXY_URL }}
           VITE_PUBLIC_POSTHOG_PROJECT_TOKEN: ${{ secrets.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN }}
           VITE_PUBLIC_POSTHOG_HOST: ${{ secrets.VITE_PUBLIC_POSTHOG_HOST }}
+
+  core-sync:
+    name: Core drift guard (web ↔ mobile)
+    runs-on: ubuntu-latest
+    steps:
+      # The shared core lives in src/core and is mirrored into plot-mobile's
+      # lib/core. This job fails if the two have drifted. It needs a token with
+      # read access to the private plot-mobile repo; without MOBILE_SYNC_TOKEN
+      # the check is skipped (so CI stays green until the secret is added).
+      - name: Detect token
+        id: guard
+        env:
+          TOK: ${{ secrets.MOBILE_SYNC_TOKEN }}
+        run: |
+          if [ -n "$TOK" ]; then echo "ok=true" >> "$GITHUB_OUTPUT";
+          else echo "ok=false" >> "$GITHUB_OUTPUT"; echo "::notice::MOBILE_SYNC_TOKEN not set — skipping web↔mobile core drift check"; fi
+
+      - name: Check out web (PLOT)
+        if: steps.guard.outputs.ok == 'true'
+        uses: actions/checkout@v6
+
+      - name: Check out plot-mobile
+        if: steps.guard.outputs.ok == 'true'
+        uses: actions/checkout@v6
+        with:
+          repository: savblack/plot-mobile
+          token: ${{ secrets.MOBILE_SYNC_TOKEN }}
+          path: plot-mobile
+
+      - name: Set up Node
+        if: steps.guard.outputs.ok == 'true'
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Verify src/core is mirrored into plot-mobile/lib/core
+        if: steps.guard.outputs.ok == 'true'
+        run: node scripts/mirror-core.mjs plot-mobile --check

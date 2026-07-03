@@ -143,6 +143,10 @@ const runWeekly = (args) => {
     env: { ...BASE_ENV, MARKETING_PLAN_DAYS: String(days) },
   });
 
+  // Web-only long-form SEO guides (best-of + "shows like"). Same pull→worker→
+  // save→review pipeline as every other post; planned here so pull picks them up.
+  run('Plan SEO guides', process.execPath, ['marketing/planner/guides.mjs']);
+
   run('Build copy briefs', process.execPath, ['marketing/copy/pull.mjs']);
   const jobs = manifestJobs();
 

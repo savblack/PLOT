@@ -6,7 +6,7 @@
 import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { getSupabase } from '../lib/supabase.mjs';
-import { validateCopy, validateConversation } from './schema.mjs';
+import { validateCopy, validateConversation, validateGuide } from './schema.mjs';
 import { JOBS_DIR } from './paths.mjs';
 
 // post_id -> post_type, from the manifest pull.mjs wrote, so we validate each
@@ -48,7 +48,10 @@ const main = async () => {
       continue;
     }
 
-    const validate = types.get(postId) === 'question' ? validateConversation : validateCopy;
+    const postType = types.get(postId);
+    const validate = postType === 'question' ? validateConversation
+      : postType === 'guide' ? validateGuide
+      : validateCopy;
     const { valid, errors, copy } = validate(parsed);
     if (!valid) {
       console.error(`✗ ${postId}: rejected —\n    ${errors.join('\n    ')}`);

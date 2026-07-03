@@ -1,10 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../api/supabase';
 import { tmdb } from '../api/tmdb';
 import { logoUrl, posterUrl } from '../App.jsx';
 import PlotLoader from '../components/PlotLoader.jsx';
 import { getButtonLikeProps } from '../utils/interactive.js';
+import { track, markActivated, EVENTS } from '../lib/analytics.js';
+
+const STEP_NAMES = { 1: 'region', 2: 'platforms', 3: 'seed' };
 
 /* ── Timezone → region guess ── */
 const TZ_MAP = {
@@ -105,6 +108,20 @@ export default function OnboardingFlow() {
     });
   }, [navigate]);
 
+  /* ── Activation funnel: fire once the authed user reaches onboarding ── */
+  const startedRef = useRef(false);
+  useEffect(() => {
+    if (user && !startedRef.current) {
+      startedRef.current = true;
+      track(EVENTS.ONBOARDING_STARTED);
+    }
+  }, [user]);
+
+  const goNext = () => {
+    track(EVENTS.ONBOARDING_STEP_COMPLETED, { step, step_name: STEP_NAMES[step] });
+    setStep((s) => s + 1);
+  };
+
   /* ── Load providers when moving to step 2 ── */
   useEffect(() => {
     if (step !== 2 || allProviders.length > 0) return;
@@ -191,6 +208,14 @@ export default function OnboardingFlow() {
         await supabase.from('list_items').upsert(rows, { onConflict: 'list_id,tmdb_id' });
       }
     }
+
+    track(EVENTS.ONBOARDING_COMPLETED, {
+      region,
+      providers_count: providers.length,
+      seed_titles_added: seedSelected.length,
+    });
+    // Completing onboarding is an activation signal (first-of wins).
+    markActivated('onboarding', { seed_titles_added: seedSelected.length });
 
     navigate('/home', { replace: true });
   };
@@ -391,7 +416,7 @@ export default function OnboardingFlow() {
             <button
               className="btn btn-primary"
               style={{ flex: 1 }}
-              onClick={step === 3 ? finish : () => setStep(s => s + 1)}
+              onClick={step === 3 ? finish : goNext}
               disabled={saving}
               aria-busy={saving}
               aria-label={saving ? 'Setting up account' : step === 3 ? 'Start watching' : 'Continue'}

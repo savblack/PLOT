@@ -1,3 +1,10 @@
 {
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "rewrites": [
+    { "source": "/u/:username", "destination": "/api/profile?username=:username" },
+    { "source": "/list/:id", "destination": "/api/list?id=:id" },
+    { "source": "/save", "destination": "/api/save" },
+    { "source": "/sitemap-profiles.xml", "destination": "/api/sitemap-profiles" },
+    { "source": "/sitemap-lists.xml", "destination": "/api/sitemap-lists" },
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ]
 }

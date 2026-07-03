@@ -5,7 +5,7 @@
   flex-direction: column;
   align-items: center;
   background: #ffffff;
-  font-family: 'Manrope', system-ui, sans-serif;
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   padding: 2rem 1.5rem 6rem;
 }
@@ -115,7 +115,7 @@
   padding: 0.85rem 1rem;
   border: none;
   background: transparent;
-  font-family: 'Manrope', system-ui, sans-serif;
+  font-family: var(--font-sans);
   font-size: 0.95rem;
   color: #1a1a1a;
   outline: none;
@@ -224,7 +224,7 @@
   border: 1px solid #1a1a1a;
   border-radius: 12px;
   background: transparent;
-  font-family: 'Manrope', system-ui, sans-serif;
+  font-family: var(--font-sans);
   font-size: 0.92rem;
   font-weight: 600;
   color: #1a1a1a;
@@ -263,7 +263,7 @@
   padding: 0.7rem 1.1rem;
   background: transparent;
   border: none;
-  font-family: 'Manrope', system-ui, sans-serif;
+  font-family: var(--font-sans);
   font-size: 0.88rem;
   font-weight: 500;
   color: #1a1a1a;
@@ -400,7 +400,7 @@
   padding: 0.85rem 1rem 0.85rem 2.75rem;
   border: 1.5px solid #e8e8e8;
   border-radius: 12px;
-  font-family: 'Manrope', system-ui, sans-serif;
+  font-family: var(--font-sans);
   font-size: 0.95rem;
   color: #1a1a1a;
   background: #fafafa;
@@ -645,7 +645,7 @@
 .onboarding-btn-back {
   background: none;
   border: none;
-  font-family: 'Manrope', system-ui, sans-serif;
+  font-family: var(--font-sans);
   font-size: 0.9rem;
   font-weight: 600;
   color: #aaa;
@@ -662,7 +662,7 @@
   color: #1a1a1a;
   border: 1px solid #1a1a1a;
   border-radius: 9999px;
-  font-family: 'Manrope', system-ui, sans-serif;
+  font-family: var(--font-sans);
   font-size: 0.92rem;
   font-weight: 600;
   cursor: pointer;
@@ -704,7 +704,7 @@
   justify-content: center;
   gap: 2.5rem;
   text-align: center;
-  font-family: 'Manrope', system-ui, sans-serif;
+  font-family: var(--font-sans);
   padding: 2rem;
 }
 

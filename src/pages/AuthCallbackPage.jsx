@@ -42,12 +42,12 @@ export default function AuthCallbackPage() {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        fontFamily: "'Manrope', system-ui, sans-serif",
+        fontFamily: 'var(--font-sans)',
         gap: '1rem',
         padding: '2rem',
         textAlign: 'center',
       }}>
-        <PlotLogo style={{ width: '100px', height: 'auto' }} />
+        <PlotLogo style={{ fontSize: '2rem' }} />
         <p style={{ color: '#c0392b', fontSize: '0.95rem' }}>This link has expired or is invalid.</p>
         <a href="/login" style={{ color: '#1a1a1a', fontWeight: 600, fontSize: '0.9rem' }}>Back to sign in</a>
       </div>
@@ -61,7 +61,7 @@ export default function AuthCallbackPage() {
       alignItems: 'center',
       justifyContent: 'center',
     }}>
-      <PlotLogo style={{ width: '100px', height: 'auto' }} />
+      <PlotLogo style={{ fontSize: '2rem' }} />
     </div>
   );
 }

@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../api/supabase';
 import './AuthPage.css';
-import PlotLogo from '../components/PlotLogo.jsx';
 import PlotLoader from '../components/PlotLoader.jsx';
 
 function friendlyError(msg) {
@@ -37,8 +36,8 @@ export default function ResetPasswordPage() {
   return (
     <div className="auth-page" style={{ justifyContent: 'center' }}>
       <div className="auth-panel" style={{ maxWidth: 480, height: 'auto', minHeight: '100vh' }}>
-        <Link to="/" className="auth-panel-logo">
-          <PlotLogo />
+        <Link to="/" className="auth-panel-logo" aria-label="PLOT">
+          PLOT
         </Link>
 
         <div className="auth-panel-body">

@@ -18,6 +18,11 @@ project_id = "mkegtssedjyqldysvzga"
 [functions.marketing-feed]
 verify_jwt = false
 
+# Public title pages (theplot.tv/movie|tv/<slug>) — must render for crawlers and
+# logged-out visitors, so reachable without a JWT.
+[functions.title-page]
+verify_jwt = false
+
 # Admin review desk — public at the gateway (reachable via admin.theplot.tv),
 # gated by ADMIN_TOKEN inside the function.
 [functions.admin-review]
@@ -46,12 +51,6 @@ verify_jwt = false
 # complete source of truth and no function silently relies on the default.
 
 [functions.tmdb-proxy]
-verify_jwt = true
-
-[functions.generate-journal]
-verify_jwt = true
-
-[functions.generate-taste-profile]
 verify_jwt = true
 
 [functions.delete-account]

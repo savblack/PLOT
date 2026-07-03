@@ -3,32 +3,38 @@
 //
 //   node scripts/push-auth-emails.mjs            # render + push
 //   node scripts/push-auth-emails.mjs --render   # render to supabase/templates/ only
+//   node scripts/push-auth-emails.mjs --check    # verify committed templates match (CI; no network)
 //
 // Auth: SUPABASE_ACCESS_TOKEN env var, or the Supabase CLI keychain entry.
 
 import { execFileSync } from 'node:child_process';
-import { writeFileSync, mkdirSync } from 'node:fs';
+import { writeFileSync, readFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { colors } from '../src/core/tokens.js';
 
 const PROJECT_REF = 'mkegtssedjyqldysvzga';
 const TEMPLATES_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'supabase', 'templates');
 const SITE_URL = 'https://theplot.tv';
 
-// ── Design tokens (mirrors src/styles/tokens.css, light mode) ──
+// ── Design tokens ──
+// Brand colors derive from src/core/tokens.js (the canonical source, enforced by
+// `npm run tokens:marketing`). surfaceTint/accentSoft/border are email-only.
+const c = colors.light;
+const dmSans = "'DM Sans', -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif";
 const t = {
-  bg: '#F4F4F5',
-  surface: '#FFFFFF',
+  bg: c.bg,
+  surface: c.surface,
   surfaceTint: '#FFF5F7',
-  textPrimary: '#09090B',
-  textSecondary: '#52525B',
-  textMuted: '#A1A1AA',
+  textPrimary: c.textPrimary,
+  textSecondary: c.textSecondary,
+  textMuted: c.textMuted,
   border: '#E4E4E7',
-  accent: '#E05578',
+  accent: c.accent,
   accentSoft: '#F7C7D3',
   serif: "'Instrument Serif', Georgia, 'Times New Roman', serif",
-  siteSans: "'DM Sans', -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif",
-  sans: "'Manrope', -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif",
+  siteSans: dmSans,
+  sans: dmSans,
 };
 
 const button = (href, label) => `
@@ -65,7 +71,7 @@ const layout = ({ preheader, eyebrow, heading, intro, content, note, safety }) =
   <meta name="supported-color-schemes" content="light">
   <title>PLOT</title>
   <!--[if !mso]><!-->
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=Instrument+Serif&family=Manrope:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Instrument+Serif&display=swap" rel="stylesheet">
   <!--<![endif]-->
 </head>
 <body style="margin: 0; padding: 0; background-color: ${t.bg};">
@@ -198,6 +204,23 @@ const emails = {
     }),
   },
 };
+
+// ── --check: verify committed templates match this generator (CI, no network) ──
+if (process.argv.includes('--check')) {
+  const drift = [];
+  for (const { file, html } of Object.values(emails)) {
+    let existing = null;
+    try { existing = readFileSync(join(TEMPLATES_DIR, file), 'utf8'); } catch { existing = null; }
+    if (existing !== html) drift.push(file);
+  }
+  if (drift.length) {
+    console.error(`✗ supabase/templates out of sync with push-auth-emails.mjs: ${drift.join(', ')}`);
+    console.error('  Regenerate with: node scripts/push-auth-emails.mjs --render');
+    process.exit(1);
+  }
+  console.log(`✓ auth email templates in sync (${Object.keys(emails).length})`);
+  process.exit(0);
+}
 
 // ── Render to supabase/templates/ for review ──
 mkdirSync(TEMPLATES_DIR, { recursive: true });

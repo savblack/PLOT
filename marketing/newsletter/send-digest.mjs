@@ -12,6 +12,7 @@ import { tmdb } from '../lib/tmdb.mjs';
 import { getRatings } from '../lib/omdb.mjs';
 import { addDays } from '../lib/dates.mjs';
 import { tzDateParts } from '../learning/window.mjs';
+import { colors } from '../../src/core/tokens.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const SITE = 'https://theplot.tv';
@@ -39,8 +40,10 @@ const providersOf = (details) => {
 };
 
 // ── brand tokens ──
-const INK = '#0c0c0c', MUT = '#6b6b70', FAINT = '#a1a1a6', PINK = '#E05578';
-const HAIR = '#e7e6e3', PAPER = '#f4f4f5';
+// Brand pink + paper derive from the canonical source (src/core/tokens.js);
+// INK/MUT/FAINT/HAIR are newsletter-only email inks.
+const INK = '#0c0c0c', MUT = '#6b6b70', FAINT = '#a1a1a6', PINK = colors.light.accent;
+const HAIR = '#e7e6e3', PAPER = colors.light.bg;
 const SERIF = "'Instrument Serif', Georgia, 'Times New Roman', serif";
 const SANS = "'Helvetica Neue', Helvetica, Arial, sans-serif";
 
@@ -53,6 +56,25 @@ const saveUrl = ({ tmdb_id, media_type } = {}) => {
   if (!Number.isInteger(id) || id <= 0) return '';
   if (media_type !== 'movie' && media_type !== 'tv') return '';
   return `${APP}/save?media_type=${media_type}&tmdb_id=${id}&src=newsletter`;
+};
+// Public title page (theplot.tv/movie|tv/<slug>) — the indexable "where to
+// watch" page. Matches the slug the title-page function canonicalises to. The
+// utm tags the click for the funnel (PostHog auto-captures it on the title
+// page's pageview). Returns '' for invalid items, like saveUrl.
+const slugify = (s) =>
+  String(s || '').toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80) || 'title';
+const titleUrl = ({ tmdb_id, media_type, title } = {}) => {
+  const id = Number(tmdb_id);
+  if (!Number.isInteger(id) || id <= 0) return '';
+  if (media_type !== 'movie' && media_type !== 'tv') return '';
+  return `${SITE}/${media_type}/${slugify(title)}-${id}?utm_source=newsletter&utm_medium=email&utm_campaign=weekly_digest`;
+};
+// Wrap title text (or a poster <img>) in a link to its title page; falls back to
+// the bare inner HTML when the item can't resolve (never a broken link).
+const titleLink = (item, inner, extraStyle = '') => {
+  const u = titleUrl(item);
+  return u ? `<a href="${u}" style="color:inherit;text-decoration:none;${extraStyle}">${inner}</a>` : inner;
 };
 // Small inline "+ Save" text link for compact rows.
 const saveTextLink = (item, px = 13) => {
@@ -88,10 +110,10 @@ const chartTwoColumn = (items) => {
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 16px;"><tr>
       <td width="20" valign="top" style="font-family:${SERIF};font-size:19px;line-height:1;color:${PINK};text-align:center;padding-top:2px;">${i.rank}</td>
       <td width="40" valign="top" style="padding-left:9px;">
-        ${i.poster_path ? `<img src="${esc(tmdbImg(i.poster_path, 'w92'))}" width="40" height="60" alt="" style="display:block;width:40px;height:60px;object-fit:cover;border-radius:5px;border:1px solid ${HAIR};background:#ececec;">` : `<div style="width:40px;height:60px;border-radius:5px;background:${INK};"></div>`}
+        ${i.poster_path ? titleLink(i, `<img src="${esc(tmdbImg(i.poster_path, 'w92'))}" width="40" height="60" alt="" style="display:block;width:40px;height:60px;object-fit:cover;border-radius:5px;border:1px solid ${HAIR};background:#ececec;">`) : `<div style="width:40px;height:60px;border-radius:5px;background:${INK};"></div>`}
       </td>
       <td valign="middle" style="padding-left:11px;">
-        <div style="font-family:${SERIF};font-size:16px;line-height:1.12;color:${INK};">${esc(i.title)}</div>
+        <div style="font-family:${SERIF};font-size:16px;line-height:1.12;color:${INK};">${titleLink(i, esc(i.title))}</div>
         <div style="font-family:${SANS};font-size:12px;line-height:1.3;color:${MUT};margin-top:3px;">${i.media_type === 'tv' ? 'TV' : 'Film'}${mv ? ` &middot; ${mv}` : ''}</div>
         ${saveTextLink(i, 12) ? `<div style="margin-top:5px;">${saveTextLink(i, 12)}</div>` : ''}
       </td>
@@ -122,9 +144,9 @@ const featuredBlock = (f, kicker) => {
   ].filter(Boolean).join(' &middot; ');
   return `
     <tr><td style="padding:28px 32px 0;">
-      ${heroImg ? `<img src="${esc(heroImg)}" width="536" alt="" style="display:block;width:100%;height:auto;border-radius:12px;border:1px solid ${HAIR};">` : ''}
+      ${heroImg ? titleLink(f, `<img src="${esc(heroImg)}" width="536" alt="" style="display:block;width:100%;height:auto;border-radius:12px;border:1px solid ${HAIR};">`, 'display:block;') : ''}
       <div style="font-family:${SANS};font-size:11px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:${PINK};margin-top:18px;">${esc(kicker)}</div>
-      <div style="font-family:${SERIF};font-size:33px;line-height:1.04;letter-spacing:-0.01em;color:${INK};margin-top:6px;">${esc(f.title)}</div>
+      <div style="font-family:${SERIF};font-size:33px;line-height:1.04;letter-spacing:-0.01em;color:${INK};margin-top:6px;">${titleLink(f, esc(f.title))}</div>
       ${ratings ? `<div style="font-family:${SANS};font-size:13px;color:${MUT};margin-top:12px;">${ratings}</div>` : ''}
       ${f.overview ? `<div style="font-family:${SANS};font-size:15px;line-height:1.6;color:#27272a;margin-top:14px;">${esc(trim(f.overview, 280))}</div>` : ''}
       ${credits ? `<div style="font-family:${SANS};font-size:13px;line-height:1.5;color:${MUT};margin-top:12px;">${credits}</div>` : ''}
@@ -139,11 +161,11 @@ const weekendBlock = (picks) => {
     <tr><td style="padding:18px 32px 0;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
         <td width="78" valign="top">
-          <img src="${esc(tmdbImg(p.poster_path, 'w185'))}" width="78" height="117" alt="" style="display:block;width:78px;height:117px;object-fit:cover;border-radius:8px;border:1px solid ${HAIR};background:#ececec;">
+          ${titleLink(p, `<img src="${esc(tmdbImg(p.poster_path, 'w185'))}" width="78" height="117" alt="" style="display:block;width:78px;height:117px;object-fit:cover;border-radius:8px;border:1px solid ${HAIR};background:#ececec;">`, 'display:block;')}
         </td>
         <td valign="top" style="padding-left:17px;">
           <div style="font-family:${SANS};font-size:11px;font-weight:700;letter-spacing:0.13em;text-transform:uppercase;color:${PINK};">${esc(p.label)}</div>
-          <div style="font-family:${SERIF};font-size:21px;line-height:1.12;color:${INK};margin-top:5px;">${esc(p.title)}</div>
+          <div style="font-family:${SERIF};font-size:21px;line-height:1.12;color:${INK};margin-top:5px;">${titleLink(p, esc(p.title))}</div>
           <div style="font-family:${SANS};font-size:13px;line-height:1.45;color:${MUT};margin-top:7px;">${p.meta}</div>
           ${saveTextLink(p) ? `<div style="margin-top:9px;">${saveTextLink(p)}</div>` : ''}
         </td>
@@ -157,8 +179,8 @@ const weekendBlock = (picks) => {
 const streamingGallery = (items) => {
   const cell = (t) => t ? `
     <td width="33.33%" valign="top" style="padding:16px 6px 0;">
-      <img src="${esc(tmdbImg(t.poster_path, 'w342'))}" width="166" height="249" alt="" style="display:block;width:100%;height:249px;object-fit:cover;border-radius:8px;border:1px solid ${HAIR};background:#ececec;">
-      <div style="font-family:${SERIF};font-size:17px;line-height:1.12;color:${INK};margin-top:9px;">${esc(t.title)}</div>
+      ${titleLink(t, `<img src="${esc(tmdbImg(t.poster_path, 'w342'))}" width="166" height="249" alt="" style="display:block;width:100%;height:249px;object-fit:cover;border-radius:8px;border:1px solid ${HAIR};background:#ececec;">`, 'display:block;')}
+      <div style="font-family:${SERIF};font-size:17px;line-height:1.12;color:${INK};margin-top:9px;">${titleLink(t, esc(t.title))}</div>
       <div style="font-family:${SANS};font-size:12px;line-height:1.4;color:${MUT};margin-top:4px;">${t.vote ? `&#9733; ${t.vote.toFixed(1)} &middot; ` : ''}${esc(t.providers[0])}</div>
       ${saveTextLink(t, 12) ? `<div style="margin-top:6px;">${saveTextLink(t, 12)}</div>` : ''}
     </td>` : '<td width="33.33%" style="font-size:0;line-height:0;">&nbsp;</td>';
