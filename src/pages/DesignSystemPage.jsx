@@ -202,7 +202,7 @@ export default function DesignSystemPage() {
           </div>
           <div className="ds-type-card ds-type-card--sans">
             <span>Interface and data</span>
-            <strong>Manrope</strong>
+            <strong>DM Sans</strong>
             <p>Use for buttons, dense rows, metadata, settings, navigation, forms, and repeated controls.</p>
           </div>
         </div>
@@ -212,15 +212,15 @@ export default function DesignSystemPage() {
             <h3>Calendar</h3>
           </div>
           <div>
-            <span>Rail label · Manrope · 0.75rem / 700 / 1.2 lh / 0.08em ls / uppercase</span>
+            <span>Rail label · DM Sans · 0.75rem / 700 / 1.2 lh / 0.08em ls / uppercase</span>
             <strong className="ds-rail-sample">Upcoming releases</strong>
           </div>
           <div>
-            <span>Body copy · Manrope · 0.875rem / 400 / 1.6 lh</span>
+            <span>Body copy · DM Sans · 0.875rem / 400 / 1.6 lh</span>
             <p>Track what is streaming, airing, saved, watched, and coming soon.</p>
           </div>
           <div>
-            <span>Metadata · Manrope · 0.75rem / 400 / 1.4 lh · --text-muted</span>
+            <span>Metadata · DM Sans · 0.75rem / 400 / 1.4 lh · --text-muted</span>
             <small>Season 2 · 8 episodes · Streaming</small>
           </div>
         </div>

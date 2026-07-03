@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Manrope:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap');
 
 /* ── Light mode ──────────────────────── */
 :root {
@@ -43,7 +43,7 @@
 
   /* Typography */
   --font-serif:     'Instrument Serif', Georgia, serif;
-  --font-sans:      'Manrope', system-ui, sans-serif;
+  --font-sans:      'DM Sans', system-ui, sans-serif;
 
   /* Radii */
   --radius-md:      16px;

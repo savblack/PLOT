@@ -42,7 +42,7 @@ export default function AuthCallbackPage() {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        fontFamily: "'Manrope', system-ui, sans-serif",
+        fontFamily: 'var(--font-sans)',
         gap: '1rem',
         padding: '2rem',
         textAlign: 'center',

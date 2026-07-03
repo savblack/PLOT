@@ -57,7 +57,7 @@ export default function TraktCallbackPage() {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        fontFamily: "'Manrope', system-ui, sans-serif",
+        fontFamily: 'var(--font-sans)',
         gap: '1rem',
         padding: '2rem',
         textAlign: 'center',
@@ -76,7 +76,7 @@ export default function TraktCallbackPage() {
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      fontFamily: "'Manrope', system-ui, sans-serif",
+      fontFamily: 'var(--font-sans)',
       gap: '0.75rem',
     }}>
       <PlotLogo style={{ fontSize: '2rem' }} />
