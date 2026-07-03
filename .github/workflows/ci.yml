@@ -36,6 +36,12 @@ jobs:
       - name: Check design tokens are in sync (web ↔ core ↔ mobile)
         run: npm run tokens:check
 
+      - name: Check marketing tokens are in sync (website + email + collateral)
+        run: npm run tokens:marketing
+
+      - name: Check auth email templates are in sync
+        run: npm run emails:check
+
       - name: Unit tests
         run: node --test tests/unit/*.test.js
 

@@ -16,6 +16,8 @@
     "footer": "node scripts/build-footer.mjs",
     "footer:check": "node scripts/build-footer.mjs --check",
     "tokens:check": "node scripts/build-tokens.mjs --check",
+    "tokens:marketing": "node scripts/check-marketing-tokens.mjs",
+    "emails:check": "node scripts/push-auth-emails.mjs --check",
     "mkt:plan": "node marketing/planner/plan.mjs",
     "mkt:guides": "node marketing/planner/guides.mjs",
     "mkt:copy:pull": "node marketing/copy/pull.mjs",
