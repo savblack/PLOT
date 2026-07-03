@@ -224,6 +224,14 @@ export default function DesignSystemPage() {
             <small>Season 2 · 8 episodes · Streaming</small>
           </div>
         </div>
+
+        <h3 className="ds-subsection-title">Editorial display · marketing surface</h3>
+        <p className="ds-section-note" style={{ marginTop: '0.25rem' }}>
+          Marketing hero and manifesto headlines push Instrument Serif large and tight — weight 400, <code>−0.05em</code> tracking, a <code>0.997</code> horizontal condense, at a fluid <code>clamp(2.8rem, 6.5vw, 5rem)</code>. Same font as the app; editorial scale.
+        </p>
+        <div className="ds-editorial-display">
+          <span>Your film &amp; TV companion</span>
+        </div>
       </Section>
 
       <Section eyebrow="02" title="Color Tokens">
@@ -938,7 +946,7 @@ export default function DesignSystemPage() {
 
       <Section eyebrow="14" title="Error, Empty, and Loading States">
         <p className="ds-section-note">
-          All full-page error screens share one dark centered design. In-app empty states use a minimal inline pattern, and loading falls back to the animated PLOT mark.
+          All full-page error screens share one dark centered design — including the marketing site's 404, which shares this exact layout and copy. In-app empty states use a minimal inline pattern, and loading falls back to the animated PLOT mark.
         </p>
 
         {/* Full-page error screens */}
@@ -1080,6 +1088,65 @@ export default function DesignSystemPage() {
             </div>
             <div className="ds-loader-label">Inline / button scale · <code>size="sm"</code></div>
           </div>
+        </div>
+      </Section>
+
+      <Section eyebrow="15" title="Cross-Surface & Token Architecture">
+        <p className="ds-section-note">
+          One brand, three surfaces — the app, the marketing site (theplot.tv), and transactional email. They stay consistent because they all resolve to a single source of truth.
+        </p>
+        <div className="ds-utility-grid">
+          <RuleCard label="Source of truth">
+            <div className="ds-note-list">
+              <div className="ds-note-row">
+                <strong>core/tokens.js</strong>
+                <p>Canonical colors + radii for every surface. The app CSS (<code>tokens.css</code>) and the marketing site (<code>website/theme.css</code>) both derive from it; email generators import it at build time.</p>
+              </div>
+              <div className="ds-note-row">
+                <strong>Enforced in CI</strong>
+                <p><code>tokens:check</code> guards the app CSS, <code>tokens:marketing</code> guards the website + social cards + collateral, and <code>emails:check</code> guards the auth templates. Drift fails the build, not review.</p>
+              </div>
+              <div className="ds-note-row">
+                <strong>One dark palette</strong>
+                <p>The app dark theme, marketing dark sections, and every error screen share <code>#0c0c0c</code> / <code>#f0efe8</code>. There is no separate "error dark".</p>
+              </div>
+            </div>
+          </RuleCard>
+          <RuleCard label="Marketing-surface tokens">
+            <div className="ds-note-list">
+              <div className="ds-note-row ds-cross-swatch-row">
+                <span className="ds-swatch" style={{ background: 'var(--accent)' }} />
+                <p><strong>--accent</strong> — brand pink, identical value on the app and the site (name and semantics now match).</p>
+              </div>
+              <div className="ds-note-row ds-cross-swatch-row">
+                <span className="ds-swatch" style={{ background: '#000000' }} />
+                <p><strong>--ink</strong> — near-black CTA fill, marketing-only. The app's primary button uses <code>--text-primary</code> instead.</p>
+              </div>
+              <div className="ds-note-row ds-cross-swatch-row">
+                <span className="ds-swatch" style={{ background: '#059669' }} />
+                <p><strong>--success</strong> — "saved / added" confirmation; the same green as the app's <code>--chip-now</code>.</p>
+              </div>
+            </div>
+          </RuleCard>
+        </div>
+
+        <h3 className="ds-subsection-title">Marketing-only patterns</h3>
+        <p className="ds-section-note" style={{ marginTop: '0.25rem' }}>
+          These live only on the marketing site by design. They inherit the shared tokens, fonts, and wordmark — but their composition is editorial, not product UI.
+        </p>
+        <div className="ds-utility-grid">
+          <RuleCard label="Editorial display headlines">
+            <p>Oversized, condensed Instrument Serif (see §01) for hero and manifesto moments. The app never sets type this large.</p>
+          </RuleCard>
+          <RuleCard label="Black CTA button">
+            <p>The marketing primary button fills with <code>--ink</code>; the app keeps its quieter <code>--text-primary</code> button.</p>
+          </RuleCard>
+          <RuleCard label="Grain + poster wall">
+            <p>A fixed film-grain overlay and a rotating editorial poster wall set the marketing tone; the app surface stays clean.</p>
+          </RuleCard>
+          <RuleCard label="Live ticker">
+            <p>The scrolling "what's on" ticker is a marketing-home device, not part of the fixed app shell.</p>
+          </RuleCard>
         </div>
       </Section>
     </div>

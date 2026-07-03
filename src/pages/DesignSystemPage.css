@@ -1336,6 +1336,44 @@
   line-height: 1.5;
 }
 
+/* Editorial display sample (§01) */
+.ds-editorial-display {
+  margin-top: 0.75rem;
+  padding: 1.5rem 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  overflow: hidden;
+}
+
+.ds-editorial-display span {
+  display: inline-block;
+  font-family: var(--font-serif);
+  font-weight: 400;
+  letter-spacing: -0.05em;
+  line-height: 0.95;
+  font-size: clamp(2.2rem, 6vw, 4rem);
+  transform: scaleX(0.997);
+  color: var(--text-primary);
+}
+
+/* Cross-surface swatch rows (§15) */
+.ds-cross-swatch-row {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 0.65rem;
+  align-items: center;
+}
+
+.ds-cross-swatch-row .ds-swatch {
+  width: 30px;
+  height: 30px;
+}
+
+.ds-cross-swatch-row p {
+  margin: 0;
+}
+
 /* Loading state (§14) */
 .ds-loader-grid {
   display: grid;
