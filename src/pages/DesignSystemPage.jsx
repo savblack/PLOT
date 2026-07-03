@@ -1100,11 +1100,11 @@ export default function DesignSystemPage() {
             <div className="ds-note-list">
               <div className="ds-note-row">
                 <strong>core/tokens.js</strong>
-                <p>Canonical colors + radii for every surface. The app CSS (<code>tokens.css</code>) and the marketing site (<code>website/theme.css</code>) both derive from it; email generators import it at build time.</p>
+                <p>Canonical colors + radii + base-4 spacing for every surface. The app CSS (<code>tokens.css</code>) and the marketing site (<code>website/theme.css</code>) derive from it; email generators import it; and it's mirrored byte-for-byte into the mobile app (<code>plot-mobile/lib/core</code>) — see §18.</p>
               </div>
               <div className="ds-note-row">
                 <strong>Enforced in CI</strong>
-                <p><code>tokens:check</code> guards the app CSS, <code>tokens:marketing</code> guards the website + social cards + collateral, and <code>emails:check</code> guards the auth templates. Drift fails the build, not review.</p>
+                <p><code>tokens:check</code> guards the app CSS, <code>tokens:marketing</code> the website + social cards, <code>emails:check</code> the auth templates, and <code>mirror-core --check</code> the web↔mobile core. Drift fails the build, not review.</p>
               </div>
               <div className="ds-note-row">
                 <strong>One dark palette</strong>
@@ -1259,6 +1259,68 @@ export default function DesignSystemPage() {
             <img src="/ds/collateral-ig-monogram-cream.jpg" alt="Instagram avatar, monogram on cream" />
             <figcaption><strong>Avatar · monogram, cream</strong>Inverted</figcaption>
           </figure>
+        </div>
+      </Section>
+
+      <Section eyebrow="18" title="Mobile (native app)">
+        <p className="ds-section-note">
+          The PLOT mobile app (Expo / React Native, in the <code>plot-mobile</code> repo) is a first-class surface of this system. It shares the foundation with web through <code>src/core/tokens.js</code>, mirrored byte-for-byte into <code>plot-mobile/lib/core</code> and drift-guarded in CI — so colors, radii, and the base-4 spacing scale are locked to web. It now shares the type families too: Instrument Serif for display, DM Sans for UI.
+        </p>
+
+        <div className="ds-mobile-grid">
+          <div className="ds-phone" data-theme="dark">
+            <div className="ds-phone-bar" />
+            <div className="ds-phone-header">
+              <span className="ds-phone-wordmark">PLOT</span>
+              <span className="ds-phone-glyph" aria-hidden="true">⌕</span>
+            </div>
+            <div className="ds-phone-subtabs">
+              <span className="active">Discover</span><span>Releases</span><span>Guide</span>
+            </div>
+            <div className="ds-phone-chiprow">
+              <span className="chip chip-now">Now</span>
+              <span className="chip chip-today">Today</span>
+              <span className="chip chip-streaming">Movie</span>
+            </div>
+            <div className="ds-phone-rows">
+              <div className="ds-phone-listrow"><span className="ds-phone-poster" /><span className="ds-phone-lines"><b /><i /></span></div>
+              <div className="ds-phone-listrow"><span className="ds-phone-poster" /><span className="ds-phone-lines"><b /><i /></span></div>
+              <div className="ds-phone-listrow"><span className="ds-phone-poster" /><span className="ds-phone-lines"><b /><i /></span></div>
+            </div>
+            <div className="ds-phone-tabbar">
+              <span className="active">Home</span><span>Calendar</span><span>Lists</span><span>History</span>
+            </div>
+          </div>
+
+          <div className="ds-mobile-notes">
+            <p className="ds-example-label">Token-driven representation of the mobile shell — composed from the shared tokens, not a live screenshot.</p>
+            <div className="ds-note-list">
+              <div className="ds-note-row">
+                <strong>Shared with web (via core)</strong>
+                <p>Colors, radii (<code>md/lg/badge/pill</code>), the base-4 spacing scale, and the type families (DM Sans + Instrument Serif). Locked by <code>mirror-core</code> + the CI drift guard — the warm dark <code>#0c0c0c</code>/<code>#f0efe8</code> reached mobile automatically this way.</p>
+              </div>
+              <div className="ds-note-row">
+                <strong>Platform-specific (by design)</strong>
+                <p>Font-size scale (mobile numeric px vs web semantic rem), elevation/shadows (RN vs CSS), and one mobile-only <code>radii.sm</code> (8px). These don't map 1:1, so they live in <code>plot-mobile/lib/tokens.ts</code>, not core.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <h3 className="ds-subsection-title">Native-only patterns</h3>
+        <div className="ds-utility-grid">
+          <RuleCard label="Bottom tab bar">
+            <p>Persistent native tab navigation (Home · Calendar · Lists · History) — the mobile analog of the web sub-tabs.</p>
+          </RuleCard>
+          <RuleCard label="Sheets & drawer">
+            <p>Media details and the nav drawer slide up/in as native sheets (<code>MediaPanel</code>, <code>DrawerMenu</code>) with gesture dismissal — not the web side-panel.</p>
+          </RuleCard>
+          <RuleCard label="Safe-area insets">
+            <p>Layouts respect device notches and home indicators via <code>SafeAreaProvider</code>; there's no web equivalent.</p>
+          </RuleCard>
+          <RuleCard label="Gestures & transitions">
+            <p>Swipe, long-press, and native stack transitions replace hover/click affordances from the web surface.</p>
+          </RuleCard>
         </div>
       </Section>
     </div>

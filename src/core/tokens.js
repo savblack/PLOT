@@ -67,6 +67,19 @@ export const radii = {
   pill: 9999,
 };
 
+// Base-4 spacing scale (px), shared across platforms. The web app uses these
+// same steps in its layout rhythm (design system §11); mobile consumes the
+// numbers directly. Font SIZES are intentionally NOT shared — web uses a
+// semantic rem scale, mobile a numeric px scale that don't map 1:1.
+export const spacing = {
+  xs: 4,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 24,
+  xxl: 32,
+};
+
 // Maps a camelCase token key to its web CSS custom-property name.
 // (surfaceRaised -> --surface-raised, epgBarStream -> --epg-bar-stream)
 export function cssVarName(key) {

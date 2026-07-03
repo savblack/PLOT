@@ -1421,6 +1421,98 @@
 .ds-ci--wide { flex: 1 1 100%; }
 .ds-ci--square { flex: 0 1 132px; }
 
+/* Mobile section (§18) — token-driven phone frame */
+.ds-mobile-grid {
+  display: grid;
+  grid-template-columns: 232px minmax(0, 1fr);
+  gap: 1.5rem;
+  align-items: start;
+  margin-bottom: 1.5rem;
+}
+
+.ds-phone {
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  border-radius: 2rem;
+  width: 100%;
+  max-width: 232px;
+  aspect-ratio: 9 / 19;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+}
+
+.ds-phone-bar {
+  width: 34%;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--border-strong);
+  margin: 0.5rem auto 0.6rem;
+}
+
+.ds-phone-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 0.8rem 0.55rem;
+}
+.ds-phone-wordmark {
+  font-family: var(--font-serif);
+  font-size: 1.3rem;
+  letter-spacing: -0.04em;
+  color: var(--text-primary);
+}
+.ds-phone-glyph { color: var(--text-secondary); font-size: 1rem; }
+
+.ds-phone-subtabs {
+  display: flex;
+  gap: 0.9rem;
+  padding: 0 0.8rem 0.6rem;
+  font-family: var(--font-sans);
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.ds-phone-subtabs .active {
+  color: var(--text-primary);
+  border-bottom: 2px solid var(--accent);
+  padding-bottom: 2px;
+}
+
+.ds-phone-chiprow { display: flex; gap: 0.3rem; padding: 0 0.8rem 0.6rem; }
+
+.ds-phone-rows { display: flex; flex-direction: column; gap: 0.55rem; padding: 0 0.8rem; flex: 1; }
+.ds-phone-listrow { display: flex; gap: 0.5rem; align-items: center; }
+.ds-phone-poster {
+  width: 34px; height: 48px; flex-shrink: 0;
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+}
+.ds-phone-lines { display: flex; flex-direction: column; gap: 5px; flex: 1; }
+.ds-phone-lines b { display: block; height: 7px; width: 72%; border-radius: 3px; background: var(--text-secondary); opacity: 0.5; }
+.ds-phone-lines i { display: block; height: 6px; width: 42%; border-radius: 3px; background: var(--text-muted); opacity: 0.5; }
+
+.ds-phone-tabbar {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.6rem;
+  padding: 0.5rem 0.7rem 0.7rem;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  font-family: var(--font-sans);
+  font-size: 0.52rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.ds-phone-tabbar .active { color: var(--accent); }
+
+.ds-mobile-notes .ds-example-label { margin-bottom: 0.7rem; }
+
 /* Editorial display sample (§01) */
 .ds-editorial-display {
   margin-top: 0.75rem;
@@ -1510,7 +1602,8 @@
   .ds-empty-states-grid,
   .ds-layout-token-grid,
   .ds-loader-grid,
-  .ds-share-grid {
+  .ds-share-grid,
+  .ds-mobile-grid {
     grid-template-columns: 1fr;
   }
 
