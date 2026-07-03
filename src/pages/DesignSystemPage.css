@@ -21,8 +21,36 @@
   box-shadow: var(--shadow-xs);
 }
 
+.ds-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
 .ds-hero > div {
   padding: clamp(1.25rem, 4vw, 2rem);
+}
+
+.ds-theme-toggle {
+  margin: clamp(1.25rem, 4vw, 2rem) 0 auto auto;
+  align-self: flex-start;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  padding: 0.45rem 1rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.15s, color 0.15s;
+}
+.ds-theme-toggle:hover {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .ds-kicker,
@@ -206,6 +234,20 @@
   height: 42px;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-md);
+  flex-shrink: 0;
+}
+
+.ds-swatch--glassy {
+  background-image: linear-gradient(135deg, #6a4fcf 0%, #c94b9a 50%, #e06c3a 100%) !important;
+  position: relative;
+  overflow: hidden;
+}
+.ds-swatch--glassy::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--glass-bg);
+  border-radius: inherit;
 }
 
 .ds-token-card strong,
@@ -409,6 +451,49 @@
   gap: 0.85rem;
 }
 
+.ds-icon-labeled-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.8rem;
+}
+
+.ds-icon-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.ds-icon-bookmark svg {
+  width: 15px;
+  height: 15px;
+  fill: var(--accent);
+  stroke: var(--accent);
+}
+
+.ds-icon-labeled-grid .season-nav-btn {
+  width: 36px;
+  height: 36px;
+  font-size: 1.4rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.ds-icon-cell span {
+  color: var(--text-muted);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .ds-icon-row .icon-btn,
 .ds-icon-row .card-save-btn,
 .ds-icon-row .season-nav-btn {
@@ -561,6 +646,15 @@
 .ds-settings-sample .settings-row-icon svg {
   width: 15px;
   height: 15px;
+}
+
+.ds-provider-logo {
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  object-fit: cover;
+  vertical-align: middle;
+  flex-shrink: 0;
 }
 
 .ds-drawer-sample {
@@ -718,26 +812,486 @@
 }
 
 .ds-layout-rule-art {
-  display: grid;
-  grid-template-rows: 12px 1fr 12px;
-  gap: 4px;
-  height: 90px;
-  padding: 0.45rem;
+  height: 160px;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: var(--surface);
+  overflow: hidden;
 }
 
-.ds-layout-rule-art span,
-.ds-layout-rule-art strong,
-.ds-layout-rule-art em {
+.ds-layout-rule-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
   display: block;
+}
+
+/* shared bar — top/bottom chrome */
+.ds-la-bar {
+  display: block;
+  height: 10px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--accent) 15%, var(--surface-sunken));
+  flex-shrink: 0;
+}
+
+/* Fixed frame: scrollable rows between two fixed bars */
+.ds-layout-art--fixed .ds-la-scroll {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  overflow: hidden;
+}
+.ds-layout-art--fixed .ds-la-scroll span {
+  display: block;
+  height: 8px;
   border-radius: 2px;
   background: var(--surface-sunken);
 }
 
-.ds-layout-rule-art strong {
-  background: color-mix(in srgb, var(--accent) 12%, var(--surface-sunken));
+/* Side panel: main area + narrower aside */
+.ds-layout-art--panel .ds-la-body {
+  flex: 1;
+  display: flex;
+  gap: 3px;
+  overflow: hidden;
+}
+.ds-layout-art--panel .ds-la-main {
+  flex: 1;
+  border-radius: 2px;
+  background: var(--surface-sunken);
+}
+.ds-layout-art--panel .ds-la-aside {
+  width: 35%;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface-sunken));
+}
+
+/* Focused: centred narrow column */
+.ds-layout-art--focused .ds-la-center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 0 18%;
+  overflow: hidden;
+}
+.ds-layout-art--focused .ds-la-center span {
+  display: block;
+  width: 100%;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--surface-sunken);
+}
+
+/* Full-width bands: alternating full-width bars */
+.ds-layout-art--bands {
+  justify-content: center;
+  gap: 4px;
+}
+.ds-la-band {
+  display: block;
+  width: 100%;
+  height: 14px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--accent) 15%, var(--surface-sunken));
+  flex-shrink: 0;
+}
+.ds-la-band--dim {
+  background: var(--surface-sunken);
+  height: 10px;
+}
+
+/* ── Interactive States ───────────────── */
+.ds-interactive-demo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem;
+  background: var(--bg);
+  border-radius: var(--radius-md);
+}
+
+.ds-interactive-card {
+  cursor: pointer;
+  transition: transform 0.2s var(--ease);
+}
+
+.ds-interactive-card:hover { transform: scale(0.97); }
+.ds-interactive-card:active { transform: scale(0.93); }
+
+.ds-focus-demo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.75rem;
+  background: var(--bg);
+  border-radius: var(--radius-md);
+}
+
+/* ── Overlays, Glass, and Menus ───────── */
+.ds-modal-demos {
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.75rem;
+  background: var(--bg);
+  border-radius: var(--radius-md);
+}
+
+.ds-modal-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  box-shadow: var(--shadow-md);
+}
+
+.ds-modal-title {
+  font-family: var(--font-serif);
+  font-size: 1.05rem;
+  font-weight: 400;
+  color: var(--text-primary);
+  margin: 0 0 0.4rem;
+  line-height: 1.25;
+}
+
+.ds-modal-message {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0 0 1.25rem;
+}
+
+.ds-modal-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.ds-modal-btn {
+  padding: 0.55rem 1.1rem !important;
+  font-size: 0.8rem !important;
+}
+
+.ds-btn-danger {
+  background: var(--danger);
+  border-color: transparent;
+  color: #fff;
+  font-weight: 600;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-sans);
+  cursor: pointer;
+}
+
+.ds-filter-demo {
+  display: flex;
+  align-items: flex-start;
+  padding: 0.75rem;
+  background: var(--bg);
+  border-radius: var(--radius-md);
+}
+
+.ds-filter-wrap {
+  position: relative;
+}
+
+.ds-menu-static {
+  position: static !important;
+  display: block !important;
+  margin-top: 4px;
+  box-shadow: var(--shadow-sm);
+}
+
+.ds-glass-demo {
+  position: relative;
+  overflow: hidden;
+  height: 120px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+}
+
+.ds-glass-art {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, var(--chip-streaming), var(--chip-cinema), var(--chip-episode));
+}
+
+.ds-glass-panel {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 0.75rem 1rem;
+  background: var(--glass-bg);
+  border-top: 1px solid var(--glass-border);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.ds-glass-label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.15rem;
+}
+
+.ds-glass-panel code {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-weight: 600;
+}
+
+/* ── Forms and Validation ─────────────── */
+.ds-state-wrap {
+  position: relative;
+}
+
+.ds-input-error {
+  border-color: var(--danger) !important;
+  background: var(--danger-dim) !important;
+}
+
+.ds-error-msg {
+  display: block;
+  margin-top: 0.2rem;
+  color: var(--danger);
+  font-size: 0.72rem;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.ds-input-valid {
+  border-color: #059669 !important;
+  padding-right: 2.2rem !important;
+}
+
+.ds-valid-mark {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #059669;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.ds-pw-toggle {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+}
+
+.ds-pw-toggle svg {
+  width: 16px;
+  height: 16px;
+}
+
+.ds-search-wrap {
+  position: relative;
+  margin-bottom: 0.1rem;
+}
+
+.ds-search-input {
+  border-radius: var(--radius-md) !important;
+}
+
+.ds-star-row {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 0.5rem;
+}
+
+/* §14 Error and Empty States */
+.ds-error-screens {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  margin-bottom: 2.5rem;
+}
+
+.ds-error-screen-demo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.ds-error-preview {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  aspect-ratio: 9 / 16;
+  max-height: 420px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 2rem 1.5rem;
+  text-align: center;
+}
+
+.ds-error-preview--crash {
+  background: #0c0c0c;
+  color: #f0efe8;
+  font-family: 'DM Sans', system-ui, sans-serif;
+}
+
+.ds-ep-logo {
+  opacity: 0.9;
+  margin-bottom: 0.5rem;
+}
+
+.ds-ep-code {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: clamp(2.5rem, 8vw, 4rem);
+  font-weight: 400;
+  line-height: 0.9;
+  letter-spacing: -0.04em;
+  color: #f0efe8;
+}
+
+.ds-ep-title {
+  font-size: 0.95rem;
+  font-weight: 300;
+  line-height: 1.3;
+  color: #f0efe8;
+}
+
+.ds-ep-body {
+  font-size: 0.8rem;
+  font-weight: 300;
+  color: rgba(240, 239, 232, 0.5);
+  line-height: 1.5;
+  max-width: 20rem;
+}
+
+.ds-ep-actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 0.25rem;
+}
+
+.ds-ep-btn-primary {
+  background: #f0efe8;
+  color: #0c0c0c;
+  padding: 0.55rem 1.25rem;
+  border-radius: 9999px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: default;
+}
+
+.ds-ep-btn-ghost {
+  background: transparent;
+  color: #f0efe8;
+  border: 1px solid rgba(240, 239, 232, 0.25);
+  padding: 0.55rem 1.25rem;
+  border-radius: 9999px;
+  font-size: 0.85rem;
+  cursor: default;
+}
+
+.ds-error-screen-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ds-error-screen-meta strong {
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+
+.ds-error-screen-meta p {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.55;
+  margin: 0;
+}
+
+.ds-error-tokens {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.25rem;
+}
+
+.ds-chip--meta {
+  background: var(--surface-raised);
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-family: var(--font-mono, monospace);
+  padding: 0.2rem 0.55rem;
+  border-radius: 9999px;
+  border: 1px solid var(--border);
+}
+
+.ds-subsection-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 1.5rem 0 0;
+}
+
+.ds-empty-states-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.ds-empty-state-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.ds-empty-state-demo {
+  padding: 2rem 1rem;
+  background: var(--surface-sunken);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ds-empty-state-label {
+  padding: 0.6rem 0.85rem;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  border-top: 1px solid var(--border);
+}
+
+.ds-code-note {
+  margin-top: 1.25rem;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
+}
+
+.ds-code-note code {
+  font-size: 0.78rem;
+  line-height: 1.7;
+  white-space: pre;
+  display: block;
+  color: var(--text-secondary);
 }
 
 @media (max-width: 900px) {
@@ -748,7 +1302,9 @@
   .ds-control-grid,
   .ds-pattern-grid,
   .ds-utility-grid,
-  .ds-layout-grid {
+  .ds-layout-grid,
+  .ds-error-screen-demo,
+  .ds-empty-states-grid {
     grid-template-columns: 1fr;
   }
 
