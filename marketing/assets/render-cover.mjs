@@ -5,6 +5,7 @@ import { dirname, join } from 'node:path';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const targets = [
+  ['x-header-wordmark.svg', 'x-header-wordmark.png'],
   ['x-cover-wordmark.svg', 'x-cover-wordmark.png'],
   ['x-cover-wordmark-coral.svg', 'x-cover-wordmark-coral.png'],
   ['x-cover-plotline.svg', 'x-cover-plotline.png'],

@@ -1233,20 +1233,12 @@ export default function DesignSystemPage() {
         </p>
         <div className="ds-collateral-row">
           <figure className="ds-collateral-item ds-ci--wide">
-            <img src="/ds/collateral-x-header-dark.jpg" alt="X header, dark" />
-            <figcaption><strong>X / Twitter header · dark</strong>1500×500</figcaption>
-          </figure>
-          <figure className="ds-collateral-item ds-ci--wide">
-            <img src="/ds/collateral-x-header-light.jpg" alt="X header, light" />
-            <figcaption><strong>X / Twitter header · light</strong>Same layout, light theme</figcaption>
-          </figure>
-          <figure className="ds-collateral-item ds-ci--landscape">
-            <img src="/ds/collateral-cover-wordmark.jpg" alt="Brand cover, wordmark" />
-            <figcaption><strong>Brand cover · wordmark</strong>Decorative 1500×500</figcaption>
+            <img src="/ds/collateral-x-header.jpg" alt="X header and brand cover — centered PLOT wordmark on cream" />
+            <figcaption><strong>X / Twitter header &amp; brand cover</strong>Centered Instrument Serif wordmark, ink on cream · 1500×500 · used for both</figcaption>
           </figure>
           <figure className="ds-collateral-item ds-ci--landscape">
             <img src="/ds/collateral-cover-billing.jpg" alt="Brand cover, billing block" />
-            <figcaption><strong>Brand cover · billing</strong>Poster-style promo</figcaption>
+            <figcaption><strong>Brand cover · billing</strong>Poster-style promo variant</figcaption>
           </figure>
           <figure className="ds-collateral-item ds-ci--square">
             <img src="/ds/collateral-ig-wordmark.jpg" alt="Instagram avatar, wordmark" />
