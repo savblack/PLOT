@@ -29,7 +29,6 @@ const guideTokens = [
   ['--chip-today', 'Today', 'Airs or releases today.'],
   ['--chip-tomorrow', 'Tomorrow', 'Airs or releases tomorrow.'],
   ['--chip-soon', 'Soon', 'Coming in the next few days.'],
-  ['--chip-muted', 'Muted', 'Saved, watched, and neutral state chips with no time or type context.'],
   ['--epg-bar-broadcast', 'Broadcast bar', 'Left edge marker for live TV guide channels.'],
   ['--epg-bar-stream', 'Streaming bar', 'Left edge marker for streaming guide channels.'],
 ];
