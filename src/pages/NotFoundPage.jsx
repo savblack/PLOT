@@ -6,7 +6,7 @@ export default function NotFoundPage() {
   return (
     <ErrorScreen
       code="404"
-      title="This scene didn't make the final cut."
+      title="Looks like we've hit a plot hole."
       body="Let's get you back to something worth watching."
       primaryLabel="Go home"
       primaryAction={() => navigate('/')}

@@ -939,7 +939,7 @@ export default function DesignSystemPage() {
                 </svg>
               </div>
               <div className="ds-ep-code">404</div>
-              <div className="ds-ep-title">This scene didn't make the final cut.</div>
+              <div className="ds-ep-title">Looks like we've hit a plot hole.</div>
               <div className="ds-ep-body">Let's get you back to something worth watching.</div>
               <div className="ds-ep-actions">
                 <span className="ds-ep-btn-primary">Go home</span>
