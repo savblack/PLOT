@@ -1149,6 +1149,59 @@ export default function DesignSystemPage() {
           </RuleCard>
         </div>
       </Section>
+
+      <Section eyebrow="16" title="Share & Social Cards">
+        <p className="ds-section-note">
+          When a PLOT link is shared — a title texted to a friend, a profile or list posted — it unfurls as a 1200×630 card generated on the fly by <code>/api/og</code>. All three variants share the brand dark, Instrument Serif titles, DM Sans meta, the accent eyebrow, and the PLOT wordmark. (Samples below are the real rendered output.)
+        </p>
+
+        <div className="ds-share-grid">
+          <figure className="ds-share-card">
+            <img src="/ds/share-title.jpg" alt="Title share card — Dune: Part Two" />
+            <figcaption>
+              <strong>Title card</strong>
+              <p>Sent when someone shares a movie or show. Backdrop + poster, "Found on PLOT" eyebrow, year · type · rating. <code>/api/og?type=movie&amp;id=…</code></p>
+            </figcaption>
+          </figure>
+          <figure className="ds-share-card">
+            <img src="/ds/share-profile.jpg" alt="Profile share card" />
+            <figcaption>
+              <strong>Profile card</strong>
+              <p>Avatar, name, supporter seal, and watch stats over a backdrop from a recent watch. <code>/api/og?u=…</code></p>
+            </figcaption>
+          </figure>
+          <figure className="ds-share-card">
+            <img src="/ds/share-list.jpg" alt="List share card" />
+            <figcaption>
+              <strong>List card</strong>
+              <p>List name, owner, and up to five posters. "A list on PLOT" eyebrow. <code>/api/og?list=…</code></p>
+            </figcaption>
+          </figure>
+        </div>
+
+        <div className="ds-utility-grid">
+          <RuleCard label="How a link becomes a card">
+            <div className="ds-note-list">
+              <div className="ds-note-row"><strong>Title</strong><p>An in-app Share button builds a <code>/save</code> link; <code>api/save.js</code> rewrites the page head so <code>og:image</code> points at <code>/api/og?type=&amp;id=</code>.</p></div>
+              <div className="ds-note-row"><strong>Profile</strong><p><code>/u/&lt;username&gt;</code> → <code>api/profile.js</code> → <code>og:image = /api/og?u=</code>.</p></div>
+              <div className="ds-note-row"><strong>List</strong><p><code>/list/&lt;id&gt;</code> → <code>api/list.js</code> → <code>og:image = /api/og?list=</code>.</p></div>
+              <div className="ds-note-row"><strong>Fallback</strong><p>Bare-domain links use the static 1200×630 <code>og-image</code>. Each card also has a branded no-data fallback (wordmark + tagline).</p></div>
+            </div>
+          </RuleCard>
+          <RuleCard label="Shared spec">
+            <div className="ds-note-list">
+              <div className="ds-note-row"><strong>Canvas</strong><p>1200×630, brand dark, PLOT wordmark, accent eyebrow — <code>--accent</code> sourced from <code>core/tokens.js</code>.</p></div>
+              <div className="ds-note-row"><strong>Type</strong><p>Instrument Serif titles (fluid 58–106px by length), DM Sans meta + labels. The same two families as every other surface.</p></div>
+              <div className="ds-note-row"><strong>Source</strong><p>Rendered by <code>api/og.js</code> via @vercel/og. These samples come from the real builders via <code>scripts/gen-share-samples.mjs</code>.</p></div>
+            </div>
+          </RuleCard>
+        </div>
+
+        <h3 className="ds-subsection-title">Known inconsistency to reconcile</h3>
+        <p className="ds-section-note" style={{ marginTop: '0.25rem' }}>
+          The same title can unfurl two different ways. Shared via the app's <code>/save</code> link it gets the branded card above; shared via the marketing <code>theplot.tv/movie/:slug</code> page (<code>supabase/functions/title-page</code>) it currently gets a bare, unbranded TMDB backdrop at a non-standard size. The <code>/whats-on</code> article pages likewise use plain stills, and the <code>/whats-on</code> index + chart emit no <code>og:image</code> at all. These marketing-domain surfaces should adopt the branded <code>/api/og</code> card so every shared PLOT link looks like PLOT.
+        </p>
+      </Section>
     </div>
   );
 }

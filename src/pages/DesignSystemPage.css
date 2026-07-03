@@ -1336,6 +1336,48 @@
   line-height: 1.5;
 }
 
+/* Share & social cards (§16) */
+.ds-share-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.ds-share-card {
+  margin: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.ds-share-card img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1200 / 630;
+  object-fit: cover;
+  border-bottom: 1px solid var(--border);
+}
+
+.ds-share-card figcaption {
+  padding: 0.75rem 0.85rem;
+}
+
+.ds-share-card figcaption strong {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  margin-bottom: 0.2rem;
+}
+
+.ds-share-card figcaption p {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
 /* Editorial display sample (§01) */
 .ds-editorial-display {
   margin-top: 0.75rem;
@@ -1424,7 +1466,8 @@
   .ds-error-screen-demo,
   .ds-empty-states-grid,
   .ds-layout-token-grid,
-  .ds-loader-grid {
+  .ds-loader-grid,
+  .ds-share-grid {
     grid-template-columns: 1fr;
   }
 

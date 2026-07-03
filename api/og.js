@@ -8,6 +8,7 @@
 import { ImageResponse } from '@vercel/og';
 import React from 'react';
 import { loadTitle } from './_tmdb.js';
+import { colors } from '../src/core/tokens.js';
 
 export const config = { runtime: 'edge' };
 
@@ -17,7 +18,8 @@ const SUPABASE_URL = 'https://mkegtssedjyqldysvzga.supabase.co';
 // Public, publishable anon key (role: anon) — same key the client ships.
 const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1rZWd0c3NlZGp5cWxkeXN2emdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2MDgzMzUsImV4cCI6MjA4OTE4NDMzNX0.W-toEr3ftNeN0iTpRQ8Ord09sxBiwO2CQC6j2jszN6w';
 
-const ACCENT = '#F06A88';
+// Brand dark accent — same value as the app/marketing (src/core/tokens.js).
+const ACCENT = colors.dark.accent;
 const BG = '#0f0f11';
 const TMDB_IMG = (p, s = 'w185') => (p ? `https://image.tmdb.org/t/p/${s}${p}` : null);
 const sh = (a) => `0 2px 12px rgba(0,0,0,${a})`;
@@ -82,7 +84,7 @@ async function loadList(id) {
   };
 }
 
-function listCard(list, fonts) {
+export function listCard(list, fonts) {
   const opts = { width: 1200, height: 630, fonts, headers: { 'cache-control': 'public, max-age=300, s-maxage=300' } };
   if (!list) {
     return new ImageResponse(
@@ -128,7 +130,7 @@ async function loadFonts(req) {
 }
 
 // ── Title card: backdrop + gradient scrim + serif title + DM Sans meta ──
-function titleCard(t, fonts) {
+export function titleCard(t, fonts) {
   const title = t && t.title ? t.title : 'PLOT';
   const metaBits = t ? [t.year, t.type === 'tv' ? 'Series' : 'Movie'].filter(Boolean).join('   ·   ') : 'Your film & TV companion';
   const n = title.length;
@@ -159,33 +161,8 @@ function titleCard(t, fonts) {
   return new ImageResponse(el, { width: 1200, height: 630, fonts, headers: { 'cache-control': 'public, max-age=86400, s-maxage=86400' } });
 }
 
-export default async function handler(req) {
-  const { searchParams } = new URL(req.url);
-
-  // List card — /api/og?list=<uuid>
-  const listId = searchParams.get('list');
-  if (listId) {
-    let list = null;
-    try { list = await loadList(listId); } catch { /* branded fallback */ }
-    const fonts = await loadFonts(req);
-    return listCard(list, fonts);
-  }
-
-  // Title card — /api/og?type=movie&id=123
-  const id = searchParams.get('id');
-  if (id) {
-    let t = null;
-    try { t = await loadTitle(searchParams.get('type'), id); } catch { /* generic card */ }
-    const fonts = await loadFonts(req);
-    return titleCard(t, fonts);
-  }
-
-  // Profile card — /api/og?u=username
-  const handle = (searchParams.get('u') || '').replace(/^@/, '').trim().toLowerCase();
-  let profile = null;
-  try { if (handle) profile = await loadProfile(handle); } catch { /* branded fallback */ }
-
-  const fonts = await loadFonts(req);
+// ── Profile card: avatar + name + @handle + stats, optional backdrop scrim ──
+export function profileCard(profile, fonts) {
   const opts = { width: 1200, height: 630, fonts, headers: { 'cache-control': 'public, max-age=300, s-maxage=300' } };
 
   if (!profile) {
@@ -238,4 +215,32 @@ export default async function handler(req) {
       : h('div', { style: { position: 'relative', display: 'flex', fontFamily: 'DM Sans', fontWeight: 400, fontSize: 46, color: '#cfcfd6', marginTop: 48 } }, 'Just joined PLOT!'),
   );
   return new ImageResponse(el, opts);
+}
+
+export default async function handler(req) {
+  const { searchParams } = new URL(req.url);
+
+  // List card — /api/og?list=<uuid>
+  const listId = searchParams.get('list');
+  if (listId) {
+    let list = null;
+    try { list = await loadList(listId); } catch { /* branded fallback */ }
+    const fonts = await loadFonts(req);
+    return listCard(list, fonts);
+  }
+
+  // Title card — /api/og?type=movie&id=123
+  const id = searchParams.get('id');
+  if (id) {
+    let t = null;
+    try { t = await loadTitle(searchParams.get('type'), id); } catch { /* generic card */ }
+    const fonts = await loadFonts(req);
+    return titleCard(t, fonts);
+  }
+
+  // Profile card — /api/og?u=username
+  const handle = (searchParams.get('u') || '').replace(/^@/, '').trim().toLowerCase();
+  let profile = null;
+  try { if (handle) profile = await loadProfile(handle); } catch { /* branded fallback */ }
+  return profileCard(profile, await loadFonts(req));
 }
