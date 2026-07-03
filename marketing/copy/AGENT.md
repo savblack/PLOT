@@ -32,6 +32,11 @@ is **Codex**. Other runners are fallback/debug only.
 - Use only the facts supplied in the brief for social copy.
 - The website article can use the brief's research pack plus live web research.
 - Always paraphrase in PLOT's voice.
+- Strip out obvious AI writing patterns before saving:
+  corporate filler words, neat trios, "it's not X, it's Y", narrator phrases,
+  em dashes, fake significance, and vague trailing `-ing` analysis.
+- Prefer plain language, concrete details, and an actual point of view over
+  polished but empty phrasing.
 - Never quote reviews verbatim.
 - Never copy Wikipedia or synopsis text.
 - List every outside source you actually used in `sources`.
@@ -43,6 +48,8 @@ is **Codex**. Other runners are fallback/debug only.
 - `threads`: no URLs, no hashtags
 - `hashtags`: 3 to 5 items, no `#` prefix
 - `cta_variant`: one of `track_it`, `whats_on_tonight`, `journal_it`, `none`
+- Question posts that use `watch`/`rewatch` wording must explicitly say
+  `movie`, `film`, `show`, `series`, or `TV`
 
 ## Environment
 

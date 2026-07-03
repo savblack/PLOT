@@ -117,6 +117,10 @@ export const validateConversation = (raw) => {
   if (!question) errors.push('question is empty');
   if (hasUrl(question)) errors.push('question contains a URL (not allowed)');
   if (/#\w/.test(question)) errors.push('question contains a hashtag (not allowed)');
+  if (/\b(watch|watched|watching|rewatch|rewatched|rewatching)\b/i.test(question)
+    && !/\b(movie|movies|film|films|show|shows|series|tv|television|episode|episodes)\b/i.test(question)) {
+    errors.push('question uses watch language without explicit film/TV context');
+  }
 
   const q = question.length > 280 ? `${question.slice(0, 279)}…` : question;
   return {

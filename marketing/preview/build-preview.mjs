@@ -108,8 +108,9 @@ const main = async () => {
   const payloads = await samplePayloads();
 
   // Which platform sees which render (mirrors publish.mjs):
-  //   portrait  -> Instagram carousel; landscape -> Threads carousel;
-  //   X gets ONE landscape image: the first card that allows 'x'.
+  //   portrait  -> Instagram carousel;
+  //   landscape -> X always, and Threads for text/image posts.
+  //   Trending uses one full landscape chart on both X and Threads.
   //   cards[i].channels (null = all) limits a card to specific platforms.
   const allows = (card, ch) => !card.channels || card.channels.includes(ch);
   const channelLabel = (type, cards, cardIndex, size) => {

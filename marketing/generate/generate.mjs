@@ -10,19 +10,20 @@ import { sendEmail, ADMIN_EMAIL } from '../lib/email.mjs';
 import { POST_TYPES } from '../lib/post-types.mjs';
 import { feedHeroUrl } from '../lib/images.mjs';
 import { postSlug } from '../lib/feed.mjs';
+import { syncMarketingPostToOperator } from '../operator/sync.mjs';
 
 const PLATFORMS = ['x', 'instagram', 'threads'];
 
 const CONVERSATION_PLATFORMS = ['x', 'threads']; // text-only — no Instagram
 
-// Text-only conversation post: no card to render, no article. Just the question
-// (already on the row as copy), published to X + Threads.
+// Text-only conversation post: no card to render, no article. The operator desk
+// owns review now, so the legacy row stays in a generated/rendered state.
 const generateConversation = async (supabase, post) => {
   if (!post.copy) throw new Error('Conversation post has no copy yet');
   const copy = { ...post.copy };
   const { error } = await supabase
     .from('marketing_posts')
-    .update({ copy, media: [], status: 'needs_review', updated_at: new Date().toISOString() })
+    .update({ copy, media: [], status: 'generated', updated_at: new Date().toISOString() })
     .eq('id', post.id);
   if (error) throw new Error(`Post update failed: ${error.message}`);
 
@@ -36,8 +37,23 @@ const generateConversation = async (supabase, post) => {
   return { ...post, copy, media: [], slug: null };
 };
 
+// Web-only guide: no card render, no social publications. The operator desk
+// handles review, approval, and scheduling.
+const generateGuide = async (supabase, post) => {
+  if (!post.copy) throw new Error('Guide has no copy yet');
+  const copy = { ...post.copy };
+  const slug = postSlug(copy.page_title || 'guide', post.scheduled_for);
+  const { error } = await supabase
+    .from('marketing_posts')
+    .update({ copy, media: [], slug, status: 'generated', updated_at: new Date().toISOString() })
+    .eq('id', post.id);
+  if (error) throw new Error(`Post update failed: ${error.message}`);
+  return { ...post, copy, media: [], slug };
+};
+
 const generatePost = async (supabase, post) => {
   if (post.post_type === 'question') return generateConversation(supabase, post);
+  if (post.post_type === 'guide') return generateGuide(supabase, post);
 
   const spec = POST_TYPES[post.post_type];
   if (!spec) throw new Error(`Unknown post type ${post.post_type}`);
@@ -66,7 +82,7 @@ const generatePost = async (supabase, post) => {
   const slug = postSlug(copy.page_title || post.post_type, post.scheduled_for);
   const { error } = await supabase
     .from('marketing_posts')
-    .update({ copy, media, slug, status: 'needs_review', updated_at: new Date().toISOString() })
+    .update({ copy, media, slug, status: 'generated', updated_at: new Date().toISOString() })
     .eq('id', post.id);
   if (error) throw new Error(`Post update failed: ${error.message}`);
 
@@ -101,7 +117,7 @@ const applyAnnounceState = async (supabase, post) => {
   await supabase.from('marketing_tracked_titles').update(update).eq('id', announce.tracked_id);
 };
 
-const REVIEW_URL = 'https://admin.theplot.tv';
+const REVIEW_URL = process.env.OPERATOR_REVIEW_URL || 'https://admin.theplot.tv';
 
 // Ping the admin that the week's posts are ready to review — replaces the old
 // per-post veto email. Review / edit / approve now happens on the admin desk.
@@ -110,8 +126,8 @@ const notifyReview = async (count) => {
   const html = `<div style="font-family:sans-serif;max-width:520px;color:#1a1a1a;">
     <h1 style="font-size:1.25rem;">${count} post${count > 1 ? 's' : ''} ready to review</h1>
     <p style="font-size:.95rem;line-height:1.6;">This week's marketing posts (and the newsletter) are generated and waiting.</p>
-    <p style="font-size:.95rem;line-height:1.6;margin:18px 0 0;">Review, edit, approve, reject, reschedule, or publish from the admin desk:</p>
-    <p style="margin:18px 0 0;"><a href="${REVIEW_URL}" style="background:#E05578;color:#fff;text-decoration:none;padding:11px 24px;border-radius:9999px;font-weight:600;">Open admin.theplot.tv</a></p>
+    <p style="font-size:.95rem;line-height:1.6;margin:18px 0 0;">Review, edit, approve, reject, reschedule, or publish from the operator desk:</p>
+    <p style="margin:18px 0 0;"><a href="${REVIEW_URL}" style="background:#E05578;color:#fff;text-decoration:none;padding:11px 24px;border-radius:9999px;font-weight:600;">Open operator desk</a></p>
   </div>`;
   try {
     await sendEmail({ to: ADMIN_EMAIL, subject: `PLOT marketing: ${count} post(s) ready to review`, html });
@@ -124,7 +140,7 @@ const main = async () => {
   const supabase = getSupabase();
 
   // Render every post whose copy is ready (the copy worker has run), across the
-  // whole upcoming week, onto the review desk (status needs_review).
+  // whole upcoming week, then sync it into the operator desk as a draft.
   const horizon = new Date(Date.now() + 8 * 86400000).toISOString();
   const { data: pending, error } = await supabase
     .from('marketing_posts')
@@ -138,13 +154,12 @@ const main = async () => {
   for (const post of pending || []) {
     try {
       if (post.status === 'generated' && post.copy && post.media) {
-        // Already rendered on a prior run — just move it onto the desk.
-        await supabase.from('marketing_posts')
-          .update({ status: 'needs_review', updated_at: new Date().toISOString() })
-          .eq('id', post.id);
+        // Already rendered on a prior run — just sync the existing artifact set.
         await applyAnnounceState(supabase, post);
+        await syncMarketingPostToOperator(supabase, post.id);
       } else {
-        await generatePost(supabase, post);
+        const generated = await generatePost(supabase, post);
+        await syncMarketingPostToOperator(supabase, generated.id);
       }
       count++;
     } catch (err) {
@@ -157,7 +172,7 @@ const main = async () => {
 
   await closeBrowser();
   await notifyReview(count);
-  console.log(`Rendered ${count} post(s) -> needs_review; notified ${ADMIN_EMAIL}.`);
+  console.log(`Rendered ${count} post(s) -> operator drafts; notified ${ADMIN_EMAIL}.`);
 };
 
 main().catch(async (err) => { console.error(err); await closeBrowser(); process.exit(1); });

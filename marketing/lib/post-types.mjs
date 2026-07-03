@@ -37,8 +37,9 @@ export const POST_TYPES = {
 
   trending: {
     template: 'trending-chart',
-    // X gets the full top-10 chart as its single image. IG/Threads get a
-    // carousel: chart 1-5, chart 6-10, then detail cards for the top 3.
+    // X and Threads get the full top-10 chart as a single landscape image.
+    // Instagram keeps the carousel: chart 1-5, chart 6-10, then detail cards
+    // for the top 3.
     cards: async (payload) => {
       const items = await Promise.all((payload.items || []).slice(0, 10).map(async (item, i) => ({
         ...item,
@@ -48,12 +49,12 @@ export const POST_TYPES = {
       })));
       const chart = (slice) => ({ kind: 'chart', week_label: payload.week_label, items: slice });
       return [
-        { data: chart(items), channels: ['x'] },
-        { data: chart(items.slice(0, 5)), channels: ['instagram', 'threads'] },
-        { data: chart(items.slice(5, 10)), channels: ['instagram', 'threads'] },
+        { data: chart(items), channels: ['x', 'threads'] },
+        { data: chart(items.slice(0, 5)), channels: ['instagram'] },
+        { data: chart(items.slice(5, 10)), channels: ['instagram'] },
         ...items.slice(0, 3).map(item => ({
           data: { kind: 'detail', title: item },
-          channels: ['instagram', 'threads'],
+          channels: ['instagram'],
         })),
       ];
     },

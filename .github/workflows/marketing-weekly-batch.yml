@@ -54,6 +54,8 @@ jobs:
           OMDB_API_KEY: ${{ secrets.OMDB_API_KEY }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           MARKETING_ADMIN_EMAIL: ${{ secrets.MARKETING_ADMIN_EMAIL }}
+          OPERATOR_SYNC_SECRET: ${{ secrets.OPERATOR_SYNC_SECRET }}
+          OPERATOR_REVIEW_URL: ${{ secrets.OPERATOR_REVIEW_URL }}
 
       - name: Alert on failure
         if: failure()

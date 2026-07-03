@@ -26,9 +26,12 @@ const sourceList = (research) => {
 // no article. Text-only for Threads + X.
 export const buildConversationBrief = async (post) => {
   const prompt = `One genuine, GENERIC question that sparks replies — the kind any film/TV lover
-can answer (a comfort watch, a hot take, an underrated pick, a guilty pleasure).
+can answer (a comfort movie or show, a hot take, an underrated pick, a guilty pleasure).
 It must be evergreen: NEVER tied to a specific film/show, a new release, or
-whatever is trending right now. No title names at all.`;
+whatever is trending right now. No title names at all.
+If you use words like "watch", "rewatch", or "watching", explicitly anchor them
+to screen entertainment by saying movie, film, show, series, or TV so the
+question cannot be misread as being about literal watches.`;
   return `# Copy job: question (text-only, Threads + X)
 
 Post id: \`${post.id}\`

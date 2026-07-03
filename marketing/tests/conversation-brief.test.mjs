@@ -10,4 +10,8 @@ test('generic conversation brief forbids title-specific prompts', async () => {
 
   assert.match(brief, /GENERIC question/i);
   assert.match(brief, /No title names at all/i);
+  assert.match(brief, /literal watches/i);
+  assert.match(brief, /movie, film, show, series, or TV/i);
+  assert.match(brief, /Do not force tidy lists of three/i);
+  assert.match(brief, /Avoid the "it's not X, it's Y" setup/i);
 });

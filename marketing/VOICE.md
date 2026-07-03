@@ -55,6 +55,41 @@ actually trust, writing a short note — not a brand running a content calendar.
 - Keep social copy short. The image does the heavy lifting; the caption is not
   the essay. (The theplot.tv article is the long-form piece — see below.)
 
+## Anti-AI writing patterns
+
+- Prefer plain, spoken words over inflated copy words. Avoid filler like
+  "leverage", "utilize", "delve", "craft", "elevate", "amplify", "streamline",
+  "curate", "groundbreaking", "cutting-edge", "robust", "seamless",
+  "transformative", "holistic", "comprehensive", "compelling", "landscape",
+  "ecosystem", "framework", "game-changer", and "deep dive". Say the concrete
+  thing instead.
+- Do not force tidy lists of three just because they sound polished. If two
+  details do the job, stop at two. If four are needed, use four. Natural beats
+  neat.
+- Avoid the "it's not X, it's Y" setup. Say the point directly.
+- No em dashes in public copy. Use commas, periods, or a simple hyphen when
+  needed.
+- Avoid stacked dramatic one-line sentences and narrator phrasing like "Here's
+  why this matters", "The key takeaway", "The bottom line", "The kicker", "This
+  underscores", or "This highlights". If the point matters, make it with a
+  specific detail.
+- Do not dress ordinary ideas up as secret knowledge: no "nobody tells you
+  this", "nobody talks about this", or similar lines.
+- Do not invent fake named frameworks or capitalized concepts for ordinary
+  ideas. Describe the idea plainly.
+- Avoid stiff transition openers like "Moreover", "Furthermore", "Additionally",
+  "Nevertheless", and "Notably". Usually "but", "also", or no transition is
+  better.
+- Do not inflate significance with phrases like "pivotal moment", "sets the
+  stage", "serves as a testament", or "marks a new chapter". If something
+  matters, explain why with a fact.
+- Avoid vague trailing -ing clauses that pretend to add analysis: "..., highlighting",
+  "..., underscoring", "..., paving the way". If the second idea matters, write
+  a real second sentence with specifics.
+- Prefer plain verbs like "is" and "has" over puffed-up substitutes such as
+  "serves as", "stands as", "boasts", "features", and "offers" when plain
+  language says it better.
+
 ## Audience & regions
 
 PLOT's audience is **US, UK and Australia**. Default to **US** framing (dates,
@@ -100,9 +135,12 @@ Occasional text-only posts (no image) that ask the community a genuine question.
   explanatory trailer. "The movie you've rewatched more than any other? No wrong
   answers." NOT "…No wrong answers, just genuinely curious what everyone's comfort
   pick is." End on the question or the short closer; cut the rest.
+- If the wording uses **watch / rewatch / watching**, make the medium explicit:
+  movie, film, show, series, or TV. Never leave "watch" standing on its own in a
+  way people could read as a literal wristwatch question.
 - It must be a real question you'd actually want answered, not bait. No "drop a 🔥",
   no fake controversy, no "tag someone who…".
-- Sometimes general ("comfort show you put on without really watching?"), sometimes
+- Sometimes general ("comfort movie or show you put on without really watching?"), sometimes
   hooked to what's releasing/trending — both fine; vary them.
 - Same newcomer rule applies: if you reference a title, the question still has to
   make sense to someone who hasn't seen it.

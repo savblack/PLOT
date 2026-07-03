@@ -1,0 +1,2 @@
+-- Placeholder for a migration version already applied on the linked remote
+-- project before this checkout. No-op; preserves migration history alignment.

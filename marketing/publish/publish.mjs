@@ -11,6 +11,7 @@ import { getSupabase } from '../lib/supabase.mjs';
 import { publicUrl } from '../lib/storage.mjs';
 import { publishToBuffer } from './buffer.mjs';
 import { chartUrl } from '../lib/feed.mjs';
+import { canUseOperatorPublisher, publishViaOperator } from '../operator/publish.mjs';
 
 // Every platform now publishes through Buffer.
 const SERVICE = { x: 'twitter', instagram: 'instagram', threads: 'threads' };
@@ -130,6 +131,12 @@ const finalStatus = (outcomes) => {
 };
 
 const main = async () => {
+  if (canUseOperatorPublisher()) {
+    const result = await publishViaOperator({ dryRun: DRY_RUN });
+    console.log(`Operator publish pass complete (${result.results?.length || 0} post(s)).`);
+    return;
+  }
+
   const supabase = getSupabase();
 
   if (await publishingPaused(supabase)) {

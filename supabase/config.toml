@@ -32,6 +32,15 @@ verify_jwt = false
 [functions.calendar-feed]
 verify_jwt = false
 
+[functions.operator-api]
+verify_jwt = false
+
+[functions.operator-publish]
+verify_jwt = false
+
+[functions.operator-sync]
+verify_jwt = false
+
 # --- Authenticated functions: require a Supabase JWT ------------------------
 # Declared explicitly (verify_jwt = true is the CLI default) so this file is a
 # complete source of truth and no function silently relies on the default.

@@ -407,6 +407,107 @@ function ProviderPicker({ title, hint, region, selected, onSave, onClose, limit 
   );
 }
 
+/* ── Profile photo ── */
+const AVATAR_MAX_MB = 5;
+
+function avatarStoragePath(userId, file) {
+  const ext = file?.name?.includes('.') ? file.name.split('.').pop().toLowerCase() : 'jpg';
+  return `${userId}/avatar.${ext}`;
+}
+
+function AvatarSetting({ user, profile, refreshProfile, onError }) {
+  const inputRef = useRef(null);
+  const [busy, setBusy] = useState(false);
+  const avatarUrl = profile?.avatar_url || null;
+  const initial = (user?.email?.trim()?.[0] || '?').toUpperCase();
+
+  const handlePick = () => { if (!busy) inputRef.current?.click(); };
+
+  const handleFile = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    onError(null);
+    if (!file.type.startsWith('image/')) { onError('Please choose an image file.'); return; }
+    if (file.size > AVATAR_MAX_MB * 1024 * 1024) { onError(`Profile photos must be under ${AVATAR_MAX_MB}MB.`); return; }
+
+    setBusy(true);
+    const path = avatarStoragePath(user.id, file);
+    const { error: upErr } = await supabase.storage
+      .from('avatars')
+      .upload(path, file, { upsert: true, contentType: file.type });
+    if (upErr) { setBusy(false); onError(upErr.message || 'We could not upload your photo. Please try again.'); return; }
+
+    const { data } = supabase.storage.from('avatars').getPublicUrl(path);
+    // Cache-bust so a replaced photo at the same path refreshes immediately.
+    const publicUrl = `${data.publicUrl}?v=${Date.now()}`;
+
+    const { error: dbErr } = await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', user.id);
+    setBusy(false);
+    if (dbErr) { onError(dbErr.message || 'We could not save your photo. Please try again.'); return; }
+    refreshProfile();
+  };
+
+  const handleRemove = async () => {
+    if (busy || !avatarUrl) return;
+    onError(null);
+    setBusy(true);
+    // Best-effort cleanup of any stored object for this user (extension may vary).
+    const { data: files } = await supabase.storage.from('avatars').list(user.id);
+    if (files?.length) {
+      await supabase.storage.from('avatars').remove(files.map(f => `${user.id}/${f.name}`));
+    }
+    const { error } = await supabase.from('profiles').update({ avatar_url: null }).eq('id', user.id);
+    setBusy(false);
+    if (error) { onError(error.message || 'We could not remove your photo. Please try again.'); return; }
+    refreshProfile();
+  };
+
+  return (
+    <div className="settings-row" style={{ cursor: 'default' }}>
+      <div className="settings-row-left">
+        <div
+          aria-hidden="true"
+          style={{
+            width: 44, height: 44, borderRadius: '50%', overflow: 'hidden',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'var(--accent-dim)', color: 'var(--accent)',
+            fontFamily: 'var(--font-serif)', fontSize: '1.15rem', fontWeight: 600,
+            flexShrink: 0,
+          }}
+        >
+          {avatarUrl
+            ? <img src={avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            : initial}
+        </div>
+        <div>
+          <div className="settings-row-label">Profile Photo</div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+            {busy ? 'Saving…' : avatarUrl ? 'Visible on your profile' : `JPG or PNG · up to ${AVATAR_MAX_MB}MB`}
+          </div>
+        </div>
+      </div>
+      <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
+        <SettingsTextAction onClick={handlePick} disabled={busy}>
+          {avatarUrl ? 'Change' : 'Add photo'}
+        </SettingsTextAction>
+        {avatarUrl && (
+          <SettingsTextAction onClick={handleRemove} disabled={busy} tone="danger">
+            Remove
+          </SettingsTextAction>
+        )}
+      </div>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        style={{ display: 'none' }}
+        onChange={handleFile}
+      />
+    </div>
+  );
+}
+
 /* ── Feedback panel ── */
 const FEEDBACK_TYPES = [
   {
@@ -974,6 +1075,12 @@ export default function SettingsView() {
       {/* Account */}
       <div className="settings-group" style={{ marginTop: '0.75rem' }}>
         <div className="settings-group-title">Account</div>
+        <AvatarSetting
+          user={user}
+          profile={profile}
+          refreshProfile={refreshProfile}
+          onError={setActionError}
+        />
         <div className="settings-row" style={{ cursor: 'default' }}>
           <div className="settings-row-left">
             <div className="settings-row-icon">
