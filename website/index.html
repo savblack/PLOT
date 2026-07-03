@@ -59,27 +59,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@200;300;400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/theme.css" />
   <style>
     /* ── Reset & Tokens ─────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    :root {
-      --bg:           #ffffff;
-      --text:         #1a1a1a;
-      --muted:        #666666;
-      --accent:       #000000;
-      --pink:         #e05578;
-      --glass-bg:     rgba(255,255,255,0.8);
-      --serif:        'Instrument Serif', Georgia, serif;
-      --sans:         'DM Sans', system-ui, sans-serif;
-      --serif-tracking: -0.05em;
-      --serif-condense: 0.997;
-      --dark:          #0c0c0c;
-      --text-dark:     #f0efe8;
-      --r-pill:       9999px;
-      --ease:         cubic-bezier(0.23, 1, 0.32, 1);
-      --ticker-height: 2.75rem;
-    }
+    /* Brand tokens now live in /theme.css (shared with the app via src/core/tokens.js). */
 
     /* ── Display headlines: thin (100) ───────────────────────── */
     .hero-headline,
@@ -138,7 +123,7 @@
     /* ── Scrollbar ──────────────────────────────────────────── */
     ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-track { background: var(--bg); }
-    ::-webkit-scrollbar-thumb { background: #ddd; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb { background: #ddd; border-radius: var(--r-badge); }
     ::-webkit-scrollbar-thumb:hover { background: #bbb; }
 
     /* ── Grain texture overlay ──────────────────────────────── */
@@ -215,7 +200,7 @@
       display: inline-block;
       padding: 0.75rem 0.25rem;
       text-decoration: none;
-      color: var(--muted);
+      color: var(--text-secondary);
       font-size: 0.7rem;
       font-weight: 200;
       letter-spacing: 0.12em;
@@ -240,11 +225,11 @@
       border: none;
     }
     .btn-primary {
-      background: var(--accent);
+      background: var(--ink);
       color: #fff;
     }
     .btn-primary:hover {
-      background: #222;
+      background: var(--ink-hover);
       transform: translateY(-1px);
       box-shadow: 0 6px 20px rgba(0,0,0,0.18);
     }
@@ -312,7 +297,7 @@
     }
     .side-poster {
       position: absolute;
-      border-radius: 10px;
+      border-radius: var(--r-badge);
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
@@ -358,7 +343,7 @@
 
     .hero-sub {
       font-size: 1rem;
-      color: var(--muted);
+      color: var(--text-secondary);
       font-weight: 300;
       margin-bottom: 2.25rem;
       max-width: 480px;
@@ -446,7 +431,7 @@
     .ftp-body {
       font-size: 1rem;
       font-weight: 300;
-      color: var(--muted);
+      color: var(--text-secondary);
       line-height: 1.5;
       margin-bottom: 2rem;
     }
@@ -550,7 +535,7 @@
     .timeline-intro {
       font-size: 1rem;
       font-weight: 300;
-      color: var(--muted);
+      color: var(--text-secondary);
       max-width: 640px;
       line-height: 1.45;
     }
@@ -588,7 +573,7 @@
       font-weight: 300;
       letter-spacing: 0.16em;
       text-transform: uppercase;
-      color: var(--pink);
+      color: var(--accent);
       writing-mode: vertical-rl;
       text-orientation: mixed;
       transform: rotate(180deg);
@@ -633,7 +618,7 @@
       font-weight: 300;
       letter-spacing: 0.1em;
       text-transform: uppercase;
-      color: var(--pink);
+      color: var(--accent);
       margin-bottom: 0.3rem;
     }
 
@@ -649,7 +634,7 @@
       font-family: var(--serif);
       font-style: italic;
       font-size: 0.75rem;
-      color: var(--muted);
+      color: var(--text-secondary);
       line-height: 1.45;
     }
 
@@ -730,7 +715,7 @@
       font-weight: 200;
       letter-spacing: 0.14em;
       text-transform: uppercase;
-      color: var(--pink);
+      color: var(--accent);
       padding: 0 1.25rem 0 2rem;
       white-space: nowrap;
     }
@@ -746,7 +731,7 @@
 
     .ticker-sep {
       font-size: 0.7rem;
-      color: var(--muted);
+      color: var(--text-secondary);
       padding: 0 0.2rem;
       opacity: 0.4;
     }
@@ -967,7 +952,7 @@
         grid-template-columns: repeat(3, 1fr);
         gap: 0.5rem;
         margin-top: 2rem;
-        border-radius: 16px;
+        border-radius: var(--r-md);
         overflow: hidden;
       }
       .ftp-mobile-poster {
@@ -1079,7 +1064,7 @@
         align-self: center;
         width: 160px;
         height: 240px;
-        border-radius: 10px;
+        border-radius: var(--r-badge);
         background-color: rgba(0,0,0,0.05);
         background-size: cover;
         background-position: center;
@@ -1344,7 +1329,7 @@
     .disc-date { font-size: 0.42rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(240,239,232,0.32); margin-right: 1px; }
     .disc-tab { font-size: 0.62rem; color: rgba(240,239,232,0.4); position: relative; padding-bottom: 6px; }
     .disc-tab-on { color: #f0efe8; }
-    .disc-tab-on::after { content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 1.5px; background: var(--pink); border-radius: 2px; }
+    .disc-tab-on::after { content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 1.5px; background: var(--accent); border-radius: 2px; }
     .disc-scroll { flex: 1; overflow: hidden; padding: 9px 13px 0; }
     .disc-hero {
       position: relative; height: 152px; border-radius: 11px; overflow: hidden;
@@ -1370,7 +1355,7 @@
       padding: 9px 4px; border-top: 1px solid rgba(255,255,255,0.07); flex-shrink: 0;
     }
     .disc-nav span { font-size: 0.5rem; color: rgba(240,239,232,0.35); }
-    .disc-nav-on { color: var(--pink) !important; }
+    .disc-nav-on { color: var(--accent) !important; }
     .guide-date-hdr {
       padding: 9px 14px 6px;
       font-size: 0.58rem;
@@ -1430,8 +1415,8 @@
     .phone-frame.animating .anim-bk { animation: bk-bg 4s linear infinite; }
     @keyframes bk-fill {
       0%,43%  { fill: none; stroke: rgba(240,239,232,0.8); }
-      44%     { fill: var(--pink); stroke: var(--pink); }
-      100%    { fill: var(--pink); stroke: var(--pink); }
+      44%     { fill: var(--accent); stroke: var(--accent); }
+      100%    { fill: var(--accent); stroke: var(--accent); }
     }
     @keyframes bk-bg {
       0%,43%  { background: rgba(0,0,0,0.55); }
@@ -1443,7 +1428,7 @@
       bottom: 58px; left: 10px; right: 10px;
       background: #1e1e1e;
       border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 10px;
+      border-radius: var(--r-badge);
       padding: 8px 12px;
       display: flex;
       align-items: center;
@@ -1455,7 +1440,7 @@
       pointer-events: none;
       z-index: 10;
     }
-    .toast-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--pink); flex-shrink: 0; }
+    .toast-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
     .phone-frame.animating .guide-toast { animation: toast-pop 4s linear infinite; }
     @keyframes toast-pop {
       0%,49%   { opacity: 0; transform: translateY(8px); }
@@ -1693,7 +1678,7 @@
     }
     .lstk-ct {
       font-size: 0.64rem;
-      color: var(--muted);
+      color: var(--text-secondary);
       margin-top: 0.15rem;
       letter-spacing: 0.08em;
       text-transform: uppercase;
@@ -1808,7 +1793,7 @@
       border-radius: 50%;
     }
     .guide-add-btn:hover { border-color: #e05578; color: #e05578; background: rgba(224,85,120,0.08); }
-    .guide-add-btn.added  { border-color: #3a9e6a; color: #3a9e6a; background: rgba(58,158,106,0.12); }
+    .guide-add-btn.added  { border-color: var(--success); color: var(--success); background: rgba(5,150,105,0.12); }
     .guide-check { width: 14px; height: 14px; display: block; }
 
     /* Interactive calendar mockup */
@@ -1902,7 +1887,7 @@
       transform: translateX(-50%) translateY(16px);
       background: #1d1d1d;
       border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 10px;
+      border-radius: var(--r-badge);
       padding: 9px 16px 9px 12px;
       font-size: 0.78rem;
       color: var(--text-dark);
@@ -2289,7 +2274,7 @@
       </div>
       <div class="demo-copy reveal">
         <h2 class="demo-headline" style="color:var(--text)">The lists<br>only <em style="font-style:italic">you</em> could curate.</h2>
-        <p class="demo-body" style="color:var(--muted)">
+        <p class="demo-body" style="color:var(--text-secondary)">
           Organise by decade, director, or whatever mood you're in. Create and share film and TV collections that are unmistakably yours.
         </p>
         <a href="https://app.theplot.tv/signup" class="demo-link dark-link" data-cta="demo-create">Start creating &rarr;</a>
@@ -2958,7 +2943,7 @@
 
       var TYPE = {
         cinema:    { label: 'Cinema',    color: '#e05578' },
-        streaming: { label: 'Streaming', color: '#3a9e6a' },
+        streaming: { label: 'Streaming', color: '#68AFA8' },
         episode:   { label: 'Episode',   color: '#4a90d9' },
       };
 

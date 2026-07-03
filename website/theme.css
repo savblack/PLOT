@@ -1,0 +1,47 @@
+/* theplot.tv — shared brand tokens for the marketing site.
+   Loaded by every page before its inline <style> so pages can still override.
+
+   Values marked (CANON) MUST equal src/core/tokens.js and are enforced in CI
+   by `npm run tokens:marketing`. Everything else is marketing-only presentation
+   and lives here alone. App-aligned names: --accent IS the brand pink (matches
+   the app), the black CTA is --ink. */
+:root {
+  /* Brand accent — same semantics + value as the app. (CANON colors.light.accent) */
+  --accent:          #E05578;
+  --accent-dim:      rgba(224,85,120,0.12);   /* (CANON colors.light.accentDim) */
+
+  /* Black CTA ink — marketing-only near-black used for .btn-primary. Not an app token. */
+  --ink:             #000000;
+  --ink-hover:       #222222;
+
+  /* Surface + text (marketing presentation; the marketing palette is its own) */
+  --bg:              #ffffff;      /* homepage default; content pages override to #f8f8f8 */
+  --surface:         #ffffff;
+  --text:            #1a1a1a;
+  --text-secondary:  #666666;      /* was --muted */
+  --glass-bg:        rgba(255,255,255,0.8);
+  --glass-border:    rgba(0,0,0,0.05);
+
+  /* Brand/editorial dark (shared with the app dark theme + error screens) */
+  --dark:            #0c0c0c;
+  --text-dark:       #f0efe8;
+
+  /* Success — reconciled to the app's green. (CANON colors.light.chipNow) */
+  --success:         #059669;
+
+  /* Typography */
+  --serif:           'Instrument Serif', Georgia, serif;
+  --sans:            'DM Sans', system-ui, sans-serif;
+  --serif-tracking:  -0.05em;
+  --serif-condense:  0.997;
+
+  /* Radii — (CANON radii.badge / md / lg / pill) */
+  --r-badge:         10px;
+  --r-md:            16px;
+  --r-lg:            24px;
+  --r-pill:          9999px;
+
+  /* Motion + layout */
+  --ease:            cubic-bezier(0.23, 1, 0.32, 1);
+  --ticker-height:   2.75rem;
+}

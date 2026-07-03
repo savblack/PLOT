@@ -28,23 +28,14 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@200;300;400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/theme.css" />
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    /* Shared brand tokens live in /theme.css. Content pages use the warmer surface. */
     :root {
-      --bg:           #f8f8f8;
-      --surface:      #ffffff;
-      --text:         #1a1a1a;
-      --muted:        #666666;
-      --accent:       #000000;
-      --pink:         #e05578;
-      --glass-bg:     rgba(255,255,255,0.8);
-      --glass-border: rgba(0,0,0,0.05);
-      --serif:        'Instrument Serif', Georgia, serif;
-      --sans:         'DM Sans', system-ui, sans-serif;
-      --r-pill:       9999px;
-      --ease:         cubic-bezier(0.23, 1, 0.32, 1);
+      --bg: #f8f8f8;
     }
 
     html { scroll-behavior: smooth; }
@@ -94,7 +85,7 @@
       display: inline-block;
       padding: 0.75rem 0.25rem;
       text-decoration: none;
-      color: var(--muted);
+      color: var(--text-secondary);
       font-size: 0.75rem;
       font-weight: 500;
       transition: color 0.2s;
@@ -114,7 +105,7 @@
       font-weight: 600;
       letter-spacing: 0.1em;
       text-transform: uppercase;
-      color: var(--muted);
+      color: var(--text-secondary);
       margin-bottom: 1rem;
     }
 
@@ -132,7 +123,7 @@
       font-size: 0.95rem;
       font-style: italic;
       font-family: var(--serif);
-      color: var(--muted);
+      color: var(--text-secondary);
       margin-bottom: 3rem;
       padding-bottom: 2rem;
       border-bottom: 1px solid rgba(0,0,0,0.08);
