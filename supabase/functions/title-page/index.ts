@@ -261,7 +261,10 @@ Deno.serve(async (req) => {
   const canonicalUrl = `${SITE}/${type}/${canonicalSlug}`;
   const poster = img(data.poster_path, 'w342');
   const backdrop = img(data.backdrop_path, 'w1280');
-  const ogImage = img(data.backdrop_path, 'w780') || img(data.poster_path, 'w500') || '';
+  const posterImage = img(data.backdrop_path, 'w780') || img(data.poster_path, 'w500') || '';
+  // Branded 1200×630 PLOT share card (same one app.theplot.tv/save uses), so a
+  // title unfurls identically wherever its link is shared.
+  const shareCard = `${APP}/api/og?type=${type}&id=${id}`;
   const genres = (data.genres || []).map((g: any) => g.name).filter(Boolean);
   const overview: string = data.overview || '';
   const rating = typeof data.vote_average === 'number' && data.vote_average > 0 ? data.vote_average.toFixed(1) : null;
@@ -317,7 +320,7 @@ Deno.serve(async (req) => {
     '@context': 'https://schema.org',
     '@type': isMovie ? 'Movie' : 'TVSeries',
     name: title,
-    ...(ogImage ? { image: [ogImage] } : {}),
+    ...(posterImage ? { image: [posterImage] } : {}),
     description: overview || undefined,
     ...(date ? { datePublished: date } : {}),
     ...(genres.length ? { genre: genres } : {}),
@@ -330,8 +333,11 @@ Deno.serve(async (req) => {
 <meta property="og:title" content="${esc(metaTitle)}">
 <meta property="og:description" content="${esc(desc)}">
 <meta property="og:url" content="${esc(canonicalUrl)}">
-${ogImage ? `<meta property="og:image" content="${esc(ogImage)}">` : ''}
+<meta property="og:image" content="${esc(shareCard)}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="${esc(shareCard)}">
 <script type="application/ld+json">${jsonLd}</script>`;
 
   // ── Body ──
