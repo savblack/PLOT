@@ -882,6 +882,30 @@ export default function DesignSystemPage() {
             </div>
           </RuleCard>
         </div>
+
+        <h3 className="ds-subsection-title">Icon inventory</h3>
+        <p className="ds-section-note" style={{ marginTop: '0.25rem' }}>
+          The core glyph set — 24×24 viewBox, stroke-based (1.5–2px, round caps), <code>currentColor</code>. Drawn inline per component; these are the canonical shapes.
+        </p>
+        <div className="ds-glyph-grid">
+          {[
+            ['Menu', <><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></>],
+            ['Search', <><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></>],
+            ['Close', <><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></>],
+            ['Save / bookmark', <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>],
+            ['Notifications', <><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></>],
+            ['Share', <><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="10.7" x2="15.4" y2="6.3"/><line x1="8.6" y1="13.3" x2="15.4" y2="17.7"/></>],
+            ['Check / done', <polyline points="20 6 9 17 4 12"/>],
+            ['Star / rating', <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>],
+            ['Watching / clock', <><circle cx="12" cy="12" r="10"/><polyline points="12 7 12 12 15 14"/></>],
+            ['Add', <><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></>],
+          ].map(([name, glyph]) => (
+            <div key={name} className="ds-glyph-cell">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{glyph}</svg>
+              <span>{name}</span>
+            </div>
+          ))}
+        </div>
       </Section>
 
       <Section eyebrow="12" title="Shared vs Surface-Specific">
@@ -1320,6 +1344,104 @@ export default function DesignSystemPage() {
           </RuleCard>
           <RuleCard label="Gestures & transitions">
             <p>Swipe, long-press, and native stack transitions replace hover/click affordances from the web surface.</p>
+          </RuleCard>
+        </div>
+      </Section>
+
+      <Section eyebrow="19" title="Social & Identity">
+        <p className="ds-section-note">
+          The social layer — profiles, follows, notifications. Avatars are circles with a serif-initial fallback; approve/decline pairs follow the primary/ghost button pattern.
+        </p>
+
+        <div className="ds-utility-grid">
+          <RuleCard label="Avatar">
+            <div className="ds-avatar-row">
+              <div className="ds-avatar-demo">
+                <span className="ds-avatar ds-avatar--lg">S</span>
+                <em>Profile · 80px<br /><code>.pp-avatar</code></em>
+              </div>
+              <div className="ds-avatar-demo">
+                <span className="ds-avatar ds-avatar--md">S</span>
+                <em>Row · 48px<br /><code>.req-avatar</code></em>
+              </div>
+              <div className="ds-avatar-demo">
+                <span className="ds-avatar ds-avatar--md ds-avatar--accent">S</span>
+                <em>Share card<br />accent ring</em>
+              </div>
+            </div>
+            <p>Circle crop, <code>--surface-raised</code> fill, hairline border. No photo → the display-name initial in Instrument Serif, <code>--text-muted</code>. The OG share card adds a 3px <code>--accent</code> ring.</p>
+          </RuleCard>
+
+          <RuleCard label="Follow request row">
+            <div className="ds-req-row">
+              <span className="ds-avatar ds-avatar--md">A</span>
+              <span className="ds-req-id">
+                <b>Avery</b>
+                <i>@averywatches</i>
+              </span>
+              <span className="ds-req-actions">
+                <button type="button" className="ds-req-btn ds-req-btn--approve">Approve</button>
+                <button type="button" className="ds-req-btn ds-req-btn--decline">Decline</button>
+              </span>
+            </div>
+            <p>Avatar + name/handle + pill actions, hairline-divided rows (<code>.req-row</code>, RequestsView). Approve fills with <code>--text-primary</code>; decline stays ghost.</p>
+          </RuleCard>
+
+          <RuleCard label="Notification bell + unread">
+            <div className="ds-bell-demo">
+              <span className="icon-btn ds-bell-btn" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                </svg>
+                <span className="ds-bell-badge">3</span>
+              </span>
+              <em>Header icon button · badge caps at <code>9+</code></em>
+            </div>
+            <p>The unread count sits as a small <code>--accent</code> disc on the header bell (AppShell); it clears when the notifications feed is opened.</p>
+          </RuleCard>
+
+          <RuleCard label="Profile identity block">
+            <div className="ds-pp-header">
+              <span className="ds-avatar ds-avatar--lg">S</span>
+              <span>
+                <span className="ds-pp-name">Savannah</span>
+                <span className="ds-pp-handle">@savwatches</span>
+              </span>
+            </div>
+            <p>Serif display name (1.95rem / 500 / −0.03em) beside the 80px avatar; muted handle below (<code>.pp-header</code>, PublicProfilePage). Stats use serif numerals, as on the share card.</p>
+          </RuleCard>
+        </div>
+      </Section>
+
+      <Section eyebrow="20" title="Voice & Copy">
+        <p className="ds-section-note">
+          How PLOT sounds is part of the system. The canonical source is <code>marketing/VOICE.md</code> — injected verbatim into every copy-generation call. This is the distilled version.
+        </p>
+
+        <div className="ds-utility-grid">
+          <RuleCard label="Who is speaking">
+            <p>The friend whose recommendations you actually trust, keeping a beautiful journal — not a brand running a content calendar. Warm, literate, specific. It's fine to have taste: gentle enthusiasm and a point of view beat neutrality.</p>
+          </RuleCard>
+          <RuleCard label="Tone rules">
+            <div className="ds-note-list">
+              <div className="ds-note-row"><strong>Lead with the hook</strong><p>No framing words ("A captivating…"). Title first, then premise and cast. Vary the angle so nothing feels formulaic.</p></div>
+              <div className="ds-note-row"><strong>Say something or cut it</strong><p>No filler that states nothing ("a must-see", "through sheer craft"). Every sentence earns its place with a fact or a point of view.</p></div>
+              <div className="ds-note-row"><strong>Sentence case everywhere</strong><p>Including headlines. At most one emoji, usually zero. No engagement-bait, no spoilers — ever.</p></div>
+            </div>
+          </RuleCard>
+          <RuleCard label="Product copy patterns">
+            <div className="ds-note-list">
+              <div className="ds-note-row"><strong>Errors stay in-world</strong><p>"Looks like we've hit a plot hole." / "That scene didn't quite load." — film language, warm, never blame-y.</p></div>
+              <div className="ds-note-row"><strong>Empty states point forward</strong><p>"Nothing saved yet" + one concrete next step ("Browse the Guide or search for titles…"). Never a dead end.</p></div>
+              <div className="ds-note-row"><strong>CTAs are product verbs</strong><p>"Save to your watchlist" / "Add to your PLOT" — one soft CTA or none. Never "link in bio", never stacked CTAs.</p></div>
+            </div>
+          </RuleCard>
+          <RuleCard label="Never">
+            <div className="ds-note-list">
+              <div className="ds-note-row"><strong>Claims without data</strong><p>No hardcoded facts (dates, cast, platforms) not in the payload; ratings only from the provided IMDb/RT/Metacritic block — never TMDB scores.</p></div>
+              <div className="ds-note-row"><strong>Studio affiliation</strong><p>Never imply PLOT is affiliated with or endorsed by any studio, network, or streamer.</p></div>
+              <div className="ds-note-row"><strong>Superlatives about PLOT</strong><p>Never "the best app for…". The product speaks through what it does.</p></div>
+            </div>
           </RuleCard>
         </div>
       </Section>
