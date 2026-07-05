@@ -47,6 +47,9 @@ export default function Turnstile({ siteKey, onToken, resetSignal = 0 }) {
         if (cancelled || !containerRef.current || !window.turnstile) return;
         widgetIdRef.current = window.turnstile.render(containerRef.current, {
           sitekey: siteKey,
+          // Hidden unless a challenge genuinely needs interaction — no visible
+          // Cloudflare box in the normal auto-pass flow.
+          appearance: 'interaction-only',
           callback: (token) => onTokenRef.current?.(token),
           'expired-callback': () => onTokenRef.current?.(null),
           'error-callback': () => onTokenRef.current?.(null),
@@ -70,11 +73,13 @@ export default function Turnstile({ siteKey, onToken, resetSignal = 0 }) {
   }, [resetSignal]);
 
   if (!siteKey) return null;
+  // No reserved height — interaction-only keeps the widget hidden until (if
+  // ever) a challenge is required, and challenges render as an overlay.
   return (
     <div
       ref={containerRef}
       className="auth-turnstile"
-      style={{ minHeight: 65, display: 'flex', justifyContent: 'center' }}
+      style={{ display: 'flex', justifyContent: 'center' }}
     />
   );
 }
