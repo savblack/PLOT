@@ -176,6 +176,9 @@
 }
 
 .auth-forgot-link {
+  display: block;
+  margin-left: auto;       /* right-align under the password box */
+  margin-top: 0.4rem;
   background: none;
   border: none;
   font-family: var(--font-sans);
