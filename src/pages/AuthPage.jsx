@@ -30,6 +30,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
   const [error, setError]             = useState(null);
   const [success, setSuccess]         = useState(false);
   const [resendStatus, setResendStatus] = useState(null); // null | 'sending' | 'sent' | 'error'
+  const [magicStatus, setMagicStatus]   = useState(null); // null | 'sending' | 'sent' | 'error'
   const [captchaToken, setCaptchaToken] = useState(null);
   const [captchaNonce, setCaptchaNonce] = useState(0); // bump to force a fresh Turnstile token
   const navigate = useNavigate();
@@ -99,6 +100,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
     setError(null);
     setSuccess(false);
     setResendStatus(null);
+    setMagicStatus(null);
   };
 
   const handleResend = async () => {
@@ -110,6 +112,21 @@ export default function AuthPage({ initialMode = 'signup' }) {
       options: { emailRedirectTo: getAuthCallbackUrl(), captchaToken },
     });
     setResendStatus(error ? 'error' : 'sent');
+  };
+
+  const handleMagicLink = async () => {
+    if (magicStatus === 'sending' || magicStatus === 'sent') return;
+    if (!email) { setError('Please enter your email first.'); return; }
+    if (!captchaReady) return;
+    setError(null);
+    setMagicStatus('sending');
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { shouldCreateUser: true, emailRedirectTo: getAuthCallbackUrl(), captchaToken },
+    });
+    resetCaptcha();
+    if (error) { setError(friendlyError(error.message)); setMagicStatus('error'); }
+    else setMagicStatus('sent');
   };
 
   const scrollPosters = [...HERO_POSTERS, ...HERO_POSTERS];
@@ -278,6 +295,21 @@ export default function AuthPage({ initialMode = 'signup' }) {
                   <p>Don't have an account? <button onClick={() => switchMode('signup')}>Sign up</button></p>
                 )}
               </div>
+
+              {mode !== 'forgot' && (
+                <div className="auth-magic">
+                  <button
+                    type="button"
+                    className="auth-magic-btn"
+                    onClick={handleMagicLink}
+                    disabled={magicStatus === 'sending' || magicStatus === 'sent' || !captchaReady}
+                  >
+                    {magicStatus === 'sending' ? 'Sending…'
+                      : magicStatus === 'sent' ? 'Magic link sent — check your inbox'
+                      : 'Send a magic link instead'}
+                  </button>
+                </div>
+              )}
             </>
           )}
         </div>

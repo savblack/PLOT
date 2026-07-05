@@ -309,6 +309,26 @@ a.auth-cta { text-decoration: none; }
 
 .auth-toggle button:hover { opacity: 0.6; }
 
+/* Magic-link (passwordless) option under the toggle */
+.auth-magic {
+  width: 100%;
+  max-width: 380px;
+  text-align: center;
+  margin-top: 0.75rem;
+}
+.auth-magic-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+.auth-magic-btn:hover:not(:disabled) { color: var(--text-primary); }
+.auth-magic-btn:disabled { cursor: default; color: var(--text-muted); }
+
 /* Footer */
 .auth-panel-footer {
   flex-shrink: 0;
