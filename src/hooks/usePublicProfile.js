@@ -65,7 +65,7 @@ export function usePublicProfile(username, viewerId = null) {
     const rated = ratedRes.data || [];
     setAvgRating(rated.length ? Math.round((rated.reduce((s, r) => s + r.rating, 0) / rated.length) * 10) / 10 : null);
     setLoading(false);
-  }, [username]);
+  }, [username, viewerId]);
 
   useEffect(() => {
     let cancelled = false;
