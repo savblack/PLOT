@@ -45,12 +45,14 @@ export default function PrivacyPage() {
         <ul>
           <li><strong>Supabase</strong> — authentication, database, storage, and edge functions</li>
           <li><strong>The Movie Database (TMDB)</strong> — film and TV metadata. This product uses the TMDB API but is not endorsed or certified by TMDB.</li>
+          <li><strong>JustWatch</strong> — streaming availability ("where to watch") data, delivered via the TMDB API.</li>
           <li><strong>Vercel</strong> — website and application hosting. Your requests are routed through Vercel's infrastructure.</li>
           <li><strong>PostHog</strong> — product analytics used to understand how the Service is used.</li>
           <li><strong>Linear</strong> — anonymised in-app feedback can be mirrored into our product backlog for support and planning.</li>
           <li><strong>Resend</strong> — feedback email delivery and transactional notification support where applicable.</li>
           <li><strong>Google Fonts</strong> — typography loaded from Google's servers, which may log your IP address per Google's privacy policy.</li>
         </ul>
+        <p><strong>Affiliate links.</strong> Some links to streaming services and retailers include an affiliate identifier that tells the destination the visit came from PLOT. It contains no personal information about you, and we do not share your account data with these third parties. PLOT may earn a commission on qualifying purchases made through these links, at no additional cost to you.</p>
         <p>We are not liable for the acts or omissions of these third-party providers, including any data breaches, service outages, or loss of data that occurs on their infrastructure. Your use of the Service constitutes your acceptance of their respective policies.</p>
 
         <h2>5. Data Security &amp; Limitation of Liability</h2>

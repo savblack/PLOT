@@ -35,6 +35,7 @@ export default function TermsPage() {
 
         <h2>4. Third-Party Data &amp; Services</h2>
         <p>Film and television metadata displayed on PLOT is provided by The Movie Database (TMDB). This product uses the TMDB API but is not endorsed or certified by TMDB. We make no representations or warranties regarding the accuracy, completeness, or reliability of any third-party data. You use such data entirely at your own risk. We are not responsible for any errors, omissions, or inaccuracies in third-party content.</p>
+        <p>Streaming availability ("where to watch") is sourced from JustWatch via the TMDB API and may be inaccurate or out of date. Some outbound links to streaming services and retailers are affiliate links: PLOT may earn a commission on qualifying purchases or sign-ups made through them, at no additional cost to you. As an Amazon Associate, PLOT earns from qualifying purchases. Affiliate relationships never affect which services are shown or their order.</p>
         <p>The Service may integrate with or link to third-party platforms and services. We have no control over, and assume no responsibility for, the content, privacy practices, or terms of any third-party service. Your dealings with third parties are solely between you and them.</p>
 
         <h2>5. User Content</h2>
