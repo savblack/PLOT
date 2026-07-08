@@ -1,46 +1,46 @@
--- Rebrand: "Supporter" → "PLOT Premium".
+-- Rebrand: "Supporter" → "PLOT Premium" (transitional, zero-downtime).
 --
--- Renames profiles.is_supporter (added 20260409000000, still all-false in
--- prod — nothing ever set it) to is_premium, and recreates the five applied
--- SQL objects that expose it under the old name. RETURNS TABLE column names
--- can't change via CREATE OR REPLACE, so the functions are dropped first;
--- same for the view's output column. Bodies are copied verbatim from
--- 20260621130000 / 20260621140000 / 20260621150000 apart from the rename.
+-- Adds profiles.is_premium alongside is_supporter instead of renaming it,
+-- because this migration is applied while the previous frontend deploy —
+-- which selects is_supporter by name (App.jsx profile select, api/profile.js,
+-- api/og.js) — is still live. The five applied SQL objects that exposed the
+-- flag are recreated to return BOTH columns, so old and new clients (web +
+-- plot-mobile) work on either side of the deploy. A follow-up cleanup
+-- migration drops is_supporter and the legacy fields once the Premium
+-- frontend deploy has settled.
+--
+-- Nothing has ever set is_supporter = true (the badge shipped without a
+-- granting mechanism), so the copy below is belt-and-braces.
 --
 -- Must run BEFORE 20260708000000_add_premium_billing.sql, which builds the
--- entitlement machinery (is_premium(), tamper trigger, list cap) on the
--- renamed column.
+-- entitlement machinery (is_premium(), tamper trigger, list cap) on the new
+-- column.
 
 -- ── 1. Column ────────────────────────────────────────────────────────────────
 
+alter table public.profiles add column if not exists is_premium boolean default false;
+update public.profiles set is_premium = is_supporter
+  where is_supporter is distinct from is_premium;
+
+-- ── 2. Public profile view (from 20260621130000; + is_premium) ───────────────
+
 drop view if exists public.public_profiles;
-
-do $$ begin
-  if exists (
-    select 1 from information_schema.columns
-    where table_schema = 'public' and table_name = 'profiles'
-      and column_name = 'is_supporter'
-  ) then
-    execute 'alter table public.profiles rename column is_supporter to is_premium';
-  end if;
-end $$;
-
--- ── 2. Public profile view (from 20260621130000) ─────────────────────────────
-
 create view public.public_profiles with (security_invoker = off) as
-  select id, username, display_name, avatar_url, is_premium
+  select id, username, display_name, avatar_url, is_supporter, is_premium
   from public.profiles
   where is_public = true;
 grant select on public.public_profiles to anon, authenticated;
 
--- ── 3. Profile card (from 20260621140000) ────────────────────────────────────
+-- ── 3. Profile card (from 20260621140000; + is_premium) ──────────────────────
 
 drop function if exists public.get_profile_card(text);
 create function public.get_profile_card(p_username text)
 returns table (id uuid, username text, display_name text, avatar_url text,
-               is_premium boolean, is_public boolean, follow_status text)
+               is_supporter boolean, is_premium boolean, is_public boolean,
+               follow_status text)
 language sql security definer stable set search_path = public as $$
-  select p.id, p.username, p.display_name, p.avatar_url, p.is_premium, p.is_public,
+  select p.id, p.username, p.display_name, p.avatar_url, p.is_supporter,
+         p.is_premium, p.is_public,
          (select f.status from public.follows f
             where f.following_id = p.id and f.follower_id = auth.uid())
   from public.profiles p
@@ -49,14 +49,16 @@ language sql security definer stable set search_path = public as $$
 $$;
 grant execute on function public.get_profile_card(text) to anon, authenticated;
 
--- ── 4. User search + follow lists (from 20260621150000) ──────────────────────
+-- ── 4. User search + follow lists (from 20260621150000; + is_premium) ────────
 
 drop function if exists public.search_users(text);
 create function public.search_users(p_query text)
 returns table (id uuid, username text, display_name text, avatar_url text,
-               is_premium boolean, is_public boolean, follow_status text)
+               is_supporter boolean, is_premium boolean, is_public boolean,
+               follow_status text)
 language sql security definer stable set search_path = public as $$
-  select p.id, p.username, p.display_name, p.avatar_url, p.is_premium, p.is_public,
+  select p.id, p.username, p.display_name, p.avatar_url, p.is_supporter,
+         p.is_premium, p.is_public,
          (select f.status from public.follows f
             where f.following_id = p.id and f.follower_id = auth.uid())
   from public.profiles p
@@ -72,9 +74,11 @@ grant execute on function public.search_users(text) to anon, authenticated;
 drop function if exists public.list_followers(uuid);
 create function public.list_followers(p_target uuid)
 returns table (id uuid, username text, display_name text, avatar_url text,
-               is_premium boolean, is_public boolean, follow_status text)
+               is_supporter boolean, is_premium boolean, is_public boolean,
+               follow_status text)
 language sql security definer stable set search_path = public as $$
-  select p.id, p.username, p.display_name, p.avatar_url, p.is_premium, p.is_public,
+  select p.id, p.username, p.display_name, p.avatar_url, p.is_supporter,
+         p.is_premium, p.is_public,
          (select f2.status from public.follows f2 where f2.following_id = p.id and f2.follower_id = auth.uid())
   from public.follows f
   join public.profiles p on p.id = f.follower_id
@@ -88,9 +92,11 @@ grant execute on function public.list_followers(uuid) to anon, authenticated;
 drop function if exists public.list_following(uuid);
 create function public.list_following(p_target uuid)
 returns table (id uuid, username text, display_name text, avatar_url text,
-               is_premium boolean, is_public boolean, follow_status text)
+               is_supporter boolean, is_premium boolean, is_public boolean,
+               follow_status text)
 language sql security definer stable set search_path = public as $$
-  select p.id, p.username, p.display_name, p.avatar_url, p.is_premium, p.is_public,
+  select p.id, p.username, p.display_name, p.avatar_url, p.is_supporter,
+         p.is_premium, p.is_public,
          (select f2.status from public.follows f2 where f2.following_id = p.id and f2.follower_id = auth.uid())
   from public.follows f
   join public.profiles p on p.id = f.following_id
