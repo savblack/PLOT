@@ -26,6 +26,6 @@ export function canCreateCustomList(listCount, profile) {
 /** Turn the edge functions' `premium_required` 403 into a human message. */
 export function friendlyPremiumError(message) {
   return message === 'premium_required'
-    ? 'This is a PLOT Premium feature — upgrade from Settings to unlock it.'
+    ? 'This is a PLOT Premium feature. Upgrade from Settings to unlock it.'
     : message;
 }

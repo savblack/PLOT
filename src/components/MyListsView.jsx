@@ -711,7 +711,7 @@ function CustomListsSection({ customLists: clHook, filterItems, hideHeader }) {
           color: 'var(--text-secondary)', background: 'var(--surface)',
           border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
         }}>
-          You&rsquo;ve got {FREE_CUSTOM_LIST_CAP} lists — PLOT Premium gets unlimited.{' '}
+          You&rsquo;ve got {FREE_CUSTOM_LIST_CAP} lists. PLOT Premium gets unlimited.{' '}
           <button
             type="button"
             onClick={() => navigateTo?.('settings')}

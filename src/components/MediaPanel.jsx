@@ -429,7 +429,7 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
     }
     if (!canCreateCustomList(lists.length, profile)) {
       track(EVENTS.PREMIUM_GATE_HIT, { feature: 'custom_lists' });
-      setCreateError(`Free accounts can have ${FREE_CUSTOM_LIST_CAP} lists — PLOT Premium gets unlimited. Upgrade from Settings to unlock.`);
+      setCreateError(`Free accounts can have ${FREE_CUSTOM_LIST_CAP} lists. PLOT Premium gets unlimited. Upgrade from Settings to unlock.`);
       return;
     }
 
