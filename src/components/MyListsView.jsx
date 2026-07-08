@@ -437,20 +437,18 @@ function TopTenSection({ listType, title, topLists }) {
 }
 
 /* ── Poster grid (for Favorites and Custom Lists) ── */
-function PosterGrid({ items, onRemove, openPanel }) {
+function PosterGrid({ items, onRemove, openPanel, horizontal }) {
+  const containerStyle = horizontal
+    ? { display: 'flex', gap: '0.5rem', padding: '0.75rem 1rem', overflowX: 'auto', scrollbarWidth: 'none' }
+    : { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', padding: '0.75rem 1rem' };
   return (
-    <div style={{
-      display: 'grid',
-      gridTemplateColumns: 'repeat(3, 1fr)',
-      gap: '0.5rem',
-      padding: '0.75rem 1rem',
-    }}>
+    <div style={containerStyle}>
       {items.map(item => {
         const img = posterUrl(item.poster_path, 'w185');
         const title = item.title || 'Unknown';
         const openDetails = () => openPanel(item.tmdb_id, item.media_type);
         return (
-          <div key={item.id} style={{ position: 'relative' }}>
+          <div key={item.id} style={{ position: 'relative', ...(horizontal ? { flex: '0 0 auto', width: 104 } : null) }}>
             <div
               className="interactive-surface"
               style={{
@@ -541,6 +539,7 @@ function FavoritesSection({ favorites: favsHook, filterItems, hideHeader }) {
         </div>
       ) : (
         <PosterGrid
+          horizontal
           items={visible}
           openPanel={openPanel}
           onRemove={(tmdbId) => {

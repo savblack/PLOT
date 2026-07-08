@@ -37,7 +37,7 @@ export function countdownChip(dateStr) {
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const d = new Date(y, m - 1, day);
   const diff = Math.round((d - today) / 86400000);
-  if (diff < 0)   return { label: 'Released',    cls: 'chip-muted' };
+  if (diff < 0)   return null; // already out — no chip (only upcoming dates are useful)
   if (diff === 0) return { label: 'Today',        cls: 'chip-today' };
   if (diff === 1) return { label: 'Tomorrow',     cls: 'chip-tomorrow' };
   if (diff <= 7)  return { label: `${diff} days`, cls: 'chip-soon' };

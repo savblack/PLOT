@@ -260,6 +260,7 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone }) {
               >
                 <span className="ep-num">E{String(ep.episode_number).padStart(2,'0')}</span>
                 <div className="ep-info">
+                  {isCurrent && <span className="ep-upnext">UP NEXT</span>}
                   <div className="ep-title">{ep.name || `Episode ${ep.episode_number}`}</div>
                   {ep.air_date && (
                     <div className="ep-air">
