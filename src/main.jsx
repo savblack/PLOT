@@ -17,6 +17,14 @@ configure({
   tmdbProxyUrl: import.meta.env.VITE_TMDB_PROXY_URL,
   traktClientId: import.meta.env.VITE_TRAKT_CLIENT_ID,
   isDev: import.meta.env.DEV,
+  affiliate: {
+    amazonTags: {
+      AU: import.meta.env.VITE_AMZ_TAG_AU,
+      US: import.meta.env.VITE_AMZ_TAG_US,
+      GB: import.meta.env.VITE_AMZ_TAG_GB,
+    },
+    appleToken: import.meta.env.VITE_APPLE_AT_TOKEN,
+  },
 });
 
 posthog.init(import.meta.env.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN, {

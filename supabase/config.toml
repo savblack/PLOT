@@ -37,6 +37,13 @@ verify_jwt = false
 [functions.calendar-feed]
 verify_jwt = false
 
+# Stripe webhook — Stripe signs requests with STRIPE_WEBHOOK_SECRET; there is
+# no Supabase JWT on deliveries, so the gateway must let them through. With
+# verify_jwt = true every delivery dies at the gateway with 401 and billing
+# state silently stops updating.
+[functions.stripe-webhook]
+verify_jwt = false
+
 # --- Authenticated functions: require a Supabase JWT ------------------------
 # Declared explicitly (verify_jwt = true is the CLI default) so this file is a
 # complete source of truth and no function silently relies on the default.
@@ -57,4 +64,7 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.trakt-sync]
+verify_jwt = true
+
+[functions.stripe-billing]
 verify_jwt = true

@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '../api/supabase.js';
 import { callAuthenticatedFunction } from '../api/functions.js';
+import { friendlyPremiumError } from '../core/premium.js';
 
 async function callSync(action, body = {}) {
   const { data: { session } } = await supabase.auth.getSession();
@@ -34,7 +35,7 @@ export function useMediaSync(userId) {
       if (result?.authUrl?.startsWith('https://app.plex.tv')) window.open(result.authUrl, '_blank', 'noopener,noreferrer');
       return result;
     } catch (e) {
-      setError(e.message);
+      setError(friendlyPremiumError(e.message));
       return null;
     }
   }, []);
@@ -68,7 +69,7 @@ export function useMediaSync(userId) {
       await callSync('sync');
       await loadIntegration();
     } catch (e) {
-      setError(e.message);
+      setError(friendlyPremiumError(e.message));
     } finally {
       setSyncing(false);
     }

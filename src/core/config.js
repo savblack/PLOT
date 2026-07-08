@@ -22,6 +22,10 @@
  *   options. Web leaves this undefined (default localStorage session); mobile
  *   injects `{ auth: { storage: AsyncStorage, … } }` so Supabase persists the
  *   session via AsyncStorage. This is the storage seam.
+ * @property {{amazonTags?: Record<string, string>, appleToken?: string}} [affiliate]
+ *   Affiliate parameters for outbound watch links (core/watchLinks.js).
+ *   amazonTags is keyed by region code (AU, US, GB, …). Absent values degrade
+ *   links to plain search URLs — safe before any affiliate-program approval.
  */
 
 /** @type {PlotCoreConfig} */
@@ -32,6 +36,7 @@ const defaults = {
   traktClientId: '',
   isDev: false,
   supabaseClientOptions: undefined,
+  affiliate: undefined,
 };
 
 let config = { ...defaults };

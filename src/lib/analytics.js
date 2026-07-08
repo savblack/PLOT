@@ -26,6 +26,11 @@ export const EVENTS = Object.freeze({
   LIST_SHARED: 'list_shared',
   INVITE_SHARED: 'invite_shared',
   REFERRAL_COMPLETED: 'referral_completed',
+  PREMIUM_CHECKOUT_STARTED: 'premium_checkout_started',
+  PREMIUM_ACTIVATED: 'premium_activated',
+  PREMIUM_GATE_HIT: 'premium_gate_hit',
+  WATCH_LINK_CLICKED: 'watch_link_clicked',
+  TIP_JAR_CLICKED: 'tip_jar_clicked',
 });
 
 export function track(event, props) {

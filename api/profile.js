@@ -36,7 +36,7 @@ const countOf = (r) => parseInt((r.headers.get('content-range') || '0-0/0').spli
 async function loadProfile(handle) {
   const pRes = await fetch(
     `${SUPABASE_URL}/rest/v1/public_profiles?username=ilike.${encodeURIComponent(handle)}` +
-    `&select=id,username,display_name,avatar_url,is_supporter&limit=1`,
+    `&select=id,username,display_name,avatar_url,is_premium&limit=1`,
     { headers },
   );
   const rows = await pRes.json().catch(() => []);
@@ -85,7 +85,7 @@ function seoSnapshot(p) {
     : '';
   return `<div id="seo-snapshot" style="max-width:760px;margin:0 auto;padding:64px 24px;color:#e8e8ec;font-family:'DM Sans',system-ui,sans-serif;background:#0f0f11;min-height:100vh">
   <header style="display:flex;align-items:center;gap:20px">${avatar}
-    <div><h1 style="font-family:'Instrument Serif',Georgia,serif;font-weight:400;font-size:2.4rem;margin:0;line-height:1">${esc(name)}${p.is_supporter ? ' <span style="color:#F06A88">●</span>' : ''}</h1>
+    <div><h1 style="font-family:'Instrument Serif',Georgia,serif;font-weight:400;font-size:2.4rem;margin:0;line-height:1">${esc(name)}${p.is_premium ? ' <span style="color:#F06A88">●</span>' : ''}</h1>
     <div style="color:#9a9aa2;margin-top:6px">@${esc(p.username)} · on PLOT</div></div>
   </header>
   <div style="display:flex;gap:40px;margin-top:28px">${stat(p.followers, 'Followers')}${stat(p.watchCount, 'Watched')}${stat(p.reviews, 'Reviews')}${stat(p.avgRating, 'Avg rating')}</div>

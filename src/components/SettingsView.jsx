@@ -7,6 +7,8 @@ import { supabase } from '../api/supabase.js';
 import { edgeFunctionUrl } from '../api/functions.js';
 import { useMediaSync } from '../hooks/useMediaSync.js';
 import { useTraktSync } from '../hooks/useTraktSync.js';
+import { usePremium } from '../hooks/usePremium.js';
+import { track, EVENTS } from '../lib/analytics.js';
 import { useCalendar } from '../hooks/useCalendar.js';
 import { useShare } from '../hooks/useShare.js';
 import { deleteAccountAndSignOut } from '../utils/deleteAccount.js';
@@ -18,6 +20,10 @@ import { IANA_TIMEZONES } from '../utils/timezones.js';
 import { SHOW_MEDIA_SYNC_INTEGRATIONS } from '../launchFeatures.js';
 import ConfirmModal from './ConfirmModal.jsx';
 import PlotLoader from './PlotLoader.jsx';
+
+// Stripe one-time Payment Link (pay-what-you-want tips). Fire-and-forget —
+// no webhook, no entitlement; the row hides entirely when unconfigured.
+const TIP_JAR_URL = import.meta.env.VITE_TIP_JAR_URL || null;
 
 const REGIONS = [
   { code: 'US', name: 'United States' }, { code: 'AU', name: 'Australia' },
@@ -914,6 +920,7 @@ export default function SettingsView() {
   const navigate = useNavigate();
   const sync  = useMediaSync(user?.id);
   const trakt = useTraktSync(user?.id);
+  const premium = usePremium(profile);
   const { events: calEvents, loading: calLoading } = useCalendar(
     watchlist?.items ?? [],
     watching?.items ?? [],
@@ -941,8 +948,40 @@ export default function SettingsView() {
   const [usernameStatus,      setUsernameStatus]      = useState(null); // null|checking|available|taken|invalid|saving|saved|error
   const [actionError,         setActionError]         = useState(null);
   const [confirmModal,        setConfirmModal]        = useState(null); // { title, message, confirmLabel, danger, onConfirm }
+  const [checkoutThanks,      setCheckoutThanks]      = useState(false);
+  const premiumEventFired = useRef(false);
 
   const showConfirm = useCallback((opts) => setConfirmModal(opts), []);
+
+  const handleTipJar = useCallback(() => {
+    track(EVENTS.TIP_JAR_CLICKED, { source: 'settings' });
+    window.open(TIP_JAR_URL, '_blank', 'noopener,noreferrer');
+  }, []);
+
+  // Back from Stripe checkout: thank the user and re-pull the profile a few
+  // times — the webhook that flips is_premium can lag the redirect.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const checkout = params.get('checkout');
+    if (!checkout && !params.get('tip')) return;
+    navigate('/settings', { replace: true });
+    if (checkout === 'success' || params.get('tip') === 'thanks') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot init from the return URL
+      setCheckoutThanks(true);
+    }
+    if (checkout === 'success') {
+      const timers = [1500, 4000, 9000].map(ms => setTimeout(() => refreshProfile(), ms));
+      return () => timers.forEach(clearTimeout);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once on mount for the return-URL params
+  }, []);
+
+  useEffect(() => {
+    if (checkoutThanks && profile?.is_premium && !premiumEventFired.current) {
+      premiumEventFired.current = true;
+      track(EVENTS.PREMIUM_ACTIVATED, {});
+    }
+  }, [checkoutThanks, profile?.is_premium]);
 
   // Use optimistic local value so the URL appears immediately after generation
   const calendarToken = localCalToken ?? profile?.calendar_token ?? null;
@@ -1553,10 +1592,107 @@ export default function SettingsView() {
         </div>
       </div>
 
+      {/* PLOT Premium */}
+      <div className="settings-group">
+        <div className="settings-group-title">PLOT Premium</div>
+        {premium.isPremium ? (
+          <div className="settings-row" style={{ cursor: 'default' }}>
+            <div className="settings-row-left">
+              <div className="settings-row-icon" style={{ color: 'var(--accent)' }}>
+                <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+              </div>
+              <div>
+                <div className="settings-row-label">You have PLOT Premium</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                  Thank you for keeping PLOT running
+                </div>
+              </div>
+            </div>
+            <SettingsTextAction onClick={premium.openPortal} disabled={premium.busy}>
+              {premium.busy ? 'Opening…' : 'Manage subscription'}
+            </SettingsTextAction>
+          </div>
+        ) : (
+          <div className="settings-row" style={{ cursor: 'default' }}>
+            <div className="settings-row-left">
+              <div className="settings-row-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+              </div>
+              <div>
+                <div className="settings-row-label">Get PLOT Premium</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.45 }}>
+                  PLOT is built by one person. Premium keeps it running — and unlocks
+                  Plex &amp; Trakt sync plus unlimited lists.
+                </div>
+              </div>
+            </div>
+            <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
+              <SettingsTextAction onClick={() => premium.startCheckout('monthly', 'settings')} disabled={premium.busy}>
+                $3/mo
+              </SettingsTextAction>
+              <SettingsTextAction onClick={() => premium.startCheckout('yearly', 'settings')} disabled={premium.busy}>
+                $25/yr
+              </SettingsTextAction>
+            </div>
+          </div>
+        )}
+        {checkoutThanks && (
+          <div style={{ padding: '0.5rem 1rem', fontSize: '0.78rem', color: 'var(--accent)', background: 'var(--accent-dim)', borderRadius: 8, margin: '0.25rem 1rem' }}>
+            {premium.isPremium
+              ? 'PLOT Premium is active — thank you ♥'
+              : 'Thank you! Your upgrade is being confirmed — this can take a few seconds.'}
+          </div>
+        )}
+        {premium.error && (
+          <div style={{ padding: '0.5rem 1rem', fontSize: '0.78rem', color: 'var(--danger)', background: 'var(--danger-dim)', border: '1px solid var(--danger-border)', borderRadius: 8, margin: '0.25rem 1rem' }}>
+            {premium.error}
+          </div>
+        )}
+      </div>
+
       {/* Plex */}
       <div className="settings-group">
         <div className="settings-group-title">Integrations</div>
-        {SHOW_MEDIA_SYNC_INTEGRATIONS ? (
+        {SHOW_MEDIA_SYNC_INTEGRATIONS && !premium.isPremium ? (
+          <>
+            {[
+              { name: 'Plex',  blurb: 'Sync your Plex watchlist and history', connected: sync.isConnected,  disconnect: sync.disconnect },
+              { name: 'Trakt', blurb: 'Sync Netflix, Prime, Disney+ & more',  connected: trakt.isConnected, disconnect: trakt.disconnect },
+            ].map(row => (
+              <div key={row.name} className="settings-row" style={{ cursor: 'default' }}>
+                <div className="settings-row-left">
+                  <div>
+                    <div className="settings-row-label">
+                      {row.name}{' '}
+                      <span style={{ fontSize: '0.66rem', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--accent)', background: 'var(--accent-dim)', borderRadius: 999, padding: '0.15rem 0.5rem', marginLeft: '0.35rem', verticalAlign: 'middle' }}>
+                        Premium
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                      {row.connected ? 'Paused — needs PLOT Premium to sync' : row.blurb}
+                    </div>
+                  </div>
+                </div>
+                <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
+                  <SettingsTextAction
+                    disabled={premium.busy}
+                    onClick={() => {
+                      track(EVENTS.PREMIUM_GATE_HIT, { feature: `${row.name.toLowerCase()}_sync` });
+                      premium.startCheckout('monthly', 'integrations_gate');
+                    }}
+                  >
+                    Unlock · $3/mo
+                  </SettingsTextAction>
+                  {row.connected && (
+                    <SettingsTextAction onClick={row.disconnect} tone="danger">
+                      Disconnect
+                    </SettingsTextAction>
+                  )}
+                </div>
+              </div>
+            ))}
+          </>
+        ) : SHOW_MEDIA_SYNC_INTEGRATIONS ? (
           <>
             <div className="settings-row" style={{ cursor: 'default' }}>
               <div className="settings-row-left">
@@ -1756,6 +1892,28 @@ export default function SettingsView() {
       {/* Support */}
       <div className="settings-group">
         <div className="settings-group-title">Support</div>
+        {TIP_JAR_URL && (
+          <div
+            className="settings-row interactive-surface"
+            onClick={handleTipJar}
+            {...getButtonLikeProps({ onPress: handleTipJar, label: 'Leave a tip' })}
+          >
+            <div className="settings-row-left">
+              <div className="settings-row-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+              </div>
+              <div>
+                <div className="settings-row-label">Leave a Tip</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                  A one-time thanks — no subscription
+                </div>
+              </div>
+            </div>
+            <div className="settings-row-value">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ width: 14, height: 14, opacity: 0.4 }}><polyline points="9 18 15 12 9 6"/></svg>
+            </div>
+          </div>
+        )}
         <div
           className="settings-row interactive-surface"
           onClick={() => setShowFeedback(true)}

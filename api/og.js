@@ -31,7 +31,7 @@ async function loadProfile(handle) {
   const headers = { apikey: ANON_KEY, authorization: `Bearer ${ANON_KEY}` };
   const pRes = await fetch(
     `${SUPABASE_URL}/rest/v1/public_profiles?username=ilike.${encodeURIComponent(handle)}` +
-    `&select=id,username,display_name,avatar_url,is_supporter&limit=1`,
+    `&select=id,username,display_name,avatar_url,is_premium&limit=1`,
     { headers },
   );
   const rows = await pRes.json();
@@ -193,7 +193,7 @@ export function profileCard(profile, fonts) {
       h('div', { style: { display: 'flex', flexDirection: 'column', marginLeft: profile.avatar_url ? 44 : 0 } },
         h('div', { style: { display: 'flex', alignItems: 'center' } },
           h('div', { style: { display: 'flex', fontSize: profile.avatar_url ? 94 : 112, color: '#fafafa', letterSpacing: -1, lineHeight: 1, textShadow: sh(0.5) } }, name),
-          profile.is_supporter
+          profile.is_premium
             ? h('svg', { width: 74, height: 74, viewBox: '0 0 24 24', style: { marginLeft: 18 } },
                 h('path', { d: SEAL, fill: ACCENT }),
                 h('path', { d: 'M9.4 12.4l1.7 1.7 3.5-3.7', fill: 'none', stroke: '#fff', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }))
