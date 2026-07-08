@@ -1,18 +1,18 @@
--- PLOT Supporter billing (Stripe).
+-- PLOT Premium billing (Stripe).
 --
 -- Additive only — the database has real users. Four pieces:
 --   1. billing_customers: Stripe subscription state, service-role only
 --      (RLS enabled with zero policies, same pattern as the old ai_usage
 --      table). Written exclusively by the stripe-webhook edge function.
 --   2. stripe_events: webhook idempotency log.
---   3. is_supporter(): the entitlement check. Self-expiring — it compares
+--   3. is_premium(): the entitlement check. Self-expiring — it compares
 --      current_period_end to now(), so a lapsed subscription loses
 --      entitlement without any cron. past_due stays entitled (Stripe's
 --      dunning retry window) and a 3-day grace covers late webhooks at
 --      period rollover.
 --   4. Tamper protection + the free-tier custom-list cap. profiles is
 --      updated directly by clients (region, timezone, ...), so without the
---      trigger anyone could set their own is_supporter badge.
+--      trigger anyone could set their own is_premium badge.
 
 -- 1. Billing state -----------------------------------------------------------
 
@@ -44,7 +44,7 @@ alter table public.stripe_events enable row level security;
 
 -- 3. Entitlement check --------------------------------------------------------
 
-create or replace function public.is_supporter(p_user uuid default null)
+create or replace function public.is_premium(p_user uuid default null)
 returns boolean
 language sql stable security definer
 set search_path = public
@@ -57,35 +57,35 @@ as $$
   );
 $$;
 
-grant execute on function public.is_supporter(uuid) to authenticated;
+grant execute on function public.is_premium(uuid) to authenticated;
 
--- 4a. Block client tampering with the supporter flag --------------------------
+-- 4a. Block client tampering with the premium flag ----------------------------
 -- Clients update their own profiles row directly, and the badge column lives
 -- there. Allow changes only from the service role (webhook) or direct SQL
 -- (no JWT claims — dashboard/admin sessions).
 
-create or replace function public.protect_supporter_flag()
+create or replace function public.protect_premium_flag()
 returns trigger
 language plpgsql
 as $$
 begin
-  if new.is_supporter is distinct from old.is_supporter
+  if new.is_premium is distinct from old.is_premium
      and current_setting('request.jwt.claims', true) is not null
      and coalesce(current_setting('request.jwt.claims', true)::jsonb->>'role', '') <> 'service_role' then
-    raise exception 'is_supporter can only be changed by billing';
+    raise exception 'is_premium can only be changed by billing';
   end if;
   return new;
 end;
 $$;
 
-drop trigger if exists protect_supporter_flag on public.profiles;
-create trigger protect_supporter_flag
+drop trigger if exists protect_premium_flag on public.profiles;
+create trigger protect_premium_flag
   before update on public.profiles
-  for each row execute function public.protect_supporter_flag();
+  for each row execute function public.protect_premium_flag();
 
--- 4b. Custom-list cap: free accounts create up to 3 lists, supporters
--- unlimited. Grandfathering: the cap only gates INSERT — nobody's existing
--- lists are touched, and a free user with 4+ keeps full read/update/delete.
+-- 4b. Custom-list cap: free accounts create up to 3 lists, Premium unlimited.
+-- Grandfathering: the cap only gates INSERT — nobody's existing lists are
+-- touched, and a free user with 4+ keeps full read/update/delete.
 --
 -- The original "Users manage own custom lists" policy is FOR ALL; permissive
 -- policies OR together, so an added INSERT policy alone would change nothing.
@@ -101,7 +101,7 @@ returns boolean
 language sql stable security definer
 set search_path = public
 as $$
-  select public.is_supporter()
+  select public.is_premium()
       or (select count(*) from public.user_custom_lists where user_id = auth.uid()) < 3;
 $$;
 

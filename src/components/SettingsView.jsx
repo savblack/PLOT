@@ -7,7 +7,7 @@ import { supabase } from '../api/supabase.js';
 import { edgeFunctionUrl } from '../api/functions.js';
 import { useMediaSync } from '../hooks/useMediaSync.js';
 import { useTraktSync } from '../hooks/useTraktSync.js';
-import { useSupporter } from '../hooks/useSupporter.js';
+import { usePremium } from '../hooks/usePremium.js';
 import { track, EVENTS } from '../lib/analytics.js';
 import { useCalendar } from '../hooks/useCalendar.js';
 import { useShare } from '../hooks/useShare.js';
@@ -920,7 +920,7 @@ export default function SettingsView() {
   const navigate = useNavigate();
   const sync  = useMediaSync(user?.id);
   const trakt = useTraktSync(user?.id);
-  const supporter = useSupporter(profile);
+  const premium = usePremium(profile);
   const { events: calEvents, loading: calLoading } = useCalendar(
     watchlist?.items ?? [],
     watching?.items ?? [],
@@ -949,7 +949,7 @@ export default function SettingsView() {
   const [actionError,         setActionError]         = useState(null);
   const [confirmModal,        setConfirmModal]        = useState(null); // { title, message, confirmLabel, danger, onConfirm }
   const [checkoutThanks,      setCheckoutThanks]      = useState(false);
-  const supporterEventFired = useRef(false);
+  const premiumEventFired = useRef(false);
 
   const showConfirm = useCallback((opts) => setConfirmModal(opts), []);
 
@@ -959,7 +959,7 @@ export default function SettingsView() {
   }, []);
 
   // Back from Stripe checkout: thank the user and re-pull the profile a few
-  // times — the webhook that flips is_supporter can lag the redirect.
+  // times — the webhook that flips is_premium can lag the redirect.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const checkout = params.get('checkout');
@@ -977,11 +977,11 @@ export default function SettingsView() {
   }, []);
 
   useEffect(() => {
-    if (checkoutThanks && profile?.is_supporter && !supporterEventFired.current) {
-      supporterEventFired.current = true;
-      track(EVENTS.SUPPORTER_ACTIVATED, {});
+    if (checkoutThanks && profile?.is_premium && !premiumEventFired.current) {
+      premiumEventFired.current = true;
+      track(EVENTS.PREMIUM_ACTIVATED, {});
     }
-  }, [checkoutThanks, profile?.is_supporter]);
+  }, [checkoutThanks, profile?.is_premium]);
 
   // Use optimistic local value so the URL appears immediately after generation
   const calendarToken = localCalToken ?? profile?.calendar_token ?? null;
@@ -1592,24 +1592,24 @@ export default function SettingsView() {
         </div>
       </div>
 
-      {/* Support PLOT */}
+      {/* PLOT Premium */}
       <div className="settings-group">
-        <div className="settings-group-title">Support PLOT</div>
-        {supporter.isSupporter ? (
+        <div className="settings-group-title">PLOT Premium</div>
+        {premium.isPremium ? (
           <div className="settings-row" style={{ cursor: 'default' }}>
             <div className="settings-row-left">
               <div className="settings-row-icon" style={{ color: 'var(--accent)' }}>
                 <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
               </div>
               <div>
-                <div className="settings-row-label">You&rsquo;re a PLOT Supporter</div>
+                <div className="settings-row-label">You have PLOT Premium</div>
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                   Thank you for keeping PLOT running
                 </div>
               </div>
             </div>
-            <SettingsTextAction onClick={supporter.openPortal} disabled={supporter.busy}>
-              {supporter.busy ? 'Opening…' : 'Manage subscription'}
+            <SettingsTextAction onClick={premium.openPortal} disabled={premium.busy}>
+              {premium.busy ? 'Opening…' : 'Manage subscription'}
             </SettingsTextAction>
           </div>
         ) : (
@@ -1619,18 +1619,18 @@ export default function SettingsView() {
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
               </div>
               <div>
-                <div className="settings-row-label">Become a Supporter</div>
+                <div className="settings-row-label">Get PLOT Premium</div>
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.45 }}>
-                  PLOT is built by one person. Supporters keep it running — and unlock
+                  PLOT is built by one person. Premium keeps it running — and unlocks
                   Plex &amp; Trakt sync plus unlimited lists.
                 </div>
               </div>
             </div>
             <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
-              <SettingsTextAction onClick={() => supporter.startCheckout('monthly', 'settings')} disabled={supporter.busy}>
+              <SettingsTextAction onClick={() => premium.startCheckout('monthly', 'settings')} disabled={premium.busy}>
                 $3/mo
               </SettingsTextAction>
-              <SettingsTextAction onClick={() => supporter.startCheckout('yearly', 'settings')} disabled={supporter.busy}>
+              <SettingsTextAction onClick={() => premium.startCheckout('yearly', 'settings')} disabled={premium.busy}>
                 $25/yr
               </SettingsTextAction>
             </div>
@@ -1638,14 +1638,14 @@ export default function SettingsView() {
         )}
         {checkoutThanks && (
           <div style={{ padding: '0.5rem 1rem', fontSize: '0.78rem', color: 'var(--accent)', background: 'var(--accent-dim)', borderRadius: 8, margin: '0.25rem 1rem' }}>
-            {supporter.isSupporter
-              ? 'Thank you for supporting PLOT ♥'
-              : 'Thank you! Your support is being confirmed — this can take a few seconds.'}
+            {premium.isPremium
+              ? 'PLOT Premium is active — thank you ♥'
+              : 'Thank you! Your upgrade is being confirmed — this can take a few seconds.'}
           </div>
         )}
-        {supporter.error && (
+        {premium.error && (
           <div style={{ padding: '0.5rem 1rem', fontSize: '0.78rem', color: 'var(--danger)', background: 'var(--danger-dim)', border: '1px solid var(--danger-border)', borderRadius: 8, margin: '0.25rem 1rem' }}>
-            {supporter.error}
+            {premium.error}
           </div>
         )}
       </div>
@@ -1653,7 +1653,7 @@ export default function SettingsView() {
       {/* Plex */}
       <div className="settings-group">
         <div className="settings-group-title">Integrations</div>
-        {SHOW_MEDIA_SYNC_INTEGRATIONS && !supporter.isSupporter ? (
+        {SHOW_MEDIA_SYNC_INTEGRATIONS && !premium.isPremium ? (
           <>
             {[
               { name: 'Plex',  blurb: 'Sync your Plex watchlist and history', connected: sync.isConnected,  disconnect: sync.disconnect },
@@ -1665,20 +1665,20 @@ export default function SettingsView() {
                     <div className="settings-row-label">
                       {row.name}{' '}
                       <span style={{ fontSize: '0.66rem', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--accent)', background: 'var(--accent-dim)', borderRadius: 999, padding: '0.15rem 0.5rem', marginLeft: '0.35rem', verticalAlign: 'middle' }}>
-                        Supporter
+                        Premium
                       </span>
                     </div>
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                      {row.connected ? 'Paused — supporter subscription needed to sync' : row.blurb}
+                      {row.connected ? 'Paused — needs PLOT Premium to sync' : row.blurb}
                     </div>
                   </div>
                 </div>
                 <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
                   <SettingsTextAction
-                    disabled={supporter.busy}
+                    disabled={premium.busy}
                     onClick={() => {
-                      track(EVENTS.SUPPORTER_GATE_HIT, { feature: `${row.name.toLowerCase()}_sync` });
-                      supporter.startCheckout('monthly', 'integrations_gate');
+                      track(EVENTS.PREMIUM_GATE_HIT, { feature: `${row.name.toLowerCase()}_sync` });
+                      premium.startCheckout('monthly', 'integrations_gate');
                     }}
                   >
                     Unlock · $3/mo

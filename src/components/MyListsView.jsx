@@ -12,7 +12,7 @@ import PlotLoader from './PlotLoader.jsx';
 import { getButtonLikeProps } from '../utils/interactive.js';
 import { useShare } from '../hooks/useShare.js';
 import { EVENTS, track } from '../lib/analytics.js';
-import { canCreateCustomList, FREE_CUSTOM_LIST_CAP } from '../core/supporter.js';
+import { canCreateCustomList, FREE_CUSTOM_LIST_CAP } from '../core/premium.js';
 
 /* ── Heart icon ── */
 function HeartIcon({ filled }) {
@@ -660,11 +660,11 @@ function CustomListsSection({ customLists: clHook, filterItems, hideHeader }) {
   const toggleList = (id) => setOpenItems(prev => ({ ...prev, [id]: !(prev[id] ?? true) }));
   const isOpen = (id) => openItems[id] ?? true;
 
-  // Free accounts get FREE_CUSTOM_LIST_CAP lists; supporters unlimited. The
+  // Free accounts get FREE_CUSTOM_LIST_CAP lists; Premium unlimited. The
   // DB (RLS insert policy) is the authority — this is just friendlier UX.
   const requestCreate = useCallback(() => {
     if (!canCreateCustomList(lists.length, profile)) {
-      track(EVENTS.SUPPORTER_GATE_HIT, { feature: 'custom_lists' });
+      track(EVENTS.PREMIUM_GATE_HIT, { feature: 'custom_lists' });
       setShowCapNotice(true);
       return;
     }
@@ -711,13 +711,13 @@ function CustomListsSection({ customLists: clHook, filterItems, hideHeader }) {
           color: 'var(--text-secondary)', background: 'var(--surface)',
           border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
         }}>
-          You&rsquo;ve got {FREE_CUSTOM_LIST_CAP} lists — PLOT Supporters get unlimited.{' '}
+          You&rsquo;ve got {FREE_CUSTOM_LIST_CAP} lists — PLOT Premium gets unlimited.{' '}
           <button
             type="button"
             onClick={() => navigateTo?.('settings')}
             style={{ background: 'none', border: 'none', padding: 0, color: 'var(--accent)', fontWeight: 600, cursor: 'pointer', fontSize: 'inherit' }}
           >
-            Support PLOT
+            Get Premium
           </button>
         </div>
       )}

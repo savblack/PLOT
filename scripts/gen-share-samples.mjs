@@ -67,7 +67,7 @@ async function main() {
     username: 'savwatches',
     display_name: 'Savannah',
     avatar_url: null,
-    is_supporter: true,
+    is_premium: true,
     backdrop: backdropTitle.backdrop,
     watchCount: 412,
     reviews: 87,

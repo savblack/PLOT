@@ -10,7 +10,7 @@ import { ratingFromPointer, ratingToStars, starFillPercent, STAR_COUNT } from '.
 import { pickBestTvmazeShowMatch } from '../utils/tvmaze.js';
 import { useShareTitle } from '../hooks/useShareTitle.js';
 import { track, EVENTS } from '../lib/analytics.js';
-import { canCreateCustomList, FREE_CUSTOM_LIST_CAP } from '../core/supporter.js';
+import { canCreateCustomList, FREE_CUSTOM_LIST_CAP } from '../core/premium.js';
 import { buildWatchLink } from '../core/watchLinks.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import PlotLoader from './PlotLoader.jsx';
@@ -428,8 +428,8 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
       return;
     }
     if (!canCreateCustomList(lists.length, profile)) {
-      track(EVENTS.SUPPORTER_GATE_HIT, { feature: 'custom_lists' });
-      setCreateError(`Free accounts can have ${FREE_CUSTOM_LIST_CAP} lists — PLOT Supporters get unlimited. Support PLOT from Settings to unlock.`);
+      track(EVENTS.PREMIUM_GATE_HIT, { feature: 'custom_lists' });
+      setCreateError(`Free accounts can have ${FREE_CUSTOM_LIST_CAP} lists — PLOT Premium gets unlimited. Upgrade from Settings to unlock.`);
       return;
     }
 

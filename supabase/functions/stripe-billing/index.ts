@@ -1,7 +1,7 @@
 /**
  * stripe-billing
  *
- * Authenticated billing actions for the PLOT Supporter subscription:
+ * Authenticated billing actions for the PLOT Premium subscription:
  *   POST ?action=checkout  {plan: 'monthly' | 'yearly'} -> {url}  Stripe Checkout
  *   POST ?action=portal                                 -> {url}  Customer Portal
  *

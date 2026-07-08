@@ -1191,7 +1191,7 @@ export default function DesignSystemPage() {
             <img src="/ds/share-profile.jpg" alt="Profile share card" />
             <figcaption>
               <strong>Profile card</strong>
-              <p>Avatar, name, supporter seal, and watch stats over a backdrop from a recent watch. <code>/api/og?u=…</code></p>
+              <p>Avatar, name, premium seal, and watch stats over a backdrop from a recent watch. <code>/api/og?u=…</code></p>
             </figcaption>
           </figure>
           <figure className="ds-share-card">

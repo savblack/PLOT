@@ -2,12 +2,12 @@ import { useCallback, useState } from 'react';
 import { supabase } from '../api/supabase.js';
 import { edgeFunctionUrl } from '../api/functions.js';
 import { track, EVENTS } from '../lib/analytics.js';
-import { isSupporterProfile } from '../core/supporter.js';
+import { isPremiumProfile } from '../core/premium.js';
 
 /**
- * PLOT Supporter billing actions (web only — redirects to Stripe).
+ * PLOT Premium billing actions (web only — redirects to Stripe).
  *
- * Supporter *status* comes from profile.is_supporter, already loaded by
+ * Premium *status* comes from profile.is_premium, already loaded by
  * App.jsx's profile select and mirrored by the stripe-webhook edge function.
  * Server-side gates (RLS + edge functions) are the authority; this hook just
  * starts checkout / opens the Stripe customer portal.
@@ -29,7 +29,7 @@ async function callBilling(action, body = {}) {
   return data.url;
 }
 
-export function useSupporter(profile) {
+export function usePremium(profile) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
 
@@ -37,7 +37,7 @@ export function useSupporter(profile) {
     if (busy) return;
     setBusy(true);
     setError(null);
-    track(EVENTS.SUPPORTER_CHECKOUT_STARTED, { plan, source });
+    track(EVENTS.PREMIUM_CHECKOUT_STARTED, { plan, source });
     try {
       window.location.assign(await callBilling('checkout', { plan }));
     } catch (e) {
@@ -59,7 +59,7 @@ export function useSupporter(profile) {
   }, [busy]);
 
   return {
-    isSupporter: isSupporterProfile(profile),
+    isPremium: isPremiumProfile(profile),
     startCheckout,
     openPortal,
     busy,

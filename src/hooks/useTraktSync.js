@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '../api/supabase.js';
 import { callAuthenticatedFunction } from '../api/functions.js';
-import { friendlySupporterError } from '../core/supporter.js';
+import { friendlyPremiumError } from '../core/premium.js';
 import { buildTraktAuthorizeUrl, redirectToExternal } from '../utils/redirects.js';
 import { getConfig } from '../core/config.js';
 
@@ -47,7 +47,7 @@ export function useTraktSync(userId) {
       await loadIntegration();
       return result;
     } catch (e) {
-      setError(friendlySupporterError(e.message));
+      setError(friendlyPremiumError(e.message));
       return null;
     } finally {
       setSyncing(false);
@@ -62,7 +62,7 @@ export function useTraktSync(userId) {
       await callTraktSync('disconnect');
       setIntegration(prev => prev ? { ...prev, status: 'disabled' } : null);
     } catch (e) {
-      setError(friendlySupporterError(e.message));
+      setError(friendlyPremiumError(e.message));
     }
   }, [userId]);
 

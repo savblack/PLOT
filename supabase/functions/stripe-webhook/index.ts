@@ -1,10 +1,10 @@
 /**
  * stripe-webhook
  *
- * Receives Stripe events for the PLOT Supporter subscription and maintains
+ * Receives Stripe events for the PLOT Premium subscription and maintains
  * billing state:
  *   - billing_customers  (entitlement source of truth, service-role only)
- *   - profiles.is_supporter (cosmetic badge mirror read by the app/OG cards)
+ *   - profiles.is_premium (cosmetic badge mirror read by the app/OG cards)
  *
  * Subscribed events (configure exactly these on the Stripe endpoint):
  *   checkout.session.completed     first purchase — maps Stripe customer -> user
@@ -36,9 +36,9 @@ const json = (body: unknown, status = 200) =>
     headers: { 'Content-Type': 'application/json' },
   });
 
-// Statuses that keep the supporter entitlement. past_due is included so a
+// Statuses that keep the Premium entitlement. past_due is included so a
 // failing card keeps access through Stripe's retry window; the DB-side
-// is_supporter() adds a 3-day grace on current_period_end.
+// is_premium() adds a 3-day grace on current_period_end.
 const ENTITLED = new Set(['active', 'trialing', 'past_due']);
 
 // Stripe API versions >= 2025-03-31 moved current_period_end onto the
@@ -86,7 +86,7 @@ async function syncSubscription({ userId, customerId, sub, eventCreated }: SyncA
   const entitled = ENTITLED.has(sub.status) && !!end && new Date(end).getTime() > Date.now();
   const { error: profErr } = await db
     .from('profiles')
-    .update({ is_supporter: entitled })
+    .update({ is_premium: entitled })
     .eq('id', userId);
   if (profErr) throw new Error(`profiles badge update failed: ${profErr.message}`);
 }
