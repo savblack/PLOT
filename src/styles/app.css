@@ -2122,6 +2122,22 @@ svg { stroke-width: 1.5; }
 .provider-chip--rentbuy {
   opacity: 0.8;
 }
+a.provider-chip--link {
+  color: var(--text-secondary);
+  text-decoration: none;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+a.provider-chip--link:hover {
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  background: var(--surface);
+}
+.providers-attribution {
+  margin: 0.35rem 0 0;
+  font-size: 0.68rem;
+  line-height: 1.4;
+  color: var(--text-tertiary);
+}
 .providers-sublabel {
   font-size: 0.7rem;
   font-weight: 600;

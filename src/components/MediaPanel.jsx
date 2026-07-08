@@ -11,6 +11,7 @@ import { pickBestTvmazeShowMatch } from '../utils/tvmaze.js';
 import { useShareTitle } from '../hooks/useShareTitle.js';
 import { track, EVENTS } from '../lib/analytics.js';
 import { canCreateCustomList, FREE_CUSTOM_LIST_CAP } from '../core/supporter.js';
+import { buildWatchLink } from '../core/watchLinks.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import PlotLoader from './PlotLoader.jsx';
 
@@ -361,6 +362,47 @@ function StarIcon({ fillPercent = 0 }) {
   );
 }
 
+/* ── Where-to-watch provider chip ── */
+// Clickable when core/watchLinks resolves a destination (provider search URL,
+// affiliate-tagged where configured, JustWatch fallback); inert div otherwise.
+function ProviderChip({ provider, variant, title, mediaType, tmdbId, region, justwatchLink }) {
+  const link = buildWatchLink({
+    providerName: provider.provider_name,
+    title,
+    region,
+    justwatchLink,
+  });
+  const className = `provider-chip${variant === 'rentbuy' ? ' provider-chip--rentbuy' : ''}${link ? ' provider-chip--link' : ''}`;
+  const inner = (
+    <>
+      {provider.logo_path && (
+        <img src={logoUrl(provider.logo_path, 'w45')} alt={provider.provider_name} />
+      )}
+      {provider.provider_name}
+    </>
+  );
+  if (!link) return <div className={className}>{inner}</div>;
+  return (
+    <a
+      className={className}
+      href={link.url}
+      target="_blank"
+      rel={link.kind === 'affiliate' ? 'noopener nofollow sponsored' : 'noopener'}
+      onClick={() => track(EVENTS.WATCH_LINK_CLICKED, {
+        provider_id: provider.provider_id,
+        provider_name: provider.provider_name,
+        tmdb_id: tmdbId,
+        media_type: mediaType,
+        monetization: variant,
+        link_kind: link.kind,
+        region,
+      })}
+    >
+      {inner}
+    </a>
+  );
+}
+
 /* ── Add to custom list sheet ── */
 function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
   const { customLists, profile } = useApp();
@@ -540,7 +582,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
   const { shareTitle, copied: shareCopied } = useShareTitle();
 
   const [details,      setDetails]      = useState(null);
-  const [whereToWatch, setWhereToWatch] = useState({ streaming: [], rentBuy: [], inCinemas: false });
+  const [whereToWatch, setWhereToWatch] = useState({ streaming: [], rentBuy: [], inCinemas: false, justwatchLink: null, region: null });
   const [loading,      setLoading]      = useState(true);
   const [detailsError, setDetailsError] = useState(false);
 
@@ -651,7 +693,13 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
           !hasDigital
         );
       }
-      setWhereToWatch({ streaming, rentBuy, inCinemas });
+      setWhereToWatch({
+        streaming,
+        rentBuy,
+        inCinemas,
+        justwatchLink: regionData.link || null,
+        region,
+      });
     }
     setLoading(false);
   }, [itemId, itemType, isMovie]);
@@ -1088,12 +1136,16 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                 {whereToWatch.streaming.length > 0 && (
                   <div className="providers-grid">
                     {whereToWatch.streaming.map(p => (
-                      <div key={p.provider_id} className="provider-chip">
-                        {p.logo_path && (
-                          <img src={logoUrl(p.logo_path, 'w45')} alt={p.provider_name} />
-                        )}
-                        {p.provider_name}
-                      </div>
+                      <ProviderChip
+                        key={p.provider_id}
+                        provider={p}
+                        variant="streaming"
+                        title={title}
+                        mediaType={itemType}
+                        tmdbId={itemId}
+                        region={whereToWatch.region}
+                        justwatchLink={whereToWatch.justwatchLink}
+                      />
                     ))}
                   </div>
                 )}
@@ -1104,16 +1156,31 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                     )}
                     <div className="providers-grid">
                       {whereToWatch.rentBuy.map(p => (
-                        <div key={p.provider_id} className="provider-chip provider-chip--rentbuy">
-                          {p.logo_path && (
-                            <img src={logoUrl(p.logo_path, 'w45')} alt={p.provider_name} />
-                          )}
-                          {p.provider_name}
-                        </div>
+                        <ProviderChip
+                          key={p.provider_id}
+                          provider={p}
+                          variant="rentbuy"
+                          title={title}
+                          mediaType={itemType}
+                          tmdbId={itemId}
+                          region={whereToWatch.region}
+                          justwatchLink={whereToWatch.justwatchLink}
+                        />
                       ))}
                     </div>
                   </>
                 )}
+                <p className="providers-attribution">
+                  Streaming availability by JustWatch.
+                  {[...whereToWatch.streaming, ...whereToWatch.rentBuy].some(p =>
+                    buildWatchLink({
+                      providerName: p.provider_name,
+                      title,
+                      region: whereToWatch.region,
+                      justwatchLink: whereToWatch.justwatchLink,
+                    })?.kind === 'affiliate'
+                  ) && ' Some links may earn PLOT a commission.'}
+                </p>
               </>
             )}
 
