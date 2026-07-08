@@ -11,7 +11,8 @@ import GroupedFilterMenu from './GroupedFilterMenu.jsx';
 import PlotLoader from './PlotLoader.jsx';
 import { getButtonLikeProps } from '../utils/interactive.js';
 import { useShare } from '../hooks/useShare.js';
-import { EVENTS } from '../lib/analytics.js';
+import { EVENTS, track } from '../lib/analytics.js';
+import { canCreateCustomList, FREE_CUSTOM_LIST_CAP } from '../core/supporter.js';
 
 /* ── Heart icon ── */
 function HeartIcon({ filled }) {
@@ -637,7 +638,7 @@ function CreateListModal({ lists, onConfirm, onClose }) {
 
 /* ── Custom lists section ── */
 function CustomListsSection({ customLists: clHook, filterItems, hideHeader }) {
-  const { openPanel } = useApp();
+  const { openPanel, profile, navigateTo } = useApp();
   const { lists, createList, deleteList, renameList, setListPublic, addItem, removeItem } = clHook;
   const { share } = useShare();
 
@@ -650,6 +651,7 @@ function CustomListsSection({ customLists: clHook, filterItems, hideHeader }) {
   }), [share]);
   const [openItems, setOpenItems] = useState({});
   const [creatingList, setCreatingList] = useState(false);
+  const [showCapNotice, setShowCapNotice] = useState(false);
   const [renamingId,   setRenamingId]   = useState(null);
   const [renameValue,  setRenameValue]  = useState('');
   const [menuOpen,     setMenuOpen]     = useState(null);
@@ -657,6 +659,18 @@ function CustomListsSection({ customLists: clHook, filterItems, hideHeader }) {
 
   const toggleList = (id) => setOpenItems(prev => ({ ...prev, [id]: !(prev[id] ?? true) }));
   const isOpen = (id) => openItems[id] ?? true;
+
+  // Free accounts get FREE_CUSTOM_LIST_CAP lists; supporters unlimited. The
+  // DB (RLS insert policy) is the authority — this is just friendlier UX.
+  const requestCreate = useCallback(() => {
+    if (!canCreateCustomList(lists.length, profile)) {
+      track(EVENTS.SUPPORTER_GATE_HIT, { feature: 'custom_lists' });
+      setShowCapNotice(true);
+      return;
+    }
+    setShowCapNotice(false);
+    setCreatingList(true);
+  }, [lists.length, profile]);
 
   const handleCreate = useCallback(async (name) => {
     const created = await createList(name);
@@ -683,9 +697,27 @@ function CustomListsSection({ customLists: clHook, filterItems, hideHeader }) {
             type="button"
             aria-label="Create new list"
             title="Create new list"
-            onClick={() => setCreatingList(true)}
+            onClick={requestCreate}
           >
             <PlusIcon />
+          </button>
+        </div>
+      )}
+
+      {showCapNotice && (
+        <div style={{
+          margin: '0.5rem 1rem', padding: '0.65rem 0.85rem',
+          fontSize: '0.78rem', lineHeight: 1.45,
+          color: 'var(--text-secondary)', background: 'var(--surface)',
+          border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
+        }}>
+          You&rsquo;ve got {FREE_CUSTOM_LIST_CAP} lists — PLOT Supporters get unlimited.{' '}
+          <button
+            type="button"
+            onClick={() => navigateTo?.('settings')}
+            style={{ background: 'none', border: 'none', padding: 0, color: 'var(--accent)', fontWeight: 600, cursor: 'pointer', fontSize: 'inherit' }}
+          >
+            Support PLOT
           </button>
         </div>
       )}
@@ -700,7 +732,7 @@ function CustomListsSection({ customLists: clHook, filterItems, hideHeader }) {
             type="button"
             aria-label="Create new list"
             title="Create new list"
-            onClick={() => setCreatingList(true)}
+            onClick={requestCreate}
           >
             <PlusIcon />
           </button>

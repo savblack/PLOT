@@ -640,6 +640,13 @@ serve(async (req) => {
     const url = new URL(req.url)
     const action = String(body.action || url.searchParams.get('action') || '')
 
+    // Trakt sync is a PLOT Supporter feature. Disconnect stays open so a
+    // lapsed supporter can always sever the integration.
+    if (action === 'exchange' || action === 'sync') {
+      const { data: supporter } = await supabaseAdmin.rpc('is_supporter', { p_user: user.id })
+      if (!supporter) return json({ error: 'supporter_required' }, 403)
+    }
+
     if (req.method === 'POST' && action === 'exchange')   return await handleExchange(body, supabaseAdmin, user.id)
     if (req.method === 'POST' && action === 'sync')       return await handleSync(supabaseAdmin, user.id)
     if (req.method === 'POST' && action === 'disconnect') return await handleDisconnect(supabaseAdmin, user.id)

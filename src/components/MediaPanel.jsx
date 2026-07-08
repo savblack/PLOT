@@ -9,6 +9,8 @@ import { resolveMediaPanelEscapeAction } from '../utils/mediaPanel.js';
 import { ratingFromPointer, ratingToStars, starFillPercent, STAR_COUNT } from '../utils/ratings.js';
 import { pickBestTvmazeShowMatch } from '../utils/tvmaze.js';
 import { useShareTitle } from '../hooks/useShareTitle.js';
+import { track, EVENTS } from '../lib/analytics.js';
+import { canCreateCustomList, FREE_CUSTOM_LIST_CAP } from '../core/supporter.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import PlotLoader from './PlotLoader.jsx';
 
@@ -361,7 +363,7 @@ function StarIcon({ fillPercent = 0 }) {
 
 /* ── Add to custom list sheet ── */
 function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
-  const { customLists } = useApp();
+  const { customLists, profile } = useApp();
   const { lists, createList, addItem, removeItem, isInList } = customLists;
   const [creatingName, setCreatingName] = useState('');
   const [showCreate,   setShowCreate]   = useState(false);
@@ -381,6 +383,11 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
     if (!creatingName.trim() || isCreating) return;
     if (duplicateList) {
       setCreateError(`"${duplicateList.name}" already exists.`);
+      return;
+    }
+    if (!canCreateCustomList(lists.length, profile)) {
+      track(EVENTS.SUPPORTER_GATE_HIT, { feature: 'custom_lists' });
+      setCreateError(`Free accounts can have ${FREE_CUSTOM_LIST_CAP} lists — PLOT Supporters get unlimited. Support PLOT from Settings to unlock.`);
       return;
     }
 

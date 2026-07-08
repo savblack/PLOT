@@ -30,8 +30,12 @@ export async function callAuthenticatedFunction(name, session, body = {}) {
   });
 
   if (!res.ok) {
-    const err = await res.text().catch(() => 'Unknown error');
-    throw new Error(err);
+    const text = await res.text().catch(() => '');
+    let message = text || 'Unknown error';
+    // Edge functions answer errors as {"error": "..."} — surface the message,
+    // not the JSON envelope.
+    try { message = JSON.parse(text)?.error || message; } catch { /* not JSON */ }
+    throw new Error(message);
   }
 
   return res.json();

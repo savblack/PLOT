@@ -640,6 +640,13 @@ serve(async (req) => {
     const body: Record<string, unknown> = req.method === 'POST' ? await req.clone().json().catch(() => ({})) : {}
     const action = String(body.action || queryAction || '')
 
+    // Plex sync is a PLOT Supporter feature. Disconnect stays open so a
+    // lapsed supporter can always sever the integration.
+    if (action === 'start-auth' || action === 'poll-auth' || action === 'sync') {
+      const { data: supporter } = await supabaseAdmin.rpc('is_supporter', { p_user: user.id })
+      if (!supporter) return json({ error: 'supporter_required' }, 403)
+    }
+
     if (req.method === 'POST' && action === 'start-auth') return await handleStartAuth(body, supabaseAdmin, user.id)
     if (req.method === 'POST' && action === 'poll-auth') return await handlePollAuth(supabaseAdmin, user.id)
     if (req.method === 'POST' && action === 'sync') return await handleSync(supabaseAdmin, user.id)
