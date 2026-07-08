@@ -12,6 +12,7 @@ import { useWatching }     from './hooks/useWatching.js';
 import { useReminders }    from './hooks/useReminders.js';
 import { useTopLists }     from './hooks/useTopLists.js';
 import { useFavorites }    from './hooks/useFavorites.js';
+import { useHistory }      from './hooks/useHistory.js';
 import { useCustomLists }  from './hooks/useCustomLists.js';
 import PlotLoader from './components/PlotLoader.jsx';
 import { pathForView, viewFromPath } from './navigation.js';
@@ -240,6 +241,7 @@ export default function App() {
   const topLists     = useTopLists(user?.id);
   const favorites    = useFavorites(user?.id);
   const customLists  = useCustomLists(user?.id);
+  const history      = useHistory(user?.id);
 
   /* ── Pending "save to watchlist" deep link (newsletter / chart page) ── */
   const handleSaveResult = useCallback((result) => {
@@ -281,6 +283,7 @@ export default function App() {
     topLists,
     favorites,
     customLists,
+    history,
     refreshProfile,
   };
 

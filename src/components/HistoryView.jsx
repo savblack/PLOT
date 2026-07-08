@@ -1,13 +1,12 @@
 import { useState, useMemo } from 'react';
 import { useApp, posterUrl, TodayLabel } from '../App.jsx';
-import { useHistory } from '../hooks/useHistory.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import { getButtonLikeProps } from '../utils/interactive.js';
 import { entriesForMonth, historyMonthEmptyCopy, historyRatingLabel, monthLabel } from '../utils/history.js';
 
 export default function HistoryView() {
-  const { openPanel, user } = useApp();
-  const { entries, loading } = useHistory(user?.id);
+  const { openPanel, history } = useApp();
+  const { entries, loading } = history;
 
   const today = useMemo(() => new Date(), []);
   const [year,  setYear]  = useState(today.getFullYear());

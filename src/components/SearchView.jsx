@@ -2,7 +2,6 @@ import { useState, useRef } from 'react';
 import { useApp, posterUrl } from '../App.jsx';
 import { tmdb } from '../api/tmdb.js';
 import { supabase } from '../api/supabase.js';
-import { useHistory } from '../hooks/useHistory.js';
 import { localDateStr } from '../utils/date.js';
 import { getButtonLikeProps } from '../utils/interactive.js';
 import PlotLoader from './PlotLoader.jsx';
@@ -137,8 +136,7 @@ function ResultRow({ item, openPanel, watchlist, favorites, history }) {
    SearchView
 ═══════════════════════════════════════ */
 export default function SearchView() {
-  const { openPanel, watchlist, favorites, user } = useApp();
-  const history = useHistory(user?.id);
+  const { openPanel, watchlist, favorites, history, user } = useApp();
   const [mode,    setMode]    = useState('titles'); // 'titles' | 'people'
   const [query,   setQuery]   = useState('');
   const [results, setResults] = useState([]);

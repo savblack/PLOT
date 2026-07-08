@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useApp, backdropUrl, logoUrl, countdownChip, formatDate } from '../App.jsx';
 import { tmdb, getTmdbRegion } from '../api/tmdb.js';
 import { findDuplicateCustomList } from '../domain/customLists.js';
-import { useHistory } from '../hooks/useHistory.js';
 import { getEpisodeGuideState } from '../utils/episodeProgress.js';
 import { markMediaAsWatched, moveSavedShowToWatching } from '../utils/mediaStatus.js';
 import { resolveMediaPanelEscapeAction } from '../utils/mediaPanel.js';
@@ -528,9 +527,8 @@ function dedupeProviders(list) {
 }
 
 export default function MediaPanel({ itemId, itemType, closing, onClose }) {
-  const { watchlist, watching, user, profile, favorites, customLists } = useApp();
+  const { watchlist, watching, profile, favorites, customLists, history } = useApp();
   const timezone = profile?.timezone || null;
-  const history = useHistory(user?.id);
   const { shareTitle, copied: shareCopied } = useShareTitle();
 
   const [details,      setDetails]      = useState(null);

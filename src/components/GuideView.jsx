@@ -213,17 +213,25 @@ function DateGroup({ label, items, openPanel, providerLogos, watchlist, defaultO
 }
 
 /* ── Upcoming content (global, date-grouped) ── */
+
+// Stale-while-revalidate: the view remounts per navigation; keep the last
+// result at module scope (keyed by providers + local day, since the groups
+// are date-relative) so revisits render instantly and refresh silently.
+let upcomingCache = null; // { key, data }
+
 export function UpcomingContent({ typeFilters, genreFilters, providers, openPanel, watchlist }) {
-  const [data,       setData]       = useState({ today: [], recentGrouped: {}, recentDates: [], upcomingGrouped: {}, upcomingDates: [] });
-  const [loading,    setLoading]    = useState(true);
+  const providerIds = providers.map(p => p.id);
+  const cacheKey = `${providerIds.join(',')}:${localDateStr()}`;
+  const cached = upcomingCache?.key === cacheKey ? upcomingCache.data : null;
+
+  const [data,       setData]       = useState(cached ?? { today: [], recentGrouped: {}, recentDates: [], upcomingGrouped: {}, upcomingDates: [] });
+  const [loading,    setLoading]    = useState(!cached);
   const [loadedProviderLogos, setLoadedProviderLogos] = useState({});
   const [recentOpen, setRecentOpen] = useState(false);
 
-  const providerIds = providers.map(p => p.id);
-
   useEffect(() => {
     async function load() {
-      setLoading(true);
+      if (upcomingCache?.key !== cacheKey) setLoading(true);
       // Use local date string so UTC+ users (e.g. Australia) get the correct local "today"
       const todayStr = localDateStr();
 
@@ -296,11 +304,13 @@ export function UpcomingContent({ typeFilters, genreFilters, providers, openPane
       }
       const upcomingDates = Object.keys(upcomingGrouped).sort();
 
-      setData({ today: todayItems, recentGrouped, recentDates, upcomingGrouped, upcomingDates });
+      const next = { today: todayItems, recentGrouped, recentDates, upcomingGrouped, upcomingDates };
+      upcomingCache = { key: cacheKey, data: next };
+      setData(next);
       setLoading(false);
     }
     load();
-  }, [providerIds.join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [cacheKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const items = flattenGuideItems(data);

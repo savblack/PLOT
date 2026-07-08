@@ -3,7 +3,6 @@ import { createPortal } from 'react-dom';
 import { useApp, posterUrl, countdownChip } from '../App.jsx';
 import { tmdb } from '../api/tmdb.js';
 import { findDuplicateCustomList } from '../domain/customLists.js';
-import { useHistory } from '../hooks/useHistory.js';
 import { useGenres } from '../hooks/useGenres.js';
 import { localDateStr } from '../utils/date.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
@@ -36,8 +35,8 @@ function PlusIcon() {
 
 /* ── Search modal for Top 10 additions ── */
 function AddToRankModal({ listType, rank, onAdd, onClose }) {
-  const { user } = useApp();
-  const { entries } = useHistory(user?.id);
+  const { history } = useApp();
+  const { entries } = history;
   const [tab,     setTab]     = useState('history'); // 'history' | 'search'
   const [query,   setQuery]   = useState('');
   const [results, setResults] = useState([]);
@@ -187,8 +186,8 @@ function ModalResultRow({ item, onSelect }) {
 
 /* ── Add to Favorites search modal ── */
 function AddToFavoritesModal({ title = 'Add to Favorites', onAdd, onClose }) {
-  const { user } = useApp();
-  const { entries } = useHistory(user?.id);
+  const { history } = useApp();
+  const { entries } = history;
   const [tab,     setTab]     = useState('history');
   const [query,   setQuery]   = useState('');
   const [results, setResults] = useState([]);

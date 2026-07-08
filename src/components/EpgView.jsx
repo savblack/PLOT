@@ -81,6 +81,11 @@ function resolveAirtime(ep, timezone) {
 ── */
 const getShow = (ep) => ep.show ?? ep._embedded?.show;
 
+// Stale-while-revalidate: the view remounts per navigation; keep the last
+// week's schedule at module scope so revisits render instantly while the
+// fetch refreshes each day in the background.
+let epgCache = null; // { key: `${country}:${timezone}`, data: scheduleByDate }
+
 /* ── API ── */
 async function fetchBroadcast(date, country) {
   try {
@@ -231,7 +236,10 @@ export default function EpgView() {
   ].filter(p => { if (seenIds.has(p.id)) return false; seenIds.add(p.id); return true; });
 
   const [date,             setDate]             = useState(todayStr);
-  const [scheduleByDate,   setScheduleByDate]   = useState({});
+  // Seed from the module cache so a revisit renders the grid instantly
+  // (stale-while-revalidate; the fetch effect refreshes it silently).
+  const [scheduleByDate,   setScheduleByDate]   = useState(() =>
+    epgCache?.key === `${country}:${timezone}` ? epgCache.data : {});
   const [hiddenChannelIds, setHiddenChannelIds] = useState(new Set());
   const [typeFilters,      setTypeFilters]      = useState([]);
   const [platformFilters,  setPlatformFilters]  = useState([]); // provider names to match against EPG channel names
@@ -272,8 +280,11 @@ export default function EpgView() {
   /* ── Fetch the visible week up front so day-to-day scroll feels local ── */
   useEffect(() => {
     let cancelled = false;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- clear prior week data before async reload
-    setScheduleByDate({});
+    const cacheKey = `${country}:${timezone}`;
+    if (epgCache?.key !== cacheKey) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- clear prior week data before async reload
+      setScheduleByDate({});
+    }
 
     dayDateStrs.forEach(async (dateStr) => {
       const [broadcastEps, webEps] = await Promise.all([
@@ -287,7 +298,11 @@ export default function EpgView() {
         ...buildStreamingChannels(webEps, dateStr, timezone),
       ].sort((a, b) => a.name.localeCompare(b.name));
 
-      setScheduleByDate(prev => ({ ...prev, [dateStr]: all }));
+      setScheduleByDate(prev => {
+        const next = { ...prev, [dateStr]: all };
+        epgCache = { key: cacheKey, data: next };
+        return next;
+      });
     });
 
     return () => { cancelled = true; };

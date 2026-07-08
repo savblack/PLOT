@@ -1,19 +1,37 @@
 import { useState, useEffect } from 'react';
 import { tmdb, getTmdbRegion } from '../api/tmdb.js';
 
-export function useDiscover(providers = []) {
-  const [data, setData]       = useState({ hero: null, hotRail: [], weekly: [], bingedShows: [], platforms: {} });
-  const [loading, setLoading] = useState(true);
+// Stale-while-revalidate: DiscoverView remounts on every navigation home, so
+// keep the last result at module scope. A revisit renders instantly from the
+// cache while the fetch refreshes it in the background — the full-screen
+// loader only ever shows on the first visit of a session.
+let discoverCache = null; // { key: providerKey, data }
 
+export function useDiscover(providers = []) {
   const providerKey = providers.map(p => p.id).join(',');
+  const cached = discoverCache?.key === providerKey ? discoverCache.data : null;
+
+  const [data, setData]       = useState(cached ?? { hero: null, hotRail: [], weekly: [], bingedShows: [], platforms: {} });
+  const [loading, setLoading] = useState(!cached);
 
   useEffect(() => {
     let cancelled = false;
     const emptyData = { hero: null, hotRail: [], weekly: [], bingedShows: [], platforms: {} };
+    const hasCache = discoverCache?.key === providerKey;
+
+    const commit = (updater) => {
+      setData(prev => {
+        const next = typeof updater === 'function' ? updater(prev) : updater;
+        discoverCache = { key: providerKey, data: next };
+        return next;
+      });
+    };
 
     async function load() {
-      setLoading(true);
-      setData(emptyData);
+      if (!hasCache) {
+        setLoading(true);
+        setData(emptyData);
+      }
       try {
         const region = getTmdbRegion();
 
@@ -33,7 +51,7 @@ export function useDiscover(providers = []) {
           .slice(0, 10)
           .map(show => ({ ...show, media_type: 'tv' }));
 
-        setData({ hero, hotRail, weekly, bingedShows, platforms: {} });
+        commit(prev => ({ hero, hotRail, weekly, bingedShows, platforms: prev.platforms || {} }));
         setLoading(false);
 
         if (!providers.length) return;
@@ -62,13 +80,13 @@ export function useDiscover(providers = []) {
             }
           });
 
-          setData(prev => ({ ...prev, platforms }));
+          commit(prev => ({ ...prev, platforms }));
         } catch (platformError) {
           console.error('Discover platform load failed:', platformError);
         }
       } catch (error) {
         console.error('Discover load failed:', error);
-        if (!cancelled) setData(emptyData);
+        if (!cancelled && !hasCache) setData(emptyData);
       } finally {
         if (!cancelled) setLoading(false);
       }
