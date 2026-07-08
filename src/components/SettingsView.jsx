@@ -21,6 +21,10 @@ import { SHOW_MEDIA_SYNC_INTEGRATIONS } from '../launchFeatures.js';
 import ConfirmModal from './ConfirmModal.jsx';
 import PlotLoader from './PlotLoader.jsx';
 
+// Stripe one-time Payment Link (pay-what-you-want tips). Fire-and-forget —
+// no webhook, no entitlement; the row hides entirely when unconfigured.
+const TIP_JAR_URL = import.meta.env.VITE_TIP_JAR_URL || null;
+
 const REGIONS = [
   { code: 'US', name: 'United States' }, { code: 'AU', name: 'Australia' },
   { code: 'GB', name: 'United Kingdom' }, { code: 'CA', name: 'Canada' },
@@ -948,6 +952,11 @@ export default function SettingsView() {
   const supporterEventFired = useRef(false);
 
   const showConfirm = useCallback((opts) => setConfirmModal(opts), []);
+
+  const handleTipJar = useCallback(() => {
+    track(EVENTS.TIP_JAR_CLICKED, { source: 'settings' });
+    window.open(TIP_JAR_URL, '_blank', 'noopener,noreferrer');
+  }, []);
 
   // Back from Stripe checkout: thank the user and re-pull the profile a few
   // times — the webhook that flips is_supporter can lag the redirect.
@@ -1883,6 +1892,28 @@ export default function SettingsView() {
       {/* Support */}
       <div className="settings-group">
         <div className="settings-group-title">Support</div>
+        {TIP_JAR_URL && (
+          <div
+            className="settings-row interactive-surface"
+            onClick={handleTipJar}
+            {...getButtonLikeProps({ onPress: handleTipJar, label: 'Leave a tip' })}
+          >
+            <div className="settings-row-left">
+              <div className="settings-row-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+              </div>
+              <div>
+                <div className="settings-row-label">Leave a Tip</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                  A one-time thanks — no subscription
+                </div>
+              </div>
+            </div>
+            <div className="settings-row-value">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ width: 14, height: 14, opacity: 0.4 }}><polyline points="9 18 15 12 9 6"/></svg>
+            </div>
+          </div>
+        )}
         <div
           className="settings-row interactive-surface"
           onClick={() => setShowFeedback(true)}
