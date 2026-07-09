@@ -144,13 +144,13 @@ function FollowListModal({ kind, targetId, viewerId, onClose }) {
 }
 
 /* ── Edit profile — display name, username (availability), visibility, photo ── */
-function EditProfileModal({ userId, current, onClose, onSaved, onAvatarChange }) {
+function EditProfileModal({ userId, current, onClose, onSaved }) {
   const [displayName, setDisplayName] = useState(current.display_name || '');
   const [uname, setUname] = useState(current.username);
   const [isPublic, setIsPublic] = useState(current.is_public);
-  const [avatar, setAvatar] = useState(current.avatar_url);
+  const [avatar, setAvatar] = useState(current.avatar_url); // preview (object URL until Save)
+  const [pendingFile, setPendingFile] = useState(null);     // picked photo, not yet uploaded
   const [unameStatus, setUnameStatus] = useState(''); // '' | checking | ok | taken | invalid
-  const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const fileRef = useRef(null);
@@ -171,25 +171,15 @@ function EditProfileModal({ userId, current, onClose, onSaved, onAvatarChange })
     return () => clearTimeout(t);
   }, [cleanUname, unameChanged, validUname]);
 
-  const pickPhoto = async (e) => {
+  // Preview only — nothing uploads or persists until Save, so Cancel keeps
+  // the old photo.
+  const pickPhoto = (e) => {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
-    setUploading(true); setError('');
-    try {
-      const path = `${userId}/avatar.jpg`;
-      const { error: upErr } = await supabase.storage.from('avatars').upload(path, file, { upsert: true, contentType: file.type || 'image/jpeg' });
-      if (upErr) throw upErr;
-      const { data } = supabase.storage.from('avatars').getPublicUrl(path);
-      const publicUrl = `${data.publicUrl}?v=${Date.now()}`;
-      const { error: dbErr } = await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', userId);
-      if (dbErr) throw dbErr;
-      setAvatar(publicUrl);
-      onAvatarChange(publicUrl);
-    } catch {
-      setError('Couldn’t update your photo. Please try again.');
-    }
-    setUploading(false);
+    setError('');
+    setPendingFile(file);
+    setAvatar(URL.createObjectURL(file));
   };
 
   const canSave = !saving && (unameStatus === '' || unameStatus === 'ok') && (!unameChanged || validUname);
@@ -197,11 +187,25 @@ function EditProfileModal({ userId, current, onClose, onSaved, onAvatarChange })
   const save = async () => {
     setSaving(true); setError('');
     const patch = { display_name: displayName.trim() || null, is_public: isPublic };
+    // Upload the picked photo now (only on Save).
+    if (pendingFile) {
+      try {
+        const path = `${userId}/avatar.jpg`;
+        const { error: upErr } = await supabase.storage.from('avatars').upload(path, pendingFile, { upsert: true, contentType: pendingFile.type || 'image/jpeg' });
+        if (upErr) throw upErr;
+        const { data } = supabase.storage.from('avatars').getPublicUrl(path);
+        patch.avatar_url = `${data.publicUrl}?v=${Date.now()}`;
+      } catch {
+        setSaving(false);
+        setError('Couldn’t upload your photo. Please try again.');
+        return;
+      }
+    }
     if (unameChanged) patch.username = cleanUname;
     const { error: e } = await supabase.from('profiles').update(patch).eq('id', userId);
     setSaving(false);
     if (e) { setError(/duplicate/i.test(e.message) ? 'That username is taken.' : 'Couldn’t save. Please try again.'); return; }
-    onSaved({ display_name: displayName.trim(), username: unameChanged ? cleanUname : current.username, is_public: isPublic });
+    onSaved({ display_name: displayName.trim(), username: unameChanged ? cleanUname : current.username, is_public: isPublic, avatar_url: patch.avatar_url });
   };
 
   const initial = (displayName || uname || '?').charAt(0).toUpperCase();
@@ -217,8 +221,8 @@ function EditProfileModal({ userId, current, onClose, onSaved, onAvatarChange })
         <div className="pp-edit-body">
           <div className="pp-photo">
             {avatar ? <img className="pp-avatar" src={avatar} alt="" /> : <div className="pp-avatar">{initial}</div>}
-            <button type="button" className="pp-photo-btn" onClick={() => fileRef.current?.click()} disabled={uploading}>
-              {uploading ? 'Uploading…' : 'Change photo'}
+            <button type="button" className="pp-photo-btn" onClick={() => fileRef.current?.click()} disabled={saving}>
+              Change photo
             </button>
             <input ref={fileRef} type="file" accept="image/*" hidden onChange={pickPhoto} />
           </div>
@@ -407,10 +411,15 @@ export default function PublicProfilePage() {
           userId={viewer.id}
           current={{ display_name: p.display_name ?? '', username: p.username, is_public: !!p.is_public, avatar_url: p.avatar_url ?? null }}
           onClose={() => setEditing(false)}
-          onAvatarChange={(url) => setEdits((e) => ({ ...e, avatar_url: url }))}
           onSaved={(next) => {
             const usernameChanged = next.username !== p.username;
-            setEdits((e) => ({ ...e, ...next }));
+            setEdits((e) => ({
+              ...e,
+              display_name: next.display_name,
+              username: next.username,
+              is_public: next.is_public,
+              ...(next.avatar_url ? { avatar_url: next.avatar_url } : {}),
+            }));
             setEditing(false);
             if (usernameChanged) navigate(`/u/${next.username}`, { replace: true });
           }}
