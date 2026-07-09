@@ -89,13 +89,9 @@ function AddToRankModal({ listType, rank, onAdd, onClose }) {
         display: 'flex', flexDirection: 'column',
         overflow: 'hidden',
       }}>
-        <div style={{ padding: '1rem 1rem 0.5rem', borderBottom: '1px solid var(--border)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-            <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>
-              Select #{rank} {listType === 'movies' ? 'Movie' : 'TV Show'}
-            </span>
-            <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '1rem', padding: '0.25rem', lineHeight: 1 }}>✕</button>
-          </div>
+        <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--border)', margin: '0.5rem auto 0' }} />
+        <SheetHeader title={`Select #${rank} ${listType === 'movies' ? 'Movie' : 'TV Show'}`} onClose={onClose} bordered={false} />
+        <div style={{ padding: '0 1rem 0.5rem', borderBottom: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
             <button
               className={`sub-tab-btn${tab === 'history' ? ' active' : ''}`}
@@ -234,11 +230,9 @@ function AddToFavoritesModal({ title = 'Add to Favorites', onAdd, onClose }) {
         display: 'flex', flexDirection: 'column',
         overflow: 'hidden',
       }}>
-        <div style={{ padding: '1rem 1rem 0.5rem', borderBottom: '1px solid var(--border)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-            <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{title}</span>
-            <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '1rem', padding: '0.25rem', lineHeight: 1 }}>✕</button>
-          </div>
+        <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--border)', margin: '0.5rem auto 0' }} />
+        <SheetHeader title={title} onClose={onClose} bordered={false} />
+        <div style={{ padding: '0 1rem 0.5rem', borderBottom: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
             <button className={`sub-tab-btn${tab === 'history' ? ' active' : ''}`} onClick={() => { setTab('history'); setQuery(''); }}>From history</button>
             <button className={`sub-tab-btn${tab === 'search' ? ' active' : ''}`} onClick={() => setTab('search')}>Search all</button>

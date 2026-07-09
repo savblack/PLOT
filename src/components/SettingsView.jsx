@@ -18,6 +18,7 @@ import { downloadICS } from '../utils/ics.js';
 import { getButtonLikeProps } from '../utils/interactive.js';
 import { IANA_TIMEZONES } from '../utils/timezones.js';
 import { SHOW_MEDIA_SYNC_INTEGRATIONS } from '../launchFeatures.js';
+import SheetHeader from './SheetHeader.jsx';
 import ConfirmModal from './ConfirmModal.jsx';
 import PlotLoader from './PlotLoader.jsx';
 
@@ -52,10 +53,7 @@ function RegionPicker({ current, onSave, onClose }) {
     <>
       <div className="panel-overlay" onClick={onClose} />
       <div className="panel">
-        <div style={{ padding: '1.25rem 1.1rem', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.4rem', fontWeight: 500 }}>Region</h2>
-          <button className="btn btn-ghost btn-sm" onClick={onClose}>Cancel</button>
-        </div>
+        <SheetHeader title="Region" onClose={onClose} />
         <div style={{ padding: '1rem', overflow: 'auto', flex: 1 }}>
           <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '1rem', lineHeight: 1.5 }}>
             Used to show content and streaming services available in your region.
@@ -224,10 +222,7 @@ function TimezonePicker({ current, onSave, onClose }) {
     <>
       <div className="panel-overlay" onClick={onClose} />
       <div className="panel">
-        <div style={{ padding: '1.25rem 1.1rem', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.4rem', fontWeight: 500 }}>Timezone</h2>
-          <button className="btn btn-ghost btn-sm" onClick={onClose}>Cancel</button>
-        </div>
+        <SheetHeader title="Timezone" onClose={onClose} />
 
         <div style={{ padding: '0.75rem 1rem 0' }}>
           <input
@@ -354,19 +349,9 @@ function ProviderPicker({ title, hint, region, selected, onSave, onClose, limit 
     <>
       <div className="panel-overlay" onClick={onClose} />
       <div className="panel">
-        {/* Sticky header — title + Cancel + Save always visible */}
-        <div style={{
-          position: 'sticky', top: 0, zIndex: 2,
-          padding: '1.25rem 1.1rem',
-          borderBottom: '1px solid var(--border)',
-          background: 'var(--surface)',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        }}>
-          <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.4rem', fontWeight: 500 }}>{title}</h2>
-          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-            <button className="btn btn-ghost btn-sm" onClick={onClose}>Cancel</button>
-            <button className="btn btn-primary btn-sm" onClick={handleSave}>Save</button>
-          </div>
+        {/* Sticky header — title + Save always visible */}
+        <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--surface)' }}>
+          <SheetHeader title={title} onClose={onClose} action={{ label: 'Save', onClick: handleSave }} />
         </div>
 
         {/* Scrollable content */}

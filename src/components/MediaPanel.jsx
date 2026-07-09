@@ -13,6 +13,7 @@ import { track, EVENTS } from '../lib/analytics.js';
 import { canCreateCustomList, FREE_CUSTOM_LIST_CAP } from '../core/premium.js';
 import { buildWatchLink } from '../core/watchLinks.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
+import SheetHeader from './SheetHeader.jsx';
 import PlotLoader from './PlotLoader.jsx';
 
 /* ── Close icon ── */
@@ -469,10 +470,8 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
         display: 'flex', flexDirection: 'column',
         overflow: 'hidden',
       }}>
-        <div style={{ padding: '1rem', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>Add to list</span>
-          <button className="btn btn-ghost btn-xs" onClick={onClose}>✕</button>
-        </div>
+        <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--border)', margin: '0.5rem auto 0' }} />
+        <SheetHeader title="Add to list" onClose={onClose} bordered={false} />
         <div style={{ overflowY: 'auto', flex: 1 }}>
           {lists.length === 0 && !showCreate && (
             <div style={{ padding: '1.5rem 1rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>

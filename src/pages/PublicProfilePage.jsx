@@ -6,6 +6,7 @@ import { usePublicProfile } from '../hooks/usePublicProfile.js';
 import { useFollows } from '../hooks/useFollows.js';
 import { useDragScroll } from '../hooks/useDragScroll.js';
 import UserList from '../components/UserList.jsx';
+import SheetHeader from '../components/SheetHeader.jsx';
 
 const posterUrl = (path, size = 'w342') =>
   path ? `https://image.tmdb.org/t/p/${size}${path}` : null;
@@ -83,11 +84,6 @@ const styles = `
   /* ── Edit profile modal ── */
   .pp-edit-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 1rem; }
   .pp-edit-modal { background: var(--surface); width: 100%; max-width: 440px; max-height: 90vh; border-radius: var(--radius-lg); overflow-y: auto; }
-  .pp-edit-head { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--surface); }
-  .pp-edit-title { margin: 0; font-family: var(--font-serif); font-size: 1.3rem; font-weight: 500; }
-  .pp-edit-cancel { background: none; border: none; color: var(--text-muted); font-size: 0.9rem; cursor: pointer; }
-  .pp-edit-save { background: none; border: none; color: var(--accent); font-size: 0.9rem; font-weight: 700; cursor: pointer; }
-  .pp-edit-save:disabled { color: var(--text-muted); cursor: default; }
   .pp-edit-body { padding: 1.25rem; display: flex; flex-direction: column; gap: 1.4rem; }
   .pp-photo { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
   .pp-photo-btn { background: none; border: none; color: var(--accent); font-weight: 700; font-size: 0.9rem; cursor: pointer; }
@@ -139,14 +135,14 @@ function FollowListModal({ kind, targetId, viewerId, onClose }) {
   }, [kind, targetId]);
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-      <div onClick={(e) => e.stopPropagation()} style={{ background: 'var(--surface)', width: '100%', maxWidth: 520, maxHeight: '75vh', borderTopLeftRadius: 16, borderTopRightRadius: 16, overflowY: 'auto', padding: '1.25rem 1.25rem 2rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-          <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.3rem', fontWeight: 500, margin: 0, textTransform: 'capitalize' }}>{kind}</h2>
-          <button type="button" onClick={onClose} aria-label="Close" style={{ background: 'none', border: 'none', fontSize: '1.6rem', lineHeight: 1, color: 'var(--text-muted)', cursor: 'pointer' }}>×</button>
+      <div onClick={(e) => e.stopPropagation()} style={{ background: 'var(--surface)', width: '100%', maxWidth: 520, maxHeight: '75vh', borderTopLeftRadius: 16, borderTopRightRadius: 16, overflowY: 'auto', paddingBottom: '2rem' }}>
+        <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--border)', margin: '0.5rem auto 0' }} />
+        <SheetHeader title={kind === 'followers' ? 'Followers' : 'Following'} onClose={onClose} bordered={false} />
+        <div style={{ padding: '0 1.25rem' }}>
+          {users === null
+            ? <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '2rem' }}>Loading…</p>
+            : <UserList users={users} viewerId={viewerId} onNavigate={onClose} empty={kind === 'followers' ? 'No followers yet.' : 'Not following anyone yet.'} />}
         </div>
-        {users === null
-          ? <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '2rem' }}>Loading…</p>
-          : <UserList users={users} viewerId={viewerId} onNavigate={onClose} empty={kind === 'followers' ? 'No followers yet.' : 'Not following anyone yet.'} />}
       </div>
     </div>
   );
@@ -228,10 +224,12 @@ function EditProfileModal({ userId, current, onClose, onSaved }) {
   return (
     <div className="pp-edit-overlay" onClick={onClose}>
       <div className="pp-edit-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="pp-edit-head">
-          <button type="button" className="pp-edit-cancel" onClick={onClose}>Cancel</button>
-          <h2 className="pp-edit-title">Edit profile</h2>
-          <button type="button" className="pp-edit-save" onClick={save} disabled={!canSave}>{saving ? 'Saving…' : 'Save'}</button>
+        <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--surface)' }}>
+          <SheetHeader
+            title="Edit profile"
+            onClose={onClose}
+            action={{ label: saving ? 'Saving…' : 'Save', onClick: save, disabled: !canSave }}
+          />
         </div>
         <div className="pp-edit-body">
           <div className="pp-photo">
