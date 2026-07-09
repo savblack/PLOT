@@ -44,7 +44,7 @@ function DiscoverSectionHeader({ kicker, title, open, onToggle, className = '' }
     >
       <div style={{ flex: 1 }}>
         <div style={{ fontSize: '0.6rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.15rem' }}>{kicker}</div>
-        <div style={{ fontSize: '0.72rem', fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-primary)' }}>{title}</div>
+        <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1.5rem', fontWeight: 400, lineHeight: 1.1, color: 'var(--text-primary)' }}>{title}</div>
       </div>
       <svg className={`date-group-chevron${open ? ' open' : ''}`} viewBox="0 0 24 24" aria-hidden="true">
         <polyline points="6 9 12 15 18 9" />
