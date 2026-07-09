@@ -10,6 +10,14 @@ import UserList from '../components/UserList.jsx';
 const posterUrl = (path, size = 'w342') =>
   path ? `https://image.tmdb.org/t/p/${size}${path}` : null;
 
+// Content rails a user can show/hide. profile_sections null = show all.
+const SECTIONS = [
+  { key: 'recent',    label: 'Recently watched' },
+  { key: 'topMovies', label: 'Top 10 films' },
+  { key: 'topTv',     label: 'Top 10 TV' },
+  { key: 'favourites', label: 'Favourites' },
+];
+
 const styles = `
   .pp-view { max-width: 600px; margin: 0 auto; padding: 0.25rem 0 3rem; -webkit-font-smoothing: antialiased; }
   .pp-pad { padding: 0 1.25rem; }
@@ -89,6 +97,7 @@ const styles = `
   .pp-toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
   .pp-toggle-help { font-size: 0.78rem; color: var(--text-muted); margin: 0.15rem 0 0; line-height: 1.4; }
   .pp-error { color: var(--accent); font-size: 0.85rem; }
+  .pp-section-toggle { display: flex; align-items: center; justify-content: space-between; padding: 0.4rem 0; font-size: 0.92rem; color: var(--text-primary); cursor: pointer; }
 `;
 
 function PosterCard({ item, ranked, i }) {
@@ -150,6 +159,7 @@ function EditProfileModal({ userId, current, onClose, onSaved }) {
   const [isPublic, setIsPublic] = useState(current.is_public);
   const [avatar, setAvatar] = useState(current.avatar_url); // preview (object URL until Save)
   const [pendingFile, setPendingFile] = useState(null);     // picked photo, not yet uploaded
+  const [enabled, setEnabled] = useState(current.profile_sections ?? SECTIONS.map((s) => s.key));
   const [unameStatus, setUnameStatus] = useState(''); // '' | checking | ok | taken | invalid
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -203,9 +213,14 @@ function EditProfileModal({ userId, current, onClose, onSaved }) {
     }
     if (unameChanged) patch.username = cleanUname;
     const { error: e } = await supabase.from('profiles').update(patch).eq('id', userId);
+    if (e) { setSaving(false); setError(/duplicate/i.test(e.message) ? 'That username is taken.' : 'Couldn’t save. Please try again.'); return; }
+
+    // Section visibility — separate best-effort update so the core save still
+    // works before the profile_sections migration lands.
+    const sections = SECTIONS.map((s) => s.key).filter((k) => enabled.includes(k));
+    await supabase.from('profiles').update({ profile_sections: sections }).eq('id', userId);
     setSaving(false);
-    if (e) { setError(/duplicate/i.test(e.message) ? 'That username is taken.' : 'Couldn’t save. Please try again.'); return; }
-    onSaved({ display_name: displayName.trim(), username: unameChanged ? cleanUname : current.username, is_public: isPublic, avatar_url: patch.avatar_url });
+    onSaved({ display_name: displayName.trim(), username: unameChanged ? cleanUname : current.username, is_public: isPublic, avatar_url: patch.avatar_url, profile_sections: sections });
   };
 
   const initial = (displayName || uname || '?').charAt(0).toUpperCase();
@@ -249,6 +264,23 @@ function EditProfileModal({ userId, current, onClose, onSaved }) {
             <input id="pp-public-toggle" type="checkbox" checked={isPublic} onChange={(e) => setIsPublic(e.target.checked)} style={{ width: 20, height: 20, accentColor: 'var(--accent)' }} />
           </div>
 
+          {/* Which sections show on the profile */}
+          <div>
+            <label className="pp-field-label">Sections shown</label>
+            <p className="pp-toggle-help" style={{ marginBottom: '0.5rem' }}>Choose which rails appear on your profile.</p>
+            {SECTIONS.map((s) => (
+              <label key={s.key} className="pp-section-toggle">
+                <span>{s.label}</span>
+                <input
+                  type="checkbox"
+                  checked={enabled.includes(s.key)}
+                  onChange={(e) => setEnabled((prev) => e.target.checked ? [...prev, s.key] : prev.filter((k) => k !== s.key))}
+                  style={{ width: 20, height: 20, accentColor: 'var(--accent)' }}
+                />
+              </label>
+            ))}
+          </div>
+
           {!!error && <div className="pp-error">{error}</div>}
         </div>
       </div>
@@ -275,6 +307,8 @@ export default function PublicProfilePage() {
   const found = !loading && !!profile;
   const isPrivate = !!p && !p.is_public;
   const name = p ? (p.display_name || p.username) : '';
+  const sectionPref = p?.profile_sections; // null/undefined = show all
+  const showSection = (key) => !sectionPref || sectionPref.includes(key);
 
   const shareProfile = async () => {
     if (!p) return;
@@ -379,17 +413,18 @@ export default function PublicProfilePage() {
               )}
             </div>
 
-            {/* Sections — rails for living activity, grids for ranked picks */}
-            {!locked && recent.length > 0 && (
+            {/* Sections — rails for living activity, grids for ranked picks.
+                Each shows only if the owner keeps it in profile_sections. */}
+            {!locked && showSection('recent') && recent.length > 0 && (
               <div className="pp-section"><h2 className="pp-section-title pp-pad">Recently watched</h2><div className="pp-pad"><PosterRail items={recent} /></div></div>
             )}
-            {topMovies.length > 0 && (
+            {showSection('topMovies') && topMovies.length > 0 && (
               <div className="pp-section pp-pad"><h2 className="pp-section-title">Top 10 films</h2><PosterGrid items={topMovies} ranked /></div>
             )}
-            {topTv.length > 0 && (
+            {showSection('topTv') && topTv.length > 0 && (
               <div className="pp-section pp-pad"><h2 className="pp-section-title">Top 10 TV</h2><PosterGrid items={topTv} ranked /></div>
             )}
-            {favourites.length > 0 && (
+            {showSection('favourites') && favourites.length > 0 && (
               <div className="pp-section"><h2 className="pp-section-title pp-pad">Favourites</h2><div className="pp-pad"><PosterRail items={favourites} /></div></div>
             )}
 
@@ -409,7 +444,7 @@ export default function PublicProfilePage() {
       {editing && isOwn && p && (
         <EditProfileModal
           userId={viewer.id}
-          current={{ display_name: p.display_name ?? '', username: p.username, is_public: !!p.is_public, avatar_url: p.avatar_url ?? null }}
+          current={{ display_name: p.display_name ?? '', username: p.username, is_public: !!p.is_public, avatar_url: p.avatar_url ?? null, profile_sections: p.profile_sections ?? null }}
           onClose={() => setEditing(false)}
           onSaved={(next) => {
             const usernameChanged = next.username !== p.username;
@@ -418,6 +453,7 @@ export default function PublicProfilePage() {
               display_name: next.display_name,
               username: next.username,
               is_public: next.is_public,
+              profile_sections: next.profile_sections,
               ...(next.avatar_url ? { avatar_url: next.avatar_url } : {}),
             }));
             setEditing(false);
