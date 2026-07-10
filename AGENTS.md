@@ -24,3 +24,7 @@ This applies to: sample data, tests, fixtures, hardcoded lists, and any other st
 
 Both are model-agnostic runbooks. Run from the repo root on `main` with `.env` present;
 never use a paid API for copy; confirm before anything that posts publicly.
+
+## Imported Claude Cowork project instructions
+
+Building a movie and TV tracking app from scratch. The app is supposed to feel like a warm and aesthetic journal all based around what the user has watched, what they think about think about it and how it made them feel. It also should serve as the user's first point of contact for figuring out what to watch rather than clicking into every streaming platform they have and searching one by one.

@@ -6,6 +6,7 @@ import { logoUrl, posterUrl } from '../App.jsx';
 import PlotLoader from '../components/PlotLoader.jsx';
 import { getButtonLikeProps } from '../utils/interactive.js';
 import { track, markActivated, EVENTS } from '../lib/analytics.js';
+import { saveOnboardingSeedTitles } from '../core/onboarding.js';
 
 const STEP_NAMES = { 1: 'region', 2: 'platforms', 3: 'seed' };
 
@@ -190,23 +191,7 @@ export default function OnboardingFlow() {
 
     // Seed selected titles into watching_progress or My List
     if (seedSelected.length > 0) {
-      const listRes = await supabase.from('lists')
-        .upsert({ user_id: user.id, name: 'My List', is_public: false }, { onConflict: 'user_id,name' })
-        .select('id').single();
-      const listId = listRes?.data?.id;
-
-      if (listId) {
-        const rows = seedSelected.map(item => ({
-          list_id:     listId,
-          user_id:     user.id,
-          tmdb_id:     item.id,
-          media_type:  item.media_type,
-          title:       item.title || item.name,
-          poster_path: item.poster_path,
-          release_date: item.release_date || item.first_air_date || null,
-        }));
-        await supabase.from('list_items').upsert(rows, { onConflict: 'list_id,tmdb_id' });
-      }
+      await saveOnboardingSeedTitles({ supabase, userId: user.id, items: seedSelected });
     }
 
     track(EVENTS.ONBOARDING_COMPLETED, {
