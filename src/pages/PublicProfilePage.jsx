@@ -292,7 +292,7 @@ export default function PublicProfilePage() {
   const { user: viewer } = useApp();
   const navigate = useNavigate();
 
-  const { loading, profile, locked, watchCount, avgRating, recent, topMovies, topTv, favourites } =
+  const { loading, profile, locked, watchCount, recent, topMovies, topTv, favourites } =
     usePublicProfile(username, viewer?.id);
   const [followList, setFollowList] = useState(null);
   const [editing, setEditing] = useState(false);
@@ -388,9 +388,6 @@ export default function PublicProfilePage() {
               {/* Stats */}
               <div className="pp-stats">
                 {!locked && <div className="pp-stat"><span className="pp-stat-num">{watchCount}</span><span className="pp-stat-label">Watched</span></div>}
-                {!locked && avgRating != null && (
-                  <div className="pp-stat"><span className="pp-stat-num">{avgRating}★</span><span className="pp-stat-label">Avg</span></div>
-                )}
                 <button type="button" className="pp-stat pp-stat-btn" onClick={() => setFollowList('followers')}>
                   <span className="pp-stat-num">{followers}</span><span className="pp-stat-label">Followers</span>
                 </button>
