@@ -4,6 +4,7 @@ import { supabase } from '../api/supabase';
 import './AuthPage.css';
 import { track, identifyUser, EVENTS } from '../lib/analytics.js';
 import { getAuthCallbackUrl } from '../utils/redirects.js';
+import { SHOW_GOOGLE_LOGIN, SHOW_APPLE_LOGIN } from '../launchFeatures.js';
 import { HERO_POSTERS } from '../constants/heroPosters.js';
 import PlotLoader from '../components/PlotLoader.jsx';
 import Turnstile from '../components/Turnstile.jsx';
@@ -264,15 +265,19 @@ export default function AuthPage({ initialMode = 'signup' }) {
                 <p>{subheadings[mode]}</p>
               </div>
 
-              {mode !== 'forgot' && (
+              {mode !== 'forgot' && (SHOW_GOOGLE_LOGIN || SHOW_APPLE_LOGIN) && (
                 <>
                   <div className="auth-social">
-                    <button type="button" className="auth-social-btn" onClick={() => beginOAuth('google')} disabled={loading}>
-                      <GoogleIcon /> Continue with Google
-                    </button>
-                    <button type="button" className="auth-social-btn" onClick={() => beginOAuth('apple')} disabled={loading}>
-                      <AppleIcon /> Continue with Apple
-                    </button>
+                    {SHOW_GOOGLE_LOGIN && (
+                      <button type="button" className="auth-social-btn" onClick={() => beginOAuth('google')} disabled={loading}>
+                        <GoogleIcon /> Continue with Google
+                      </button>
+                    )}
+                    {SHOW_APPLE_LOGIN && (
+                      <button type="button" className="auth-social-btn" onClick={() => beginOAuth('apple')} disabled={loading}>
+                        <AppleIcon /> Continue with Apple
+                      </button>
+                    )}
                   </div>
                   <div className="auth-divider"><span>or</span></div>
                 </>
