@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { tmdb } from '../api/tmdb.js';
 import { readPendingSave, clearPendingSave } from '../utils/pendingSave.js';
 import { drainPendingSave } from '../utils/drainPendingSave.js';
-import { track, markActivated, EVENTS } from '../lib/analytics.js';
+import { track, EVENTS } from '../lib/analytics.js';
 
 // Give the watchlist + the first Discover load a beat to settle so the
 // deep-link's single detail fetch isn't competing inside the initial
@@ -62,7 +62,6 @@ export function usePendingSave({ user, watchlist, openPanel, onResult }) {
               // Side-effects are no-ops once the effect has torn down.
               openPanel: (...a) => { if (!cancelled) openPanel(...a); },
               track,
-              markActivated,
               EVENTS,
               onResult: (...a) => { if (!cancelled) onResult?.(...a); },
             },

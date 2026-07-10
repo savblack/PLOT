@@ -122,7 +122,10 @@
 .auth-header,
 .auth-form,
 .auth-toggle,
-.auth-success {
+.auth-success,
+.auth-social,
+.auth-divider,
+.auth-magiclink {
   width: 100%;
   max-width: 380px;
 }
@@ -377,6 +380,34 @@ a.auth-cta { text-decoration: none; }
   opacity: 0.6 !important;
 }
 
+/* Logout page: the two CTAs sit side by side at equal width. */
+.logout-actions {
+  display: flex;
+  gap: 0.75rem;
+  width: 100%;
+  margin-top: 0.5rem;
+}
+.logout-actions .auth-cta {
+  flex: 1 1 0;
+  width: auto;
+  min-width: 0;
+  margin: 0;
+  box-sizing: border-box;
+  white-space: nowrap;
+}
+/* Neutralise the outline variant's auto-width + wide side padding so both
+   buttons share the row equally and match height. */
+.logout-actions .auth-cta--outline {
+  width: auto !important;
+  padding-left: clamp(0.75rem, 1.3vh, 0.95rem) !important;
+  padding-right: clamp(0.75rem, 1.3vh, 0.95rem) !important;
+  align-self: stretch;
+  /* A 0.75px hairline can't paint cleanly around the pill's rounded corners
+     (sub-pixel anti-aliasing → jagged edge); a crisp 1.5px reads smooth and
+     matches the app's other outline buttons. */
+  border-width: 1.5px !important;
+}
+
 .auth-success-resend {
   font-size: 0.74rem;
   color: var(--text-muted);
@@ -397,6 +428,68 @@ a.auth-cta { text-decoration: none; }
 .auth-resend-btn:hover:not(:disabled) { color: var(--text-primary); }
 .auth-resend-btn:disabled { color: var(--text-muted); cursor: default; text-decoration: none; }
 .auth-resend-btn--sent { color: #22863a !important; }
+
+/* ── Social login + magic link ───────────────────────────── */
+.auth-social {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.auth-social-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  width: 100%;
+  min-height: 48px;
+  padding: 0.7rem 1rem;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+.auth-social-btn:hover:not(:disabled) { border-color: var(--text-primary); }
+.auth-social-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.auth-social-btn svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.auth-magiclink {
+  background: none;
+  border: none;
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  padding: 0.5rem 0;
+  margin: -0.25rem auto 0.75rem;
+  display: block;
+}
+.auth-magiclink:hover:not(:disabled) { color: var(--text-primary); }
+.auth-magiclink:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* ── Mobile ──────────────────────────────────────────────── */
 @media (max-width: 768px) {

@@ -8,6 +8,7 @@ import posthog from 'posthog-js';
 import { PostHogProvider } from '@posthog/react';
 import { Analytics } from '@vercel/analytics/react';
 import { captureAttribution } from './utils/attribution.js';
+import { track, markActivated, EVENTS } from './lib/analytics.js';
 
 // Inject web env into the shared core before anything renders or fetches.
 // Core modules read these via getConfig() — never import.meta.env directly.
@@ -24,6 +25,13 @@ configure({
       GB: import.meta.env.VITE_AMZ_TAG_GB,
     },
     appleToken: import.meta.env.VITE_APPLE_AT_TOKEN,
+  },
+  // Analytics seam: core fires this once per genuinely new watchlist add (any
+  // surface). Previously only the /save deep link emitted watchlist_saved; now
+  // every in-app save does too, and a first save counts as activation.
+  onWatchlistSave: ({ tmdb_id, media_type, source }) => {
+    track(EVENTS.WATCHLIST_SAVED, { tmdb_id, media_type, source, already_saved: false });
+    markActivated('first_save', { source });
   },
 });
 

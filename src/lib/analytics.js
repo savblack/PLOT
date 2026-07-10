@@ -24,6 +24,7 @@ export const EVENTS = Object.freeze({
   ACTIVATED: 'activated',
   TITLE_SHARED: 'title_shared',
   LIST_SHARED: 'list_shared',
+  PROFILE_SHARED: 'profile_shared',
   INVITE_SHARED: 'invite_shared',
   REFERRAL_COMPLETED: 'referral_completed',
   PREMIUM_CHECKOUT_STARTED: 'premium_checkout_started',
@@ -51,9 +52,9 @@ export function captureException(error, props) {
  * comes first: completing onboarding, or saving their first title. Fires exactly
  * once per browser (guarded by localStorage).
  *
- * We use first-of rather than an AND because regular in-app saves don't yet emit
- * `watchlist_saved` (only the /save deep link does), so requiring a tracked save
- * would rarely trigger. Tighten the definition once save coverage grows.
+ * Every genuinely-new watchlist add now emits `watchlist_saved` and marks
+ * first_save activation via the core `onWatchlistSave` seam (wired in main.jsx) —
+ * in-app taps and the /save deep link alike — so the "first save" arm is reliable.
  */
 const ACTIVATED_KEY = 'plot_activated';
 

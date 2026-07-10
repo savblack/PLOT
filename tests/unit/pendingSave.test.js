@@ -84,12 +84,12 @@ const EVENTS = { WATCHLIST_SAVED: 'watchlist_saved' };
 
 // Build an injected-deps bag with recording spies and a scripted getDetails.
 function makeDeps({ getDetails, isInList = () => false, addToList = async () => true } = {}) {
-  const calls = { track: [], activated: [], opened: [], results: [], added: [] };
+  const calls = { track: [], activated: [], opened: [], results: [], added: [], addedOpts: [] };
   return {
     deps: {
       getDetails,
       isInList,
-      addToList: async (item) => { calls.added.push(item); return addToList(item); },
+      addToList: async (item, opts) => { calls.added.push(item); calls.addedOpts.push(opts); return addToList(item); },
       openPanel: (id, mediaType) => calls.opened.push([id, mediaType]),
       track: (event, props) => calls.track.push([event, props]),
       markActivated: (name, props) => calls.activated.push([name, props]),
@@ -132,9 +132,12 @@ test('drainPendingSave: 429 then success (caller retries) → terminal success, 
   assert.equal(second.status, 'success');
   assert.equal(calls.added.length, 1);
   assert.deepEqual(calls.added[0].genre_ids, [28], 'genres objects flattened to genre_ids');
-  assert.equal(calls.track[0][0], EVENTS.WATCHLIST_SAVED);
-  assert.equal(calls.track[0][1].already_saved, false);
-  assert.equal(calls.activated.length, 1, 'a new save marks first_save activation');
+  assert.equal(calls.addedOpts[0]?.source, 'deep_link', 'source threaded into addToList so core tags the event');
+  // A NEW save's watchlist_saved + first_save activation are now emitted by
+  // watchlist.addToList (the core onWatchlistSave seam), NOT by the drain — so the
+  // drain fires neither here. This avoids double-counting the deep-link save.
+  assert.equal(calls.track.length, 0, 'drain does not emit watchlist_saved for a new save');
+  assert.equal(calls.activated.length, 0, 'drain does not mark activation for a new save');
   assert.deepEqual(calls.opened[0], [603, 'movie']);
   assert.equal(calls.results[0].status, 'success');
 });

@@ -26,6 +26,12 @@
  *   Affiliate parameters for outbound watch links (core/watchLinks.js).
  *   amazonTags is keyed by region code (AU, US, GB, …). Absent values degrade
  *   links to plain search URLs — safe before any affiliate-program approval.
+ * @property {(payload: { tmdb_id: number, media_type: string, source: string }) => void} [onWatchlistSave]
+ *   Optional analytics hook fired once per genuinely new watchlist add, from any
+ *   surface (in-app tap, /save deep link, …). This is the seam that lets the
+ *   platform-agnostic core report a save without importing an analytics SDK — web
+ *   wires it to PostHog (watchlist_saved + first_save activation) in main.jsx;
+ *   mobile may leave it undefined until it wires its own analytics.
  */
 
 /** @type {PlotCoreConfig} */
@@ -37,6 +43,7 @@ const defaults = {
   isDev: false,
   supabaseClientOptions: undefined,
   affiliate: undefined,
+  onWatchlistSave: undefined,
 };
 
 let config = { ...defaults };
