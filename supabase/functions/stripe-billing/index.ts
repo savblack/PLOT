@@ -4,6 +4,7 @@
  * Authenticated billing actions for the PLOT Premium subscription:
  *   POST ?action=checkout  {plan: 'monthly' | 'yearly'} -> {url}  Stripe Checkout
  *   POST ?action=portal                                 -> {url}  Customer Portal
+ *   POST ?action=tip       {amount: 500}                -> {url}  One-time Stripe Checkout
  *
  * Reuses the caller's existing Stripe customer (from billing_customers) so a
  * cancel/resubscribe never creates a duplicate customer. The Supabase user id
@@ -26,6 +27,8 @@ const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
 });
 
 const SETTINGS_URL = 'https://app.theplot.tv/settings';
+const TIP_MIN_AMOUNT = 100;
+const TIP_MAX_AMOUNT = 50000;
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -108,6 +111,48 @@ Deno.serve(async (req) => {
     } catch (err) {
       console.error('Portal session failed:', (err as Error).message);
       return json({ error: 'Could not open billing portal' }, 500);
+    }
+  }
+
+  if (action === 'tip') {
+    let amount = 500;
+    try {
+      const body = await req.json();
+      if (Number.isFinite(body?.amount)) amount = Math.round(Number(body.amount));
+    } catch { /* default to A$5 */ }
+
+    if (amount < TIP_MIN_AMOUNT || amount > TIP_MAX_AMOUNT) {
+      return json({ error: 'Tip amount must be between A$1 and A$500' }, 400);
+    }
+
+    try {
+      const session = await stripe.checkout.sessions.create({
+        mode: 'payment',
+        customer: billing?.stripe_customer_id ?? undefined,
+        customer_email: billing?.stripe_customer_id ? undefined : user.email,
+        client_reference_id: user.id,
+        metadata: {
+          kind: 'tip',
+          supabase_user_id: user.id,
+        },
+        line_items: [{
+          quantity: 1,
+          price_data: {
+            currency: 'aud',
+            unit_amount: amount,
+            product_data: {
+              name: 'PLOT Tip',
+              description: 'One-time support for PLOT',
+            },
+          },
+        }],
+        success_url: `${SETTINGS_URL}?tip=thanks`,
+        cancel_url: `${SETTINGS_URL}?tip=cancelled`,
+      });
+      return json({ url: session.url });
+    } catch (err) {
+      console.error('Tip checkout session failed:', (err as Error).message);
+      return json({ error: 'Could not start tip checkout' }, 500);
     }
   }
 

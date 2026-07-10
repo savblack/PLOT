@@ -58,9 +58,23 @@ export function usePremium(profile) {
     }
   }, [busy]);
 
+  const startTipCheckout = useCallback(async (amount, source = 'settings') => {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    track(EVENTS.TIP_JAR_CLICKED, { source, amount });
+    try {
+      window.location.assign(await callBilling('tip', { amount }));
+    } catch (e) {
+      setError(e.message);
+      setBusy(false);
+    }
+  }, [busy]);
+
   return {
     isPremium: isPremiumProfile(profile),
     startCheckout,
+    startTipCheckout,
     openPortal,
     busy,
     error,

@@ -22,9 +22,7 @@ import SheetHeader from './SheetHeader.jsx';
 import ConfirmModal from './ConfirmModal.jsx';
 import PlotLoader from './PlotLoader.jsx';
 
-// Stripe one-time Payment Link (pay-what-you-want tips). Fire-and-forget —
-// no webhook, no entitlement; the row hides entirely when unconfigured.
-const TIP_JAR_URL = import.meta.env.VITE_TIP_JAR_URL || null;
+const TIP_PRESET_AMOUNTS = [3, 5, 10, 25];
 
 const REGIONS = [
   { code: 'US', name: 'United States' }, { code: 'AU', name: 'Australia' },
@@ -113,6 +111,115 @@ function SettingsTextAction({ children, onClick, disabled = false, tone = 'defau
       <span>{children}</span>
       <span aria-hidden="true">›</span>
     </button>
+  );
+}
+
+function TipJarModal({ busy = false, error = null, onClose, onSubmit }) {
+  const [selectedAmount, setSelectedAmount] = useState(5);
+  const [customAmount, setCustomAmount] = useState('');
+
+  const usingCustomAmount = customAmount.trim() !== '';
+  const parsedCustomAmount = Number(customAmount);
+  const amount = usingCustomAmount ? parsedCustomAmount : selectedAmount;
+  const amountValid = Number.isInteger(amount) && amount >= 1 && amount <= 500;
+  const amountCents = amountValid ? Math.round(amount * 100) : 0;
+  const buttonLabel = amountValid ? `Continue with A$${amount}` : 'Continue';
+
+  return createPortal(
+    <>
+      <div className="panel-overlay" onClick={busy ? undefined : onClose} />
+      <div className="panel">
+        <SheetHeader title="Leave a Tip" onClose={busy ? undefined : onClose} />
+        <div style={{ padding: '1rem', overflow: 'auto', flex: 1 }}>
+          <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '1rem', lineHeight: 1.5 }}>
+            One-time support for PLOT. No subscription, no account changes.
+          </p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem', marginBottom: '1rem' }}>
+            {TIP_PRESET_AMOUNTS.map((value) => {
+              const selected = !usingCustomAmount && selectedAmount === value;
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => {
+                    setSelectedAmount(value);
+                    setCustomAmount('');
+                  }}
+                  style={{
+                    padding: '0.8rem 0.5rem',
+                    borderRadius: 'var(--radius-md)',
+                    border: selected ? '2px solid var(--accent)' : '1px solid var(--border)',
+                    background: selected ? 'var(--accent-dim)' : 'var(--surface)',
+                    color: selected ? 'var(--accent)' : 'var(--text-primary)',
+                    fontSize: '0.9rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  A${value}
+                </button>
+              );
+            })}
+          </div>
+
+          <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '0.45rem' }}>
+            Custom amount
+          </label>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.55rem',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-md)',
+            background: 'var(--surface)',
+            padding: '0.8rem 0.9rem',
+            marginBottom: '0.65rem',
+          }}>
+            <span style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)' }}>A$</span>
+            <input
+              type="number"
+              min="1"
+              max="500"
+              step="1"
+              inputMode="numeric"
+              value={customAmount}
+              onChange={(event) => setCustomAmount(event.target.value)}
+              placeholder="5"
+              style={{
+                width: '100%',
+                border: 'none',
+                outline: 'none',
+                background: 'transparent',
+                fontSize: '0.95rem',
+                color: 'var(--text-primary)',
+                fontFamily: 'var(--font-sans)',
+              }}
+            />
+          </div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+            Enter any whole amount from A$1 to A$500.
+          </div>
+
+          {error && (
+            <div style={{ padding: '0.75rem 0.9rem', fontSize: '0.78rem', color: 'var(--danger)', background: 'var(--danger-dim)', border: '1px solid var(--danger-border)', borderRadius: 8, marginBottom: '1rem' }}>
+              {error}
+            </div>
+          )}
+
+          <button
+            className="btn btn-primary"
+            style={{ width: '100%' }}
+            disabled={busy || !amountValid}
+            aria-busy={busy}
+            onClick={() => onSubmit(amountCents)}
+          >
+            {busy ? <PlotLoader size="button" tone="dark" ariaHidden /> : buttonLabel}
+          </button>
+        </div>
+      </div>
+    </>,
+    document.body
   );
 }
 
@@ -933,14 +1040,14 @@ export default function SettingsView() {
   const [usernameStatus,      setUsernameStatus]      = useState(null); // null|checking|available|taken|invalid|saving|saved|error
   const [actionError,         setActionError]         = useState(null);
   const [confirmModal,        setConfirmModal]        = useState(null); // { title, message, confirmLabel, danger, onConfirm }
-  const [checkoutThanks,      setCheckoutThanks]      = useState(false);
+  const [billingReturn,       setBillingReturn]       = useState(null); // null|'premium'|'tip'
+  const [showTipJar,          setShowTipJar]          = useState(false);
   const premiumEventFired = useRef(false);
 
   const showConfirm = useCallback((opts) => setConfirmModal(opts), []);
 
   const handleTipJar = useCallback(() => {
-    track(EVENTS.TIP_JAR_CLICKED, { source: 'settings' });
-    window.open(TIP_JAR_URL, '_blank', 'noopener,noreferrer');
+    setShowTipJar(true);
   }, []);
 
   // Back from Stripe checkout: thank the user and re-pull the profile a few
@@ -948,12 +1055,11 @@ export default function SettingsView() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const checkout = params.get('checkout');
-    if (!checkout && !params.get('tip')) return;
+    const tip = params.get('tip');
+    if (!checkout && !tip) return;
     navigate('/settings', { replace: true });
-    if (checkout === 'success' || params.get('tip') === 'thanks') {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot init from the return URL
-      setCheckoutThanks(true);
-    }
+    if (checkout === 'success') setBillingReturn('premium');
+    if (tip === 'thanks') setBillingReturn('tip');
     if (checkout === 'success') {
       const timers = [1500, 4000, 9000].map(ms => setTimeout(() => refreshProfile(), ms));
       return () => timers.forEach(clearTimeout);
@@ -962,11 +1068,11 @@ export default function SettingsView() {
   }, []);
 
   useEffect(() => {
-    if (checkoutThanks && profile?.is_premium && !premiumEventFired.current) {
+    if (billingReturn === 'premium' && profile?.is_premium && !premiumEventFired.current) {
       premiumEventFired.current = true;
       track(EVENTS.PREMIUM_ACTIVATED, {});
     }
-  }, [checkoutThanks, profile?.is_premium]);
+  }, [billingReturn, profile?.is_premium]);
 
   // Use optimistic local value so the URL appears immediately after generation
   const calendarToken = localCalToken ?? profile?.calendar_token ?? null;
@@ -1621,11 +1727,13 @@ export default function SettingsView() {
             </div>
           </div>
         )}
-        {checkoutThanks && (
+        {billingReturn && (
           <div style={{ padding: '0.5rem 1rem', fontSize: '0.78rem', color: 'var(--accent)', background: 'var(--accent-dim)', borderRadius: 8, margin: '0.25rem 1rem' }}>
-            {premium.isPremium
-              ? 'PLOT Premium is active — thank you ♥'
-              : 'Thank you! Your upgrade is being confirmed — this can take a few seconds.'}
+            {billingReturn === 'tip'
+              ? 'Thanks for supporting PLOT ♥'
+              : premium.isPremium
+                ? 'PLOT Premium is active — thank you ♥'
+                : 'Thank you! Your upgrade is being confirmed — this can take a few seconds.'}
           </div>
         )}
         {premium.error && (
@@ -1877,28 +1985,26 @@ export default function SettingsView() {
       {/* Support */}
       <div className="settings-group">
         <div className="settings-group-title">Support</div>
-        {TIP_JAR_URL && (
-          <div
-            className="settings-row interactive-surface"
-            onClick={handleTipJar}
-            {...getButtonLikeProps({ onPress: handleTipJar, label: 'Leave a tip' })}
-          >
-            <div className="settings-row-left">
-              <div className="settings-row-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
-              </div>
-              <div>
-                <div className="settings-row-label">Leave a Tip</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                  A one-time thanks — no subscription
-                </div>
-              </div>
+        <div
+          className="settings-row interactive-surface"
+          onClick={handleTipJar}
+          {...getButtonLikeProps({ onPress: handleTipJar, label: 'Leave a tip' })}
+        >
+          <div className="settings-row-left">
+            <div className="settings-row-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
             </div>
-            <div className="settings-row-value">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ width: 14, height: 14, opacity: 0.4 }}><polyline points="9 18 15 12 9 6"/></svg>
+            <div>
+              <div className="settings-row-label">Leave a Tip</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                A one-time thanks — no subscription
+              </div>
             </div>
           </div>
-        )}
+          <div className="settings-row-value">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ width: 14, height: 14, opacity: 0.4 }}><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+        </div>
         <div
           className="settings-row interactive-surface"
           onClick={() => setShowFeedback(true)}
@@ -2039,6 +2145,15 @@ export default function SettingsView() {
       {/* Feedback panel */}
       {showFeedback && (
         <FeedbackPanel user={user} onClose={() => setShowFeedback(false)} />
+      )}
+
+      {showTipJar && (
+        <TipJarModal
+          busy={premium.busy}
+          error={premium.error}
+          onClose={() => setShowTipJar(false)}
+          onSubmit={(amount) => premium.startTipCheckout(amount, 'settings')}
+        />
       )}
 
       {confirmModal && (

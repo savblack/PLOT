@@ -80,6 +80,7 @@ export default function OnboardingFlow() {
   const navigate = useNavigate();
 
   const [user,      setUser]      = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [step,      setStep]      = useState(1);
   const [saving,    setSaving]    = useState(false);
 
@@ -103,11 +104,24 @@ export default function OnboardingFlow() {
 
   /* ── Auth check ── */
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) navigate('/login', { replace: true });
-      else setUser(session.user);
+    let alive = true;
+
+    const syncUser = (session) => {
+      if (!alive) return;
+      setUser(session?.user ?? null);
+      setAuthLoading(false);
+    };
+
+    supabase.auth.getSession().then(({ data: { session } }) => syncUser(session));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      syncUser(session);
     });
-  }, [navigate]);
+
+    return () => {
+      alive = false;
+      subscription.unsubscribe();
+    };
+  }, []);
 
   /* ── Activation funnel: fire once the authed user reaches onboarding ── */
   const startedRef = useRef(false);
@@ -222,6 +236,14 @@ export default function OnboardingFlow() {
   );
 
   const seedGridItems = seedQuery.trim() ? seedResults : trending;
+
+  if (authLoading) {
+    return (
+      <div className="app-boot-loader">
+        <PlotLoader />
+      </div>
+    );
+  }
 
   if (!user) return null;
 
