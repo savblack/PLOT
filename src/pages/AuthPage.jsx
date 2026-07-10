@@ -21,6 +21,25 @@ function friendlyError(msg) {
   return msg;
 }
 
+function GoogleIcon() {
+  return (
+    <svg viewBox="0 0 18 18" aria-hidden="true">
+      <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/>
+      <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.259c-.806.54-1.837.859-3.048.859-2.344 0-4.328-1.583-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/>
+      <path fill="#FBBC05" d="M3.964 10.705a5.41 5.41 0 0 1-.282-1.705c0-.593.102-1.17.282-1.705V4.963H.957A8.997 8.997 0 0 0 0 9c0 1.452.348 2.827.957 4.037l3.007-2.332z"/>
+      <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.963L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/>
+    </svg>
+  );
+}
+
+function AppleIcon() {
+  return (
+    <svg viewBox="0 0 18 18" aria-hidden="true" fill="currentColor">
+      <path d="M13.03 9.56c-.02-1.86 1.52-2.75 1.59-2.79-.87-1.27-2.22-1.44-2.7-1.46-1.15-.12-2.24.68-2.83.68-.58 0-1.48-.66-2.43-.64-1.25.02-2.4.73-3.04 1.85-1.3 2.25-.33 5.58.93 7.41.62.9 1.36 1.9 2.32 1.86.93-.04 1.29-.6 2.41-.6 1.13 0 1.45.6 2.43.58 1.0-.02 1.64-.91 2.25-1.81.71-1.04 1.0-2.05 1.02-2.1-.02-.01-1.95-.75-1.97-2.97zM11.2 4.03c.51-.62.86-1.48.76-2.34-.74.03-1.63.49-2.16 1.11-.47.55-.89 1.43-.78 2.27.82.06 1.67-.42 2.18-1.04z"/>
+    </svg>
+  );
+}
+
 export default function AuthPage({ initialMode = 'signup' }) {
   const [mode, setMode]               = useState(initialMode);
   const [email, setEmail]             = useState('');
@@ -29,6 +48,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
   const [loading, setLoading]         = useState(false);
   const [error, setError]             = useState(null);
   const [success, setSuccess]         = useState(false);
+  const [magicSent, setMagicSent]     = useState(false);
   const [resendStatus, setResendStatus] = useState(null); // null | 'sending' | 'sent' | 'error'
   const [captchaToken, setCaptchaToken] = useState(null);
   const [captchaNonce, setCaptchaNonce] = useState(0); // bump to force a fresh Turnstile token
@@ -94,10 +114,44 @@ export default function AuthPage({ initialMode = 'signup' }) {
     }
   };
 
+  // OAuth: hand off to the provider. We can't fire the signup/login event here
+  // (the page redirects away), so we stash the method in sessionStorage and let
+  // AuthCallbackPage report it once the session comes back (see reportAuth there).
+  const beginOAuth = async (provider) => {
+    setError(null);
+    try { sessionStorage.setItem('plot_auth_method', provider); } catch { /* ignore */ }
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: { redirectTo: getAuthCallbackUrl() },
+    });
+    // A returned error means we never navigated away — surface it and clear the marker.
+    if (error) {
+      setError(friendlyError(error.message));
+      try { sessionStorage.removeItem('plot_auth_method'); } catch { /* ignore */ }
+    }
+  };
+
+  // Passwordless: email a one-time sign-in link. Works for new and returning
+  // users alike; the callback completes auth and reports the method.
+  const sendMagicLink = async () => {
+    if (!email) { setError('Enter your email address first, then request a link.'); return; }
+    setLoading(true);
+    setError(null);
+    try { sessionStorage.setItem('plot_auth_method', 'magic_link'); } catch { /* ignore */ }
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: getAuthCallbackUrl(), captchaToken },
+    });
+    setLoading(false);
+    if (error) { setError(friendlyError(error.message)); resetCaptcha(); }
+    else setMagicSent(true);
+  };
+
   const switchMode = (next) => {
     setMode(next);
     setError(null);
     setSuccess(false);
+    setMagicSent(false);
     setResendStatus(null);
   };
 
@@ -189,12 +243,40 @@ export default function AuthPage({ initialMode = 'signup' }) {
             </div>
           )}
 
-          {!success && (
+          {magicSent && (
+            <div className="auth-success">
+              <div className="auth-success-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="4" width="20" height="16" rx="2"/>
+                  <polyline points="2 4 12 13 22 4"/>
+                </svg>
+              </div>
+              <h1>Check your inbox</h1>
+              <p>We sent a one-time sign-in link to <strong>{email}</strong>. Open it on this device and you're straight in — no password needed.</p>
+              <button className="auth-cta auth-cta--outline" onClick={() => { setMagicSent(false); resetCaptcha(); }}>Back</button>
+            </div>
+          )}
+
+          {!success && !magicSent && (
             <>
               <div className="auth-header">
                 <h1>{headings[mode]}</h1>
                 <p>{subheadings[mode]}</p>
               </div>
+
+              {mode !== 'forgot' && (
+                <>
+                  <div className="auth-social">
+                    <button type="button" className="auth-social-btn" onClick={() => beginOAuth('google')} disabled={loading}>
+                      <GoogleIcon /> Continue with Google
+                    </button>
+                    <button type="button" className="auth-social-btn" onClick={() => beginOAuth('apple')} disabled={loading}>
+                      <AppleIcon /> Continue with Apple
+                    </button>
+                  </div>
+                  <div className="auth-divider"><span>or</span></div>
+                </>
+              )}
 
               <form onSubmit={handleSubmit} className="auth-form" noValidate>
                 {error && (
@@ -268,6 +350,17 @@ export default function AuthPage({ initialMode = 'signup' }) {
                   {loading ? <PlotLoader size="button" tone="dark" ariaHidden /> : ctaLabels[mode]}
                 </button>
               </form>
+
+              {mode !== 'forgot' && (
+                <button
+                  type="button"
+                  className="auth-magiclink"
+                  onClick={sendMagicLink}
+                  disabled={loading || !captchaReady}
+                >
+                  Email me a magic link instead
+                </button>
+              )}
 
               <div className="auth-toggle">
                 {mode === 'forgot' ? (

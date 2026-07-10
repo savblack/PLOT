@@ -5,8 +5,10 @@ import { supabase } from '../api/supabase.js';
 import { usePublicProfile } from '../hooks/usePublicProfile.js';
 import { useFollows } from '../hooks/useFollows.js';
 import { useDragScroll } from '../hooks/useDragScroll.js';
+import { useShare } from '../hooks/useShare.js';
 import UserList from '../components/UserList.jsx';
 import SheetHeader from '../components/SheetHeader.jsx';
+import { EVENTS } from '../lib/analytics.js';
 
 const posterUrl = (path, size = 'w342') =>
   path ? `https://image.tmdb.org/t/p/${size}${path}` : null;
@@ -299,6 +301,7 @@ export default function PublicProfilePage() {
   const [edits, setEdits] = useState({}); // local overlay: display_name, username, is_public, avatar_url
   const { followers, following, status, follow, unfollow, busy, canFollow } =
     useFollows(profile?.id, viewer?.id, profile?.follow_status ?? null);
+  const { share, copied } = useShare();
 
   const p = profile ? { ...profile, ...edits } : profile;
   const isOwn = viewer?.id && profile?.id && viewer.id === profile.id;
@@ -308,13 +311,17 @@ export default function PublicProfilePage() {
   const sectionPref = p?.profile_sections; // null/undefined = show all
   const showSection = (key) => !sectionPref || sectionPref.includes(key);
 
-  const shareProfile = async () => {
+  // Route through the shared share primitive so profile shares are analytics-
+  // tracked (profile_shared) and get the "Copied!" fallback state, like every
+  // other share surface (see MyListsView / DiscoverView).
+  const shareProfile = () => {
     if (!p) return;
-    const url = `${window.location.origin}/u/${p.username}`;
-    try {
-      if (navigator.share) await navigator.share({ title: `${name} on PLOT`, url });
-      else await navigator.clipboard.writeText(url);
-    } catch { /* dismissed */ }
+    share({
+      url: `${window.location.origin}/u/${p.username}`,
+      title: `${name} on PLOT`,
+      event: EVENTS.PROFILE_SHARED,
+      eventProps: { profile_id: p.id },
+    });
   };
 
   return (
@@ -365,7 +372,7 @@ export default function PublicProfilePage() {
                 {isOwn ? (
                   <>
                     <button type="button" className="pp-btn pp-btn-secondary" onClick={() => setEditing(true)}>Edit profile</button>
-                    <button type="button" className="pp-btn pp-btn-secondary" onClick={shareProfile}>Share profile</button>
+                    <button type="button" className="pp-btn pp-btn-secondary" onClick={shareProfile}>{copied ? 'Copied!' : 'Share profile'}</button>
                   </>
                 ) : !viewer ? (
                   <>

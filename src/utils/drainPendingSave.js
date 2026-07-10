@@ -18,40 +18,33 @@
  * @param {object}   deps
  * @param {(mediaType: string, id: number) => Promise<{ ok: boolean, data: any, retryable: boolean }>} deps.getDetails
  * @param {(id: number) => boolean}            deps.isInList
- * @param {(item: object) => Promise<any>}     deps.addToList
+ * @param {(item: object, opts?: { source?: string }) => Promise<any>} deps.addToList
  * @param {(id: number, mediaType: string) => void} deps.openPanel
  * @param {(event: string, props?: object) => void} deps.track
- * @param {(name: string, props?: object) => void}  deps.markActivated
  * @param {object}   deps.EVENTS
  * @param {(result: { status: string, message: string, title?: string }) => void} [deps.onResult]
  * @returns {Promise<{ terminal: boolean, status: 'success'|'already_saved'|'error'|'retry' }>}
+ *
+ * Analytics note: a genuinely NEW save is emitted by watchlist.addToList via the
+ * core `onWatchlistSave` seam (with source 'deep_link'), so we don't fire
+ * watchlist_saved for it here — that would double-count. We DO emit it for the
+ * already-saved branch below, where addToList is never called.
  */
 export async function drainPendingSave({ intent }, deps) {
-  const { getDetails, isInList, addToList, openPanel, track, markActivated, EVENTS, onResult } = deps;
+  const { getDetails, isInList, addToList, openPanel, track, EVENTS, onResult } = deps;
   const { tmdb_id, media_type, source } = intent;
+  const src = source || 'deep_link';
 
-  const confirmSaved = ({ alreadySaved, title }) => {
-    track(EVENTS.WATCHLIST_SAVED, {
-      tmdb_id,
-      media_type,
-      source: source || 'deep_link',
-      already_saved: alreadySaved,
-    });
-    // A genuinely new save is an activation signal (first-of wins).
-    if (!alreadySaved) markActivated('first_save', { source: source || 'deep_link' });
+  const confirm = ({ title, message }) => {
     openPanel(tmdb_id, media_type);
-    onResult?.({
-      status: 'success',
-      title,
-      message: alreadySaved
-        ? `${title || 'This title'} is already on your watchlist`
-        : `Saved${title ? ` ${title}` : ''} to your watchlist`,
-    });
+    onResult?.({ status: 'success', title, message });
   };
 
-  // Already on the list — pure confirmation, nothing to fetch. Idempotent.
+  // Already on the list — pure confirmation, nothing to fetch or add. Idempotent.
+  // No add happens here, so this is where the (already_saved) signal is emitted.
   if (isInList(tmdb_id)) {
-    confirmSaved({ alreadySaved: true, title: '' });
+    track(EVENTS.WATCHLIST_SAVED, { tmdb_id, media_type, source: src, already_saved: true });
+    confirm({ title: '', message: 'This title is already on your watchlist' });
     return { terminal: true, status: 'already_saved' };
   }
 
@@ -77,13 +70,15 @@ export async function drainPendingSave({ intent }, deps) {
       // Detail responses carry `genres` objects; the add path wants `genre_ids`.
       genre_ids: Array.isArray(details.genres) ? details.genres.map(g => g.id) : [],
     };
-    added = !!(await addToList(item));
+    // Pass the source so core's onWatchlistSave seam tags the watchlist_saved
+    // event 'deep_link' (rather than the default 'in_app').
+    added = !!(await addToList(item, { source: src }));
   }
 
   const title = details?.title || details?.name || '';
   // Idempotent: a concurrent add (or a slow isInList) still counts as saved.
   if (added || isInList(tmdb_id)) {
-    confirmSaved({ alreadySaved: false, title });
+    confirm({ title, message: `Saved${title ? ` ${title}` : ''} to your watchlist` });
     return { terminal: true, status: 'success' };
   }
 

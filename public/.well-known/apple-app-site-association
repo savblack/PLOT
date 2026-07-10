@@ -1,0 +1,15 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["REPLACE_WITH_APPLE_TEAM_ID.tv.theplot.app"],
+        "components": [
+          { "/": "/save", "comment": "Save-to-watchlist deep link" },
+          { "/": "/save/*", "comment": "Save-to-watchlist deep link (with path)" },
+          { "/": "/list/*", "comment": "Public custom list" },
+          { "/": "/u/*", "comment": "Public profile" }
+        ]
+      }
+    ]
+  }
+}

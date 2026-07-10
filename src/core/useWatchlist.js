@@ -29,7 +29,7 @@ function enqueueTraktAction(userId, integrationId, action, payload) {
  *   items: any[];
  *   loading: boolean;
  *   isInList: (tmdbId: number) => boolean;
- *   addToList: (item: any) => Promise<any>;
+ *   addToList: (item: any, opts?: { source?: string }) => Promise<any>;
  *   removeFromList: (tmdbId: number) => Promise<any>;
  *   toggle: (item: any) => Promise<any>;
  *   reload: () => Promise<void>;
@@ -130,7 +130,9 @@ export function useWatchlist(userId) {
   );
 
   /* ── Add item ── */
-  const addToList = useCallback(async (item) => {
+  // opts.source labels where the save came from ('in_app' default, 'deep_link'
+  // for the /save processor) and is forwarded to the analytics seam below.
+  const addToList = useCallback(async (item, opts) => {
     if (!listId || !userId) {
       if (getConfig().isDev) console.warn('[useWatchlist] addToList: not ready', { listId, userId });
       return null;
@@ -164,6 +166,14 @@ export function useWatchlist(userId) {
     }
     if (data) {
       setItems(prev => [data, ...prev]);
+      // Report the save through the platform-injected analytics seam. This is the
+      // single place every genuinely-new add is emitted from (in-app tap and the
+      // /save deep link both land here), so callers never double-count.
+      getConfig().onWatchlistSave?.({
+        tmdb_id,
+        media_type: row?.media_type ?? item.media_type,
+        source: opts?.source || 'in_app',
+      });
       // Queue add to Trakt if connected
       if (traktIntegrationId.current) {
         enqueueTraktAction(userId, traktIntegrationId.current, 'trakt_watchlist_add', {
