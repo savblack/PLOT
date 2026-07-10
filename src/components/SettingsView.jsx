@@ -1713,7 +1713,14 @@ export default function SettingsView() {
                 <div className="settings-row-label">Get PLOT Premium</div>
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.45 }}>
                   PLOT is built by one person. Premium keeps it running — and unlocks
-                  Plex &amp; Trakt sync plus unlimited lists.
+                  Plex &amp; Trakt sync plus unlimited lists.{' '}
+                  <button
+                    type="button"
+                    onClick={() => navigate('/plans')}
+                    style={{ background: 'none', border: 'none', padding: 0, font: 'inherit', color: 'var(--text-secondary)', textDecoration: 'underline', cursor: 'pointer' }}
+                  >
+                    Compare plans
+                  </button>
                 </div>
               </div>
             </div>

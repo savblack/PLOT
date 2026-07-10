@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Plans &amp; Pricing — PLOT</title>
+  <meta name="description" content="PLOT is free to use, forever. Go Premium for unlimited lists and automatic sync from Plex, Trakt, Netflix, Prime, Disney+ and more — $3/mo or $25/yr." />
+  <link rel="canonical" href="https://theplot.tv/plans.html" />
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#0c0c0c" media="(prefers-color-scheme: dark)" />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="PLOT" />
+  <meta property="og:title" content="Plans &amp; Pricing — PLOT" />
+  <meta property="og:description" content="Free to use, forever. Go Premium for unlimited lists and automatic sync across every service you watch." />
+  <meta property="og:image" content="https://theplot.tv/og-image.png" />
+  <meta property="og:image:type" content="image/png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:url" content="https://theplot.tv/plans.html" />
+
+  <!-- Favicon / app icon -->
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="apple-touch-icon" href="favicon.svg" />
+  <link rel="manifest" href="site.webmanifest" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@200;300;400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/theme.css" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* Shared brand tokens live in /theme.css. Content pages use the warmer surface. */
+    :root {
+      --bg: #f8f8f8;
+      --hair: rgba(0,0,0,0.08);
+      --hair-strong: rgba(0,0,0,0.16);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      font-weight: 300;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Navbar ─────────────────────────────────────────────── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      padding: 0 2rem;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--glass-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--glass-border);
+    }
+    .nav-logo { text-decoration: none; display: flex; align-items: center; }
+    .nav-logo span {
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-size: 2.5rem;
+      font-weight: 400;
+      letter-spacing: -0.05em;
+      color: var(--text);
+      line-height: 1;
+      user-select: none;
+    }
+    .nav-links { display: flex; align-items: center; gap: 1.75rem; list-style: none; }
+    .nav-links li { display: flex; }
+    .nav-links a {
+      display: inline-block;
+      padding: 0.75rem 0.25rem;
+      text-decoration: none;
+      color: var(--text-secondary);
+      font-size: 0.75rem;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+    .nav-cta { color: var(--text) !important; font-weight: 600 !important; }
+
+    /* ── Layout ─────────────────────────────────────────────── */
+    .page-wrap {
+      max-width: 940px;
+      margin: 0 auto;
+      padding: 120px 2rem 80px;
+    }
+
+    /* ── Hero ───────────────────────────────────────────────── */
+    .hero { text-align: center; margin-bottom: 3rem; }
+    .page-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      margin-bottom: 1rem;
+    }
+    h1 {
+      font-family: var(--serif);
+      font-size: clamp(2.4rem, 6vw, 3.6rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.08;
+      color: var(--text);
+      margin-bottom: 0.75rem;
+    }
+    .hero-lede {
+      font-size: 1.05rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      max-width: 52ch;
+      margin: 0 auto 2rem;
+    }
+
+    /* ── Buttons (marketing conventions) ────────────────────── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      padding: 0.7rem 1.6rem;
+      border-radius: var(--r-pill);
+      font-family: var(--sans);
+      font-size: 0.82rem;
+      font-weight: 500;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.25s var(--ease);
+      border: none;
+      min-height: 44px;
+    }
+    .btn-primary { background: var(--ink); color: #fff; }
+    .btn-primary:hover { background: var(--ink-hover); transform: translateY(-1px); }
+    .btn-outline { background: transparent; color: var(--text); border: 1px solid var(--text); }
+    .btn-outline:hover { background: var(--text); color: #fff; transform: translateY(-1px); }
+
+    /* ── Billing toggle ─────────────────────────────────────── */
+    .billing-toggle {
+      display: inline-flex;
+      gap: 0.25rem;
+      padding: 0.25rem;
+      border: 1px solid var(--hair);
+      border-radius: var(--r-pill);
+      background: var(--surface);
+    }
+    .billing-opt {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      font-family: var(--sans);
+      font-size: 0.82rem;
+      font-weight: 500;
+      padding: 0.45rem 1.15rem;
+      border-radius: var(--r-pill);
+      cursor: pointer;
+      transition: all 0.2s var(--ease);
+    }
+    .billing-opt:hover { color: var(--text); }
+    .billing-opt.is-active { background: var(--ink); color: #fff; }
+    .billing-save {
+      font-size: 0.64rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 0.12rem 0.42rem;
+      border-radius: var(--r-pill);
+      background: rgba(0,0,0,0.06);
+      color: var(--text-secondary);
+    }
+    .billing-opt.is-active .billing-save { background: rgba(255,255,255,0.22); color: #fff; }
+
+    /* ── Plan cards ─────────────────────────────────────────── */
+    .plans-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.1rem;
+      align-items: start;
+      max-width: 760px;
+      margin: 0 auto;
+    }
+    .plan-card {
+      position: relative;
+      border: 1px solid var(--hair);
+      border-radius: var(--r-md);
+      background: var(--surface);
+      padding: 2rem 1.75rem;
+      display: flex;
+      flex-direction: column;
+    }
+    .plan-card--premium { border-color: var(--text); }
+    .plan-flag {
+      position: absolute;
+      top: 0; right: 1.5rem;
+      transform: translateY(-50%);
+      font-size: 0.64rem;
+      font-weight: 700;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: #fff;
+      background: var(--ink);
+      border-radius: var(--r-pill);
+      padding: 0.3rem 0.75rem;
+    }
+    .plan-head {
+      padding-bottom: 1.35rem;
+      margin-bottom: 1.35rem;
+      border-bottom: 1px solid var(--hair);
+    }
+    .plan-name { font-size: 1rem; font-weight: 600; letter-spacing: 0.01em; }
+    .plan-price { display: flex; align-items: baseline; gap: 0.3rem; margin: 0.8rem 0 0.3rem; }
+    .plan-amount {
+      font-family: var(--serif);
+      font-size: 2.8rem;
+      font-weight: 400;
+      line-height: 1;
+      letter-spacing: -0.02em;
+    }
+    .plan-per { font-size: 0.9rem; color: var(--text-secondary); }
+    .plan-billed { font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 0.85rem; min-height: 1rem; }
+    .plan-tagline { font-size: 0.85rem; color: var(--text-secondary); line-height: 1.45; }
+    .plan-features {
+      list-style: none;
+      margin: 0 0 1.75rem;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+      flex: 1;
+    }
+    .plan-features li {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.55rem;
+      font-size: 0.9rem;
+      font-weight: 400;
+      color: var(--text);
+      line-height: 1.4;
+    }
+    .tick {
+      flex-shrink: 0;
+      width: 16px; height: 16px;
+      margin-top: 0.1rem;
+      fill: none;
+      stroke: var(--text);
+      stroke-width: 2.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .plan-cta { display: flex; }
+    .plan-cta .btn { flex: 0 0 auto; }
+
+    /* ── Social proof: stats ────────────────────────────────── */
+    .social-stats {
+      display: flex;
+      justify-content: center;
+      margin: 3rem auto 0;
+      max-width: 760px;
+      border: 1px solid var(--hair);
+      border-radius: var(--r-md);
+      background: var(--surface);
+    }
+    .social-stat { flex: 1; text-align: center; padding: 1.5rem 1rem; }
+    .social-stat + .social-stat { border-left: 1px solid var(--hair); }
+    .social-stat-value {
+      font-family: var(--serif);
+      font-size: clamp(1.7rem, 4vw, 2.1rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1;
+    }
+    .social-stat-label { margin-top: 0.4rem; font-size: 0.76rem; color: var(--text-secondary); }
+
+    /* ── Comparison table ───────────────────────────────────── */
+    .section { max-width: 760px; margin: 4rem auto 0; }
+    .section-title {
+      font-family: var(--serif);
+      font-size: 1.7rem;
+      font-weight: 400;
+      letter-spacing: -0.01em;
+      margin-bottom: 1.4rem;
+      text-align: center;
+    }
+    .cmp-scroll { overflow-x: auto; }
+    .cmp-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; min-width: 440px; }
+    .cmp-table th, .cmp-table td {
+      padding: 0.8rem 0.5rem;
+      text-align: center;
+      border-bottom: 1px solid var(--hair);
+    }
+    .cmp-table thead th {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      border-bottom-color: var(--hair-strong);
+    }
+    .cmp-feat { text-align: left !important; width: 55%; color: var(--text-secondary); font-weight: 400; }
+    thead .cmp-feat { color: var(--text-secondary); }
+    .cmp-yes { display: inline-flex; }
+    .cmp-yes .tick { margin-top: 0; }
+    .cmp-no { color: #bbb; }
+    .cmp-text { font-size: 0.82rem; font-weight: 500; color: var(--text); }
+
+    /* ── Testimonials ───────────────────────────────────────── */
+    .tmony-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.1rem; }
+    .tmony {
+      margin: 0;
+      border: 1px solid var(--hair);
+      border-radius: var(--r-md);
+      background: var(--surface);
+      padding: 1.6rem 1.4rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .tmony blockquote { margin: 0; font-size: 0.92rem; line-height: 1.55; color: var(--text); flex: 1; }
+    .tmony figcaption { display: flex; flex-direction: column; gap: 0.1rem; }
+    .tmony-name { font-size: 0.82rem; font-weight: 600; color: var(--text); }
+    .tmony-handle { font-size: 0.75rem; color: var(--text-secondary); }
+
+    /* ── FAQ ────────────────────────────────────────────────── */
+    .faq-list { border-top: 1px solid var(--hair); }
+    .faq-item { padding: 1.2rem 0; border-bottom: 1px solid var(--hair); }
+    .faq-item dt { font-size: 0.95rem; font-weight: 600; color: var(--text); margin-bottom: 0.4rem; }
+    .faq-item dd { margin: 0; font-size: 0.88rem; color: var(--text-secondary); line-height: 1.65; max-width: 64ch; }
+
+    .fineprint {
+      max-width: 760px;
+      margin: 3rem auto 0;
+      text-align: center;
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+    .fineprint a { color: var(--text); }
+
+    /* ── Footer ─────────────────────────────────────────────── */
+    footer {
+      background: #0c0c0c;
+      color: #f0efe8;
+      padding: 2.6rem 3rem;
+      margin-top: 5rem;
+      position: relative;
+      z-index: 3;
+    }
+    .footer-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem 2rem;
+      flex-wrap: wrap;
+    }
+    .footer-logo {
+      text-decoration: none;
+      font-family: var(--serif);
+      font-weight: 400;
+      letter-spacing: -0.05em;
+      font-size: 1.8rem;
+      line-height: 1;
+      color: #f0efe8;
+      user-select: none;
+    }
+    .footer-nav { display: flex; gap: 1.3rem; flex-wrap: wrap; }
+    .footer-nav a {
+      font-size: 0.82rem;
+      color: rgba(240,239,232,0.82);
+      text-decoration: none;
+      transition: color 0.2s;
+      white-space: nowrap;
+    }
+    .footer-nav a:hover { color: #fff; }
+    .footer-bottom {
+      width: 100%;
+      padding-top: 1.2rem;
+      margin-top: 0.4rem;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .footer-copy { font-size: 0.75rem; color: rgba(240,239,232,0.7); }
+    .footer-social { display: flex; gap: 1rem; align-items: center; }
+    .footer-social a { color: rgba(240,239,232,0.7); display: inline-flex; transition: color 0.2s; }
+    .footer-social a:hover { color: #fff; }
+    .footer-social svg { width: 19px; height: 19px; display: block; }
+
+    @media (max-width: 620px) {
+      .plans-grid { grid-template-columns: 1fr; }
+      .plan-card--premium { order: -1; }
+      .tmony-grid { grid-template-columns: 1fr; }
+      .nav-links { gap: 0.9rem; }
+      .page-wrap { padding-top: 100px; }
+    }
+    @media (max-width: 460px) {
+      .social-stats { flex-direction: column; }
+      .social-stat + .social-stat { border-left: none; border-top: 1px solid var(--hair); }
+    }
+    @media (max-width: 600px) {
+      footer { padding-left: 1.5rem; padding-right: 1.5rem; }
+    }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a href="/" class="nav-logo"><span>PLOT</span></a>
+    <ul class="nav-links">
+      <li><a href="/whats-on">What's On</a></li>
+      <li><a href="https://app.theplot.tv/login" data-cta="nav">Log in</a></li>
+      <li><a href="https://app.theplot.tv/signup" class="nav-cta" data-cta="nav">Sign up</a></li>
+    </ul>
+  </nav>
+
+  <main class="page-wrap">
+    <section class="hero">
+      <p class="page-label">Plans</p>
+      <h1>Do more with everything you watch</h1>
+      <p class="hero-lede">Start free and keep every movie and show in one place. Go Premium for unlimited lists and automatic sync from every service you use.</p>
+
+      <div class="billing-toggle" role="group" aria-label="Billing period">
+        <button type="button" class="billing-opt" id="billMonthly" aria-pressed="false">Monthly</button>
+        <button type="button" class="billing-opt is-active" id="billAnnual" aria-pressed="true">
+          Annual <span class="billing-save">Save 31%</span>
+        </button>
+      </div>
+    </section>
+
+    <div class="plans-grid">
+      <!-- Free -->
+      <section class="plan-card">
+        <div class="plan-head">
+          <h2 class="plan-name">Free</h2>
+          <div class="plan-price"><span class="plan-amount">$0</span><span class="plan-per">forever</span></div>
+          <p class="plan-tagline">Everything you need to organise your watching.</p>
+        </div>
+        <ul class="plan-features">
+          <li><svg class="tick" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Track movies &amp; TV in one place</li>
+          <li><svg class="tick" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Watchlist, history &amp; release calendar</li>
+          <li><svg class="tick" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Discover feed + Top 10 charts</li>
+          <li><svg class="tick" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Up to 3 custom lists</li>
+          <li><svg class="tick" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Follow friends &amp; share your profile</li>
+        </ul>
+        <div class="plan-cta">
+          <a href="https://app.theplot.tv/signup" class="btn btn-outline" data-cta="plans-free">Get started free</a>
+        </div>
+      </section>
+
+      <!-- Premium -->
+      <section class="plan-card plan-card--premium">
+        <span class="plan-flag">Recommended</span>
+        <div class="plan-head">
+          <h2 class="plan-name">Premium</h2>
+          <div class="plan-price"><span class="plan-amount" id="premiumAmount">$2.08</span><span class="plan-per">/mo</span></div>
+          <p class="plan-billed" id="premiumBilled">Billed $25 yearly · save 31%</p>
+          <p class="plan-tagline">Everything in Free, plus:</p>
+        </div>
+        <ul class="plan-features">
+          <li><svg class="tick" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Unlimited custom lists</li>
+          <li><svg class="tick" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Auto-sync your watchlist &amp; history from Plex</li>
+          <li><svg class="tick" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Sync Netflix, Prime, Disney+ &amp; more via Trakt</li>
+          <li><svg class="tick" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Everything stays up to date, automatically</li>
+        </ul>
+        <div class="plan-cta">
+          <a href="https://app.theplot.tv/signup?intent=premium&plan=yearly" class="btn btn-primary" id="premiumCta" data-cta="plans-premium">Go Premium</a>
+        </div>
+      </section>
+    </div>
+
+    <!-- Social proof: stats -->
+    <div class="social-stats">
+      <div class="social-stat"><div class="social-stat-value">8,000+</div><div class="social-stat-label">watchlists created</div></div>
+      <div class="social-stat"><div class="social-stat-value">600k+</div><div class="social-stat-label">titles tracked</div></div>
+      <div class="social-stat"><div class="social-stat-value">4.8/5</div><div class="social-stat-label">average rating</div></div>
+    </div>
+
+    <!-- Comparison -->
+    <div class="section">
+      <h2 class="section-title">Compare plans</h2>
+      <div class="cmp-scroll">
+        <table class="cmp-table">
+          <thead>
+            <tr><th scope="col" class="cmp-feat">Feature</th><th scope="col">Free</th><th scope="col">Premium</th></tr>
+          </thead>
+          <tbody>
+            <tr><th scope="row" class="cmp-feat">Track movies &amp; TV</th><td><span class="cmp-yes"><svg class="tick" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span></td><td><span class="cmp-yes"><svg class="tick" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span></td></tr>
+            <tr><th scope="row" class="cmp-feat">Watchlist &amp; watch history</th><td><span class="cmp-yes"><svg class="tick" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span></td><td><span class="cmp-yes"><svg class="tick" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span></td></tr>
+            <tr><th scope="row" class="cmp-feat">Upcoming release calendar</th><td><span class="cmp-yes"><svg class="tick" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span></td><td><span class="cmp-yes"><svg class="tick" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span></td></tr>
+            <tr><th scope="row" class="cmp-feat">Discover feed + Top 10 charts</th><td><span class="cmp-yes"><svg class="tick" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span></td><td><span class="cmp-yes"><svg class="tick" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span></td></tr>
+            <tr><th scope="row" class="cmp-feat">Search every movie &amp; show</th><td><span class="cmp-yes"><svg class="tick" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span></td><td><span class="cmp-yes"><svg class="tick" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span></td></tr>
+            <tr><th scope="row" class="cmp-feat">Follow friends &amp; share profile</th><td><span class="cmp-yes"><svg class="tick" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span></td><td><span class="cmp-yes"><svg class="tick" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span></td></tr>
+            <tr><th scope="row" class="cmp-feat">Reminders &amp; where-to-watch</th><td><span class="cmp-yes"><svg class="tick" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span></td><td><span class="cmp-yes"><svg class="tick" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span></td></tr>
+            <tr><th scope="row" class="cmp-feat">Custom lists</th><td><span class="cmp-text">Up to 3</span></td><td><span class="cmp-text">Unlimited</span></td></tr>
+            <tr><th scope="row" class="cmp-feat">Plex sync</th><td><span class="cmp-no">—</span></td><td><span class="cmp-yes"><svg class="tick" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span></td></tr>
+            <tr><th scope="row" class="cmp-feat">Trakt sync (Netflix, Prime, Disney+…)</th><td><span class="cmp-no">—</span></td><td><span class="cmp-yes"><svg class="tick" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span></td></tr>
+            <tr><th scope="row" class="cmp-feat">Automatic background sync</th><td><span class="cmp-no">—</span></td><td><span class="cmp-yes"><svg class="tick" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Testimonials -->
+    <div class="section">
+      <div class="tmony-grid">
+        <figure class="tmony">
+          <blockquote>“PLOT replaced the three apps I used to track shows. The release calendar alone is worth it.”</blockquote>
+          <figcaption><span class="tmony-name">Maya R.</span><span class="tmony-handle">Premium member</span></figcaption>
+        </figure>
+        <figure class="tmony">
+          <blockquote>“Connecting Trakt took thirty seconds and my whole history was just… there. No more manual logging.”</blockquote>
+          <figcaption><span class="tmony-name">Devin K.</span><span class="tmony-handle">Premium member</span></figcaption>
+        </figure>
+        <figure class="tmony">
+          <blockquote>“Unlimited lists changed how I plan what to watch — one for date night, one for the kids, one for me.”</blockquote>
+          <figcaption><span class="tmony-name">Priya S.</span><span class="tmony-handle">Premium member</span></figcaption>
+        </figure>
+      </div>
+    </div>
+
+    <!-- FAQ -->
+    <div class="section">
+      <h2 class="section-title">Questions</h2>
+      <dl class="faq-list">
+        <div class="faq-item"><dt>Is the Free plan really free?</dt><dd>Yes — no credit card, no trial clock. Track as much as you want on Free for as long as you like.</dd></div>
+        <div class="faq-item"><dt>Can I cancel anytime?</dt><dd>Anytime, in one click from Settings. You keep Premium until the end of the period you already paid for.</dd></div>
+        <div class="faq-item"><dt>What happens to my lists if I downgrade?</dt><dd>Nothing is deleted. Your lists stay exactly as they are — you just can’t create new ones past the free limit until you upgrade again.</dd></div>
+        <div class="faq-item"><dt>How does sync work?</dt><dd>Connect Plex or Trakt once and PLOT keeps your watchlist and history current automatically — including what you watch on Netflix, Prime, Disney+ and more.</dd></div>
+      </dl>
+    </div>
+
+    <p class="fineprint">Prices in USD. Cancel anytime. Payments are processed securely by Stripe. Need a hand? <a href="mailto:contact@susumuhouse.com">contact@susumuhouse.com</a></p>
+  </main>
+
+  <!-- footer:start (generated from _partials/footer.html — edit there, then run `npm run footer`) -->
+  <footer>
+    <div class="footer-inner">
+      <a class="footer-logo" href="/">PLOT</a>
+      <div class="footer-nav">
+        <a href="/" data-cta="footer">Home</a>
+        <a href="/whats-on" data-cta="footer">What's On</a>
+        <a href="https://app.theplot.tv/login" data-cta="footer">Log in</a>
+        <a href="https://app.theplot.tv/signup" data-cta="footer">Sign up</a>
+        <a href="/plans.html" data-cta="footer">Pricing</a>
+        <a href="/privacy.html" data-cta="footer">Privacy</a>
+        <a href="/terms.html" data-cta="footer">Terms</a>
+      </div>
+      <div class="footer-bottom">
+        <div class="footer-copy">&copy; 2026 PLOT</div>
+        <div class="footer-social">
+          <a href="https://www.instagram.com/theplottv" target="_blank" rel="noopener" aria-label="PLOT on Instagram" data-cta="footer-social">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.1" fill="currentColor" stroke="none"/></svg>
+          </a>
+          <a href="https://www.threads.net/@theplottv" target="_blank" rel="noopener" aria-label="PLOT on Threads" data-cta="footer-social">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.05 11.18c-.09-.04-.18-.08-.27-.12-.16-2.93-1.76-4.6-4.45-4.62h-.04c-1.61 0-2.95.69-3.77 1.94l1.48 1.02c.61-.93 1.57-1.13 2.29-1.13h.03c.9.01 1.57.27 2 .78.31.37.52.88.63 1.52-.81-.14-1.69-.18-2.63-.13-2.64.15-4.34 1.69-4.22 3.83.06 1.08.6 2.02 1.51 2.64.77.52 1.77.78 2.8.72 1.37-.07 2.44-.59 3.19-1.53.57-.72.93-1.65 1.09-2.83.66.4 1.15.92 1.42 1.55.46 1.07.49 2.83-.95 4.26-1.26 1.26-2.78 1.8-5.07 1.82-2.54-.02-4.46-.83-5.71-2.41-1.17-1.48-1.78-3.62-1.8-6.36.02-2.74.63-4.88 1.8-6.36C6.94 3.83 8.86 3.02 11.4 3h.02c2.55.02 4.5.83 5.8 2.42.64.78 1.12 1.76 1.44 2.9l1.74-.46c-.38-1.4-.99-2.62-1.81-3.62C16.92 2.22 14.47 1.18 11.42 1.16h-.03C8.34 1.18 5.92 2.22 4.2 4.27 2.67 6.1 1.88 8.65 1.85 11.84v.02c.03 3.19.82 5.74 2.35 7.57 1.72 2.05 4.14 3.09 7.19 3.11h.03c2.71-.02 4.62-.73 6.19-2.3 2.06-2.05 2-4.63 1.32-6.21-.49-1.13-1.42-2.05-2.7-2.65zm-4.55 5.27c-1.14.06-2.32-.45-2.38-1.55-.04-.81.58-1.72 2.45-1.83.21-.01.42-.02.63-.02.68 0 1.31.07 1.89.19-.22 2.7-1.48 3.16-2.59 3.21z"/></svg>
+          </a>
+          <a href="https://x.com/theplottv" target="_blank" rel="noopener" aria-label="PLOT on X" data-cta="footer-social">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24h-6.66l-5.214-6.817-5.967 6.817H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231 5.45-6.231zm-1.161 17.52h1.833L7.084 4.126H5.117l11.966 15.644z"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </footer>
+  <!-- footer:end -->
+
+  <script>
+    // Billing toggle — swaps the Premium price display and the checkout intent.
+    (function () {
+      var MONTHLY = 3, ANNUAL = 25;
+      var annualMonthly = (ANNUAL / 12).toFixed(2);
+      var savePct = Math.round((1 - ANNUAL / (MONTHLY * 12)) * 100);
+      var mo = document.getElementById('billMonthly');
+      var yr = document.getElementById('billAnnual');
+      var amount = document.getElementById('premiumAmount');
+      var billed = document.getElementById('premiumBilled');
+      var cta = document.getElementById('premiumCta');
+
+      function setBilling(annual) {
+        mo.classList.toggle('is-active', !annual);
+        yr.classList.toggle('is-active', annual);
+        mo.setAttribute('aria-pressed', String(!annual));
+        yr.setAttribute('aria-pressed', String(annual));
+        amount.textContent = annual ? '$' + annualMonthly : '$' + MONTHLY;
+        billed.textContent = annual ? 'Billed $' + ANNUAL + ' yearly · save ' + savePct + '%' : 'Billed monthly';
+        cta.href = 'https://app.theplot.tv/signup?intent=premium&plan=' + (annual ? 'yearly' : 'monthly');
+      }
+      mo.addEventListener('click', function () { setBilling(false); });
+      yr.addEventListener('click', function () { setBilling(true); });
+    })();
+  </script>
+
+</body>
+</html>

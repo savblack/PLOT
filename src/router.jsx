@@ -32,6 +32,7 @@ const PublicProfilePage = lazy(() => import('./pages/PublicProfilePage.jsx'));
 const RootRoute         = lazy(() => import('./pages/RootRoute.jsx'));
 const DesignSystemPage  = lazy(() => import('./pages/DesignSystemPage.jsx'));
 const SavePage          = lazy(() => import('./pages/SavePage.jsx'));
+const PlansPage         = lazy(() => import('./pages/PlansPage.jsx'));
 
 const wrap = (el) => <Suspense fallback={<LoadingSpinner />}>{el}</Suspense>;
 
@@ -49,6 +50,8 @@ const router = createBrowserRouter([
   // Static
   { path: '/terms',          element: wrap(<TermsPage />) },
   { path: '/privacy',        element: wrap(<PrivacyPage />) },
+  { path: '/plans',          element: wrap(<PlansPage />) },
+  { path: '/pricing',        element: <Navigate to="/plans" replace /> },
 
   // Design system — standalone, no auth, dev builds only
   ...(import.meta.env.DEV ? [{ path: '/design-system', element: wrap(<DesignSystemPage />) }] : []),
