@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import { supabase } from '../api/supabase.js';
 import { edgeFunctionUrl } from '../api/functions.js';
 import { track, EVENTS } from '../lib/analytics.js';
-import { isPremiumProfile } from '../core/premium.js';
+import { isPremiumProfile } from '@plot/core/premium.js';
 
 /**
  * PLOT Premium billing actions (web only — redirects to Stripe).

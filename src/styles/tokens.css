@@ -75,7 +75,7 @@
 [data-theme="dark"] {
   /* Warm-neutral scale on the brand/editorial dark (#0c0c0c / #f0efe8) —
      shared with the marketing site and error screens. Keep in lockstep with
-     colors.dark in src/core/tokens.js (tokens:check compares exact strings). */
+     colors.dark in @plot/core/tokens.js (tokens:check compares exact strings). */
   --bg:             #0c0c0c;
   --surface:        #191919;
   --surface-raised: #242424;

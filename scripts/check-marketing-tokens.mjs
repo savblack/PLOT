@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * tokens:marketing — verify the marketing surfaces stay in sync with the
- * canonical brand values in src/core/tokens.js (the same source the app CSS
+ * canonical brand values in @plot/core/tokens.js (the same source the app CSS
  * is checked against by tokens:check). Read-only.
  *
  *   node scripts/check-marketing-tokens.mjs
@@ -18,7 +18,7 @@
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { colors, radii } from '../src/core/tokens.js';
+import { colors, radii } from '@plot/core/tokens.js';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(resolve(root, p), 'utf8');
@@ -78,7 +78,7 @@ const eq = (label, actual, expected) => {
 }
 
 if (fails.length) {
-  console.error('✗ marketing tokens out of sync with src/core/tokens.js:');
+  console.error('✗ marketing tokens out of sync with @plot/core/tokens.js:');
   fails.forEach((f) => console.error(`    ${f}`));
   console.error('\nUpdate whichever is wrong so the app and marketing surfaces share one source of truth.');
   process.exit(1);

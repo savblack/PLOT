@@ -7,8 +7,8 @@ import {
   clearPendingSave,
 } from '../../src/utils/pendingSave.js';
 import { drainPendingSave } from '../../src/utils/drainPendingSave.js';
-import { fetchFromTMDBResolved } from '../../src/core/tmdb.js';
-import { configure } from '../../src/core/config.js';
+import { fetchFromTMDBResolved } from '@plot/core/tmdb.js';
+import { configure } from '@plot/core/config.js';
 
 function withFakeStorage(fn) {
   const store = new Map();

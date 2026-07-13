@@ -9,10 +9,11 @@ import { localDateStr } from '../utils/date.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import GroupedFilterMenu from './GroupedFilterMenu.jsx';
 import PlotLoader from './PlotLoader.jsx';
+import SheetHeader from './SheetHeader.jsx';
 import { getButtonLikeProps } from '../utils/interactive.js';
 import { useShare } from '../hooks/useShare.js';
 import { EVENTS, track } from '../lib/analytics.js';
-import { canCreateCustomList, FREE_CUSTOM_LIST_CAP } from '../core/premium.js';
+import { canCreateCustomList, FREE_CUSTOM_LIST_CAP } from '@plot/core/premium.js';
 
 /* ── Heart icon ── */
 function HeartIcon({ filled }) {

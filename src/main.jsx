@@ -1,7 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { RouterProvider } from 'react-router-dom';
-import { configure } from './core/config.js';
+import { configure } from '@plot/core/config.js';
 import router from './router.jsx';
 import './index.css';
 import posthog from 'posthog-js';

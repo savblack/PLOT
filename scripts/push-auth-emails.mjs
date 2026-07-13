@@ -11,14 +11,14 @@ import { execFileSync } from 'node:child_process';
 import { writeFileSync, readFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { colors } from '../src/core/tokens.js';
+import { colors } from '@plot/core/tokens.js';
 
 const PROJECT_REF = 'mkegtssedjyqldysvzga';
 const TEMPLATES_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'supabase', 'templates');
 const SITE_URL = 'https://theplot.tv';
 
 // ── Design tokens ──
-// Brand colors derive from src/core/tokens.js (the canonical source, enforced by
+// Brand colors derive from @plot/core/tokens.js (the canonical source, enforced by
 // `npm run tokens:marketing`). surfaceTint/accentSoft/border are email-only.
 const c = colors.light;
 const dmSans = "'DM Sans', -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif";

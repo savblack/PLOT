@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * tokens:check — verify the web app's CSS custom properties in
- * src/styles/tokens.css match the canonical values in src/core/tokens.js
+ * src/styles/tokens.css match the canonical values in @plot/core/tokens.js
  * (the cross-platform source of truth, also consumed by plot-mobile).
  *
  *   node scripts/build-tokens.mjs --check
@@ -13,7 +13,7 @@
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { colors, radii, cssVarName } from '../src/core/tokens.js';
+import { colors, radii, cssVarName } from '@plot/core/tokens.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const css = readFileSync(resolve(__dirname, '..', 'src', 'styles', 'tokens.css'), 'utf8');
@@ -51,7 +51,7 @@ for (const [key, px] of Object.entries(radii)) {
 }
 
 if (mismatches.length) {
-  console.error('✗ tokens.css is out of sync with src/core/tokens.js:');
+  console.error('✗ tokens.css is out of sync with @plot/core/tokens.js:');
   mismatches.forEach((m) => console.error(`    ${m}`));
   console.error('\nUpdate whichever is wrong so the web app and plot-mobile share one source of truth.');
   process.exit(1);

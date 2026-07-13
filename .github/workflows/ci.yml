@@ -66,40 +66,27 @@ jobs:
           VITE_PUBLIC_POSTHOG_PROJECT_TOKEN: ${{ secrets.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN }}
           VITE_PUBLIC_POSTHOG_HOST: ${{ secrets.VITE_PUBLIC_POSTHOG_HOST }}
 
-  core-sync:
-    name: Core drift guard (web ↔ mobile)
+  mobile-typecheck:
+    name: Mobile typecheck (Expo)
     runs-on: ubuntu-latest
     steps:
-      # The shared core lives in src/core and is mirrored into plot-mobile's
-      # lib/core. This job fails if the two have drifted. It needs a token with
-      # read access to the private plot-mobile repo; without MOBILE_SYNC_TOKEN
-      # the check is skipped (so CI stays green until the secret is added).
-      - name: Detect token
-        id: guard
-        env:
-          TOK: ${{ secrets.MOBILE_SYNC_TOKEN }}
-        run: |
-          if [ -n "$TOK" ]; then echo "ok=true" >> "$GITHUB_OUTPUT";
-          else echo "ok=false" >> "$GITHUB_OUTPUT"; echo "::notice::MOBILE_SYNC_TOKEN not set — skipping web↔mobile core drift check"; fi
-
-      - name: Check out web (PLOT)
-        if: steps.guard.outputs.ok == 'true'
+      # The web and mobile apps now share one source of truth: the @plot/core
+      # workspace package (packages/core). There is no copy to drift, so the old
+      # mirror drift-guard is gone. This job just type-checks the Expo app, which
+      # also proves it still resolves @plot/core.
+      - name: Check out repository
         uses: actions/checkout@v6
-
-      - name: Check out plot-mobile
-        if: steps.guard.outputs.ok == 'true'
-        uses: actions/checkout@v6
-        with:
-          repository: savblack/plot-mobile
-          token: ${{ secrets.MOBILE_SYNC_TOKEN }}
-          path: plot-mobile
 
       - name: Set up Node
-        if: steps.guard.outputs.ok == 'true'
         uses: actions/setup-node@v6
         with:
           node-version: 22
+          cache: npm
 
-      - name: Verify src/core is mirrored into plot-mobile/lib/core
-        if: steps.guard.outputs.ok == 'true'
-        run: node scripts/mirror-core.mjs plot-mobile --check
+      # Installs the whole workspace (web + mobile + @plot/core). legacy-peer-deps
+      # comes from the root .npmrc (react-native pins a different react patch).
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript
+        run: npm run typecheck --workspace @plot/mobile

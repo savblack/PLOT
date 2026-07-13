@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '../api/supabase.js';
 import { callAuthenticatedFunction } from '../api/functions.js';
-import { friendlyPremiumError } from '../core/premium.js';
+import { friendlyPremiumError } from '@plot/core/premium.js';
 
 async function callSync(action, body = {}) {
   const { data: { session } } = await supabase.auth.getSession();

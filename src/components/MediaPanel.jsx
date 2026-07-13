@@ -10,8 +10,8 @@ import { ratingFromPointer, ratingToStars, starFillPercent, STAR_COUNT } from '.
 import { pickBestTvmazeShowMatch } from '../utils/tvmaze.js';
 import { useShareTitle } from '../hooks/useShareTitle.js';
 import { track, EVENTS } from '../lib/analytics.js';
-import { canCreateCustomList, FREE_CUSTOM_LIST_CAP } from '../core/premium.js';
-import { buildWatchLink } from '../core/watchLinks.js';
+import { canCreateCustomList, FREE_CUSTOM_LIST_CAP } from '@plot/core/premium.js';
+import { buildWatchLink } from '@plot/core/watchLinks.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import SheetHeader from './SheetHeader.jsx';
 import PlotLoader from './PlotLoader.jsx';

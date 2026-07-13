@@ -10,6 +10,15 @@ PLOT is a private React/Vite app for discovering and logging movies and TV shows
 - PostHog
 - Vercel deployment
 
+## Monorepo layout
+
+This repo is an npm-workspaces monorepo. `npm ci` at the root installs every workspace.
+
+- **Root** — the web app (`src/`, `api/`, `index.html`, `vite.config.js`), deployed to Vercel. Also the workspace root.
+- **`packages/core/`** (`@plot/core`) — platform-agnostic logic (data hooks, Supabase/TMDB access, tokens, date/calendar helpers) shared by web and mobile. Both apps import it directly (e.g. `import { useWatchlist } from '@plot/core/useWatchlist.js'`), so there is one source of truth — no copy to drift.
+- **`mobile/`** (`@plot/mobile`) — the Expo / React Native app. Platform seams (storage, Supabase client options) are injected into `@plot/core` via `configure()` at startup; see `mobile/lib/configureCore.ts`.
+- **`website/`**, **`marketing/`**, **`supabase/`**, **`scripts/`** — the static marketing site, marketing automation, Supabase backend, and repo tooling.
+
 ## Local Setup
 
 1. Install dependencies:
