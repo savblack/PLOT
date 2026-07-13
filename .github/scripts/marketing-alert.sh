@@ -4,7 +4,7 @@
 set -euo pipefail
 
 payload=$(jq -n \
-  --arg from "PLOT <hello@plotapp.tv>" \
+  --arg from "PLOT <hello@theplot.tv>" \
   --arg to "$ADMIN_EMAIL" \
   --arg subject "PLOT marketing: ${WORKFLOW_NAME} workflow FAILED" \
   --arg html "<p>The ${WORKFLOW_NAME} run failed. ${FAILURE_NOTE:-}</p><p><a href=\"${RUN_URL}\">Open the workflow run</a></p>" \
