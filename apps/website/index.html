@@ -304,7 +304,9 @@
                   opacity 0.6s ease;
     }
     /* Poster sizes/offsets are tuned for wide desktop — below 1100px they
-       collide with the centered hero/manifesto text, so hide them entirely. */
+       collide with the centered hero/manifesto text, so hide them entirely.
+       The hero-peek teaser takes over at the same breakpoint (see below) so
+       the hero is never left without posters — tablet portrait sits here. */
     @media (max-width: 1100px) { #posterSide { display: none; } }
 
     /* ── Hero ───────────────────────────────────────────────── */
@@ -839,6 +841,36 @@
       #hero { padding-top: 5rem; padding-bottom: 2rem; }
     }
 
+    /* Hero scroll-teaser — posters peeking up from the bottom of the fold.
+       Shown from 1100px down (where the desktop side-posters hide) so the
+       hero always has posters, including at tablet portrait widths. */
+    @media (max-width: 1100px) {
+      .hero-peek {
+        display: flex;
+        gap: 14px;
+        justify-content: center;
+        align-items: center;
+        position: absolute;
+        left: 1.5rem;
+        right: 1.5rem;
+        bottom: calc(var(--ticker-height) + env(safe-area-inset-bottom, 0px));
+        /* Peek up far enough to be visible before the first scroll (SUS-112) */
+        transform: translateY(30%);
+        pointer-events: none;
+        z-index: 5;
+      }
+      .hpk {
+        width: 30%;            /* JS overrides width/height for varied sizes */
+        aspect-ratio: 2 / 3;
+        flex-shrink: 0;
+        border-radius: 12px;
+        background-color: rgba(0,0,0,0.05);
+        background-size: cover;
+        background-position: center;
+        box-shadow: 0 -10px 30px rgba(0,0,0,0.12);
+      }
+    }
+
     @media (max-width: 768px) {
       /* Manifesto — reduce gaps for mid-size screens */
       #manifesto { gap: 10rem; padding: 6rem 2rem 10rem; }
@@ -886,32 +918,6 @@
       section#hero, section#guide-demo, section#calendar-demo, section#lists-demo {
         padding-left: 1.5rem;
         padding-right: 1.5rem;
-      }
-
-      /* Scroll teaser — posters peeking up from the bottom of the fold */
-      .hero-peek {
-        display: flex;
-        gap: 14px;
-        justify-content: center;
-        align-items: center;
-        position: absolute;
-        left: 1.5rem;
-        right: 1.5rem;
-        bottom: calc(var(--ticker-height) + env(safe-area-inset-bottom, 0px));
-        /* Peek up far enough to be visible before the first scroll (SUS-112) */
-        transform: translateY(30%);
-        pointer-events: none;
-        z-index: 5;
-      }
-      .hpk {
-        width: 30%;            /* JS overrides width/height for varied sizes */
-        aspect-ratio: 2 / 3;
-        flex-shrink: 0;
-        border-radius: 12px;
-        background-color: rgba(0,0,0,0.05);
-        background-size: cover;
-        background-position: center;
-        box-shadow: 0 -10px 30px rgba(0,0,0,0.12);
       }
 
       /* Manifesto — scroll-driven reveal with poster interludes on mobile */
@@ -1777,7 +1783,6 @@
     <a href="/" class="nav-logo">PLOT</a>
     <ul class="nav-links" id="navLinks">
       <li><a href="/whats-on">What's On</a></li>
-      <li><a href="/whats-on/chart">The chart</a></li>
       <li><a href="/plans.html">Pricing</a></li>
       <li><a href="https://app.theplot.tv/login" data-cta="nav">Log in</a></li>
       <li><a href="https://app.theplot.tv/signup" class="nav-cta" data-cta="nav">Sign up</a></li>
