@@ -75,9 +75,17 @@ The learning artifact includes:
 - newsletter issue snapshots
 - IG/Threads metrics where available
 
-If a Sunday learning artifact exists but has not been applied yet,
-`npm run learn:assert` fails loudly so weekly generation does not silently run
-against half-updated rules.
+Applying the learning is a **manual local step** (`npm run learn:apply` on the
+Mac — see the `launchd` template in step 5 of Setup). If it hasn't run, the
+weekly generation does **not** block: `npm run learn:assert` logs a warning and
+continues against the current voice rules (the same fallback used when no
+artifact exists at all). This is deliberate — a forgotten local apply should not
+stop the whole week from generating. Run `learn:apply` locally whenever you want
+that week's learning folded into `VOICE.md` / `copy/AGENT.md`; until you do, the
+prepared artifact simply sits unused.
+
+> Note: this is a soft-fail as of PR #225. It previously threw and failed the
+> `marketing-weekly-batch` workflow every Sunday the local apply hadn't run.
 
 ## Review and publish
 
