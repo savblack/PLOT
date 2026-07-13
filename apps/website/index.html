@@ -2414,6 +2414,10 @@
       });
       manifestoFaders.forEach(el => {
         const rect = el.getBoundingClientRect();
+        // Fade in on scroll: trigger the reveal as soon as the poster rises
+        // into view from the bottom. Deterministic + idempotent, so it works
+        // even if the shared IntersectionObserver hasn't fired yet.
+        if (rect.top < window.innerHeight * 0.85 && rect.bottom > 0) el.classList.add('visible');
         el.classList.toggle('passed', rect.bottom < threshold);
       });
     }
