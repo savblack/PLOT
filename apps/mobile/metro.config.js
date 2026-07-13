@@ -3,8 +3,8 @@ const { getDefaultConfig } = require('expo/metro-config');
 const path = require('path');
 
 const projectRoot = __dirname;
-// The monorepo root is one level up (mobile/ lives beside packages/ and src/).
-const workspaceRoot = path.resolve(projectRoot, '..');
+// The monorepo root is two levels up (apps/mobile lives under apps/).
+const workspaceRoot = path.resolve(projectRoot, '..', '..');
 
 /** @type {import('expo/metro-config').MetroConfig} */
 const config = getDefaultConfig(projectRoot);

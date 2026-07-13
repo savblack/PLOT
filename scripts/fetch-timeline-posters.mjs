@@ -8,7 +8,7 @@ import path from 'node:path';
 const PROXY = 'https://mkegtssedjyqldysvzga.supabase.co/functions/v1/tmdb-proxy';
 const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1rZWd0c3NlZGp5cWxkeXN2emdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2MDgzMzUsImV4cCI6MjA4OTE4NDMzNX0.W-toEr3ftNeN0iTpRQ8Ord09sxBiwO2CQC6j2jszN6w';
 const IMG = 'https://image.tmdb.org/t/p/w342';
-const OUT_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'website', 'images', 'timeline');
+const OUT_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'apps', 'website', 'images', 'timeline');
 
 const WANTED = [
   { query: 'Oppenheimer',      type: 'movie', year: 2023, file: 'oppenheimer.jpg' },

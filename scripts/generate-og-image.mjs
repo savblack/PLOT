@@ -4,7 +4,7 @@ import { chromium } from 'playwright';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
-const OUT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'website', 'og-image.png');
+const OUT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'apps', 'website', 'og-image.png');
 
 const html = `<!DOCTYPE html>
 <html>

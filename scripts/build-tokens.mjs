@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url';
 import { colors, radii, cssVarName } from '@plot/core/tokens.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const css = readFileSync(resolve(__dirname, '..', 'src', 'styles', 'tokens.css'), 'utf8');
+const css = readFileSync(resolve(__dirname, '..', 'apps', 'web', 'src', 'styles', 'tokens.css'), 'utf8');
 
 // Extract a `selector { ... }` block body.
 function block(selector) {

@@ -12,12 +12,13 @@ PLOT is a private React/Vite app for discovering and logging movies and TV shows
 
 ## Monorepo layout
 
-This repo is an npm-workspaces monorepo. `npm ci` at the root installs every workspace.
+This repo is an npm-workspaces monorepo. `npm ci` at the root installs every workspace. The root `package.json` is the workspace root and the orchestrator CI calls (`lint`, `build`, `test:*`, `tokens:*`, `mkt:*`); `build`/`dev`/`preview`/`test:*` delegate into `@plot/web`.
 
-- **Root** — the web app (`src/`, `api/`, `index.html`, `vite.config.js`), deployed to Vercel. Also the workspace root.
+- **`apps/web/`** (`@plot/web`) — the Vite/React app (`src/`, `api/`, `index.html`), deployed to Vercel (project `plot`, Root Directory `apps/web`).
+- **`apps/website/`** — the static marketing site (theplot.tv), its own Vercel project `plot-site` (Root Directory `apps/website`), no build step.
+- **`apps/mobile/`** (`@plot/mobile`) — the Expo / React Native app. Platform seams (storage, Supabase client options) are injected into `@plot/core` via `configure()` at startup; see `apps/mobile/lib/configureCore.ts`.
 - **`packages/core/`** (`@plot/core`) — platform-agnostic logic (data hooks, Supabase/TMDB access, tokens, date/calendar helpers) shared by web and mobile. Both apps import it directly (e.g. `import { useWatchlist } from '@plot/core/useWatchlist.js'`), so there is one source of truth — no copy to drift.
-- **`mobile/`** (`@plot/mobile`) — the Expo / React Native app. Platform seams (storage, Supabase client options) are injected into `@plot/core` via `configure()` at startup; see `mobile/lib/configureCore.ts`.
-- **`website/`**, **`marketing/`**, **`supabase/`**, **`scripts/`** — the static marketing site, marketing automation, Supabase backend, and repo tooling.
+- **`marketing/`**, **`supabase/`**, **`scripts/`** — marketing automation, Supabase backend (functions + migrations), and repo tooling. These stay at the root and run from there.
 
 ## Local Setup
 

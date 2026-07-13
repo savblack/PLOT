@@ -7,7 +7,7 @@ import { defineConfig, globalIgnores } from 'eslint/config'
 export default defineConfig([
   // The mobile workspace is TypeScript/Expo with its own tsc typecheck (npm run
   // typecheck -w @plot/mobile); the web flat config does not apply to it.
-  globalIgnores(['dist', '**/dist/**', '.claude', 'website/.claude', 'supabase/.temp', 'node_modules', 'archive/', 'mobile']),
+  globalIgnores(['dist', '**/dist/**', '.claude', 'apps/website/.claude', 'supabase/.temp', 'node_modules', 'archive/', 'apps/mobile']),
   {
     files: ['**/*.{js,jsx}'],
     extends: [
@@ -30,14 +30,14 @@ export default defineConfig([
     },
   },
   {
-    files: ['scripts/**/*.{js,mjs}', 'playwright.config.js'],
+    files: ['scripts/**/*.{js,mjs}', 'apps/web/playwright.config.js'],
     languageOptions: {
       globals: globals.node,
     },
   },
   {
     // Vercel serverless / edge functions for the app (app.theplot.tv/api/*)
-    files: ['api/**/*.{js,jsx,mjs}'],
+    files: ['apps/web/api/**/*.{js,jsx,mjs}'],
     languageOptions: {
       globals: { ...globals.node, ...globals.browser },
     },
@@ -46,7 +46,7 @@ export default defineConfig([
     },
   },
   {
-    files: ['src/router.jsx', 'src/App.jsx'],
+    files: ['apps/web/src/router.jsx', 'apps/web/src/App.jsx'],
     rules: {
       'react-refresh/only-export-components': 'off',
     },

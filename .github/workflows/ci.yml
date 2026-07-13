@@ -43,7 +43,7 @@ jobs:
         run: npm run emails:check
 
       - name: Unit tests
-        run: node --test tests/unit/*.test.js
+        run: npm run test:unit
 
       - name: Build
         run: npm run build
@@ -58,7 +58,7 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Smoke tests
-        run: npx playwright test
+        run: npm run test:smoke -w @plot/web
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
