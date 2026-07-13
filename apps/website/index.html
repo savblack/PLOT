@@ -917,6 +917,19 @@
       #plotDoes { margin-top: 12vh; margin-bottom: 24vh; }
     }
 
+    /* Tablet (portrait/landscape between phone and desktop): the phone
+       manifesto rhythm above uses viewport-height gaps and a deep fade that
+       leave posters marooned and ghosted on a larger screen. Tighten the
+       spacing and keep posters present so the section reads as intentional. */
+    @media (min-width: 601px) and (max-width: 1100px) {
+      #manifesto { padding: 9rem 2rem; gap: 6rem; }
+      #plotDoes { margin-top: 8rem; margin-bottom: 11rem; }
+      /* Keep posters legible after they've been scrolled past — a gentle
+         recede rather than the near-invisible phone fade. */
+      .manifesto-poster.passed,
+      .manifesto-poster-row.passed { opacity: 0.82; }
+    }
+
     @media (max-width: 600px) {
       .nav-links { display: none; }
       .nav-links.open {
