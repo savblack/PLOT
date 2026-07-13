@@ -1,3 +1,3 @@
-// Moved to src/core/timezones.js (shared, platform-agnostic core).
+// Moved to @plot/core/timezones.js (shared, platform-agnostic core).
 // Re-export keeps existing `../utils/timezones` import sites working.
-export * from '../core/timezones.js';
+export * from '@plot/core/timezones.js';

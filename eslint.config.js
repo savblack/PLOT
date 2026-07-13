@@ -5,7 +5,9 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist', '**/dist/**', '.claude', 'website/.claude', 'supabase/.temp', 'node_modules', 'archive/']),
+  // The mobile workspace is TypeScript/Expo with its own tsc typecheck (npm run
+  // typecheck -w @plot/mobile); the web flat config does not apply to it.
+  globalIgnores(['dist', '**/dist/**', '.claude', 'website/.claude', 'supabase/.temp', 'node_modules', 'archive/', 'mobile']),
   {
     files: ['**/*.{js,jsx}'],
     extends: [

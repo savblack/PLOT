@@ -1,7 +1,7 @@
 /* theplot.tv — shared brand tokens for the marketing site.
    Loaded by every page before its inline <style> so pages can still override.
 
-   Values marked (CANON) MUST equal src/core/tokens.js and are enforced in CI
+   Values marked (CANON) MUST equal @plot/core/tokens.js and are enforced in CI
    by `npm run tokens:marketing`. Everything else is marketing-only presentation
    and lives here alone. App-aligned names: --accent IS the brand pink (matches
    the app), the black CTA is --ink. */

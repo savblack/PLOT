@@ -1,0 +1,47 @@
+{
+  "expo": {
+    "name": "PLOT",
+    "slug": "plot",
+    "scheme": "plot",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "bundleIdentifier": "tv.theplot.app",
+      "supportsTablet": true,
+      "associatedDomains": ["applinks:app.theplot.tv"]
+    },
+    "android": {
+      "package": "tv.theplot.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#0c0c0c",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            { "scheme": "https", "host": "app.theplot.tv", "pathPrefix": "/save" },
+            { "scheme": "https", "host": "app.theplot.tv", "pathPrefix": "/list" },
+            { "scheme": "https", "host": "app.theplot.tv", "pathPrefix": "/u" }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      "expo-status-bar"
+    ]
+  }
+}

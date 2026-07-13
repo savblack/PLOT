@@ -6,7 +6,7 @@ import { logoUrl, posterUrl } from '../App.jsx';
 import PlotLoader from '../components/PlotLoader.jsx';
 import { getButtonLikeProps } from '../utils/interactive.js';
 import { track, markActivated, EVENTS } from '../lib/analytics.js';
-import { saveOnboardingSeedTitles } from '../core/onboarding.js';
+import { saveOnboardingSeedTitles } from '@plot/core/onboarding.js';
 
 const STEP_NAMES = { 1: 'region', 2: 'platforms', 3: 'seed' };
 

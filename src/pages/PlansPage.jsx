@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../api/supabase.js';
 import { usePremium } from '../hooks/usePremium.js';
 import { useTheme } from '../hooks/useTheme.js';
-import { FREE_CUSTOM_LIST_CAP } from '../core/premium.js';
+import { FREE_CUSTOM_LIST_CAP } from '@plot/core/premium.js';
 import { SHOW_MEDIA_SYNC_INTEGRATIONS } from '../launchFeatures.js';
 import './PlansPage.css';
 

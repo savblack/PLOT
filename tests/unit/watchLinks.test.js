@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildWatchLink } from '../../src/core/watchLinks.js';
-import { configure } from '../../src/core/config.js';
+import { buildWatchLink } from '@plot/core/watchLinks.js';
+import { configure } from '@plot/core/config.js';
 
 const BASE = { title: 'The Test Movie', region: 'AU', justwatchLink: 'https://www.justwatch.com/au/movie/the-test-movie' };
 

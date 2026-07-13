@@ -1,0 +1,12 @@
+{
+  "name": "@plot/core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Platform-agnostic PLOT core shared by the web app and the Expo mobile app. JS + JSDoc: the web consumes it natively; mobile imports it with JSDoc-derived types (allowJs).",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./*": "./*"
+  }
+}

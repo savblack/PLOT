@@ -8,7 +8,7 @@
 import { ImageResponse } from '@vercel/og';
 import React from 'react';
 import { loadTitle } from './_tmdb.js';
-import { colors } from '../src/core/tokens.js';
+import { colors } from '@plot/core/tokens.js';
 
 export const config = { runtime: 'edge' };
 
@@ -18,7 +18,7 @@ const SUPABASE_URL = 'https://mkegtssedjyqldysvzga.supabase.co';
 // Public, publishable anon key (role: anon) — same key the client ships.
 const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1rZWd0c3NlZGp5cWxkeXN2emdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2MDgzMzUsImV4cCI6MjA4OTE4NDMzNX0.W-toEr3ftNeN0iTpRQ8Ord09sxBiwO2CQC6j2jszN6w';
 
-// Brand dark accent — same value as the app/marketing (src/core/tokens.js).
+// Brand dark accent — same value as the app/marketing (@plot/core/tokens.js).
 const ACCENT = colors.dark.accent;
 const BG = '#0f0f11';
 const TMDB_IMG = (p, s = 'w185') => (p ? `https://image.tmdb.org/t/p/${s}${p}` : null);

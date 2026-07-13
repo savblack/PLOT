@@ -1123,12 +1123,12 @@ export default function DesignSystemPage() {
           <RuleCard label="Source of truth">
             <div className="ds-note-list">
               <div className="ds-note-row">
-                <strong>core/tokens.js</strong>
-                <p>Canonical colors + radii + base-4 spacing for every surface. The app CSS (<code>tokens.css</code>) and the marketing site (<code>website/theme.css</code>) derive from it; email generators import it; and it's mirrored byte-for-byte into the mobile app (<code>plot-mobile/lib/core</code>) — see §18.</p>
+                <strong>@plot/core/tokens.js</strong>
+                <p>Canonical colors + radii + base-4 spacing for every surface, in the shared <code>@plot/core</code> package. The app CSS (<code>tokens.css</code>) and the marketing site (<code>website/theme.css</code>) derive from it; email generators import it; and the mobile app imports it directly (<code>@plot/core</code>) — see §18.</p>
               </div>
               <div className="ds-note-row">
                 <strong>Enforced in CI</strong>
-                <p><code>tokens:check</code> guards the app CSS, <code>tokens:marketing</code> the website + social cards, <code>emails:check</code> the auth templates, and <code>mirror-core --check</code> the web↔mobile core. Drift fails the build, not review.</p>
+                <p><code>tokens:check</code> guards the app CSS, <code>tokens:marketing</code> the website + social cards, and <code>emails:check</code> the auth templates. Mobile shares the exact same module, so there is nothing to drift. Drift in the derived files fails the build, not review.</p>
               </div>
               <div className="ds-note-row">
                 <strong>One dark palette</strong>
@@ -1288,7 +1288,7 @@ export default function DesignSystemPage() {
 
       <Section eyebrow="18" title="Mobile (native app)">
         <p className="ds-section-note">
-          The PLOT mobile app (Expo / React Native, in the <code>plot-mobile</code> repo) is a first-class surface of this system. It shares the foundation with web through <code>src/core/tokens.js</code>, mirrored byte-for-byte into <code>plot-mobile/lib/core</code> and drift-guarded in CI — so colors, radii, and the base-4 spacing scale are locked to web. It now shares the type families too: Instrument Serif for display, DM Sans for UI.
+          The PLOT mobile app (Expo / React Native, in <code>mobile/</code>) is a first-class surface of this system. It shares the foundation with web through the <code>@plot/core</code> workspace package (<code>packages/core/tokens.js</code>) — one source both apps import directly, so colors, radii, and the base-4 spacing scale are locked to web with no copy to drift. It now shares the type families too: Instrument Serif for display, DM Sans for UI.
         </p>
 
         <div className="ds-mobile-grid">
@@ -1320,12 +1320,12 @@ export default function DesignSystemPage() {
             <p className="ds-example-label">Token-driven representation of the mobile shell — composed from the shared tokens, not a live screenshot.</p>
             <div className="ds-note-list">
               <div className="ds-note-row">
-                <strong>Shared with web (via core)</strong>
-                <p>Colors, radii (<code>md/lg/badge/pill</code>), the base-4 spacing scale, and the type families (DM Sans + Instrument Serif). Locked by <code>mirror-core</code> + the CI drift guard — the warm dark <code>#0c0c0c</code>/<code>#f0efe8</code> reached mobile automatically this way.</p>
+                <strong>Shared with web (via @plot/core)</strong>
+                <p>Colors, radii (<code>md/lg/badge/pill</code>), the base-4 spacing scale, and the type families (DM Sans + Instrument Serif). Web and mobile import the same <code>@plot/core</code> module directly — the warm dark <code>#0c0c0c</code>/<code>#f0efe8</code> is one value, not a copy, so it cannot drift.</p>
               </div>
               <div className="ds-note-row">
                 <strong>Platform-specific (by design)</strong>
-                <p>Font-size scale (mobile numeric px vs web semantic rem), elevation/shadows (RN vs CSS), and one mobile-only <code>radii.sm</code> (8px). These don't map 1:1, so they live in <code>plot-mobile/lib/tokens.ts</code>, not core.</p>
+                <p>Font-size scale (mobile numeric px vs web semantic rem), elevation/shadows (RN vs CSS), and one mobile-only <code>radii.sm</code> (8px). These don't map 1:1, so they live in <code>mobile/lib/tokens.ts</code>, not core.</p>
               </div>
             </div>
           </div>

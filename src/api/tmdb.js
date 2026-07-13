@@ -1,3 +1,3 @@
-// Moved to src/core/tmdb.js (shared, platform-agnostic core).
+// Moved to @plot/core/tmdb.js (shared, platform-agnostic core).
 // This re-export keeps existing `../api/tmdb` import sites working.
-export * from '../core/tmdb.js';
+export * from '@plot/core/tmdb.js';

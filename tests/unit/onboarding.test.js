@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { getOrCreateMyListId, saveOnboardingSeedTitles } from '../../src/core/onboarding.js';
+import { getOrCreateMyListId, saveOnboardingSeedTitles } from '@plot/core/onboarding.js';
 
 function makeSupabase({ maybeSingleResults = [], singleResults = [] } = {}) {
   const calls = { selects: [], inserts: [] };

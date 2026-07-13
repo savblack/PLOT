@@ -12,7 +12,7 @@ import { tmdb } from '../lib/tmdb.mjs';
 import { getRatings } from '../lib/omdb.mjs';
 import { addDays } from '../lib/dates.mjs';
 import { tzDateParts } from '../learning/window.mjs';
-import { colors } from '../../src/core/tokens.js';
+import { colors } from '@plot/core/tokens.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const SITE = 'https://theplot.tv';
@@ -40,7 +40,7 @@ const providersOf = (details) => {
 };
 
 // ── brand tokens ──
-// Brand pink + paper derive from the canonical source (src/core/tokens.js);
+// Brand pink + paper derive from the canonical source (@plot/core/tokens.js);
 // INK/MUT/FAINT/HAIR are newsletter-only email inks.
 const INK = '#0c0c0c', MUT = '#6b6b70', FAINT = '#a1a1a6', PINK = colors.light.accent;
 const HAIR = '#e7e6e3', PAPER = colors.light.bg;

@@ -123,7 +123,7 @@ const PLATFORMS = [
 ];
 
 /* Platform parsers (parseNetflix/Prime/Disney/Max/Apple/Letterboxd + parsePlatform)
-   now live in the shared core: src/core/importParsing.js. */
+   now live in the shared core: @plot/core/importParsing.js. */
 
 /* ─────────────────────────── Deduplication ─────────────────────────── */
 
