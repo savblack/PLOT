@@ -27,7 +27,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join, relative } from 'node:path';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const WEB = join(ROOT, 'website');
+const WEB = join(ROOT, 'apps', 'website');
 const PARTIAL = join(WEB, '_partials', 'footer.html');
 const PAGES = ['index.html', 'about.html', 'privacy.html', 'terms.html', 'plans.html'];
 const EDGE_TS = join(ROOT, 'supabase', 'functions', 'marketing-feed', 'footer.generated.ts');

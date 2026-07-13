@@ -7,7 +7,7 @@
  *   node scripts/check-marketing-tokens.mjs
  *
  * Covers:
- *   - website/theme.css            → brand accent, accent-dim, success, radii (light)
+ *   - apps/website/theme.css            → brand accent, accent-dim, success, radii (light)
  *   - marketing/templates/base.css → dark accent + media chips (social cards)
  *   - marketing/assets/x-*         → static collateral carries the canonical accent
  *
@@ -36,16 +36,16 @@ const eq = (label, actual, expected) => {
   }
 };
 
-// 1. website/theme.css — light brand tokens the marketing site consumes.
+// 1. apps/website/theme.css — light brand tokens the marketing site consumes.
 {
-  const v = vars(rootBlock(read('website/theme.css')));
-  eq('website/theme.css --accent', v['--accent'], colors.light.accent);
-  eq('website/theme.css --accent-dim', v['--accent-dim'], colors.light.accentDim);
-  eq('website/theme.css --success', v['--success'], colors.light.chipNow);
-  eq('website/theme.css --r-badge', v['--r-badge'], `${radii.badge}px`);
-  eq('website/theme.css --r-md', v['--r-md'], `${radii.md}px`);
-  eq('website/theme.css --r-lg', v['--r-lg'], `${radii.lg}px`);
-  eq('website/theme.css --r-pill', v['--r-pill'], `${radii.pill}px`);
+  const v = vars(rootBlock(read('apps/website/theme.css')));
+  eq('apps/website/theme.css --accent', v['--accent'], colors.light.accent);
+  eq('apps/website/theme.css --accent-dim', v['--accent-dim'], colors.light.accentDim);
+  eq('apps/website/theme.css --success', v['--success'], colors.light.chipNow);
+  eq('apps/website/theme.css --r-badge', v['--r-badge'], `${radii.badge}px`);
+  eq('apps/website/theme.css --r-md', v['--r-md'], `${radii.md}px`);
+  eq('apps/website/theme.css --r-lg', v['--r-lg'], `${radii.lg}px`);
+  eq('apps/website/theme.css --r-pill', v['--r-pill'], `${radii.pill}px`);
 }
 
 // 2. marketing/templates/base.css — dark accent + media chips for social cards.

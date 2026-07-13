@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { PROTECTED_PATH_REGEX } from '../../scripts/ops/lib/agent-pr.mjs';
+import { PROTECTED_PATH_REGEX } from '../../../../scripts/ops/lib/agent-pr.mjs';
 
 // The enforcing safety boundary for the autonomous fix loops. If any of these
 // paths can slip past the guard, an automated agent could edit auth/account/data

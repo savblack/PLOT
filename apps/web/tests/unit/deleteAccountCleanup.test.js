@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { ACCOUNT_CLEANUP_STEPS, runAccountCleanup } from '../../supabase/functions/delete-account/cleanup.js';
+import { ACCOUNT_CLEANUP_STEPS, runAccountCleanup } from '../../../../supabase/functions/delete-account/cleanup.js';
 
 function createDeleteClient(failingTable = null) {
   const calls = [];

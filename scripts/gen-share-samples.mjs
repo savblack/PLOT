@@ -12,15 +12,15 @@ import { execFileSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { titleCard, listCard, profileCard } from '../api/og.js';
-import { loadTitle, posterUrl } from '../api/_tmdb.js';
+import { titleCard, listCard, profileCard } from '../apps/web/api/og.js';
+import { loadTitle, posterUrl } from '../apps/web/api/_tmdb.js';
 import { tmdb } from '../marketing/lib/tmdb.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const OUT = resolve(root, 'public', 'ds');
+const OUT = resolve(root, 'apps', 'web', 'public', 'ds');
 
 // Fonts: same faces api/og.js loads from /fonts/ in production.
-const font = (f) => readFileSync(resolve(root, 'public', 'fonts', f));
+const font = (f) => readFileSync(resolve(root, 'apps', 'web', 'public', 'fonts', f));
 const fonts = [
   { name: 'Instrument Serif', data: font('InstrumentSerif-Regular.ttf'), weight: 400, style: 'normal' },
   { name: 'DM Sans', data: font('DMSans-Regular.ttf'), weight: 400, style: 'normal' },

@@ -15,7 +15,7 @@ playwright-report/
 *.local
 supabase/.temp/
 .claude/
-website/.claude/
+apps/website/.claude/
 
 # Editor directories and files
 .vscode/*
@@ -38,7 +38,7 @@ mockup-*.html
 *-previews.html
 *-variants.html
 *-variants-*.html
-website/images/product/*.gif
+apps/website/images/product/*.gif
 .vercel
 marketing/preview/out/
 # Manually generated marketing posts (media + per-day copy docs)

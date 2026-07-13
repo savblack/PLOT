@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { EXPORT_STEPS, runDataExport } from '../../supabase/functions/export-user-data/collect.js';
+import { EXPORT_STEPS, runDataExport } from '../../../../supabase/functions/export-user-data/collect.js';
 
 function createExportClient({ rowsByTable = {}, failingTable = null } = {}) {
   const calls = [];
