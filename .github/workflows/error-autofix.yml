@@ -32,7 +32,7 @@ jobs:
     # AUTOFIX_ENABLED=true. Manual workflow_dispatch always runs (defaults to dry_run).
     if: github.event_name != 'schedule' || vars.AUTOFIX_ENABLED == 'true'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           # PAT so live-mode pushes/PRs trigger CI; falls back to the built-in
           # token (fine for checkout + dry-run). Live mode needs GH_DISPATCH_TOKEN set.
