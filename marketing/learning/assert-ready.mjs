@@ -18,10 +18,16 @@ const main = async () => {
   }
 
   if (data.status !== 'applied') {
-    throw new Error(
-      `Sunday learning for ${data.week_start} → ${data.week_end} is ${data.status}. ` +
-      'Weekly generation must wait for the local learning writer or skip rule application explicitly.',
+    // Soft-fail: a prepared-but-unapplied artifact means the local learning writer
+    // (marketing/learning/apply.mjs) hasn't run yet. Rather than block the whole
+    // weekly generation, warn and continue with the current voice rules — the same
+    // conservative fallback used above when no artifact exists at all. Run apply.mjs
+    // locally to fold this week's learning in before the next generation.
+    console.warn(
+      `⚠️  Sunday learning for ${data.week_start} → ${data.week_end} is ${data.status}, not applied. ` +
+      'Continuing with the current voice rules. Run marketing/learning/apply.mjs locally to apply it.',
     );
+    return;
   }
 
   console.log(`Sunday learning is applied for ${data.week_start} → ${data.week_end}.`);
