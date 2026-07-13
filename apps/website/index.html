@@ -869,13 +869,52 @@
         background-position: center;
         box-shadow: 0 -10px 30px rgba(0,0,0,0.12);
       }
-    }
 
-    @media (max-width: 768px) {
-      /* Manifesto — reduce gaps for mid-size screens */
-      #manifesto { gap: 10rem; padding: 6rem 2rem 10rem; }
-      #plotDoes { margin-top: 10rem; margin-bottom: 8rem; }
-
+      /* Manifesto — scroll-driven reveal with poster interludes. Applies
+         across the whole sub-1100px range (tablet + phone) so the manifesto
+         still has posters wherever the desktop side-posters are hidden. */
+      #manifesto {
+        padding: 22vh 1.5rem;
+        gap: 13vh;
+        text-align: center;
+      }
+      .tl-mbreak { display: inline; }
+      .manifesto-line {
+        display: block;
+        font-size: clamp(1.8rem, 7.5vw, 2.6rem);
+        max-width: 100%;
+      }
+      .manifesto-poster {
+        display: block;
+        align-self: center;
+        width: 160px;
+        height: 240px;
+        border-radius: var(--r-badge);
+        background-color: rgba(0,0,0,0.05);
+        background-size: cover;
+        background-position: center;
+        box-shadow: 0 16px 34px rgba(0,0,0,0.16);
+      }
+      .manifesto-poster-row {
+        display: flex;
+        align-self: center;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+      }
+      .manifesto-poster-row .manifesto-poster { align-self: center; }
+      /* Entrance — slow, clear fade + drift up + scale as they scroll in. */
+      .manifesto-poster.reveal,
+      .manifesto-poster-row.reveal {
+        transform: translateY(70px) scale(0.82);
+        transition: opacity 1.3s var(--ease), transform 1.3s var(--ease);
+      }
+      .manifesto-poster.reveal.visible,
+      .manifesto-poster-row.reveal.visible { transform: none; }
+      /* Dim out once scrolled past, mirroring the text's fade. */
+      .manifesto-poster.passed,
+      .manifesto-poster-row.passed { opacity: 0.22; }
+      #plotDoes { margin-top: 12vh; margin-bottom: 24vh; }
     }
 
     @media (max-width: 600px) {
@@ -919,50 +958,6 @@
         padding-left: 1.5rem;
         padding-right: 1.5rem;
       }
-
-      /* Manifesto — scroll-driven reveal with poster interludes on mobile */
-      #manifesto {
-        padding: 22vh 1.5rem;
-        gap: 13vh;
-        text-align: center;
-      }
-      .tl-mbreak { display: inline; }
-      .manifesto-line {
-        display: block;
-        font-size: clamp(1.8rem, 7.5vw, 2.6rem);
-        max-width: 100%;
-      }
-      .manifesto-poster {
-        display: block;
-        align-self: center;
-        width: 160px;
-        height: 240px;
-        border-radius: var(--r-badge);
-        background-color: rgba(0,0,0,0.05);
-        background-size: cover;
-        background-position: center;
-        box-shadow: 0 16px 34px rgba(0,0,0,0.16);
-      }
-      .manifesto-poster-row {
-        display: flex;
-        align-self: center;
-        align-items: center;
-        justify-content: center;
-        gap: 16px;
-      }
-      .manifesto-poster-row .manifesto-poster { align-self: center; }
-      /* Entrance — slow, clear fade + drift up + scale as they scroll in. */
-      .manifesto-poster.reveal,
-      .manifesto-poster-row.reveal {
-        transform: translateY(70px) scale(0.82);
-        transition: opacity 1.3s var(--ease), transform 1.3s var(--ease);
-      }
-      .manifesto-poster.reveal.visible,
-      .manifesto-poster-row.reveal.visible { transform: none; }
-      /* Dim out once scrolled past, mirroring the text's fade. */
-      .manifesto-poster.passed,
-      .manifesto-poster-row.passed { opacity: 0.22; }
-      #plotDoes { margin-top: 12vh; margin-bottom: 24vh; }
 
       /* Timeline — tighten padding on mobile */
       #timeline-section { padding: 5rem 0 4rem; }
