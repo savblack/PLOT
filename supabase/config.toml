@@ -63,6 +63,13 @@ verify_jwt = true
 [functions.notify-feedback]
 verify_jwt = true
 
+# Signup notifier — invoked by the trg_notify_new_signup trigger on auth.users
+# (see supabase/notify-signup-trigger.sql). The trigger reads the service-role
+# key from Vault and sends it as the bearer, so verify_jwt stays true and the
+# gateway rejects anything unsigned.
+[functions.notify-signup]
+verify_jwt = true
+
 [functions.trakt-sync]
 verify_jwt = true
 
