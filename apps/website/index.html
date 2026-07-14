@@ -1539,14 +1539,24 @@
       background-position: center;
     }
     .lstk-peek {
-      box-shadow: 0 8px 18px -10px rgba(0,0,0,0.45);
+      box-shadow: 0 8px 18px -10px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(0,0,0,0.06);
       transition: transform 0.55s var(--ease), box-shadow 0.55s var(--ease);
+    }
+    /* Mute the cards behind so the front poster is always the clear hero and
+       the fanned edges recede as a clean stack instead of competing posters
+       (otherwise a bright back card can clutter a dark front one). */
+    .lstk-peek::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: rgba(250,250,249,0.5);
     }
     .lstk-peek.p2 { transform: rotate(7deg)  translate(8px, 9px);  z-index: 1; }
     .lstk-peek.p1 { transform: rotate(-5deg) translate(-6px, 6px); z-index: 2; }
     .lstk-face {
       z-index: 5;
-      box-shadow: 0 18px 34px -14px rgba(0,0,0,0.5);
+      box-shadow: 0 18px 34px -14px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(0,0,0,0.07);
       /* opacity + transform crossfade — the JS lifts each new poster into place */
       transition: opacity 0.95s var(--ease), transform 0.95s var(--ease);
     }
