@@ -63,9 +63,10 @@ verify_jwt = true
 [functions.notify-feedback]
 verify_jwt = true
 
-# Signup notifier — triggered by a Database Webhook on INSERT to auth.users.
-# The webhook (configured in the dashboard) attaches the service-role bearer
-# token, so verify_jwt stays true and the gateway rejects anything unsigned.
+# Signup notifier — invoked by the trg_notify_new_signup trigger on auth.users
+# (see supabase/notify-signup-trigger.sql). The trigger reads the service-role
+# key from Vault and sends it as the bearer, so verify_jwt stays true and the
+# gateway rejects anything unsigned.
 [functions.notify-signup]
 verify_jwt = true
 
