@@ -70,6 +70,12 @@ nav.topnav.scrolled{background:rgba(255,255,255,.8);backdrop-filter:blur(16px);-
 .nav-links a{display:inline-block;padding:.75rem .25rem;text-decoration:none;color:var(--mut);font-size:.7rem;font-weight:200;letter-spacing:.12em;text-transform:uppercase;transition:color .2s;}
 .nav-links a:hover{color:var(--ink);}
 .nav-cta{color:var(--ink)!important;font-weight:300!important;}
+.nav-hamburger{display:none;background:none;border:none;cursor:pointer;padding:14px 12px;margin-right:-12px;flex-direction:column;gap:5px;}
+.nav-hamburger span{display:block;width:22px;height:2px;background:var(--ink);border-radius:2px;transition:all .3s var(--ease);}
+.nav-hamburger.open span:nth-child(1){transform:translateY(7px) rotate(45deg);}
+.nav-hamburger.open span:nth-child(2){opacity:0;}
+.nav-hamburger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg);}
+@media (max-width:600px){.nav-links{display:none;}.nav-links.open{display:flex;flex-direction:column;position:fixed;top:64px;left:0;right:0;background:rgba(255,255,255,.92);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);padding:1.25rem 2rem;gap:.35rem;align-items:stretch;}.nav-links.open li{display:block;}.nav-links.open a{display:block;padding:.85rem 0;text-align:center;}.nav-hamburger{display:flex;}nav.topnav.nav-open{background:rgba(255,255,255,.92);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);}}
 .wrap{max-width:960px;margin:0 auto;padding:96px 28px 110px;}
 .hero{position:relative;border-radius:18px;overflow:hidden;border:1px solid var(--hair);margin-bottom:34px;}
 .hero img{width:100%;display:block;aspect-ratio:16/9;object-fit:cover;}
@@ -126,12 +132,15 @@ ${head}
 <body>
 <nav class="topnav" id="topnav">
   <a href="${SITE}" class="nav-logo" aria-label="PLOT">PLOT</a>
-  <ul class="nav-links">
+  <ul class="nav-links" id="navLinks">
     <li><a href="${SITE}/whats-on">What's On</a></li>
     <li><a href="${SITE}/plans.html">Pricing</a></li>
     <li><a href="${APP}/login" data-cta="nav">Log in</a></li>
     <li><a href="${APP}/signup" data-cta="nav" class="nav-cta">Sign up</a></li>
   </ul>
+  <button class="nav-hamburger" id="hamburger" aria-label="Menu" aria-expanded="false" aria-controls="navLinks">
+    <span></span><span></span><span></span>
+  </button>
 </nav>
 <div class="wrap">
 ${body}
@@ -143,6 +152,20 @@ ${FOOTER_HTML}
     var update = function () { nav.classList.toggle('scrolled', window.scrollY > 8); };
     window.addEventListener('scroll', update, { passive: true });
     update();
+    var hamburger = document.getElementById('hamburger');
+    var navLinks = document.getElementById('navLinks');
+    if (hamburger && navLinks) {
+      var setOpen = function (open) {
+        navLinks.classList.toggle('open', open);
+        hamburger.classList.toggle('open', open);
+        nav.classList.toggle('nav-open', open);
+        hamburger.setAttribute('aria-expanded', String(open));
+      };
+      hamburger.addEventListener('click', function () { setOpen(!navLinks.classList.contains('open')); });
+      navLinks.querySelectorAll('a').forEach(function (a) { a.addEventListener('click', function () { setOpen(false); }); });
+      document.addEventListener('click', function (e) { if (navLinks.classList.contains('open') && !e.target.closest('nav') && !e.target.closest('.nav-links')) { setOpen(false); } });
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && navLinks.classList.contains('open')) { setOpen(false); hamburger.focus(); } });
+    }
   })();
 </script>
 </body>
