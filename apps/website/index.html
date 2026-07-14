@@ -1552,8 +1552,8 @@
       border-radius: inherit;
       background: rgba(250,250,249,0.5);
     }
-    .lstk-peek.p2 { transform: rotate(7deg)  translate(8px, 9px);  z-index: 1; }
-    .lstk-peek.p1 { transform: rotate(-5deg) translate(-6px, 6px); z-index: 2; }
+    .lstk-peek.p2 { z-index: 1; }
+    .lstk-peek.p1 { z-index: 2; }
     .lstk-face {
       z-index: 5;
       box-shadow: 0 18px 34px -14px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(0,0,0,0.07);
@@ -1562,18 +1562,39 @@
     }
     .lstk-face.fb { z-index: 6; }
 
-    /* Hover — riffle the deck open: peeks fan out to the sides, the whole
-       stack lifts. Purely decorative; touch devices just see the static deck. */
+    /* Each collection is its own hand-tossed pile — a distinct tilt for the
+       top case plus differently-splayed cards behind — so the row reads as an
+       organic stack of cases rather than three identical fans. */
+    .lstk-cell:nth-child(1) .lstk { transform: rotate(-2.5deg); }
+    .lstk-cell:nth-child(1) .lstk-peek.p2 { transform: rotate(-10deg) translate(-14px, 6px); }
+    .lstk-cell:nth-child(1) .lstk-peek.p1 { transform: rotate(3deg)   translate(8px, 8px); }
+
+    .lstk-cell:nth-child(2) .lstk { transform: rotate(1.5deg); }
+    .lstk-cell:nth-child(2) .lstk-peek.p2 { transform: rotate(6deg)   translate(12px, 10px); }
+    .lstk-cell:nth-child(2) .lstk-peek.p1 { transform: rotate(-3deg)  translate(-6px, 3px); }
+
+    .lstk-cell:nth-child(3) .lstk { transform: rotate(-3.5deg); }
+    .lstk-cell:nth-child(3) .lstk-peek.p2 { transform: rotate(-7deg)  translate(-10px, 11px); }
+    .lstk-cell:nth-child(3) .lstk-peek.p1 { transform: rotate(12deg)  translate(15px, 5px); }
+
+    /* Hover — riffle each pile open along its own lean, keeping its tilt, and
+       lift it. Purely decorative; touch devices just see the static stack. */
     @media (hover: hover) {
-      .lstk-cell:hover .lstk { transform: translateY(-8px); }
-      .lstk-cell:hover .lstk-peek.p2 {
-        transform: rotate(12deg) translate(24px, 2px);
-        box-shadow: 0 14px 26px -12px rgba(0,0,0,0.5);
+      .lstk-cell:hover .lstk-peek {
+        box-shadow: 0 14px 26px -12px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(0,0,0,0.06);
       }
-      .lstk-cell:hover .lstk-peek.p1 {
-        transform: rotate(-10deg) translate(-22px, 0);
-        box-shadow: 0 14px 26px -12px rgba(0,0,0,0.5);
-      }
+
+      .lstk-cell:nth-child(1):hover .lstk { transform: translateY(-8px) rotate(-2.5deg); }
+      .lstk-cell:nth-child(1):hover .lstk-peek.p2 { transform: rotate(-15deg) translate(-26px, 2px); }
+      .lstk-cell:nth-child(1):hover .lstk-peek.p1 { transform: rotate(8deg)   translate(22px, 5px); }
+
+      .lstk-cell:nth-child(2):hover .lstk { transform: translateY(-8px) rotate(1.5deg); }
+      .lstk-cell:nth-child(2):hover .lstk-peek.p2 { transform: rotate(12deg)  translate(27px, 4px); }
+      .lstk-cell:nth-child(2):hover .lstk-peek.p1 { transform: rotate(-8deg)  translate(-20px, 0); }
+
+      .lstk-cell:nth-child(3):hover .lstk { transform: translateY(-8px) rotate(-3.5deg); }
+      .lstk-cell:nth-child(3):hover .lstk-peek.p2 { transform: rotate(-13deg) translate(-24px, 5px); }
+      .lstk-cell:nth-child(3):hover .lstk-peek.p1 { transform: rotate(18deg)  translate(28px, 3px); }
     }
     .lstk-nm {
       font-family: var(--serif);
