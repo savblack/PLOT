@@ -29,6 +29,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@200;300;400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/theme.css" />
+  <link rel="stylesheet" href="/nav.css" />
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -49,49 +50,7 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    /* ── Navbar ─────────────────────────────────────────────── */
-    nav {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      z-index: 100;
-      padding: 0 2rem;
-      height: 64px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: var(--glass-bg);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border-bottom: 1px solid var(--glass-border);
-    }
-    .nav-logo { text-decoration: none; display: flex; align-items: center; }
-    .nav-logo span {
-      font-family: var(--serif);
-      font-size: 2.5rem;
-      font-weight: 400;
-      letter-spacing: -0.05em;
-      color: var(--text);
-      line-height: 1;
-      user-select: none;
-    }
-
-    .nav-links {
-      display: flex; align-items: center; gap: 2rem; list-style: none;
-    }
-    /* Flex keeps the padded anchors vertically centered (baseline alignment
-       inside the list item pushes them above the nav midline otherwise) */
-    .nav-links li { display: flex; }
-    .nav-links a {
-      display: inline-block;
-      padding: 0.75rem 0.25rem;
-      text-decoration: none;
-      color: var(--text-secondary);
-      font-size: 0.75rem;
-      font-weight: 500;
-      transition: color 0.2s;
-    }
-    .nav-links a:hover { color: var(--text); }
-    .nav-cta { color: var(--text) !important; font-weight: 600 !important; }
+    /* Navbar styling lives in the shared /nav.css (matches the home page). */
 
     /* ── Content ─────────────────────────────────────────────── */
     .page-wrap {
@@ -238,8 +197,17 @@
 </head>
 <body>
 
-  <nav>
-    <a href="index.html" class="nav-logo"><span>PLOT</span></a>
+  <nav id="navbar">
+    <a href="/" class="nav-logo">PLOT</a>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="/whats-on">What's On</a></li>
+      <li><a href="/plans.html">Pricing</a></li>
+      <li><a href="https://app.theplot.tv/login" data-cta="nav">Log in</a></li>
+      <li><a href="https://app.theplot.tv/signup" class="nav-cta" data-cta="nav">Sign up</a></li>
+    </ul>
+    <button class="nav-hamburger" id="hamburger" aria-label="Menu" aria-expanded="false" aria-controls="navLinks">
+      <span></span><span></span><span></span>
+    </button>
   </nav>
 
   <main class="page-wrap">
@@ -338,6 +306,7 @@
   <!-- footer:end -->
 
   <script src="js/config.js"></script>
+  <script src="js/nav.js"></script>
 
 </body>
 </html>
