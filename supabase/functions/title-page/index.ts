@@ -65,9 +65,11 @@ a{color:inherit;}
 nav.topnav{position:fixed;top:0;left:0;right:0;z-index:100;padding:0 2rem;height:64px;display:flex;align-items:center;justify-content:space-between;background:transparent;transition:background .3s var(--ease),backdrop-filter .3s var(--ease);}
 nav.topnav.scrolled{background:rgba(255,255,255,.8);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);}
 .nav-logo{text-decoration:none;display:flex;align-items:center;font-family:var(--serif);font-size:1.7rem;font-weight:400;letter-spacing:-.05em;color:var(--ink);line-height:1;}
-.nav-links{display:flex;align-items:center;gap:1.6rem;list-style:none;}
-.nav-links a{text-decoration:none;color:var(--mut);font-size:.7rem;font-weight:400;letter-spacing:.12em;text-transform:uppercase;transition:color .2s;}
+.nav-links{display:flex;align-items:center;gap:2rem;list-style:none;}
+.nav-links li{display:flex;}
+.nav-links a{display:inline-block;padding:.75rem .25rem;text-decoration:none;color:var(--mut);font-size:.7rem;font-weight:200;letter-spacing:.12em;text-transform:uppercase;transition:color .2s;}
 .nav-links a:hover{color:var(--ink);}
+.nav-cta{color:var(--ink)!important;font-weight:300!important;}
 .wrap{max-width:960px;margin:0 auto;padding:96px 28px 110px;}
 .hero{position:relative;border-radius:18px;overflow:hidden;border:1px solid var(--hair);margin-bottom:34px;}
 .hero img{width:100%;display:block;aspect-ratio:16/9;object-fit:cover;}
@@ -126,8 +128,9 @@ ${head}
   <a href="${SITE}" class="nav-logo" aria-label="PLOT">PLOT</a>
   <ul class="nav-links">
     <li><a href="${SITE}/whats-on">What's On</a></li>
+    <li><a href="${SITE}/plans.html">Pricing</a></li>
     <li><a href="${APP}/login" data-cta="nav">Log in</a></li>
-    <li><a href="${APP}/signup" data-cta="nav">Sign up</a></li>
+    <li><a href="${APP}/signup" data-cta="nav" class="nav-cta">Sign up</a></li>
   </ul>
 </nav>
 <div class="wrap">

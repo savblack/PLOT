@@ -181,6 +181,7 @@ ${head}
   .nav-links a { display: inline-block; padding: 0.75rem 0.25rem; text-decoration: none; color: var(--mut); font-size: 0.7rem; font-weight: 200; letter-spacing: 0.12em; text-transform: uppercase; transition: color 0.2s; }
   .nav-links a:hover { color: var(--ink); }
   .nav-links a.current { color: var(--ink); font-weight: 500; }
+  .nav-cta { color: var(--ink) !important; font-weight: 300 !important; }
 
   .head { padding: 104px 0 0; }
   .head-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; flex-wrap: wrap; }
@@ -312,9 +313,9 @@ ${head}
   <a href="${SITE}" class="nav-logo" aria-label="PLOT">PLOT</a>
   <ul class="nav-links">
     <li><a href="${FEED_PATH}"${nav === 'whats-on' ? ' class="current"' : ''}>What's On</a></li>
-    <li><a href="${FEED_PATH}/chart"${nav === 'chart' ? ' class="current"' : ''}>The chart</a></li>
-    <li><a href="https://app.theplot.tv/login">Log in</a></li>
-    <li><a href="https://app.theplot.tv/signup">Sign up</a></li>
+    <li><a href="${SITE}/plans.html">Pricing</a></li>
+    <li><a href="${APP}/login">Log in</a></li>
+    <li><a href="${APP}/signup" class="nav-cta">Sign up</a></li>
   </ul>
 </nav>
 <div class="wrap">
