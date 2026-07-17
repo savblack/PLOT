@@ -2665,7 +2665,7 @@
         wrapper.style.transition = '';                        // … then restore its glide
       }
 
-      const INTERVAL = 900, LEAD = 700;                       // snappy, starts soon
+      const INTERVAL = 400, LEAD = 500;                       // near-continuous glide
       let timer = null, lead = null;
       const start = () => {
         if (timer || lead) return;
