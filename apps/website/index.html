@@ -1440,7 +1440,7 @@
       position: absolute; width: 210px; aspect-ratio: 2 / 3;
       border-radius: 12px; background-size: cover; background-position: center; background-color: var(--bg);
       box-shadow: 0 22px 50px -22px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(0,0,0,0.08);
-      transition: transform 0.75s var(--ease), opacity 0.75s var(--ease);
+      transition: transform 0.4s var(--ease), opacity 0.4s var(--ease);
       backface-visibility: hidden; will-change: transform, opacity; opacity: 0;
     }
     /* Coverflow slide states — 0 = centred cover, neighbours angled, far cards
@@ -2665,9 +2665,13 @@
         wrapper.style.transition = '';                        // … then restore its glide
       }
 
-      let timer = null;
-      const start = () => { if (!timer) timer = setInterval(advance, 3800); };
-      const stop  = () => { clearInterval(timer); timer = null; };
+      const INTERVAL = 900, LEAD = 700;                       // snappy, starts soon
+      let timer = null, lead = null;
+      const start = () => {
+        if (timer || lead) return;
+        lead = setTimeout(() => { lead = null; advance(); timer = setInterval(advance, INTERVAL); }, LEAD);
+      };
+      const stop  = () => { clearTimeout(lead); clearInterval(timer); lead = timer = null; };
       start();
       cf.parentElement.addEventListener('mouseenter', stop);  // pause to study
       cf.parentElement.addEventListener('mouseleave', start);
