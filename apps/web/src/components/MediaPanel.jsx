@@ -8,6 +8,7 @@ import { markMediaAsWatched, moveSavedShowToWatching } from '../utils/mediaStatu
 import { resolveMediaPanelEscapeAction } from '../utils/mediaPanel.js';
 import { ratingFromPointer, ratingToStars, starFillPercent, STAR_COUNT } from '../utils/ratings.js';
 import { pickBestTvmazeShowMatch } from '../utils/tvmaze.js';
+import { favoriteWords } from '../utils/spelling.js';
 import { useShareTitle } from '../hooks/useShareTitle.js';
 import { track, EVENTS } from '../lib/analytics.js';
 import { canCreateCustomList, FREE_CUSTOM_LIST_CAP } from '@plot/core/premium.js';
@@ -601,6 +602,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
   const progress   = watching.getProgress(itemId);
   const watched    = history.isWatched(itemId);
   const isFav        = favorites.isFavorite(itemId);
+  const fw           = favoriteWords(profile?.region);
   const isInAnyList  = customLists?.lists?.some(list => customLists.isInList(list.id, itemId)) ?? false;
   const watchedEntry = history.entries.find(e => e.tmdb_id === Number(itemId));
   const hasSavedReview = !!(
@@ -965,7 +967,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                   }}
                 >
                   <HeartIcon filled={isFav} size={18} />
-                  {isFav ? 'Favourited' : 'Favourite'}
+                  {isFav ? fw.pastTitle : fw.noun}
                 </button>
 
                 {/* Add to list */}

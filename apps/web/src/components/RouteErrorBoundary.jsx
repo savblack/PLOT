@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useRouteError, isRouteErrorResponse } from 'react-router-dom';
 import { captureException } from '../lib/analytics.js';
 import { ErrorScreen, CrashScreen } from './ErrorBoundary.jsx';
-import { isChunkError, RELOAD_KEY } from '../utils/chunkError.js';
+import { isChunkError, recentlyReloaded, markChunkReload } from '../utils/chunkError.js';
 
 /**
  * Router-level error element. Catches anything thrown while routing, rendering,
@@ -14,11 +14,11 @@ export default function RouteErrorBoundary() {
   const chunk = isChunkError(error);
   // A failed dynamic import is almost always a stale chunk after a deploy —
   // reload once (guarded so we never loop) to pull the fresh build.
-  const reloading = chunk && !sessionStorage.getItem(RELOAD_KEY);
+  const reloading = chunk && !recentlyReloaded();
 
   useEffect(() => {
     if (reloading) {
-      sessionStorage.setItem(RELOAD_KEY, '1');
+      markChunkReload();
       window.location.reload();
       return;
     }

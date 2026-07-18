@@ -73,7 +73,7 @@ const TESTIMONIALS = [
     handle: 'Premium member',
   },
   {
-    quote: 'Unlimited lists changed how I plan what to watch — one for date night, one for the kids, one for me.',
+    quote: 'Unlimited lists changed how I plan what to watch: one for date night, one for the kids, one for me.',
     name: 'Priya S.',
     handle: 'Premium member',
   },
@@ -82,7 +82,7 @@ const TESTIMONIALS = [
 const FAQS = [
   {
     q: 'Is the Free plan really free?',
-    a: 'Yes — no credit card, no trial clock. Track as much as you want on Free for as long as you like.',
+    a: 'Yes. No credit card, no trial clock. Track as much as you want on Free for as long as you like.',
   },
   {
     q: 'Can I cancel anytime?',
@@ -90,12 +90,12 @@ const FAQS = [
   },
   {
     q: 'What happens to my lists if I downgrade?',
-    a: 'Nothing is deleted. Your lists stay exactly as they are — you just can’t create new ones past the free limit until you upgrade again.',
+    a: 'Nothing is deleted. Your lists stay exactly as they are. You just can’t create new ones past the free limit until you upgrade again.',
   },
   ...(SHOW_MEDIA_SYNC_INTEGRATIONS
     ? [{
         q: 'How does sync work?',
-        a: 'Connect Plex or Trakt once and PLOT keeps your watchlist and history current automatically — including what you watch on Netflix, Prime, Disney+ and more.',
+        a: 'Connect Plex or Trakt once and PLOT keeps your watchlist and history current automatically, including what you watch on Netflix, Prime, Disney+ and more.',
       }]
     : []),
 ];
@@ -199,7 +199,7 @@ export default function PlansPage() {
                 <span className="plan-amount">$0</span>
                 <span className="plan-per">forever</span>
               </div>
-              <p className="plan-tagline">Everything you need to organise your watching.</p>
+              <p className="plan-tagline">Everything you need to organize your watching.</p>
             </div>
             <ul className="plan-features">
               {FREE_HIGHLIGHTS.map(f => <li key={f}><Tick />{f}</li>)}
@@ -251,7 +251,7 @@ export default function PlansPage() {
         </div>
 
         {isPremium && (
-          <p className="plans-note plans-note--ok">You’re on PLOT Premium — enjoy the full experience.</p>
+          <p className="plans-note plans-note--ok">You’re on PLOT Premium. Enjoy the full experience.</p>
         )}
         {premium.error && (
           <p className="plans-note plans-note--err">{premium.error}</p>

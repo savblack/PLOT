@@ -12,6 +12,7 @@ import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
+import { favoriteWords } from '../../lib/spelling';
 import { UserRow, SocialUser } from '../../components/UserList';
 
 type Mode = 'titles' | 'people';
@@ -187,6 +188,8 @@ function SearchRow({ item, hooks, signedIn }: { item: SearchResult; hooks: Media
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { open: openPanel } = useMediaPanel();
+  const { profile } = useAppData();
+  const fw = favoriteWords(profile?.region);
   const { watchlist, favorites, history } = hooks;
 
   const title = item.title || item.name || '';
@@ -253,7 +256,7 @@ function SearchRow({ item, hooks, signedIn }: { item: SearchResult; hooks: Media
             style={[styles.actionBtn, isFav && styles.actionBtnActive]}
             onPress={() => favorites.toggleFavorite(payload)}
             hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-            accessibilityLabel={isFav ? 'Remove favourite' : 'Add favourite'}
+            accessibilityLabel={isFav ? `Remove ${fw.nounLower}` : `Add ${fw.nounLower}`}
           >
             <HeartIcon size={15} color={isFav ? colors.accent : colors.textMuted} filled={isFav} />
           </TouchableOpacity>

@@ -7,6 +7,7 @@ import { findDuplicateCustomList } from '../domain/customLists.js';
 import { useHistory } from '../hooks/useHistory.js';
 import { useGenres } from '../hooks/useGenres.js';
 import { localDateStr } from '../utils/date.js';
+import { favoriteWords } from '../utils/spelling.js';
 import { entriesForMonth, historyMonthEmptyCopy, historyRatingLabel, monthLabel } from '../utils/history.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import GroupedFilterMenu from './GroupedFilterMenu.jsx';
@@ -492,7 +493,8 @@ function PosterGrid({ items, onRemove, openPanel }) {
 
 /* ── Favorites section ── */
 function FavoritesSection({ favorites: favsHook, filterItems, hideHeader }) {
-  const { openPanel } = useApp();
+  const { openPanel, profile } = useApp();
+  const fw = favoriteWords(profile?.region);
   const [showAdd, setShowAdd] = useState(false);
   const { favorites, isFavorite, toggleFavorite } = favsHook;
 
@@ -502,15 +504,15 @@ function FavoritesSection({ favorites: favsHook, filterItems, hideHeader }) {
     <div>
       {!hideHeader && (
         <div className="date-group-header">
-          <span className="date-group-label">Favourites</span>
+          <span className="date-group-label">{fw.plural}</span>
           {visible.length > 0 && (
             <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginRight: '0.25rem' }}>{visible.length}</span>
           )}
           <button
             className="date-group-action-btn date-group-action-btn--plain"
             type="button"
-            aria-label="Add favourite"
-            title="Add favourite"
+            aria-label={`Add ${fw.nounLower}`}
+            title={`Add ${fw.nounLower}`}
             onClick={() => setShowAdd(true)}
           >
             <PlusIcon />
@@ -526,8 +528,8 @@ function FavoritesSection({ favorites: favsHook, filterItems, hideHeader }) {
           <button
             className="empty-add-btn"
             type="button"
-            aria-label="Add favourite"
-            title="Add favourite"
+            aria-label={`Add ${fw.nounLower}`}
+            title={`Add ${fw.nounLower}`}
             onClick={() => setShowAdd(true)}
           >
             <PlusIcon />
@@ -535,7 +537,7 @@ function FavoritesSection({ favorites: favsHook, filterItems, hideHeader }) {
         </div>
       ) : visible.length === 0 ? (
         <div style={{ padding: '1.5rem 1rem', textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-          No favorites match the current filters
+          No {fw.pluralLower} match the current filters
         </div>
       ) : (
         <PosterGrid
@@ -550,6 +552,7 @@ function FavoritesSection({ favorites: favsHook, filterItems, hideHeader }) {
 
       {showAdd && (
         <AddToFavoritesModal
+          title={`Add to ${fw.plural}`}
           onAdd={(item) => {
             if (!isFavorite(item.id || item.tmdb_id)) toggleFavorite(item);
           }}
@@ -1126,7 +1129,8 @@ function CollapsibleBar({ label, open, onToggle }) {
 
 /* ── Main view ── */
 export default function MyListsView() {
-  const { user, topLists, favorites, customLists, watching, watchlist } = useApp();
+  const { user, profile, topLists, favorites, customLists, watching, watchlist } = useApp();
+  const fw = favoriteWords(profile?.region);
   const genres = useGenres();
   const location = useLocation();
   const { entries: historyEntries, loading: historyLoading } = useHistory(user?.id);
@@ -1184,7 +1188,7 @@ export default function MyListsView() {
     { id: 'watching',  label: 'Watching'      },
     { id: 'want',      label: 'Want to Watch' },
     { id: 'top10',     label: 'Top 10'        },
-    { id: 'favorites', label: 'Favorites'     },
+    { id: 'favorites', label: fw.plural        },
     { id: 'lists',     label: 'Lists'         },
     { id: 'history',   label: 'History'       },
   ];
@@ -1290,7 +1294,7 @@ export default function MyListsView() {
       {/* ── Favorites ── */}
       {showFavs && (
         <>
-          {isAll && <CollapsibleBar label="Favourites" open={favsOpen} onToggle={() => setFavsOpen(o => !o)} />}
+          {isAll && <CollapsibleBar label={fw.plural} open={favsOpen} onToggle={() => setFavsOpen(o => !o)} />}
           {(!isAll || favsOpen) && <FavoritesSection favorites={favorites} filterItems={filterItems} hideHeader={isAll} />}
         </>
       )}

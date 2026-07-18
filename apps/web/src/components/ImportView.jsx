@@ -118,7 +118,7 @@ const PLATFORMS = [
       'Open Settings → Data (letterboxd.com/settings/data)',
       'Click "Export your data" to download the ZIP',
       'Unzip it and find diary.csv (or watched.csv)',
-      'Upload that CSV file here — your ratings and reviews come across too',
+      'Upload that CSV file here. Your ratings and reviews come across too',
     ],
   },
 ];

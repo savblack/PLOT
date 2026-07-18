@@ -1,6 +1,6 @@
 import { Component } from 'react';
 import { captureException } from '../lib/analytics.js';
-import { isChunkError, RELOAD_KEY } from '../utils/chunkError.js';
+import { isChunkError, recentlyReloaded, markChunkReload } from '../utils/chunkError.js';
 import PlotLogo from './PlotLogo.jsx';
 
 // Dark, centered, minimal error design — matches the marketing site's
@@ -140,9 +140,10 @@ export default class ErrorBoundary extends Component {
 
   static getDerivedStateFromError(error) {
     if (isChunkError(error)) {
-      // Only auto-reload once per session to avoid infinite reload loops
-      if (!sessionStorage.getItem(RELOAD_KEY)) {
-        sessionStorage.setItem(RELOAD_KEY, '1');
+      // Reload to pull the fresh build, but not again if we just did (avoids an
+      // infinite loop on a genuinely broken deploy). See chunkError.js.
+      if (!recentlyReloaded()) {
+        markChunkReload();
         window.location.reload();
         return null; // stay mounted while reloading
       }

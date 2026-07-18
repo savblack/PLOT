@@ -185,7 +185,7 @@ export default function ProfileScreen() {
               <Section title="Top 10 TV" colors={colors}><PosterGrid items={topTv} ranked /></Section>
             )}
             {favourites.length > 0 && (
-              <Section title="Favourites" colors={colors}><PosterGrid items={favourites} /></Section>
+              <Section title="Favorites" colors={colors}><PosterGrid items={favourites} /></Section>
             )}
 
             {noPublicContent && (

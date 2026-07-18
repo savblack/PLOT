@@ -3,10 +3,12 @@
  * consistent in alignment, type size, and padding — mirrors the mobile
  * app's <SheetHeader>.
  *
- * A centred serif title (1.4rem) with an optional left back-chevron and a
- * right cluster (optional action button + ✕ close). The title is absolutely
- * centred so it sits mid-header and screen-centred regardless of which sides
- * carry buttons. `bordered` (default true) draws the hairline divider.
+ * A centred serif title (1.4rem). The primary action (e.g. Save) sits on the
+ * left; the ✕ close button sits on the right. If a back-chevron is supplied it
+ * takes the left slot and the action falls back beside the close button. The
+ * title is absolutely centred so it sits mid-header and screen-centred
+ * regardless of which sides carry buttons. `bordered` (default true) draws the
+ * hairline divider.
  */
 
 const ICON_BTN = {
@@ -17,6 +19,22 @@ const ICON_BTN = {
 };
 
 export default function SheetHeader({ title, onClose, onBack, action, bordered = true }) {
+  const actionBtn = action && (
+    <button
+      type="button"
+      onClick={action.onClick}
+      disabled={action.disabled}
+      style={{
+        background: 'none', border: 'none', cursor: action.disabled ? 'default' : 'pointer',
+        fontFamily: 'var(--font-sans)', fontSize: '0.9rem', fontWeight: 700,
+        color: action.disabled ? 'var(--text-muted)' : 'var(--accent)',
+        padding: 0,
+      }}
+    >
+      {action.label}
+    </button>
+  );
+
   return (
     <div
       style={{
@@ -27,10 +45,13 @@ export default function SheetHeader({ title, onClose, onBack, action, bordered =
         flexShrink: 0,
       }}
     >
+      {/* Left slot: back-chevron takes priority, otherwise the primary action (e.g. Save). */}
       {onBack ? (
         <button type="button" onClick={onBack} aria-label="Back" style={ICON_BTN}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
         </button>
+      ) : action ? (
+        <div style={{ display: 'flex', alignItems: 'center', minWidth: 44 }}>{actionBtn}</div>
       ) : <span style={{ minWidth: 44 }} />}
 
       <h2
@@ -46,21 +67,9 @@ export default function SheetHeader({ title, onClose, onBack, action, bordered =
         {title}
       </h2>
 
+      {/* Right slot: ✕ close. If a back-chevron owns the left slot, the action rides here too. */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', marginLeft: 'auto', zIndex: 1 }}>
-        {action && (
-          <button
-            type="button"
-            onClick={action.onClick}
-            disabled={action.disabled}
-            style={{
-              background: 'none', border: 'none', cursor: action.disabled ? 'default' : 'pointer',
-              fontFamily: 'var(--font-sans)', fontSize: '0.9rem', fontWeight: 700,
-              color: action.disabled ? 'var(--text-muted)' : 'var(--accent)',
-            }}
-          >
-            {action.label}
-          </button>
-        )}
+        {onBack && actionBtn}
         {onClose && (
           <button type="button" onClick={onClose} aria-label="Close" style={ICON_BTN}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>

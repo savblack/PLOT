@@ -157,7 +157,7 @@ export default function OnboardingFlow() {
     tmdb.getTrending('all', 'week').then(data => {
       const list = (data?.results || [])
         .filter(r => (r.media_type === 'tv' || r.media_type === 'movie') && r.poster_path)
-        .slice(0, 12);
+        .slice(0, 24);
       setTrending(list);
     });
   }, [step, trending.length]);
@@ -175,7 +175,7 @@ export default function OnboardingFlow() {
       const hits = (data?.results || [])
         .filter(r => r.media_type === 'tv' || r.media_type === 'movie')
         .filter(r => r.poster_path)
-        .slice(0, 12);
+        .slice(0, 24);
       setSeedResults(hits);
       setSeedSearching(false);
     }, 350);

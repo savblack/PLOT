@@ -245,14 +245,6 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
               <span className="nav-drawer-label">Profile</span>
             </button>
           )}
-          <button
-            type="button"
-            className={`nav-drawer-item${currentView === 'notifications' ? ' active' : ''}`}
-            onClick={() => handleNav('notifications')}
-            aria-current={currentView === 'notifications' ? 'page' : undefined}
-          >
-            <span className="nav-drawer-label">Notifications</span>
-          </button>
         </nav>
 
         <div className="nav-drawer-footer">

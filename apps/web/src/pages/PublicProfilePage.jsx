@@ -18,7 +18,7 @@ const SECTIONS = [
   { key: 'recent',    label: 'Recently watched' },
   { key: 'topMovies', label: 'Top 10 films' },
   { key: 'topTv',     label: 'Top 10 TV' },
-  { key: 'favourites', label: 'Favourites' },
+  { key: 'favourites', label: 'Favorites' },
 ];
 
 const styles = `
@@ -427,7 +427,7 @@ export default function PublicProfilePage() {
               <div className="pp-section pp-pad"><h2 className="pp-section-title">Top 10 TV</h2><PosterGrid items={topTv} ranked /></div>
             )}
             {showSection('favourites') && favourites.length > 0 && (
-              <div className="pp-section"><h2 className="pp-section-title pp-pad">Favourites</h2><div className="pp-pad"><PosterRail items={favourites} /></div></div>
+              <div className="pp-section"><h2 className="pp-section-title pp-pad">Favorites</h2><div className="pp-pad"><PosterRail items={favourites} /></div></div>
             )}
 
             {!locked && watchCount === 0 && recent.length === 0 && topMovies.length === 0 && topTv.length === 0 && favourites.length === 0 && (

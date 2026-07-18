@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp, posterUrl } from '../App.jsx';
 import { starFillPercent, STAR_COUNT } from '../utils/ratings.js';
+import { favoriteWords } from '../utils/spelling.js';
 import { toggleLike } from '../hooks/usePostEngagement.js';
 import { buildTitleShareUrl, shareUrl } from '../utils/share.js';
 import { track, EVENTS } from '../lib/analytics.js';
@@ -78,7 +79,11 @@ function CommentIcon() {
   );
 }
 
-const ACTION = { watch: 'watched', favourite: 'favourited', top_list: 'added to Top 10' };
+// Keys match feed_posts.source_type (DB value stays 'favourite'); the label
+// spelling follows the viewer's region (see actionLabels).
+const actionLabels = (region) => ({
+  watch: 'watched', favourite: favoriteWords(region).past, top_list: 'added to Top 10',
+});
 
 const actionBtn = (active) => ({
   display: 'inline-flex', alignItems: 'center', gap: 6, background: 'none', border: 0,
@@ -94,6 +99,7 @@ const actionBtn = (active) => ({
 export default function FeedPost({ post }) {
   const navigate = useNavigate();
   const { openPanel, user, profile } = useApp();
+  const ACTION = actionLabels(profile?.region);
 
   const {
     id, author_username, author_display_name, author_avatar_url,
