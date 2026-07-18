@@ -502,15 +502,15 @@ function FavoritesSection({ favorites: favsHook, filterItems, hideHeader }) {
     <div>
       {!hideHeader && (
         <div className="date-group-header">
-          <span className="date-group-label">Favourites</span>
+          <span className="date-group-label">Favorites</span>
           {visible.length > 0 && (
             <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginRight: '0.25rem' }}>{visible.length}</span>
           )}
           <button
             className="date-group-action-btn date-group-action-btn--plain"
             type="button"
-            aria-label="Add favourite"
-            title="Add favourite"
+            aria-label="Add favorite"
+            title="Add favorite"
             onClick={() => setShowAdd(true)}
           >
             <PlusIcon />
@@ -526,8 +526,8 @@ function FavoritesSection({ favorites: favsHook, filterItems, hideHeader }) {
           <button
             className="empty-add-btn"
             type="button"
-            aria-label="Add favourite"
-            title="Add favourite"
+            aria-label="Add favorite"
+            title="Add favorite"
             onClick={() => setShowAdd(true)}
           >
             <PlusIcon />
@@ -1290,7 +1290,7 @@ export default function MyListsView() {
       {/* ── Favorites ── */}
       {showFavs && (
         <>
-          {isAll && <CollapsibleBar label="Favourites" open={favsOpen} onToggle={() => setFavsOpen(o => !o)} />}
+          {isAll && <CollapsibleBar label="Favorites" open={favsOpen} onToggle={() => setFavsOpen(o => !o)} />}
           {(!isAll || favsOpen) && <FavoritesSection favorites={favorites} filterItems={filterItems} hideHeader={isAll} />}
         </>
       )}

@@ -65,7 +65,7 @@ export default function PrivacyPage() {
         </ul>
 
         <h2>6. Data Retention &amp; Deletion</h2>
-        <p>Your data is retained for as long as your account remains active. You may request deletion of your account and associated app data at any time through account settings. Account deletion removes the current app records tied to your user account, including lists, favourites, reminders, journal/history, integration records, feedback rows, and the original feedback attachment objects associated with your account. We may retain operational logs, anonymised analytics, and temporary backup copies for a limited period where required for security, debugging, or normal infrastructure recovery.</p>
+        <p>Your data is retained for as long as your account remains active. You may request deletion of your account and associated app data at any time through account settings. Account deletion removes the current app records tied to your user account, including lists, favorites, reminders, journal/history, integration records, feedback rows, and the original feedback attachment objects associated with your account. We may retain operational logs, anonymised analytics, and temporary backup copies for a limited period where required for security, debugging, or normal infrastructure recovery.</p>
 
         <h2>7. Cookies &amp; Local Storage</h2>
         <p>PLOT uses cookies and local storage for session management, authentication, and limited product analytics state. We do not use advertising cookies. By using the Service, you consent to this use.</p>

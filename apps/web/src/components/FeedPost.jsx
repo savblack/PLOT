@@ -77,7 +77,8 @@ function CommentIcon() {
   );
 }
 
-const ACTION = { watch: 'watched', favourite: 'favourited', top_list: 'added to Top 10' };
+// Keys match feed_posts.source_type (DB value stays 'favourite'); labels are US-spelled.
+const ACTION = { watch: 'watched', favourite: 'favorited', top_list: 'added to Top 10' };
 
 const actionBtn = (active) => ({
   display: 'inline-flex', alignItems: 'center', gap: 6, background: 'none', border: 0,
