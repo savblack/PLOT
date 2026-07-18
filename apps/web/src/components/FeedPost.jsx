@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp, posterUrl } from '../App.jsx';
 import { starFillPercent, STAR_COUNT } from '../utils/ratings.js';
@@ -6,7 +6,7 @@ import { favoriteWords } from '../utils/spelling.js';
 import { toggleLike } from '../hooks/usePostEngagement.js';
 import { buildTitleShareUrl, shareUrl } from '../utils/share.js';
 import { track, EVENTS } from '../lib/analytics.js';
-import CommentSheet from './CommentSheet.jsx';
+import CommentsInline from './CommentsInline.jsx';
 
 function relativeTime(iso) {
   const then = new Date(iso).getTime();
@@ -109,7 +109,7 @@ export default function FeedPost({ post }) {
   const [liked, setLiked]             = useState(!!post.viewer_liked);
   const [likeCount, setLikeCount]     = useState(Number(post.like_count) || 0);
   const [commentCount, setCommentCount] = useState(Number(post.comment_count) || 0);
-  const [sheetOpen, setSheetOpen]     = useState(false);
+  const composerRef = useRef(null);
 
   const openTitle = () => {
     track(EVENTS.FEED_POST_OPENED, { post_type: source_type, tmdb_id });
@@ -232,8 +232,8 @@ export default function FeedPost({ post }) {
             {likeCount > 0 && <span>{likeCount}</span>}
           </button>
           <button
-            type="button" onClick={() => setSheetOpen(true)} style={actionBtn(false)}
-            aria-label="Comments"
+            type="button" onClick={() => composerRef.current?.focus()} style={actionBtn(false)}
+            aria-label="Add a comment"
           >
             <CommentIcon />
             {commentCount > 0 && <span>{commentCount}</span>}
@@ -245,17 +245,16 @@ export default function FeedPost({ post }) {
             <ShareIcon />
           </button>
         </div>
-      </div>
 
-      {sheetOpen && (
-        <CommentSheet
+        <CommentsInline
           post={post}
           user={user}
           profile={profile}
-          onClose={() => setSheetOpen(false)}
-          onAdded={() => setCommentCount(c => c + 1)}
+          commentCount={commentCount}
+          onCountChange={(d) => setCommentCount(c => Math.max(0, c + d))}
+          composerRef={composerRef}
         />
-      )}
+      </div>
     </article>
   );
 }

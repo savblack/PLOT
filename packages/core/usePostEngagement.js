@@ -20,6 +20,25 @@ export async function addComment({ postId, userId, body }) {
     .single();
 }
 
+// Like / unlike a comment. `liked` is the CURRENT state (before the toggle).
+export async function toggleCommentLike({ commentId, userId, liked }) {
+  if (!commentId || !userId) return { error: null };
+  if (liked) {
+    return supabase.from('comment_likes').delete().eq('comment_id', commentId).eq('user_id', userId);
+  }
+  return supabase.from('comment_likes').insert({ comment_id: commentId, user_id: userId });
+}
+
+export async function editComment({ commentId, userId, body }) {
+  const text = (body || '').trim();
+  if (!commentId || !userId || !text) return { data: null, error: null };
+  return supabase.from('post_comments')
+    .update({ body: text, edited_at: new Date().toISOString() })
+    .eq('id', commentId).eq('user_id', userId)
+    .select()
+    .single();
+}
+
 export async function deleteComment({ commentId, userId }) {
   if (!commentId) return { error: null };
   const query = supabase.from('post_comments').delete().eq('id', commentId);
