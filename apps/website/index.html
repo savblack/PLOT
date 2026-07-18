@@ -2701,7 +2701,7 @@
         wrapper.style.transition = '';                        // … then restore its glide
       }
 
-      const INTERVAL = 400, LEAD = 500;                       // near-continuous glide
+      const INTERVAL = 1000, LEAD = 700;                      // ~1s dwell on each list
       let timer = null, lead = null;
       const start = () => {
         if (timer || lead) return;
