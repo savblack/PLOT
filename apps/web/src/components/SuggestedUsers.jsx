@@ -6,7 +6,7 @@ import UserList from './UserList.jsx';
  * "People to follow" — the feed's find-friends block. Shown when the following
  * feed is thin (cold start), so there's always a path to fill it.
  */
-export default function SuggestedUsers({ heading = 'People to follow' }) {
+export default function SuggestedUsers({ heading = 'People To Follow' }) {
   const { user } = useApp();
   const { users, loading } = useSuggestedUsers(user?.id);
 
@@ -15,8 +15,8 @@ export default function SuggestedUsers({ heading = 'People to follow' }) {
   return (
     <section style={{ margin: '0 0 1.75rem' }}>
       <h2 style={{
-        fontSize: '0.72rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase',
-        color: 'var(--text-muted)', margin: '0 0 0.35rem', padding: '0 0.25rem',
+        fontFamily: 'var(--font-serif)', fontSize: '1.5rem', fontWeight: 400, lineHeight: 1.1,
+        color: 'var(--text-primary)', margin: '0 0 0.6rem', padding: '0 0.25rem',
       }}>
         {heading}
       </h2>
