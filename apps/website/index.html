@@ -969,6 +969,65 @@
       border-bottom-color: rgba(26,26,26,0.2);
     }
     .demo-link.dark-link:hover { border-bottom-color: var(--text); }
+
+    /* "Pulls from" platform-proof row — substantiates the "every platform"
+       claim. Logos in their own brand colours (most are already white; Netflix
+       + Prime carry the only colour), sized per-logo for even optical weight. */
+    .demo-copy .btn { margin-top: 2.6rem; }
+    /* Let the column keep its grid share; the marquee's wide track clips inside. */
+    .demo-copy { min-width: 0; }
+
+    /* Platform logos as a slow marquee under the CTA. Edges fade out; three
+       copies of the set loop seamlessly. Muted so the copy + CTA still lead. */
+    .marquee {
+      margin-top: 3rem; overflow: hidden;
+      -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+      mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+    }
+    .marquee-track {
+      display: flex; width: max-content; align-items: center; gap: 3.2rem;
+      animation: marquee-scroll 48s linear infinite;   /* two copies of the set */
+    }
+    @keyframes marquee-scroll { to { transform: translateX(-50%); } }
+    .marquee .pl { width: auto; display: block; opacity: 0.55; }
+    .pl-netflix     { height: 18px; }
+    .pl-prime       { height: 16px; }
+    .pl-max         { height: 21px; }
+    .pl-disney      { height: 20px; }
+    .pl-paramount   { height: 21px; }
+    .pl-amc         { height: 20px; }
+    .pl-crunchyroll { height: 16px; }
+    .pl-hulu        { height: 15px; }
+    .pl-peacock     { height: 15px; }
+    .pl-stan        { height: 17px; }
+    .pl-hayu        { height: 16px; }
+    @media (prefers-reduced-motion: reduce) { .marquee-track { animation: none; } }
+
+    /* App UI shown as floating, deconstructed cards (replaces the phone frame).
+       Absolute layout at a 520×540 design size, scaled to fit via --afs. */
+    #guide-demo { --afs: 0.9; }
+    .af-scale { position: relative; width: calc(520px * var(--afs)); height: calc(540px * var(--afs)); margin: 0 auto; }
+    .app-float { position: absolute; top: 0; left: 0; width: 520px; height: 540px; transform: scale(var(--afs)); transform-origin: top left; }
+    .af-card {
+      position: absolute; border-radius: 16px; background-size: cover; background-position: center;
+      background-color: #141414; box-shadow: 0 30px 60px -28px rgba(0,0,0,0.75); overflow: hidden;
+    }
+    .af-hero { width: 260px; height: 356px; left: 130px; top: 70px; z-index: 4; }
+    .af-hero::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.82), transparent 50%); }
+    .af-badge { position: absolute; top: 13px; left: 13px; z-index: 2; background: var(--accent, #e05578); color: #fff; font-size: 0.56rem; font-weight: 600; letter-spacing: 0.02em; padding: 4px 9px; border-radius: 999px; }
+    .af-cap { position: absolute; left: 15px; bottom: 14px; z-index: 2; font-family: var(--serif); font-size: 1.5rem; line-height: 1; color: #fff; }
+    .af-cap small { display: block; font-family: var(--sans); font-size: 0.62rem; color: rgba(240,239,232,0.65); margin-top: 5px; }
+    .af-p1 { width: 150px; height: 216px; left: 0; top: 150px; z-index: 3; transform: rotate(-6deg); }
+    .af-p2 { width: 140px; height: 202px; right: 8px; top: 40px; z-index: 3; transform: rotate(7deg); }
+    .af-p3 { width: 128px; height: 186px; right: 30px; top: 300px; z-index: 5; transform: rotate(-4deg); }
+    .af-chip { position: absolute; z-index: 6; background: #141414; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 10px 13px; box-shadow: 0 20px 40px -20px rgba(0,0,0,0.7); }
+    .af-chip .af-t { font-size: 0.72rem; font-weight: 600; color: #f0efe8; }
+    .af-chip .af-s { font-size: 0.5rem; letter-spacing: 0.09em; text-transform: uppercase; color: rgba(240,239,232,0.4); margin-bottom: 3px; }
+    .af-chip1 { left: 4px; top: 30px; }
+    .af-chip2 { right: 40px; bottom: 8px; }
+    @media (max-width: 900px) { #guide-demo { --afs: 0.68; } }
+    @media (max-width: 420px) { #guide-demo { --afs: 0.56; } }
+
     .phone-wrap { display: flex; justify-content: center; }
 
     /* iPhone PNG mockup wrapper
@@ -1462,9 +1521,10 @@
       .demo-split { grid-template-columns: 1fr; gap: 3.5rem; }
       .demo-copy { position: static; order: 1 !important; }
       .phone-wrap { order: 2 !important; }
-      .iphone-png-wrap { width: 280px; height: 574px; }
-      .iphone-png-frame { width: 944px; left: -333px; top: -67px; }
-      .phone-frame { left: 14px; top: 35px; width: 253px; height: 526px; }
+      /* Guide demo — tighten the stacked layout on mobile */
+      section#guide-demo { padding-top: 5rem; padding-bottom: 5rem; }
+      #guide-demo .demo-split { gap: 2.4rem; }
+      #guide-demo .marquee-track { gap: 2.2rem; }
     }
 
     @media (max-width: 420px) {
@@ -1752,111 +1812,54 @@
         <h2 class="demo-headline">Everything.<br><em>In one place.</em></h2>
         <p class="demo-body">
           Always know what's worth watching. PLOT pulls the top 10 from
-          every platform, what's trending worldwide, and every release on
+          the major platforms, what's trending worldwide, and every release on
           the way into a single feed. <em>Your</em> feed.
         </p>
-        <a href="https://app.theplot.tv/signup" class="demo-link" data-cta="demo-unify">Unify your entertainment universe &rarr;</a>
+        <a href="https://app.theplot.tv/signup" class="btn btn-outline-white btn-large" data-cta="demo-unify">Unify your entertainment universe &rarr;</a>
+        <div class="marquee" aria-hidden="true">
+          <div class="marquee-track">
+            <!-- set 1 -->
+            <img class="pl pl-netflix"     src="images/platforms/netflix.webp"            alt="" loading="lazy" decoding="async">
+            <img class="pl pl-prime"       src="images/platforms/amazon-prime-video.svg"  alt="" loading="lazy" decoding="async">
+            <img class="pl pl-max"         src="images/platforms/hbo-max.webp"            alt="" loading="lazy" decoding="async">
+            <img class="pl pl-disney"      src="images/platforms/disney-plus.webp"        alt="" loading="lazy" decoding="async">
+            <img class="pl pl-paramount"   src="images/platforms/paramount-plus.svg"      alt="" loading="lazy" decoding="async">
+            <img class="pl pl-amc"         src="images/platforms/amc-plus.webp"           alt="" loading="lazy" decoding="async">
+            <img class="pl pl-crunchyroll" src="images/platforms/crunchyroll.svg"         alt="" loading="lazy" decoding="async">
+            <img class="pl pl-hulu"        src="images/platforms/hulu.svg"                alt="" loading="lazy" decoding="async">
+            <img class="pl pl-peacock"     src="images/platforms/peacock.svg"             alt="" loading="lazy" decoding="async">
+            <img class="pl pl-stan"        src="images/platforms/stan.svg"                alt="" loading="lazy" decoding="async">
+            <img class="pl pl-hayu"        src="images/platforms/hayu.svg"                alt="" loading="lazy" decoding="async">
+            <!-- set 2 (duplicate for a seamless loop) -->
+            <img class="pl pl-netflix"     src="images/platforms/netflix.webp"            alt="" loading="lazy" decoding="async">
+            <img class="pl pl-prime"       src="images/platforms/amazon-prime-video.svg"  alt="" loading="lazy" decoding="async">
+            <img class="pl pl-max"         src="images/platforms/hbo-max.webp"            alt="" loading="lazy" decoding="async">
+            <img class="pl pl-disney"      src="images/platforms/disney-plus.webp"        alt="" loading="lazy" decoding="async">
+            <img class="pl pl-paramount"   src="images/platforms/paramount-plus.svg"      alt="" loading="lazy" decoding="async">
+            <img class="pl pl-amc"         src="images/platforms/amc-plus.webp"           alt="" loading="lazy" decoding="async">
+            <img class="pl pl-crunchyroll" src="images/platforms/crunchyroll.svg"         alt="" loading="lazy" decoding="async">
+            <img class="pl pl-hulu"        src="images/platforms/hulu.svg"                alt="" loading="lazy" decoding="async">
+            <img class="pl pl-peacock"     src="images/platforms/peacock.svg"             alt="" loading="lazy" decoding="async">
+            <img class="pl pl-stan"        src="images/platforms/stan.svg"                alt="" loading="lazy" decoding="async">
+            <img class="pl pl-hayu"        src="images/platforms/hayu.svg"                alt="" loading="lazy" decoding="async">
+          </div>
+        </div>
       </div>
       <div class="phone-wrap reveal">
-        <div class="iphone-png-wrap">
-          <img class="iphone-png-frame" src="images/iphone-mockup.webp" alt="">
-          <div class="phone-frame" id="guideFrame">
-          <div class="guide-screen disc">
-            <div class="disc-bar">
-              <span class="disc-ham"><span></span><span></span><span></span></span>
-              <span class="disc-logo">PLOT</span>
-              <svg class="disc-search" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="8" cy="8" r="5.5"/><path d="M12.5 12.5L16 16"/></svg>
+        <!-- App UI shown as floating, deconstructed cards (no device frame) -->
+        <div class="af-scale">
+          <div class="app-float">
+            <div class="af-card af-hero" style="background-image:url('images/timeline/the-odyssey.jpg')">
+              <span class="af-badge">TRENDING #1</span>
+              <div class="af-cap">The Odyssey<small>2026 &middot; Film</small></div>
             </div>
-            <div class="disc-tabs">
-              <span class="disc-tab disc-tab-on">Discover</span>
-              <span class="disc-tab">Releases</span>
-              <span class="disc-tab">Guide</span>
-            </div>
-            <div class="disc-scroll">
-              <div class="disc-hero" style="background-image:url('images/hero/sinners.webp')">
-                <div class="disc-hero-grad"></div>
-                <span class="disc-trend">TRENDING #1</span>
-                <div class="disc-hero-title">Sinners</div>
-                <div class="disc-hero-meta">2025 &middot; Film</div>
-              </div>
-              <div class="disc-sec">
-                <div class="disc-sec-sub">Trending today</div>
-                <div class="disc-sec-t">Hot right now</div>
-              </div>
-              <div class="disc-row">
-                <div class="disc-card">
-                  <div class="disc-poster" style="background-image:url('images/hero/saltburn.webp')">
-                    <span class="disc-tag">Movie</span>
-                    <svg class="disc-bk" viewBox="0 0 12 14" fill="currentColor"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg>
-                  </div>
-                  <div class="disc-card-t">Saltburn</div>
-                </div>
-                <div class="disc-card">
-                  <div class="disc-poster" style="background-image:url('images/hero/nosferatu.webp')">
-                    <span class="disc-tag">Movie</span>
-                    <svg class="disc-bk" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg>
-                  </div>
-                  <div class="disc-card-t">Nosferatu</div>
-                </div>
-                <div class="disc-card">
-                  <div class="disc-poster" style="background-image:url('images/hero/the-substance.webp')">
-                    <span class="disc-tag">Movie</span>
-                    <svg class="disc-bk" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg>
-                  </div>
-                  <div class="disc-card-t">The Substance</div>
-                </div>
-                <div class="disc-card">
-                  <div class="disc-poster" style="background-image:url('images/hero/anyone-but-you.webp')">
-                    <span class="disc-tag">Movie</span>
-                    <svg class="disc-bk" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg>
-                  </div>
-                  <div class="disc-card-t">Anyone But You</div>
-                </div>
-              </div>
-              <div class="disc-sec">
-                <div class="disc-sec-sub">Popular TV</div>
-                <div class="disc-sec-t">Most binged shows</div>
-              </div>
-              <div class="disc-row">
-                <div class="disc-card">
-                  <div class="disc-poster" style="background-image:url('images/timeline/severance.jpg')">
-                    <span class="disc-tag disc-tag-tv">TV</span>
-                    <svg class="disc-bk" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg>
-                  </div>
-                  <div class="disc-card-t">Severance</div>
-                </div>
-                <div class="disc-card">
-                  <div class="disc-poster" style="background-image:url('images/timeline/the-bear.jpg')">
-                    <span class="disc-tag disc-tag-tv">TV</span>
-                    <svg class="disc-bk" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg>
-                  </div>
-                  <div class="disc-card-t">The Bear</div>
-                </div>
-                <div class="disc-card">
-                  <div class="disc-poster" style="background-image:url('images/timeline/adolescence.jpg')">
-                    <span class="disc-tag disc-tag-tv">TV</span>
-                    <svg class="disc-bk" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg>
-                  </div>
-                  <div class="disc-card-t">Adolescence</div>
-                </div>
-                <div class="disc-card">
-                  <div class="disc-poster" style="background-image:url('images/timeline/presumed-innocent.jpeg')">
-                    <span class="disc-tag disc-tag-tv">TV</span>
-                    <svg class="disc-bk" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg>
-                  </div>
-                  <div class="disc-card-t">Presumed Innocent</div>
-                </div>
-              </div>
-            </div>
-            <div class="disc-nav">
-              <span class="disc-nav-on">Home</span>
-              <span>Calendar</span>
-              <span>My Lists</span>
-              <span>History</span>
-            </div>
+            <div class="af-card af-p1" style="background-image:url('images/hero/nosferatu.webp')"></div>
+            <div class="af-card af-p2" style="background-image:url('images/hero/sinners.webp')"></div>
+            <div class="af-card af-p3" style="background-image:url('images/hero/past-lives.webp')"></div>
+            <div class="af-chip af-chip1"><div class="af-s">Trending today</div><div class="af-t">Hot right now</div></div>
+            <div class="af-chip af-chip2"><div class="af-s">On your list</div><div class="af-t">Add to watchlist +</div></div>
           </div>
-        </div><!-- /phone-frame -->
-        </div><!-- /iphone-png-wrap -->
+        </div>
       </div>
     </div>
   </section>
@@ -2061,7 +2064,7 @@
         <p class="demo-body" style="color:var(--text-secondary)">
           Organise by decade, director, or whatever mood you're in. Create and share film and TV collections that are unmistakably yours.
         </p>
-        <a href="https://app.theplot.tv/signup" class="demo-link dark-link" data-cta="demo-create">Start creating &rarr;</a>
+        <a href="https://app.theplot.tv/signup" class="btn btn-outline btn-large" data-cta="demo-create">Start curating &rarr;</a>
       </div>
     </div>
   </section>
