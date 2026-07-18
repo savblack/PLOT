@@ -6,6 +6,7 @@ import { useDiscover } from '../hooks/useDiscover.js';
 import { usePlatformCharts } from '../hooks/usePlatformCharts.js';
 import { UpcomingContent } from './GuideView.jsx';
 import EpgView from './EpgView.jsx';
+import FeedView from './FeedView.jsx';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import GroupedFilterMenu from './GroupedFilterMenu.jsx';
 import { getButtonLikeProps } from '../utils/interactive.js';
@@ -456,9 +457,10 @@ function DiscoverContent({ openPanel, watchlist }) {
 /* ═══════════════════════════════════════
    DiscoverView — unified home with 3 tabs
 ═══════════════════════════════════════ */
-export default function DiscoverView({ tab = 'discover' }) {
+export default function DiscoverView() {
   const app = useApp();
   const genres        = useGenres();
+  const [tab,          setTab]          = useState('feed');
   const [typeFilters,  setTypeFilters]  = useState(ALL_TYPES);
   const [genreFilters, setGenreFilters] = useState([]);
 
@@ -470,9 +472,36 @@ export default function DiscoverView({ tab = 'discover' }) {
   return (
     <div className={tab === 'guide' ? 'guide-schedule-mode' : ''}>
 
-      {/* ── Contextual toolbar (tab is chosen from the bottom nav) ── */}
+      {/* ── Sub-tab toolbar ── */}
       <div className="sub-tabs">
-        <span className="sub-tabs-date"><TodayLabel /></span>
+        {tab !== 'feed' && <span className="sub-tabs-date"><TodayLabel /></span>}
+
+        <div className="sub-tabs-scroll">
+          <button
+            className={`sub-tab-btn${tab === 'feed' ? ' active' : ''}`}
+            onClick={() => setTab('feed')}
+          >
+            Feed
+          </button>
+          <button
+            className={`sub-tab-btn${tab === 'discover' ? ' active' : ''}`}
+            onClick={() => setTab('discover')}
+          >
+            Discover
+          </button>
+          <button
+            className={`sub-tab-btn${tab === 'releases' ? ' active' : ''}`}
+            onClick={() => setTab('releases')}
+          >
+            Releases
+          </button>
+          <button
+            className={`sub-tab-btn${tab === 'guide' ? ' active' : ''}`}
+            onClick={() => setTab('guide')}
+          >
+            Guide
+          </button>
+        </div>
 
         {tab === 'releases' && (
           <div className="sub-tabs-filters">
@@ -506,6 +535,8 @@ export default function DiscoverView({ tab = 'discover' }) {
       </div>
 
       {/* ── Tab content ── */}
+      {tab === 'feed' && <FeedView />}
+
       {tab === 'discover' && (
         <DiscoverContent
           openPanel={openPanel}
