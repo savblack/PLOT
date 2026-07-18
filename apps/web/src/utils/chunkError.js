@@ -5,6 +5,25 @@
 
 export const RELOAD_KEY = 'plot_chunk_reload';
 
+// If a chunk STILL fails right after we reloaded, the reload didn't help (a
+// genuinely broken deploy) — give up so we don't loop. Outside this window a
+// fresh stale-chunk error is treated as new: a long-lived tab that survives
+// several deploys (e.g. one left open for days, then a rarely-loaded route like
+// /logout is finally opened) gets its own recovery reload instead of crashing
+// because an earlier, unrelated chunk error already spent a one-shot flag.
+const RELOAD_WINDOW_MS = 10_000;
+
+// True when we reloaded to recover from a chunk error too recently to try again.
+export function recentlyReloaded() {
+  const last = Number(sessionStorage.getItem(RELOAD_KEY)) || 0;
+  return last > 0 && Date.now() - last < RELOAD_WINDOW_MS;
+}
+
+// Record that we're about to reload to recover from a stale chunk.
+export function markChunkReload() {
+  sessionStorage.setItem(RELOAD_KEY, String(Date.now()));
+}
+
 export function isChunkError(error) {
   const msg = error?.message || '';
   return (
