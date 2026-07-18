@@ -167,6 +167,9 @@ export default async function handler(req, res) {
 
   res.statusCode = 200;
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
-  res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
+  // Crawler-exposed via sitemap-profiles.xml + robots Allow: /u/. Long edge
+  // cache (1h, SWR 1d) so Googlebot walking every profile doesn't re-render
+  // this multi-query page every 5 min — a secondary driver of the Hobby pause.
+  res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400');
   res.end(html);
 }

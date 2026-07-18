@@ -68,7 +68,7 @@ export default async function handler(req, res) {
   const send = (html, status, cache) => {
     res.statusCode = status;
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.setHeader('Cache-Control', cache ? 'public, s-maxage=300, stale-while-revalidate=600' : 'no-store');
+    res.setHeader('Cache-Control', cache ? 'public, s-maxage=3600, stale-while-revalidate=86400' : 'no-store');
     res.end(html);
   };
 

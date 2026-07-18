@@ -7,6 +7,11 @@ Allow: /list/
 Allow: /terms
 Allow: /privacy
 
+# Dynamically rendered share images — expensive to generate, no index value.
+# Social unfurlers ignore robots and still fetch these via og:image meta tags,
+# so link previews are unaffected; this only stops crawlers hammering them.
+Disallow: /api/og
+
 # App and auth routes — no value to crawl
 Disallow: /app
 Disallow: /app/

@@ -63,6 +63,6 @@ export default async function handler(req, res) {
   // The whole point: serve as HTML, and do NOT forward Supabase's text/plain
   // content type or its `sandbox` Content-Security-Policy.
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
-  res.setHeader('Cache-Control', upstream.headers.get('cache-control') || 'public, s-maxage=300, stale-while-revalidate=600');
+  res.setHeader('Cache-Control', upstream.headers.get('cache-control') || 'public, s-maxage=3600, stale-while-revalidate=86400');
   res.end(body);
 }
