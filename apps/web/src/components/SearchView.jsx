@@ -111,8 +111,8 @@ function ResultRow({ item, openPanel, watchlist, favorites, history }) {
             e.stopPropagation();
             await favorites.toggleFavorite({ ...item, id, tmdb_id: id, media_type: type });
           }}
-          data-tip={isFav ? 'Remove favourite' : 'Favourite'}
-          aria-label={isFav ? `Remove ${title} from favourites` : `Add ${title} to favourites`}
+          data-tip={isFav ? 'Remove favorite' : 'Favorite'}
+          aria-label={isFav ? `Remove ${title} from favorites` : `Add ${title} to favorites`}
         >
           <HeartIcon filled={isFav} />
         </button>

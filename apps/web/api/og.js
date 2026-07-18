@@ -194,7 +194,7 @@ export function postCard(post, fonts) {
 
   const author = post.author || {};
   const name = (author.display_name || author.username || 'Someone').replace(/\b([a-z])/g, (m) => m.toUpperCase());
-  const verb = post.source_type === 'favourite' ? 'favourited'
+  const verb = post.source_type === 'favourite' ? 'favorited'
     : post.source_type === 'top_list' ? 'added to their Top 10' : 'watched';
   const title = post.title || 'PLOT';
   const n = title.length;
