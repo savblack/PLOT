@@ -366,7 +366,8 @@ export default function OnboardingFlow() {
               </div>
             )}
             {seedGridItems.length > 0 && (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem', marginBottom: '0.75rem' }}>
+              <div style={{ maxHeight: '42vh', overflowY: 'auto', WebkitOverflowScrolling: 'touch', marginBottom: '0.75rem', paddingRight: '0.15rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem' }}>
                 {seedGridItems.map(item => {
                   const sel = seedSelected.some(i => i.id === item.id);
                   return (
@@ -392,6 +393,7 @@ export default function OnboardingFlow() {
                     </div>
                   );
                 })}
+                </div>
               </div>
             )}
             {seedSelected.length > 0 && (
