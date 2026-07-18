@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PRIMARY_NAV_ITEMS, DRAWER_NAV_ITEMS, VIEW_TITLES } from '../navigation.js';
+import { PRIMARY_NAV_ITEMS, VIEW_TITLES } from '../navigation.js';
 import { useNotifications } from '../hooks/useNotifications.js';
 import ConfirmModal from './ConfirmModal.jsx';
 
@@ -68,7 +68,7 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
   };
 
   const pageTitle = VIEW_TITLES[currentView] ?? 'PLOT';
-  const showHomeLogo = currentView === 'home' || currentView === 'feed' || (currentView || '').startsWith('u/');
+  const showHomeLogo = currentView === 'home' || (currentView || '').startsWith('u/');
 
   return (
     <div className="app-shell">
@@ -174,7 +174,7 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
         </div>
 
         <nav className="nav-drawer-nav">
-          {DRAWER_NAV_ITEMS.map(({ id, label }) => (
+          {PRIMARY_NAV_ITEMS.map(({ id, label }) => (
             <button
               key={id}
               type="button"

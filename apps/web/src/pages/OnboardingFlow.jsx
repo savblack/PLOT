@@ -216,7 +216,7 @@ export default function OnboardingFlow() {
     // Completing onboarding is an activation signal (first-of wins).
     markActivated('onboarding', { seed_titles_added: seedSelected.length });
 
-    navigate('/feed', { replace: true });
+    navigate('/home', { replace: true });
   };
 
   const toggleProvider = (id) =>
