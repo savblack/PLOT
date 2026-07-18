@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { usePostComments, addComment } from '../hooks/usePostEngagement.js';
 
@@ -56,7 +57,7 @@ export default function CommentSheet({ post, user, profile, onClose, onAdded }) 
 
   const goUser = (username) => { if (username) { onClose(); navigate(`/u/${username}`); } };
 
-  return (
+  return createPortal(
     <div
       onClick={onClose}
       style={{
@@ -150,6 +151,7 @@ export default function CommentSheet({ post, user, profile, onClose, onAdded }) 
           >Post</button>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
