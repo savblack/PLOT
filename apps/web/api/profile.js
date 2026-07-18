@@ -14,6 +14,8 @@
 //
 // Routing (vercel.json):  /u/:username -> /api/profile?username=:username
 
+import { ogBase } from './_og-base.js';
+
 const SUPABASE_URL = 'https://mkegtssedjyqldysvzga.supabase.co';
 // Public, publishable anon key (role: anon) — same key the client ships.
 const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1rZWd0c3NlZGp5cWxkeXN2emdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2MDgzMzUsImV4cCI6MjA4OTE4NDMzNX0.W-toEr3ftNeN0iTpRQ8Ord09sxBiwO2CQC6j2jszN6w';
@@ -120,7 +122,7 @@ export default async function handler(req, res) {
     const desc = profile.watchCount
       ? `@${profile.username} has tracked ${profile.watchCount} film${profile.watchCount === 1 ? '' : 's'} & shows on PLOT${profile.followers ? `, with ${profile.followers} follower${profile.followers === 1 ? '' : 's'}` : ''}. See their taste.`
       : `See what @${profile.username} is watching — their film & TV taste on PLOT.`;
-    const image = `https://${host}/api/og?u=${encodeURIComponent(profile.username)}`;
+    const image = `${ogBase(host)}?u=${encodeURIComponent(profile.username)}`;
     const url = `https://${host}/u/${encodeURIComponent(profile.username)}`;
     const jsonLd = ldjson({
       '@context': 'https://schema.org',
