@@ -474,7 +474,7 @@ export default function DiscoverView() {
 
       {/* ── Sub-tab toolbar ── */}
       <div className="sub-tabs">
-        {tab !== 'feed' && <span className="sub-tabs-date"><TodayLabel /></span>}
+        <span className="sub-tabs-date"><TodayLabel /></span>
 
         <div className="sub-tabs-scroll">
           <button
