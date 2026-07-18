@@ -14,7 +14,9 @@
  *
  * Server-rendered HTML, form POSTs back to itself. A tiny inline script adds the
  * lightbox / character counter / confirmations as progressive enhancement — the
- * page works fully without it. Auth: password (ADMIN_PASSWORD) or ?key= bookmark.
+ * page works fully without it. Auth: password (ADMIN_PASSWORD or ADMIN_TOKEN),
+ * checked in constant time; a derived, non-reversible token is then stored in an
+ * HttpOnly session cookie. Sign-ins are throttled per IP against brute force.
  */
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
@@ -23,9 +25,49 @@ const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const ADMIN_TOKEN = Deno.env.get('ADMIN_TOKEN') ?? '';
 const ADMIN_PASSWORD = Deno.env.get('ADMIN_PASSWORD') ?? '';
 // Either secret signs you in: the friendly ADMIN_PASSWORD (typed on the login
-// page) or the original ADMIN_TOKEN (also accepted via ?key= for bookmarks).
+// page) or the original ADMIN_TOKEN. Both are compared in constant time.
 const SECRETS = [ADMIN_PASSWORD, ADMIN_TOKEN].filter((s) => s.length > 0);
-const validSecret = (s: string | null | undefined): boolean => !!s && SECRETS.includes(s);
+
+// Constant-time compare — avoids leaking the secret via response timing.
+function timingSafeEqual(a: string, b: string): boolean {
+  const ea = new TextEncoder().encode(a);
+  const eb = new TextEncoder().encode(b);
+  if (ea.length !== eb.length) return false;
+  let diff = 0;
+  for (let i = 0; i < ea.length; i++) diff |= ea[i] ^ eb[i];
+  return diff === 0;
+}
+const matchesSecret = (s: string | null | undefined): boolean =>
+  !!s && SECRETS.some((secret) => timingSafeEqual(s, secret));
+
+async function sha256Hex(s: string): Promise<string> {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+// The session cookie holds THIS derived token, never the raw password — a leaked
+// cookie can't be replayed as the master secret elsewhere, and rotating
+// ADMIN_PASSWORD / ADMIN_TOKEN invalidates every existing session.
+const SESSION_TOKEN = await sha256Hex(`plot-admin-review::v1::${ADMIN_PASSWORD}::${ADMIN_TOKEN}`);
+
+// Best-effort in-memory brute-force throttle on sign-ins, keyed by client IP.
+// State lives in the warm isolate; a sustained brute force keeps it warm, which
+// is exactly when the limit bites. A successful sign-in clears the bucket.
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const LOGIN_MAX_FAILS = 8;
+const loginFails = new Map<string, { count: number; first: number }>();
+const clientIp = (req: Request): string =>
+  (req.headers.get('x-forwarded-for') || '').split(',')[0].trim() || 'unknown';
+function loginBlocked(ip: string): boolean {
+  const rec = loginFails.get(ip);
+  if (!rec) return false;
+  if (Date.now() - rec.first > LOGIN_WINDOW_MS) { loginFails.delete(ip); return false; }
+  return rec.count >= LOGIN_MAX_FAILS;
+}
+function noteLoginFail(ip: string): void {
+  const rec = loginFails.get(ip);
+  if (!rec || Date.now() - rec.first > LOGIN_WINDOW_MS) loginFails.set(ip, { count: 1, first: Date.now() });
+  else rec.count += 1;
+}
 const SITE_URL = 'https://theplot.tv';
 
 // The week in progress (everything still decidable / editable), oldest first.
@@ -161,8 +203,12 @@ const cookieToken = (req: Request) => {
   return raw ? decodeURIComponent(raw) : undefined;
 };
 
-const authed = (req: Request, url: URL) =>
-  validSecret(url.searchParams.get('key')) || validSecret(cookieToken(req));
+// Cookie-only session auth. The ?key= URL param was removed — it leaked the
+// secret into proxy logs, browser history and Referer headers.
+const authed = (req: Request): boolean => {
+  const c = cookieToken(req);
+  return !!c && timingSafeEqual(c, SESSION_TOKEN);
+};
 
 const STYLE = `
   :root { --ink:#15140f; --mut:#76746c; --line:#e7e3dc; --soft:#f7f5f1; --pink:#c23d63; --teal:#0F6E56; --amber:#9a6a00; }
@@ -276,10 +322,12 @@ const shell = (body: string) => `<!DOCTYPE html><html lang="en"><head>
 
 // The sign-in page shown when there's no valid session. The password is
 // ADMIN_PASSWORD (or the ADMIN_TOKEN); on success we set a 30-day cookie.
-const loginPage = (error = false) => shell(
+const loginPage = (error = false, rateLimited = false) => shell(
   `<div class="login"><h1>PLOT control room</h1><p class="small" style="margin:6px 0 0">Sign in to review and publish.</p>
    <form method="POST" action="/api/admin">
-     ${error ? '<div class="flash err" style="margin-top:14px">Incorrect password.</div>' : ''}
+     ${rateLimited
+       ? '<div class="flash err" style="margin-top:14px">Too many attempts. Wait a few minutes and try again.</div>'
+       : error ? '<div class="flash err" style="margin-top:14px">Incorrect password.</div>' : ''}
      <label>Password</label>
      <input type="password" name="password" autofocus autocomplete="current-password">
      <button class="approve" type="submit">Sign in</button>
@@ -313,7 +361,7 @@ const pubChips = (pubs: Row[]) => {
 
 const confirm = (msg: string) => ` onclick="return confirm('${msg.replace(/'/g, '')}')"`;
 
-const postForm = (p: Row, key: string) => {
+const postForm = (p: Row) => {
   const c = p.copy || {};
   const media = (p.media || []) as { portrait_path?: string; landscape_path?: string }[];
   const imgs = media.map((m) => {
@@ -331,7 +379,6 @@ const postForm = (p: Row, key: string) => {
   const plats = platformsFor(p).map((s) => `<span class="chip">${PLAT_LABEL[s] || s}</span>`).join('');
   const preview = c.x || c.instagram || c.threads || '';
   return `<form id="p-${esc(p.id)}" data-status="${esc(p.status)}" class="post ${ACCENT[p.status] || 'p-wait'}" method="POST" action="/api/admin">
-    <input type="hidden" name="key" value="${esc(key)}">
     <input type="hidden" name="id" value="${esc(p.id)}">
     <div class="phead">
       <div class="ptitle">
@@ -398,21 +445,28 @@ Deno.serve(async (req) => {
   // Read the body once: it carries either the sign-in password or a desk action.
   const form = req.method === 'POST' ? await req.formData() : null;
   const submitted = form ? String(form.get('password') || '') : '';
-  const passwordOk = validSecret(submitted);
+  const isLoginAttempt = !!form && form.has('password');
+  const ip = clientIp(req);
 
-  // No valid session → show the sign-in page (with an error if a wrong password
-  // was just submitted). The ?key= shortcut still works for bookmarks.
-  if (!authed(req, url) && !passwordOk) {
-    return new Response(loginPage(!!form && form.has('password')),
+  // Throttle brute force before checking the password at all.
+  if (isLoginAttempt && loginBlocked(ip)) {
+    return new Response(loginPage(true, true),
+      { status: 429, headers: { 'content-type': 'text/html; charset=utf-8', 'retry-after': '900' } });
+  }
+
+  const passwordOk = matchesSecret(submitted);
+  if (isLoginAttempt) { if (passwordOk) loginFails.delete(ip); else noteLoginFail(ip); }
+
+  // No valid session cookie and no valid password → show the sign-in page.
+  if (!authed(req) && !passwordOk) {
+    return new Response(loginPage(isLoginAttempt),
       { status: 401, headers: { 'content-type': 'text/html; charset=utf-8' } });
   }
 
   const supabase = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
-  // On a fresh sign-in (password or ?key=), persist the matched secret as the cookie.
-  const sessionSecret = passwordOk ? submitted
-    : (validSecret(url.searchParams.get('key')) ? url.searchParams.get('key')! : '');
-  const setCookie = sessionSecret
-    ? { 'set-cookie': `admin_token=${encodeURIComponent(sessionSecret)}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=2592000` } : {};
+  // On a fresh password sign-in, set the derived session cookie (never the raw secret).
+  const setCookie = passwordOk
+    ? { 'set-cookie': `admin_token=${SESSION_TOKEN}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=2592000` } : {};
 
   // Readable week sheet: the weekly batch pre-builds week.html and stores it in
   // the private `marketing-review` bucket. Supabase serves stored HTML as
@@ -505,11 +559,6 @@ Deno.serve(async (req) => {
     }
   }
 
-  // Embed the authenticating secret in every form so actions stay authed even if
-  // the session cookie doesn't survive the proxy. After a password sign-in the
-  // cookie isn't in the request yet, so fall back to the just-submitted password.
-  const key = url.searchParams.get('key') || cookieToken(req) || (passwordOk ? submitted : '');
-
   const { data: settings } = await supabase.from('marketing_settings').select('publishing_paused').limit(1).maybeSingle();
   const paused = !!settings?.publishing_paused;
 
@@ -555,18 +604,17 @@ Deno.serve(async (req) => {
     (byDay.get(k) || byDay.set(k, []).get(k)!).push(p);
   }
   const dayBlocks = [...byDay.entries()].map(([, list]) =>
-    `<section class="day"><div class="dayhead">${esc(fmtDay(list[0].scheduled_for))}</div>${list.map((p) => postForm(p, key)).join('')}</section>`
+    `<section class="day"><div class="dayhead">${esc(fmtDay(list[0].scheduled_for))}</div>${list.map((p) => postForm(p)).join('')}</section>`
   ).join('');
 
-  const keyInput = `<input type="hidden" name="key" value="${esc(key)}">`;
   const topbar = `<div class="topbar">
     <div class="toprow">
       <h1>PLOT control room</h1>
       <span class="spacer"></span>
-      <form method="POST" action="/api/admin">${keyInput}
+      <form method="POST" action="/api/admin">
         <button class="approve" name="action" value="approve_all"${counts.review ? confirm(`Approve all ${counts.review} posts awaiting review?`) : ' disabled'}>Approve week${counts.review ? ` (${counts.review})` : ''}</button>
       </form>
-      <form method="POST" action="/api/admin">${keyInput}
+      <form method="POST" action="/api/admin">
         <button class="${paused ? 'resume' : 'pause'}" name="action" value="${paused ? 'resume' : 'pause'}"${paused ? '' : confirm('Pause all publishing? Approved posts will not be sent until you resume.')}>${paused ? 'Resume' : 'Pause'}</button>
       </form>
     </div>

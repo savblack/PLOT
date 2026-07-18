@@ -19,6 +19,23 @@ const CORS = {
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
+// Best-effort in-memory per-IP throttle on subscribe POSTs — raises the cost of
+// list-pollution / bulk address injection (the honeypot only stops naive bots).
+// Warm-isolate state; a burst from one IP keeps the isolate warm, which is when
+// the limit matters. Not applied to the unsubscribe flow.
+const SUB_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+const SUB_MAX = 10;                   // subscribe attempts per IP per window
+const subHits = new Map<string, { count: number; first: number }>();
+const clientIp = (req: Request): string =>
+  (req.headers.get('x-forwarded-for') || '').split(',')[0].trim() || 'unknown';
+function subRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const rec = subHits.get(ip);
+  if (!rec || now - rec.first > SUB_WINDOW_MS) { subHits.set(ip, { count: 1, first: now }); return false; }
+  rec.count += 1;
+  return rec.count > SUB_MAX;
+}
+
 const page = (title: string, body: string, status = 200) =>
   new Response(
     `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -85,6 +102,13 @@ Deno.serve(async (req) => {
 
   // ── Subscribe flow ──
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
+
+  if (subRateLimited(clientIp(req))) {
+    return new Response(JSON.stringify({ error: 'Too many requests' }), {
+      status: 429,
+      headers: { 'Content-Type': 'application/json', 'Retry-After': '3600', ...CORS },
+    });
+  }
 
   let body: { email?: string; website?: string; list?: string };
   try {
