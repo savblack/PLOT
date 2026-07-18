@@ -1,11 +1,13 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { useApp, posterUrl, countdownChip } from '../App.jsx';
+import { useLocation } from 'react-router-dom';
+import { useApp, posterUrl, countdownChip, TodayLabel } from '../App.jsx';
 import { tmdb } from '../api/tmdb.js';
 import { findDuplicateCustomList } from '../domain/customLists.js';
 import { useHistory } from '../hooks/useHistory.js';
 import { useGenres } from '../hooks/useGenres.js';
 import { localDateStr } from '../utils/date.js';
+import { entriesForMonth, historyMonthEmptyCopy, historyRatingLabel, monthLabel } from '../utils/history.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import GroupedFilterMenu from './GroupedFilterMenu.jsx';
 import PlotLoader from './PlotLoader.jsx';
@@ -1036,6 +1038,80 @@ function WantToWatchSection({ watchlist, watching, hideHeader }) {
   );
 }
 
+/* ── History row ── */
+function HistoryRow({ entry, openPanel }) {
+  const img   = posterUrl(entry.poster_path, 'w92');
+  const title = entry.title || 'Unknown';
+  const date  = entry.watched_at
+    ? new Date(entry.watched_at).toLocaleDateString('en', { month: 'short', day: 'numeric' })
+    : '';
+  const ratingLabel = historyRatingLabel(entry.rating);
+  const openDetails = () => openPanel(entry.tmdb_id, entry.media_type || 'movie');
+
+  return (
+    <div
+      className="list-row history-list-row interactive-surface"
+      onClick={openDetails}
+      {...getButtonLikeProps({ onPress: openDetails, label: `View details for ${title}` })}
+    >
+      <div className="list-row-poster">
+        {img && <img src={img} alt={title} />}
+      </div>
+      <div className="list-row-info">
+        <div className="list-row-title">{title}</div>
+        <div className="list-row-meta">
+          {date && <span>{date}</span>}
+          {ratingLabel && <span className="history-row-rating">{ratingLabel}</span>}
+        </div>
+      </div>
+      {entry.note && <div className="history-row-review">{entry.note}</div>}
+    </div>
+  );
+}
+
+/* ── History section (month-scoped watch history) ── */
+function HistorySection({ entries, loading, year, month }) {
+  const { openPanel } = useApp();
+  const today = useMemo(() => new Date(), []);
+
+  const isCurrentMonth = year === today.getFullYear() && month === today.getMonth();
+  const monthHistory   = useMemo(() => entriesForMonth(entries, year, month), [entries, year, month]);
+  const emptyMonthState = historyMonthEmptyCopy({ year, month, isCurrentMonth });
+
+  if (loading) return <LoadingSpinner />;
+
+  if (entries.length === 0) {
+    return (
+      <div className="empty-state" style={{ marginTop: '1rem' }}>
+        <div className="empty-title">Nothing watched yet</div>
+        <div className="empty-body">
+          Your watch history will appear here. Search for a title and mark it as watched to get started.
+        </div>
+      </div>
+    );
+  }
+
+  if (monthHistory.length === 0) {
+    return (
+      <div className="empty-state" style={{ marginTop: '1rem' }}>
+        <div className="empty-title">{emptyMonthState.title}</div>
+        <div className="empty-body">{emptyMonthState.body}</div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ paddingBottom: '2rem' }}>
+      <div className="date-group-header">
+        <span className="date-group-label">{monthLabel(year, month)}</span>
+      </div>
+      {monthHistory.map(entry => (
+        <HistoryRow key={entry.id} entry={entry} openPanel={openPanel} />
+      ))}
+    </div>
+  );
+}
+
 /* ── Collapsible section bar (used under "All" tab) ── */
 function CollapsibleBar({ label, open, onToggle }) {
   return (
@@ -1052,10 +1128,31 @@ function CollapsibleBar({ label, open, onToggle }) {
 export default function MyListsView() {
   const { user, topLists, favorites, customLists, watching, watchlist } = useApp();
   const genres = useGenres();
+  const location = useLocation();
+  const { entries: historyEntries, loading: historyLoading } = useHistory(user?.id);
 
-  const [tab,          setTab]          = useState('all');
+  const [tab,          setTab]          = useState(location.state?.tab || 'all');
   const [typeFilters,  setTypeFilters]  = useState([]);
   const [genreFilters, setGenreFilters] = useState([]);
+
+  // History tab month navigation
+  const today = useMemo(() => new Date(), []);
+  const [historyYear,  setHistoryYear]  = useState(today.getFullYear());
+  const [historyMonth, setHistoryMonth] = useState(today.getMonth());
+  const isCurrentHistoryMonth = historyYear === today.getFullYear() && historyMonth === today.getMonth();
+
+  const goToHistoryToday = () => {
+    setHistoryYear(today.getFullYear());
+    setHistoryMonth(today.getMonth());
+  };
+  const prevHistoryMonth = () => {
+    setHistoryYear(historyMonth === 0 ? historyYear - 1 : historyYear);
+    setHistoryMonth(historyMonth === 0 ? 11 : historyMonth - 1);
+  };
+  const nextHistoryMonth = () => {
+    setHistoryYear(historyMonth === 11 ? historyYear + 1 : historyYear);
+    setHistoryMonth(historyMonth === 11 ? 0 : historyMonth + 1);
+  };
 
   // Collapse state for "All" tab sections
   const [watchingOpen, setWatchingOpen] = useState(true);
@@ -1089,9 +1186,11 @@ export default function MyListsView() {
     { id: 'top10',     label: 'Top 10'        },
     { id: 'favorites', label: 'Favorites'     },
     { id: 'lists',     label: 'Lists'         },
+    { id: 'history',   label: 'History'       },
   ];
 
   const isAll       = tab === 'all';
+  const isHistory   = tab === 'history';
   const showWatching = isAll || tab === 'watching';
   const showWant     = isAll || tab === 'want';
   const showTop10    = isAll || tab === 'top10';
@@ -1115,27 +1214,40 @@ export default function MyListsView() {
           ))}
         </div>
         <div className="sub-tabs-filters">
-          <GroupedFilterMenu
-            ariaLabel="Filter lists"
-            groups={[
-              {
-                heading: 'Type',
-                options: [
-                  { id: 'movie',  label: 'Movies' },
-                  { id: 'tv',     label: 'TV'     },
-                  { id: 'cinema', label: 'Cinema' },
-                ],
-                value: typeFilters,
-                onChange: setTypeFilters,
-              },
-              {
-                heading: 'Genre',
-                options: genres.map(g => ({ id: g.id, label: g.name })),
-                value: genreFilters,
-                onChange: setGenreFilters,
-              },
-            ]}
-          />
+          {isHistory ? (
+            <div className="cal-month-nav">
+              <TodayLabel onClick={!isCurrentHistoryMonth ? goToHistoryToday : undefined} />
+              <button className="cal-month-btn" onClick={prevHistoryMonth} aria-label="Previous month">
+                <svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>
+              </button>
+              <span className="cal-month-nav-label">{monthLabel(historyYear, historyMonth, 'short')}</span>
+              <button className="cal-month-btn" onClick={nextHistoryMonth} aria-label="Next month">
+                <svg viewBox="0 0 24 24"><polyline points="9,18 15,12 9,6"/></svg>
+              </button>
+            </div>
+          ) : (
+            <GroupedFilterMenu
+              ariaLabel="Filter lists"
+              groups={[
+                {
+                  heading: 'Type',
+                  options: [
+                    { id: 'movie',  label: 'Movies' },
+                    { id: 'tv',     label: 'TV'     },
+                    { id: 'cinema', label: 'Cinema' },
+                  ],
+                  value: typeFilters,
+                  onChange: setTypeFilters,
+                },
+                {
+                  heading: 'Genre',
+                  options: genres.map(g => ({ id: g.id, label: g.name })),
+                  value: genreFilters,
+                  onChange: setGenreFilters,
+                },
+              ]}
+            />
+          )}
         </div>
       </div>
 
@@ -1189,6 +1301,16 @@ export default function MyListsView() {
           {isAll && <CollapsibleBar label="My Lists" open={listsOpen} onToggle={() => setListsOpen(o => !o)} />}
           {(!isAll || listsOpen) && <CustomListsSection customLists={customLists} filterItems={filterItems} hideHeader={isAll} />}
         </>
+      )}
+
+      {/* ── History ── */}
+      {isHistory && (
+        <HistorySection
+          entries={historyEntries}
+          loading={historyLoading}
+          year={historyYear}
+          month={historyMonth}
+        />
       )}
     </div>
   );
