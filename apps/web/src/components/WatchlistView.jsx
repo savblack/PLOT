@@ -125,7 +125,7 @@ export default function WatchlistView() {
           </div>
           <div className="empty-title">Nothing here yet</div>
           <div className="empty-body">
-            Browse the Guide or search for titles — tap the bookmark to save, or "Start Watching" for shows in progress.
+            Browse the Guide or search for titles. Tap the bookmark to save, or "Start Watching" for shows in progress.
           </div>
         </div>
       ) : (
