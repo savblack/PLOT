@@ -19,14 +19,14 @@ export default function PrivacyPage() {
         <h2>2. What We Collect</h2>
         <p>When you use PLOT, we may collect:</p>
         <ul>
-          <li><strong>Account information</strong> — your email address and hashed password (managed via Supabase Auth)</li>
-          <li><strong>Profile and preference data</strong> — your username, display name, optional bio, region, timezone, and channel/provider preferences</li>
-          <li><strong>Activity data</strong> — films and TV shows you log, rate, save, add to lists, or track in progress</li>
-          <li><strong>Journal entries</strong> — notes and reviews you write about content you've watched</li>
-          <li><strong>Integration and utility data</strong> — calendar feed tokens, reminder settings, and optional Plex/Trakt integration records where enabled</li>
-          <li><strong>Support data</strong> — feedback messages and optional screenshot attachments you submit through the app</li>
-          <li><strong>Usage data</strong> — product analytics about pages viewed and features used</li>
-          <li><strong>Technical data</strong> — IP address, browser type, and device information collected automatically when you access the Service</li>
+          <li><strong>Account information</strong>: your email address and hashed password (managed via Supabase Auth)</li>
+          <li><strong>Profile and preference data</strong>: your username, display name, optional bio, region, timezone, and channel/provider preferences</li>
+          <li><strong>Activity data</strong>: films and TV shows you log, rate, save, add to lists, or track in progress</li>
+          <li><strong>Journal entries</strong>: notes and reviews you write about content you've watched</li>
+          <li><strong>Integration and utility data</strong>: calendar feed tokens, reminder settings, and optional Plex/Trakt integration records where enabled</li>
+          <li><strong>Support data</strong>: feedback messages and optional screenshot attachments you submit through the app</li>
+          <li><strong>Usage data</strong>: product analytics about pages viewed and features used</li>
+          <li><strong>Technical data</strong>: IP address, browser type, and device information collected automatically when you access the Service</li>
         </ul>
 
         <h2>3. How We Use Your Data</h2>
@@ -43,14 +43,14 @@ export default function PrivacyPage() {
         <h2>4. Third-Party Services &amp; Disclaimer</h2>
         <p>The Service relies on third-party infrastructure and data providers. By using PLOT, you acknowledge and accept that your data may be processed by these third parties under their own policies, over which SUSUMU HOUSE has no control:</p>
         <ul>
-          <li><strong>Supabase</strong> — authentication, database, storage, and edge functions</li>
-          <li><strong>The Movie Database (TMDB)</strong> — film and TV metadata. This product uses the TMDB API but is not endorsed or certified by TMDB.</li>
-          <li><strong>JustWatch</strong> — streaming availability ("where to watch") data, delivered via the TMDB API.</li>
-          <li><strong>Vercel</strong> — website and application hosting. Your requests are routed through Vercel's infrastructure.</li>
-          <li><strong>PostHog</strong> — product analytics used to understand how the Service is used.</li>
-          <li><strong>Linear</strong> — anonymised in-app feedback can be mirrored into our product backlog for support and planning.</li>
-          <li><strong>Resend</strong> — feedback email delivery and transactional notification support where applicable.</li>
-          <li><strong>Google Fonts</strong> — typography loaded from Google's servers, which may log your IP address per Google's privacy policy.</li>
+          <li><strong>Supabase</strong>: authentication, database, storage, and edge functions</li>
+          <li><strong>The Movie Database (TMDB)</strong>: film and TV metadata. This product uses the TMDB API but is not endorsed or certified by TMDB.</li>
+          <li><strong>JustWatch</strong>: streaming availability ("where to watch") data, delivered via the TMDB API.</li>
+          <li><strong>Vercel</strong>: website and application hosting. Your requests are routed through Vercel's infrastructure.</li>
+          <li><strong>PostHog</strong>: product analytics used to understand how the Service is used.</li>
+          <li><strong>Linear</strong>: anonymised in-app feedback can be mirrored into our product backlog for support and planning.</li>
+          <li><strong>Resend</strong>: feedback email delivery and transactional notification support where applicable.</li>
+          <li><strong>Google Fonts</strong>: typography loaded from Google's servers, which may log your IP address per Google's privacy policy.</li>
         </ul>
         <p><strong>Affiliate links.</strong> Some links to streaming services and retailers include an affiliate identifier that tells the destination the visit came from PLOT. It contains no personal information about you, and we do not share your account data with these third parties. PLOT may earn a commission on qualifying purchases made through these links, at no additional cost to you.</p>
         <p>We are not liable for the acts or omissions of these third-party providers, including any data breaches, service outages, or loss of data that occurs on their infrastructure. Your use of the Service constitutes your acceptance of their respective policies.</p>

@@ -253,7 +253,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
                 </svg>
               </div>
               <h1>Check your inbox</h1>
-              <p>We sent a one-time sign-in link to <strong>{email}</strong>. Open it on this device and you're straight in — no password needed.</p>
+              <p>We sent a one-time sign-in link to <strong>{email}</strong>. Open it on this device and you're straight in, no password needed.</p>
               <button className="auth-cta auth-cta--outline" onClick={() => { setMagicSent(false); resetCaptcha(); }}>Back</button>
             </div>
           )}

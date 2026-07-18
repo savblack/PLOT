@@ -67,7 +67,7 @@ export default function LogoutPage() {
                 </svg>
               </div>
               <h1>You're signed out</h1>
-              <p>Come back any time — your watchlist and history will be right where you left them.</p>
+              <p>Come back any time. Your watchlist and history will be right where you left them.</p>
               <div className="logout-actions">
                 <Link to="/login" className="auth-cta">Log back in</Link>
                 <a href={MARKETING_URL} className="auth-cta auth-cta--outline">Return to homepage</a>

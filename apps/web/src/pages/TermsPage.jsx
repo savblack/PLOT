@@ -42,7 +42,7 @@ export default function TermsPage() {
         <p>You retain ownership of content you create on PLOT. By submitting content, you grant SUSUMU HOUSE a perpetual, worldwide, non-exclusive, royalty-free, sublicensable license to use, store, display, reproduce, and distribute that content for the purpose of operating and improving the Service.</p>
         <p>You are solely responsible for all content you submit and represent that you have all rights necessary to grant the above license. You agree to indemnify and hold harmless SUSUMU HOUSE from any claims arising from your content. We are not responsible for and expressly disclaim liability for any user-generated content on the Service.</p>
 
-        <h2>6. No Warranties — Service Provided "As Is"</h2>
+        <h2>6. No Warranties: Service Provided "As Is"</h2>
         <p><strong>THE SERVICE IS PROVIDED STRICTLY ON AN "AS IS" AND "AS AVAILABLE" BASIS WITHOUT WARRANTY OF ANY KIND, WHETHER EXPRESS, IMPLIED, STATUTORY, OR OTHERWISE. SUSUMU HOUSE EXPRESSLY DISCLAIMS ALL WARRANTIES, INCLUDING BUT NOT LIMITED TO IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND NON-INFRINGEMENT.</strong></p>
         <p>We do not warrant that: (a) the Service will be uninterrupted, error-free, or secure; (b) any defects will be corrected; (c) the Service or servers that make it available are free of viruses or harmful components; or (d) the results of using the Service will meet your requirements. You assume all responsibility for any damage to your device, loss of data, or other harm that results from your use of the Service.</p>
 
