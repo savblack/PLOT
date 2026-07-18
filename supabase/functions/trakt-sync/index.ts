@@ -28,8 +28,9 @@ function cleanDate(value: unknown) {
 // ── Encryption (same AES-GCM approach as media-sync) ─────────────────────────
 
 async function tokenKey() {
-  const secret = Deno.env.get('PLEX_TOKEN_SECRET') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-  if (!secret) throw new Error('Encryption secret is not configured')
+  // Use a dedicated secret only — never the service-role key (see media-sync).
+  const secret = Deno.env.get('TRAKT_TOKEN_SECRET') || Deno.env.get('PLEX_TOKEN_SECRET')
+  if (!secret) throw new Error('TRAKT_TOKEN_SECRET / PLEX_TOKEN_SECRET is not configured')
   const keyBytes = await crypto.subtle.digest('SHA-256', encoder.encode(secret))
   return crypto.subtle.importKey('raw', keyBytes, 'AES-GCM', false, ['encrypt', 'decrypt'])
 }
