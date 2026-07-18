@@ -13,6 +13,7 @@ import { tmdb, getTmdbRegion } from '../lib/tmdb';
 import { backdropUrl, posterUrl, logoUrl, Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAppData } from '../contexts/AppDataContext';
+import { favoriteWords } from '../lib/spelling';
 import { findDuplicateCustomList } from '@plot/core/customLists.js';
 import { buildWatchLink } from '@plot/core/watchLinks.js';
 import { canCreateCustomList, FREE_CUSTOM_LIST_CAP } from '@plot/core/premium.js';
@@ -390,7 +391,8 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { userId, watchlist, watching, favorites, history, customLists } = useAppData();
+  const { userId, profile, watchlist, watching, favorites, history, customLists } = useAppData();
+  const fw = favoriteWords(profile?.region);
 
   const [showListSheet, setShowListSheet] = useState(false);
   const [details,   setDetails]   = useState<TMDBDetails | null>(null);
@@ -605,7 +607,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                     >
                       <IconHeart filled={isFav} />
                       <Text style={[styles.btnSecondaryText, isFav && { color: colors.accent }]}>
-                        {isFav ? 'Favourited' : 'Favourite'}
+                        {isFav ? fw.pastTitle : fw.noun}
                       </Text>
                     </TouchableOpacity>
                     <TouchableOpacity
