@@ -15,6 +15,7 @@ import { useMediaPanel } from '../../contexts/MediaPanelContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import { canCreateCustomList, FREE_CUSTOM_LIST_CAP } from '@plot/core/premium.js';
 import { tmdb } from '../../lib/tmdb';
+import { favoriteWords } from '../../lib/spelling';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 
@@ -329,6 +330,7 @@ export default function MyListsScreen() {
   const { open: openPanel } = useMediaPanel();
   const router  = useRouter();
   const { userId, watchlist, watching, favorites, customLists, history, profile } = useAppData();
+  const fw = favoriteWords(profile?.region);
 
   const [tab,          setTab]          = useState('all');
   const [typeFilter,   setTypeFilter]   = useState<TypeFilter>('all');
@@ -468,7 +470,7 @@ export default function MyListsScreen() {
           <>
             {isAll && (
               <SectionBar
-                label="Favourites"
+                label={fw.plural}
                 count={favList.length}
                 open={favsOpen}
                 onToggle={() => setFavsOpen(o => !o)}
@@ -570,7 +572,7 @@ export default function MyListsScreen() {
           style={styles.subTabsScroll}
         >
           {TABS.map(t => (
-            <SubTab key={t.id} label={t.label} active={tab === t.id} onPress={() => setTab(t.id)} />
+            <SubTab key={t.id} label={t.id === 'favorites' ? fw.plural : t.label} active={tab === t.id} onPress={() => setTab(t.id)} />
           ))}
         </ScrollView>
         <View style={styles.filterRow}>
@@ -592,7 +594,7 @@ export default function MyListsScreen() {
       {/* Modals */}
       {showAddFav && (
         <SearchPickModal
-          title="Add to Favourites"
+          title={`Add to ${fw.plural}`}
           historyEntries={history.entries}
           onSelect={(item) => favorites.toggleFavorite(item)}
           onClose={() => setShowAddFav(false)}
