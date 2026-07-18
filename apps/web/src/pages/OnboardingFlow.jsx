@@ -423,10 +423,10 @@ export default function OnboardingFlow() {
         <div style={{ width: '100%', maxWidth: 420, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             {step > 1 && (
-              <button className="btn btn-ghost" onClick={() => setStep(s => s - 1)}>← Back</button>
+              <button className="onboarding-cta onboarding-cta--outline" onClick={() => setStep(s => s - 1)}>← Back</button>
             )}
             <button
-              className="btn btn-primary"
+              className="onboarding-cta"
               style={{ flex: 1 }}
               onClick={step === 3 ? finish : goNext}
               disabled={saving}
