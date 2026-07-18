@@ -2,6 +2,8 @@ import { useEffect, useRef } from 'react';
 import { useApp } from '../App.jsx';
 import { useFeed } from '../hooks/useFeed.js';
 import FeedPost from './FeedPost.jsx';
+import SuggestedUsers from './SuggestedUsers.jsx';
+import PublicProfileNudge from './PublicProfileNudge.jsx';
 
 export default function FeedView() {
   const { user } = useApp();
@@ -22,6 +24,10 @@ export default function FeedView() {
 
   return (
     <div style={{ maxWidth: 480, margin: '0 auto', padding: '0.5rem 1rem 4rem' }}>
+      <PublicProfileNudge />
+
+      {!loading && (source === 'global' || items.length === 0) && <SuggestedUsers />}
+
       {source === 'global' && !loading && items.length > 0 && (
         <p style={{
           fontSize: '0.72rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase',
