@@ -1,5 +1,14 @@
 # Contributing
 
+## First-Time Setup
+
+Enable the local secret-scanning git hook (blocks commits containing secret-shaped
+strings). Run once per clone:
+
+```sh
+git config core.hooksPath .githooks
+```
+
 ## Before Opening a PR
 
 Run:

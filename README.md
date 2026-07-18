@@ -96,6 +96,6 @@ Pull requests should pass CI before merging. The repository is private, so requi
 
 ## Launch Docs
 
-- Public launch playbook: [docs/launch/public-launch-readiness.md](/Users/savannahblack/.codex/worktrees/122d/PLOT/docs/launch/public-launch-readiness.md)
-- Signed-in QA checklist: [docs/qa/public-launch-checklist.md](/Users/savannahblack/.codex/worktrees/122d/PLOT/docs/qa/public-launch-checklist.md)
-- Shared design system: [docs/design/shared-design-system.md](/Users/savannahblack/.codex/worktrees/122d/PLOT/docs/design/shared-design-system.md)
+- Public launch playbook: [docs/launch/public-launch-readiness.md](docs/launch/public-launch-readiness.md)
+- Signed-in QA checklist: [docs/qa/public-launch-checklist.md](docs/qa/public-launch-checklist.md)
+- Shared design system: [docs/design/shared-design-system.md](docs/design/shared-design-system.md)
