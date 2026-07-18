@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useApp, posterUrl } from '../App.jsx';
 import { starFillPercent, STAR_COUNT } from '../utils/ratings.js';
 import { toggleLike } from '../hooks/usePostEngagement.js';
+import { buildTitleShareUrl, shareUrl } from '../utils/share.js';
 import CommentSheet from './CommentSheet.jsx';
 
 function relativeTime(iso) {
@@ -53,6 +54,16 @@ function HeartIcon({ filled }) {
     <svg viewBox="0 0 24 24" width="20" height="20" fill={filled ? 'currentColor' : 'none'}
          stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1a5.5 5.5 0 1 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/>
+    </svg>
+  );
+}
+
+function ShareIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+         strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M22 2 11 13"/>
+      <path d="M22 2 15 22l-4-9-9-4z"/>
     </svg>
   );
 }
@@ -108,6 +119,32 @@ export default function FeedPost({ post }) {
       setLiked(wasLiked);
       setLikeCount(c => c + (wasLiked ? 1 : -1));
     }
+  };
+
+  // Share the post as an image (the /api/og?post= card) where the device can
+  // share files — the real Instagram / Stories path — otherwise share the
+  // title's link so recipients land in the app.
+  const onShare = async () => {
+    const url = buildTitleShareUrl({ tmdbId: tmdb_id, mediaType: media_type, source: 'feed_share' });
+    const text = `${displayName} ${ACTION[source_type] || 'shared'} ${title} on PLOT`;
+    const imageUrl = `${window.location.origin}/api/og?post=${id}`;
+    try {
+      if (typeof navigator !== 'undefined' && navigator.canShare) {
+        const res = await fetch(imageUrl);
+        if (res.ok) {
+          const blob = await res.blob();
+          const file = new File([blob], 'plot.png', { type: blob.type || 'image/png' });
+          if (navigator.canShare({ files: [file] })) {
+            await navigator.share({ files: [file], text, ...(url ? { url } : {}) });
+            return;
+          }
+        }
+      }
+    } catch (err) {
+      if (err?.name === 'AbortError') return;   // user cancelled the sheet
+      // otherwise fall through to a plain link share
+    }
+    await shareUrl({ url: url || imageUrl, text });
   };
 
   return (
@@ -188,6 +225,12 @@ export default function FeedPost({ post }) {
           >
             <CommentIcon />
             {commentCount > 0 && <span>{commentCount}</span>}
+          </button>
+          <button
+            type="button" onClick={onShare} style={{ ...actionBtn(false), marginLeft: 'auto' }}
+            aria-label="Share"
+          >
+            <ShareIcon />
           </button>
         </div>
       </div>

@@ -108,6 +108,32 @@ export function listCard(list, fonts) {
   return new ImageResponse(el, opts);
 }
 
+// Feed post: the post row (RLS: only public authors' posts are anon-readable),
+// its author from public_profiles, and poster/backdrop art from TMDB.
+async function loadPost(id) {
+  const headers = { apikey: ANON_KEY, authorization: `Bearer ${ANON_KEY}` };
+  const r = await fetch(
+    `${SUPABASE_URL}/rest/v1/feed_posts?id=eq.${encodeURIComponent(id)}` +
+    `&select=author_id,source_type,rank,tmdb_id,media_type,title,poster_path,rating,note&limit=1`,
+    { headers },
+  );
+  const post = (await r.json().catch(() => []))?.[0];
+  if (!post) return null;
+
+  const pRes = await fetch(
+    `${SUPABASE_URL}/rest/v1/public_profiles?id=eq.${encodeURIComponent(post.author_id)}` +
+    `&select=username,display_name,avatar_url,is_premium&limit=1`,
+    { headers },
+  );
+  const author = (await pRes.json().catch(() => []))?.[0] || null;
+
+  let poster = TMDB_IMG(post.poster_path, 'w500');
+  let backdrop = null;
+  try { const d = await loadTitle(post.media_type, post.tmdb_id); if (d) { backdrop = d.backdrop; if (!poster) poster = d.poster; } } catch { /* ignore */ }
+
+  return { ...post, author, poster, backdrop };
+}
+
 async function loadFont(host, file) {
   try {
     const r = await fetch(`https://${host}/fonts/${file}`);
@@ -159,6 +185,46 @@ export function titleCard(t, fonts) {
     h('div', { style: { display: 'flex', position: 'absolute', bottom: 58, right: 74, fontSize: 60, color: '#ffffff', letterSpacing: -2, textShadow: '0 2px 16px rgba(0,0,0,0.9)' } }, 'PLOT'),
   );
   return new ImageResponse(el, { width: 1200, height: 630, fonts, headers: { 'cache-control': 'public, max-age=86400, s-maxage=86400' } });
+}
+
+// ── Post card: poster + author + rating + review, for sharing a feed post ──
+export function postCard(post, fonts) {
+  const opts = { width: 1200, height: 630, fonts, headers: { 'cache-control': 'public, max-age=300, s-maxage=300' } };
+  if (!post) return titleCard(null, fonts);
+
+  const author = post.author || {};
+  const name = (author.display_name || author.username || 'Someone').replace(/\b([a-z])/g, (m) => m.toUpperCase());
+  const verb = post.source_type === 'favourite' ? 'favourited'
+    : post.source_type === 'top_list' ? 'added to their Top 10' : 'watched';
+  const title = post.title || 'PLOT';
+  const n = title.length;
+  const titleSize = n <= 15 ? 92 : n <= 24 ? 76 : n <= 36 ? 62 : 52;
+  const note = post.note ? (post.note.length > 150 ? post.note.slice(0, 147) + '…' : post.note) : null;
+
+  const el = h('div', { style: { width: '100%', height: '100%', display: 'flex', position: 'relative', background: '#0b0a0e', color: '#e8e8ec', fontFamily: 'Instrument Serif' } },
+    post.backdrop ? h('img', { src: post.backdrop, width: 1200, height: 630, style: { position: 'absolute', top: 0, left: 0, objectFit: 'cover' } }) : null,
+    h('div', { style: { position: 'absolute', top: 0, left: 0, width: 1200, height: 630, display: 'flex', background: 'linear-gradient(90deg, rgba(7,6,10,0.93) 0%, rgba(7,6,10,0.82) 55%, rgba(7,6,10,0.5) 100%)' } }),
+    h('div', { style: { position: 'relative', display: 'flex', alignItems: 'center', width: '100%', height: '100%', padding: 70 } },
+      post.poster
+        ? h('img', { src: post.poster, width: 300, height: 450, style: { borderRadius: 14, objectFit: 'cover', boxShadow: '0 18px 50px rgba(0,0,0,0.7)' } })
+        : h('div', { style: { width: 300, height: 450, borderRadius: 14, background: '#1c1c21', border: `2px solid ${ACCENT}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 150, color: ACCENT } }, '★'),
+      h('div', { style: { display: 'flex', flexDirection: 'column', justifyContent: 'center', marginLeft: 60, maxWidth: 610 } },
+        h('div', { style: { display: 'flex', alignItems: 'center', marginBottom: 22 } },
+          author.avatar_url ? h('img', { src: author.avatar_url, width: 56, height: 56, style: { borderRadius: '50%', objectFit: 'cover', marginRight: 18, border: '2px solid rgba(255,255,255,0.25)' } }) : null,
+          h('div', { style: { display: 'flex', fontFamily: 'DM Sans', fontWeight: 500, fontSize: 28, color: '#d8d8de' } }, `${name} ${verb}`),
+        ),
+        h('div', { style: { display: 'flex', fontSize: titleSize, lineHeight: 0.98, color: '#ffffff', letterSpacing: -1, maxWidth: 610 } }, title),
+        post.rating
+          ? h('div', { style: { display: 'flex', alignItems: 'center', marginTop: 24 } },
+              h('svg', { width: 44, height: 44, viewBox: '0 0 24 24', fill: '#fbbf24', style: { marginRight: 12 } }, h('path', { d: STAR_RATING })),
+              h('span', { style: { display: 'flex', fontFamily: 'DM Sans', fontWeight: 500, fontSize: 40, color: '#ececf0' } }, `${post.rating}/10`))
+          : null,
+        note ? h('div', { style: { display: 'flex', marginTop: 26, fontFamily: 'DM Sans', fontWeight: 400, fontSize: 32, lineHeight: 1.35, color: '#c9c9d0', maxWidth: 610 } }, `“${note}”`) : null,
+      ),
+    ),
+    h('div', { style: { display: 'flex', position: 'absolute', bottom: 54, right: 72, fontSize: 56, color: '#ffffff', letterSpacing: -2, textShadow: sh(0.6) } }, 'PLOT'),
+  );
+  return new ImageResponse(el, opts);
 }
 
 // ── Profile card: avatar + name + @handle + stats, optional backdrop scrim ──
@@ -227,6 +293,14 @@ export default async function handler(req) {
     try { list = await loadList(listId); } catch { /* branded fallback */ }
     const fonts = await loadFonts(req);
     return listCard(list, fonts);
+  }
+
+  // Post card — /api/og?post=<uuid>
+  const postId = searchParams.get('post');
+  if (postId) {
+    let post = null;
+    try { post = await loadPost(postId); } catch { /* branded fallback */ }
+    return postCard(post, await loadFonts(req));
   }
 
   // Title card — /api/og?type=movie&id=123
