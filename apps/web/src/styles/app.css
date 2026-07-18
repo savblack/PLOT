@@ -3634,7 +3634,8 @@ a.provider-chip--link:hover {
 /* Hero card */
 .discover-hero {
   position: relative;
-  height: 240px;
+  aspect-ratio: 4 / 3;
+  max-height: 440px;
   margin: 2rem 1rem 0;
   border-radius: var(--radius-md);
   overflow: hidden;
