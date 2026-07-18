@@ -23,8 +23,8 @@ export default function RootRoute() {
     }
   }, [loading, authenticated]);
 
-  // Authenticated users go to the discovery home.
-  if (!loading && authenticated) return <Navigate to="/home" replace />;
+  // Authenticated users land on the social feed.
+  if (!loading && authenticated) return <Navigate to="/feed" replace />;
 
   // Loading, or logged out and about to leave for the marketing site.
   return (

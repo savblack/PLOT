@@ -8,6 +8,7 @@ import { SHOW_MEDIA_SYNC_INTEGRATIONS } from './launchFeatures.js';
 
 // Layout + views
 const App         = lazy(() => import('./App.jsx'));
+const FeedView    = lazy(() => import('./components/FeedView.jsx'));
 const DiscoverView = lazy(() => import('./components/DiscoverView.jsx'));
 const CalendarView= lazy(() => import('./components/CalendarView.jsx'));
 const HistoryView   = lazy(() => import('./components/HistoryView.jsx'));
@@ -87,7 +88,10 @@ const router = createBrowserRouter([
     children: [
       { path: 'app',      element: <Navigate to="/home" replace /> },
       { path: 'u/:username', element: wrap(<PublicProfilePage />) },
-      { path: 'home',     element: wrap(<DiscoverView />) },
+      { path: 'feed',     element: wrap(<FeedView />) },
+      { path: 'home',     element: wrap(<DiscoverView tab="discover" />) },
+      { path: 'releases', element: wrap(<DiscoverView tab="releases" />) },
+      { path: 'guide',    element: wrap(<DiscoverView tab="guide" />) },
       { path: 'calendar', element: wrap(<CalendarView />) },
       { path: 'watching', element: <Navigate to="/my-lists" replace /> },
       { path: 'list',     element: <Navigate to="/my-lists" replace /> },
