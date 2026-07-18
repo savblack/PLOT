@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PRIMARY_NAV_ITEMS, VIEW_TITLES } from '../navigation.js';
 import { useNotifications } from '../hooks/useNotifications.js';
@@ -33,10 +33,21 @@ function IconSearch() {
   );
 }
 
+function IconArrowUp() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="12" y1="19" x2="12" y2="5" />
+      <polyline points="6 11 12 5 18 11" />
+    </svg>
+  );
+}
+
 export default function AppShell({ currentView, navigateTo, children, profile, user }) {
   const navigate = useNavigate();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [confirmSignOut, setConfirmSignOut] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const mainRef = useRef(null);
 
   const { unread, refreshCount } = useNotifications(user?.id);
 
@@ -53,6 +64,34 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [drawerOpen]);
+
+  // Show a "back to top" button once the main content has scrolled more than a
+  // full screen — the point where scrolling back by hand becomes tedious. Tying
+  // the threshold to the viewport height means short pages (that never scroll a
+  // whole screen) never show it, so it only appears when it's actually needed.
+  useEffect(() => {
+    const el = mainRef.current;
+    if (!el) return undefined;
+
+    const handleScroll = () => setShowScrollTop(el.scrollTop > el.clientHeight);
+    handleScroll();
+    el.addEventListener('scroll', handleScroll, { passive: true });
+
+    // Content height changes without a scroll event when switching sub-tabs
+    // (Feed / Discover / Releases) or as data loads in — re-check then too.
+    const observer = new ResizeObserver(handleScroll);
+    observer.observe(el);
+    if (el.firstElementChild) observer.observe(el.firstElementChild);
+
+    return () => {
+      el.removeEventListener('scroll', handleScroll);
+      observer.disconnect();
+    };
+  }, [currentView]);
+
+  const scrollToTop = () => {
+    mainRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const openDrawer  = () => setDrawerOpen(true);
   const closeDrawer = () => setDrawerOpen(false);
@@ -138,9 +177,21 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
       </header>
 
       {/* ── Main content ── */}
-      <main className="app-main animate-in">
+      <main className="app-main animate-in" ref={mainRef}>
         {children}
       </main>
+
+      {/* ── Back to top ── */}
+      <button
+        type="button"
+        className={`scroll-top-btn${showScrollTop ? ' visible' : ''}`}
+        onClick={scrollToTop}
+        aria-label="Scroll to top"
+        aria-hidden={!showScrollTop}
+        tabIndex={showScrollTop ? 0 : -1}
+      >
+        <IconArrowUp />
+      </button>
 
       {/* ── Bottom tab bar ── */}
       <nav className="tab-bar">
