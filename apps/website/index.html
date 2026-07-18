@@ -1025,6 +1025,7 @@
     .af-chip .af-s { font-size: 0.5rem; letter-spacing: 0.09em; text-transform: uppercase; color: rgba(240,239,232,0.4); margin-bottom: 3px; }
     .af-chip1 { left: 4px; top: 30px; }
     .af-chip2 { right: 40px; bottom: 8px; }
+    .af-chip3 { right: 4px; top: 0; }
     @media (max-width: 900px) { #guide-demo { --afs: 0.68; } }
     @media (max-width: 420px) { #guide-demo { --afs: 0.56; } }
 
@@ -1636,9 +1637,10 @@
             </div>
             <div class="af-card af-p1" style="background-image:url('images/hero/nosferatu.webp')"></div>
             <div class="af-card af-p2" style="background-image:url('images/hero/sinners.webp')"></div>
-            <div class="af-card af-p3" style="background-image:url('images/hero/past-lives.webp')"></div>
+            <div class="af-card af-p3" style="background-image:url('images/timeline/severance.jpg')"></div>
             <div class="af-chip af-chip1"><div class="af-s">Trending today</div><div class="af-t">Hot right now</div></div>
-            <div class="af-chip af-chip2"><div class="af-s">On your list</div><div class="af-t">Add to watchlist +</div></div>
+            <div class="af-chip af-chip3"><div class="af-s">This week</div><div class="af-t">Top 10</div></div>
+            <div class="af-chip af-chip2"><div class="af-s">Popular TV</div><div class="af-t">Most binged shows</div></div>
           </div>
         </div>
       </div>
@@ -2050,6 +2052,26 @@
       }
       return trendingSetsPromise;
     }
+
+    // Guide-demo floating cards — pull the posters around the feature from TMDB
+    // so each matches its category chip (Hot right now / Top 10 / Most binged).
+    (function () {
+      var stage = document.querySelector('#guide-demo .app-float');
+      if (!stage) return;
+      var p1 = stage.querySelector('.af-p1');   // Hot right now  (trending movie)
+      var p2 = stage.querySelector('.af-p2');   // Top 10         (top trending movie)
+      var p3 = stage.querySelector('.af-p3');   // Most binged    (popular TV)
+      fetchTrendingSets().then(function (sets) {
+        var IMG = 'https://image.tmdb.org/t/p/w500';
+        // Exclude the feature title so the surrounding cards stay distinct from the hero.
+        var movies = ((sets[0] && sets[0].results) || []).filter(function (r) { return r.poster_path && (r.title || '') !== 'The Odyssey'; });
+        var tv     = ((sets[2] && sets[2].results) || []).filter(function (r) { return r.poster_path; });
+        function set(el, item) { if (el && item) el.style.backgroundImage = "url('" + IMG + item.poster_path + "')"; }
+        set(p1, movies[0]);   // Hot right now
+        set(p2, movies[1]);   // Top 10
+        set(p3, tv[0]);       // Most binged shows
+      }).catch(function () {});
+    })();
 
     // What's On closing section — poster wall (reuses the shared trending sets)
     (function () {
