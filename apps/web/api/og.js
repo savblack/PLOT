@@ -21,6 +21,13 @@ const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsI
 // Brand dark accent — same value as the app/marketing (@plot/core/tokens.js).
 const ACCENT = colors.dark.accent;
 const BG = '#0f0f11';
+// OG cards are share previews, not live data, so we cache them hard at the CDN.
+// Short TTLs meant every crawler/social-unfurl fetch re-rendered the PNG (heavy
+// Satori CPU) and re-shipped it from origin (bandwidth) — that combination is
+// what paused the Vercel project on the Hobby tier during launch. A week-long
+// edge cache with background revalidation cuts both by ~1000x for hot URLs while
+// keeping cards fresh enough (stats/backdrops refresh within a week).
+const OG_CACHE = 'public, max-age=86400, s-maxage=604800, stale-while-revalidate=604800';
 const TMDB_IMG = (p, s = 'w185') => (p ? `https://image.tmdb.org/t/p/${s}${p}` : null);
 const sh = (a) => `0 2px 12px rgba(0,0,0,${a})`;
 const STAR_RATING = 'M12 2l2.9 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77 5.82 21l1.18-6.88-5-4.87 7.1-1.01z';
@@ -85,7 +92,7 @@ async function loadList(id) {
 }
 
 export function listCard(list, fonts) {
-  const opts = { width: 1200, height: 630, fonts, headers: { 'cache-control': 'public, max-age=300, s-maxage=300' } };
+  const opts = { width: 1200, height: 630, fonts, headers: { 'cache-control': OG_CACHE } };
   if (!list) {
     return new ImageResponse(
       h('div', { style: { width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: BG, color: '#fafafa', fontFamily: 'Instrument Serif' } },
@@ -184,12 +191,12 @@ export function titleCard(t, fonts) {
     ),
     h('div', { style: { display: 'flex', position: 'absolute', bottom: 58, right: 74, fontSize: 60, color: '#ffffff', letterSpacing: -2, textShadow: '0 2px 16px rgba(0,0,0,0.9)' } }, 'PLOT'),
   );
-  return new ImageResponse(el, { width: 1200, height: 630, fonts, headers: { 'cache-control': 'public, max-age=86400, s-maxage=86400' } });
+  return new ImageResponse(el, { width: 1200, height: 630, fonts, headers: { 'cache-control': OG_CACHE } });
 }
 
 // ── Post card: poster + author + rating + review, for sharing a feed post ──
 export function postCard(post, fonts) {
-  const opts = { width: 1200, height: 630, fonts, headers: { 'cache-control': 'public, max-age=300, s-maxage=300' } };
+  const opts = { width: 1200, height: 630, fonts, headers: { 'cache-control': OG_CACHE } };
   if (!post) return titleCard(null, fonts);
 
   const author = post.author || {};
@@ -229,7 +236,7 @@ export function postCard(post, fonts) {
 
 // ── Profile card: avatar + name + @handle + stats, optional backdrop scrim ──
 export function profileCard(profile, fonts) {
-  const opts = { width: 1200, height: 630, fonts, headers: { 'cache-control': 'public, max-age=300, s-maxage=300' } };
+  const opts = { width: 1200, height: 630, fonts, headers: { 'cache-control': OG_CACHE } };
 
   if (!profile) {
     return new ImageResponse(
