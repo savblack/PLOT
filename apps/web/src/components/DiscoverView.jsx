@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useApp, posterUrl, backdropUrl, TodayLabel } from '../App.jsx';
+import { favoriteWords } from '../utils/spelling.js';
 import { useDragScroll } from '../hooks/useDragScroll.js';
 import { useGenres } from '../hooks/useGenres.js';
 import { useDiscover } from '../hooks/useDiscover.js';
@@ -8,6 +9,7 @@ import { UpcomingContent } from './GuideView.jsx';
 import EpgView from './EpgView.jsx';
 import FeedView from './FeedView.jsx';
 import LoadingSpinner from './LoadingSpinner.jsx';
+import { track, EVENTS } from '../lib/analytics.js';
 import GroupedFilterMenu from './GroupedFilterMenu.jsx';
 import { getButtonLikeProps } from '../utils/interactive.js';
 import { useShareTitle } from '../hooks/useShareTitle.js';
@@ -153,7 +155,8 @@ function BingeCard({ item, openPanel }) {
 
 /* ── Hero card (#1 trending) ── */
 function HeroCard({ item, openPanel, watchlist }) {
-  const { favorites } = useApp();
+  const { favorites, profile } = useApp();
+  const fw       = favoriteWords(profile?.region);
   const [hovered, setHovered] = useState(false);
   const title    = item.title || item.name;
   const backdrop = backdropUrl(item.backdrop_path, 'w780');
@@ -191,7 +194,7 @@ function HeroCard({ item, openPanel, watchlist }) {
           className={`discover-hero-corner-btn${fav ? ' active' : ''}`}
           style={{ position: 'absolute', top: 10, left: 10 }}
           onClick={() => favorites.toggleFavorite({ ...item, media_type: type })}
-          aria-label={fav ? 'Unfavorite' : 'Favorite'}
+          aria-label={fav ? fw.un : fw.noun}
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill={fav ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
@@ -464,6 +467,12 @@ export default function DiscoverView() {
   const [typeFilters,  setTypeFilters]  = useState(ALL_TYPES);
   const [genreFilters, setGenreFilters] = useState([]);
 
+  const changeTab = (next) => {
+    if (next === tab) return;
+    setTab(next);
+    track(EVENTS.DISCOVER_TAB_CHANGED, { tab: next });
+  };
+
   if (!app) return null;
 
   const { openPanel, watchlist, profile } = app;
@@ -479,25 +488,25 @@ export default function DiscoverView() {
         <div className="sub-tabs-scroll">
           <button
             className={`sub-tab-btn${tab === 'feed' ? ' active' : ''}`}
-            onClick={() => setTab('feed')}
+            onClick={() => changeTab('feed')}
           >
             Feed
           </button>
           <button
             className={`sub-tab-btn${tab === 'discover' ? ' active' : ''}`}
-            onClick={() => setTab('discover')}
+            onClick={() => changeTab('discover')}
           >
             Discover
           </button>
           <button
             className={`sub-tab-btn${tab === 'releases' ? ' active' : ''}`}
-            onClick={() => setTab('releases')}
+            onClick={() => changeTab('releases')}
           >
             Releases
           </button>
           <button
             className={`sub-tab-btn${tab === 'guide' ? ' active' : ''}`}
-            onClick={() => setTab('guide')}
+            onClick={() => changeTab('guide')}
           >
             Guide
           </button>

@@ -4,10 +4,12 @@ import { tmdb } from '../api/tmdb.js';
 import { supabase } from '../api/supabase.js';
 import { useHistory } from '../hooks/useHistory.js';
 import { localDateStr } from '../utils/date.js';
+import { favoriteWords } from '../utils/spelling.js';
 import { getButtonLikeProps } from '../utils/interactive.js';
 import PlotLoader from './PlotLoader.jsx';
 import UserList from './UserList.jsx';
 import { classifySearchResults } from '../utils/search.js';
+import { track, EVENTS } from '../lib/analytics.js';
 
 function BookmarkIcon({ filled }) {
   return (
@@ -40,7 +42,8 @@ function CheckIcon() {
 }
 
 /* ── Result Row ── */
-function ResultRow({ item, openPanel, watchlist, favorites, history }) {
+function ResultRow({ item, openPanel, watchlist, favorites, history, region }) {
+  const fw    = favoriteWords(region);
   const id    = item.id;
   const type  = item.media_type || 'movie';
   const title = item.title || item.name || 'Unknown';
@@ -111,8 +114,8 @@ function ResultRow({ item, openPanel, watchlist, favorites, history }) {
             e.stopPropagation();
             await favorites.toggleFavorite({ ...item, id, tmdb_id: id, media_type: type });
           }}
-          data-tip={isFav ? 'Remove favorite' : 'Favorite'}
-          aria-label={isFav ? `Remove ${title} from favorites` : `Add ${title} to favorites`}
+          data-tip={isFav ? `Remove ${fw.nounLower}` : fw.noun}
+          aria-label={isFav ? `Remove ${title} from ${fw.pluralLower}` : `Add ${title} to ${fw.pluralLower}`}
         >
           <HeartIcon filled={isFav} />
         </button>
@@ -137,7 +140,7 @@ function ResultRow({ item, openPanel, watchlist, favorites, history }) {
    SearchView
 ═══════════════════════════════════════ */
 export default function SearchView() {
-  const { openPanel, watchlist, favorites, user } = useApp();
+  const { openPanel, watchlist, favorites, user, profile } = useApp();
   const history = useHistory(user?.id);
   const [mode,    setMode]    = useState('titles'); // 'titles' | 'people'
   const [query,   setQuery]   = useState('');
@@ -153,16 +156,21 @@ export default function SearchView() {
     if (!v.trim()) { setResults([]); setUsers([]); setEmptyMode('none'); return; }
     timerRef.current = setTimeout(async () => {
       setLoading(true);
+      let resultCount;
       if (searchMode === 'people') {
         const { data } = await supabase.rpc('search_users', { p_query: v.trim() });
         setUsers(data || []);
+        resultCount = (data || []).length;
       } else {
         const data = await tmdb.search(v);
         const { filtered, emptyMode: nextEmptyMode } = classifySearchResults(data?.results || []);
         setResults(filtered);
         setEmptyMode(nextEmptyMode);
+        resultCount = filtered.length;
       }
       setLoading(false);
+      // Track the executed search — never the raw query (PII/privacy): length only.
+      track(EVENTS.SEARCH_PERFORMED, { mode: searchMode, query_length: v.trim().length, result_count: resultCount });
     }, 350);
   };
 
@@ -252,6 +260,7 @@ export default function SearchView() {
                   watchlist={watchlist}
                   favorites={favorites}
                   history={history}
+                  region={profile?.region}
                 />
               ))}
             </div>

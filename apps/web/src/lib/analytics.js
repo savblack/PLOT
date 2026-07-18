@@ -32,6 +32,22 @@ export const EVENTS = Object.freeze({
   PREMIUM_GATE_HIT: 'premium_gate_hit',
   WATCH_LINK_CLICKED: 'watch_link_clicked',
   TIP_JAR_CLICKED: 'tip_jar_clicked',
+  // Engagement — the high-value product actions worth naming. Autocapture
+  // (main.jsx) backstops the long tail of raw clicks; these are the ones we
+  // build funnels and retention analyses on. Props stay minimal + PII-free.
+  SEARCH_PERFORMED: 'search_performed',
+  TITLE_VIEWED: 'title_viewed',
+  DISCOVER_TAB_CHANGED: 'discover_tab_changed',
+  FEED_POST_OPENED: 'feed_post_opened',
+  RATING_SET: 'rating_set',
+  MARKED_WATCHED: 'marked_watched',
+  WATCHLIST_REMOVED: 'watchlist_removed',
+  CUSTOM_LIST_CREATED: 'custom_list_created',
+  CUSTOM_LIST_DELETED: 'custom_list_deleted',
+  USER_FOLLOWED: 'user_followed',
+  USER_UNFOLLOWED: 'user_unfollowed',
+  IMPORT_STARTED: 'import_started',
+  IMPORT_COMPLETED: 'import_completed',
 });
 
 export function track(event, props) {
@@ -41,6 +57,15 @@ export function track(event, props) {
 export function identifyUser(id, traits) {
   if (!id) return;
   try { posthog.identify(id, traits); } catch { /* ignore */ }
+}
+
+/**
+ * Attach properties to the current person (e.g. is_premium) so events stay
+ * segmentable in PostHog without threading traits through every capture.
+ */
+export function setPersonProps(props) {
+  if (!props || typeof props !== 'object') return;
+  try { posthog.setPersonProperties(props); } catch { /* ignore */ }
 }
 
 export function captureException(error, props) {

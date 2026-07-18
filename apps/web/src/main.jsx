@@ -33,11 +33,33 @@ configure({
     track(EVENTS.WATCHLIST_SAVED, { tmdb_id, media_type, source, already_saved: false });
     markActivated('first_save', { source });
   },
+  // Engagement seams — core fires these from the single canonical spot for each
+  // action (any surface), so we never double-count or miss a surface. See
+  // packages/core/config.js for the payload contracts.
+  onWatchlistRemove: ({ tmdb_id, media_type, source }) =>
+    track(EVENTS.WATCHLIST_REMOVED, { tmdb_id, media_type, source }),
+  onWatched: ({ tmdb_id, media_type }) =>
+    track(EVENTS.MARKED_WATCHED, { tmdb_id, media_type }),
+  onRating: ({ tmdb_id, media_type, value }) =>
+    track(EVENTS.RATING_SET, { tmdb_id, media_type, value }),
+  onFollow: ({ target_user_id, following }) =>
+    track(following ? EVENTS.USER_FOLLOWED : EVENTS.USER_UNFOLLOWED, { target_user_id }),
+  onCustomListChange: ({ list_id, action }) =>
+    track(action === 'created' ? EVENTS.CUSTOM_LIST_CREATED : EVENTS.CUSTOM_LIST_DELETED, { list_id }),
 });
 
 posthog.init(import.meta.env.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN, {
   api_host: import.meta.env.VITE_PUBLIC_POSTHOG_HOST,
   defaults: '2026-01-30',
+  // Capture in-app navigation. This is an SPA (react-router createBrowserRouter),
+  // so there are no full page loads after boot — 'history_change' fires a single
+  // $pageview on each History API navigation. Set explicitly (not left to
+  // `defaults`) so route tracking survives any future change to the defaults key.
+  capture_pageview: 'history_change',
+  // Autocapture clicks / inputs / form submits as a backstop under the curated
+  // events in lib/analytics.js — so surfaces we didn't hand-instrument still
+  // produce data. Explicit for the same reason as capture_pageview above.
+  autocapture: true,
   // Share the anonymous id across theplot.tv ↔ app.theplot.tv so the
   // landing → signup funnel is one funnel. Must match website/js/config.js.
   persistence: 'localStorage+cookie',

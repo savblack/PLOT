@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp, posterUrl } from '../App.jsx';
 import { starFillPercent, STAR_COUNT } from '../utils/ratings.js';
+import { favoriteWords } from '../utils/spelling.js';
 import { toggleLike } from '../hooks/usePostEngagement.js';
 import { buildTitleShareUrl, shareUrl } from '../utils/share.js';
+import { track, EVENTS } from '../lib/analytics.js';
 import CommentSheet from './CommentSheet.jsx';
 
 function relativeTime(iso) {
@@ -77,8 +79,11 @@ function CommentIcon() {
   );
 }
 
-// Keys match feed_posts.source_type (DB value stays 'favourite'); labels are US-spelled.
-const ACTION = { watch: 'watched', favourite: 'favorited', top_list: 'added to Top 10' };
+// Keys match feed_posts.source_type (DB value stays 'favourite'); the label
+// spelling follows the viewer's region (see actionLabels).
+const actionLabels = (region) => ({
+  watch: 'watched', favourite: favoriteWords(region).past, top_list: 'added to Top 10',
+});
 
 const actionBtn = (active) => ({
   display: 'inline-flex', alignItems: 'center', gap: 6, background: 'none', border: 0,
@@ -94,6 +99,7 @@ const actionBtn = (active) => ({
 export default function FeedPost({ post }) {
   const navigate = useNavigate();
   const { openPanel, user, profile } = useApp();
+  const ACTION = actionLabels(profile?.region);
 
   const {
     id, author_username, author_display_name, author_avatar_url,
@@ -105,7 +111,10 @@ export default function FeedPost({ post }) {
   const [commentCount, setCommentCount] = useState(Number(post.comment_count) || 0);
   const [sheetOpen, setSheetOpen]     = useState(false);
 
-  const openTitle = () => openPanel(tmdb_id, media_type === 'tv' ? 'tv' : 'movie');
+  const openTitle = () => {
+    track(EVENTS.FEED_POST_OPENED, { post_type: source_type, tmdb_id });
+    openPanel(tmdb_id, media_type === 'tv' ? 'tv' : 'movie', 'feed');
+  };
   const goAuthor = () => author_username && navigate(`/u/${author_username}`);
   const displayName = author_display_name || author_username || 'Someone';
   const img = posterUrl(poster_path, 'w500');
@@ -137,6 +146,7 @@ export default function FeedPost({ post }) {
           const file = new File([blob], 'plot.png', { type: blob.type || 'image/png' });
           if (navigator.canShare({ files: [file] })) {
             await navigator.share({ files: [file], text, ...(url ? { url } : {}) });
+            track(EVENTS.TITLE_SHARED, { tmdb_id, media_type, method: 'native', source: 'feed' });
             return;
           }
         }
@@ -145,7 +155,8 @@ export default function FeedPost({ post }) {
       if (err?.name === 'AbortError') return;   // user cancelled the sheet
       // otherwise fall through to a plain link share
     }
-    await shareUrl({ url: url || imageUrl, text });
+    const result = await shareUrl({ url: url || imageUrl, text });
+    if (result?.ok) track(EVENTS.TITLE_SHARED, { tmdb_id, media_type, method: result.method, source: 'feed' });
   };
 
   return (

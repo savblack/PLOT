@@ -16,6 +16,7 @@ import { useCustomLists }  from './hooks/useCustomLists.js';
 import PlotLoader from './components/PlotLoader.jsx';
 import { pathForView, viewFromPath } from './navigation.js';
 import { readStorage, writeStorage } from './utils/storage.js';
+import { track, EVENTS, setPersonProps } from './lib/analytics.js';
 
 /* ── App Context ─────────────────────── */
 export const AppContext = createContext(null);
@@ -165,6 +166,8 @@ export default function App() {
       .maybeSingle();
     setProfile(data);
     if (data?.region) setTmdbRegion(data.region);
+    // Keep is_premium on the PostHog person so any event can be segmented by it.
+    if (data) setPersonProps({ is_premium: !!data.is_premium });
     setLoading(false);
   }, []);
 
@@ -218,9 +221,12 @@ export default function App() {
   }, [tzBanner]);
 
   /* ── Media Panel ── */
-  const openPanel = useCallback((id, type) => {
+  const openPanel = useCallback((id, type, source) => {
     setPanelItem({ id, type });
     setPanelClosing(false);
+    // Canonical "opened a title" action — every surface (rails, search, feed,
+    // deep links) routes through here, so one call covers them all.
+    track(EVENTS.TITLE_VIEWED, { tmdb_id: id, media_type: type, source });
   }, []);
 
   const closePanel = useCallback(() => {

@@ -1402,8 +1402,8 @@ export default function SettingsView() {
     return shareInvite({
       url: inviteUrl,
       title: 'Join me on PLOT',
-      text: "Join me on PLOT — here's what I'm watching.",
-      event: 'invite_shared',
+      text: "Join me on PLOT. Here's what I'm watching.",
+      event: EVENTS.INVITE_SHARED,
     });
   };
 
@@ -1512,7 +1512,7 @@ export default function SettingsView() {
                 {usernameStatus === 'invalid' && '3–30 chars · lowercase letters, numbers, hyphens'}
                 {usernameStatus === 'saving' && 'Saving…'}
                 {usernameStatus === 'saved' && 'Saved'}
-                {usernameStatus === 'error' && 'Something went wrong — try again'}
+                {usernameStatus === 'error' && 'Something went wrong. Try again'}
               </div>
             </div>
           </div>
@@ -1714,7 +1714,7 @@ export default function SettingsView() {
               <div>
                 <div className="settings-row-label">Get PLOT Premium</div>
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.45 }}>
-                  PLOT is built by one person. Premium keeps it running — and unlocks
+                  PLOT is built by one person. Premium keeps it running, and unlocks
                   Plex &amp; Trakt sync plus unlimited lists.{' '}
                   <button
                     type="button"
@@ -1741,8 +1741,8 @@ export default function SettingsView() {
             {billingReturn === 'tip'
               ? 'Thanks for supporting PLOT ♥'
               : premium.isPremium
-                ? 'PLOT Premium is active — thank you ♥'
-                : 'Thank you! Your upgrade is being confirmed — this can take a few seconds.'}
+                ? 'PLOT Premium is active. Thank you ♥'
+                : 'Thank you! Your upgrade is being confirmed. This can take a few seconds.'}
           </div>
         )}
         {premium.error && (
@@ -1771,7 +1771,7 @@ export default function SettingsView() {
                       </span>
                     </div>
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                      {row.connected ? 'Paused — needs PLOT Premium to sync' : row.blurb}
+                      {row.connected ? 'Paused, needs PLOT Premium to sync' : row.blurb}
                     </div>
                   </div>
                 </div>
@@ -2006,7 +2006,7 @@ export default function SettingsView() {
             <div>
               <div className="settings-row-label">Leave a Tip</div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                A one-time thanks — no subscription
+                A one-time thanks, no subscription
               </div>
             </div>
           </div>
@@ -2112,7 +2112,7 @@ export default function SettingsView() {
       {showGuideChannels && (
         <ProviderPicker
           title="My Channels"
-          hint="Select the free-to-air and broadcast channels to include in your Guide — e.g. ABC iview, SBS On Demand, 9Now, 7Plus, 10 Play."
+          hint="Select the free-to-air and broadcast channels to include in your Guide. For example, ABC iview, SBS On Demand, 9Now, 7Plus, 10 Play."
           region={region}
           selected={guideChannels}
           channelsOnly
