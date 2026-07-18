@@ -3,7 +3,7 @@ import { useApp, posterUrl, backdropUrl, TodayLabel } from '../App.jsx';
 import { useDragScroll } from '../hooks/useDragScroll.js';
 import { useGenres } from '../hooks/useGenres.js';
 import { useDiscover } from '../hooks/useDiscover.js';
-import { usePlatformCharts, chartKeyForProvider } from '../hooks/usePlatformCharts.js';
+import { usePlatformCharts } from '../hooks/usePlatformCharts.js';
 import { UpcomingContent } from './GuideView.jsx';
 import EpgView from './EpgView.jsx';
 import LoadingSpinner from './LoadingSpinner.jsx';
@@ -334,6 +334,12 @@ function PlatformSection({ platform, openPanel, watchlist }) {
               </div>
             </>
           )}
+          <p className="discover-plat-attribution">
+            Official Top 10 · Netflix and the{' '}
+            <a href="https://www.movieofthenight.com/about/api" target="_blank" rel="noopener noreferrer">
+              Streaming Availability API
+            </a>.
+          </p>
         </div>
       )}
     </div>
@@ -341,9 +347,12 @@ function PlatformSection({ platform, openPanel, watchlist }) {
 }
 
 /* ── Discover tab content ── */
-function DiscoverContent({ openPanel, watchlist, providers }) {
-  const { data, loading } = useDiscover(providers);
-  const officialCharts = usePlatformCharts();
+function DiscoverContent({ openPanel, watchlist }) {
+  const { data, loading } = useDiscover();
+  // Hard-coded official-chart platforms — the same set for everyone, unrelated
+  // to the user's own streaming selections. Only platforms with real synced
+  // Top 10 data are returned.
+  const platformList = usePlatformCharts();
   const [openSections, setOpenSections] = useState({
     hot: true,
     binge: true,
@@ -355,16 +364,7 @@ function DiscoverContent({ openPanel, watchlist, providers }) {
     return <LoadingSpinner />;
   }
 
-  const { hero, hotRail, weekly, bingedShows, platforms } = data;
-  // For platforms that publish a real chart (Netflix, Prime, Max, Apple), prefer
-  // the official data over the TMDB-popularity proxy whenever the sync has it.
-  const platformList = Object.values(platforms).map(platform => {
-    const chart = officialCharts[chartKeyForProvider(platform.name)];
-    if (chart && (chart.movies.length || chart.tv.length)) {
-      return { ...platform, movies: chart.movies, tv: chart.tv, official: true };
-    }
-    return platform;
-  });
+  const { hero, hotRail, weekly, bingedShows } = data;
   const hasContent = hero || hotRail.length > 0 || weekly.length > 0 || bingedShows.length > 0 || platformList.length > 0;
 
   if (!hasContent) {
@@ -438,22 +438,14 @@ function DiscoverContent({ openPanel, watchlist, providers }) {
       {platformList.length > 0 && (
         <section className="discover-section discover-section--list">
           <DiscoverSectionHeader
-            kicker="Your Streaming Services"
-            title="Top 10 On Your Platforms"
+            kicker="Official charts"
+            title="Top 10 by Platform"
             open={openSections.platforms}
             onToggle={() => toggleSection('platforms')}
           />
           {openSections.platforms && platformList.map(platform => (
             <PlatformSection key={platform.id} platform={platform} openPanel={openPanel} watchlist={watchlist} />
           ))}
-          {openSections.platforms && platformList.some(p => p.official) && (
-            <p className="discover-plat-attribution">
-              Official Top 10 data from Netflix and the{' '}
-              <a href="https://www.movieofthenight.com/about/api" target="_blank" rel="noopener noreferrer">
-                Streaming Availability API
-              </a>.
-            </p>
-          )}
         </section>
       )}
 
@@ -474,7 +466,6 @@ export default function DiscoverView() {
   if (!app) return null;
 
   const { openPanel, watchlist, profile } = app;
-  const streamingProviders = profile?.streaming_providers || [];
   const guideChannels      = profile?.guide_channels      || [];
 
   return (
@@ -541,7 +532,6 @@ export default function DiscoverView() {
         <DiscoverContent
           openPanel={openPanel}
           watchlist={watchlist}
-          providers={streamingProviders}
         />
       )}
 

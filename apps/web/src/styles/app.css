@@ -3783,12 +3783,8 @@ a.provider-chip--link:hover {
   flex-shrink: 0;
   line-height: 1;
 }
-.discover-chart-rank.glow {
-  text-shadow: 0 0 14px var(--accent-dim);
-}
 .discover-chart-rank.top3 {
   font-size: 1.95rem;
-  text-shadow: 0 0 18px var(--accent-dim), 0 1px 2px rgba(0,0,0,0.3);
 }
 .discover-chart-rank.dim {
   color: var(--text-muted);
@@ -3865,7 +3861,7 @@ a.provider-chip--link:hover {
 
 /* Landscape TV rail */
 .discover-section {
-  margin: 0 0 2rem;
+  margin: 0;
   padding: 0;
 }
 
@@ -3873,16 +3869,9 @@ a.provider-chip--link:hover {
   padding: 0;
 }
 
-/* Black gap above each grey section header (outside the header band) */
+/* Section headers stack flush — the grey bands meet with no gap above or
+   below, collapsed or expanded, so the list reads as one continuous accordion. */
 .discover-section-header {
-  margin-top: 2rem;
-}
-
-/* List sections (chart rows, platforms) sit flush — no framing gap */
-.discover-section--list {
-  margin-bottom: 0;
-}
-.discover-section--list + .discover-section .discover-section-header {
   margin-top: 0;
 }
 
@@ -4041,13 +4030,17 @@ a.provider-chip--link:hover {
   white-space: nowrap;
 }
 
+/* Fine-print source note — only shown once a platform panel is expanded */
 .discover-plat-attribution {
-  margin: 0.75rem 0 0;
-  font-size: 0.7rem;
+  margin: 1rem 0 0;
+  font-size: 0.58rem;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
   color: var(--text-muted);
+  opacity: 0.75;
 }
 .discover-plat-attribution a {
-  color: var(--text-muted);
+  color: inherit;
   text-decoration: underline;
 }
 
