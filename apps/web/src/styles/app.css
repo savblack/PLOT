@@ -195,6 +195,39 @@ svg { stroke-width: 1.5; }
   color: var(--accent);
 }
 
+/* ── Back to top ─────────────────────────────── */
+.scroll-top-btn {
+  position: fixed;
+  right: 1rem;
+  bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px) + 1rem);
+  z-index: 150;
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text-primary);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+.scroll-top-btn.visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.scroll-top-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
 /* ═══════════════════════════════════════
    NAV DRAWER
 ═══════════════════════════════════════ */
@@ -1268,6 +1301,37 @@ svg { stroke-width: 1.5; }
   stroke-width: 2.5;
   flex-shrink: 0;
 }
+
+/* Onboarding footer CTAs — chunky pill styling matching the auth pages.
+   Fill variant (right) and hairline outline variant (left). */
+.onboarding-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: clamp(0.75rem, 1.3vh, 0.95rem) 1.5rem;
+  min-height: 48px;
+  border-radius: var(--radius-pill);
+  border: none;
+  background: var(--text-primary);
+  color: var(--bg);
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.2s ease, transform 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.onboarding-cta:hover:not(:disabled) { opacity: 0.85; transform: scale(0.99); }
+.onboarding-cta:disabled { background: var(--text-muted); cursor: not-allowed; }
+
+.onboarding-cta--outline {
+  background: transparent;
+  color: var(--text-primary);
+  border: 0.75px solid var(--text-primary);
+}
+.onboarding-cta--outline:hover:not(:disabled) { opacity: 0.6; }
 
 /* ═══════════════════════════════════════
    CALENDAR
@@ -3063,6 +3127,87 @@ a.provider-chip--link:hover {
 }
 .date-group-chevron.open { transform: rotate(180deg); }
 
+/* ── Shared collapsible section (CollapsibleSection.jsx) ───────────────
+   One fixed-height banner + an animated body. Every banner is the same
+   height regardless of its contents (label / count). */
+.collapse-head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  min-height: 46px;
+  padding: 0 1rem;
+  background: var(--surface-raised);
+  border: none;
+  border-left: 3px solid var(--accent);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  transition: background 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.collapse-head:hover { background: color-mix(in srgb, var(--surface-raised) 85%, var(--accent) 15%); }
+.collapse-head:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+.collapse-chevron {
+  width: 14px;
+  height: 14px;
+  stroke: var(--text-muted);
+  fill: none;
+  stroke-width: 2.5;
+  flex-shrink: 0;
+  transform: rotate(-90deg);
+  transition: transform 0.22s var(--ease);
+}
+.collapse-chevron.open { transform: rotate(0deg); }
+
+.collapse-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+.collapse-count {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Animated collapse — grid-rows 1fr → 0fr, body clipped while closed */
+.collapse-body {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 0.28s var(--ease);
+}
+.collapse-body.collapsed { grid-template-rows: 0fr; }
+.collapse-body-inner { overflow: hidden; min-height: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .collapse-body,
+  .collapse-chevron { transition: none; }
+}
+
+/* Watching-row season progress bar */
+.list-row-progress {
+  height: 3px;
+  border-radius: 2px;
+  background: var(--surface-sunken);
+  overflow: hidden;
+  margin-top: 6px;
+  max-width: 200px;
+}
+.list-row-progress > span {
+  display: block;
+  height: 100%;
+  background: var(--chip-episode);
+  border-radius: 2px;
+}
+
 .date-group-subheader {
   padding: 0.35rem 1rem 0.4rem;
   font-size: 0.64rem;
@@ -3634,7 +3779,8 @@ a.provider-chip--link:hover {
 /* Hero card */
 .discover-hero {
   position: relative;
-  height: 240px;
+  aspect-ratio: 4 / 3;
+  max-height: 440px;
   margin: 2rem 1rem 0;
   border-radius: var(--radius-md);
   overflow: hidden;
@@ -3714,11 +3860,11 @@ a.provider-chip--link:hover {
 }
 .discover-hero-corner-btns.visible {
   opacity: 1;
-  pointer-events: auto;
 }
 
 .discover-hero-corner-btn {
   position: absolute;
+  pointer-events: auto;
   width: 34px;
   height: 34px;
   border-radius: 50%;

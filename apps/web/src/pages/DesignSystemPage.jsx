@@ -421,7 +421,7 @@ export default function DesignSystemPage() {
           </div>
           <div className="ds-control-card">
             <strong>Icon buttons</strong>
-            <p>Monochrome, stroke-based. Secondary colour until hover/active. Each button has an aria-label — no visible text.</p>
+            <p>Monochrome, stroke-based. Secondary color until hover/active. Each button has an aria-label — no visible text.</p>
             <div className="ds-icon-labeled-grid">
               <div className="ds-icon-cell">
                 <button className="icon-btn" aria-label="Open menu"><IconMenu /></button>

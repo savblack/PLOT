@@ -965,7 +965,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                   }}
                 >
                   <HeartIcon filled={isFav} size={18} />
-                  {isFav ? 'Favourited' : 'Favourite'}
+                  {isFav ? 'Favorited' : 'Favorite'}
                 </button>
 
                 {/* Add to list */}

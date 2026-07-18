@@ -157,7 +157,7 @@ export default function OnboardingFlow() {
     tmdb.getTrending('all', 'week').then(data => {
       const list = (data?.results || [])
         .filter(r => (r.media_type === 'tv' || r.media_type === 'movie') && r.poster_path)
-        .slice(0, 12);
+        .slice(0, 24);
       setTrending(list);
     });
   }, [step, trending.length]);
@@ -175,7 +175,7 @@ export default function OnboardingFlow() {
       const hits = (data?.results || [])
         .filter(r => r.media_type === 'tv' || r.media_type === 'movie')
         .filter(r => r.poster_path)
-        .slice(0, 12);
+        .slice(0, 24);
       setSeedResults(hits);
       setSeedSearching(false);
     }, 350);
@@ -319,7 +319,8 @@ export default function OnboardingFlow() {
             {loadingProv ? (
               <div className="loading-state"><PlotLoader size="sm" /></div>
             ) : (
-              <div className="providers-select-grid" style={{ padding: 0, paddingBottom: '1rem' }}>
+              <div style={{ maxHeight: '42vh', overflowY: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: '1rem', paddingRight: '0.15rem' }}>
+                <div className="providers-select-grid" style={{ padding: 0 }}>
                 {filteredProviders.map(p => (
                   <div
                     key={p.provider_id}
@@ -335,6 +336,7 @@ export default function OnboardingFlow() {
                     <span>{p.provider_name}</span>
                   </div>
                 ))}
+                </div>
               </div>
             )}
           </div>
@@ -366,7 +368,8 @@ export default function OnboardingFlow() {
               </div>
             )}
             {seedGridItems.length > 0 && (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem', marginBottom: '0.75rem' }}>
+              <div style={{ maxHeight: '42vh', overflowY: 'auto', WebkitOverflowScrolling: 'touch', marginBottom: '0.75rem', paddingRight: '0.15rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem' }}>
                 {seedGridItems.map(item => {
                   const sel = seedSelected.some(i => i.id === item.id);
                   return (
@@ -392,6 +395,7 @@ export default function OnboardingFlow() {
                     </div>
                   );
                 })}
+                </div>
               </div>
             )}
             {seedSelected.length > 0 && (
@@ -419,10 +423,10 @@ export default function OnboardingFlow() {
         <div style={{ width: '100%', maxWidth: 420, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             {step > 1 && (
-              <button className="btn btn-ghost" onClick={() => setStep(s => s - 1)}>← Back</button>
+              <button className="onboarding-cta onboarding-cta--outline" onClick={() => setStep(s => s - 1)}>← Back</button>
             )}
             <button
-              className="btn btn-primary"
+              className="onboarding-cta"
               style={{ flex: 1 }}
               onClick={step === 3 ? finish : goNext}
               disabled={saving}

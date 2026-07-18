@@ -1,12 +1,15 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { useApp, posterUrl, countdownChip } from '../App.jsx';
+import { useLocation } from 'react-router-dom';
+import { useApp, posterUrl, countdownChip, TodayLabel } from '../App.jsx';
 import { tmdb } from '../api/tmdb.js';
 import { findDuplicateCustomList } from '../domain/customLists.js';
 import { useHistory } from '../hooks/useHistory.js';
 import { useGenres } from '../hooks/useGenres.js';
 import { localDateStr } from '../utils/date.js';
+import { entriesForMonth, historyMonthEmptyCopy, historyRatingLabel, monthLabel } from '../utils/history.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
+import CollapsibleSection from './CollapsibleSection.jsx';
 import GroupedFilterMenu from './GroupedFilterMenu.jsx';
 import PlotLoader from './PlotLoader.jsx';
 import SheetHeader from './SheetHeader.jsx';
@@ -500,15 +503,15 @@ function FavoritesSection({ favorites: favsHook, filterItems, hideHeader }) {
     <div>
       {!hideHeader && (
         <div className="date-group-header">
-          <span className="date-group-label">Favourites</span>
+          <span className="date-group-label">Favorites</span>
           {visible.length > 0 && (
             <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginRight: '0.25rem' }}>{visible.length}</span>
           )}
           <button
             className="date-group-action-btn date-group-action-btn--plain"
             type="button"
-            aria-label="Add favourite"
-            title="Add favourite"
+            aria-label="Add favorite"
+            title="Add favorite"
             onClick={() => setShowAdd(true)}
           >
             <PlusIcon />
@@ -524,8 +527,8 @@ function FavoritesSection({ favorites: favsHook, filterItems, hideHeader }) {
           <button
             className="empty-add-btn"
             type="button"
-            aria-label="Add favourite"
-            title="Add favourite"
+            aria-label="Add favorite"
+            title="Add favorite"
             onClick={() => setShowAdd(true)}
           >
             <PlusIcon />
@@ -936,6 +939,10 @@ function WatchingSection({ watching, hideHeader }) {
       {items.map(item => {
         const img    = posterUrl(item.poster_path, 'w92');
         const epCode = `S${String(item.current_season).padStart(2,'0')}E${String(item.current_episode).padStart(2,'0')}`;
+        // total_episodes = episodes in the current season (cached on the row from TMDB).
+        // Only draw the bar when we know the denominator; clamp to guard bad data.
+        const total = item.total_episodes || 0;
+        const pct   = total ? Math.min(100, Math.round((item.current_episode / total) * 100)) : null;
         const openDetails = () => openPanel(item.tmdb_id, 'tv');
         return (
           <div
@@ -950,8 +957,16 @@ function WatchingSection({ watching, hideHeader }) {
             <div className="list-row-info">
               <div className="list-row-title">{item.title}</div>
               <div className="list-row-meta">
-                <span className="list-type-badge">Series</span>
+                <span>
+                  Season {item.current_season} · Episode {item.current_episode}
+                  {total ? ` of ${total}` : ''}
+                </span>
               </div>
+              {pct != null && (
+                <div className="list-row-progress">
+                  <span style={{ width: `${pct}%` }} />
+                </div>
+              )}
             </div>
             <div className="list-row-end mylists-row-status">
               <span className="chip chip-episode">{epCode}</span>
@@ -1036,15 +1051,77 @@ function WantToWatchSection({ watchlist, watching, hideHeader }) {
   );
 }
 
-/* ── Collapsible section bar (used under "All" tab) ── */
-function CollapsibleBar({ label, open, onToggle }) {
+/* ── History row ── */
+function HistoryRow({ entry, openPanel }) {
+  const img   = posterUrl(entry.poster_path, 'w92');
+  const title = entry.title || 'Unknown';
+  const date  = entry.watched_at
+    ? new Date(entry.watched_at).toLocaleDateString('en', { month: 'short', day: 'numeric' })
+    : '';
+  const ratingLabel = historyRatingLabel(entry.rating);
+  const openDetails = () => openPanel(entry.tmdb_id, entry.media_type || 'movie');
+
   return (
-    <button className="date-group-header date-group-collapsible" onClick={onToggle}>
-      <span className="date-group-label">{label}</span>
-      <svg className={`date-group-chevron${open ? ' open' : ''}`} viewBox="0 0 24 24" aria-hidden="true">
-        <polyline points="6 9 12 15 18 9" />
-      </svg>
-    </button>
+    <div
+      className="list-row history-list-row interactive-surface"
+      onClick={openDetails}
+      {...getButtonLikeProps({ onPress: openDetails, label: `View details for ${title}` })}
+    >
+      <div className="list-row-poster">
+        {img && <img src={img} alt={title} />}
+      </div>
+      <div className="list-row-info">
+        <div className="list-row-title">{title}</div>
+        <div className="list-row-meta">
+          {date && <span>{date}</span>}
+          {ratingLabel && <span className="history-row-rating">{ratingLabel}</span>}
+        </div>
+      </div>
+      {entry.note && <div className="history-row-review">{entry.note}</div>}
+    </div>
+  );
+}
+
+/* ── History section (month-scoped watch history) ── */
+function HistorySection({ entries, loading, year, month }) {
+  const { openPanel } = useApp();
+  const today = useMemo(() => new Date(), []);
+
+  const isCurrentMonth = year === today.getFullYear() && month === today.getMonth();
+  const monthHistory   = useMemo(() => entriesForMonth(entries, year, month), [entries, year, month]);
+  const emptyMonthState = historyMonthEmptyCopy({ year, month, isCurrentMonth });
+
+  if (loading) return <LoadingSpinner />;
+
+  if (entries.length === 0) {
+    return (
+      <div className="empty-state" style={{ marginTop: '1rem' }}>
+        <div className="empty-title">Nothing watched yet</div>
+        <div className="empty-body">
+          Your watch history will appear here. Search for a title and mark it as watched to get started.
+        </div>
+      </div>
+    );
+  }
+
+  if (monthHistory.length === 0) {
+    return (
+      <div className="empty-state" style={{ marginTop: '1rem' }}>
+        <div className="empty-title">{emptyMonthState.title}</div>
+        <div className="empty-body">{emptyMonthState.body}</div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ paddingBottom: '2rem' }}>
+      <div className="date-group-header">
+        <span className="date-group-label">{monthLabel(year, month)}</span>
+      </div>
+      {monthHistory.map(entry => (
+        <HistoryRow key={entry.id} entry={entry} openPanel={openPanel} />
+      ))}
+    </div>
   );
 }
 
@@ -1052,17 +1129,31 @@ function CollapsibleBar({ label, open, onToggle }) {
 export default function MyListsView() {
   const { user, topLists, favorites, customLists, watching, watchlist } = useApp();
   const genres = useGenres();
+  const location = useLocation();
+  const { entries: historyEntries, loading: historyLoading } = useHistory(user?.id);
 
-  const [tab,          setTab]          = useState('all');
+  const [tab,          setTab]          = useState(location.state?.tab || 'all');
   const [typeFilters,  setTypeFilters]  = useState([]);
   const [genreFilters, setGenreFilters] = useState([]);
 
-  // Collapse state for "All" tab sections
-  const [watchingOpen, setWatchingOpen] = useState(true);
-  const [wantOpen,     setWantOpen]     = useState(true);
-  const [top10Open,    setTop10Open]    = useState(true);
-  const [favsOpen,     setFavsOpen]     = useState(true);
-  const [listsOpen,    setListsOpen]    = useState(true);
+  // History tab month navigation
+  const today = useMemo(() => new Date(), []);
+  const [historyYear,  setHistoryYear]  = useState(today.getFullYear());
+  const [historyMonth, setHistoryMonth] = useState(today.getMonth());
+  const isCurrentHistoryMonth = historyYear === today.getFullYear() && historyMonth === today.getMonth();
+
+  const goToHistoryToday = () => {
+    setHistoryYear(today.getFullYear());
+    setHistoryMonth(today.getMonth());
+  };
+  const prevHistoryMonth = () => {
+    setHistoryYear(historyMonth === 0 ? historyYear - 1 : historyYear);
+    setHistoryMonth(historyMonth === 0 ? 11 : historyMonth - 1);
+  };
+  const nextHistoryMonth = () => {
+    setHistoryYear(historyMonth === 11 ? historyYear + 1 : historyYear);
+    setHistoryMonth(historyMonth === 11 ? 0 : historyMonth + 1);
+  };
 
   const filterItems = (items) => {
     let filtered = items;
@@ -1089,9 +1180,11 @@ export default function MyListsView() {
     { id: 'top10',     label: 'Top 10'        },
     { id: 'favorites', label: 'Favorites'     },
     { id: 'lists',     label: 'Lists'         },
+    { id: 'history',   label: 'History'       },
   ];
 
   const isAll       = tab === 'all';
+  const isHistory   = tab === 'history';
   const showWatching = isAll || tab === 'watching';
   const showWant     = isAll || tab === 'want';
   const showTop10    = isAll || tab === 'top10';
@@ -1099,6 +1192,9 @@ export default function MyListsView() {
   const showLists    = isAll || tab === 'lists';
 
   const watchingItems  = watching.items || [];
+  // Count for the "Want to Watch" banner — saved titles not already being watched.
+  const watchingIdSet  = new Set(watchingItems.map(i => i.tmdb_id));
+  const savedCount     = (watchlist.items || []).filter(i => !watchingIdSet.has(Number(i.tmdb_id))).length;
 
   return (
     <div style={{ paddingBottom: '2rem' }}>
@@ -1115,80 +1211,107 @@ export default function MyListsView() {
           ))}
         </div>
         <div className="sub-tabs-filters">
-          <GroupedFilterMenu
-            ariaLabel="Filter lists"
-            groups={[
-              {
-                heading: 'Type',
-                options: [
-                  { id: 'movie',  label: 'Movies' },
-                  { id: 'tv',     label: 'TV'     },
-                  { id: 'cinema', label: 'Cinema' },
-                ],
-                value: typeFilters,
-                onChange: setTypeFilters,
-              },
-              {
-                heading: 'Genre',
-                options: genres.map(g => ({ id: g.id, label: g.name })),
-                value: genreFilters,
-                onChange: setGenreFilters,
-              },
-            ]}
-          />
+          {isHistory ? (
+            <div className="cal-month-nav">
+              <TodayLabel onClick={!isCurrentHistoryMonth ? goToHistoryToday : undefined} />
+              <button className="cal-month-btn" onClick={prevHistoryMonth} aria-label="Previous month">
+                <svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>
+              </button>
+              <span className="cal-month-nav-label">{monthLabel(historyYear, historyMonth, 'short')}</span>
+              <button className="cal-month-btn" onClick={nextHistoryMonth} aria-label="Next month">
+                <svg viewBox="0 0 24 24"><polyline points="9,18 15,12 9,6"/></svg>
+              </button>
+            </div>
+          ) : (
+            <GroupedFilterMenu
+              ariaLabel="Filter lists"
+              groups={[
+                {
+                  heading: 'Type',
+                  options: [
+                    { id: 'movie',  label: 'Movies' },
+                    { id: 'tv',     label: 'TV'     },
+                    { id: 'cinema', label: 'Cinema' },
+                  ],
+                  value: typeFilters,
+                  onChange: setTypeFilters,
+                },
+                {
+                  heading: 'Genre',
+                  options: genres.map(g => ({ id: g.id, label: g.name })),
+                  value: genreFilters,
+                  onChange: setGenreFilters,
+                },
+              ]}
+            />
+          )}
         </div>
       </div>
 
       {/* ── Watching ── */}
-      {showWatching && watchingItems.length > 0 && (
-        <>
-          {isAll && <CollapsibleBar label="Watching" open={watchingOpen} onToggle={() => setWatchingOpen(o => !o)} />}
-          {(!isAll || watchingOpen) && <WatchingSection watching={watching} hideHeader={isAll} />}
-        </>
-      )}
-      {tab === 'watching' && watchingItems.length === 0 && (
-        <WatchingSection watching={watching} />
+      {showWatching && (
+        isAll
+          ? (watchingItems.length > 0 && (
+              <CollapsibleSection id="watching" label="Watching" count={watchingItems.length}>
+                <WatchingSection watching={watching} hideHeader />
+              </CollapsibleSection>
+            ))
+          : <WatchingSection watching={watching} />
       )}
 
       {/* ── Want to Watch ── */}
       {showWant && (
-        <>
-          {isAll && <CollapsibleBar label="Want to Watch" open={wantOpen} onToggle={() => setWantOpen(o => !o)} />}
-          {(!isAll || wantOpen) && <WantToWatchSection watchlist={watchlist} watching={watching} hideHeader={isAll} />}
-        </>
+        isAll
+          ? (
+              <CollapsibleSection id="want" label="Want to Watch" count={savedCount}>
+                <WantToWatchSection watchlist={watchlist} watching={watching} hideHeader />
+              </CollapsibleSection>
+            )
+          : <WantToWatchSection watchlist={watchlist} watching={watching} />
       )}
 
-      {/* ── Top 10 ── */}
+      {/* ── Top 10 (keeps a banner on its own tab too) ── */}
       {showTop10 && (
-        <>
-          {(isAll || tab === 'top10') && <CollapsibleBar label="Top 10" open={top10Open} onToggle={() => setTop10Open(o => !o)} />}
-          {(!isAll || top10Open) && (
-            <>
-              {(typeFilters.length === 0 || typeFilters.includes('movie')) && (
-                <TopTenSection listType="movies" title="Movies" topLists={topLists} />
-              )}
-              {(typeFilters.length === 0 || typeFilters.includes('tv')) && (
-                <TopTenSection listType="tv" title="TV Shows" topLists={topLists} />
-              )}
-            </>
+        <CollapsibleSection id="top10" label="Top 10">
+          {(typeFilters.length === 0 || typeFilters.includes('movie')) && (
+            <TopTenSection listType="movies" title="Movies" topLists={topLists} />
           )}
-        </>
+          {(typeFilters.length === 0 || typeFilters.includes('tv')) && (
+            <TopTenSection listType="tv" title="TV Shows" topLists={topLists} />
+          )}
+        </CollapsibleSection>
       )}
 
       {/* ── Favorites ── */}
       {showFavs && (
-        <>
-          {isAll && <CollapsibleBar label="Favourites" open={favsOpen} onToggle={() => setFavsOpen(o => !o)} />}
-          {(!isAll || favsOpen) && <FavoritesSection favorites={favorites} filterItems={filterItems} hideHeader={isAll} />}
-        </>
+        isAll
+          ? (
+              <CollapsibleSection id="favorites" label="Favorites" count={favorites.favorites.length}>
+                <FavoritesSection favorites={favorites} filterItems={filterItems} hideHeader />
+              </CollapsibleSection>
+            )
+          : <FavoritesSection favorites={favorites} filterItems={filterItems} />
       )}
 
       {/* ── My Lists ── */}
       {showLists && (
-        <>
-          {isAll && <CollapsibleBar label="My Lists" open={listsOpen} onToggle={() => setListsOpen(o => !o)} />}
-          {(!isAll || listsOpen) && <CustomListsSection customLists={customLists} filterItems={filterItems} hideHeader={isAll} />}
-        </>
+        isAll
+          ? (
+              <CollapsibleSection id="lists" label="My Lists" count={customLists.lists.length}>
+                <CustomListsSection customLists={customLists} filterItems={filterItems} hideHeader />
+              </CollapsibleSection>
+            )
+          : <CustomListsSection customLists={customLists} filterItems={filterItems} />
+      )}
+
+      {/* ── History ── */}
+      {isHistory && (
+        <HistorySection
+          entries={historyEntries}
+          loading={historyLoading}
+          year={historyYear}
+          month={historyMonth}
+        />
       )}
     </div>
   );
