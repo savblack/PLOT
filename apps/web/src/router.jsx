@@ -6,9 +6,12 @@ import ProtectedRoute from './components/ProtectedRoute.jsx';
 import LoadingSpinner from './components/LoadingSpinner.jsx';
 import { SHOW_MEDIA_SYNC_INTEGRATIONS } from './launchFeatures.js';
 
-// Signing out is the one action that must never fail, so LogoutPage is bundled
-// eagerly (not lazy): navigating to /logout never fetches a separate chunk that
-// a long-lived tab could find stale after a deploy.
+// The auth entry/exit points must never fail, so they're bundled eagerly (not
+// lazy): navigating to /login, /signup or /logout is almost always a
+// client-side transition inside an already-loaded (possibly stale) tab, which
+// is exactly when a lazily-fetched chunk 404s after a deploy. Keeping them in
+// the main bundle means the app can always get you in or out.
+import AuthPage from './pages/AuthPage.jsx';
 import LogoutPage from './pages/LogoutPage.jsx';
 
 // Layout + views
@@ -23,7 +26,6 @@ const RequestsView= lazy(() => import('./components/RequestsView.jsx'));
 const NotificationsView = lazy(() => import('./components/NotificationsView.jsx'));
 
 // Standalone pages
-const AuthPage          = lazy(() => import('./pages/AuthPage.jsx'));
 const AuthCallbackPage  = lazy(() => import('./pages/AuthCallbackPage.jsx'));
 const TraktCallbackPage = lazy(() => import('./pages/TraktCallbackPage.jsx'));
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage.jsx'));
@@ -63,8 +65,8 @@ const router = createBrowserRouter([
   { path: '/save',           element: wrap(<SavePage />) },
 
   // Auth
-  { path: '/login',          element: wrap(<AuthPage initialMode="login" />) },
-  { path: '/signup',         element: wrap(<AuthPage initialMode="signup" />) },
+  { path: '/login',          element: <AuthPage initialMode="login" /> },
+  { path: '/signup',         element: <AuthPage initialMode="signup" /> },
   { path: '/logout',         element: <LogoutPage /> },
   { path: '/auth/callback',  element: wrap(<AuthCallbackPage />) },
   { path: '/auth/trakt',     element: SHOW_MEDIA_SYNC_INTEGRATIONS ? wrap(<TraktCallbackPage />) : <Navigate to="/settings" replace /> },
