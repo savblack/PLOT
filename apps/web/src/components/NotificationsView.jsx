@@ -17,6 +17,8 @@ const COPY = {
   follow_request:  'requested to follow you',
   follow_accepted: 'accepted your follow request',
   new_follower:    'started following you',
+  post_like:       'liked your post',
+  post_comment:    'commented on your post',
 };
 
 const avatarStyle = {
@@ -37,6 +39,7 @@ export default function NotificationsView() {
 
   const go = (n) => {
     if (n.type === 'follow_request') navigate('/requests');
+    else if (n.type === 'post_like' || n.type === 'post_comment') navigate('/feed');
     else navigate(`/u/${n.actor_username}`);
   };
 
@@ -69,6 +72,8 @@ export default function NotificationsView() {
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: '0.92rem', color: 'var(--text-primary)', lineHeight: 1.4 }}>
                 <strong>{n.actor_display_name || n.actor_username}</strong> {COPY[n.type] || 'interacted with you'}
+                {(n.type === 'post_like' || n.type === 'post_comment') && n.post_title &&
+                  <span style={{ color: 'var(--text-muted)' }}> · {n.post_title}</span>}
                 {n.type === 'follow_request' && <span style={{ color: 'var(--accent)' }}> · review</span>}
               </div>
               <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 2 }}>{relativeTime(n.created_at)}</div>

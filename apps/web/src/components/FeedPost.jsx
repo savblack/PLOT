@@ -1,6 +1,9 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp, posterUrl } from '../App.jsx';
 import { starFillPercent, STAR_COUNT } from '../utils/ratings.js';
+import { toggleLike } from '../hooks/usePostEngagement.js';
+import CommentSheet from './CommentSheet.jsx';
 
 function relativeTime(iso) {
   const then = new Date(iso).getTime();
@@ -45,28 +48,68 @@ function Stars({ rating }) {
   );
 }
 
+function HeartIcon({ filled }) {
+  return (
+    <svg viewBox="0 0 24 24" width="20" height="20" fill={filled ? 'currentColor' : 'none'}
+         stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1a5.5 5.5 0 1 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/>
+    </svg>
+  );
+}
+
+function CommentIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+         strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+    </svg>
+  );
+}
+
+const actionBtn = (active) => ({
+  display: 'inline-flex', alignItems: 'center', gap: 6, background: 'none', border: 0,
+  padding: '4px 2px', cursor: 'pointer', fontSize: '0.82rem', fontVariantNumeric: 'tabular-nums',
+  color: active ? 'var(--text-primary)' : 'var(--text-muted)',
+});
+
 /**
  * A single auto-generated feed post: a watched title rendered Instagram-style —
- * the poster is the image, the star rating + review are the caption. Tapping the
- * poster or title opens the title's detail panel; the author header links to
- * their profile.
+ * the poster is the image, the star rating + review are the caption, with like
+ * and comment actions beneath.
  */
 export default function FeedPost({ post }) {
   const navigate = useNavigate();
-  const { openPanel } = useApp();
+  const { openPanel, user, profile } = useApp();
 
   const {
-    author_username, author_display_name, author_avatar_url,
+    id, author_username, author_display_name, author_avatar_url,
     tmdb_id, media_type, title, poster_path, rating, note, created_at,
   } = post;
+
+  const [liked, setLiked]             = useState(!!post.viewer_liked);
+  const [likeCount, setLikeCount]     = useState(Number(post.like_count) || 0);
+  const [commentCount, setCommentCount] = useState(Number(post.comment_count) || 0);
+  const [sheetOpen, setSheetOpen]     = useState(false);
 
   const openTitle = () => openPanel(tmdb_id, media_type === 'tv' ? 'tv' : 'movie');
   const goAuthor = () => author_username && navigate(`/u/${author_username}`);
   const displayName = author_display_name || author_username || 'Someone';
   const img = posterUrl(poster_path, 'w500');
 
+  const onLike = async () => {
+    if (!user?.id) return;
+    const wasLiked = liked;
+    setLiked(!wasLiked);
+    setLikeCount(c => c + (wasLiked ? -1 : 1));
+    const { error } = await toggleLike({ postId: id, userId: user.id, liked: wasLiked });
+    if (error) {                    // revert on failure
+      setLiked(wasLiked);
+      setLikeCount(c => c + (wasLiked ? 1 : -1));
+    }
+  };
+
   return (
-    <article style={{ borderBottom: '1px solid var(--border)', padding: '0.75rem 0 1.15rem' }}>
+    <article style={{ borderBottom: '1px solid var(--border)', padding: '0.75rem 0 1.1rem' }}>
       {/* Author header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0 0.25rem 0.7rem' }}>
         <div
@@ -117,7 +160,35 @@ export default function FeedPost({ post }) {
             {note}
           </p>
         )}
+
+        {/* Actions */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1.1rem', marginTop: '0.65rem' }}>
+          <button
+            type="button" onClick={onLike} style={actionBtn(liked)}
+            aria-pressed={liked} aria-label={liked ? 'Unlike' : 'Like'}
+          >
+            <HeartIcon filled={liked} />
+            {likeCount > 0 && <span>{likeCount}</span>}
+          </button>
+          <button
+            type="button" onClick={() => setSheetOpen(true)} style={actionBtn(false)}
+            aria-label="Comments"
+          >
+            <CommentIcon />
+            {commentCount > 0 && <span>{commentCount}</span>}
+          </button>
+        </div>
       </div>
+
+      {sheetOpen && (
+        <CommentSheet
+          post={post}
+          user={user}
+          profile={profile}
+          onClose={() => setSheetOpen(false)}
+          onAdded={() => setCommentCount(c => c + 1)}
+        />
+      )}
     </article>
   );
 }
