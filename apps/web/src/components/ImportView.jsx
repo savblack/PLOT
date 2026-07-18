@@ -5,6 +5,7 @@ import { tmdb } from '../api/tmdb.js';
 import { supabase } from '../api/supabase.js';
 import { parsePlatform } from '../domain/importParsing.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
+import { track, EVENTS } from '../lib/analytics.js';
 
 /* ─────────────────────────── Platform icons ─────────────────────────── */
 
@@ -279,6 +280,7 @@ export default function ImportView() {
     }
 
     const deduped = dedupeEntries(parsed);
+    track(EVENTS.IMPORT_STARTED, { source: platform.id, count: deduped.length });
 
     // Fetch existing tmdb_ids for this user
     const { data: existing } = await supabase
@@ -322,6 +324,7 @@ export default function ImportView() {
       });
 
     const count = await bulkInsert(user.id, toInsert);
+    track(EVENTS.IMPORT_COMPLETED, { source: platform?.id, count });
     // Notify history hook to reload
     if (typeof window !== 'undefined') window.dispatchEvent(new Event('plot:history-changed'));
     setImportedCount(count);

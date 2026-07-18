@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from './supabase.js';
 import { mediaIdentityRow, tmdbIdFromItem } from './media.js';
+import { getConfig } from './config.js';
 
 /**
  * User-created custom lists.
@@ -46,7 +47,10 @@ export function useCustomLists(userId) {
       console.error('Failed to create custom list', error);
       return null;
     }
-    if (data) setLists(prev => [...prev, { ...data, items: [] }]);
+    if (data) {
+      setLists(prev => [...prev, { ...data, items: [] }]);
+      getConfig().onCustomListChange?.({ list_id: data.id, action: 'created' });
+    }
     return data;
   }, [userId]);
 
@@ -61,6 +65,7 @@ export function useCustomLists(userId) {
       return false;
     }
     setLists(prev => prev.filter(l => l.id !== listId));
+    getConfig().onCustomListChange?.({ list_id: listId, action: 'deleted' });
     return true;
   }, [userId]);
 

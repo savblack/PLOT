@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { useShare } from './useShare.js';
 import { buildTitleShareUrl } from '../utils/share.js';
+import { EVENTS } from '../lib/analytics.js';
 
 // A small rotation of share lines so repeat shares feel fresh — the link card
 // already carries the title, poster and PLOT branding, so the message can have
@@ -36,7 +37,7 @@ export function useShareTitle() {
       url,
       title: title || undefined,
       text: title ? pickShareText(title) : undefined,
-      event: 'title_shared',
+      event: EVENTS.TITLE_SHARED,
       eventProps: { tmdb_id: Number(tmdbId), media_type: mediaType, source },
     });
   }, [share]);

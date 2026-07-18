@@ -8,6 +8,7 @@ import { getButtonLikeProps } from '../utils/interactive.js';
 import PlotLoader from './PlotLoader.jsx';
 import UserList from './UserList.jsx';
 import { classifySearchResults } from '../utils/search.js';
+import { track, EVENTS } from '../lib/analytics.js';
 
 function BookmarkIcon({ filled }) {
   return (
@@ -153,16 +154,21 @@ export default function SearchView() {
     if (!v.trim()) { setResults([]); setUsers([]); setEmptyMode('none'); return; }
     timerRef.current = setTimeout(async () => {
       setLoading(true);
+      let resultCount;
       if (searchMode === 'people') {
         const { data } = await supabase.rpc('search_users', { p_query: v.trim() });
         setUsers(data || []);
+        resultCount = (data || []).length;
       } else {
         const data = await tmdb.search(v);
         const { filtered, emptyMode: nextEmptyMode } = classifySearchResults(data?.results || []);
         setResults(filtered);
         setEmptyMode(nextEmptyMode);
+        resultCount = filtered.length;
       }
       setLoading(false);
+      // Track the executed search — never the raw query (PII/privacy): length only.
+      track(EVENTS.SEARCH_PERFORMED, { mode: searchMode, query_length: v.trim().length, result_count: resultCount });
     }, 350);
   };
 

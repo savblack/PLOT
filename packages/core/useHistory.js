@@ -3,6 +3,7 @@ import { supabase } from './supabase.js';
 import { logWatchedItem } from './userMedia.js';
 import { normalizeRating } from './ratings.js';
 import { on, emit } from './events.js';
+import { getConfig } from './config.js';
 
 const HISTORY_CHANGED_EVENT = 'plot:history-changed';
 
@@ -62,6 +63,12 @@ export function useHistory(userId) {
     if (data) {
       setEntries(prev => [data, ...prev.filter(e => e.tmdb_id !== row.tmdb_id)]);
       notifyHistoryChanged();
+      // Analytics seams (platform-injected; see config.js). Fired from the single
+      // core spot so every surface that logs a watch is covered.
+      getConfig().onWatched?.({ tmdb_id: row.tmdb_id, media_type: row.media_type });
+      if (rating != null) {
+        getConfig().onRating?.({ tmdb_id: row.tmdb_id, media_type: row.media_type, value: data.rating ?? rating });
+      }
     }
     return data ?? null;
   }, [userId]);
@@ -82,6 +89,9 @@ export function useHistory(userId) {
     if (data) {
       setEntries(prev => prev.map(e => e.tmdb_id === Number(tmdbId) ? data : e));
       notifyHistoryChanged();
+      if ('rating' in normalizedUpdates && normalizedUpdates.rating != null) {
+        getConfig().onRating?.({ tmdb_id: Number(tmdbId), media_type: data.media_type, value: normalizedUpdates.rating });
+      }
     }
     return data;
   }, [userId]);

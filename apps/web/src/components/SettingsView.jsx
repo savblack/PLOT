@@ -1403,7 +1403,7 @@ export default function SettingsView() {
       url: inviteUrl,
       title: 'Join me on PLOT',
       text: "Join me on PLOT — here's what I'm watching.",
-      event: 'invite_shared',
+      event: EVENTS.INVITE_SHARED,
     });
   };
 

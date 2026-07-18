@@ -196,11 +196,19 @@ export function useWatchlist(userId) {
       console.error('[useWatchlist] DELETE list_items failed:', error);
       return false;
     }
+    const removed = items.find(i => i.tmdb_id === Number(tmdbId));
     setItems(prev => prev.filter(i => i.tmdb_id !== Number(tmdbId)));
+
+    // Report the removal through the platform-injected analytics seam (mirror of
+    // onWatchlistSave in addToList) so every surface is covered from one place.
+    getConfig().onWatchlistRemove?.({
+      tmdb_id: Number(tmdbId),
+      media_type: removed?.media_type ?? 'movie',
+      source: 'in_app',
+    });
 
     // Queue remove from Trakt if connected
     if (traktIntegrationId.current) {
-      const removed = items.find(i => i.tmdb_id === Number(tmdbId));
       enqueueTraktAction(userId, traktIntegrationId.current, 'trakt_watchlist_remove', {
         tmdb_id:    Number(tmdbId),
         media_type: removed?.media_type ?? 'movie',

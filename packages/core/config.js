@@ -32,6 +32,17 @@
  *   platform-agnostic core report a save without importing an analytics SDK — web
  *   wires it to PostHog (watchlist_saved + first_save activation) in main.jsx;
  *   mobile may leave it undefined until it wires its own analytics.
+ * @property {(payload: { tmdb_id: number, media_type: string, source: string }) => void} [onWatchlistRemove]
+ *   Analytics seam — fired when an item is removed from the watchlist. Same
+ *   pattern / same rationale as onWatchlistSave.
+ * @property {(payload: { tmdb_id: number, media_type: string }) => void} [onWatched]
+ *   Analytics seam — fired when an item is logged as watched.
+ * @property {(payload: { tmdb_id: number, media_type: string, value: number }) => void} [onRating]
+ *   Analytics seam — fired when a rating is set on a title (on watched-log or edit).
+ * @property {(payload: { target_user_id: string, following: boolean }) => void} [onFollow]
+ *   Analytics seam — fired on follow (following:true) / unfollow (following:false).
+ * @property {(payload: { list_id: string, action: 'created' | 'deleted' }) => void} [onCustomListChange]
+ *   Analytics seam — fired when a custom list is created or deleted.
  */
 
 /** @type {PlotCoreConfig} */
@@ -44,6 +55,11 @@ const defaults = {
   supabaseClientOptions: undefined,
   affiliate: undefined,
   onWatchlistSave: undefined,
+  onWatchlistRemove: undefined,
+  onWatched: undefined,
+  onRating: undefined,
+  onFollow: undefined,
+  onCustomListChange: undefined,
 };
 
 let config = { ...defaults };

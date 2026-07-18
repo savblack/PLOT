@@ -8,6 +8,7 @@ import { UpcomingContent } from './GuideView.jsx';
 import EpgView from './EpgView.jsx';
 import FeedView from './FeedView.jsx';
 import LoadingSpinner from './LoadingSpinner.jsx';
+import { track, EVENTS } from '../lib/analytics.js';
 import GroupedFilterMenu from './GroupedFilterMenu.jsx';
 import { getButtonLikeProps } from '../utils/interactive.js';
 import { useShareTitle } from '../hooks/useShareTitle.js';
@@ -464,6 +465,12 @@ export default function DiscoverView() {
   const [typeFilters,  setTypeFilters]  = useState(ALL_TYPES);
   const [genreFilters, setGenreFilters] = useState([]);
 
+  const changeTab = (next) => {
+    if (next === tab) return;
+    setTab(next);
+    track(EVENTS.DISCOVER_TAB_CHANGED, { tab: next });
+  };
+
   if (!app) return null;
 
   const { openPanel, watchlist, profile } = app;
@@ -479,25 +486,25 @@ export default function DiscoverView() {
         <div className="sub-tabs-scroll">
           <button
             className={`sub-tab-btn${tab === 'feed' ? ' active' : ''}`}
-            onClick={() => setTab('feed')}
+            onClick={() => changeTab('feed')}
           >
             Feed
           </button>
           <button
             className={`sub-tab-btn${tab === 'discover' ? ' active' : ''}`}
-            onClick={() => setTab('discover')}
+            onClick={() => changeTab('discover')}
           >
             Discover
           </button>
           <button
             className={`sub-tab-btn${tab === 'releases' ? ' active' : ''}`}
-            onClick={() => setTab('releases')}
+            onClick={() => changeTab('releases')}
           >
             Releases
           </button>
           <button
             className={`sub-tab-btn${tab === 'guide' ? ' active' : ''}`}
-            onClick={() => setTab('guide')}
+            onClick={() => changeTab('guide')}
           >
             Guide
           </button>
