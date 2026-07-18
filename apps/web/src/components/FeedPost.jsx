@@ -66,6 +66,8 @@ function CommentIcon() {
   );
 }
 
+const ACTION = { watch: 'watched', favourite: 'favourited', top_list: 'added to Top 10' };
+
 const actionBtn = (active) => ({
   display: 'inline-flex', alignItems: 'center', gap: 6, background: 'none', border: 0,
   padding: '4px 2px', cursor: 'pointer', fontSize: '0.82rem', fontVariantNumeric: 'tabular-nums',
@@ -83,7 +85,7 @@ export default function FeedPost({ post }) {
 
   const {
     id, author_username, author_display_name, author_avatar_url,
-    tmdb_id, media_type, title, poster_path, rating, note, created_at,
+    source_type, rank, tmdb_id, media_type, title, poster_path, rating, note, created_at,
   } = post;
 
   const [liked, setLiked]             = useState(!!post.viewer_liked);
@@ -124,6 +126,11 @@ export default function FeedPost({ post }) {
             {displayName}
           </span>
         </div>
+        {ACTION[source_type] && (
+          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', flexShrink: 0 }}>
+            {ACTION[source_type]}
+          </span>
+        )}
         <span style={{ marginLeft: 'auto', fontSize: '0.75rem', color: 'var(--text-muted)', flexShrink: 0 }}>
           {relativeTime(created_at)}
         </span>
@@ -154,6 +161,11 @@ export default function FeedPost({ post }) {
             {title}
           </span>
           <Stars rating={rating} />
+          {source_type === 'top_list' && rank && (
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
+              #{rank} in their Top 10
+            </span>
+          )}
         </div>
         {note && (
           <p style={{ margin: '0.4rem 0 0', fontSize: '0.9rem', color: 'var(--text-secondary, var(--text-primary))', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
