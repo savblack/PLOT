@@ -32,11 +32,11 @@ export default function PrivacyPage() {
         <h2>3. How We Use Your Data</h2>
         <p>We use your data to operate, maintain, and improve the Service, including:</p>
         <ul>
-          <li>Providing and personalising your PLOT experience</li>
+          <li>Providing and personalizing your PLOT experience</li>
           <li>Displaying your watch history, lists, journal, reminders, and watch progress inside your account</li>
           <li>Sending transactional emails (account confirmation, password reset)</li>
           <li>Operating calendar links, support workflows, and optional media integrations</li>
-          <li>Analysing usage patterns to improve the product and monitor launch health</li>
+          <li>Analyzing usage patterns to improve the product and monitor launch health</li>
         </ul>
         <p>We do not sell your personal data to third parties.</p>
 
@@ -80,7 +80,7 @@ export default function PrivacyPage() {
         <p>We reserve the right to update this Privacy Policy at any time. Changes will be posted to this page with an updated "last updated" date. Your continued use of the Service after any changes constitutes your acceptance of the revised policy.</p>
 
         <h2>11. Contact</h2>
-        <p>PLOT is a product of SUSUMU HOUSE. This Privacy Policy is governed by the laws of New South Wales, Australia. Any disputes arising in connection with this policy are subject to the exclusive jurisdiction of the courts of New South Wales, Australia. For privacy-related enquiries, contact us at contact@susumuhouse.com or via the app.</p>
+        <p>PLOT is a product of SUSUMU HOUSE. This Privacy Policy is governed by the laws of New South Wales, Australia. Any disputes arising in connection with this policy are subject to the exclusive jurisdiction of the courts of New South Wales, Australia. For privacy-related inquiries, contact us at contact@susumuhouse.com or via the app.</p>
       </div>
     </div>
   );

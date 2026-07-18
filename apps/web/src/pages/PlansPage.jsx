@@ -199,7 +199,7 @@ export default function PlansPage() {
                 <span className="plan-amount">$0</span>
                 <span className="plan-per">forever</span>
               </div>
-              <p className="plan-tagline">Everything you need to organise your watching.</p>
+              <p className="plan-tagline">Everything you need to organize your watching.</p>
             </div>
             <ul className="plan-features">
               {FREE_HIGHLIGHTS.map(f => <li key={f}><Tick />{f}</li>)}
