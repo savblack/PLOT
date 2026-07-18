@@ -86,7 +86,7 @@ Deno.serve(async (req) => {
   // ── Subscribe flow ──
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
-  let body: { email?: string; website?: string };
+  let body: { email?: string; website?: string; list?: string };
   try {
     body = await req.json();
   } catch {
@@ -99,7 +99,20 @@ Deno.serve(async (req) => {
   const email = String(body.email ?? '').trim().toLowerCase();
   if (!EMAIL_RE.test(email) || email.length > 254) return json({ error: 'Invalid email' }, 400);
 
-  // Re-subscribing flips a previously unsubscribed address back to active.
+  // The mobile-app "notify me" form routes to a separate waitlist so those
+  // signups can be emailed at launch independently of the weekly digest.
+  if (body.list === 'mobile-app') {
+    const { error } = await supabase
+      .from('app_waitlist')
+      .upsert({ email }, { onConflict: 'email', ignoreDuplicates: true });
+    if (error) {
+      console.error('Waitlist failed:', error.message);
+      return json({ error: 'Something went wrong' }, 500);
+    }
+    return json({ ok: true });
+  }
+
+  // Newsletter — re-subscribing flips a previously unsubscribed address back to active.
   const { error } = await supabase
     .from('marketing_subscribers')
     .upsert(

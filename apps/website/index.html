@@ -885,7 +885,7 @@
       /* Unify the mobile gutter — the interactive demo sections default to a
          2rem side padding while the editorial sections (manifesto, closing,
          footer) use 1.5rem. Match them so section edges line up on scroll. */
-      section#hero, section#guide-demo, section#calendar-demo, section#lists-demo {
+      section#hero, section#guide-demo, section#calendar-demo, section#lists-demo, section#app-soon {
         padding-left: 1.5rem;
         padding-right: 1.5rem;
       }
@@ -1152,6 +1152,23 @@
 
     /* Guide screen */
     #guide-demo { background: var(--dark); padding: 10rem 2rem; }
+
+    /* Mobile app — coming soon (reuses the phone frame + Discover screen) */
+    #app-soon { background: var(--dark); padding: 10rem 2rem; }
+    .app-eyebrow {
+      display: inline-block; font-size: 0.62rem; font-weight: 600;
+      letter-spacing: 0.22em; text-transform: uppercase;
+      color: var(--accent, #e05578); margin-bottom: 1.4rem;
+    }
+    .app-phone { position: relative; width: 320px; }   /* badge anchors here, outside the clipped frame */
+    .app-phone-badge {
+      position: absolute; z-index: 20; top: 30px; right: -6px;
+      background: var(--accent, #e05578); color: #fff;
+      font-size: 0.62rem; font-weight: 600; letter-spacing: 0.06em;
+      padding: 7px 14px; border-radius: 999px;
+      box-shadow: 0 12px 30px -8px rgba(0,0,0,0.55);
+    }
+
     .guide-screen {
       display: flex;
       flex-direction: column;
@@ -1522,7 +1539,7 @@
       .demo-copy { position: static; order: 1 !important; }
       .phone-wrap { order: 2 !important; }
       /* Guide demo — tighten the stacked layout on mobile */
-      section#guide-demo { padding-top: 5rem; padding-bottom: 5rem; }
+      section#guide-demo, section#app-soon { padding-top: 5rem; padding-bottom: 5rem; }
       #guide-demo .demo-split { gap: 2.4rem; }
       #guide-demo .marquee-track { gap: 2.2rem; }
     }
@@ -2068,6 +2085,76 @@
       </div>
     </div>
   </section>
+
+  <!-- ── Mobile app — coming soon ─────────────────────────────── -->
+  <section id="app-soon">
+    <div class="demo-split">
+      <div class="demo-copy reveal">
+        <span class="app-eyebrow">Coming soon</span>
+        <h2 class="demo-headline">PLOT, in<br><em>your pocket.</em></h2>
+        <p class="demo-body">Everything you love about PLOT — discover, track and curate — landing on iPhone and Android. Be the first to know when it drops.</p>
+        <div class="woc-sub-wrap app-notify">
+          <form class="woc-form" id="appNotifyForm">
+            <input type="email" name="email" placeholder="your@email.com" required autocomplete="email" aria-label="Email address">
+            <input type="text" name="website" class="fn-website" tabindex="-1" autocomplete="off" aria-hidden="true">
+            <button type="submit">Notify me</button>
+          </form>
+          <div class="woc-msg" id="appNotifyMsg" role="status"></div>
+        </div>
+      </div>
+      <div class="phone-wrap reveal">
+        <div class="app-phone">
+          <div class="iphone-png-wrap">
+            <img class="iphone-png-frame" src="images/iphone-mockup.webp" alt="">
+            <div class="phone-frame">
+              <div class="guide-screen disc">
+                <div class="disc-bar">
+                  <span class="disc-ham"><span></span><span></span><span></span></span>
+                  <span class="disc-logo">PLOT</span>
+                  <svg class="disc-search" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="8" cy="8" r="5.5"/><path d="M12.5 12.5L16 16"/></svg>
+                </div>
+                <div class="disc-tabs">
+                  <span class="disc-tab disc-tab-on">Discover</span>
+                  <span class="disc-tab">Releases</span>
+                  <span class="disc-tab">Guide</span>
+                </div>
+                <div class="disc-scroll">
+                  <div class="disc-hero" style="background-image:url('images/timeline/the-odyssey.jpg')">
+                    <div class="disc-hero-grad"></div>
+                    <span class="disc-trend">TRENDING #1</span>
+                    <div class="disc-hero-title">The Odyssey</div>
+                    <div class="disc-hero-meta">2026 &middot; Film</div>
+                  </div>
+                  <div class="disc-sec"><div class="disc-sec-sub">Trending today</div><div class="disc-sec-t">Hot right now</div></div>
+                  <div class="disc-row">
+                    <div class="disc-card"><div class="disc-poster" style="background-image:url('images/hero/sinners.webp')"><span class="disc-tag">Movie</span><svg class="disc-bk" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg></div><div class="disc-card-t">Sinners</div></div>
+                    <div class="disc-card"><div class="disc-poster" style="background-image:url('images/hero/nosferatu.webp')"><span class="disc-tag">Movie</span><svg class="disc-bk" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg></div><div class="disc-card-t">Nosferatu</div></div>
+                    <div class="disc-card"><div class="disc-poster" style="background-image:url('images/hero/longlegs.webp')"><span class="disc-tag">Movie</span><svg class="disc-bk" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg></div><div class="disc-card-t">Longlegs</div></div>
+                    <div class="disc-card"><div class="disc-poster" style="background-image:url('images/hero/the-substance.webp')"><span class="disc-tag">Movie</span><svg class="disc-bk" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg></div><div class="disc-card-t">The Substance</div></div>
+                  </div>
+                  <div class="disc-sec"><div class="disc-sec-sub">Popular TV</div><div class="disc-sec-t">Most binged shows</div></div>
+                  <div class="disc-row">
+                    <div class="disc-card"><div class="disc-poster" style="background-image:url('images/timeline/severance.jpg')"><span class="disc-tag disc-tag-tv">TV</span><svg class="disc-bk" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg></div><div class="disc-card-t">Severance</div></div>
+                    <div class="disc-card"><div class="disc-poster" style="background-image:url('images/timeline/the-bear.jpg')"><span class="disc-tag disc-tag-tv">TV</span><svg class="disc-bk" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg></div><div class="disc-card-t">The Bear</div></div>
+                    <div class="disc-card"><div class="disc-poster" style="background-image:url('images/timeline/adolescence.jpg')"><span class="disc-tag disc-tag-tv">TV</span><svg class="disc-bk" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg></div><div class="disc-card-t">Adolescence</div></div>
+                    <div class="disc-card"><div class="disc-poster" style="background-image:url('images/timeline/presumed-innocent.jpeg')"><span class="disc-tag disc-tag-tv">TV</span><svg class="disc-bk" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg></div><div class="disc-card-t">Presumed Innocent</div></div>
+                  </div>
+                </div>
+                <div class="disc-nav">
+                  <span class="disc-nav-on">Home</span>
+                  <span>Calendar</span>
+                  <span>My Lists</span>
+                  <span>History</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="app-phone-badge">Coming soon</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- ── Live Ticker ──────────────────────────────────────────── -->
   <div class="ticker-section" aria-hidden="true">
     <div class="ticker-badge"><span class="ticker-badge-mark">Plot</span> Live</div>
@@ -2141,33 +2228,37 @@
     const TMDB_PROXY = window.PLOT.SUPABASE_FN + '/tmdb-proxy';
     const NEWSLETTER_URL = window.PLOT.SUPABASE_FN + '/newsletter-subscribe';
 
-    // Newsletter signup (footer)
+    // Email signups (footer newsletter + app-launch notify) — one handler,
+    // both post to the newsletter endpoint.
     (function () {
-      var form = document.getElementById('newsletterForm');
-      var msg = document.getElementById('newsletterMsg');
-      if (!form) return;
-      form.addEventListener('submit', function (e) {
-        e.preventDefault();
-        var button = form.querySelector('button');
-        button.disabled = true;
-        msg.textContent = '';
-        fetch(NEWSLETTER_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: form.elements.email.value,
-            website: form.elements.website.value,
-          }),
-        }).then(function (r) {
-          if (!r.ok) throw new Error('bad status');
-          msg.textContent = "You're in — first digest this Sunday.";
-          form.reset();
-        }).catch(function () {
-          msg.textContent = "Something went wrong — try again in a minute.";
-        }).finally(function () {
-          button.disabled = false;
+      function wire(form, msg, success, list) {
+        if (!form || !msg) return;
+        form.addEventListener('submit', function (e) {
+          e.preventDefault();
+          var button = form.querySelector('button');
+          button.disabled = true;
+          msg.textContent = '';
+          fetch(NEWSLETTER_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: form.elements.email.value,
+              website: form.elements.website.value,
+              list: list,
+            }),
+          }).then(function (r) {
+            if (!r.ok) throw new Error('bad status');
+            msg.textContent = success;
+            form.reset();
+          }).catch(function () {
+            msg.textContent = "Something went wrong — try again in a minute.";
+          }).finally(function () {
+            button.disabled = false;
+          });
         });
-      });
+      }
+      wire(document.getElementById('newsletterForm'), document.getElementById('newsletterMsg'), "You're in — first digest this Sunday.", 'newsletter');
+      wire(document.getElementById('appNotifyForm'), document.getElementById('appNotifyMsg'), "You're on the list — we'll email you the moment the app lands.", 'mobile-app');
     })();
     const TMDB_PROXY_HEADERS = { Authorization: 'Bearer ' + window.PLOT.SUPABASE_ANON };
     // Cache by full query string so identical calls across the page (e.g.
