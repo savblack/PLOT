@@ -157,7 +157,7 @@ export default function OnboardingFlow() {
     tmdb.getTrending('all', 'week').then(data => {
       const list = (data?.results || [])
         .filter(r => (r.media_type === 'tv' || r.media_type === 'movie') && r.poster_path)
-        .slice(0, 12);
+        .slice(0, 24);
       setTrending(list);
     });
   }, [step, trending.length]);
@@ -175,7 +175,7 @@ export default function OnboardingFlow() {
       const hits = (data?.results || [])
         .filter(r => r.media_type === 'tv' || r.media_type === 'movie')
         .filter(r => r.poster_path)
-        .slice(0, 12);
+        .slice(0, 24);
       setSeedResults(hits);
       setSeedSearching(false);
     }, 350);
@@ -417,13 +417,12 @@ export default function OnboardingFlow() {
       {/* ── Sticky footer — always visible ── */}
       <div style={footer}>
         <div style={{ width: '100%', maxWidth: 420, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <div style={{ display: 'flex', gap: '0.5rem', justifyContent: step > 1 ? 'space-between' : 'flex-end' }}>
             {step > 1 && (
               <button className="btn btn-ghost" onClick={() => setStep(s => s - 1)}>← Back</button>
             )}
             <button
               className="btn btn-primary"
-              style={{ flex: 1 }}
               onClick={step === 3 ? finish : goNext}
               disabled={saving}
               aria-busy={saving}
