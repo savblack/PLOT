@@ -12,7 +12,7 @@ import { track, EVENTS } from '../lib/analytics.js';
 import { useCalendar } from '../hooks/useCalendar.js';
 import { useShare } from '../hooks/useShare.js';
 import { deleteAccountAndSignOut } from '../utils/deleteAccount.js';
-import { fetchUserDataExport, downloadDataExport } from '../utils/exportData.js';
+import { fetchUserDataExport, downloadDataExport, downloadCsvExport } from '../utils/exportData.js';
 import { buildFeedbackAttachmentPath } from '../utils/feedback.js';
 import { downloadICS } from '../utils/ics.js';
 import { getButtonLikeProps } from '../utils/interactive.js';
@@ -23,6 +23,20 @@ import ConfirmModal from './ConfirmModal.jsx';
 import PlotLoader from './PlotLoader.jsx';
 
 const TIP_PRESET_AMOUNTS = [3, 5, 10, 25];
+
+// Integration row glyphs — stroke-based to match the other settings-row icons.
+// Plex reads as a media "play"; Trakt as a "tracked/watched" check.
+const PLEX_ICON = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polygon points="6 4 20 12 6 20 6 4" />
+  </svg>
+);
+const TRAKT_ICON = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10" />
+    <path d="M8 12.5l2.5 2.5L16 9" />
+  </svg>
+);
 
 const REGIONS = [
   { code: 'US', name: 'United States' }, { code: 'AU', name: 'Australia' },
@@ -98,6 +112,14 @@ function RegionPicker({ current, onSave, onClose }) {
 /* ── Chevron icon ── */
 function Chevron() {
   return <svg viewBox="0 0 24 24" width="14" height="14" stroke="var(--text-muted)" fill="none" strokeWidth="2.5"><polyline points="9,18 15,12 9,6"/></svg>;
+}
+
+function PremiumBadge() {
+  return (
+    <span style={{ fontSize: '0.66rem', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--accent)', background: 'var(--accent-dim)', borderRadius: 999, padding: '0.15rem 0.5rem', marginLeft: '0.35rem', verticalAlign: 'middle' }}>
+      Premium
+    </span>
+  );
 }
 
 function SettingsTextAction({ children, onClick, disabled = false, tone = 'default' }) {
@@ -872,12 +894,18 @@ function FeedbackPanel({ user, onClose }) {
     <>
       <div className="panel-overlay" onClick={onClose} />
       <div className="panel">
-        <div className="feedback-panel-header">
-          <div>
-            <div className="feedback-panel-kicker">PLOT Inbox</div>
-            <h2 className="feedback-panel-title">Send feedback</h2>
-          </div>
-          <button className="btn btn-ghost btn-sm" onClick={onClose} aria-label="Close" style={{ fontSize: '1rem', lineHeight: 1, border: 'none' }}>✕</button>
+        <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--surface)' }}>
+          <SheetHeader
+            title="Send feedback"
+            onClose={onClose}
+            action={status === 'done'
+              ? undefined
+              : {
+                  label: status === 'submitting' ? 'Sending…' : 'Send',
+                  onClick: handleSubmit,
+                  disabled: !message.trim() || status === 'submitting',
+                }}
+          />
         </div>
 
         {status === 'done' ? (
@@ -899,7 +927,6 @@ function FeedbackPanel({ user, onClose }) {
               <p>
                 Found a bug, have a feature idea, or want to sharpen the product taste? Send it here.
               </p>
-              <div className="feedback-privacy-pill">Mirrored anonymously into the PLOT feedback backlog</div>
             </div>
 
             <div className="feedback-type-grid">
@@ -983,19 +1010,6 @@ function FeedbackPanel({ user, onClose }) {
                 {errorMessage || 'Something went wrong. Please try again.'}
               </p>
             )}
-
-            <div className="feedback-actions">
-              <button className="btn btn-ghost btn-sm" onClick={onClose} disabled={status === 'submitting'}>
-                Cancel
-              </button>
-              <button
-                className="btn btn-primary btn-sm"
-                onClick={handleSubmit}
-                disabled={!message.trim() || status === 'submitting'}
-              >
-                {status === 'submitting' ? 'Sending…' : 'Send Feedback'}
-              </button>
-            </div>
           </div>
         )}
       </div>
@@ -1038,6 +1052,10 @@ export default function SettingsView() {
   const [localCalToken,       setLocalCalToken]       = useState(null);
   const [usernameDraft,       setUsernameDraft]       = useState(null);
   const [usernameStatus,      setUsernameStatus]      = useState(null); // null|checking|available|taken|invalid|saving|saved|error
+  const [emailDraft,          setEmailDraft]          = useState(null); // null = display, string = editing
+  const [emailSaving,         setEmailSaving]         = useState(false);
+  const [emailError,          setEmailError]          = useState(null); // inline error shown while editing
+  const [emailNotice,         setEmailNotice]         = useState(null); // post-save confirmation note shown in display mode
   const [actionError,         setActionError]         = useState(null);
   const [confirmModal,        setConfirmModal]        = useState(null); // { title, message, confirmLabel, danger, onConfirm }
   const [billingReturn,       setBillingReturn]       = useState(null); // null|'premium'|'tip'
@@ -1091,6 +1109,7 @@ export default function SettingsView() {
   // me (and the follows trigger notifies me).
   const inviteUrl     = username ? `${profileUrl}?ref=${encodeURIComponent(username)}` : null;
   const USERNAME_RE   = /^[a-z0-9](?:[a-z0-9-]{1,28}[a-z0-9])$/;
+  const EMAIL_RE      = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   // Sync local token back to null once profile catches up (or if revoked elsewhere)
   useEffect(() => {
@@ -1281,10 +1300,10 @@ export default function SettingsView() {
     });
   };
 
-  const handleExportData = async () => {
+  const handleExportData = async (format = 'json') => {
     if (exportingData) return;
     setActionError(null);
-    setExportingData(true);
+    setExportingData(format);
     try {
       const result = await fetchUserDataExport({
         supabase,
@@ -1295,7 +1314,8 @@ export default function SettingsView() {
         setActionError(result.error);
         return;
       }
-      downloadDataExport(result.payload);
+      if (format === 'csv') downloadCsvExport(result.payload);
+      else downloadDataExport(result.payload);
     } catch (err) {
       setActionError(err?.message || 'Failed to export your data.');
     } finally {
@@ -1370,6 +1390,40 @@ export default function SettingsView() {
     refreshProfile();
   };
 
+  // ── Email change ──────────────────────────────────────────────────────────
+  // Supabase requires the new address to be confirmed via a link before the
+  // change takes effect, so the row shows a "check your inbox" note rather than
+  // updating optimistically. Uniqueness (one email per account) is enforced by
+  // Supabase Auth, which returns an error for an address already in use.
+  const currentEmail = user?.email || '';
+  const emailValue   = emailDraft ?? '';
+  const emailDirty   = emailDraft !== null
+    && emailValue.trim() !== ''
+    && emailValue.trim().toLowerCase() !== currentEmail.toLowerCase();
+
+  const startEditEmail  = () => { setEmailNotice(null); setEmailError(null); setEmailDraft(currentEmail); };
+  const cancelEditEmail = () => { setEmailDraft(null); setEmailError(null); };
+
+  const handleSaveEmail = async () => {
+    const next = emailValue.trim();
+    if (next.toLowerCase() === currentEmail.toLowerCase()) { cancelEditEmail(); return; }
+    if (!EMAIL_RE.test(next)) { setEmailError('Enter a valid email address.'); return; }
+    setEmailSaving(true);
+    setEmailError(null);
+    const { error } = await supabase.auth.updateUser({ email: next });
+    setEmailSaving(false);
+    if (error) {
+      setEmailError(
+        /already|registered|exists|in use/i.test(error.message || '')
+          ? 'That email is already in use.'
+          : (error.message || 'Could not update email. Try again.')
+      );
+      return;
+    }
+    setEmailDraft(null);
+    setEmailNotice(`We sent a confirmation link to ${next}. Your email updates once you open it.`);
+  };
+
   const handleTogglePublic = async () => {
     if (!user) return;
     const { error } = await supabase.from('profiles').update({ is_public: !isPublic }).eq('id', user.id);
@@ -1429,12 +1483,60 @@ export default function SettingsView() {
       {/* Account */}
       <div className="settings-group" style={{ marginTop: '0.75rem' }}>
         <div className="settings-group-title">Account</div>
-        <div className="settings-row" style={{ cursor: 'default' }}>
-          <div className="settings-row-left">
+        <div className="settings-row" style={{ cursor: 'default', alignItems: emailDraft === null ? 'center' : 'flex-start' }}>
+          <div className="settings-row-left" style={{ flex: 1, minWidth: 0 }}>
             <div className="settings-row-icon">
               <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             </div>
-            <span className="settings-row-label">{user?.email}</span>
+            {emailDraft === null ? (
+              <div style={{ minWidth: 0 }}>
+                <span className="settings-row-label" style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentEmail}</span>
+                {emailNotice && (
+                  <div style={{ fontSize: '0.72rem', marginTop: '0.3rem', color: 'var(--accent)', lineHeight: 1.4 }}>{emailNotice}</div>
+                )}
+              </div>
+            ) : (
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="settings-row-label">Email</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.35rem' }}>
+                  <input
+                    type="email"
+                    value={emailValue}
+                    spellCheck={false}
+                    autoCapitalize="none"
+                    autoComplete="email"
+                    inputMode="email"
+                    aria-label="Email address"
+                    onChange={(e) => { setEmailDraft(e.target.value); if (emailError) setEmailError(null); }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && emailDirty && !emailSaving) handleSaveEmail();
+                      if (e.key === 'Escape') cancelEditEmail();
+                    }}
+                    style={{
+                      flex: 1, minWidth: 0, padding: '0.45rem 0.6rem',
+                      borderRadius: 'var(--radius-sm, 8px)', border: '1px solid var(--border)',
+                      background: 'var(--surface)', color: 'var(--text-primary)', fontSize: '0.9rem',
+                    }}
+                  />
+                </div>
+                <div style={{
+                  fontSize: '0.72rem', marginTop: '0.3rem', minHeight: '1rem',
+                  color: emailError ? 'var(--danger)' : 'var(--text-muted)',
+                }}>
+                  {emailError || (emailSaving ? 'Saving…' : 'You’ll get a link to confirm the new address.')}
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
+            {emailDraft === null ? (
+              <SettingsTextAction onClick={startEditEmail}>Edit</SettingsTextAction>
+            ) : (
+              <>
+                <SettingsTextAction onClick={cancelEditEmail}>Cancel</SettingsTextAction>
+                <SettingsTextAction onClick={handleSaveEmail} disabled={emailSaving || !emailDirty}>Save</SettingsTextAction>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -1758,17 +1860,15 @@ export default function SettingsView() {
         {SHOW_MEDIA_SYNC_INTEGRATIONS && !premium.isPremium ? (
           <>
             {[
-              { name: 'Plex',  blurb: 'Sync your Plex watchlist and history', connected: sync.isConnected,  disconnect: sync.disconnect },
-              { name: 'Trakt', blurb: 'Sync Netflix, Prime, Disney+ & more',  connected: trakt.isConnected, disconnect: trakt.disconnect },
+              { name: 'Plex',  blurb: 'Sync your Plex watchlist and history', connected: sync.isConnected,  disconnect: sync.disconnect,  icon: PLEX_ICON },
+              { name: 'Trakt', blurb: 'Sync Netflix, Prime, Disney+ & more',  connected: trakt.isConnected, disconnect: trakt.disconnect, icon: TRAKT_ICON },
             ].map(row => (
               <div key={row.name} className="settings-row" style={{ cursor: 'default' }}>
                 <div className="settings-row-left">
+                  <div className="settings-row-icon">{row.icon}</div>
                   <div>
                     <div className="settings-row-label">
-                      {row.name}{' '}
-                      <span style={{ fontSize: '0.66rem', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--accent)', background: 'var(--accent-dim)', borderRadius: 999, padding: '0.15rem 0.5rem', marginLeft: '0.35rem', verticalAlign: 'middle' }}>
-                        Premium
-                      </span>
+                      {row.name}<PremiumBadge />
                     </div>
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                       {row.connected ? 'Paused, needs PLOT Premium to sync' : row.blurb}
@@ -1798,6 +1898,7 @@ export default function SettingsView() {
           <>
             <div className="settings-row" style={{ cursor: 'default' }}>
               <div className="settings-row-left">
+                <div className="settings-row-icon">{PLEX_ICON}</div>
                 <div>
                   <div className="settings-row-label">Plex</div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
@@ -1834,6 +1935,7 @@ export default function SettingsView() {
 
             <div className="settings-row" style={{ cursor: 'default' }}>
               <div className="settings-row-left">
+                <div className="settings-row-icon">{TRAKT_ICON}</div>
                 <div>
                   <div className="settings-row-label">Trakt</div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
@@ -1917,14 +2019,35 @@ export default function SettingsView() {
               </svg>
             </div>
             <div>
-              <div className="settings-row-label">Subscribe to Calendar</div>
+              <div className="settings-row-label">
+                Subscribe to Calendar{!premium.isPremium && <PremiumBadge />}
+              </div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                {calendarToken ? 'Live feed · keep this link private' : 'Get a URL for Google or Apple Calendar'}
+                {!premium.isPremium
+                  ? 'A live calendar feed needs PLOT Premium'
+                  : (calendarToken ? 'Live feed · keep this link private' : 'Get a URL for Google or Apple Calendar')}
               </div>
             </div>
           </div>
           <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
-            {calendarToken ? (
+            {!premium.isPremium ? (
+              <>
+                <SettingsTextAction
+                  disabled={premium.busy}
+                  onClick={() => {
+                    track(EVENTS.PREMIUM_GATE_HIT, { feature: 'calendar_subscribe' });
+                    premium.startCheckout('monthly', 'calendar_gate');
+                  }}
+                >
+                  Unlock · $3/mo
+                </SettingsTextAction>
+                {calendarToken && (
+                  <SettingsTextAction onClick={handleRevokeCalToken} tone="danger">
+                    Revoke
+                  </SettingsTextAction>
+                )}
+              </>
+            ) : calendarToken ? (
               <>
                 <SettingsTextAction onClick={handleCopyCalUrl}>
                   {calTokenCopied ? 'Copied!' : 'Copy link'}
@@ -1978,16 +2101,24 @@ export default function SettingsView() {
             <div>
               <div className="settings-row-label">Export Your Data</div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                Watchlist, history, lists and more as a JSON file
+                Watchlist, history, lists and more as JSON or CSV
               </div>
             </div>
           </div>
-          <SettingsTextAction
-            disabled={exportingData}
-            onClick={handleExportData}
-          >
-            {exportingData ? 'Preparing…' : 'Download .json'}
-          </SettingsTextAction>
+          <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
+            <SettingsTextAction
+              disabled={!!exportingData}
+              onClick={() => handleExportData('json')}
+            >
+              {exportingData === 'json' ? 'Preparing…' : 'Download .json'}
+            </SettingsTextAction>
+            <SettingsTextAction
+              disabled={!!exportingData}
+              onClick={() => handleExportData('csv')}
+            >
+              {exportingData === 'csv' ? 'Preparing…' : 'Download .csv'}
+            </SettingsTextAction>
+          </div>
         </div>
       </div>
 
