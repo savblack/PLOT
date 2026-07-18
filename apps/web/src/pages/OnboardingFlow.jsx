@@ -319,7 +319,8 @@ export default function OnboardingFlow() {
             {loadingProv ? (
               <div className="loading-state"><PlotLoader size="sm" /></div>
             ) : (
-              <div className="providers-select-grid" style={{ padding: 0, paddingBottom: '1rem' }}>
+              <div style={{ maxHeight: '42vh', overflowY: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: '1rem', paddingRight: '0.15rem' }}>
+                <div className="providers-select-grid" style={{ padding: 0 }}>
                 {filteredProviders.map(p => (
                   <div
                     key={p.provider_id}
@@ -335,6 +336,7 @@ export default function OnboardingFlow() {
                     <span>{p.provider_name}</span>
                   </div>
                 ))}
+                </div>
               </div>
             )}
           </div>
