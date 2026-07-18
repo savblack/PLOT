@@ -1528,8 +1528,9 @@ export default function SettingsView() {
           </div>
         </div>
 
-        {/* Shareable link */}
-        {isPublic && profileUrl && (
+        {/* Shareable link — works for private profiles too (logged-in visitors
+            can still request to follow). */}
+        {profileUrl && (
           <div className="settings-row" style={{ cursor: 'default' }}>
             <div className="settings-row-left" style={{ minWidth: 0 }}>
               <div className="settings-row-icon">
@@ -1557,8 +1558,9 @@ export default function SettingsView() {
         )}
 
         {/* Invite friends — shares your profile tagged with ?ref so new signups
-            attribute to you and auto-follow you (notification fires). */}
-        {isPublic && inviteUrl && (
+            attribute to you and follow you (notification fires). On a private
+            profile the follow is a request you approve. */}
+        {inviteUrl && (
           <div className="settings-row" style={{ cursor: 'default' }}>
             <div className="settings-row-left" style={{ minWidth: 0 }}>
               <div className="settings-row-icon">
@@ -1571,7 +1573,7 @@ export default function SettingsView() {
               <div style={{ minWidth: 0 }}>
                 <div className="settings-row-label">Invite friends</div>
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  They join from your profile &amp; start following you
+                  They join from your profile &amp; {isPublic ? 'start following you' : 'request to follow you'}
                 </div>
               </div>
             </div>
