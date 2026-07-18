@@ -9,6 +9,7 @@ import { useGenres } from '../hooks/useGenres.js';
 import { localDateStr } from '../utils/date.js';
 import { entriesForMonth, historyMonthEmptyCopy, historyRatingLabel, monthLabel } from '../utils/history.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
+import CollapsibleSection from './CollapsibleSection.jsx';
 import GroupedFilterMenu from './GroupedFilterMenu.jsx';
 import PlotLoader from './PlotLoader.jsx';
 import SheetHeader from './SheetHeader.jsx';
@@ -938,6 +939,10 @@ function WatchingSection({ watching, hideHeader }) {
       {items.map(item => {
         const img    = posterUrl(item.poster_path, 'w92');
         const epCode = `S${String(item.current_season).padStart(2,'0')}E${String(item.current_episode).padStart(2,'0')}`;
+        // total_episodes = episodes in the current season (cached on the row from TMDB).
+        // Only draw the bar when we know the denominator; clamp to guard bad data.
+        const total = item.total_episodes || 0;
+        const pct   = total ? Math.min(100, Math.round((item.current_episode / total) * 100)) : null;
         const openDetails = () => openPanel(item.tmdb_id, 'tv');
         return (
           <div
@@ -952,8 +957,16 @@ function WatchingSection({ watching, hideHeader }) {
             <div className="list-row-info">
               <div className="list-row-title">{item.title}</div>
               <div className="list-row-meta">
-                <span className="list-type-badge">Series</span>
+                <span>
+                  Season {item.current_season} · Episode {item.current_episode}
+                  {total ? ` of ${total}` : ''}
+                </span>
               </div>
+              {pct != null && (
+                <div className="list-row-progress">
+                  <span style={{ width: `${pct}%` }} />
+                </div>
+              )}
             </div>
             <div className="list-row-end mylists-row-status">
               <span className="chip chip-episode">{epCode}</span>
@@ -1112,18 +1125,6 @@ function HistorySection({ entries, loading, year, month }) {
   );
 }
 
-/* ── Collapsible section bar (used under "All" tab) ── */
-function CollapsibleBar({ label, open, onToggle }) {
-  return (
-    <button className="date-group-header date-group-collapsible" onClick={onToggle}>
-      <span className="date-group-label">{label}</span>
-      <svg className={`date-group-chevron${open ? ' open' : ''}`} viewBox="0 0 24 24" aria-hidden="true">
-        <polyline points="6 9 12 15 18 9" />
-      </svg>
-    </button>
-  );
-}
-
 /* ── Main view ── */
 export default function MyListsView() {
   const { user, topLists, favorites, customLists, watching, watchlist } = useApp();
@@ -1153,13 +1154,6 @@ export default function MyListsView() {
     setHistoryYear(historyMonth === 11 ? historyYear + 1 : historyYear);
     setHistoryMonth(historyMonth === 11 ? 0 : historyMonth + 1);
   };
-
-  // Collapse state for "All" tab sections
-  const [watchingOpen, setWatchingOpen] = useState(true);
-  const [wantOpen,     setWantOpen]     = useState(true);
-  const [top10Open,    setTop10Open]    = useState(true);
-  const [favsOpen,     setFavsOpen]     = useState(true);
-  const [listsOpen,    setListsOpen]    = useState(true);
 
   const filterItems = (items) => {
     let filtered = items;
@@ -1198,6 +1192,9 @@ export default function MyListsView() {
   const showLists    = isAll || tab === 'lists';
 
   const watchingItems  = watching.items || [];
+  // Count for the "Want to Watch" banner — saved titles not already being watched.
+  const watchingIdSet  = new Set(watchingItems.map(i => i.tmdb_id));
+  const savedCount     = (watchlist.items || []).filter(i => !watchingIdSet.has(Number(i.tmdb_id))).length;
 
   return (
     <div style={{ paddingBottom: '2rem' }}>
@@ -1252,55 +1249,59 @@ export default function MyListsView() {
       </div>
 
       {/* ── Watching ── */}
-      {showWatching && watchingItems.length > 0 && (
-        <>
-          {isAll && <CollapsibleBar label="Watching" open={watchingOpen} onToggle={() => setWatchingOpen(o => !o)} />}
-          {(!isAll || watchingOpen) && <WatchingSection watching={watching} hideHeader={isAll} />}
-        </>
-      )}
-      {tab === 'watching' && watchingItems.length === 0 && (
-        <WatchingSection watching={watching} />
+      {showWatching && (
+        isAll
+          ? (watchingItems.length > 0 && (
+              <CollapsibleSection id="watching" label="Watching" count={watchingItems.length}>
+                <WatchingSection watching={watching} hideHeader />
+              </CollapsibleSection>
+            ))
+          : <WatchingSection watching={watching} />
       )}
 
       {/* ── Want to Watch ── */}
       {showWant && (
-        <>
-          {isAll && <CollapsibleBar label="Want to Watch" open={wantOpen} onToggle={() => setWantOpen(o => !o)} />}
-          {(!isAll || wantOpen) && <WantToWatchSection watchlist={watchlist} watching={watching} hideHeader={isAll} />}
-        </>
+        isAll
+          ? (
+              <CollapsibleSection id="want" label="Want to Watch" count={savedCount}>
+                <WantToWatchSection watchlist={watchlist} watching={watching} hideHeader />
+              </CollapsibleSection>
+            )
+          : <WantToWatchSection watchlist={watchlist} watching={watching} />
       )}
 
-      {/* ── Top 10 ── */}
+      {/* ── Top 10 (keeps a banner on its own tab too) ── */}
       {showTop10 && (
-        <>
-          {(isAll || tab === 'top10') && <CollapsibleBar label="Top 10" open={top10Open} onToggle={() => setTop10Open(o => !o)} />}
-          {(!isAll || top10Open) && (
-            <>
-              {(typeFilters.length === 0 || typeFilters.includes('movie')) && (
-                <TopTenSection listType="movies" title="Movies" topLists={topLists} />
-              )}
-              {(typeFilters.length === 0 || typeFilters.includes('tv')) && (
-                <TopTenSection listType="tv" title="TV Shows" topLists={topLists} />
-              )}
-            </>
+        <CollapsibleSection id="top10" label="Top 10">
+          {(typeFilters.length === 0 || typeFilters.includes('movie')) && (
+            <TopTenSection listType="movies" title="Movies" topLists={topLists} />
           )}
-        </>
+          {(typeFilters.length === 0 || typeFilters.includes('tv')) && (
+            <TopTenSection listType="tv" title="TV Shows" topLists={topLists} />
+          )}
+        </CollapsibleSection>
       )}
 
       {/* ── Favorites ── */}
       {showFavs && (
-        <>
-          {isAll && <CollapsibleBar label="Favorites" open={favsOpen} onToggle={() => setFavsOpen(o => !o)} />}
-          {(!isAll || favsOpen) && <FavoritesSection favorites={favorites} filterItems={filterItems} hideHeader={isAll} />}
-        </>
+        isAll
+          ? (
+              <CollapsibleSection id="favorites" label="Favorites" count={favorites.favorites.length}>
+                <FavoritesSection favorites={favorites} filterItems={filterItems} hideHeader />
+              </CollapsibleSection>
+            )
+          : <FavoritesSection favorites={favorites} filterItems={filterItems} />
       )}
 
       {/* ── My Lists ── */}
       {showLists && (
-        <>
-          {isAll && <CollapsibleBar label="My Lists" open={listsOpen} onToggle={() => setListsOpen(o => !o)} />}
-          {(!isAll || listsOpen) && <CustomListsSection customLists={customLists} filterItems={filterItems} hideHeader={isAll} />}
-        </>
+        isAll
+          ? (
+              <CollapsibleSection id="lists" label="My Lists" count={customLists.lists.length}>
+                <CustomListsSection customLists={customLists} filterItems={filterItems} hideHeader />
+              </CollapsibleSection>
+            )
+          : <CustomListsSection customLists={customLists} filterItems={filterItems} />
       )}
 
       {/* ── History ── */}
