@@ -2525,11 +2525,20 @@
     (function() {
       const cf = document.getElementById('listsCf');
       if (!cf) return;
-      const covers = [
-        { nm: 'Award winners', ct: '20 films', img: 'images/timeline/oppenheimer.jpg' },
-        { nm: 'Date night',    ct: '12 films', img: 'images/hero/past-lives.webp' },
-        { nm: 'Spooky season', ct: '13 films', img: 'images/hero/nosferatu.webp' },
+      // Each list carries several on-theme posters. The coverflow shows one
+      // cover per list on the first pass, then loops back with the next poster
+      // for that same list — fresh artwork, same category.
+      const cats = [
+        { nm: 'Award winners', ct: '20 films', imgs: ['images/timeline/oppenheimer.jpg', 'images/hero/anatomy-of-a-fall.webp', 'images/hero/aftersun.webp'] },
+        { nm: 'Date night',    ct: '12 films', imgs: ['images/hero/past-lives.webp', 'images/hero/anyone-but-you.webp', 'images/hero/people-we-meet-on-vacation.webp'] },
+        { nm: 'Spooky season', ct: '13 films', imgs: ['images/hero/nosferatu.webp', 'images/hero/longlegs.webp', 'images/hero/heretic.webp'] },
       ];
+      // Flatten round-by-round: list A #1, B #1, C #1, then A #2, B #2, C #2, …
+      const rounds = Math.max(...cats.map(c => c.imgs.length));
+      const covers = [];
+      for (let r = 0; r < rounds; r++) {
+        cats.forEach(c => covers.push({ nm: c.nm, ct: c.ct, cat: cats.indexOf(c), img: c.imgs[r % c.imgs.length] }));
+      }
       covers.forEach(c => { const i = new Image(); i.src = c.img; });   // preload
       const nm = document.getElementById('cfNm'), ct = document.getElementById('cfCt');
       const dots = [...document.getElementById('cfDots').children];
@@ -2549,7 +2558,7 @@
         ring.forEach((card, i) => { card.style.backgroundImage = "url('" + covers[((cur + OFFS[i]) % n + n) % n].img + "')"; });
         nm.textContent = covers[cur].nm;
         ct.textContent = covers[cur].ct;
-        dots.forEach((d, i) => d.classList.toggle('on', i === cur));
+        dots.forEach((d, i) => d.classList.toggle('on', i === covers[cur].cat));
       }
       paint();
 
