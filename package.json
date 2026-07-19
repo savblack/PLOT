@@ -39,7 +39,7 @@
   },
   "dependencies": {
     "@plot/core": "*",
-    "@supabase/supabase-js": "^2.110.2"
+    "@supabase/supabase-js": "^2.110.7"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
