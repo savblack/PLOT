@@ -8,9 +8,11 @@ Queues). The marketing site (theplot.tv) stays on Vercel for now.
 
 ## What's in the repo
 
-- **`apps/web/functions/`** — the Vercel serverless functions ported to Cloudflare
+- **`functions/`** (repo root) — the Vercel serverless functions ported to Cloudflare
   Pages Functions (`onRequest({ request, params, env })`), served at their real
-  URLs (no rewrite layer needed):
+  URLs (no rewrite layer needed). Cloudflare Pages discovers Functions in a
+  `functions/` directory at the **project root directory** (which is the repo root,
+  since the Pages build root is left blank) — NOT under `apps/web/`:
   - `u/[username].js` → `/u/<username>` (profile SSR) — port of `api/profile.js`
   - `list/[id].js` → `/list/<id>` (list SSR) — port of `api/list.js`
   - `save.js` → `/save` (title share SSR) — port of `api/save.js`
@@ -75,7 +77,7 @@ be set in the Pages project.
 
 ## Known risks
 
-1. **Monorepo build:** if Pages doesn't pick up `apps/web/functions/` with
+1. **Monorepo build:** if Pages doesn't pick up `functions/` with
    root-dir = repo root, fall back to a root `wrangler.toml` with
    `pages_build_output_dir = "apps/web/dist"`, or relocate `functions/` to repo
    root. Validate on the first build.
