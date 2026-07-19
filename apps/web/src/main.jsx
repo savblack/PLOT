@@ -6,7 +6,6 @@ import router from './router.jsx';
 import './index.css';
 import posthog from 'posthog-js';
 import { PostHogProvider } from '@posthog/react';
-import { Analytics } from '@vercel/analytics/react';
 import { captureAttribution } from './utils/attribution.js';
 import { track, markActivated, EVENTS } from './lib/analytics.js';
 
@@ -83,7 +82,6 @@ createRoot(document.getElementById('root')).render(
   <StrictMode>
     <PostHogProvider client={posthog}>
       <RouterProvider router={router} />
-      <Analytics />
     </PostHogProvider>
   </StrictMode>,
 );
