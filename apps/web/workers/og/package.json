@@ -1,0 +1,17 @@
+{
+  "name": "plot-og-worker",
+  "private": true,
+  "type": "module",
+  "description": "Cloudflare Worker rendering PLOT share-link OG cards (moved off Vercel /api/og).",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "react": "^19.2.7",
+    "workers-og": "^0.0.25"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}

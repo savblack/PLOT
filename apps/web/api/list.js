@@ -9,6 +9,8 @@
 //
 // Routing (vercel.json):  /list/:id -> /api/list?id=:id
 
+import { ogBase } from './_og-base.js';
+
 const SUPABASE_URL = 'https://mkegtssedjyqldysvzga.supabase.co';
 const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1rZWd0c3NlZGp5cWxkeXN2emdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2MDgzMzUsImV4cCI6MjA4OTE4NDMzNX0.W-toEr3ftNeN0iTpRQ8Ord09sxBiwO2CQC6j2jszN6w';
 
@@ -93,7 +95,7 @@ export default async function handler(req, res) {
   }
 
   const url = `https://${host}/list/${encodeURIComponent(id)}`;
-  const ogImage = `https://${host}/api/og?list=${encodeURIComponent(id)}`;
+  const ogImage = `${ogBase(host)}?list=${encodeURIComponent(id)}`;
   const ownerLine = owner
     ? `<span class="by">by <a href="https://${host}/u/${encodeURIComponent(owner.username)}">@${esc(owner.username)}</a></span>`
     : '';

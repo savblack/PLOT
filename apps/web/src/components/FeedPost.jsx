@@ -137,7 +137,11 @@ export default function FeedPost({ post }) {
   const onShare = async () => {
     const url = buildTitleShareUrl({ tmdbId: tmdb_id, mediaType: media_type, source: 'feed_share' });
     const text = `${displayName} ${ACTION[source_type] || 'shared'} ${title} on PLOT`;
-    const imageUrl = `${window.location.origin}/api/og?post=${id}`;
+    // OG cards render on a Cloudflare Worker when VITE_OG_BASE_URL is set
+    // (moved off Vercel to avoid the Hobby CPU/origin caps); falls back to
+    // the Vercel /api/og function otherwise.
+    const ogBase = import.meta.env.VITE_OG_BASE_URL || `${window.location.origin}/api/og`;
+    const imageUrl = `${ogBase}?post=${id}`;
     try {
       if (typeof navigator !== 'undefined' && navigator.canShare) {
         const res = await fetch(imageUrl);

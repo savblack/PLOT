@@ -10,6 +10,7 @@
 // Routing (vercel.json):  /save -> /api/save  (query string passes through)
 
 import { loadTitle } from './_tmdb.js';
+import { ogBase } from './_og-base.js';
 
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const pick = (v) => (Array.isArray(v) ? v[0] : v);
@@ -45,7 +46,7 @@ export default async function handler(req, res) {
     const desc = title.overview
       ? (title.overview.length > 180 ? `${title.overview.slice(0, 177)}…` : title.overview)
       : `Save ${title.title} to your watchlist on PLOT.`;
-    const image = `https://${host}/api/og?type=${title.type}&id=${id}`;
+    const image = `${ogBase(host)}?type=${title.type}&id=${id}`;
     const url = `https://${host}/save?media_type=${title.type}&tmdb_id=${id}`;
     const tags =
       `<meta property="og:type" content="video.other"/>` +

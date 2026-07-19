@@ -1,0 +1,29 @@
+# Cloudflare Worker that renders the share-link OG cards (moved off Vercel).
+# See README.md for the full deploy + cutover + rollback steps.
+#
+# Deploy:
+#   cd apps/web/workers/og
+#   npm install
+#   npx wrangler secret put TMDB_API_KEY   # same value as the Vercel env
+#   npx wrangler deploy
+#
+# After deploy the Worker is live at https://plot-og.<subdomain>.workers.dev —
+# VERIFY it renders each card variant, THEN point the app at it via env:
+#   Vercel  OG_BASE_URL       = https://plot-og.<subdomain>.workers.dev
+#   Vercel  VITE_OG_BASE_URL  = https://plot-og.<subdomain>.workers.dev
+#   then redeploy the app. Unset both to instantly roll back to /api/og.
+
+name = "plot-og"
+main = "src/index.js"
+compatibility_date = "2025-06-01"
+# workers-og pulls in resvg/yoga WASM + Buffer; nodejs_compat covers the shims.
+compatibility_flags = ["nodejs_compat"]
+workers_dev = true
+
+[vars]
+# Where the .ttf brand fonts are served from (the Worker host doesn't serve
+# /fonts). Points at the deployed app by default.
+FONT_BASE = "https://app.theplot.tv"
+
+# TMDB_API_KEY is a SECRET, not a var — set it with:
+#   npx wrangler secret put TMDB_API_KEY
