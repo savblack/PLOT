@@ -20,6 +20,11 @@ const SITE_URL = 'https://theplot.tv';
 // ── Design tokens ──
 // Brand colors derive from @plot/core/tokens.js (the canonical source, enforced by
 // `npm run tokens:marketing`). surfaceTint/accentSoft/border are email-only.
+//
+// NOTE: The pink/rose accent (accent #E05578, surfaceTint #FFF5F7, accentSoft
+// #F7C7D3) is intentional and approved for transactional email — this is an
+// explicit exception to PLOT's "no pink accent in the app UI" rule. Keep it
+// confined to the eyebrow chip and note box here; do not carry pink into the app.
 const c = colors.light;
 const dmSans = "'DM Sans', -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif";
 const t = {

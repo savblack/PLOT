@@ -19,6 +19,7 @@ PLOT uses one visual foundation across the app and the marketing site. The surfa
   - `--text-primary`, `--text-secondary`, `--text-muted`
   - `--border`, `--border-strong`
   - `--accent`, `--accent-dim`, `--danger`, `--danger-dim`, `--danger-border`
+  - Color usage: the app and marketing UI stay monochrome/type-led — no pink/rose "pop" accent. **Exception:** transactional (Supabase auth) email may use the pink accent — `#E05578` eyebrow chip, `#FFF5F7` / `#F7C7D3` tint and border — confined to the eyebrow chip and note box. Do not carry pink into the app UI. Source of truth: [scripts/push-auth-emails.mjs](../../scripts/push-auth-emails.mjs), rendered to `supabase/templates/*.html`.
 - Spacing rhythm:
   - `4px` for tight chip and icon gaps.
   - `8px` for compact internal spacing.
