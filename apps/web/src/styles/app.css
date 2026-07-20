@@ -750,6 +750,35 @@ svg { stroke-width: 1.5; }
   stroke: white;
 }
 
+/* Poster-card favourite (heart) — sits in the former type-chip slot (top-left) */
+.card-fav-btn {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: transform 0.15s ease;
+}
+.card-fav-btn svg {
+  width: 15px;
+  height: 15px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2.5;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.65));
+}
+.card-fav-btn:hover { transform: scale(1.1); }
+.card-fav-btn.faved { color: #ef4444; }
+.card-fav-btn.faved svg { fill: #ef4444; stroke: #ef4444; }
+
 /* Poster-card quick share — desktop hover only (mobile uses the panel's Share) */
 .card-share-btn {
   position: absolute;
@@ -4258,6 +4287,18 @@ a.provider-chip--link:hover {
     height: 15px;
   }
 
+  .card-fav-btn {
+    width: 34px;
+    height: 34px;
+    top: 3px;
+    left: 3px;
+  }
+
+  .card-fav-btn svg {
+    width: 15px;
+    height: 15px;
+  }
+
   .discover-chart-row .card-save-btn {
     width: 34px !important;
     height: 34px !important;
@@ -4342,6 +4383,18 @@ a.provider-chip--link:hover {
   }
 
   .card-save-btn svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  .card-fav-btn {
+    width: 34px;
+    height: 34px;
+    top: 3px;
+    left: 3px;
+  }
+
+  .card-fav-btn svg {
     width: 15px;
     height: 15px;
   }
