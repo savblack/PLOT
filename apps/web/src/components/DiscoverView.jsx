@@ -96,11 +96,30 @@ function ShareBtn({ item }) {
   );
 }
 
-/* ── Type chip ── */
-function TypeChip({ item }) {
-  if (item.media_type === 'tv') return <span className="chip chip-episode">TV</span>;
-  if (item._cinema)             return <span className="chip chip-cinema">Cinema</span>;
-  return                               <span className="chip chip-streaming">Movie</span>;
+/* ── Favourite (heart) button — occupies the former type-chip slot ── */
+function FavBtn({ item }) {
+  const { favorites, profile } = useApp();
+  const fw   = favoriteWords(profile?.region);
+  const type = item.media_type || 'movie';
+  const fav  = favorites.isFavorite(item.id);
+  return (
+    <button
+      className={`card-fav-btn${fav ? ' faved' : ''}`}
+      onClick={e => { e.stopPropagation(); favorites.toggleFavorite({ ...item, media_type: type }); }}
+      aria-label={fav ? fw.un : fw.noun}
+    >
+      <svg viewBox="0 0 24 24">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+      </svg>
+    </button>
+  );
+}
+
+/* ── Compact "year · type" meta line for poster cards ── */
+function cardMeta(item) {
+  const year = (item.release_date || item.first_air_date || '').slice(0, 4);
+  const type = item.media_type === 'tv' ? 'TV' : item._cinema ? 'Cinema' : 'Movie';
+  return [year, type].filter(Boolean).join(' · ');
 }
 
 /* ── Poster card with optional rank badge ── */
@@ -120,12 +139,13 @@ function RankedCard({ item, rank, showRank = true, openPanel, watchlist }) {
           ? <img src={img} alt={title} loading="lazy" />
           : <div className="media-card-img-placeholder" />
         }
-        <div className="card-chip-overlay"><TypeChip item={item} /></div>
+        <FavBtn item={item} />
         <SaveBtn item={item} watchlist={watchlist} />
         <ShareBtn item={item} />
         {showRank && <span className="discover-rank-badge">{rank}</span>}
       </div>
       <div className="media-card-title">{title}</div>
+      <div className="media-card-meta">{cardMeta(item)}</div>
     </div>
   );
 }

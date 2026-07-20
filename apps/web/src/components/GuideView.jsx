@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useApp, posterUrl, logoUrl, TodayLabel } from '../App.jsx';
+import { favoriteWords } from '../utils/spelling.js';
 import { localDateStr, dateToLocalStr } from '../utils/date.js';
 import { useDragScroll } from '../hooks/useDragScroll.js';
 import { useGenres } from '../hooks/useGenres.js';
@@ -136,16 +137,32 @@ function SaveBtn({ item, watchlist }) {
   );
 }
 
-function TypeBadge({ type, cinema }) {
-  if (type === 'tv') return <span className="chip chip-episode">TV</span>;
-  if (cinema)        return <span className="chip chip-cinema">Cinema</span>;
-  return                    <span className="chip chip-streaming">Movie</span>;
+/* ── Favourite (heart) button — occupies the former type-chip slot ── */
+function FavBtn({ item }) {
+  const { favorites, profile } = useApp();
+  const fw   = favoriteWords(profile?.region);
+  const type = item.media_type || 'movie';
+  const fav  = favorites.isFavorite(item.id);
+  return (
+    <button
+      className={`card-fav-btn${fav ? ' faved' : ''}`}
+      onClick={e => { e.stopPropagation(); favorites.toggleFavorite({ ...item, media_type: type }); }}
+      aria-label={fav ? fw.un : fw.noun}
+    >
+      <svg viewBox="0 0 24 24">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+      </svg>
+    </button>
+  );
 }
 
 function MediaCard({ item, openPanel, providerLogo, watchlist }) {
   const img   = posterUrl(item.poster_path, 'w185');
   const type  = item.media_type || 'movie';
   const title = item.title || item.name;
+  const year  = (item.release_date || item.first_air_date || '').slice(0, 4);
+  const typeLabel = type === 'tv' ? 'TV' : item._cinema ? 'Cinema' : 'Movie';
+  const meta  = [year, typeLabel].filter(Boolean).join(' · ');
 
   return (
     <div className="media-card" onClick={() => openPanel(item.id, type)}>
@@ -154,9 +171,7 @@ function MediaCard({ item, openPanel, providerLogo, watchlist }) {
           ? <img src={img} alt={title} loading="lazy" />
           : <div className="media-card-img-placeholder" />
         }
-        <div className="card-chip-overlay">
-          <TypeBadge type={type} cinema={item._cinema} />
-        </div>
+        <FavBtn item={item} />
         <SaveBtn item={item} watchlist={watchlist} />
         {providerLogo && (
           <div className="platform-badge">
@@ -165,6 +180,7 @@ function MediaCard({ item, openPanel, providerLogo, watchlist }) {
         )}
       </div>
       <div className="media-card-title">{title}</div>
+      <div className="media-card-meta">{meta}</div>
     </div>
   );
 }
