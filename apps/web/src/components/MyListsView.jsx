@@ -920,6 +920,26 @@ function WatchingSection({ watching, hideHeader }) {
   const { openPanel } = useApp();
   const items = watching.items || [];
 
+  // Episode count for each show's current season, keyed by tmdb_id — the
+  // denominator for the progress bar. It isn't stored on the row, so pull it
+  // from TMDB via the hook's ref-cached fetchSeason (one network call per
+  // show/season for the whole session; re-runs only when the list or a
+  // current-season changes).
+  const [epCounts, setEpCounts] = useState({});
+  const seasonKey = items.map(i => `${i.tmdb_id}:${i.current_season}`).join(',');
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const entries = await Promise.all(items.map(async (item) => {
+        const season = await watching.fetchSeason(item.tmdb_id, item.current_season);
+        return [item.tmdb_id, season?.episodes?.length || 0];
+      }));
+      if (!cancelled) setEpCounts(Object.fromEntries(entries));
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on seasonKey; `watching`/`items` identity churns each render
+  }, [seasonKey]);
+
   if (items.length === 0) {
     return (
       <div style={{ padding: '2rem 1rem', textAlign: 'center' }}>
@@ -942,9 +962,9 @@ function WatchingSection({ watching, hideHeader }) {
       {items.map(item => {
         const img    = posterUrl(item.poster_path, 'w92');
         const epCode = `S${String(item.current_season).padStart(2,'0')}E${String(item.current_episode).padStart(2,'0')}`;
-        // total_episodes = episodes in the current season (cached on the row from TMDB).
-        // Only draw the bar when we know the denominator; clamp to guard bad data.
-        const total = item.total_episodes || 0;
+        // Episodes in the current season (fetched above; total_episodes on the row
+        // is a legacy fallback). Only draw the bar once we know the denominator.
+        const total = epCounts[item.tmdb_id] || item.total_episodes || 0;
         const pct   = total ? Math.min(100, Math.round((item.current_episode / total) * 100)) : null;
         const openDetails = () => openPanel(item.tmdb_id, 'tv');
         return (
