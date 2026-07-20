@@ -1281,7 +1281,7 @@
       position: absolute; width: 210px; aspect-ratio: 2 / 3;
       border-radius: 12px; background-size: cover; background-position: center; background-color: var(--bg);
       box-shadow: 0 22px 50px -22px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(0,0,0,0.08);
-      transition: transform 0.4s var(--ease), opacity 0.4s var(--ease);
+      transition: transform 0.7s var(--ease), opacity 0.7s var(--ease);
       backface-visibility: hidden; will-change: transform, opacity; opacity: 0;
     }
     /* Coverflow slide states — 0 = centred cover, neighbours angled, far cards
@@ -2575,7 +2575,7 @@
         wrapper.style.transition = '';                        // … then restore its glide
       }
 
-      const INTERVAL = 1000, LEAD = 700;                      // ~1s dwell on each list
+      const INTERVAL = 2800, LEAD = 700;                      // ~2.8s dwell on each list
       let timer = null, lead = null;
       const start = () => {
         if (timer || lead) return;
