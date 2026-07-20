@@ -4203,7 +4203,7 @@ a.provider-chip--link:hover {
 }
 
 .discover-plat-grid > .media-card {
-  flex: 0 0 clamp(135px, 18vw, 180px);
+  flex: 0 0 120px;
 }
 
 /* ═══════════════════════════════════════
