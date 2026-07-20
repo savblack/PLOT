@@ -46,7 +46,7 @@ export default function PrivacyPage() {
           <li><strong>Supabase</strong>: authentication, database, storage, and edge functions</li>
           <li><strong>The Movie Database (TMDB)</strong>: film and TV metadata. This product uses the TMDB API but is not endorsed or certified by TMDB.</li>
           <li><strong>JustWatch</strong>: streaming availability ("where to watch") data, delivered via the TMDB API.</li>
-          <li><strong>Vercel</strong>: website and application hosting. Your requests are routed through Vercel's infrastructure.</li>
+          <li><strong>Cloudflare</strong>: website and application hosting and content delivery. Your requests are routed through Cloudflare's infrastructure.</li>
           <li><strong>PostHog</strong>: product analytics used to understand how the Service is used.</li>
           <li><strong>Linear</strong>: anonymised in-app feedback can be mirrored into our product backlog for support and planning.</li>
           <li><strong>Resend</strong>: feedback email delivery and transactional notification support where applicable.</li>

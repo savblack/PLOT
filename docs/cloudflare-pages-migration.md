@@ -4,7 +4,8 @@ The Vercel Hobby free tier paused production (on-the-fly OG rendering + crawler
 SSR exhausted the CPU / origin-transfer caps). Instead of paying for Vercel Pro
 we're moving the app to Cloudflare Pages — unlimited static bandwidth, no
 full-site pause, and the wider Cloudflare platform (R2, KV, Durable Objects,
-Queues). The marketing site (theplot.tv) stays on Vercel for now.
+Queues). The marketing site (theplot.tv) has since moved to Cloudflare Pages too —
+its Vercel `vercel.json` + `api/` are gone and it runs on `apps/website/functions/`.
 
 ## What's in the repo
 
@@ -69,11 +70,17 @@ be set in the Pages project.
 - Keep the Vercel project in place and unpaused as instant rollback (repoint DNS
   back if anything breaks).
 
-## Step 4 — cleanup (after a few days stable)
+## Step 4 — cleanup (after a few days stable) — DONE (repo side)
 
-- Remove `@vercel/og` and `@vercel/analytics` from `apps/web/package.json`.
-- Delete `apps/web/api/` and `apps/web/vercel.json`.
-- Decommission the Vercel project for the app.
+`app.theplot.tv` is served by Cloudflare (`server: cloudflare`, no `x-vercel-*`), so the
+repo-side cleanup is complete:
+
+- [x] Removed `@vercel/og` and `@vercel/analytics` from `apps/web/package.json`.
+- [x] Deleted `apps/web/api/` and `apps/web/vercel.json`.
+- [ ] **Manual (dashboard):** decommission the Vercel project for the app. Note: once this
+  cleanup is merged to `main`, the Vercel Git deploy would rebuild from a source tree with no
+  `vercel.json`/`api/`, so DNS-rollback-to-Vercel is no longer a viable fallback — rollback is
+  now git revert + redeploy on Cloudflare. The marketing site (`apps/website`) stays on Vercel.
 
 ## Known risks
 

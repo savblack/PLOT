@@ -14,8 +14,6 @@
     "@plot/core": "*",
     "@posthog/react": "^1.10.3",
     "@supabase/supabase-js": "^2.110.7",
-    "@vercel/analytics": "^2.0.1",
-    "@vercel/og": "^0.11.1",
     "posthog-js": "^1.404.1",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",

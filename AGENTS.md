@@ -37,12 +37,14 @@ npm-workspaces monorepo. `npm ci` at root installs everything. `legacy-peer-deps
 - `packages/core/` (`@plot/core`) — platform-agnostic JS + JSDoc shared by web & mobile:
   data hooks (`useWatchlist.js`, `useHistory.js`, …), API access (`supabase.js`, `tmdb.js`),
   domain logic (`media.js`, `customLists.js`), `config.js`, `tokens.js`. No build step.
-- `apps/web/` (`@plot/web`) — Vite + React SPA → Vercel project `plot`. `src/`, `api/`
-  (serverless fns), `workers/tmdb-proxy/` (Cloudflare Worker), `tests/`.
+- `apps/web/` (`@plot/web`) — Vite + React SPA → Cloudflare Pages (output `apps/web/dist`).
+  `src/`, `tests/`, `workers/tmdb-proxy/` + `workers/og/` (Cloudflare Workers). SSR routes
+  are Pages Functions in the repo-root `functions/`, not under `apps/web/`.
 - `apps/mobile/` (`@plot/mobile`) — Expo / React Native, TypeScript, expo-router.
   Platform seams in `lib/`. **See `apps/mobile/AGENTS.md` before writing mobile code.**
-- `apps/website/` — static marketing site (theplot.tv) → Vercel project `plot-site`.
-  Plain HTML/CSS/JS, no build step, **not an npm workspace.**
+- `apps/website/` — static marketing site (theplot.tv) → Cloudflare Pages. Plain
+  HTML/CSS/JS, no build step, **not an npm workspace.** SSR routes are Pages Functions
+  in `apps/website/functions/` (admin-host routing via `functions/_middleware.js`).
 - `supabase/` — `functions/` (Deno edge functions), `migrations/`, `config.toml`.
 - `marketing/` — automation runbooks (see Marketing). `scripts/` — repo tooling.
 
@@ -57,21 +59,23 @@ Run from repo root unless noted. Use **npm** (workspaces), never yarn/pnpm.
 - `npm run test:smoke` — Playwright smoke (`vite build` + chromium; run
   `npx playwright install chromium` once on a fresh machine)
 - `npm run typecheck -w @plot/mobile` — **required when touching mobile** (ESLint ignores it)
-- Deploy: web/website auto-deploy via Vercel on merge to `main`; Supabase functions via
-  `supabase functions deploy <name>`; Worker via `cd apps/web/workers/tmdb-proxy && npx wrangler deploy`.
+- Deploy: web app and marketing site both auto-deploy via Cloudflare Pages on merge to `main`;
+  Supabase functions via `supabase functions deploy <name>`; Worker via
+  `cd apps/web/workers/tmdb-proxy && npx wrangler deploy`.
 
 ## Tech stack
 
 React 19 + react-router 7 + Vite 8 (web) · Expo 56 / RN 0.86 + TypeScript 6 (mobile) ·
-plain JS ESM + JSDoc (core) · Supabase (Postgres + Deno edge functions) · Vercel hosting ·
-Cloudflare Worker (TMDB proxy) · PostHog (analytics) · Stripe (billing) · Resend (email).
+plain JS ESM + JSDoc (core) · Supabase (Postgres + Deno edge functions) ·
+Cloudflare Pages (web app + marketing site) hosting · Cloudflare Workers (TMDB proxy, OG) ·
+PostHog (analytics) · Stripe (billing) · Resend (email).
 CI on Node 22.
 
 ## Code style
 
 - **The brand is always written `PLOT`** (all caps) in any prose, copy, or comments —
   never "Plot" or "plot". The only exceptions are code identifiers, tags, and URLs
-  (e.g. the Vercel project `plot`, the `@plot/core` package, `theplot.tv`).
+  (e.g. the `@plot/core` package, the `plot` deploy project, `theplot.tv`).
 - Match the surrounding file — no reformatting drive-bys. No Prettier config; don't add one.
 - Web/core: components `PascalCase.jsx` (CSS co-located), hooks `useX.js` camelCase, core
   modules camelCase `.js`. Semicolons in source. Mobile route files follow expo-router naming.
