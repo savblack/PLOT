@@ -13,6 +13,7 @@ import { track, EVENTS } from '../lib/analytics.js';
 import GroupedFilterMenu from './GroupedFilterMenu.jsx';
 import { getButtonLikeProps } from '../utils/interactive.js';
 import { useShareTitle } from '../hooks/useShareTitle.js';
+import { SHOW_SOCIAL_FEED } from '../launchFeatures.js';
 
 const ALL_TYPES = ['tv', 'cinema', 'movie'];
 
@@ -463,7 +464,7 @@ function DiscoverContent({ openPanel, watchlist }) {
 export default function DiscoverView() {
   const app = useApp();
   const genres        = useGenres();
-  const [tab,          setTab]          = useState('feed');
+  const [tab,          setTab]          = useState(SHOW_SOCIAL_FEED ? 'feed' : 'discover');
   const [typeFilters,  setTypeFilters]  = useState(ALL_TYPES);
   const [genreFilters, setGenreFilters] = useState([]);
 
@@ -486,12 +487,14 @@ export default function DiscoverView() {
         <span className="sub-tabs-date"><TodayLabel /></span>
 
         <div className="sub-tabs-scroll">
-          <button
-            className={`sub-tab-btn${tab === 'feed' ? ' active' : ''}`}
-            onClick={() => changeTab('feed')}
-          >
-            Feed
-          </button>
+          {SHOW_SOCIAL_FEED && (
+            <button
+              className={`sub-tab-btn${tab === 'feed' ? ' active' : ''}`}
+              onClick={() => changeTab('feed')}
+            >
+              Feed
+            </button>
+          )}
           <button
             className={`sub-tab-btn${tab === 'discover' ? ' active' : ''}`}
             onClick={() => changeTab('discover')}
@@ -544,7 +547,7 @@ export default function DiscoverView() {
       </div>
 
       {/* ── Tab content ── */}
-      {tab === 'feed' && <FeedView />}
+      {SHOW_SOCIAL_FEED && tab === 'feed' && <FeedView />}
 
       {tab === 'discover' && (
         <DiscoverContent
