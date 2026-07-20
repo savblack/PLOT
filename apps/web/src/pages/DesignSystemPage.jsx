@@ -1216,7 +1216,7 @@ export default function DesignSystemPage() {
             <div className="ds-note-list">
               <div className="ds-note-row"><strong>Canvas</strong><p>1200×630, brand dark, PLOT wordmark, accent eyebrow — <code>--accent</code> sourced from <code>core/tokens.js</code>.</p></div>
               <div className="ds-note-row"><strong>Type</strong><p>Instrument Serif titles (fluid 58–106px by length), DM Sans meta + labels. The same two families as every other surface.</p></div>
-              <div className="ds-note-row"><strong>Source</strong><p>Rendered by <code>api/og.js</code> via @vercel/og. These samples come from the real builders via <code>scripts/gen-share-samples.mjs</code>.</p></div>
+              <div className="ds-note-row"><strong>Source</strong><p>Rendered by the <code>plot-og</code> Cloudflare Worker (<code>apps/web/workers/og</code>). These samples come from the real builders via <code>scripts/gen-share-samples.mjs</code>.</p></div>
             </div>
           </RuleCard>
         </div>

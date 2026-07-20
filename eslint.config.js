@@ -36,8 +36,9 @@ export default defineConfig([
     },
   },
   {
-    // Vercel serverless / edge functions for the app (app.theplot.tv/api/*)
-    files: ['apps/web/api/**/*.{js,jsx,mjs}'],
+    // Cloudflare Pages Functions (SSR routes) for the app (repo-root functions/)
+    // and the marketing site (apps/website/functions/).
+    files: ['functions/**/*.{js,mjs}', 'apps/website/functions/**/*.{js,mjs}'],
     languageOptions: {
       globals: { ...globals.node, ...globals.browser },
     },
