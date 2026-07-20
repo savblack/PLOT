@@ -23,7 +23,7 @@ export default function RootRoute() {
     }
   }, [loading, authenticated]);
 
-  // Authenticated users land on Home, which opens on the Feed sub-tab.
+  // Authenticated users land on Home, which opens on the Discover sub-tab.
   if (!loading && authenticated) return <Navigate to="/home" replace />;
 
   // Loading, or logged out and about to leave for the marketing site.
