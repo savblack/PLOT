@@ -17,6 +17,7 @@ import PlotLoader from './components/PlotLoader.jsx';
 import { pathForView, viewFromPath } from './navigation.js';
 import { readStorage, writeStorage } from './utils/storage.js';
 import { track, EVENTS, setPersonProps } from './lib/analytics.js';
+import { useAuthenticatedUser } from './contexts/AuthUserContext.js';
 
 /* ── App Context ─────────────────────── */
 export const AppContext = createContext(null);
@@ -143,10 +144,11 @@ export default function App() {
   const navigate  = useNavigate();
   const location  = useLocation();
   const { theme, setTheme } = useTheme();
+  const authenticatedUser = useAuthenticatedUser();
 
-  const [user,    setUser]    = useState(null);
+  const [user,    setUser]    = useState(authenticatedUser);
   const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !authenticatedUser);
 
   // Media panel state
   const [panelItem,    setPanelItem]    = useState(null);
@@ -173,19 +175,10 @@ export default function App() {
 
   /* ── Auth ── */
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (session?.user) loadProfile(session.user.id);
-      else setLoading(false);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
-      setUser(session?.user ?? null);
-      if (session?.user) loadProfile(session.user.id);
-      else { setProfile(null); setLoading(false); }
-    });
-    return () => subscription.unsubscribe();
-  }, [loadProfile]);
+    setUser(authenticatedUser);
+    if (authenticatedUser) loadProfile(authenticatedUser.id);
+    else { setProfile(null); setLoading(false); }
+  }, [authenticatedUser, loadProfile]);
 
   /* ── Timezone mismatch check ── */
   const tzBanner = useMemo(() => {

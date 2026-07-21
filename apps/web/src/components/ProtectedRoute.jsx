@@ -7,6 +7,7 @@ import { AuthUserContext } from '../contexts/AuthUserContext.js';
 
 export default function ProtectedRoute({ children, skipOnboardingCheck = false, publicPrefixes = [] }) {
   const location = useLocation();
+  const isPreview = window.location.hostname === 'preview.theplot.tv';
   const handedOffUser = location.state?.authenticatedUser ?? null;
   // The onboarding route can render immediately with the fresh sign-in user.
   // App routes must wait for the profile check, otherwise the app shell can
@@ -28,7 +29,7 @@ export default function ProtectedRoute({ children, skipOnboardingCheck = false, 
       setAuthenticated(true);
       setUser(session.user);
 
-      if (!skipOnboardingCheck) {
+      if (!skipOnboardingCheck && !isPreview) {
         try {
           const { data: profile } = await supabase
             .from('profiles')
@@ -59,7 +60,7 @@ export default function ProtectedRoute({ children, skipOnboardingCheck = false, 
     });
 
     return () => subscription.unsubscribe();
-  }, [handedOffUser, skipOnboardingCheck]);
+  }, [handedOffUser, isPreview, skipOnboardingCheck]);
 
   if (loading) {
     return (

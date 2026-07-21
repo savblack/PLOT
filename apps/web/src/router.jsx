@@ -40,6 +40,7 @@ const SavePage          = lazy(() => import('./pages/SavePage.jsx'));
 const PlansPage         = lazy(() => import('./pages/PlansPage.jsx'));
 
 const wrap = (el) => <Suspense fallback={<LoadingSpinner />}>{el}</Suspense>;
+const isPreview = typeof window !== 'undefined' && window.location.hostname === 'preview.theplot.tv';
 
 const router = createBrowserRouter([
   // Top-level layout route: its errorElement catches anything thrown while
@@ -75,7 +76,7 @@ const router = createBrowserRouter([
   // Onboarding (protected, skip onboarding check)
   {
     path: '/onboarding',
-    element: wrap(
+    element: isPreview ? <Navigate to="/home" replace /> : wrap(
       <ProtectedRoute skipOnboardingCheck>
         <ErrorBoundary><OnboardingFlow /></ErrorBoundary>
       </ProtectedRoute>
