@@ -6,7 +6,9 @@ import { cloudflare } from "@cloudflare/vite-plugin";
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), cloudflare()],
+  // Smoke tests need Vite's SPA fallback for client-side routes. Cloudflare's
+  // local asset handler deliberately returns 404 for those routes instead.
+  plugins: [react(), ...(process.env.PLOT_SMOKE_TEST ? [] : [cloudflare()])],
   // Local configuration is shared at the repository root. Without this Vite
   // only reads apps/web/.env, leaving the local app unable to initialise
   // Supabase when started through the documented root npm command.
