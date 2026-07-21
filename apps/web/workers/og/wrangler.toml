@@ -20,6 +20,12 @@ compatibility_date = "2025-06-01"
 compatibility_flags = ["nodejs_compat"]
 workers_dev = true
 
+# Distributed edge admission control for CPU-heavy Satori rendering.
+[[ratelimits]]
+name = "RL"
+namespace_id = "1002"
+simple = { limit = 30, period = 60 }
+
 [vars]
 # Where the .ttf brand fonts are served from (the Worker host doesn't serve
 # /fonts). Points at the deployed app by default.

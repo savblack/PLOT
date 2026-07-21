@@ -335,6 +335,12 @@ function profileCard(profile, fonts) {
 
 export default {
   async fetch(request, env) {
+    if (request.method !== 'GET' && request.method !== 'HEAD') {
+      return new Response('Method not allowed', { status: 405 });
+    }
+    const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+    const { success } = await env.RL.limit({ key: ip });
+    if (!success) return new Response('Rate limit exceeded', { status: 429 });
     if (!TMDB_KEY) TMDB_KEY = env.TMDB_API_KEY || '';
     if (!FONT_BASE) FONT_BASE = env.FONT_BASE || 'https://app.theplot.tv';
 

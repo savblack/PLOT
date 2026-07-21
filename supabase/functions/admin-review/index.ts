@@ -56,7 +56,7 @@ const LOGIN_WINDOW_MS = 15 * 60 * 1000;
 const LOGIN_MAX_FAILS = 8;
 const loginFails = new Map<string, { count: number; first: number }>();
 const clientIp = (req: Request): string =>
-  (req.headers.get('x-forwarded-for') || '').split(',')[0].trim() || 'unknown';
+  req.headers.get('cf-connecting-ip') || 'unknown';
 function loginBlocked(ip: string): boolean {
   const rec = loginFails.get(ip);
   if (!rec) return false;

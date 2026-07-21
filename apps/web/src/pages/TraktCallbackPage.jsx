@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../api/supabase';
 import { callAuthenticatedFunction, edgeFunctionUrl } from '../api/functions.js';
-import { getTraktCallbackUrl } from '../utils/redirects.js';
+import { consumeTraktState, getTraktCallbackUrl } from '../utils/redirects.js';
 import PlotLogo from '../components/PlotLogo.jsx';
 
 export default function TraktCallbackPage() {
@@ -17,8 +17,13 @@ export default function TraktCallbackPage() {
 
     const handle = async () => {
       const code = searchParams.get('code');
+      const state = searchParams.get('state');
       if (!code) {
         setError('No authorization code received from Trakt.');
+        return;
+      }
+      if (!consumeTraktState(state)) {
+        setError('This Trakt connection request is invalid or has expired. Please try again from Settings.');
         return;
       }
 

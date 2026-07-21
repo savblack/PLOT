@@ -10,7 +10,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as Linking from 'expo-linking';
 import { supabase } from '../lib/supabase';
 import { setTmdbRegion } from '../lib/tmdb';
-import { exchangeTraktCode } from '../hooks/useTraktSync';
+import { consumeTraktState, exchangeTraktCode } from '../hooks/useTraktSync';
 import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
 import { AppDataProvider } from '../contexts/AppDataContext';
 import { DrawerProvider, useDrawer } from '../contexts/DrawerContext';
@@ -132,7 +132,9 @@ function RootInner() {
     const handle = async (url: string | null) => {
       if (!url || !/trakt/.test(url)) return;
       const code = Linking.parse(url).queryParams?.code as string | undefined;
+      const state = Linking.parse(url).queryParams?.state as string | undefined;
       if (!code) return;
+      if (!await consumeTraktState(state)) return;
       try { await exchangeTraktCode(code); } catch (e) { console.warn('[trakt] code exchange failed', e); }
     };
     Linking.getInitialURL().then(handle);

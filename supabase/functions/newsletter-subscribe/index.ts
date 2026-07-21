@@ -26,8 +26,9 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const SUB_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 const SUB_MAX = 10;                   // subscribe attempts per IP per window
 const subHits = new Map<string, { count: number; first: number }>();
-const clientIp = (req: Request): string =>
-  (req.headers.get('x-forwarded-for') || '').split(',')[0].trim() || 'unknown';
+// Only accept a platform-provided connection header. `X-Forwarded-For` is
+// caller controlled when this public Edge Function is invoked directly.
+const clientIp = (req: Request): string => req.headers.get('cf-connecting-ip') || 'unknown';
 function subRateLimited(ip: string): boolean {
   const now = Date.now();
   const rec = subHits.get(ip);
@@ -136,13 +137,11 @@ Deno.serve(async (req) => {
     return json({ ok: true });
   }
 
-  // Newsletter — re-subscribing flips a previously unsubscribed address back to active.
+  // Preserve an unsubscribe decision. A fresh opt-in flow is required before a
+  // previously unsubscribed address may become active again.
   const { error } = await supabase
     .from('marketing_subscribers')
-    .upsert(
-      { email, status: 'active', unsubscribed_at: null },
-      { onConflict: 'email' },
-    );
+    .upsert({ email, status: 'active' }, { onConflict: 'email', ignoreDuplicates: true });
   if (error) {
     console.error('Subscribe failed:', error.message);
     return json({ error: 'Something went wrong' }, 500);

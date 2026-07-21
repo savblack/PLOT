@@ -390,7 +390,7 @@ function ipv6IsPrivate(ip: string): boolean {
 }
 
 function hostIsBlocked(hostname: string): boolean {
-  const host = hostname.toLowerCase().replace(/^\[|\]$/g, '')
+  const host = hostname.toLowerCase().replace(/^\[|\]$/g, '').replace(/\.+$/, '')
   if (!host || host === 'localhost' || host === 'metadata.google.internal') return true
   if (/^\d{1,3}(\.\d{1,3}){3}$/.test(host)) return ipv4IsPrivate(host)
   if (host.includes(':')) return ipv6IsPrivate(host)
@@ -404,16 +404,33 @@ function hostIsBlocked(hostname: string): boolean {
 
 // Reject non-http(s) schemes and internal hosts before fetching a URL whose
 // host is influenced by user-controlled Plex data.
-function isSafeExternalUrl(url: URL): boolean {
+async function isSafeExternalUrl(url: URL): Promise<boolean> {
   if (url.protocol !== 'http:' && url.protocol !== 'https:') return false
-  return !hostIsBlocked(url.hostname)
+  if (hostIsBlocked(url.hostname)) return false
+
+  // Resolve hostnames immediately before connecting: lexical checks alone do
+  // not protect against a custom Plex host resolving to a private address.
+  try {
+    const records = await Promise.all([
+      Deno.resolveDns(url.hostname, 'A').catch(() => []),
+      Deno.resolveDns(url.hostname, 'AAAA').catch(() => []),
+    ])
+    const addresses = records.flat()
+    return addresses.length > 0 && addresses.every(address => !hostIsBlocked(address))
+  } catch {
+    return false
+  }
 }
 
-async function fetchWithTimeout(url: string, timeoutMs = 8000) {
+async function fetchWithTimeout(url: URL, timeoutMs = 8000) {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), timeoutMs)
   try {
-    return await fetch(url, { headers: { Accept: 'application/xml' }, signal: controller.signal })
+    return await fetch(url, {
+      headers: { Accept: 'application/xml' },
+      signal: controller.signal,
+      redirect: 'error',
+    })
   } finally {
     clearTimeout(timeout)
   }
@@ -432,13 +449,13 @@ async function fetchPlexWatched(token: string, resources: Array<Record<string, u
         continue
       }
       // SSRF guard: a malicious Plex server can advertise an internal address.
-      if (!isSafeExternalUrl(url)) continue
+      if (!await isSafeExternalUrl(url)) continue
       url.searchParams.set('X-Plex-Token', token)
       url.searchParams.set('X-Plex-Container-Start', '0')
       url.searchParams.set('X-Plex-Container-Size', '100')
       url.searchParams.set('sort', 'viewedAt:desc')
       try {
-        const res = await fetchWithTimeout(url.toString())
+        const res = await fetchWithTimeout(url)
         if (!res.ok) continue
         const rawItems = parsePlexItems(await res.text()).filter(item => item.viewedAt || item.lastViewedAt)
         const normalized = await Promise.all(rawItems.map(item => normalizePlexItem('plex_history', item)))

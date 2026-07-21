@@ -18,11 +18,7 @@
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import {
-  anonymizedFeedbackReporter,
-  buildFeedbackLinearTitle,
-  feedbackTypeLabel,
-} from '../../../src/utils/feedback.js'
+import { hasServiceRoleBearer } from '../_shared/internalWebhook.ts'
 
 const RESEND_API_URL = 'https://api.resend.com/emails'
 const TO_EMAIL = 'feedback@theplot.tv'
@@ -30,6 +26,26 @@ const FROM_EMAIL = 'PLOT Feedback <feedback@theplot.tv>'
 const LINEAR_API_URL = 'https://api.linear.app/graphql'
 const DEFAULT_LINEAR_FEEDBACK_PROJECT_ID = '200f6ebb-1cd4-4cd0-b7d6-0fb7e937f7ad'
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+const FEEDBACK_TYPE_LABELS: Record<string, string> = {
+  bug: 'Bug report',
+  feature: 'Feature request',
+  general: 'General feedback',
+}
+
+function feedbackTypeLabel(type: string) {
+  return FEEDBACK_TYPE_LABELS[type] || FEEDBACK_TYPE_LABELS.general
+}
+
+function anonymizedFeedbackReporter({ userId, userEmail }: { userId: string | null, userEmail: string | null }) {
+  return userId || userEmail ? 'Signed-in PLOT user' : 'Anonymous visitor'
+}
+
+function buildFeedbackLinearTitle(type: string, message: string) {
+  const prefix = feedbackTypeLabel(type)
+  const normalized = String(message || '').replace(/\s+/g, ' ').trim()
+  if (!normalized) return `${prefix}: Untitled`
+  return `${prefix}: ${normalized.length > 72 ? `${normalized.slice(0, 69).trimEnd()}...` : normalized}`
+}
 
 function attachmentPathsFrom(value: unknown) {
   if (!Array.isArray(value)) return []
@@ -296,6 +312,10 @@ async function sendFeedbackEmail({
 Deno.serve(async (req) => {
   if (req.method !== 'POST') {
     return new Response('Method not allowed', { status: 405 })
+  }
+
+  if (!hasServiceRoleBearer(req)) {
+    return new Response('Forbidden', { status: 403 })
   }
 
   let body: { record?: Record<string, unknown> }

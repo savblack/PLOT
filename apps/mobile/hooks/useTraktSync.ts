@@ -17,10 +17,24 @@ import { supabase } from '../lib/supabase';
 import { callAuthenticatedFunction } from '@plot/core/functions.js';
 import { getConfig } from '@plot/core/config.js';
 import { friendlyPremiumError } from '@plot/core/premium.js';
+import { readStorage, removeStorage, writeStorage } from '../lib/storage';
 
 // Custom-scheme redirect the Trakt OAuth app must allowlist. The app's scheme
 // is `plot` (app.json); the root layout's deep-link listener handles the code.
 export const TRAKT_REDIRECT_URI = 'plot://auth/trakt';
+const TRAKT_STATE_KEY = 'plot_trakt_oauth_state';
+
+async function createTraktState() {
+  const state = crypto.randomUUID();
+  await writeStorage(TRAKT_STATE_KEY, state);
+  return state;
+}
+
+export async function consumeTraktState(state: string | undefined) {
+  const expected = await readStorage(TRAKT_STATE_KEY);
+  await removeStorage(TRAKT_STATE_KEY);
+  return Boolean(expected && state && expected === state);
+}
 
 export interface MediaIntegration {
   id: string;
@@ -59,13 +73,15 @@ export function useTraktSync(userId: string | null | undefined) {
     return data as MediaIntegration | null;
   }, [userId]);
 
-  const connect = useCallback(() => {
+  const connect = useCallback(async () => {
     const clientId = getConfig().traktClientId;
     if (!clientId) { setError('Trakt isn’t configured yet.'); return; }
+    const state = await createTraktState();
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: clientId,
       redirect_uri: TRAKT_REDIRECT_URI,
+      state,
     });
     Linking.openURL(`https://trakt.tv/oauth/authorize?${params}`);
   }, []);

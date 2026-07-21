@@ -24,11 +24,24 @@ export function getTraktCallbackUrl() {
   return getAppUrl('/auth/trakt');
 }
 
-export function buildTraktAuthorizeUrl(clientId) {
+export function createTraktState() {
+  const state = crypto.randomUUID();
+  sessionStorage.setItem('plot_trakt_oauth_state', state);
+  return state;
+}
+
+export function consumeTraktState(state) {
+  const expected = sessionStorage.getItem('plot_trakt_oauth_state');
+  sessionStorage.removeItem('plot_trakt_oauth_state');
+  return Boolean(expected && state && expected === state);
+}
+
+export function buildTraktAuthorizeUrl(clientId, state) {
   const params = new URLSearchParams({
     response_type: 'code',
     client_id: clientId,
     redirect_uri: getTraktCallbackUrl(),
+    state,
   });
 
   return `https://trakt.tv/oauth/authorize?${params}`;

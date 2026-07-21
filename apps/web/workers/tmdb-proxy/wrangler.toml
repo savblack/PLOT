@@ -19,6 +19,8 @@ workers_dev = true
 [vars]
 # The real Supabase Edge Function the Worker forwards to.
 UPSTREAM = "https://mkegtssedjyqldysvzga.supabase.co/functions/v1/tmdb-proxy"
+# Set `UPSTREAM_SHARED_SECRET` as a Worker secret and set the identical
+# `TMDB_PROXY_SHARED_SECRET` in Supabase before deploying either side.
 
 # Distributed rate limit: 100 requests per 10s per client IP, enforced at
 # Cloudflare's edge (consistent across requests, unlike the per-isolate limiter).

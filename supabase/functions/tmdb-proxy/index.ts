@@ -26,6 +26,7 @@ function corsHeaders(origin: string | null): Record<string, string> {
 }
 
 const BASE = 'https://api.themoviedb.org/3';
+const PROXY_SECRET_HEADER = 'x-plot-tmdb-proxy-secret';
 const ALLOWED_PATHS = [
   /^search\/multi$/,
   /^search\/person$/,
@@ -52,6 +53,16 @@ Deno.serve(async (req) => {
 
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: CORS });
+  }
+
+  // The Worker is the public admission-control boundary. A browser JWT alone
+  // must not be enough to bypass its distributed rate limiter.
+  const proxySecret = Deno.env.get('TMDB_PROXY_SHARED_SECRET');
+  if (!proxySecret || req.headers.get(PROXY_SECRET_HEADER) !== proxySecret) {
+    return new Response(JSON.stringify({ error: 'Proxy access required' }), {
+      status: 403,
+      headers: { ...CORS, 'Content-Type': 'application/json' },
+    });
   }
 
   // Reject cross-site browser requests outright (an Origin we don't serve).

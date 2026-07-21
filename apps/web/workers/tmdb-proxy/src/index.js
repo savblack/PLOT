@@ -15,9 +15,12 @@ export default {
     const url = new URL(request.url);
     const upstream = env.UPSTREAM + url.search;
 
+    const upstreamHeaders = forwardHeaders(request.headers);
+    upstreamHeaders.set('X-PLOT-TMDB-Proxy-Secret', env.UPSTREAM_SHARED_SECRET);
+
     // Preflight: forward without spending rate budget so OPTIONS never 429s.
     if (request.method === 'OPTIONS') {
-      return fetch(upstream, { method: 'OPTIONS', headers: forwardHeaders(request.headers) });
+      return fetch(upstream, { method: 'OPTIONS', headers: upstreamHeaders });
     }
 
     const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
@@ -36,7 +39,7 @@ export default {
 
     const resp = await fetch(upstream, {
       method: request.method,
-      headers: forwardHeaders(request.headers),
+      headers: upstreamHeaders,
     });
     // The Workers runtime has already decoded the body, so passing the upstream
     // content-encoding/content-length through makes the browser fail to decode.

@@ -29,6 +29,12 @@ export async function whatsOn(request, slug) {
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
       'Cache-Control': upstream.headers.get('cache-control') || 'public, s-maxage=3600, stale-while-revalidate=86400',
+      'Strict-Transport-Security': 'max-age=63072000; includeSubDomains; preload',
+      'Content-Security-Policy': "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; upgrade-insecure-requests",
+      'X-Content-Type-Options': 'nosniff',
+      'X-Frame-Options': 'DENY',
+      'Referrer-Policy': 'strict-origin-when-cross-origin',
+      'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), browsing-topics=()',
     },
   });
 }

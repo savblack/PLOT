@@ -14,6 +14,8 @@
  *   SIGNUP_NOTIFY_TO_EMAIL    - recipient of the alert (defaults to TO_EMAIL below)
  */
 
+import { hasServiceRoleBearer } from '../_shared/internalWebhook.ts'
+
 const RESEND_API_URL = 'https://api.resend.com/emails'
 const TO_EMAIL = Deno.env.get('SIGNUP_NOTIFY_TO_EMAIL') || 'sav.black@outlook.com'
 const FROM_EMAIL = 'PLOT <signups@theplot.tv>'
@@ -96,6 +98,10 @@ async function sendSignupEmail({
 Deno.serve(async (req) => {
   if (req.method !== 'POST') {
     return new Response('Method not allowed', { status: 405 })
+  }
+
+  if (!hasServiceRoleBearer(req)) {
+    return new Response('Forbidden', { status: 403 })
   }
 
   let body: { record?: Record<string, unknown> }

@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { supabase } from '../api/supabase.js';
 import { callAuthenticatedFunction } from '../api/functions.js';
 import { friendlyPremiumError } from '@plot/core/premium.js';
-import { buildTraktAuthorizeUrl, redirectToExternal } from '../utils/redirects.js';
+import { buildTraktAuthorizeUrl, createTraktState, redirectToExternal } from '../utils/redirects.js';
 import { getConfig } from '@plot/core/config.js';
 
 async function callTraktSync(action, body = {}) {
@@ -35,7 +35,7 @@ export function useTraktSync(userId) {
       setError('Trakt client ID is not configured');
       return;
     }
-    redirectToExternal(buildTraktAuthorizeUrl(clientId));
+    redirectToExternal(buildTraktAuthorizeUrl(clientId, createTraktState()));
   }, []);
 
   /* ── Sync ── */

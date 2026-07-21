@@ -9,7 +9,8 @@ function attachmentPathsFrom(value: unknown) {
     const marker = '/storage/v1/object/public/feedback-attachments/'
     const index = entry.indexOf(marker)
     if (index === -1) return []
-    return [decodeURIComponent(entry.slice(index + marker.length))]
+    const path = decodeURIComponent(entry.slice(index + marker.length))
+    return /^feedback\/[0-9a-f-]{36}(?:\.[a-z0-9]{1,10})?$/i.test(path) ? [path] : []
   })
 }
 
