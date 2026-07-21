@@ -1989,11 +1989,11 @@
   <script src="js/config.js"></script>
   <script>
 
-    // All TMDB data is fetched through the Supabase edge proxy — the raw TMDB
-    // API key lives only in the edge function's environment, never client-side.
-    // Supabase constants come from the shared js/config.js (SUS-95).
-    const TMDB_PROXY = window.PLOT.SUPABASE_FN + '/tmdb-proxy';
-    const NEWSLETTER_URL = window.PLOT.SUPABASE_FN + '/newsletter-subscribe';
+    // The marketing site presents its own PLOT-owned endpoints. Their
+    // Cloudflare Pages Functions retain the existing upstream protection, so
+    // neither Supabase nor the TMDB proxy hostname reaches a visitor's browser.
+    const TMDB_PROXY = '/api/discover';
+    const NEWSLETTER_URL = '/api/newsletter';
 
     // Email signups (footer newsletter + app-launch notify) — one handler,
     // both post to the newsletter endpoint.
@@ -2027,7 +2027,6 @@
       wire(document.getElementById('newsletterForm'), document.getElementById('newsletterMsg'), "You're in — first digest this Sunday.", 'newsletter');
       wire(document.getElementById('appNotifyForm'), document.getElementById('appNotifyMsg'), "You're on the list — we'll email you the moment the app lands.", 'mobile-app');
     })();
-    const TMDB_PROXY_HEADERS = { Authorization: 'Bearer ' + window.PLOT.SUPABASE_ANON };
     // Cache by full query string so identical calls across the page (e.g.
     // movie/now_playing requested by both the trending sets and the ticker)
     // share a single network request. (SUS-85)
@@ -2035,7 +2034,7 @@
     function tmdbProxy(path, params) {
       var qs = '?path=' + encodeURIComponent(path) + (params ? '&' + params : '');
       if (!tmdbCache[qs]) {
-        tmdbCache[qs] = fetch(TMDB_PROXY + qs, { headers: TMDB_PROXY_HEADERS }).then(function(r) { return r.json(); });
+        tmdbCache[qs] = fetch(TMDB_PROXY + qs).then(function(r) { return r.json(); });
       }
       return tmdbCache[qs];
     }

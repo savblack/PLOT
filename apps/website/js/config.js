@@ -3,11 +3,6 @@
    acquisition attribution. (SUS-95 / SUS-99 / SUS-115) */
 window.PLOT = window.PLOT || {};
 
-/* ── Supabase / proxy constants (SUS-95) ───────────────────────────────
-   The anon key is a public, RLS-gated token — safe to ship client-side. */
-window.PLOT.SUPABASE_FN = 'https://mkegtssedjyqldysvzga.supabase.co/functions/v1';
-window.PLOT.SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1rZWd0c3NlZGp5cWxkeXN2emdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2MDgzMzUsImV4cCI6MjA4OTE4NDMzNX0.W-toEr3ftNeN0iTpRQ8Ord09sxBiwO2CQC6j2jszN6w';
-
 /* ── Product analytics — PostHog (SUS-99) ──────────────────────────────
    Same project as the app so the acquisition funnel (landing → CTA →
    signup) is one funnel. cross_subdomain_cookie shares the anonymous id
