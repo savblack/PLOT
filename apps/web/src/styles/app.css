@@ -3760,7 +3760,9 @@ a.provider-chip--link:hover {
 
 /* Featured row — one card, or two side-by-side (trending + on this day). */
 .discover-hero-row {
-  margin: 2rem 1rem 0;
+  margin: 2rem auto 0;
+  max-width: 1189px;
+  padding: 0 1rem;
 }
 .discover-hero-row.has-two {
   display: grid;
