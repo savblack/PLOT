@@ -7,7 +7,7 @@ import PlotLoader from '../components/PlotLoader.jsx';
 import { getButtonLikeProps } from '../utils/interactive.js';
 import { track, markActivated, EVENTS } from '../lib/analytics.js';
 import { saveOnboardingSeedTitles } from '@plot/core/onboarding.js';
-import { getSessionOrNull } from '../utils/authSession.js';
+import { useAuthenticatedUser } from '../contexts/AuthUserContext.js';
 
 const STEP_NAMES = { 1: 'region', 2: 'platforms', 3: 'seed' };
 
@@ -80,8 +80,7 @@ const card = {
 export default function OnboardingFlow() {
   const navigate = useNavigate();
 
-  const [user,      setUser]      = useState(null);
-  const [authLoading, setAuthLoading] = useState(true);
+  const user = useAuthenticatedUser();
   const [step,      setStep]      = useState(1);
   const [saving,    setSaving]    = useState(false);
 
@@ -102,27 +101,6 @@ export default function OnboardingFlow() {
   const [trending,     setTrending]     = useState([]);
 
   const TOTAL = 3;
-
-  /* ── Auth check ── */
-  useEffect(() => {
-    let alive = true;
-
-    const syncUser = (session) => {
-      if (!alive) return;
-      setUser(session?.user ?? null);
-      setAuthLoading(false);
-    };
-
-    getSessionOrNull(supabase).then(syncUser);
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      syncUser(session);
-    });
-
-    return () => {
-      alive = false;
-      subscription.unsubscribe();
-    };
-  }, []);
 
   /* ── Activation funnel: fire once the authed user reaches onboarding ── */
   const startedRef = useRef(false);
@@ -238,15 +216,13 @@ export default function OnboardingFlow() {
 
   const seedGridItems = seedQuery.trim() ? seedResults : trending;
 
-  if (authLoading) {
+  if (!user) {
     return (
       <div className="app-boot-loader">
         <PlotLoader />
       </div>
     );
   }
-
-  if (!user) return null;
 
   return (
     <div style={page}>

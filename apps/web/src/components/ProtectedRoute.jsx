@@ -3,22 +3,26 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { supabase } from '../api/supabase';
 import PlotLoader from './PlotLoader';
 import { getSessionOrNull } from '../utils/authSession.js';
+import { AuthUserContext } from '../contexts/AuthUserContext.js';
 
 export default function ProtectedRoute({ children, skipOnboardingCheck = false, publicPrefixes = [] }) {
   const location = useLocation();
   const [loading, setLoading] = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
+  const [user, setUser] = useState(null);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
 
   useEffect(() => {
     const checkSession = async (session) => {
       if (!session) {
         setAuthenticated(false);
+        setUser(null);
         setNeedsOnboarding(false);
         setLoading(false);
         return;
       }
       setAuthenticated(true);
+      setUser(session.user);
 
       if (!skipOnboardingCheck) {
         const { data: profile } = await supabase
@@ -58,5 +62,5 @@ export default function ProtectedRoute({ children, skipOnboardingCheck = false, 
 
   if (!authenticated && !isPublic) return <Navigate to="/login" replace />;
   if (needsOnboarding && !isPublic) return <Navigate to="/onboarding" replace />;
-  return children;
+  return <AuthUserContext.Provider value={user}>{children}</AuthUserContext.Provider>;
 }
