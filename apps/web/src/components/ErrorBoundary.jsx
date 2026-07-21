@@ -121,12 +121,14 @@ function ErrorScreen({ code, title, body, primaryLabel, primaryAction, ghostLabe
 
 // Generic "something went wrong" screen for unexpected runtime crashes.
 // A render crash is NOT a 404 — give it its own honest messaging + a reload.
-function CrashScreen() {
+function CrashScreen({ detail }) {
   return (
     <ErrorScreen
       code="Oops"
       title="That scene didn't quite load."
-      body="An unexpected error interrupted things. A quick reload usually gets you back on track."
+      body={detail
+        ? `Preview detail: ${detail}`
+        : "An unexpected error interrupted things. A quick reload usually gets you back on track."}
       primaryLabel="Reload"
       primaryAction={() => { window.location.reload(); }}
       ghostLabel="Go home"
@@ -136,7 +138,7 @@ function CrashScreen() {
 }
 
 export default class ErrorBoundary extends Component {
-  state = { hasError: false };
+  state = { hasError: false, detail: '' };
 
   static getDerivedStateFromError(error) {
     if (isChunkError(error)) {
@@ -148,7 +150,7 @@ export default class ErrorBoundary extends Component {
         return null; // stay mounted while reloading
       }
     }
-    return { hasError: true };
+    return { hasError: true, detail: error instanceof Error ? error.message : String(error) };
   }
 
   componentDidCatch(error, info) {
@@ -159,7 +161,8 @@ export default class ErrorBoundary extends Component {
 
   render() {
     if (this.state.hasError) {
-      return <CrashScreen />;
+      const isPreview = window.location.hostname === 'preview.theplot.tv';
+      return <CrashScreen detail={isPreview ? this.state.detail : ''} />;
     }
     return this.props.children;
   }

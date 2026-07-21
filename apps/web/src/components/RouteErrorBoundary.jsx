@@ -45,5 +45,7 @@ export default function RouteErrorBoundary() {
     );
   }
 
-  return <CrashScreen />;
+  const isPreview = window.location.hostname === 'preview.theplot.tv';
+  const detail = error instanceof Error ? error.message : String(error);
+  return <CrashScreen detail={isPreview ? detail : ''} />;
 }
