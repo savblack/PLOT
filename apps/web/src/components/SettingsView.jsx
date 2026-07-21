@@ -23,6 +23,8 @@ import ConfirmModal from './ConfirmModal.jsx';
 import PlotLoader from './PlotLoader.jsx';
 
 const TIP_PRESET_AMOUNTS = [3, 5, 10, 25];
+const USERNAME_RE = /^[a-z0-9](?:[a-z0-9-]{1,28}[a-z0-9])$/;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // Integration row glyphs — stroke-based to match the other settings-row icons.
 // Plex reads as a media "play"; Trakt as a "tracked/watched" check.
@@ -1076,8 +1078,11 @@ export default function SettingsView() {
     const tip = params.get('tip');
     if (!checkout && !tip) return;
     navigate('/settings', { replace: true });
-    if (checkout === 'success') setBillingReturn('premium');
-    if (tip === 'thanks') setBillingReturn('tip');
+    const returnState = checkout === 'success' ? 'premium' : tip === 'thanks' ? 'tip' : null;
+    if (returnState) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reflect the external checkout return URL in local UI state
+      setBillingReturn(returnState);
+    }
     if (checkout === 'success') {
       const timers = [1500, 4000, 9000].map(ms => setTimeout(() => refreshProfile(), ms));
       return () => timers.forEach(clearTimeout);
@@ -1108,9 +1113,6 @@ export default function SettingsView() {
   // ref on the new visitor; after they sign up, usePendingReferral auto-follows
   // me (and the follows trigger notifies me).
   const inviteUrl     = username ? `${profileUrl}?ref=${encodeURIComponent(username)}` : null;
-  const USERNAME_RE   = /^[a-z0-9](?:[a-z0-9-]{1,28}[a-z0-9])$/;
-  const EMAIL_RE      = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
   // Sync local token back to null once profile catches up (or if revoked elsewhere)
   useEffect(() => {
     const shouldClearLocalToken = localCalToken && (
@@ -1126,6 +1128,7 @@ export default function SettingsView() {
   useEffect(() => {
     if (!providerDraft) return;
     if (JSON.stringify(profile?.streaming_providers ?? []) !== JSON.stringify(providerDraft)) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- clear optimistic state once persisted profile data catches up
     setProviderDraft(null);
     setSavingProviders(false);
   }, [profile?.streaming_providers, providerDraft]);
@@ -1133,6 +1136,7 @@ export default function SettingsView() {
   useEffect(() => {
     if (!guideChannelDraft) return;
     if (JSON.stringify(profile?.guide_channels ?? []) !== JSON.stringify(guideChannelDraft)) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- clear optimistic state once persisted profile data catches up
     setGuideChannelDraft(null);
     setSavingGuideChannels(false);
   }, [profile?.guide_channels, guideChannelDraft]);
@@ -1361,7 +1365,11 @@ export default function SettingsView() {
   // Debounced username availability check while editing.
   useEffect(() => {
     if (usernameDraft === null) return;          // not editing
-    if (!usernameDirty) { setUsernameStatus(null); return; }
+    if (!usernameDirty) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reset validation state when editing returns to the saved username
+      setUsernameStatus(null);
+      return;
+    }
     const candidate = usernameDraft.trim().toLowerCase();
     if (!USERNAME_RE.test(candidate)) { setUsernameStatus('invalid'); return; }
     let cancelled = false;

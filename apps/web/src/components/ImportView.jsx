@@ -330,7 +330,7 @@ export default function ImportView() {
     setImportedCount(count);
     setImporting(false);
     setStep(5);
-  }, [results, existingIds, user]);
+  }, [results, existingIds, user, platform?.id]);
 
   const newCount      = results.filter(r => r.status === 'matched' && !existingIds.has(r.tmdbId)).length;
   const alreadyCount  = results.filter(r => r.status === 'matched' && existingIds.has(r.tmdbId)).length;

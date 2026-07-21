@@ -26,6 +26,7 @@ export function useNotifications(userId) {
     setLoading(false);
   }, [userId]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- load the unread count when the signed-in user changes
   useEffect(() => { refreshCount(); }, [refreshCount]);
 
   // Mark everything read (call when the notifications view is opened).

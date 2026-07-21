@@ -17,6 +17,7 @@ export function useFollowRequests(userId) {
     setLoading(false);
   }, [userId]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- load the current requests when the signed-in user changes
   useEffect(() => { refresh(); }, [refresh]);
 
   const approve = useCallback(async (followerId) => {
