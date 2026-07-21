@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { tmdb } from '../api/tmdb.js';
+import { prioritiseEnglishSpeakingTitles } from '@plot/core/tmdb.js';
 
 export function useDiscover() {
   const [data, setData]       = useState({ hero: null, onThisDay: null, hotRail: [], weekly: [], bingedShows: [], realityShows: [] });
@@ -28,14 +29,14 @@ export function useDiscover() {
 
         if (cancelled) return;
 
-        const trendingItems = (trendingDay?.results || []).slice(0, 20);
+        const trendingItems = prioritiseEnglishSpeakingTitles(trendingDay?.results || []).slice(0, 20);
         const hero    = trendingItems[0] || null;
         const hotRail = trendingItems.slice(1, 10);
         const weekly  = (trendingWeek?.results || []).slice(0, 20);
-        const bingedShows = (trendingTVDay?.results || [])
+        const bingedShows = prioritiseEnglishSpeakingTitles(trendingTVDay?.results || [])
           .slice(0, 10)
           .map(show => ({ ...show, media_type: 'tv' }));
-        const realityShows = (realityTV?.results || [])
+        const realityShows = prioritiseEnglishSpeakingTitles(realityTV?.results || [])
           .slice(0, 10)
           .map(show => ({ ...show, media_type: 'tv' }));
 

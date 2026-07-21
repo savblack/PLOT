@@ -1,7 +1,20 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { configure } from '../../../../packages/core/config.js';
-import { tmdb, setTmdbRegion } from '../../../../packages/core/tmdb.js';
+import { tmdb, setTmdbRegion, prioritiseEnglishSpeakingTitles } from '../../../../packages/core/tmdb.js';
+
+test('English-speaking titles are favoured without excluding other titles', () => {
+  const results = prioritiseEnglishSpeakingTitles([
+    { id: 1, original_language: 'ko' },
+    { id: 2, original_language: 'en' },
+    { id: 3, original_language: 'ja' },
+    { id: 4, origin_country: ['AU'] },
+    { id: 5, original_language: 'en' },
+    { id: 6, original_language: 'es' },
+  ]);
+
+  assert.deepEqual(results.map(item => item.id), [2, 4, 1, 5, 3, 6]);
+});
 
 test('talent helpers use TMDB person endpoints and title details request credits', async () => {
   const originalFetch = globalThis.fetch;

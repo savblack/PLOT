@@ -18,7 +18,7 @@ import Svg, { Circle, Line, Path, Polyline } from 'react-native-svg';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../../lib/supabase';
-import { tmdb, setTmdbRegion, getTmdbRegion } from '../../lib/tmdb';
+import { tmdb, setTmdbRegion, getTmdbRegion, prioritiseEnglishSpeakingTitles } from '../../lib/tmdb';
 import { posterUrl, backdropUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
@@ -44,6 +44,8 @@ interface MediaItem {
   media_type?: string;
   release_date?: string;
   first_air_date?: string;
+  original_language?: string;
+  origin_country?: string[];
 }
 
 interface StreamingProvider {
@@ -427,9 +429,9 @@ export default function HomeScreen() {
 
       if (cancelled) return;
 
-      if (trendingDay?.results)  setTrending(trendingDay.results.slice(0, 20));
+      if (trendingDay?.results)  setTrending(prioritiseEnglishSpeakingTitles(trendingDay.results).slice(0, 20));
       if (trendingWeek?.results) setWeekly(trendingWeek.results.slice(0, 20));
-      if (trendingTV?.results)   setBingedShows(trendingTV.results.slice(0, 10).map((s: MediaItem) => ({ ...s, media_type: 'tv' })));
+      if (trendingTV?.results)   setBingedShows(prioritiseEnglishSpeakingTitles(trendingTV.results).slice(0, 10).map((s: MediaItem) => ({ ...s, media_type: 'tv' })));
 
       const lid = listData.data?.id;
       if (lid) {
@@ -456,8 +458,8 @@ export default function HomeScreen() {
               ]);
               return {
                 ...p,
-                movies: (moviesRes?.results ?? []).slice(0, 10),
-                tv:     (tvRes?.results     ?? []).slice(0, 10),
+                movies: prioritiseEnglishSpeakingTitles(moviesRes?.results ?? []).slice(0, 10),
+                tv:     prioritiseEnglishSpeakingTitles(tvRes?.results ?? []).slice(0, 10),
               } as PlatformData;
             })
           );

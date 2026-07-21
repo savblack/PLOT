@@ -5,6 +5,39 @@ let userRegion = 'US';
 export const setTmdbRegion = (region) => { userRegion = region; };
 export const getTmdbRegion = () => userRegion;
 
+const ENGLISH_SPEAKING_REGIONS = new Set(['AU', 'CA', 'GB', 'IE', 'NZ', 'US']);
+
+/**
+ * Gently bias a ranked TMDB result set toward titles made in English-speaking
+ * markets, without filtering out international titles or losing TMDB's order
+ * within either group. Two preferred titles are surfaced for every one other
+ * title while both groups have results.
+ *
+ * TMDB list responses expose original_language for all media, and origin_country
+ * for TV. Movies do not include production countries in these lightweight
+ * responses, so original language is the reliable shared signal.
+ *
+ * @param {Array<{original_language?: string, origin_country?: string[]}>} items
+ * @returns {Array<any>}
+ */
+export function prioritiseEnglishSpeakingTitles(items = []) {
+  const preferred = [];
+  const other = [];
+
+  for (const item of items) {
+    const isEnglishLanguage = item?.original_language === 'en';
+    const isFromEnglishSpeakingMarket = item?.origin_country?.some(country => ENGLISH_SPEAKING_REGIONS.has(country));
+    (isEnglishLanguage || isFromEnglishSpeakingMarket ? preferred : other).push(item);
+  }
+
+  const ranked = [];
+  while (preferred.length || other.length) {
+    ranked.push(...preferred.splice(0, 2));
+    if (other.length) ranked.push(other.shift());
+  }
+  return ranked;
+}
+
 const REGIONAL_RELEASE_TYPE_ORDER = [3, 2, 4, 1, 5, 6];
 
 /**
