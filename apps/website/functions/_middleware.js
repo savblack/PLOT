@@ -4,11 +4,17 @@
 // admin.theplot.tv request straight to the admin-review proxy and let all other
 // hosts (theplot.tv) fall through to the static site + its functions.
 import { admin } from './_lib/admin.js';
+import { acceptsMarkdown, homepageMarkdownResponse } from './_lib/markdown.js';
 
 export async function onRequest(context) {
-  const host = new URL(context.request.url).hostname;
+  const { request } = context;
+  const url = new URL(request.url);
+  const host = url.hostname;
   if (host === 'admin.theplot.tv') {
-    return admin(context.request);
+    return admin(request);
+  }
+  if ((request.method === 'GET' || request.method === 'HEAD') && url.pathname === '/' && acceptsMarkdown(request)) {
+    return homepageMarkdownResponse(request);
   }
   return context.next();
 }
