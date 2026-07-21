@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { configure } from '../../../../packages/core/config.js';
-import { tmdb } from '../../../../packages/core/tmdb.js';
+import { tmdb, setTmdbRegion } from '../../../../packages/core/tmdb.js';
 
 test('talent helpers use TMDB person endpoints and title details request credits', async () => {
   const originalFetch = globalThis.fetch;
@@ -24,9 +24,68 @@ test('talent helpers use TMDB person endpoints and title details request credits
       'search/person', 'person/123', 'person/123/combined_credits', 'movie/456', 'tv/789',
     ]);
     assert.match(requests[3].searchParams.get('append_to_response'), /credits/);
+    assert.match(requests[3].searchParams.get('append_to_response'), /release_dates/);
     assert.match(requests[4].searchParams.get('append_to_response'), /aggregate_credits/);
   } finally {
     globalThis.fetch = originalFetch;
+  }
+});
+
+test('movie details use the selected region release date instead of the primary date', async () => {
+  const originalFetch = globalThis.fetch;
+  configure({ tmdbProxyUrl: 'https://proxy.test', supabaseAnonKey: 'anon' });
+  setTmdbRegion('AU');
+  globalThis.fetch = async (url) => {
+    const request = new URL(url);
+    assert.equal(request.searchParams.get('region'), 'AU');
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({
+        id: 123,
+        release_date: '2026-01-09',
+        release_dates: {
+          results: [{
+            iso_3166_1: 'AU',
+            release_dates: [
+              { type: 4, release_date: '2026-05-01T00:00:00.000Z' },
+              { type: 3, release_date: '2026-04-16T00:00:00.000Z' },
+            ],
+          }],
+        },
+      }),
+    };
+  };
+
+  try {
+    const movie = await tmdb.getMovieDetails(123);
+    assert.equal(movie.release_date, '2026-04-16');
+  } finally {
+    globalThis.fetch = originalFetch;
+    setTmdbRegion('US');
+  }
+});
+
+test('digital release dates do not fall back to the United States', async () => {
+  const originalFetch = globalThis.fetch;
+  configure({ tmdbProxyUrl: 'https://proxy.test', supabaseAnonKey: 'anon' });
+  setTmdbRegion('AU');
+  globalThis.fetch = async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      results: [{
+        iso_3166_1: 'US',
+        release_dates: [{ type: 4, release_date: '2026-04-10T00:00:00.000Z' }],
+      }],
+    }),
+  });
+
+  try {
+    assert.equal(await tmdb.getDigitalReleaseDate(123), null);
+  } finally {
+    globalThis.fetch = originalFetch;
+    setTmdbRegion('US');
   }
 });
 
@@ -46,7 +105,7 @@ test('getOnThisDay returns the highest-voted anniversary title', async () => {
   globalThis.fetch = async (url) => {
     const parsed = new URL(url);
     requests.push(parsed.searchParams);
-    const year = parsed.searchParams.get('primary_release_date.gte').slice(0, 4);
+    const year = parsed.searchParams.get('release_date.gte').slice(0, 4);
     const results = year === '2006'
       ? [{ id: 7, title: 'Most watched', vote_count: 9000 }]
       : [{ id: 8, title: 'Less watched', vote_count: 3000 }];
@@ -60,8 +119,9 @@ test('getOnThisDay returns the highest-voted anniversary title', async () => {
     assert.equal(result.media_type, 'movie');
     assert.equal(result.anniversary_years, 20);
     assert.equal(requests.length, 2);
-    assert.equal(requests[0].get('primary_release_date.gte'), '2006-07-21');
-    assert.equal(requests[0].get('primary_release_date.lte'), '2006-07-21');
+    assert.equal(requests[0].get('release_date.gte'), '2006-07-21');
+    assert.equal(requests[0].get('release_date.lte'), '2006-07-21');
+    assert.equal(requests[0].get('with_release_type'), '3|2');
     assert.equal(requests[0].get('vote_count.gte'), '500');
   } finally {
     globalThis.fetch = originalFetch;
@@ -84,7 +144,7 @@ test('getOnThisDay falls back to a random archival title when no anniversary tit
   globalThis.fetch = async (url) => {
     const parsed = new URL(url);
     requests.push(parsed.searchParams);
-    const isArchiveQuery = parsed.searchParams.get('primary_release_date.gte') === '2016-01-01';
+    const isArchiveQuery = parsed.searchParams.get('release_date.gte') === '2016-01-01';
     return {
       ok: true,
       status: 200,
@@ -99,8 +159,8 @@ test('getOnThisDay falls back to a random archival title when no anniversary tit
     assert.equal(result.archive_year, 2016);
     assert.equal(result.media_type, 'movie');
     assert.equal(requests.length, 2);
-    assert.equal(requests[1].get('primary_release_date.gte'), '2016-01-01');
-    assert.equal(requests[1].get('primary_release_date.lte'), '2016-12-31');
+    assert.equal(requests[1].get('release_date.gte'), '2016-01-01');
+    assert.equal(requests[1].get('release_date.lte'), '2016-12-31');
     assert.equal(requests[1].get('sort_by'), 'popularity.desc');
   } finally {
     globalThis.fetch = originalFetch;
