@@ -47,7 +47,8 @@ configure({
     track(action === 'created' ? EVENTS.CUSTOM_LIST_CREATED : EVENTS.CUSTOM_LIST_DELETED, { list_id }),
 });
 
-posthog.init(import.meta.env.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN, {
+const posthogToken = import.meta.env.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN;
+if (posthogToken) posthog.init(posthogToken, {
   api_host: import.meta.env.VITE_PUBLIC_POSTHOG_HOST,
   defaults: '2026-01-30',
   // Capture in-app navigation. This is an SPA (react-router createBrowserRouter),
@@ -73,7 +74,7 @@ posthog.init(import.meta.env.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN, {
 // (utm_*, click ids, referrer, src) and attach it to every event + the person,
 // so signup / activation stay traceable to their source. First-touch wins.
 const attribution = captureAttribution();
-if (Object.keys(attribution).length > 0) {
+if (posthogToken && Object.keys(attribution).length > 0) {
   posthog.register(attribution);
   posthog.setPersonProperties(undefined, attribution);
 }

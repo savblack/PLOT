@@ -5,6 +5,7 @@ import PlotLoader from '../components/PlotLoader';
 
 // The marketing site is the only landing page — the app never serves one.
 const MARKETING_URL = 'https://theplot.tv';
+const isPreview = typeof window !== 'undefined' && window.location.hostname === 'preview.theplot.tv';
 
 export default function RootRoute() {
   const [loading,       setLoading]       = useState(true);
@@ -18,13 +19,14 @@ export default function RootRoute() {
   }, []);
 
   useEffect(() => {
-    if (!loading && !authenticated) {
+    if (!loading && !authenticated && !isPreview) {
       window.location.replace(MARKETING_URL);
     }
   }, [loading, authenticated]);
 
   // Authenticated users land on Home, which opens on the Discover sub-tab.
   if (!loading && authenticated) return <Navigate to="/home" replace />;
+  if (!loading && isPreview) return <Navigate to="/login" replace />;
 
   // Loading, or logged out and about to leave for the marketing site.
   return (
