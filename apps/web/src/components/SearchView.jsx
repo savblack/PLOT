@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
-import { useApp, posterUrl } from '../App.jsx';
+import { useNavigate } from 'react-router-dom';
+import { useApp, posterUrl, profileUrl } from '../App.jsx';
 import { tmdb } from '../api/tmdb.js';
 import { supabase } from '../api/supabase.js';
 import { useHistory } from '../hooks/useHistory.js';
@@ -136,16 +137,40 @@ function ResultRow({ item, openPanel, watchlist, favorites, history, region }) {
   );
 }
 
+function TalentResultRow({ person, onOpen }) {
+  const image = profileUrl(person.profile_path, 'w185');
+  const knownFor = (person.known_for || [])
+    .map(item => item.title || item.name)
+    .filter(Boolean)
+    .slice(0, 2)
+    .join(' · ');
+
+  return (
+    <button type="button" className="list-row search-result-row talent-result-row" onClick={() => onOpen(person.id)}>
+      <div className="list-row-poster">
+        {image ? <img src={image} alt="" loading="lazy" /> : <span aria-hidden="true">{person.name?.charAt(0)}</span>}
+      </div>
+      <div className="list-row-info">
+        <div className="list-row-title">{person.name}</div>
+        <div className="list-row-meta">{person.known_for_department || 'Talent'}</div>
+        {knownFor && <div className="talent-known-for">Known for {knownFor}</div>}
+      </div>
+    </button>
+  );
+}
+
 /* ═══════════════════════════════════════
    SearchView
 ═══════════════════════════════════════ */
 export default function SearchView() {
   const { openPanel, watchlist, favorites, user, profile } = useApp();
+  const navigate = useNavigate();
   const history = useHistory(user?.id);
-  const [mode,    setMode]    = useState('titles'); // 'titles' | 'people'
+  const [mode,    setMode]    = useState('titles'); // 'titles' | 'talent' | 'friends'
   const [query,   setQuery]   = useState('');
   const [results, setResults] = useState([]);
   const [users,   setUsers]   = useState([]);
+  const [talent,  setTalent]  = useState([]);
   const [loading, setLoading] = useState(false);
   const [emptyMode, setEmptyMode] = useState('none');
 
@@ -153,14 +178,19 @@ export default function SearchView() {
 
   const runSearch = (v, searchMode) => {
     clearTimeout(timerRef.current);
-    if (!v.trim()) { setResults([]); setUsers([]); setEmptyMode('none'); return; }
+    if (!v.trim()) { setResults([]); setUsers([]); setTalent([]); setEmptyMode('none'); return; }
     timerRef.current = setTimeout(async () => {
       setLoading(true);
       let resultCount;
-      if (searchMode === 'people') {
+      if (searchMode === 'friends') {
         const { data } = await supabase.rpc('search_users', { p_query: v.trim() });
         setUsers(data || []);
         resultCount = (data || []).length;
+      } else if (searchMode === 'talent') {
+        const data = await tmdb.searchPeople(v);
+        const nextTalent = data?.results || [];
+        setTalent(nextTalent);
+        resultCount = nextTalent.length;
       } else {
         const data = await tmdb.search(v);
         const { filtered, emptyMode: nextEmptyMode } = classifySearchResults(data?.results || []);
@@ -177,13 +207,6 @@ export default function SearchView() {
   const handleChange = (e) => { const v = e.target.value; setQuery(v); runSearch(v, mode); };
   const switchMode = (m) => { if (m === mode) return; setMode(m); runSearch(query, m); };
 
-  const tabStyle = (active) => ({
-    flex: 1, padding: '0.5rem', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer',
-    background: 'none', border: 'none',
-    borderBottom: active ? '2px solid var(--accent)' : '2px solid transparent',
-    color: active ? 'var(--text-primary)' : 'var(--text-muted)',
-  });
-
   return (
     <div>
       {/* Search input */}
@@ -195,7 +218,7 @@ export default function SearchView() {
           <input
             className="search-input"
             type="search"
-            placeholder={mode === 'people' ? 'Search people by username or name…' : 'Search TV shows, movies and cinema...'}
+            placeholder={mode === 'friends' ? 'Search friends by username or name…' : mode === 'talent' ? 'Search actors, directors and creators…' : 'Search TV shows, movies and cinema...'}
             value={query}
             onChange={handleChange}
             autoFocus
@@ -203,26 +226,45 @@ export default function SearchView() {
         </div>
       </div>
 
-      {/* Titles / People toggle */}
-      <div style={{ display: 'flex', maxWidth: 360, margin: '0 auto 0.5rem' }}>
-        <button type="button" style={tabStyle(mode === 'titles')} onClick={() => switchMode('titles')}>Titles</button>
-        <button type="button" style={tabStyle(mode === 'people')} onClick={() => switchMode('people')}>People</button>
+      <div className="sub-tabs" style={{ marginBottom: '0.75rem' }}>
+        <div className="sub-tabs-scroll">
+          {[['titles', 'Titles'], ['talent', 'Talent'], ['friends', 'Friends']].map(([id, label]) => (
+            <button key={id} type="button" className={`sub-tab-btn${mode === id ? ' active' : ''}`} onClick={() => switchMode(id)}>{label}</button>
+          ))}
+        </div>
       </div>
 
       {loading && (
         <div className="loading-state"><PlotLoader size="sm" /></div>
       )}
 
-      {/* People results */}
-      {!loading && mode === 'people' && (
+      {!loading && mode === 'friends' && (
         query.trim().length < 2 ? (
           <div className="empty-state" style={{ paddingTop: '2rem' }}>
-            <div className="empty-title">Find people</div>
+            <div className="empty-title">Find friends</div>
             <div className="empty-body">Search by username or name to follow other film &amp; TV fans.</div>
           </div>
         ) : (
           <div style={{ maxWidth: 560, margin: '0 auto', padding: '0 1rem' }}>
-            <UserList users={users} viewerId={user?.id} empty="No people found. Try a different name." />
+            <UserList users={users} viewerId={user?.id} empty="No friends found. Try a different name." />
+          </div>
+        )
+      )}
+
+      {!loading && mode === 'talent' && (
+        query.trim().length < 2 ? (
+          <div className="empty-state" style={{ paddingTop: '2rem' }}>
+            <div className="empty-title">Find talent</div>
+            <div className="empty-body">Search actors, directors and creators to explore their work.</div>
+          </div>
+        ) : talent.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-title">No talent found</div>
+            <div className="empty-body">Try a different name or spelling.</div>
+          </div>
+        ) : (
+          <div>
+            {talent.map(person => <TalentResultRow key={person.id} person={person} onOpen={(id) => navigate(`/person/${id}`)} />)}
           </div>
         )
       )}

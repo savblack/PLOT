@@ -38,6 +38,7 @@ const RootRoute         = lazy(() => import('./pages/RootRoute.jsx'));
 const DesignSystemPage  = lazy(() => import('./pages/DesignSystemPage.jsx'));
 const SavePage          = lazy(() => import('./pages/SavePage.jsx'));
 const PlansPage         = lazy(() => import('./pages/PlansPage.jsx'));
+const TalentPage        = lazy(() => import('./pages/TalentPage.jsx'));
 
 const wrap = (el) => <Suspense fallback={<LoadingSpinner />}>{el}</Suspense>;
 
@@ -99,6 +100,7 @@ const router = createBrowserRouter([
       { path: 'history',  element: <Navigate to="/my-lists" replace state={{ tab: 'history' }} /> },
       { path: 'my-lists', element: wrap(<MyListsView />) },
       { path: 'search',   element: wrap(<SearchView />) },
+      { path: 'person/:personId', element: wrap(<TalentPage />) },
       { path: 'settings', element: wrap(<SettingsView />) },
       { path: 'requests', element: wrap(<RequestsView />) },
       { path: 'notifications', element: wrap(<NotificationsView />) },

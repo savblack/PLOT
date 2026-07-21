@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useApp, backdropUrl, logoUrl, countdownChip, formatDate } from '../App.jsx';
+import { useNavigate } from 'react-router-dom';
+import { useApp, backdropUrl, logoUrl, profileUrl, countdownChip, formatDate } from '../App.jsx';
 import { tmdb, getTmdbRegion } from '../api/tmdb.js';
 import { findDuplicateCustomList } from '../domain/customLists.js';
 import { useHistory } from '../hooks/useHistory.js';
@@ -577,6 +578,7 @@ function dedupeProviders(list) {
 
 export default function MediaPanel({ itemId, itemType, closing, onClose }) {
   const { watchlist, watching, user, profile, favorites, customLists } = useApp();
+  const navigate = useNavigate();
   const timezone = profile?.timezone || null;
   const history = useHistory(user?.id);
   const { shareTitle, copied: shareCopied } = useShareTitle();
@@ -713,6 +715,12 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
   const genres  = (details?.genres || []).slice(0, 3).map(g => g.name).join(' · ');
   const date    = details?.release_date || details?.first_air_date;
   const chip    = date ? countdownChip(date) : null;
+  const cast = (details?.credits?.cast || details?.aggregate_credits?.cast || []).slice(0, 12);
+
+  const openTalent = (personId) => {
+    onClose();
+    navigate(`/person/${personId}`);
+  };
 
   const runStatusAction = useCallback(async (actionLabel, action) => {
     if (statusActionPending) return;
@@ -845,6 +853,35 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
             {/* Overview */}
             {details?.overview && (
               <p className="panel-overview">{details.overview}</p>
+            )}
+
+            {cast.length > 0 && (
+              <section className="panel-cast-section" aria-labelledby="panel-cast-title">
+                <div className="panel-section-title" id="panel-cast-title">Cast</div>
+                <div className="panel-cast-rail">
+                  {cast.map(person => {
+                    const image = profileUrl(person.profile_path);
+                    return (
+                      <button
+                        type="button"
+                        className="panel-cast-card"
+                        key={person.id}
+                        onClick={() => openTalent(person.id)}
+                        aria-label={`View ${person.name}`}
+                      >
+                        {image
+                          ? <img src={image} alt="" loading="lazy" />
+                          : <span className="panel-cast-fallback" aria-hidden="true">{person.name?.charAt(0)}</span>
+                        }
+                        <span className="panel-cast-name">{person.name}</span>
+                        {(person.character || person.roles?.[0]?.character) && (
+                          <span className="panel-cast-role">{person.character || person.roles[0].character}</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
             )}
 
             {/* Trailer */}
