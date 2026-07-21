@@ -3758,6 +3758,24 @@ a.provider-chip--link:hover {
    DISCOVER VIEW
 ═══════════════════════════════════════ */
 
+/* Featured row — one card, or two side-by-side (trending + on this day). */
+.discover-hero-row {
+  margin: 2rem 1rem 0;
+}
+.discover-hero-row.has-two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+.discover-hero-row .discover-hero {
+  margin: 0;
+}
+@media (max-width: 640px) {
+  .discover-hero-row.has-two {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Hero card */
 .discover-hero {
   position: relative;

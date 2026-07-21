@@ -174,15 +174,22 @@ function BingeCard({ item, openPanel }) {
   );
 }
 
-/* ── Hero card (#1 trending) ── */
-function HeroCard({ item, openPanel, watchlist }) {
+/* ── Hero card (featured title) ── */
+function HeroCard({ item, openPanel, watchlist, badge = 'Trending #1' }) {
   const { favorites, profile } = useApp();
   const fw       = favoriteWords(profile?.region);
   const [hovered, setHovered] = useState(false);
   const title    = item.title || item.name;
   const backdrop = backdropUrl(item.backdrop_path, 'w780');
   const type     = item.media_type || 'movie';
-  const year     = (item.release_date || item.first_air_date || '').slice(0, 4);
+  const yearsAgo = item.anniversary_years;
+  const archiveYear = item.archive_year;
+  const note     = yearsAgo ? `${yearsAgo} years ago today` : archiveYear ? 'From the archive' : null;
+  const year     = yearsAgo
+    ? String(new Date().getFullYear() - yearsAgo)
+    : archiveYear
+      ? String(archiveYear)
+    : (item.release_date || item.first_air_date || '').slice(0, 4);
   const saved    = watchlist.isInList(item.id);
   const fav      = favorites.isFavorite(item.id);
   const openDetails = () => openPanel(item.id, type);
@@ -200,9 +207,13 @@ function HeroCard({ item, openPanel, watchlist }) {
         : <div className="discover-hero-backdrop discover-hero-backdrop-fallback" />
       }
       <div className="discover-hero-overlay">
-        <span className="discover-hero-badge">Trending #1</span>
+        <span className="discover-hero-badge">{badge}</span>
         <h2 className="discover-hero-title">{title}</h2>
-        {year && <p className="discover-hero-meta">{year} · {type === 'tv' ? 'TV Series' : 'Movie'}</p>}
+        {year && (
+          <p className="discover-hero-meta">
+            {year} · {type === 'tv' ? 'TV Series' : 'Movie'}{note ? ` · ${note}` : ''}
+          </p>
+        )}
       </div>
 
       {/* Corner action buttons — visible on hover or when active */}
@@ -389,7 +400,7 @@ function DiscoverContent({ openPanel, watchlist }) {
     return <LoadingSpinner />;
   }
 
-  const { hero, hotRail, weekly, bingedShows } = data;
+  const { hero, onThisDay, hotRail, weekly, bingedShows } = data;
   const hasContent = hero || hotRail.length > 0 || weekly.length > 0 || bingedShows.length > 0 || platformList.length > 0;
 
   if (!hasContent) {
@@ -407,7 +418,19 @@ function DiscoverContent({ openPanel, watchlist }) {
 
   return (
     <div>
-      {hero && <HeroCard item={hero} openPanel={openPanel} watchlist={watchlist} />}
+      {hero && (
+        <div className={`discover-hero-row${onThisDay ? ' has-two' : ''}`}>
+          <HeroCard item={hero} openPanel={openPanel} watchlist={watchlist} />
+          {onThisDay && (
+            <HeroCard
+              item={onThisDay}
+              openPanel={openPanel}
+              watchlist={watchlist}
+              badge={onThisDay.archive_year ? 'From the Archive' : 'On This Day'}
+            />
+          )}
+        </div>
+      )}
 
       {hotRail.length > 0 && (
         <section className="discover-section">

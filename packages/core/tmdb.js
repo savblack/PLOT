@@ -185,6 +185,55 @@ export const tmdb = {
     return { results: pages.flatMap(p => p?.results ?? []) };
   },
 
+  /* ── "On this day" — a notable film released on today's calendar date in
+     a past year. A spread of meaningful anniversary marks keeps this editorial
+     rather than a random date lookup. ── */
+  getOnThisDay: async ({
+    years = [50, 40, 30, 25, 20, 15, 10],
+    archiveYears = [10, 9, 8, 7, 6, 5, 4, 3, 2, 1],
+    minVotes = 1500,
+    random = Math.random,
+  } = {}) => {
+    const now = new Date();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const dayOfMonth = String(now.getDate()).padStart(2, '0');
+    const batches = await Promise.all(
+      years.map(async (yearsAgo) => {
+        const date = `${now.getFullYear() - yearsAgo}-${month}-${dayOfMonth}`;
+        const data = await fetchFromTMDB('/discover/movie', {
+          'primary_release_date.gte': date,
+          'primary_release_date.lte': date,
+          'vote_count.gte': String(minVotes),
+          sort_by: 'vote_count.desc',
+        });
+        return (data?.results ?? []).map(movie => ({
+          ...movie,
+          media_type: 'movie',
+          anniversary_years: yearsAgo,
+        }));
+      })
+    );
+    const anniversaryPick = batches.flat().sort((a, b) => (b.vote_count ?? 0) - (a.vote_count ?? 0))[0];
+    if (anniversaryPick) return anniversaryPick;
+
+    // Some calendar dates have no suitably notable release. Fall back to one
+    // archival year and choose from its strongest results, so Discover still
+    // has a serendipitous but credible film to surface.
+    const archiveYearsAgo = archiveYears[Math.floor(random() * archiveYears.length)];
+    if (!archiveYearsAgo) return null;
+    const archiveYear = now.getFullYear() - archiveYearsAgo;
+    const archive = await fetchFromTMDB('/discover/movie', {
+      'primary_release_date.gte': `${archiveYear}-01-01`,
+      'primary_release_date.lte': `${archiveYear}-12-31`,
+      'vote_count.gte': String(minVotes),
+      sort_by: 'popularity.desc',
+    });
+    const candidates = archive?.results ?? [];
+    if (!candidates.length) return null;
+    const movie = candidates[Math.floor(random() * candidates.length)];
+    return { ...movie, media_type: 'movie', archive_year: archiveYear };
+  },
+
   /* ── Upcoming TV (optionally filtered to specific providers) ── */
   getUpcomingTV: async (providerIds = []) => {
     const today = localDateStr();
