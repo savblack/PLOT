@@ -1,0 +1,21 @@
+name: Watchlist availability alerts
+
+on:
+  schedule:
+    - cron: '15 8 * * *' # Daily; the function compares current regional availability to delivered alerts.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  send-alerts:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check and deliver availability alerts
+        run: |
+          curl --fail --silent --show-error --request POST "$SUPABASE_URL/functions/v1/watchlist-availability-alerts" \
+            --header "x-cron-secret: $AVAILABILITY_ALERTS_CRON_SECRET"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          AVAILABILITY_ALERTS_CRON_SECRET: ${{ secrets.AVAILABILITY_ALERTS_CRON_SECRET }}

@@ -37,6 +37,10 @@ verify_jwt = false
 [functions.calendar-feed]
 verify_jwt = false
 
+# Called only by the scheduled GitHub workflow, which supplies its own secret.
+[functions.watchlist-availability-alerts]
+verify_jwt = false
+
 # Stripe webhook — Stripe signs requests with STRIPE_WEBHOOK_SECRET; there is
 # no Supabase JWT on deliveries, so the gateway must let them through. With
 # verify_jwt = true every delivery dies at the gateway with 401 and billing

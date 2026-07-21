@@ -1039,6 +1039,7 @@ export default function SettingsView() {
   const [showProviders,       setShowProviders]       = useState(false);
   const [showGuideChannels,   setShowGuideChannels]   = useState(false);
   const [savingProviders,     setSavingProviders]     = useState(false);
+  const [savingAvailabilityAlerts, setSavingAvailabilityAlerts] = useState(false);
   const [savingGuideChannels, setSavingGuideChannels] = useState(false);
   const [providerDraft,       setProviderDraft]       = useState(null);
   const [guideChannelDraft,   setGuideChannelDraft]   = useState(null);
@@ -1148,6 +1149,7 @@ export default function SettingsView() {
   useEffect(() => { trakt.loadIntegration(); }, [trakt.loadIntegration]);
 
   const providers      = providerDraft ?? profile?.streaming_providers ?? [];
+  const availabilityAlertsEnabled = !!profile?.watchlist_availability_alerts;
   const guideChannels  = guideChannelDraft ?? profile?.guide_channels ?? [];
   const region         = profile?.region || 'US';
   const timezone  = profile?.timezone || '';
@@ -1194,6 +1196,26 @@ export default function SettingsView() {
 
     refreshProfile();
     return true;
+  };
+
+  const toggleAvailabilityAlerts = async () => {
+    if (savingAvailabilityAlerts) return;
+    if (!availabilityAlertsEnabled && providers.length === 0) {
+      setActionError('Choose at least one streaming platform before turning on availability alerts.');
+      setShowProviders(true);
+      return;
+    }
+    setActionError(null);
+    setSavingAvailabilityAlerts(true);
+    const { error } = await supabase.from('profiles')
+      .update({ watchlist_availability_alerts: !availabilityAlertsEnabled })
+      .eq('id', user.id);
+    setSavingAvailabilityAlerts(false);
+    if (error) {
+      setActionError(error.message || 'Failed to update availability alerts.');
+      return;
+    }
+    refreshProfile();
   };
 
   const saveRegion = async (code) => {
@@ -1715,6 +1737,23 @@ export default function SettingsView() {
             <span>{savingProviders ? 'Saving…' : providers.length > 0 ? `${providers.length} selected` : 'None'}</span>
             <Chevron />
           </div>
+        </div>
+
+        <div
+          className="settings-row interactive-surface"
+          onClick={toggleAvailabilityAlerts}
+          {...getButtonLikeProps({ onPress: toggleAvailabilityAlerts, label: 'Toggle watchlist availability alerts', pressed: availabilityAlertsEnabled, disabled: savingAvailabilityAlerts })}
+        >
+          <div className="settings-row-left">
+            <div className="settings-row-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            </div>
+            <div>
+              <div className="settings-row-label">Watchlist availability alerts</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.12rem' }}>Email me when a saved title arrives on my selected services in {REGIONS.find(r => r.code === region)?.name ?? region}</div>
+            </div>
+          </div>
+          <div className="settings-row-value"><span>{savingAvailabilityAlerts ? 'Saving…' : availabilityAlertsEnabled ? 'On' : 'Off'}</span><Chevron /></div>
         </div>
 
         <div
