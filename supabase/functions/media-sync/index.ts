@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { isSafePlexConnectionUrl } from '../_shared/plexConnectionPolicy.js'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -351,77 +352,6 @@ async function fetchPlexResources(token: string) {
   return parsePlexResources(await res.text())
 }
 
-// --- SSRF guard for user-influenced Plex server connections ----------------
-// A user's Plex account can advertise arbitrary `connection.uri` values — a
-// malicious Plex Media Server reports whatever address it likes to plex.tv.
-// Because we fetch that URL server-side, reject anything pointing at loopback /
-// private / link-local / cloud-metadata ranges, whether given as a raw IP or
-// encoded in a *.plex.direct hostname (Plex embeds the server IP, dash-joined,
-// in the leading label, e.g. 10-0-0-5.hash.plex.direct → 10.0.0.5).
-function ipv4IsPrivate(ip: string): boolean {
-  const parts = ip.split('.').map(Number)
-  if (parts.length !== 4 || parts.some(n => Number.isNaN(n) || n < 0 || n > 255)) return true
-  const [a, b] = parts
-  if (a === 0) return true                          // 0.0.0.0/8 "this host"
-  if (a === 10) return true                         // 10/8 private
-  if (a === 127) return true                        // loopback
-  if (a === 169 && b === 254) return true           // link-local incl. 169.254.169.254 metadata
-  if (a === 172 && b >= 16 && b <= 31) return true  // 172.16/12 private
-  if (a === 192 && b === 168) return true           // 192.168/16 private
-  if (a === 100 && b >= 64 && b <= 127) return true // 100.64/10 CGNAT
-  if (a >= 224) return true                          // multicast / reserved
-  return false
-}
-
-function ipv6IsPrivate(ip: string): boolean {
-  const h = ip.toLowerCase().replace(/^\[|\]$/g, '')
-  if (h === '::1' || h === '::') return true         // loopback / unspecified
-  if (h.startsWith('fe80')) return true              // link-local
-  if (h.startsWith('fc') || h.startsWith('fd')) return true // unique-local fc00::/7
-  const mappedDotted = h.match(/(?:::ffff:)(\d{1,3}(?:\.\d{1,3}){3})$/)
-  if (mappedDotted) return ipv4IsPrivate(mappedDotted[1])    // ::ffff:a.b.c.d
-  const mappedHex = h.match(/::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/) // normalised form
-  if (mappedHex) {
-    const hi = parseInt(mappedHex[1], 16)
-    const lo = parseInt(mappedHex[2], 16)
-    return ipv4IsPrivate(`${(hi >> 8) & 255}.${hi & 255}.${(lo >> 8) & 255}.${lo & 255}`)
-  }
-  return false
-}
-
-function hostIsBlocked(hostname: string): boolean {
-  const host = hostname.toLowerCase().replace(/^\[|\]$/g, '').replace(/\.+$/, '')
-  if (!host || host === 'localhost' || host === 'metadata.google.internal') return true
-  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(host)) return ipv4IsPrivate(host)
-  if (host.includes(':')) return ipv6IsPrivate(host)
-  if (host.endsWith('.plex.direct')) {
-    const label = host.split('.')[0]
-    const dotted = label.replace(/-/g, '.')
-    if (/^\d{1,3}(\.\d{1,3}){3}$/.test(dotted)) return ipv4IsPrivate(dotted)
-  }
-  return false
-}
-
-// Reject non-http(s) schemes and internal hosts before fetching a URL whose
-// host is influenced by user-controlled Plex data.
-async function isSafeExternalUrl(url: URL): Promise<boolean> {
-  if (url.protocol !== 'http:' && url.protocol !== 'https:') return false
-  if (hostIsBlocked(url.hostname)) return false
-
-  // Resolve hostnames immediately before connecting: lexical checks alone do
-  // not protect against a custom Plex host resolving to a private address.
-  try {
-    const records = await Promise.all([
-      Deno.resolveDns(url.hostname, 'A').catch(() => []),
-      Deno.resolveDns(url.hostname, 'AAAA').catch(() => []),
-    ])
-    const addresses = records.flat()
-    return addresses.length > 0 && addresses.every(address => !hostIsBlocked(address))
-  } catch {
-    return false
-  }
-}
-
 async function fetchWithTimeout(url: URL, timeoutMs = 8000) {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), timeoutMs)
@@ -449,7 +379,7 @@ async function fetchPlexWatched(token: string, resources: Array<Record<string, u
         continue
       }
       // SSRF guard: a malicious Plex server can advertise an internal address.
-      if (!await isSafeExternalUrl(url)) continue
+      if (!isSafePlexConnectionUrl(url)) continue
       url.searchParams.set('X-Plex-Token', token)
       url.searchParams.set('X-Plex-Container-Start', '0')
       url.searchParams.set('X-Plex-Container-Size', '100')
