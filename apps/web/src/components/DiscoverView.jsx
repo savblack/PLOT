@@ -470,6 +470,20 @@ function DiscoverContent({ openPanel, watchlist }) {
         </section>
       )}
 
+      {weekly.length > 0 && (
+        <section className="discover-section discover-section--list">
+          <DiscoverSectionHeader
+            kicker="Global ranking"
+            title="Top 20 This Week"
+            open={openSections.weekly}
+            onToggle={() => toggleSection('weekly')}
+          />
+          {openSections.weekly && weekly.map((item, i) => (
+            <ChartRow key={item.id} item={item} rank={i + 1} openPanel={openPanel} watchlist={watchlist} />
+          ))}
+        </section>
+      )}
+
       {realityShows.length > 0 && (
         <section className="discover-section">
           <DiscoverSectionHeader
@@ -485,20 +499,6 @@ function DiscoverContent({ openPanel, watchlist }) {
               ))}
             </Rail>
           )}
-        </section>
-      )}
-
-      {weekly.length > 0 && (
-        <section className="discover-section discover-section--list">
-          <DiscoverSectionHeader
-            kicker="Global ranking"
-            title="Top 20 This Week"
-            open={openSections.weekly}
-            onToggle={() => toggleSection('weekly')}
-          />
-          {openSections.weekly && weekly.map((item, i) => (
-            <ChartRow key={item.id} item={item} rank={i + 1} openPanel={openPanel} watchlist={watchlist} />
-          ))}
         </section>
       )}
 
