@@ -392,6 +392,7 @@ function DiscoverContent({ openPanel, watchlist }) {
   const [openSections, setOpenSections] = useState({
     hot: true,
     binge: true,
+    reality: true,
     weekly: true,
     platforms: true,
   });
@@ -400,8 +401,8 @@ function DiscoverContent({ openPanel, watchlist }) {
     return <LoadingSpinner />;
   }
 
-  const { hero, onThisDay, hotRail, weekly, bingedShows } = data;
-  const hasContent = hero || hotRail.length > 0 || weekly.length > 0 || bingedShows.length > 0 || platformList.length > 0;
+  const { hero, onThisDay, hotRail, weekly, bingedShows, realityShows } = data;
+  const hasContent = hero || hotRail.length > 0 || weekly.length > 0 || bingedShows.length > 0 || realityShows.length > 0 || platformList.length > 0;
 
   if (!hasContent) {
     return (
@@ -465,6 +466,24 @@ function DiscoverContent({ openPanel, watchlist }) {
                 <BingeCard key={item.id} item={item} openPanel={openPanel} />
               ))}
             </BingeRail>
+          )}
+        </section>
+      )}
+
+      {realityShows.length > 0 && (
+        <section className="discover-section">
+          <DiscoverSectionHeader
+            kicker="Unscripted TV"
+            title="Reality TV"
+            open={openSections.reality}
+            onToggle={() => toggleSection('reality')}
+          />
+          {openSections.reality && (
+            <Rail>
+              {realityShows.map((item, i) => (
+                <RankedCard key={item.id} item={item} rank={i + 1} showRank={false} openPanel={openPanel} watchlist={watchlist} />
+              ))}
+            </Rail>
           )}
         </section>
       )}
