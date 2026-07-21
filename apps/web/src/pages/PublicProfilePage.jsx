@@ -81,7 +81,7 @@ const styles = `
   .pp-poster { position: relative; aspect-ratio: 2 / 3; border-radius: var(--radius-sm, 8px); overflow: hidden; background: var(--surface-raised); border: 1px solid var(--border); }
   .pp-poster img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .pp-poster-fallback { display: flex; align-items: center; justify-content: center; height: 100%; padding: 0.4rem; font-size: 0.66rem; line-height: 1.3; text-align: center; color: var(--text-muted); }
-  .pp-poster-rank { position: absolute; left: 0.35rem; bottom: 0.1rem; font-family: var(--font-serif); font-size: 1.6rem; font-weight: 600; color: #fff; text-shadow: 0 1px 6px rgba(0,0,0,0.9); }
+  .pp-poster-rank { position: absolute; left: 0.35rem; bottom: 0.1rem; padding: 0.08rem 0.28rem 0.14rem; border-radius: var(--radius-badge); background: rgba(0,0,0,0.7); font-family: var(--font-serif); font-size: 1.6rem; font-weight: 600; color: #fff; }
 
   /* ── Edit profile modal ── */
   .pp-edit-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 1rem; }

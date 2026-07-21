@@ -141,9 +141,16 @@ When you finish, report in this shape:
 3. **Follow-ups** — anything deferred or newly noticed, or "none."
 
 Quality bar: it builds, `npm run check` passes, no new lint errors, no console noise, no
-secrets added, no unrelated diffs. Design intent holds — flat monochrome, hairlines, compact
-buttons; no gradients, shadows/glows, or pink accents (see `docs/design/`). If you can't meet
-the bar, stop and say why rather than shipping a guess.
+secrets added, no unrelated diffs. Design intent holds — flat monochrome (black/white/grey),
+structure from hairlines and surface tokens, compact buttons never full-width. The `#E05578`
+accent is reserved for approved interaction and hierarchy cues: Save, favourite, delete,
+logout, active tabs/indicators, focus and hover states, selected filters/providers,
+progress/completion, calendar selection/today, list/profile/settings status, and featured or
+chart hierarchy. It is not decorative. Image overlays may use a scrim for readability;
+avoid decorative gradients or glows. Shadows only to keep an element legible against what's
+behind it (`--shadow-overlay`), never on text. Full rules and canonical sources:
+`docs/design/shared-design-system.md`. If you can't meet the bar, stop and say why rather
+than shipping a guess.
 
 ## Marketing
 

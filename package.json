@@ -18,6 +18,7 @@
     "test:smoke": "npm run test:smoke -w @plot/web",
     "footer": "node scripts/build-footer.mjs",
     "footer:check": "node scripts/build-footer.mjs --check",
+    "tokens:build": "node scripts/build-tokens.mjs --write",
     "tokens:check": "node scripts/build-tokens.mjs --check",
     "tokens:marketing": "node scripts/check-marketing-tokens.mjs",
     "emails:check": "node scripts/push-auth-emails.mjs --check",

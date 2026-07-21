@@ -12,8 +12,8 @@ const colorTokens = [
   ['--text-muted', 'Muted text', 'Metadata, hints, timestamps, and quiet counters.'],
   ['--border', 'Standard border', 'Separates structural surfaces without heavy outlines.'],
   ['--border-strong', 'Strong border', 'Higher-contrast separator for overlays, focused inputs, and modals.'],
-  ['--accent', 'Accent', 'Active state, selected tabs, saves, and focused attention.'],
-  ['--accent-dim', 'Accent dim', 'Tinted accent fill for save confirmations and selected state backgrounds.'],
+  ['--accent', 'Accent', 'Spent sparingly — consequential actions (save, delete, logout) and small hierarchy cues (favourite, save) only. Never decoration.'],
+  ['--accent-dim', 'Accent dim', 'Tinted accent fill for the few accented states (save confirmation, selected). Not a background color.'],
   ['--danger', 'Danger', 'Destructive actions, error states, and delete confirmations.'],
   ['--danger-dim', 'Danger dim', 'Danger background tint for warning banners and error input fills.'],
   ['--danger-border', 'Danger border', 'Error input outlines and alert borders.'],
@@ -49,11 +49,17 @@ const spacingScale = [
   ['32px+', 'Hero spacing, wide gutters, and high-emphasis layout moments.'],
 ];
 
-const shadowTokens = [
-  ['--shadow-xs', 'Default lift', 'Ordinary cards and bounded content sections.'],
-  ['--shadow-sm', 'Hover lift', 'Raised controls and floating surfaces that need a subtle step up.'],
-  ['--shadow-md', 'Panel depth', 'Drawers, sheets, and high-priority overlays.'],
-  ['--shadow-lg', 'Hero depth', 'Rare emphasis for bold spotlights or dramatic art framing.'],
+const accentRules = [
+  ['Actions and controls', 'Save, favourite, delete / destructive confirm, logout, active tabs or indicators, and focus / hover states on interactive controls.'],
+  ['Selection and progress', 'Selected filters and provider cards, onboarding / import / watching progress, completion, calendar today / selected days, and the EPG now line / active programme.'],
+  ['Status and hierarchy', 'List, profile, settings, featured, and chart status cues: ranks, official labels, Premium / public-list badges, and Discover hero actions.'],
+  ['Everything else is greyscale', 'Do not use pink for decorative fills, large surfaces, generic branding, or inactive content. Marketing and transactional surfaces retain their established treatment.'],
+];
+
+const shadowRules = [
+  ['Flat by default', 'Separation comes from surface tokens (--bg / --surface / --surface-raised / --surface-sunken) and hairline borders (--border / --border-strong), never from lift.'],
+  ['Shadow is a legibility rescue', 'The single --shadow-overlay token is allowed only when an element (an icon or floating control over image/arbitrary content) can’t be separated by a hairline.'],
+  ['Never on text', 'No text-shadow, ever. When text sits over an image, put a scrim or solid chip behind it — the shadow goes on the surface, not the glyphs.'],
 ];
 
 const motionRules = [
@@ -246,6 +252,16 @@ export default function DesignSystemPage() {
             />
           ))}
         </div>
+
+        <h3 className="ds-subsection-title">Spending the accent</h3>
+        <p className="ds-section-note" style={{ marginTop: '0.25rem' }}>
+          <code>--accent</code> (#E05578) is a signal, not a decorative palette colour. Everything else is black, white, and grey. Use it only where it earns its place:
+        </p>
+        <div className="ds-utility-grid">
+          {accentRules.map(([label, purpose]) => (
+            <RuleCard key={label} label={label}><p>{purpose}</p></RuleCard>
+          ))}
+        </div>
       </Section>
 
       <Section eyebrow="03" title="Status and Guide Color">
@@ -394,7 +410,7 @@ export default function DesignSystemPage() {
         <div className="ds-control-grid">
           <div className="ds-control-card">
             <strong>Action buttons</strong>
-            <p>Primary confirms the main action. Accent is for positive app emphasis. Ghost stays quiet. Danger is for destructive confirms only.</p>
+            <p>Primary confirms the main action. Accent is spent only on consequential actions (save, delete, logout) — not general emphasis. Ghost stays quiet. Danger is for destructive confirms only.</p>
             <div className="ds-button-row">
               <button className="btn btn-primary">Primary</button>
               <button className="btn btn-accent">Accent</button>
@@ -522,7 +538,7 @@ export default function DesignSystemPage() {
           <div className="ds-card-example">
             <span className="ds-example-label">Ranked chart row</span>
             <div className="discover-chart-row ds-chart-row-sample">
-              <span className="discover-chart-rank glow">1</span>
+              <span className="discover-chart-rank">1</span>
               <div className="discover-chart-poster"><div className="ds-mini-poster" /></div>
               <div className="discover-chart-info">
                 <div className="discover-chart-title">Top title</div>
@@ -665,7 +681,7 @@ export default function DesignSystemPage() {
           <div className="ds-bar-item">
             <div className="ds-bar-copy">
               <strong>Focus-visible ring</strong>
-              <p>Keyboard navigation shows a 2px accent outline on all interactive elements. Rows get --surface-raised background; cards get a glow shadow instead.</p>
+              <p>Keyboard navigation shows a 2px accent outline on all interactive elements. Rows get --surface-raised background; focused cards keep the same hairline treatment without decorative lift.</p>
             </div>
             <div className="ds-focus-demo">
               <button className="btn btn-secondary">Tab to me</button>
@@ -832,12 +848,12 @@ export default function DesignSystemPage() {
             </div>
           </RuleCard>
 
-          <RuleCard label="Shadow tokens">
+          <RuleCard label="Depth & shadow">
             <div className="ds-note-list">
-              {shadowTokens.map(([token, label, purpose]) => (
-                <div key={token} className="ds-note-row">
-                  <code>{token}</code>
-                  <p><strong>{label}</strong> {purpose}</p>
+              {shadowRules.map(([label, purpose]) => (
+                <div key={label} className="ds-note-row">
+                  <strong>{label}</strong>
+                  <p>{purpose}</p>
                 </div>
               ))}
             </div>

@@ -23,7 +23,6 @@
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-xs);
 }
 
 .ds-hero {
@@ -951,7 +950,6 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: 1.25rem;
-  box-shadow: var(--shadow-md);
 }
 
 .ds-modal-title {
@@ -1007,7 +1005,6 @@
   position: static !important;
   display: block !important;
   margin-top: 4px;
-  box-shadow: var(--shadow-sm);
 }
 
 .ds-glass-demo {
@@ -1590,7 +1587,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-overlay);
 }
 
 .ds-phone-bar {

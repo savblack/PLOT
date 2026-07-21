@@ -248,7 +248,7 @@
   background: #fff;
   border: 1px solid #e8e8e8;
   border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-overlay);
   z-index: 100;
   overflow: hidden;
   max-height: 280px;

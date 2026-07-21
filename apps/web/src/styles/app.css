@@ -415,7 +415,7 @@ svg { stroke-width: 1.5; }
   overflow-y: auto;
   overscroll-behavior: contain;
   z-index: 300;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  box-shadow: var(--shadow-overlay);
 }
 
 .multi-select-option {
@@ -486,7 +486,7 @@ svg { stroke-width: 1.5; }
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface-raised);
-  box-shadow: 0 12px 32px rgba(0,0,0,0.35);
+  box-shadow: var(--shadow-overlay);
 }
 
 .guide-filter-group + .guide-filter-group {
@@ -647,7 +647,6 @@ svg { stroke-width: 1.5; }
   overflow: hidden;
   background: var(--surface-raised);
   margin-bottom: 0.45rem;
-  box-shadow: var(--shadow-xs);
 }
 .media-card-img img {
   width: 100%;
@@ -673,7 +672,7 @@ svg { stroke-width: 1.5; }
   height: 22px;
   border-radius: 5px;
   overflow: hidden;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+  box-shadow: var(--shadow-overlay);
   background: #000;
   flex-shrink: 0;
   opacity: 0;
@@ -1049,7 +1048,6 @@ svg { stroke-width: 1.5; }
   border-radius: var(--radius-lg);
   overflow: hidden;
   margin: 0 1rem 0.9rem;
-  box-shadow: var(--shadow-sm);
   border: 1px solid var(--border);
 }
 
@@ -1081,7 +1079,6 @@ svg { stroke-width: 1.5; }
   font-weight: 500;
   color: #fff;
   letter-spacing: -0.02em;
-  text-shadow: 0 1px 8px rgba(0,0,0,0.5);
 }
 
 .watching-body {
@@ -2081,7 +2078,7 @@ svg { stroke-width: 1.5; }
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
-  box-shadow: -8px 0 60px rgba(0,0,0,0.2);
+  box-shadow: var(--shadow-overlay);
   animation: panelIn 0.32s var(--ease);
 }
 .panel::-webkit-scrollbar { display: none; }
@@ -2603,7 +2600,6 @@ a.provider-chip--link:hover {
 .settings-theme-tab.is-active {
   background: var(--surface);
   color: var(--text-primary);
-  box-shadow: var(--shadow-xs);
 }
 
 .providers-select-grid {
@@ -3563,7 +3559,7 @@ a.provider-chip--link:hover {
   min-width: max-content;
   max-width: 280px;
   overflow: hidden;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--shadow-overlay);
 }
 .epg-program:hover .epg-prog-name,
 .epg-program:hover .epg-prog-time {
@@ -3842,7 +3838,6 @@ a.provider-chip--link:hover {
   letter-spacing: -0.03em;
   line-height: 1.05;
   margin-bottom: 0.25rem;
-  text-shadow: 0 2px 16px rgba(0,0,0,0.5), 0 1px 2px rgba(0,0,0,0.45);
 }
 
 .discover-hero-meta {
@@ -3850,7 +3845,6 @@ a.provider-chip--link:hover {
   color: rgba(255,255,255,0.72);
   margin-bottom: 0.65rem;
   font-weight: 500;
-  text-shadow: 0 1px 8px rgba(0,0,0,0.55);
 }
 
 .discover-hero-corner-btns {
@@ -3900,8 +3894,10 @@ a.provider-chip--link:hover {
   bottom: 9px;
   left: 14px;
   line-height: 1;
-  text-shadow: 0 1px 10px rgba(0,0,0,0.7), 0 0 20px rgba(0,0,0,0.5);
   z-index: 2;
+  background: rgba(0,0,0,0.68);
+  border-radius: var(--radius-badge);
+  padding: 0.12rem 0.38rem 0.18rem;
   pointer-events: none;
   user-select: none;
 }
@@ -3946,7 +3942,6 @@ a.provider-chip--link:hover {
   overflow: hidden;
   flex-shrink: 0;
   background: var(--surface-sunken);
-  box-shadow: var(--shadow-xs);
 }
 .discover-chart-poster img {
   transition: transform 0.25s var(--ease);
@@ -3989,13 +3984,6 @@ a.provider-chip--link:hover {
 .discover-section .media-card:active {
   transform: translateY(-1px) scale(0.97);
 }
-.discover-section .media-card .media-card-img {
-  transition: box-shadow 0.2s var(--ease);
-}
-.discover-section .media-card:hover .media-card-img {
-  box-shadow: var(--shadow-md);
-}
-
 /* Staggered section load-in */
 .discover-hero,
 .discover-section {
@@ -4061,14 +4049,12 @@ a.provider-chip--link:hover {
   cursor: pointer;
   padding: 0;
   text-align: left;
-  box-shadow: var(--shadow-xs);
-  transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
+  transition: transform 0.2s var(--ease);
   -webkit-tap-highlight-color: transparent;
 }
 
 .discover-binge-card:hover {
   transform: translateY(-3px);
-  box-shadow: var(--shadow-md);
 }
 
 .discover-binge-card:active {
@@ -4277,12 +4263,8 @@ a.provider-chip--link:hover {
   .discover-section .media-card:hover {
     transform: none;
   }
-  .discover-section .media-card:hover .media-card-img {
-    box-shadow: var(--shadow-xs);
-  }
   .discover-binge-card:hover {
     transform: none;
-    box-shadow: var(--shadow-xs);
   }
 
   .media-card:active {
@@ -4345,7 +4327,7 @@ a.provider-chip--link:hover {
     width: 100%;
     max-height: 92dvh;
     border-radius: 20px 20px 0 0;
-    box-shadow: 0 -8px 40px rgba(0,0,0,0.35);
+    box-shadow: var(--shadow-overlay);
     animation: panelSheetIn 0.38s var(--ease);
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }

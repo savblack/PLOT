@@ -97,7 +97,7 @@ export default function ConfirmModal({ title, message, confirmLabel = 'Confirm',
             padding: '1.5rem',
             width: '100%',
             maxWidth: '360px',
-            boxShadow: 'var(--shadow-lg)',
+            boxShadow: 'var(--shadow-overlay)',
             animation: 'confirmSlideUp 0.18s var(--ease)',
           }}
         >
