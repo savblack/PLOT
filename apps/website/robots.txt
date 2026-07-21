@@ -1,5 +1,6 @@
 User-agent: *
 Allow: /
+Content-Signal: ai-train=no, search=yes, ai-input=no
 
 Sitemap: https://theplot.tv/sitemap.xml
 Sitemap: https://theplot.tv/sitemap-titles.xml

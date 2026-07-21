@@ -1,4 +1,5 @@
 User-agent: *
+Content-Signal: ai-train=no, search=yes, ai-input=no
 
 # Public-facing routes — allow indexing
 Allow: /$
