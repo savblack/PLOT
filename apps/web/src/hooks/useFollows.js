@@ -16,6 +16,7 @@ export function useFollows(targetId, viewerId, initialStatus = null) {
   const [status, setStatus]       = useState(initialStatus);
   const [busy, setBusy]           = useState(false);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- mirror the controlled initial status into local interaction state
   useEffect(() => { setStatus(initialStatus); }, [initialStatus]);
 
   const readStatus = useCallback(async () => {
@@ -38,6 +39,7 @@ export function useFollows(targetId, viewerId, initialStatus = null) {
     setStatus(await readStatus());
   }, [targetId, readStatus]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- load relationship counts when the target changes
   useEffect(() => { refresh(); }, [refresh]);
 
   // Follow (public → accepted) or request (private → pending). The DB trigger
