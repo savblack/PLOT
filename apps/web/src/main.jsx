@@ -9,6 +9,22 @@ import { PostHogProvider } from '@posthog/react';
 import { captureAttribution } from './utils/attribution.js';
 import { track, markActivated, EVENTS } from './lib/analytics.js';
 
+// A staging project has its own auth tokens. If an early preview session gets
+// wedged while the environment is being configured, this deliberately scoped
+// escape hatch clears only those tokens and returns the tester to preview login.
+const isPreview = window.location.hostname === 'preview.theplot.tv';
+const resetPreviewSession = isPreview
+  && new URLSearchParams(window.location.search).get('reset-preview-session') === '1';
+
+if (resetPreviewSession) {
+  try {
+    for (const key of Object.keys(window.localStorage)) {
+      if (key.startsWith('sb-uzrhfivnhdcfieuaxzip-')) window.localStorage.removeItem(key);
+    }
+  } catch { /* storage unavailable — continue to preview login */ }
+  window.location.replace('/login');
+}
+
 // Inject web env into the shared core before anything renders or fetches.
 // Core modules read these via getConfig() — never import.meta.env directly.
 configure({
