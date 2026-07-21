@@ -1,0 +1,7 @@
+# PLOT web app
+
+PLOT is a film and television companion for tracking what you watch, keeping a watchlist, writing private notes and ratings, and deciding what to watch next.
+
+This is the signed-in PLOT web app. Personal viewing history, lists, ratings, notes, and account details are private. Agents must not claim access to them without the member's authenticated, explicit permission.
+
+PLOT does not offer a public third-party API. For public product information, see https://theplot.tv/about.html and https://theplot.tv/plans.html.
