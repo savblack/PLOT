@@ -7,9 +7,10 @@ import { AuthUserContext } from '../contexts/AuthUserContext.js';
 
 export default function ProtectedRoute({ children, skipOnboardingCheck = false, publicPrefixes = [] }) {
   const location = useLocation();
-  const [loading, setLoading] = useState(true);
-  const [authenticated, setAuthenticated] = useState(false);
-  const [user, setUser] = useState(null);
+  const handedOffUser = location.state?.authenticatedUser ?? null;
+  const [loading, setLoading] = useState(() => !handedOffUser);
+  const [authenticated, setAuthenticated] = useState(() => !!handedOffUser);
+  const [user, setUser] = useState(handedOffUser);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
 
   useEffect(() => {
@@ -37,8 +38,11 @@ export default function ProtectedRoute({ children, skipOnboardingCheck = false, 
       setLoading(false);
     };
 
-    // Initial session check
-    getSessionOrNull(supabase).then(checkSession);
+    // A successful password sign-in already gives us the authenticated user.
+    // Reusing that hand-off avoids a second session read while Supabase is
+    // finishing its browser-storage update.
+    if (handedOffUser) checkSession({ user: handedOffUser });
+    else getSessionOrNull(supabase).then(checkSession);
 
     // Stay in sync if session expires or is revoked
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -46,12 +50,12 @@ export default function ProtectedRoute({ children, skipOnboardingCheck = false, 
     });
 
     return () => subscription.unsubscribe();
-  }, [skipOnboardingCheck]);
+  }, [handedOffUser, skipOnboardingCheck]);
 
   if (loading) {
     return (
       <div className="app-boot-loader">
-        <PlotLoader />
+        <PlotLoader tone="auto" />
       </div>
     );
   }
@@ -61,6 +65,8 @@ export default function ProtectedRoute({ children, skipOnboardingCheck = false, 
   const isPublic = publicPrefixes.some((p) => location.pathname.startsWith(p));
 
   if (!authenticated && !isPublic) return <Navigate to="/login" replace />;
-  if (needsOnboarding && !isPublic) return <Navigate to="/onboarding" replace />;
+  if (needsOnboarding && !isPublic) {
+    return <Navigate to="/onboarding" replace state={{ authenticatedUser: user }} />;
+  }
   return <AuthUserContext.Provider value={user}>{children}</AuthUserContext.Provider>;
 }

@@ -96,7 +96,10 @@ export default function AuthPage({ initialMode = 'signup' }) {
       else {
         identifyUser(data.user.id, { email: data.user.email });
         track(EVENTS.USER_LOGGED_IN);
-        navigate('/app');
+        // We already have the verified user from the successful sign-in. Pass
+        // it through the first protected-route hand-off so the destination
+        // does not need to immediately re-read the just-written auth session.
+        navigate('/app', { state: { authenticatedUser: data.user } });
       }
     } else {
       const { data, error } = await supabase.auth.signUp({
