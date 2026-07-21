@@ -8,7 +8,10 @@ import { AuthUserContext } from '../contexts/AuthUserContext.js';
 export default function ProtectedRoute({ children, skipOnboardingCheck = false, publicPrefixes = [] }) {
   const location = useLocation();
   const handedOffUser = location.state?.authenticatedUser ?? null;
-  const [loading, setLoading] = useState(() => !handedOffUser);
+  // The onboarding route can render immediately with the fresh sign-in user.
+  // App routes must wait for the profile check, otherwise the app shell can
+  // mount briefly before we redirect a new account into onboarding.
+  const [loading, setLoading] = useState(() => !handedOffUser || !skipOnboardingCheck);
   const [authenticated, setAuthenticated] = useState(() => !!handedOffUser);
   const [user, setUser] = useState(handedOffUser);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
@@ -26,13 +29,19 @@ export default function ProtectedRoute({ children, skipOnboardingCheck = false, 
       setUser(session.user);
 
       if (!skipOnboardingCheck) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('onboarding_complete')
-          .eq('id', session.user.id)
-          .maybeSingle();
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('onboarding_complete')
+            .eq('id', session.user.id)
+            .maybeSingle();
 
-        setNeedsOnboarding(!profile?.onboarding_complete);
+          setNeedsOnboarding(!profile?.onboarding_complete);
+        } catch {
+          // Don't strand a newly signed-in account on a blank app shell if
+          // the profile read is interrupted. Onboarding can safely recover it.
+          setNeedsOnboarding(true);
+        }
       }
 
       setLoading(false);
