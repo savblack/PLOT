@@ -82,6 +82,7 @@ export { fetchFromTMDBResolved };
 export const tmdb = {
   /* ── Search ── */
   search: (query) => fetchFromTMDB('/search/multi', { query }),
+  searchPeople: (query) => fetchFromTMDB('/search/person', { query }),
   resolveTitle: async (query, mediaType) => {
     const data = await fetchFromTMDB('/search/multi', { query });
     const results = data?.results || [];
@@ -98,9 +99,9 @@ export const tmdb = {
 
   /* ── Details ── */
   getMovieDetails: (id) =>
-    fetchFromTMDB(`/movie/${id}`, { append_to_response: 'watch/providers,recommendations,videos' }),
+    fetchFromTMDB(`/movie/${id}`, { append_to_response: 'watch/providers,recommendations,videos,credits' }),
   getTVDetails: (id) =>
-    fetchFromTMDB(`/tv/${id}`, { append_to_response: 'watch/providers,recommendations,videos' }),
+    fetchFromTMDB(`/tv/${id}`, { append_to_response: 'watch/providers,recommendations,videos,aggregate_credits' }),
 
   /**
    * Resolve a movie/TV detail record, surfacing transient vs. terminal failure
@@ -113,8 +114,12 @@ export const tmdb = {
    */
   getDetails: (mediaType, id) => {
     const path = mediaType === 'tv' ? `/tv/${id}` : `/movie/${id}`;
-    return fetchFromTMDBResolved(path, { append_to_response: 'watch/providers,recommendations,videos' });
+    return fetchFromTMDBResolved(path, { append_to_response: mediaType === 'tv' ? 'watch/providers,recommendations,videos,aggregate_credits' : 'watch/providers,recommendations,videos,credits' });
   },
+
+  /* ── Talent ── */
+  getPersonDetails: (id) => fetchFromTMDB(`/person/${id}`),
+  getPersonCredits: (id) => fetchFromTMDB(`/person/${id}/combined_credits`),
 
   /* ── Digital (streaming) release date for a movie, by region ── */
   getDigitalReleaseDate: async (movieId) => {

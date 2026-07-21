@@ -1,0 +1,31 @@
+.talent-page { max-width: 760px; margin: 0 auto; padding: 1.25rem 1rem 3rem; }
+.talent-page--loading, .talent-page--empty { min-height: 50vh; display: grid; place-content: center; text-align: center; }
+.talent-page--empty p { color: var(--text-muted); margin: 0.4rem 0 1rem; }
+.talent-back { margin-bottom: 1.5rem; padding: 0; border: 0; background: none; color: var(--text-secondary); cursor: pointer; font-size: 0.82rem; font-weight: 600; }
+.talent-back:hover { color: var(--text-primary); }
+.talent-header { display: flex; align-items: center; gap: 1.25rem; }
+.talent-portrait { width: 100px; flex: 0 0 auto; aspect-ratio: 2 / 3; overflow: hidden; border-radius: var(--radius-md); background: var(--surface-raised); box-shadow: var(--shadow-xs); }
+.talent-portrait img, .talent-portrait span { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; object-fit: cover; }
+.talent-portrait span { color: var(--text-muted); font-family: var(--font-serif); font-size: 2.5rem; }
+.talent-kicker, .talent-section h2 { color: var(--text-muted); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; }
+.talent-header h1 { margin: 0.3rem 0; font-family: var(--font-serif); font-size: clamp(2rem, 8vw, 3rem); font-weight: 500; letter-spacing: -0.04em; line-height: 0.95; }
+.talent-birthday { margin: 0; color: var(--text-muted); font-size: 0.82rem; }
+.talent-biography { max-width: 65ch; margin: 1.75rem 0 2rem; color: var(--text-secondary); font-size: 0.92rem; line-height: 1.7; white-space: pre-line; }
+.talent-section h2 { margin: 0 0 0.85rem; }
+.talent-credits-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1.25rem; }
+.talent-credit { min-width: 0; padding: 0; border: 0; background: none; color: var(--text-primary); cursor: pointer; text-align: left; }
+.talent-credit:hover { transform: scale(0.97); }
+.talent-credit:active { transform: scale(0.93); }
+.talent-credit-poster { aspect-ratio: 2 / 3; overflow: hidden; border-radius: var(--radius-md); background: var(--surface-raised); box-shadow: var(--shadow-xs); }
+.talent-credit-poster img, .talent-credit-poster span { display: flex; width: 100%; height: 100%; align-items: center; justify-content: center; object-fit: cover; }
+.talent-credit-poster span { padding: 0.5rem; box-sizing: border-box; color: var(--text-muted); font-size: 0.72rem; text-align: center; }
+.talent-credit-title, .talent-credit-role, .talent-credit-meta { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.talent-credit-title { margin-top: 1rem; color: var(--text-primary); font-size: 0.78rem; font-weight: 600; line-height: 1.3; }
+.talent-credit-role { margin-top: 0.15rem; color: var(--text-secondary); font-size: 0.72rem; }
+.talent-credit-meta { margin-top: 0.15rem; color: var(--text-muted); font-size: 0.7rem; }
+.talent-muted { color: var(--text-muted); font-size: 0.88rem; }
+
+@media (max-width: 520px) {
+  .talent-credits-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.85rem; }
+  .talent-credit-title { margin-top: 0.65rem; }
+}

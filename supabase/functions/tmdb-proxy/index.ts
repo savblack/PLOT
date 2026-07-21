@@ -28,6 +28,7 @@ function corsHeaders(origin: string | null): Record<string, string> {
 const BASE = 'https://api.themoviedb.org/3';
 const ALLOWED_PATHS = [
   /^search\/multi$/,
+  /^search\/person$/,
   /^trending\/(all|movie|tv)\/(day|week)$/,
   /^movie\/(now_playing|top_rated)$/,
   /^tv\/(on_the_air|airing_today|top_rated)$/,
@@ -35,6 +36,8 @@ const ALLOWED_PATHS = [
   /^(movie|tv)\/\d+$/,
   /^(movie|tv)\/\d+\/recommendations$/,
   /^(movie|tv)\/\d+\/watch\/providers$/,
+  /^person\/\d+$/,
+  /^person\/\d+\/combined_credits$/,
   /^watch\/providers\/(movie|tv)$/,
   // Episode schedule endpoints (for Watching view + Calendar)
   /^tv\/\d+\/season\/\d+$/,

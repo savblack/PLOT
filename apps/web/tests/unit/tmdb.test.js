@@ -3,6 +3,33 @@ import test from 'node:test';
 import { configure } from '../../../../packages/core/config.js';
 import { tmdb } from '../../../../packages/core/tmdb.js';
 
+test('talent helpers use TMDB person endpoints and title details request credits', async () => {
+  const originalFetch = globalThis.fetch;
+  const requests = [];
+  configure({ tmdbProxyUrl: 'https://proxy.test', supabaseAnonKey: 'anon' });
+  globalThis.fetch = async (url) => {
+    requests.push(new URL(url));
+    return { ok: true, status: 200, json: async () => ({ results: [] }) };
+  };
+
+  try {
+    await Promise.all([
+      tmdb.searchPeople('Greta'),
+      tmdb.getPersonDetails(123),
+      tmdb.getPersonCredits(123),
+      tmdb.getMovieDetails(456),
+      tmdb.getTVDetails(789),
+    ]);
+    assert.deepEqual(requests.map(request => request.searchParams.get('path')), [
+      'search/person', 'person/123', 'person/123/combined_credits', 'movie/456', 'tv/789',
+    ]);
+    assert.match(requests[3].searchParams.get('append_to_response'), /credits/);
+    assert.match(requests[4].searchParams.get('append_to_response'), /aggregate_credits/);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test('getOnThisDay returns the highest-voted anniversary title', async () => {
   const originalFetch = globalThis.fetch;
   const originalDate = globalThis.Date;
