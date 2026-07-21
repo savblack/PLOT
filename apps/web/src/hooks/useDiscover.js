@@ -23,7 +23,7 @@ export function useDiscover() {
 
         const realityGenre = genres.find(genre => genre.name === 'Reality');
         const realityTV = realityGenre
-          ? await tmdb.discoverBrowse('tv', { genreId: realityGenre.id }).catch(() => null)
+          ? await tmdb.discoverNewestByGenre('tv', realityGenre.id).catch(() => null)
           : null;
 
         if (cancelled) return;

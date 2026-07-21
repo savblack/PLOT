@@ -487,8 +487,8 @@ function DiscoverContent({ openPanel, watchlist }) {
       {realityShows.length > 0 && (
         <section className="discover-section">
           <DiscoverSectionHeader
-            kicker="Unscripted TV"
-            title="Reality TV"
+            kicker="Reality TV"
+            title="Worth Talking About"
             open={openSections.reality}
             onToggle={() => toggleSection('reality')}
           />

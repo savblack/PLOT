@@ -449,6 +449,18 @@ export const tmdb = {
     return fetchFromTMDB(`/discover/${type}`, params);
   },
 
+  /* ── Newest released titles in a genre ── */
+  discoverNewestByGenre: (type, genreId) => {
+    if (!genreId) return Promise.resolve(null);
+    const dateField = type === 'tv' ? 'first_air_date' : 'primary_release_date';
+    return fetchFromTMDB(`/discover/${type}`, {
+      with_genres: genreId,
+      sort_by: `${dateField}.desc`,
+      [`${dateField}.lte`]: localDateStr(),
+      'vote_count.gte': 1,
+    });
+  },
+
   getTopRated: (type) => fetchFromTMDB(`/${type}/top_rated`),
 
   discoverByGenres: (type, genreIds) => {
