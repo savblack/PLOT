@@ -13,6 +13,7 @@ import { SHOW_MEDIA_SYNC_INTEGRATIONS } from './launchFeatures.js';
 // the main bundle means the app can always get you in or out.
 import AuthPage from './pages/AuthPage.jsx';
 import LogoutPage from './pages/LogoutPage.jsx';
+import OnboardingFlow from './pages/OnboardingFlow.jsx';
 
 // Layout + views
 const App         = lazy(() => import('./App.jsx'));
@@ -29,7 +30,6 @@ const NotificationsView = lazy(() => import('./components/NotificationsView.jsx'
 const AuthCallbackPage  = lazy(() => import('./pages/AuthCallbackPage.jsx'));
 const TraktCallbackPage = lazy(() => import('./pages/TraktCallbackPage.jsx'));
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage.jsx'));
-const OnboardingFlow    = lazy(() => import('./pages/OnboardingFlow.jsx'));
 const NotFoundPage      = lazy(() => import('./pages/NotFoundPage.jsx'));
 const TermsPage         = lazy(() => import('./pages/TermsPage.jsx'));
 const PrivacyPage       = lazy(() => import('./pages/PrivacyPage.jsx'));
