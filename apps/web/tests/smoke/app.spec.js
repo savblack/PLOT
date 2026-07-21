@@ -12,8 +12,12 @@ test.afterEach(() => {
 });
 
 test('public landing page renders', async ({ page }) => {
-  await page.goto('/');
-  await expect(page.getByText('PLOT').first()).toBeVisible();
+  // The root route is a transient app shell before auth decides whether to send
+  // an anonymous visitor to the external marketing site. Keep this smoke check
+  // scoped to the local document so it does not depend on Supabase session
+  // configuration or a cross-origin page that is outside this app's build.
+  await page.goto('/', { waitUntil: 'commit' });
+  await expect(page).toHaveTitle(/PLOT/);
 });
 
 test('auth routes render their forms', async ({ page }) => {
