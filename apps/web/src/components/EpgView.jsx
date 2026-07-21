@@ -9,9 +9,27 @@ const START_H = 6;   // guide window opens 6:00 AM
 const END_H   = 24;  // …closes midnight
 
 /* ── Helpers ── */
-function localDateStr(d) {
-  const date = d ?? new Date();
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+function dateInTimezone(date, timezone) {
+  try {
+    const parts = new Intl.DateTimeFormat('en', {
+      timeZone: timezone || undefined,
+      year: 'numeric', month: '2-digit', day: '2-digit',
+    }).formatToParts(date);
+    const part = (type) => parts.find(item => item.type === type)?.value;
+    return `${part('year')}-${part('month')}-${part('day')}`;
+  } catch {
+    return dateToLocalStr(date);
+  }
+}
+
+function addDays(dateStr, days) {
+  const date = new Date(`${dateStr}T12:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+function dateLabel(dateStr, options) {
+  return new Date(`${dateStr}T12:00:00Z`).toLocaleDateString('en', { timeZone: 'UTC', ...options });
 }
 
 function stampToLocalHHMM(airstamp, timezone) {
@@ -61,10 +79,20 @@ function addMins(airtime, mins) {
 }
 
 // Now in minutes-from-START_H, or null if outside the guide window.
-function nowMinsInWindow() {
-  const now = new Date();
-  const m = (now.getHours() - START_H) * 60 + now.getMinutes();
-  return m >= 0 && m < (END_H - START_H) * 60 ? m : null;
+function nowMinsInWindow(timezone) {
+  try {
+    const parts = new Intl.DateTimeFormat('en', {
+      timeZone: timezone || undefined,
+      hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+    }).formatToParts(new Date());
+    const value = (type) => Number(parts.find(part => part.type === type)?.value ?? 0);
+    const m = (value('hour') - START_H) * 60 + value('minute');
+    return m >= 0 && m < (END_H - START_H) * 60 ? m : null;
+  } catch {
+    const now = new Date();
+    const m = (now.getHours() - START_H) * 60 + now.getMinutes();
+    return m >= 0 && m < (END_H - START_H) * 60 ? m : null;
+  }
 }
 
 const getShow = (ep) => ep.show ?? ep._embedded?.show;
@@ -198,7 +226,7 @@ export default function EpgView() {
   const country  = profile?.region   ?? 'US';
   const timezone = profile?.timezone ?? null;
   const cacheKey = `${country}:${timezone}`;
-  const todayStr = localDateStr();
+  const todayStr = dateInTimezone(new Date(), timezone);
 
   const [date,           setDate]           = useState(todayStr);
   const [programsByDate, setProgramsByDate] = useState(() => epgCache?.key === cacheKey ? epgCache.data : {});
@@ -212,14 +240,14 @@ export default function EpgView() {
   }, []);
 
   const days = useMemo(() => Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(); d.setDate(d.getDate() + i);
+    const dateStr = addDays(todayStr, i);
     return {
-      dateStr: dateToLocalStr(d),
-      weekday: i === 0 ? 'Today' : d.toLocaleDateString('en', { weekday: 'short' }),
-      month:   d.toLocaleDateString('en', { month: 'short' }),
-      num:     d.getDate(),
+      dateStr,
+      weekday: i === 0 ? 'Today' : dateLabel(dateStr, { weekday: 'short' }),
+      month:   dateLabel(dateStr, { month: 'short' }),
+      num:     Number(dateLabel(dateStr, { day: 'numeric' })),
     };
-  }), []);
+  }), [todayStr]);
   const dayKey = days.map(d => d.dateStr).join('|');
 
   // Fetch the visible week up front (stale-while-revalidate).
@@ -243,7 +271,7 @@ export default function EpgView() {
   }, [country, timezone, dayKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const isToday  = date === todayStr;
-  const nowMins  = isToday ? nowMinsInWindow() : null;
+  const nowMins  = isToday ? nowMinsInWindow(timezone) : null;
   const programs = programsByDate[date]; // undefined = loading
 
   // Bucket into rails. Today → On Now / Up Next (next 3 hrs) / Later.

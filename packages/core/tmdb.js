@@ -5,6 +5,35 @@ let userRegion = 'US';
 export const setTmdbRegion = (region) => { userRegion = region; };
 export const getTmdbRegion = () => userRegion;
 
+const REGIONAL_RELEASE_TYPE_ORDER = [3, 2, 4, 1, 5, 6];
+
+/**
+ * Returns the most relevant recorded release date for the active region.
+ * TMDB's top-level movie release_date is the primary date, which can be from
+ * another country even when a user has chosen a different region.
+ *
+ * @param {{results?: Array<{iso_3166_1?: string, release_dates?: Array<{type?: number, release_date?: string}>}>}|undefined|null} releaseDates
+ * @param {string} [region]
+ * @returns {string|null}
+ */
+export function regionalMovieReleaseDate(releaseDates, region = userRegion) {
+  const dates = releaseDates?.results
+    ?.find(entry => entry.iso_3166_1 === region)
+    ?.release_dates
+    ?.filter(entry => entry.release_date) || [];
+
+  for (const type of REGIONAL_RELEASE_TYPE_ORDER) {
+    const match = dates.find(entry => entry.type === type);
+    if (match) return match.release_date.slice(0, 10);
+  }
+  return dates[0]?.release_date?.slice(0, 10) || null;
+}
+
+const withRegionalMovieReleaseDate = (movie) => {
+  const releaseDate = regionalMovieReleaseDate(movie?.release_dates);
+  return releaseDate ? { ...movie, release_date: releaseDate } : movie;
+};
+
 const RETRY_STATUSES = new Set([429, 500, 502, 503, 504]);
 const RETRY_DELAYS   = [400, 1200]; // ms — 2 retries with backoff
 
@@ -97,8 +126,10 @@ export const tmdb = {
   },
 
   /* ── Details ── */
-  getMovieDetails: (id) =>
-    fetchFromTMDB(`/movie/${id}`, { append_to_response: 'watch/providers,recommendations,videos' }),
+  getMovieDetails: async (id) => {
+    const movie = await fetchFromTMDB(`/movie/${id}`, { append_to_response: 'watch/providers,recommendations,videos,release_dates' });
+    return withRegionalMovieReleaseDate(movie);
+  },
   getTVDetails: (id) =>
     fetchFromTMDB(`/tv/${id}`, { append_to_response: 'watch/providers,recommendations,videos' }),
 
@@ -111,18 +142,23 @@ export const tmdb = {
    * @param {number|string} id
    * @returns {Promise<{ ok: boolean, data: any, status: number|null, retryable: boolean }>}
    */
-  getDetails: (mediaType, id) => {
+  getDetails: async (mediaType, id) => {
     const path = mediaType === 'tv' ? `/tv/${id}` : `/movie/${id}`;
-    return fetchFromTMDBResolved(path, { append_to_response: 'watch/providers,recommendations,videos' });
+    const result = await fetchFromTMDBResolved(path, {
+      append_to_response: mediaType === 'tv'
+        ? 'watch/providers,recommendations,videos'
+        : 'watch/providers,recommendations,videos,release_dates',
+    });
+    return result.ok && mediaType !== 'tv'
+      ? { ...result, data: withRegionalMovieReleaseDate(result.data) }
+      : result;
   },
 
   /* ── Digital (streaming) release date for a movie, by region ── */
   getDigitalReleaseDate: async (movieId) => {
     const data = await fetchFromTMDB(`/movie/${movieId}/release_dates`);
     const entries = data?.results || [];
-    // Prefer the user's region, fall back to US
-    const forRegion = (r) => entries.find(e => e.iso_3166_1 === r)?.release_dates || [];
-    const dates = forRegion(userRegion).length ? forRegion(userRegion) : forRegion('US');
+    const dates = entries.find(entry => entry.iso_3166_1 === userRegion)?.release_dates || [];
     const digital = dates.find(d => d.type === 4); // 4 = Digital
     return digital?.release_date ? digital.release_date.slice(0, 10) : null;
   },
@@ -201,8 +237,9 @@ export const tmdb = {
       years.map(async (yearsAgo) => {
         const date = `${now.getFullYear() - yearsAgo}-${month}-${dayOfMonth}`;
         const data = await fetchFromTMDB('/discover/movie', {
-          'primary_release_date.gte': date,
-          'primary_release_date.lte': date,
+          'release_date.gte': date,
+          'release_date.lte': date,
+          with_release_type: '3|2',
           'vote_count.gte': String(minVotes),
           sort_by: 'vote_count.desc',
         });
@@ -223,8 +260,9 @@ export const tmdb = {
     if (!archiveYearsAgo) return null;
     const archiveYear = now.getFullYear() - archiveYearsAgo;
     const archive = await fetchFromTMDB('/discover/movie', {
-      'primary_release_date.gte': `${archiveYear}-01-01`,
-      'primary_release_date.lte': `${archiveYear}-12-31`,
+      'release_date.gte': `${archiveYear}-01-01`,
+      'release_date.lte': `${archiveYear}-12-31`,
+      with_release_type: '3|2',
       'vote_count.gte': String(minVotes),
       sort_by: 'popularity.desc',
     });
