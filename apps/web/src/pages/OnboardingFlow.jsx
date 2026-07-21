@@ -7,6 +7,7 @@ import PlotLoader from '../components/PlotLoader.jsx';
 import { getButtonLikeProps } from '../utils/interactive.js';
 import { track, markActivated, EVENTS } from '../lib/analytics.js';
 import { saveOnboardingSeedTitles } from '@plot/core/onboarding.js';
+import { getSessionOrNull } from '../utils/authSession.js';
 
 const STEP_NAMES = { 1: 'region', 2: 'platforms', 3: 'seed' };
 
@@ -112,7 +113,7 @@ export default function OnboardingFlow() {
       setAuthLoading(false);
     };
 
-    supabase.auth.getSession().then(({ data: { session } }) => syncUser(session));
+    getSessionOrNull(supabase).then(syncUser);
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       syncUser(session);
     });

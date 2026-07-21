@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { supabase } from '../api/supabase';
 import PlotLoader from './PlotLoader';
+import { getSessionOrNull } from '../utils/authSession.js';
 
 export default function ProtectedRoute({ children, skipOnboardingCheck = false, publicPrefixes = [] }) {
   const location = useLocation();
@@ -33,7 +34,7 @@ export default function ProtectedRoute({ children, skipOnboardingCheck = false, 
     };
 
     // Initial session check
-    supabase.auth.getSession().then(({ data: { session } }) => checkSession(session));
+    getSessionOrNull(supabase).then(checkSession);
 
     // Stay in sync if session expires or is revoked
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
