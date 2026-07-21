@@ -16,6 +16,7 @@
  * @property {string} supabaseUrl
  * @property {string} supabaseAnonKey
  * @property {string} tmdbProxyUrl
+ * @property {string} watchAvailabilityUrl Server-side JustWatch partner availability resolver.
  * @property {string} traktClientId
  * @property {boolean} isDev
  * @property {Record<string, any>} [supabaseClientOptions] Optional createClient()
@@ -50,6 +51,7 @@ const defaults = {
   supabaseUrl: '',
   supabaseAnonKey: '',
   tmdbProxyUrl: '',
+  watchAvailabilityUrl: '',
   traktClientId: '',
   isDev: false,
   supabaseClientOptions: undefined,

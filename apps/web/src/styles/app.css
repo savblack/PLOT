@@ -2245,6 +2245,11 @@ svg { stroke-width: 1.5; }
   border-radius: 5px;
   object-fit: cover;
 }
+.provider-chip-offer {
+  color: var(--text-tertiary);
+  font-size: 0.68rem;
+  font-weight: 500;
+}
 .provider-chip--cinema {
   border-color: color-mix(in srgb, var(--accent) 40%, transparent);
   background: var(--accent-dim);

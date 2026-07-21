@@ -14,6 +14,7 @@ import { useShareTitle } from '../hooks/useShareTitle.js';
 import { track, EVENTS } from '../lib/analytics.js';
 import { canCreateCustomList, FREE_CUSTOM_LIST_CAP } from '@plot/core/premium.js';
 import { buildWatchLink } from '@plot/core/watchLinks.js';
+import { fetchVerifiedAvailability, formatOfferPrice, offersFromTmdb } from '@plot/core/availability.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import SheetHeader from './SheetHeader.jsx';
 import PlotLoader from './PlotLoader.jsx';
@@ -366,22 +367,21 @@ function StarIcon({ fillPercent = 0 }) {
 }
 
 /* ── Where-to-watch provider chip ── */
-// Clickable when core/watchLinks resolves a destination (provider search URL,
-// affiliate-tagged where configured, JustWatch fallback); inert div otherwise.
-function ProviderChip({ provider, variant, title, mediaType, tmdbId, region, justwatchLink }) {
+// Clickable only for a verified provider offer or the region-specific title page.
+function ProviderChip({ provider, tmdbId, mediaType, region, justwatchLink }) {
   const link = buildWatchLink({
-    providerName: provider.provider_name,
-    title,
-    region,
+    providerUrl: provider.providerUrl,
     justwatchLink,
   });
-  const className = `provider-chip${variant === 'rentbuy' ? ' provider-chip--rentbuy' : ''}${link ? ' provider-chip--link' : ''}`;
+  const className = `provider-chip${provider.offerType === 'Rent' || provider.offerType === 'Buy' ? ' provider-chip--rentbuy' : ''}${link ? ' provider-chip--link' : ''}`;
+  const price = formatOfferPrice(provider.price, provider.currency);
   const inner = (
     <>
-      {provider.logo_path && (
-        <img src={logoUrl(provider.logo_path, 'w45')} alt={provider.provider_name} />
+      {provider.logoPath && (
+        <img src={provider.logoPath.startsWith('http') ? provider.logoPath : logoUrl(provider.logoPath, 'w45')} alt={provider.providerName} />
       )}
-      {provider.provider_name}
+      <span>{provider.providerName}</span>
+      <span className="provider-chip-offer">{price || provider.offerType}</span>
     </>
   );
   if (!link) return <div className={className}>{inner}</div>;
@@ -390,13 +390,13 @@ function ProviderChip({ provider, variant, title, mediaType, tmdbId, region, jus
       className={className}
       href={link.url}
       target="_blank"
-      rel={link.kind === 'affiliate' ? 'noopener nofollow sponsored' : 'noopener'}
+      rel={link.kind === 'provider' ? 'noopener nofollow sponsored' : 'noopener'}
       onClick={() => track(EVENTS.WATCH_LINK_CLICKED, {
-        provider_id: provider.provider_id,
-        provider_name: provider.provider_name,
+        provider_id: provider.providerId,
+        provider_name: provider.providerName,
         tmdb_id: tmdbId,
         media_type: mediaType,
-        monetization: variant,
+        monetization: provider.offerType.toLowerCase().replaceAll(' ', '_'),
         link_kind: link.kind,
         region,
       })}
@@ -567,15 +567,6 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
   );
 }
 
-function dedupeProviders(list) {
-  const seen = new Set();
-  return list.filter(p => {
-    if (seen.has(p.provider_id)) return false;
-    seen.add(p.provider_id);
-    return true;
-  });
-}
-
 export default function MediaPanel({ itemId, itemType, closing, onClose }) {
   const { watchlist, watching, user, profile, favorites, customLists } = useApp();
   const navigate = useNavigate();
@@ -661,25 +652,24 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
     if (!itemId) return;
     setLoading(true);
     setDetailsError(false);
-    const [det, prov] = await Promise.all([
+    const region = getTmdbRegion();
+    const [det, prov, verified] = await Promise.all([
       isMovie ? tmdb.getMovieDetails(itemId) : tmdb.getTVDetails(itemId),
       tmdb.getWatchProviders(itemId, itemType),
+      fetchVerifiedAvailability({ tmdbId: itemId, mediaType: itemType, region }),
     ]);
     if (!det) {
       setDetailsError(true);
     } else {
       setDetails(det);
-      const region = getTmdbRegion();
       const regionData = prov?.results?.[region] || {};
-      const streaming = dedupeProviders([
-        ...(regionData.flatrate || []),
-        ...(regionData.free     || []),
-        ...(regionData.ads      || []),
-      ]);
-      const rentBuy = dedupeProviders([
-        ...(regionData.rent || []),
-        ...(regionData.buy  || []),
-      ]);
+      const fallbackOffers = offersFromTmdb(regionData);
+      const offers = verified?.offers?.length ? verified.offers.map((offer) => ({
+        ...offer,
+        offerType: { flatrate: 'Subscription', rent: 'Rent', buy: 'Buy', free: 'Free', ads: 'Free with ads' }[offer.offerType] || offer.offerType,
+      })) : fallbackOffers;
+      const streaming = offers.filter((offer) => ['Subscription', 'Free', 'Free with ads'].includes(offer.offerType));
+      const rentBuy = offers.filter((offer) => ['Rent', 'Buy'].includes(offer.offerType));
       // Cinema detection: movie released within last 90 days with no digital availability yet
       let inCinemas = false;
       if (isMovie) {
@@ -700,7 +690,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
         streaming,
         rentBuy,
         inCinemas,
-        justwatchLink: regionData.link || null,
+        justwatchLink: verified?.title_url || regionData.link || null,
         region,
       });
     }
@@ -1175,10 +1165,8 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                   <div className="providers-grid">
                     {whereToWatch.streaming.map(p => (
                       <ProviderChip
-                        key={p.provider_id}
-                        provider={p}
-                        variant="streaming"
-                        title={title}
+                          key={`${p.providerId}-${p.offerType}`}
+                          provider={p}
                         mediaType={itemType}
                         tmdbId={itemId}
                         region={whereToWatch.region}
@@ -1195,10 +1183,8 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                     <div className="providers-grid">
                       {whereToWatch.rentBuy.map(p => (
                         <ProviderChip
-                          key={p.provider_id}
-                          provider={p}
-                          variant="rentbuy"
-                          title={title}
+                        key={`${p.providerId}-${p.offerType}`}
+                        provider={p}
                           mediaType={itemType}
                           tmdbId={itemId}
                           region={whereToWatch.region}
@@ -1212,12 +1198,10 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                   Streaming availability by JustWatch.
                   {[...whereToWatch.streaming, ...whereToWatch.rentBuy].some(p =>
                     buildWatchLink({
-                      providerName: p.provider_name,
-                      title,
-                      region: whereToWatch.region,
+                      providerUrl: p.providerUrl,
                       justwatchLink: whereToWatch.justwatchLink,
-                    })?.kind === 'affiliate'
-                  ) && ' Some links may earn PLOT a commission.'}
+                    })?.kind === 'provider'
+                  ) && ' Links open the verified title offer.'}
                 </p>
               </>
             )}

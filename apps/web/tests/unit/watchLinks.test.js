@@ -1,59 +1,41 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildWatchLink } from '@plot/core/watchLinks.js';
-import { configure } from '@plot/core/config.js';
+import { formatOfferPrice, offersFromTmdb } from '@plot/core/availability.js';
 
-const BASE = { title: 'The Test Movie', region: 'AU', justwatchLink: 'https://www.justwatch.com/au/movie/the-test-movie' };
-
-test('known provider resolves to a search link when no affiliate tag is configured', () => {
-  configure({ affiliate: undefined });
-  const link = buildWatchLink({ ...BASE, providerName: 'Netflix' });
-  assert.equal(link.kind, 'search');
-  assert.equal(link.url, 'https://www.netflix.com/search?q=The%20Test%20Movie');
+test('uses a verified provider title URL and never constructs a provider search URL', () => {
+  const link = buildWatchLink({
+    providerUrl: 'https://click.justwatch.com/a?offer=123',
+    justwatchLink: 'https://www.justwatch.com/au/movie/the-test-movie',
+  });
+  assert.deepEqual(link, { url: 'https://click.justwatch.com/a?offer=123', kind: 'provider' });
 });
 
-test('amazon uses the regional storefront and becomes affiliate when a tag exists', () => {
-  configure({ affiliate: { amazonTags: { AU: 'plot-22' } } });
-  const link = buildWatchLink({ ...BASE, providerName: 'Amazon Prime Video' });
-  assert.equal(link.kind, 'affiliate');
-  assert.ok(link.url.startsWith('https://www.amazon.com.au/s?k=The%20Test%20Movie'));
-  assert.ok(link.url.includes('tag=plot-22'));
-
-  configure({ affiliate: undefined });
-  const plain = buildWatchLink({ ...BASE, providerName: 'Amazon Video' });
-  assert.equal(plain.kind, 'search');
-  assert.ok(!plain.url.includes('tag='));
+test('falls back only to the exact regional JustWatch title page', () => {
+  const link = buildWatchLink({
+    providerUrl: null,
+    justwatchLink: 'https://www.justwatch.com/au/movie/the-test-movie',
+  });
+  assert.deepEqual(link, { url: 'https://www.justwatch.com/au/movie/the-test-movie', kind: 'justwatch' });
+  assert.equal(buildWatchLink({ providerUrl: 'javascript:alert(1)', justwatchLink: null }), null);
 });
 
-test('amazon falls back to .com for unmapped regions', () => {
-  configure({ affiliate: undefined });
-  const link = buildWatchLink({ ...BASE, region: 'ZA', providerName: 'Amazon Prime Video' });
-  assert.ok(link.url.startsWith('https://www.amazon.com/s?k='));
+test('TMDB availability retains each offer category without inventing a price', () => {
+  const offers = offersFromTmdb({
+    flatrate: [{ provider_id: 8, provider_name: 'Netflix', logo_path: '/netflix.png' }],
+    rent: [{ provider_id: 10, provider_name: 'Amazon Video', logo_path: '/amazon.png' }],
+    buy: [{ provider_id: 10, provider_name: 'Amazon Video', logo_path: '/amazon.png' }],
+    free: [{ provider_id: 20, provider_name: 'ABC iview', logo_path: '/abc.png' }],
+  });
+  assert.deepEqual(offers.map(({ providerName, offerType, price }) => ({ providerName, offerType, price })), [
+    { providerName: 'Netflix', offerType: 'Subscription', price: null },
+    { providerName: 'Amazon Video', offerType: 'Rent', price: null },
+    { providerName: 'Amazon Video', offerType: 'Buy', price: null },
+    { providerName: 'ABC iview', offerType: 'Free', price: null },
+  ]);
 });
 
-test('apple tv gets the at token when configured', () => {
-  configure({ affiliate: { appleToken: 'plot_at' } });
-  const link = buildWatchLink({ ...BASE, providerName: 'Apple TV+' });
-  assert.equal(link.kind, 'affiliate');
-  assert.ok(link.url.includes('at=plot_at'));
-  configure({ affiliate: undefined });
-});
-
-test('max matches both Max and HBO Max but not e.g. Cinemax', () => {
-  configure({ affiliate: undefined });
-  assert.ok(buildWatchLink({ ...BASE, providerName: 'Max' }).url.includes('play.max.com'));
-  assert.ok(buildWatchLink({ ...BASE, providerName: 'HBO Max' }).url.includes('play.max.com'));
-  assert.equal(buildWatchLink({ ...BASE, providerName: 'Cinemax' }).kind, 'justwatch');
-});
-
-test('unknown provider falls back to the JustWatch link', () => {
-  configure({ affiliate: undefined });
-  const link = buildWatchLink({ ...BASE, providerName: 'Some Obscure Service' });
-  assert.equal(link.kind, 'justwatch');
-  assert.equal(link.url, BASE.justwatchLink);
-});
-
-test('no destination at all returns null (chip renders inert)', () => {
-  configure({ affiliate: undefined });
-  assert.equal(buildWatchLink({ providerName: 'Some Obscure Service', title: 'X', region: 'AU', justwatchLink: null }), null);
+test('formats a verified price only when both amount and currency exist', () => {
+  assert.equal(formatOfferPrice(4.99, 'AUD'), '$4.99');
+  assert.equal(formatOfferPrice(null, 'AUD'), null);
 });

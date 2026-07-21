@@ -55,6 +55,9 @@ verify_jwt = false
 [functions.tmdb-proxy]
 verify_jwt = true
 
+[functions.watch-availability]
+verify_jwt = true
+
 [functions.delete-account]
 verify_jwt = true
 
