@@ -390,6 +390,7 @@ function DiscoverContent({ openPanel, watchlist }) {
   // Top 10 data are returned.
   const platformList = usePlatformCharts();
   const [openSections, setOpenSections] = useState({
+    featured: true,
     hot: true,
     binge: true,
     reality: true,
@@ -420,17 +421,27 @@ function DiscoverContent({ openPanel, watchlist }) {
   return (
     <div>
       {hero && (
-        <div className={`discover-hero-row${onThisDay ? ' has-two' : ''}`}>
-          <HeroCard item={hero} openPanel={openPanel} watchlist={watchlist} />
-          {onThisDay && (
-            <HeroCard
-              item={onThisDay}
-              openPanel={openPanel}
-              watchlist={watchlist}
-              badge={onThisDay.archive_year ? 'From the Archive' : 'On This Day'}
-            />
+        <section className="discover-section discover-featured-section">
+          <DiscoverSectionHeader
+            kicker="Featured today"
+            title="Featured"
+            open={openSections.featured}
+            onToggle={() => toggleSection('featured')}
+          />
+          {openSections.featured && (
+            <div className={`discover-hero-row${onThisDay ? ' has-two' : ''}`}>
+              <HeroCard item={hero} openPanel={openPanel} watchlist={watchlist} />
+              {onThisDay && (
+                <HeroCard
+                  item={onThisDay}
+                  openPanel={openPanel}
+                  watchlist={watchlist}
+                  badge={onThisDay.archive_year ? 'From the Archive' : 'On This Day'}
+                />
+              )}
+            </div>
           )}
-        </div>
+        </section>
       )}
 
       {hotRail.length > 0 && (

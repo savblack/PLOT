@@ -3803,7 +3803,6 @@ a.provider-chip--link:hover {
 /* Featured row — one card, or two side-by-side (trending + on this day). */
 .discover-hero-row {
   margin: 2rem auto 0;
-  max-width: 1189px;
   padding: 0 1rem;
 }
 .discover-hero-row.has-two {
@@ -3824,7 +3823,6 @@ a.provider-chip--link:hover {
 .discover-hero {
   position: relative;
   aspect-ratio: 4 / 3;
-  max-height: 440px;
   margin: 2rem 1rem 0;
   border-radius: var(--radius-md);
   overflow: hidden;
