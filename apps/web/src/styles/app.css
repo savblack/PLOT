@@ -4055,6 +4055,36 @@ a.provider-chip--link:hover {
   margin-top: 0;
 }
 
+.discover-expand-all-btn {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.discover-expand-all-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.discover-expand-all-btn svg {
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 .discover-binge-header {
   margin-bottom: 0;
 }

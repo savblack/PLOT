@@ -57,6 +57,18 @@ function DiscoverSectionHeader({ kicker, title, open, onToggle, className = '' }
   );
 }
 
+function ExpandAllIcon({ collapse }) {
+  return collapse ? (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M3 3l7 7M3 9h6V3M21 21l-7-7M21 15h-6v6" />
+    </svg>
+  ) : (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M10 10 3 3M3 9V3h6M14 14l7 7M21 15v6h-6" />
+    </svg>
+  );
+}
+
 /* ── Save button ── */
 function SaveBtn({ item, watchlist }) {
   const id    = item.id || item.tmdb_id;
@@ -383,21 +395,12 @@ function PlatformSection({ platform, openPanel, watchlist }) {
 }
 
 /* ── Discover tab content ── */
-function DiscoverContent({ openPanel, watchlist }) {
+function DiscoverContent({ openPanel, watchlist, openSections, setOpenSections }) {
   const { data, loading } = useDiscover();
   // Hard-coded official-chart platforms — the same set for everyone, unrelated
   // to the user's own streaming selections. Only platforms with real synced
   // Top 10 data are returned.
   const platformList = usePlatformCharts();
-  const [openSections, setOpenSections] = useState({
-    featured: true,
-    hot: true,
-    binge: true,
-    reality: true,
-    weekly: true,
-    platforms: true,
-  });
-
   if (loading) {
     return <LoadingSpinner />;
   }
@@ -417,14 +420,13 @@ function DiscoverContent({ openPanel, watchlist }) {
   const toggleSection = (section) => {
     setOpenSections(prev => ({ ...prev, [section]: !prev[section] }));
   };
-
   return (
     <div>
       {hero && (
         <section className="discover-section discover-featured-section">
           <DiscoverSectionHeader
-            kicker="Featured today"
-            title="Featured"
+            kicker="Featured"
+            title="PLOT's Picks"
             open={openSections.featured}
             onToggle={() => toggleSection('featured')}
           />
@@ -540,6 +542,20 @@ export default function DiscoverView() {
   const [tab,          setTab]          = useState(SHOW_SOCIAL_FEED ? 'feed' : 'discover');
   const [typeFilters,  setTypeFilters]  = useState(ALL_TYPES);
   const [genreFilters, setGenreFilters] = useState([]);
+  const [discoverSections, setDiscoverSections] = useState({
+    featured: true,
+    hot: true,
+    binge: true,
+    reality: true,
+    weekly: true,
+    platforms: true,
+  });
+  const allDiscoverSectionsOpen = Object.values(discoverSections).every(Boolean);
+  const toggleAllDiscoverSections = () => {
+    setDiscoverSections(prev => Object.fromEntries(
+      Object.keys(prev).map(section => [section, !allDiscoverSectionsOpen]),
+    ));
+  };
 
   const changeTab = (next) => {
     if (next === tab) return;
@@ -617,6 +633,21 @@ export default function DiscoverView() {
         {tab === 'guide' && (
           <div id="guide-top-filters" className="sub-tabs-filters" />
         )}
+
+        {tab === 'discover' && (
+          <div className="sub-tabs-filters">
+            <button
+              className="discover-expand-all-btn"
+              onClick={toggleAllDiscoverSections}
+              aria-label={allDiscoverSectionsOpen ? 'Collapse all Discover sections' : 'Expand all Discover sections'}
+              aria-pressed={!allDiscoverSectionsOpen}
+              title={allDiscoverSectionsOpen ? 'Collapse all sections' : 'Expand all sections'}
+              type="button"
+            >
+              <ExpandAllIcon collapse={allDiscoverSectionsOpen} />
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ── Tab content ── */}
@@ -626,6 +657,8 @@ export default function DiscoverView() {
         <DiscoverContent
           openPanel={openPanel}
           watchlist={watchlist}
+          openSections={discoverSections}
+          setOpenSections={setDiscoverSections}
         />
       )}
 
