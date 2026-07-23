@@ -11,6 +11,7 @@ import FeedView from './FeedView.jsx';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import { track, EVENTS } from '../lib/analytics.js';
 import GroupedFilterMenu from './GroupedFilterMenu.jsx';
+import SectionToggleIcon from './SectionToggleIcon.jsx';
 import { getButtonLikeProps } from '../utils/interactive.js';
 import { useShareTitle } from '../hooks/useShareTitle.js';
 import { SHOW_SOCIAL_FEED } from '../launchFeatures.js';
@@ -54,18 +55,6 @@ function DiscoverSectionHeader({ kicker, title, open, onToggle, className = '' }
         <polyline points="6 9 12 15 18 9" />
       </svg>
     </button>
-  );
-}
-
-function ExpandAllIcon({ collapse }) {
-  return collapse ? (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M3 3l7 7M3 9h6V3M21 21l-7-7M21 15h-6v6" />
-    </svg>
-  ) : (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M10 10 3 3M3 9V3h6M14 14l7 7M21 15v6h-6" />
-    </svg>
   );
 }
 
@@ -637,14 +626,14 @@ export default function DiscoverView() {
         {tab === 'discover' && (
           <div className="sub-tabs-filters">
             <button
-              className="discover-expand-all-btn"
+              className="section-expand-all-btn"
               onClick={toggleAllDiscoverSections}
               aria-label={allDiscoverSectionsOpen ? 'Collapse all Discover sections' : 'Expand all Discover sections'}
               aria-pressed={!allDiscoverSectionsOpen}
               title={allDiscoverSectionsOpen ? 'Collapse all sections' : 'Expand all sections'}
               type="button"
             >
-              <ExpandAllIcon collapse={allDiscoverSectionsOpen} />
+              <SectionToggleIcon collapse={allDiscoverSectionsOpen} />
             </button>
           </div>
         )}

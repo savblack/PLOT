@@ -12,12 +12,16 @@ import { entriesForMonth, historyMonthEmptyCopy, historyRatingLabel, monthLabel 
 import LoadingSpinner from './LoadingSpinner.jsx';
 import CollapsibleSection from './CollapsibleSection.jsx';
 import GroupedFilterMenu from './GroupedFilterMenu.jsx';
+import SectionToggleIcon from './SectionToggleIcon.jsx';
 import PlotLoader from './PlotLoader.jsx';
 import SheetHeader from './SheetHeader.jsx';
 import { getButtonLikeProps } from '../utils/interactive.js';
 import { useShare } from '../hooks/useShare.js';
 import { EVENTS, track } from '../lib/analytics.js';
 import { canCreateCustomList, FREE_CUSTOM_LIST_CAP } from '@plot/core/premium.js';
+import { getStoredSectionOpen, storeSectionOpen } from '../utils/sectionOpenState.js';
+
+const ALL_LIST_SECTION_IDS = ['watching', 'want', 'top10', 'favorites', 'lists'];
 
 /* ── Heart icon ── */
 function HeartIcon({ filled }) {
@@ -1159,6 +1163,9 @@ export default function MyListsView() {
   const [tab,          setTab]          = useState(location.state?.tab || 'all');
   const [typeFilters,  setTypeFilters]  = useState([]);
   const [genreFilters, setGenreFilters] = useState([]);
+  const [listSectionsOpen, setListSectionsOpen] = useState(() => Object.fromEntries(
+    ALL_LIST_SECTION_IDS.map(id => [id, getStoredSectionOpen(id)]),
+  ));
 
   // History tab month navigation
   const today = useMemo(() => new Date(), []);
@@ -1214,6 +1221,15 @@ export default function MyListsView() {
   const showTop10    = isAll || tab === 'top10';
   const showFavs     = isAll || tab === 'favorites';
   const showLists    = isAll || tab === 'lists';
+  const allListSectionsOpen = ALL_LIST_SECTION_IDS.every(id => listSectionsOpen[id]);
+  const setListSectionOpen = (id, open) => {
+    setListSectionsOpen(prev => ({ ...prev, [id]: open }));
+  };
+  const toggleAllListSections = () => {
+    const next = !allListSectionsOpen;
+    setListSectionsOpen(Object.fromEntries(ALL_LIST_SECTION_IDS.map(id => [id, next])));
+    ALL_LIST_SECTION_IDS.forEach(id => storeSectionOpen(id, next));
+  };
 
   const watchingItems  = watching.items || [];
   // Count for the "Want to Watch" banner — saved titles not already being watched.
@@ -1247,27 +1263,41 @@ export default function MyListsView() {
               </button>
             </div>
           ) : (
-            <GroupedFilterMenu
-              ariaLabel="Filter lists"
-              groups={[
-                {
-                  heading: 'Type',
-                  options: [
-                    { id: 'movie',  label: 'Movies' },
-                    { id: 'tv',     label: 'TV'     },
-                    { id: 'cinema', label: 'Cinema' },
-                  ],
-                  value: typeFilters,
-                  onChange: setTypeFilters,
-                },
-                {
-                  heading: 'Genre',
-                  options: genres.map(g => ({ id: g.id, label: g.name })),
-                  value: genreFilters,
-                  onChange: setGenreFilters,
-                },
-              ]}
-            />
+            <>
+              <GroupedFilterMenu
+                ariaLabel="Filter lists"
+                groups={[
+                  {
+                    heading: 'Type',
+                    options: [
+                      { id: 'movie',  label: 'Movies' },
+                      { id: 'tv',     label: 'TV'     },
+                      { id: 'cinema', label: 'Cinema' },
+                    ],
+                    value: typeFilters,
+                    onChange: setTypeFilters,
+                  },
+                  {
+                    heading: 'Genre',
+                    options: genres.map(g => ({ id: g.id, label: g.name })),
+                    value: genreFilters,
+                    onChange: setGenreFilters,
+                  },
+                ]}
+              />
+              {isAll && (
+                <button
+                  className="section-expand-all-btn"
+                  onClick={toggleAllListSections}
+                  aria-label={allListSectionsOpen ? 'Collapse all list sections' : 'Expand all list sections'}
+                  aria-pressed={allListSectionsOpen}
+                  title={allListSectionsOpen ? 'Collapse all sections' : 'Expand all sections'}
+                  type="button"
+                >
+                  <SectionToggleIcon collapse={allListSectionsOpen} />
+                </button>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -1276,7 +1306,7 @@ export default function MyListsView() {
       {showWatching && (
         isAll
           ? (watchingItems.length > 0 && (
-              <CollapsibleSection id="watching" label="Watching" count={watchingItems.length}>
+              <CollapsibleSection id="watching" label="Watching" count={watchingItems.length} open={listSectionsOpen.watching} onOpenChange={open => setListSectionOpen('watching', open)}>
                 <WatchingSection watching={watching} hideHeader />
               </CollapsibleSection>
             ))
@@ -1287,7 +1317,7 @@ export default function MyListsView() {
       {showWant && (
         isAll
           ? (
-              <CollapsibleSection id="want" label="Want to Watch" count={savedCount}>
+              <CollapsibleSection id="want" label="Want to Watch" count={savedCount} open={listSectionsOpen.want} onOpenChange={open => setListSectionOpen('want', open)}>
                 <WantToWatchSection watchlist={watchlist} watching={watching} hideHeader />
               </CollapsibleSection>
             )
@@ -1296,7 +1326,7 @@ export default function MyListsView() {
 
       {/* ── Top 10 (keeps a banner on its own tab too) ── */}
       {showTop10 && (
-        <CollapsibleSection id="top10" label="Top 10">
+        <CollapsibleSection id="top10" label="Top 10" open={listSectionsOpen.top10} onOpenChange={open => setListSectionOpen('top10', open)}>
           {(typeFilters.length === 0 || typeFilters.includes('movie')) && (
             <TopTenSection listType="movies" title="Movies" topLists={topLists} />
           )}
@@ -1310,7 +1340,7 @@ export default function MyListsView() {
       {showFavs && (
         isAll
           ? (
-              <CollapsibleSection id="favorites" label={fw.plural} count={favorites.favorites.length}>
+              <CollapsibleSection id="favorites" label={fw.plural} count={favorites.favorites.length} open={listSectionsOpen.favorites} onOpenChange={open => setListSectionOpen('favorites', open)}>
                 <FavoritesSection favorites={favorites} filterItems={filterItems} hideHeader />
               </CollapsibleSection>
             )
@@ -1321,7 +1351,7 @@ export default function MyListsView() {
       {showLists && (
         isAll
           ? (
-              <CollapsibleSection id="lists" label="My Lists" count={customLists.lists.length}>
+              <CollapsibleSection id="lists" label="My Lists" count={customLists.lists.length} open={listSectionsOpen.lists} onOpenChange={open => setListSectionOpen('lists', open)}>
                 <CustomListsSection customLists={customLists} filterItems={filterItems} hideHeader />
               </CollapsibleSection>
             )

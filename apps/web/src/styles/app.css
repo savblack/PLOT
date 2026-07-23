@@ -3063,12 +3063,12 @@ a.provider-chip--link:hover {
   align-items: center;
   gap: 0.7rem;
   padding: 0.65rem 1rem;
-  background: var(--surface-raised);
+  background: var(--bg);
   border-left: 3px solid var(--accent);
   transition: background 0.15s ease;
 }
 .date-group-header:hover {
-  background: color-mix(in srgb, var(--surface-raised) 85%, var(--accent) 15%);
+  background: color-mix(in srgb, var(--bg) 85%, var(--accent) 15%);
 }
 .date-group-label {
   font-size: 0.72rem;
@@ -3126,7 +3126,7 @@ a.provider-chip--link:hover {
 
 .date-group-collapsible {
   width: 100%;
-  background: var(--surface-raised);
+  background: var(--bg);
   border: none;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
@@ -3135,7 +3135,7 @@ a.provider-chip--link:hover {
   text-align: left;
 }
 .date-group-collapsible:hover {
-  background: color-mix(in srgb, var(--surface-raised) 85%, var(--accent) 15%);
+  background: color-mix(in srgb, var(--bg) 85%, var(--accent) 15%);
 }
 
 /* Chevron */
@@ -3161,7 +3161,7 @@ a.provider-chip--link:hover {
   width: 100%;
   min-height: 46px;
   padding: 0 1rem;
-  background: var(--surface-raised);
+  background: var(--bg);
   border: none;
   border-left: 3px solid var(--accent);
   border-bottom: 1px solid var(--border);
@@ -3172,7 +3172,7 @@ a.provider-chip--link:hover {
   transition: background 0.15s ease;
   -webkit-tap-highlight-color: transparent;
 }
-.collapse-head:hover { background: color-mix(in srgb, var(--surface-raised) 85%, var(--accent) 15%); }
+.collapse-head:hover { background: color-mix(in srgb, var(--bg) 85%, var(--accent) 15%); }
 .collapse-head:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 
 .collapse-chevron {
@@ -4055,7 +4055,7 @@ a.provider-chip--link:hover {
   margin-top: 0;
 }
 
-.discover-expand-all-btn {
+.section-expand-all-btn {
   width: 34px;
   height: 34px;
   border: 1px solid var(--border);
@@ -4070,12 +4070,12 @@ a.provider-chip--link:hover {
   -webkit-tap-highlight-color: transparent;
 }
 
-.discover-expand-all-btn:hover {
+.section-expand-all-btn:hover {
   border-color: var(--accent);
   color: var(--accent);
 }
 
-.discover-expand-all-btn svg {
+.section-expand-all-btn svg {
   width: 19px;
   height: 19px;
   fill: none;
