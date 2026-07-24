@@ -9,7 +9,7 @@ function isAllowedOrigin(origin: string | null): boolean {
     const { hostname, protocol } = new URL(origin);
     if (protocol === 'http:' && (hostname === 'localhost' || hostname === '127.0.0.1')) return true;
     if (hostname === 'theplot.tv' || hostname.endsWith('.theplot.tv')) return true;
-    if (hostname.endsWith('.vercel.app')) return true; // preview deploys
+    if (protocol === 'https:' && hostname.endsWith('.plot-5wr.pages.dev')) return true; // Cloudflare Pages preview deploys
     return false;
   } catch {
     return false;
