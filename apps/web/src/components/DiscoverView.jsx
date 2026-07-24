@@ -394,8 +394,8 @@ function DiscoverContent({ openPanel, watchlist, openSections, setOpenSections }
     return <LoadingSpinner />;
   }
 
-  const { hero, onThisDay, hotRail, weekly, bingedShows, realityShows } = data;
-  const hasContent = hero || hotRail.length > 0 || weekly.length > 0 || bingedShows.length > 0 || realityShows.length > 0 || platformList.length > 0;
+  const { hero, onThisDay, hotRail, recentReleases, weekly, bingedShows, realityShows } = data;
+  const hasContent = hero || hotRail.length > 0 || recentReleases.length > 0 || weekly.length > 0 || bingedShows.length > 0 || realityShows.length > 0 || platformList.length > 0;
 
   if (!hasContent) {
     return (
@@ -447,6 +447,24 @@ function DiscoverContent({ openPanel, watchlist, openSections, setOpenSections }
             <Rail>
               {hotRail.map((item, i) => (
                 <RankedCard key={item.id} item={item} rank={i + 2} showRank={false} openPanel={openPanel} watchlist={watchlist} />
+              ))}
+            </Rail>
+          )}
+        </section>
+      )}
+
+      {recentReleases.length > 0 && (
+        <section className="discover-section">
+          <DiscoverSectionHeader
+            kicker="Last 14 days"
+            title="Recently Released"
+            open={openSections.recent}
+            onToggle={() => toggleSection('recent')}
+          />
+          {openSections.recent && (
+            <Rail>
+              {recentReleases.map(item => (
+                <RankedCard key={`${item.media_type}-${item.id}`} item={item} showRank={false} openPanel={openPanel} watchlist={watchlist} />
               ))}
             </Rail>
           )}
@@ -534,6 +552,7 @@ export default function DiscoverView() {
   const [discoverSections, setDiscoverSections] = useState({
     featured: true,
     hot: true,
+    recent: true,
     binge: true,
     reality: true,
     weekly: true,
