@@ -23,6 +23,7 @@ import { FOOTER_HTML } from './footer.generated.ts';
 const SITE = 'https://theplot.tv';
 const APP = 'https://app.theplot.tv';
 const FEED_TITLE = "What's On";
+const FEED_SEO_TITLE = "What's On: Film & TV Releases, Streaming & Trends – PLOT";
 const FEED_PATH = '/whats-on';
 const PAGE_SIZE = 30;
 
@@ -641,10 +642,10 @@ Deno.serve(async (req) => {
       weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC',
     });
 
-    const head = `<meta name="description" content="What's coming, what's streaming, what's trending. Film and TV updates from PLOT.">
+    const head = `<meta name="description" content="What’s On is PLOT’s guide to what’s coming, streaming and trending in film and TV, so you can spend less time searching and more time watching.">
 <link rel="canonical" href="${SITE}${FEED_PATH}">
-<meta property="og:title" content="${FEED_TITLE} · PLOT">
-<meta property="og:description" content="What's coming, what's streaming, what's trending.">
+<meta property="og:title" content="${FEED_SEO_TITLE}">
+<meta property="og:description" content="What’s On is PLOT’s guide to what’s coming, streaming and trending in film and TV, so you can spend less time searching and more time watching.">
 <meta property="og:url" content="${SITE}${FEED_PATH}">
 <meta property="og:image" content="${OG_FALLBACK}">
 <meta property="og:image:width" content="1200">
@@ -652,7 +653,7 @@ Deno.serve(async (req) => {
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="${OG_FALLBACK}">`;
 
-    return page(`PLOT | ${FEED_TITLE}`, head, `
+    return page(FEED_SEO_TITLE, head, `
       <div class="head r2">
         <div class="head-row">
           <h1 class="feed-title">What's <em>on</em></h1>
