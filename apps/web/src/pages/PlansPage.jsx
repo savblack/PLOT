@@ -198,12 +198,12 @@ export default function PlansPage() {
             <div className="plan-card-head">
               <h2 className="plan-name">Premium</h2>
               <div className="plan-price">
-                <span className="plan-amount">${annual ? ANNUAL_MONTHLY : MONTHLY_PRICE}</span>
+                <span className="plan-amount">A${annual ? ANNUAL_MONTHLY : MONTHLY_PRICE}</span>
                 <span className="plan-per">/mo</span>
               </div>
               <p className="plan-billed">
                 {annual
-                  ? `Billed $${ANNUAL_PRICE} yearly · save ${ANNUAL_SAVING_PCT}%`
+                  ? `Billed A$${ANNUAL_PRICE} yearly · save ${ANNUAL_SAVING_PCT}%`
                   : 'Billed monthly'}
               </p>
               <p className="plan-tagline">Everything in Free, plus:</p>
@@ -273,9 +273,9 @@ export default function PlansPage() {
         </div>
 
         <p className="plans-fineprint">
-          Base prices are in AUD. Stripe shows your local currency at checkout where available.
+          US, UK and euro customers have fixed local prices. Stripe converts prices for other supported locations at checkout.
           {' '}Cancel anytime. Payments are processed securely by Stripe.
-          {' '}Need a hand? <a href="mailto:contact@susumuhouse.com">contact@susumuhouse.com</a>
+          {' '}Need a hand? <a href="mailto:contact@theplot.tv">contact@theplot.tv</a>
         </p>
 
         <footer className="plans-foot">
