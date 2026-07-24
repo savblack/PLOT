@@ -51,6 +51,14 @@
   text-align: center;
   margin-bottom: 2.75rem;
 }
+.plans-eyebrow {
+  margin: 0 0 0.9rem;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
 .plans-title {
   font-family: var(--font-serif);
   font-size: clamp(2rem, 5vw, 3rem);

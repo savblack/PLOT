@@ -58,8 +58,8 @@ const router = createBrowserRouter([
   // Static
   { path: '/terms',          element: wrap(<TermsPage />) },
   { path: '/privacy',        element: wrap(<PrivacyPage />) },
-  { path: '/plans',          element: wrap(<PlansPage />) },
-  { path: '/pricing',        element: <Navigate to="/plans" replace /> },
+  { path: '/pricing',        element: wrap(<PlansPage />) },
+  { path: '/plans',          element: <Navigate to="/pricing" replace /> },
 
   // Design system — standalone, no auth, dev builds only
   ...(import.meta.env.DEV ? [{ path: '/design-system', element: wrap(<DesignSystemPage />) }] : []),

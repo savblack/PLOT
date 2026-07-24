@@ -1867,7 +1867,7 @@ export default function SettingsView() {
                   Plex &amp; Trakt sync plus unlimited lists.{' '}
                   <button
                     type="button"
-                    onClick={() => navigate('/plans')}
+                    onClick={() => navigate('/pricing')}
                     style={{ background: 'none', border: 'none', padding: 0, font: 'inherit', color: 'var(--text-secondary)', textDecoration: 'underline', cursor: 'pointer' }}
                   >
                     Compare plans

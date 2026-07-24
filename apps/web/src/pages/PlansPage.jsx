@@ -140,6 +140,7 @@ export default function PlansPage() {
         </header>
 
         <div className="plans-hero">
+          <p className="plans-eyebrow">Pricing</p>
           <h1 className="plans-title">Do more with everything you watch</h1>
           <p className="plans-lede">
             Start free and keep every movie and show in one place. Go Premium for

@@ -222,7 +222,7 @@ export default function OnboardingFlow() {
     const plan = takePremiumCheckoutIntent();
     if (plan) {
       const started = await premium.startCheckout(plan, 'premium_signup');
-      if (!started) navigate(`/plans?billing=${plan}`, { replace: true });
+      if (!started) navigate(`/pricing?billing=${plan}`, { replace: true });
       return;
     }
 

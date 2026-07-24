@@ -74,7 +74,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) return;
       const plan = getPremiumCheckoutIntent();
-      navigate(plan ? `/plans?billing=${plan}` : '/app', { replace: true });
+      navigate(plan ? `/pricing?billing=${plan}` : '/app', { replace: true });
     });
   }, [navigate]);
 
@@ -107,7 +107,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
         identifyUser(data.user.id, { email: data.user.email });
         track(EVENTS.USER_LOGGED_IN);
         const plan = getPremiumCheckoutIntent();
-        navigate(plan ? `/plans?billing=${plan}` : '/app');
+        navigate(plan ? `/pricing?billing=${plan}` : '/app');
       }
     } else {
       const { data, error } = await supabase.auth.signUp({
