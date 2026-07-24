@@ -16,6 +16,7 @@ import { useAppData } from '../contexts/AppDataContext';
 import { favoriteWords } from '../lib/spelling';
 import { findDuplicateCustomList } from '@plot/core/customLists.js';
 import { buildWatchLink } from '@plot/core/watchLinks.js';
+import { fetchVerifiedAvailability, offersFromTmdb } from '@plot/core/availability.js';
 import { canCreateCustomList, FREE_CUSTOM_LIST_CAP } from '@plot/core/premium.js';
 import { TrailerPlayer } from './TrailerPlayer';
 
@@ -449,43 +450,57 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
     let cancelled = false;
     (async () => {
       setLoading(true); setError(false); setTrailerPlaying(false);
-      const [det, prov] = await Promise.all([
+      const region = getTmdbRegion();
+      const [det, prov, verified] = await Promise.all([
         isMovie ? tmdb.getMovieDetails(itemId) : tmdb.getTVDetails(itemId),
         tmdb.getWatchProviders(itemId, itemType),
+        fetchVerifiedAvailability({ tmdbId: itemId, mediaType: itemType, region }),
       ]);
       if (cancelled) return;
       if (!det) { setError(true); } else {
         setDetails(det);
-        const region = getTmdbRegion();
         const regionData = prov?.results?.[region] || {};
+        const fallbackOffers = offersFromTmdb(regionData).map((offer) => ({
+          provider_id: offer.providerId,
+          provider_name: offer.providerName,
+          logo_path: offer.logoPath,
+          offerType: offer.offerType,
+          providerUrl: offer.providerUrl,
+        }));
+        const offerTypeLabels: Record<string, string> = { flatrate: 'Subscription', rent: 'Rent', buy: 'Buy', free: 'Free', ads: 'Free with ads' };
+        const offers = verified?.offers?.length ? verified.offers.map((offer: any) => ({
+          provider_id: offer.providerId,
+          provider_name: offer.providerName,
+          logo_path: offer.logoPath,
+          offerType: offerTypeLabels[offer.offerType] || offer.offerType,
+          providerUrl: offer.providerUrl,
+        })) : fallbackOffers;
         const dedupe = (list: any[]) => {
           const seen = new Set<number>();
           return list.filter((p: any) => (seen.has(p.provider_id) ? false : (seen.add(p.provider_id), true)));
         };
-        const streaming = dedupe([...(regionData.flatrate || []), ...(regionData.free || []), ...(regionData.ads || [])]);
-        const rentBuy   = dedupe([...(regionData.rent || []), ...(regionData.buy || [])]);
+        const streaming = dedupe(offers.filter((offer: any) => ['Subscription', 'Free', 'Free with ads'].includes(offer.offerType)));
+        const rentBuy = dedupe(offers.filter((offer: any) => ['Rent', 'Buy'].includes(offer.offerType)));
         // Cinema: a movie released in the last 90 days with no digital availability yet.
         let inCinemas = false;
         if (isMovie && det.release_date) {
           const days = (Date.now() - new Date(det.release_date).getTime()) / 86400000;
           inCinemas = det.status === 'Released' && days >= 0 && days <= 90 && streaming.length === 0 && rentBuy.length === 0;
         }
-        setWhereToWatch({ streaming, rentBuy, inCinemas, region, justwatchLink: regionData.link ?? null });
+        setWhereToWatch({ streaming, rentBuy, inCinemas, region, justwatchLink: verified?.title_url || regionData.link || null });
       }
       setLoading(false);
     })();
     return () => { cancelled = true; };
   }, [itemId, itemType, retryKey]);
 
-  const title  = details?.title || details?.name || '';
+  const title = details?.title || details?.name || '';
 
-  // Outbound watch link: shared core builder (affiliate-tagged where
-  // configured, JustWatch fallback) — same behavior as web MediaPanel.
+  // Outbound watch link: verified provider offer where available, with the
+  // region-specific JustWatch title page as the safe fallback.
   const openWatchLink = (p: any) => {
     const link = buildWatchLink({
-      providerName: p.provider_name,
-      title,
-      region: whereToWatch.region,
+      providerUrl: p.providerUrl,
       justwatchLink: whereToWatch.justwatchLink,
     });
     if (link?.url) Linking.openURL(link.url).catch(() => {});
@@ -745,8 +760,8 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                     <Text style={styles.providersAttribution}>
                       Streaming availability by JustWatch.
                       {[...whereToWatch.streaming, ...whereToWatch.rentBuy].some((p: any) =>
-                        buildWatchLink({ providerName: p.provider_name, title, region: whereToWatch.region, justwatchLink: whereToWatch.justwatchLink })?.kind === 'affiliate'
-                      ) ? ' Some links may earn PLOT a commission.' : ''}
+                        buildWatchLink({ providerUrl: p.providerUrl, justwatchLink: whereToWatch.justwatchLink })?.kind === 'provider'
+                      ) ? ' Links open the verified title offer.' : ''}
                     </Text>
                   </>
                 )}
