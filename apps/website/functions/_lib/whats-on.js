@@ -30,7 +30,10 @@ export async function whatsOn(request, slug) {
       'Content-Type': 'text/html; charset=utf-8',
       'Cache-Control': upstream.headers.get('cache-control') || 'public, s-maxage=3600, stale-while-revalidate=86400',
       'Strict-Transport-Security': 'max-age=63072000; includeSubDomains; preload',
-      'Content-Security-Policy': "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; upgrade-insecure-requests",
+      // The upstream feed is a complete server-rendered document with inline
+      // presentation and navigation scripts. Keep this aligned with _headers:
+      // Pages Functions replace the static-header policy for this route.
+      'Content-Security-Policy': "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; img-src 'self' data: https://image.tmdb.org https://theplot.tv https://us-assets.i.posthog.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self' 'unsafe-inline' https://us-assets.i.posthog.com; connect-src 'self' https://us.i.posthog.com https://us-assets.i.posthog.com; worker-src 'self' blob:; form-action 'self'; upgrade-insecure-requests",
       'X-Content-Type-Options': 'nosniff',
       'X-Frame-Options': 'DENY',
       'Referrer-Policy': 'strict-origin-when-cross-origin',
