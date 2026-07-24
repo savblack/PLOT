@@ -23,7 +23,7 @@ function Rail({ children }) {
   const { ref, handlers } = useDragScroll();
   return (
     <div className="rail-scroll" ref={ref} {...handlers}
-      style={{ paddingLeft: '1rem', paddingRight: '1rem', paddingTop: '2rem', paddingBottom: '0.15rem' }}>
+      style={{ paddingLeft: '1rem', paddingRight: '1rem', paddingTop: '2rem', paddingBottom: '2rem' }}>
       {children}
     </div>
   );

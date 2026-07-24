@@ -2,9 +2,11 @@ import { useState, useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { supabase } from '../api/supabase';
 import PlotLoader from './PlotLoader';
+import { isPreviewDeployment } from '../utils/previewDeployment.js';
 
 export default function ProtectedRoute({ children, skipOnboardingCheck = false, publicPrefixes = [] }) {
   const location = useLocation();
+  const isPreview = isPreviewDeployment();
   const [loading, setLoading] = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
@@ -19,7 +21,7 @@ export default function ProtectedRoute({ children, skipOnboardingCheck = false, 
       }
       setAuthenticated(true);
 
-      if (!skipOnboardingCheck) {
+      if (!skipOnboardingCheck && !isPreview) {
         const { data: profile } = await supabase
           .from('profiles')
           .select('onboarding_complete')
@@ -41,7 +43,7 @@ export default function ProtectedRoute({ children, skipOnboardingCheck = false, 
     });
 
     return () => subscription.unsubscribe();
-  }, [skipOnboardingCheck]);
+  }, [isPreview, skipOnboardingCheck]);
 
   if (loading) {
     return (
