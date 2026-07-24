@@ -74,7 +74,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) return;
       const plan = getPremiumCheckoutIntent();
-      navigate(plan ? `/pricing?billing=${plan}` : '/app', { replace: true });
+        navigate(plan ? `/pricing?billing=${plan}` : '/app', { replace: true });
     });
   }, [navigate]);
 
