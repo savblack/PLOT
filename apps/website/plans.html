@@ -12,7 +12,7 @@
     gtag('config', 'G-PYLHY9JMK1');
   </script>
   <title>Plans &amp; Pricing — PLOT</title>
-  <meta name="description" content="PLOT is free to use, forever. Go Premium for unlimited lists and automatic sync from Plex, Trakt, Netflix, Prime, Disney+ and more — $3/mo or $25/yr." />
+  <meta name="description" content="PLOT is free to use, forever. Go Premium for unlimited lists and automatic sync from Plex, Trakt, Netflix, Prime, Disney+ and more — A$3/mo or A$25/yr." />
   <link rel="canonical" href="https://theplot.tv/plans.html" />
   <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
   <meta name="theme-color" content="#0c0c0c" media="(prefers-color-scheme: dark)" />
@@ -447,8 +447,8 @@
         <span class="plan-flag">Recommended</span>
         <div class="plan-head">
           <h2 class="plan-name">Premium</h2>
-          <div class="plan-price"><span class="plan-amount" id="premiumAmount">$2.08</span><span class="plan-per">/mo</span></div>
-          <p class="plan-billed" id="premiumBilled">Billed $25 yearly · save 31%</p>
+          <div class="plan-price"><span class="plan-amount" id="premiumAmount">A$2.08</span><span class="plan-per">/mo</span></div>
+          <p class="plan-billed" id="premiumBilled">Billed A$25 yearly · save 31%</p>
           <p class="plan-tagline">Everything in Free, plus:</p>
         </div>
         <ul class="plan-features">
@@ -499,7 +499,7 @@
       </dl>
     </div>
 
-    <p class="fineprint">Base prices are in AUD. Stripe shows your local currency at checkout where available. Cancel anytime. Payments are processed securely by Stripe. Need a hand? <a href="mailto:contact@susumuhouse.com">contact@susumuhouse.com</a></p>
+    <p class="fineprint">US, UK and euro customers have fixed local prices. Stripe converts prices for other supported locations at checkout. Cancel anytime. Payments are processed securely by Stripe. Need a hand? <a href="mailto:contact@theplot.tv">contact@theplot.tv</a></p>
   </main>
 
   <!-- footer:start (generated from _partials/footer.html — edit there, then run `npm run footer`) -->
@@ -550,8 +550,8 @@
         yr.classList.toggle('is-active', annual);
         mo.setAttribute('aria-pressed', String(!annual));
         yr.setAttribute('aria-pressed', String(annual));
-        amount.textContent = annual ? '$' + annualMonthly : '$' + MONTHLY;
-        billed.textContent = annual ? 'Billed $' + ANNUAL + ' yearly · save ' + savePct + '%' : 'Billed monthly';
+        amount.textContent = annual ? 'A$' + annualMonthly : 'A$' + MONTHLY;
+        billed.textContent = annual ? 'Billed A$' + ANNUAL + ' yearly · save ' + savePct + '%' : 'Billed monthly';
         cta.href = 'https://app.theplot.tv/signup?intent=premium&plan=' + (annual ? 'yearly' : 'monthly');
       }
       mo.addEventListener('click', function () { setBilling(false); });
