@@ -11,6 +11,7 @@ import { getSupabase } from '../lib/supabase.mjs';
 import { publicUrl } from '../lib/storage.mjs';
 import { publishToBuffer } from './buffer.mjs';
 import { chartUrl } from '../lib/feed.mjs';
+import { submitIndexNow } from '../lib/indexnow.mjs';
 
 // Every platform now publishes through Buffer.
 const SERVICE = { x: 'twitter', instagram: 'instagram', threads: 'threads' };
@@ -129,6 +130,21 @@ const finalStatus = (outcomes) => {
   return 'failed';
 };
 
+const notifyIndexNow = async (posts) => {
+  const urls = posts
+    .filter((post) => post.slug && post.post_type !== 'trending')
+    .map((post) => `https://theplot.tv/whats-on/${post.slug}`);
+  if (!urls.length) return;
+  try {
+    const { submitted } = await submitIndexNow(urls);
+    console.log(`IndexNow notified for ${submitted} newly published URL(s).`);
+  } catch (err) {
+    // Indexing is helpful but must never make a successfully sent social post
+    // look failed or cause it to be retried.
+    console.error(`IndexNow notification failed: ${err.message}`);
+  }
+};
+
 const main = async () => {
   const supabase = getSupabase();
 
@@ -163,6 +179,7 @@ const main = async () => {
     return;
   }
 
+  const newlyPublic = [];
   for (const post of posts) {
     if (!(await stillPublishable(supabase, post.id))) continue;
 
@@ -179,8 +196,10 @@ const main = async () => {
       .update({ status, updated_at: new Date().toISOString() })
       .eq('id', post.id)
       .eq('status', 'approved');
+    if (status === 'published' || status === 'partially_published') newlyPublic.push(post);
     console.log(`${post.topic_key}: ${status} (${outcomes.join(', ')})`);
   }
+  if (!DRY_RUN) await notifyIndexNow(newlyPublic);
 };
 
 main().catch((err) => { console.error(err); process.exit(1); });

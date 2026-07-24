@@ -10,6 +10,7 @@ import path from 'node:path';
 import { getSupabase } from '../lib/supabase.mjs';
 import { postSlug } from '../lib/feed.mjs';
 import { nextPublishAt, isoDate } from '../lib/dates.mjs';
+import { submitIndexNow } from '../lib/indexnow.mjs';
 import { parse } from './format.mjs';
 import { MANUAL_OUTPUT_ROOT } from './paths.mjs';
 const REQUIRED = ['x', 'instagram', 'threads', 'page_title'];
@@ -77,6 +78,17 @@ const main = async () => {
   if (error) throw new Error(error.message);
 
   for (const r of data) console.log(`${r.status}  ${r.post_type.padEnd(12)} https://theplot.tv/whats-on/${r.slug}`);
+  const urls = data
+    .filter((r) => r.slug && r.post_type !== 'trending')
+    .map((r) => `https://theplot.tv/whats-on/${r.slug}`);
+  try {
+    const { submitted } = await submitIndexNow(urls);
+    console.log(`IndexNow notified for ${submitted} public URL(s).`);
+  } catch (err) {
+    // The content is already safely published; leave it published if the
+    // indexing service is temporarily unavailable.
+    console.error(`IndexNow notification failed: ${err.message}`);
+  }
   console.log(`\nPublished ${data.length} post(s) to the What's On feed.`);
 };
 
