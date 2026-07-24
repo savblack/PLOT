@@ -3802,7 +3802,7 @@ a.provider-chip--link:hover {
 
 /* Featured row — one card, or two side-by-side (trending + on this day). */
 .discover-hero-row {
-  margin: 2rem auto 0;
+  margin: 2rem auto;
   padding: 0 1rem;
 }
 .discover-hero-row.has-two {
@@ -4095,7 +4095,7 @@ a.provider-chip--link:hover {
   overflow-x: auto;
   overscroll-behavior-x: contain;
   scrollbar-width: none;
-  padding: 2rem 1rem 0.15rem;
+  padding: 2rem 1rem;
   cursor: grab;
   user-select: none;
   -webkit-overflow-scrolling: touch;
