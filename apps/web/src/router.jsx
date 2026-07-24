@@ -5,6 +5,7 @@ import RouteErrorBoundary from './components/RouteErrorBoundary.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import LoadingSpinner from './components/LoadingSpinner.jsx';
 import { SHOW_MEDIA_SYNC_INTEGRATIONS } from './launchFeatures.js';
+import { isPreviewDeployment } from './utils/previewDeployment.js';
 
 // The auth entry/exit points must never fail, so they're bundled eagerly (not
 // lazy): navigating to /login, /signup or /logout is almost always a
@@ -41,6 +42,7 @@ const PlansPage         = lazy(() => import('./pages/PlansPage.jsx'));
 const TalentPage        = lazy(() => import('./pages/TalentPage.jsx'));
 
 const wrap = (el) => <Suspense fallback={<LoadingSpinner />}>{el}</Suspense>;
+const isPreview = isPreviewDeployment();
 
 const router = createBrowserRouter([
   // Top-level layout route: its errorElement catches anything thrown while
@@ -76,7 +78,7 @@ const router = createBrowserRouter([
   // Onboarding (protected, skip onboarding check)
   {
     path: '/onboarding',
-    element: wrap(
+    element: isPreview ? <Navigate to="/home" replace /> : wrap(
       <ProtectedRoute skipOnboardingCheck>
         <ErrorBoundary><OnboardingFlow /></ErrorBoundary>
       </ProtectedRoute>

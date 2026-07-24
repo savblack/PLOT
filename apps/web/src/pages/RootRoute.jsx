@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { supabase } from '../api/supabase';
 import PlotLoader from '../components/PlotLoader';
+import { isPreviewDeployment } from '../utils/previewDeployment.js';
 
 // The marketing site is the only landing page — the app never serves one.
 const MARKETING_URL = 'https://theplot.tv';
-const isPreview = typeof window !== 'undefined' && window.location.hostname === 'preview.theplot.tv';
+const isPreview = isPreviewDeployment();
 
 export default function RootRoute() {
   const [loading,       setLoading]       = useState(true);
