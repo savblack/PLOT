@@ -1872,10 +1872,9 @@ export default function SettingsView() {
               <button
                 type="button"
                 className="btn btn-primary"
-                onClick={() => premium.startCheckout('yearly', 'settings')}
-                disabled={premium.busy}
+                onClick={() => navigate('/pricing?billing=annual')}
               >
-                {premium.busy ? 'Opening…' : 'Get PLOT Premium'}
+                Get PLOT Premium
               </button>
             </div>
           </div>
