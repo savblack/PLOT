@@ -7,6 +7,8 @@ import PlotLoader from '../components/PlotLoader.jsx';
 import { getButtonLikeProps } from '../utils/interactive.js';
 import { track, markActivated, EVENTS } from '../lib/analytics.js';
 import { saveOnboardingSeedTitles } from '@plot/core/onboarding.js';
+import { usePremium } from '../hooks/usePremium.js';
+import { takePremiumCheckoutIntent } from '../utils/premiumCheckoutIntent.js';
 
 const STEP_NAMES = { 1: 'region', 2: 'platforms', 3: 'seed' };
 
@@ -83,6 +85,7 @@ export default function OnboardingFlow() {
   const [authLoading, setAuthLoading] = useState(true);
   const [step,      setStep]      = useState(1);
   const [saving,    setSaving]    = useState(false);
+  const premium = usePremium(null);
 
   // Step 1: Region
   const [region, setRegion] = useState(guessRegion());
@@ -215,6 +218,13 @@ export default function OnboardingFlow() {
     });
     // Completing onboarding is an activation signal (first-of wins).
     markActivated('onboarding', { seed_titles_added: seedSelected.length });
+
+    const plan = takePremiumCheckoutIntent();
+    if (plan) {
+      const started = await premium.startCheckout(plan, 'premium_signup');
+      if (!started) navigate(`/plans?billing=${plan}`, { replace: true });
+      return;
+    }
 
     navigate('/home', { replace: true });
   };

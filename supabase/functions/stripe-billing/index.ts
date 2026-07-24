@@ -14,7 +14,7 @@
  *
  * Secrets: STRIPE_SECRET_KEY, STRIPE_PRICE_MONTHLY, STRIPE_PRICE_YEARLY.
  */
-import Stripe from 'npm:stripe@17';
+import Stripe from 'npm:stripe@22.3.2';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const corsHeaders = {
@@ -35,6 +35,14 @@ const json = (body: unknown, status = 200) =>
     status,
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   });
+
+async function createPortalUrl(customerId: string) {
+  const session = await stripe.billingPortal.sessions.create({
+    customer: customerId,
+    return_url: SETTINGS_URL,
+  });
+  return session.url;
+}
 
 async function authUser(req: Request) {
   const authHeader = req.headers.get('Authorization');
@@ -81,6 +89,19 @@ Deno.serve(async (req) => {
     if (!price) return json({ error: 'Billing is not configured' }, 500);
 
     try {
+      // A late webhook or stale profile badge must never let someone open a
+      // second subscription. Existing subscribers go straight to the portal.
+      if (billing?.stripe_customer_id) {
+        const subscriptions = await stripe.subscriptions.list({
+          customer: billing.stripe_customer_id,
+          status: 'all',
+          limit: 100,
+        });
+        if (subscriptions.data.some((sub) => ['active', 'trialing', 'past_due'].includes(sub.status))) {
+          return json({ url: await createPortalUrl(billing.stripe_customer_id) });
+        }
+      }
+
       const session = await stripe.checkout.sessions.create({
         mode: 'subscription',
         line_items: [{ price, quantity: 1 }],
@@ -103,11 +124,7 @@ Deno.serve(async (req) => {
   if (action === 'portal') {
     if (!billing?.stripe_customer_id) return json({ error: 'No subscription found' }, 404);
     try {
-      const session = await stripe.billingPortal.sessions.create({
-        customer: billing.stripe_customer_id,
-        return_url: SETTINGS_URL,
-      });
-      return json({ url: session.url });
+      return json({ url: await createPortalUrl(billing.stripe_customer_id) });
     } catch (err) {
       console.error('Portal session failed:', (err as Error).message);
       return json({ error: 'Could not open billing portal' }, 500);

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../api/supabase';
 import './AuthPage.css';
 import { track, identifyUser, EVENTS } from '../lib/analytics.js';
@@ -8,6 +8,7 @@ import { SHOW_GOOGLE_LOGIN, SHOW_APPLE_LOGIN } from '../launchFeatures.js';
 import { HERO_POSTERS } from '../constants/heroPosters.js';
 import PlotLoader from '../components/PlotLoader.jsx';
 import Turnstile from '../components/Turnstile.jsx';
+import { getPremiumCheckoutIntent, rememberPremiumCheckoutIntent } from '../utils/premiumCheckoutIntent.js';
 
 const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY;
 
@@ -54,6 +55,13 @@ export default function AuthPage({ initialMode = 'signup' }) {
   const [captchaToken, setCaptchaToken] = useState(null);
   const [captchaNonce, setCaptchaNonce] = useState(0); // bump to force a fresh Turnstile token
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // A pricing visitor must not lose their selected billing period while they
+  // create an account, confirm their email, and complete onboarding.
+  useEffect(() => {
+    rememberPremiumCheckoutIntent(location.search);
+  }, [location.search]);
 
   // Turnstile tokens are single-use; clear and re-issue after every auth attempt.
   const resetCaptcha = () => { setCaptchaToken(null); setCaptchaNonce((n) => n + 1); };
@@ -64,7 +72,9 @@ export default function AuthPage({ initialMode = 'signup' }) {
   // Auto-redirect if already logged in
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) navigate('/app', { replace: true });
+      if (!session) return;
+      const plan = getPremiumCheckoutIntent();
+      navigate(plan ? `/plans?billing=${plan}` : '/app', { replace: true });
     });
   }, [navigate]);
 
@@ -96,7 +106,8 @@ export default function AuthPage({ initialMode = 'signup' }) {
       else {
         identifyUser(data.user.id, { email: data.user.email });
         track(EVENTS.USER_LOGGED_IN);
-        navigate('/app');
+        const plan = getPremiumCheckoutIntent();
+        navigate(plan ? `/plans?billing=${plan}` : '/app');
       }
     } else {
       const { data, error } = await supabase.auth.signUp({

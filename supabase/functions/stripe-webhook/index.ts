@@ -16,7 +16,7 @@
  *
  * Secrets: STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET.
  */
-import Stripe from 'npm:stripe@17';
+import Stripe from 'npm:stripe@22.3.2';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
