@@ -40,9 +40,11 @@ export function usePremium(profile) {
     track(EVENTS.PREMIUM_CHECKOUT_STARTED, { plan, source });
     try {
       window.location.assign(await callBilling('checkout', { plan }));
+      return true;
     } catch (e) {
       setError(e.message);
       setBusy(false);
+      return false;
     }
   }, [busy]);
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../api/supabase.js';
 import { usePremium } from '../hooks/usePremium.js';
 import { useTheme } from '../hooks/useTheme.js';
@@ -7,7 +7,7 @@ import { FREE_CUSTOM_LIST_CAP } from '@plot/core/premium.js';
 import { SHOW_MEDIA_SYNC_INTEGRATIONS } from '../launchFeatures.js';
 import './PlansPage.css';
 
-// Pricing (USD). Annual is billed once a year; we surface the effective
+// Pricing (AUD). Annual is billed once a year; we surface the effective
 // monthly price so the saving is obvious.
 const MONTHLY_PRICE = 3;
 const ANNUAL_PRICE = 25;
@@ -53,32 +53,6 @@ const COMPARISON = [
     : []),
 ];
 
-// ⚠️ PLACEHOLDER social proof — swap these for real figures/quotes before
-// launch. Never ship invented numbers or testimonials to users.
-const SOCIAL_STATS = [
-  { value: '8,000+', label: 'watchlists created' },
-  { value: '600k+', label: 'titles tracked' },
-  { value: '4.8/5', label: 'average rating' },
-];
-
-const TESTIMONIALS = [
-  {
-    quote: 'PLOT replaced the three apps I used to track shows. The release calendar alone is worth it.',
-    name: 'Maya R.',
-    handle: 'Premium member',
-  },
-  {
-    quote: 'Connecting Trakt took thirty seconds and my whole history was just… there. No more manual logging.',
-    name: 'Devin K.',
-    handle: 'Premium member',
-  },
-  {
-    quote: 'Unlimited lists changed how I plan what to watch: one for date night, one for the kids, one for me.',
-    name: 'Priya S.',
-    handle: 'Premium member',
-  },
-];
-
 const FAQS = [
   {
     q: 'Is the Free plan really free?',
@@ -117,9 +91,12 @@ function Cell({ value }) {
 export default function PlansPage() {
   useTheme(); // apply the saved/system theme on this standalone route
   const navigate = useNavigate();
+  const location = useLocation();
   const [profile, setProfile] = useState(null);
   const [authState, setAuthState] = useState('loading'); // loading | anon | signed-in
-  const [billing, setBilling] = useState('annual'); // 'annual' | 'monthly' — default to the best value
+  const [billing, setBilling] = useState(() =>
+    new URLSearchParams(location.search).get('billing') === 'monthly' ? 'monthly' : 'annual',
+  ); // 'annual' | 'monthly' — default to the best value
   const premium = usePremium(profile);
 
   useEffect(() => {
@@ -199,7 +176,7 @@ export default function PlansPage() {
                 <span className="plan-amount">$0</span>
                 <span className="plan-per">forever</span>
               </div>
-              <p className="plan-tagline">Everything you need to organize your watching.</p>
+              <p className="plan-tagline">Everything you need to organise your watching.</p>
             </div>
             <ul className="plan-features">
               {FREE_HIGHLIGHTS.map(f => <li key={f}><Tick />{f}</li>)}
@@ -257,16 +234,6 @@ export default function PlansPage() {
           <p className="plans-note plans-note--err">{premium.error}</p>
         )}
 
-        {/* Social proof — stats */}
-        <div className="social-stats">
-          {SOCIAL_STATS.map(stat => (
-            <div className="social-stat" key={stat.label}>
-              <div className="social-stat-value">{stat.value}</div>
-              <div className="social-stat-label">{stat.label}</div>
-            </div>
-          ))}
-        </div>
-
         {/* Full comparison */}
         <div className="cmp-wrap">
           <h2 className="cmp-title">Compare plans</h2>
@@ -292,21 +259,6 @@ export default function PlansPage() {
           </div>
         </div>
 
-        {/* Social proof — testimonials */}
-        <div className="tmony-wrap">
-          <div className="tmony-grid">
-            {TESTIMONIALS.map(t => (
-              <figure className="tmony" key={t.name}>
-                <blockquote>“{t.quote}”</blockquote>
-                <figcaption>
-                  <span className="tmony-name">{t.name}</span>
-                  <span className="tmony-handle">{t.handle}</span>
-                </figcaption>
-              </figure>
-            ))}
-          </div>
-        </div>
-
         {/* FAQ */}
         <div className="faq-wrap">
           <h2 className="faq-title">Questions</h2>
@@ -321,7 +273,8 @@ export default function PlansPage() {
         </div>
 
         <p className="plans-fineprint">
-          Prices in USD. Cancel anytime. Payments are processed securely by Stripe.
+          Base prices are in AUD. Stripe shows your local currency at checkout where available.
+          {' '}Cancel anytime. Payments are processed securely by Stripe.
           {' '}Need a hand? <a href="mailto:contact@susumuhouse.com">contact@susumuhouse.com</a>
         </p>
 
