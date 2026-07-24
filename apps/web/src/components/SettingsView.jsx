@@ -1864,24 +1864,19 @@ export default function SettingsView() {
                 <div className="settings-row-label">Get PLOT Premium</div>
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.45 }}>
                   PLOT is built by one person. Premium keeps it running, and unlocks
-                  Plex &amp; Trakt sync plus unlimited lists.{' '}
-                  <button
-                    type="button"
-                    onClick={() => navigate('/pricing')}
-                    style={{ background: 'none', border: 'none', padding: 0, font: 'inherit', color: 'var(--text-secondary)', textDecoration: 'underline', cursor: 'pointer' }}
-                  >
-                    Compare plans
-                  </button>
+                  Plex &amp; Trakt sync plus unlimited lists.
                 </div>
               </div>
             </div>
             <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
-              <SettingsTextAction onClick={() => premium.startCheckout('monthly', 'settings')} disabled={premium.busy}>
-                $3/mo
-              </SettingsTextAction>
-              <SettingsTextAction onClick={() => premium.startCheckout('yearly', 'settings')} disabled={premium.busy}>
-                $25/yr
-              </SettingsTextAction>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => premium.startCheckout('yearly', 'settings')}
+                disabled={premium.busy}
+              >
+                {premium.busy ? 'Opening…' : 'Get PLOT Premium'}
+              </button>
             </div>
           </div>
         )}
