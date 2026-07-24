@@ -731,12 +731,12 @@ Deno.serve(async (req) => {
 <meta name="twitter:image" content="${esc(shareImg)}">
 <script type="application/ld+json">${jsonLd}</script>`;
 
-  // Guides (and any entry carrying tmdb_refs) get a poster grid linking each
-  // featured title to its public title page — the internal-linking payoff.
+  // Entries carrying tmdb_refs get a poster grid linking each featured title
+  // to its public title page, so readers can save a pick straight to PLOT.
   const refs = Array.isArray(typed.tmdb_refs) ? typed.tmdb_refs : [];
   const titlesSection = refs.length
     ? `<section style="margin:48px 0 0">
-        <h2 style="font-family:var(--serif);font-size:1.7rem;font-weight:400;margin:0 0 18px">Titles in this guide</h2>
+        <h2 style="font-family:var(--serif);font-size:1.7rem;font-weight:400;margin:0 0 18px">Save to my PLOT</h2>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:18px">${refs.map((r) => {
           const poster = r.poster_path ? `https://image.tmdb.org/t/p/w185${esc(r.poster_path)}` : null;
           return `<a href="${esc(titleHref(r.media_type, r.tmdb_id, r.title))}" style="text-decoration:none;color:inherit">${poster ? `<img src="${poster}" alt="${esc(r.title)}" loading="lazy" style="width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:10px;border:1px solid var(--hair);display:block">` : '<span style="display:block;width:100%;aspect-ratio:2/3;border-radius:10px;background:var(--ink)"></span>'}<span style="display:block;font-size:0.82rem;margin-top:8px;line-height:1.3">${esc(r.title)}</span></a>`;
