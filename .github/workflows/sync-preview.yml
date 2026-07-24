@@ -1,0 +1,46 @@
+name: Sync preview with main
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-preview
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Advance preview safely
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository history
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Advance preview when it is safe
+        run: |
+          git fetch origin main preview
+
+          if ! git merge-base --is-ancestor origin/preview origin/main; then
+            echo "::error title=Preview needs reconciliation::preview contains commits that are not on main, so this workflow will not overwrite it. Merge or rebase preview onto main, then run this workflow again."
+            {
+              echo "## Preview was not updated"
+              echo
+              echo "\`preview\` contains commits that are not in \`main\`. No changes were overwritten. Reconcile the branches, then run this workflow again."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+          git push origin "origin/main:refs/heads/preview"
+          {
+            echo "## Preview updated"
+            echo
+            echo "\`preview\` now matches \`main\`."
+          } >> "$GITHUB_STEP_SUMMARY"
