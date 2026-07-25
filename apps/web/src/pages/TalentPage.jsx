@@ -1,61 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { posterUrl, profileUrl, useApp } from '../App.jsx';
+import { profileUrl, useApp } from '../App.jsx';
 import { tmdb } from '../api/tmdb.js';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
+import CreditsGrid from '../components/TalentCredits.jsx';
+import { dedupedActingCredits, shortBiography } from '../utils/talentCredits.js';
 import './TalentPage.css';
-
-function creditTitle(credit) {
-  return credit.title || credit.name || 'Untitled';
-}
-
-function mediaType(credit) {
-  return credit.media_type === 'tv' ? 'tv' : 'movie';
-}
-
-function creditMeta(credit, type) {
-  const year = (credit.release_date || credit.first_air_date || '').slice(0, 4);
-  return [year, type === 'tv' ? 'TV' : 'Movie'].filter(Boolean).join(' · ');
-}
-
-function creditDate(credit) {
-  return credit.release_date || credit.first_air_date || '';
-}
-
-function shortBiography(biography) {
-  if (!biography) return '';
-  const cleanedBiography = biography.replace(
-    /^([^\n(]{1,160})\s+\((?=[^)]*\b(?:born|née)\b)[^)]*\)\s*/i,
-    '$1 ',
-  ).trim();
-  const sentences = cleanedBiography.match(/[^.!?]+[.!?]+(?:\s|$)/g) || [];
-  const preview = sentences.slice(0, 3).join('').trim();
-  return preview || cleanedBiography;
-}
-
-function CreditsGrid({ credits, openPanel }) {
-  if (!credits.length) return null;
-  return (
-    <div className="talent-credits-grid">
-      {credits.map(credit => {
-        const title = creditTitle(credit);
-        const image = posterUrl(credit.poster_path, 'w185');
-        const type = mediaType(credit);
-        const role = credit.character || credit.roles?.[0]?.character;
-        return (
-          <button type="button" className="talent-credit" key={`${type}-${credit.id}`} onClick={() => openPanel(credit.id, type, 'talent_profile')}>
-            <div className="talent-credit-poster">
-              {image ? <img src={image} alt="" loading="lazy" /> : <span>{title}</span>}
-            </div>
-            <span className="talent-credit-title">{title}</span>
-            {role && <span className="talent-credit-role">{role}</span>}
-            <span className="talent-credit-meta">{creditMeta(credit, type)}</span>
-          </button>
-        );
-      })}
-    </div>
-  );
-}
 
 export default function TalentPage() {
   const { personId } = useParams();
@@ -80,18 +30,7 @@ function TalentPageContent({ personId }) {
     return () => { cancelled = true; };
   }, [personId]);
 
-  const actingCredits = useMemo(() => {
-    const seen = new Set();
-    return (credits?.cast || [])
-      .filter(credit => credit.id && (credit.media_type === 'movie' || credit.media_type === 'tv'))
-      .sort((a, b) => creditDate(b).localeCompare(creditDate(a)) || (b.popularity || 0) - (a.popularity || 0))
-      .filter(credit => {
-        const key = `${credit.media_type}-${credit.id}`;
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      });
-  }, [credits]);
+  const actingCredits = useMemo(() => dedupedActingCredits(credits?.cast), [credits]);
 
   if (!person && !error) return <div className="talent-page talent-page--loading"><LoadingSpinner /></div>;
   if (error) return (
