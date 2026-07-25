@@ -134,7 +134,6 @@ ${head}
   <a href="${SITE}" class="nav-logo" aria-label="PLOT">PLOT</a>
   <ul class="nav-links" id="navLinks">
     <li><a href="${SITE}/whats-on">What's On</a></li>
-    <li><a href="${SITE}/plans.html">Pricing</a></li>
     <li><a href="${APP}/login" data-cta="nav">Log in</a></li>
     <li><a href="${APP}/signup" data-cta="nav" class="nav-cta">Sign up</a></li>
   </ul>
