@@ -698,8 +698,8 @@ const FEEDBACK_MAX = 4000;
 const MAX_IMAGES   = 3;
 const MAX_IMAGE_MB = 5;
 
-function FeedbackPanel({ user, onClose }) {
-  const [type,      setType]      = useState('bug');
+function FeedbackPanel({ user, initialType, onClose }) {
+  const [type,      setType]      = useState(initialType || 'bug');
   const [message,   setMessage]   = useState('');
   const [images,    setImages]    = useState([]); // [{ file, preview }]
   const [status,    setStatus]    = useState('idle'); // idle | submitting | done | error
@@ -934,7 +934,7 @@ export default function SettingsView() {
   const [guideChannelDraft,   setGuideChannelDraft]   = useState(null);
   const [showRegion,          setShowRegion]          = useState(false);
   const [showTimezone,        setShowTimezone]        = useState(false);
-  const [showFeedback,        setShowFeedback]        = useState(false);
+  const [feedbackType,        setFeedbackType]        = useState(null);
   const [showClearWatchlist,  setShowClearWatchlist]  = useState(false);
   const [clearingHistory,     setClearingHistory]     = useState(false);
   const [clearingWatchlist,   setClearingWatchlist]   = useState(false);
@@ -2127,14 +2127,29 @@ export default function SettingsView() {
         </div>
         <div
           className="settings-row interactive-surface"
-          onClick={() => setShowFeedback(true)}
-          {...getButtonLikeProps({ onPress: () => setShowFeedback(true), label: 'Report a bug or leave feedback' })}
+          onClick={() => setFeedbackType('bug')}
+          {...getButtonLikeProps({ onPress: () => setFeedbackType('bug'), label: 'Report a bug' })}
+        >
+          <div className="settings-row-left">
+            <div className="settings-row-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L14.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+            </div>
+            <span className="settings-row-label">Report a Bug</span>
+          </div>
+          <div className="settings-row-value">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ width: 14, height: 14, opacity: 0.4 }}><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+        </div>
+        <div
+          className="settings-row interactive-surface"
+          onClick={() => setFeedbackType('feature')}
+          {...getButtonLikeProps({ onPress: () => setFeedbackType('feature'), label: 'Leave feedback' })}
         >
           <div className="settings-row-left">
             <div className="settings-row-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
             </div>
-            <span className="settings-row-label">Report a Bug or Leave Feedback</span>
+            <span className="settings-row-label">Leave Feedback</span>
           </div>
           <div className="settings-row-value">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ width: 14, height: 14, opacity: 0.4 }}><polyline points="9 18 15 12 9 6"/></svg>
@@ -2263,8 +2278,8 @@ export default function SettingsView() {
       )}
 
       {/* Feedback panel */}
-      {showFeedback && (
-        <FeedbackPanel user={user} onClose={() => setShowFeedback(false)} />
+      {feedbackType && (
+        <FeedbackPanel user={user} initialType={feedbackType} onClose={() => setFeedbackType(null)} />
       )}
 
       {confirmModal && (
