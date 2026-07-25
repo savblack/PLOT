@@ -13,7 +13,6 @@ import { track, EVENTS } from '../lib/analytics.js';
 import GroupedFilterMenu from './GroupedFilterMenu.jsx';
 import SectionToggleIcon from './SectionToggleIcon.jsx';
 import { getButtonLikeProps } from '../utils/interactive.js';
-import { useShareTitle } from '../hooks/useShareTitle.js';
 import { SHOW_SOCIAL_FEED } from '../launchFeatures.js';
 
 const ALL_TYPES = ['tv', 'cinema', 'movie'];
@@ -74,30 +73,6 @@ function SaveBtn({ item, watchlist }) {
   );
 }
 
-/* ── Poster-card quick share (desktop hover) ── */
-function ShareBtn({ item }) {
-  const id    = item.id || item.tmdb_id;
-  const type  = item.media_type || 'movie';
-  const title = item.title || item.name;
-  const { shareTitle, copied } = useShareTitle();
-  return (
-    <button
-      className={`card-share-btn${copied ? ' copied' : ''}`}
-      onClick={e => { e.stopPropagation(); shareTitle({ tmdbId: id, mediaType: type, title, source: 'discover_card' }); }}
-      aria-label={copied ? 'Link copied' : `Share ${title}`}
-    >
-      {copied ? (
-        <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-      ) : (
-        <svg viewBox="0 0 24 24">
-          <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
-          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-        </svg>
-      )}
-    </button>
-  );
-}
-
 /* ── Favourite (heart) button — occupies the former type-chip slot ── */
 function FavBtn({ item }) {
   const { favorites, profile } = useApp();
@@ -143,7 +118,6 @@ function RankedCard({ item, rank, showRank = true, openPanel, watchlist }) {
         }
         <FavBtn item={item} />
         <SaveBtn item={item} watchlist={watchlist} />
-        <ShareBtn item={item} />
         {showRank && <span className="discover-rank-badge">{rank}</span>}
       </div>
       <div className="media-card-title">{title}</div>
@@ -152,18 +126,27 @@ function RankedCard({ item, rank, showRank = true, openPanel, watchlist }) {
   );
 }
 
-function BingeCard({ item, openPanel }) {
-  const title = item.name || item.title;
+function BingeCard({ item, openPanel, watchlist }) {
+  const { favorites, profile } = useApp();
+  const fw       = favoriteWords(profile?.region);
+  const [hovered, setHovered] = useState(false);
+  const title    = item.name || item.title;
   const backdrop = backdropUrl(item.backdrop_path, 'w780');
-  const poster = posterUrl(item.poster_path, 'w342');
-  const type = item.media_type || 'tv';
-  const year = (item.first_air_date || item.release_date || '').slice(0, 4);
+  const poster   = posterUrl(item.poster_path, 'w342');
+  const type     = item.media_type || 'tv';
+  const year     = (item.first_air_date || item.release_date || '').slice(0, 4);
+  const saved    = watchlist.isInList(item.id);
+  const fav      = favorites.isFavorite(item.id);
+  const openDetails = () => openPanel(item.id, type);
 
   return (
-    <button
-      className="discover-binge-card"
-      onClick={() => openPanel(item.id, type)}
+    <div
+      className="discover-binge-card interactive-surface"
+      onClick={openDetails}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       style={{ backgroundImage: `url(${backdrop || poster || ''})` }}
+      {...getButtonLikeProps({ onPress: openDetails, label: `View details for ${title}` })}
     >
       <span className="discover-binge-card-shade" />
       <span className="discover-binge-card-copy">
@@ -172,7 +155,35 @@ function BingeCard({ item, openPanel }) {
           {year ? `${year} • ` : ''}{type === 'tv' ? 'TV Series' : 'Movie'}
         </span>
       </span>
-    </button>
+
+      {/* Corner action buttons — visible on hover or when active */}
+      <div
+        className={`discover-hero-corner-btns${hovered || saved || fav ? ' visible' : ''}`}
+        onClick={e => e.stopPropagation()}
+      >
+        <button
+          className={`discover-hero-corner-btn${fav ? ' active' : ''}`}
+          style={{ position: 'absolute', top: 10, left: 10 }}
+          onClick={() => favorites.toggleFavorite({ ...item, media_type: type })}
+          aria-label={fav ? fw.un : fw.noun}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill={fav ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          </svg>
+        </button>
+        <button
+          className={`discover-hero-corner-btn${saved ? ' active' : ''}`}
+          style={{ position: 'absolute', top: 10, right: 10 }}
+          onClick={() => watchlist.toggle({ ...item })}
+          disabled={watchlist.loading}
+          aria-label={saved ? 'Remove from watchlist' : 'Save to watchlist'}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill={saved ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -337,8 +348,7 @@ function PlatformSection({ platform, openPanel, watchlist }) {
                       }
                       <FavBtn item={item} />
                       <SaveBtn item={item} watchlist={watchlist} />
-                      <ShareBtn item={item} />
-                      <span className="discover-rank-badge">{item._rank ?? i + 1}</span>
+                                    <span className="discover-rank-badge">{item._rank ?? i + 1}</span>
                     </div>
                     <div className="media-card-title">{item.title || item.name}</div>
                   </div>
@@ -364,8 +374,7 @@ function PlatformSection({ platform, openPanel, watchlist }) {
                       }
                       <FavBtn item={item} />
                       <SaveBtn item={item} watchlist={watchlist} />
-                      <ShareBtn item={item} />
-                      <span className="discover-rank-badge">{item._rank ?? i + 1}</span>
+                                    <span className="discover-rank-badge">{item._rank ?? i + 1}</span>
                     </div>
                     <div className="media-card-title">{item.title || item.name}</div>
                   </div>
@@ -485,7 +494,7 @@ function DiscoverContent({ openPanel, watchlist, openSections, setOpenSections }
           {openSections.binge && (
             <BingeRail>
               {bingedShows.map(item => (
-                <BingeCard key={item.id} item={item} openPanel={openPanel} />
+                <BingeCard key={item.id} item={item} openPanel={openPanel} watchlist={watchlist} />
               ))}
             </BingeRail>
           )}
@@ -518,7 +527,7 @@ function DiscoverContent({ openPanel, watchlist, openSections, setOpenSections }
           {openSections.anticipated && (
             <BingeRail>
               {anticipatedMovies.map(item => (
-                <BingeCard key={item.id} item={item} openPanel={openPanel} />
+                <BingeCard key={item.id} item={item} openPanel={openPanel} watchlist={watchlist} />
               ))}
             </BingeRail>
           )}

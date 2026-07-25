@@ -6,7 +6,6 @@ import { usePublicProfile } from '../hooks/usePublicProfile.js';
 import { useFollows } from '../hooks/useFollows.js';
 import { useDragScroll } from '../hooks/useDragScroll.js';
 import { useShare } from '../hooks/useShare.js';
-import { useShareTitle } from '../hooks/useShareTitle.js';
 import { useCustomLists } from '@plot/core/useCustomLists.js';
 import { favoriteWords } from '../utils/spelling.js';
 import { getButtonLikeProps } from '../utils/interactive.js';
@@ -90,10 +89,8 @@ const styles = `
   .pp-poster-rank-scrim { position: absolute; left: 0; right: 0; bottom: 0; height: 44%; background: linear-gradient(to top, rgba(0,0,0,0.65), rgba(0,0,0,0)); pointer-events: none; }
   .pp-poster-rank { position: absolute; left: 0.45rem; bottom: 0.35rem; min-width: 22px; height: 22px; padding: 0 0.3rem; border-radius: 999px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.94); font-family: var(--font-sans); font-size: 0.72rem; font-weight: 700; letter-spacing: -0.01em; color: #111; box-shadow: 0 1px 3px rgba(0,0,0,0.35); }
   .pp-poster:hover .card-fav-btn, .pp-poster:focus-within .card-fav-btn,
-  .pp-poster:hover .card-save-btn, .pp-poster:focus-within .card-save-btn,
-  .pp-poster:hover .card-share-btn, .pp-poster:focus-within .card-share-btn { opacity: 1; }
+  .pp-poster:hover .card-save-btn, .pp-poster:focus-within .card-save-btn { opacity: 1; }
   .pp-poster .card-save-btn.saved { opacity: 1; }
-  .pp-poster .card-share-btn.copied { opacity: 1; }
 
   /* ── Edit profile modal ── */
   .pp-edit-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 1rem; }
@@ -122,30 +119,6 @@ function SaveBtn({ item, watchlist }) {
       disabled={watchlist.loading}
     >
       <svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
-    </button>
-  );
-}
-
-/* ── Quick share (desktop hover) ── */
-function ShareBtn({ item }) {
-  const id    = item.id || item.tmdb_id;
-  const type  = item.media_type || 'movie';
-  const title = item.title || item.name;
-  const { shareTitle, copied } = useShareTitle();
-  return (
-    <button
-      className={`card-share-btn${copied ? ' copied' : ''}`}
-      onClick={e => { e.stopPropagation(); shareTitle({ tmdbId: id, mediaType: type, title, source: 'public_profile_card' }); }}
-      aria-label={copied ? 'Link copied' : `Share ${title}`}
-    >
-      {copied ? (
-        <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-      ) : (
-        <svg viewBox="0 0 24 24">
-          <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
-          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-        </svg>
-      )}
     </button>
   );
 }
@@ -184,7 +157,6 @@ function PosterCard({ item, ranked, i, openPanel, watchlist }) {
       {img ? <img src={img} alt={item.title} loading="lazy" draggable="false" /> : <div className="pp-poster-fallback">{item.title}</div>}
       <FavBtn item={item} />
       <SaveBtn item={item} watchlist={watchlist} />
-      <ShareBtn item={item} />
       {ranked && (
         <>
           <div className="pp-poster-rank-scrim" />

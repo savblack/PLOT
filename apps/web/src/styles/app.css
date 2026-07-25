@@ -738,7 +738,7 @@ svg { stroke-width: 1.5; }
   box-shadow: none;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
-  color: var(--text-muted);
+  color: white;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -753,6 +753,7 @@ svg { stroke-width: 1.5; }
   stroke: currentColor;
   fill: none;
   stroke-width: 2.5;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.65));
 }
 .media-card:hover .card-save-btn { opacity: 1; }
 .discover-chart-row:hover .card-save-btn,
@@ -765,9 +766,23 @@ svg { stroke-width: 1.5; }
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   opacity: 1;
-  color: var(--accent);
 }
 .card-save-btn.saved svg {
+  fill: white;
+  stroke: white;
+}
+
+/* Chart list rows only: grey by default, pink + filled when saved */
+.discover-chart-row .card-save-btn {
+  color: var(--text-muted);
+}
+.discover-chart-row .card-save-btn svg {
+  filter: none;
+}
+.discover-chart-row .card-save-btn.saved {
+  color: var(--accent);
+}
+.discover-chart-row .card-save-btn.saved svg {
   fill: var(--accent);
   stroke: var(--accent);
 }
@@ -801,8 +816,8 @@ svg { stroke-width: 1.5; }
 .card-fav-btn:hover { transform: scale(1.1); }
 .media-card:hover .card-fav-btn,
 .media-card:focus-within .card-fav-btn { opacity: 1; }
-.card-fav-btn.faved { color: #ef4444; }
-.card-fav-btn.faved svg { fill: #ef4444; stroke: #ef4444; }
+.card-fav-btn.faved { color: var(--accent); }
+.card-fav-btn.faved svg { fill: var(--accent); stroke: var(--accent); }
 
 /* Poster-card quick share — desktop hover only (mobile uses the panel's Share) */
 .card-share-btn {
