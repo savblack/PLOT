@@ -1896,6 +1896,7 @@ svg { stroke-width: 1.5; }
 .list-row:active { background: var(--surface-sunken); }
 
 .list-row-poster {
+  position: relative;
   width: 42px;
   flex-shrink: 0;
   aspect-ratio: 2/3;
@@ -1904,6 +1905,45 @@ svg { stroke-width: 1.5; }
   background: var(--surface-raised);
 }
 .list-row-poster img { width: 100%; height: 100%; object-fit: cover; }
+
+/* Multi-select circle, used in every list's bulk-select edit mode */
+.select-circle {
+  position: absolute;
+  border-radius: 50%;
+  padding: 0;
+  cursor: pointer;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.select-circle svg { width: 60%; height: 60%; }
+
+.select-circle--grid {
+  top: 4px;
+  right: 4px;
+  width: 22px;
+  height: 22px;
+  background: rgba(0,0,0,0.55);
+  border: 2px solid rgba(255,255,255,0.85);
+}
+.select-circle--grid.selected {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.select-circle--row {
+  top: 2px;
+  right: 2px;
+  width: 16px;
+  height: 16px;
+  background: rgba(0,0,0,0.45);
+  border: 2px solid #fff;
+}
+.select-circle--row.selected {
+  background: var(--accent);
+  border-color: #fff;
+}
 
 .list-row-info { flex: 1; min-width: 0; }
 .list-row-title {

@@ -43,6 +43,27 @@ function PlusIcon() {
   );
 }
 
+/* ── Multi-select mode toggle (a checked circle) ── */
+function SelectModeIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }}>
+      <circle cx="12" cy="12" r="9" />
+      <polyline points="8.5 12.5 11 15 15.5 9" />
+    </svg>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }}>
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+      <path d="M10 11v6M14 11v6" />
+      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+    </svg>
+  );
+}
+
 /* ── Search modal for Top 10 additions ── */
 function AddToRankModal({ listType, rank, onAdd, onClose }) {
   const { user } = useApp();
@@ -520,8 +541,27 @@ function TopTenSection({ listType, title, topLists }) {
   );
 }
 
+/* ── Selection circle, top-right overlay used by every list's multi-select edit mode ── */
+function SelectCircle({ selected, variant = 'grid', onClick, label }) {
+  return (
+    <button
+      type="button"
+      className={`select-circle select-circle--${variant}${selected ? ' selected' : ''}`}
+      onClick={onClick}
+      aria-pressed={selected}
+      aria-label={label}
+    >
+      {selected && (
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+      )}
+    </button>
+  );
+}
+
 /* ── Poster grid (for Favorites and Custom Lists) ── */
-function PosterGrid({ items, onRemove, openPanel }) {
+function PosterGrid({ items, openPanel, editMode, selectedIds, onToggleSelect }) {
   return (
     <div style={{
       display: 'grid',
@@ -532,7 +572,11 @@ function PosterGrid({ items, onRemove, openPanel }) {
       {items.map(item => {
         const img = posterUrl(item.poster_path, 'w185');
         const title = item.title || 'Unknown';
-        const openDetails = () => openPanel(item.tmdb_id, item.media_type);
+        const isSelected = !!selectedIds?.has(item.tmdb_id);
+        const openDetails = () => {
+          if (editMode) onToggleSelect(item.tmdb_id);
+          else openPanel(item.tmdb_id, item.media_type);
+        };
         return (
           <div key={item.id} style={{ position: 'relative' }}>
             <div
@@ -545,29 +589,20 @@ function PosterGrid({ items, onRemove, openPanel }) {
                 cursor: 'pointer',
               }}
               onClick={openDetails}
-              {...getButtonLikeProps({ onPress: openDetails, label: `View details for ${title}` })}
+              {...getButtonLikeProps({ onPress: openDetails, label: editMode ? `${isSelected ? 'Deselect' : 'Select'} ${title}` : `View details for ${title}` })}
             >
               {img
                 ? <img src={img} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.65rem', color: 'var(--text-muted)', textAlign: 'center', padding: '0.25rem' }}>{item.title}</div>
               }
             </div>
-            {onRemove && (
-              <button
-                onClick={(e) => { e.stopPropagation(); onRemove(item.tmdb_id); }}
-                style={{
-                  position: 'absolute', top: 4, right: 4,
-                  width: 20, height: 20,
-                  background: 'rgba(0,0,0,0.6)',
-                  border: 'none', borderRadius: '50%',
-                  color: '#fff', fontSize: '0.65rem',
-                  cursor: 'pointer', display: 'flex',
-                  alignItems: 'center', justifyContent: 'center',
-                  lineHeight: 1,
-                }}
-              >
-                ✕
-              </button>
+            {editMode && (
+              <SelectCircle
+                variant="grid"
+                selected={isSelected}
+                onClick={(e) => { e.stopPropagation(); onToggleSelect(item.tmdb_id); }}
+                label={isSelected ? `Deselect ${title}` : `Select ${title}`}
+              />
             )}
           </div>
         );
@@ -581,9 +616,29 @@ function FavoritesSection({ favorites: favsHook, filterItems, hideHeader }) {
   const { openPanel, profile } = useApp();
   const fw = favoriteWords(profile?.region);
   const [showAdd, setShowAdd] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [selected, setSelected] = useState(() => new Set());
   const { favorites, isFavorite, toggleFavorite } = favsHook;
 
   const visible = filterItems ? filterItems(favorites) : favorites;
+
+  const toggleSelect = (tmdbId) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(tmdbId)) next.delete(tmdbId); else next.add(tmdbId);
+      return next;
+    });
+  };
+
+  const exitEditMode = () => { setEditMode(false); setSelected(new Set()); };
+
+  const deleteSelected = () => {
+    selected.forEach(tmdbId => {
+      const item = favorites.find(f => f.tmdb_id === tmdbId);
+      if (item) toggleFavorite(item);
+    });
+    exitEditMode();
+  };
 
   return (
     <div>
@@ -592,6 +647,31 @@ function FavoritesSection({ favorites: favsHook, filterItems, hideHeader }) {
           <span className="date-group-label" style={{ fontSize: '0.62rem' }}>{fw.plural}</span>
           {visible.length > 0 && (
             <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginRight: '0.25rem' }}>{visible.length}</span>
+          )}
+          {editMode && selected.size > 0 && (
+            <button
+              className="date-group-action-btn date-group-action-btn--plain"
+              type="button"
+              aria-label={`Delete ${selected.size} selected`}
+              title={`Delete ${selected.size} selected`}
+              onClick={deleteSelected}
+              style={{ color: '#ef4444' }}
+            >
+              <TrashIcon />
+            </button>
+          )}
+          {visible.length > 0 && (
+            <button
+              className="date-group-action-btn date-group-action-btn--plain"
+              type="button"
+              aria-label={editMode ? 'Done selecting' : 'Select'}
+              title={editMode ? 'Done selecting' : 'Select'}
+              onClick={() => (editMode ? exitEditMode() : setEditMode(true))}
+            >
+              {editMode
+                ? <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Done</span>
+                : <SelectModeIcon />}
+            </button>
           )}
           <button
             className="date-group-action-btn date-group-action-btn--plain"
@@ -628,6 +708,9 @@ function FavoritesSection({ favorites: favsHook, filterItems, hideHeader }) {
         <PosterGrid
           items={visible}
           openPanel={openPanel}
+          editMode={editMode}
+          selectedIds={selected}
+          onToggleSelect={toggleSelect}
         />
       )}
 
@@ -720,7 +803,7 @@ function CreateListModal({ lists, onConfirm, onClose }) {
 /* ── Custom lists section ── */
 function CustomListsSection({ customLists: clHook, filterItems, hideHeader }) {
   const { openPanel, profile, navigateTo } = useApp();
-  const { lists, createList, deleteList, renameList, setListPublic, addItem } = clHook;
+  const { lists, createList, deleteList, renameList, setListPublic, addItem, removeItem } = clHook;
   const { share } = useShare();
 
   const shareList = useCallback((list) => share({
@@ -737,9 +820,28 @@ function CustomListsSection({ customLists: clHook, filterItems, hideHeader }) {
   const [renameValue,  setRenameValue]  = useState('');
   const [menuOpen,     setMenuOpen]     = useState(null);
   const [showAddToList, setShowAddToList] = useState(null);
+  const [editListId,   setEditListId]   = useState(null);
+  const [selectedByList, setSelectedByList] = useState({});
 
   const toggleList = (id) => setOpenItems(prev => ({ ...prev, [id]: !(prev[id] ?? true) }));
   const isOpen = (id) => openItems[id] ?? true;
+
+  const toggleSelect = (listId, tmdbId) => {
+    setSelectedByList(prev => {
+      const next = new Set(prev[listId]);
+      if (next.has(tmdbId)) next.delete(tmdbId); else next.add(tmdbId);
+      return { ...prev, [listId]: next };
+    });
+  };
+
+  const exitEditMode = () => setEditListId(null);
+
+  const deleteSelected = (listId) => {
+    const selected = selectedByList[listId];
+    if (selected) selected.forEach(tmdbId => removeItem(listId, tmdbId));
+    setSelectedByList(prev => ({ ...prev, [listId]: new Set() }));
+    setEditListId(null);
+  };
 
   // Free accounts get FREE_CUSTOM_LIST_CAP lists; Premium unlimited. The
   // DB (RLS insert policy) is the authority — this is just friendlier UX.
@@ -858,6 +960,30 @@ function CustomListsSection({ customLists: clHook, filterItems, hideHeader }) {
               )}
             </button>
 
+            {editListId === list.id && (selectedByList[list.id]?.size ?? 0) > 0 && (
+              <button
+                className="date-group-action-btn date-group-action-btn--plain"
+                type="button"
+                aria-label={`Delete ${selectedByList[list.id].size} selected`}
+                title={`Delete ${selectedByList[list.id].size} selected`}
+                onClick={() => deleteSelected(list.id)}
+                style={{ color: '#ef4444' }}
+              >
+                <TrashIcon />
+              </button>
+            )}
+            {editListId === list.id && (
+              <button
+                className="date-group-action-btn date-group-action-btn--plain"
+                type="button"
+                aria-label="Done selecting"
+                title="Done selecting"
+                onClick={exitEditMode}
+              >
+                <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Done</span>
+              </button>
+            )}
+
             <div style={{ position: 'relative' }}>
               <button
                 className="list-options-btn"
@@ -878,6 +1004,18 @@ function CustomListsSection({ customLists: clHook, filterItems, hideHeader }) {
                     boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
                     overflow: 'hidden',
                   }}>
+                    {(list.items || []).length > 0 && (
+                      <button
+                        style={{ display: 'block', width: '100%', padding: '0.6rem 0.8rem', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', fontSize: '0.8rem', color: 'var(--text-primary)' }}
+                        onClick={() => {
+                          setEditListId(list.id);
+                          setMenuOpen(null);
+                        }}
+                        aria-label={`Select items in ${list.name}`}
+                      >
+                        Select
+                      </button>
+                    )}
                     <button
                       style={{ display: 'block', width: '100%', padding: '0.6rem 0.8rem', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', fontSize: '0.8rem', color: 'var(--text-primary)' }}
                       onClick={() => {
@@ -974,6 +1112,9 @@ function CustomListsSection({ customLists: clHook, filterItems, hideHeader }) {
               <PosterGrid
                 items={visibleItems}
                 openPanel={openPanel}
+                editMode={editListId === list.id}
+                selectedIds={selectedByList[list.id]}
+                onToggleSelect={(tmdbId) => toggleSelect(list.id, tmdbId)}
               />
             );
           })()}
@@ -998,6 +1139,21 @@ function CustomListsSection({ customLists: clHook, filterItems, hideHeader }) {
 function WatchingSection({ watching, hideHeader }) {
   const { openPanel } = useApp();
   const items = watching.items || [];
+  const [editMode, setEditMode] = useState(false);
+  const [selected, setSelected] = useState(() => new Set());
+
+  const toggleSelect = (tmdbId) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(tmdbId)) next.delete(tmdbId); else next.add(tmdbId);
+      return next;
+    });
+  };
+  const exitEditMode = () => { setEditMode(false); setSelected(new Set()); };
+  const deleteSelected = () => {
+    selected.forEach(tmdbId => watching.stopWatching(tmdbId));
+    exitEditMode();
+  };
 
   // Episode count for each show's current season, keyed by tmdb_id — the
   // denominator for the progress bar. It isn't stored on the row, so pull it
@@ -1035,7 +1191,30 @@ function WatchingSection({ watching, hideHeader }) {
       {!hideHeader && (
         <div className="date-group-header">
           <span className="date-group-label">Watching</span>
-          <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{items.length}</span>
+          <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginRight: '0.25rem' }}>{items.length}</span>
+          {editMode && selected.size > 0 && (
+            <button
+              className="date-group-action-btn date-group-action-btn--plain"
+              type="button"
+              aria-label={`Stop watching ${selected.size} selected`}
+              title={`Stop watching ${selected.size} selected`}
+              onClick={deleteSelected}
+              style={{ color: '#ef4444' }}
+            >
+              <TrashIcon />
+            </button>
+          )}
+          <button
+            className="date-group-action-btn date-group-action-btn--plain"
+            type="button"
+            aria-label={editMode ? 'Done selecting' : 'Select'}
+            title={editMode ? 'Done selecting' : 'Select'}
+            onClick={() => (editMode ? exitEditMode() : setEditMode(true))}
+          >
+            {editMode
+              ? <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Done</span>
+              : <SelectModeIcon />}
+          </button>
         </div>
       )}
       {items.map(item => {
@@ -1045,16 +1224,28 @@ function WatchingSection({ watching, hideHeader }) {
         // is a legacy fallback). Only draw the bar once we know the denominator.
         const total = epCounts[item.tmdb_id] || item.total_episodes || 0;
         const pct   = total ? Math.min(100, Math.round((item.current_episode / total) * 100)) : null;
-        const openDetails = () => openPanel(item.tmdb_id, 'tv');
+        const isSelected = selected.has(item.tmdb_id);
+        const openDetails = () => {
+          if (editMode) toggleSelect(item.tmdb_id);
+          else openPanel(item.tmdb_id, 'tv');
+        };
         return (
           <div
             key={item.tmdb_id}
             className="list-row interactive-surface"
             onClick={openDetails}
-            {...getButtonLikeProps({ onPress: openDetails, label: `View details for ${item.title}` })}
+            {...getButtonLikeProps({ onPress: openDetails, label: editMode ? `${isSelected ? 'Deselect' : 'Select'} ${item.title}` : `View details for ${item.title}` })}
           >
             <div className="list-row-poster">
               {img && <img src={img} alt={item.title} />}
+              {editMode && (
+                <SelectCircle
+                  variant="row"
+                  selected={isSelected}
+                  onClick={(e) => { e.stopPropagation(); toggleSelect(item.tmdb_id); }}
+                  label={isSelected ? `Deselect ${item.title}` : `Select ${item.title}`}
+                />
+              )}
             </div>
             <div className="list-row-info">
               <div className="list-row-title">{item.title}</div>
@@ -1084,6 +1275,8 @@ function WatchingSection({ watching, hideHeader }) {
 function WantToWatchSection({ watchlist, watching, hideHeader }) {
   const { openPanel } = useApp();
   const todayStr = localDateStr();
+  const [editMode, setEditMode] = useState(false);
+  const [selected, setSelected] = useState(() => new Set());
 
   const watchingIds = new Set((watching.items || []).map(i => i.tmdb_id));
   const saved = (watchlist.items || []).filter(i => !watchingIds.has(Number(i.tmdb_id)));
@@ -1092,6 +1285,19 @@ function WantToWatchSection({ watchlist, watching, hideHeader }) {
     .sort((a, b) => a.release_date.localeCompare(b.release_date));
   const availableNow = saved.filter(i => !i.release_date || i.release_date <= todayStr);
   const sorted = [...comingSoon, ...availableNow];
+
+  const toggleSelect = (tmdbId) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(tmdbId)) next.delete(tmdbId); else next.add(tmdbId);
+      return next;
+    });
+  };
+  const exitEditMode = () => { setEditMode(false); setSelected(new Set()); };
+  const deleteSelected = () => {
+    selected.forEach(tmdbId => watchlist.removeFromList(tmdbId));
+    exitEditMode();
+  };
 
   if (sorted.length === 0) {
     return (
@@ -1109,7 +1315,30 @@ function WantToWatchSection({ watchlist, watching, hideHeader }) {
       {!hideHeader && (
         <div className="date-group-header">
           <span className="date-group-label">Want to Watch</span>
-          <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{sorted.length}</span>
+          <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginRight: '0.25rem' }}>{sorted.length}</span>
+          {editMode && selected.size > 0 && (
+            <button
+              className="date-group-action-btn date-group-action-btn--plain"
+              type="button"
+              aria-label={`Remove ${selected.size} selected`}
+              title={`Remove ${selected.size} selected`}
+              onClick={deleteSelected}
+              style={{ color: '#ef4444' }}
+            >
+              <TrashIcon />
+            </button>
+          )}
+          <button
+            className="date-group-action-btn date-group-action-btn--plain"
+            type="button"
+            aria-label={editMode ? 'Done selecting' : 'Select'}
+            title={editMode ? 'Done selecting' : 'Select'}
+            onClick={() => (editMode ? exitEditMode() : setEditMode(true))}
+          >
+            {editMode
+              ? <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Done</span>
+              : <SelectModeIcon />}
+          </button>
         </div>
       )}
       {sorted.map(item => {
@@ -1118,17 +1347,29 @@ function WantToWatchSection({ watchlist, watching, hideHeader }) {
         const isTV          = item.media_type === 'tv';
         const chip          = item.release_date ? countdownChip(item.release_date) : null;
         const streamingChip = item.streaming_date ? countdownChip(item.streaming_date) : null;
-        const openDetails = () => openPanel(item.tmdb_id, item.media_type || 'movie');
+        const isSelected = selected.has(item.tmdb_id);
+        const openDetails = () => {
+          if (editMode) toggleSelect(item.tmdb_id);
+          else openPanel(item.tmdb_id, item.media_type || 'movie');
+        };
 
         return (
           <div
             key={item.id}
             className="list-row interactive-surface"
             onClick={openDetails}
-            {...getButtonLikeProps({ onPress: openDetails, label: `View details for ${title}` })}
+            {...getButtonLikeProps({ onPress: openDetails, label: editMode ? `${isSelected ? 'Deselect' : 'Select'} ${title}` : `View details for ${title}` })}
           >
             <div className="list-row-poster">
               {img && <img src={img} alt={title} />}
+              {editMode && (
+                <SelectCircle
+                  variant="row"
+                  selected={isSelected}
+                  onClick={(e) => { e.stopPropagation(); toggleSelect(item.tmdb_id); }}
+                  label={isSelected ? `Deselect ${title}` : `Select ${title}`}
+                />
+              )}
             </div>
             <div className="list-row-info">
               <div className="list-row-title">{title}</div>
