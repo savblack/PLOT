@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { canUseDOM, getSystemColorScheme, readStorage, writeStorage } from '../utils/storage.js';
 
 export function useTheme() {
-  const [theme, setTheme] = useState(() => readStorage('plot-theme', 'system'));
+  const [theme, setTheme] = useState(() => readStorage('plot-theme', 'light'));
 
   useEffect(() => {
     if (!canUseDOM()) return undefined;

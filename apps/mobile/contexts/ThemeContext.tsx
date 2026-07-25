@@ -19,13 +19,13 @@ const STORAGE_KEY = 'plot-theme';
 const ThemeContext = createContext<ThemeContextValue>({
   colors: palettes.light,
   resolved: 'light',
-  preference: 'system',
+  preference: 'light',
   setPreference: () => {},
 });
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const system = useColorScheme();
-  const [preference, setPreferenceState] = useState<ThemePreference>('system');
+  const [preference, setPreferenceState] = useState<ThemePreference>('light');
 
   useEffect(() => {
     readStorage(STORAGE_KEY).then((stored) => {
