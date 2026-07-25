@@ -2177,8 +2177,40 @@ svg { stroke-width: 1.5; }
   stroke-width: 2.5;
 }
 
+.panel-back-btn {
+  position: absolute;
+  top: 0.7rem;
+  right: 0.7rem;
+  width: 32px;
+  height: 32px;
+  border-radius: 0;
+  border: none;
+  background: transparent;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+.panel-back-btn svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2.5;
+}
+
 .panel-body {
   padding: 1.1rem 1.1rem 2rem;
+}
+
+.panel-talent-view .talent-credits-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+.panel-talent-view .talent-credit-title {
+  margin-top: 0.65rem;
 }
 
 .panel-title {

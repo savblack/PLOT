@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useApp, backdropUrl, logoUrl, profileUrl, countdownChip, formatDate } from '../App.jsx';
 import { tmdb, getTmdbRegion } from '../api/tmdb.js';
 import { findDuplicateCustomList } from '../domain/customLists.js';
@@ -13,6 +12,8 @@ import { favoriteWords } from '../utils/spelling.js';
 import { getButtonLikeProps } from '../utils/interactive.js';
 import { useShareTitle } from '../hooks/useShareTitle.js';
 import { track, EVENTS } from '../lib/analytics.js';
+import CreditsGrid from './TalentCredits.jsx';
+import { dedupedActingCredits, shortBiography } from '../utils/talentCredits.js';
 import { canCreateCustomList, FREE_CUSTOM_LIST_CAP } from '@plot/core/premium.js';
 import { buildWatchLink } from '@plot/core/watchLinks.js';
 import { fetchVerifiedAvailability, formatOfferPrice, offersFromTmdb } from '@plot/core/availability.js';
@@ -27,6 +28,70 @@ function CloseIcon() {
     <svg width="16" height="16" viewBox="0 0 24 24" stroke="currentColor" fill="none" strokeWidth="2.5">
       <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
     </svg>
+  );
+}
+
+/* ── Back icon ── */
+function BackIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" stroke="currentColor" fill="none" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="15 18 9 12 15 6"/>
+    </svg>
+  );
+}
+
+/* ── Talent (cast member) mini-profile shown inline within the panel ── */
+function TalentPanelView({ personId, onOpenTitle }) {
+  const [person, setPerson] = useState(null);
+  const [credits, setCredits] = useState(null);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([tmdb.getPersonDetails(personId), tmdb.getPersonCredits(personId)]).then(([details, work]) => {
+      if (cancelled) return;
+      if (!details || !work) { setError(true); return; }
+      setPerson(details);
+      setCredits(work);
+    }).catch(() => { if (!cancelled) setError(true); });
+    return () => { cancelled = true; };
+  }, [personId]);
+
+  if (!person && !error) {
+    return <div style={{ padding: '2rem 0', textAlign: 'center' }}><LoadingSpinner /></div>;
+  }
+  if (error) {
+    return (
+      <div style={{ textAlign: 'center', paddingTop: '1rem' }}>
+        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Couldn't load this profile.</div>
+      </div>
+    );
+  }
+
+  const actingCredits = dedupedActingCredits(credits?.cast).slice(0, 12);
+
+  const image = profileUrl(person.profile_path, 'h632');
+  const knownFor = person.known_for_department || 'Talent';
+  const biographyPreview = shortBiography(person.biography);
+
+  return (
+    <div className="panel-talent-view">
+      <header className="talent-header">
+        <div className="talent-portrait">
+          {image ? <img src={image} alt={person.name} /> : <span aria-hidden="true">{person.name?.charAt(0)}</span>}
+        </div>
+        <div>
+          <div className="talent-kicker">{knownFor}</div>
+          <h1>{person.name}</h1>
+          {person.birthday && <p className="talent-birthday">Born {new Date(person.birthday).toLocaleDateString('en', { month: 'long', day: 'numeric', year: 'numeric' })}</p>}
+        </div>
+      </header>
+      {person.biography && <p className="talent-biography">{biographyPreview}</p>}
+      <section className="talent-section">
+        <CreditsGrid credits={actingCredits} openPanel={onOpenTitle} />
+        {!actingCredits.length && <p className="talent-muted">No screen credits available.</p>}
+      </section>
+    </div>
   );
 }
 
@@ -584,8 +649,13 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
 }
 
 export default function MediaPanel({ itemId, itemType, closing, onClose }) {
-  const { watchlist, watching, user, profile, favorites, customLists } = useApp();
-  const navigate = useNavigate();
+  const { watchlist, watching, user, profile, favorites, customLists, openPanel } = useApp();
+  const [talentId, setTalentId] = useState(null);
+
+  // Switching to a different title (e.g. via a credit inside the talent view)
+  // should always land back on that title's own overview, not the last cast member.
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- a new title always opens on its own overview, not the last cast member viewed
+  useEffect(() => { setTalentId(null); }, [itemId]);
   const timezone = profile?.timezone || null;
   const history = useHistory(user?.id);
   const { shareTitle, copied: shareCopied } = useShareTitle();
@@ -647,12 +717,17 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
         return;
       }
 
+      if (talentId) {
+        setTalentId(null);
+        return;
+      }
+
       onClose();
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [closing, onClose, showListSheet]);
+  }, [closing, onClose, showListSheet, talentId]);
 
   // Swipe-down-to-close (mobile/tablet bottom sheet only)
   const [dragY, setDragY] = useState(0);
@@ -753,8 +828,11 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
   const cast = (details?.credits?.cast || details?.aggregate_credits?.cast || []).slice(0, 12);
 
   const openTalent = (personId) => {
-    onClose();
-    navigate(`/person/${personId}`);
+    setTalentId(personId);
+  };
+
+  const openTitleFromTalent = (id, type, source) => {
+    openPanel(id, type, source);
   };
 
   const runStatusAction = useCallback(async (actionLabel, action) => {
@@ -850,12 +928,21 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
             : <div className="panel-header-fallback" />
           }
           <div className="panel-drag-handle" />
+          {talentId && (
+            <button className="panel-back-btn" onClick={() => setTalentId(null)} aria-label="Back to title">
+              <BackIcon />
+            </button>
+          )}
           <button className="panel-close-btn" onClick={onClose} aria-label="Close">
             <CloseIcon />
           </button>
         </div>
 
-        {loading ? (
+        {talentId ? (
+          <div className="panel-body">
+            <TalentPanelView key={talentId} personId={talentId} onOpenTitle={openTitleFromTalent} />
+          </div>
+        ) : loading ? (
           <div className="panel-body">
             <LoadingSpinner />
           </div>
