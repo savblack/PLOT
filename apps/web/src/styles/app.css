@@ -157,10 +157,10 @@ svg { stroke-width: 1.5; }
 .app-main::-webkit-scrollbar { display: none; }
 
 /* ── Bottom Tab Bar ─────────────────────────────── */
-/* Floating glass pill, detached from the edges — mirrors the mobile app's
-   tab bar (apps/mobile/app/(app)/_layout.tsx) instead of a flush, full-width
-   bar. Total reserved space (.app-main / .scroll-top-btn) still keys off
-   --tabbar-h + --tabbar-gap so content clears the pill either way. */
+/* Icons float free over the content, detached from the edges — no pill
+   container, no background, no shadow. Total reserved space
+   (.app-main / .scroll-top-btn) still keys off --tabbar-h + --tabbar-gap
+   so content clears the bar. */
 .tab-bar {
   position: fixed;
   bottom: calc(var(--tabbar-gap) + env(safe-area-inset-bottom, 0px));
@@ -168,12 +168,9 @@ svg { stroke-width: 1.5; }
   right: var(--tabbar-gap);
   z-index: 200;
   height: var(--tabbar-h);
-  border-radius: 999px;
   background: transparent;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow-overlay, 0 6px 16px rgba(0, 0, 0, 0.16));
+  border: none;
+  box-shadow: none;
   display: flex;
   align-items: stretch;
 }
