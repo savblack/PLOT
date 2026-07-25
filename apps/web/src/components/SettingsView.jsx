@@ -22,7 +22,6 @@ import SheetHeader from './SheetHeader.jsx';
 import ConfirmModal from './ConfirmModal.jsx';
 import PlotLoader from './PlotLoader.jsx';
 
-const TIP_PRESET_AMOUNTS = [3, 5, 10, 25];
 const USERNAME_RE = /^[a-z0-9](?:[a-z0-9-]{1,28}[a-z0-9])$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -135,115 +134,6 @@ function SettingsTextAction({ children, onClick, disabled = false, tone = 'defau
       <span>{children}</span>
       <span aria-hidden="true">›</span>
     </button>
-  );
-}
-
-function TipJarModal({ busy = false, error = null, onClose, onSubmit }) {
-  const [selectedAmount, setSelectedAmount] = useState(5);
-  const [customAmount, setCustomAmount] = useState('');
-
-  const usingCustomAmount = customAmount.trim() !== '';
-  const parsedCustomAmount = Number(customAmount);
-  const amount = usingCustomAmount ? parsedCustomAmount : selectedAmount;
-  const amountValid = Number.isInteger(amount) && amount >= 1 && amount <= 500;
-  const amountCents = amountValid ? Math.round(amount * 100) : 0;
-  const buttonLabel = amountValid ? `Continue with A$${amount}` : 'Continue';
-
-  return createPortal(
-    <>
-      <div className="panel-overlay" onClick={busy ? undefined : onClose} />
-      <div className="panel">
-        <SheetHeader title="Leave a Tip" onClose={busy ? undefined : onClose} />
-        <div style={{ padding: '1rem', overflow: 'auto', flex: 1 }}>
-          <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '1rem', lineHeight: 1.5 }}>
-            One-time support for PLOT. No subscription, no account changes.
-          </p>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem', marginBottom: '1rem' }}>
-            {TIP_PRESET_AMOUNTS.map((value) => {
-              const selected = !usingCustomAmount && selectedAmount === value;
-              return (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => {
-                    setSelectedAmount(value);
-                    setCustomAmount('');
-                  }}
-                  style={{
-                    padding: '0.8rem 0.5rem',
-                    borderRadius: 'var(--radius-md)',
-                    border: selected ? '2px solid var(--accent)' : '1px solid var(--border)',
-                    background: selected ? 'var(--accent-dim)' : 'var(--surface)',
-                    color: selected ? 'var(--accent)' : 'var(--text-primary)',
-                    fontSize: '0.9rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                  }}
-                >
-                  A${value}
-                </button>
-              );
-            })}
-          </div>
-
-          <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '0.45rem' }}>
-            Custom amount
-          </label>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.55rem',
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--radius-md)',
-            background: 'var(--surface)',
-            padding: '0.8rem 0.9rem',
-            marginBottom: '0.65rem',
-          }}>
-            <span style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)' }}>A$</span>
-            <input
-              type="number"
-              min="1"
-              max="500"
-              step="1"
-              inputMode="numeric"
-              value={customAmount}
-              onChange={(event) => setCustomAmount(event.target.value)}
-              placeholder="5"
-              style={{
-                width: '100%',
-                border: 'none',
-                outline: 'none',
-                background: 'transparent',
-                fontSize: '0.95rem',
-                color: 'var(--text-primary)',
-                fontFamily: 'var(--font-sans)',
-              }}
-            />
-          </div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
-            Enter any whole amount from A$1 to A$500.
-          </div>
-
-          {error && (
-            <div style={{ padding: '0.75rem 0.9rem', fontSize: '0.78rem', color: 'var(--danger)', background: 'var(--danger-dim)', border: '1px solid var(--danger-border)', borderRadius: 8, marginBottom: '1rem' }}>
-              {error}
-            </div>
-          )}
-
-          <button
-            className="btn btn-primary"
-            style={{ width: '100%' }}
-            disabled={busy || !amountValid}
-            aria-busy={busy}
-            onClick={() => onSubmit(amountCents)}
-          >
-            {busy ? <PlotLoader size="button" tone="dark" ariaHidden /> : buttonLabel}
-          </button>
-        </div>
-      </div>
-    </>,
-    document.body
   );
 }
 
@@ -1062,14 +952,11 @@ export default function SettingsView() {
   const [actionError,         setActionError]         = useState(null);
   const [confirmModal,        setConfirmModal]        = useState(null); // { title, message, confirmLabel, danger, onConfirm }
   const [billingReturn,       setBillingReturn]       = useState(null); // null|'premium'|'tip'
-  const [showTipJar,          setShowTipJar]          = useState(false);
+  const [requestedIntegrations, setRequestedIntegrations] = useState(() => new Set());
+  const [requestingIntegration, setRequestingIntegration] = useState(null);
   const premiumEventFired = useRef(false);
 
   const showConfirm = useCallback((opts) => setConfirmModal(opts), []);
-
-  const handleTipJar = useCallback(() => {
-    setShowTipJar(true);
-  }, []);
 
   // Back from Stripe checkout: thank the user and re-pull the profile a few
   // times — the webhook that flips is_premium can lag the redirect.
@@ -1882,10 +1769,10 @@ export default function SettingsView() {
         </div>
       </div>
 
-      {/* PLOT Premium */}
-      <div className="settings-group">
-        <div className="settings-group-title">PLOT Premium</div>
-        {premium.isPremium ? (
+      {/* PLOT Premium — only shown to existing subscribers; checkout is offline for now */}
+      {premium.isPremium && (
+        <div className="settings-group">
+          <div className="settings-group-title">PLOT Premium</div>
           <div className="settings-row" style={{ cursor: 'default' }}>
             <div className="settings-row-left">
               <div className="settings-row-icon" style={{ color: 'var(--accent)' }}>
@@ -1902,46 +1789,18 @@ export default function SettingsView() {
               {premium.busy ? 'Opening…' : 'Manage subscription'}
             </SettingsTextAction>
           </div>
-        ) : (
-          <div className="settings-row" style={{ cursor: 'default' }}>
-            <div className="settings-row-left">
-              <div className="settings-row-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-              </div>
-              <div>
-                <div className="settings-row-label">Get PLOT Premium</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.45 }}>
-                  PLOT is built by one person. Premium keeps it running, and unlocks
-                  Plex &amp; Trakt sync plus unlimited lists.
-                </div>
-              </div>
+          {billingReturn && (
+            <div style={{ padding: '0.5rem 1rem', fontSize: '0.78rem', color: 'var(--accent)', background: 'var(--accent-dim)', borderRadius: 8, margin: '0.25rem 1rem' }}>
+              {billingReturn === 'tip' ? 'Thanks for supporting PLOT ♥' : 'PLOT Premium is active. Thank you ♥'}
             </div>
-            <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={() => navigate('/pricing?billing=annual')}
-              >
-                Get PLOT Premium
-              </button>
+          )}
+          {premium.error && (
+            <div style={{ padding: '0.5rem 1rem', fontSize: '0.78rem', color: 'var(--danger)', background: 'var(--danger-dim)', border: '1px solid var(--danger-border)', borderRadius: 8, margin: '0.25rem 1rem' }}>
+              {premium.error}
             </div>
-          </div>
-        )}
-        {billingReturn && (
-          <div style={{ padding: '0.5rem 1rem', fontSize: '0.78rem', color: 'var(--accent)', background: 'var(--accent-dim)', borderRadius: 8, margin: '0.25rem 1rem' }}>
-            {billingReturn === 'tip'
-              ? 'Thanks for supporting PLOT ♥'
-              : premium.isPremium
-                ? 'PLOT Premium is active. Thank you ♥'
-                : 'Thank you! Your upgrade is being confirmed. This can take a few seconds.'}
-          </div>
-        )}
-        {premium.error && (
-          <div style={{ padding: '0.5rem 1rem', fontSize: '0.78rem', color: 'var(--danger)', background: 'var(--danger-dim)', border: '1px solid var(--danger-border)', borderRadius: 8, margin: '0.25rem 1rem' }}>
-            {premium.error}
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
       {/* Plex */}
       <div className="settings-group">
@@ -1951,37 +1810,51 @@ export default function SettingsView() {
             {[
               { name: 'Plex',  blurb: 'Sync your Plex watchlist and history', connected: sync.isConnected,  disconnect: sync.disconnect,  icon: PLEX_ICON },
               { name: 'Trakt', blurb: 'Sync Netflix, Prime, Disney+ & more',  connected: trakt.isConnected, disconnect: trakt.disconnect, icon: TRAKT_ICON },
-            ].map(row => (
-              <div key={row.name} className="settings-row" style={{ cursor: 'default' }}>
-                <div className="settings-row-left">
-                  <div className="settings-row-icon">{row.icon}</div>
-                  <div>
-                    <div className="settings-row-label">
-                      {row.name}<PremiumBadge />
-                    </div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                      {row.connected ? 'Paused, needs PLOT Premium to sync' : row.blurb}
+            ].map(row => {
+              const feature = `${row.name.toLowerCase()}_sync`;
+              const requested = requestedIntegrations.has(feature);
+              return (
+                <div key={row.name} className="settings-row" style={{ cursor: 'default' }}>
+                  <div className="settings-row-left">
+                    <div className="settings-row-icon">{row.icon}</div>
+                    <div>
+                      <div className="settings-row-label">
+                        {row.name}<PremiumBadge />
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                        {row.connected ? 'Paused, needs PLOT Premium to sync' : row.blurb}
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
-                  <SettingsTextAction
-                    disabled={premium.busy}
-                    onClick={() => {
-                      track(EVENTS.PREMIUM_GATE_HIT, { feature: `${row.name.toLowerCase()}_sync` });
-                      premium.startCheckout('monthly', 'integrations_gate');
-                    }}
-                  >
-                    Unlock · $3/mo
-                  </SettingsTextAction>
-                  {row.connected && (
-                    <SettingsTextAction onClick={row.disconnect} tone="danger">
-                      Disconnect
+                  <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
+                    <SettingsTextAction
+                      disabled={requested || requestingIntegration === feature}
+                      onClick={async () => {
+                        track(EVENTS.PREMIUM_GATE_HIT, { feature });
+                        setRequestingIntegration(feature);
+                        const { error } = await supabase.from('feedback').insert({
+                          user_id:    user?.id ?? null,
+                          user_email: user?.email ?? null,
+                          type:       'feature',
+                          message:    `Requested access: ${row.name} sync`,
+                        });
+                        setRequestingIntegration(null);
+                        if (!error) {
+                          setRequestedIntegrations(prev => new Set(prev).add(feature));
+                        }
+                      }}
+                    >
+                      {requested ? 'Requested ✓' : requestingIntegration === feature ? 'Sending…' : 'Request access'}
                     </SettingsTextAction>
-                  )}
+                    {row.connected && (
+                      <SettingsTextAction onClick={row.disconnect} tone="danger">
+                        Disconnect
+                      </SettingsTextAction>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </>
         ) : SHOW_MEDIA_SYNC_INTEGRATIONS ? (
           <>
@@ -2214,11 +2087,7 @@ export default function SettingsView() {
       {/* Support */}
       <div className="settings-group">
         <div className="settings-group-title">Support</div>
-        <div
-          className="settings-row interactive-surface"
-          onClick={handleTipJar}
-          {...getButtonLikeProps({ onPress: handleTipJar, label: 'Leave a tip' })}
-        >
+        <div className="settings-row" style={{ cursor: 'default' }}>
           <div className="settings-row-left">
             <div className="settings-row-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
@@ -2230,9 +2099,9 @@ export default function SettingsView() {
               </div>
             </div>
           </div>
-          <div className="settings-row-value">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ width: 14, height: 14, opacity: 0.4 }}><polyline points="9 18 15 12 9 6"/></svg>
-          </div>
+          <a href="https://ko-fi.com/J7P123TYGK" target="_blank" rel="noreferrer">
+            <img height="36" style={{ border: 0, height: 36 }} src="https://storage.ko-fi.com/cdn/kofi3.png?v=6" alt="Buy Me a Coffee at ko-fi.com" />
+          </a>
         </div>
         <div
           className="settings-row interactive-surface"
@@ -2374,15 +2243,6 @@ export default function SettingsView() {
       {/* Feedback panel */}
       {showFeedback && (
         <FeedbackPanel user={user} onClose={() => setShowFeedback(false)} />
-      )}
-
-      {showTipJar && (
-        <TipJarModal
-          busy={premium.busy}
-          error={premium.error}
-          onClose={() => setShowTipJar(false)}
-          onSubmit={(amount) => premium.startTipCheckout(amount, 'settings')}
-        />
       )}
 
       {confirmModal && (
