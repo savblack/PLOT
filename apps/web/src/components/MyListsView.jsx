@@ -5,7 +5,6 @@ import { useApp, posterUrl, countdownChip, TodayLabel } from '../App.jsx';
 import { tmdb } from '../api/tmdb.js';
 import { findDuplicateCustomList } from '../domain/customLists.js';
 import { useHistory } from '../hooks/useHistory.js';
-import { useGenres } from '../hooks/useGenres.js';
 import { localDateStr } from '../utils/date.js';
 import { favoriteWords } from '../utils/spelling.js';
 import { entriesForMonth, historyMonthEmptyCopy, historyRatingLabel, monthLabel } from '../utils/history.js';
@@ -344,10 +343,22 @@ function TopTenSection({ listType, title, topLists }) {
     if (targetRank !== dragRank) moveItemToRank(dragRank, targetRank);
   };
 
+  const nextOpenRank = slots.find(rank => !items.find(i => i.rank === rank));
+
   return (
     <div>
       <div className="discover-plat-type-label mylists-topten-type-label">
         <span>{title}</span>
+        {!editMode && nextOpenRank && (
+          <button
+            className="icon-btn"
+            onClick={() => setAddingRank(nextOpenRank)}
+            aria-label="Add a title"
+            title="Add a title"
+          >
+            <PlusIcon />
+          </button>
+        )}
         {items.length > 0 && (
           <button
             className="icon-btn"
@@ -357,9 +368,10 @@ function TopTenSection({ listType, title, topLists }) {
             {editMode
               ? <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Done</span>
               : (
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }}>
-                  <path d="M12 20h9"/>
-                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: 16, height: 16 }}>
+                  <circle cx="5" cy="12" r="2"/>
+                  <circle cx="12" cy="12" r="2"/>
+                  <circle cx="19" cy="12" r="2"/>
                 </svg>
               )
             }
@@ -577,7 +589,7 @@ function FavoritesSection({ favorites: favsHook, filterItems, hideHeader }) {
     <div>
       {!hideHeader && (
         <div className="date-group-header">
-          <span className="date-group-label">{fw.plural}</span>
+          <span className="date-group-label" style={{ fontSize: '0.62rem' }}>{fw.plural}</span>
           {visible.length > 0 && (
             <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginRight: '0.25rem' }}>{visible.length}</span>
           )}
@@ -616,10 +628,6 @@ function FavoritesSection({ favorites: favsHook, filterItems, hideHeader }) {
         <PosterGrid
           items={visible}
           openPanel={openPanel}
-          onRemove={(tmdbId) => {
-            const item = favorites.find(f => f.tmdb_id === tmdbId);
-            if (item) toggleFavorite(item);
-          }}
         />
       )}
 
@@ -712,7 +720,7 @@ function CreateListModal({ lists, onConfirm, onClose }) {
 /* ── Custom lists section ── */
 function CustomListsSection({ customLists: clHook, filterItems, hideHeader }) {
   const { openPanel, profile, navigateTo } = useApp();
-  const { lists, createList, deleteList, renameList, setListPublic, addItem, removeItem } = clHook;
+  const { lists, createList, deleteList, renameList, setListPublic, addItem } = clHook;
   const { share } = useShare();
 
   const shareList = useCallback((list) => share({
@@ -764,7 +772,7 @@ function CustomListsSection({ customLists: clHook, filterItems, hideHeader }) {
     <div style={{ marginBottom: '2rem' }}>
       {!hideHeader && (
         <div className="date-group-header">
-          <span className="date-group-label">My Lists</span>
+          <span className="date-group-label" style={{ fontSize: '0.62rem' }}>My Lists</span>
           <button
             className="date-group-action-btn date-group-action-btn--plain"
             type="button"
@@ -966,7 +974,6 @@ function CustomListsSection({ customLists: clHook, filterItems, hideHeader }) {
               <PosterGrid
                 items={visibleItems}
                 openPanel={openPanel}
-                onRemove={(tmdbId) => removeItem(list.id, tmdbId)}
               />
             );
           })()}
@@ -1224,13 +1231,11 @@ function HistorySection({ entries, loading, year, month }) {
 export default function MyListsView() {
   const { user, profile, topLists, favorites, customLists, watching, watchlist } = useApp();
   const fw = favoriteWords(profile?.region);
-  const genres = useGenres();
   const location = useLocation();
   const { entries: historyEntries, loading: historyLoading } = useHistory(user?.id);
 
   const [tab,          setTab]          = useState(location.state?.tab || 'all');
   const [typeFilters,  setTypeFilters]  = useState([]);
-  const [genreFilters, setGenreFilters] = useState([]);
   const [listSectionsOpen, setListSectionsOpen] = useState(() => Object.fromEntries(
     ALL_LIST_SECTION_IDS.map(id => [id, getStoredSectionOpen(id)]),
   ));
@@ -1255,16 +1260,12 @@ export default function MyListsView() {
   };
 
   const filterItems = (items) => {
-    let filtered = items;
-    if (typeFilters.length) {
-      filtered = filtered.filter(i =>
-        (typeFilters.includes('tv') && i.media_type === 'tv') ||
-        (typeFilters.includes('cinema') && i._cinema === true) ||
-        (typeFilters.includes('movie') && i.media_type === 'movie' && !i._cinema)
-      );
-    }
-    if (genreFilters.length) filtered = filtered.filter(i => !i.genre_ids?.length || i.genre_ids.some(id => genreFilters.includes(id)));
-    return filtered;
+    if (!typeFilters.length) return items;
+    return items.filter(i =>
+      (typeFilters.includes('tv') && i.media_type === 'tv') ||
+      (typeFilters.includes('cinema') && i._cinema === true) ||
+      (typeFilters.includes('movie') && i.media_type === 'movie' && !i._cinema)
+    );
   };
 
   if (!user) return null;
@@ -1307,6 +1308,11 @@ export default function MyListsView() {
   return (
     <div style={{ paddingBottom: '2rem' }}>
       <div className="sub-tabs">
+        {isHistory && (
+          <span className="sub-tabs-date">
+            <TodayLabel onClick={!isCurrentHistoryMonth ? goToHistoryToday : undefined} />
+          </span>
+        )}
         <div className="sub-tabs-scroll">
           {TABS.map(({ id, label }) => (
             <button
@@ -1321,7 +1327,6 @@ export default function MyListsView() {
         <div className="sub-tabs-filters">
           {isHistory ? (
             <div className="cal-month-nav">
-              <TodayLabel onClick={!isCurrentHistoryMonth ? goToHistoryToday : undefined} />
               <button className="cal-month-btn" onClick={prevHistoryMonth} aria-label="Previous month">
                 <svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>
               </button>
@@ -1344,12 +1349,6 @@ export default function MyListsView() {
                     ],
                     value: typeFilters,
                     onChange: setTypeFilters,
-                  },
-                  {
-                    heading: 'Genre',
-                    options: genres.map(g => ({ id: g.id, label: g.name })),
-                    value: genreFilters,
-                    onChange: setGenreFilters,
                   },
                 ]}
               />

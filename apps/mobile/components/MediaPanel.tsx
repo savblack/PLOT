@@ -805,7 +805,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     overflow: 'hidden',
     shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.15, shadowRadius: 24, elevation: 24,
   },
-  handleOverlay: { position: 'absolute', top: spacing.sm, left: 0, right: 0, alignItems: 'center', zIndex: 20 },
+  handleOverlay: { position: 'absolute', top: spacing.md, left: 0, right: 0, alignItems: 'center', zIndex: 20 },
   handle: { width: 36, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.7)' },
 
   backdropWrap: { height: 200, position: 'relative' },
@@ -915,7 +915,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   lsName:  { fontFamily: fontFamily.sansMedium, fontSize: fontSize.md, color: colors.textPrimary },
   lsCount: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted, marginTop: 2 },
   lsCheck: {
-    width: 22, height: 22, borderRadius: 6,
+    width: 22, height: 22, borderRadius: 11,
     borderWidth: 1.5, borderColor: colors.borderStrong,
     alignItems: 'center', justifyContent: 'center',
   },

@@ -124,6 +124,14 @@ function cardMeta(item) {
   return [year, type].filter(Boolean).join(' · ');
 }
 
+// Matches the rank coloring used for the profile's Top 10 lists: gold for #1,
+// secondary for the rest of the podium, muted beyond that.
+function rankBadgeClass(rank) {
+  if (rank === 1) return '';
+  if (rank <= 3)  return ' rank-top3';
+  return ' rank-rest';
+}
+
 /* ── Poster card with optional rank badge ── */
 function RankedCard({ item, rank, showRank = true, openPanel, watchlist }) {
   const title = item.title || item.name;
@@ -144,7 +152,7 @@ function RankedCard({ item, rank, showRank = true, openPanel, watchlist }) {
         <FavBtn item={item} />
         <SaveBtn item={item} watchlist={watchlist} />
         <ShareBtn item={item} />
-        {showRank && <span className="discover-rank-badge">{rank}</span>}
+        {showRank && <span className={`discover-rank-badge${rankBadgeClass(rank)}`}>{rank}</span>}
       </div>
       <div className="media-card-title">{title}</div>
       <div className="media-card-meta">{cardMeta(item)}</div>
@@ -338,7 +346,7 @@ function PlatformSection({ platform, openPanel, watchlist }) {
                       <FavBtn item={item} />
                       <SaveBtn item={item} watchlist={watchlist} />
                       <ShareBtn item={item} />
-                      <span className="discover-rank-badge">{item._rank ?? i + 1}</span>
+                      <span className={`discover-rank-badge${rankBadgeClass(item._rank ?? i + 1)}`}>{item._rank ?? i + 1}</span>
                     </div>
                     <div className="media-card-title">{item.title || item.name}</div>
                   </div>
@@ -365,7 +373,7 @@ function PlatformSection({ platform, openPanel, watchlist }) {
                       <FavBtn item={item} />
                       <SaveBtn item={item} watchlist={watchlist} />
                       <ShareBtn item={item} />
-                      <span className="discover-rank-badge">{item._rank ?? i + 1}</span>
+                      <span className={`discover-rank-badge${rankBadgeClass(item._rank ?? i + 1)}`}>{item._rank ?? i + 1}</span>
                     </div>
                     <div className="media-card-title">{item.title || item.name}</div>
                   </div>
