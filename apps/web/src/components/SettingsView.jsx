@@ -1684,7 +1684,7 @@ export default function SettingsView() {
             </div>
             <div>
               <div className="settings-row-label">Watchlist availability alerts</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.12rem' }}>Email me when a saved title arrives on a streaming platform or channel I've selected, in {REGIONS.find(r => r.code === region)?.name ?? region}</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.12rem' }}>Email me when a saved title arrives on a streaming platform or channel I've selected</div>
             </div>
           </div>
           <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
@@ -1994,7 +1994,7 @@ export default function SettingsView() {
               <div className="settings-row-label">
                 Subscribe to Calendar{!premium.isPremium && <PremiumBadge />}
               </div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+              <div className={!premium.isPremium ? 'settings-row-hint settings-row-hint--hide-mobile' : undefined} style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                 {!premium.isPremium
                   ? 'A live calendar feed needs PLOT Premium'
                   : (calendarToken ? 'Live feed · keep this link private' : 'Get a URL for Google or Apple Calendar')}
@@ -2089,7 +2089,7 @@ export default function SettingsView() {
               </div>
             </div>
           </div>
-          <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
+          <div className="settings-inline-actions settings-inline-actions--stack-mobile" style={{ flexShrink: 0 }}>
             <SettingsTextAction
               disabled={!!exportingData}
               onClick={() => handleExportData('json')}
@@ -2112,12 +2112,12 @@ export default function SettingsView() {
         <div className="settings-row" style={{ cursor: 'default' }}>
           <div className="settings-row-left">
             <div className="settings-row-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
             </div>
             <div>
               <div className="settings-row-label">Support PLOT</div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                Help keep PLOT subscription-free
+                Help keep PLOT <br className="support-plot-hint-break" />subscription-free
               </div>
             </div>
           </div>

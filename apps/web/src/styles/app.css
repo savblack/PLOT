@@ -2626,6 +2626,21 @@ a.provider-chip--link:hover {
   gap: 0.15rem 0.9rem;
   flex-wrap: wrap;
 }
+.support-plot-hint-break {
+  display: none;
+}
+@media (max-width: 640px) {
+  .settings-inline-actions--stack-mobile {
+    flex-direction: column;
+    align-items: flex-end;
+  }
+  .settings-row-hint--hide-mobile {
+    display: none;
+  }
+  .support-plot-hint-break {
+    display: block;
+  }
+}
 .settings-text-action {
   display: inline-flex;
   align-items: center;
