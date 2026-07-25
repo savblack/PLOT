@@ -12,7 +12,7 @@ const RESEND_API_URL = 'https://api.resend.com/emails'
 const FROM_EMAIL = 'PLOT <alerts@theplot.tv>'
 
 type Provider = { id?: number; name?: string }
-type Profile = { id: string; region?: string; streaming_providers?: Provider[] }
+type Profile = { id: string; region?: string; streaming_providers?: Provider[]; guide_channels?: Provider[] }
 type WatchlistItem = { user_id: string; tmdb_id: number; media_type: 'movie' | 'tv'; title: string }
 type Match = WatchlistItem & { providerId: number; providerName: string; region: string }
 
@@ -39,7 +39,7 @@ async function sendEmail(resendKey: string, email: string, matches: Match[]) {
       from: FROM_EMAIL,
       to: [email],
       subject: `${matches.length === 1 ? 'A title on your PLOT watchlist is ready' : `${matches.length} watchlist titles are ready`}`,
-      html: `<div style="font-family:Arial,sans-serif;max-width:560px;color:#171717"><h2 style="margin:0 0 12px">Ready to watch</h2><p style="line-height:1.5">A title on your PLOT watchlist is now included with one of your selected streaming services.</p><ul style="padding-left:20px;line-height:1.5">${rows}</ul><p style="font-size:12px;color:#666">You can change these alerts in PLOT Settings.</p></div>`,
+      html: `<div style="font-family:Arial,sans-serif;max-width:560px;color:#171717"><h2 style="margin:0 0 12px">Ready to watch</h2><p style="line-height:1.5">A title on your PLOT watchlist is now included with one of your selected streaming platforms or channels.</p><ul style="padding-left:20px;line-height:1.5">${rows}</ul><p style="font-size:12px;color:#666">You can change these alerts in PLOT Settings.</p></div>`,
     }),
   })
   if (!response.ok) throw new Error(`Resend request failed (${response.status}): ${await response.text()}`)
@@ -58,17 +58,23 @@ Deno.serve(async (req) => {
   const admin = createClient(supabaseUrl, serviceRole)
   const { data: profiles, error: profileError } = await admin
     .from('profiles')
-    .select('id, region, streaming_providers')
+    .select('id, region, streaming_providers, guide_channels')
     .eq('watchlist_availability_alerts', true)
   if (profileError) return Response.json({ ok: false, error: profileError.message }, { status: 500 })
 
-  const enabledProfiles = (profiles ?? []).filter((profile: Profile) => Array.isArray(profile.streaming_providers) && profile.streaming_providers.some(provider => Number.isInteger(provider.id))) as Profile[]
+  // Alerts match against whichever of "My Platforms" and "My Channels" the
+  // user has selected — the two feed the same TMDB provider-id shape, so
+  // either (or both) is enough to be eligible.
+  const selectedProvidersFor = (profile: Profile) =>
+    [...(profile.streaming_providers ?? []), ...(profile.guide_channels ?? [])].filter(provider => Number.isInteger(provider.id))
+
+  const enabledProfiles = (profiles ?? []).filter((profile: Profile) => selectedProvidersFor(profile).length > 0) as Profile[]
   let sent = 0
   let discovered = 0
 
   for (const profile of enabledProfiles) {
     const region = profile.region || 'US'
-    const selected = new Map((profile.streaming_providers ?? []).filter(provider => Number.isInteger(provider.id)).map(provider => [Number(provider.id), provider.name || 'your streaming service']))
+    const selected = new Map(selectedProvidersFor(profile).map(provider => [Number(provider.id), provider.name || 'your streaming service']))
     const { data: items, error: itemError } = await admin
       .from('list_items')
       .select('user_id, tmdb_id, media_type, title, lists!inner(name)')
