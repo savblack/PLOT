@@ -1995,13 +1995,25 @@ export default function SettingsView() {
             {!premium.isPremium ? (
               <>
                 <SettingsTextAction
-                  disabled={premium.busy}
-                  onClick={() => {
+                  disabled={requestedIntegrations.has('calendar_subscribe') || requestingIntegration === 'calendar_subscribe'}
+                  onClick={async () => {
                     track(EVENTS.PREMIUM_GATE_HIT, { feature: 'calendar_subscribe' });
-                    premium.startCheckout('monthly', 'calendar_gate');
+                    setRequestingIntegration('calendar_subscribe');
+                    const { error } = await supabase.from('feedback').insert({
+                      user_id:    user?.id ?? null,
+                      user_email: user?.email ?? null,
+                      type:       'feature',
+                      message:    'Requested access: Calendar subscribe',
+                    });
+                    setRequestingIntegration(null);
+                    if (!error) {
+                      setRequestedIntegrations(prev => new Set(prev).add('calendar_subscribe'));
+                    }
                   }}
                 >
-                  Unlock · $3/mo
+                  {requestedIntegrations.has('calendar_subscribe')
+                    ? 'Requested ✓'
+                    : requestingIntegration === 'calendar_subscribe' ? 'Sending…' : 'Request access'}
                 </SettingsTextAction>
                 {calendarToken && (
                   <SettingsTextAction onClick={handleRevokeCalToken} tone="danger">
