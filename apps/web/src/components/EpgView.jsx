@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../App.jsx';
 import { dateToLocalStr } from '../utils/date.js';
 import { useDragScroll } from '../hooks/useDragScroll.js';
+import { channelNamesMatch } from '../utils/channelAliases.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 
 /* ── Constants ── */
@@ -226,7 +227,7 @@ export default function EpgView() {
   const country  = profile?.region   ?? 'US';
   const timezone = profile?.timezone ?? null;
   const channelNames = useMemo(
-    () => new Set((profile?.guide_channels ?? []).map(c => (c.name || '').toLowerCase())),
+    () => (profile?.guide_channels ?? []).map(c => c.name || '').filter(Boolean),
     [profile?.guide_channels]
   );
   const cacheKey = `${country}:${timezone}`;
@@ -280,8 +281,8 @@ export default function EpgView() {
   // Apply "My Channels" if the user has selected any; otherwise show everything.
   const programs = useMemo(() => {
     if (!allPrograms) return allPrograms;
-    if (!channelNames.size) return allPrograms;
-    return allPrograms.filter(p => channelNames.has((p.channelName || '').toLowerCase()));
+    if (!channelNames.length) return allPrograms;
+    return allPrograms.filter(p => channelNames.some(name => channelNamesMatch(name, p.channelName)));
   }, [allPrograms, channelNames]);
 
   // Bucket into rails. Today → On Now / Up Next (next 3 hrs) / Later.
@@ -336,7 +337,7 @@ export default function EpgView() {
         <div className="empty-state">
           <div className="empty-title">Nothing scheduled</div>
           <div className="empty-body">
-            {channelNames.size > 0 && (allPrograms?.length ?? 0) > 0
+            {channelNames.length > 0 && (allPrograms?.length ?? 0) > 0
               ? "None of your My Channels have anything on this date. Try another day or update My Channels in Settings."
               : isToday ? 'Nothing more airing today for your region.' : "Schedules aren't available for your region on this date."}
           </div>
