@@ -181,34 +181,44 @@ svg { stroke-width: 1.5; }
 .tab-btn {
   flex: 1;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.15rem;
   padding: 0.4rem 0.1rem;
   background: none;
   border: none;
   border-radius: 999px;
   cursor: pointer;
   color: var(--text-muted);
-  font-size: 0.62rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
   transition: color 0.15s ease;
   -webkit-tap-highlight-color: transparent;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 .tab-btn svg {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   fill: none;
   stroke: currentColor;
 }
 .tab-btn.active {
   color: var(--accent);
+}
+.tab-btn-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--surface-raised);
+  border: 1.5px solid var(--text-muted);
+}
+.tab-btn-avatar-initial {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-serif);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+.tab-btn.active .tab-btn-avatar {
+  border-color: var(--accent);
 }
 
 /* ── Back to top ─────────────────────────────── */

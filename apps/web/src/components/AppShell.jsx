@@ -63,15 +63,6 @@ function IconLists() {
   );
 }
 
-function IconUser() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="8" r="4" />
-      <path d="M4 21c0-4 4-6 8-6s8 2 8 6" />
-    </svg>
-  );
-}
-
 const TAB_ICONS = { home: IconHome, calendar: IconCalendar, 'my-lists': IconLists };
 
 function IconArrowUp() {
@@ -245,10 +236,10 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
               type="button"
               className={`tab-btn${currentView === id ? ' active' : ''}`}
               onClick={() => navigateTo(id)}
+              aria-label={label}
               aria-current={currentView === id ? 'page' : undefined}
             >
               {Icon && <Icon />}
-              {label}
             </button>
           );
         })}
@@ -257,10 +248,12 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
             type="button"
             className={`tab-btn${isOwnProfile ? ' active' : ''}`}
             onClick={() => navigate(`/u/${profile.username}`)}
+            aria-label="Profile"
             aria-current={isOwnProfile ? 'page' : undefined}
           >
-            <IconUser />
-            Profile
+            {profile.avatar_url
+              ? <img className="tab-btn-avatar" src={profile.avatar_url} alt="" />
+              : <span className="tab-btn-avatar tab-btn-avatar-initial">{(profile.display_name || profile.username).charAt(0).toUpperCase()}</span>}
           </button>
         )}
       </nav>
