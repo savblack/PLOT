@@ -382,6 +382,7 @@ ${head}
     .row { gap: 18px; }
     .row img, .row .ph { width: 150px; }
     .row-t { font-size: 1.25rem; }
+    .row-dek { display: none; }
     .dex { overflow-x: auto; scrollbar-width: none; }
     .dex::-webkit-scrollbar { display: none; }
     .dex-links { flex-wrap: nowrap; }
