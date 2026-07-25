@@ -285,6 +285,7 @@ ${head}
   .group { border-top: 1px solid var(--hair); }
   .row-t { display: block; font-family: var(--serif); font-size: 1.45rem; line-height: 1.12; letter-spacing: -0.01em; margin-top: 6px; transition: color 0.25s var(--ease); }
   .row:hover .row-t { color: var(--pink); }
+  .row-dek { display: block; color: var(--mut); font-weight: 300; font-size: 0.92rem; line-height: 1.35; margin-top: 8px; }
   .row img { width: 240px; aspect-ratio: 3/2; object-fit: cover; flex-shrink: 0; border: 1px solid var(--hair); border-radius: 12px; filter: grayscale(1) contrast(1.04); transition: filter 0.45s var(--ease); }
   .row:hover img { filter: grayscale(0) contrast(1); }
   .row .ph { width: 240px; aspect-ratio: 3/2; flex-shrink: 0; background: var(--ink); border-radius: 12px; }
@@ -440,9 +441,11 @@ ${FOOTER_HTML}
 
 const entryRow = (p: FeedPost) => {
   const img = postImage(p);
+  const dek = postBody(p)[0];
   return `<a class="row" href="${FEED_PATH}/${esc(p.slug)}">
     <span class="row-main">${kicker(p.post_type)}
-    <span class="row-t">${esc(postTitle(p))}</span></span>
+    <span class="row-t">${esc(postTitle(p))}</span>
+    ${dek ? `<span class="row-dek">${esc(dek)}</span>` : ''}</span>
     ${img ? `<img src="${esc(img)}" alt="" loading="lazy">` : '<span class="ph"></span>'}
   </a>`;
 };
