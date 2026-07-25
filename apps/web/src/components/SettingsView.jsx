@@ -1044,17 +1044,16 @@ export default function SettingsView() {
     setActionError(null);
     setProviderDraft(newProviders);
     setSavingProviders(true);
-    setShowProviders(false);
 
     const { error } = await supabase
       .from('profiles')
       .update({ streaming_providers: newProviders })
       .eq('id', user.id);
 
+    setSavingProviders(false);
+
     if (error) {
       setActionError(error.message || 'Failed to save your streaming platforms.');
-      setShowProviders(true);
-      setSavingProviders(false);
       return false;
     }
 
@@ -1066,17 +1065,16 @@ export default function SettingsView() {
     setActionError(null);
     setGuideChannelDraft(newChannels);
     setSavingGuideChannels(true);
-    setShowGuideChannels(false);
 
     const { error } = await supabase
       .from('profiles')
       .update({ guide_channels: newChannels })
       .eq('id', user.id);
 
+    setSavingGuideChannels(false);
+
     if (error) {
       setActionError(error.message || 'Failed to save your channels.');
-      setShowGuideChannels(true);
-      setSavingGuideChannels(false);
       return false;
     }
 
