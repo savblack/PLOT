@@ -40,23 +40,10 @@ function BackIcon() {
   );
 }
 
-/* ── Talent (cast member) mini-profile shown inline within the panel ── */
-function TalentPanelView({ personId, onOpenTitle }) {
-  const [person, setPerson] = useState(null);
-  const [credits, setCredits] = useState(null);
-  const [error, setError] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    Promise.all([tmdb.getPersonDetails(personId), tmdb.getPersonCredits(personId)]).then(([details, work]) => {
-      if (cancelled) return;
-      if (!details || !work) { setError(true); return; }
-      setPerson(details);
-      setCredits(work);
-    }).catch(() => { if (!cancelled) setError(true); });
-    return () => { cancelled = true; };
-  }, [personId]);
-
+/* ── Talent (cast member) mini-profile shown inline within the panel ──
+   Presentational only: the panel owns the fetch so the actor's own
+   portrait can replace the title's backdrop in the shared header. ── */
+function TalentPanelView({ person, credits, error, onOpenTitle }) {
   if (!person && !error) {
     return <div style={{ padding: '2rem 0', textAlign: 'center' }}><LoadingSpinner /></div>;
   }
@@ -69,25 +56,21 @@ function TalentPanelView({ personId, onOpenTitle }) {
   }
 
   const actingCredits = dedupedActingCredits(credits?.cast).slice(0, 12);
-
-  const image = profileUrl(person.profile_path, 'h632');
   const knownFor = person.known_for_department || 'Talent';
   const biographyPreview = shortBiography(person.biography);
 
   return (
     <div className="panel-talent-view">
-      <header className="talent-header">
-        <div className="talent-portrait">
-          {image ? <img src={image} alt={person.name} /> : <span aria-hidden="true">{person.name?.charAt(0)}</span>}
+      <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{knownFor}</span>
+      <h2 className="panel-title">{person.name}</h2>
+      {person.birthday && (
+        <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', fontWeight: 500, marginBottom: '0.5rem' }}>
+          Born {new Date(person.birthday).toLocaleDateString('en', { month: 'long', day: 'numeric', year: 'numeric' })}
         </div>
-        <div>
-          <div className="talent-kicker">{knownFor}</div>
-          <h1>{person.name}</h1>
-          {person.birthday && <p className="talent-birthday">Born {new Date(person.birthday).toLocaleDateString('en', { month: 'long', day: 'numeric', year: 'numeric' })}</p>}
-        </div>
-      </header>
-      {person.biography && <p className="talent-biography">{biographyPreview}</p>}
+      )}
+      {person.biography && <p className="panel-overview">{biographyPreview}</p>}
       <section className="talent-section">
+        <div className="panel-section-title">Filmography</div>
         <CreditsGrid credits={actingCredits} openPanel={onOpenTitle} />
         {!actingCredits.length && <p className="talent-muted">No screen credits available.</p>}
       </section>
@@ -651,11 +634,30 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
 export default function MediaPanel({ itemId, itemType, closing, onClose }) {
   const { watchlist, watching, user, profile, favorites, customLists, openPanel } = useApp();
   const [talentId, setTalentId] = useState(null);
+  const [talentPerson, setTalentPerson] = useState(null);
+  const [talentCredits, setTalentCredits] = useState(null);
+  const [talentError, setTalentError] = useState(false);
 
   // Switching to a different title (e.g. via a credit inside the talent view)
   // should always land back on that title's own overview, not the last cast member.
   // eslint-disable-next-line react-hooks/set-state-in-effect -- a new title always opens on its own overview, not the last cast member viewed
   useEffect(() => { setTalentId(null); }, [itemId]);
+
+  useEffect(() => {
+    if (!talentId) return;
+    let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- clear stale profile/credits before fetching the newly-selected cast member
+    setTalentPerson(null);
+    setTalentCredits(null);
+    setTalentError(false);
+    Promise.all([tmdb.getPersonDetails(talentId), tmdb.getPersonCredits(talentId)]).then(([person, work]) => {
+      if (cancelled) return;
+      if (!person || !work) { setTalentError(true); return; }
+      setTalentPerson(person);
+      setTalentCredits(work);
+    }).catch(() => { if (!cancelled) setTalentError(true); });
+    return () => { cancelled = true; };
+  }, [talentId]);
   const timezone = profile?.timezone || null;
   const history = useHistory(user?.id);
   const { shareTitle, copied: shareCopied } = useShareTitle();
@@ -915,19 +917,24 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
         className={`panel${closing ? ' closing' : ''}`}
         style={dragY ? { transform: `translateY(${dragY}px)`, transition: 'none' } : undefined}
       >
-        {/* Header image */}
-        <div
-          className="panel-header-wrap"
-          onPointerDown={handleDragStart}
-          onPointerMove={handleDragMove}
-          onPointerUp={endDrag}
-          onPointerCancel={endDrag}
-        >
-          {details?.backdrop_path
-            ? <img className="panel-header-img" src={backdropUrl(details.backdrop_path)} alt="" />
-            : <div className="panel-header-fallback" />
-          }
-          <div className="panel-drag-handle" />
+        {/* Header image — swaps to the cast member's own portrait while viewing their profile */}
+        <div className="panel-header-wrap">
+          <div
+            onPointerDown={handleDragStart}
+            onPointerMove={handleDragMove}
+            onPointerUp={endDrag}
+            onPointerCancel={endDrag}
+          >
+            {talentId
+              ? (talentPerson?.profile_path
+                  ? <img className="panel-header-img" src={profileUrl(talentPerson.profile_path, 'h632')} alt="" />
+                  : <div className="panel-header-fallback" />)
+              : (details?.backdrop_path
+                  ? <img className="panel-header-img" src={backdropUrl(details.backdrop_path)} alt="" />
+                  : <div className="panel-header-fallback" />)
+            }
+            <div className="panel-drag-handle" />
+          </div>
           {talentId && (
             <button className="panel-back-btn" onClick={() => setTalentId(null)} aria-label="Back to title">
               <BackIcon />
@@ -940,7 +947,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
 
         {talentId ? (
           <div className="panel-body">
-            <TalentPanelView key={talentId} personId={talentId} onOpenTitle={openTitleFromTalent} />
+            <TalentPanelView person={talentPerson} credits={talentCredits} error={talentError} onOpenTitle={openTitleFromTalent} />
           </div>
         ) : loading ? (
           <div className="panel-body">
