@@ -959,6 +959,7 @@ export default function SettingsView() {
   const [showTimezone,        setShowTimezone]        = useState(false);
   const [feedbackType,        setFeedbackType]        = useState(null);
   const [showClearWatchlist,  setShowClearWatchlist]  = useState(false);
+  const [confirmSignOut,      setConfirmSignOut]      = useState(false);
   const [clearingHistory,     setClearingHistory]     = useState(false);
   const [clearingWatchlist,   setClearingWatchlist]   = useState(false);
   const [generatingCalToken,  setGeneratingCalToken]  = useState(false);
@@ -1500,7 +1501,32 @@ export default function SettingsView() {
             )}
           </div>
         </div>
+
+        <div
+          className="settings-row interactive-surface"
+          onClick={() => setConfirmSignOut(true)}
+          {...getButtonLikeProps({ onPress: () => setConfirmSignOut(true), label: 'Sign out' })}
+        >
+          <div className="settings-row-left">
+            <div className="settings-row-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+              </svg>
+            </div>
+            <span className="settings-row-label">Sign out</span>
+          </div>
+        </div>
       </div>
+
+      {confirmSignOut && (
+        <ConfirmModal
+          title="Sign out?"
+          message="You can sign back in anytime."
+          confirmLabel="Sign out"
+          onConfirm={() => { navigate('/logout'); return true; }}
+          onClose={() => setConfirmSignOut(false)}
+        />
+      )}
 
       {/* Public profile */}
       <div className="settings-group">

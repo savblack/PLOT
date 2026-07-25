@@ -3230,7 +3230,6 @@ a.provider-chip--link:hover {
   padding: 0 1rem;
   background: var(--bg);
   border: none;
-  border-left: 3px solid var(--accent);
   border-bottom: 1px solid var(--border);
   cursor: pointer;
   text-align: left;

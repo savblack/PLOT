@@ -10,6 +10,7 @@ import { resolveMediaPanelEscapeAction } from '../utils/mediaPanel.js';
 import { ratingFromPointer, ratingToStars, starFillPercent, STAR_COUNT } from '../utils/ratings.js';
 import { pickBestTvmazeShowMatch } from '../utils/tvmaze.js';
 import { favoriteWords } from '../utils/spelling.js';
+import { getButtonLikeProps } from '../utils/interactive.js';
 import { useShareTitle } from '../hooks/useShareTitle.js';
 import { track, EVENTS } from '../lib/analytics.js';
 import { canCreateCustomList, FREE_CUSTOM_LIST_CAP } from '@plot/core/premium.js';
@@ -265,6 +266,10 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone }) {
               <div
                 key={ep.episode_number}
                 className={`ep-row${watched ? ' watched' : ''}${isCurrent ? ' ep-current' : ''}`}
+                onClick={isTracking && !isChecking ? () => handleCheckEp(ep, watched) : undefined}
+                {...(isTracking && !isChecking
+                  ? getButtonLikeProps({ onPress: () => handleCheckEp(ep, watched), label: watched ? 'Mark unwatched' : 'Mark watched' })
+                  : {})}
               >
                 <span className="ep-num">E{String(ep.episode_number).padStart(2,'0')}</span>
                 <div className="ep-info">

@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PRIMARY_NAV_ITEMS, VIEW_TITLES } from '../navigation.js';
 import { useNotifications } from '../hooks/useNotifications.js';
-import ConfirmModal from './ConfirmModal.jsx';
 
 /* ── SVG Icons ───────────────────────── */
 function IconMenu() {
@@ -77,7 +76,6 @@ function IconArrowUp() {
 export default function AppShell({ currentView, navigateTo, children, profile, user }) {
   const navigate = useNavigate();
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [confirmSignOut, setConfirmSignOut] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const mainRef = useRef(null);
 
@@ -131,11 +129,6 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
   const handleNav = (id) => {
     navigateTo(id);
     closeDrawer();
-  };
-
-  const handleSignOut = () => {
-    closeDrawer();
-    setConfirmSignOut(true);
   };
 
   const pageTitle = VIEW_TITLES[currentView] ?? 'PLOT';
@@ -306,25 +299,8 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
           >
             <span className="nav-drawer-label">Settings</span>
           </button>
-          <button
-            type="button"
-            className="nav-drawer-item nav-drawer-item--signout"
-            onClick={handleSignOut}
-          >
-            <span className="nav-drawer-label">Sign out</span>
-          </button>
         </div>
       </div>
-
-      {confirmSignOut && (
-        <ConfirmModal
-          title="Sign out?"
-          message="You can sign back in anytime."
-          confirmLabel="Sign out"
-          onConfirm={() => { navigate('/logout'); return true; }}
-          onClose={() => setConfirmSignOut(false)}
-        />
-      )}
     </div>
   );
 }

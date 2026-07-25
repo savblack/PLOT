@@ -293,9 +293,10 @@ interface TMDBDetails {
 
 // ── Main panel ────────────────────────────────────────────────────────
 // ── Add-to-custom-list sheet (mobile port of web AddToCustomListSheet) ──
-function AddToListSheet({ item, customLists, onClose }: {
+function AddToListSheet({ item, customLists, topLists, onClose }: {
   item: { id: number; media_type: string; title: string; poster_path: string | null };
   customLists: any;
+  topLists: any;
   onClose: () => void;
 }) {
   const { colors } = useTheme();
@@ -307,6 +308,11 @@ function AddToListSheet({ item, customLists, onClose }: {
   const [name, setName]         = useState('');
   const [error, setError]       = useState('');
   const [busy, setBusy]         = useState(false);
+  const [topOpen, setTopOpen]   = useState(false);
+
+  const topListType = item.media_type === 'tv' ? 'tv' : 'movies';
+  const topItems     = topLists?.lists?.[topListType] || [];
+  const currentRank   = topItems.find((t: any) => t.tmdb_id === item.id)?.rank;
 
   const handleCreate = async () => {
     const trimmed = name.trim();
@@ -329,6 +335,45 @@ function AddToListSheet({ item, customLists, onClose }: {
       <View style={[styles.lsSheet, { paddingBottom: insets.bottom + spacing.lg }]}>
         <View style={styles.lsHandle} />
         <Text style={styles.lsTitle}>Add to list</Text>
+
+        {!!topLists && (
+          <View style={styles.lsTopSection}>
+            <TouchableOpacity style={styles.lsRow} onPress={() => setTopOpen(o => !o)} activeOpacity={0.7}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.lsName}>Top 10 {topListType === 'tv' ? 'TV Shows' : 'Movies'}</Text>
+                <Text style={styles.lsCount}>{currentRank ? `Currently #${currentRank}` : 'Not ranked'}</Text>
+              </View>
+              <View style={[styles.lsCheck, currentRank && styles.lsCheckOn]}>
+                {currentRank ? <Text style={styles.lsTopCheckNum}>{currentRank}</Text> : null}
+              </View>
+            </TouchableOpacity>
+            {topOpen && (
+              <View style={styles.lsTopGrid}>
+                {Array.from({ length: 10 }, (_, i) => i + 1).map(rank => {
+                  const occupant = topItems.find((t: any) => t.rank === rank);
+                  const isThis = occupant?.tmdb_id === item.id;
+                  return (
+                    <TouchableOpacity
+                      key={rank}
+                      style={[styles.lsTopSlot, isThis && styles.lsTopSlotOn]}
+                      activeOpacity={0.7}
+                      onPress={() => {
+                        if (isThis) topLists.removeSlot(topListType, item.id);
+                        else topLists.setSlot(topListType, rank, item);
+                      }}
+                    >
+                      <Text style={[styles.lsTopSlotNum, isThis && styles.lsTopSlotNumOn]}>{rank}</Text>
+                      {occupant && !isThis && (
+                        <Text style={styles.lsTopSlotTitle} numberOfLines={1}>{occupant.title}</Text>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
+          </View>
+        )}
+
         <ScrollView style={{ maxHeight: SCREEN_H * 0.45 }} keyboardShouldPersistTaps="handled">
           {lists.length === 0 && !creating && (
             <Text style={styles.lsEmpty}>No lists yet — create one below.</Text>
@@ -784,6 +829,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
       <AddToListSheet
         item={{ id: itemId, media_type: itemType, title, poster_path: details?.poster_path ?? null }}
         customLists={customLists}
+        topLists={topLists}
         onClose={() => setShowListSheet(false)}
       />
     )}
@@ -920,6 +966,18 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   lsCheckOn: { backgroundColor: colors.accent, borderColor: colors.accent },
+  lsTopCheckNum: { fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, color: '#fff' },
+  lsTopSection: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border, marginBottom: spacing.xs },
+  lsTopGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, paddingBottom: spacing.md },
+  lsTopSlot: {
+    width: '18%', aspectRatio: 1, borderRadius: radii.md,
+    borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surfaceSunken,
+    alignItems: 'center', justifyContent: 'center', padding: 4,
+  },
+  lsTopSlotOn: { backgroundColor: colors.accent, borderColor: colors.accent },
+  lsTopSlotNum: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textMuted },
+  lsTopSlotNumOn: { color: '#fff' },
+  lsTopSlotTitle: { fontFamily: fontFamily.sans, fontSize: 8, color: colors.textMuted, marginTop: 2, textAlign: 'center' },
   lsNewBtn: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.md, marginTop: spacing.xs },
   lsNewBtnText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.accent },
   lsCreateRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'center', marginTop: spacing.sm },

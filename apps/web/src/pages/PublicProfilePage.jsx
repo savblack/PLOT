@@ -6,6 +6,10 @@ import { usePublicProfile } from '../hooks/usePublicProfile.js';
 import { useFollows } from '../hooks/useFollows.js';
 import { useDragScroll } from '../hooks/useDragScroll.js';
 import { useShare } from '../hooks/useShare.js';
+import { useShareTitle } from '../hooks/useShareTitle.js';
+import { useCustomLists } from '@plot/core/useCustomLists.js';
+import { favoriteWords } from '../utils/spelling.js';
+import { getButtonLikeProps } from '../utils/interactive.js';
 import UserList from '../components/UserList.jsx';
 import SheetHeader from '../components/SheetHeader.jsx';
 import { EVENTS } from '../lib/analytics.js';
@@ -15,8 +19,8 @@ const posterUrl = (path, size = 'w342') =>
 
 // Content rails a user can show/hide. profile_sections null = show all.
 const SECTIONS = [
-  { key: 'recent',    label: 'Recently watched' },
-  { key: 'topMovies', label: 'Top 10 films' },
+  { key: 'recent',    label: 'Recently Watched' },
+  { key: 'topMovies', label: 'Top 10 Films' },
   { key: 'topTv',     label: 'Top 10 TV' },
   { key: 'favourites', label: 'Favorites' },
 ];
@@ -68,7 +72,7 @@ const styles = `
   .pp-stat-btn:hover .pp-stat-num { opacity: 0.65; }
 
   .pp-section { margin-top: 2.2rem; }
-  .pp-section-title { margin: 0 0 0.9rem; font-size: 0.78rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); }
+  .pp-section-title { margin: 0 0 0.9rem; font-size: 0.78rem; font-weight: 600; letter-spacing: 0.1em; color: var(--text-muted); }
 
   /* Grids (Top 10) */
   .pp-poster-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 0.6rem; }
@@ -78,10 +82,18 @@ const styles = `
   .pp-rail:active { cursor: grabbing; }
   .pp-rail .pp-poster { flex: 0 0 auto; width: 104px; }
 
-  .pp-poster { position: relative; aspect-ratio: 2 / 3; border-radius: var(--radius-sm, 8px); overflow: hidden; background: var(--surface-raised); border: 1px solid var(--border); }
+  .pp-poster { position: relative; aspect-ratio: 2 / 3; border-radius: var(--radius-sm, 8px); overflow: hidden; background: var(--surface-raised); border: 1px solid var(--border); cursor: pointer; transition: transform 0.2s ease; }
+  .pp-poster:hover { transform: scale(0.97); }
+  .pp-poster:active { transform: scale(0.93); }
   .pp-poster img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .pp-poster-fallback { display: flex; align-items: center; justify-content: center; height: 100%; padding: 0.4rem; font-size: 0.66rem; line-height: 1.3; text-align: center; color: var(--text-muted); }
-  .pp-poster-rank { position: absolute; left: 0.35rem; bottom: 0.1rem; padding: 0.08rem 0.28rem 0.14rem; border-radius: var(--radius-badge); background: rgba(0,0,0,0.7); font-family: var(--font-serif); font-size: 1.6rem; font-weight: 600; color: #fff; }
+  .pp-poster-rank-scrim { position: absolute; left: 0; right: 0; bottom: 0; height: 44%; background: linear-gradient(to top, rgba(0,0,0,0.65), rgba(0,0,0,0)); pointer-events: none; }
+  .pp-poster-rank { position: absolute; left: 0.45rem; bottom: 0.35rem; min-width: 22px; height: 22px; padding: 0 0.3rem; border-radius: 999px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.94); font-family: var(--font-sans); font-size: 0.72rem; font-weight: 700; letter-spacing: -0.01em; color: #111; box-shadow: 0 1px 3px rgba(0,0,0,0.35); }
+  .pp-poster:hover .card-fav-btn, .pp-poster:focus-within .card-fav-btn,
+  .pp-poster:hover .card-save-btn, .pp-poster:focus-within .card-save-btn,
+  .pp-poster:hover .card-share-btn, .pp-poster:focus-within .card-share-btn { opacity: 1; }
+  .pp-poster .card-save-btn.saved { opacity: 1; }
+  .pp-poster .card-share-btn.copied { opacity: 1; }
 
   /* ── Edit profile modal ── */
   .pp-edit-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 1rem; }
@@ -98,31 +110,110 @@ const styles = `
   .pp-section-toggle { display: flex; align-items: center; justify-content: space-between; padding: 0.4rem 0; font-size: 0.92rem; color: var(--text-primary); cursor: pointer; }
 `;
 
-function PosterCard({ item, ranked, i }) {
-  const img = posterUrl(item.poster_path, 'w185');
+/* ── Save (watchlist) button ── */
+function SaveBtn({ item, watchlist }) {
+  const id    = item.id || item.tmdb_id;
+  const saved = watchlist.isInList(id);
   return (
-    <div className="pp-poster" title={item.title}>
+    <button
+      className={`card-save-btn${saved ? ' saved' : ''}`}
+      onClick={e => { e.stopPropagation(); watchlist.toggle({ ...item, id }); }}
+      aria-label={saved ? 'Remove from list' : 'Add to list'}
+      disabled={watchlist.loading}
+    >
+      <svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+    </button>
+  );
+}
+
+/* ── Quick share (desktop hover) ── */
+function ShareBtn({ item }) {
+  const id    = item.id || item.tmdb_id;
+  const type  = item.media_type || 'movie';
+  const title = item.title || item.name;
+  const { shareTitle, copied } = useShareTitle();
+  return (
+    <button
+      className={`card-share-btn${copied ? ' copied' : ''}`}
+      onClick={e => { e.stopPropagation(); shareTitle({ tmdbId: id, mediaType: type, title, source: 'public_profile_card' }); }}
+      aria-label={copied ? 'Link copied' : `Share ${title}`}
+    >
+      {copied ? (
+        <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+      ) : (
+        <svg viewBox="0 0 24 24">
+          <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+        </svg>
+      )}
+    </button>
+  );
+}
+
+/* ── Favourite (heart) button ── */
+function FavBtn({ item }) {
+  const { favorites, profile } = useApp();
+  const fw   = favoriteWords(profile?.region);
+  const type = item.media_type || 'movie';
+  const fav  = favorites.isFavorite(item.id || item.tmdb_id);
+  return (
+    <button
+      className={`card-fav-btn${fav ? ' faved' : ''}`}
+      onClick={e => { e.stopPropagation(); favorites.toggleFavorite({ ...item, id: item.id || item.tmdb_id, media_type: type }); }}
+      aria-label={fav ? fw.un : fw.noun}
+    >
+      <svg viewBox="0 0 24 24">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+      </svg>
+    </button>
+  );
+}
+
+function PosterCard({ item, ranked, i, openPanel, watchlist }) {
+  const img  = posterUrl(item.poster_path, 'w185');
+  const id   = item.id || item.tmdb_id;
+  const type = item.media_type || 'movie';
+  const openDetails = () => openPanel(id, type);
+  return (
+    <div
+      className="pp-poster interactive-surface"
+      title={item.title}
+      onClick={openDetails}
+      {...getButtonLikeProps({ onPress: openDetails, label: `View details for ${item.title}` })}
+    >
       {img ? <img src={img} alt={item.title} loading="lazy" draggable="false" /> : <div className="pp-poster-fallback">{item.title}</div>}
-      {ranked && <span className="pp-poster-rank">{item.rank ?? i + 1}</span>}
+      <FavBtn item={item} />
+      <SaveBtn item={item} watchlist={watchlist} />
+      <ShareBtn item={item} />
+      {ranked && (
+        <>
+          <div className="pp-poster-rank-scrim" />
+          <span className="pp-poster-rank">{item.rank ?? i + 1}</span>
+        </>
+      )}
     </div>
   );
 }
 
-function PosterGrid({ items, ranked = false }) {
+function PosterGrid({ items, ranked = false, openPanel, watchlist }) {
   if (!items?.length) return null;
   return (
     <div className="pp-poster-grid">
-      {items.map((it, i) => <PosterCard key={`${it.tmdb_id}-${it.rank ?? i}`} item={it} ranked={ranked} i={i} />)}
+      {items.map((it, i) => (
+        <PosterCard key={`${it.tmdb_id}-${it.rank ?? i}`} item={it} ranked={ranked} i={i} openPanel={openPanel} watchlist={watchlist} />
+      ))}
     </div>
   );
 }
 
-function PosterRail({ items }) {
+function PosterRail({ items, openPanel, watchlist }) {
   const { ref, handlers } = useDragScroll();
   if (!items?.length) return null;
   return (
     <div className="pp-rail" ref={ref} {...handlers}>
-      {items.map((it, i) => <PosterCard key={`${it.tmdb_id}-${i}`} item={it} />)}
+      {items.map((it, i) => (
+        <PosterCard key={`${it.tmdb_id}-${i}`} item={it} openPanel={openPanel} watchlist={watchlist} />
+      ))}
     </div>
   );
 }
@@ -162,6 +253,13 @@ function EditProfileModal({ userId, current, onClose, onSaved }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const fileRef = useRef(null);
+  const { lists: customLists, setListPublic } = useCustomLists(userId);
+
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = previousOverflow; };
+  }, []);
 
   const cleanUname = uname.trim().toLowerCase();
   const unameChanged = cleanUname !== current.username.toLowerCase();
@@ -279,6 +377,17 @@ function EditProfileModal({ userId, current, onClose, onSaved }) {
                 />
               </label>
             ))}
+            {customLists.map((list) => (
+              <label key={list.id} className="pp-section-toggle">
+                <span>{list.name}</span>
+                <input
+                  type="checkbox"
+                  checked={!!list.is_public}
+                  onChange={(e) => setListPublic(list.id, e.target.checked)}
+                  style={{ width: 20, height: 20, accentColor: 'var(--accent)' }}
+                />
+              </label>
+            ))}
           </div>
 
           {!!error && <div className="pp-error">{error}</div>}
@@ -291,10 +400,10 @@ function EditProfileModal({ userId, current, onClose, onSaved }) {
 export default function PublicProfilePage() {
   const { username = '' } = useParams();
   const handle = username.startsWith('@') ? username : `@${username}`;
-  const { user: viewer } = useApp();
+  const { user: viewer, openPanel, watchlist } = useApp();
   const navigate = useNavigate();
 
-  const { loading, profile, locked, watchCount, recent, topMovies, topTv, favourites } =
+  const { loading, profile, locked, watchCount, recent, topMovies, topTv, favourites, customLists } =
     usePublicProfile(username, viewer?.id);
   const [followList, setFollowList] = useState(null);
   const [editing, setEditing] = useState(false);
@@ -409,7 +518,7 @@ export default function PublicProfilePage() {
                   <p className="public-profile-status-copy">
                     {status === 'pending'
                       ? 'Your follow request is pending. You’ll see their watches and lists once they approve it.'
-                      : `Follow ${name} to see their watch count, recent watches and lists.`}
+                      : `Follow ${name} to stay up to date on their watch activity.`}
                   </p>
                 </div>
               )}
@@ -418,19 +527,25 @@ export default function PublicProfilePage() {
             {/* Sections — rails for living activity, grids for ranked picks.
                 Each shows only if the owner keeps it in profile_sections. */}
             {!locked && showSection('recent') && recent.length > 0 && (
-              <div className="pp-section"><h2 className="pp-section-title pp-pad">Recently watched</h2><div className="pp-pad"><PosterRail items={recent} /></div></div>
+              <div className="pp-section"><h2 className="pp-section-title pp-pad">Recently Watched</h2><div className="pp-pad"><PosterRail items={recent} openPanel={openPanel} watchlist={watchlist} /></div></div>
             )}
             {showSection('topMovies') && topMovies.length > 0 && (
-              <div className="pp-section pp-pad"><h2 className="pp-section-title">Top 10 films</h2><PosterGrid items={topMovies} ranked /></div>
+              <div className="pp-section pp-pad"><h2 className="pp-section-title">Top 10 Films</h2><PosterGrid items={topMovies} ranked openPanel={openPanel} watchlist={watchlist} /></div>
             )}
             {showSection('topTv') && topTv.length > 0 && (
-              <div className="pp-section pp-pad"><h2 className="pp-section-title">Top 10 TV</h2><PosterGrid items={topTv} ranked /></div>
+              <div className="pp-section pp-pad"><h2 className="pp-section-title">Top 10 TV</h2><PosterGrid items={topTv} ranked openPanel={openPanel} watchlist={watchlist} /></div>
             )}
             {showSection('favourites') && favourites.length > 0 && (
-              <div className="pp-section"><h2 className="pp-section-title pp-pad">Favorites</h2><div className="pp-pad"><PosterRail items={favourites} /></div></div>
+              <div className="pp-section"><h2 className="pp-section-title pp-pad">Favorites</h2><div className="pp-pad"><PosterRail items={favourites} openPanel={openPanel} watchlist={watchlist} /></div></div>
             )}
+            {customLists.map((list) => (
+              <div className="pp-section" key={list.id}>
+                <h2 className="pp-section-title pp-pad">{list.name}</h2>
+                <div className="pp-pad"><PosterRail items={list.items} openPanel={openPanel} watchlist={watchlist} /></div>
+              </div>
+            ))}
 
-            {!locked && watchCount === 0 && recent.length === 0 && topMovies.length === 0 && topTv.length === 0 && favourites.length === 0 && (
+            {!locked && watchCount === 0 && recent.length === 0 && topMovies.length === 0 && topTv.length === 0 && favourites.length === 0 && customLists.length === 0 && (
               <p className="pp-empty-body pp-pad" style={{ marginTop: '1.6rem', textAlign: 'center' }}>
                 {name} hasn&apos;t logged anything public yet.
               </p>
