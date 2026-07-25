@@ -2107,7 +2107,7 @@ export default function SettingsView() {
             <div>
               <div className="settings-row-label">Support PLOT</div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                A one-time thanks, no subscription
+                Help keep PLOT subscription-free
               </div>
             </div>
           </div>
