@@ -1568,7 +1568,7 @@ export default function SettingsView() {
               )}
             </div>
           </div>
-          <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
+          <div className="settings-inline-actions" style={{ flexShrink: 0, alignSelf: 'center' }}>
             {usernameDraft === null ? (
               <SettingsTextAction onClick={() => setUsernameDraft(username)}>
                 Edit
