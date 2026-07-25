@@ -312,10 +312,12 @@ export default function EpgView() {
     ].filter(b => b.items.length);
   }, [programs, nowMins]);
 
+  const { ref: daysRef, handlers: daysHandlers } = useDragScroll();
+
   return (
     <div className="epg-rails-outer">
       {/* ── Day selector ── */}
-      <div className="epg-days">
+      <div className="epg-days" ref={daysRef} {...daysHandlers}>
         {days.map(d => (
           <button
             key={d.dateStr}

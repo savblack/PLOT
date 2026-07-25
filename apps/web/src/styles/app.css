@@ -3407,6 +3407,7 @@ a.provider-chip--link:hover {
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
   background: var(--bg);
+  cursor: grab;
 }
 .epg-days::-webkit-scrollbar { display: none; }
 
