@@ -130,6 +130,11 @@ ${hasResearch
     ? `\`\`\`json\n${JSON.stringify(research.map(r => ({ title: r.title, ratings: r.ratings, tmdb: r.tmdb, wikipedia: r.wikipedia })), null, 2)}\n\`\`\``
     : '(no structured research resolved for this post — rely on web research)'}
 
+## Mandatory title baseline
+- TMDB: use it to verify the title ID, basic credits, poster paths and initial metadata.
+- OMDb: use its pre-fetched IMDb, Rotten Tomatoes and Metacritic fields when present.
+- These are research inputs, never reader-facing provenance or a substitute for reporting and criticism.
+
 ### Starting sources to consult / browse further
 ${sourceList(research)}
 
@@ -146,6 +151,10 @@ Write a short-to-medium blog post (4-8 short paragraphs) for theplot.tv/whats-on
   existed. Make it a confident editorial take, not a recap of what the sources say.
 - Use the research pack above, AND do your own light web research for current
   critical reception, cast/production context, and recent news.
+- Give the article one distinct, sourced angle that changes how a reader sees
+  the title: a production choice, collaboration, source-material change,
+  festival response, craft decision, release-history wrinkle or interview detail.
+  Weave it into the writing; never label it a "fun fact" or a trivia aside.
 - Ratings: cite ONLY the pre-fetched \`ratings\` block above (IMDb, Rotten
   Tomatoes, Metacritic) — it is reliable, so do not scrape or web-search for
   scores. If a rating is null, omit it; only include ratings when they add value.

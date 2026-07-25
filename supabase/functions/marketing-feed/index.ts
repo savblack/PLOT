@@ -79,6 +79,7 @@ const FILTERS: { key: string | null; label: string }[] = [
 ];
 
 type TmdbRef = { media_type: string; tmdb_id: number; title: string; poster_path?: string | null };
+type WatchProvider = { provider_id: number; provider_name: string; logo_path?: string | null };
 type FeedPost = {
   slug: string;
   copy: { page_title?: string; page_body?: string[]; hero_image?: string } | null;
@@ -113,6 +114,59 @@ const postShareImage = (p: FeedPost) => {
 };
 const postBody = (p: FeedPost) => (Array.isArray(p.copy?.page_body) ? p.copy.page_body : []);
 const entryUrl = (p: FeedPost) => `${SITE}${FEED_PATH}/${p.slug}`;
+
+const providerLogo = (path: string | null | undefined) =>
+  path ? `https://image.tmdb.org/t/p/w92${path}` : null;
+
+const uniqueProviders = (providers: WatchProvider[]) => {
+  const seen = new Set<number>();
+  return providers.filter((provider) => provider && !seen.has(provider.provider_id) && seen.add(provider.provider_id));
+};
+
+// Article CTAs use a fresh, regional TMDB watch-provider lookup. This keeps the
+// destination logos honest when a title moves between services, rather than
+// freezing a provider name into the marketing-post record.
+const titleCta = async (post: FeedPost, region: string) => {
+  const ref = post.tmdb_refs?.[0];
+  if (!ref?.tmdb_id || !ref.media_type) return '';
+
+  const title = ref.title || postTitle(post);
+  const mediaType = ref.media_type === 'tv' ? 'tv' : 'movie';
+  const saveUrl = `${APP}/save?media_type=${mediaType}&tmdb_id=${ref.tmdb_id}&src=whats_on_article`;
+  let providers: WatchProvider[] = [];
+
+  try {
+    const key = Deno.env.get('TMDB_API_KEY');
+    if (key) {
+      const response = await fetch(
+        `https://api.themoviedb.org/3/${mediaType}/${ref.tmdb_id}/watch/providers?api_key=${key}`,
+      );
+      if (response.ok) {
+        const data = await response.json();
+        const availability = data?.results?.[region] || {};
+        providers = uniqueProviders([
+          ...(availability.flatrate || []),
+          ...(availability.free || []),
+          ...(availability.ads || []),
+        ]).slice(0, 5);
+      }
+    }
+  } catch {
+    // A provider lookup should never stop an editorial article from rendering.
+  }
+
+  const whereToWatch = providers.length
+    ? `<div class="article-watch"><span class="article-watch-label">Where to watch in ${esc(region)}</span><div class="article-providers">${providers.map((provider) => {
+      const logo = providerLogo(provider.logo_path);
+      return `<span class="article-provider">${logo ? `<img src="${esc(logo)}" alt="${esc(provider.provider_name)}" loading="lazy">` : ''}<span>${esc(provider.provider_name)}</span></span>`;
+    }).join('')}</div></div>`
+    : `<div class="article-watch"><span class="article-watch-label">Where to watch</span><span class="article-watch-empty">Availability is not currently confirmed in ${esc(region)}.</span></div>`;
+
+  return `<aside class="article-cta">
+    <div class="article-cta-copy"><span class="article-cta-title">${esc(title)}</span>${whereToWatch}</div>
+    <a class="article-save" data-cta="article_save" href="${esc(saveUrl)}">Save to my PLOT <span aria-hidden="true">&rarr;</span></a>
+  </aside>`;
+};
 
 const kicker = (type: string) => {
   const m = TYPE_META[type];
@@ -254,6 +308,17 @@ ${head}
   .endcta { display: flex; align-items: center; justify-content: space-between; gap: 32px; margin-top: 52px; padding-top: 36px; border-top: 1px solid var(--hair); }
   .endcta .ec-title { display: block; font-family: var(--serif); font-size: 2rem; line-height: 1.04; letter-spacing: -0.015em; }
   .endcta .ec-sub { display: block; color: var(--mut); font-weight: 300; font-size: 0.85rem; margin-top: 8px; }
+  .article-cta { display:flex; align-items:center; justify-content:space-between; gap:28px; margin-top:52px; padding:24px; border:1px solid var(--hair); border-radius:14px; background:var(--paper); }
+  .article-cta-copy { min-width:0; }
+  .article-cta-title { display:block; font-family:var(--serif); font-size:1.65rem; line-height:1.05; letter-spacing:-0.015em; }
+  .article-watch { margin-top:13px; }
+  .article-watch-label { display:block; color:var(--mut); font-size:0.65rem; font-weight:600; letter-spacing:0.13em; text-transform:uppercase; margin-bottom:8px; }
+  .article-providers { display:flex; flex-wrap:wrap; gap:8px; }
+  .article-provider { display:inline-flex; align-items:center; gap:6px; min-height:28px; padding:4px 8px 4px 5px; border:1px solid var(--hair); border-radius:999px; background:#fff; font-size:0.75rem; white-space:nowrap; }
+  .article-provider img { width:21px; height:21px; object-fit:contain; border-radius:5px; display:block; }
+  .article-watch-empty { color:var(--mut); font-size:0.82rem; font-weight:300; }
+  .article-save { display:inline-flex; align-items:center; gap:0.5rem; min-height:44px; padding:0.8rem 1.1rem; border-radius:999px; background:var(--ink); color:#fff; text-decoration:none; font-size:0.78rem; font-weight:500; white-space:nowrap; transition:transform 0.2s var(--ease), background 0.2s var(--ease); }
+  .article-save:hover { background:var(--pink); transform:translateY(-1px); }
   /* CTA button — mirrors the home page hero's "btn btn-outline btn-large" */
   .cta { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.85rem 2.2rem; min-height: 44px; border: 1px solid var(--ink); border-radius: 9999px; background: transparent; color: var(--ink); text-decoration: none; font-weight: 300; font-size: 0.85rem; white-space: nowrap; transition: all 0.25s var(--ease); }
   .cta:hover { background: var(--ink); color: #fff; transform: translateY(-1px); }
@@ -308,6 +373,7 @@ ${head}
     .mcard .kick { margin: 0 0 5px; }
     .mcard .mc-t { font-size: 1.15rem; }
     .endcta { flex-direction: column; align-items: flex-start; gap: 22px; }
+    .article-cta { align-items:flex-start; flex-direction:column; gap:20px; }
     .feature { grid-template-columns: 1fr; gap: 22px; padding: 34px 0; }
     .group { grid-template-columns: 1fr; gap: 0; }
     .g-date { padding-top: 26px; display: flex; gap: 10px; align-items: baseline; }
@@ -731,12 +797,12 @@ Deno.serve(async (req) => {
 <meta name="twitter:image" content="${esc(shareImg)}">
 <script type="application/ld+json">${jsonLd}</script>`;
 
-  // Entries carrying tmdb_refs get a poster grid linking each featured title
-  // to its public title page, so readers can save a pick straight to PLOT.
+  // The poster grid belongs to long-form, multi-title guides. Ordinary article
+  // pages use their single, combined title/save/watch module below instead.
   const refs = Array.isArray(typed.tmdb_refs) ? typed.tmdb_refs : [];
-  const titlesSection = refs.length
+  const titlesSection = typed.post_type === 'guide' && refs.length
     ? `<section style="margin:48px 0 0">
-        <h2 style="font-family:var(--serif);font-size:1.7rem;font-weight:400;margin:0 0 18px">Save to my PLOT</h2>
+        <h2 style="font-family:var(--serif);font-size:1.7rem;font-weight:400;margin:0 0 18px">Titles in this guide</h2>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:18px">${refs.map((r) => {
           const poster = r.poster_path ? `https://image.tmdb.org/t/p/w185${esc(r.poster_path)}` : null;
           return `<a href="${esc(titleHref(r.media_type, r.tmdb_id, r.title))}" style="text-decoration:none;color:inherit">${poster ? `<img src="${poster}" alt="${esc(r.title)}" loading="lazy" style="width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:10px;border:1px solid var(--hair);display:block">` : '<span style="display:block;width:100%;aspect-ratio:2/3;border-radius:10px;background:var(--ink)"></span>'}<span style="display:block;font-size:0.82rem;margin-top:8px;line-height:1.3">${esc(r.title)}</span></a>`;
@@ -745,6 +811,10 @@ Deno.serve(async (req) => {
     : '';
 
   const k = kicker(typed.post_type);
+  const region = (url.searchParams.get('r') || 'US').toUpperCase().slice(0, 2) || 'US';
+  const articleCta = typed.post_type !== 'guide' && refs.length === 1
+    ? await titleCta(typed, region)
+    : '';
   return page(`${title} · PLOT`, head, `
     <article class="post r2">
       <header class="post-head">
@@ -756,13 +826,7 @@ Deno.serve(async (req) => {
         ${body.map((p, i) => `<p${i === 0 ? ' class="lede"' : ''}>${esc(p)}</p>`).join('')}
       </div>
       ${titlesSection}
-      <aside class="endcta">
-        <div class="ec-copy">
-          <span class="ec-title">Watch more. Forget less.</span>
-          <span class="ec-sub">Track upcoming releases and get reminded the day they drop.</span>
-        </div>
-        <a class="cta" href="https://app.theplot.tv/signup?utm_source=whats_on&utm_medium=site&utm_campaign=${esc(typed.post_type)}">Sign up &rarr;</a>
-      </aside>
+      ${articleCta}
     </article>
     ${more}
     <div class="post-foot"><a class="back sc" href="${FEED_PATH}">&larr; All updates</a></div>

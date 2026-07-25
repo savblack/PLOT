@@ -29,6 +29,8 @@ is **Codex**. Other runners are fallback/debug only.
 
 ## Rules
 
+- Follow `marketing/copy/WHATSON_GUIDELINES.md` for website-article sourcing,
+  structure and post-type guidance.
 - Use only the facts supplied in the brief for social copy.
 - The website article can use the brief's research pack plus live web research.
 - Always paraphrase in PLOT's voice.
