@@ -218,7 +218,7 @@ function FollowListModal({ kind, targetId, viewerId, onClose }) {
 }
 
 /* ── Edit profile — display name, username (availability), visibility, photo ── */
-function EditProfileModal({ userId, current, onClose, onSaved }) {
+function EditProfileModal({ userId, current, onClose, onSaved, favWord }) {
   const [displayName, setDisplayName] = useState(current.display_name || '');
   const [uname, setUname] = useState(current.username);
   const [isPublic, setIsPublic] = useState(current.is_public);
@@ -344,7 +344,7 @@ function EditProfileModal({ userId, current, onClose, onSaved }) {
             <p className="pp-toggle-help" style={{ marginBottom: '0.5rem' }}>Choose which rails appear on your profile.</p>
             {SECTIONS.map((s) => (
               <label key={s.key} className="pp-section-toggle">
-                <span>{s.label}</span>
+                <span>{s.key === 'favourites' ? favWord : s.label}</span>
                 <input
                   type="checkbox"
                   checked={enabled.includes(s.key)}
@@ -376,10 +376,10 @@ function EditProfileModal({ userId, current, onClose, onSaved }) {
 export default function PublicProfilePage() {
   const { username = '' } = useParams();
   const handle = username.startsWith('@') ? username : `@${username}`;
-  const { user: viewer, openPanel, watchlist } = useApp();
+  const { user: viewer, openPanel, watchlist, profile: viewerProfile } = useApp();
   const navigate = useNavigate();
 
-  const { loading, profile, locked, watchCount, recent, topMovies, topTv, favourites, customLists } =
+  const { loading, profile, locked, watchCount, avgRating, recent, topMovies, topTv, favourites, customLists } =
     usePublicProfile(username, viewer?.id);
   const [followList, setFollowList] = useState(null);
   const [editing, setEditing] = useState(false);
@@ -390,6 +390,7 @@ export default function PublicProfilePage() {
 
   const p = profile ? { ...profile, ...edits } : profile;
   const isOwn = viewer?.id && profile?.id && viewer.id === profile.id;
+  const fw = favoriteWords(isOwn ? viewerProfile?.region : undefined);
   const found = !loading && !!profile;
   const isPrivate = !!p && !p.is_public;
   const name = p ? (p.display_name || p.username) : '';
@@ -480,6 +481,9 @@ export default function PublicProfilePage() {
               {/* Stats */}
               <div className="pp-stats">
                 {!locked && <div className="pp-stat"><span className="pp-stat-num">{watchCount}</span><span className="pp-stat-label">Watched</span></div>}
+                {!locked && avgRating != null && (
+                  <div className="pp-stat"><span className="pp-stat-num">{avgRating.toFixed(1)}</span><span className="pp-stat-label">Avg rating</span></div>
+                )}
                 <button type="button" className="pp-stat pp-stat-btn" onClick={() => setFollowList('followers')}>
                   <span className="pp-stat-num">{followers}</span><span className="pp-stat-label">Followers</span>
                 </button>
@@ -512,7 +516,7 @@ export default function PublicProfilePage() {
               <div className="pp-section pp-pad"><h2 className="pp-section-title">Top 10 TV</h2><PosterGrid items={topTv} ranked openPanel={openPanel} watchlist={watchlist} /></div>
             )}
             {showSection('favourites') && favourites.length > 0 && (
-              <div className="pp-section"><h2 className="pp-section-title pp-pad">Favorites</h2><div className="pp-pad"><PosterRail items={favourites} openPanel={openPanel} watchlist={watchlist} /></div></div>
+              <div className="pp-section"><h2 className="pp-section-title pp-pad">{fw.plural}</h2><div className="pp-pad"><PosterRail items={favourites} openPanel={openPanel} watchlist={watchlist} /></div></div>
             )}
             {customLists.map((list) => (
               <div className="pp-section" key={list.id}>
@@ -538,6 +542,7 @@ export default function PublicProfilePage() {
         <EditProfileModal
           userId={viewer.id}
           current={{ display_name: p.display_name ?? '', username: p.username, is_public: !!p.is_public, avatar_url: p.avatar_url ?? null, profile_sections: p.profile_sections ?? null }}
+          favWord={fw.plural}
           onClose={() => setEditing(false)}
           onSaved={(next) => {
             const usernameChanged = next.username !== p.username;
