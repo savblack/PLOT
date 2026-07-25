@@ -352,12 +352,10 @@ function ProviderPicker({ title, hint, region, selected, onSave, onClose, limit 
   }, [region, limit, channelsOnly]);
 
   const toggle = (id) => {
-    setChosen(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
-  };
-
-  const handleSave = () => {
+    const next = chosen.includes(id) ? chosen.filter(i => i !== id) : [...chosen, id];
+    setChosen(next);
     const providers = all
-      .filter(p => chosen.includes(p.provider_id))
+      .filter(p => next.includes(p.provider_id))
       .map(p => ({ id: p.provider_id, name: p.provider_name, logo_path: p.logo_path }));
     onSave(providers);
   };
@@ -372,7 +370,7 @@ function ProviderPicker({ title, hint, region, selected, onSave, onClose, limit 
       <div className="panel">
         {/* Sticky header — title + Save always visible */}
         <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--surface)' }}>
-          <SheetHeader title={title} onClose={onClose} action={{ label: 'Save', onClick: handleSave }} />
+          <SheetHeader title={title} onClose={onClose} />
         </div>
 
         {/* Scrollable content */}
