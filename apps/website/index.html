@@ -3,13 +3,27 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <!-- Google tag (gtag.js) -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-PYLHY9JMK1"></script>
+  <!-- Opt out of all analytics on this device: visit with ?dnt=1 once. -->
   <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-PYLHY9JMK1');
+    (function () {
+      if (new URLSearchParams(location.search).get('dnt') === '1') {
+        document.cookie = 'plot_dnt=1; domain=.theplot.tv; path=/; max-age=31536000';
+      }
+      window.PLOT_DNT = /(?:^|; )plot_dnt=1/.test(document.cookie);
+    })();
+  </script>
+  <!-- Google tag (gtag.js) -->
+  <script>
+    if (!window.PLOT_DNT) {
+      window.dataLayer = window.dataLayer || [];
+      window.gtag = function () { dataLayer.push(arguments); };
+      var gtagScript = document.createElement('script');
+      gtagScript.async = true;
+      gtagScript.src = 'https://www.googletagmanager.com/gtag/js?id=G-PYLHY9JMK1';
+      document.head.appendChild(gtagScript);
+      gtag('js', new Date());
+      gtag('config', 'G-PYLHY9JMK1');
+    }
   </script>
   <title>PLOT – Your Film &amp; TV Companion</title>
   <meta name="description" content="PLOT is your personal film and TV companion: for everything you've watched and everything you want to watch, all in one beautiful home." />

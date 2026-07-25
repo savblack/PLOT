@@ -48,7 +48,14 @@ configure({
     track(action === 'created' ? EVENTS.CUSTOM_LIST_CREATED : EVENTS.CUSTOM_LIST_DELETED, { list_id }),
 });
 
-const posthogToken = import.meta.env.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN;
+// Opt this browser out of analytics: visit either theplot.tv or app.theplot.tv
+// once with ?dnt=1 to set a 1yr cookie shared across both subdomains.
+if (new URLSearchParams(window.location.search).get('dnt') === '1') {
+  document.cookie = 'plot_dnt=1; domain=.theplot.tv; path=/; max-age=31536000';
+}
+const isDnt = /(?:^|; )plot_dnt=1/.test(document.cookie);
+
+const posthogToken = !isDnt && import.meta.env.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN;
 if (posthogToken) posthog.init(posthogToken, {
   api_host: import.meta.env.VITE_PUBLIC_POSTHOG_HOST,
   defaults: '2026-01-30',
