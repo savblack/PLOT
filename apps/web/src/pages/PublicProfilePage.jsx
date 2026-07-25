@@ -71,10 +71,13 @@ const styles = `
   .pp-stat-btn:hover .pp-stat-num { opacity: 0.65; }
 
   .pp-section { margin-top: 2.2rem; }
-  .pp-section-title { margin: 0 0 0.9rem; font-size: 0.78rem; font-weight: 600; letter-spacing: 0.1em; color: var(--text-muted); }
+  .pp-section-title { margin: 0 0 0.9rem; font-family: var(--font-serif); font-size: 1.5rem; font-weight: 400; line-height: 1.1; letter-spacing: normal; text-transform: none; color: var(--text-primary); }
 
-  /* Grids (Top 10) */
-  .pp-poster-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 0.6rem; }
+  /* Grids (Top 10) — horizontal scroll rail, same as recent/favourites */
+  .pp-poster-grid { display: flex; gap: 0.6rem; overflow-x: auto; scrollbar-width: none; cursor: grab; }
+  .pp-poster-grid::-webkit-scrollbar { display: none; }
+  .pp-poster-grid:active { cursor: grabbing; }
+  .pp-poster-grid .pp-poster { flex: 0 0 auto; width: 104px; }
   /* Rails (recent, favourites) */
   .pp-rail { display: flex; gap: 0.6rem; overflow-x: auto; scrollbar-width: none; cursor: grab; }
   .pp-rail::-webkit-scrollbar { display: none; }
@@ -87,7 +90,7 @@ const styles = `
   .pp-poster img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .pp-poster-fallback { display: flex; align-items: center; justify-content: center; height: 100%; padding: 0.4rem; font-size: 0.66rem; line-height: 1.3; text-align: center; color: var(--text-muted); }
   .pp-poster-rank-scrim { position: absolute; left: 0; right: 0; bottom: 0; height: 44%; background: linear-gradient(to top, rgba(0,0,0,0.65), rgba(0,0,0,0)); pointer-events: none; }
-  .pp-poster-rank { position: absolute; left: 0.45rem; bottom: 0.35rem; min-width: 22px; height: 22px; padding: 0 0.3rem; border-radius: 999px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.94); font-family: var(--font-sans); font-size: 0.72rem; font-weight: 700; letter-spacing: -0.01em; color: #111; box-shadow: 0 1px 3px rgba(0,0,0,0.35); }
+  .pp-poster-rank { position: absolute; left: 0.45rem; bottom: 0.35rem; min-width: 22px; height: 22px; padding: 0 0.3rem; border-radius: 999px; display: flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--accent) 22%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 60%, transparent); font-family: var(--font-sans); font-size: 0.72rem; font-weight: 700; letter-spacing: -0.01em; color: var(--accent); }
   .pp-poster:hover .card-fav-btn, .pp-poster:focus-within .card-fav-btn,
   .pp-poster:hover .card-save-btn, .pp-poster:focus-within .card-save-btn { opacity: 1; }
   .pp-poster .card-save-btn.saved { opacity: 1; }
@@ -168,9 +171,10 @@ function PosterCard({ item, ranked, i, openPanel, watchlist }) {
 }
 
 function PosterGrid({ items, ranked = false, openPanel, watchlist }) {
+  const { ref, handlers } = useDragScroll();
   if (!items?.length) return null;
   return (
-    <div className="pp-poster-grid">
+    <div className="pp-poster-grid" ref={ref} {...handlers}>
       {items.map((it, i) => (
         <PosterCard key={`${it.tmdb_id}-${it.rank ?? i}`} item={it} ranked={ranked} i={i} openPanel={openPanel} watchlist={watchlist} />
       ))}
