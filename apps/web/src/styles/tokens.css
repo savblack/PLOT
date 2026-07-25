@@ -45,7 +45,7 @@
 
   /* Layout constants */
   --header-h:       56px;
-  --tabbar-h:       48px;
+  --tabbar-h:       60px;
   --tab-bar-height: var(--tabbar-h);
   --panel-w:        460px;
   --content-max:    680px;
