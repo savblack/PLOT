@@ -641,6 +641,35 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [closing, onClose, showListSheet]);
 
+  // Swipe-down-to-close (mobile/tablet bottom sheet only)
+  const [dragY, setDragY] = useState(0);
+  const dragStateRef = useRef({ active: false, startY: 0, startTime: 0 });
+
+  const isBottomSheet = () =>
+    typeof window !== 'undefined' && window.matchMedia('(hover: none), (pointer: coarse)').matches;
+
+  const handleDragStart = useCallback((e) => {
+    if (e.pointerType === 'mouse' || !isBottomSheet()) return;
+    dragStateRef.current = { active: true, startY: e.clientY, startTime: Date.now() };
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+  }, []);
+
+  const handleDragMove = useCallback((e) => {
+    if (!dragStateRef.current.active) return;
+    const delta = e.clientY - dragStateRef.current.startY;
+    setDragY(delta > 0 ? delta : 0);
+  }, []);
+
+  const endDrag = useCallback(() => {
+    if (!dragStateRef.current.active) return;
+    const delta = dragY;
+    const elapsed = Date.now() - dragStateRef.current.startTime;
+    const velocity = delta / Math.max(elapsed, 1);
+    dragStateRef.current.active = false;
+    setDragY(0);
+    if (delta > 120 || velocity > 0.5) onClose();
+  }, [dragY, onClose]);
+
   // Sync local review state when entry loads or changes
   useEffect(() => {
     if (watchedEntry) {
@@ -791,9 +820,25 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
         />
       )}
       <div className={`panel-overlay${closing ? ' closing' : ''}`} onClick={onClose} />
-      <div className={`panel${closing ? ' closing' : ''}`}>
+      <div
+        className={`panel${closing ? ' closing' : ''}`}
+        style={dragY ? { transform: `translateY(${dragY}px)`, transition: 'none' } : undefined}
+      >
+        <div
+          className="panel-drag-handle"
+          onPointerDown={handleDragStart}
+          onPointerMove={handleDragMove}
+          onPointerUp={endDrag}
+          onPointerCancel={endDrag}
+        />
         {/* Header image */}
-        <div className="panel-header-wrap">
+        <div
+          className="panel-header-wrap"
+          onPointerDown={handleDragStart}
+          onPointerMove={handleDragMove}
+          onPointerUp={endDrag}
+          onPointerCancel={endDrag}
+        >
           {details?.backdrop_path
             ? <img className="panel-header-img" src={backdropUrl(details.backdrop_path)} alt="" />
             : <div className="panel-header-fallback" />
