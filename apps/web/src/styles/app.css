@@ -169,7 +169,7 @@ svg { stroke-width: 1.5; }
   z-index: 200;
   height: var(--tabbar-h);
   border-radius: 999px;
-  background: color-mix(in srgb, var(--surface) 55%, transparent);
+  background: transparent;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--border);
