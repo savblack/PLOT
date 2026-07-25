@@ -229,7 +229,6 @@ function ProviderModal({
   const [chosen,  setChosen]  = useState<number[]>(selected.map(p => p.id));
   const [search,  setSearch]  = useState('');
   const [loading, setLoading] = useState(true);
-  const [saving,  setSaving]  = useState(false);
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
@@ -243,12 +242,11 @@ function ProviderModal({
     });
   }, [region, channelsOnly]);
 
-  const toggle = (id: number) => setChosen(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
-
-  const handleSave = () => {
-    setSaving(true);
+  const toggle = (id: number) => {
+    const next = chosen.includes(id) ? chosen.filter(i => i !== id) : [...chosen, id];
+    setChosen(next);
     const providers = all
-      .filter((p: any) => chosen.includes(p.provider_id))
+      .filter((p: any) => next.includes(p.provider_id))
       .map((p: any) => ({ id: p.provider_id, name: p.provider_name, logo_path: p.logo_path }));
     onSave(providers);
   };
@@ -262,12 +260,12 @@ function ProviderModal({
       <View style={[styles.modalContainer, { paddingTop: insets.top }]}>
         <View style={styles.modalHeader}>
           <Text style={styles.modalTitle}>{title}</Text>
-          <View style={{ flexDirection: 'row', gap: spacing.md }}>
-            <TouchableOpacity onPress={onClose}><Text style={styles.modalCancel}>Cancel</Text></TouchableOpacity>
-            <TouchableOpacity onPress={handleSave} disabled={saving}>
-              <Text style={[styles.modalCancel, { color: colors.accent }]}>{saving ? 'Saving…' : 'Save'}</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity onPress={onClose}>
+            <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={colors.textSecondary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+              <Line x1="18" y1="6" x2="6" y2="18" />
+              <Line x1="6" y1="6" x2="18" y2="18" />
+            </Svg>
+          </TouchableOpacity>
         </View>
         <View style={styles.modalSearchWrap}>
           <TextInput
@@ -515,13 +513,11 @@ export default function SettingsScreen() {
   const saveProviders = async (newProviders: any[]) => {
     await supabase.from('profiles').update({ streaming_providers: newProviders }).eq('id', userId!);
     refreshProfile();
-    setShowProviders(false);
   };
 
   const saveChannels = async (newChannels: any[]) => {
     await supabase.from('profiles').update({ guide_channels: newChannels }).eq('id', userId!);
     refreshProfile();
-    setShowChannels(false);
   };
 
   const saveRegion = async (code: string) => {
