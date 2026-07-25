@@ -236,6 +236,10 @@ export function UpcomingContent({ typeFilters, genreFilters, providers, openPane
   const [recentOpen, setRecentOpen] = useState(false);
 
   const providerIds = providers.map(p => p.id);
+  // "My Channels" (guide_channels) are free/ad-supported broadcast providers,
+  // not subscription streaming — TMDB's default 'flatrate' monetization
+  // filter would silently exclude them, so widen it here.
+  const monetizationTypes = 'free|ads';
 
   useEffect(() => {
     async function load() {
@@ -244,9 +248,9 @@ export function UpcomingContent({ typeFilters, genreFilters, providers, openPane
       const todayStr = localDateStr();
 
       const [upcomingMovRes, upcomingTVRes, recentRes] = await Promise.all([
-        tmdb.getUpcoming(providerIds),
-        tmdb.getUpcomingTV(providerIds),
-        tmdb.getRecentReleases(14, providerIds),
+        tmdb.getUpcoming(providerIds, monetizationTypes),
+        tmdb.getUpcomingTV(providerIds, monetizationTypes),
+        tmdb.getRecentReleases(14, providerIds, monetizationTypes),
       ]);
 
       const todayItems = [];

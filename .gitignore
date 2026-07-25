@@ -40,6 +40,7 @@ mockup-*.html
 *-variants-*.html
 apps/website/images/product/*.gif
 .vercel
+.wrangler/
 marketing/preview/out/
 # Manually generated marketing posts (media + per-day copy docs)
 plot-posts/

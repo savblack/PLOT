@@ -13,6 +13,7 @@ interface Profile {
   guide_channels?: Array<{ id: number; name: string; logo_path?: string | null }>;
   calendar_token?: string | null;
   is_premium?: boolean;
+  log_rewatches?: boolean;
 }
 
 export function useCurrentUser() {

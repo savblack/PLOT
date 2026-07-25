@@ -73,6 +73,8 @@
       transition: border-color 0.2s, transform 0.2s;
     }
     .home:hover { border-color: rgba(240, 239, 232, 0.5); transform: translateY(-1px); }
+    .actions { display: flex; flex-wrap: wrap; gap: 0.6rem; justify-content: center; margin-top: 0.5rem; }
+    .actions .home { margin-top: 0; }
   </style>
 </head>
 <body>
@@ -80,7 +82,10 @@
   <div class="code">404</div>
   <p class="headline">Looks like we've hit a plot hole.</p>
   <p class="sub">Let's get you back to something worth watching.</p>
-  <a class="home" href="/">← Back to PLOT</a>
+  <div class="actions">
+    <a class="home" href="/">← Back to PLOT</a>
+    <a class="home" href="/whats-on">See what's on</a>
+  </div>
   <script src="js/config.js"></script>
 </body>
 </html>

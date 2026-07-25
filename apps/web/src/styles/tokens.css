@@ -47,6 +47,7 @@
   --header-h:       56px;
   --tabbar-h:       58px;
   --tab-bar-height: var(--tabbar-h);
+  --tabbar-gap:     0.75rem; /* inset between the floating tab-bar pill and the viewport edges */
   --panel-w:        460px;
   --content-max:    680px;
 

@@ -314,6 +314,7 @@ export default function GuideScreen() {
 
   const [country,         setCountry]         = useState('US');
   const [timezone,        setTimezone]        = useState<string | null>(null);
+  const [channelNames,    setChannelNames]    = useState<Set<string>>(new Set());
   const [scheduleByDate,  setScheduleByDate]  = useState<Record<string, Channel[] | null>>({});
   const [selectedDate,    setSelectedDate]    = useState(() => localDateStr());
   const [selectedProg,    setSelectedProg]    = useState<Program | null>(null);
@@ -332,9 +333,11 @@ export default function GuideScreen() {
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) return;
-      const { data: profile } = await supabase.from('profiles').select('region, timezone').eq('id', session.user.id).maybeSingle();
+      const { data: profile } = await supabase.from('profiles').select('region, timezone, guide_channels').eq('id', session.user.id).maybeSingle();
       if (profile?.region)   setCountry(profile.region);
       if (profile?.timezone) setTimezone(profile.timezone);
+      const channels: Array<{ name?: string }> = profile?.guide_channels ?? [];
+      setChannelNames(new Set(channels.map(c => (c.name || '').toLowerCase())));
     })();
   }, []);
 
@@ -411,7 +414,11 @@ export default function GuideScreen() {
 
         {/* ── Single day view (day switching via tab taps only) ── */}
         {(() => {
-          const dayChannels = scheduleByDate[selectedDate] ?? null;
+          const allDayChannels = scheduleByDate[selectedDate] ?? null;
+          // Apply "My Channels" if the user has selected any; otherwise show everything.
+          const dayChannels = allDayChannels && channelNames.size
+            ? allDayChannels.filter(ch => channelNames.has((ch.name || '').toLowerCase()))
+            : allDayChannels;
           const isToday     = selectedDate === todayStr;
           const now2        = new Date();
           const dayNowMins  = isToday ? (now2.getHours() - START_H) * 60 + now2.getMinutes() : null;
@@ -422,12 +429,19 @@ export default function GuideScreen() {
               <ActivityIndicator color={colors.accent} />
             </View>
           );
-          if (!dayChannels.length) return (
-            <View style={styles.empty}>
-              <Text style={styles.emptyTitle}>No schedule available</Text>
-              <Text style={styles.emptyBody}>Schedules aren't available for your region on this date.</Text>
-            </View>
-          );
+          if (!dayChannels.length) {
+            const filteredToZero = channelNames.size > 0 && (allDayChannels?.length ?? 0) > 0;
+            return (
+              <View style={styles.empty}>
+                <Text style={styles.emptyTitle}>No schedule available</Text>
+                <Text style={styles.emptyBody}>
+                  {filteredToZero
+                    ? "None of your My Channels have anything on this date. Try another day or update My Channels in Settings."
+                    : "Schedules aren't available for your region on this date."}
+                </Text>
+              </View>
+            );
+          }
           return (
             <DayGrid
               channels={dayChannels}

@@ -423,11 +423,18 @@ export default function SettingsScreen() {
 
   const username    = profile?.username || '';
   const isPublic    = !!profile?.is_public;
+  const logRewatches = profile?.log_rewatches ?? true;
   const { count: requestCount } = useFollowRequests(userId);
 
   const toggleVisibility = async () => {
     if (!userId) return;
     await supabase.from('profiles').update({ is_public: !isPublic }).eq('id', userId);
+    refreshProfile();
+  };
+
+  const toggleLogRewatches = async () => {
+    if (!userId) return;
+    await supabase.from('profiles').update({ log_rewatches: !logRewatches }).eq('id', userId);
     refreshProfile();
   };
 
@@ -549,17 +556,23 @@ export default function SettingsScreen() {
   };
 
   const handleClearWatchlist = () => {
-    Alert.alert('Clear watchlist?', '', [
+    Alert.alert('Clear watchlist?', 'This removes everything from your Saved list (want-to-watch). Items in your custom lists are not affected.', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Clear Saved only', onPress: async () => {
         setClearingList(true);
-        await supabase.from('list_items').delete().eq('user_id', userId!);
+        const { data: myList } = await supabase.from('lists')
+          .select('id').eq('user_id', userId!).eq('name', 'My List').maybeSingle();
+        if (myList?.id) {
+          await supabase.from('list_items').delete().eq('list_id', myList.id);
+        }
         setClearingList(false);
       }},
       { text: 'Clear Saved + Watching', style: 'destructive', onPress: async () => {
         setClearingList(true);
+        const { data: myList } = await supabase.from('lists')
+          .select('id').eq('user_id', userId!).eq('name', 'My List').maybeSingle();
         await Promise.all([
-          supabase.from('list_items').delete().eq('user_id', userId!),
+          myList?.id ? supabase.from('list_items').delete().eq('list_id', myList.id) : Promise.resolve(),
           supabase.from('watching_progress').delete().eq('user_id', userId!),
         ]);
         setClearingList(false);
@@ -577,8 +590,16 @@ export default function SettingsScreen() {
           const { data: { session } } = await supabase.auth.getSession();
           if (!session) return;
           const url = `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/delete-account`;
-          await fetch(url, { method: 'POST', headers: { Authorization: `Bearer ${session.access_token}` } });
-          await supabase.auth.signOut();
+          try {
+            const response = await fetch(url, { method: 'POST', headers: { Authorization: `Bearer ${session.access_token}` } });
+            if (!response.ok) {
+              Alert.alert('Delete failed', 'We could not delete your account. Please try again.');
+              return;
+            }
+            await supabase.auth.signOut();
+          } catch {
+            Alert.alert('Delete failed', 'We could not delete your account. Please try again.');
+          }
         }},
       ]
     );
@@ -649,6 +670,11 @@ export default function SettingsScreen() {
                 ))}
               </View>
             }
+          />
+          <SettingsRow
+            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><Path d="M3 3v5h5"/></Svg>}
+            label="Log rewatches"
+            trailing={<Switch value={logRewatches} onValueChange={toggleLogRewatches} trackColor={{ true: colors.accent }} />}
           />
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Rect x={2} y={3} width={20} height={14} rx={2}/><Path d="M8 21h8M12 17v4"/></Svg>}

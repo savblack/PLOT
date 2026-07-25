@@ -43,7 +43,7 @@ function CheckIcon() {
 }
 
 /* ── Result Row ── */
-function ResultRow({ item, openPanel, watchlist, favorites, history, region }) {
+function ResultRow({ item, openPanel, watchlist, favorites, history, region, logRewatches = true }) {
   const fw    = favoriteWords(region);
   const id    = item.id;
   const type  = item.media_type || 'movie';
@@ -59,7 +59,7 @@ function ResultRow({ item, openPanel, watchlist, favorites, history, region }) {
     if (watched) {
       await history.removeEntry(id);
     } else {
-      await history.logWatched({ ...item, id, media_type: type });
+      await history.logWatched({ ...item, id, media_type: type }, { logRewatches });
     }
   };
   const openDetails = () => openPanel(id, type);
@@ -303,6 +303,7 @@ export default function SearchView() {
                   favorites={favorites}
                   history={history}
                   region={profile?.region}
+                  logRewatches={profile?.log_rewatches ?? true}
                 />
               ))}
             </div>

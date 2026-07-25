@@ -70,7 +70,7 @@ type Step = 'pick-platform' | 'pick-file' | 'resolving' | 'preview' | 'importing
 
 async function resolveEntries(
   entries: RawEntry[],
-  existingTmdbIds: Set<number>,
+  existingWatches: Set<string>,
   onProgress: (done: number) => void,
 ): Promise<ResolvedEntry[]> {
   const resolved: ResolvedEntry[] = [];
@@ -93,7 +93,9 @@ async function resolveEntries(
         mediaType: match.media_type as 'movie' | 'tv',
         title: (match.title ?? match.name ?? e.title) as string,
         posterPath: (match.poster_path ?? null) as string | null,
-        alreadyImported: existingTmdbIds.has(match.id),
+        // Only skip an exact (title, date) match already in the journal —
+        // a rewatch on a different date is a new entry, not a duplicate.
+        alreadyImported: existingWatches.has(`${match.id}::${e.watchedAt}`),
       } satisfies ResolvedEntry;
     }));
     resolved.push(...results.filter((r): r is ResolvedEntry => r !== null));
@@ -154,14 +156,16 @@ export default function ImportHistoryModal({ userId, onClose }: Props) {
       setResolveDone(0);
       setStep('resolving');
 
-      // Fetch existing tmdb_ids to flag duplicates
+      // Fetch existing (tmdb_id, watched_at) pairs to flag exact duplicates —
+      // a different date for a title already in the journal is a rewatch,
+      // not a duplicate, so it must still import.
       const { data: existing } = await supabase
         .from('journal')
-        .select('tmdb_id')
+        .select('tmdb_id, watched_at')
         .eq('user_id', userId);
-      const existingIds = new Set<number>((existing ?? []).map((r: any) => r.tmdb_id));
+      const existingWatches = new Set<string>((existing ?? []).map((r: any) => `${r.tmdb_id}::${r.watched_at}`));
 
-      const results = await resolveEntries(deduped, existingIds, (done) => setResolveDone(done));
+      const results = await resolveEntries(deduped, existingWatches, (done) => setResolveDone(done));
       setResolved(results);
       setStep('preview');
     } catch (err) {
@@ -171,11 +175,29 @@ export default function ImportHistoryModal({ userId, onClose }: Props) {
   }, [platform, userId]);
 
   const handleImport = useCallback(async () => {
-    const toImport = resolved.filter(r => !r.alreadyImported);
+    let toImport = resolved.filter(r => !r.alreadyImported);
     if (toImport.length === 0) {
       setStep('done');
       return;
     }
+
+    const { data: profile } = await supabase.from('profiles').select('log_rewatches').eq('id', userId).maybeSingle();
+    const logRewatches = profile?.log_rewatches ?? true;
+
+    if (!logRewatches) {
+      // Collapse to one row per title (most-recent watch) — this preference
+      // means "don't clutter my history with rewatches" — and clear out any
+      // existing rows for those titles first since there's no more DB-level
+      // unique(user_id,tmdb_id) to upsert against.
+      const latestByTmdbId = new Map<number, ResolvedEntry>();
+      for (const r of toImport) {
+        const existing = latestByTmdbId.get(r.tmdbId);
+        if (!existing || r.raw.watchedAt > existing.raw.watchedAt) latestByTmdbId.set(r.tmdbId, r);
+      }
+      toImport = Array.from(latestByTmdbId.values());
+      await supabase.from('journal').delete().eq('user_id', userId).in('tmdb_id', toImport.map(r => r.tmdbId));
+    }
+
     setImportTotal(toImport.length);
     setImportDone(0);
     setStep('importing');
@@ -189,9 +211,13 @@ export default function ImportHistoryModal({ userId, onClose }: Props) {
         media_type: r.mediaType,
         title:      r.title,
         poster_path: r.posterPath,
-        watched_at: new Date(r.raw.watchedAt + 'T12:00:00').toISOString(),
+        watched_at: r.raw.watchedAt,
       }));
-      await supabase.from('journal').upsert(rows, { onConflict: 'user_id,tmdb_id', ignoreDuplicates: true });
+      if (logRewatches) {
+        await supabase.from('journal').upsert(rows, { onConflict: 'user_id,tmdb_id,watched_at', ignoreDuplicates: true });
+      } else {
+        await supabase.from('journal').insert(rows);
+      }
       setImportDone(Math.min(i + BATCH, toImport.length));
     }
     setStep('done');

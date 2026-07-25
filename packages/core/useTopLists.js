@@ -113,24 +113,17 @@ export function useTopLists(userId) {
     const itemB = items.find(i => i.rank === rankB);
     if (!itemA || !itemB) return false;
 
-    // Delete both, re-insert with swapped ranks
-    const removeResult = await supabase.from('user_top_lists')
-      .delete()
-      .eq('user_id', userId)
-      .eq('list_type', listType)
-      .in('rank', [rankA, rankB]);
-    if (removeResult.error) {
-      console.error('Failed to swap top-list ranks', removeResult.error);
-      return false;
-    }
-
-    const insertResult = await supabase.from('user_top_lists')
-      .insert([
-        { ...itemA, id: undefined, rank: rankB },
-        { ...itemB, id: undefined, rank: rankA },
-      ]);
-    if (insertResult.error) {
-      console.error('Failed to persist swapped top-list ranks', insertResult.error);
+    // Swap atomically in one transaction (see swap_top_list_ranks migration) —
+    // a two-step delete-then-insert risked losing both rows if the insert
+    // failed after the delete had already succeeded.
+    const { error } = await supabase.rpc('swap_top_list_ranks', {
+      p_user_id:   userId,
+      p_list_type: listType,
+      p_rank_a:    rankA,
+      p_rank_b:    rankB,
+    });
+    if (error) {
+      console.error('Failed to swap top-list ranks', error);
       await load();
       return false;
     }

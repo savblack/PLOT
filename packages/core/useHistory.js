@@ -17,7 +17,7 @@ function notifyHistoryChanged() {
  * @returns {{
  *   entries: any[];
  *   loading: boolean;
- *   logWatched: (item: any, opts?: { rating?: number; note?: string; dnf?: boolean }) => Promise<any>;
+ *   logWatched: (item: any, opts?: { rating?: number; note?: string; dnf?: boolean; watchedAt?: string; logRewatches?: boolean }) => Promise<any>;
  *   updateEntry: (tmdbId: number, updates: any) => Promise<any>;
  *   removeEntry: (tmdbId: number) => Promise<boolean>;
  *   isWatched: (tmdbId: number) => boolean;
@@ -55,13 +55,25 @@ export function useHistory(userId) {
   useEffect(() => { load(); }, [load]);
   useEffect(() => on(HISTORY_CHANGED_EVENT, load), [load]);
 
-  /* ── Log a watched item ── */
-  const logWatched = useCallback(async (item, { rating, note, dnf } = {}) => {
+  /* ── Log a watched item ──
+     logRewatches (default true): a rewatch on a new date becomes its own
+     history row instead of overwriting the previous watch (see SUS-66 /
+     profiles.log_rewatches). */
+  const logWatched = useCallback(async (item, { rating, note, dnf, watchedAt, logRewatches = true } = {}) => {
     if (!userId) return null;
-    const { data, row } = await logWatchedItem({ userId, item, rating, note, dnf });
+    const { data, row } = await logWatchedItem({ userId, item, rating, note, dnf, watchedAt, logRewatches });
 
     if (data) {
-      setEntries(prev => [data, ...prev.filter(e => e.tmdb_id !== row.tmdb_id)]);
+      setEntries(prev => {
+        // Same-title-same-date always replaces in place. A same-title
+        // different-date row is a preserved rewatch (kept) unless rewatches
+        // are off, in which case the DB write already collapsed to one row
+        // per title and every stale local entry for it must go too.
+        const withoutStale = prev.filter(e => logRewatches
+          ? !(e.tmdb_id === row.tmdb_id && e.watched_at === row.watched_at)
+          : e.tmdb_id !== row.tmdb_id);
+        return [data, ...withoutStale].sort((a, b) => (a.watched_at < b.watched_at ? 1 : -1));
+      });
       notifyHistoryChanged();
       // Analytics seams (platform-injected; see config.js). Fired from the single
       // core spot so every surface that logs a watch is covered.
@@ -73,8 +85,15 @@ export function useHistory(userId) {
     return data ?? null;
   }, [userId]);
 
-  /* ── Update rating / note ── */
+  /* ── Update rating / note ──
+     A title can now have multiple journal rows (rewatches), so this targets
+     the most recent entry for tmdbId — i.e. the one representing "current"
+     status in every existing caller (MediaPanel's status panel, SearchView) —
+     by row id, not a blind tmdb_id match that could hit several rows. */
   const updateEntry = useCallback(async (tmdbId, updates) => {
+    const target = entries.find(e => e.tmdb_id === Number(tmdbId));
+    if (!target) return null;
+
     const normalizedUpdates = 'rating' in updates
       ? { ...updates, rating: normalizeRating(updates.rating) || null }
       : updates;
@@ -82,32 +101,35 @@ export function useHistory(userId) {
     const { data } = await supabase
       .from('journal')
       .update(normalizedUpdates)
-      .eq('user_id', userId)
-      .eq('tmdb_id', Number(tmdbId))
+      .eq('id', target.id)
       .select()
       .single();
     if (data) {
-      setEntries(prev => prev.map(e => e.tmdb_id === Number(tmdbId) ? data : e));
+      setEntries(prev => prev.map(e => e.id === target.id ? data : e));
       notifyHistoryChanged();
       if ('rating' in normalizedUpdates && normalizedUpdates.rating != null) {
         getConfig().onRating?.({ tmdb_id: Number(tmdbId), media_type: data.media_type, value: normalizedUpdates.rating });
       }
     }
     return data;
-  }, [userId]);
+  }, [entries]);
 
-  /* ── Remove entry ── */
+  /* ── Remove entry ──
+     Same row-id targeting as updateEntry — removes only the most recent
+     watch of this title, leaving earlier rewatches intact. */
   const removeEntry = useCallback(async (tmdbId) => {
+    const target = entries.find(e => e.tmdb_id === Number(tmdbId));
+    if (!target) return false;
+
     const { error } = await supabase
       .from('journal')
       .delete()
-      .eq('user_id', userId)
-      .eq('tmdb_id', Number(tmdbId));
+      .eq('id', target.id);
     if (error) return false; // keep local state intact so the entry doesn't ghost-reappear
-    setEntries(prev => prev.filter(e => e.tmdb_id !== Number(tmdbId)));
+    setEntries(prev => prev.filter(e => e.id !== target.id));
     notifyHistoryChanged();
     return true;
-  }, [userId]);
+  }, [entries]);
 
   const isWatched = useCallback(
     (tmdbId) => entries.some(e => e.tmdb_id === Number(tmdbId)),

@@ -478,22 +478,35 @@ export default function HomeScreen() {
 
   // ── Watchlist toggle ─────────────────────────────────────────────
   const handleSave = useCallback(async (item: MediaItem) => {
-    if (!listId || !userId) return;
+    if (!userId) return;
     const tmdbId = item.id ?? 0;
     if (!tmdbId) return;
     const isSaved = savedIds.has(tmdbId);
+
+    // Accounts onboarded before My List was guaranteed at signup may still
+    // be missing it — create it lazily so Save works immediately instead
+    // of silently no-oping.
+    let currentListId = listId;
+    if (!currentListId) {
+      const { data: created } = await supabase.from('lists')
+        .upsert({ user_id: userId, name: 'My List', is_public: false }, { onConflict: 'user_id,name' })
+        .select('id').single();
+      currentListId = created?.id ?? null;
+      if (!currentListId) return;
+      setListId(currentListId);
+    }
 
     if (isSaved) {
       await supabase
         .from('list_items')
         .delete()
-        .eq('list_id', listId)
+        .eq('list_id', currentListId)
         .eq('tmdb_id', tmdbId)
         .eq('user_id', userId);
       setWatchlist(prev => prev.filter(i => (i.tmdb_id ?? i.id) !== tmdbId));
     } else {
       const row = {
-        list_id:    listId,
+        list_id:    currentListId,
         user_id:    userId,
         tmdb_id:    tmdbId,
         media_type: item.media_type ?? 'movie',
