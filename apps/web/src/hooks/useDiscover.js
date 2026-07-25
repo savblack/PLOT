@@ -3,24 +3,25 @@ import { tmdb } from '../api/tmdb.js';
 import { prioritiseEnglishSpeakingTitles } from '@plot/core/tmdb.js';
 
 export function useDiscover() {
-  const [data, setData]       = useState({ hero: null, onThisDay: null, hotRail: [], recentReleases: [], weekly: [], bingedShows: [], realityShows: [] });
+  const [data, setData]       = useState({ hero: null, onThisDay: null, hotRail: [], recentReleases: [], weekly: [], bingedShows: [], realityShows: [], anticipatedMovies: [] });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
-    const emptyData = { hero: null, onThisDay: null, hotRail: [], recentReleases: [], weekly: [], bingedShows: [], realityShows: [] };
+    const emptyData = { hero: null, onThisDay: null, hotRail: [], recentReleases: [], weekly: [], bingedShows: [], realityShows: [], anticipatedMovies: [] };
 
     async function load() {
       setLoading(true);
       setData(emptyData);
       try {
-        const [trendingDay, trendingWeek, trendingTVDay, recentReleases, onThisDay, genres] = await Promise.all([
+        const [trendingDay, trendingWeek, trendingTVDay, recentReleases, onThisDay, genres, upcoming] = await Promise.all([
           tmdb.getTrending('all', 'day'),
           tmdb.getTrending('all', 'week'),
           tmdb.getTrending('tv', 'day'),
           tmdb.getRecentReleases(14, []),
           tmdb.getOnThisDay().catch(() => null),
           tmdb.getGenres().catch(() => []),
+          tmdb.getUpcoming([]).catch(() => null),
         ]);
 
         const realityGenre = genres.find(genre => genre.name === 'Reality');
@@ -49,8 +50,11 @@ export function useDiscover() {
         const realityShows = prioritiseEnglishSpeakingTitles(realityTV?.results || [])
           .slice(0, 10)
           .map(show => ({ ...show, media_type: 'tv' }));
+        const anticipatedMovies = prioritiseEnglishSpeakingTitles(upcoming?.results || [])
+          .slice(0, 10)
+          .map(movie => ({ ...movie, media_type: 'movie' }));
 
-        setData({ hero, onThisDay, hotRail, recentReleases: recentRail, weekly, bingedShows, realityShows });
+        setData({ hero, onThisDay, hotRail, recentReleases: recentRail, weekly, bingedShows, realityShows, anticipatedMovies });
       } catch (error) {
         console.error('Discover load failed:', error);
         if (!cancelled) setData(emptyData);

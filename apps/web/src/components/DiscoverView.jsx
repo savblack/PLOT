@@ -156,19 +156,20 @@ function BingeCard({ item, openPanel }) {
   const title = item.name || item.title;
   const backdrop = backdropUrl(item.backdrop_path, 'w780');
   const poster = posterUrl(item.poster_path, 'w342');
-  const year = (item.first_air_date || '').slice(0, 4);
+  const type = item.media_type || 'tv';
+  const year = (item.first_air_date || item.release_date || '').slice(0, 4);
 
   return (
     <button
       className="discover-binge-card"
-      onClick={() => openPanel(item.id, 'tv')}
+      onClick={() => openPanel(item.id, type)}
       style={{ backgroundImage: `url(${backdrop || poster || ''})` }}
     >
       <span className="discover-binge-card-shade" />
       <span className="discover-binge-card-copy">
         <span className="discover-binge-card-title">{title}</span>
         <span className="discover-binge-card-meta">
-          {year ? `${year} • ` : ''}TV Series
+          {year ? `${year} • ` : ''}{type === 'tv' ? 'TV Series' : 'Movie'}
         </span>
       </span>
     </button>
@@ -394,8 +395,8 @@ function DiscoverContent({ openPanel, watchlist, openSections, setOpenSections }
     return <LoadingSpinner />;
   }
 
-  const { hero, onThisDay, hotRail, recentReleases, weekly, bingedShows, realityShows } = data;
-  const hasContent = hero || hotRail.length > 0 || recentReleases.length > 0 || weekly.length > 0 || bingedShows.length > 0 || realityShows.length > 0 || platformList.length > 0;
+  const { hero, onThisDay, hotRail, recentReleases, weekly, bingedShows, realityShows, anticipatedMovies } = data;
+  const hasContent = hero || hotRail.length > 0 || recentReleases.length > 0 || weekly.length > 0 || bingedShows.length > 0 || realityShows.length > 0 || anticipatedMovies.length > 0 || platformList.length > 0;
 
   if (!hasContent) {
     return (
@@ -490,6 +491,25 @@ function DiscoverContent({ openPanel, watchlist, openSections, setOpenSections }
         </section>
       )}
 
+      {anticipatedMovies.length > 0 && (
+        <section className="discover-section discover-binge-section">
+          <DiscoverSectionHeader
+            kicker="Coming Soon"
+            title="Most Anticipated"
+            open={openSections.anticipated}
+            onToggle={() => toggleSection('anticipated')}
+            className="discover-binge-header"
+          />
+          {openSections.anticipated && (
+            <BingeRail>
+              {anticipatedMovies.map(item => (
+                <BingeCard key={item.id} item={item} openPanel={openPanel} />
+              ))}
+            </BingeRail>
+          )}
+        </section>
+      )}
+
       {weekly.length > 0 && (
         <section className="discover-section discover-section--list">
           <DiscoverSectionHeader
@@ -554,6 +574,7 @@ export default function DiscoverView() {
     hot: true,
     recent: true,
     binge: true,
+    anticipated: true,
     reality: true,
     weekly: true,
     platforms: true,
