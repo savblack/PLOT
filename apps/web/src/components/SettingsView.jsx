@@ -1201,8 +1201,8 @@ export default function SettingsView() {
 
   const toggleAvailabilityAlerts = async () => {
     if (savingAvailabilityAlerts) return;
-    if (!availabilityAlertsEnabled && providers.length === 0) {
-      setActionError('Choose at least one streaming platform before turning on availability alerts.');
+    if (!availabilityAlertsEnabled && providers.length === 0 && guideChannels.length === 0) {
+      setActionError('Choose at least one streaming platform or channel before turning on availability alerts.');
       setShowProviders(true);
       return;
     }
@@ -1763,21 +1763,45 @@ export default function SettingsView() {
           </div>
         </div>
 
-        <div
-          className="settings-row interactive-surface"
-          onClick={toggleAvailabilityAlerts}
-          {...getButtonLikeProps({ onPress: toggleAvailabilityAlerts, label: 'Toggle watchlist availability alerts', pressed: availabilityAlertsEnabled, disabled: savingAvailabilityAlerts })}
-        >
+        <div className="settings-row" style={{ cursor: 'default' }}>
           <div className="settings-row-left">
             <div className="settings-row-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
             </div>
             <div>
               <div className="settings-row-label">Watchlist availability alerts</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.12rem' }}>Email me when a saved title arrives on my selected services in {REGIONS.find(r => r.code === region)?.name ?? region}</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.12rem' }}>Email me when a saved title arrives on a streaming platform or channel I've selected, in {REGIONS.find(r => r.code === region)?.name ?? region}</div>
             </div>
           </div>
-          <div className="settings-row-value"><span>{savingAvailabilityAlerts ? 'Saving…' : availabilityAlertsEnabled ? 'On' : 'Off'}</span><Chevron /></div>
+          <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
+            <SettingsTextAction onClick={toggleAvailabilityAlerts} disabled={savingAvailabilityAlerts}>
+              {savingAvailabilityAlerts ? 'Saving…' : availabilityAlertsEnabled ? 'Turn off' : 'Turn on'}
+            </SettingsTextAction>
+          </div>
+        </div>
+
+        {/* Rewatches */}
+        <div className="settings-row" style={{ cursor: 'default' }}>
+          <div className="settings-row-left">
+            <div className="settings-row-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>
+              </svg>
+            </div>
+            <div>
+              <div className="settings-row-label">Log rewatches</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                {logRewatches
+                  ? 'Rewatching a title adds a new entry to your history.'
+                  : 'Rewatching a title updates the existing entry instead of adding a new one.'}
+              </div>
+            </div>
+          </div>
+          <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
+            <SettingsTextAction onClick={handleToggleLogRewatches}>
+              {logRewatches ? 'Turn off' : 'Turn on'}
+            </SettingsTextAction>
+          </div>
         </div>
 
         <div
@@ -2223,30 +2247,6 @@ export default function SettingsView() {
           </div>
           <div className="settings-row-value">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ width: 14, height: 14, opacity: 0.4 }}><polyline points="9 18 15 12 9 6"/></svg>
-          </div>
-        </div>
-
-        {/* Rewatches */}
-        <div className="settings-row" style={{ cursor: 'default' }}>
-          <div className="settings-row-left">
-            <div className="settings-row-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>
-              </svg>
-            </div>
-            <div>
-              <div className="settings-row-label">Log rewatches</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                {logRewatches
-                  ? 'Rewatching a title adds a new entry to your history.'
-                  : 'Rewatching a title updates the existing entry instead of adding a new one.'}
-              </div>
-            </div>
-          </div>
-          <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
-            <SettingsTextAction onClick={handleToggleLogRewatches}>
-              {logRewatches ? 'Turn off' : 'Turn on'}
-            </SettingsTextAction>
           </div>
         </div>
       </div>
