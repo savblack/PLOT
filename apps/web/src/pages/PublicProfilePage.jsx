@@ -16,9 +16,29 @@ import { EVENTS } from '../lib/analytics.js';
 const posterUrl = (path, size = 'w342') =>
   path ? `https://image.tmdb.org/t/p/${size}${path}` : null;
 
+/* ── Per-field edit toggle icons (Edit profile modal) ── */
+function DotsFieldIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16" aria-hidden="true">
+      <circle cx="5" cy="12" r="2"/>
+      <circle cx="12" cy="12" r="2"/>
+      <circle cx="19" cy="12" r="2"/>
+    </svg>
+  );
+}
+function SaveFieldIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" width="16" height="16" aria-hidden="true">
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  );
+}
+
 // Content rails a user can show/hide. profile_sections null = show all.
 const SECTIONS = [
   { key: 'recent',    label: 'Recently Watched' },
+  { key: 'watching',  label: 'Watching' },
+  { key: 'want',      label: 'Want to Watch' },
   { key: 'topMovies', label: 'Top 10 Films' },
   { key: 'topTv',     label: 'Top 10 TV' },
   { key: 'favourites', label: 'Favorites' },
@@ -38,25 +58,24 @@ const styles = `
   .public-profile-status-copy { margin: 0.55rem 0 0; font-size: 0.88rem; line-height: 1.65; color: var(--text-secondary); }
   .public-profile-actions { display: flex; justify-content: center; gap: 0.8rem; flex-wrap: wrap; margin-top: 1.25rem; }
 
-  /* ── Header — avatar left, identity + stats + actions stacked to its right ── */
-  .pp-header { display: flex; align-items: flex-start; gap: 1.1rem; text-align: left; padding-top: 1.75rem; }
+  /* ── Centered, stacked header ── */
+  .pp-header { display: flex; flex-direction: column; align-items: center; text-align: center; padding-top: 1.75rem; }
   .pp-avatar {
-    width: 72px; height: 72px; border-radius: 50%; flex-shrink: 0;
+    width: 92px; height: 92px; border-radius: 50%; flex-shrink: 0;
     object-fit: cover; background: var(--surface-raised); border: 1px solid var(--border);
     display: flex; align-items: center; justify-content: center;
-    font-family: var(--font-serif); font-size: 1.7rem; color: var(--text-muted);
+    font-family: var(--font-serif); font-size: 2.2rem; color: var(--text-muted);
   }
-  .pp-header-info { flex: 1; min-width: 0; }
-  .pp-name { margin: 0; font-family: var(--font-serif); font-size: 1.5rem; font-weight: 500; letter-spacing: -0.03em; line-height: 1.15; word-break: break-word; }
-  .pp-handle { margin: 0.15rem 0 0; font-size: 0.85rem; color: var(--text-muted); }
-  .pp-verified { width: 1.1rem; height: 1.1rem; margin-left: 0.3rem; vertical-align: -0.15rem; flex-shrink: 0; }
+  .pp-name { margin: 0.85rem 0 0; font-family: var(--font-serif); font-size: 1.95rem; font-weight: 500; letter-spacing: -0.03em; line-height: 1.05; word-break: break-word; }
+  .pp-handle { margin: 0.2rem 0 0; font-size: 0.9rem; color: var(--text-muted); }
+  .pp-verified { width: 1.35rem; height: 1.35rem; margin-left: 0.35rem; vertical-align: -0.2rem; flex-shrink: 0; }
 
   /* ── Action buttons ── */
-  .pp-btn-row { display: flex; gap: 0.5rem; justify-content: flex-start; margin-top: 0.9rem; flex-wrap: wrap; }
+  .pp-btn-row { display: flex; gap: 0.6rem; justify-content: center; margin-top: 1.25rem; }
   .pp-btn {
     display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
-    min-height: 36px; padding: 0.45rem 1.1rem; border-radius: var(--radius-pill);
-    font-size: 0.85rem; font-weight: 600; cursor: pointer; text-decoration: none;
+    min-height: 40px; min-width: 150px; padding: 0.55rem 1.4rem; border-radius: var(--radius-pill);
+    font-size: 0.9rem; font-weight: 600; cursor: pointer; text-decoration: none;
     transition: opacity 0.2s ease, transform 0.15s ease;
   }
   .pp-btn-primary { background: var(--text-primary); color: var(--surface); border: none; }
@@ -64,17 +83,12 @@ const styles = `
   .pp-btn:hover { opacity: 0.85; transform: scale(0.99); }
   .pp-btn:disabled { opacity: 0.55; cursor: default; transform: none; }
 
-  .pp-stats { display: flex; justify-content: flex-start; gap: 1.4rem; margin: 0.65rem 0 0; flex-wrap: wrap; }
-  .pp-stat { display: flex; flex-direction: row; align-items: baseline; gap: 0.3rem; text-align: left; }
-  .pp-stat-num { font-family: var(--font-serif); font-size: 1.05rem; font-weight: 600; color: var(--text-primary); line-height: 1; }
-  .pp-stat-label { display: block; font-size: 0.78rem; color: var(--text-muted); }
+  .pp-stats { display: flex; justify-content: center; gap: 2rem; margin: 1.7rem 0 0; flex-wrap: wrap; }
+  .pp-stat { display: flex; flex-direction: column; align-items: center; text-align: center; }
+  .pp-stat-num { font-family: var(--font-serif); font-size: 1.5rem; font-weight: 500; color: var(--text-primary); line-height: 1; }
+  .pp-stat-label { display: block; margin-top: 0.3rem; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
   .pp-stat-btn { background: none; border: none; padding: 0; cursor: pointer; font: inherit; }
   .pp-stat-btn:hover .pp-stat-num { opacity: 0.65; }
-
-  @media (max-width: 420px) {
-    .pp-avatar { width: 64px; height: 64px; font-size: 1.5rem; }
-    .pp-name { font-size: 1.3rem; }
-  }
 
   .pp-section { margin-top: 2.2rem; }
   .pp-section-title { margin: 0 0 0.9rem; font-family: var(--font-serif); font-size: 1.5rem; font-weight: 400; line-height: 1.1; letter-spacing: normal; text-transform: none; color: var(--text-primary); }
@@ -108,7 +122,15 @@ const styles = `
   .pp-photo { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
   .pp-photo-btn { background: none; border: none; color: var(--accent); font-weight: 700; font-size: 0.9rem; cursor: pointer; }
   .pp-field-label { display: block; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.4rem; }
-  .pp-input { width: 100%; box-sizing: border-box; padding: 0.6rem 0.75rem; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg); color: var(--text-primary); font-size: 0.95rem; }
+  .pp-input { width: 100%; box-sizing: border-box; padding: 0.6rem 2.4rem 0.6rem 0.75rem; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg); color: var(--text-primary); font-size: 0.95rem; }
+  .pp-input[readonly] { background: var(--surface-raised); color: var(--text-secondary); cursor: default; }
+  .pp-input-wrap { position: relative; }
+  .pp-input-edit-btn {
+    position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%);
+    width: 28px; height: 28px; border-radius: 50%; border: none; background: none;
+    color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center;
+  }
+  .pp-input-edit-btn:hover { color: var(--text-primary); background: var(--surface-raised); }
   .pp-hint { font-size: 0.75rem; margin-top: 0.35rem; color: var(--text-muted); }
   .pp-toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
   .pp-toggle-help { font-size: 0.78rem; color: var(--text-muted); margin: 0.15rem 0 0; line-height: 1.4; }
@@ -227,14 +249,17 @@ function FollowListModal({ kind, targetId, viewerId, onClose }) {
 function EditProfileModal({ userId, current, onClose, onSaved, favWord }) {
   const [displayName, setDisplayName] = useState(current.display_name || '');
   const [uname, setUname] = useState(current.username);
-  const [isPublic, setIsPublic] = useState(current.is_public);
   const [avatar, setAvatar] = useState(current.avatar_url); // preview (object URL until Save)
   const [pendingFile, setPendingFile] = useState(null);     // picked photo, not yet uploaded
   const [enabled, setEnabled] = useState(current.profile_sections ?? SECTIONS.map((s) => s.key));
   const [unameStatus, setUnameStatus] = useState(''); // '' | checking | ok | taken | invalid
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [editingName, setEditingName] = useState(false);
+  const [editingUname, setEditingUname] = useState(false);
   const fileRef = useRef(null);
+  const nameInputRef = useRef(null);
+  const unameInputRef = useRef(null);
   const { lists: customLists, setListPublic } = useCustomLists(userId);
 
   useEffect(() => {
@@ -274,7 +299,7 @@ function EditProfileModal({ userId, current, onClose, onSaved, favWord }) {
 
   const save = async () => {
     setSaving(true); setError('');
-    const patch = { display_name: displayName.trim() || null, is_public: isPublic };
+    const patch = { display_name: displayName.trim() || null };
     // Upload the picked photo now (only on Save).
     if (pendingFile) {
       try {
@@ -298,7 +323,7 @@ function EditProfileModal({ userId, current, onClose, onSaved, favWord }) {
     const sections = SECTIONS.map((s) => s.key).filter((k) => enabled.includes(k));
     await supabase.from('profiles').update({ profile_sections: sections }).eq('id', userId);
     setSaving(false);
-    onSaved({ display_name: displayName.trim(), username: unameChanged ? cleanUname : current.username, is_public: isPublic, avatar_url: patch.avatar_url, profile_sections: sections });
+    onSaved({ display_name: displayName.trim(), username: unameChanged ? cleanUname : current.username, is_public: current.is_public, avatar_url: patch.avatar_url, profile_sections: sections });
   };
 
   const initial = (displayName || uname || '?').charAt(0).toUpperCase();
@@ -324,24 +349,68 @@ function EditProfileModal({ userId, current, onClose, onSaved, favWord }) {
 
           <div>
             <label className="pp-field-label" htmlFor="pp-name-input">Display name</label>
-            <input id="pp-name-input" className="pp-input" value={displayName} onChange={(e) => setDisplayName(e.target.value)} maxLength={50} placeholder="Your name" />
+            <div className="pp-input-wrap">
+              <input
+                id="pp-name-input"
+                ref={nameInputRef}
+                className="pp-input"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                maxLength={50}
+                placeholder="Your name"
+                readOnly={!editingName}
+              />
+              <button
+                type="button"
+                className="pp-input-edit-btn"
+                aria-label={editingName ? 'Save display name' : 'Edit display name'}
+                title={editingName ? 'Save' : 'Edit'}
+                onClick={() => {
+                  setEditingName((was) => {
+                    if (!was) setTimeout(() => nameInputRef.current?.focus(), 0);
+                    return !was;
+                  });
+                }}
+              >
+                {editingName ? <SaveFieldIcon /> : <DotsFieldIcon />}
+              </button>
+            </div>
           </div>
 
           <div>
             <label className="pp-field-label" htmlFor="pp-uname-input">Username</label>
-            <input id="pp-uname-input" className="pp-input" value={uname} onChange={(e) => setUname(e.target.value)} maxLength={30} autoCapitalize="none" autoCorrect="off" placeholder="username" />
+            <div className="pp-input-wrap">
+              <input
+                id="pp-uname-input"
+                ref={unameInputRef}
+                className="pp-input"
+                value={uname}
+                onChange={(e) => setUname(e.target.value)}
+                maxLength={30}
+                autoCapitalize="none"
+                autoCorrect="off"
+                placeholder="username"
+                readOnly={!editingUname}
+              />
+              <button
+                type="button"
+                className="pp-input-edit-btn"
+                aria-label={editingUname ? 'Save username' : 'Edit username'}
+                title={editingUname ? 'Save' : 'Edit'}
+                onClick={() => {
+                  setEditingUname((was) => {
+                    if (!was) setTimeout(() => unameInputRef.current?.focus(), 0);
+                    return !was;
+                  });
+                }}
+              >
+                {editingUname ? <SaveFieldIcon /> : <DotsFieldIcon />}
+              </button>
+            </div>
             {unameStatus === 'checking' && <div className="pp-hint">Checking…</div>}
             {unameStatus === 'ok'       && <div className="pp-hint" style={{ color: 'var(--chip-today, #16a34a)' }}>Available</div>}
             {unameStatus === 'taken'    && <div className="pp-hint" style={{ color: 'var(--accent)' }}>That username is taken.</div>}
             {unameStatus === 'invalid'  && <div className="pp-hint" style={{ color: 'var(--accent)' }}>3–30 characters: letters, numbers, underscores.</div>}
-          </div>
-
-          <div className="pp-toggle-row">
-            <div>
-              <label className="pp-field-label" htmlFor="pp-public-toggle" style={{ marginBottom: 0 }}>Public profile</label>
-              <p className="pp-toggle-help">Anyone can see your watches and lists. Off means followers only.</p>
-            </div>
-            <input id="pp-public-toggle" type="checkbox" checked={isPublic} onChange={(e) => setIsPublic(e.target.checked)} style={{ width: 20, height: 20, accentColor: 'var(--accent)' }} />
           </div>
 
           {/* Which sections show on the profile */}
@@ -385,7 +454,7 @@ export default function PublicProfilePage() {
   const { user: viewer, openPanel, watchlist, profile: viewerProfile } = useApp();
   const navigate = useNavigate();
 
-  const { loading, profile, locked, watchCount, avgRating, recent, topMovies, topTv, favourites, customLists } =
+  const { loading, profile, locked, watchCount, recent, topMovies, topTv, favourites, customLists, watching, wantToWatch } =
     usePublicProfile(username, viewer?.id);
   const [followList, setFollowList] = useState(null);
   const [editing, setEditing] = useState(false);
@@ -442,62 +511,57 @@ export default function PublicProfilePage() {
         ) : (
           <>
             <div className="pp-pad">
-              {/* Header — avatar left, identity/stats/actions stacked to its right */}
+              {/* Header — centered, stacked */}
               <div className="pp-header">
                 {p.avatar_url
                   ? <img className="pp-avatar" src={p.avatar_url} alt="" />
                   : <div className="pp-avatar">{(name || '?').charAt(0).toUpperCase()}</div>}
-                <div className="pp-header-info">
-                  <h1 className="pp-name">
-                    {name}
-                    {p.is_premium && (
-                      <svg className="pp-verified" viewBox="0 0 22 22" aria-label="Verified">
-                        <path fill="#1d9bf0" d="M20.396 11c-.018-.646-.215-1.275-.57-1.816-.354-.54-.852-.972-1.438-1.246.223-.607.27-1.264.14-1.897-.131-.634-.437-1.218-.882-1.687-.47-.445-1.053-.75-1.687-.882-.633-.13-1.29-.083-1.897.14-.273-.587-.704-1.086-1.245-1.44S11.647 1.62 11 1.604c-.646.017-1.273.213-1.813.568s-.969.854-1.24 1.44c-.608-.223-1.267-.272-1.902-.14-.635.13-1.22.436-1.69.882-.445.47-.749 1.055-.878 1.688-.13.633-.08 1.29.144 1.896-.587.274-1.087.705-1.443 1.245-.356.54-.555 1.17-.574 1.817.02.647.218 1.276.574 1.817.356.54.856.972 1.443 1.245-.224.606-.274 1.263-.144 1.896.13.634.433 1.218.877 1.688.47.443 1.054.747 1.689.878.635.132 1.294.084 1.902-.14.27.586.7 1.084 1.24 1.439.54.354 1.16.561 1.797.577.647-.016 1.275-.213 1.815-.567s.972-.854 1.243-1.44c.604.239 1.268.296 1.902.196.633-.1 1.226-.45 1.687-.882.461-.432.879-.974 1.087-1.588.207-.614.196-1.27-.032-1.876.587-.274 1.087-.705 1.443-1.245.356-.54.555-1.17.574-1.817z"/>
-                        <path d="M7.3 11.2l2.6 2.6 4.8-5.4" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    )}
-                  </h1>
-                  <p className="pp-handle">@{p.username}</p>
+                <h1 className="pp-name">
+                  {name}
+                  {p.is_premium && (
+                    <svg className="pp-verified" viewBox="0 0 22 22" aria-label="Verified">
+                      <path fill="#1d9bf0" d="M20.396 11c-.018-.646-.215-1.275-.57-1.816-.354-.54-.852-.972-1.438-1.246.223-.607.27-1.264.14-1.897-.131-.634-.437-1.218-.882-1.687-.47-.445-1.053-.75-1.687-.882-.633-.13-1.29-.083-1.897.14-.273-.587-.704-1.086-1.245-1.44S11.647 1.62 11 1.604c-.646.017-1.273.213-1.813.568s-.969.854-1.24 1.44c-.608-.223-1.267-.272-1.902-.14-.635.13-1.22.436-1.69.882-.445.47-.749 1.055-.878 1.688-.13.633-.08 1.29.144 1.896-.587.274-1.087.705-1.443 1.245-.356.54-.555 1.17-.574 1.817.02.647.218 1.276.574 1.817.356.54.856.972 1.443 1.245-.224.606-.274 1.263-.144 1.896.13.634.433 1.218.877 1.688.47.443 1.054.747 1.689.878.635.132 1.294.084 1.902-.14.27.586.7 1.084 1.24 1.439.54.354 1.16.561 1.797.577.647-.016 1.275-.213 1.815-.567s.972-.854 1.243-1.44c.604.239 1.268.296 1.902.196.633-.1 1.226-.45 1.687-.882.461-.432.879-.974 1.087-1.588.207-.614.196-1.27-.032-1.876.587-.274 1.087-.705 1.443-1.245.356-.54.555-1.17.574-1.817z"/>
+                      <path d="M7.3 11.2l2.6 2.6 4.8-5.4" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  )}
+                </h1>
+                <p className="pp-handle">@{p.username}</p>
+              </div>
 
-                  {/* Stats */}
-                  <div className="pp-stats">
-                    {!locked && <div className="pp-stat"><span className="pp-stat-num">{watchCount}</span><span className="pp-stat-label">watched</span></div>}
-                    {!locked && avgRating != null && (
-                      <div className="pp-stat"><span className="pp-stat-num">{avgRating.toFixed(1)}</span><span className="pp-stat-label">avg rating</span></div>
-                    )}
-                    <button type="button" className="pp-stat pp-stat-btn" onClick={() => setFollowList('followers')}>
-                      <span className="pp-stat-num">{followers}</span><span className="pp-stat-label">followers</span>
+              {/* Actions */}
+              <div className="pp-btn-row">
+                {isOwn ? (
+                  <>
+                    <button type="button" className="pp-btn pp-btn-secondary" onClick={() => setEditing(true)}>Edit profile</button>
+                    <button type="button" className="pp-btn pp-btn-secondary" onClick={shareProfile}>{copied ? 'Copied!' : 'Share profile'}</button>
+                  </>
+                ) : !viewer ? (
+                  <>
+                    <Link to={`/signup?ref=${encodeURIComponent(p.username)}&src=profile`} className="pp-btn pp-btn-primary">Join to follow</Link>
+                    <Link to="/login" className="pp-btn pp-btn-secondary">Sign in</Link>
+                  </>
+                ) : canFollow && (
+                  status === 'accepted' ? (
+                    <button type="button" className="pp-btn pp-btn-secondary" onClick={unfollow} disabled={busy}>Following</button>
+                  ) : status === 'pending' ? (
+                    <button type="button" className="pp-btn pp-btn-secondary" onClick={unfollow} disabled={busy}>Requested</button>
+                  ) : (
+                    <button type="button" className="pp-btn pp-btn-primary" onClick={follow} disabled={busy}>
+                      {isPrivate ? 'Request to follow' : 'Follow'}
                     </button>
-                    <button type="button" className="pp-stat pp-stat-btn" onClick={() => setFollowList('following')}>
-                      <span className="pp-stat-num">{following}</span><span className="pp-stat-label">following</span>
-                    </button>
-                  </div>
+                  )
+                )}
+              </div>
 
-                  {/* Actions */}
-                  <div className="pp-btn-row">
-                    {isOwn ? (
-                      <>
-                        <button type="button" className="pp-btn pp-btn-secondary" onClick={() => setEditing(true)}>Edit profile</button>
-                        <button type="button" className="pp-btn pp-btn-secondary" onClick={shareProfile}>{copied ? 'Copied!' : 'Share profile'}</button>
-                      </>
-                    ) : !viewer ? (
-                      <>
-                        <Link to={`/signup?ref=${encodeURIComponent(p.username)}&src=profile`} className="pp-btn pp-btn-primary">Join to follow</Link>
-                        <Link to="/login" className="pp-btn pp-btn-secondary">Sign in</Link>
-                      </>
-                    ) : canFollow && (
-                      status === 'accepted' ? (
-                        <button type="button" className="pp-btn pp-btn-secondary" onClick={unfollow} disabled={busy}>Following</button>
-                      ) : status === 'pending' ? (
-                        <button type="button" className="pp-btn pp-btn-secondary" onClick={unfollow} disabled={busy}>Requested</button>
-                      ) : (
-                        <button type="button" className="pp-btn pp-btn-primary" onClick={follow} disabled={busy}>
-                          {isPrivate ? 'Request to follow' : 'Follow'}
-                        </button>
-                      )
-                    )}
-                  </div>
-                </div>
+              {/* Stats */}
+              <div className="pp-stats">
+                {!locked && <div className="pp-stat"><span className="pp-stat-num">{watchCount}</span><span className="pp-stat-label">Watched</span></div>}
+                <button type="button" className="pp-stat pp-stat-btn" onClick={() => setFollowList('followers')}>
+                  <span className="pp-stat-num">{followers}</span><span className="pp-stat-label">Followers</span>
+                </button>
+                <button type="button" className="pp-stat pp-stat-btn" onClick={() => setFollowList('following')}>
+                  <span className="pp-stat-num">{following}</span><span className="pp-stat-label">Following</span>
+                </button>
               </div>
 
               {locked && (
@@ -517,6 +581,12 @@ export default function PublicProfilePage() {
             {!locked && showSection('recent') && recent.length > 0 && (
               <div className="pp-section"><h2 className="pp-section-title pp-pad">Recently Watched</h2><div className="pp-pad"><PosterRail items={recent} openPanel={openPanel} watchlist={watchlist} /></div></div>
             )}
+            {!locked && showSection('watching') && watching.length > 0 && (
+              <div className="pp-section"><h2 className="pp-section-title pp-pad">Watching</h2><div className="pp-pad"><PosterRail items={watching} openPanel={openPanel} watchlist={watchlist} /></div></div>
+            )}
+            {!locked && showSection('want') && wantToWatch.length > 0 && (
+              <div className="pp-section"><h2 className="pp-section-title pp-pad">Want to Watch</h2><div className="pp-pad"><PosterRail items={wantToWatch} openPanel={openPanel} watchlist={watchlist} /></div></div>
+            )}
             {showSection('topMovies') && topMovies.length > 0 && (
               <div className="pp-section pp-pad"><h2 className="pp-section-title">Top 10 Films</h2><PosterGrid items={topMovies} ranked openPanel={openPanel} watchlist={watchlist} /></div>
             )}
@@ -533,7 +603,7 @@ export default function PublicProfilePage() {
               </div>
             ))}
 
-            {!locked && watchCount === 0 && recent.length === 0 && topMovies.length === 0 && topTv.length === 0 && favourites.length === 0 && customLists.length === 0 && (
+            {!locked && watchCount === 0 && recent.length === 0 && watching.length === 0 && wantToWatch.length === 0 && topMovies.length === 0 && topTv.length === 0 && favourites.length === 0 && customLists.length === 0 && (
               <p className="pp-empty-body pp-pad" style={{ marginTop: '1.6rem', textAlign: 'center' }}>
                 {name} hasn&apos;t logged anything public yet.
               </p>
