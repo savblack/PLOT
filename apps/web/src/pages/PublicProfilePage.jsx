@@ -16,9 +16,29 @@ import { EVENTS } from '../lib/analytics.js';
 const posterUrl = (path, size = 'w342') =>
   path ? `https://image.tmdb.org/t/p/${size}${path}` : null;
 
+/* ── Per-field edit toggle icons (Edit profile modal) ── */
+function DotsFieldIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16" aria-hidden="true">
+      <circle cx="5" cy="12" r="2"/>
+      <circle cx="12" cy="12" r="2"/>
+      <circle cx="19" cy="12" r="2"/>
+    </svg>
+  );
+}
+function SaveFieldIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" width="16" height="16" aria-hidden="true">
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  );
+}
+
 // Content rails a user can show/hide. profile_sections null = show all.
 const SECTIONS = [
   { key: 'recent',    label: 'Recently Watched' },
+  { key: 'watching',  label: 'Watching' },
+  { key: 'want',      label: 'Want to Watch' },
   { key: 'topMovies', label: 'Top 10 Films' },
   { key: 'topTv',     label: 'Top 10 TV' },
   { key: 'favourites', label: 'Favorites' },
@@ -102,7 +122,15 @@ const styles = `
   .pp-photo { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
   .pp-photo-btn { background: none; border: none; color: var(--accent); font-weight: 700; font-size: 0.9rem; cursor: pointer; }
   .pp-field-label { display: block; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.4rem; }
-  .pp-input { width: 100%; box-sizing: border-box; padding: 0.6rem 0.75rem; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg); color: var(--text-primary); font-size: 0.95rem; }
+  .pp-input { width: 100%; box-sizing: border-box; padding: 0.6rem 2.4rem 0.6rem 0.75rem; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg); color: var(--text-primary); font-size: 0.95rem; }
+  .pp-input[readonly] { background: var(--surface-raised); color: var(--text-secondary); cursor: default; }
+  .pp-input-wrap { position: relative; }
+  .pp-input-edit-btn {
+    position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%);
+    width: 28px; height: 28px; border-radius: 50%; border: none; background: none;
+    color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center;
+  }
+  .pp-input-edit-btn:hover { color: var(--text-primary); background: var(--surface-raised); }
   .pp-hint { font-size: 0.75rem; margin-top: 0.35rem; color: var(--text-muted); }
   .pp-toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
   .pp-toggle-help { font-size: 0.78rem; color: var(--text-muted); margin: 0.15rem 0 0; line-height: 1.4; }
@@ -221,14 +249,17 @@ function FollowListModal({ kind, targetId, viewerId, onClose }) {
 function EditProfileModal({ userId, current, onClose, onSaved, favWord }) {
   const [displayName, setDisplayName] = useState(current.display_name || '');
   const [uname, setUname] = useState(current.username);
-  const [isPublic, setIsPublic] = useState(current.is_public);
   const [avatar, setAvatar] = useState(current.avatar_url); // preview (object URL until Save)
   const [pendingFile, setPendingFile] = useState(null);     // picked photo, not yet uploaded
   const [enabled, setEnabled] = useState(current.profile_sections ?? SECTIONS.map((s) => s.key));
   const [unameStatus, setUnameStatus] = useState(''); // '' | checking | ok | taken | invalid
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [editingName, setEditingName] = useState(false);
+  const [editingUname, setEditingUname] = useState(false);
   const fileRef = useRef(null);
+  const nameInputRef = useRef(null);
+  const unameInputRef = useRef(null);
   const { lists: customLists, setListPublic } = useCustomLists(userId);
 
   useEffect(() => {
@@ -268,7 +299,7 @@ function EditProfileModal({ userId, current, onClose, onSaved, favWord }) {
 
   const save = async () => {
     setSaving(true); setError('');
-    const patch = { display_name: displayName.trim() || null, is_public: isPublic };
+    const patch = { display_name: displayName.trim() || null };
     // Upload the picked photo now (only on Save).
     if (pendingFile) {
       try {
@@ -292,7 +323,7 @@ function EditProfileModal({ userId, current, onClose, onSaved, favWord }) {
     const sections = SECTIONS.map((s) => s.key).filter((k) => enabled.includes(k));
     await supabase.from('profiles').update({ profile_sections: sections }).eq('id', userId);
     setSaving(false);
-    onSaved({ display_name: displayName.trim(), username: unameChanged ? cleanUname : current.username, is_public: isPublic, avatar_url: patch.avatar_url, profile_sections: sections });
+    onSaved({ display_name: displayName.trim(), username: unameChanged ? cleanUname : current.username, is_public: current.is_public, avatar_url: patch.avatar_url, profile_sections: sections });
   };
 
   const initial = (displayName || uname || '?').charAt(0).toUpperCase();
@@ -318,24 +349,68 @@ function EditProfileModal({ userId, current, onClose, onSaved, favWord }) {
 
           <div>
             <label className="pp-field-label" htmlFor="pp-name-input">Display name</label>
-            <input id="pp-name-input" className="pp-input" value={displayName} onChange={(e) => setDisplayName(e.target.value)} maxLength={50} placeholder="Your name" />
+            <div className="pp-input-wrap">
+              <input
+                id="pp-name-input"
+                ref={nameInputRef}
+                className="pp-input"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                maxLength={50}
+                placeholder="Your name"
+                readOnly={!editingName}
+              />
+              <button
+                type="button"
+                className="pp-input-edit-btn"
+                aria-label={editingName ? 'Save display name' : 'Edit display name'}
+                title={editingName ? 'Save' : 'Edit'}
+                onClick={() => {
+                  setEditingName((was) => {
+                    if (!was) setTimeout(() => nameInputRef.current?.focus(), 0);
+                    return !was;
+                  });
+                }}
+              >
+                {editingName ? <SaveFieldIcon /> : <DotsFieldIcon />}
+              </button>
+            </div>
           </div>
 
           <div>
             <label className="pp-field-label" htmlFor="pp-uname-input">Username</label>
-            <input id="pp-uname-input" className="pp-input" value={uname} onChange={(e) => setUname(e.target.value)} maxLength={30} autoCapitalize="none" autoCorrect="off" placeholder="username" />
+            <div className="pp-input-wrap">
+              <input
+                id="pp-uname-input"
+                ref={unameInputRef}
+                className="pp-input"
+                value={uname}
+                onChange={(e) => setUname(e.target.value)}
+                maxLength={30}
+                autoCapitalize="none"
+                autoCorrect="off"
+                placeholder="username"
+                readOnly={!editingUname}
+              />
+              <button
+                type="button"
+                className="pp-input-edit-btn"
+                aria-label={editingUname ? 'Save username' : 'Edit username'}
+                title={editingUname ? 'Save' : 'Edit'}
+                onClick={() => {
+                  setEditingUname((was) => {
+                    if (!was) setTimeout(() => unameInputRef.current?.focus(), 0);
+                    return !was;
+                  });
+                }}
+              >
+                {editingUname ? <SaveFieldIcon /> : <DotsFieldIcon />}
+              </button>
+            </div>
             {unameStatus === 'checking' && <div className="pp-hint">Checking…</div>}
             {unameStatus === 'ok'       && <div className="pp-hint" style={{ color: 'var(--chip-today, #16a34a)' }}>Available</div>}
             {unameStatus === 'taken'    && <div className="pp-hint" style={{ color: 'var(--accent)' }}>That username is taken.</div>}
             {unameStatus === 'invalid'  && <div className="pp-hint" style={{ color: 'var(--accent)' }}>3–30 characters: letters, numbers, underscores.</div>}
-          </div>
-
-          <div className="pp-toggle-row">
-            <div>
-              <label className="pp-field-label" htmlFor="pp-public-toggle" style={{ marginBottom: 0 }}>Public profile</label>
-              <p className="pp-toggle-help">Anyone can see your watches and lists. Off means followers only.</p>
-            </div>
-            <input id="pp-public-toggle" type="checkbox" checked={isPublic} onChange={(e) => setIsPublic(e.target.checked)} style={{ width: 20, height: 20, accentColor: 'var(--accent)' }} />
           </div>
 
           {/* Which sections show on the profile */}
@@ -379,7 +454,7 @@ export default function PublicProfilePage() {
   const { user: viewer, openPanel, watchlist, profile: viewerProfile } = useApp();
   const navigate = useNavigate();
 
-  const { loading, profile, locked, watchCount, recent, topMovies, topTv, favourites, customLists } =
+  const { loading, profile, locked, watchCount, recent, topMovies, topTv, favourites, customLists, watching, wantToWatch } =
     usePublicProfile(username, viewer?.id);
   const [followList, setFollowList] = useState(null);
   const [editing, setEditing] = useState(false);
@@ -506,6 +581,12 @@ export default function PublicProfilePage() {
             {!locked && showSection('recent') && recent.length > 0 && (
               <div className="pp-section"><h2 className="pp-section-title pp-pad">Recently Watched</h2><div className="pp-pad"><PosterRail items={recent} openPanel={openPanel} watchlist={watchlist} /></div></div>
             )}
+            {!locked && showSection('watching') && watching.length > 0 && (
+              <div className="pp-section"><h2 className="pp-section-title pp-pad">Watching</h2><div className="pp-pad"><PosterRail items={watching} openPanel={openPanel} watchlist={watchlist} /></div></div>
+            )}
+            {!locked && showSection('want') && wantToWatch.length > 0 && (
+              <div className="pp-section"><h2 className="pp-section-title pp-pad">Want to Watch</h2><div className="pp-pad"><PosterRail items={wantToWatch} openPanel={openPanel} watchlist={watchlist} /></div></div>
+            )}
             {showSection('topMovies') && topMovies.length > 0 && (
               <div className="pp-section pp-pad"><h2 className="pp-section-title">Top 10 Films</h2><PosterGrid items={topMovies} ranked openPanel={openPanel} watchlist={watchlist} /></div>
             )}
@@ -522,7 +603,7 @@ export default function PublicProfilePage() {
               </div>
             ))}
 
-            {!locked && watchCount === 0 && recent.length === 0 && topMovies.length === 0 && topTv.length === 0 && favourites.length === 0 && customLists.length === 0 && (
+            {!locked && watchCount === 0 && recent.length === 0 && watching.length === 0 && wantToWatch.length === 0 && topMovies.length === 0 && topTv.length === 0 && favourites.length === 0 && customLists.length === 0 && (
               <p className="pp-empty-body pp-pad" style={{ marginTop: '1.6rem', textAlign: 'center' }}>
                 {name} hasn&apos;t logged anything public yet.
               </p>
