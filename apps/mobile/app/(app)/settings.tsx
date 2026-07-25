@@ -306,10 +306,10 @@ function ProviderModal({
 }
 
 // ── Feedback modal ────────────────────────────────────────────────────
-function FeedbackModal({ userId, userEmail, onClose }: { userId: string; userEmail: string; onClose: () => void }) {
+function FeedbackModal({ userId, userEmail, initialType, onClose }: { userId: string; userEmail: string; initialType: string; onClose: () => void }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const [type,    setType]    = useState('bug');
+  const [type,    setType]    = useState(initialType);
   const [message, setMessage] = useState('');
   const [status,  setStatus]  = useState<'idle' | 'submitting' | 'done' | 'error'>('idle');
   const insets = useSafeAreaInsets();
@@ -408,7 +408,7 @@ export default function SettingsScreen() {
   const [showChannels,   setShowChannels]   = useState(false);
   const [showRegion,     setShowRegion]     = useState(false);
   const [showTimezone,   setShowTimezone]   = useState(false);
-  const [showFeedback,   setShowFeedback]   = useState(false);
+  const [feedbackType,   setFeedbackType]   = useState<string | null>(null);
   const [showImport,     setShowImport]     = useState(false);
   const [clearingHist,   setClearingHist]   = useState(false);
   const [clearingList,   setClearingList]   = useState(false);
@@ -753,9 +753,14 @@ export default function SettingsScreen() {
             onPress={() => setShowImport(true)}
           />
           <SettingsRow
+            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M12 9v4"/><Path d="M12 17h.01"/><Path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L14.71 3.86a2 2 0 0 0-3.42 0z"/></Svg>}
+            label="Report a Bug"
+            onPress={() => setFeedbackType('bug')}
+          />
+          <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></Svg>}
-            label="Report a Bug / Leave Feedback"
-            onPress={() => setShowFeedback(true)}
+            label="Leave Feedback"
+            onPress={() => setFeedbackType('feature')}
           />
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><Polyline points="14,2 14,8 20,8"/></Svg>}
@@ -833,8 +838,8 @@ export default function SettingsScreen() {
       {showTimezone && (
         <TimezoneModal current={timezone} onSave={saveTimezone} onClose={() => setShowTimezone(false)} />
       )}
-      {showFeedback && userId && user && (
-        <FeedbackModal userId={userId} userEmail={user.email ?? ''} onClose={() => setShowFeedback(false)} />
+      {feedbackType && userId && user && (
+        <FeedbackModal userId={userId} userEmail={user.email ?? ''} initialType={feedbackType} onClose={() => setFeedbackType(null)} />
       )}
       {showImport && userId && (
         <ImportHistoryModal userId={userId} onClose={() => setShowImport(false)} />
