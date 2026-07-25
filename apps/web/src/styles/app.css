@@ -3459,7 +3459,8 @@ a.provider-chip--link:hover {
 
 .epg-day-btn {
   position: relative;
-  flex: 0 0 clamp(150px, 18vw, 190px);
+  flex: 1 0 clamp(150px, 18vw, 190px);
+  max-width: 220px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -3469,7 +3470,6 @@ a.provider-chip--link:hover {
   border-right: 0;
   background: var(--surface);
   cursor: pointer;
-  flex-shrink: 0;
   color: var(--text-primary);
   -webkit-tap-highlight-color: transparent;
   transition: background 0.15s ease, border-color 0.15s ease;
