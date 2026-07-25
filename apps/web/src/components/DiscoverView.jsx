@@ -335,6 +335,7 @@ function PlatformSection({ platform, openPanel, watchlist }) {
                         ? <img src={posterUrl(item.poster_path, 'w185')} alt={item.title || item.name} loading="lazy" />
                         : <div className="media-card-img-placeholder" />
                       }
+                      <FavBtn item={item} />
                       <SaveBtn item={item} watchlist={watchlist} />
                       <ShareBtn item={item} />
                       <span className="discover-rank-badge">{item._rank ?? i + 1}</span>
@@ -361,6 +362,7 @@ function PlatformSection({ platform, openPanel, watchlist }) {
                         ? <img src={posterUrl(item.poster_path, 'w185')} alt={item.title || item.name} loading="lazy" />
                         : <div className="media-card-img-placeholder" />
                       }
+                      <FavBtn item={item} />
                       <SaveBtn item={item} watchlist={watchlist} />
                       <ShareBtn item={item} />
                       <span className="discover-rank-badge">{item._rank ?? i + 1}</span>

@@ -171,14 +171,21 @@ function TimezoneModal({ current, onSave, onClose }: { current: string; onSave: 
           <TouchableOpacity onPress={onClose}><Text style={styles.modalCancel}>Cancel</Text></TouchableOpacity>
         </View>
         <View style={styles.modalSearchWrap}>
-          <TextInput
-            style={styles.modalSearchInput}
-            placeholder="Search timezones…"
-            placeholderTextColor={colors.textMuted}
-            value={query}
-            onChangeText={setQuery}
-            autoCorrect={false}
-          />
+          <View style={styles.modalSearchInner}>
+            <TextInput
+              style={styles.modalSearchInput}
+              placeholder="Search timezones…"
+              placeholderTextColor={colors.textMuted}
+              value={query}
+              onChangeText={setQuery}
+              autoCorrect={false}
+            />
+            {query.length > 0 && (
+              <TouchableOpacity onPress={() => setQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Text style={styles.modalSearchClear}>✕</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
         <ScrollView style={{ flex: 1 }}>
           {!query && deviceTz && deviceTz !== chosen && (
@@ -268,13 +275,20 @@ function ProviderModal({
           </TouchableOpacity>
         </View>
         <View style={styles.modalSearchWrap}>
-          <TextInput
-            style={styles.modalSearchInput}
-            placeholder="Search…"
-            placeholderTextColor={colors.textMuted}
-            value={search}
-            onChangeText={setSearch}
-          />
+          <View style={styles.modalSearchInner}>
+            <TextInput
+              style={styles.modalSearchInput}
+              placeholder="Search…"
+              placeholderTextColor={colors.textMuted}
+              value={search}
+              onChangeText={setSearch}
+            />
+            {search.length > 0 && (
+              <TouchableOpacity onPress={() => setSearch('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Text style={styles.modalSearchClear}>✕</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
         {loading ? (
           <ActivityIndicator color={colors.accent} style={{ marginTop: spacing.xl }} />
@@ -931,12 +945,18 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   modalTitle: { fontFamily: fontFamily.serif, fontSize: fontSize.xl, color: colors.textPrimary },
   modalCancel: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.md, color: colors.textSecondary },
   modalSearchWrap: { padding: spacing.md, paddingHorizontal: spacing.xl },
-  modalSearchInput: {
+  modalSearchInner: {
+    flexDirection: 'row', alignItems: 'center',
     backgroundColor: colors.surface, borderRadius: radii.pill,
-    paddingHorizontal: spacing.lg, paddingVertical: spacing.sm,
-    fontFamily: fontFamily.sans, fontSize: fontSize.md, color: colors.textPrimary,
+    paddingRight: spacing.lg,
     borderWidth: 1, borderColor: colors.border,
   },
+  modalSearchInput: {
+    flex: 1,
+    paddingHorizontal: spacing.lg, paddingVertical: spacing.sm,
+    fontFamily: fontFamily.sans, fontSize: fontSize.md, color: colors.textPrimary,
+  },
+  modalSearchClear: { fontSize: 14, color: colors.textMuted },
   modalFooter: { paddingHorizontal: spacing.xl, paddingTop: spacing.md },
 
   regionGrid: { flexDirection: 'row', flexWrap: 'wrap', padding: spacing.xl, gap: spacing.sm },

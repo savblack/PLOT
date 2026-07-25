@@ -738,7 +738,7 @@ svg { stroke-width: 1.5; }
   box-shadow: none;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
-  color: white;
+  color: var(--text-muted);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -753,7 +753,6 @@ svg { stroke-width: 1.5; }
   stroke: currentColor;
   fill: none;
   stroke-width: 2.5;
-  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.65));
 }
 .media-card:hover .card-save-btn { opacity: 1; }
 .discover-chart-row:hover .card-save-btn,
@@ -766,10 +765,11 @@ svg { stroke-width: 1.5; }
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   opacity: 1;
+  color: var(--accent);
 }
 .card-save-btn.saved svg {
-  fill: white;
-  stroke: white;
+  fill: var(--accent);
+  stroke: var(--accent);
 }
 
 /* Poster-card favourite (heart) — sits in the former type-chip slot (top-left) */
@@ -4489,15 +4489,20 @@ a.provider-chip--link:hover {
     to   { transform: translateY(100%); }
   }
 
-  /* Drag handle pill at top of sheet — doubles as the swipe-down-to-close grab area */
+  /* Drag handle pill, overlaid on the header image — doubles as the
+     swipe-down-to-close grab area. Sits inside .panel-header-wrap so the
+     image itself fills the top of the sheet with no white strip above it. */
   .panel-drag-handle {
     display: block;
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
     width: 36px;
     height: 4px;
     border-radius: 2px;
-    background: var(--border-strong);
-    margin: 10px auto 0;
-    flex-shrink: 0;
+    background: rgba(255,255,255,0.85);
+    box-shadow: 0 0 4px rgba(0,0,0,0.35);
     touch-action: none;
   }
   .panel-header-wrap {

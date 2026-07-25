@@ -86,14 +86,21 @@ export default function Step2() {
         <Text style={styles.heading}>Your platforms</Text>
         <Text style={styles.body}>Select the streaming services you subscribe to.</Text>
 
-        <TextInput
-          style={styles.search}
-          placeholder="Search platforms…"
-          placeholderTextColor={colors.textMuted}
-          value={query}
-          onChangeText={setQuery}
-          autoCorrect={false}
-        />
+        <View style={styles.searchWrap}>
+          <TextInput
+            style={styles.search}
+            placeholder="Search platforms…"
+            placeholderTextColor={colors.textMuted}
+            value={query}
+            onChangeText={setQuery}
+            autoCorrect={false}
+          />
+          {query.length > 0 && (
+            <TouchableOpacity onPress={() => setQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={styles.clearBtnWrap}>
+              <Text style={styles.clearBtn}>✕</Text>
+            </TouchableOpacity>
+          )}
+        </View>
 
         {loading ? (
           <View style={styles.loadingWrap}><ActivityIndicator color={colors.accent} /></View>
@@ -161,12 +168,19 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   content:   { flex: 1, paddingHorizontal: spacing.xl },
   heading:   { fontFamily: fontFamily.serif, fontSize: fontSize.xxl, color: colors.textPrimary, textAlign: 'center', marginBottom: spacing.sm },
   body:      { fontFamily: fontFamily.sans,  fontSize: fontSize.sm,  color: colors.textMuted, textAlign: 'center', marginBottom: spacing.lg },
-  search: {
+  searchWrap: {
+    flexDirection: 'row', alignItems: 'center',
     backgroundColor: colors.surface, borderRadius: radii.md,
+    borderWidth: 1, borderColor: colors.border, marginBottom: spacing.md,
+    paddingRight: spacing.md,
+  },
+  search: {
+    flex: 1,
     paddingHorizontal: spacing.lg, paddingVertical: spacing.sm,
     fontFamily: fontFamily.sans, fontSize: fontSize.md, color: colors.textPrimary,
-    borderWidth: 1, borderColor: colors.border, marginBottom: spacing.md,
   },
+  clearBtnWrap: { paddingLeft: spacing.sm },
+  clearBtn: { fontSize: 14, color: colors.textMuted },
   loadingWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   list:      { flex: 1 },
   card: {
