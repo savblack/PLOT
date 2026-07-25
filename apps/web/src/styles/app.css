@@ -2317,7 +2317,7 @@ a.provider-chip--link:hover {
 }
 .ep-row {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 0.7rem;
   padding: 0.7rem 0.85rem;
   background: var(--surface);
@@ -2397,7 +2397,7 @@ a.provider-chip--link:hover {
 }
 .search-input {
   width: 100%;
-  padding: 0.7rem 1rem 0.7rem 2.5rem;
+  padding: 0.7rem 2.25rem 0.7rem 2.5rem;
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
   background: var(--surface);
@@ -2409,17 +2409,6 @@ a.provider-chip--link:hover {
 }
 .search-input::placeholder { color: var(--text-muted); }
 .search-input:focus { border-color: var(--accent); }
-.search-input::-webkit-search-cancel-button {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 11px;
-  height: 11px;
-  cursor: pointer;
-  background:
-    linear-gradient(45deg, transparent 46%, var(--text-primary) 46%, var(--text-primary) 54%, transparent 54%),
-    linear-gradient(-45deg, transparent 46%, var(--text-primary) 46%, var(--text-primary) 54%, transparent 54%);
-  opacity: 0.8;
-}
 .search-input-icon {
   position: absolute;
   left: 0.9rem;
@@ -2434,6 +2423,27 @@ a.provider-chip--link:hover {
   stroke: currentColor;
   fill: none;
   stroke-width: 2;
+}
+.search-input-clear {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  color: var(--text-muted);
+}
+.search-input-clear:hover { color: var(--text-primary); }
+.search-input-clear svg {
+  width: 12px;
+  height: 12px;
 }
 
 .search-row-status {
@@ -3061,6 +3071,22 @@ a.provider-chip--link:hover {
 @keyframes plot-letter-pulse {
   0%, 60%, 100% { opacity: 0.18; }
   20%            { opacity: 1; }
+}
+
+/* Small circular loader — inline/small-component loading (buttons, rows,
+   inline sections). PlotLoader (the wordmark) is reserved for full pages. */
+.spinner {
+  display: inline-block;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  opacity: 0.65;
+  color: inherit;
+  animation: spinner-rotate 0.7s linear infinite;
+}
+
+@keyframes spinner-rotate {
+  to { transform: rotate(360deg); }
 }
 
 /* ═══════════════════════════════════════

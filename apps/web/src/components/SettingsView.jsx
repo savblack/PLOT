@@ -21,6 +21,7 @@ import { SHOW_MEDIA_SYNC_INTEGRATIONS } from '../launchFeatures.js';
 import SheetHeader from './SheetHeader.jsx';
 import ConfirmModal from './ConfirmModal.jsx';
 import PlotLoader from './PlotLoader.jsx';
+import Spinner from './Spinner.jsx';
 
 const USERNAME_RE = /^[a-z0-9](?:[a-z0-9-]{1,28}[a-z0-9])$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -101,7 +102,7 @@ function RegionPicker({ current, onSave, onClose }) {
             aria-busy={saving}
             aria-label={saving ? 'Saving region' : 'Save region'}
           >
-            {saving ? <PlotLoader size="button" tone="dark" ariaHidden /> : 'Save Region'}
+            {saving ? <Spinner size="button" ariaHidden /> : 'Save Region'}
           </button>
         </div>
       </div>
@@ -318,7 +319,7 @@ function TimezonePicker({ current, onSave, onClose }) {
             aria-busy={saving}
             aria-label={saving ? 'Saving timezone' : 'Save timezone'}
           >
-            {saving ? <PlotLoader size="button" tone="dark" ariaHidden /> : 'Save'}
+            {saving ? <Spinner size="button" ariaHidden /> : 'Save'}
           </button>
         </div>
       </div>
@@ -551,7 +552,7 @@ function AvatarCropModal({ src, saving, onCancel, onSave }) {
             disabled={saving || !nat}
             aria-busy={saving}
           >
-            {saving ? <PlotLoader size="button" tone="dark" ariaHidden /> : 'Save photo'}
+            {saving ? <Spinner size="button" ariaHidden /> : 'Save photo'}
           </button>
         </div>
       </div>

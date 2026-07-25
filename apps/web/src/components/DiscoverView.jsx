@@ -308,7 +308,6 @@ function PlatformSection({ platform, openPanel, watchlist }) {
             : <div className="discover-plat-logo discover-plat-logo-fallback">{platform.name.slice(0, 2)}</div>
           }
           <span className="discover-plat-name">{platform.name}</span>
-          {platform.official && <span className="discover-plat-official">Official Top 10</span>}
         </div>
         <svg
           className={`discover-plat-chevron${open ? ' open' : ''}`}

@@ -4,6 +4,7 @@ import { supabase } from '../api/supabase';
 import { tmdb } from '../api/tmdb';
 import { logoUrl, posterUrl } from '../App.jsx';
 import PlotLoader from '../components/PlotLoader.jsx';
+import Spinner from '../components/Spinner.jsx';
 import { getButtonLikeProps } from '../utils/interactive.js';
 import { track, markActivated, EVENTS } from '../lib/analytics.js';
 import { getOrCreateMyListId, saveOnboardingSeedTitles } from '@plot/core/onboarding.js';
@@ -461,7 +462,7 @@ export default function OnboardingFlow() {
               aria-busy={saving}
               aria-label={saving ? 'Setting up account' : step === 3 ? 'Start watching' : 'Continue'}
             >
-              {step === 3 ? (saving ? <PlotLoader size="button" tone="dark" ariaHidden /> : 'Start watching →') : 'Continue →'}
+              {step === 3 ? (saving ? <Spinner size="button" ariaHidden /> : 'Start watching →') : 'Continue →'}
             </button>
           </div>
         </div>

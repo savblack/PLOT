@@ -18,6 +18,7 @@ import { fetchVerifiedAvailability, formatOfferPrice, offersFromTmdb } from '@pl
 import LoadingSpinner from './LoadingSpinner.jsx';
 import SheetHeader from './SheetHeader.jsx';
 import PlotLoader from './PlotLoader.jsx';
+import Spinner from './Spinner.jsx';
 
 /* ── Close icon ── */
 function CloseIcon() {
@@ -286,7 +287,9 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone }) {
                 {/* Check button — only shown when tracking progress */}
                 {isTracking && (
                   isChecking ? (
-                    <PlotLoader size={14} ariaHidden />
+                    <span className="ep-check-btn" aria-hidden="true">
+                      <Spinner size={14} ariaHidden />
+                    </span>
                   ) : (
                     <button
                       className={`ep-check-btn${isActive ? ' checked' : ''}`}
@@ -1131,16 +1134,23 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                         return;
                       }
                       setReviewSaving(true);
-                      await history.updateEntry(itemId, {
-                        rating: localRating || null,
-                        note:   localReview.trim() || null,
-                        dnf:    localDnf,
-                      });
+                      if (watchedEntry) {
+                        await history.updateEntry(itemId, {
+                          rating: localRating || null,
+                          note:   localReview.trim() || null,
+                          dnf:    localDnf,
+                        });
+                      } else {
+                        await history.logWatched(
+                          { ...details, id: itemId, media_type: itemType },
+                          { rating: localRating || null, note: localReview.trim() || null, dnf: localDnf, logRewatches: profile?.log_rewatches ?? true }
+                        );
+                      }
                       setReviewSaving(false);
                     }}
                   >
                     {reviewSaving
-                      ? <PlotLoader size="button" ariaHidden />
+                      ? <Spinner size="button" ariaHidden />
                       : hasSavedReview
                         ? reviewDirty ? 'Save changes' : 'Edit review'
                         : 'Save review'

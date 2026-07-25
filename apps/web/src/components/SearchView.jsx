@@ -217,12 +217,22 @@ export default function SearchView() {
           </div>
           <input
             className="search-input"
-            type="search"
+            type="text"
             placeholder={mode === 'friends' ? 'Search friends by username or name…' : mode === 'talent' ? 'Search actors, directors and creators…' : 'Search TV shows, movies and cinema...'}
             value={query}
             onChange={handleChange}
             autoFocus
           />
+          {query && (
+            <button
+              type="button"
+              className="search-input-clear"
+              onClick={() => { setQuery(''); runSearch('', mode); }}
+              aria-label="Clear search"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          )}
         </div>
       </div>
 
