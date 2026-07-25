@@ -1763,6 +1763,23 @@ export default function SettingsView() {
           </div>
         </div>
 
+        <div
+          className="settings-row interactive-surface"
+          onClick={() => { if (!savingGuideChannels) setShowGuideChannels(true); }}
+          {...getButtonLikeProps({ onPress: () => { if (!savingGuideChannels) setShowGuideChannels(true); }, label: 'Open my channels', disabled: savingGuideChannels })}
+        >
+          <div className="settings-row-left">
+            <div className="settings-row-icon">
+              <svg viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+            </div>
+            <span className="settings-row-label">My Channels</span>
+          </div>
+          <div className="settings-row-value">
+            <span>{savingGuideChannels ? 'Saving…' : guideChannels.length > 0 ? `${guideChannels.length} selected` : 'None'}</span>
+            <Chevron />
+          </div>
+        </div>
+
         <div className="settings-row" style={{ cursor: 'default' }}>
           <div className="settings-row-left">
             <div className="settings-row-icon">
@@ -1801,23 +1818,6 @@ export default function SettingsView() {
             <SettingsTextAction onClick={handleToggleLogRewatches}>
               {logRewatches ? 'Turn off' : 'Turn on'}
             </SettingsTextAction>
-          </div>
-        </div>
-
-        <div
-          className="settings-row interactive-surface"
-          onClick={() => { if (!savingGuideChannels) setShowGuideChannels(true); }}
-          {...getButtonLikeProps({ onPress: () => { if (!savingGuideChannels) setShowGuideChannels(true); }, label: 'Open my channels', disabled: savingGuideChannels })}
-        >
-          <div className="settings-row-left">
-            <div className="settings-row-icon">
-              <svg viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
-            </div>
-            <span className="settings-row-label">My Channels</span>
-          </div>
-          <div className="settings-row-value">
-            <span>{savingGuideChannels ? 'Saving…' : guideChannels.length > 0 ? `${guideChannels.length} selected` : 'None'}</span>
-            <Chevron />
           </div>
         </div>
 
