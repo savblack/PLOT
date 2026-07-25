@@ -1527,40 +1527,53 @@ export default function SettingsView() {
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div className="settings-row-label">Username</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.35rem' }}>
-                <input
-                  type="text"
-                  value={usernameValue}
-                  spellCheck={false}
-                  autoCapitalize="none"
-                  maxLength={30}
-                  aria-label="Username"
-                  onChange={(e) => setUsernameDraft(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
-                  style={{
-                    flex: 1, minWidth: 0, padding: '0.45rem 0.6rem',
-                    borderRadius: 'var(--radius-sm, 8px)', border: '1px solid var(--border)',
-                    background: 'var(--surface)', color: 'var(--text-primary)', fontSize: '0.9rem',
-                  }}
-                />
-              </div>
-              <div style={{
-                fontSize: '0.72rem', marginTop: '0.3rem', minHeight: '1rem',
-                color: usernameStatus === 'available' || usernameStatus === 'saved' ? 'var(--accent)'
-                  : usernameStatus === 'taken' || usernameStatus === 'invalid' || usernameStatus === 'error' ? 'var(--danger)'
-                  : 'var(--text-muted)',
-              }}>
-                {usernameStatus === 'checking' && 'Checking availability…'}
-                {usernameStatus === 'available' && 'Available'}
-                {usernameStatus === 'taken' && 'That username is taken'}
-                {usernameStatus === 'invalid' && '3–30 chars · lowercase letters, numbers, hyphens'}
-                {usernameStatus === 'saving' && 'Saving…'}
-                {usernameStatus === 'saved' && 'Saved'}
-                {usernameStatus === 'error' && 'Something went wrong. Try again'}
-              </div>
+              {usernameDraft === null ? (
+                <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginTop: '0.35rem' }}>
+                  {username}
+                </div>
+              ) : (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.35rem' }}>
+                    <input
+                      type="text"
+                      value={usernameValue}
+                      spellCheck={false}
+                      autoCapitalize="none"
+                      maxLength={30}
+                      autoFocus
+                      aria-label="Username"
+                      onChange={(e) => setUsernameDraft(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                      style={{
+                        flex: 1, minWidth: 0, padding: '0.45rem 0.6rem',
+                        borderRadius: 'var(--radius-sm, 8px)', border: '1px solid var(--border)',
+                        background: 'var(--surface)', color: 'var(--text-primary)', fontSize: '0.9rem',
+                      }}
+                    />
+                  </div>
+                  <div style={{
+                    fontSize: '0.72rem', marginTop: '0.3rem', minHeight: '1rem',
+                    color: usernameStatus === 'available' || usernameStatus === 'saved' ? 'var(--accent)'
+                      : usernameStatus === 'taken' || usernameStatus === 'invalid' || usernameStatus === 'error' ? 'var(--danger)'
+                      : 'var(--text-muted)',
+                  }}>
+                    {usernameStatus === 'checking' && 'Checking availability…'}
+                    {usernameStatus === 'available' && 'Available'}
+                    {usernameStatus === 'taken' && 'That username is taken'}
+                    {usernameStatus === 'invalid' && '3–30 chars · lowercase letters, numbers, hyphens'}
+                    {usernameStatus === 'saving' && 'Saving…'}
+                    {usernameStatus === 'saved' && 'Saved'}
+                    {usernameStatus === 'error' && 'Something went wrong. Try again'}
+                  </div>
+                </>
+              )}
             </div>
           </div>
           <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
-            {usernameDirty && (
+            {usernameDraft === null ? (
+              <SettingsTextAction onClick={() => setUsernameDraft(username)}>
+                Edit
+              </SettingsTextAction>
+            ) : (
               <SettingsTextAction
                 disabled={usernameStatus === 'checking' || usernameStatus === 'saving' || usernameStatus === 'invalid' || usernameStatus === 'taken'}
                 onClick={handleSaveUsername}
