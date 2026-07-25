@@ -5,6 +5,7 @@ import {
   Dimensions, Image, Animated, Easing, FlatList,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as Linking from 'expo-linking';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { supabase } from '../../lib/supabase';
@@ -109,6 +110,14 @@ const TURNSTILE_SITE_KEY = process.env.EXPO_PUBLIC_TURNSTILE_SITE_KEY;
 // Password-reset + confirmation links resolve on the web app (there's no
 // native set-new-password screen yet), so point them at the web callback.
 const AUTH_WEB_CALLBACK = 'https://app.theplot.tv/auth/callback';
+
+// Magic links sign the user straight into a session — unlike reset/confirm,
+// there's nothing that needs a browser, so send them back into the app via
+// the plot:// deep link that app/(auth)/callback.tsx already listens for.
+// PRODUCTION REQUIREMENT: this resolves to plot://auth/callback — add that
+// exact URL to Supabase Dashboard → Authentication → URL Configuration →
+// Redirect URLs, or signInWithOtp will reject it and fall back to erroring.
+const AUTH_APP_CALLBACK = Linking.createURL('/auth/callback');
 
 // Kind, PLOT-voiced auth errors (mirrors web AuthPage's friendlyError).
 function friendlyAuthError(msg?: string) {
@@ -220,7 +229,7 @@ export default function AuthScreen() {
     setLoading(true);
     const { error } = await supabase.auth.signInWithOtp({
       email: email.trim(),
-      options: { shouldCreateUser: true, emailRedirectTo: AUTH_WEB_CALLBACK, captchaToken: captchaToken ?? undefined },
+      options: { shouldCreateUser: true, emailRedirectTo: AUTH_APP_CALLBACK, captchaToken: captchaToken ?? undefined },
     });
     setLoading(false);
     refreshCaptcha();

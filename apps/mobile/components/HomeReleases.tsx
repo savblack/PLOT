@@ -10,6 +10,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import { useMediaPanel } from '../contexts/MediaPanelContext';
 import { tmdb, getTmdbRegion } from '../lib/tmdb';
+import { supabase } from '../lib/supabase';
 import { buildProviderLogoCacheKey, collectPendingProviderLogoRequests } from '@plot/core/providerLogos.js';
 import { posterUrl, backdropUrl, logoUrl, Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import { useTheme } from '../contexts/ThemeContext';
@@ -91,10 +92,22 @@ async function loadReleases(): Promise<ReleasesData> {
   const todayStr     = localDateStr();
   const sixMonthsStr = localDateStr(180);
 
+  // Apply "My Channels" (guide_channels) if the user has selected any —
+  // these are free/ad-supported broadcast providers, not subscription
+  // streaming, so the monetization filter must be widened accordingly.
+  const { data: { session } } = await supabase.auth.getSession();
+  let providerIds: number[] = [];
+  if (session?.user) {
+    const { data: profile } = await supabase.from('profiles')
+      .select('guide_channels').eq('id', session.user.id).maybeSingle();
+    providerIds = (profile?.guide_channels ?? []).map((c: { id: number }) => c.id);
+  }
+  const monetizationTypes = 'free|ads';
+
   const [upcomingMovRes, upcomingTVRes, recentRes] = await Promise.all([
-    tmdb.getUpcoming([]),
-    tmdb.getUpcomingTV([]),
-    tmdb.getRecentReleases(14, []),
+    tmdb.getUpcoming(providerIds, monetizationTypes),
+    tmdb.getUpcomingTV(providerIds, monetizationTypes),
+    tmdb.getRecentReleases(14, providerIds, monetizationTypes),
   ]);
 
   const today: ReleaseItem[] = [];

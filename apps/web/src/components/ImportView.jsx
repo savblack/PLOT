@@ -4,6 +4,7 @@ import { useApp } from '../App.jsx';
 import { tmdb } from '../api/tmdb.js';
 import { supabase } from '../api/supabase.js';
 import { parsePlatform } from '../domain/importParsing.js';
+import { dedupeEntries } from '../domain/importDedup.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import { track, EVENTS } from '../lib/analytics.js';
 
@@ -126,18 +127,13 @@ const PLATFORMS = [
 /* Platform parsers (parseNetflix/Prime/Disney/Max/Apple/Letterboxd + parsePlatform)
    now live in the shared core: @plot/core/importParsing.js. */
 
-/* ─────────────────────────── Deduplication ─────────────────────────── */
-
-function dedupeEntries(entries) {
-  const map = new Map();
-  for (const e of entries) {
-    const key = e.title.toLowerCase();
-    const existing = map.get(key);
-    if (!existing || (e.date && (!existing.date || e.date > existing.date))) {
-      map.set(key, e);
-    }
-  }
-  return [...map.values()];
+// Normalise a parsed entry's date into the journal's watched_at format —
+// shared by the import write and every "already have this exact watch"
+// check so they agree on what counts as a duplicate.
+function watchedAtFor(r) {
+  return r.date
+    ? new Date(r.date + 'T12:00:00').toISOString().slice(0, 10)
+    : new Date().toISOString().slice(0, 10);
 }
 
 /* ─────────────────────────── TMDB resolution ─────────────────────────── */
@@ -191,14 +187,21 @@ async function resolveAll(entries, onProgress) {
 
 /* ─────────────────────────── Bulk insert ─────────────────────────── */
 
-async function bulkInsert(userId, rows) {
+async function bulkInsert(userId, rows, logRewatches) {
   const BATCH = 50;
   let inserted = 0;
+  if (!logRewatches) {
+    // Collapsing to one row per title: clear existing rows for these titles
+    // first since there's no more DB-level unique(user_id,tmdb_id) to
+    // upsert against (it was relaxed so rewatches can coexist).
+    const tmdbIds = [...new Set(rows.map(r => r.tmdb_id))];
+    if (tmdbIds.length) await supabase.from('journal').delete().eq('user_id', userId).in('tmdb_id', tmdbIds);
+  }
   for (let i = 0; i < rows.length; i += BATCH) {
     const batch = rows.slice(i, i + BATCH);
-    const { error } = await supabase
-      .from('journal')
-      .upsert(batch, { onConflict: 'user_id,tmdb_id' });
+    const { error } = logRewatches
+      ? await supabase.from('journal').upsert(batch, { onConflict: 'user_id,tmdb_id,watched_at' })
+      : await supabase.from('journal').insert(batch);
     if (!error) inserted += batch.length;
   }
   return inserted;
@@ -237,7 +240,7 @@ function PosterThumb({ path }) {
 /* ─────────────────────────── Main component ─────────────────────────── */
 
 export default function ImportView() {
-  const { user } = useApp();
+  const { user, profile } = useApp();
   const navigate = useNavigate();
 
   const [step, setStep] = useState(1); // 1=platform 2=file 3=resolving 4=preview 5=done
@@ -282,12 +285,14 @@ export default function ImportView() {
     const deduped = dedupeEntries(parsed);
     track(EVENTS.IMPORT_STARTED, { source: platform.id, count: deduped.length });
 
-    // Fetch existing tmdb_ids for this user
+    // Fetch existing (tmdb_id, watched_at) pairs — a different date for a
+    // title already in the journal is a rewatch, not a duplicate, so it
+    // must still import.
     const { data: existing } = await supabase
       .from('journal')
-      .select('tmdb_id')
+      .select('tmdb_id, watched_at')
       .eq('user_id', user.id);
-    const ids = new Set((existing || []).map(r => r.tmdb_id));
+    const ids = new Set((existing || []).map(r => `${r.tmdb_id}::${r.watched_at}`));
     setExistingIds(ids);
 
     setStep(3);
@@ -305,35 +310,37 @@ export default function ImportView() {
   const handleImport = useCallback(async () => {
     setImporting(true);
     const toInsert = results
-      .filter(r => r.status === 'matched' && !existingIds.has(r.tmdbId))
+      .filter(r => r.status === 'matched')
       .map(r => {
+        const watchedAt = watchedAtFor(r);
         const row = {
           user_id:    user.id,
           tmdb_id:    r.tmdbId,
           media_type: r.mediaType,
           title:      r.tmdbTitle,
           poster_path: r.posterPath || null,
-          watched_at: r.date
-            ? new Date(r.date + 'T12:00:00').toISOString().slice(0, 10)
-            : new Date().toISOString().slice(0, 10),
+          watched_at: watchedAt,
         };
         // Letterboxd carries ratings/reviews; clamp to the 1–10 journal scale
         if (r.rating != null) row.rating = Math.min(10, Math.max(1, Math.round(r.rating)));
         if (r.note) row.note = r.note;
         return row;
-      });
+      })
+      // Only skip an exact (title, date) match already in the journal — a
+      // rewatch on a different date is a new entry, not a duplicate.
+      .filter(row => !existingIds.has(`${row.tmdb_id}::${row.watched_at}`));
 
-    const count = await bulkInsert(user.id, toInsert);
+    const count = await bulkInsert(user.id, toInsert, profile?.log_rewatches ?? true);
     track(EVENTS.IMPORT_COMPLETED, { source: platform?.id, count });
     // Notify history hook to reload
     if (typeof window !== 'undefined') window.dispatchEvent(new Event('plot:history-changed'));
     setImportedCount(count);
     setImporting(false);
     setStep(5);
-  }, [results, existingIds, user, platform?.id]);
+  }, [results, existingIds, user, platform?.id, profile?.log_rewatches]);
 
-  const newCount      = results.filter(r => r.status === 'matched' && !existingIds.has(r.tmdbId)).length;
-  const alreadyCount  = results.filter(r => r.status === 'matched' && existingIds.has(r.tmdbId)).length;
+  const newCount      = results.filter(r => r.status === 'matched' && !existingIds.has(`${r.tmdbId}::${watchedAtFor(r)}`)).length;
+  const alreadyCount  = results.filter(r => r.status === 'matched' && existingIds.has(`${r.tmdbId}::${watchedAtFor(r)}`)).length;
   const unmatchedCount = results.filter(r => r.status === 'unmatched').length;
 
   return (
@@ -529,7 +536,7 @@ export default function ImportView() {
           {/* Results list */}
           <div style={{ display: 'flex', flexDirection: 'column', marginBottom: '1.5rem', maxHeight: '52vh', overflowY: 'auto' }}>
             {results.map((r, i) => {
-              const alreadyHave = r.status === 'matched' && existingIds.has(r.tmdbId);
+              const alreadyHave = r.status === 'matched' && existingIds.has(`${r.tmdbId}::${watchedAtFor(r)}`);
               const unmatched = r.status === 'unmatched';
               const isNew = !alreadyHave && !unmatched;
               return (

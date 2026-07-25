@@ -44,7 +44,12 @@ export function findCol(headers, ...candidates) {
   return -1;
 }
 
-export function normaliseDate(raw) {
+// Slash dates (DD/MM/YYYY vs MM/DD/YYYY) are ambiguous whenever both segments
+// are <= 12 — e.g. a UK export's "03/04/2024" (3 April) reads as US "March 4"
+// unless we know the file's convention. `dayFirst` lets a caller pass that
+// convention in (see detectDayFirst below); rows that are unambiguous on
+// their own (a segment > 12) are always resolved correctly regardless.
+export function normaliseDate(raw, { dayFirst = false } = {}) {
   if (!raw) return null;
   const s = raw.trim();
 
@@ -55,9 +60,12 @@ export function normaliseDate(raw) {
   const slashMatch = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
   if (slashMatch) {
     const [, a, b, y] = slashMatch;
-    // If first segment > 12 it must be a day
+    // If first segment > 12 it must be a day, regardless of file convention
     if (parseInt(a) > 12) return `${y}-${b.padStart(2,'0')}-${a.padStart(2,'0')}`;
-    // Otherwise assume MM/DD/YYYY (Netflix default)
+    if (parseInt(b) > 12) return `${y}-${a.padStart(2,'0')}-${b.padStart(2,'0')}`;
+    // Ambiguous (both segments <= 12) — use the file-level convention,
+    // defaulting to MM/DD/YYYY (Netflix default) when none was detected.
+    if (dayFirst) return `${y}-${b.padStart(2,'0')}-${a.padStart(2,'0')}`;
     return `${y}-${a.padStart(2,'0')}-${b.padStart(2,'0')}`;
   }
 
@@ -65,6 +73,17 @@ export function normaliseDate(raw) {
   const d = new Date(s);
   if (!isNaN(d)) return d.toISOString().slice(0, 10);
   return null;
+}
+
+// Scan a column of raw date strings for an unambiguous DD/MM/YYYY row (first
+// segment > 12) to infer the whole file's convention before parsing any row.
+export function detectDayFirst(rawDates) {
+  for (const raw of rawDates) {
+    if (!raw) continue;
+    const match = raw.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if (match && parseInt(match[1], 10) > 12) return true;
+  }
+  return false;
 }
 
 // Letterboxd exports a ZIP of CSVs; the richest single file is diary.csv
@@ -81,6 +100,7 @@ export function parseLetterboxd(text) {
   const ratingIdx = findCol(headers, 'rating');
   const reviewIdx = findCol(headers, 'review');
   if (titleIdx === -1) return [];
+  const dayFirst = dateIdx !== -1 && detectDayFirst(rows.slice(1).map(r => r[dateIdx]));
 
   return rows.slice(1).map(r => {
     const title = r[titleIdx]?.trim();
@@ -92,7 +112,7 @@ export function parseLetterboxd(text) {
     return {
       title,
       hint: 'movie',
-      date: dateIdx !== -1 ? normaliseDate(r[dateIdx]) : null,
+      date: dateIdx !== -1 ? normaliseDate(r[dateIdx], { dayFirst }) : null,
       year: /^\d{4}$/.test(yearRaw) ? yearRaw : null,
       rating: Number.isFinite(stars) && stars > 0 ? Math.round(stars * 2) : null,
       note: reviewRaw || null,
@@ -122,12 +142,13 @@ export function parseNetflix(text) {
   const titleIdx = findCol(headers, 'title', 'name');
   const dateIdx  = findCol(headers, 'date', 'watched', 'viewdate');
   if (titleIdx === -1) return [];
+  const dayFirst = dateIdx !== -1 && detectDayFirst(rows.slice(1).map(r => r[dateIdx]));
 
   return rows.slice(1).map(r => {
     const raw = r[titleIdx]?.trim();
     if (!raw) return null;
     const { title, hint } = stripNetflixEpisode(raw);
-    const date = dateIdx !== -1 ? normaliseDate(r[dateIdx]) : null;
+    const date = dateIdx !== -1 ? normaliseDate(r[dateIdx], { dayFirst }) : null;
     return { title, hint, date };
   }).filter(Boolean);
 }
@@ -139,11 +160,12 @@ export function parsePrime(text) {
   const titleIdx = findCol(headers, 'title', 'name', 'content');
   const dateIdx  = findCol(headers, 'watcheddate', 'date', 'watched', 'viewdate', 'lastwatched');
   if (titleIdx === -1) return [];
+  const dayFirst = dateIdx !== -1 && detectDayFirst(rows.slice(1).map(r => r[dateIdx]));
 
   return rows.slice(1).map(r => {
     const title = r[titleIdx]?.trim();
     if (!title) return null;
-    return { title, hint: 'unknown', date: dateIdx !== -1 ? normaliseDate(r[dateIdx]) : null };
+    return { title, hint: 'unknown', date: dateIdx !== -1 ? normaliseDate(r[dateIdx], { dayFirst }) : null };
   }).filter(Boolean);
 }
 
@@ -187,12 +209,13 @@ export function parseMax(text) {
     const dateIdx  = findCol(headers, 'datewatched', 'date', 'watched');
     const typeIdx  = findCol(headers, 'contenttype', 'type', 'content');
     if (titleIdx === -1) return [];
+    const dayFirst = dateIdx !== -1 && detectDayFirst(rows.slice(1).map(r => r[dateIdx]));
     return rows.slice(1).map(r => {
       const title = r[titleIdx]?.trim();
       if (!title) return null;
       const typeVal = typeIdx !== -1 ? (r[typeIdx] || '').toLowerCase() : '';
       const hint = typeVal.includes('series') || typeVal.includes('tv') ? 'tv' : 'unknown';
-      return { title, hint, date: dateIdx !== -1 ? normaliseDate(r[dateIdx]) : null };
+      return { title, hint, date: dateIdx !== -1 ? normaliseDate(r[dateIdx], { dayFirst }) : null };
     }).filter(Boolean);
   }
 }

@@ -17,13 +17,19 @@ export default function AuthCallback() {
     // Handle the URL that launched this screen
     const handleUrl = async (url: string) => {
       const parsed = Linking.parse(url);
-      const token = parsed.queryParams?.token as string | undefined;
-      const type  = parsed.queryParams?.type  as string | undefined;
+      // Supabase's default email templates redirect with `token_hash` (the
+      // PKCE/OTP-verify convention); accept the older `token` name too in
+      // case a custom template still uses it.
+      const tokenHash = (parsed.queryParams?.token_hash ?? parsed.queryParams?.token) as string | undefined;
+      const type = parsed.queryParams?.type as string | undefined;
 
-      if (token && type === 'magiclink') {
-        await supabase.auth.verifyOtp({ token_hash: token, type: 'magiclink' });
+      if (tokenHash && type === 'magiclink') {
+        await supabase.auth.verifyOtp({ token_hash: tokenHash, type: 'magiclink' });
       }
-      // For OAuth, Supabase JS auto-parses the fragment — detectSessionInUrl handles it
+      // Note: detectSessionInUrl is false (lib/configureCore.ts) — there is no
+      // OAuth flow on mobile today, only magic-link verified above via
+      // verifyOtp. If OAuth is added later, this fragment must be parsed
+      // manually too since detectSessionInUrl won't auto-consume it.
     };
 
     // Get the URL that opened the app (cold start)

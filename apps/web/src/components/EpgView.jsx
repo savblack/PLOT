@@ -225,6 +225,10 @@ export default function EpgView() {
   const { profile } = useApp();
   const country  = profile?.region   ?? 'US';
   const timezone = profile?.timezone ?? null;
+  const channelNames = useMemo(
+    () => new Set((profile?.guide_channels ?? []).map(c => (c.name || '').toLowerCase())),
+    [profile?.guide_channels]
+  );
   const cacheKey = `${country}:${timezone}`;
   const todayStr = dateInTimezone(new Date(), timezone);
 
@@ -272,7 +276,13 @@ export default function EpgView() {
 
   const isToday  = date === todayStr;
   const nowMins  = isToday ? nowMinsInWindow(timezone) : null;
-  const programs = programsByDate[date]; // undefined = loading
+  const allPrograms = programsByDate[date]; // undefined = loading
+  // Apply "My Channels" if the user has selected any; otherwise show everything.
+  const programs = useMemo(() => {
+    if (!allPrograms) return allPrograms;
+    if (!channelNames.size) return allPrograms;
+    return allPrograms.filter(p => channelNames.has((p.channelName || '').toLowerCase()));
+  }, [allPrograms, channelNames]);
 
   // Bucket into rails. Today → On Now / Up Next (next 3 hrs) / Later.
   // Future day → by time of day.
@@ -326,7 +336,9 @@ export default function EpgView() {
         <div className="empty-state">
           <div className="empty-title">Nothing scheduled</div>
           <div className="empty-body">
-            {isToday ? 'Nothing more airing today for your region.' : "Schedules aren't available for your region on this date."}
+            {channelNames.size > 0 && (allPrograms?.length ?? 0) > 0
+              ? "None of your My Channels have anything on this date. Try another day or update My Channels in Settings."
+              : isToday ? 'Nothing more airing today for your region.' : "Schedules aren't available for your region on this date."}
           </div>
         </div>
       ) : (

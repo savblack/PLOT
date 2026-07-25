@@ -40,7 +40,7 @@ export async function deleteListItem({ listId, tmdbId, userId }) {
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
-export async function logWatchedItem({ userId, item, rating, note, dnf, watchedAt = localDateStr() }) {
+export async function logWatchedItem({ userId, item, rating, note, dnf, watchedAt = localDateStr(), logRewatches = true }) {
   const mediaRow = baseMediaRow(item);
   if (!userId || !mediaRow) return { data: null, error: null, row: null };
 
@@ -58,9 +58,22 @@ export async function logWatchedItem({ userId, item, rating, note, dnf, watchedA
     dnf: dnf ?? false,
   };
 
+  // logRewatches: a rewatch on a new date becomes its own history row
+  // (upsert on user_id,tmdb_id,watched_at — the same date still overwrites,
+  // so duplicate taps/re-imports don't create duplicate rows). With the
+  // preference off, collapse back to the old single-row-per-title behavior —
+  // there's no more DB-level unique(user_id,tmdb_id) to upsert against (it
+  // was relaxed so rewatches can coexist), so do it explicitly: clear any
+  // existing rows for this title first, then insert the one true row.
+  if (!logRewatches) {
+    await supabase.from('journal').delete().eq('user_id', userId).eq('tmdb_id', row.tmdb_id);
+    const { data, error } = await supabase.from('journal').insert(row).select().single();
+    return { data, error, row };
+  }
+
   const { data, error } = await supabase
     .from('journal')
-    .upsert(row, { onConflict: 'user_id,tmdb_id' })
+    .upsert(row, { onConflict: 'user_id,tmdb_id,watched_at' })
     .select()
     .single();
 

@@ -752,14 +752,14 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
     }
 
     return markMediaAsWatched({
-      logWatched: () => history.logWatched({ ...details, id: itemId, media_type: itemType, dnf }),
+      logWatched: () => history.logWatched({ ...details, id: itemId, media_type: itemType, dnf }, { logRewatches: profile?.log_rewatches ?? true }),
       clearWatching: () => watching.stopWatching(itemId),
       removeFromSaved: () => watchlist.removeFromList(itemId),
       rollbackHistory: () => history.removeEntry(itemId),
       shouldClearWatching: !isMovie && isWatching,
-      shouldRemoveFromSaved: !isMovie && !isWatching && inList,
+      shouldRemoveFromSaved: inList && !isWatching,
     });
-  }, [details, history, inList, isMovie, isWatching, itemId, itemType, watched, watchedEntry?.dnf, watchlist, watching]);
+  }, [details, history, inList, isMovie, isWatching, itemId, itemType, profile?.log_rewatches, watched, watchedEntry?.dnf, watchlist, watching]);
 
   const handleClearStatus = useCallback(async () => {
     if (isWatching) {

@@ -73,15 +73,30 @@ export default function Step3() {
   };
   const isSelected = (item: SearchResult) => selected.some(i => i.id === item.id);
 
+  // Always create My List so the Home Save action has somewhere to write
+  // into, even for a user who skips title selection entirely.
+  const ensureMyList = async (userId: string) => {
+    const listRes = await supabase.from('lists')
+      .upsert({ user_id: userId, name: 'My List', is_public: false }, { onConflict: 'user_id,name' })
+      .select('id').single();
+    return listRes?.data?.id ?? null;
+  };
+
+  const handleSkip = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      await ensureMyList(session.user.id);
+      await supabase.from('profiles').update({ onboarding_complete: true }).eq('id', session.user.id);
+    }
+    router.replace('/(app)');
+  };
+
   const handleFinish = async () => {
     setSaving(true);
     const { data: { session } } = await supabase.auth.getSession();
-    if (session?.user && selected.length > 0) {
-      const listRes = await supabase.from('lists')
-        .upsert({ user_id: session.user.id, name: 'My List', is_public: false }, { onConflict: 'user_id,name' })
-        .select('id').single();
-      const listId = listRes?.data?.id;
-      if (listId) {
+    if (session?.user) {
+      const listId = await ensureMyList(session.user.id);
+      if (listId && selected.length > 0) {
         const rows = selected.map(item => ({
           list_id: listId,
           user_id: session.user.id,
@@ -195,7 +210,7 @@ export default function Step3() {
               </Text>
           }
         </TouchableOpacity>
-        <TouchableOpacity style={styles.skipBtn} onPress={() => router.replace('/(app)')}>
+        <TouchableOpacity style={styles.skipBtn} onPress={handleSkip}>
           <Text style={styles.skipText}>Skip this step</Text>
         </TouchableOpacity>
       </View>

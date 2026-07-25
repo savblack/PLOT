@@ -6,7 +6,7 @@ import { logoUrl, posterUrl } from '../App.jsx';
 import PlotLoader from '../components/PlotLoader.jsx';
 import { getButtonLikeProps } from '../utils/interactive.js';
 import { track, markActivated, EVENTS } from '../lib/analytics.js';
-import { saveOnboardingSeedTitles } from '@plot/core/onboarding.js';
+import { getOrCreateMyListId, saveOnboardingSeedTitles } from '@plot/core/onboarding.js';
 import { usePremium } from '../hooks/usePremium.js';
 import { takePremiumCheckoutIntent } from '../utils/premiumCheckoutIntent.js';
 
@@ -85,6 +85,7 @@ export default function OnboardingFlow() {
   const [authLoading, setAuthLoading] = useState(true);
   const [step,      setStep]      = useState(1);
   const [saving,    setSaving]    = useState(false);
+  const [saveError, setSaveError] = useState(null);
   const premium = usePremium(null);
 
   // Step 1: Region
@@ -189,6 +190,7 @@ export default function OnboardingFlow() {
   const finish = async () => {
     if (!user) return;
     setSaving(true);
+    setSaveError(null);
 
     const provPayload = allProviders
       .filter(p => providers.includes(p.provider_id))
@@ -198,13 +200,26 @@ export default function OnboardingFlow() {
     let detectedTz = 'UTC';
     try { detectedTz = Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { /* unsupported */ }
 
-    await supabase.from('profiles').upsert({
+    const { error: profileError } = await supabase.from('profiles').upsert({
       id:                  user.id,
       region,
       timezone:            detectedTz,
       streaming_providers: provPayload,
       onboarding_complete: true,
     });
+
+    if (profileError) {
+      // Don't navigate to /home on a failed write — ProtectedRoute would just
+      // bounce the user back here since onboarding_complete never got set,
+      // leaving them stuck in a neither-done-nor-in-flow loop.
+      setSaving(false);
+      setSaveError('Something went wrong saving your setup. Please try again.');
+      return;
+    }
+
+    // Always create My List so Save works immediately, even if the user
+    // skipped seeding titles.
+    await getOrCreateMyListId({ supabase, userId: user.id });
 
     // Seed selected titles into watching_progress or My List
     if (seedSelected.length > 0) {
@@ -431,6 +446,9 @@ export default function OnboardingFlow() {
       {/* ── Sticky footer — always visible ── */}
       <div style={footer}>
         <div style={{ width: '100%', maxWidth: 420, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          {saveError && (
+            <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--accent)', textAlign: 'center' }}>{saveError}</p>
+          )}
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             {step > 1 && (
               <button className="onboarding-cta onboarding-cta--outline" onClick={() => setStep(s => s - 1)}>← Back</button>

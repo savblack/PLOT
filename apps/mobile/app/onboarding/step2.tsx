@@ -33,6 +33,9 @@ export default function Step2() {
     let cancelled = false;
     tmdb.getWatchProvidersForRegion('tv', getTmdbRegion()).then((data: any) => {
       if (cancelled) return;
+      // Deduping of TMDB's occasional duplicate provider_ids happens in
+      // tmdb.getWatchProvidersForRegion (packages/core/tmdb.js) so every
+      // caller benefits.
       const list = (data?.results || [])
         .sort((a: Provider, b: Provider) => a.display_priority - b.display_priority)
         .slice(0, 30);

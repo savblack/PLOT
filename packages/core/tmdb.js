@@ -211,12 +211,12 @@ export const tmdb = {
   getRecommendations: (type, id) => fetchFromTMDB(`/${type}/${id}/recommendations`),
 
   /* ── Upcoming movies (optionally filtered to specific providers) ── */
-  getUpcoming: async (providerIds = []) => {
+  getUpcoming: async (providerIds = [], monetizationTypes = 'flatrate') => {
     const today = localDateStr();
     const sixMonths = new Date(); sixMonths.setMonth(sixMonths.getMonth() + 6);
     const end = dateToLocalStr(sixMonths);
     const providerParams = providerIds.length
-      ? { watch_region: userRegion, with_watch_providers: providerIds.join('|'), with_watch_monetization_types: 'flatrate' }
+      ? { watch_region: userRegion, with_watch_providers: providerIds.join('|'), with_watch_monetization_types: monetizationTypes }
       : {};
     const baseParams = { 'release_date.gte': today, 'release_date.lte': end, sort_by: 'popularity.desc', ...providerParams };
     const [theatricalPages, streamingPages] = await Promise.all([
@@ -311,12 +311,12 @@ export const tmdb = {
   },
 
   /* ── Upcoming TV (optionally filtered to specific providers) ── */
-  getUpcomingTV: async (providerIds = []) => {
+  getUpcomingTV: async (providerIds = [], monetizationTypes = 'flatrate') => {
     const today = localDateStr();
     const sixMonths = new Date(); sixMonths.setMonth(sixMonths.getMonth() + 6);
     const end = dateToLocalStr(sixMonths);
     const providerParams = providerIds.length
-      ? { watch_region: userRegion, with_watch_providers: providerIds.join('|'), with_watch_monetization_types: 'flatrate' }
+      ? { watch_region: userRegion, with_watch_providers: providerIds.join('|'), with_watch_monetization_types: monetizationTypes }
       : {};
     const pages = await Promise.all(
       [1, 2, 3].map(page =>
@@ -335,8 +335,21 @@ export const tmdb = {
   /* ── Watch providers ── */
   getWatchProviders: (id, type) =>
     fetchFromTMDB(`/${type}/${id}/watch/providers`),
-  getWatchProvidersForRegion: (type, region) =>
-    fetchFromTMDB(`/watch/providers/${type}`, { watch_region: region }),
+  // TMDB's region provider list occasionally contains duplicate provider_ids
+  // (e.g. Stan / Curiosity Stream have collided in some regions) — a
+  // duplicate id breaks id-keyed selection state and list keys downstream,
+  // so two entries would toggle together. Dedupe, keeping the first.
+  getWatchProvidersForRegion: async (type, region) => {
+    const data = await fetchFromTMDB(`/watch/providers/${type}`, { watch_region: region });
+    if (!data?.results) return data;
+    const seen = new Set();
+    const results = data.results.filter(p => {
+      if (seen.has(p.provider_id)) return false;
+      seen.add(p.provider_id);
+      return true;
+    });
+    return { ...data, results };
+  },
 
   /* ── Channel providers only (free / ad-supported, not subscription streaming) ── */
   getChannelProviders: async (region) => {
@@ -445,11 +458,11 @@ export const tmdb = {
   },
 
   /* ── Recently released (past N days, optionally filtered to specific providers) ── */
-  getRecentReleases: async (days = 14, providerIds = []) => {
+  getRecentReleases: async (days = 14, providerIds = [], monetizationTypes = 'flatrate') => {
     const endStr   = localDateStr();
     const startStr = localDateStr(-days);
     const providerParams = providerIds.length
-      ? { watch_region: userRegion, with_watch_providers: providerIds.join('|'), with_watch_monetization_types: 'flatrate' }
+      ? { watch_region: userRegion, with_watch_providers: providerIds.join('|'), with_watch_monetization_types: monetizationTypes }
       : {};
     const movieBase = { 'release_date.gte': startStr, 'release_date.lte': endStr, sort_by: 'popularity.desc', ...providerParams };
     const [tvRes, theatricalRes, streamingRes] = await Promise.all([

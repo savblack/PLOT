@@ -291,7 +291,7 @@ function ClearWatchlistModal({ onClearList, onClearBoth, onClose }) {
         >
           <span style={{ flex: 1 }}>
             <span style={{ display: 'block', fontWeight: 600, fontSize: '0.88rem' }}>Clear Saved only</span>
-            <span style={{ display: 'block', fontSize: '0.76rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>Keeps your Watching list intact</span>
+            <span style={{ display: 'block', fontSize: '0.76rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>Keeps your Watching list and custom lists intact</span>
           </span>
         </button>
 
@@ -1107,6 +1107,7 @@ export default function SettingsView() {
 
   const username      = profile?.username || '';
   const isPublic      = !!profile?.is_public;
+  const logRewatches  = profile?.log_rewatches ?? true;
   const usernameValue = usernameDraft ?? username;
   const usernameDirty = usernameValue.trim().toLowerCase() !== username.toLowerCase();
   const profileUrl    = username ? `${window.location.origin}/u/${username}` : null;
@@ -1271,7 +1272,16 @@ export default function SettingsView() {
     setActionError(null);
     setShowClearWatchlist(false);
     setClearingWatchlist(true);
-    const { error } = await supabase.from('list_items').delete().eq('user_id', user.id);
+    const { data: myList, error: listLookupError } = await supabase.from('lists')
+      .select('id').eq('user_id', user.id).eq('name', 'My List').maybeSingle();
+    if (listLookupError) {
+      setActionError(listLookupError.message || 'Failed to clear your watch list.');
+      setClearingWatchlist(false);
+      return;
+    }
+    const { error } = myList?.id
+      ? await supabase.from('list_items').delete().eq('list_id', myList.id)
+      : { error: null };
     if (error) {
       setActionError(error.message || 'Failed to clear your watch list.');
       setClearingWatchlist(false);
@@ -1285,8 +1295,15 @@ export default function SettingsView() {
     setActionError(null);
     setShowClearWatchlist(false);
     setClearingWatchlist(true);
+    const { data: myList, error: listLookupError } = await supabase.from('lists')
+      .select('id').eq('user_id', user.id).eq('name', 'My List').maybeSingle();
+    if (listLookupError) {
+      setActionError(listLookupError.message || 'Failed to clear your watch list.');
+      setClearingWatchlist(false);
+      return;
+    }
     const results = await Promise.all([
-      supabase.from('list_items').delete().eq('user_id', user.id),
+      myList?.id ? supabase.from('list_items').delete().eq('list_id', myList.id) : Promise.resolve({ error: null }),
       supabase.from('watching_progress').delete().eq('user_id', user.id),
     ]);
     const firstError = results.find(result => result.error)?.error;
@@ -1457,6 +1474,13 @@ export default function SettingsView() {
   const handleTogglePublic = async () => {
     if (!user) return;
     const { error } = await supabase.from('profiles').update({ is_public: !isPublic }).eq('id', user.id);
+    if (error) { setActionError(error.message); return; }
+    refreshProfile();
+  };
+
+  const handleToggleLogRewatches = async () => {
+    if (!user) return;
+    const { error } = await supabase.from('profiles').update({ log_rewatches: !logRewatches }).eq('id', user.id);
     if (error) { setActionError(error.message); return; }
     refreshProfile();
   };
@@ -2199,6 +2223,30 @@ export default function SettingsView() {
           </div>
           <div className="settings-row-value">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ width: 14, height: 14, opacity: 0.4 }}><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+        </div>
+
+        {/* Rewatches */}
+        <div className="settings-row" style={{ cursor: 'default' }}>
+          <div className="settings-row-left">
+            <div className="settings-row-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>
+              </svg>
+            </div>
+            <div>
+              <div className="settings-row-label">Log rewatches</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                {logRewatches
+                  ? 'Rewatching a title adds a new entry to your history.'
+                  : 'Rewatching a title updates the existing entry instead of adding a new one.'}
+              </div>
+            </div>
+          </div>
+          <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
+            <SettingsTextAction onClick={handleToggleLogRewatches}>
+              {logRewatches ? 'Turn off' : 'Turn on'}
+            </SettingsTextAction>
           </div>
         </div>
       </div>

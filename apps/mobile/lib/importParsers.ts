@@ -48,8 +48,11 @@ function headerIndex(headers: string[], ...candidates: string[]): number {
   return -1;
 }
 
-// Normalise a date string into YYYY-MM-DD
-function normDate(raw: string): string {
+// Normalise a date string into YYYY-MM-DD. Slash dates are ambiguous whenever
+// both segments are <= 12 (e.g. a UK "03/04/2024" read as US "March 4") —
+// `dayFirst` lets the caller pass the file's detected convention; a segment
+// > 12 is always unambiguous regardless.
+function normDate(raw: string, dayFirst = false): string {
   if (!raw) return new Date().toISOString().slice(0, 10);
   // Already YYYY-MM-DD
   if (/^\d{4}-\d{2}-\d{2}/.test(raw)) return raw.slice(0, 10);
@@ -57,13 +60,26 @@ function normDate(raw: string): string {
   const slash = raw.split('/');
   if (slash.length === 3) {
     const [a, b, c] = slash.map(Number);
-    // If first part > 12 it must be DD/MM/YYYY
+    // If a segment > 12 it must be the day, regardless of file convention
     if (a > 12) return `${c}-${String(b).padStart(2,'0')}-${String(a).padStart(2,'0')}`;
+    if (b > 12) return `${c}-${String(a).padStart(2,'0')}-${String(b).padStart(2,'0')}`;
+    if (dayFirst) return `${c}-${String(b).padStart(2,'0')}-${String(a).padStart(2,'0')}`;
     return `${c}-${String(a).padStart(2,'0')}-${String(b).padStart(2,'0')}`;
   }
   // Fall back: let Date parse it
   const d = new Date(raw);
   return isNaN(d.getTime()) ? new Date().toISOString().slice(0, 10) : d.toISOString().slice(0, 10);
+}
+
+// Scan a column of raw date strings for an unambiguous DD/MM/YYYY row (a
+// segment > 12) to infer the whole file's convention before parsing any row.
+function detectDayFirst(rawDates: string[]): boolean {
+  for (const raw of rawDates) {
+    if (!raw) continue;
+    const slash = raw.split('/');
+    if (slash.length === 3 && Number(slash[0]) > 12) return true;
+  }
+  return false;
 }
 
 // Strip Netflix-style episode suffixes: "Show: Season 2: Ep Title" → "Show"
@@ -92,10 +108,11 @@ export function parseNetflix(text: string): RawEntry[] {
   const tIdx = headerIndex(headers, 'title');
   const dIdx = headerIndex(headers, 'date');
   if (tIdx === -1) return [];
+  const dayFirst = detectDayFirst(rows.slice(1).map(row => row[dIdx] ?? ''));
 
   return rows.slice(1).flatMap(row => {
     const raw = row[tIdx] ?? '';
-    const date = normDate(row[dIdx] ?? '');
+    const date = normDate(row[dIdx] ?? '', dayFirst);
     if (!raw) return [];
     const { cleanTitle, isTV } = stripEpisodeSuffix(raw);
     return [{ title: cleanTitle, watchedAt: date, mediaTypeHint: isTV ? 'tv' : 'unknown' }];
@@ -112,10 +129,11 @@ export function parsePrime(text: string): RawEntry[] {
   const tIdx = headerIndex(headers, 'title', 'videotitle', 'content');
   const dIdx = headerIndex(headers, 'watcheddate', 'datewatched', 'watched', 'date');
   if (tIdx === -1) return [];
+  const dayFirst = detectDayFirst(rows.slice(1).map(row => row[dIdx] ?? ''));
 
   return rows.slice(1).flatMap(row => {
     const raw = row[tIdx] ?? '';
-    const date = normDate(row[dIdx] ?? '');
+    const date = normDate(row[dIdx] ?? '', dayFirst);
     if (!raw) return [];
     const { cleanTitle, isTV } = stripEpisodeSuffix(raw);
     return [{ title: cleanTitle, watchedAt: date, mediaTypeHint: isTV ? 'tv' : 'unknown' }];
@@ -174,10 +192,11 @@ export function parseMax(text: string): RawEntry[] {
   const dIdx = headerIndex(headers, 'datewatched', 'watchdate', 'date');
   const typeIdx = headerIndex(headers, 'type', 'contenttype');
   if (tIdx === -1) return [];
+  const dayFirst = detectDayFirst(rows.slice(1).map(row => row[dIdx] ?? ''));
 
   return rows.slice(1).flatMap(row => {
     const raw = row[tIdx] ?? '';
-    const date = normDate(row[dIdx] ?? '');
+    const date = normDate(row[dIdx] ?? '', dayFirst);
     if (!raw) return [];
     const { cleanTitle, isTV: tvFromTitle } = stripEpisodeSuffix(raw);
     const typeStr = (row[typeIdx] ?? '').toLowerCase();
@@ -220,13 +239,15 @@ export function parseExport(platform: Platform, text: string): RawEntry[] {
   }
 }
 
-// Deduplicate: keep one entry per cleaned title, most-recent date wins.
+// Deduplicate exact source-row duplicates only (same title + same watch
+// date) — a export file can legitimately list the same episode/session
+// twice. A different date for the same title is a real rewatch and must be
+// kept, not collapsed to "most-recent wins" (see SUS-66).
 export function deduplicateEntries(entries: RawEntry[]): RawEntry[] {
   const map = new Map<string, RawEntry>();
   for (const e of entries) {
-    const key = e.title.toLowerCase().trim();
-    const existing = map.get(key);
-    if (!existing || e.watchedAt > existing.watchedAt) map.set(key, e);
+    const key = `${e.title.toLowerCase().trim()}::${e.watchedAt}`;
+    if (!map.has(key)) map.set(key, e);
   }
   return Array.from(map.values());
 }
