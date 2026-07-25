@@ -3,12 +3,12 @@
  * consistent in alignment, type size, and padding — mirrors the mobile
  * app's <SheetHeader>.
  *
- * A centred serif title (1.4rem). The primary action (e.g. Save) sits on the
- * left; the ✕ close button sits on the right. If a back-chevron is supplied it
- * takes the left slot and the action falls back beside the close button. The
- * title is absolutely centred so it sits mid-header and screen-centred
- * regardless of which sides carry buttons. `bordered` (default true) draws the
- * hairline divider.
+ * A centred serif title (1.4rem). With no primary action, ✕ close sits on the
+ * right (or a back-chevron on the left, if supplied). When a primary action
+ * (e.g. Save) is present, the action moves to the right and ✕ close (or the
+ * back-chevron) takes the left slot. The title is absolutely centred so it
+ * sits mid-header and screen-centred regardless of which sides carry buttons.
+ * `bordered` (default true) draws the hairline divider.
  */
 
 const ICON_BTN = {
@@ -45,13 +45,17 @@ export default function SheetHeader({ title, onClose, onBack, action, bordered =
         flexShrink: 0,
       }}
     >
-      {/* Left slot: back-chevron takes priority, otherwise the primary action (e.g. Save). */}
+      {/* Left slot: back-chevron takes priority. Otherwise ✕ close lives here
+          only when a primary action is displacing it to the right — with no
+          action, close stays in its usual right-hand spot. */}
       {onBack ? (
         <button type="button" onClick={onBack} aria-label="Back" style={ICON_BTN}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
         </button>
-      ) : action ? (
-        <div style={{ display: 'flex', alignItems: 'center', minWidth: 44 }}>{actionBtn}</div>
+      ) : (action && onClose) ? (
+        <button type="button" onClick={onClose} aria-label="Close" style={ICON_BTN}>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
+        </button>
       ) : <span style={{ minWidth: 44 }} />}
 
       <h2
@@ -67,10 +71,12 @@ export default function SheetHeader({ title, onClose, onBack, action, bordered =
         {title}
       </h2>
 
-      {/* Right slot: ✕ close. If a back-chevron owns the left slot, the action rides here too. */}
+      {/* Right slot: the primary action (e.g. Save), if any. ✕ close rides here
+          too, unless it's already been placed on the left (action present and
+          no back-chevron — see left slot above). */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', marginLeft: 'auto', zIndex: 1 }}>
-        {onBack && actionBtn}
-        {onClose && (
+        {actionBtn}
+        {onClose && !(action && !onBack) && (
           <button type="button" onClick={onClose} aria-label="Close" style={ICON_BTN}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
           </button>

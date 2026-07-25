@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocation } from 'react-router-dom';
 import { useApp, posterUrl, countdownChip, TodayLabel } from '../App.jsx';
@@ -289,6 +289,10 @@ function TopTenSection({ listType, title, topLists }) {
   const { openPanel } = useApp();
   const [editMode,    setEditMode]    = useState(false);
   const [addingRank,  setAddingRank]  = useState(null); // rank number for modal
+  const [dragRank,    setDragRank]    = useState(null);
+  const [dragOffset,  setDragOffset]  = useState(0);
+  const dragInfoRef = useRef({ startY: 0, rowHeight: 0 });
+  const rowRefs = useRef({});
 
   const items = topLists.lists[listType] || [];
   const slots = Array.from({ length: 10 }, (_, i) => i + 1);
@@ -299,16 +303,66 @@ function TopTenSection({ listType, title, topLists }) {
     return 'var(--text-muted)';
   };
 
+  const moveItemToRank = useCallback(async (fromRank, toRank) => {
+    let current = fromRank;
+    if (fromRank < toRank) {
+      while (current < toRank) {
+        const ok = await topLists.moveDown(listType, current);
+        if (!ok) break;
+        current++;
+      }
+    } else {
+      while (current > toRank) {
+        const ok = await topLists.moveUp(listType, current);
+        if (!ok) break;
+        current--;
+      }
+    }
+  }, [listType, topLists]);
+
+  const handleDragStart = (rank, e) => {
+    if (!editMode || e.target.closest('button')) return;
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+    dragInfoRef.current = { startY: e.clientY, rowHeight: rowRefs.current[rank]?.offsetHeight || 76 };
+    setDragRank(rank);
+    setDragOffset(0);
+  };
+
+  const handleDragMove = (e) => {
+    if (dragRank == null) return;
+    setDragOffset(e.clientY - dragInfoRef.current.startY);
+  };
+
+  const handleDragEnd = () => {
+    if (dragRank == null) return;
+    const { rowHeight } = dragInfoRef.current;
+    const maxRank = items.reduce((max, i) => Math.max(max, i.rank), 1);
+    const steps = Math.round(dragOffset / rowHeight);
+    const targetRank = Math.min(Math.max(dragRank + steps, 1), maxRank);
+    setDragRank(null);
+    setDragOffset(0);
+    if (targetRank !== dragRank) moveItemToRank(dragRank, targetRank);
+  };
+
   return (
     <div>
       <div className="discover-plat-type-label mylists-topten-type-label">
         <span>{title}</span>
         {items.length > 0 && (
           <button
-            className="btn btn-ghost btn-xs"
+            className="icon-btn"
             onClick={() => setEditMode(m => !m)}
+            aria-label={editMode ? 'Done editing' : 'Edit list'}
           >
-            {editMode ? 'Done' : 'Edit'}
+            {editMode
+              ? <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Done</span>
+              : (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }}>
+                  <path d="M12 20h9"/>
+                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                </svg>
+              )
+            }
           </button>
         )}
       </div>
@@ -358,16 +412,30 @@ function TopTenSection({ listType, title, topLists }) {
           if (!editMode) openPanel(item.tmdb_id, item.media_type);
         };
 
+        const isDragging = dragRank === rank;
+
         return (
           <div
             key={rank}
+            ref={el => { rowRefs.current[rank] = el; }}
             className={!editMode ? 'interactive-surface' : undefined}
             style={{
               display: 'flex', alignItems: 'center', gap: '0.75rem',
               padding: '0.6rem 1rem',
               borderBottom: '1px solid var(--border)',
+              touchAction: editMode ? 'none' : undefined,
+              position: isDragging ? 'relative' : undefined,
+              zIndex: isDragging ? 2 : undefined,
+              transform: isDragging ? `translateY(${dragOffset}px)` : undefined,
+              transition: isDragging ? 'none' : undefined,
+              background: isDragging ? 'var(--surface-raised)' : undefined,
+              boxShadow: isDragging ? 'var(--shadow-overlay)' : undefined,
             }}
             onClick={!editMode ? openDetails : undefined}
+            onPointerDown={editMode ? (e) => handleDragStart(rank, e) : undefined}
+            onPointerMove={editMode ? handleDragMove : undefined}
+            onPointerUp={editMode ? handleDragEnd : undefined}
+            onPointerCancel={editMode ? handleDragEnd : undefined}
             {...(!editMode
               ? getButtonLikeProps({ onPress: openDetails, label: `View details for ${title}` })
               : {})}

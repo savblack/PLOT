@@ -246,11 +246,11 @@ function TimezonePicker({ current, onSave, onClose }) {
       <div className="panel">
         <SheetHeader title="Timezone" onClose={onClose} />
 
-        <div style={{ padding: '0.75rem 1rem 0' }}>
+        <div style={{ padding: '0.75rem 1rem 0', position: 'relative' }}>
           <input
             style={{
               width: '100%',
-              padding: '0.6rem 1rem',
+              padding: '0.6rem 2.25rem 0.6rem 1rem',
               borderRadius: 'var(--radius-pill)',
               border: '1px solid var(--border)',
               background: 'var(--surface)',
@@ -264,6 +264,17 @@ function TimezonePicker({ current, onSave, onClose }) {
             onChange={e => setQuery(e.target.value)}
             autoFocus
           />
+          {query && (
+            <button
+              type="button"
+              className="search-input-clear"
+              style={{ right: '1.75rem' }}
+              onClick={() => setQuery('')}
+              aria-label="Clear search"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          )}
         </div>
 
         <div style={{ overflow: 'auto', flex: 1, padding: '0.5rem 0', maxHeight: '55vh' }}>
@@ -382,18 +393,30 @@ function ProviderPicker({ title, hint, region, selected, onSave, onClose, limit 
             {hint && (
               <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '0.75rem', lineHeight: 1.4 }}>{hint}</p>
             )}
-            <input
-              type="search"
-              placeholder="Search…"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              style={{
-                width: '100%', padding: '0.5rem 0.75rem', marginBottom: '0.75rem',
-                background: 'var(--surface-raised)', border: '1px solid var(--border)',
-                borderRadius: 8, fontSize: '0.9rem', color: 'var(--text)',
-                fontFamily: 'inherit', outline: 'none',
-              }}
-            />
+            <div style={{ position: 'relative', marginBottom: '0.75rem' }}>
+              <input
+                type="text"
+                placeholder="Search…"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                style={{
+                  width: '100%', padding: '0.5rem 2.25rem 0.5rem 0.75rem',
+                  background: 'var(--surface-raised)', border: '1px solid var(--border)',
+                  borderRadius: 8, fontSize: '0.9rem', color: 'var(--text)',
+                  fontFamily: 'inherit', outline: 'none',
+                }}
+              />
+              {search && (
+                <button
+                  type="button"
+                  className="search-input-clear"
+                  onClick={() => setSearch('')}
+                  aria-label="Clear search"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              )}
+            </div>
             <div className="providers-select-grid">
               {visible.map(p => (
                 <div

@@ -139,7 +139,14 @@ export default function Step3() {
             onChangeText={setQuery}
             autoCapitalize="none"
           />
-          {searching && <ActivityIndicator color={colors.accent} style={{ marginRight: spacing.sm }} />}
+          {searching
+            ? <ActivityIndicator color={colors.accent} style={{ marginRight: spacing.sm }} />
+            : query.length > 0 && (
+              <TouchableOpacity onPress={() => setQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ marginRight: spacing.sm }}>
+                <Text style={styles.clearBtn}>✕</Text>
+              </TouchableOpacity>
+            )
+          }
         </View>
 
         {!query.trim() && trending.length > 0 && (
@@ -233,6 +240,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     marginBottom: spacing.md,
   },
   searchInput: { flex: 1, paddingVertical: 12, fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textPrimary },
+  clearBtn:    { fontSize: 14, color: colors.textMuted },
   gridLabel:   { fontFamily: fontFamily.sansBold, fontSize: 11, letterSpacing: 0.5, textTransform: 'uppercase', color: colors.textMuted, marginBottom: spacing.sm },
   grid:        { flex: 1 },
   cardWrap:    { width: CARD_W, marginBottom: spacing.md },

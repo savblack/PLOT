@@ -336,12 +336,19 @@ export default function OnboardingFlow() {
             <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '1.25rem', lineHeight: 1.5, textAlign: 'center' }}>
               Select the streaming services you subscribe to.
             </p>
-            <input
-              style={{ width: '100%', padding: '0.65rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', background: 'var(--surface)', fontSize: '0.82rem', fontFamily: 'var(--font-sans)', color: 'var(--text-primary)', outline: 'none', marginBottom: '1rem' }}
-              placeholder="Search platforms…"
-              value={provSearch}
-              onChange={e => setProvSearch(e.target.value)}
-            />
+            <div style={{ position: 'relative', marginBottom: '1rem' }}>
+              <input
+                style={{ width: '100%', padding: '0.65rem 2.25rem 0.65rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', background: 'var(--surface)', fontSize: '0.82rem', fontFamily: 'var(--font-sans)', color: 'var(--text-primary)', outline: 'none' }}
+                placeholder="Search platforms…"
+                value={provSearch}
+                onChange={e => setProvSearch(e.target.value)}
+              />
+              {provSearch && (
+                <button type="button" className="search-input-clear" onClick={() => setProvSearch('')} aria-label="Clear search">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              )}
+            </div>
             {loadingProv ? (
               <div className="loading-state"><PlotLoader size="sm" /></div>
             ) : (
@@ -377,13 +384,20 @@ export default function OnboardingFlow() {
             <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '1.25rem', lineHeight: 1.5, textAlign: 'center' }}>
               Add a few titles to kick things off.
             </p>
-            <input
-              style={{ width: '100%', padding: '0.65rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', background: 'var(--surface)', fontSize: '0.82rem', fontFamily: 'var(--font-sans)', color: 'var(--text-primary)', outline: 'none', marginBottom: '0.4rem' }}
-              placeholder="Search for a show or movie…"
-              value={seedQuery}
-              onChange={e => setSeedQuery(e.target.value)}
-              autoFocus
-            />
+            <div style={{ position: 'relative', marginBottom: '0.4rem' }}>
+              <input
+                style={{ width: '100%', padding: '0.65rem 2.25rem 0.65rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', background: 'var(--surface)', fontSize: '0.82rem', fontFamily: 'var(--font-sans)', color: 'var(--text-primary)', outline: 'none' }}
+                placeholder="Search for a show or movie…"
+                value={seedQuery}
+                onChange={e => setSeedQuery(e.target.value)}
+                autoFocus
+              />
+              {seedQuery && (
+                <button type="button" className="search-input-clear" onClick={() => setSeedQuery('')} aria-label="Clear search">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              )}
+            </div>
             <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '0.72rem', textAlign: 'center', padding: '0.2rem 0', marginBottom: '0.75rem', width: '100%' }} onClick={finish}>
               Skip this step
             </button>

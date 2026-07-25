@@ -536,10 +536,18 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
                 <button className="btn btn-primary btn-xs" disabled={!creatingName.trim() || isCreating} onClick={handleCreate}>
                   {isCreating ? 'Creating…' : 'Create'}
                 </button>
-                <button className="btn btn-ghost btn-xs" disabled={isCreating} onClick={() => {
-                  setShowCreate(false);
-                  setCreateError('');
-                }}>✕</button>
+                <button
+                  className="icon-btn"
+                  style={{ width: 32, height: 32 }}
+                  disabled={isCreating}
+                  aria-label="Cancel"
+                  onClick={() => {
+                    setShowCreate(false);
+                    setCreateError('');
+                  }}
+                >
+                  <CloseIcon />
+                </button>
               </div>
               {createError && (
                 <div style={{ padding: '0 1rem 0.75rem', color: '#ef4444', fontSize: '0.75rem' }}>
@@ -824,13 +832,6 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
         className={`panel${closing ? ' closing' : ''}`}
         style={dragY ? { transform: `translateY(${dragY}px)`, transition: 'none' } : undefined}
       >
-        <div
-          className="panel-drag-handle"
-          onPointerDown={handleDragStart}
-          onPointerMove={handleDragMove}
-          onPointerUp={endDrag}
-          onPointerCancel={endDrag}
-        />
         {/* Header image */}
         <div
           className="panel-header-wrap"
@@ -843,6 +844,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
             ? <img className="panel-header-img" src={backdropUrl(details.backdrop_path)} alt="" />
             : <div className="panel-header-fallback" />
           }
+          <div className="panel-drag-handle" />
           <button className="panel-close-btn" onClick={onClose} aria-label="Close">
             <CloseIcon />
           </button>
