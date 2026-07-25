@@ -78,7 +78,7 @@ const motionTokens = [
 
 const layoutTokens = [
   ['--content-max', '680px', 'Focused reading width for legal, settings, and forms.'],
-  ['--panel-w', '460px', 'Fixed width of the right-side media reading panel.'],
+  ['--panel-w', '560px', 'Fixed width of the right-side media reading panel.'],
   ['--header-h', '56px', 'Height of the fixed app header.'],
   ['--tabbar-h', '58px', 'Height of the fixed bottom tab bar.'],
 ];
