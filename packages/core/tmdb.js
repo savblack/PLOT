@@ -518,15 +518,19 @@ export const tmdb = {
   },
 
   /* ── Newest released titles in a genre ── */
-  discoverNewestByGenre: (type, genreId) => {
+  discoverNewestByGenre: async (type, genreId) => {
     if (!genreId) return Promise.resolve(null);
     const dateField = type === 'tv' ? 'first_air_date' : 'primary_release_date';
-    return fetchFromTMDB(`/discover/${type}`, {
+    const params = {
       with_genres: genreId,
       sort_by: `${dateField}.desc`,
       [`${dateField}.lte`]: localDateStr(),
       'vote_count.gte': 1,
-    });
+    };
+    const pages = await Promise.all(
+      [1, 2, 3].map(page => fetchFromTMDB(`/discover/${type}`, { ...params, page }))
+    );
+    return { results: pages.flatMap(p => p?.results ?? []) };
   },
 
   getTopRated: (type) => fetchFromTMDB(`/${type}/top_rated`),

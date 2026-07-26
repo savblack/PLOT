@@ -2,6 +2,14 @@ import { useState, useEffect } from 'react';
 import { tmdb } from '../api/tmdb.js';
 import { isEnglishOriginTitle } from '@plot/core/tmdb.js';
 
+// Smaller poster-card rails read poorly with a blank card, so titles missing
+// a poster image are dropped before slicing to the section's display count.
+const hasPoster = item => !!item.poster_path;
+
+// Floor every smaller-card rail aims to clear once poster-less items are
+// dropped, so sections rarely fall short of a full row.
+const MIN_RAIL_SIZE = 14;
+
 export function useDiscover() {
   const [data, setData]       = useState({ hero: null, onThisDay: null, hotRail: [], recentReleases: [], weekly: [], bingedShows: [], realityShows: [], anticipatedMovies: [] });
   const [loading, setLoading] = useState(true);
@@ -44,12 +52,14 @@ export function useDiscover() {
           if (recentIds.has(key)) return false;
           recentIds.add(key);
           return true;
-        }).slice(0, 18);
+        }).filter(hasPoster).slice(0, Math.max(MIN_RAIL_SIZE, 18));
         const bingedShows = (trendingTVDay?.results || []).filter(isEnglishOriginTitle)
-          .slice(0, 10)
+          .filter(hasPoster)
+          .slice(0, Math.max(MIN_RAIL_SIZE, 18))
           .map(show => ({ ...show, media_type: 'tv' }));
         const realityShows = (realityTV?.results || []).filter(isEnglishOriginTitle)
-          .slice(0, 10)
+          .filter(hasPoster)
+          .slice(0, Math.max(MIN_RAIL_SIZE, 18))
           .map(show => ({ ...show, media_type: 'tv' }));
         const anticipatedMovies = (upcoming?.results || []).filter(isEnglishOriginTitle)
           .slice(0, 10)

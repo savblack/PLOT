@@ -25,7 +25,7 @@ export function useForYou(limit = 20) {
       const hydrated = await Promise.all(
         rows.map(async (row) => {
           const details = await tmdb.getBasicDetails(row.media_type, row.tmdb_id).catch(() => null);
-          if (!details?.id) return null;
+          if (!details?.id || !details.poster_path) return null;
           return { ...details, media_type: row.media_type };
         })
       );

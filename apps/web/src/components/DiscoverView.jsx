@@ -416,7 +416,7 @@ function DiscoverContent({ openPanel, watchlist, openSections, setOpenSections, 
   // to the user's own streaming selections. Only platforms with real synced
   // Top 10 data are returned.
   const platformList = usePlatformCharts();
-  const { items: forYouItems } = useForYou(20);
+  const { items: forYouItems } = useForYou(28);
   if (loading) {
     return <LoadingSpinner />;
   }
