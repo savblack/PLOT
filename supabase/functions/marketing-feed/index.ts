@@ -192,6 +192,7 @@ const page = (title: string, head: string, body: string, status = 200, nav = 'wh
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(title)}</title>
+<link rel="icon" type="image/svg+xml" href="${SITE}/favicon.svg">
 ${POSTHOG}
 ${head}
 <link rel="preconnect" href="https://fonts.googleapis.com">
