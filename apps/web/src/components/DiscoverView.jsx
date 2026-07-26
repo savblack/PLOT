@@ -50,7 +50,7 @@ function DiscoverSectionHeader({ kicker, title, open, onToggle, className = '' }
       </svg>
       <div style={{ flex: 1, textAlign: 'left' }}>
         <div style={{ fontSize: '0.6rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.15rem' }}>{kicker}</div>
-        <div style={{ fontFamily: 'var(--font-sans)', fontSize: '0.85rem', fontWeight: 700, letterSpacing: '0.02em', lineHeight: 1.2, textTransform: 'uppercase', color: 'var(--text-primary)' }}>{title}</div>
+        <div style={{ fontFamily: 'var(--font-sans)', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.02em', lineHeight: 1.2, textTransform: 'uppercase', color: 'var(--text-primary)' }}>{title}</div>
       </div>
     </button>
   );

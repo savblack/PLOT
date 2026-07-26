@@ -61,7 +61,8 @@ export function useHistory(userId) {
      profiles.log_rewatches). */
   const logWatched = useCallback(async (item, { rating, note, dnf, watchedAt, logRewatches = true } = {}) => {
     if (!userId) return null;
-    const { data, row } = await logWatchedItem({ userId, item, rating, note, dnf, watchedAt, logRewatches });
+    const { data, error, row } = await logWatchedItem({ userId, item, rating, note, dnf, watchedAt, logRewatches });
+    if (error) console.error('Failed to log watched item', error);
 
     if (data) {
       setEntries(prev => {
