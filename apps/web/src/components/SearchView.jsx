@@ -7,7 +7,7 @@ import { useHistory } from '../hooks/useHistory.js';
 import { localDateStr } from '../utils/date.js';
 import { favoriteWords } from '../utils/spelling.js';
 import { getButtonLikeProps } from '../utils/interactive.js';
-import PlotLoader from './PlotLoader.jsx';
+import Spinner from './Spinner.jsx';
 import UserList from './UserList.jsx';
 import { classifySearchResults } from '../utils/search.js';
 import { track, EVENTS } from '../lib/analytics.js';
@@ -245,7 +245,7 @@ export default function SearchView() {
       </div>
 
       {loading && (
-        <div className="loading-state"><PlotLoader size="sm" /></div>
+        <div className="loading-state"><Spinner size="md" label="Searching" /></div>
       )}
 
       {!loading && mode === 'friends' && (

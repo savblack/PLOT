@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+#
+# Fires after any checkout, including the implicit checkout git performs
+# when creating a new worktree (git worktree add). Copies .env from the
+# main checkout so worktrees don't start without Supabase/PostHog/etc vars.
+# Tool-agnostic: runs for worktrees created by Claude Code, Codex, or a
+# plain `git worktree add` from the terminal.
+set -euo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+SCRIPT="$REPO_ROOT/scripts/setup-worktree.sh"
+
+if [[ -f "$SCRIPT" ]]; then
+  bash "$SCRIPT" --force 2>/dev/null || true
+fi

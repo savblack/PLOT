@@ -51,7 +51,7 @@ function DiscoverSectionHeader({ kicker, title, open, onToggle, className = '' }
       </svg>
       <div style={{ flex: 1, textAlign: 'left' }}>
         <div style={{ fontSize: '0.6rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.15rem' }}>{kicker}</div>
-        <div style={{ fontFamily: 'var(--font-sans)', fontSize: '0.85rem', fontWeight: 700, letterSpacing: '0.02em', lineHeight: 1.2, textTransform: 'uppercase', color: 'var(--text-primary)' }}>{title}</div>
+        <div style={{ fontFamily: 'var(--font-sans)', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.02em', lineHeight: 1.2, textTransform: 'uppercase', color: 'var(--text-primary)' }}>{title}</div>
       </div>
     </button>
   );
@@ -447,24 +447,6 @@ function DiscoverContent({ openPanel, watchlist, openSections, setOpenSections, 
   };
   return (
     <div>
-      {hotRail.length > 0 && (
-        <section className="discover-section">
-          <DiscoverSectionHeader
-            kicker="Trending today"
-            title="Hot Right Now"
-            open={openSections.hot}
-            onToggle={() => toggleSection('hot')}
-          />
-          {openSections.hot && (
-            <Rail>
-              {hotRail.map((item, i) => (
-                <RankedCard key={item.id} item={item} rank={i + 2} showRank={false} openPanel={openPanel} watchlist={watchlist} />
-              ))}
-            </Rail>
-          )}
-        </section>
-      )}
-
       {hero && (
         <section className="discover-section discover-featured-section">
           <DiscoverSectionHeader
@@ -507,6 +489,24 @@ function DiscoverContent({ openPanel, watchlist, openSections, setOpenSections, 
         </section>
       )}
 
+      {hotRail.length > 0 && (
+        <section className="discover-section">
+          <DiscoverSectionHeader
+            kicker="Trending today"
+            title="Hot Right Now"
+            open={openSections.hot}
+            onToggle={() => toggleSection('hot')}
+          />
+          {openSections.hot && (
+            <Rail>
+              {hotRail.map((item, i) => (
+                <RankedCard key={item.id} item={item} rank={i + 2} showRank={false} openPanel={openPanel} watchlist={watchlist} />
+              ))}
+            </Rail>
+          )}
+        </section>
+      )}
+
       {recentReleases.length > 0 && (
         <section className="discover-section">
           <DiscoverSectionHeader
@@ -522,20 +522,6 @@ function DiscoverContent({ openPanel, watchlist, openSections, setOpenSections, 
               ))}
             </Rail>
           )}
-        </section>
-      )}
-
-      {weekly.length > 0 && (
-        <section className="discover-section discover-section--list">
-          <DiscoverSectionHeader
-            kicker="Global ranking"
-            title="Top 20 This Week"
-            open={openSections.weekly}
-            onToggle={() => toggleSection('weekly')}
-          />
-          {openSections.weekly && weekly.map((item, i) => (
-            <ChartRow key={item.id} item={item} rank={i + 1} openPanel={openPanel} watchlist={watchlist} />
-          ))}
         </section>
       )}
 
@@ -555,6 +541,20 @@ function DiscoverContent({ openPanel, watchlist, openSections, setOpenSections, 
               ))}
             </BingeRail>
           )}
+        </section>
+      )}
+
+      {weekly.length > 0 && (
+        <section className="discover-section discover-section--list">
+          <DiscoverSectionHeader
+            kicker="Global ranking"
+            title="Top 20 This Week"
+            open={openSections.weekly}
+            onToggle={() => toggleSection('weekly')}
+          />
+          {openSections.weekly && weekly.map((item, i) => (
+            <ChartRow key={item.id} item={item} rank={i + 1} openPanel={openPanel} watchlist={watchlist} />
+          ))}
         </section>
       )}
 
