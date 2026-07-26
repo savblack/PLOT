@@ -74,8 +74,9 @@ if (posthogToken) posthog.init(posthogToken, {
   cross_subdomain_cookie: true,
   // Auto-report unhandled errors + promise rejections to PostHog Error Tracking,
   // not just the ones our ErrorBoundaries catch. Turn on Error Tracking in the
-  // PostHog project for these to show up.
-  capture_exceptions: true,
+  // PostHog project for these to show up. Gated off in dev so localhost HMR /
+  // scratch-page errors don't pollute the production Error Tracking inbox.
+  capture_exceptions: !import.meta.env.DEV,
 });
 
 // Read the acquisition attribution the marketing site forwarded onto this link
