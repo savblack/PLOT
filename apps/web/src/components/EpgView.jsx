@@ -119,6 +119,7 @@ function buildPrograms(broadcastEps, webEps, timezone) {
   const push = (ep, container, type) => {
     if (!container?.id) return;
     const show = getShow(ep);
+    if (show?.language && show.language !== 'English') return;
     const resolved = resolveAirtime(ep, timezone);
     if (!resolved) return;
     out.push({
