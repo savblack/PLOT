@@ -382,7 +382,7 @@ function TopTenSection({ listType, title, topLists }) {
         )}
         {items.length > 0 && (
           <button
-            className="icon-btn"
+            className="list-options-btn"
             onClick={() => setEditMode(m => !m)}
             aria-label={editMode ? 'Done editing' : 'Edit list'}
           >
@@ -565,7 +565,7 @@ function PosterGrid({ items, openPanel, editMode, selectedIds, onToggleSelect })
   return (
     <div style={{
       display: 'grid',
-      gridTemplateColumns: 'repeat(3, 1fr)',
+      gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))',
       gap: '0.5rem',
       padding: '0.75rem 1rem',
     }}>

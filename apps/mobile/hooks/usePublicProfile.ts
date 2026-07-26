@@ -9,6 +9,8 @@ export interface PublicProfile {
   is_premium: boolean;
   is_public: boolean;
   follow_status: string | null;
+  bio?: string | null;
+  links?: Record<string, string> | null;
 }
 
 export interface ProfilePoster {

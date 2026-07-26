@@ -4,11 +4,12 @@ import { favoriteWords } from '../utils/spelling.js';
 import { localDateStr, dateToLocalStr } from '../utils/date.js';
 import { useDragScroll } from '../hooks/useDragScroll.js';
 import { useGenres } from '../hooks/useGenres.js';
-import { tmdb, getTmdbRegion } from '../api/tmdb.js';
+import { tmdb, getTmdbRegion, isEnglishOriginTitle } from '../api/tmdb.js';
 import { buildProviderLogoCacheKey, collectPendingProviderLogoRequests } from '../utils/providerLogos.js';
 import EpgView from './EpgView.jsx';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import GroupedFilterMenu from './GroupedFilterMenu.jsx';
+import CollapsibleSection from './CollapsibleSection.jsx';
 
 /* ── Module-level provider logo cache (keyed with region to avoid stale logos after region change) ── */
 const _providerCache = new Map();
@@ -63,7 +64,6 @@ async function warmProviderLogoCache(items, region) {
 function flattenGuideItems(data) {
   return [
     ...data.today,
-    ...data.recentDates.flatMap(date => data.recentGrouped[date] || []),
     ...data.upcomingDates.flatMap(date => data.upcomingGrouped[date] || []),
   ];
 }
@@ -109,15 +109,6 @@ function Rail({ children, style }) {
     <div className="rail-scroll" ref={ref} {...handlers} style={style}>
       {children}
     </div>
-  );
-}
-
-/* ── Chevron SVG ── */
-function Chevron({ open }) {
-  return (
-    <svg className={`date-group-chevron${open ? ' open' : ''}`} viewBox="0 0 24 24" aria-hidden="true">
-      <polyline points="6 9 12 15 18 9" />
-    </svg>
   );
 }
 
@@ -213,38 +204,31 @@ function DateGroup({ label, items, openPanel, providerLogos, watchlist, defaultO
   const region = getTmdbRegion();
   if (!items.length) return null;
   return (
-    <div className="date-group">
-      <button className="date-group-header date-group-collapsible" onClick={() => setOpen(o => !o)}>
-        <span className="date-group-label">{label}</span>
-        <Chevron open={open} />
-      </button>
-      {open && (
-        <Rail style={{ paddingLeft: '1rem', paddingRight: '1rem', paddingTop: '1.25rem', paddingBottom: '1.5rem' }}>
-          {items.map(item => (
-            <MediaCard
-              key={`${item.media_type}-${item.id}`}
-              item={item}
-              openPanel={openPanel}
-              providerLogo={providerLogos[buildProviderLogoCacheKey({
-                id: item.id || item.tmdb_id,
-                type: item.media_type || 'movie',
-                region,
-              })] || null}
-              watchlist={watchlist}
-            />
-          ))}
-        </Rail>
-      )}
-    </div>
+    <CollapsibleSection id={`guide-date-${label}`} label={label} open={open} onOpenChange={setOpen}>
+      <Rail style={{ paddingLeft: '1rem', paddingRight: '1rem', paddingTop: '1.25rem', paddingBottom: '1.5rem' }}>
+        {items.map(item => (
+          <MediaCard
+            key={`${item.media_type}-${item.id}`}
+            item={item}
+            openPanel={openPanel}
+            providerLogo={providerLogos[buildProviderLogoCacheKey({
+              id: item.id || item.tmdb_id,
+              type: item.media_type || 'movie',
+              region,
+            })] || null}
+            watchlist={watchlist}
+          />
+        ))}
+      </Rail>
+    </CollapsibleSection>
   );
 }
 
 /* ── Upcoming content (global, date-grouped) ── */
 export function UpcomingContent({ typeFilters, genreFilters, providers, openPanel, watchlist, expandSignal }) {
-  const [data,       setData]       = useState({ today: [], recentGrouped: {}, recentDates: [], upcomingGrouped: {}, upcomingDates: [] });
+  const [data,       setData]       = useState({ today: [], upcomingGrouped: {}, upcomingDates: [] });
   const [loading,    setLoading]    = useState(true);
   const [loadedProviderLogos, setLoadedProviderLogos] = useState({});
-  const [recentOpen, setRecentOpen] = useControlledOpen(expandSignal, false);
 
   const providerIds = providers.map(p => p.id);
   // "My Channels" (guide_channels) are free/ad-supported broadcast providers,
@@ -258,10 +242,9 @@ export function UpcomingContent({ typeFilters, genreFilters, providers, openPane
       // Use local date string so UTC+ users (e.g. Australia) get the correct local "today"
       const todayStr = localDateStr();
 
-      const [upcomingMovRes, upcomingTVRes, recentRes] = await Promise.all([
+      const [upcomingMovRes, upcomingTVRes] = await Promise.all([
         tmdb.getUpcoming(providerIds, monetizationTypes),
         tmdb.getUpcomingTV(providerIds, monetizationTypes),
-        tmdb.getRecentReleases(14, providerIds, monetizationTypes),
       ]);
 
       const todayItems = [];
@@ -281,28 +264,6 @@ export function UpcomingContent({ typeFilters, genreFilters, providers, openPane
           seenIds.add(m.id);
         }
       }
-
-      const recentGrouped = {};
-      for (let i = 1; i <= 14; i++) recentGrouped[localDateStr(-i)] = [];
-      const recentFallbackDay = localDateStr(-1);
-
-      for (const show of (recentRes?.tv || [])) {
-        if (seenIds.has(show.id)) continue;
-        const d = show.first_air_date;
-        const bucket = (d && recentGrouped[d] !== undefined) ? d : recentFallbackDay;
-        recentGrouped[bucket].push({ ...show, first_air_date: null });
-        seenIds.add(show.id);
-      }
-      for (const movie of (recentRes?.movies || [])) {
-        if (seenIds.has(movie.id)) continue;
-        const d = movie.release_date;
-        const bucket = (d && recentGrouped[d] !== undefined) ? d : recentFallbackDay;
-        recentGrouped[bucket].push({ ...movie, release_date: null });
-        seenIds.add(movie.id);
-      }
-      const recentDates = Object.keys(recentGrouped)
-        .sort((a, b) => b.localeCompare(a))
-        .filter(d => recentGrouped[d].length > 0);
 
       const upcomingGrouped = {};
 
@@ -327,7 +288,7 @@ export function UpcomingContent({ typeFilters, genreFilters, providers, openPane
       }
       const upcomingDates = Object.keys(upcomingGrouped).sort();
 
-      setData({ today: todayItems, recentGrouped, recentDates, upcomingGrouped, upcomingDates });
+      setData({ today: todayItems, upcomingGrouped, upcomingDates });
       setLoading(false);
     }
     load();
@@ -352,17 +313,11 @@ export function UpcomingContent({ typeFilters, genreFilters, providers, openPane
 
   if (loading) return <LoadingSpinner />;
 
-  const { today, recentGrouped, recentDates, upcomingGrouped, upcomingDates } = data;
+  const { today, upcomingGrouped, upcomingDates } = data;
 
-  const applyFilters = (items) => filterByGenre(filterByType(items, typeFilters), genreFilters);
+  const applyFilters = (items) => filterByGenre(filterByType(items.filter(isEnglishOriginTitle), typeFilters), genreFilters);
 
   const filteredToday = applyFilters(today);
-  const filteredRecent = {};
-  const filteredRecDates = recentDates.filter(d => {
-    const arr = applyFilters(recentGrouped[d]);
-    if (arr.length) { filteredRecent[d] = arr; return true; }
-    return false;
-  });
   const filteredUpcoming = {};
   const filteredUpDates = upcomingDates.filter(d => {
     const arr = applyFilters(upcomingGrouped[d]);
@@ -375,7 +330,7 @@ export function UpcomingContent({ typeFilters, genreFilters, providers, openPane
     ...loadedProviderLogos,
   };
 
-  const hasContent = filteredToday.length > 0 || filteredRecDates.length > 0 || filteredUpDates.length > 0;
+  const hasContent = filteredToday.length > 0 || filteredUpDates.length > 0;
 
   if (!hasContent) {
     const allSelected = typeFilters.length === ALL_TYPES.length || typeFilters.length === 0;
@@ -393,36 +348,6 @@ export function UpcomingContent({ typeFilters, genreFilters, providers, openPane
 
   return (
     <div className="upcoming-content">
-      {/* Recently Released — collapsible, collapsed by default */}
-      {filteredRecDates.length > 0 && (
-        <div className="date-group">
-          <button className="date-group-header date-group-collapsible" onClick={() => setRecentOpen(o => !o)}>
-            <span className="date-group-label">Recently Released</span>
-            <Chevron open={recentOpen} />
-          </button>
-          {recentOpen && filteredRecDates.map(date => (
-            <div key={date}>
-              <div className="date-group-subheader">{formatDayLabel(date)}</div>
-              <Rail style={{ paddingLeft: '1rem', paddingRight: '1rem', paddingTop: '1.25rem', paddingBottom: '1.5rem' }}>
-                {filteredRecent[date].map(item => (
-                  <MediaCard
-                    key={`${item.media_type}-${item.id}`}
-                    item={item}
-                    openPanel={openPanel}
-                    providerLogo={providerLogos[buildProviderLogoCacheKey({
-                      id: item.id || item.tmdb_id,
-                      type: item.media_type || 'movie',
-                      region: currentRegion,
-                    })] || null}
-                    watchlist={watchlist}
-                  />
-                ))}
-              </Rail>
-            </div>
-          ))}
-        </div>
-      )}
-
       <DateGroup label="Today" items={filteredToday} openPanel={openPanel} providerLogos={providerLogos} watchlist={watchlist} defaultOpen expandSignal={expandSignal} />
 
       {filteredUpDates.map(date => (
@@ -485,6 +410,7 @@ export default function GuideView() {
                   ],
                   value: typeFilters,
                   onChange: setTypeFilters,
+                  defaultValue: ['tv', 'cinema', 'movie'],
                 },
                 {
                   heading: 'Genre',

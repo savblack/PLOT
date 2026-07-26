@@ -34,6 +34,65 @@ function SaveFieldIcon() {
   );
 }
 
+/* ── Social platform icons (fixed set — Edit profile modal + public header) ── */
+function InstagramIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <rect x="3" y="3" width="18" height="18" rx="5" />
+      <circle cx="12" cy="12" r="4" />
+      <circle cx="17.2" cy="6.8" r="1" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+function XIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M4 3h3.6l4.2 5.8L16.9 3H20l-6.4 8.3L20.4 21h-3.6l-4.6-6.3L6.9 21H3.8l6.9-8.9L4 3z" />
+    </svg>
+  );
+}
+function TikTokIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M14.5 2h2.6c.2 1.5 1.1 2.9 2.5 3.7.8.5 1.7.7 2.4.8v2.7c-1.5 0-2.9-.4-4.2-1.2v6.6c0 3.1-2.5 5.6-5.7 5.6S6.4 17.7 6.4 14.6c0-2.9 2.2-5.3 5.1-5.6v2.8c-1.3.3-2.3 1.4-2.3 2.8 0 1.6 1.3 2.9 3 2.9s3-1.3 3-2.9V2z" />
+    </svg>
+  );
+}
+function YouTubeIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <rect x="2.5" y="6" width="19" height="12" rx="3.5" />
+      <path d="M10.5 9.5l5 2.5-5 2.5v-5z" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+function LetterboxdIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <circle cx="6.5" cy="12" r="4" />
+      <circle cx="12" cy="12" r="4" />
+      <circle cx="17.5" cy="12" r="4" />
+    </svg>
+  );
+}
+function WebsiteIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" />
+    </svg>
+  );
+}
+
+const SOCIAL_LINKS = [
+  { key: 'instagram',  label: 'Instagram',  icon: InstagramIcon,  placeholder: 'username',      url: (v) => `https://instagram.com/${v}` },
+  { key: 'x',          label: 'X',          icon: XIcon,          placeholder: 'username',      url: (v) => `https://x.com/${v}` },
+  { key: 'tiktok',     label: 'TikTok',     icon: TikTokIcon,     placeholder: 'username',      url: (v) => `https://tiktok.com/@${v}` },
+  { key: 'youtube',    label: 'YouTube',    icon: YouTubeIcon,    placeholder: 'channel',        url: (v) => `https://youtube.com/@${v}` },
+  { key: 'letterboxd', label: 'Letterboxd', icon: LetterboxdIcon, placeholder: 'username',      url: (v) => `https://letterboxd.com/${v}` },
+  { key: 'website',    label: 'Website',    icon: WebsiteIcon,    placeholder: 'yoursite.com',  url: (v) => (/^https?:\/\//i.test(v) ? v : `https://${v}`) },
+];
+
 // Content rails a user can show/hide. profile_sections null = show all.
 const SECTIONS = [
   { key: 'recent',    label: 'Recently Watched' },
@@ -69,6 +128,11 @@ const styles = `
   .pp-name { margin: 0.85rem 0 0; font-family: var(--font-serif); font-size: 1.95rem; font-weight: 500; letter-spacing: -0.03em; line-height: 1.05; word-break: break-word; }
   .pp-handle { margin: 0.2rem 0 0; font-size: 0.9rem; color: var(--text-muted); }
   .pp-verified { width: 1.35rem; height: 1.35rem; margin-left: 0.35rem; vertical-align: -0.2rem; flex-shrink: 0; }
+  .pp-bio { margin: 0.9rem 0 0; max-width: 420px; font-size: 0.9rem; line-height: 1.55; color: var(--text-secondary); white-space: pre-wrap; }
+  .pp-social-row { display: flex; gap: 0.6rem; justify-content: center; flex-wrap: wrap; margin-top: 0.9rem; }
+  .pp-social-btn { display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--border); color: var(--text-secondary); background: var(--surface-raised); transition: var(--transition-fast); }
+  .pp-social-btn svg { width: 17px; height: 17px; }
+  .pp-social-btn:hover { color: var(--text-primary); border-color: color-mix(in srgb, var(--accent) 55%, var(--border)); }
 
   /* ── Action buttons ── */
   .pp-btn-row { display: flex; gap: 0.6rem; justify-content: center; margin-top: 1.25rem; }
@@ -124,6 +188,10 @@ const styles = `
   .pp-field-label { display: block; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.4rem; }
   .pp-input { width: 100%; box-sizing: border-box; padding: 0.6rem 2.4rem 0.6rem 0.75rem; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg); color: var(--text-primary); font-size: 0.95rem; }
   .pp-input[readonly] { background: var(--surface-raised); color: var(--text-secondary); cursor: default; }
+  .pp-textarea { width: 100%; box-sizing: border-box; padding: 0.6rem 0.75rem; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg); color: var(--text-primary); font: inherit; font-size: 0.95rem; resize: vertical; min-height: 72px; }
+  .pp-social-input-row { display: flex; align-items: center; gap: 0.6rem; margin-top: 0.6rem; }
+  .pp-social-input-icon { display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--border); color: var(--text-secondary); flex-shrink: 0; }
+  .pp-social-input-icon svg { width: 16px; height: 16px; }
   .pp-input-wrap { position: relative; }
   .pp-input-edit-btn {
     position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%);
@@ -248,6 +316,8 @@ function FollowListModal({ kind, targetId, viewerId, onClose }) {
 /* ── Edit profile — display name, username (availability), visibility, photo ── */
 function EditProfileModal({ userId, current, onClose, onSaved, favWord }) {
   const [displayName, setDisplayName] = useState(current.display_name || '');
+  const [bio, setBio] = useState(current.bio || '');
+  const [links, setLinks] = useState(current.links || {});
   const [uname, setUname] = useState(current.username);
   const [avatar, setAvatar] = useState(current.avatar_url); // preview (object URL until Save)
   const [pendingFile, setPendingFile] = useState(null);     // picked photo, not yet uploaded
@@ -299,7 +369,10 @@ function EditProfileModal({ userId, current, onClose, onSaved, favWord }) {
 
   const save = async () => {
     setSaving(true); setError('');
-    const patch = { display_name: displayName.trim() || null };
+    const cleanLinks = Object.fromEntries(
+      Object.entries(links).map(([k, v]) => [k, v.trim()]).filter(([, v]) => v)
+    );
+    const patch = { display_name: displayName.trim() || null, bio: bio.trim() || null, links: Object.keys(cleanLinks).length ? cleanLinks : null };
     // Upload the picked photo now (only on Save).
     if (pendingFile) {
       try {
@@ -323,7 +396,7 @@ function EditProfileModal({ userId, current, onClose, onSaved, favWord }) {
     const sections = SECTIONS.map((s) => s.key).filter((k) => enabled.includes(k));
     await supabase.from('profiles').update({ profile_sections: sections }).eq('id', userId);
     setSaving(false);
-    onSaved({ display_name: displayName.trim(), username: unameChanged ? cleanUname : current.username, is_public: current.is_public, avatar_url: patch.avatar_url, profile_sections: sections });
+    onSaved({ display_name: displayName.trim(), username: unameChanged ? cleanUname : current.username, is_public: current.is_public, avatar_url: patch.avatar_url, profile_sections: sections, bio: patch.bio, links: patch.links });
   };
 
   const initial = (displayName || uname || '?').charAt(0).toUpperCase();
@@ -378,6 +451,20 @@ function EditProfileModal({ userId, current, onClose, onSaved, favWord }) {
           </div>
 
           <div>
+            <label className="pp-field-label" htmlFor="pp-bio-input">Bio</label>
+            <textarea
+              id="pp-bio-input"
+              className="pp-textarea"
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              maxLength={280}
+              placeholder="A little about you"
+              rows={3}
+            />
+            <div className="pp-hint">{bio.length}/280</div>
+          </div>
+
+          <div>
             <label className="pp-field-label" htmlFor="pp-uname-input">Username</label>
             <div className="pp-input-wrap">
               <input
@@ -411,6 +498,24 @@ function EditProfileModal({ userId, current, onClose, onSaved, favWord }) {
             {unameStatus === 'ok'       && <div className="pp-hint" style={{ color: 'var(--chip-today, #16a34a)' }}>Available</div>}
             {unameStatus === 'taken'    && <div className="pp-hint" style={{ color: 'var(--accent)' }}>That username is taken.</div>}
             {unameStatus === 'invalid'  && <div className="pp-hint" style={{ color: 'var(--accent)' }}>3–30 characters: letters, numbers, underscores.</div>}
+          </div>
+
+          {/* Fixed set of social/external links */}
+          <div>
+            <label className="pp-field-label">Links</label>
+            {SOCIAL_LINKS.map(({ key, label, icon: Icon, placeholder }) => (
+              <div key={key} className="pp-social-input-row">
+                <span className="pp-social-input-icon" aria-hidden="true"><Icon /></span>
+                <input
+                  className="pp-input"
+                  value={links[key] || ''}
+                  onChange={(e) => setLinks((prev) => ({ ...prev, [key]: e.target.value }))}
+                  placeholder={`${label} ${placeholder}`}
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                />
+              </div>
+            ))}
           </div>
 
           {/* Which sections show on the profile */}
@@ -526,6 +631,24 @@ export default function PublicProfilePage() {
                   )}
                 </h1>
                 <p className="pp-handle">@{p.username}</p>
+                {p.bio && <p className="pp-bio">{p.bio}</p>}
+                {p.links && Object.keys(p.links).length > 0 && (
+                  <div className="pp-social-row">
+                    {SOCIAL_LINKS.filter(({ key }) => p.links[key]).map(({ key, label, icon: Icon, url }) => (
+                      <a
+                        key={key}
+                        className="pp-social-btn"
+                        href={url(p.links[key])}
+                        target="_blank"
+                        rel="noopener noreferrer nofollow ugc"
+                        aria-label={label}
+                        title={label}
+                      >
+                        <Icon />
+                      </a>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Actions */}
@@ -619,7 +742,7 @@ export default function PublicProfilePage() {
       {editing && isOwn && p && (
         <EditProfileModal
           userId={viewer.id}
-          current={{ display_name: p.display_name ?? '', username: p.username, is_public: !!p.is_public, avatar_url: p.avatar_url ?? null, profile_sections: p.profile_sections ?? null }}
+          current={{ display_name: p.display_name ?? '', username: p.username, is_public: !!p.is_public, avatar_url: p.avatar_url ?? null, profile_sections: p.profile_sections ?? null, bio: p.bio ?? '', links: p.links ?? {} }}
           favWord={fw.plural}
           onClose={() => setEditing(false)}
           onSaved={(next) => {
@@ -630,6 +753,8 @@ export default function PublicProfilePage() {
               username: next.username,
               is_public: next.is_public,
               profile_sections: next.profile_sections,
+              bio: next.bio,
+              links: next.links,
               ...(next.avatar_url ? { avatar_url: next.avatar_url } : {}),
             }));
             setEditing(false);

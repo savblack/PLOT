@@ -8,6 +8,16 @@ export const getTmdbRegion = () => userRegion;
 const ENGLISH_SPEAKING_REGIONS = new Set(['AU', 'CA', 'GB', 'IE', 'NZ', 'US']);
 
 /**
+ * @param {{original_language?: string, origin_country?: string[]}} item
+ * @returns {boolean}
+ */
+export function isEnglishOriginTitle(item) {
+  const isEnglishLanguage = item?.original_language === 'en';
+  const isFromEnglishSpeakingMarket = item?.origin_country?.some(country => ENGLISH_SPEAKING_REGIONS.has(country));
+  return Boolean(isEnglishLanguage || isFromEnglishSpeakingMarket);
+}
+
+/**
  * Gently bias a ranked TMDB result set toward titles made in English-speaking
  * markets, without filtering out international titles or losing TMDB's order
  * within either group. Two preferred titles are surfaced for every one other

@@ -483,7 +483,8 @@ svg { stroke-width: 1.5; }
   -webkit-tap-highlight-color: transparent;
 }
 .guide-filter-btn:hover,
-.guide-filter-btn.open {
+.guide-filter-btn.open,
+.guide-filter-btn.active {
   border-color: var(--accent);
   color: var(--accent);
 }
@@ -3509,8 +3510,8 @@ a.provider-chip--link:hover {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 78px;
-  padding: 0.85rem 1rem;
+  min-height: 74px;
+  padding: 0.7rem 1rem;
   border: 1px solid var(--border);
   border-right: 0;
   background: var(--surface);
