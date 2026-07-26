@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useApp } from '../App.jsx';
 import { supabase } from '../api/supabase.js';
@@ -298,7 +299,7 @@ function FollowListModal({ kind, targetId, viewerId, onClose }) {
     supabase.rpc(rpc, { p_target: targetId }).then(({ data }) => { if (!cancelled) setUsers(data || []); });
     return () => { cancelled = true; };
   }, [kind, targetId]);
-  return (
+  const modal = (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
       <div onClick={(e) => e.stopPropagation()} style={{ background: 'var(--surface)', width: '100%', maxWidth: 520, maxHeight: '75vh', borderTopLeftRadius: 16, borderTopRightRadius: 16, overflowY: 'auto', paddingBottom: '2rem' }}>
         <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--border)', margin: '0.5rem auto 0' }} />
@@ -311,6 +312,12 @@ function FollowListModal({ kind, targetId, viewerId, onClose }) {
       </div>
     </div>
   );
+
+  // Portal to <body> — this component renders inside .app-main, whose
+  // animate-in class leaves a non-'none' transform after the entrance
+  // animation, which makes position:fixed descendants fix to that ancestor
+  // instead of the viewport (clipped, scrolls with the page).
+  return typeof document !== 'undefined' ? createPortal(modal, document.body) : modal;
 }
 
 /* ── Edit profile — display name, username (availability), visibility, photo ── */
@@ -333,9 +340,18 @@ function EditProfileModal({ userId, current, onClose, onSaved, favWord }) {
   const { lists: customLists, setListPublic } = useCustomLists(userId);
 
   useEffect(() => {
-    const previousOverflow = document.body.style.overflow;
+    // .app-main (not document.body) is the actual scrolling container — it's
+    // a fixed-position div with its own overflow-y: auto — so locking body
+    // alone left the page scrollable behind the modal.
+    const scroller = document.querySelector('.app-main');
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousScrollerOverflow = scroller?.style.overflow;
     document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = previousOverflow; };
+    if (scroller) scroller.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      if (scroller) scroller.style.overflow = previousScrollerOverflow;
+    };
   }, []);
 
   const cleanUname = uname.trim().toLowerCase();
@@ -401,7 +417,7 @@ function EditProfileModal({ userId, current, onClose, onSaved, favWord }) {
 
   const initial = (displayName || uname || '?').charAt(0).toUpperCase();
 
-  return (
+  const modal = (
     <div className="pp-edit-overlay" onClick={onClose}>
       <div className="pp-edit-modal" onClick={(e) => e.stopPropagation()}>
         <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--surface)' }}>
@@ -551,6 +567,12 @@ function EditProfileModal({ userId, current, onClose, onSaved, favWord }) {
       </div>
     </div>
   );
+
+  // Portal to <body> — this modal renders inside .app-main, whose animate-in
+  // class leaves a non-'none' transform after the entrance animation, which
+  // makes position:fixed descendants fix to that ancestor instead of the
+  // viewport (clipped top/bottom, background scrolls, wrong scrollbar).
+  return typeof document !== 'undefined' ? createPortal(modal, document.body) : modal;
 }
 
 export default function PublicProfilePage() {
