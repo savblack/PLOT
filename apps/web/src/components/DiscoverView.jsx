@@ -490,19 +490,20 @@ function DiscoverContent({ openPanel, watchlist, openSections, setOpenSections, 
       )}
 
       {hotRail.length > 0 && (
-        <section className="discover-section">
+        <section className="discover-section discover-binge-section">
           <DiscoverSectionHeader
             kicker="Trending today"
             title="Hot Right Now"
             open={openSections.hot}
             onToggle={() => toggleSection('hot')}
+            className="discover-binge-header"
           />
           {openSections.hot && (
-            <Rail>
-              {hotRail.map((item, i) => (
-                <RankedCard key={item.id} item={item} rank={i + 2} showRank={false} openPanel={openPanel} watchlist={watchlist} />
+            <BingeRail>
+              {hotRail.map(item => (
+                <BingeCard key={item.id} item={item} openPanel={openPanel} watchlist={watchlist} />
               ))}
-            </Rail>
+            </BingeRail>
           )}
         </section>
       )}
