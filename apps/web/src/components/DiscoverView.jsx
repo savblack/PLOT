@@ -40,19 +40,18 @@ function BingeRail({ children }) {
 function DiscoverSectionHeader({ kicker, title, open, onToggle, className = '' }) {
   return (
     <button
-      className={`date-group-header date-group-collapsible discover-section-header${className ? ` ${className}` : ''}`}
-      style={{ paddingTop: '1rem', paddingBottom: '0.5rem' }}
+      className={`collapse-head discover-section-header${className ? ` ${className}` : ''}`}
       onClick={onToggle}
       aria-expanded={open}
       type="button"
     >
-      <div style={{ flex: 1 }}>
-        <div style={{ fontSize: '0.6rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.15rem' }}>{kicker}</div>
-        <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1.5rem', fontWeight: 400, lineHeight: 1.1, color: 'var(--text-primary)' }}>{title}</div>
-      </div>
-      <svg className={`date-group-chevron${open ? ' open' : ''}`} viewBox="0 0 24 24" aria-hidden="true">
+      <svg className={`collapse-chevron${open ? ' open' : ''}`} viewBox="0 0 24 24" aria-hidden="true">
         <polyline points="6 9 12 15 18 9" />
       </svg>
+      <div style={{ flex: 1, textAlign: 'left' }}>
+        <div style={{ fontSize: '0.6rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.15rem' }}>{kicker}</div>
+        <div style={{ fontFamily: 'var(--font-sans)', fontSize: '0.85rem', fontWeight: 700, letterSpacing: '0.02em', lineHeight: 1.2, color: 'var(--text-primary)' }}>{title}</div>
+      </div>
     </button>
   );
 }
