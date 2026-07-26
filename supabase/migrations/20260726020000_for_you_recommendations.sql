@@ -95,17 +95,30 @@ set search_path = public
 as $$
 declare
   v_user_id uuid := auth.uid();
-  v_signal_count integer;
+  v_similarity_hits integer;
 begin
   if v_user_id is null then
     return;
   end if;
 
-  select count(*) into v_signal_count
-  from user_title_signals
-  where user_id = v_user_id;
+  -- Similarity coverage is sparse until enough users overlap on the same
+  -- pairs of titles (co_count >= 2 in recompute_title_similarity()). A user
+  -- can have plenty of their own signals and still get zero similarity
+  -- rows back — that's a *coverage* gap, not a "new user" gap, so the
+  -- fallback below is keyed on whether the similarity query actually
+  -- returned anything, not on how many signals the user has.
+  select count(*) into v_similarity_hits
+  from user_title_signals uts
+  join title_similarity s
+    on s.tmdb_id_a = uts.tmdb_id and s.media_type_a = uts.media_type
+  where uts.user_id = v_user_id
+    and not exists (
+      select 1 from user_title_signals seen
+      where seen.user_id = v_user_id
+        and seen.tmdb_id = s.tmdb_id_b and seen.media_type = s.media_type_b
+    );
 
-  if v_signal_count >= 3 then
+  if v_similarity_hits > 0 then
     return query
     select s.tmdb_id_b, s.media_type_b, sum(s.score) as relevance, 'similar_to_your_titles' as reason
     from user_title_signals uts
@@ -121,9 +134,10 @@ begin
     order by relevance desc
     limit p_limit;
   else
-    -- Cold start: rank by genre overlap with whatever the user has liked so
-    -- far, restricted to titles other users have actually signalled on
-    -- (keeps results to real, checkable titles rather than an open catalog).
+    -- Cold start / low-coverage fallback: rank by genre overlap with
+    -- whatever the user has liked so far, restricted to titles other users
+    -- have actually signalled on (keeps results to real, checkable titles
+    -- rather than an open catalog).
     return query
     with liked_genres as (
       select array_agg(distinct g) as genres
@@ -131,7 +145,7 @@ begin
       where user_id = v_user_id
     )
     select uts.tmdb_id, uts.media_type,
-           cardinality(uts.genre_ids & lg.genres)::numeric as relevance,
+           (select count(*) from unnest(uts.genre_ids) g where g = any(lg.genres))::numeric as relevance,
            'because_you_like_these_genres' as reason
     from user_title_signals uts, liked_genres lg
     where lg.genres is not null
@@ -141,7 +155,7 @@ begin
         where seen.user_id = v_user_id
           and seen.tmdb_id = uts.tmdb_id and seen.media_type = uts.media_type
       )
-    group by uts.tmdb_id, uts.media_type, uts.genre_ids
+    group by uts.tmdb_id, uts.media_type, uts.genre_ids, lg.genres
     order by relevance desc
     limit p_limit;
   end if;
