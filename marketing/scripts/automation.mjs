@@ -102,7 +102,7 @@ const runCodexCopyWriter = (dangerous) => {
   if (!hasCommand('codex')) {
     throw new Error('Codex CLI is not installed. Set --copy-command=... or install `codex`.');
   }
-  const args = ['exec', '--search'];
+  const args = ['exec'];
   if (dangerous) args.push('--dangerously-bypass-approvals-and-sandbox');
   args.push(codexPrompt);
   run('Write copy with Codex', 'codex', args);
