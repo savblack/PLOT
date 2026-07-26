@@ -8,12 +8,11 @@ import { tmdb, getTmdbRegion } from '../api/tmdb.js';
 // order. `match` locates the platform's TMDB watch-provider entry so we can
 // reuse its logo without hard-coding any TMDB paths.
 const OFFICIAL_PLATFORMS = [
-  { key: 'netflix',   name: 'Netflix',            match: /netflix/i },
-  { key: 'prime',     name: 'Amazon Prime Video', match: /prime video|amazon prime/i },
-  { key: 'max',       name: 'Max',                match: /^max$|hbo max/i },
-  { key: 'apple',     name: 'Apple TV',           match: /apple tv/i },
-  { key: 'disney',    name: 'Disney Plus',        match: /disney/i },
-  { key: 'paramount', name: 'Paramount Plus',     match: /paramount/i },
+  { key: 'netflix', name: 'Netflix',            match: /netflix/i },
+  { key: 'prime',   name: 'Amazon Prime Video', match: /prime video|amazon prime/i },
+  { key: 'max',     name: 'Max',                match: /^max$|hbo max/i },
+  { key: 'apple',   name: 'Apple TV',           match: /apple tv/i },
+  { key: 'disney',  name: 'Disney Plus',        match: /disney/i },
 ];
 
 // Reads OFFICIAL streaming Top 10 charts for the user's region from the

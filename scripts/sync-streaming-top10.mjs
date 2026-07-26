@@ -1,5 +1,5 @@
-// Ingest the OFFICIAL in-app Top 10s for Prime Video, Max, Apple TV, Disney Plus,
-// and Paramount+ into the platform_charts table, via the Streaming Availability API (Movie of the Night,
+// Ingest the OFFICIAL in-app Top 10s for Prime Video, Max, and Apple TV into the
+// platform_charts table, via the Streaming Availability API (Movie of the Night,
 // over RapidAPI). These are the platforms — besides Netflix — that publish a real
 // Top 10. Netflix is intentionally NOT here: it's covered by the free, unlimited
 // Tudum feed (scripts/sync-netflix-top10.mjs), so we don't spend API quota on it.
@@ -9,8 +9,8 @@
 // and canonical title so rows render identically to the Netflix ones.
 //
 // Free tier is 500 requests/month. We make ONE call per (service × region) — omitting
-// show_type returns both movies and series — so cost = services(5) × regions per run.
-// At a weekly cadence, 5 × 12 regions × ~4.3 runs ≈ 258/month. Override the region
+// show_type returns both movies and series — so cost = services(4) × regions per run.
+// At a weekly cadence, 4 × 12 regions × ~4.3 runs ≈ 206/month. Override the region
 // set with CHART_REGIONS="us,gb,au".
 //
 // Usage (needs deps):
@@ -32,11 +32,10 @@ const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABAS
 
 // Our canonical platform key → Streaming Availability service id (Max = "hbo").
 const SERVICES = [
-  { platform: 'prime',     service: 'prime'     },
-  { platform: 'max',       service: 'hbo'       },
-  { platform: 'apple',     service: 'apple'     },
-  { platform: 'disney',    service: 'disney'    },
-  { platform: 'paramount', service: 'paramount' },
+  { platform: 'prime',  service: 'prime'  },
+  { platform: 'max',    service: 'hbo'    },
+  { platform: 'apple',  service: 'apple'  },
+  { platform: 'disney', service: 'disney' },
 ];
 const REGIONS = (process.env.CHART_REGIONS || 'us,gb,au,ca,de,fr,es,it,br,mx,in,jp')
   .split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
