@@ -12,6 +12,7 @@ import { favoriteWords } from '../utils/spelling.js';
 import { getButtonLikeProps } from '../utils/interactive.js';
 import UserList from '../components/UserList.jsx';
 import SheetHeader from '../components/SheetHeader.jsx';
+import PlotLoader from '../components/PlotLoader.jsx';
 import { EVENTS } from '../lib/analytics.js';
 
 const posterUrl = (path, size = 'w342') =>
@@ -118,29 +119,32 @@ const styles = `
   .public-profile-status-copy { margin: 0.55rem 0 0; font-size: 0.88rem; line-height: 1.65; color: var(--text-secondary); }
   .public-profile-actions { display: flex; justify-content: center; gap: 0.8rem; flex-wrap: wrap; margin-top: 1.25rem; }
 
-  /* ── Centered, stacked header ── */
-  .pp-header { display: flex; flex-direction: column; align-items: center; text-align: center; padding-top: 1.75rem; }
+  /* ── Left-aligned header: avatar + name/handle/stats in one row, bio + actions below ── */
+  .pp-header { padding-top: 1.75rem; }
+  .pp-header-top { display: flex; align-items: flex-start; gap: 1rem; }
   .pp-avatar {
-    width: 92px; height: 92px; border-radius: 50%; flex-shrink: 0;
+    width: 68px; height: 68px; border-radius: 50%; flex-shrink: 0;
     object-fit: cover; background: var(--surface-raised); border: 1px solid var(--border);
     display: flex; align-items: center; justify-content: center;
-    font-family: var(--font-serif); font-size: 2.2rem; color: var(--text-muted);
+    font-family: var(--font-serif); font-size: 1.7rem; color: var(--text-muted);
   }
-  .pp-name { margin: 0.85rem 0 0; font-family: var(--font-serif); font-size: 1.95rem; font-weight: 500; letter-spacing: -0.03em; line-height: 1.05; word-break: break-word; }
-  .pp-handle { margin: 0.2rem 0 0; font-size: 0.9rem; color: var(--text-muted); }
-  .pp-verified { width: 1.35rem; height: 1.35rem; margin-left: 0.35rem; vertical-align: -0.2rem; flex-shrink: 0; }
-  .pp-bio { margin: 0.9rem 0 0; max-width: 420px; font-size: 0.9rem; line-height: 1.55; color: var(--text-secondary); white-space: pre-wrap; }
-  .pp-social-row { display: flex; gap: 0.6rem; justify-content: center; flex-wrap: wrap; margin-top: 1rem; }
-  .pp-social-btn { display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--border); color: var(--text-secondary); background: var(--surface-raised); transition: var(--transition-fast); }
-  .pp-social-btn svg { width: 17px; height: 17px; }
+  .pp-header-info { flex: 1; min-width: 0; }
+  .pp-name { margin: 0; font-family: var(--font-serif); font-size: 1.35rem; font-weight: 500; letter-spacing: -0.02em; line-height: 1.2; word-break: break-word; }
+  .pp-handle { margin: 0.1rem 0 0; font-size: 0.85rem; color: var(--text-muted); }
+  .pp-verified { width: 1.05rem; height: 1.05rem; margin-left: 0.3rem; vertical-align: -0.12rem; flex-shrink: 0; }
+  .pp-bio { margin: 0.9rem 0 0; font-size: 0.9rem; line-height: 1.55; color: var(--text-secondary); white-space: pre-wrap; }
+  .pp-footer-row { display: flex; align-items: center; gap: 0.6rem; margin-top: 1.1rem; flex-wrap: wrap; }
+  .pp-social-row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-right: auto; }
+  .pp-social-btn { display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--border); color: var(--text-secondary); background: var(--surface-raised); transition: var(--transition-fast); }
+  .pp-social-btn svg { width: 15px; height: 15px; }
   .pp-social-btn:hover { color: var(--text-primary); border-color: color-mix(in srgb, var(--accent) 55%, var(--border)); }
 
-  /* ── Action buttons ── */
-  .pp-btn-row { display: flex; gap: 0.6rem; justify-content: center; margin-top: 1.75rem; }
+  /* ── Action buttons — compact, not full-width ── */
+  .pp-btn-row { display: flex; gap: 0.5rem; margin-left: auto; }
   .pp-btn {
     display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
-    min-height: 40px; min-width: 150px; padding: 0.55rem 1.4rem; border-radius: var(--radius-pill);
-    font-size: 0.9rem; font-weight: 600; cursor: pointer; text-decoration: none;
+    min-height: 34px; padding: 0.45rem 1rem; border-radius: var(--radius-pill);
+    font-size: 0.83rem; font-weight: 600; cursor: pointer; text-decoration: none; white-space: nowrap;
     transition: opacity 0.2s ease, transform 0.15s ease;
   }
   .pp-btn-primary { background: var(--text-primary); color: var(--surface); border: none; }
@@ -148,11 +152,11 @@ const styles = `
   .pp-btn:hover { opacity: 0.85; transform: scale(0.99); }
   .pp-btn:disabled { opacity: 0.55; cursor: default; transform: none; }
 
-  .pp-stats { display: flex; justify-content: center; gap: 2rem; margin: 1.7rem 0 0; flex-wrap: wrap; }
-  .pp-stat { display: flex; flex-direction: column; align-items: center; text-align: center; }
-  .pp-stat-num { font-family: var(--font-serif); font-size: 1.5rem; font-weight: 500; color: var(--text-primary); line-height: 1; }
-  .pp-stat-label { display: block; margin-top: 0.3rem; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
-  .pp-stat-btn { background: none; border: none; padding: 0; cursor: pointer; font: inherit; }
+  .pp-stats { display: flex; gap: 0.9rem; margin: 0.45rem 0 0; flex-wrap: wrap; }
+  .pp-stat { display: flex; align-items: baseline; gap: 0.3rem; background: none; border: none; padding: 0; cursor: default; font: inherit; }
+  .pp-stat-num { font-weight: 600; color: var(--text-primary); line-height: 1; }
+  .pp-stat-label { font-size: 0.78rem; color: var(--text-muted); }
+  .pp-stat-btn { cursor: pointer; }
   .pp-stat-btn:hover .pp-stat-num { opacity: 0.65; }
 
   .pp-section { margin-top: 2.2rem; }
@@ -306,7 +310,7 @@ function FollowListModal({ kind, targetId, viewerId, onClose }) {
         <SheetHeader title={kind === 'followers' ? 'Followers' : 'Following'} onClose={onClose} bordered={false} />
         <div style={{ padding: '0 1.25rem' }}>
           {users === null
-            ? <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '2rem' }}>Loading…</p>
+            ? <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}><PlotLoader size="sm" /></div>
             : <UserList users={users} viewerId={viewerId} onNavigate={onClose} empty={kind === 'followers' ? 'No followers yet.' : 'Not following anyone yet.'} />}
         </div>
       </div>
@@ -619,7 +623,7 @@ export default function PublicProfilePage() {
         {!found ? (
           <div className="pp-empty">
             {loading ? (
-              <p className="pp-empty-body">Loading…</p>
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}><PlotLoader /></div>
             ) : (
               <>
                 <h1 className="pp-empty-title">This profile <em>isn&apos;t public</em>.</h1>
@@ -638,75 +642,80 @@ export default function PublicProfilePage() {
         ) : (
           <>
             <div className="pp-pad">
-              {/* Header — centered, stacked */}
+              {/* Header — left-aligned, info-dense */}
               <div className="pp-header">
-                {p.avatar_url
-                  ? <img className="pp-avatar" src={p.avatar_url} alt="" />
-                  : <div className="pp-avatar">{(name || '?').charAt(0).toUpperCase()}</div>}
-                <h1 className="pp-name">
-                  {name}
-                  {p.is_premium && (
-                    <svg className="pp-verified" viewBox="0 0 22 22" aria-label="Verified">
-                      <path fill="#1d9bf0" d="M20.396 11c-.018-.646-.215-1.275-.57-1.816-.354-.54-.852-.972-1.438-1.246.223-.607.27-1.264.14-1.897-.131-.634-.437-1.218-.882-1.687-.47-.445-1.053-.75-1.687-.882-.633-.13-1.29-.083-1.897.14-.273-.587-.704-1.086-1.245-1.44S11.647 1.62 11 1.604c-.646.017-1.273.213-1.813.568s-.969.854-1.24 1.44c-.608-.223-1.267-.272-1.902-.14-.635.13-1.22.436-1.69.882-.445.47-.749 1.055-.878 1.688-.13.633-.08 1.29.144 1.896-.587.274-1.087.705-1.443 1.245-.356.54-.555 1.17-.574 1.817.02.647.218 1.276.574 1.817.356.54.856.972 1.443 1.245-.224.606-.274 1.263-.144 1.896.13.634.433 1.218.877 1.688.47.443 1.054.747 1.689.878.635.132 1.294.084 1.902-.14.27.586.7 1.084 1.24 1.439.54.354 1.16.561 1.797.577.647-.016 1.275-.213 1.815-.567s.972-.854 1.243-1.44c.604.239 1.268.296 1.902.196.633-.1 1.226-.45 1.687-.882.461-.432.879-.974 1.087-1.588.207-.614.196-1.27-.032-1.876.587-.274 1.087-.705 1.443-1.245.356-.54.555-1.17.574-1.817z"/>
-                      <path d="M7.3 11.2l2.6 2.6 4.8-5.4" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  )}
-                </h1>
-                <p className="pp-handle">@{p.username}</p>
-                {p.bio && <p className="pp-bio">{p.bio}</p>}
-                {p.links && Object.keys(p.links).length > 0 && (
-                  <div className="pp-social-row">
-                    {SOCIAL_LINKS.filter(({ key }) => p.links[key]).map(({ key, label, icon: Icon, url }) => (
-                      <a
-                        key={key}
-                        className="pp-social-btn"
-                        href={url(p.links[key])}
-                        target="_blank"
-                        rel="noopener noreferrer nofollow ugc"
-                        aria-label={label}
-                        title={label}
-                      >
-                        <Icon />
-                      </a>
-                    ))}
+                <div className="pp-header-top">
+                  {p.avatar_url
+                    ? <img className="pp-avatar" src={p.avatar_url} alt="" />
+                    : <div className="pp-avatar">{(name || '?').charAt(0).toUpperCase()}</div>}
+                  <div className="pp-header-info">
+                    <h1 className="pp-name">
+                      {name}
+                      {p.is_premium && (
+                        <svg className="pp-verified" viewBox="0 0 22 22" aria-label="Verified">
+                          <path fill="#1d9bf0" d="M20.396 11c-.018-.646-.215-1.275-.57-1.816-.354-.54-.852-.972-1.438-1.246.223-.607.27-1.264.14-1.897-.131-.634-.437-1.218-.882-1.687-.47-.445-1.053-.75-1.687-.882-.633-.13-1.29-.083-1.897.14-.273-.587-.704-1.086-1.245-1.44S11.647 1.62 11 1.604c-.646.017-1.273.213-1.813.568s-.969.854-1.24 1.44c-.608-.223-1.267-.272-1.902-.14-.635.13-1.22.436-1.69.882-.445.47-.749 1.055-.878 1.688-.13.633-.08 1.29.144 1.896-.587.274-1.087.705-1.443 1.245-.356.54-.555 1.17-.574 1.817.02.647.218 1.276.574 1.817.356.54.856.972 1.443 1.245-.224.606-.274 1.263-.144 1.896.13.634.433 1.218.877 1.688.47.443 1.054.747 1.689.878.635.132 1.294.084 1.902-.14.27.586.7 1.084 1.24 1.439.54.354 1.16.561 1.797.577.647-.016 1.275-.213 1.815-.567s.972-.854 1.243-1.44c.604.239 1.268.296 1.902.196.633-.1 1.226-.45 1.687-.882.461-.432.879-.974 1.087-1.588.207-.614.196-1.27-.032-1.876.587-.274 1.087-.705 1.443-1.245.356-.54.555-1.17.574-1.817z"/>
+                          <path d="M7.3 11.2l2.6 2.6 4.8-5.4" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      )}
+                    </h1>
+                    <p className="pp-handle">@{p.username}</p>
+                    <div className="pp-stats">
+                      {!locked && <span className="pp-stat"><span className="pp-stat-num">{watchCount}</span><span className="pp-stat-label">watched</span></span>}
+                      <button type="button" className="pp-stat pp-stat-btn" onClick={() => setFollowList('followers')}>
+                        <span className="pp-stat-num">{followers}</span><span className="pp-stat-label">followers</span>
+                      </button>
+                      <button type="button" className="pp-stat pp-stat-btn" onClick={() => setFollowList('following')}>
+                        <span className="pp-stat-num">{following}</span><span className="pp-stat-label">following</span>
+                      </button>
+                    </div>
                   </div>
-                )}
-              </div>
+                </div>
 
-              {/* Actions */}
-              <div className="pp-btn-row">
-                {isOwn ? (
-                  <>
-                    <button type="button" className="pp-btn pp-btn-secondary" onClick={() => setEditing(true)}>Edit profile</button>
-                    <button type="button" className="pp-btn pp-btn-secondary" onClick={shareProfile}>{copied ? 'Copied!' : 'Share profile'}</button>
-                  </>
-                ) : !viewer ? (
-                  <>
-                    <Link to={`/signup?ref=${encodeURIComponent(p.username)}&src=profile`} className="pp-btn pp-btn-primary">Join to follow</Link>
-                    <Link to="/login" className="pp-btn pp-btn-secondary">Sign in</Link>
-                  </>
-                ) : canFollow && (
-                  status === 'accepted' ? (
-                    <button type="button" className="pp-btn pp-btn-secondary" onClick={unfollow} disabled={busy}>Following</button>
-                  ) : status === 'pending' ? (
-                    <button type="button" className="pp-btn pp-btn-secondary" onClick={unfollow} disabled={busy}>Requested</button>
-                  ) : (
-                    <button type="button" className="pp-btn pp-btn-primary" onClick={follow} disabled={busy}>
-                      {isPrivate ? 'Request to follow' : 'Follow'}
-                    </button>
-                  )
-                )}
-              </div>
+                {p.bio && <p className="pp-bio">{p.bio}</p>}
 
-              {/* Stats */}
-              <div className="pp-stats">
-                {!locked && <div className="pp-stat"><span className="pp-stat-num">{watchCount}</span><span className="pp-stat-label">Watched</span></div>}
-                <button type="button" className="pp-stat pp-stat-btn" onClick={() => setFollowList('followers')}>
-                  <span className="pp-stat-num">{followers}</span><span className="pp-stat-label">Followers</span>
-                </button>
-                <button type="button" className="pp-stat pp-stat-btn" onClick={() => setFollowList('following')}>
-                  <span className="pp-stat-num">{following}</span><span className="pp-stat-label">Following</span>
-                </button>
+                <div className="pp-footer-row">
+                  {p.links && Object.keys(p.links).length > 0 && (
+                    <div className="pp-social-row">
+                      {SOCIAL_LINKS.filter(({ key }) => p.links[key]).map(({ key, label, icon: Icon, url }) => (
+                        <a
+                          key={key}
+                          className="pp-social-btn"
+                          href={url(p.links[key])}
+                          target="_blank"
+                          rel="noopener noreferrer nofollow ugc"
+                          aria-label={label}
+                          title={label}
+                        >
+                          <Icon />
+                        </a>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="pp-btn-row">
+                    {isOwn ? (
+                      <>
+                        <button type="button" className="pp-btn pp-btn-secondary" onClick={() => setEditing(true)}>Edit profile</button>
+                        <button type="button" className="pp-btn pp-btn-secondary" onClick={shareProfile}>{copied ? 'Copied!' : 'Share profile'}</button>
+                      </>
+                    ) : !viewer ? (
+                      <>
+                        <Link to={`/signup?ref=${encodeURIComponent(p.username)}&src=profile`} className="pp-btn pp-btn-primary">Join to follow</Link>
+                        <Link to="/login" className="pp-btn pp-btn-secondary">Sign in</Link>
+                      </>
+                    ) : canFollow && (
+                      status === 'accepted' ? (
+                        <button type="button" className="pp-btn pp-btn-secondary" onClick={unfollow} disabled={busy}>Following</button>
+                      ) : status === 'pending' ? (
+                        <button type="button" className="pp-btn pp-btn-secondary" onClick={unfollow} disabled={busy}>Requested</button>
+                      ) : (
+                        <button type="button" className="pp-btn pp-btn-primary" onClick={follow} disabled={busy}>
+                          {isPrivate ? 'Request to follow' : 'Follow'}
+                        </button>
+                      )
+                    )}
+                  </div>
+                </div>
               </div>
 
               {locked && (
