@@ -4,6 +4,7 @@ import { favoriteWords } from '../utils/spelling.js';
 import { useDragScroll } from '../hooks/useDragScroll.js';
 import { useGenres } from '../hooks/useGenres.js';
 import { useDiscover } from '../hooks/useDiscover.js';
+import { useForYou } from '../hooks/useForYou.js';
 import { usePlatformCharts } from '../hooks/usePlatformCharts.js';
 import { UpcomingContent, filterByType, filterByGenre } from './GuideView.jsx';
 import EpgView from './EpgView.jsx';
@@ -416,6 +417,7 @@ function DiscoverContent({ openPanel, watchlist, openSections, setOpenSections, 
   // to the user's own streaming selections. Only platforms with real synced
   // Top 10 data are returned.
   const platformList = usePlatformCharts();
+  const { items: forYouItems } = useForYou(20);
   if (loading) {
     return <LoadingSpinner />;
   }
@@ -429,7 +431,8 @@ function DiscoverContent({ openPanel, watchlist, openSections, setOpenSections, 
   const bingedShows       = applyFilters(data.bingedShows);
   const realityShows      = applyFilters(data.realityShows);
   const anticipatedMovies = applyFilters(data.anticipatedMovies);
-  const hasContent = hero || hotRail.length > 0 || recentReleases.length > 0 || weekly.length > 0 || bingedShows.length > 0 || realityShows.length > 0 || anticipatedMovies.length > 0 || platformList.length > 0;
+  const forYou            = applyFilters(forYouItems);
+  const hasContent = hero || hotRail.length > 0 || recentReleases.length > 0 || weekly.length > 0 || bingedShows.length > 0 || realityShows.length > 0 || anticipatedMovies.length > 0 || platformList.length > 0 || forYou.length > 0;
 
   if (!hasContent) {
     return (
@@ -481,6 +484,24 @@ function DiscoverContent({ openPanel, watchlist, openSections, setOpenSections, 
             <Rail>
               {hotRail.map((item, i) => (
                 <RankedCard key={item.id} item={item} rank={i + 2} showRank={false} openPanel={openPanel} watchlist={watchlist} />
+              ))}
+            </Rail>
+          )}
+        </section>
+      )}
+
+      {forYou.length > 0 && (
+        <section className="discover-section">
+          <DiscoverSectionHeader
+            kicker="Picked for you"
+            title="For You"
+            open={openSections.forYou}
+            onToggle={() => toggleSection('forYou')}
+          />
+          {openSections.forYou && (
+            <Rail>
+              {forYou.map(item => (
+                <RankedCard key={`${item.media_type}-${item.id}`} item={item} showRank={false} openPanel={openPanel} watchlist={watchlist} />
               ))}
             </Rail>
           )}
@@ -605,6 +626,7 @@ export default function DiscoverView() {
   const [discoverSections, setDiscoverSections] = useState({
     featured: true,
     hot: true,
+    forYou: true,
     recent: true,
     binge: true,
     anticipated: true,

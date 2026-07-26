@@ -391,6 +391,7 @@ export default function HomeScreen() {
   const [weekly,       setWeekly]       = useState<MediaItem[]>([]);
   const [bingedShows,  setBingedShows]  = useState<MediaItem[]>([]);
   const [platforms,    setPlatforms]    = useState<PlatformData[]>([]);
+  const [forYou,       setForYou]       = useState<MediaItem[]>([]);
   const [loading,      setLoading]      = useState(true);
 
   const savedIds = new Set(watchlist.map(i => i.tmdb_id ?? i.id ?? 0));
@@ -444,6 +445,27 @@ export default function HomeScreen() {
       }
 
       setLoading(false);
+
+      // For You: item-item collaborative filtering over the user's own
+      // watchlist/favourites/history, computed nightly in Postgres (see
+      // supabase/migrations/20260726020000_for_you_recommendations.sql).
+      // Non-blocking — hydrate rows with TMDB after the rest of the screen loads.
+      (async () => {
+        try {
+          const { data: rows, error } = await supabase.rpc('get_for_you', { p_limit: 20 });
+          if (cancelled || error || !rows?.length) return;
+          const hydrated = await Promise.all(
+            rows.map(async (row: { tmdb_id: number; media_type: 'movie' | 'tv' }) => {
+              const details = await tmdb.getBasicDetails(row.media_type, row.tmdb_id).catch(() => null);
+              if (!details?.id) return null;
+              return { ...details, media_type: row.media_type } as MediaItem;
+            })
+          );
+          if (!cancelled) setForYou(hydrated.filter((item): item is MediaItem => item !== null));
+        } catch (e) {
+          console.warn('[home] for-you load failed', e);
+        }
+      })();
 
       // Load platform content in background (non-blocking)
       const providers: StreamingProvider[] = profile?.streaming_providers ?? [];
@@ -550,6 +572,31 @@ export default function HomeScreen() {
               horizontal
               data={hotRail}
               keyExtractor={item => String(item.id)}
+              renderItem={({ item }) => (
+                <PosterCard
+                  item={item}
+                  onPress={() => item.id && openPanel(item.id, (item.media_type === 'tv' ? 'tv' : 'movie'))}
+                  saved={savedIds.has(item.id ?? 0)}
+                  onSave={() => handleSave(item)}
+                  isFav={favorites.isFavorite(item.id ?? 0)}
+                  onFavorite={() => toggleFav(item)}
+                />
+              )}
+              showsHorizontalScrollIndicator={false}
+              nestedScrollEnabled
+              contentContainerStyle={{ paddingHorizontal: spacing.xl, gap: spacing.md }}
+            />
+          </View>
+        )}
+
+        {/* ── For You ── */}
+        {forYou.length > 0 && (
+          <View style={styles.section}>
+            <SectionHeader kicker="Picked for you" title="For You" />
+            <FlatList
+              horizontal
+              data={forYou}
+              keyExtractor={item => `${item.media_type}-${item.id}`}
               renderItem={({ item }) => (
                 <PosterCard
                   item={item}
