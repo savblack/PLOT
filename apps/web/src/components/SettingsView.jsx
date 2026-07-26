@@ -198,37 +198,14 @@ function ClearWatchlistModal({ savedCount, watchingCount, customLists = [], onCl
 
   return createPortal(
     <>
-      <div
-        style={{
-          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
-          zIndex: 1000, backdropFilter: 'blur(2px)',
-        }}
-        onClick={onClose}
-      />
-      <div style={{
-        position: 'fixed',
-        bottom: 0, left: 0, right: 0,
-        background: 'var(--surface)',
-        borderRadius: 'var(--radius-lg) var(--radius-lg) 0 0',
-        padding: '1.5rem 1.25rem 2rem',
-        zIndex: 1001,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '0.6rem',
-        maxHeight: '80vh',
-      }}>
-        <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--border)', margin: '0 auto 0.5rem' }} />
-
-        <div style={{ marginBottom: '0.25rem' }}>
-          <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1.3rem', fontWeight: 500, marginBottom: '0.4rem' }}>
-            Clear Lists
-          </div>
-          <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+      <div className="panel-overlay" onClick={onClose} />
+      <div className="panel">
+        <SheetHeader title="Clear Lists" onClose={onClose} />
+        <div style={{ padding: '1rem 1.25rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5, margin: '0 0 0.25rem' }}>
             Select which lists to clear. This can't be undone.
-          </div>
-        </div>
+          </p>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', overflowY: 'auto' }}>
           <ClearListRow
             checked={selected.saved}
             onToggle={toggleSaved}
@@ -259,20 +236,16 @@ function ClearWatchlistModal({ savedCount, watchingCount, customLists = [], onCl
               ))}
             </>
           )}
+
+          <button
+            className="btn btn-primary"
+            style={{ width: '100%', marginTop: '0.5rem', background: count ? 'var(--danger)' : undefined, borderColor: count ? 'var(--danger)' : undefined }}
+            onClick={handleClear}
+            disabled={!count}
+          >
+            {count ? `Clear Selected (${count})` : 'Select lists to clear'}
+          </button>
         </div>
-
-        <button
-          className="btn btn-primary"
-          style={{ width: '100%', marginTop: '0.5rem', background: count ? 'var(--danger)' : undefined, borderColor: count ? 'var(--danger)' : undefined }}
-          onClick={handleClear}
-          disabled={!count}
-        >
-          {count ? `Clear Selected (${count})` : 'Select lists to clear'}
-        </button>
-
-        <button className="btn btn-ghost" style={{ width: '100%' }} onClick={onClose}>
-          Cancel
-        </button>
       </div>
     </>,
     document.body
@@ -1631,7 +1604,7 @@ export default function SettingsView() {
         </div>
 
         {/* Username */}
-        <div className="settings-row" style={{ cursor: 'default', alignItems: 'flex-start' }}>
+        <div className="settings-row" style={{ cursor: 'default' }}>
           <div className="settings-row-left" style={{ flex: 1, minWidth: 0 }}>
             <div className="settings-row-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -1641,7 +1614,7 @@ export default function SettingsView() {
             <div style={{ flex: 1, minWidth: 0 }}>
               <div className="settings-row-label">Username</div>
               {usernameDraft === null ? (
-                <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginTop: '0.35rem' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                   {username}
                 </div>
               ) : (

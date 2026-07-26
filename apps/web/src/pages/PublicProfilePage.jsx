@@ -121,14 +121,14 @@ const styles = `
 
   /* ── Left-aligned header: avatar + name/handle/stats in one row, bio + actions below ── */
   .pp-header { padding-top: 1.75rem; }
-  .pp-header-top { display: flex; align-items: center; gap: 1rem; }
+  .pp-header-top { display: flex; align-items: center; justify-content: center; gap: 1rem; }
   .pp-avatar {
     width: 68px; height: 68px; border-radius: 50%; flex-shrink: 0;
     object-fit: cover; background: var(--surface-raised); border: 1px solid var(--border);
     display: flex; align-items: center; justify-content: center;
     font-family: var(--font-serif); font-size: 1.7rem; color: var(--text-muted);
   }
-  .pp-header-info { flex: 1; min-width: 0; }
+  .pp-header-info { flex: 0 1 auto; min-width: 0; }
   .pp-name { margin: 0; font-family: var(--font-serif); font-size: 1.35rem; font-weight: 500; letter-spacing: -0.02em; line-height: 1.2; word-break: break-word; }
   .pp-handle { margin: 0.1rem 0 0; font-size: 0.85rem; color: var(--text-muted); }
   .pp-verified { width: 1.05rem; height: 1.05rem; margin-left: 0.3rem; vertical-align: -0.12rem; flex-shrink: 0; }
