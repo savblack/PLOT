@@ -127,7 +127,7 @@ const PLATFORMS = [
 /* Platform parsers (parseNetflix/Prime/Disney/Max/Apple/Letterboxd + parsePlatform)
    now live in the shared core: @plot/core/importParsing.js. */
 
-// Normalise a parsed entry's date into the journal's watched_at format —
+// Normalise a parsed entry's date into the history's watched_at format —
 // shared by the import write and every "already have this exact watch"
 // check so they agree on what counts as a duplicate.
 function watchedAtFor(r) {
@@ -195,13 +195,13 @@ async function bulkInsert(userId, rows, logRewatches) {
     // first since there's no more DB-level unique(user_id,tmdb_id) to
     // upsert against (it was relaxed so rewatches can coexist).
     const tmdbIds = [...new Set(rows.map(r => r.tmdb_id))];
-    if (tmdbIds.length) await supabase.from('journal').delete().eq('user_id', userId).in('tmdb_id', tmdbIds);
+    if (tmdbIds.length) await supabase.from('history').delete().eq('user_id', userId).in('tmdb_id', tmdbIds);
   }
   for (let i = 0; i < rows.length; i += BATCH) {
     const batch = rows.slice(i, i + BATCH);
     const { error } = logRewatches
-      ? await supabase.from('journal').upsert(batch, { onConflict: 'user_id,tmdb_id,watched_at' })
-      : await supabase.from('journal').insert(batch);
+      ? await supabase.from('history').upsert(batch, { onConflict: 'user_id,tmdb_id,watched_at' })
+      : await supabase.from('history').insert(batch);
     if (!error) inserted += batch.length;
   }
   return inserted;
@@ -286,10 +286,10 @@ export default function ImportView() {
     track(EVENTS.IMPORT_STARTED, { source: platform.id, count: deduped.length });
 
     // Fetch existing (tmdb_id, watched_at) pairs — a different date for a
-    // title already in the journal is a rewatch, not a duplicate, so it
+    // title already in the history is a rewatch, not a duplicate, so it
     // must still import.
     const { data: existing } = await supabase
-      .from('journal')
+      .from('history')
       .select('tmdb_id, watched_at')
       .eq('user_id', user.id);
     const ids = new Set((existing || []).map(r => `${r.tmdb_id}::${r.watched_at}`));
@@ -321,12 +321,12 @@ export default function ImportView() {
           poster_path: r.posterPath || null,
           watched_at: watchedAt,
         };
-        // Letterboxd carries ratings/reviews; clamp to the 1–10 journal scale
+        // Letterboxd carries ratings/reviews; clamp to the 1–10 history scale
         if (r.rating != null) row.rating = Math.min(10, Math.max(1, Math.round(r.rating)));
         if (r.note) row.note = r.note;
         return row;
       })
-      // Only skip an exact (title, date) match already in the journal — a
+      // Only skip an exact (title, date) match already in the history — a
       // rewatch on a different date is a new entry, not a duplicate.
       .filter(row => !existingIds.has(`${row.tmdb_id}::${row.watched_at}`));
 

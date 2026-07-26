@@ -9,10 +9,10 @@ export const ACCOUNT_CLEANUP_STEPS = Object.freeze([
   { table: 'user_custom_list_items', match: { type: 'eq', column: 'user_id' } },
   { table: 'user_custom_lists', match: { type: 'eq', column: 'user_id' } },
   { table: 'feedback', match: { type: 'eq', column: 'user_id' } },
-  { table: 'journal', match: { type: 'eq', column: 'user_id' } },
+  { table: 'history', match: { type: 'eq', column: 'user_id' } },
   { table: 'list_items', match: { type: 'eq', column: 'user_id' } },
   { table: 'lists', match: { type: 'eq', column: 'user_id' } },
-  { table: 'journal_board', match: { type: 'eq', column: 'user_id' } },
+  { table: 'history_board', match: { type: 'eq', column: 'user_id' } },
   { table: 'follows', match: { type: 'or', columns: ['follower_id', 'following_id'] } },
   { table: 'profiles', match: { type: 'eq', column: 'id' } },
 ]);

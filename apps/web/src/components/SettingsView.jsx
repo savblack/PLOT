@@ -1165,7 +1165,7 @@ export default function SettingsView() {
       onConfirm: async () => {
         setActionError(null);
         setClearingHistory(true);
-        const { error } = await supabase.from('journal').delete().eq('user_id', user.id);
+        const { error } = await supabase.from('history').delete().eq('user_id', user.id);
         setClearingHistory(false);
         if (error) {
           setActionError(error.message || 'Failed to clear watch history.');

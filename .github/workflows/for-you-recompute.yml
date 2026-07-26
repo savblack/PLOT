@@ -1,0 +1,21 @@
+name: For You recompute
+
+on:
+  schedule:
+    - cron: '30 7 * * *' # Nightly; rebuilds the title-similarity table from the day's signals.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  recompute:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Recompute title similarity
+        run: |
+          curl --fail --silent --show-error --request POST "$SUPABASE_URL/functions/v1/for-you-recompute" \
+            --header "x-cron-secret: $FOR_YOU_CRON_SECRET"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          FOR_YOU_CRON_SECRET: ${{ secrets.FOR_YOU_CRON_SECRET }}

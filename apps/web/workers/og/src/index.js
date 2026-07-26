@@ -90,11 +90,11 @@ async function loadProfile(handle) {
   if (!profile) return null;
 
   const [cRes, revRes, fRes, recentRes, ratedRes] = await Promise.all([
-    fetch(`${SUPABASE_URL}/rest/v1/journal?user_id=eq.${profile.id}&select=id`, { headers: { ...headers, Prefer: 'count=exact', Range: '0-0' } }),
-    fetch(`${SUPABASE_URL}/rest/v1/journal?user_id=eq.${profile.id}&note=not.is.null&select=id`, { headers: { ...headers, Prefer: 'count=exact', Range: '0-0' } }),
+    fetch(`${SUPABASE_URL}/rest/v1/history?user_id=eq.${profile.id}&select=id`, { headers: { ...headers, Prefer: 'count=exact', Range: '0-0' } }),
+    fetch(`${SUPABASE_URL}/rest/v1/history?user_id=eq.${profile.id}&note=not.is.null&select=id`, { headers: { ...headers, Prefer: 'count=exact', Range: '0-0' } }),
     fetch(`${SUPABASE_URL}/rest/v1/follows?following_id=eq.${profile.id}&status=eq.accepted&select=follower_id`, { headers: { ...headers, Prefer: 'count=exact', Range: '0-0' } }),
-    fetch(`${SUPABASE_URL}/rest/v1/journal?user_id=eq.${profile.id}&select=tmdb_id,media_type,watched_at&order=watched_at.desc&limit=6`, { headers }),
-    fetch(`${SUPABASE_URL}/rest/v1/journal?user_id=eq.${profile.id}&select=rating&rating=not.is.null`, { headers }),
+    fetch(`${SUPABASE_URL}/rest/v1/history?user_id=eq.${profile.id}&select=tmdb_id,media_type,watched_at&order=watched_at.desc&limit=6`, { headers }),
+    fetch(`${SUPABASE_URL}/rest/v1/history?user_id=eq.${profile.id}&select=rating&rating=not.is.null`, { headers }),
   ]);
 
   const count = (r) => parseInt((r.headers.get('content-range') || '0-0/0').split('/')[1], 10) || 0;

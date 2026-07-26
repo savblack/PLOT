@@ -310,7 +310,7 @@ async function upsertSnapshot(
     if (error) throw error
   }
 
-  const journalRows = watchedItems
+  const historyRows = watchedItems
     .filter(item => Number.isInteger(item.tmdb_id) && cleanMediaType(item.media_type))
     .map(item => ({
       user_id: userId,
@@ -321,14 +321,14 @@ async function upsertSnapshot(
       watched_at: cleanDate(item.watched_at) || new Date().toISOString().slice(0, 10),
     }))
 
-  if (journalRows.length > 0) {
+  if (historyRows.length > 0) {
     const { error } = await supabaseAdmin
-      .from('journal')
-      .upsert(journalRows, { onConflict: 'user_id,tmdb_id' })
+      .from('history')
+      .upsert(historyRows, { onConflict: 'user_id,tmdb_id' })
     if (error) throw error
   }
 
-  return { watchlistCount: rows.length, watchedCount: journalRows.length }
+  return { watchlistCount: rows.length, watchedCount: historyRows.length }
 }
 
 async function fetchPlexWatchlist(token: string) {

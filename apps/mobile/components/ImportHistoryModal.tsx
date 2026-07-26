@@ -93,7 +93,7 @@ async function resolveEntries(
         mediaType: match.media_type as 'movie' | 'tv',
         title: (match.title ?? match.name ?? e.title) as string,
         posterPath: (match.poster_path ?? null) as string | null,
-        // Only skip an exact (title, date) match already in the journal —
+        // Only skip an exact (title, date) match already in the history —
         // a rewatch on a different date is a new entry, not a duplicate.
         alreadyImported: existingWatches.has(`${match.id}::${e.watchedAt}`),
       } satisfies ResolvedEntry;
@@ -157,10 +157,10 @@ export default function ImportHistoryModal({ userId, onClose }: Props) {
       setStep('resolving');
 
       // Fetch existing (tmdb_id, watched_at) pairs to flag exact duplicates —
-      // a different date for a title already in the journal is a rewatch,
+      // a different date for a title already in the history is a rewatch,
       // not a duplicate, so it must still import.
       const { data: existing } = await supabase
-        .from('journal')
+        .from('history')
         .select('tmdb_id, watched_at')
         .eq('user_id', userId);
       const existingWatches = new Set<string>((existing ?? []).map((r: any) => `${r.tmdb_id}::${r.watched_at}`));
@@ -195,7 +195,7 @@ export default function ImportHistoryModal({ userId, onClose }: Props) {
         if (!existing || r.raw.watchedAt > existing.raw.watchedAt) latestByTmdbId.set(r.tmdbId, r);
       }
       toImport = Array.from(latestByTmdbId.values());
-      await supabase.from('journal').delete().eq('user_id', userId).in('tmdb_id', toImport.map(r => r.tmdbId));
+      await supabase.from('history').delete().eq('user_id', userId).in('tmdb_id', toImport.map(r => r.tmdbId));
     }
 
     setImportTotal(toImport.length);
@@ -214,9 +214,9 @@ export default function ImportHistoryModal({ userId, onClose }: Props) {
         watched_at: r.raw.watchedAt,
       }));
       if (logRewatches) {
-        await supabase.from('journal').upsert(rows, { onConflict: 'user_id,tmdb_id,watched_at', ignoreDuplicates: true });
+        await supabase.from('history').upsert(rows, { onConflict: 'user_id,tmdb_id,watched_at', ignoreDuplicates: true });
       } else {
-        await supabase.from('journal').insert(rows);
+        await supabase.from('history').insert(rows);
       }
       setImportDone(Math.min(i + BATCH, toImport.length));
     }
