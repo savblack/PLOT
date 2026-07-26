@@ -1524,6 +1524,15 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
               </div>
             )}
 
+            {/* Episode guide for TV — ahead of Where to Watch so that section
+                lands at the bottom for both movies and TV. */}
+            {!isMovie && details && (
+              <>
+                <div className="panel-section-title">Episodes</div>
+                <EpisodeGuide tvId={itemId} currentProgress={progress} details={details} timezone={timezone} />
+              </>
+            )}
+
             {/* Where to watch */}
             {(whereToWatch.streaming.length > 0 || whereToWatch.rentBuy.length > 0 || whereToWatch.inCinemas) && (
               <>
@@ -1577,14 +1586,6 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                     })?.kind === 'provider'
                   ) && ' Links open the verified title offer.'}
                 </p>
-              </>
-            )}
-
-            {/* Episode guide for TV */}
-            {!isMovie && details && (
-              <>
-                <div className="panel-section-title">Episodes</div>
-                <EpisodeGuide tvId={itemId} currentProgress={progress} details={details} timezone={timezone} />
               </>
             )}
           </div>
