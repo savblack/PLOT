@@ -3,6 +3,7 @@ import { useApp, posterUrl, backdropUrl, TodayLabel } from '../App.jsx';
 import { favoriteWords } from '../utils/spelling.js';
 import { useDragScroll } from '../hooks/useDragScroll.js';
 import { useGenres } from '../hooks/useGenres.js';
+import { useHistory } from '../hooks/useHistory.js';
 import { useDiscover } from '../hooks/useDiscover.js';
 import { useForYou } from '../hooks/useForYou.js';
 import { usePlatformCharts } from '../hooks/usePlatformCharts.js';
@@ -271,14 +272,55 @@ function HeroCard({ item, openPanel, watchlist, badge = 'Trending #1' }) {
   );
 }
 
+/* ── Chart row action icons — same set/behavior as SearchView's result row ── */
+function BookmarkIcon({ filled }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M6 4.5A2.5 2.5 0 0 1 8.5 2h7A2.5 2.5 0 0 1 18 4.5v16l-6-3.75L6 20.5v-16Z"
+        fill={filled ? 'currentColor' : 'none'}
+      />
+    </svg>
+  );
+}
+function HeartIcon({ filled }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78Z"
+        fill={filled ? 'currentColor' : 'none'}
+      />
+    </svg>
+  );
+}
+function CheckIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M20 6 9 17l-5-5" />
+    </svg>
+  );
+}
+
 /* ── Chart row ── */
-function ChartRow({ item, rank, openPanel, watchlist }) {
+function ChartRow({ item, rank, openPanel, watchlist, favorites, history, region, logRewatches = true }) {
+  const fw    = favoriteWords(region);
   const title = item.title || item.name;
   const img   = posterUrl(item.poster_path, 'w92');
   const type  = item.media_type || 'movie';
+  const id    = item.id;
   const year  = (item.release_date || item.first_air_date || '').slice(0, 4);
-  const saved = watchlist.isInList(item.id);
-  const openDetails = () => openPanel(item.id, type);
+  const inList  = watchlist.isInList(id);
+  const isFav   = favorites.isFavorite(id);
+  const watched = history.isWatched(id);
+  const openDetails = () => openPanel(id, type);
+
+  const handleToggleWatched = async () => {
+    if (watched) {
+      await history.removeEntry(id);
+    } else {
+      await history.logWatched({ ...item, id, media_type: type }, { logRewatches });
+    }
+  };
 
   return (
     <div
@@ -297,15 +339,33 @@ function ChartRow({ item, rank, openPanel, watchlist }) {
         <div className="discover-chart-title">{title}</div>
         <div className="discover-chart-meta">{year}{year ? ' · ' : ''}{type === 'tv' ? 'TV' : 'Movie'}</div>
       </div>
-      <div className="discover-chart-right">
+      <div className="discover-chart-right search-row-actions">
         <button
-          className={`card-save-btn${saved ? ' saved' : ''}`}
-          style={{ position: 'static', width: 28, height: 28 }}
-          onClick={e => { e.stopPropagation(); watchlist.toggle({ ...item }); }}
-          aria-label={saved ? 'Remove from list' : 'Add to list'}
-          disabled={watchlist.loading}
+          type="button"
+          className={`search-action-btn${inList ? ' active' : ''}`}
+          onClick={e => { e.stopPropagation(); watchlist.toggle({ ...item, id, media_type: type }); }}
+          data-tip={inList ? 'Remove from watch list' : 'Save to watch list'}
+          aria-label={inList ? `Remove ${title} from list` : `Add ${title} to list`}
         >
-          <svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+          <BookmarkIcon filled={inList} />
+        </button>
+        <button
+          type="button"
+          className={`search-action-btn search-action-btn--heart${isFav ? ' active' : ''}`}
+          onClick={async e => { e.stopPropagation(); await favorites.toggleFavorite({ ...item, id, tmdb_id: id, media_type: type }); }}
+          data-tip={isFav ? `Remove ${fw.nounLower}` : fw.noun}
+          aria-label={isFav ? `Remove ${title} from ${fw.pluralLower}` : `Add ${title} to ${fw.pluralLower}`}
+        >
+          <HeartIcon filled={isFav} />
+        </button>
+        <button
+          type="button"
+          className={`search-action-btn search-action-btn--watched${watched ? ' active' : ''}`}
+          onClick={e => { e.stopPropagation(); handleToggleWatched(); }}
+          data-tip={watched ? 'Watched' : 'Mark watched'}
+          aria-label={watched ? `${title} watched` : `Mark ${title} watched`}
+        >
+          <CheckIcon />
         </button>
       </div>
     </div>
@@ -410,7 +470,8 @@ function PlatformSection({ platform, openPanel, watchlist, typeFilters, genreFil
 }
 
 /* ── Discover tab content ── */
-function DiscoverContent({ openPanel, watchlist, openSections, setOpenSections, typeFilters, genreFilters }) {
+function DiscoverContent({ openPanel, watchlist, history, openSections, setOpenSections, typeFilters, genreFilters }) {
+  const { favorites, profile } = useApp();
   const { data, loading } = useDiscover();
   // Hard-coded official-chart platforms — the same set for everyone, unrelated
   // to the user's own streaming selections. Only platforms with real synced
@@ -535,7 +596,7 @@ function DiscoverContent({ openPanel, watchlist, openSections, setOpenSections, 
             onToggle={() => toggleSection('weekly')}
           />
           {openSections.weekly && weekly.map((item, i) => (
-            <ChartRow key={item.id} item={item} rank={i + 1} openPanel={openPanel} watchlist={watchlist} />
+            <ChartRow key={item.id} item={item} rank={i + 1} openPanel={openPanel} watchlist={watchlist} favorites={favorites} history={history} region={profile?.region} logRewatches={profile?.log_rewatches ?? true} />
           ))}
         </section>
       )}
@@ -618,6 +679,7 @@ function DiscoverContent({ openPanel, watchlist, openSections, setOpenSections, 
 ═══════════════════════════════════════ */
 export default function DiscoverView() {
   const app = useApp();
+  const history        = useHistory(app?.user?.id);
   const genres        = useGenres();
   const [tab,          setTab]          = useState(SHOW_SOCIAL_FEED ? 'feed' : 'discover');
   const [typeFilters,  setTypeFilters]  = useState(ALL_TYPES);
@@ -760,6 +822,7 @@ export default function DiscoverView() {
         <DiscoverContent
           openPanel={openPanel}
           watchlist={watchlist}
+          history={history}
           openSections={discoverSections}
           setOpenSections={setDiscoverSections}
           typeFilters={typeFilters}
