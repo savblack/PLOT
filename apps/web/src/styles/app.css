@@ -335,12 +335,10 @@ svg { stroke-width: 1.5; }
   color: var(--text-secondary);
 }
 .nav-drawer-item:hover {
-  background: var(--surface-raised);
-  color: var(--text-primary);
+  color: var(--accent);
 }
 .nav-drawer-item.active {
   color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 8%, transparent);
 }
 .nav-drawer-label {
   font-size: 0.95rem;
