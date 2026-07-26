@@ -688,6 +688,7 @@ export default function DiscoverView() {
                   ],
                   value: typeFilters,
                   onChange: setTypeFilters,
+                  defaultValue: ALL_TYPES,
                 },
                 {
                   heading: 'Genre',
