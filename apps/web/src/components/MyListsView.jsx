@@ -803,7 +803,7 @@ function CreateListModal({ lists, onConfirm, onClose }) {
 /* ── Custom lists section ── */
 function CustomListsSection({ customLists: clHook, filterItems, hideHeader }) {
   const { openPanel, profile, navigateTo } = useApp();
-  const { lists, createList, deleteList, renameList, setListPublic, addItem, removeItem } = clHook;
+  const { lists = [], createList, deleteList, renameList, setListPublic, addItem, removeItem } = clHook ?? {};
   const { share } = useShare();
 
   const shareList = useCallback((list) => share({
@@ -1659,7 +1659,7 @@ export default function MyListsView() {
       {showLists && (
         isAll
           ? (
-              <CollapsibleSection id="lists" label="My Lists" count={customLists.lists.length} open={listSectionsOpen.lists} onOpenChange={open => setListSectionOpen('lists', open)}>
+              <CollapsibleSection id="lists" label="My Lists" count={customLists?.lists?.length ?? 0} open={listSectionsOpen.lists} onOpenChange={open => setListSectionOpen('lists', open)}>
                 <CustomListsSection customLists={customLists} filterItems={filterItems} hideHeader />
               </CollapsibleSection>
             )
