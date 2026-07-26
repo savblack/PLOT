@@ -790,13 +790,18 @@ const MAX_IMAGES   = 3;
 const MAX_IMAGE_MB = 5;
 
 function FeedbackPanel({ user, initialType, onClose }) {
-  const [type,      setType]      = useState(initialType || 'bug');
+  // "Report a Bug" (initialType 'bug') only offers the bug card; "Leave Feedback"
+  // (any other entry point) offers feature request + general feedback only.
+  const visibleTypes = initialType === 'bug'
+    ? FEEDBACK_TYPES.filter(entry => entry.id === 'bug')
+    : FEEDBACK_TYPES.filter(entry => entry.id !== 'bug');
+  const [type,      setType]      = useState(initialType === 'bug' ? 'bug' : visibleTypes[0].id);
   const [message,   setMessage]   = useState('');
   const [images,    setImages]    = useState([]); // [{ file, preview }]
   const [status,    setStatus]    = useState('idle'); // idle | submitting | done | error
   const [errorMessage, setErrorMessage] = useState('');
   const imagesRef = useRef([]);
-  const selectedType = FEEDBACK_TYPES.find(entry => entry.id === type) || FEEDBACK_TYPES[0];
+  const selectedType = visibleTypes.find(entry => entry.id === type) || visibleTypes[0];
   const messageCount = message.length;
 
   const addImages = (files) => {
@@ -878,17 +883,7 @@ function FeedbackPanel({ user, initialType, onClose }) {
       <div className="panel-overlay" onClick={onClose} />
       <div className="panel">
         <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--surface)' }}>
-          <SheetHeader
-            title="Send feedback"
-            onClose={onClose}
-            action={status === 'done'
-              ? undefined
-              : {
-                  label: status === 'submitting' ? 'Sending…' : 'Send',
-                  onClick: handleSubmit,
-                  disabled: !message.trim() || status === 'submitting',
-                }}
-          />
+          <SheetHeader title="Send feedback" onClose={onClose} />
         </div>
 
         {status === 'done' ? (
@@ -913,7 +908,7 @@ function FeedbackPanel({ user, initialType, onClose }) {
             </div>
 
             <div className="feedback-type-grid">
-              {FEEDBACK_TYPES.map(entry => (
+              {visibleTypes.map(entry => (
                 <button
                   key={entry.id}
                   onClick={() => setType(entry.id)}
@@ -993,6 +988,16 @@ function FeedbackPanel({ user, initialType, onClose }) {
                 {errorMessage || 'Something went wrong. Please try again.'}
               </p>
             )}
+
+            <button
+              type="button"
+              className="btn btn-primary"
+              style={{ width: '100%', marginTop: '0.25rem' }}
+              onClick={handleSubmit}
+              disabled={!message.trim() || status === 'submitting'}
+            >
+              {status === 'submitting' ? 'Sending…' : 'Send'}
+            </button>
           </div>
         )}
       </div>
@@ -2274,26 +2279,6 @@ export default function SettingsView() {
 
         <div
           className="settings-row interactive-surface"
-          onClick={clearingHistory ? undefined : handleClearHistory}
-          style={{ cursor: clearingHistory ? 'default' : 'pointer' }}
-          {...getButtonLikeProps({
-            onPress: handleClearHistory,
-            disabled: clearingHistory,
-            label: 'Clear watch history',
-          })}
-        >
-          <div className="settings-row-left">
-            <div className="settings-row-icon" style={{ borderColor: 'var(--danger-border)', color: 'var(--danger)' }}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
-            </div>
-            <span className="settings-row-label" style={{ color: clearingHistory ? 'var(--text-muted)' : undefined }}>
-              {clearingHistory ? 'Clearing…' : 'Clear Watch History'}
-            </span>
-          </div>
-        </div>
-
-        <div
-          className="settings-row interactive-surface"
           onClick={clearingWatchlist ? undefined : () => setShowClearWatchlist(true)}
           style={{ cursor: clearingWatchlist ? 'default' : 'pointer' }}
           {...getButtonLikeProps({
@@ -2308,6 +2293,26 @@ export default function SettingsView() {
             </div>
             <span className="settings-row-label" style={{ color: clearingWatchlist ? 'var(--text-muted)' : undefined }}>
               {clearingWatchlist ? 'Clearing…' : 'Clear Lists'}
+            </span>
+          </div>
+        </div>
+
+        <div
+          className="settings-row interactive-surface"
+          onClick={clearingHistory ? undefined : handleClearHistory}
+          style={{ cursor: clearingHistory ? 'default' : 'pointer' }}
+          {...getButtonLikeProps({
+            onPress: handleClearHistory,
+            disabled: clearingHistory,
+            label: 'Clear watch history',
+          })}
+        >
+          <div className="settings-row-left">
+            <div className="settings-row-icon" style={{ borderColor: 'var(--danger-border)', color: 'var(--danger)' }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
+            </div>
+            <span className="settings-row-label" style={{ color: clearingHistory ? 'var(--text-muted)' : undefined }}>
+              {clearingHistory ? 'Clearing…' : 'Clear Watch History'}
             </span>
           </div>
         </div>
