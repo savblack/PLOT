@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../api/supabase';
+import { track, EVENTS } from '../lib/analytics.js';
 
 const POLL_INTERVAL_MS = 3000;
 const POLL_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
@@ -97,6 +98,7 @@ export function usePlexIntegration(user) {
           setLastSyncedAt(integration?.last_sync_at ?? null);
           setLastError(integration?.last_error ?? null);
           setServers(integration?.plex_servers ?? []);
+          track(EVENTS.PLEX_CONNECTED, {});
           stopPolling();
         } else if (result.status === 'expired') {
           setStatus('error');
@@ -144,6 +146,7 @@ export function usePlexIntegration(user) {
       await callMediaSync('sync', {});
       setStatus('connected');
       setLastSyncedAt(new Date().toISOString());
+      track(EVENTS.PLEX_SYNCED, {});
     } catch (err) {
       setStatus('error');
       setLastError(err?.message ?? 'Sync failed');
