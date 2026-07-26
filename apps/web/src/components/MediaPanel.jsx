@@ -475,6 +475,8 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
   const [createError,  setCreateError]  = useState('');
   const [isCreating,   setIsCreating]   = useState(false);
   const [topOpen,      setTopOpen]      = useState(false);
+  const [rankConflict, setRankConflict] = useState(null); // { rank, occupant }
+  const [pickingMoveTo, setPickingMoveTo] = useState(false);
 
   const item = {
     id: itemId,
@@ -580,7 +582,7 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
                       key={rank}
                       onClick={() => {
                         if (isThis) { topLists.removeSlot(topListType, itemId); return; }
-                        if (occupant && !window.confirm(`Replace "${occupant.title}" at #${rank} with "${item.title}"?`)) return;
+                        if (occupant) { setRankConflict({ rank, occupant }); return; }
                         topLists.setSlot(topListType, rank, item);
                       }}
                       style={{
@@ -607,6 +609,75 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
                 })}
               </div>
             )}
+          </div>
+        )}
+        {rankConflict && (
+          <div style={{
+            position: 'fixed', inset: 0, zIndex: 1200,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: '1.5rem',
+          }}>
+            <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)' }} onClick={() => { setRankConflict(null); setPickingMoveTo(false); }} />
+            <div style={{
+              position: 'relative', width: '100%', maxWidth: 340,
+              background: 'var(--surface)', borderRadius: 'var(--radius-lg)',
+              padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem',
+            }}>
+              {!pickingMoveTo ? (
+                <>
+                  <div style={{ fontSize: '0.875rem', color: 'var(--text-primary)' }}>
+                    Replace <strong>"{rankConflict.occupant.title}"</strong> at #{rankConflict.rank} with <strong>"{item.title}"</strong>?
+                  </div>
+                  <button className="btn btn-primary btn-xs" onClick={() => {
+                    topLists.setSlot(topListType, rankConflict.rank, item);
+                    setRankConflict(null);
+                  }}>
+                    Replace
+                  </button>
+                  <button className="btn btn-xs" onClick={() => setPickingMoveTo(true)}>
+                    Move "{rankConflict.occupant.title}" to another spot first
+                  </button>
+                  <button className="btn btn-xs" onClick={() => { setRankConflict(null); setPickingMoveTo(false); }}>
+                    Cancel
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div style={{ fontSize: '0.875rem', color: 'var(--text-primary)' }}>
+                    Move <strong>"{rankConflict.occupant.title}"</strong> to which open spot?
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.4rem' }}>
+                    {Array.from({ length: 10 }, (_, i) => i + 1)
+                      .filter(r => r !== rankConflict.rank && !topItems.find(t => t.rank === r))
+                      .map(r => (
+                        <button
+                          key={r}
+                          onClick={async () => {
+                            await topLists.setSlot(topListType, r, rankConflict.occupant);
+                            await topLists.setSlot(topListType, rankConflict.rank, item);
+                            setRankConflict(null);
+                            setPickingMoveTo(false);
+                          }}
+                          style={{
+                            padding: '0.5rem 0', minHeight: 40,
+                            border: '1px solid var(--border)', borderRadius: 8,
+                            background: 'transparent', color: 'var(--text-primary)',
+                            cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600,
+                          }}
+                        >
+                          {r}
+                        </button>
+                      ))}
+                  </div>
+                  {Array.from({ length: 10 }, (_, i) => i + 1).filter(r => r !== rankConflict.rank && !topItems.find(t => t.rank === r)).length === 0 && (
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>No open spots — every other rank is taken.</div>
+                  )}
+                  <button className="btn btn-xs" onClick={() => setPickingMoveTo(false)}>
+                    Back
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         )}
         <div style={{ overflowY: 'auto', flex: 1 }}>

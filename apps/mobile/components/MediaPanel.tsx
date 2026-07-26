@@ -309,6 +309,7 @@ function AddToListSheet({ item, customLists, topLists, onClose }: {
   const [error, setError]       = useState('');
   const [busy, setBusy]         = useState(false);
   const [topOpen, setTopOpen]   = useState(false);
+  const [moveToPicker, setMoveToPicker] = useState<{ rank: number; occupant: any } | null>(null);
 
   const topListType = item.media_type === 'tv' ? 'tv' : 'movies';
   const topItems     = topLists?.lists?.[topListType] || [];
@@ -365,6 +366,7 @@ function AddToListSheet({ item, customLists, topLists, onClose }: {
                             `"${occupant.title}" is currently #${rank}. Replace it with "${item.title}"?`,
                             [
                               { text: 'Cancel', style: 'cancel' },
+                              { text: 'Move to...', onPress: () => setMoveToPicker({ rank, occupant }) },
                               { text: 'Replace', style: 'destructive', onPress: () => topLists.setSlot(topListType, rank, item) },
                             ]
                           );
@@ -434,6 +436,37 @@ function AddToListSheet({ item, customLists, topLists, onClose }: {
         )}
         {error ? <Text style={styles.lsError}>{error}</Text> : null}
       </View>
+
+      {moveToPicker && (
+        <Modal visible transparent animationType="fade" onRequestClose={() => setMoveToPicker(null)}>
+          <TouchableOpacity style={styles.lsOverlay} onPress={() => setMoveToPicker(null)} activeOpacity={1} />
+          <View style={[styles.lsSheet, { paddingBottom: insets.bottom + spacing.lg }]}>
+            <View style={styles.lsHandle} />
+            <Text style={styles.lsTitle}>Move "{moveToPicker.occupant.title}" to...</Text>
+            <View style={styles.lsTopGrid}>
+              {Array.from({ length: 10 }, (_, i) => i + 1)
+                .filter(r => r !== moveToPicker.rank && !topItems.find((t: any) => t.rank === r))
+                .map(r => (
+                  <TouchableOpacity
+                    key={r}
+                    style={styles.lsTopSlot}
+                    activeOpacity={0.7}
+                    onPress={async () => {
+                      await topLists.setSlot(topListType, r, moveToPicker.occupant);
+                      await topLists.setSlot(topListType, moveToPicker.rank, item);
+                      setMoveToPicker(null);
+                    }}
+                  >
+                    <Text style={styles.lsTopSlotNum}>{r}</Text>
+                  </TouchableOpacity>
+                ))}
+            </View>
+            {Array.from({ length: 10 }, (_, i) => i + 1).filter(r => r !== moveToPicker.rank && !topItems.find((t: any) => t.rank === r)).length === 0 && (
+              <Text style={styles.lsEmpty}>No open spots — every other rank is taken.</Text>
+            )}
+          </View>
+        </Modal>
+      )}
     </Modal>
   );
 }
