@@ -5,7 +5,7 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import {
   View, Text, Image, ScrollView, TouchableOpacity, Modal,
-  StyleSheet, Dimensions, ActivityIndicator, TextInput, Animated, Share, Linking,
+  StyleSheet, Dimensions, ActivityIndicator, TextInput, Animated, Share, Linking, Alert,
 } from 'react-native';
 import Svg, { Path, Line, Polyline, Circle, Polygon, Rect } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -358,8 +358,19 @@ function AddToListSheet({ item, customLists, topLists, onClose }: {
                       style={[styles.lsTopSlot, isThis && styles.lsTopSlotOn]}
                       activeOpacity={0.7}
                       onPress={() => {
-                        if (isThis) topLists.removeSlot(topListType, item.id);
-                        else topLists.setSlot(topListType, rank, item);
+                        if (isThis) { topLists.removeSlot(topListType, item.id); return; }
+                        if (occupant) {
+                          Alert.alert(
+                            `Replace #${rank}?`,
+                            `"${occupant.title}" is currently #${rank}. Replace it with "${item.title}"?`,
+                            [
+                              { text: 'Cancel', style: 'cancel' },
+                              { text: 'Replace', style: 'destructive', onPress: () => topLists.setSlot(topListType, rank, item) },
+                            ]
+                          );
+                          return;
+                        }
+                        topLists.setSlot(topListType, rank, item);
                       }}
                     >
                       <Text style={[styles.lsTopSlotNum, isThis && styles.lsTopSlotNumOn]}>{rank}</Text>

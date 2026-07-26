@@ -578,7 +578,11 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
                   return (
                     <button
                       key={rank}
-                      onClick={() => isThis ? topLists.removeSlot(topListType, itemId) : topLists.setSlot(topListType, rank, item)}
+                      onClick={() => {
+                        if (isThis) { topLists.removeSlot(topListType, itemId); return; }
+                        if (occupant && !window.confirm(`Replace "${occupant.title}" at #${rank} with "${item.title}"?`)) return;
+                        topLists.setSlot(topListType, rank, item);
+                      }}
                       style={{
                         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                         padding: '0.4rem 0.2rem', minHeight: 44,
