@@ -1,8 +1,8 @@
-name: Streaming Top 10 — weekly sync (Prime / Max / Apple)
+name: Streaming Top 10 — daily sync (Prime / Max / Apple / Disney)
 
 on:
   schedule:
-    - cron: '30 12 * * 3' # Wednesday 12:30 UTC, just after the Netflix sync
+    - cron: '30 12 * * *' # 12:30 UTC daily — regions auto-detected from active users, stays under free quota
   workflow_dispatch:
 
 permissions:
@@ -22,7 +22,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Sync Prime / Max / Apple Top 10
+      - name: Sync Prime / Max / Apple / Disney Top 10
         run: node scripts/sync-streaming-top10.mjs
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}

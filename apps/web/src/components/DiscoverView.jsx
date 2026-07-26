@@ -293,16 +293,8 @@ function HeartIcon({ filled }) {
     </svg>
   );
 }
-function CheckIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M20 6 9 17l-5-5" />
-    </svg>
-  );
-}
-
 /* ── Chart row ── */
-function ChartRow({ item, rank, openPanel, watchlist, favorites, history, region, logRewatches = true }) {
+function ChartRow({ item, rank, openPanel, watchlist, favorites, region }) {
   const fw    = favoriteWords(region);
   const title = item.title || item.name;
   const img   = posterUrl(item.poster_path, 'w92');
@@ -311,16 +303,7 @@ function ChartRow({ item, rank, openPanel, watchlist, favorites, history, region
   const year  = (item.release_date || item.first_air_date || '').slice(0, 4);
   const inList  = watchlist.isInList(id);
   const isFav   = favorites.isFavorite(id);
-  const watched = history.isWatched(id);
   const openDetails = () => openPanel(id, type);
-
-  const handleToggleWatched = async () => {
-    if (watched) {
-      await history.removeEntry(id);
-    } else {
-      await history.logWatched({ ...item, id, media_type: type }, { logRewatches });
-    }
-  };
 
   return (
     <div
@@ -357,15 +340,6 @@ function ChartRow({ item, rank, openPanel, watchlist, favorites, history, region
           aria-label={isFav ? `Remove ${title} from ${fw.pluralLower}` : `Add ${title} to ${fw.pluralLower}`}
         >
           <HeartIcon filled={isFav} />
-        </button>
-        <button
-          type="button"
-          className={`search-action-btn search-action-btn--watched${watched ? ' active' : ''}`}
-          onClick={e => { e.stopPropagation(); handleToggleWatched(); }}
-          data-tip={watched ? 'Watched' : 'Mark watched'}
-          aria-label={watched ? `${title} watched` : `Mark ${title} watched`}
-        >
-          <CheckIcon />
         </button>
       </div>
     </div>
@@ -596,7 +570,7 @@ function DiscoverContent({ openPanel, watchlist, history, openSections, setOpenS
             onToggle={() => toggleSection('weekly')}
           />
           {openSections.weekly && weekly.map((item, i) => (
-            <ChartRow key={item.id} item={item} rank={i + 1} openPanel={openPanel} watchlist={watchlist} favorites={favorites} history={history} region={profile?.region} logRewatches={profile?.log_rewatches ?? true} />
+            <ChartRow key={item.id} item={item} rank={i + 1} openPanel={openPanel} watchlist={watchlist} favorites={favorites} region={profile?.region} />
           ))}
         </section>
       )}

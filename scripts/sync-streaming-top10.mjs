@@ -10,8 +10,11 @@
 //
 // Free tier is 500 requests/month. We make ONE call per (service × region) — omitting
 // show_type returns both movies and series — so cost = services(4) × regions per run.
-// At a weekly cadence, 4 × 12 regions × ~4.3 runs ≈ 206/month. Override the region
-// set with CHART_REGIONS="us,gb,au".
+// Regions are auto-detected from the actual `profiles.region` distribution (see
+// detectActiveRegions below) so we never spend quota on markets with zero users —
+// at 4 services × ~2 active regions, even a daily cadence stays well under the free
+// cap. Set CHART_REGIONS="us,gb,au" to override detection with a fixed list (e.g.
+// to pre-seed a market before real users show up there).
 //
 // Usage (needs deps):
 //   RAPIDAPI_KEY=… TMDB_API_KEY=… SUPABASE_SERVICE_ROLE_KEY=… node scripts/sync-streaming-top10.mjs
@@ -30,6 +33,11 @@ const DEFAULT_SUPABASE_URL = 'https://mkegtssedjyqldysvzga.supabase.co';
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 
+// Fallback when there's no DB access to detect from (e.g. --dry-run with no
+// service key) and no CHART_REGIONS override — a broad list so a smoke-test
+// run still exercises multiple markets.
+const FALLBACK_REGIONS = 'us,gb,au,ca,de,fr,es,it,br,mx,in,jp';
+
 // Our canonical platform key → Streaming Availability service id (Max = "hbo").
 const SERVICES = [
   { platform: 'prime',  service: 'prime'  },
@@ -37,8 +45,19 @@ const SERVICES = [
   { platform: 'apple',  service: 'apple'  },
   { platform: 'disney', service: 'disney' },
 ];
-const REGIONS = (process.env.CHART_REGIONS || 'us,gb,au,ca,de,fr,es,it,br,mx,in,jp')
-  .split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+
+// Reads the distinct set of regions real users are actually in, straight from
+// `profiles.region`, so we never burn API quota on markets with nobody in them.
+async function detectActiveRegions(supabase) {
+  if (!supabase) return null;
+  const { data, error } = await supabase.from('profiles').select('region').not('region', 'is', null);
+  if (error) {
+    console.warn(`Could not auto-detect regions from profiles (${error.message}); using fallback list.`);
+    return null;
+  }
+  const regions = [...new Set(data.map(r => r.region).filter(Boolean).map(r => r.toLowerCase()))];
+  return regions.length ? regions : null;
+}
 
 if (!API_KEY) {
   console.error('RAPIDAPI_KEY is required.');
@@ -89,6 +108,22 @@ async function tmdbDetails(mediaType, id) {
 async function main() {
   const runWeek = new Date().toISOString().slice(0, 10); // these charts are daily; stamp the run date
   const raw = [];
+
+  // Created early (even for --dry-run, when a key is available) so region
+  // detection and the final upsert share one client.
+  const supabase = SERVICE_KEY ? createClient(SUPABASE_URL, SERVICE_KEY) : null;
+
+  let REGIONS;
+  if (process.env.CHART_REGIONS) {
+    REGIONS = process.env.CHART_REGIONS.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+    console.log(`Using CHART_REGIONS override: ${REGIONS.join(', ')}`);
+  } else {
+    const detected = await detectActiveRegions(supabase);
+    REGIONS = detected || FALLBACK_REGIONS.split(',');
+    console.log(detected
+      ? `Auto-detected active regions from profiles: ${REGIONS.join(', ')}`
+      : `No regions detected; using fallback list: ${REGIONS.join(', ')}`);
+  }
 
   for (const { platform, service } of SERVICES) {
     for (const region of REGIONS) {
@@ -149,8 +184,6 @@ async function main() {
     for (const r of sample) console.log(`  ${r.rank}. ${r.tmdb_title} (tmdb ${r.tmdb_id})`);
     return;
   }
-
-  const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
 
   const CHUNK = 500;
   for (let i = 0; i < records.length; i += CHUNK) {

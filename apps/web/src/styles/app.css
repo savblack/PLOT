@@ -2600,7 +2600,7 @@ a.provider-chip--link:hover {
   background: transparent;
 }
 .search-action-btn--heart.active {
-  color: #ef4444;
+  color: var(--accent);
   background: transparent;
 }
 .search-action-btn--watched.active {
@@ -4486,15 +4486,6 @@ a.provider-chip--link:hover {
 
 .discover-plat-type-label:first-child {
   margin-top: 0.35rem;
-}
-
-.mylists-topten-type-label {
-  justify-content: space-between;
-  margin: 0;
-}
-
-.mylists-topten-type-label:first-child {
-  margin-top: 0;
 }
 
 .discover-plat-grid {

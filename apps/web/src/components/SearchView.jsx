@@ -34,16 +34,8 @@ function HeartIcon({ filled }) {
   );
 }
 
-function CheckIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M20 6 9 17l-5-5" />
-    </svg>
-  );
-}
-
 /* ── Result Row ── */
-function ResultRow({ item, openPanel, watchlist, favorites, history, region, logRewatches = true }) {
+function ResultRow({ item, openPanel, watchlist, favorites, history, region }) {
   const fw    = favoriteWords(region);
   const id    = item.id;
   const type  = item.media_type || 'movie';
@@ -55,13 +47,6 @@ function ResultRow({ item, openPanel, watchlist, favorites, history, region, log
   const isFav      = favorites.isFavorite(id);
   const watched    = history.isWatched(id);
 
-  const handleToggleWatched = async () => {
-    if (watched) {
-      await history.removeEntry(id);
-    } else {
-      await history.logWatched({ ...item, id, media_type: type }, { logRewatches });
-    }
-  };
   const openDetails = () => openPanel(id, type);
 
   return (
@@ -119,18 +104,6 @@ function ResultRow({ item, openPanel, watchlist, favorites, history, region, log
           aria-label={isFav ? `Remove ${title} from ${fw.pluralLower}` : `Add ${title} to ${fw.pluralLower}`}
         >
           <HeartIcon filled={isFav} />
-        </button>
-        <button
-          type="button"
-          className={`search-action-btn search-action-btn--watched${watched ? ' active' : ''}`}
-          onClick={e => {
-            e.stopPropagation();
-            handleToggleWatched();
-          }}
-          data-tip={watched ? 'Watched' : 'Mark watched'}
-          aria-label={watched ? `${title} watched` : `Mark ${title} watched`}
-        >
-          <CheckIcon />
         </button>
       </div>
     </div>
@@ -313,7 +286,6 @@ export default function SearchView() {
                   favorites={favorites}
                   history={history}
                   region={profile?.region}
-                  logRewatches={profile?.log_rewatches ?? true}
                 />
               ))}
             </div>

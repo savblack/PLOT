@@ -1,8 +1,8 @@
-name: Netflix Top 10 — weekly sync
+name: Netflix Top 10 — daily sync
 
 on:
   schedule:
-    - cron: '0 12 * * 3' # Wednesday 12:00 UTC — Netflix publishes the new week on Tuesdays
+    - cron: '0 12 * * *' # 12:00 UTC daily — free Tudum feed, no API quota to manage
   workflow_dispatch:
 
 permissions:

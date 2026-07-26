@@ -307,6 +307,7 @@ function AddToFavoritesModal({ title = 'Add to Favorites', onAdd, onClose }) {
 /* ── Top 10 section ── */
 function TopTenSection({ listType, title, topLists }) {
   const { openPanel } = useApp();
+  const [open,        setOpen]        = useState(true);
   const [editMode,    setEditMode]    = useState(false);
   const [addingRank,  setAddingRank]  = useState(null); // rank number for modal
   const [dragRank,    setDragRank]    = useState(null);
@@ -368,18 +369,37 @@ function TopTenSection({ listType, title, topLists }) {
 
   return (
     <div>
-      <div className="discover-plat-type-label mylists-topten-type-label">
-        <span>{title}</span>
-        {!editMode && nextOpenRank && (
-          <button
-            className="icon-btn"
-            onClick={() => setAddingRank(nextOpenRank)}
-            aria-label="Add a title"
-            title="Add a title"
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: '0.5rem',
+        padding: '0.65rem 1rem',
+        borderBottom: '1px solid var(--border)',
+      }}>
+        <button
+          onClick={() => setOpen(o => !o)}
+          style={{
+            flex: 1, display: 'flex', alignItems: 'center', gap: '0.5rem',
+            background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: 0,
+          }}
+        >
+          <svg
+            style={{
+              width: 14, height: 14, flexShrink: 0,
+              transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
+              transition: 'transform 0.15s ease',
+              stroke: 'var(--text-muted)', fill: 'none', strokeWidth: 2,
+            }}
+            viewBox="0 0 24 24"
           >
-            <PlusIcon />
-          </button>
-        )}
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+          <span style={{ fontWeight: 500, fontSize: '0.875rem', color: 'var(--text-primary)' }}>
+            {title}
+          </span>
+          <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+            {items.length}
+          </span>
+        </button>
+
         {items.length > 0 && (
           <button
             className="list-options-btn"
@@ -400,7 +420,7 @@ function TopTenSection({ listType, title, topLists }) {
         )}
       </div>
 
-      {slots.map(rank => {
+      {open && slots.map(rank => {
         const item = items.find(i => i.rank === rank);
 
         if (!item) {
