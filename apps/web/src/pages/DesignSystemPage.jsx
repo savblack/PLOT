@@ -1424,7 +1424,7 @@ export default function DesignSystemPage() {
                 <span className="ds-pp-handle">@savwatches</span>
               </span>
             </div>
-            <p>Serif display name (1.95rem / 500 / −0.03em) beside the 80px avatar; muted handle below (<code>.pp-header</code>, PublicProfilePage). Stats use serif numerals, as on the share card.</p>
+            <p>Serif display name (1.35rem / 500 / −0.02em) beside the 68px avatar, left-aligned with muted handle and stats below (<code>.pp-header</code>, PublicProfilePage). Stat numbers use serif numerals, as on the share card.</p>
           </RuleCard>
         </div>
       </Section>

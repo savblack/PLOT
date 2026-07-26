@@ -152,9 +152,9 @@ const styles = `
   .pp-btn:hover { opacity: 0.85; transform: scale(0.99); }
   .pp-btn:disabled { opacity: 0.55; cursor: default; transform: none; }
 
-  .pp-stats { display: flex; gap: 0.9rem; margin: 0.45rem 0 0; flex-wrap: wrap; }
-  .pp-stat { display: flex; align-items: baseline; gap: 0.3rem; background: none; border: none; padding: 0; cursor: default; font: inherit; }
-  .pp-stat-num { font-weight: 600; color: var(--text-primary); line-height: 1; }
+  .pp-stats { display: flex; gap: 0.9rem; margin: 0.5rem 0 0; flex-wrap: wrap; }
+  .pp-stat { display: flex; align-items: center; gap: 0.35rem; background: none; border: none; padding: 0; cursor: default; font: inherit; }
+  .pp-stat-num { font-family: var(--font-serif); font-size: 1.1rem; font-weight: 500; color: var(--text-primary); line-height: 1; }
   .pp-stat-label { font-size: 0.78rem; color: var(--text-muted); }
   .pp-stat-btn { cursor: pointer; }
   .pp-stat-btn:hover .pp-stat-num { opacity: 0.65; }
