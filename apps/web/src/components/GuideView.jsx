@@ -85,6 +85,7 @@ function buildProviderLogoState(items, region) {
 /* ── Type filter helper ── */
 const ALL_TYPES = ['tv', 'cinema', 'movie'];
 export function filterByType(items, typeFilters) {
+  if (!items) return items;
   if (!typeFilters.length || typeFilters.length === ALL_TYPES.length) return items;
   return items.filter(i => {
     if (typeFilters.includes('tv')     && i.media_type === 'tv')                   return true;
@@ -96,6 +97,7 @@ export function filterByType(items, typeFilters) {
 
 /* ── Genre filter helper ── */
 export function filterByGenre(items, genreFilters) {
+  if (!items) return items;
   if (!genreFilters.length) return items;
   return items.filter(i =>
     !i.genre_ids?.length || i.genre_ids.some(id => genreFilters.includes(id))
