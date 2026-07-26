@@ -642,10 +642,46 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
   const [talentCredits, setTalentCredits] = useState(null);
   const [talentError, setTalentError] = useState(false);
 
-  // Switching to a different title (e.g. via a credit inside the talent view)
-  // should always land back on that title's own overview, not the last cast member.
-  // eslint-disable-next-line react-hooks/set-state-in-effect -- a new title always opens on its own overview, not the last cast member viewed
-  useEffect(() => { setTalentId(null); }, [itemId]);
+  // Breadcrumb trail of every view left behind while clicking through
+  // title → cast → title → cast, so "back" always has somewhere to go.
+  // Each entry is a full snapshot of what was on screen before that step.
+  const [navStack, setNavStack] = useState([]);
+  const skipNextResetRef = useRef(false);
+
+  const goToTalent = (personId) => {
+    setNavStack(stack => [...stack, { itemId, itemType, talentId }]);
+    setTalentId(personId);
+  };
+
+  const goToTitleFromTalent = (id, type, source) => {
+    setNavStack(stack => [...stack, { itemId, itemType, talentId }]);
+    skipNextResetRef.current = true;
+    setTalentId(null);
+    openPanel(id, type, source);
+  };
+
+  const goBack = () => {
+    if (!navStack.length) return;
+    const prev = navStack[navStack.length - 1];
+    setNavStack(navStack.slice(0, -1));
+    if (prev.itemId !== itemId || prev.itemType !== itemType) {
+      skipNextResetRef.current = true;
+      openPanel(prev.itemId, prev.itemType, 'panel_back');
+    }
+    setTalentId(prev.talentId);
+  };
+
+  // A title opened from *outside* this panel's own click-through chain (e.g. a
+  // rail elsewhere in the app while this panel is still open) is a fresh start,
+  // not a step in the trail — clear the trail and any cast member being viewed.
+  useEffect(() => {
+    if (skipNextResetRef.current) {
+      skipNextResetRef.current = false;
+      return;
+    }
+    setNavStack([]);
+    setTalentId(null);
+  }, [itemId]);
 
   useEffect(() => {
     if (!talentId) return;
@@ -723,8 +759,8 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
         return;
       }
 
-      if (talentId) {
-        setTalentId(null);
+      if (navStack.length) {
+        goBack();
         return;
       }
 
@@ -733,7 +769,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [closing, onClose, showListSheet, talentId]);
+  }, [closing, onClose, showListSheet, navStack]); // eslint-disable-line react-hooks/exhaustive-deps -- goBack is a stable closure over local state, re-declaring it every render would thrash this listener
 
   // Swipe-down-to-close (mobile/tablet bottom sheet only)
   const [dragY, setDragY] = useState(0);
@@ -833,14 +869,6 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
   const chip    = date ? countdownChip(date) : null;
   const cast = (details?.credits?.cast || details?.aggregate_credits?.cast || []).slice(0, 12);
 
-  const openTalent = (personId) => {
-    setTalentId(personId);
-  };
-
-  const openTitleFromTalent = (id, type, source) => {
-    openPanel(id, type, source);
-  };
-
   const runStatusAction = useCallback(async (actionLabel, action) => {
     if (statusActionPending) return;
     setStatusActionPending(actionLabel);
@@ -921,12 +949,14 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
         className={`panel${closing ? ' closing' : ''}`}
         style={dragY ? { transform: `translateY(${dragY}px)`, transition: 'none' } : undefined}
       >
-        {talentId ? (
-          /* Slim toolbar — a portrait crop stretched into a 16:9 backdrop zooms
-             in on the face awkwardly, so the talent view skips the hero image
-             and just gets a plain back/close bar instead. */
+        {navStack.length > 0 ? (
+          /* Every step deeper than the title you first opened — cast → title →
+             cast → title, etc. — gets this plain back/close bar rather than a
+             hero image, so there's always a way back up the trail. A portrait
+             stretched into the 16:9 backdrop crop also zooms in on the face
+             awkwardly, which this sidesteps entirely. */
           <div className="panel-toolbar">
-            <button className="panel-toolbar-btn" onClick={() => setTalentId(null)} aria-label="Back to title">
+            <button className="panel-toolbar-btn" onClick={goBack} aria-label="Back">
               <BackIcon />
             </button>
             <button className="panel-toolbar-btn" onClick={onClose} aria-label="Close">
@@ -955,7 +985,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
 
         {talentId ? (
           <div className="panel-body">
-            <TalentPanelView person={talentPerson} credits={talentCredits} error={talentError} onOpenTitle={openTitleFromTalent} />
+            <TalentPanelView person={talentPerson} credits={talentCredits} error={talentError} onOpenTitle={goToTitleFromTalent} />
           </div>
         ) : loading ? (
           <div className="panel-body">
@@ -1013,7 +1043,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                         type="button"
                         className="panel-cast-card"
                         key={person.id}
-                        onClick={() => openTalent(person.id)}
+                        onClick={() => goToTalent(person.id)}
                         aria-label={`View ${person.name}`}
                       >
                         {image
