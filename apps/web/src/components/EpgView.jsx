@@ -98,6 +98,14 @@ function nowMinsInWindow(timezone) {
 
 const getShow = (ep) => ep.show ?? ep._embedded?.show;
 
+// TVMaze's `show.language` is often missing entirely, so a title with non-Latin
+// script (CJK, Hangul, Cyrillic, Arabic, Thai, Devanagari, etc.) is the fallback
+// signal that a show isn't English-language, even when the language field is unset.
+const NON_LATIN_SCRIPT_RE = /[぀-ヿ㐀-鿿가-힯Ѐ-ӿ؀-ۿ฀-๿ऀ-ॿ]/;
+function looksNonEnglishTitle(title) {
+  return NON_LATIN_SCRIPT_RE.test(title || '');
+}
+
 /* ── API ── */
 async function fetchBroadcast(date, country) {
   try {
@@ -119,7 +127,11 @@ function buildPrograms(broadcastEps, webEps, timezone) {
   const push = (ep, container, type) => {
     if (!container?.id) return;
     const show = getShow(ep);
-    if (show?.language && show.language !== 'English') return;
+    if (show?.language) {
+      if (show.language !== 'English') return;
+    } else if (looksNonEnglishTitle(show?.name ?? ep.name)) {
+      return;
+    }
     const resolved = resolveAirtime(ep, timezone);
     if (!resolved) return;
     out.push({
