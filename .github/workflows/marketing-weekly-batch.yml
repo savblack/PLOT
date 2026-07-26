@@ -30,6 +30,9 @@ jobs:
       - name: Install Claude Code CLI
         run: npm install -g @anthropic-ai/claude-code
 
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
       - name: Confirm Sunday learning is applied
         if: github.event_name == 'schedule'
         run: node marketing/learning/assert-ready.mjs
