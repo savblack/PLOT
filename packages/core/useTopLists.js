@@ -139,8 +139,39 @@ export function useTopLists(userId) {
     return true;
   }, [load, userId, lists]);
 
-  const moveUp   = useCallback((listType, rank) => swapRanks(listType, rank, rank - 1), [swapRanks]);
-  const moveDown = useCallback((listType, rank) => swapRanks(listType, rank, rank + 1), [swapRanks]);
+  // Moves the item at `rank` to `targetRank`. Swaps if the target is occupied,
+  // otherwise just relocates it — so moving into a gap doesn't require an
+  // occupied neighbor.
+  const moveToRank = useCallback(async (listType, rank, targetRank) => {
+    if (!userId) return false;
+    const items = lists[listType];
+    const item = items.find(i => i.rank === rank);
+    if (!item) return false;
+    const occupant = items.find(i => i.rank === targetRank);
+    if (occupant) return swapRanks(listType, rank, targetRank);
+
+    const { error } = await supabase.from('user_top_lists')
+      .update({ rank: targetRank })
+      .eq('user_id', userId)
+      .eq('list_type', listType)
+      .eq('tmdb_id', item.tmdb_id);
+    if (error) {
+      console.error('Failed to move top-list item', error);
+      await load();
+      return false;
+    }
+
+    setLists(prev => ({
+      ...prev,
+      [listType]: prev[listType]
+        .map(i => i.tmdb_id === item.tmdb_id ? { ...i, rank: targetRank } : i)
+        .sort((a, b) => a.rank - b.rank),
+    }));
+    return true;
+  }, [swapRanks, load, userId, lists]);
+
+  const moveUp   = useCallback((listType, rank) => moveToRank(listType, rank, rank - 1), [moveToRank]);
+  const moveDown = useCallback((listType, rank) => moveToRank(listType, rank, rank + 1), [moveToRank]);
 
   return { lists, loading, setSlot, removeSlot, moveUp, moveDown };
 }

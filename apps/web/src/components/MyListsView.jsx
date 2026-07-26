@@ -350,18 +350,13 @@ function TopTenSection({ listType, title, topLists }) {
         <span>{title}</span>
         {items.length > 0 && (
           <button
-            className="icon-btn"
+            className="list-options-btn"
             onClick={() => setEditMode(m => !m)}
             aria-label={editMode ? 'Done editing' : 'Edit list'}
           >
             {editMode
               ? <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Done</span>
-              : (
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }}>
-                  <path d="M12 20h9"/>
-                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
-                </svg>
-              )
+              : '···'
             }
           </button>
         )}
@@ -513,7 +508,7 @@ function PosterGrid({ items, onRemove, openPanel }) {
   return (
     <div style={{
       display: 'grid',
-      gridTemplateColumns: 'repeat(3, 1fr)',
+      gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))',
       gap: '0.5rem',
       padding: '0.75rem 1rem',
     }}>

@@ -464,12 +464,13 @@ function ProviderChip({ provider, tmdbId, mediaType, region, justwatchLink }) {
 
 /* ── Add to custom list sheet ── */
 function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
-  const { customLists, profile } = useApp();
+  const { customLists, topLists, profile } = useApp();
   const { lists, createList, addItem, removeItem, isInList } = customLists;
   const [creatingName, setCreatingName] = useState('');
   const [showCreate,   setShowCreate]   = useState(false);
   const [createError,  setCreateError]  = useState('');
   const [isCreating,   setIsCreating]   = useState(false);
+  const [topOpen,      setTopOpen]      = useState(false);
 
   const item = {
     id: itemId,
@@ -477,6 +478,10 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
     title: details?.title || details?.name || '',
     poster_path: details?.poster_path || null,
   };
+
+  const topListType = itemType === 'tv' ? 'tv' : 'movies';
+  const topItems     = topLists?.lists?.[topListType] || [];
+  const currentRank  = topItems.find(t => t.tmdb_id === itemId)?.rank;
 
   const duplicateList = findDuplicateCustomList(lists, creatingName);
 
@@ -530,6 +535,72 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
       }}>
         <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--border)', margin: '0.5rem auto 0' }} />
         <SheetHeader title="Add to list" onClose={onClose} bordered={false} />
+        {!!topLists && (
+          <div style={{ borderBottom: '1px solid var(--border)' }}>
+            <button
+              onClick={() => setTopOpen(o => !o)}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                width: '100%', padding: '0.75rem 1rem',
+                border: 'none', background: 'none', cursor: 'pointer', textAlign: 'left',
+              }}
+            >
+              <div>
+                <div style={{ fontWeight: 500, fontSize: '0.875rem', color: 'var(--text-primary)' }}>
+                  Top 10 {topListType === 'tv' ? 'TV Shows' : 'Movies'}
+                </div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                  {currentRank ? `Currently #${currentRank}` : 'Not ranked'}
+                </div>
+              </div>
+              <div style={{
+                width: 20, height: 20, borderRadius: 4,
+                border: `2px solid ${currentRank ? 'var(--accent)' : 'var(--border-strong)'}`,
+                background: currentRank ? 'var(--accent)' : 'transparent',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0, fontSize: '0.7rem', color: '#fff', fontWeight: 600,
+              }}>
+                {currentRank || ''}
+              </div>
+            </button>
+            {topOpen && (
+              <div style={{
+                display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.4rem',
+                padding: '0 1rem 0.75rem',
+              }}>
+                {Array.from({ length: 10 }, (_, i) => i + 1).map(rank => {
+                  const occupant = topItems.find(t => t.rank === rank);
+                  const isThis = occupant?.tmdb_id === itemId;
+                  return (
+                    <button
+                      key={rank}
+                      onClick={() => isThis ? topLists.removeSlot(topListType, itemId) : topLists.setSlot(topListType, rank, item)}
+                      style={{
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                        padding: '0.4rem 0.2rem', minHeight: 44,
+                        border: `1px solid ${isThis ? 'var(--accent)' : 'var(--border)'}`,
+                        borderRadius: 'var(--radius)',
+                        background: isThis ? 'var(--accent)' : 'transparent',
+                        color: isThis ? '#fff' : 'var(--text-primary)',
+                        cursor: 'pointer', fontSize: '0.72rem',
+                      }}
+                    >
+                      <span style={{ fontWeight: 600 }}>{rank}</span>
+                      {occupant && !isThis && (
+                        <span style={{
+                          color: 'var(--text-muted)', fontSize: '0.6rem',
+                          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%',
+                        }}>
+                          {occupant.title}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
         <div style={{ overflowY: 'auto', flex: 1 }}>
           {lists.length === 0 && !showCreate && (
             <div style={{ padding: '1.5rem 1rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>

@@ -126,13 +126,14 @@ function SearchPickModal({
 }
 
 // ── Rank row ──────────────────────────────────────────────────────────
-function RankRow({ rank, item, editMode, onRemove, onMoveUp, onMoveDown, canMoveDown = true }: {
+function RankRow({ rank, item, editMode, onRemove, onMoveUp, onMoveDown, canMoveUp = true, canMoveDown = true }: {
   rank: number;
   item: any | null;
   editMode: boolean;
   onRemove?: () => void;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
+  canMoveUp?: boolean;
   canMoveDown?: boolean;
 }) {
   const { colors } = useTheme();
@@ -154,8 +155,13 @@ function RankRow({ rank, item, editMode, onRemove, onMoveUp, onMoveDown, canMove
           <Text style={styles.rankTitle} numberOfLines={1}>{item.title}</Text>
           {editMode && (
             <View style={styles.rankActions}>
-              <TouchableOpacity onPress={onMoveUp} style={styles.rankActionBtn} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
-                <Text style={{ color: rank === 1 ? colors.textMuted : colors.textPrimary, fontSize: 14 }}>↑</Text>
+              <TouchableOpacity
+                onPress={onMoveUp}
+                disabled={!canMoveUp}
+                style={styles.rankActionBtn}
+                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+              >
+                <Text style={{ color: canMoveUp ? colors.textPrimary : colors.textMuted, fontSize: 14, opacity: canMoveUp ? 1 : 0.3 }}>↑</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={onMoveDown}
@@ -225,7 +231,8 @@ function TopTenSection({ listType, title, topLists, history }: {
               rank={rank}
               item={item || null}
               editMode={editMode}
-              canMoveDown={rank !== 10 && !!items.find((i: any) => i.rank === rank + 1)}
+              canMoveUp={rank !== 1}
+              canMoveDown={rank !== 10}
               onRemove={() => item && topLists.removeSlot(listType, item.tmdb_id)}
               onMoveUp={() => topLists.moveUp(listType, rank)}
               onMoveDown={() => topLists.moveDown(listType, rank)}
