@@ -130,13 +130,13 @@ const styles = `
   .pp-handle { margin: 0.2rem 0 0; font-size: 0.9rem; color: var(--text-muted); }
   .pp-verified { width: 1.35rem; height: 1.35rem; margin-left: 0.35rem; vertical-align: -0.2rem; flex-shrink: 0; }
   .pp-bio { margin: 0.9rem 0 0; max-width: 420px; font-size: 0.9rem; line-height: 1.55; color: var(--text-secondary); white-space: pre-wrap; }
-  .pp-social-row { display: flex; gap: 0.6rem; justify-content: center; flex-wrap: wrap; margin-top: 0.9rem; }
+  .pp-social-row { display: flex; gap: 0.6rem; justify-content: center; flex-wrap: wrap; margin-top: 1rem; }
   .pp-social-btn { display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--border); color: var(--text-secondary); background: var(--surface-raised); transition: var(--transition-fast); }
   .pp-social-btn svg { width: 17px; height: 17px; }
   .pp-social-btn:hover { color: var(--text-primary); border-color: color-mix(in srgb, var(--accent) 55%, var(--border)); }
 
   /* ── Action buttons ── */
-  .pp-btn-row { display: flex; gap: 0.6rem; justify-content: center; margin-top: 1.25rem; }
+  .pp-btn-row { display: flex; gap: 0.6rem; justify-content: center; margin-top: 1.75rem; }
   .pp-btn {
     display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
     min-height: 40px; min-width: 150px; padding: 0.55rem 1.4rem; border-radius: var(--radius-pill);
