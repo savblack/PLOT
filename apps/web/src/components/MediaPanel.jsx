@@ -41,8 +41,9 @@ function BackIcon() {
 }
 
 /* ── Talent (cast member) mini-profile shown inline within the panel ──
-   Presentational only: the panel owns the fetch so the actor's own
-   portrait can replace the title's backdrop in the shared header. ── */
+   Presentational only: the panel owns the fetch. Uses a portrait
+   thumbnail rather than a full-bleed header image — a portrait crop
+   stretched across a 16:9 backdrop zooms in on the face awkwardly. ── */
 function TalentPanelView({ person, credits, error, onOpenTitle }) {
   if (!person && !error) {
     return <div style={{ padding: '2rem 0', textAlign: 'center' }}><LoadingSpinner /></div>;
@@ -56,21 +57,24 @@ function TalentPanelView({ person, credits, error, onOpenTitle }) {
   }
 
   const actingCredits = dedupedActingCredits(credits?.cast).slice(0, 12);
+  const image = profileUrl(person.profile_path, 'h632');
   const knownFor = person.known_for_department || 'Talent';
   const biographyPreview = shortBiography(person.biography);
 
   return (
     <div className="panel-talent-view">
-      <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{knownFor}</span>
-      <h2 className="panel-title">{person.name}</h2>
-      {person.birthday && (
-        <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', fontWeight: 500, marginBottom: '0.5rem' }}>
-          Born {new Date(person.birthday).toLocaleDateString('en', { month: 'long', day: 'numeric', year: 'numeric' })}
+      <header className="talent-header">
+        <div className="talent-portrait">
+          {image ? <img src={image} alt={person.name} /> : <span aria-hidden="true">{person.name?.charAt(0)}</span>}
         </div>
-      )}
-      {person.biography && <p className="panel-overview">{biographyPreview}</p>}
+        <div>
+          <div className="talent-kicker">{knownFor}</div>
+          <h1>{person.name}</h1>
+          {person.birthday && <p className="talent-birthday">Born {new Date(person.birthday).toLocaleDateString('en', { month: 'long', day: 'numeric', year: 'numeric' })}</p>}
+        </div>
+      </header>
+      {person.biography && <p className="talent-biography">{biographyPreview}</p>}
       <section className="talent-section">
-        <div className="panel-section-title">Filmography</div>
         <CreditsGrid credits={actingCredits} openPanel={onOpenTitle} />
         {!actingCredits.length && <p className="talent-muted">No screen credits available.</p>}
       </section>
@@ -917,33 +921,37 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
         className={`panel${closing ? ' closing' : ''}`}
         style={dragY ? { transform: `translateY(${dragY}px)`, transition: 'none' } : undefined}
       >
-        {/* Header image — swaps to the cast member's own portrait while viewing their profile */}
-        <div className="panel-header-wrap">
-          <div
-            onPointerDown={handleDragStart}
-            onPointerMove={handleDragMove}
-            onPointerUp={endDrag}
-            onPointerCancel={endDrag}
-          >
-            {talentId
-              ? (talentPerson?.profile_path
-                  ? <img className="panel-header-img" src={profileUrl(talentPerson.profile_path, 'h632')} alt="" />
-                  : <div className="panel-header-fallback" />)
-              : (details?.backdrop_path
-                  ? <img className="panel-header-img" src={backdropUrl(details.backdrop_path)} alt="" />
-                  : <div className="panel-header-fallback" />)
-            }
-            <div className="panel-drag-handle" />
-          </div>
-          {talentId && (
-            <button className="panel-back-btn" onClick={() => setTalentId(null)} aria-label="Back to title">
+        {talentId ? (
+          /* Slim toolbar — a portrait crop stretched into a 16:9 backdrop zooms
+             in on the face awkwardly, so the talent view skips the hero image
+             and just gets a plain back/close bar instead. */
+          <div className="panel-toolbar">
+            <button className="panel-toolbar-btn" onClick={() => setTalentId(null)} aria-label="Back to title">
               <BackIcon />
             </button>
-          )}
-          <button className="panel-close-btn" onClick={onClose} aria-label="Close">
-            <CloseIcon />
-          </button>
-        </div>
+            <button className="panel-toolbar-btn" onClick={onClose} aria-label="Close">
+              <CloseIcon />
+            </button>
+          </div>
+        ) : (
+          <div className="panel-header-wrap">
+            <div
+              onPointerDown={handleDragStart}
+              onPointerMove={handleDragMove}
+              onPointerUp={endDrag}
+              onPointerCancel={endDrag}
+            >
+              {details?.backdrop_path
+                ? <img className="panel-header-img" src={backdropUrl(details.backdrop_path)} alt="" />
+                : <div className="panel-header-fallback" />
+              }
+              <div className="panel-drag-handle" />
+            </div>
+            <button className="panel-close-btn" onClick={onClose} aria-label="Close">
+              <CloseIcon />
+            </button>
+          </div>
+        )}
 
         {talentId ? (
           <div className="panel-body">
