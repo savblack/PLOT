@@ -802,10 +802,11 @@ function FeedbackPanel({ user, initialType, onClose }) {
     }
 
     setStatus('done');
+    track(EVENTS.FEEDBACK_SUBMITTED, { type, has_attachments: attachmentUrls.length > 0 });
   };
 
   return createPortal(
-    <>
+<>
       <div className="panel-overlay" onClick={onClose} />
       <div className="panel">
         <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--surface)' }}>
@@ -1196,6 +1197,7 @@ export default function SettingsView() {
       return;
     }
     await watchlist.reload();
+    track(EVENTS.WATCHLIST_CLEARED, { scope: 'saved_only' });
     setClearingWatchlist(false);
   };
 
@@ -1221,6 +1223,7 @@ export default function SettingsView() {
       return;
     }
     await Promise.all([watchlist.reload(), watching.reload()]);
+    track(EVENTS.WATCHLIST_CLEARED, { scope: 'saved_and_watching' });
     setClearingWatchlist(false);
   };
 
@@ -1237,6 +1240,7 @@ export default function SettingsView() {
           fetchImpl: fetch,
           deleteAccountUrl: edgeFunctionUrl('delete-account'),
           onDeleted: async () => {
+            track(EVENTS.ACCOUNT_DELETED, {});
             window.location.href = '/';
           },
         });
@@ -1267,6 +1271,7 @@ export default function SettingsView() {
       }
       if (format === 'csv') downloadCsvExport(result.payload);
       else downloadDataExport(result.payload);
+      track(EVENTS.DATA_EXPORTED, { format });
     } catch (err) {
       setActionError(err?.message || 'Failed to export your data.');
     } finally {
@@ -1285,6 +1290,7 @@ export default function SettingsView() {
     }
     setLocalCalToken(token);
     setGeneratingCalToken(false);
+    track(EVENTS.CALENDAR_FEED_GENERATED, {});
     refreshProfile();
   };
 
@@ -1383,6 +1389,7 @@ export default function SettingsView() {
     if (!user) return;
     const { error } = await supabase.from('profiles').update({ is_public: !isPublic }).eq('id', user.id);
     if (error) { setActionError(error.message); return; }
+    track(EVENTS.PROFILE_VISIBILITY_CHANGED, { is_public: !isPublic });
     refreshProfile();
   };
 

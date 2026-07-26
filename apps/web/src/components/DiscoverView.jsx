@@ -508,39 +508,20 @@ function DiscoverContent({ openPanel, watchlist, openSections, setOpenSections, 
         </section>
       )}
 
-      {recentReleases.length > 0 && (
-        <section className="discover-section">
-          <DiscoverSectionHeader
-            kicker="Last 14 days"
-            title="Recently Released"
-            open={openSections.recent}
-            onToggle={() => toggleSection('recent')}
-          />
-          {openSections.recent && (
-            <Rail>
-              {recentReleases.map(item => (
-                <RankedCard key={`${item.media_type}-${item.id}`} item={item} showRank={false} openPanel={openPanel} watchlist={watchlist} />
-              ))}
-            </Rail>
-          )}
-        </section>
-      )}
-
       {bingedShows.length > 0 && (
-        <section className="discover-section discover-binge-section">
+        <section className="discover-section">
           <DiscoverSectionHeader
             kicker="Popular TV"
             title="Most Binged Shows"
             open={openSections.binge}
             onToggle={() => toggleSection('binge')}
-            className="discover-binge-header"
           />
           {openSections.binge && (
-            <BingeRail>
+            <Rail>
               {bingedShows.map(item => (
-                <BingeCard key={item.id} item={item} openPanel={openPanel} watchlist={watchlist} />
+                <RankedCard key={item.id} item={item} showRank={false} openPanel={openPanel} watchlist={watchlist} />
               ))}
-            </BingeRail>
+            </Rail>
           )}
         </section>
       )}
@@ -556,6 +537,24 @@ function DiscoverContent({ openPanel, watchlist, openSections, setOpenSections, 
           {openSections.weekly && weekly.map((item, i) => (
             <ChartRow key={item.id} item={item} rank={i + 1} openPanel={openPanel} watchlist={watchlist} />
           ))}
+        </section>
+      )}
+
+      {recentReleases.length > 0 && (
+        <section className="discover-section">
+          <DiscoverSectionHeader
+            kicker="Last 14 days"
+            title="Recently Released"
+            open={openSections.recent}
+            onToggle={() => toggleSection('recent')}
+          />
+          {openSections.recent && (
+            <Rail>
+              {recentReleases.map(item => (
+                <RankedCard key={`${item.media_type}-${item.id}`} item={item} showRank={false} openPanel={openPanel} watchlist={watchlist} />
+              ))}
+            </Rail>
+          )}
         </section>
       )}
 

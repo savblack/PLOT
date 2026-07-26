@@ -48,6 +48,18 @@ export const EVENTS = Object.freeze({
   USER_UNFOLLOWED: 'user_unfollowed',
   IMPORT_STARTED: 'import_started',
   IMPORT_COMPLETED: 'import_completed',
+  // Settings / account actions
+  FEEDBACK_SUBMITTED: 'feedback_submitted',
+  ACCOUNT_DELETED: 'account_deleted',
+  DATA_EXPORTED: 'data_exported',
+  CALENDAR_FEED_GENERATED: 'calendar_feed_generated',
+  WATCHLIST_CLEARED: 'watchlist_cleared',
+  PROFILE_VISIBILITY_CHANGED: 'profile_visibility_changed',
+  // Integrations
+  PLEX_CONNECTED: 'plex_connected',
+  PLEX_SYNCED: 'plex_synced',
+  TRAKT_CONNECTED: 'trakt_connected',
+  TRAKT_SYNCED: 'trakt_synced',
 });
 
 export function track(event, props) {
