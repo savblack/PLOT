@@ -138,8 +138,64 @@ function SettingsTextAction({ children, onClick, disabled = false, tone = 'defau
   );
 }
 
-/* ── Clear Watchlist confirmation modal ── */
-function ClearWatchlistModal({ onClearList, onClearBoth, onClose }) {
+/* ── Checkbox row used by ClearListsModal ── */
+function ClearListRow({ checked, onToggle, label, sublabel, danger = false }) {
+  return (
+    <button
+      type="button"
+      className="btn btn-ghost"
+      onClick={onToggle}
+      aria-pressed={checked}
+      style={{
+        width: '100%', textAlign: 'left', justifyContent: 'flex-start', alignItems: 'center',
+        padding: '0.75rem 0.9rem', borderRadius: 'var(--radius-md)',
+        border: checked ? `1.5px solid ${danger ? 'var(--danger)' : 'var(--accent)'}` : '1.5px solid var(--border)',
+        background: checked ? (danger ? 'var(--danger-dim)' : 'var(--accent-dim)') : 'transparent',
+        gap: '0.75rem', transition: 'all 0.12s ease',
+      }}
+    >
+      <span
+        aria-hidden="true"
+        style={{
+          flexShrink: 0, width: 18, height: 18, borderRadius: 5,
+          border: `1.5px solid ${checked ? (danger ? 'var(--danger)' : 'var(--accent)') : 'var(--border)'}`,
+          background: checked ? (danger ? 'var(--danger)' : 'var(--accent)') : 'transparent',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}
+      >
+        {checked && (
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        )}
+      </span>
+      <span style={{ flex: 1, minWidth: 0 }}>
+        <span style={{ display: 'block', fontWeight: 600, fontSize: '0.88rem', color: danger && checked ? 'var(--danger)' : undefined, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
+        {sublabel && <span style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>{sublabel}</span>}
+      </span>
+    </button>
+  );
+}
+
+/* ── Clear/delete lists modal — one place to clear Saved, Watching, or any custom list ── */
+function ClearWatchlistModal({ savedCount, watchingCount, customLists = [], onClear, onClose }) {
+  const [selected, setSelected] = useState({ saved: false, watching: false, custom: new Set() });
+
+  const toggleSaved    = () => setSelected(s => ({ ...s, saved: !s.saved }));
+  const toggleWatching = () => setSelected(s => ({ ...s, watching: !s.watching }));
+  const toggleCustom   = (id) => setSelected(s => {
+    const next = new Set(s.custom);
+    next.has(id) ? next.delete(id) : next.add(id);
+    return { ...s, custom: next };
+  });
+
+  const count = (selected.saved ? 1 : 0) + (selected.watching ? 1 : 0) + selected.custom.size;
+
+  const handleClear = () => {
+    if (!count) return;
+    onClear({ saved: selected.saved, watching: selected.watching, customListIds: [...selected.custom] });
+  };
+
   return createPortal(
     <>
       <div
@@ -154,52 +210,64 @@ function ClearWatchlistModal({ onClearList, onClearBoth, onClose }) {
         bottom: 0, left: 0, right: 0,
         background: 'var(--surface)',
         borderRadius: 'var(--radius-lg) var(--radius-lg) 0 0',
-        padding: '1.5rem 1.25rem 2.5rem',
+        padding: '1.5rem 1.25rem 2rem',
         zIndex: 1001,
         display: 'flex',
         flexDirection: 'column',
-        gap: '0.75rem',
+        gap: '0.6rem',
+        maxHeight: '80vh',
       }}>
         <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--border)', margin: '0 auto 0.5rem' }} />
 
         <div style={{ marginBottom: '0.25rem' }}>
           <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1.3rem', fontWeight: 500, marginBottom: '0.4rem' }}>
-            Clear Watchlist
+            Clear Lists
           </div>
           <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-            Clear just your saved titles, or your watching list too?
+            Select which lists to clear. This can't be undone.
           </div>
         </div>
 
-        <button
-          className="btn btn-ghost"
-          style={{
-            width: '100%', textAlign: 'left', justifyContent: 'flex-start',
-            padding: '0.85rem 1rem', borderRadius: 'var(--radius-md)',
-            border: '1px solid var(--border)', gap: '0.75rem',
-          }}
-          onClick={onClearList}
-        >
-          <span style={{ flex: 1 }}>
-            <span style={{ display: 'block', fontWeight: 600, fontSize: '0.88rem' }}>Clear Saved only</span>
-            <span style={{ display: 'block', fontSize: '0.76rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>Keeps your Watching list and custom lists intact</span>
-          </span>
-        </button>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', overflowY: 'auto' }}>
+          <ClearListRow
+            checked={selected.saved}
+            onToggle={toggleSaved}
+            label="Saved"
+            sublabel={`${savedCount} title${savedCount === 1 ? '' : 's'} · list stays, only the titles are cleared`}
+          />
+          <ClearListRow
+            checked={selected.watching}
+            onToggle={toggleWatching}
+            label="Watching"
+            sublabel={`${watchingCount} in progress · list stays, only the titles are cleared`}
+          />
+
+          {customLists.length > 0 && (
+            <>
+              <div style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--text-muted)', margin: '0.5rem 0 0.1rem' }}>
+                Custom lists
+              </div>
+              {customLists.map(list => (
+                <ClearListRow
+                  key={list.id}
+                  checked={selected.custom.has(list.id)}
+                  onToggle={() => toggleCustom(list.id)}
+                  label={list.name}
+                  sublabel={`${list.items?.length ?? 0} title${(list.items?.length ?? 0) === 1 ? '' : 's'} · list will be deleted`}
+                  danger
+                />
+              ))}
+            </>
+          )}
+        </div>
 
         <button
-          className="btn btn-ghost"
-          style={{
-            width: '100%', textAlign: 'left', justifyContent: 'flex-start',
-            padding: '0.85rem 1rem', borderRadius: 'var(--radius-md)',
-            border: '1px solid #EF444433', gap: '0.75rem',
-            color: 'var(--chip-cinema)',
-          }}
-          onClick={onClearBoth}
+          className="btn btn-primary"
+          style={{ width: '100%', marginTop: '0.5rem', background: count ? 'var(--danger)' : undefined, borderColor: count ? 'var(--danger)' : undefined }}
+          onClick={handleClear}
+          disabled={!count}
         >
-          <span style={{ flex: 1 }}>
-            <span style={{ display: 'block', fontWeight: 600, fontSize: '0.88rem' }}>Clear Saved + Watching</span>
-            <span style={{ display: 'block', fontSize: '0.76rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>Removes everything from your watchlist</span>
-          </span>
+          {count ? `Clear Selected (${count})` : 'Select lists to clear'}
         </button>
 
         <button className="btn btn-ghost" style={{ width: '100%' }} onClick={onClose}>
@@ -937,7 +1005,7 @@ function FeedbackPanel({ user, initialType, onClose }) {
    SettingsView
 ═══════════════════════════════════════ */
 export default function SettingsView() {
-  const { profile, user, theme, setTheme, refreshProfile, watchlist, watching, reminders } = useApp();
+  const { profile, user, theme, setTheme, refreshProfile, watchlist, watching, reminders, customLists } = useApp();
   const navigate = useNavigate();
   const sync  = useMediaSync(user?.id);
   const trakt = useTraktSync(user?.id);
@@ -1177,53 +1245,40 @@ export default function SettingsView() {
     });
   };
 
-  const handleClearListOnly = async () => {
+  const handleClearLists = async ({ saved, watching: clearWatching, customListIds }) => {
     setActionError(null);
     setShowClearWatchlist(false);
     setClearingWatchlist(true);
-    const { data: myList, error: listLookupError } = await supabase.from('lists')
-      .select('id').eq('user_id', user.id).eq('name', 'My List').maybeSingle();
-    if (listLookupError) {
-      setActionError(listLookupError.message || 'Failed to clear your watch list.');
-      setClearingWatchlist(false);
-      return;
-    }
-    const { error } = myList?.id
-      ? await supabase.from('list_items').delete().eq('list_id', myList.id)
-      : { error: null };
-    if (error) {
-      setActionError(error.message || 'Failed to clear your watch list.');
-      setClearingWatchlist(false);
-      return;
-    }
-    await watchlist.reload();
-    track(EVENTS.WATCHLIST_CLEARED, { scope: 'saved_only' });
-    setClearingWatchlist(false);
-  };
 
-  const handleClearListAndWatching = async () => {
-    setActionError(null);
-    setShowClearWatchlist(false);
-    setClearingWatchlist(true);
-    const { data: myList, error: listLookupError } = await supabase.from('lists')
-      .select('id').eq('user_id', user.id).eq('name', 'My List').maybeSingle();
-    if (listLookupError) {
-      setActionError(listLookupError.message || 'Failed to clear your watch list.');
-      setClearingWatchlist(false);
-      return;
+    let myListId = null;
+    if (saved) {
+      const { data: myList, error: listLookupError } = await supabase.from('lists')
+        .select('id').eq('user_id', user.id).eq('name', 'My List').maybeSingle();
+      if (listLookupError) {
+        setActionError(listLookupError.message || 'Failed to clear your lists.');
+        setClearingWatchlist(false);
+        return;
+      }
+      myListId = myList?.id ?? null;
     }
+
     const results = await Promise.all([
-      myList?.id ? supabase.from('list_items').delete().eq('list_id', myList.id) : Promise.resolve({ error: null }),
-      supabase.from('watching_progress').delete().eq('user_id', user.id),
+      saved && myListId ? supabase.from('list_items').delete().eq('list_id', myListId) : Promise.resolve({ error: null }),
+      clearWatching ? supabase.from('watching_progress').delete().eq('user_id', user.id) : Promise.resolve({ error: null }),
+      ...customListIds.map(id => customLists.deleteList(id).then(ok => ({ error: ok ? null : new Error('Failed to delete a custom list.') }))),
     ]);
     const firstError = results.find(result => result.error)?.error;
     if (firstError) {
-      setActionError(firstError.message || 'Failed to clear your watch list.');
+      setActionError(firstError.message || 'Failed to clear your lists.');
       setClearingWatchlist(false);
       return;
     }
-    await Promise.all([watchlist.reload(), watching.reload()]);
-    track(EVENTS.WATCHLIST_CLEARED, { scope: 'saved_and_watching' });
+
+    await Promise.all([
+      saved ? watchlist.reload() : Promise.resolve(),
+      clearWatching ? watching.reload() : Promise.resolve(),
+    ]);
+    track(EVENTS.WATCHLIST_CLEARED, { saved, watching: clearWatching, customListCount: customListIds.length });
     setClearingWatchlist(false);
   };
 
@@ -2244,7 +2299,7 @@ export default function SettingsView() {
           {...getButtonLikeProps({
             onPress: () => setShowClearWatchlist(true),
             disabled: clearingWatchlist,
-            label: 'Clear watch list',
+            label: 'Clear lists',
           })}
         >
           <div className="settings-row-left">
@@ -2252,7 +2307,7 @@ export default function SettingsView() {
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
             </div>
             <span className="settings-row-label" style={{ color: clearingWatchlist ? 'var(--text-muted)' : undefined }}>
-              {clearingWatchlist ? 'Clearing…' : 'Clear Watchlist'}
+              {clearingWatchlist ? 'Clearing…' : 'Clear Lists'}
             </span>
           </div>
         </div>
@@ -2271,11 +2326,6 @@ export default function SettingsView() {
           </div>
         </div>
       </div>
-
-      <p style={{ margin: '1.75rem 0 0', padding: '0 0.25rem', fontSize: '0.74rem', lineHeight: 1.5, color: 'var(--text-muted)', textAlign: 'center' }}>
-        Metadata and some artwork are provided by{' '}
-        <a href="https://www.themoviedb.org" target="_blank" rel="noreferrer" style={{ color: 'inherit', textDecoration: 'underline' }}>TMDB</a>. This product uses the TMDB API but is not endorsed or certified by TMDB.
-      </p>
 
       {/* Provider picker modal */}
       {showProviders && (
@@ -2306,11 +2356,13 @@ export default function SettingsView() {
         />
       )}
 
-      {/* Clear Watchlist modal */}
+      {/* Clear Lists modal */}
       {showClearWatchlist && (
         <ClearWatchlistModal
-          onClearList={handleClearListOnly}
-          onClearBoth={handleClearListAndWatching}
+          savedCount={watchlist.items?.length ?? 0}
+          watchingCount={watching.items?.length ?? 0}
+          customLists={customLists.lists}
+          onClear={handleClearLists}
           onClose={() => setShowClearWatchlist(false)}
         />
       )}
