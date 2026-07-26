@@ -2391,12 +2391,13 @@ a.provider-chip--link:hover {
   margin: 0.35rem 0 0;
   font-size: 0.68rem;
   line-height: 1.4;
-  color: var(--text-tertiary);
+  text-align: right;
+  color: var(--text-muted);
 }
 .providers-sublabel {
   font-size: 0.7rem;
   font-weight: 600;
-  color: var(--text-tertiary);
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin-top: 0.5rem;
@@ -2640,6 +2641,26 @@ a.provider-chip--link:hover {
 .search-action-btn:focus-visible::after {
   opacity: 1;
   transform: translateX(50%) translateY(0);
+}
+
+/* Edge buttons: keep the tooltip from spilling past the viewport by
+   anchoring it to the button's own edge instead of centering it. */
+.search-row-actions .search-action-btn:first-child::after {
+  right: auto;
+  left: 0;
+  transform: translateY(2px);
+}
+.search-row-actions .search-action-btn:first-child:hover::after,
+.search-row-actions .search-action-btn:first-child:focus-visible::after {
+  transform: translateY(0);
+}
+.search-row-actions .search-action-btn:last-child::after {
+  right: 0;
+  transform: translateY(2px);
+}
+.search-row-actions .search-action-btn:last-child:hover::after,
+.search-row-actions .search-action-btn:last-child:focus-visible::after {
+  transform: translateY(0);
 }
 
 /* ═══════════════════════════════════════
