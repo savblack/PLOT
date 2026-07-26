@@ -149,6 +149,7 @@ const styles = `
   }
   .pp-btn-primary { background: var(--text-primary); color: var(--surface); border: none; }
   .pp-btn-secondary { background: transparent; color: var(--text-primary); border: 0.75px solid var(--text-primary); }
+  .pp-btn-outline { background: var(--surface-raised); color: var(--text-primary); border: 1px solid var(--border); }
   .pp-btn:hover { opacity: 0.85; transform: scale(0.99); }
   .pp-btn:disabled { opacity: 0.55; cursor: default; transform: none; }
 
@@ -695,8 +696,8 @@ export default function PublicProfilePage() {
                   <div className="pp-btn-row">
                     {isOwn ? (
                       <>
-                        <button type="button" className="pp-btn pp-btn-secondary" onClick={() => setEditing(true)}>Edit profile</button>
-                        <button type="button" className="pp-btn pp-btn-secondary" onClick={shareProfile}>{copied ? 'Copied!' : 'Share profile'}</button>
+                        <button type="button" className="pp-btn pp-btn-outline" onClick={() => setEditing(true)}>Edit profile</button>
+                        <button type="button" className="pp-btn pp-btn-outline" onClick={shareProfile}>{copied ? 'Copied!' : 'Share profile'}</button>
                       </>
                     ) : !viewer ? (
                       <>
