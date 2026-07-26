@@ -239,7 +239,13 @@ function ClearWatchlistModal({ savedCount, watchingCount, customLists = [], onCl
 
           <button
             className="btn btn-primary"
-            style={{ width: '100%', marginTop: '0.5rem', background: count ? 'var(--danger)' : undefined, borderColor: count ? 'var(--danger)' : undefined }}
+            style={{
+              width: '100%', marginTop: '0.5rem',
+              background: count ? 'var(--danger)' : 'var(--surface-raised)',
+              borderColor: count ? 'var(--danger)' : 'var(--border)',
+              color: count ? undefined : 'var(--text-muted)',
+              cursor: count ? 'pointer' : 'default',
+            }}
             onClick={handleClear}
             disabled={!count}
           >
@@ -965,7 +971,13 @@ function FeedbackPanel({ user, initialType, onClose }) {
             <button
               type="button"
               className="btn btn-primary"
-              style={{ width: '100%', marginTop: '0.25rem' }}
+              style={{
+                width: '100%', marginTop: '0.25rem',
+                background: message.trim() ? undefined : 'var(--surface-raised)',
+                borderColor: message.trim() ? undefined : 'var(--border)',
+                color: message.trim() ? undefined : 'var(--text-muted)',
+                cursor: message.trim() ? 'pointer' : 'default',
+              }}
               onClick={handleSubmit}
               disabled={!message.trim() || status === 'submitting'}
             >

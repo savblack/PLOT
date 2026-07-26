@@ -121,17 +121,17 @@ const styles = `
 
   /* ── Left-aligned header: avatar + name/handle/stats in one row, bio + actions below ── */
   .pp-header { padding-top: 1.75rem; }
-  .pp-header-top { display: flex; align-items: center; justify-content: center; gap: 1rem; }
+  .pp-header-top { display: flex; align-items: center; justify-content: center; gap: 1.75rem; }
   .pp-avatar {
-    width: 68px; height: 68px; border-radius: 50%; flex-shrink: 0;
+    width: 108px; height: 108px; border-radius: 50%; flex-shrink: 0;
     object-fit: cover; background: var(--surface-raised); border: 1px solid var(--border);
     display: flex; align-items: center; justify-content: center;
-    font-family: var(--font-serif); font-size: 1.7rem; color: var(--text-muted);
+    font-family: var(--font-serif); font-size: 2.6rem; color: var(--text-muted);
   }
   .pp-header-info { flex: 0 1 auto; min-width: 0; }
-  .pp-name { margin: 0; font-family: var(--font-serif); font-size: 1.35rem; font-weight: 500; letter-spacing: -0.02em; line-height: 1.2; word-break: break-word; }
-  .pp-handle { margin: 0.1rem 0 0; font-size: 0.85rem; color: var(--text-muted); }
-  .pp-verified { width: 1.05rem; height: 1.05rem; margin-left: 0.3rem; vertical-align: -0.12rem; flex-shrink: 0; }
+  .pp-name { margin: 0; font-family: var(--font-serif); font-size: 2.1rem; font-weight: 500; letter-spacing: -0.02em; line-height: 1.2; word-break: break-word; }
+  .pp-handle { margin: 0.15rem 0 0; font-size: 1rem; color: var(--text-muted); }
+  .pp-verified { width: 1.5rem; height: 1.5rem; margin-left: 0.4rem; vertical-align: -0.18rem; flex-shrink: 0; }
   .pp-bio { margin: 0.9rem 0 0; font-size: 0.9rem; line-height: 1.55; color: var(--text-secondary); white-space: pre-wrap; }
   .pp-footer-row { display: flex; align-items: center; gap: 0.6rem; margin-top: 1.1rem; flex-wrap: wrap; }
   .pp-social-row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-right: auto; }
@@ -152,10 +152,10 @@ const styles = `
   .pp-btn:hover { opacity: 0.85; transform: scale(0.99); }
   .pp-btn:disabled { opacity: 0.55; cursor: default; transform: none; }
 
-  .pp-stats { display: flex; gap: 0.9rem; margin: 0.5rem 0 0; flex-wrap: wrap; }
-  .pp-stat { display: flex; align-items: center; gap: 0.35rem; background: none; border: none; padding: 0; cursor: default; font: inherit; }
-  .pp-stat-num { font-family: var(--font-serif); font-size: 1.1rem; font-weight: 500; color: var(--text-primary); line-height: 1; }
-  .pp-stat-label { font-size: 0.78rem; color: var(--text-muted); }
+  .pp-stats { display: flex; gap: 1.3rem; margin: 0.65rem 0 0; flex-wrap: wrap; }
+  .pp-stat { display: flex; align-items: center; gap: 0.4rem; background: none; border: none; padding: 0; cursor: default; font: inherit; }
+  .pp-stat-num { font-family: var(--font-serif); font-size: 1.4rem; font-weight: 500; color: var(--text-primary); line-height: 1; }
+  .pp-stat-label { font-size: 0.9rem; color: var(--text-muted); }
   .pp-stat-btn { cursor: pointer; }
   .pp-stat-btn:hover .pp-stat-num { opacity: 0.65; }
 
