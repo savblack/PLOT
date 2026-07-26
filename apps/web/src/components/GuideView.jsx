@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useApp, posterUrl, logoUrl, TodayLabel } from '../App.jsx';
 import { favoriteWords } from '../utils/spelling.js';
 import { localDateStr, dateToLocalStr } from '../utils/date.js';
@@ -84,7 +84,7 @@ function buildProviderLogoState(items, region) {
 
 /* ── Type filter helper ── */
 const ALL_TYPES = ['tv', 'cinema', 'movie'];
-function filterByType(items, typeFilters) {
+export function filterByType(items, typeFilters) {
   if (!typeFilters.length || typeFilters.length === ALL_TYPES.length) return items;
   return items.filter(i => {
     if (typeFilters.includes('tv')     && i.media_type === 'tv')                   return true;
@@ -95,7 +95,7 @@ function filterByType(items, typeFilters) {
 }
 
 /* ── Genre filter helper ── */
-function filterByGenre(items, genreFilters) {
+export function filterByGenre(items, genreFilters) {
   if (!genreFilters.length) return items;
   return items.filter(i =>
     !i.genre_ids?.length || i.genre_ids.some(id => genreFilters.includes(id))
@@ -196,9 +196,20 @@ function formatDayLabel(dateStr) {
   return d.toLocaleDateString('en', { weekday: 'long', month: 'long', day: 'numeric' });
 }
 
-/* ── Collapsible date group ── */
-function DateGroup({ label, items, openPanel, providerLogos, watchlist, defaultOpen = true }) {
+/* ── Shared expand-all/collapse-all signal ── */
+function useControlledOpen(expandSignal, defaultOpen) {
   const [open, setOpen] = useState(defaultOpen);
+  const initialToken = useRef(expandSignal?.token);
+  useEffect(() => {
+    if (!expandSignal || expandSignal.token === initialToken.current) return;
+    setOpen(expandSignal.open);
+  }, [expandSignal]);
+  return [open, setOpen];
+}
+
+/* ── Collapsible date group ── */
+function DateGroup({ label, items, openPanel, providerLogos, watchlist, defaultOpen = true, expandSignal }) {
+  const [open, setOpen] = useControlledOpen(expandSignal, defaultOpen);
   const region = getTmdbRegion();
   if (!items.length) return null;
   return (
@@ -229,11 +240,11 @@ function DateGroup({ label, items, openPanel, providerLogos, watchlist, defaultO
 }
 
 /* ── Upcoming content (global, date-grouped) ── */
-export function UpcomingContent({ typeFilters, genreFilters, providers, openPanel, watchlist }) {
+export function UpcomingContent({ typeFilters, genreFilters, providers, openPanel, watchlist, expandSignal }) {
   const [data,       setData]       = useState({ today: [], recentGrouped: {}, recentDates: [], upcomingGrouped: {}, upcomingDates: [] });
   const [loading,    setLoading]    = useState(true);
   const [loadedProviderLogos, setLoadedProviderLogos] = useState({});
-  const [recentOpen, setRecentOpen] = useState(false);
+  const [recentOpen, setRecentOpen] = useControlledOpen(expandSignal, false);
 
   const providerIds = providers.map(p => p.id);
   // "My Channels" (guide_channels) are free/ad-supported broadcast providers,
@@ -412,7 +423,7 @@ export function UpcomingContent({ typeFilters, genreFilters, providers, openPane
         </div>
       )}
 
-      <DateGroup label="Today" items={filteredToday} openPanel={openPanel} providerLogos={providerLogos} watchlist={watchlist} defaultOpen />
+      <DateGroup label="Today" items={filteredToday} openPanel={openPanel} providerLogos={providerLogos} watchlist={watchlist} defaultOpen expandSignal={expandSignal} />
 
       {filteredUpDates.map(date => (
         <DateGroup
@@ -423,6 +434,7 @@ export function UpcomingContent({ typeFilters, genreFilters, providers, openPane
           providerLogos={providerLogos}
           watchlist={watchlist}
           defaultOpen
+          expandSignal={expandSignal}
         />
       ))}
     </div>
