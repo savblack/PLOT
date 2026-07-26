@@ -474,8 +474,8 @@ function DiscoverContent({ openPanel, watchlist, openSections, setOpenSections, 
       {forYou.length > 0 && (
         <section className="discover-section">
           <DiscoverSectionHeader
-            kicker="Recommendations"
-            title="Just For You"
+            kicker="Based on your taste"
+            title="Your Next Watch"
             open={openSections.forYou}
             onToggle={() => toggleSection('forYou')}
           />
