@@ -4362,14 +4362,18 @@ a.provider-chip--link:hover {
   border-bottom: 1px solid var(--border);
 }
 
+/* Nested one level under "Top 10 by Platform", styled like a custom-list row
+   nested under "My Lists" — plain row, border-bottom, right-pointing chevron
+   that rotates down when open — rather than its own card-like surface. */
 .discover-plat-header {
   width: 100%;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 0.85rem 1rem;
-  background: var(--surface);
+  gap: 0.5rem;
+  padding: 0.65rem 1rem;
+  background: none;
   border: none;
+  border-bottom: 1px solid var(--border);
   cursor: pointer;
   text-align: left;
   -webkit-tap-highlight-color: transparent;
@@ -4405,8 +4409,8 @@ a.provider-chip--link:hover {
 }
 
 .discover-plat-name {
-  font-size: 0.8rem;
-  font-weight: 600;
+  font-size: 0.875rem;
+  font-weight: 500;
   color: var(--text-primary);
 }
 
@@ -4437,14 +4441,17 @@ a.provider-chip--link:hover {
 }
 
 .discover-plat-chevron {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   flex-shrink: 0;
-  color: var(--text-muted);
-  transition: transform 0.2s var(--ease);
+  stroke: var(--text-muted);
+  fill: none;
+  stroke-width: 2;
+  transform: rotate(0deg);
+  transition: transform 0.15s ease;
 }
 .discover-plat-chevron.open {
-  transform: rotate(180deg);
+  transform: rotate(90deg);
 }
 
 .discover-plat-body {

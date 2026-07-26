@@ -328,6 +328,12 @@ function PlatformSection({ platform, openPanel, watchlist, typeFilters, genreFil
   return (
     <div className="discover-plat-section">
       <button className="discover-plat-header" onClick={() => setOpen(o => !o)}>
+        <svg
+          className={`discover-plat-chevron${open ? ' open' : ''}`}
+          viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+        >
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
         <div className="discover-plat-header-left">
           {platform.logo_path
             ? <img className="discover-plat-logo" src={`https://image.tmdb.org/t/p/w45${platform.logo_path}`} alt={platform.name} />
@@ -335,12 +341,6 @@ function PlatformSection({ platform, openPanel, watchlist, typeFilters, genreFil
           }
           <span className="discover-plat-name">{platform.name}</span>
         </div>
-        <svg
-          className={`discover-plat-chevron${open ? ' open' : ''}`}
-          viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-        >
-          <polyline points="6 9 12 15 18 9"/>
-        </svg>
       </button>
 
       {open && (
