@@ -444,6 +444,24 @@ function DiscoverContent({ openPanel, watchlist, openSections, setOpenSections, 
   };
   return (
     <div>
+      {hotRail.length > 0 && (
+        <section className="discover-section">
+          <DiscoverSectionHeader
+            kicker="Trending today"
+            title="Hot Right Now"
+            open={openSections.hot}
+            onToggle={() => toggleSection('hot')}
+          />
+          {openSections.hot && (
+            <Rail>
+              {hotRail.map((item, i) => (
+                <RankedCard key={item.id} item={item} rank={i + 2} showRank={false} openPanel={openPanel} watchlist={watchlist} />
+              ))}
+            </Rail>
+          )}
+        </section>
+      )}
+
       {hero && (
         <section className="discover-section discover-featured-section">
           <DiscoverSectionHeader
@@ -468,24 +486,6 @@ function DiscoverContent({ openPanel, watchlist, openSections, setOpenSections, 
         </section>
       )}
 
-      {hotRail.length > 0 && (
-        <section className="discover-section">
-          <DiscoverSectionHeader
-            kicker="Trending today"
-            title="Hot Right Now"
-            open={openSections.hot}
-            onToggle={() => toggleSection('hot')}
-          />
-          {openSections.hot && (
-            <Rail>
-              {hotRail.map((item, i) => (
-                <RankedCard key={item.id} item={item} rank={i + 2} showRank={false} openPanel={openPanel} watchlist={watchlist} />
-              ))}
-            </Rail>
-          )}
-        </section>
-      )}
-
       {recentReleases.length > 0 && (
         <section className="discover-section">
           <DiscoverSectionHeader
@@ -501,6 +501,20 @@ function DiscoverContent({ openPanel, watchlist, openSections, setOpenSections, 
               ))}
             </Rail>
           )}
+        </section>
+      )}
+
+      {weekly.length > 0 && (
+        <section className="discover-section discover-section--list">
+          <DiscoverSectionHeader
+            kicker="Global ranking"
+            title="Top 20 This Week"
+            open={openSections.weekly}
+            onToggle={() => toggleSection('weekly')}
+          />
+          {openSections.weekly && weekly.map((item, i) => (
+            <ChartRow key={item.id} item={item} rank={i + 1} openPanel={openPanel} watchlist={watchlist} />
+          ))}
         </section>
       )}
 
@@ -520,20 +534,6 @@ function DiscoverContent({ openPanel, watchlist, openSections, setOpenSections, 
               ))}
             </BingeRail>
           )}
-        </section>
-      )}
-
-      {weekly.length > 0 && (
-        <section className="discover-section discover-section--list">
-          <DiscoverSectionHeader
-            kicker="Global ranking"
-            title="Top 20 This Week"
-            open={openSections.weekly}
-            onToggle={() => toggleSection('weekly')}
-          />
-          {openSections.weekly && weekly.map((item, i) => (
-            <ChartRow key={item.id} item={item} rank={i + 1} openPanel={openPanel} watchlist={watchlist} />
-          ))}
         </section>
       )}
 
