@@ -4141,6 +4141,16 @@ a.provider-chip--link:hover {
 .discover-chart-row:hover {
   background: var(--surface-raised);
 }
+.discover-chart-row .discover-chart-right.search-row-actions {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+.discover-chart-row:hover .discover-chart-right.search-row-actions,
+.discover-chart-row:focus-within .discover-chart-right.search-row-actions {
+  opacity: 1;
+  pointer-events: auto;
+}
 
 .discover-chart-rank {
   font-family: var(--font-serif);
