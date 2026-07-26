@@ -114,11 +114,11 @@ const runClaudeCopyWriter = () => {
   }
   run('Write copy with Claude Code', 'claude', [
     '-p',
+    codexPrompt,
     '--permission-mode',
     'bypassPermissions',
     '--allowedTools',
     'Bash,Read,Write,WebSearch,WebFetch',
-    codexPrompt,
   ]);
 };
 
