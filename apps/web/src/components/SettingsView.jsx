@@ -15,6 +15,7 @@ import { deleteAccountAndSignOut } from '../utils/deleteAccount.js';
 import { fetchUserDataExport, downloadDataExport, downloadCsvExport } from '../utils/exportData.js';
 import { buildFeedbackAttachmentPath } from '../utils/feedback.js';
 import { downloadICS } from '../utils/ics.js';
+import { setUserTimezone } from '../utils/date.js';
 import { getButtonLikeProps } from '../utils/interactive.js';
 import { IANA_TIMEZONES } from '../utils/timezones.js';
 import { SHOW_MEDIA_SYNC_INTEGRATIONS } from '../launchFeatures.js';
@@ -1209,6 +1210,7 @@ export default function SettingsView() {
       .from('profiles')
       .update({ timezone: tz })
       .eq('id', user.id);
+    setUserTimezone(tz);
     refreshProfile();
     setShowTimezone(false);
     // Clear any pending nudge dismissal so the banner doesn't re-appear

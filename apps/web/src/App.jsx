@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback, useMemo } 
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from './api/supabase.js';
 import { setTmdbRegion } from './api/tmdb.js';
+import { setUserTimezone } from './utils/date.js';
 import AppShell from './components/AppShell.jsx';
 import MediaPanel from './components/MediaPanel.jsx';
 import { useTheme } from './hooks/useTheme.js';
@@ -168,6 +169,7 @@ export default function App() {
       .maybeSingle();
     setProfile(data);
     if (data?.region) setTmdbRegion(data.region);
+    setUserTimezone(data?.timezone || null);
     // Keep is_premium on the PostHog person so any event can be segmented by it.
     if (data) setPersonProps({ is_premium: !!data.is_premium });
     setLoading(false);

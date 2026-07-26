@@ -240,7 +240,10 @@ export const tmdb = {
     const providerParams = providerIds.length
       ? { watch_region: userRegion, with_watch_providers: providerIds.join('|'), with_watch_monetization_types: monetizationTypes }
       : {};
-    const baseParams = { 'release_date.gte': today, 'release_date.lte': end, sort_by: 'popularity.desc', ...providerParams };
+    // `region` makes TMDB filter/sort by the release date for that market
+    // (theatrical dates vary by country) instead of always the primary
+    // (usually US) release date.
+    const baseParams = { 'release_date.gte': today, 'release_date.lte': end, sort_by: 'popularity.desc', region: userRegion, ...providerParams };
     const [theatricalPages, streamingPages] = await Promise.all([
       Promise.all([1, 2, 3, 4, 5].map(page =>
         fetchFromTMDB('/discover/movie', { ...baseParams, 'with_release_type': '2|3', page })
