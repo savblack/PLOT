@@ -4,6 +4,7 @@ import { callAuthenticatedFunction } from '../api/functions.js';
 import { friendlyPremiumError } from '@plot/core/premium.js';
 import { buildTraktAuthorizeUrl, createTraktState, redirectToExternal } from '../utils/redirects.js';
 import { getConfig } from '@plot/core/config.js';
+import { track, EVENTS } from '../lib/analytics.js';
 
 async function callTraktSync(action, body = {}) {
   const { data: { session } } = await supabase.auth.getSession();
@@ -35,6 +36,7 @@ export function useTraktSync(userId) {
       setError('Trakt client ID is not configured');
       return;
     }
+    track(EVENTS.TRAKT_CONNECTED, {});
     redirectToExternal(buildTraktAuthorizeUrl(clientId, createTraktState()));
   }, []);
 
@@ -45,6 +47,7 @@ export function useTraktSync(userId) {
     try {
       const result = await callTraktSync('sync');
       await loadIntegration();
+      track(EVENTS.TRAKT_SYNCED, {});
       return result;
     } catch (e) {
       setError(friendlyPremiumError(e.message));
