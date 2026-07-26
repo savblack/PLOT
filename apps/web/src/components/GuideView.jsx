@@ -473,6 +473,7 @@ export default function GuideView() {
                   ],
                   value: typeFilters,
                   onChange: setTypeFilters,
+                  defaultValue: ['tv', 'cinema', 'movie'],
                 },
                 {
                   heading: 'Genre',

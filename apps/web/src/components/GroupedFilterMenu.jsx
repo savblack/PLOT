@@ -29,10 +29,21 @@ export default function GroupedFilterMenu({ ariaLabel = 'Filter', groups }) {
       : [...values, value]);
   };
 
+  // A group counts as "active" (filtered away from its default) when its
+  // current value differs from defaultValue — order-independent. Groups that
+  // don't pass a defaultValue default to "empty selection = no filter".
+  const isGroupActive = (group) => {
+    const def = group.defaultValue ?? [];
+    if (group.value.length !== def.length) return true;
+    const defSet = new Set(def);
+    return !group.value.every(v => defSet.has(v));
+  };
+  const hasActiveFilters = visibleGroups.some(isGroupActive);
+
   return (
     <div className="guide-filter" ref={ref}>
       <button
-        className={`guide-filter-btn${open ? ' open' : ''}`}
+        className={`guide-filter-btn${open ? ' open' : ''}${hasActiveFilters ? ' active' : ''}`}
         onClick={() => setOpen(o => !o)}
         aria-label={ariaLabel}
         aria-expanded={open}
