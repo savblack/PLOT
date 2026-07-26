@@ -583,7 +583,7 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
                         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                         padding: '0.4rem 0.2rem', minHeight: 44,
                         border: `1px solid ${isThis ? 'var(--accent)' : 'var(--border)'}`,
-                        borderRadius: 'var(--radius)',
+                        borderRadius: 8,
                         background: isThis ? 'var(--accent)' : 'transparent',
                         color: isThis ? '#fff' : 'var(--text-primary)',
                         cursor: 'pointer', fontSize: '0.72rem',
