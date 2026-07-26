@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from './supabase.js';
 import { logWatchedItem } from './userMedia.js';
 import { normalizeRating } from './ratings.js';
@@ -18,16 +18,21 @@ function notifyHistoryChanged() {
  *   entries: any[];
  *   loading: boolean;
  *   logWatched: (item: any, opts?: { rating?: number; note?: string; dnf?: boolean; watchedAt?: string; logRewatches?: boolean }) => Promise<any>;
- *   updateEntry: (tmdbId: number, updates: any) => Promise<any>;
- *   removeEntry: (tmdbId: number) => Promise<boolean>;
- *   isWatched: (tmdbId: number) => boolean;
+ *   updateEntry: (tmdbId: number, updates: any, mediaType?: string) => Promise<any>;
+ *   removeEntry: (tmdbId: number, mediaType?: string) => Promise<boolean>;
+ *   isWatched: (tmdbId: number, mediaType?: string) => boolean;
  *   reload: () => Promise<void>;
  * }}
  */
 export function useHistory(userId) {
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [lastError, setLastError] = useState(null);
+  // A ref, not state: callers read this synchronously right after an await
+  // resolves (same tick), before any re-render — state would still hold the
+  // pre-call value at that point since React re-renders are async relative to
+  // the closure that triggered them.
+  const lastErrorRef = useRef(null);
+  const getLastError = useCallback(() => lastErrorRef.current, []);
 
   const load = useCallback(async () => {
     if (!userId) { setLoading(false); return; }
@@ -61,13 +66,13 @@ export function useHistory(userId) {
      history row instead of overwriting the previous watch (see SUS-66 /
      profiles.log_rewatches). */
   const logWatched = useCallback(async (item, { rating, note, dnf, watchedAt, logRewatches = true } = {}) => {
-    if (!userId) { setLastError('You need to be signed in to log a watch.'); return null; }
+    if (!userId) { lastErrorRef.current = 'You need to be signed in to log a watch.'; return null; }
     const { data, error, row } = await logWatchedItem({ userId, item, rating, note, dnf, watchedAt, logRewatches });
     if (error) {
       console.error('Failed to log watched item', error);
-      setLastError(error.message || 'Unknown error saving watch status.');
+      lastErrorRef.current = error.message || 'Unknown error saving watch status.';
     } else {
-      setLastError(null);
+      lastErrorRef.current = null;
     }
 
     if (data) {
@@ -77,8 +82,8 @@ export function useHistory(userId) {
         // are off, in which case the DB write already collapsed to one row
         // per title and every stale local entry for it must go too.
         const withoutStale = prev.filter(e => logRewatches
-          ? !(e.tmdb_id === row.tmdb_id && e.watched_at === row.watched_at)
-          : e.tmdb_id !== row.tmdb_id);
+          ? !(e.tmdb_id === row.tmdb_id && e.media_type === row.media_type && e.watched_at === row.watched_at)
+          : !(e.tmdb_id === row.tmdb_id && e.media_type === row.media_type));
         return [data, ...withoutStale].sort((a, b) => (a.watched_at < b.watched_at ? 1 : -1));
       });
       notifyHistoryChanged();
@@ -96,9 +101,12 @@ export function useHistory(userId) {
      A title can now have multiple history rows (rewatches), so this targets
      the most recent entry for tmdbId — i.e. the one representing "current"
      status in every existing caller (MediaPanel's status panel, SearchView) —
-     by row id, not a blind tmdb_id match that could hit several rows. */
-  const updateEntry = useCallback(async (tmdbId, updates) => {
-    const target = entries.find(e => e.tmdb_id === Number(tmdbId));
+     by row id, not a blind tmdb_id match that could hit several rows. mediaType
+     is required to disambiguate: movie and TV TMDB ids are separate numbering
+     sequences that can collide (e.g. movie 262 vs tv 262 are unrelated), so a
+     tmdb_id-only match can silently grab the wrong title's row. */
+  const updateEntry = useCallback(async (tmdbId, updates, mediaType) => {
+    const target = entries.find(e => e.tmdb_id === Number(tmdbId) && (!mediaType || e.media_type === mediaType));
     if (!target) return null;
 
     const normalizedUpdates = 'rating' in updates
@@ -122,10 +130,11 @@ export function useHistory(userId) {
   }, [entries]);
 
   /* ── Remove entry ──
-     Same row-id targeting as updateEntry — removes only the most recent
-     watch of this title, leaving earlier rewatches intact. */
-  const removeEntry = useCallback(async (tmdbId) => {
-    const target = entries.find(e => e.tmdb_id === Number(tmdbId));
+     Same row-id targeting (and same mediaType disambiguation) as updateEntry —
+     removes only the most recent watch of this title, leaving earlier
+     rewatches intact. */
+  const removeEntry = useCallback(async (tmdbId, mediaType) => {
+    const target = entries.find(e => e.tmdb_id === Number(tmdbId) && (!mediaType || e.media_type === mediaType));
     if (!target) return false;
 
     const { error } = await supabase
@@ -138,10 +147,12 @@ export function useHistory(userId) {
     return true;
   }, [entries]);
 
+  // mediaType optional for back-compat, but always pass it when known — a
+  // movie and TV show can share a tmdb_id (see note on updateEntry above).
   const isWatched = useCallback(
-    (tmdbId) => entries.some(e => e.tmdb_id === Number(tmdbId)),
+    (tmdbId, mediaType) => entries.some(e => e.tmdb_id === Number(tmdbId) && (!mediaType || e.media_type === mediaType)),
     [entries]
   );
 
-  return { entries, loading, logWatched, updateEntry, removeEntry, isWatched, reload: load, lastError };
+  return { entries, loading, logWatched, updateEntry, removeEntry, isWatched, reload: load, getLastError };
 }

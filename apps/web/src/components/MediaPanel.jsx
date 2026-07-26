@@ -390,14 +390,6 @@ function PlusIcon() {
     </svg>
   );
 }
-function CheckSmallIcon({ color } = {}) {
-  return (
-    <svg viewBox="0 0 24 24" width="15" height="15" fill="none"
-      stroke={color || 'currentColor'} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="20 6 9 17 4 12"/>
-    </svg>
-  );
-}
 function PlaySmallIcon() {
   return (
     <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
@@ -903,11 +895,11 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
   const inList     = watchlist.isInList(itemId);
   const isWatching = !isMovie && watching.isWatching(itemId);
   const progress   = watching.getProgress(itemId);
-  const watched    = history.isWatched(itemId);
+  const watched    = history.isWatched(itemId, itemType);
   const isFav        = favorites.isFavorite(itemId);
   const fw           = favoriteWords(profile?.region);
   const isInAnyList  = customLists?.lists?.some(list => customLists.isInList(list.id, itemId)) ?? false;
-  const watchedEntry = history.entries.find(e => e.tmdb_id === Number(itemId));
+  const watchedEntry = history.entries.find(e => e.tmdb_id === Number(itemId) && e.media_type === itemType);
   // Date watched defaults to the date this title was added to Saved (not
   // today) — most titles are watched a while after being saved, and that's a
   // more honest default than "just now". Falls back to today if it was never
@@ -1093,7 +1085,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
   const handleWatchedStatus = useCallback(async (dnf) => {
     const isSameWatchedState = watched && (!!watchedEntry?.dnf === dnf);
     if (isSameWatchedState) {
-      const removed = await history.removeEntry(itemId);
+      const removed = await history.removeEntry(itemId, itemType);
       return removed
         ? { ok: true }
         : { ok: false, error: 'Could not clear watch status. Please try again.' };
@@ -1106,13 +1098,14 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
       ),
       clearWatching: () => watching.stopWatching(itemId),
       removeFromSaved: () => watchlist.removeFromList(itemId),
-      rollbackHistory: () => history.removeEntry(itemId),
+      rollbackHistory: () => history.removeEntry(itemId, itemType),
       shouldClearWatching: !isMovie && isWatching,
       shouldRemoveFromSaved: inList && !isWatching,
     });
     // Surface the real Supabase error (e.g. constraint/network failure) instead
     // of the generic fallback message, so a recurrence is actually diagnosable.
-    return (!result.ok && history.lastError) ? { ok: false, error: history.lastError } : result;
+    const realError = !result.ok && history.getLastError();
+    return realError ? { ok: false, error: realError } : result;
   }, [defaultWatchedAt, details, history, inList, isMovie, isWatching, itemId, itemType, profile?.log_rewatches, watched, watchedEntry?.dnf, watchlist, watching]);
 
   const handleClearStatus = useCallback(async () => {
@@ -1123,7 +1116,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
         : { ok: false, error: 'Could not clear watch status. Please try again.' };
     }
     if (watched) {
-      const removed = await history.removeEntry(itemId);
+      const removed = await history.removeEntry(itemId, itemType);
       return removed
         ? { ok: true }
         : { ok: false, error: 'Could not clear watch status. Please try again.' };
@@ -1442,9 +1435,8 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                   Your review
                 </div>
 
-                {/* Stars + DNF */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.65rem' }}>
-                  {/* Star rating */}
+                {/* Star rating */}
+                <div style={{ marginBottom: '0.65rem' }}>
                   <div
                     className="half-star-rating"
                     aria-label={localRating ? `${ratingToStars(localRating)} out of 5 stars` : 'No rating'}
@@ -1463,22 +1455,6 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                       </button>
                     ))}
                   </div>
-
-                  {/* Didn't finish chip */}
-                  <button
-                    onClick={() => setLocalDnf(d => !d)}
-                    style={{
-                      padding: '5px 11px', borderRadius: 999,
-                      border: localDnf ? '1.5px solid rgba(251,146,60,0.5)' : '1.5px solid var(--border)',
-                      background: localDnf ? 'rgba(251,146,60,0.12)' : 'transparent',
-                      color: localDnf ? '#fb923c' : 'var(--text-muted)',
-                      fontSize: '0.76rem', fontWeight: 600, cursor: 'pointer',
-                      display: 'flex', alignItems: 'center', gap: '4px', transition: 'all 0.18s',
-                    }}
-                  >
-                    {localDnf && <CheckSmallIcon color="#fb923c" />}
-                    Didn't finish
-                  </button>
                 </div>
 
                 {/* Date watched */}
@@ -1538,7 +1514,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                           note:       localReview.trim() || null,
                           dnf:        localDnf,
                           watched_at: localWatchedAt || defaultWatchedAt,
-                        });
+                        }, itemType);
                       } else {
                         await history.logWatched(
                           { ...details, id: itemId, media_type: itemType },

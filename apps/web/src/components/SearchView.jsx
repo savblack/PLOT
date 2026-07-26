@@ -45,7 +45,7 @@ function ResultRow({ item, openPanel, watchlist, favorites, history, region }) {
   const comingSoon = releaseDate > localDateStr();
   const inList     = watchlist.isInList(id);
   const isFav      = favorites.isFavorite(id);
-  const watched    = history.isWatched(id);
+  const watched    = history.isWatched(id, type);
 
   const openDetails = () => openPanel(id, type);
 

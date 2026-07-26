@@ -58,22 +58,25 @@ export async function logWatchedItem({ userId, item, rating, note, dnf, watchedA
     dnf: dnf ?? false,
   };
 
-  // logRewatches: a rewatch on a new date becomes its own history row
-  // (upsert on user_id,tmdb_id,watched_at — the same date still overwrites,
-  // so duplicate taps/re-imports don't create duplicate rows). With the
-  // preference off, collapse back to the old single-row-per-title behavior —
-  // there's no more DB-level unique(user_id,tmdb_id) to upsert against (it
-  // was relaxed so rewatches can coexist), so do it explicitly: clear any
-  // existing rows for this title first, then insert the one true row.
+  // logRewatches: a rewatch on a new date becomes its own history row (upsert
+  // on user_id,tmdb_id,media_type,watched_at — the same date still overwrites,
+  // so duplicate taps/re-imports don't create duplicate rows; media_type is
+  // required in the key because movie and TV TMDB ids are separate numbering
+  // sequences that can collide, e.g. movie 262 vs tv 262 are unrelated titles).
+  // With the preference off, collapse back to the old single-row-per-title
+  // behavior — there's no more DB-level unique(user_id,tmdb_id,media_type) to
+  // upsert against (it was relaxed so rewatches can coexist), so do it
+  // explicitly: clear any existing rows for this title first, then insert the
+  // one true row.
   if (!logRewatches) {
-    await supabase.from('history').delete().eq('user_id', userId).eq('tmdb_id', row.tmdb_id);
+    await supabase.from('history').delete().eq('user_id', userId).eq('tmdb_id', row.tmdb_id).eq('media_type', row.media_type);
     const { data, error } = await supabase.from('history').insert(row).select().single();
     return { data, error, row };
   }
 
   const { data, error } = await supabase
     .from('history')
-    .upsert(row, { onConflict: 'user_id,tmdb_id,watched_at' })
+    .upsert(row, { onConflict: 'user_id,tmdb_id,media_type,watched_at' })
     .select()
     .single();
 
