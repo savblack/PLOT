@@ -27,8 +27,8 @@ jobs:
 
       - run: npm ci
 
-      - name: Install Codex CLI
-        run: npm install -g @openai/codex
+      - name: Install Claude Code CLI
+        run: npm install -g @anthropic-ai/claude-code
 
       - name: Confirm Sunday learning is applied
         if: github.event_name == 'schedule'
@@ -37,17 +37,15 @@ jobs:
           SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
-      - name: Generate the week with Codex
+      - name: Generate the week with Claude Code
         run: |
-          if [ -z "$CODEX_AUTH" ]; then
-            echo "Missing CODEX_AUTH secret."
+          if [ -z "$CLAUDE_CODE_OAUTH_TOKEN" ]; then
+            echo "Missing CLAUDE_CODE_OAUTH_TOKEN secret."
             exit 1
           fi
-          mkdir -p ~/.codex
-          printf '%s' "$CODEX_AUTH" > ~/.codex/auth.json
-          node marketing/scripts/automation.mjs weekly --dangerous-codex
+          node marketing/scripts/automation.mjs weekly --copy-runner=claude
         env:
-          CODEX_AUTH: ${{ secrets.CODEX_AUTH }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
