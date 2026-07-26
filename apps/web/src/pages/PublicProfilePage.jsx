@@ -121,7 +121,7 @@ const styles = `
 
   /* ── Left-aligned header: avatar + name/handle/stats in one row, bio + actions below ── */
   .pp-header { padding-top: 1.75rem; }
-  .pp-header-top { display: flex; align-items: flex-start; gap: 1rem; }
+  .pp-header-top { display: flex; align-items: center; gap: 1rem; }
   .pp-avatar {
     width: 68px; height: 68px; border-radius: 50%; flex-shrink: 0;
     object-fit: cover; background: var(--surface-raised); border: 1px solid var(--border);
