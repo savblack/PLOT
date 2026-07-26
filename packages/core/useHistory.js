@@ -27,6 +27,7 @@ function notifyHistoryChanged() {
 export function useHistory(userId) {
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [lastError, setLastError] = useState(null);
 
   const load = useCallback(async () => {
     if (!userId) { setLoading(false); return; }
@@ -60,9 +61,14 @@ export function useHistory(userId) {
      history row instead of overwriting the previous watch (see SUS-66 /
      profiles.log_rewatches). */
   const logWatched = useCallback(async (item, { rating, note, dnf, watchedAt, logRewatches = true } = {}) => {
-    if (!userId) return null;
+    if (!userId) { setLastError('You need to be signed in to log a watch.'); return null; }
     const { data, error, row } = await logWatchedItem({ userId, item, rating, note, dnf, watchedAt, logRewatches });
-    if (error) console.error('Failed to log watched item', error);
+    if (error) {
+      console.error('Failed to log watched item', error);
+      setLastError(error.message || 'Unknown error saving watch status.');
+    } else {
+      setLastError(null);
+    }
 
     if (data) {
       setEntries(prev => {
@@ -137,5 +143,5 @@ export function useHistory(userId) {
     [entries]
   );
 
-  return { entries, loading, logWatched, updateEntry, removeEntry, isWatched, reload: load };
+  return { entries, loading, logWatched, updateEntry, removeEntry, isWatched, reload: load, lastError };
 }

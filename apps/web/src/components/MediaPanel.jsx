@@ -3,6 +3,7 @@ import { useApp, backdropUrl, logoUrl, profileUrl, countdownChip, formatDate } f
 import { tmdb, getTmdbRegion } from '../api/tmdb.js';
 import { findDuplicateCustomList } from '../domain/customLists.js';
 import { useHistory } from '../hooks/useHistory.js';
+import { localDateStr } from '../utils/date.js';
 import { getEpisodeGuideState } from '../utils/episodeProgress.js';
 import { markMediaAsWatched, moveSavedShowToWatching } from '../utils/mediaStatus.js';
 import { resolveMediaPanelEscapeAction } from '../utils/mediaPanel.js';
@@ -892,6 +893,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
   const [localRating,    setLocalRating]    = useState(0);
   const [localReview,    setLocalReview]    = useState('');
   const [localDnf,       setLocalDnf]       = useState(false);
+  const [localWatchedAt, setLocalWatchedAt] = useState('');
   const [reviewSaving,   setReviewSaving]   = useState(false);
   const [statusActionPending, setStatusActionPending] = useState('');
   const [statusActionError, setStatusActionError] = useState('');
@@ -906,6 +908,12 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
   const fw           = favoriteWords(profile?.region);
   const isInAnyList  = customLists?.lists?.some(list => customLists.isInList(list.id, itemId)) ?? false;
   const watchedEntry = history.entries.find(e => e.tmdb_id === Number(itemId));
+  // Date watched defaults to the date this title was added to Saved (not
+  // today) — most titles are watched a while after being saved, and that's a
+  // more honest default than "just now". Falls back to today if it was never
+  // saved before being marked watched.
+  const watchlistEntry   = watchlist.items?.find(i => i.tmdb_id === Number(itemId));
+  const defaultWatchedAt = watchlistEntry?.created_at ? watchlistEntry.created_at.slice(0, 10) : localDateStr();
   const hasSavedReview = !!(
     watchedEntry?.rating ||
     watchedEntry?.note?.trim() ||
@@ -914,11 +922,13 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
   const savedRating = watchedEntry?.rating || 0;
   const savedReview = watchedEntry?.note || '';
   const savedDnf = !!watchedEntry?.dnf;
-  const hasReviewDraft = localRating > 0 || !!localReview.trim() || localDnf;
+  const savedWatchedAt = watchedEntry?.watched_at || defaultWatchedAt;
+  const hasReviewDraft = localRating > 0 || !!localReview.trim() || localDnf || (!!watchedEntry && localWatchedAt !== savedWatchedAt);
   const reviewDirty = !!watchedEntry && (
     localRating !== savedRating ||
     localReview.trim() !== savedReview.trim() ||
-    localDnf !== savedDnf
+    localDnf !== savedDnf ||
+    localWatchedAt !== savedWatchedAt
   );
   const reviewStateClass = reviewDirty || (!hasSavedReview && hasReviewDraft)
     ? ' review-textarea--active'
@@ -987,6 +997,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
       setLocalRating(watchedEntry.rating || 0);
       setLocalReview(watchedEntry.note   || '');
       setLocalDnf(watchedEntry.dnf       || false);
+      setLocalWatchedAt(watchedEntry.watched_at || defaultWatchedAt);
     }
   }, [watchedEntry?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -1088,15 +1099,21 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
         : { ok: false, error: 'Could not clear watch status. Please try again.' };
     }
 
-    return markMediaAsWatched({
-      logWatched: () => history.logWatched({ ...details, id: itemId, media_type: itemType, dnf }, { logRewatches: profile?.log_rewatches ?? true }),
+    const result = await markMediaAsWatched({
+      logWatched: () => history.logWatched(
+        { ...details, id: itemId, media_type: itemType, dnf },
+        { logRewatches: profile?.log_rewatches ?? true, watchedAt: defaultWatchedAt },
+      ),
       clearWatching: () => watching.stopWatching(itemId),
       removeFromSaved: () => watchlist.removeFromList(itemId),
       rollbackHistory: () => history.removeEntry(itemId),
       shouldClearWatching: !isMovie && isWatching,
       shouldRemoveFromSaved: inList && !isWatching,
     });
-  }, [details, history, inList, isMovie, isWatching, itemId, itemType, profile?.log_rewatches, watched, watchedEntry?.dnf, watchlist, watching]);
+    // Surface the real Supabase error (e.g. constraint/network failure) instead
+    // of the generic fallback message, so a recurrence is actually diagnosable.
+    return (!result.ok && history.lastError) ? { ok: false, error: history.lastError } : result;
+  }, [defaultWatchedAt, details, history, inList, isMovie, isWatching, itemId, itemType, profile?.log_rewatches, watched, watchedEntry?.dnf, watchlist, watching]);
 
   const handleClearStatus = useCallback(async () => {
     if (isWatching) {
@@ -1464,6 +1481,23 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                   </button>
                 </div>
 
+                {/* Date watched */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.65rem' }}>
+                  <span style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>Watched on</span>
+                  <input
+                    type="date"
+                    value={localWatchedAt}
+                    max={localDateStr()}
+                    onChange={e => setLocalWatchedAt(e.target.value || defaultWatchedAt)}
+                    style={{
+                      padding: '0.35rem 0.6rem', borderRadius: '0.5rem',
+                      border: '1px solid var(--border)', background: 'var(--surface)',
+                      color: 'var(--text-primary)', fontSize: '0.78rem', fontFamily: 'inherit',
+                    }}
+                    aria-label="Date watched"
+                  />
+                </div>
+
                 {/* Review text */}
                 <div style={{ position: 'relative', marginBottom: '0.65rem' }}>
                   <textarea
@@ -1500,14 +1534,15 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                       setReviewSaving(true);
                       if (watchedEntry) {
                         await history.updateEntry(itemId, {
-                          rating: localRating || null,
-                          note:   localReview.trim() || null,
-                          dnf:    localDnf,
+                          rating:     localRating || null,
+                          note:       localReview.trim() || null,
+                          dnf:        localDnf,
+                          watched_at: localWatchedAt || defaultWatchedAt,
                         });
                       } else {
                         await history.logWatched(
                           { ...details, id: itemId, media_type: itemType },
-                          { rating: localRating || null, note: localReview.trim() || null, dnf: localDnf, logRewatches: profile?.log_rewatches ?? true }
+                          { rating: localRating || null, note: localReview.trim() || null, dnf: localDnf, watchedAt: localWatchedAt || defaultWatchedAt, logRewatches: profile?.log_rewatches ?? true }
                         );
                       }
                       setReviewSaving(false);
