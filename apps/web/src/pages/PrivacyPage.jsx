@@ -22,7 +22,7 @@ export default function PrivacyPage() {
           <li><strong>Account information</strong>: your email address and hashed password (managed via Supabase Auth)</li>
           <li><strong>Profile and preference data</strong>: your username, display name, optional bio, region, timezone, and channel/provider preferences</li>
           <li><strong>Activity data</strong>: films and TV shows you log, rate, save, add to lists, or track in progress</li>
-          <li><strong>Journal entries</strong>: notes and reviews you write about content you've watched</li>
+          <li><strong>History entries</strong>: notes and reviews you write about content you've watched</li>
           <li><strong>Integration and utility data</strong>: calendar feed tokens, reminder settings, and optional Plex/Trakt integration records where enabled</li>
           <li><strong>Support data</strong>: feedback messages and optional screenshot attachments you submit through the app</li>
           <li><strong>Usage data</strong>: product analytics about pages viewed and features used</li>
@@ -33,7 +33,7 @@ export default function PrivacyPage() {
         <p>We use your data to operate, maintain, and improve the Service, including:</p>
         <ul>
           <li>Providing and personalizing your PLOT experience</li>
-          <li>Displaying your watch history, lists, journal, reminders, and watch progress inside your account</li>
+          <li>Displaying your watch history, lists, reminders, and watch progress inside your account</li>
           <li>Sending transactional emails (account confirmation, password reset)</li>
           <li>Operating calendar links, support workflows, and optional media integrations</li>
           <li>Analyzing usage patterns to improve the product and monitor launch health</li>
@@ -65,7 +65,7 @@ export default function PrivacyPage() {
         </ul>
 
         <h2>6. Data Retention &amp; Deletion</h2>
-        <p>Your data is retained for as long as your account remains active. You may request deletion of your account and associated app data at any time through account settings. Account deletion removes the current app records tied to your user account, including lists, favorites, reminders, journal/history, integration records, feedback rows, and the original feedback attachment objects associated with your account. We may retain operational logs, anonymised analytics, and temporary backup copies for a limited period where required for security, debugging, or normal infrastructure recovery.</p>
+        <p>Your data is retained for as long as your account remains active. You may request deletion of your account and associated app data at any time through account settings. Account deletion removes the current app records tied to your user account, including lists, favorites, reminders, history, integration records, feedback rows, and the original feedback attachment objects associated with your account. We may retain operational logs, anonymised analytics, and temporary backup copies for a limited period where required for security, debugging, or normal infrastructure recovery.</p>
 
         <h2>7. Cookies &amp; Local Storage</h2>
         <p>PLOT uses cookies and local storage for session management, authentication, and limited product analytics state. We do not use advertising cookies. By using the Service, you consent to this use.</p>

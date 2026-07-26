@@ -382,8 +382,8 @@ async function upsertTraktData(
     if (error) throw error
   }
 
-  // Log history to journal
-  const journalRows = historyItems
+  // Log history
+  const historyRows = historyItems
     .filter(item => item.tmdb_id && item.media_type)
     .map(item => ({
       user_id: userId,
@@ -394,14 +394,14 @@ async function upsertTraktData(
       watched_at: item.watched_at || new Date().toISOString().slice(0, 10),
     }))
 
-  if (journalRows.length > 0) {
+  if (historyRows.length > 0) {
     const { error } = await supabaseAdmin
-      .from('journal')
-      .upsert(journalRows, { onConflict: 'user_id,tmdb_id' })
+      .from('history')
+      .upsert(historyRows, { onConflict: 'user_id,tmdb_id' })
     if (error) throw error
   }
 
-  return { watchlistCount: listRows.length, watchedCount: journalRows.length }
+  return { watchlistCount: listRows.length, watchedCount: historyRows.length }
 }
 
 // ── Outbox processing ─────────────────────────────────────────────────────────

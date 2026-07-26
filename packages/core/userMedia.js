@@ -66,13 +66,13 @@ export async function logWatchedItem({ userId, item, rating, note, dnf, watchedA
   // was relaxed so rewatches can coexist), so do it explicitly: clear any
   // existing rows for this title first, then insert the one true row.
   if (!logRewatches) {
-    await supabase.from('journal').delete().eq('user_id', userId).eq('tmdb_id', row.tmdb_id);
-    const { data, error } = await supabase.from('journal').insert(row).select().single();
+    await supabase.from('history').delete().eq('user_id', userId).eq('tmdb_id', row.tmdb_id);
+    const { data, error } = await supabase.from('history').insert(row).select().single();
     return { data, error, row };
   }
 
   const { data, error } = await supabase
-    .from('journal')
+    .from('history')
     .upsert(row, { onConflict: 'user_id,tmdb_id,watched_at' })
     .select()
     .single();

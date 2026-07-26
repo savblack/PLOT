@@ -69,11 +69,11 @@ test('runDataExport strips secret columns from profiles and media_integrations',
 });
 
 test('runDataExport returns the failing table and stops on the first read error', async () => {
-  const { client, calls } = createExportClient({ failingTable: 'journal' });
+  const { client, calls } = createExportClient({ failingTable: 'history' });
 
   const result = await runDataExport(client, 'user-123');
 
-  assert.equal(result.table, 'journal');
-  assert.equal(result.error?.message, 'failed:journal');
+  assert.equal(result.table, 'history');
+  assert.equal(result.error?.message, 'failed:history');
   assert.equal(calls.some((call) => call.table === 'feedback'), false);
 });

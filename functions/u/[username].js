@@ -43,10 +43,10 @@ async function loadProfile(handle) {
 
   const base = `${SUPABASE_URL}/rest/v1`;
   const [cRes, fRes, revRes, ratedRes, topRes] = await Promise.all([
-    fetch(`${base}/journal?user_id=eq.${p.id}&select=id`, { headers: { ...headers, Prefer: 'count=exact', Range: '0-0' } }),
+    fetch(`${base}/history?user_id=eq.${p.id}&select=id`, { headers: { ...headers, Prefer: 'count=exact', Range: '0-0' } }),
     fetch(`${base}/follows?following_id=eq.${p.id}&status=eq.accepted&select=follower_id`, { headers: { ...headers, Prefer: 'count=exact', Range: '0-0' } }),
-    fetch(`${base}/journal?user_id=eq.${p.id}&note=not.is.null&select=id`, { headers: { ...headers, Prefer: 'count=exact', Range: '0-0' } }),
-    fetch(`${base}/journal?user_id=eq.${p.id}&select=rating&rating=not.is.null`, { headers }),
+    fetch(`${base}/history?user_id=eq.${p.id}&note=not.is.null&select=id`, { headers: { ...headers, Prefer: 'count=exact', Range: '0-0' } }),
+    fetch(`${base}/history?user_id=eq.${p.id}&select=rating&rating=not.is.null`, { headers }),
     fetch(`${base}/user_top_lists?user_id=eq.${p.id}&select=list_type,rank,tmdb_id,media_type,title,poster_path&order=rank.asc`, { headers }),
   ]);
   const rated = await ratedRes.json().catch(() => []);

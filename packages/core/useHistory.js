@@ -12,7 +12,7 @@ function notifyHistoryChanged() {
 }
 
 /**
- * Watch-history journal for a user.
+ * Watch history for a user.
  * @param {string|null|undefined} userId
  * @returns {{
  *   entries: any[];
@@ -38,7 +38,7 @@ export function useHistory(userId) {
     while (!done) {
       const from = page * PAGE_SIZE;
       const { data } = await supabase
-        .from('journal')
+        .from('history')
         .select('*')
         .eq('user_id', userId)
         .order('watched_at', { ascending: false })
@@ -86,7 +86,7 @@ export function useHistory(userId) {
   }, [userId]);
 
   /* ── Update rating / note ──
-     A title can now have multiple journal rows (rewatches), so this targets
+     A title can now have multiple history rows (rewatches), so this targets
      the most recent entry for tmdbId — i.e. the one representing "current"
      status in every existing caller (MediaPanel's status panel, SearchView) —
      by row id, not a blind tmdb_id match that could hit several rows. */
@@ -99,7 +99,7 @@ export function useHistory(userId) {
       : updates;
 
     const { data } = await supabase
-      .from('journal')
+      .from('history')
       .update(normalizedUpdates)
       .eq('id', target.id)
       .select()
@@ -122,7 +122,7 @@ export function useHistory(userId) {
     if (!target) return false;
 
     const { error } = await supabase
-      .from('journal')
+      .from('history')
       .delete()
       .eq('id', target.id);
     if (error) return false; // keep local state intact so the entry doesn't ghost-reappear

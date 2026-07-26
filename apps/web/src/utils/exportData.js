@@ -85,7 +85,7 @@ export function downloadDataExport(payload, filename = exportFilename()) {
 // in the JSON export only — a single flat CSV can't represent it faithfully.
 const CSV_SECTIONS = [
   { table: 'list_items',             section: 'Watchlist',   date: (r) => r.created_at || r.added_at },
-  { table: 'journal',                section: 'History',     date: (r) => r.watched_at },
+  { table: 'history',                section: 'History',     date: (r) => r.watched_at },
   { table: 'watching_progress',      section: 'Watching',    date: (r) => r.updated_at || r.started_at },
   { table: 'user_favourites',        section: 'Favourites',  date: (r) => r.added_at || r.created_at },
   { table: 'user_top_lists',         section: 'Top list',    date: (r) => r.added_at || r.created_at },

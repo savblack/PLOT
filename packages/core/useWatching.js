@@ -118,7 +118,7 @@ export function useWatching(userId) {
 
     setItems(prev => prev.map(i => i.tmdb_id === Number(tmdbId) ? data : i));
 
-    // Log completed episode to journal via shared helper (includes date validation)
+    // Log completed episode to history via shared helper (includes date validation)
     if (userId) {
       await logWatchedItem({
         userId,

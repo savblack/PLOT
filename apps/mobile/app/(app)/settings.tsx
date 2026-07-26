@@ -559,7 +559,7 @@ export default function SettingsScreen() {
       { text: 'Cancel', style: 'cancel' },
       { text: 'Clear history', style: 'destructive', onPress: async () => {
         setClearingHist(true);
-        await supabase.from('journal').delete().eq('user_id', userId!);
+        await supabase.from('history').delete().eq('user_id', userId!);
         setClearingHist(false);
       }},
     ]);
