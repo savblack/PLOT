@@ -466,6 +466,23 @@ function ProviderChip({ provider, tmdbId, mediaType, region, justwatchLink }) {
   );
 }
 
+/* ── Full-width pill button, styled like ConfirmModal's dialog buttons ── */
+function pillButtonStyle(variant) {
+  return {
+    width: '100%',
+    padding: '0.7rem 1.1rem',
+    borderRadius: '9999px',
+    border: 'none',
+    fontSize: '0.85rem',
+    fontWeight: variant === 'solid' ? 600 : 500,
+    fontFamily: 'var(--font-sans)',
+    cursor: 'pointer',
+    transition: 'opacity 0.15s',
+    background: variant === 'solid' ? 'var(--accent)' : 'var(--surface-raised)',
+    color: variant === 'solid' ? '#fff' : 'var(--text-primary)',
+  };
+}
+
 /* ── Add to custom list sheet ── */
 function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
   const { customLists, topLists, profile } = useApp();
@@ -612,40 +629,57 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
           </div>
         )}
         {rankConflict && (
-          <div style={{
-            position: 'fixed', inset: 0, zIndex: 1200,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            padding: '1.5rem',
-          }}>
-            <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)' }} onClick={() => { setRankConflict(null); setPickingMoveTo(false); }} />
-            <div style={{
-              position: 'relative', width: '100%', maxWidth: 340,
-              background: 'var(--surface)', borderRadius: 'var(--radius-lg)',
-              padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem',
-            }}>
+          <div
+            onClick={() => { setRankConflict(null); setPickingMoveTo(false); }}
+            style={{
+              position: 'fixed', inset: 0, zIndex: 1200,
+              background: 'rgba(0,0,0,0.5)',
+              backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              padding: '1.5rem',
+            }}
+          >
+            <div
+              onClick={e => e.stopPropagation()}
+              style={{
+                width: '100%', maxWidth: 360,
+                background: 'var(--surface)', border: '1px solid var(--border)',
+                borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-overlay)',
+                padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem',
+              }}
+            >
               {!pickingMoveTo ? (
                 <>
-                  <div style={{ fontSize: '0.875rem', color: 'var(--text-primary)' }}>
-                    Replace <strong>"{rankConflict.occupant.title}"</strong> at #{rankConflict.rank} with <strong>"{item.title}"</strong>?
-                  </div>
-                  <button className="btn btn-primary btn-xs" onClick={() => {
-                    topLists.setSlot(topListType, rankConflict.rank, item);
-                    setRankConflict(null);
+                  <p style={{
+                    fontFamily: 'var(--font-serif)', fontSize: '1.15rem', fontWeight: 400,
+                    color: 'var(--text-primary)', lineHeight: 1.3, margin: '0 0 0.25rem',
                   }}>
+                    Replace "{rankConflict.occupant.title}" at #{rankConflict.rank} with "{item.title}"?
+                  </p>
+                  <button
+                    onClick={() => {
+                      topLists.setSlot(topListType, rankConflict.rank, item);
+                      setRankConflict(null);
+                    }}
+                    style={pillButtonStyle('solid')}
+                  >
                     Replace
                   </button>
-                  <button className="btn btn-xs" onClick={() => setPickingMoveTo(true)}>
+                  <button onClick={() => setPickingMoveTo(true)} style={pillButtonStyle('muted')}>
                     Move "{rankConflict.occupant.title}" to another spot first
                   </button>
-                  <button className="btn btn-xs" onClick={() => { setRankConflict(null); setPickingMoveTo(false); }}>
+                  <button onClick={() => { setRankConflict(null); setPickingMoveTo(false); }} style={pillButtonStyle('muted')}>
                     Cancel
                   </button>
                 </>
               ) : (
                 <>
-                  <div style={{ fontSize: '0.875rem', color: 'var(--text-primary)' }}>
-                    Move <strong>"{rankConflict.occupant.title}"</strong> to which open spot?
-                  </div>
+                  <p style={{
+                    fontFamily: 'var(--font-serif)', fontSize: '1.15rem', fontWeight: 400,
+                    color: 'var(--text-primary)', lineHeight: 1.3, margin: '0 0 0.25rem',
+                  }}>
+                    Move "{rankConflict.occupant.title}" to which open spot?
+                  </p>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.4rem' }}>
                     {Array.from({ length: 10 }, (_, i) => i + 1)
                       .filter(r => r !== rankConflict.rank && !topItems.find(t => t.rank === r))
@@ -672,7 +706,7 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
                   {Array.from({ length: 10 }, (_, i) => i + 1).filter(r => r !== rankConflict.rank && !topItems.find(t => t.rank === r)).length === 0 && (
                     <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>No open spots — every other rank is taken.</div>
                   )}
-                  <button className="btn btn-xs" onClick={() => setPickingMoveTo(false)}>
+                  <button onClick={() => setPickingMoveTo(false)} style={pillButtonStyle('muted')}>
                     Back
                   </button>
                 </>
