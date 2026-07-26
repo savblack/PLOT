@@ -132,7 +132,7 @@ const styles = `
   .pp-name { margin: 0; font-family: var(--font-serif); font-size: 2.1rem; font-weight: 500; letter-spacing: -0.02em; line-height: 1.2; word-break: break-word; }
   .pp-handle { margin: 0.15rem 0 0; font-size: 1rem; color: var(--text-muted); }
   .pp-verified { width: 1.5rem; height: 1.5rem; margin-left: 0.4rem; vertical-align: -0.18rem; flex-shrink: 0; }
-  .pp-bio { margin: 0.9rem 0 0; font-size: 0.9rem; line-height: 1.55; color: var(--text-secondary); white-space: pre-wrap; }
+  .pp-bio { margin: 1.6rem 0 0; font-size: 0.9rem; line-height: 1.55; color: var(--text-secondary); white-space: pre-wrap; }
   .pp-footer-row { display: flex; align-items: center; gap: 0.6rem; margin-top: 1.1rem; flex-wrap: wrap; }
   .pp-social-row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-right: auto; }
   .pp-social-btn { display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--border); color: var(--text-secondary); background: var(--surface-raised); transition: var(--transition-fast); }
