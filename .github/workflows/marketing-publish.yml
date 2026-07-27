@@ -2,7 +2,7 @@ name: Marketing — publish
 
 on:
   schedule:
-    - cron: '*/5 * * * *'
+    - cron: '0 2 * * *' # 12:00pm Sydney (AEST)
   workflow_dispatch:
     inputs:
       retry_failed:
