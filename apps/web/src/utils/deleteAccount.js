@@ -22,6 +22,7 @@ export async function deleteAccountAndSignOut({
   supabase,
   fetchImpl,
   deleteAccountUrl,
+  confirmationPhrase,
   onDeleted = async () => {},
 }) {
   const { data: { session } } = await supabase.auth.getSession();
@@ -41,7 +42,8 @@ export async function deleteAccountAndSignOut({
 
   const response = await fetchImpl(deleteAccountUrl, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${session.access_token}` },
+    headers: { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ confirmationPhrase }),
   });
 
   if (!response.ok) {

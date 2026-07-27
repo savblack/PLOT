@@ -4,6 +4,7 @@
  *
  * Required secrets: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, TMDB_API_KEY,
  * RESEND_API_KEY, AVAILABILITY_ALERTS_CRON_SECRET.
+ * Optional: SENTRY_DSN (reports run failures to Sentry; safe to omit).
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -11,10 +12,59 @@ const TMDB_BASE = 'https://api.themoviedb.org/3'
 const RESEND_API_URL = 'https://api.resend.com/emails'
 const FROM_EMAIL = 'PLOT <alerts@theplot.tv>'
 
+// Cost/reliability caps: without these, one run scales linearly with total
+// users x watchlist size, with no ceiling on TMDB calls, Resend sends, or
+// Edge Function execution time.
+const MAX_ITEMS_PER_PROFILE = 200
+const MAX_TMDB_CALLS_PER_RUN = 2000
+const MAX_EMAILS_PER_RUN = 500
+const TMDB_CONCURRENCY = 5
+const MAX_FAILURE_RATE = 0.5 // above this, report ok:false so the cron step actually fails loudly
+
+async function mapWithConcurrency<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+  const results: R[] = new Array(items.length)
+  let next = 0
+  async function worker() {
+    while (true) {
+      const index = next++
+      if (index >= items.length) return
+      results[index] = await fn(items[index])
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker))
+  return results
+}
+
 type Provider = { id?: number; name?: string }
 type Profile = { id: string; region?: string; streaming_providers?: Provider[]; guide_channels?: Provider[] }
 type WatchlistItem = { user_id: string; tmdb_id: number; media_type: 'movie' | 'tv'; title: string }
 type Match = WatchlistItem & { providerId: number; providerName: string; region: string }
+
+// Minimal Sentry capture over plain fetch — the official SDKs assume Node/
+// browser globals that don't reliably exist in this Deno edge runtime, and a
+// cron job only needs "tell me when it broke," not full tracing.
+async function captureSentryError(error: unknown, extra?: Record<string, unknown>) {
+  const dsn = Deno.env.get('SENTRY_DSN')
+  if (!dsn) return
+  const match = dsn.match(/^https:\/\/([^@]+)@([^/]+)\/(.+)$/)
+  if (!match) return
+  const [, publicKey, host, projectId] = match
+  try {
+    await fetch(`https://${host}/api/${projectId}/store/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Sentry-Auth': `Sentry sentry_version=7, sentry_key=${publicKey}, sentry_client=plot-edge-function/1.0`,
+      },
+      body: JSON.stringify({
+        message: error instanceof Error ? error.message : String(error),
+        level: 'error',
+        extra,
+        tags: { runtime: 'supabase-edge-function', function: 'watchlist-availability-alerts' },
+      }),
+    })
+  } catch { /* telemetry is best-effort; never let it fail the job */ }
+}
 
 function escapeHtml(value: string) {
   return value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;')
@@ -60,7 +110,7 @@ Deno.serve(async (req) => {
     .from('profiles')
     .select('id, region, streaming_providers, guide_channels')
     .eq('watchlist_availability_alerts', true)
-  if (profileError) return Response.json({ ok: false, error: profileError.message }, { status: 500 })
+  if (profileError) { await captureSentryError(profileError); return Response.json({ ok: false, error: profileError.message }, { status: 500 }) }
 
   // Alerts match against whichever of "My Platforms" and "My Channels" the
   // user has selected — the two feed the same TMDB provider-id shape, so
@@ -71,8 +121,14 @@ Deno.serve(async (req) => {
   const enabledProfiles = (profiles ?? []).filter((profile: Profile) => selectedProvidersFor(profile).length > 0) as Profile[]
   let sent = 0
   let discovered = 0
+  let tmdbCalls = 0
+  let itemsSkippedForCap = 0
+  let profilesSkippedForCap = 0
+  let failures = 0
 
   for (const profile of enabledProfiles) {
+    if (tmdbCalls >= MAX_TMDB_CALLS_PER_RUN || sent >= MAX_EMAILS_PER_RUN) { profilesSkippedForCap++; continue }
+
     const region = profile.region || 'US'
     const selected = new Map(selectedProvidersFor(profile).map(provider => [Number(provider.id), provider.name || 'your streaming service']))
     const { data: items, error: itemError } = await admin
@@ -80,39 +136,51 @@ Deno.serve(async (req) => {
       .select('user_id, tmdb_id, media_type, title, lists!inner(name)')
       .eq('user_id', profile.id)
       .eq('lists.name', 'My List')
-    if (itemError) { console.error(`Could not read watchlist for ${profile.id}: ${itemError.message}`); continue }
+      .limit(MAX_ITEMS_PER_PROFILE)
+    if (itemError) { console.error(`Could not read watchlist for ${profile.id}: ${itemError.message}`); await captureSentryError(itemError, { profileId: profile.id }); failures++; continue }
 
-    const matches: Match[] = []
-    for (const item of (items ?? []) as WatchlistItem[]) {
+    const allItems = (items ?? []) as WatchlistItem[]
+    const budget = Math.max(0, MAX_TMDB_CALLS_PER_RUN - tmdbCalls)
+    const toProcess = allItems.slice(0, budget)
+    itemsSkippedForCap += allItems.length - toProcess.length
+    tmdbCalls += toProcess.length
+
+    const perItemMatches = await mapWithConcurrency(toProcess, TMDB_CONCURRENCY, async (item) => {
       try {
         const providers = await providersForTitle(item, region, tmdbKey)
+        const found: Match[] = []
         for (const provider of providers) {
           const providerId = Number(provider.provider_id)
           if (!selected.has(providerId)) continue
-          matches.push({ ...item, providerId, providerName: provider.provider_name || selected.get(providerId)!, region })
+          found.push({ ...item, providerId, providerName: provider.provider_name || selected.get(providerId)!, region })
         }
-      } catch (error) { console.error(error) }
-    }
+        return found
+      } catch (error) { console.error(error); failures++; return [] }
+    })
+    const matches = perItemMatches.flat()
+    if (!matches.length) continue
 
-    const fresh: Match[] = []
-    for (const match of matches) {
-      const { data, error } = await admin.from('watchlist_availability_alerts')
-        .select('id')
-        .eq('user_id', match.user_id)
-        .eq('tmdb_id', match.tmdb_id)
-        .eq('media_type', match.media_type)
-        .eq('region', match.region)
-        .eq('provider_id', match.providerId)
-        .maybeSingle()
-      if (error) console.error(`Could not read alert history: ${error.message}`)
-      if (!data) fresh.push(match)
-    }
+    // One lookup per profile instead of one per match — avoids an extra DB
+    // round-trip per watchlist item on top of the TMDB call it already made.
+    // Scoped to just this run's matched titles, not the whole alert history,
+    // which otherwise grows unbounded as more alerts are sent over time.
+    const matchedIds = [...new Set(matches.map(m => m.tmdb_id))]
+    const { data: existingAlerts, error: alertsError } = await admin
+      .from('watchlist_availability_alerts')
+      .select('tmdb_id, media_type, region, provider_id')
+      .eq('user_id', profile.id)
+      .in('tmdb_id', matchedIds)
+    if (alertsError) { console.error(`Could not read alert history for ${profile.id}: ${alertsError.message}`); await captureSentryError(alertsError, { profileId: profile.id }); failures++; continue }
+    const alertKey = (m: { tmdb_id: number; media_type: string; region: string; provider_id?: number; providerId?: number }) =>
+      `${m.tmdb_id}:${m.media_type}:${m.region}:${m.provider_id ?? m.providerId}`
+    const seen = new Set((existingAlerts ?? []).map(alertKey))
+    const fresh = matches.filter(match => !seen.has(alertKey(match)))
     discovered += fresh.length
     if (!fresh.length) continue
 
     const { data: authUser, error: userError } = await admin.auth.admin.getUserById(profile.id)
     const email = authUser?.user?.email
-    if (userError || !email) { console.error(`No alert email for ${profile.id}`); continue }
+    if (userError || !email) { console.error(`No alert email for ${profile.id}`); failures++; continue }
     try {
       await sendEmail(resendKey, email, fresh)
       const { error: recordError } = await admin.from('watchlist_availability_alerts').insert(fresh.map(match => ({
@@ -123,8 +191,21 @@ Deno.serve(async (req) => {
       // been delivered, so it is safe to treat that as a successful completion.
       if (recordError && recordError.code !== '23505') throw recordError
       sent += fresh.length
-    } catch (error) { console.error(error) }
+    } catch (error) { console.error(error); failures++ }
   }
 
-  return Response.json({ ok: true, profiles: enabledProfiles.length, discovered, sent })
+  const failureRate = enabledProfiles.length ? failures / enabledProfiles.length : 0
+  const ok = failureRate <= MAX_FAILURE_RATE
+  if (itemsSkippedForCap || profilesSkippedForCap) {
+    console.error(`Availability alerts hit run caps: ${itemsSkippedForCap} items and ${profilesSkippedForCap} profiles skipped`)
+  }
+  if (!ok) {
+    await captureSentryError(new Error(`watchlist-availability-alerts failure rate ${(failureRate * 100).toFixed(0)}%`), {
+      profiles: enabledProfiles.length, failures, sent, discovered,
+    })
+  }
+  return Response.json({
+    ok, profiles: enabledProfiles.length, discovered, sent, tmdbCalls, failures,
+    itemsSkippedForCap, profilesSkippedForCap,
+  }, { status: ok ? 200 : 500 })
 })

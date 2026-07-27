@@ -14,6 +14,8 @@
 name = "tmdb-proxy"
 main = "src/index.js"
 compatibility_date = "2025-06-01"
+# Sentry's Cloudflare SDK needs AsyncLocalStorage.
+compatibility_flags = ["nodejs_compat"]
 workers_dev = true
 
 [vars]
@@ -21,6 +23,8 @@ workers_dev = true
 UPSTREAM = "https://mkegtssedjyqldysvzga.supabase.co/functions/v1/tmdb-proxy"
 # Set `UPSTREAM_SHARED_SECRET` as a Worker secret and set the identical
 # `TMDB_PROXY_SHARED_SECRET` in Supabase before deploying either side.
+# DSN is not a secret (Sentry's own docs embed it in client code) — safe as a var.
+SENTRY_DSN = "https://3bedccb283d603faea535c5bd3625b71@o4511806617092096.ingest.us.sentry.io/4511806906105857"
 
 # Distributed rate limit: 100 requests per 10s per client IP, enforced at
 # Cloudflare's edge (consistent across requests, unlike the per-isolate limiter).

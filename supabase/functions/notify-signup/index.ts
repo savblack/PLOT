@@ -15,6 +15,7 @@
  */
 
 import { hasServiceRoleBearer } from '../_shared/internalWebhook.ts'
+import { captureSentryError } from '../_shared/sentry.ts'
 
 const RESEND_API_URL = 'https://api.resend.com/emails'
 const TO_EMAIL = Deno.env.get('SIGNUP_NOTIFY_TO_EMAIL') || 'sav.black@outlook.com'
@@ -149,6 +150,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown signup notification error'
     console.error('Failed to send signup notification:', errorMessage)
+    await captureSentryError('notify-signup', error, { userId })
     return new Response(JSON.stringify({ ok: false, error: errorMessage }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
