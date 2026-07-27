@@ -11,13 +11,16 @@ import { createPortal } from 'react-dom';
  *   // trigger: setConfirm({ message: '…', onConfirm: () => doThing() })
  *   {confirm && <ConfirmModal {...confirm} onClose={() => setConfirm(null)} />}
  */
-export default function ConfirmModal({ title, message, confirmLabel = 'Confirm', danger = false, onConfirm, onClose }) {
+export default function ConfirmModal({ title, message, confirmLabel = 'Confirm', danger = false, onConfirm, onClose, confirmPhrase = null }) {
   const cancelRef = useRef(null);
   const confirmRef = useRef(null);
   const restoreFocusRef = useRef(null);
   const [submitting, setSubmitting] = useState(false);
+  const [typedPhrase, setTypedPhrase] = useState('');
   const titleId = useId();
   const messageId = useId();
+  const phraseId = useId();
+  const phraseMatches = !confirmPhrase || typedPhrase.trim().toLowerCase() === confirmPhrase.toLowerCase();
 
   useEffect(() => {
     restoreFocusRef.current = document.activeElement;
@@ -56,11 +59,11 @@ export default function ConfirmModal({ title, message, confirmLabel = 'Confirm',
   }, [onClose, submitting]);
 
   const handleConfirm = async () => {
-    if (submitting) return;
+    if (submitting || !phraseMatches) return;
 
     try {
       setSubmitting(true);
-      const result = onConfirm ? await onConfirm() : true;
+      const result = onConfirm ? await onConfirm(typedPhrase) : true;
       if (result !== false) onClose();
     } finally {
       setSubmitting(false);
@@ -121,6 +124,32 @@ export default function ConfirmModal({ title, message, confirmLabel = 'Confirm',
           }}>
             {message}
           </p>
+          {confirmPhrase && (
+            <div style={{ marginBottom: '1.25rem' }}>
+              <label htmlFor={phraseId} style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>
+                Type "{confirmPhrase}" to confirm
+              </label>
+              <input
+                id={phraseId}
+                type="text"
+                autoComplete="off"
+                value={typedPhrase}
+                onChange={e => setTypedPhrase(e.target.value)}
+                disabled={submitting}
+                style={{
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  background: 'var(--surface-inset, transparent)',
+                  border: '1px solid var(--border-strong)',
+                  borderRadius: 'var(--radius-md, 8px)',
+                  padding: '0.55rem 0.7rem',
+                  fontSize: '0.85rem',
+                  fontFamily: 'var(--font-sans)',
+                  color: 'var(--text-primary)',
+                }}
+              />
+            </div>
+          )}
           <div style={{ display: 'flex', gap: '0.625rem', justifyContent: 'flex-end' }}>
             <button
               ref={cancelRef}
@@ -144,7 +173,7 @@ export default function ConfirmModal({ title, message, confirmLabel = 'Confirm',
             <button
               ref={confirmRef}
               onClick={handleConfirm}
-              disabled={submitting}
+              disabled={submitting || !phraseMatches}
               style={{
                 background: danger ? '#dc2626' : 'var(--accent)',
                 border: 'none',
@@ -154,7 +183,8 @@ export default function ConfirmModal({ title, message, confirmLabel = 'Confirm',
                 fontWeight: 600,
                 fontFamily: 'var(--font-sans)',
                 color: '#fff',
-                cursor: 'pointer',
+                cursor: phraseMatches ? 'pointer' : 'not-allowed',
+                opacity: phraseMatches ? 1 : 0.5,
                 transition: 'opacity 0.15s',
               }}
             >

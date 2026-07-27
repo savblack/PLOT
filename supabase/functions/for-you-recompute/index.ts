@@ -10,6 +10,7 @@
  *
  * Required secrets: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, TMDB_API_KEY,
  * FOR_YOU_CRON_SECRET.
+ * Optional: SENTRY_DSN (reports run failures to Sentry; safe to omit).
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -21,6 +22,31 @@ const CONTENT_SIMILARITY_TOP_N = 10
 
 type Gap = { tmdb_id: number; media_type: 'movie' | 'tv' }
 type TmdbResult = { id?: number; vote_average?: number; vote_count?: number }
+
+// See watchlist-availability-alerts/index.ts for why this bypasses the
+// official Sentry SDKs in favor of a plain fetch to the store endpoint.
+async function captureSentryError(error: unknown, extra?: Record<string, unknown>) {
+  const dsn = Deno.env.get('SENTRY_DSN')
+  if (!dsn) return
+  const match = dsn.match(/^https:\/\/([^@]+)@([^/]+)\/(.+)$/)
+  if (!match) return
+  const [, publicKey, host, projectId] = match
+  try {
+    await fetch(`https://${host}/api/${projectId}/store/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Sentry-Auth': `Sentry sentry_version=7, sentry_key=${publicKey}, sentry_client=plot-edge-function/1.0`,
+      },
+      body: JSON.stringify({
+        message: error instanceof Error ? error.message : String(error),
+        level: 'error',
+        extra,
+        tags: { runtime: 'supabase-edge-function', function: 'for-you-recompute' },
+      }),
+    })
+  } catch { /* telemetry is best-effort; never let it fail the job */ }
+}
 
 async function fetchRecommendations(gap: Gap, tmdbKey: string): Promise<TmdbResult[]> {
   const response = await fetch(
@@ -43,10 +69,10 @@ Deno.serve(async (req) => {
   const admin = createClient(supabaseUrl, serviceRole)
 
   const { error: similarityError } = await admin.rpc('recompute_title_similarity')
-  if (similarityError) return Response.json({ ok: false, error: similarityError.message }, { status: 500 })
+  if (similarityError) { await captureSentryError(similarityError); return Response.json({ ok: false, error: similarityError.message }, { status: 500 }) }
 
   const { data: gaps, error: gapsError } = await admin.rpc('for_you_content_similarity_gaps', { p_limit: CONTENT_SIMILARITY_BATCH_SIZE })
-  if (gapsError) return Response.json({ ok: false, error: gapsError.message }, { status: 500 })
+  if (gapsError) { await captureSentryError(gapsError); return Response.json({ ok: false, error: gapsError.message }, { status: 500 }) }
 
   let cached = 0
   let failed = 0
@@ -78,5 +104,11 @@ Deno.serve(async (req) => {
     }
   }
 
-  return Response.json({ ok: true, content_similarity_cached: cached, content_similarity_failed: failed })
+  // Bounded batch size keeps cost in check, but a high failure rate (TMDB key
+  // revoked, rate-limited, etc.) was previously invisible: this always
+  // returned ok:true, so the cron step never failed and nobody was alerted.
+  const total = cached + failed
+  const ok = total === 0 || failed / total <= 0.5
+  if (!ok) await captureSentryError(new Error(`for-you-recompute failure rate ${((failed / total) * 100).toFixed(0)}%`), { cached, failed, total })
+  return Response.json({ ok, content_similarity_cached: cached, content_similarity_failed: failed }, { status: ok ? 200 : 500 })
 })

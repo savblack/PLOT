@@ -24,6 +24,7 @@
 // app at it (set OG_BASE_URL / VITE_OG_BASE_URL — see the README).
 import { ImageResponse } from 'workers-og';
 import React from 'react';
+import * as Sentry from '@sentry/cloudflare';
 
 const h = React.createElement;
 
@@ -333,7 +334,7 @@ function profileCard(profile, fonts) {
   return new ImageResponse(el, opts);
 }
 
-export default {
+const handler = {
   async fetch(request, env) {
     if (request.method !== 'GET' && request.method !== 'HEAD') {
       return new Response('Method not allowed', { status: 405 });
@@ -377,3 +378,8 @@ export default {
     return profileCard(profile, await loadFonts());
   },
 };
+
+export default Sentry.withSentry(
+  (env) => ({ dsn: env.SENTRY_DSN }),
+  handler,
+);

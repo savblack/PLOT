@@ -94,9 +94,35 @@ async function authUser(req: Request) {
   return { user }
 }
 
+// Best-effort in-memory per-IP throttle on failed companion-token attempts —
+// this custom auth path isn't covered by Supabase's own auth rate limits.
+// Warm-isolate state, same caveat as newsletter-subscribe's limiter: it only
+// bounds a burst against one warm isolate, not a distributed attack, but that
+// still raises the cost of brute-forcing a device token meaningfully.
+const AUTH_FAIL_WINDOW_MS = 5 * 60 * 1000
+const AUTH_FAIL_MAX = 20
+const authFailHits = new Map<string, { count: number; first: number }>()
+function isAuthFailRateLimited(ip: string): boolean {
+  const rec = authFailHits.get(ip)
+  if (!rec) return false
+  if (Date.now() - rec.first > AUTH_FAIL_WINDOW_MS) return false
+  return rec.count >= AUTH_FAIL_MAX
+}
+function recordAuthFailure(ip: string) {
+  const now = Date.now()
+  const rec = authFailHits.get(ip)
+  if (!rec || now - rec.first > AUTH_FAIL_WINDOW_MS) { authFailHits.set(ip, { count: 1, first: now }); return }
+  rec.count += 1
+}
+
 async function authenticateCompanion(req: Request, supabaseAdmin: ReturnType<typeof createClient>) {
   const token = req.headers.get('x-plot-device-token')
   if (!token) return { error: json({ error: 'Missing companion token' }, 401) }
+
+  // Only failed lookups count against the limit, so a legitimate device
+  // making frequent valid-token calls is never throttled by this.
+  const ip = req.headers.get('cf-connecting-ip') || 'unknown'
+  if (isAuthFailRateLimited(ip)) return { error: json({ error: 'Too many attempts' }, 429) }
 
   const tokenHash = await sha256Hex(token)
   const { data, error } = await supabaseAdmin
@@ -106,7 +132,7 @@ async function authenticateCompanion(req: Request, supabaseAdmin: ReturnType<typ
     .neq('status', 'disabled')
     .single()
 
-  if (error || !data) return { error: json({ error: 'Invalid companion token' }, 401) }
+  if (error || !data) { recordAuthFailure(ip); return { error: json({ error: 'Invalid companion token' }, 401) } }
   return { integration: data }
 }
 

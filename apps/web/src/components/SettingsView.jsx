@@ -1280,12 +1280,14 @@ export default function SettingsView() {
       message: 'This will permanently delete your account and all your data. This cannot be undone.',
       confirmLabel: 'Delete account',
       danger: true,
-      onConfirm: async () => {
+      confirmPhrase: 'delete account',
+      onConfirm: async (typedPhrase) => {
         setActionError(null);
         const result = await deleteAccountAndSignOut({
           supabase,
           fetchImpl: fetch,
           deleteAccountUrl: edgeFunctionUrl('delete-account'),
+          confirmationPhrase: typedPhrase,
           onDeleted: async () => {
             track(EVENTS.ACCOUNT_DELETED, {});
             window.location.href = '/';

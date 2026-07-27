@@ -17,10 +17,27 @@
 import Stripe from 'npm:stripe@22.3.2';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+// Wildcard CORS was needless here — unlike newsletter-subscribe (called by
+// arbitrary email clients and marketing embeds), this is only ever called
+// from the app itself. Not directly exploitable given the bearer-token auth
+// below, but tightened for defense-in-depth, matching watch-availability's pattern.
+function allowedOrigin(origin: string | null) {
+  if (!origin) return 'https://app.theplot.tv';
+  try {
+    const { hostname, protocol } = new URL(origin);
+    if (protocol === 'http:' && (hostname === 'localhost' || hostname === '127.0.0.1')) return origin;
+    if (hostname === 'theplot.tv' || hostname.endsWith('.theplot.tv') || hostname.endsWith('.vercel.app')) return origin;
+  } catch { /* use canonical origin */ }
+  return 'https://app.theplot.tv';
+}
+
+function corsHeadersFor(req: Request) {
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin(req.headers.get('Origin')),
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Vary': 'Origin',
+  };
+}
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
   httpClient: Stripe.createFetchHttpClient(),
@@ -30,12 +47,6 @@ const SETTINGS_URL = 'https://app.theplot.tv/settings';
 const TIP_MIN_AMOUNT = 100;
 const TIP_MAX_AMOUNT = 50000;
 
-const json = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  });
-
 async function createPortalUrl(customerId: string) {
   const session = await stripe.billingPortal.sessions.create({
     customer: customerId,
@@ -44,25 +55,29 @@ async function createPortalUrl(customerId: string) {
   return session.url;
 }
 
-async function authUser(req: Request) {
+async function getAuthedUser(req: Request) {
   const authHeader = req.headers.get('Authorization');
-  if (!authHeader) return { error: json({ error: 'Unauthorized' }, 401) };
+  if (!authHeader) return { user: null };
   const supabaseUser = createClient(
     Deno.env.get('SUPABASE_URL') ?? '',
     Deno.env.get('SUPABASE_ANON_KEY') ?? '',
     { global: { headers: { Authorization: authHeader } } },
   );
   const { data: { user }, error } = await supabaseUser.auth.getUser();
-  if (error || !user) return { error: json({ error: 'Unauthorized' }, 401) };
+  if (error || !user) return { user: null };
   return { user };
 }
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
+  const headers = corsHeadersFor(req);
+  const json = (body: unknown, status = 200) =>
+    new Response(JSON.stringify(body), { status, headers: { ...headers, 'Content-Type': 'application/json' } });
+
+  if (req.method === 'OPTIONS') return new Response(null, { headers });
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
-  const { user, error } = await authUser(req);
-  if (error) return error;
+  const { user } = await getAuthedUser(req);
+  if (!user) return json({ error: 'Unauthorized' }, 401);
 
   const admin = createClient(
     Deno.env.get('SUPABASE_URL')!,

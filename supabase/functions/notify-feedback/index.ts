@@ -19,6 +19,7 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { hasServiceRoleBearer } from '../_shared/internalWebhook.ts'
+import { captureSentryError } from '../_shared/sentry.ts'
 
 const RESEND_API_URL = 'https://api.resend.com/emails'
 const TO_EMAIL = 'feedback@theplot.tv'
@@ -55,7 +56,13 @@ function attachmentPathsFrom(value: unknown) {
     const marker = '/storage/v1/object/public/feedback-attachments/'
     const index = entry.indexOf(marker)
     if (index === -1) return []
-    return [decodeURIComponent(entry.slice(index + marker.length))]
+    const path = decodeURIComponent(entry.slice(index + marker.length))
+    // Matches the validation in delete-account/index.ts — without this, an
+    // attacker-crafted path (e.g. containing "../" or pointing at another
+    // user's feedback/<uuid> object) would be copied verbatim by
+    // storage.copy() below into linear-archive/, which could exfiltrate
+    // another user's private attachment.
+    return /^feedback\/[0-9a-f-]{36}(?:\.[a-z0-9]{1,10})?$/i.test(path) ? [path] : []
   })
 }
 
@@ -305,7 +312,10 @@ async function sendFeedbackEmail({
 
   if (!res.ok) {
     const err = await res.text()
-    console.error('Resend error:', err)
+    // Truncated: some APIs echo request fields back in validation errors, and
+    // this request body includes the reporter's feedback message.
+    console.error('Resend error:', res.status, err.slice(0, 200))
+    await captureSentryError('notify-feedback', new Error(`Resend request failed (${res.status})`))
   }
 }
 
@@ -413,6 +423,7 @@ Deno.serve(async (req) => {
     const errorMessage = error instanceof Error ? error.message : 'Unknown feedback sync error'
     await updateFeedbackSyncState(supabaseAdmin, feedbackId, { linear_sync_error: errorMessage })
     console.error('Failed to mirror feedback:', errorMessage)
+    await captureSentryError('notify-feedback', error, { feedbackId })
     return new Response(JSON.stringify({ ok: false, error: errorMessage }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },

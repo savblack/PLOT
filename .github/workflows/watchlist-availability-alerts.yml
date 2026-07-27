@@ -1,8 +1,10 @@
 name: Watchlist availability alerts
 
 on:
-  schedule:
-    - cron: '15 8 * * *' # Daily; the function compares current regional availability to delivered alerts.
+  # Paused until there's enough traffic to justify it — re-enable by
+  # uncommenting the schedule below. workflow_dispatch still allows a manual run.
+  # schedule:
+  #   - cron: '15 8 * * *' # Daily; the function compares current regional availability to delivered alerts.
   workflow_dispatch:
 
 permissions:

@@ -285,22 +285,22 @@ export default function ImportView() {
     const deduped = dedupeEntries(parsed);
     track(EVENTS.IMPORT_STARTED, { source: platform.id, count: deduped.length });
 
-    // Fetch existing (tmdb_id, watched_at) pairs — a different date for a
-    // title already in the history is a rewatch, not a duplicate, so it
-    // must still import.
-    const { data: existing } = await supabase
-      .from('history')
-      .select('tmdb_id, watched_at')
-      .eq('user_id', user.id);
-    const ids = new Set((existing || []).map(r => `${r.tmdb_id}::${r.watched_at}`));
-    setExistingIds(ids);
-
     setStep(3);
     setResolveProgress({ done: 0, total: deduped.length });
 
     const resolved = await resolveAll(deduped, (done, total) => {
       setResolveProgress({ done, total });
     });
+
+    // Fetch existing (tmdb_id, watched_at) pairs, scoped to just the titles
+    // this import resolved to — not the user's whole history, which would
+    // grow unbounded as they log more over time.
+    const resolvedIds = [...new Set(resolved.filter(r => r.status === 'matched').map(r => r.tmdbId))];
+    const { data: existing } = resolvedIds.length
+      ? await supabase.from('history').select('tmdb_id, watched_at').eq('user_id', user.id).in('tmdb_id', resolvedIds)
+      : { data: [] };
+    const ids = new Set((existing || []).map(r => `${r.tmdb_id}::${r.watched_at}`));
+    setExistingIds(ids);
 
     setResults(resolved);
     setStep(4);

@@ -115,17 +115,22 @@ Deno.serve(async (req) => {
       .select('tmdb_id, media_type, title, release_date')
       .eq('user_id', userId)
       .not('release_date', 'is', null)
-      .gte('release_date', today),
+      .gte('release_date', today)
+      .order('release_date')
+      .limit(500),
     db
       .from('watching_progress')
       .select('tmdb_id, title, current_season, current_episode')
-      .eq('user_id', userId),
+      .eq('user_id', userId)
+      .order('updated_at', { ascending: false })
+      .limit(500),
     db
       .from('reminders')
       .select('tvmaze_ep_id, show_name, network_name, air_date, air_time')
       .eq('user_id', userId)
       .gte('air_date', today)
-      .order('air_date'),
+      .order('air_date')
+      .limit(500),
   ]);
 
   const events: CalEvent[] = [];

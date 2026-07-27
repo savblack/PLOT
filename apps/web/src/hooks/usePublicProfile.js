@@ -57,7 +57,11 @@ export function usePublicProfile(username, viewerId = null) {
       supabase.from('user_favourites')
         .select('tmdb_id, media_type, title, poster_path')
         .eq('user_id', uid).order('created_at', { ascending: false }).limit(18),
-      supabase.from('history').select('rating').eq('user_id', uid).not('rating', 'is', null),
+      // Capped: this fetches every rated row just to average client-side, which
+      // would otherwise grow unbounded with a user's history. 2000 is far beyond
+      // any real user's rating count today, so the average stays exact in
+      // practice while bounding the payload as history keeps growing.
+      supabase.from('history').select('rating').eq('user_id', uid).not('rating', 'is', null).limit(2000),
       // Only lists the owner has explicitly marked public are readable here (RLS-enforced too).
       supabase.from('user_custom_lists')
         .select('id, name, items:user_custom_list_items(tmdb_id, media_type, title, poster_path)')

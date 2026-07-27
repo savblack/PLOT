@@ -35,6 +35,19 @@ Deno.serve(async (req) => {
   const { data: { user }, error: authError } = await supabaseClient.auth.getUser()
   if (authError || !user) return new Response('Unauthorized', { status: 401 })
 
+  // A guessed/typed phrase alone doesn't verify identity — a valid bearer
+  // token already does that. This guards against a misclick or a UI bug
+  // triggering deletion without the user having actually typed to confirm,
+  // enforced server-side so it can't be skipped by calling the API directly.
+  let confirmationPhrase = ''
+  try {
+    const body = await req.json()
+    confirmationPhrase = String(body?.confirmationPhrase || '')
+  } catch { /* missing/invalid body falls through to the check below */ }
+  if (confirmationPhrase.trim().toLowerCase() !== 'delete account') {
+    return jsonError('Type "delete account" to confirm.', 400)
+  }
+
   const userId = user.id
 
   // Use the service role client for storage cleanup and auth deletion.

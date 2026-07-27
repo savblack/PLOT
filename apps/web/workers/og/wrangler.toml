@@ -30,6 +30,8 @@ simple = { limit = 30, period = 60 }
 # Where the .ttf brand fonts are served from (the Worker host doesn't serve
 # /fonts). Points at the deployed app by default.
 FONT_BASE = "https://app.theplot.tv"
+# DSN is not a secret (Sentry's own docs embed it in client code) — safe as a var.
+SENTRY_DSN = "https://3bedccb283d603faea535c5bd3625b71@o4511806617092096.ingest.us.sentry.io/4511806906105857"
 
 # TMDB_API_KEY is a SECRET, not a var — set it with:
 #   npx wrangler secret put TMDB_API_KEY
