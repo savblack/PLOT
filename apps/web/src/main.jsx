@@ -4,10 +4,8 @@ import { RouterProvider } from 'react-router-dom';
 import { configure } from '@plot/core/config.js';
 import router from './router.jsx';
 import './index.css';
-import posthog from 'posthog-js';
-import { PostHogProvider } from '@posthog/react';
 import { captureAttribution } from './utils/attribution.js';
-import { track, markActivated, EVENTS } from './lib/analytics.js';
+import { track, markActivated, EVENTS, _setPostHogClient } from './lib/analytics.js';
 
 // Inject web env into the shared core before anything renders or fetches.
 // Core modules read these via getConfig() — never import.meta.env directly.
@@ -56,44 +54,53 @@ if (new URLSearchParams(window.location.search).get('dnt') === '1') {
 const isDnt = /(?:^|; )plot_dnt=1/.test(document.cookie);
 
 const posthogToken = !isDnt && import.meta.env.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN;
-if (posthogToken) posthog.init(posthogToken, {
-  api_host: import.meta.env.VITE_PUBLIC_POSTHOG_HOST,
-  // Required alongside a reverse-proxy api_host so PostHog's own links
-  // (e.g. session replay URLs) still point back at the real dashboard.
-  ui_host: 'https://us.posthog.com',
-  defaults: '2026-01-30',
-  // Capture in-app navigation. This is an SPA (react-router createBrowserRouter),
-  // so there are no full page loads after boot — 'history_change' fires a single
-  // $pageview on each History API navigation. Set explicitly (not left to
-  // `defaults`) so route tracking survives any future change to the defaults key.
-  capture_pageview: 'history_change',
-  // Autocapture clicks / inputs / form submits as a backstop under the curated
-  // events in lib/analytics.js — so surfaces we didn't hand-instrument still
-  // produce data. Explicit for the same reason as capture_pageview above.
-  autocapture: true,
-  // Share the anonymous id across theplot.tv ↔ app.theplot.tv so the
-  // landing → signup funnel is one funnel. Must match website/js/config.js.
-  persistence: 'localStorage+cookie',
-  cross_subdomain_cookie: true,
-  // Auto-report unhandled errors + promise rejections to PostHog Error Tracking,
-  // not just the ones our ErrorBoundaries catch. Turn on Error Tracking in the
-  // PostHog project for these to show up.
-  capture_exceptions: true,
-});
 
 // Read the acquisition attribution the marketing site forwarded onto this link
 // (utm_*, click ids, referrer, src) and attach it to every event + the person,
 // so signup / activation stay traceable to their source. First-touch wins.
 const attribution = captureAttribution();
-if (posthogToken && Object.keys(attribution).length > 0) {
-  posthog.register(attribution);
-  posthog.setPersonProperties(undefined, attribution);
+
+// posthog-js (+ @posthog/react) is the single largest chunk in the app —
+// bigger than React itself — so it's dynamically imported after the app has
+// already started rendering instead of sitting on the initial critical path.
+// Nothing breaks in the gap: every analytics call in lib/analytics.js queues
+// until _setPostHogClient() hands it the real client below.
+if (posthogToken) {
+  import('posthog-js').then(({ default: posthog }) => {
+    posthog.init(posthogToken, {
+      api_host: import.meta.env.VITE_PUBLIC_POSTHOG_HOST,
+      // Required alongside a reverse-proxy api_host so PostHog's own links
+      // (e.g. session replay URLs) still point back at the real dashboard.
+      ui_host: 'https://us.posthog.com',
+      defaults: '2026-01-30',
+      // Capture in-app navigation. This is an SPA (react-router createBrowserRouter),
+      // so there are no full page loads after boot — 'history_change' fires a single
+      // $pageview on each History API navigation. Set explicitly (not left to
+      // `defaults`) so route tracking survives any future change to the defaults key.
+      capture_pageview: 'history_change',
+      // Autocapture clicks / inputs / form submits as a backstop under the curated
+      // events in lib/analytics.js — so surfaces we didn't hand-instrument still
+      // produce data. Explicit for the same reason as capture_pageview above.
+      autocapture: true,
+      // Share the anonymous id across theplot.tv ↔ app.theplot.tv so the
+      // landing → signup funnel is one funnel. Must match website/js/config.js.
+      persistence: 'localStorage+cookie',
+      cross_subdomain_cookie: true,
+      // Auto-report unhandled errors + promise rejections to PostHog Error Tracking,
+      // not just the ones our ErrorBoundaries catch. Turn on Error Tracking in the
+      // PostHog project for these to show up.
+      capture_exceptions: true,
+    });
+    if (Object.keys(attribution).length > 0) {
+      posthog.register(attribution);
+      posthog.setPersonProperties(undefined, attribution);
+    }
+    _setPostHogClient(posthog);
+  });
 }
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <PostHogProvider client={posthog}>
-      <RouterProvider router={router} />
-    </PostHogProvider>
+    <RouterProvider router={router} />
   </StrictMode>,
 );

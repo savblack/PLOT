@@ -1,5 +1,12 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+// The bulk of the app's CSS (~4800 lines: every authenticated view — Discover,
+// Settings, Calendar, etc.) lives here instead of the global stylesheet, so
+// visitors who never reach the app shell (/login, /terms, /save, ...) don't pay
+// for it. Anything outside the shell that statically imports from this module
+// (e.g. OnboardingFlow, for logoUrl/posterUrl) pulls this chunk — and its CSS —
+// in too, so it stays styled.
+import './styles/app.css';
 import { supabase } from './api/supabase.js';
 import { setTmdbRegion } from './api/tmdb.js';
 import { setUserTimezone } from './utils/date.js';
