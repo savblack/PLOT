@@ -138,7 +138,7 @@ export default function Step3() {
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           <Text style={styles.wordmark}>PLOT</Text>
-          <Text style={styles.stepLabel}>Step 5 of 5</Text>
+          <Text style={styles.stepLabel}>Step 4 of 4</Text>
         </View>
         <View style={styles.backBtn} />
       </View>
@@ -146,7 +146,7 @@ export default function Step3() {
       {/* Content */}
       <View style={styles.content}>
         <Text style={styles.heading}>What are you watching?</Text>
-        <Text style={styles.body}>Add a few titles to kick things off. You can always add more later.</Text>
+        <Text style={styles.body}>Give your watchlist a head start. You can always add more later.</Text>
 
         {/* Search */}
         <View style={styles.searchBar}>

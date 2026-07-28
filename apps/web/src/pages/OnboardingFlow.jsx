@@ -8,7 +8,7 @@ import { tmdb } from '../api/tmdb';
 // only rides along on App.jsx's own lazy-loaded chunk), so import app.css
 // explicitly — Vite dedupes it against App's stylesheet rather than doubling it.
 import '../styles/app.css';
-import { logoUrl, posterUrl } from '../App.jsx';
+import { posterUrl } from '../App.jsx';
 import PlotLoader from '../components/PlotLoader.jsx';
 import Spinner from '../components/Spinner.jsx';
 import { getButtonLikeProps } from '../utils/interactive.js';
@@ -17,7 +17,7 @@ import { getOrCreateMyListId, saveOnboardingSeedTitles } from '@plot/core/onboar
 import { usePremium } from '../hooks/usePremium.js';
 import { takePremiumCheckoutIntent } from '../utils/premiumCheckoutIntent.js';
 
-const STEP_NAMES = { 1: 'name', 2: 'region', 3: 'platforms', 4: 'genres', 5: 'seed' };
+const STEP_NAMES = { 1: 'name', 2: 'region', 3: 'genres', 4: 'seed' };
 
 /* ── Timezone → region guess ── */
 const TZ_MAP = {
@@ -49,28 +49,29 @@ const REGIONS = [
 ];
 
 /* ── Shared styles ── */
-// Outer: fixed height flex column so the footer stays on screen
+// Outer: grows with content instead of forcing full-viewport height, so short
+// steps (e.g. a filtered platform search with few results) don't leave a
+// block of empty page background above the footer.
 const page = {
-  height: '100dvh',
+  minHeight: '100dvh',
   background: 'var(--bg)',
   display: 'flex',
   flexDirection: 'column',
-  overflow: 'hidden',
 };
 
-// Scrollable content area — fills remaining space above footer
+// Content area — sized to its content, not stretched to fill the page.
 const scrollArea = {
-  flex: 1,
-  overflowY: 'auto',
-  WebkitOverflowScrolling: 'touch',
   padding: '0 1.25rem',
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
 };
 
-// Sticky footer that always stays on screen
+// Sticky footer: hugs the content when it's short, pins to the viewport
+// bottom once the page scrolls past it.
 const footer = {
+  position: 'sticky',
+  bottom: 0,
   flexShrink: 0,
   padding: '0.75rem 1.25rem',
   paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))',
@@ -102,25 +103,19 @@ export default function OnboardingFlow() {
   const [region, setRegion] = useState(guessRegion());
   const regionTouched = useRef(false);
 
-  // Step 3: Platforms
-  const [providers,     setProviders]     = useState([]);
-  const [allProviders,  setAllProviders]  = useState([]);
-  const [loadingProv,   setLoadingProv]   = useState(false);
-  const [provSearch,    setProvSearch]    = useState('');
-
-  // Step 4: Genres
+  // Step 3: Genres
   const [genres,       setGenres]       = useState([]);
   const [allGenres,    setAllGenres]    = useState([]);
   const [loadingGenres, setLoadingGenres] = useState(false);
 
-  // Step 5: Seed shows (optional)
+  // Step 4: Seed shows (optional)
   const [seedQuery,    setSeedQuery]    = useState('');
   const [seedResults,  setSeedResults]  = useState([]);
   const [seedSelected, setSeedSelected] = useState([]);
   const [seedSearching, setSeedSearching] = useState(false);
   const [trending,     setTrending]     = useState([]);
 
-  const TOTAL = 5;
+  const TOTAL = 4;
 
   /* ── Auth check ── */
   useEffect(() => {
@@ -168,23 +163,9 @@ export default function OnboardingFlow() {
       .catch(() => { /* keep the timezone guess */ });
   }, []);
 
-  /* ── Load providers when moving to step 3 ── */
+  /* ── Load genres when moving to step 3 ── */
   useEffect(() => {
-    if (step !== 3 || allProviders.length > 0) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- provider fetch toggles local loading state for this onboarding step
-    setLoadingProv(true);
-    tmdb.getWatchProvidersForRegion('tv', region).then(data => {
-      const list = (data?.results || [])
-        .sort((a, b) => a.display_priority - b.display_priority)
-        .slice(0, 30);
-      setAllProviders(list);
-      setLoadingProv(false);
-    });
-  }, [step, region, allProviders.length]);
-
-  /* ── Load genres when moving to step 4 ── */
-  useEffect(() => {
-    if (step !== 4 || allGenres.length > 0) return;
+    if (step !== 3 || allGenres.length > 0) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- genre fetch toggles local loading state for this onboarding step
     setLoadingGenres(true);
     tmdb.getGenres().then(list => {
@@ -193,9 +174,9 @@ export default function OnboardingFlow() {
     });
   }, [step, allGenres.length]);
 
-  /* ── Trending prefill for step 5 ── */
+  /* ── Trending prefill for step 4 ── */
   useEffect(() => {
-    if (step !== 5 || trending.length > 0) return;
+    if (step !== 4 || trending.length > 0) return;
     tmdb.getTrending('all', 'week').then(data => {
       const list = (data?.results || [])
         .filter(r => (r.media_type === 'tv' || r.media_type === 'movie') && r.poster_path)
@@ -206,7 +187,7 @@ export default function OnboardingFlow() {
 
   /* ── Seed search ── */
   useEffect(() => {
-    if (step !== 5 || !seedQuery.trim()) {
+    if (step !== 4 || !seedQuery.trim()) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- clear transient onboarding search results when the query is empty
       setSeedResults([]);
       return;
@@ -230,11 +211,7 @@ export default function OnboardingFlow() {
     setSaving(true);
     setSaveError(null);
 
-    const provPayload = allProviders
-      .filter(p => providers.includes(p.provider_id))
-      .map(p => ({ id: p.provider_id, name: p.provider_name, logo_path: p.logo_path }));
-
-    const genrePayload = allGenres.filter(g => genres.includes(g.id));
+    const genrePayload = allGenres.filter(g => genres.includes(g.id)).map(g => g.name);
 
     // Detect device IANA timezone (e.g. "Australia/Sydney")
     let detectedTz = 'UTC';
@@ -245,7 +222,6 @@ export default function OnboardingFlow() {
       first_name:          firstName.trim(),
       region,
       timezone:            detectedTz,
-      streaming_providers: provPayload,
       genres:              genrePayload,
       onboarding_complete: true,
     });
@@ -270,7 +246,6 @@ export default function OnboardingFlow() {
 
     track(EVENTS.ONBOARDING_COMPLETED, {
       region,
-      providers_count: providers.length,
       genres_count: genres.length,
       seed_titles_added: seedSelected.length,
     });
@@ -287,9 +262,6 @@ export default function OnboardingFlow() {
     navigate('/home', { replace: true });
   };
 
-  const toggleProvider = (id) =>
-    setProviders(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
-
   const toggleGenre = (id) =>
     setGenres(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
 
@@ -301,10 +273,6 @@ export default function OnboardingFlow() {
         : [...prev, item]
     );
   };
-
-  const filteredProviders = allProviders.filter(p =>
-    p.provider_name.toLowerCase().includes(provSearch.toLowerCase())
-  );
 
   const seedGridItems = seedQuery.trim() ? seedResults : trending;
 
@@ -323,18 +291,26 @@ export default function OnboardingFlow() {
       {/* ── Scrollable content ── */}
       <div style={scrollArea}>
         {/* Header */}
-        <div style={{ width: '100%', maxWidth: 420, padding: '2rem 0 1.5rem', textAlign: 'center' }}>
-          <div style={{ fontFamily: 'var(--font-serif)', fontSize: '2rem', fontWeight: 500, letterSpacing: '-0.05em', textTransform: 'uppercase', marginBottom: '1.5rem' }}>
-            PLOT
+        <div style={{ width: '100%', maxWidth: 420, padding: '2rem 0 1.5rem', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.5rem' }}>
+          {step > 1 ? (
+            <button type="button" className="onboarding-back" onClick={() => setStep(s => s - 1)} aria-label="Go back" style={{ marginTop: '0.4rem' }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+            </button>
+          ) : <div style={{ width: 28, flexShrink: 0 }} />}
+          <div style={{ flex: 1, textAlign: 'center' }}>
+            <div style={{ fontFamily: 'var(--font-serif)', fontSize: '2rem', fontWeight: 500, letterSpacing: '-0.05em', textTransform: 'uppercase', marginBottom: '1.5rem' }}>
+              PLOT
+            </div>
+            <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'center', marginBottom: '0.6rem' }}>
+              {Array.from({ length: TOTAL }, (_, i) => (
+                <div key={i} style={{ flex: 1, maxWidth: 60, height: 3, borderRadius: 2, background: i < step ? 'var(--accent)' : 'var(--border)', transition: 'background 0.3s ease' }} />
+              ))}
+            </div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+              Step {step} of {TOTAL}
+            </div>
           </div>
-          <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'center', marginBottom: '0.6rem' }}>
-            {Array.from({ length: TOTAL }, (_, i) => (
-              <div key={i} style={{ flex: 1, maxWidth: 60, height: 3, borderRadius: 2, background: i < step ? 'var(--accent)' : 'var(--border)', transition: 'background 0.3s ease' }} />
-            ))}
-          </div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-            Step {step} of {TOTAL}
-          </div>
+          <div style={{ width: 28, flexShrink: 0 }} />
         </div>
 
         {/* ── Step 1: First name ── */}
@@ -344,7 +320,7 @@ export default function OnboardingFlow() {
               What's your name?
             </h1>
             <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '1.5rem', lineHeight: 1.5, textAlign: 'center' }}>
-              We'll use this to personalize your PLOT.
+              So we can make PLOT yours.
             </p>
             <input
               style={{ width: '100%', padding: '0.7rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', background: 'var(--surface)', fontSize: '0.9rem', fontFamily: 'var(--font-sans)', color: 'var(--text-primary)', outline: 'none' }}
@@ -391,68 +367,20 @@ export default function OnboardingFlow() {
           </div>
         )}
 
-        {/* ── Step 3: Platforms ── */}
+        {/* ── Step 3: Genres ── */}
         {step === 3 && (
-          <div style={card}>
-            <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.8rem', fontWeight: 500, letterSpacing: '-0.03em', marginBottom: '0.4rem', textAlign: 'center' }}>
-              Your platforms
-            </h1>
-            <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '1.25rem', lineHeight: 1.5, textAlign: 'center' }}>
-              Select the streaming services you subscribe to.
-            </p>
-            <div style={{ position: 'relative', marginBottom: '1rem' }}>
-              <input
-                style={{ width: '100%', padding: '0.65rem 2.25rem 0.65rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', background: 'var(--surface)', fontSize: '0.82rem', fontFamily: 'var(--font-sans)', color: 'var(--text-primary)', outline: 'none' }}
-                placeholder="Search platforms…"
-                value={provSearch}
-                onChange={e => setProvSearch(e.target.value)}
-              />
-              {provSearch && (
-                <button type="button" className="search-input-clear" onClick={() => setProvSearch('')} aria-label="Clear search">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                </button>
-              )}
-            </div>
-            {loadingProv ? (
-              <div className="loading-state"><PlotLoader size="sm" /></div>
-            ) : (
-              <div style={{ maxHeight: '42vh', overflowY: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: '1rem', paddingRight: '0.15rem' }}>
-                <div className="providers-select-grid" style={{ padding: 0 }}>
-                {filteredProviders.map(p => (
-                  <div
-                    key={p.provider_id}
-                    className={`provider-select-card interactive-surface${providers.includes(p.provider_id) ? ' selected' : ''}`}
-                    onClick={() => toggleProvider(p.provider_id)}
-                    {...getButtonLikeProps({
-                      onPress: () => toggleProvider(p.provider_id),
-                      label: `${providers.includes(p.provider_id) ? 'Deselect' : 'Select'} ${p.provider_name}`,
-                      pressed: providers.includes(p.provider_id),
-                    })}
-                  >
-                    <img src={logoUrl(p.logo_path, 'w92')} alt={p.provider_name} />
-                    <span>{p.provider_name}</span>
-                  </div>
-                ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ── Step 4: Genres ── */}
-        {step === 4 && (
           <div style={card}>
             <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.8rem', fontWeight: 500, letterSpacing: '-0.03em', marginBottom: '0.4rem', textAlign: 'center' }}>
               What do you like?
             </h1>
             <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '1.25rem', lineHeight: 1.5, textAlign: 'center' }}>
-              Pick a few genres to help us recommend the right titles.
+              Pick a few to shape what we recommend.
             </p>
             {loadingGenres ? (
               <div className="loading-state"><PlotLoader size="sm" /></div>
             ) : (
               <div style={{ maxHeight: '50vh', overflowY: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: '1rem', paddingRight: '0.15rem' }}>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '0.5rem' }}>
                 {allGenres.map(g => (
                   <div
                     key={g.id}
@@ -484,14 +412,14 @@ export default function OnboardingFlow() {
           </div>
         )}
 
-        {/* ── Step 5: Seed shows ── */}
-        {step === 5 && (
+        {/* ── Step 4: Seed shows ── */}
+        {step === 4 && (
           <div style={card}>
             <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.8rem', fontWeight: 500, letterSpacing: '-0.03em', marginBottom: '0.4rem', textAlign: 'center' }}>
               What are you watching?
             </h1>
             <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '1.25rem', lineHeight: 1.5, textAlign: 'center' }}>
-              Add a few titles to kick things off.
+              Give your watchlist a head start.
             </p>
             <div style={{ position: 'relative', marginBottom: '0.4rem' }}>
               <input
@@ -507,9 +435,6 @@ export default function OnboardingFlow() {
                 </button>
               )}
             </div>
-            <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '0.72rem', textAlign: 'center', padding: '0.2rem 0', marginBottom: '0.75rem', width: '100%' }} onClick={finish}>
-              Skip this step
-            </button>
             {seedSearching && <div className="loading-state" style={{ minHeight: 60 }}><PlotLoader size="sm" /></div>}
             {!seedQuery.trim() && trending.length > 0 && (
               <div style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-secondary)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
@@ -569,25 +494,22 @@ export default function OnboardingFlow() {
 
       {/* ── Sticky footer — always visible ── */}
       <div style={footer}>
-        <div style={{ width: '100%', maxWidth: 420, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        <div style={{ width: '100%', maxWidth: 420, margin: '0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.6rem' }}>
           {saveError && (
             <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--accent)', textAlign: 'center' }}>{saveError}</p>
           )}
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            {step > 1 && (
-              <button className="onboarding-cta onboarding-cta--outline" onClick={() => setStep(s => s - 1)}>← Back</button>
-            )}
-            <button
-              className="onboarding-cta"
-              style={{ flex: 1 }}
-              onClick={step === TOTAL ? finish : goNext}
-              disabled={saving || (step === 1 && !firstName.trim()) || (step === 4 && genres.length === 0)}
-              aria-busy={saving}
-              aria-label={saving ? 'Setting up account' : step === TOTAL ? 'Start watching' : 'Continue'}
-            >
-              {step === TOTAL ? (saving ? <Spinner size="button" ariaHidden /> : 'Start watching →') : 'Continue →'}
-            </button>
-          </div>
+          <button
+            className="onboarding-cta"
+            onClick={step === TOTAL ? finish : goNext}
+            disabled={saving || (step === 1 && !firstName.trim()) || (step === 3 && genres.length === 0)}
+            aria-busy={saving}
+            aria-label={saving ? 'Setting up account' : step === TOTAL ? 'Start watching' : 'Continue'}
+          >
+            {step === TOTAL ? (saving ? <Spinner size="button" ariaHidden /> : 'Start watching →') : 'Continue →'}
+          </button>
+          {step === TOTAL && !saving && (
+            <button type="button" className="onboarding-skip" onClick={finish}>Skip this step</button>
+          )}
         </div>
       </div>
     </div>

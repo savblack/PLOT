@@ -43,13 +43,13 @@ export default function Name() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.wordmark}>PLOT</Text>
-        <Text style={styles.stepLabel}>Step 1 of 5</Text>
+        <Text style={styles.stepLabel}>Step 1 of 4</Text>
       </View>
 
       {/* Content */}
       <View style={styles.content}>
         <Text style={styles.heading}>What's your name?</Text>
-        <Text style={styles.body}>We'll use this to personalize your PLOT.</Text>
+        <Text style={styles.body}>So we can make PLOT yours.</Text>
 
         <TextInput
           style={styles.input}

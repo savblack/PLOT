@@ -1,8 +1,7 @@
 /**
- * Onboarding Step 4 — Genre selection.
- * Fetches the combined TMDB movie+TV genre list and persists
- * profiles.genres as {id,name} objects — same shape convention as
- * streaming_providers.
+ * Onboarding Step 3 — Genre selection.
+ * Fetches the combined TMDB movie+TV genre list and persists profiles.genres
+ * as a text[] of genre names, matching the pre-existing column shape.
  */
 import { useState, useMemo, useEffect } from 'react';
 import {
@@ -52,7 +51,7 @@ export default function Genres() {
     setSaving(true);
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) {
-      const payload = all.filter(g => selected.has(g.id));
+      const payload = all.filter(g => selected.has(g.id)).map(g => g.name);
       await supabase.from('profiles').update({ genres: payload }).eq('id', session.user.id);
     }
     setSaving(false);
@@ -76,7 +75,7 @@ export default function Genres() {
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           <Text style={styles.wordmark}>PLOT</Text>
-          <Text style={styles.stepLabel}>Step 4 of 5</Text>
+          <Text style={styles.stepLabel}>Step 3 of 4</Text>
         </View>
         <View style={styles.backBtn} />
       </View>
@@ -84,7 +83,7 @@ export default function Genres() {
       {/* Content */}
       <View style={styles.content}>
         <Text style={styles.heading}>What do you like?</Text>
-        <Text style={styles.body}>Pick a few genres to help us recommend the right titles.</Text>
+        <Text style={styles.body}>Pick a few to shape what we recommend.</Text>
 
         {loading ? (
           <View style={styles.loadingWrap}><ActivityIndicator color={colors.accent} /></View>

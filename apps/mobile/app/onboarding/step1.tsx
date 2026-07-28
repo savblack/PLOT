@@ -83,7 +83,7 @@ export default function Step1() {
       }
     }
     setSaving(false);
-    router.push('/onboarding/step2');
+    router.push('/onboarding/genres');
   };
 
   return (
@@ -103,7 +103,7 @@ export default function Step1() {
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           <Text style={styles.wordmark}>PLOT</Text>
-          <Text style={styles.stepLabel}>Step 2 of 5</Text>
+          <Text style={styles.stepLabel}>Step 2 of 4</Text>
         </View>
         <View style={styles.backBtn} />
       </View>
