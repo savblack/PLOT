@@ -97,6 +97,8 @@ const sleep = (ms) => new Promise(res => setTimeout(res, ms));
  *   ok=false + retryable=true  → transient (429 / 5xx / network) after exhausting retries.
  *   ok=false + retryable=false → terminal (e.g. 404 not found, bad id, misconfig).
  */
+let warnedMisconfiguredProxy = false;
+
 const fetchFromTMDBResolved = async (endpoint, params = {}, { retryDelays = RETRY_DELAYS } = {}) => {
   const { tmdbProxyUrl: PROXY_URL, supabaseAnonKey: SUPABASE_ANON_KEY } = getConfig();
   const queryParams = new URLSearchParams({
@@ -109,6 +111,21 @@ const fetchFromTMDBResolved = async (endpoint, params = {}, { retryDelays = RETR
   if (!PROXY_URL) {
     console.error('TMDB Fetch Error: tmdbProxyUrl is not configured');
     return { ok: false, data: null, status: null, retryable: false };
+  }
+
+  // tmdbProxyUrl must be the tmdb-proxy Cloudflare Worker, not the Supabase
+  // Edge Function it fronts — the Edge Function rejects every request with
+  // 403 "Proxy access required" unless it carries a shared-secret header that
+  // only the Worker adds. Pointing this straight at the Edge Function breaks
+  // every TMDB-backed feature app-wide while looking like empty data, not an
+  // error (incident 2026-07-28). Warn loudly, once, instead of failing silently.
+  if (!warnedMisconfiguredProxy && /\.supabase\.co\//.test(PROXY_URL)) {
+    warnedMisconfiguredProxy = true;
+    console.error(
+      `TMDB Proxy Misconfigured: tmdbProxyUrl ("${PROXY_URL}") points directly at the ` +
+      'Supabase Edge Function. It must be the tmdb-proxy Cloudflare Worker URL instead ' +
+      '(see apps/web/workers/tmdb-proxy) — every TMDB request will 403 until this is fixed.'
+    );
   }
 
   const url = `${PROXY_URL}?${queryParams}`;
