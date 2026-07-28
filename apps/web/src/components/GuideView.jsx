@@ -370,7 +370,6 @@ export function UpcomingContent({ typeFilters, genreFilters, providers, openPane
   );
 }
 
-
 /* ═══════════════════════════════════════
    GuideView
 ═══════════════════════════════════════ */

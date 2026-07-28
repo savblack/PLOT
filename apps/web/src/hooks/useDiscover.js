@@ -14,22 +14,21 @@ const MIN_RAIL_SIZE = 14;
 export function useDiscover() {
   const { profile } = useApp();
   const hideKids = !(profile?.include_kids_content ?? true);
-  const [data, setData]       = useState({ hero: null, onThisDay: null, hotRail: [], recentReleases: [], weekly: [], bingedShows: [], realityShows: [], anticipatedMovies: [] });
+  const [data, setData]       = useState({ hero: null, onThisDay: null, hotRail: [], weekly: [], bingedShows: [], realityShows: [], anticipatedMovies: [] });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
-    const emptyData = { hero: null, onThisDay: null, hotRail: [], recentReleases: [], weekly: [], bingedShows: [], realityShows: [], anticipatedMovies: [] };
+    const emptyData = { hero: null, onThisDay: null, hotRail: [], weekly: [], bingedShows: [], realityShows: [], anticipatedMovies: [] };
 
     async function load() {
       setLoading(true);
       setData(emptyData);
       try {
-        const [trendingDay, trendingWeek, trendingTVDay, recentReleases, onThisDay, genres, upcoming] = await Promise.all([
+        const [trendingDay, trendingWeek, trendingTVDay, onThisDay, genres, upcoming] = await Promise.all([
           tmdb.getTrending('all', 'day'),
           tmdb.getTrending('all', 'week'),
           tmdb.getTrending('tv', 'day'),
-          tmdb.getRecentReleases(14, []),
           tmdb.getOnThisDay().catch(() => null),
           tmdb.getGenres().catch(() => []),
           tmdb.getUpcoming([]).catch(() => null),
@@ -46,16 +45,6 @@ export function useDiscover() {
         const hero    = trendingItems[0] || null;
         const hotRail = trendingItems.slice(1, 10);
         const weekly  = excludeKidsContent((trendingWeek?.results || []).filter(isEnglishOriginTitle), hideKids).slice(0, 20);
-        const recentReleasesByDate = excludeKidsContent([...(recentReleases?.tv || []), ...(recentReleases?.movies || [])]
-          .filter(isEnglishOriginTitle), hideKids)
-          .sort((a, b) => (b.release_date || b.first_air_date || '').localeCompare(a.release_date || a.first_air_date || ''));
-        const recentIds = new Set();
-        const recentRail = recentReleasesByDate.filter(item => {
-          const key = `${item.media_type}-${item.id}`;
-          if (recentIds.has(key)) return false;
-          recentIds.add(key);
-          return true;
-        }).filter(hasPoster).slice(0, Math.max(MIN_RAIL_SIZE, 18));
         const bingedShows = excludeKidsContent((trendingTVDay?.results || []).filter(isEnglishOriginTitle), hideKids)
           .filter(hasPoster)
           .slice(0, Math.max(MIN_RAIL_SIZE, 18))
@@ -68,7 +57,7 @@ export function useDiscover() {
           .slice(0, 10)
           .map(movie => ({ ...movie, media_type: 'movie' }));
 
-        setData({ hero, onThisDay, hotRail, recentReleases: recentRail, weekly, bingedShows, realityShows, anticipatedMovies });
+        setData({ hero, onThisDay, hotRail, weekly, bingedShows, realityShows, anticipatedMovies });
       } catch (error) {
         console.error('Discover load failed:', error);
         if (!cancelled) setData(emptyData);
