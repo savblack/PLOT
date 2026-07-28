@@ -26,12 +26,18 @@ const html = (key: string) => `<!DOCTYPE html><html><head>
   allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>
 </div></body></html>`;
 
+// YouTube video IDs are exactly 11 URL-safe characters; reject anything else
+// before it's interpolated into the embed HTML.
+const isValidVideoKey = (key: string) => /^[\w-]{11}$/.test(key);
+
 export function TrailerPlayer({ videoKey }: { videoKey: string }) {
+  if (!isValidVideoKey(videoKey)) return null;
+
   return (
     <WebView
       source={{ html: html(videoKey), baseUrl: BASE_URL }}
       style={{ flex: 1, backgroundColor: '#000' }}
-      originWhitelist={['*']}
+      originWhitelist={[BASE_URL, 'https://www.youtube.com', 'https://youtube.com']}
       allowsInlineMediaPlayback
       mediaPlaybackRequiresUserAction={false}
       allowsFullscreenVideo

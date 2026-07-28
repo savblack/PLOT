@@ -1,42 +1,19 @@
 #!/usr/bin/env bash
 #
 # Blocks a commit if the staged changes contain secret-shaped strings.
-# Zero dependencies, runs locally before every commit.
+# Zero dependencies, runs locally before every commit. The pattern list lives
+# in scripts/scan-secrets.sh, shared with the CI backstop (ci.yml) that
+# catches this for clones that never ran the `git config` line below.
 #
 # If it ever flags something that is genuinely NOT a secret, bypass with:
 #   git commit --no-verify
 #
 # Enable once per clone with:  git config core.hooksPath .githooks
 
-patterns='eyJhbGciOiJ|-----BEGIN[A-Z ]*PRIVATE KEY-----|service_role|PGPASSWORD=|sk_live_|rk_live_|whsec_|sk-ant-|AKIA[0-9A-Z]{16}|re_[A-Za-z0-9]{20,}|AIza[0-9A-Za-z_-]{35}|api_key=[0-9a-f]{32}'
-
-# Files staged for commit, minus the example env file (placeholders live there)
-# and this hook itself (it necessarily contains the patterns it scans for).
-staged=$(git diff --cached --name-only --diff-filter=ACM | grep -vxE '\.env\.example|\.githooks/pre-commit')
-[ -z "$staged" ] && exit 0
-
-found=0
-while IFS= read -r file; do
-  [ -z "$file" ] && continue
-  # Only look at newly-added lines, ignore the diff's own +++ header.
-  match=$(git diff --cached -U0 -- "$file" \
-            | grep '^+' | grep -v '^+++' \
-            | grep -nEi "$patterns")
-  if [ -n "$match" ]; then
-    if [ "$found" -eq 0 ]; then
-      echo "COMMIT BLOCKED: possible secret in staged changes." >&2
-      echo "" >&2
-    fi
-    echo "  $file" >&2
-    echo "$match" | sed 's/^/    /' >&2
-    found=1
-  fi
-done <<< "$staged"
-
-if [ "$found" -eq 1 ]; then
+repo_root=$(git rev-parse --show-toplevel)
+if ! "$repo_root/scripts/scan-secrets.sh" --cached; then
   echo "" >&2
-  echo "Move the value into .env (gitignored) and reference it via env var." >&2
-  echo "If this is a false positive: git commit --no-verify" >&2
+  echo "COMMIT BLOCKED: possible secret in staged changes (see above)." >&2
   exit 1
 fi
 

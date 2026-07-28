@@ -11,10 +11,13 @@
 // Routing: file path functions/save.js → /save (query string passes through).
 import { loadTitle } from './_lib/tmdb.js';
 import { ogBase } from './_lib/og-base.js';
+import { rateLimited, rateLimitResponse } from './_lib/rateLimit.js';
 
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 export async function onRequest({ request, env }) {
+  if (await rateLimited(request, env)) return rateLimitResponse();
+
   const host = request.headers.get('host') || 'app.theplot.tv';
   const { searchParams } = new URL(request.url);
   const mediaType = searchParams.get('media_type') || 'movie';

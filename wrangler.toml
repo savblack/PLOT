@@ -1,0 +1,21 @@
+# Config for the app.theplot.tv Cloudflare Pages project (see
+# docs/cloudflare-pages-migration.md). Pages has been dashboard-configured
+# (git-connected build) up to now; this file adds ONLY the Ratelimit binding
+# the Pages Functions in functions/*.js need (functions/_lib/rateLimit.js).
+#
+# If Cloudflare Pages doesn't pick this file up for an already dashboard
+# git-connected project, add the same binding manually instead:
+#   Pages project → Settings → Functions → Bindings → Add → Rate Limiting →
+#   Variable name "RL", same limit/period as below. Either path produces the
+# same env.RL binding the functions call.
+name = "plot-app"
+pages_build_output_dir = "apps/web/dist"
+compatibility_date = "2025-06-01"
+
+# 60 requests per 10s per client IP on /u/*, /list/*, /save — generous enough
+# for real users (a profile page does a handful of sub-requests) but enough
+# to blunt scripted scraping/enumeration and TMDB-quota abuse.
+[[ratelimits]]
+name = "RL"
+namespace_id = "1003"
+simple = { limit = 60, period = 10 }

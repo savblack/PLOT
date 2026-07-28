@@ -10,7 +10,9 @@
     "ios": {
       "bundleIdentifier": "tv.theplot.app",
       "supportsTablet": true,
-      "associatedDomains": ["applinks:app.theplot.tv"]
+      "associatedDomains": [
+        "applinks:app.theplot.tv"
+      ]
     },
     "android": {
       "package": "tv.theplot.app",
@@ -26,11 +28,26 @@
           "action": "VIEW",
           "autoVerify": true,
           "data": [
-            { "scheme": "https", "host": "app.theplot.tv", "pathPrefix": "/save" },
-            { "scheme": "https", "host": "app.theplot.tv", "pathPrefix": "/list" },
-            { "scheme": "https", "host": "app.theplot.tv", "pathPrefix": "/u" }
+            {
+              "scheme": "https",
+              "host": "app.theplot.tv",
+              "pathPrefix": "/save"
+            },
+            {
+              "scheme": "https",
+              "host": "app.theplot.tv",
+              "pathPrefix": "/list"
+            },
+            {
+              "scheme": "https",
+              "host": "app.theplot.tv",
+              "pathPrefix": "/u"
+            }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
@@ -41,7 +58,8 @@
     "plugins": [
       "expo-router",
       "expo-font",
-      "expo-status-bar"
+      "expo-status-bar",
+      "expo-secure-store"
     ]
   }
 }

@@ -10,6 +10,27 @@ permissions:
   contents: read
 
 jobs:
+  secret-scan:
+    name: Secret scan (PR diff)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Scan changed lines for secret-shaped strings
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            ./scripts/scan-secrets.sh "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}"
+          elif [ -n "${{ github.event.before }}" ] && [ "${{ github.event.before }}" != "0000000000000000000000000000000000000000" ]; then
+            ./scripts/scan-secrets.sh "${{ github.event.before }}" "${{ github.sha }}"
+          else
+            # First push of a new branch — nothing to diff against, scan the
+            # whole tree by diffing against git's canonical empty-tree hash.
+            ./scripts/scan-secrets.sh 4b825dc642cb6eb9a060e54bf8d69288fbee4904 "${{ github.sha }}"
+          fi
+
   check:
     name: Lint and build
     runs-on: ubuntu-latest

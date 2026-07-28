@@ -49,24 +49,34 @@ async function sha256Hex(s: string): Promise<string> {
 // ADMIN_PASSWORD / ADMIN_TOKEN invalidates every existing session.
 const SESSION_TOKEN = await sha256Hex(`plot-admin-review::v1::${ADMIN_PASSWORD}::${ADMIN_TOKEN}`);
 
-// Best-effort in-memory brute-force throttle on sign-ins, keyed by client IP.
-// State lives in the warm isolate; a sustained brute force keeps it warm, which
-// is exactly when the limit bites. A successful sign-in clears the bucket.
+// Brute-force throttle on sign-ins, keyed by client IP. Persisted in
+// `auth_fail_attempts` (not an in-isolate Map) so it holds across Deno
+// isolate cycles and requests spread across isolates. A successful sign-in
+// clears the row.
+const LOGIN_SCOPE = 'admin-review-login';
 const LOGIN_WINDOW_MS = 15 * 60 * 1000;
 const LOGIN_MAX_FAILS = 8;
-const loginFails = new Map<string, { count: number; first: number }>();
 const clientIp = (req: Request): string =>
   req.headers.get('cf-connecting-ip') || 'unknown';
-function loginBlocked(ip: string): boolean {
-  const rec = loginFails.get(ip);
-  if (!rec) return false;
-  if (Date.now() - rec.first > LOGIN_WINDOW_MS) { loginFails.delete(ip); return false; }
-  return rec.count >= LOGIN_MAX_FAILS;
+// deno-lint-ignore no-explicit-any
+async function loginBlocked(supabase: any, ip: string): Promise<boolean> {
+  const { data } = await supabase
+    .from('auth_fail_attempts')
+    .select('fail_count, window_start')
+    .eq('scope', LOGIN_SCOPE)
+    .eq('ip', ip)
+    .maybeSingle();
+  if (!data) return false;
+  if (Date.now() - new Date(data.window_start).getTime() > LOGIN_WINDOW_MS) return false;
+  return data.fail_count >= LOGIN_MAX_FAILS;
 }
-function noteLoginFail(ip: string): void {
-  const rec = loginFails.get(ip);
-  if (!rec || Date.now() - rec.first > LOGIN_WINDOW_MS) loginFails.set(ip, { count: 1, first: Date.now() });
-  else rec.count += 1;
+// deno-lint-ignore no-explicit-any
+async function noteLoginFail(supabase: any, ip: string): Promise<void> {
+  await supabase.rpc('auth_note_fail', { p_scope: LOGIN_SCOPE, p_ip: ip, p_window_ms: LOGIN_WINDOW_MS });
+}
+// deno-lint-ignore no-explicit-any
+async function clearLoginFails(supabase: any, ip: string): Promise<void> {
+  await supabase.from('auth_fail_attempts').delete().eq('scope', LOGIN_SCOPE).eq('ip', ip);
 }
 const SITE_URL = 'https://theplot.tv';
 
@@ -447,15 +457,16 @@ Deno.serve(async (req) => {
   const submitted = form ? String(form.get('password') || '') : '';
   const isLoginAttempt = !!form && form.has('password');
   const ip = clientIp(req);
+  const supabase = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
 
   // Throttle brute force before checking the password at all.
-  if (isLoginAttempt && loginBlocked(ip)) {
+  if (isLoginAttempt && await loginBlocked(supabase, ip)) {
     return new Response(loginPage(true, true),
       { status: 429, headers: { 'content-type': 'text/html; charset=utf-8', 'retry-after': '900' } });
   }
 
   const passwordOk = matchesSecret(submitted);
-  if (isLoginAttempt) { if (passwordOk) loginFails.delete(ip); else noteLoginFail(ip); }
+  if (isLoginAttempt) { if (passwordOk) await clearLoginFails(supabase, ip); else await noteLoginFail(supabase, ip); }
 
   // No valid session cookie and no valid password → show the sign-in page.
   if (!authed(req) && !passwordOk) {
@@ -463,7 +474,6 @@ Deno.serve(async (req) => {
       { status: 401, headers: { 'content-type': 'text/html; charset=utf-8' } });
   }
 
-  const supabase = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
   // On a fresh password sign-in, set the derived session cookie (never the raw secret).
   const setCookie = passwordOk
     ? { 'set-cookie': `admin_token=${SESSION_TOKEN}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=2592000` } : {};

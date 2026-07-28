@@ -40,7 +40,9 @@ export default defineConfig([
     // and the marketing site (apps/website/functions/).
     files: ['functions/**/*.{js,mjs}', 'apps/website/functions/**/*.{js,mjs}'],
     languageOptions: {
-      globals: { ...globals.node, ...globals.browser },
+      // HTMLRewriter is a Cloudflare Workers/Pages runtime global, not part of
+      // any globals.* preset.
+      globals: { ...globals.node, ...globals.browser, HTMLRewriter: 'readonly' },
     },
     rules: {
       'react-refresh/only-export-components': 'off',

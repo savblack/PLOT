@@ -64,7 +64,7 @@ export default function Turnstile({ siteKey, onToken, resetSignal = 0, baseUrl =
         style={styles.webview}
         scrollEnabled={false}
         javaScriptEnabled
-        originWhitelist={['*']}
+        originWhitelist={[baseUrl, 'https://challenges.cloudflare.com*']}
         // keep the widget background transparent
         containerStyle={styles.webview}
       />
