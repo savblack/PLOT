@@ -6,8 +6,8 @@ import {
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import PlotLoader from '../../components/PlotLoader';
-import HamburgerIcon from '../../components/HamburgerIcon';
-import { useDrawer } from '../../contexts/DrawerContext';
+import ErrorState from '../../components/ErrorState';
+import ScreenHeaderBar from '../../components/ScreenHeaderBar';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 import { HistoryEntry } from '../../hooks/useHistory';
 import { useAppData } from '../../contexts/AppDataContext';
@@ -63,9 +63,8 @@ export default function HistoryScreen() {
   const { colors, resolved } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets    = useSafeAreaInsets();
-  const { open }  = useDrawer();
   const { history } = useAppData();
-  const { entries, loading } = history;
+  const { entries, loading, loadError, reload } = history;
 
   const HEADER_H = insets.top + 56;
 
@@ -113,6 +112,7 @@ export default function HistoryScreen() {
   }), [maxScroll, timeline]);
 
   if (loading) return <PlotLoader />;
+  if (loadError) return <ErrorState onRetry={reload} />;
 
   return (
     <View style={styles.screen}>
@@ -161,12 +161,7 @@ export default function HistoryScreen() {
         tint={resolved === 'dark' ? 'systemChromeMaterialDark' : 'systemChromeMaterialLight'}
         style={[styles.fixedHeader, { height: HEADER_H, paddingTop: insets.top }]}
       >
-        <View style={styles.headerInner}>
-          <TouchableOpacity style={styles.hamburgerBtn} onPress={() => open()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <HamburgerIcon />
-          </TouchableOpacity>
-          <Text style={styles.screenTitle} pointerEvents="none">History</Text>
-        </View>
+        <ScreenHeaderBar title="History" showSearch={false} />
       </BlurView>
 
     </View>
@@ -183,24 +178,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
-  headerInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.md,
-  },
-  hamburgerBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-  screenTitle: {
-    position: 'absolute',
-    left: 0, right: 0,
-    textAlign: 'center',
-    fontFamily: fontFamily.serif,
-    fontSize: fontSize.xl,
-    color: colors.textPrimary,
-  },
-
   // Scrubber — slim right-edge rail; wide touch strip, thin visible thumb
   scrubTrack: {
     position: 'absolute',

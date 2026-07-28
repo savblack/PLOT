@@ -7,6 +7,8 @@ import { supabase } from './supabase.js';
  * @returns {{
  *   lists: { movies: any[]; tv: any[] };
  *   loading: boolean;
+ *   error: boolean;
+ *   reload: () => Promise<void>;
  *   setSlot: (listType: string, rank: number, item: any) => Promise<any>;
  *   removeSlot: (listType: string, tmdbId: number) => Promise<any>;
  *   moveUp: (listType: string, rank: number) => any;
@@ -16,19 +18,29 @@ import { supabase } from './supabase.js';
 export function useTopLists(userId) {
   const [lists,   setLists]   = useState({ movies: [], tv: [] });
   const [loading, setLoading] = useState(true);
+  const [error,   setError]   = useState(false);
 
   const load = useCallback(async () => {
     if (!userId) { setLoading(false); return; }
-    const { data } = await supabase
-      .from('user_top_lists')
-      .select('*')
-      .eq('user_id', userId)
-      .order('rank', { ascending: true });
+    setError(false);
+    setLoading(true);
+    try {
+      const { data, error: selErr } = await supabase
+        .from('user_top_lists')
+        .select('*')
+        .eq('user_id', userId)
+        .order('rank', { ascending: true });
+      if (selErr) throw selErr;
 
-    const movies = (data || []).filter(r => r.list_type === 'movies');
-    const tv     = (data || []).filter(r => r.list_type === 'tv');
-    setLists({ movies, tv });
-    setLoading(false);
+      const movies = (data || []).filter(r => r.list_type === 'movies');
+      const tv     = (data || []).filter(r => r.list_type === 'tv');
+      setLists({ movies, tv });
+    } catch (e) {
+      console.error('[useTopLists] load failed', e);
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
   }, [userId]);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect -- loading is delegated to the stable loader callback
@@ -173,5 +185,5 @@ export function useTopLists(userId) {
   const moveUp   = useCallback((listType, rank) => moveToRank(listType, rank, rank - 1), [moveToRank]);
   const moveDown = useCallback((listType, rank) => moveToRank(listType, rank, rank + 1), [moveToRank]);
 
-  return { lists, loading, setSlot, removeSlot, moveUp, moveDown };
+  return { lists, loading, error, reload: load, setSlot, removeSlot, moveUp, moveDown };
 }

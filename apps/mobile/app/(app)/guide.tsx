@@ -4,15 +4,13 @@
  * Layout: day tabs → channel rows each with a horizontal program rail.
  */
 import { useEffect, useState, useMemo, useRef } from 'react';
-import { useRouter } from 'expo-router';
 import {
   View, Text, ScrollView, TouchableOpacity, Modal,
   StyleSheet, Dimensions, ActivityIndicator,
 } from 'react-native';
-import Svg, { Circle, Line, Path, Polyline } from 'react-native-svg';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import HamburgerIcon from '../../components/HamburgerIcon';
+import ScreenHeaderBar from '../../components/ScreenHeaderBar';
 import { useDrawer } from '../../contexts/DrawerContext';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 import { supabase } from '../../lib/supabase';
@@ -307,8 +305,6 @@ function ProgramSheet({ prog, onClose }: { prog: Program | null; onClose: () => 
 // ── Main screen ───────────────────────────────────────────────────────
 export default function GuideScreen() {
   const insets = useSafeAreaInsets();
-  const { open } = useDrawer();
-  const router = useRouter();
   const { colors, resolved } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
@@ -379,17 +375,7 @@ export default function GuideScreen() {
       <BlurView intensity={80} tint={resolved === 'dark' ? 'systemChromeMaterialDark' : 'systemChromeMaterialLight'}
         style={[styles.fixedHeader, { height: HEADER_H, paddingTop: insets.top }]}
       >
-        <View style={styles.headerRow}>
-          <TouchableOpacity style={styles.headerBtn} onPress={() => open()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <HamburgerIcon />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle} pointerEvents="none">Guide</Text>
-          <TouchableOpacity style={styles.headerBtn} onPress={() => router.push('/(app)/search')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={colors.textPrimary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-              <Circle cx={11} cy={11} r={7} /><Line x1={16.5} y1={16.5} x2={21} y2={21} />
-            </Svg>
-          </TouchableOpacity>
-        </View>
+        <ScreenHeaderBar title="Guide" />
       </BlurView>
 
       <View style={{ flex: 1, paddingTop: HEADER_H }}>
@@ -466,16 +452,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     position: 'absolute', top: 0, left: 0, right: 0, zIndex: 100,
     borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border,
   },
-  headerRow: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: spacing.xl, paddingTop: spacing.md, paddingBottom: spacing.lg,
-  },
-  headerBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: {
-    position: 'absolute', left: 0, right: 0, textAlign: 'center',
-    fontFamily: fontFamily.serif, fontSize: fontSize.xl, color: colors.textPrimary,
-  },
-
   // Day tabs
   dayTabs: {
     flexShrink: 0,

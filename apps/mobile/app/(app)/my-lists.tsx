@@ -1,22 +1,20 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
-import { useRouter } from 'expo-router';
 import {
   View, Text, ScrollView, FlatList, Image, TouchableOpacity, TextInput,
   Modal, StyleSheet, Dimensions, ActivityIndicator, Alert, Share,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Path, Polyline, Line, Circle } from 'react-native-svg';
+import Svg, { Path, Polyline, Line } from 'react-native-svg';
 import PlotLoader from '../../components/PlotLoader';
-import HamburgerIcon from '../../components/HamburgerIcon';
-import { useDrawer } from '../../contexts/DrawerContext';
+import ScreenHeaderBar from '../../components/ScreenHeaderBar';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 import { useMediaPanel } from '../../contexts/MediaPanelContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import { canCreateCustomList, FREE_CUSTOM_LIST_CAP } from '@plot/core/premium.js';
 import { tmdb } from '../../lib/tmdb';
 import { favoriteWords } from '../../lib/spelling';
-import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
+import { posterUrl, Palette, fontFamily, fontSize, spacing, radii, iconButtonSize } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 
 const SCREEN_W = Dimensions.get('window').width;
@@ -73,8 +71,8 @@ function SubTab({ label, active, onPress }: { label: string; active: boolean; on
 
 // ── Section header bar ────────────────────────────────────────────────
 function SectionBar({
-  label, count, open, onToggle, onAdd,
-}: { label: string; count?: number; open: boolean; onToggle: () => void; onAdd?: () => void }) {
+  label, count, open, onToggle, onAdd, addLabel = 'Add item',
+}: { label: string; count?: number; open: boolean; onToggle: () => void; onAdd?: () => void; addLabel?: string }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
@@ -91,6 +89,8 @@ function SectionBar({
           style={styles.sectionAddBtn}
           onPress={(e) => { e.stopPropagation?.(); onAdd(); }}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel={addLabel}
+          accessibilityRole="button"
         >
           <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
             <Line x1={12} y1={5} x2={12} y2={19} />
@@ -138,7 +138,7 @@ function ListRow({ item, trailing, onPress }: { item: any; trailing?: React.Reac
 }
 
 // ── Poster grid ───────────────────────────────────────────────────────
-function PosterGrid({ items, onRemove, horizontal }: { items: any[]; onRemove?: (tmdbId: number) => void; horizontal?: boolean }) {
+function PosterGrid({ items, onRemove, horizontal, removeLabel = 'Remove' }: { items: any[]; onRemove?: (tmdbId: number) => void; horizontal?: boolean; removeLabel?: string }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
@@ -156,6 +156,8 @@ function PosterGrid({ items, onRemove, horizontal }: { items: any[]; onRemove?: 
               style={styles.removeBtn}
               onPress={() => onRemove(item.tmdb_id)}
               hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+              accessibilityLabel={removeLabel}
+              accessibilityRole="button"
             >
               <Text style={{ color: '#fff', fontSize: 10, lineHeight: 14 }}>✕</Text>
             </TouchableOpacity>
@@ -326,9 +328,7 @@ export default function MyListsScreen() {
   const { colors, resolved } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
-  const { open } = useDrawer();
   const { open: openPanel } = useMediaPanel();
-  const router  = useRouter();
   const { userId, watchlist, watching, favorites, customLists, history, profile } = useAppData();
   const fw = favoriteWords(profile?.region);
 
@@ -475,13 +475,14 @@ export default function MyListsScreen() {
                 open={favsOpen}
                 onToggle={() => setFavsOpen(o => !o)}
                 onAdd={() => setShowAddFav(true)}
+                addLabel="Add to favourites"
               />
             )}
             {(!isAll || favsOpen) && (
               favList.length === 0 ? (
                 <View style={styles.empty}>
                   <Text style={styles.emptyBody}>{favorites.favorites.length === 0 ? 'Heart any title to add it here.' : 'No matching titles'}</Text>
-                  <TouchableOpacity style={styles.emptyAddBtn} onPress={() => setShowAddFav(true)}>
+                  <TouchableOpacity style={styles.emptyAddBtn} onPress={() => setShowAddFav(true)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Add to favourites" accessibilityRole="button">
                     <Text style={{ color: colors.textMuted, fontSize: 20 }}>+</Text>
                   </TouchableOpacity>
                 </View>
@@ -489,6 +490,7 @@ export default function MyListsScreen() {
                 <PosterGrid
                   horizontal
                   items={favList}
+                  removeLabel="Remove favourite"
                   onRemove={(tmdbId) => {
                     const item = favorites.favorites.find((f: any) => f.tmdb_id === tmdbId);
                     if (item) favorites.toggleFavorite({ ...item, id: undefined });
@@ -508,6 +510,7 @@ export default function MyListsScreen() {
                 open={listsOpen}
                 onToggle={() => setListsOpen(o => !o)}
                 onAdd={requestCreateList}
+                addLabel="Create list"
               />
             )}
             {(!isAll || listsOpen) && (
@@ -520,7 +523,7 @@ export default function MyListsScreen() {
                 {customLists.lists.length === 0 && (
                   <View style={styles.empty}>
                     <Text style={styles.emptyBody}>Create your first custom list.</Text>
-                    <TouchableOpacity style={styles.emptyAddBtn} onPress={requestCreateList}>
+                    <TouchableOpacity style={styles.emptyAddBtn} onPress={requestCreateList} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Create list" accessibilityRole="button">
                       <Text style={{ color: colors.textMuted, fontSize: 20 }}>+</Text>
                     </TouchableOpacity>
                   </View>
@@ -553,18 +556,7 @@ export default function MyListsScreen() {
         tint={resolved === 'dark' ? 'systemChromeMaterialDark' : 'systemChromeMaterialLight'}
         style={[styles.fixedHeader, { height: HEADER_H, paddingTop: insets.top }]}
       >
-        <View style={styles.headerTitle}>
-          <TouchableOpacity style={styles.hamburgerBtn} onPress={() => open()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <HamburgerIcon />
-          </TouchableOpacity>
-          <Text style={styles.screenTitle} pointerEvents="none">My Lists</Text>
-          <TouchableOpacity style={styles.headerSearchBtn} onPress={() => router.push('/(app)/search')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={colors.textPrimary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-              <Circle cx={11} cy={11} r={7} />
-              <Line x1={16.5} y1={16.5} x2={21} y2={21} />
-            </Svg>
-          </TouchableOpacity>
-        </View>
+        <ScreenHeaderBar title="My Lists" />
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -680,13 +672,15 @@ function CustomListCard({
           <View style={styles.publicBadge}><Text style={styles.publicBadgeText}>Public</Text></View>
         )}
         <Text style={styles.customListCount}>{list.items?.length || 0}</Text>
-        <TouchableOpacity onPress={onAddItem} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+        <TouchableOpacity onPress={onAddItem} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Add item to list" accessibilityRole="button">
           <Text style={{ color: colors.textMuted, fontSize: 16, marginLeft: spacing.sm }}>+</Text>
         </TouchableOpacity>
         <TouchableOpacity
           onPress={openMenu}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           style={{ marginLeft: spacing.sm }}
+          accessibilityLabel="List options"
+          accessibilityRole="button"
         >
           <Text style={{ color: colors.textMuted, fontSize: 16 }}>···</Text>
         </TouchableOpacity>
@@ -698,7 +692,7 @@ function CustomListCard({
             <Text style={styles.emptyBody}>{(list.items?.length || 0) === 0 ? 'No items yet — tap + to add' : 'No matching titles'}</Text>
           </TouchableOpacity>
         ) : (
-          <PosterGrid items={items} onRemove={onRemoveItem} />
+          <PosterGrid items={items} onRemove={onRemoveItem} removeLabel="Remove from list" />
         )
       )}
     </View>
@@ -744,25 +738,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     backgroundColor: colors.accent + '1F',
   },
   publicBadgeText: { fontFamily: fontFamily.sansBold, fontSize: 9, letterSpacing: 0.5, textTransform: 'uppercase', color: colors.accent },
-  headerTitle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.xs,
-  },
-  screenTitle: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    textAlign: 'center',
-    fontFamily: fontFamily.serif,
-    fontSize: fontSize.xl,
-    color: colors.textPrimary,
-  },
-  headerSearchBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-  hamburgerBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
   subTabsScroll: {
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.border,
@@ -863,7 +838,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   rankEmptyPrompt: { flex: 1, fontFamily: fontFamily.serifItalic, fontSize: fontSize.sm, color: colors.textMuted },
   rankTitle: { flex: 1, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textPrimary },
   rankActions: { flexDirection: 'row', gap: 2 },
-  rankActionBtn: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
+  rankActionBtn: { width: iconButtonSize.md, height: iconButtonSize.md, alignItems: 'center', justifyContent: 'center' },
 
   topTenHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.xl, paddingVertical: spacing.sm, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
   topTenTypeLabel: { fontFamily: fontFamily.sansBold, fontSize: 10, letterSpacing: 0.6, textTransform: 'uppercase', color: colors.textMuted },

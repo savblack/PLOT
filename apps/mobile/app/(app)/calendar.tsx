@@ -1,15 +1,14 @@
 import { useMemo, useState, useCallback } from 'react';
-import { useRouter } from 'expo-router';
 import {
   View, Text, ScrollView, FlatList, Image, TouchableOpacity,
   StyleSheet, Dimensions,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Polyline, Circle, Line } from 'react-native-svg';
+import Svg, { Polyline } from 'react-native-svg';
 import PlotLoader from '../../components/PlotLoader';
-import HamburgerIcon from '../../components/HamburgerIcon';
-import { useDrawer } from '../../contexts/DrawerContext';
+import ErrorState from '../../components/ErrorState';
+import ScreenHeaderBar from '../../components/ScreenHeaderBar';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 import { useMediaPanel } from '../../contexts/MediaPanelContext';
 import { useAppData } from '../../contexts/AppDataContext';
@@ -141,9 +140,7 @@ export default function CalendarScreen() {
   const { colors, resolved } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
-  const { open } = useDrawer();
   const { open: openPanel } = useMediaPanel();
-  const router  = useRouter();
   const { watchlist, watching } = useAppData();
   const { events, loading, eventsForDate } = useCalendarEvents(watchlist.items, watching.items);
 
@@ -221,8 +218,12 @@ export default function CalendarScreen() {
   const CELL_W   = (SCREEN_W - spacing.xl * 2) / 7;
 
   const isDataLoading = loading || watchlist.loading || watching.loading;
+  const dataError = !!watchlist.error || !!watching.error;
 
   if (isDataLoading) return <PlotLoader />;
+  if (dataError) {
+    return <ErrorState onRetry={() => { watchlist.reload(); watching.reload(); }} />;
+  }
 
   return (
     <View style={styles.screen}>
@@ -356,19 +357,7 @@ export default function CalendarScreen() {
         tint={resolved === 'dark' ? 'systemChromeMaterialDark' : 'systemChromeMaterialLight'}
         style={[styles.fixedHeader, { height: HEADER_H, paddingTop: insets.top }]}
       >
-        {/* Row 1: hamburger + title (centred) + search */}
-        <View style={styles.headerRow1}>
-          <TouchableOpacity style={styles.hamburgerBtn} onPress={() => open()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <HamburgerIcon />
-          </TouchableOpacity>
-          <Text style={styles.screenTitle} pointerEvents="none">Calendar</Text>
-          <TouchableOpacity style={styles.headerSearchBtn} onPress={() => router.push('/(app)/search')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={colors.textPrimary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-              <Circle cx={11} cy={11} r={7} />
-              <Line x1={16.5} y1={16.5} x2={21} y2={21} />
-            </Svg>
-          </TouchableOpacity>
-        </View>
+        <ScreenHeaderBar title="Calendar" />
 
         {/* Row 2: underline tabs (left flex) + divider + date nav (right) */}
         <View style={styles.toolbarRow}>
@@ -382,13 +371,13 @@ export default function CalendarScreen() {
           <View style={styles.toolbarDivider} />
           {/* Date nav */}
           <View style={styles.monthNav}>
-            <TouchableOpacity onPress={prevPeriod} style={styles.navBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <TouchableOpacity onPress={prevPeriod} style={styles.navBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Previous period" accessibilityRole="button">
               <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
                 <Polyline points="15,18 9,12 15,6" />
               </Svg>
             </TouchableOpacity>
             <Text style={styles.monthNavLabel}>{navLabel}</Text>
-            <TouchableOpacity onPress={nextPeriod} style={styles.navBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <TouchableOpacity onPress={nextPeriod} style={styles.navBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Next period" accessibilityRole="button">
               <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
                 <Polyline points="9,18 15,12 9,6" />
               </Svg>
@@ -411,25 +400,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
-  hamburgerBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-  headerRow1: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.xs,
-  },
-  screenTitle: {
-    position: 'absolute',
-    left: 0, right: 0,
-    textAlign: 'center',
-    fontFamily: fontFamily.serif,
-    fontSize: fontSize.xl,
-    color: colors.textPrimary,
-  },
-  headerSearchBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-
   // Toolbar row — underline tab strip + divider + date nav
   toolbarRow: {
     flex: 1,

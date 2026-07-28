@@ -3,23 +3,22 @@
  * Sections: Hero → Hot Right Now → Most Binged → Top 20 This Week
  */
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { useRouter } from 'expo-router';
 import PlotLoader from '../../components/PlotLoader';
+import ErrorState from '../../components/ErrorState';
 import HomeReleases from '../../components/HomeReleases';
-import HamburgerIcon from '../../components/HamburgerIcon';
-import { useDrawer } from '../../contexts/DrawerContext';
+import ScreenHeaderBar from '../../components/ScreenHeaderBar';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 import { useMediaPanel } from '../../contexts/MediaPanelContext';
 import {
   View, Text, ScrollView, FlatList, Image, TouchableOpacity, LayoutAnimation,
   UIManager, Platform, StyleSheet, Dimensions,
 } from 'react-native';
-import Svg, { Circle, Line, Path, Polyline } from 'react-native-svg';
+import Svg, { Path, Polyline } from 'react-native-svg';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../../lib/supabase';
 import { tmdb, setTmdbRegion, getTmdbRegion, prioritiseEnglishSpeakingTitles } from '../../lib/tmdb';
-import { posterUrl, backdropUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
+import { posterUrl, backdropUrl, Palette, fontFamily, fontSize, spacing, radii, iconButtonSize } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
 
@@ -99,6 +98,8 @@ function PosterCard({ item, onPress, saved, onSave, isFav, onFavorite }: {
           style={[styles.saveBtn, styles.saveBtnLeft]}
           onPress={onFavorite}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel={isFav ? 'Remove favourite' : 'Add favourite'}
+          accessibilityRole="button"
         >
           <Text style={{ color: isFav ? colors.accent : '#fff', fontSize: 13 }}>
             {isFav ? '♥' : '♡'}
@@ -109,6 +110,8 @@ function PosterCard({ item, onPress, saved, onSave, isFav, onFavorite }: {
           style={styles.saveBtn}
           onPress={onSave}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel={saved ? 'Remove from watchlist' : 'Add to watchlist'}
+          accessibilityRole="button"
         >
           <BookmarkIcon color={saved ? colors.accent : '#fff'} filled={saved} />
         </TouchableOpacity>
@@ -176,6 +179,8 @@ function ChartRow({ item, rank, saved, onSave, onPress }: {
         style={[styles.chartSaveBtn, saved && styles.chartSaveBtnSaved]}
         onPress={onSave}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        accessibilityLabel={saved ? 'Remove from watchlist' : 'Add to watchlist'}
+        accessibilityRole="button"
       >
         <BookmarkIcon size={13} color={saved ? colors.accent : colors.textMuted} filled={saved} />
       </TouchableOpacity>
@@ -205,6 +210,8 @@ function HeroCard({ item, onPress, saved, onSave }: {
         style={styles.heroSaveCircle}
         onPress={onSave}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        accessibilityLabel={saved ? 'Remove from watchlist' : 'Add to watchlist'}
+        accessibilityRole="button"
       >
         <BookmarkIcon size={16} color={saved ? colors.accent : '#fff'} filled={saved} />
       </TouchableOpacity>
@@ -256,7 +263,13 @@ function PlatformSection({ platform, saved, onSave, isFav, onFavorite }: {
   return (
     <View style={styles.platSection}>
       {/* Header row */}
-      <TouchableOpacity style={styles.platHeader} onPress={toggle} activeOpacity={0.7}>
+      <TouchableOpacity
+        style={styles.platHeader}
+        onPress={toggle}
+        activeOpacity={0.7}
+        accessibilityLabel={open ? `Collapse ${platform.name} platform` : `Expand ${platform.name} platform`}
+        accessibilityRole="button"
+      >
         <View style={styles.platHeaderLeft}>
           {logoUri
             ? <Image source={{ uri: logoUri }} style={styles.platLogo} resizeMode="contain" />
@@ -360,13 +373,21 @@ function PosterCardRanked({ item, rank, saved, onSave, isFav, onFavorite }: {
           style={[styles.saveBtn, styles.saveBtnLeft]}
           onPress={onFavorite}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel={isFav ? 'Remove favourite' : 'Add favourite'}
+          accessibilityRole="button"
         >
           <Text style={{ color: isFav ? colors.accent : '#fff', fontSize: 13 }}>
             {isFav ? '♥' : '♡'}
           </Text>
         </TouchableOpacity>
         {/* Bookmark — watchlist (bottom right) */}
-        <TouchableOpacity style={styles.saveBtn} onPress={onSave} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+        <TouchableOpacity
+          style={styles.saveBtn}
+          onPress={onSave}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel={saved ? 'Remove from watchlist' : 'Add to watchlist'}
+          accessibilityRole="button"
+        >
           <BookmarkIcon size={13} color={saved ? colors.accent : '#fff'} filled={saved} />
         </TouchableOpacity>
       </View>
@@ -378,8 +399,6 @@ function PosterCardRanked({ item, rank, saved, onSave, isFav, onFavorite }: {
 // ── Main screen ───────────────────────────────────────────────────────
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
-  const router = useRouter();
-  const { open } = useDrawer();
   const { open: openPanel } = useMediaPanel();
   const { colors, resolved } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -393,6 +412,10 @@ export default function HomeScreen() {
   const [platforms,    setPlatforms]    = useState<PlatformData[]>([]);
   const [forYou,       setForYou]       = useState<MediaItem[]>([]);
   const [loading,      setLoading]      = useState(true);
+  const [error,        setError]        = useState(false);
+  const [retryKey,     setRetryKey]     = useState(0);
+  const [forYouError,  setForYouError]  = useState(false);
+  const [platformsError, setPlatformsError] = useState(false);
 
   const savedIds = new Set(watchlist.map(i => i.tmdb_id ?? i.id ?? 0));
 
@@ -409,39 +432,51 @@ export default function HomeScreen() {
     let cancelled = false;
 
     const init = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user || cancelled) return;
-      const uid = session.user.id;
-      setUserId(uid);
+      setError(false);
+      setLoading(true);
+      let profile: { region?: string; streaming_providers?: StreamingProvider[] } | null = null;
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user || cancelled) return;
+        const uid = session.user.id;
+        setUserId(uid);
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('region, streaming_providers')
-        .eq('id', uid)
-        .maybeSingle();
-      if (profile?.region) setTmdbRegion(profile.region);
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('region, streaming_providers')
+          .eq('id', uid)
+          .maybeSingle();
+        profile = profileData;
+        if (profile?.region) setTmdbRegion(profile.region);
 
-      const [trendingDay, trendingWeek, trendingTV, listData] = await Promise.all([
-        tmdb.getTrending('all', 'day'),
-        tmdb.getTrending('all', 'week'),
-        tmdb.getTrending('tv',  'day'),
-        supabase.from('lists').select('id').eq('user_id', uid).eq('name', 'My List').maybeSingle(),
-      ]);
+        const [trendingDay, trendingWeek, trendingTV, listData] = await Promise.all([
+          tmdb.getTrending('all', 'day'),
+          tmdb.getTrending('all', 'week'),
+          tmdb.getTrending('tv',  'day'),
+          supabase.from('lists').select('id').eq('user_id', uid).eq('name', 'My List').maybeSingle(),
+        ]);
 
-      if (cancelled) return;
+        if (cancelled) return;
 
-      if (trendingDay?.results)  setTrending(prioritiseEnglishSpeakingTitles(trendingDay.results).slice(0, 20));
-      if (trendingWeek?.results) setWeekly(trendingWeek.results.slice(0, 20));
-      if (trendingTV?.results)   setBingedShows(prioritiseEnglishSpeakingTitles(trendingTV.results).slice(0, 10).map((s: MediaItem) => ({ ...s, media_type: 'tv' })));
+        if (trendingDay?.results)  setTrending(prioritiseEnglishSpeakingTitles(trendingDay.results).slice(0, 20));
+        if (trendingWeek?.results) setWeekly(trendingWeek.results.slice(0, 20));
+        if (trendingTV?.results)   setBingedShows(prioritiseEnglishSpeakingTitles(trendingTV.results).slice(0, 10).map((s: MediaItem) => ({ ...s, media_type: 'tv' })));
 
-      const lid = listData.data?.id;
-      if (lid) {
-        setListId(lid);
-        const { data: items } = await supabase
-          .from('list_items')
-          .select('tmdb_id, media_type, title, poster_path')
-          .eq('list_id', lid);
-        if (!cancelled && items) setWatchlist(items);
+        const lid = listData.data?.id;
+        if (lid) {
+          setListId(lid);
+          const { data: items } = await supabase
+            .from('list_items')
+            .select('tmdb_id, media_type, title, poster_path')
+            .eq('list_id', lid);
+          if (!cancelled && items) setWatchlist(items);
+        }
+      } catch (e) {
+        if (cancelled) return;
+        console.warn('[home] bootstrap failed', e);
+        setError(true);
+        setLoading(false);
+        return;
       }
 
       setLoading(false);
@@ -450,10 +485,13 @@ export default function HomeScreen() {
       // watchlist/favourites/history, computed nightly in Postgres (see
       // supabase/migrations/20260726020000_for_you_recommendations.sql).
       // Non-blocking — hydrate rows with TMDB after the rest of the screen loads.
+      setForYouError(false);
       (async () => {
         try {
-          const { data: rows, error } = await supabase.rpc('get_for_you', { p_limit: 20 });
-          if (cancelled || error || !rows?.length) return;
+          const { data: rows, error: rpcError } = await supabase.rpc('get_for_you', { p_limit: 20 });
+          if (cancelled) return;
+          if (rpcError) { setForYouError(true); return; }
+          if (!rows?.length) return;
           const hydrated = await Promise.all(
             rows.map(async (row: { tmdb_id: number; media_type: 'movie' | 'tv' }) => {
               const details = await tmdb.getBasicDetails(row.media_type, row.tmdb_id).catch(() => null);
@@ -464,12 +502,14 @@ export default function HomeScreen() {
           if (!cancelled) setForYou(hydrated.filter((item): item is MediaItem => item !== null));
         } catch (e) {
           console.warn('[home] for-you load failed', e);
+          if (!cancelled) setForYouError(true);
         }
       })();
 
       // Load platform content in background (non-blocking)
       const providers: StreamingProvider[] = profile?.streaming_providers ?? [];
       if (providers.length > 0 && !cancelled) {
+        setPlatformsError(false);
         try {
           const region = getTmdbRegion();
           const results = await Promise.all(
@@ -490,13 +530,14 @@ export default function HomeScreen() {
           }
         } catch (e) {
           console.warn('[home] platform load failed', e);
+          if (!cancelled) setPlatformsError(true);
         }
       }
     };
 
     init();
     return () => { cancelled = true; };
-  }, []);
+  }, [retryKey]);
 
   // ── Watchlist toggle ─────────────────────────────────────────────
   const handleSave = useCallback(async (item: MediaItem) => {
@@ -541,6 +582,7 @@ export default function HomeScreen() {
   }, [listId, userId, savedIds]);
 
   if (loading) return <PlotLoader />;
+  if (error) return <ErrorState onRetry={() => setRetryKey(k => k + 1)} />;
 
   const HEADER_H = insets.top + 56;
   const hero     = trending[0];
@@ -590,6 +632,12 @@ export default function HomeScreen() {
         )}
 
         {/* ── For You ── */}
+        {forYouError && forYou.length === 0 && (
+          <View style={styles.section}>
+            <SectionHeader kicker="Picked for you" title="For You" />
+            <Text style={styles.emptyBody}>Couldn't load your recommendations right now.</Text>
+          </View>
+        )}
         {forYou.length > 0 && (
           <View style={styles.section}>
             <SectionHeader kicker="Picked for you" title="For You" />
@@ -656,6 +704,12 @@ export default function HomeScreen() {
         <HomeReleases rails={['recent', 'comingSoon']} />
 
         {/* ── Top 10 On Your Platforms ── */}
+        {platformsError && platforms.length === 0 && (
+          <View style={styles.section}>
+            <SectionHeader kicker="Your Streaming Services" title="Top 10 On Your Platforms" />
+            <Text style={styles.emptyBody}>Couldn't load your platforms right now.</Text>
+          </View>
+        )}
         {platforms.length > 0 && (
           <View style={styles.section}>
             <SectionHeader kicker="Your Streaming Services" title="Top 10 On Your Platforms" />
@@ -712,26 +766,13 @@ export default function HomeScreen() {
         tint={resolved === 'dark' ? 'systemChromeMaterialDark' : 'systemChromeMaterialLight'}
         style={[styles.fixedHeader, { height: HEADER_H, paddingTop: insets.top }]}
       >
-        <View style={styles.screenHeader}>
-          <TouchableOpacity style={styles.headerBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => open()}>
-            <HamburgerIcon />
-          </TouchableOpacity>
-
-          <Text style={styles.dateLabel}>
-            {new Date().toLocaleDateString('en', { weekday: 'short', month: 'short', day: 'numeric' })}
-          </Text>
-
-          <TouchableOpacity
-            style={styles.headerBtn}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            onPress={() => router.push('/(app)/search')}
-          >
-            <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={colors.textPrimary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-              <Circle cx={11} cy={11} r={7} />
-              <Line x1={16.5} y1={16.5} x2={21} y2={21} />
-            </Svg>
-          </TouchableOpacity>
-        </View>
+        <ScreenHeaderBar
+          center={
+            <Text style={styles.dateLabel} pointerEvents="none">
+              {new Date().toLocaleDateString('en', { weekday: 'short', month: 'short', day: 'numeric' })}
+            </Text>
+          }
+        />
       </BlurView>
 
     </View>
@@ -753,20 +794,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     borderBottomColor: colors.border,
   },
 
-  screenHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.lg,
-  },
-  headerBtn: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   dateLabel: {
     fontFamily: fontFamily.serif,
     fontSize: fontSize.xl,
@@ -872,9 +899,9 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     position: 'absolute',
     bottom: 6,
     right: 6,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: iconButtonSize.md,
+    height: iconButtonSize.md,
+    borderRadius: iconButtonSize.md / 2,
     backgroundColor: 'rgba(0,0,0,0.5)',
     alignItems: 'center',
     justifyContent: 'center',

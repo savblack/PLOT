@@ -28,6 +28,7 @@ function enqueueTraktAction(userId, integrationId, action, payload) {
  * @returns {{
  *   items: any[];
  *   loading: boolean;
+ *   error: string|null;
  *   isInList: (tmdbId: number) => boolean;
  *   addToList: (item: any, opts?: { source?: string }) => Promise<any>;
  *   removeFromList: (tmdbId: number) => Promise<any>;
@@ -39,7 +40,7 @@ export function useWatchlist(userId) {
   const [listId,    setListId]    = useState(null);
   const [items,     setItems]     = useState([]);
   const [loading,   setLoading]   = useState(true);
-  const [, setListError] = useState(null);
+  const [listError, setListError] = useState(null);
 
   // Cache the active Trakt integration ID so add/remove can enqueue outbox rows.
   const traktIntegrationId = useRef(null);
@@ -59,65 +60,69 @@ export function useWatchlist(userId) {
   const bootstrap = useCallback(async () => {
     if (!userId) { setLoading(false); return; }
     setListError(null);
+    setLoading(true);
 
-    // ── 1. Find existing "My List"
-    const { data: existing, error: selErr } = await supabase
-      .from('lists')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('name', LIST_NAME)
-      .maybeSingle();
-
-    if (selErr) {
-      console.error('[useWatchlist] SELECT lists failed:', selErr);
-      setListError(selErr.message);
-      setLoading(false);
-      return;
-    }
-
-    let listData = existing;
-
-    // ── 2. Create it if missing
-    if (!listData) {
-      const { data: created, error: insErr } = await supabase
+    try {
+      // ── 1. Find existing "My List"
+      const { data: existing, error: selErr } = await supabase
         .from('lists')
-        .insert({ user_id: userId, name: LIST_NAME, is_public: false })
         .select('id')
-        .single();
+        .eq('user_id', userId)
+        .eq('name', LIST_NAME)
+        .maybeSingle();
 
-      if (insErr) {
-        console.error('[useWatchlist] INSERT lists failed:', insErr);
-        setListError(insErr.message);
-        setLoading(false);
+      if (selErr) {
+        console.error('[useWatchlist] SELECT lists failed:', selErr);
+        setListError(selErr.message);
         return;
       }
-      listData = created;
-    }
 
-    if (!listData?.id) {
-      const msg = 'Could not get or create list (no id returned)';
-      console.error('[useWatchlist]', msg);
-      setListError(msg);
+      let listData = existing;
+
+      // ── 2. Create it if missing
+      if (!listData) {
+        const { data: created, error: insErr } = await supabase
+          .from('lists')
+          .insert({ user_id: userId, name: LIST_NAME, is_public: false })
+          .select('id')
+          .single();
+
+        if (insErr) {
+          console.error('[useWatchlist] INSERT lists failed:', insErr);
+          setListError(insErr.message);
+          return;
+        }
+        listData = created;
+      }
+
+      if (!listData?.id) {
+        const msg = 'Could not get or create list (no id returned)';
+        console.error('[useWatchlist]', msg);
+        setListError(msg);
+        return;
+      }
+
+      setListId(listData.id);
+
+      // ── 3. Load items
+      const { data: listItems, error: itemsErr } = await supabase
+        .from('list_items')
+        .select('*')
+        .eq('list_id', listData.id)
+        .order('created_at', { ascending: false });
+
+      if (itemsErr) {
+        console.error('[useWatchlist] SELECT list_items failed:', itemsErr);
+        setListError(itemsErr.message);
+      }
+
+      setItems(listItems || []);
+    } catch (e) {
+      console.error('[useWatchlist] bootstrap failed:', e);
+      setListError(e?.message || 'Unknown error loading your list.');
+    } finally {
       setLoading(false);
-      return;
     }
-
-    setListId(listData.id);
-
-    // ── 3. Load items
-    const { data: listItems, error: itemsErr } = await supabase
-      .from('list_items')
-      .select('*')
-      .eq('list_id', listData.id)
-      .order('created_at', { ascending: false });
-
-    if (itemsErr) {
-      console.error('[useWatchlist] SELECT list_items failed:', itemsErr);
-      setListError(itemsErr.message);
-    }
-
-    setItems(listItems || []);
-    setLoading(false);
   }, [userId]);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect -- bootstrap encapsulates the staged local state updates
@@ -226,5 +231,5 @@ export function useWatchlist(userId) {
     else await addToList(item);
   }, [isInList, addToList, removeFromList]);
 
-  return { items, loading, isInList, addToList, removeFromList, toggle, reload: bootstrap };
+  return { items, loading, error: listError, isInList, addToList, removeFromList, toggle, reload: bootstrap };
 }

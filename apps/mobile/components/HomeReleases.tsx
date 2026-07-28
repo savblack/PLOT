@@ -292,7 +292,11 @@ export default function HomeReleases({ rails }: { rails: ReleaseRail[] }) {
         try {
           releasesInflight ??= loadReleases();
           d = await releasesInflight;
-        } catch { releasesInflight = null; return; }
+        } catch (e) {
+          console.warn('[HomeReleases] load failed', e);
+          releasesInflight = null;
+          return;
+        }
         releasesInflight = null;
         if (cancelled) return;
         releasesCache = { day: todayStr, data: d };
@@ -304,7 +308,7 @@ export default function HomeReleases({ rails }: { rails: ReleaseRail[] }) {
         if (!cancelled && Object.keys(loaded).length) {
           setProviderLogos(prev => ({ ...prev, ...loaded }));
         }
-      }).catch(() => {});
+      }).catch((e) => console.warn('[HomeReleases] provider logo warm failed', e));
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps

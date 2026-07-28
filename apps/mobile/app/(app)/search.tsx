@@ -4,11 +4,12 @@ import {
   View, Text, TextInput, FlatList, Image, TouchableOpacity,
   StyleSheet, ActivityIndicator,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import Svg, { Circle, Line, Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tmdb } from '../../lib/tmdb';
 import { supabase } from '../../lib/supabase';
-import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
+import { posterUrl, Palette, fontFamily, fontSize, spacing, radii, iconButtonSize } from '../../lib/tokens';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
@@ -66,6 +67,7 @@ export default function SearchScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { userId, watchlist, favorites, history } = useAppData();
   const hooks: MediaHooks = { watchlist, favorites, history };
   const [mode,    setMode]    = useState<Mode>('titles');
@@ -113,6 +115,19 @@ export default function SearchScreen() {
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
+      <View style={styles.topBar}>
+        <TouchableOpacity
+          onPress={() => router.canGoBack() ? router.back() : router.replace('/(app)')}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          style={styles.backBtn}
+          accessibilityLabel="Go back"
+          accessibilityRole="button"
+        >
+          <Svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={colors.textPrimary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            <Path d="M15 18l-6-6 6-6" />
+          </Svg>
+        </TouchableOpacity>
+      </View>
       <View style={styles.searchBar}>
         <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: spacing.sm }}>
           <Circle cx={11} cy={11} r={7} />
@@ -276,6 +291,13 @@ function SearchRow({ item, hooks, signedIn }: { item: SearchResult; hooks: Media
 
 const makeStyles = (colors: Palette) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.sm,
+  },
+  backBtn: { padding: 4 },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -340,8 +362,8 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   chipText: { fontFamily: fontFamily.sansBold, fontSize: 10, letterSpacing: 0.4 },
   actions: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginLeft: spacing.sm },
   actionBtn: {
-    width: 34,
-    height: 34,
+    width: iconButtonSize.lg,
+    height: iconButtonSize.lg,
     borderRadius: radii.sm,
     alignItems: 'center',
     justifyContent: 'center',

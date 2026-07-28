@@ -14,14 +14,17 @@ const DRAWER_W = Dimensions.get('window').width * 0.58;
 
 const NAV_ITEMS = [
   { id: 'index',    label: 'Discover', path: '/(app)/'         },
+  { id: 'search',   label: 'Search',   path: '/(app)/search'   },
   { id: 'guide',    label: 'Guide',    path: '/(app)/guide'    },
   { id: 'calendar', label: 'Calendar', path: '/(app)/calendar' },
   { id: 'my-lists', label: 'My Lists', path: '/(app)/my-lists' },
+  { id: 'top10',    label: 'Top 10',   path: '/(app)/top10'    },
   { id: 'history',  label: 'History',  path: '/(app)/history'  },
 ];
 
 const BOTTOM_NAV_ITEMS = [
-  { id: 'settings', label: 'Settings', path: '/(app)/settings' },
+  { id: 'requests', label: 'Follow Requests', path: '/(app)/requests' },
+  { id: 'settings', label: 'Settings',        path: '/(app)/settings' },
 ];
 
 interface DrawerMenuProps {
