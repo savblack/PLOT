@@ -164,12 +164,6 @@
   gap: 0.45rem;
 }
 
-.auth-field-label-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
 .auth-field label {
   font-size: 0.78rem;
   font-weight: 600;
@@ -179,6 +173,7 @@
 }
 
 .auth-forgot-link {
+  align-self: flex-end;
   background: none;
   border: none;
   font-family: var(--font-sans);
