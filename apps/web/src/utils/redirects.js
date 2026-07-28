@@ -1,4 +1,5 @@
 import { canUseDOM } from './storage.js';
+import { isPreviewDeployment } from './previewDeployment.js';
 
 const env = import.meta.env ?? {};
 const APP_BASE_URL = env.VITE_AUTH_REDIRECT_BASE_URL || env.VITE_APP_ORIGIN || null;
@@ -7,7 +8,16 @@ function browserOrigin() {
   return canUseDOM() ? window.location.origin : null;
 }
 
-export function getAppUrl(path = '/', baseUrl = APP_BASE_URL || browserOrigin()) {
+// On localhost/preview hosts, always send auth redirects back to wherever the
+// user actually is — never a configured production override. Otherwise a
+// build-time env var (or one that leaked into a Cloudflare Pages Preview
+// environment) would silently redirect preview/local logins to production.
+function defaultBaseUrl() {
+  if (canUseDOM() && isPreviewDeployment()) return browserOrigin();
+  return APP_BASE_URL || browserOrigin();
+}
+
+export function getAppUrl(path = '/', baseUrl = defaultBaseUrl()) {
   if (/^[a-z][a-z\d+.-]*:/i.test(path)) return path;
 
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
