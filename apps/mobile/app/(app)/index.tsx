@@ -18,6 +18,7 @@ import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../../lib/supabase';
 import { tmdb, setTmdbRegion, getTmdbRegion, prioritiseEnglishSpeakingTitles } from '../../lib/tmdb';
+import { excludeKidsContent } from '@plot/core/tmdb.js';
 import { posterUrl, backdropUrl, Palette, fontFamily, fontSize, spacing, radii, iconButtonSize } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
@@ -434,7 +435,7 @@ export default function HomeScreen() {
     const init = async () => {
       setError(false);
       setLoading(true);
-      let profile: { region?: string; streaming_providers?: StreamingProvider[] } | null = null;
+      let profile: { region?: string; streaming_providers?: StreamingProvider[]; include_kids_content?: boolean } | null = null;
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session?.user || cancelled) return;
@@ -443,11 +444,12 @@ export default function HomeScreen() {
 
         const { data: profileData } = await supabase
           .from('profiles')
-          .select('region, streaming_providers')
+          .select('region, streaming_providers, include_kids_content')
           .eq('id', uid)
           .maybeSingle();
         profile = profileData;
         if (profile?.region) setTmdbRegion(profile.region);
+        const hideKids = !(profile?.include_kids_content ?? true);
 
         const [trendingDay, trendingWeek, trendingTV, listData] = await Promise.all([
           tmdb.getTrending('all', 'day'),
@@ -458,9 +460,9 @@ export default function HomeScreen() {
 
         if (cancelled) return;
 
-        if (trendingDay?.results)  setTrending(prioritiseEnglishSpeakingTitles(trendingDay.results).slice(0, 20));
-        if (trendingWeek?.results) setWeekly(trendingWeek.results.slice(0, 20));
-        if (trendingTV?.results)   setBingedShows(prioritiseEnglishSpeakingTitles(trendingTV.results).slice(0, 10).map((s: MediaItem) => ({ ...s, media_type: 'tv' })));
+        if (trendingDay?.results)  setTrending(excludeKidsContent(prioritiseEnglishSpeakingTitles(trendingDay.results), hideKids).slice(0, 20));
+        if (trendingWeek?.results) setWeekly(excludeKidsContent(trendingWeek.results, hideKids).slice(0, 20));
+        if (trendingTV?.results)   setBingedShows(excludeKidsContent(prioritiseEnglishSpeakingTitles(trendingTV.results), hideKids).slice(0, 10).map((s: MediaItem) => ({ ...s, media_type: 'tv' })));
 
         const lid = listData.data?.id;
         if (lid) {

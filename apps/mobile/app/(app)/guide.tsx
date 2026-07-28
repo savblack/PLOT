@@ -114,13 +114,14 @@ interface Program {
 }
 interface Channel { id: string; name: string; type: 'broadcast' | 'streaming'; programs: Program[] }
 
-function buildChannels(broadcastEps: any[], webEps: any[], timezone?: string | null): Channel[] {
+function buildChannels(broadcastEps: any[], webEps: any[], timezone?: string | null, hideKids?: boolean): Channel[] {
   const map = new Map<string, Channel>();
 
   for (const ep of broadcastEps) {
     const show = getShow(ep);
     const net  = show?.network;
     if (!net?.id) continue;
+    if (hideKids && show?.genres?.includes('Children')) continue;
     const resolved = resolveAirtime(ep, timezone);
     if (!resolved) continue;
     const key = `net-${net.id}`;
@@ -132,6 +133,7 @@ function buildChannels(broadcastEps: any[], webEps: any[], timezone?: string | n
     const show = getShow(ep);
     const ch   = show?.webChannel;
     if (!ch?.id) continue;
+    if (hideKids && show?.genres?.includes('Children')) continue;
     const resolved = resolveAirtime(ep, timezone);
     if (!resolved) continue;
     const key = `web-${ch.id}`;
@@ -310,6 +312,7 @@ export default function GuideScreen() {
 
   const [country,         setCountry]         = useState('US');
   const [timezone,        setTimezone]        = useState<string | null>(null);
+  const [hideKids,        setHideKids]        = useState(false);
   const [channelNames,    setChannelNames]    = useState<Set<string>>(new Set());
   const [scheduleByDate,  setScheduleByDate]  = useState<Record<string, Channel[] | null>>({});
   const [selectedDate,    setSelectedDate]    = useState(() => localDateStr());
@@ -329,9 +332,10 @@ export default function GuideScreen() {
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) return;
-      const { data: profile } = await supabase.from('profiles').select('region, timezone, guide_channels').eq('id', session.user.id).maybeSingle();
+      const { data: profile } = await supabase.from('profiles').select('region, timezone, guide_channels, include_kids_content').eq('id', session.user.id).maybeSingle();
       if (profile?.region)   setCountry(profile.region);
       if (profile?.timezone) setTimezone(profile.timezone);
+      setHideKids(!(profile?.include_kids_content ?? true));
       const channels: Array<{ name?: string }> = profile?.guide_channels ?? [];
       setChannelNames(new Set(channels.map(c => (c.name || '').toLowerCase())));
     })();
@@ -359,12 +363,12 @@ export default function GuideScreen() {
         fetchWebSchedule(dateStr),
       ]);
       if (cancelled) return;
-      const channels = buildChannels(broadcastEps, webEps, timezone);
+      const channels = buildChannels(broadcastEps, webEps, timezone, hideKids);
       setScheduleByDate(prev => ({ ...prev, [dateStr]: channels }));
     });
 
     return () => { cancelled = true; };
-  }, [country, timezone]);
+  }, [country, timezone, hideKids]);
 
   const HEADER_H = insets.top + 56;
 
