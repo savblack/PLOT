@@ -317,14 +317,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
 
                 {mode !== 'forgot' && (
                   <div className="auth-field">
-                    <div className="auth-field-label-row">
-                      <label htmlFor="auth-password">Password</label>
-                      {mode === 'login' && (
-                        <button type="button" className="auth-forgot-link" onClick={() => switchMode('forgot')}>
-                          Forgot password?
-                        </button>
-                      )}
-                    </div>
+                    <label htmlFor="auth-password">Password</label>
                     <div className="auth-password-wrap">
                       <input
                         id="auth-password"
@@ -347,6 +340,11 @@ export default function AuthPage({ initialMode = 'signup' }) {
                         {showPassword ? 'Hide' : 'Show'}
                       </button>
                     </div>
+                    {mode === 'login' && (
+                      <button type="button" className="auth-forgot-link" onClick={() => switchMode('forgot')}>
+                        Forgot password?
+                      </button>
+                    )}
                   </div>
                 )}
 
