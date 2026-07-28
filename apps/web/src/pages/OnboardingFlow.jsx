@@ -472,22 +472,6 @@ export default function OnboardingFlow() {
                 </div>
               </div>
             )}
-            {seedSelected.length > 0 && (
-              <div style={{ marginBottom: '1rem' }}>
-                <div style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-secondary)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
-                  Added ({seedSelected.length})
-                </div>
-                <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', paddingBottom: '0.5rem' }}>
-                  {seedSelected.map(item => (
-                    <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', padding: '0.25rem 0.5rem 0.25rem 0.3rem', borderRadius: 'var(--radius-pill)', background: 'var(--accent-dim)', border: '1px solid color-mix(in srgb, var(--accent) 40%, transparent)', fontSize: '0.76rem', fontWeight: 600, color: 'var(--accent)' }}>
-                      <img src={posterUrl(item.poster_path, 'w92')} alt="" style={{ width: 18, height: 18, borderRadius: 3, objectFit: 'cover' }} />
-                      {item.title || item.name}
-                      <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--accent)', fontSize: '0.85rem', padding: 0, lineHeight: 1 }} onClick={() => toggleSeed(item)}>×</button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         )}
       </div>
