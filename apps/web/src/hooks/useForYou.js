@@ -26,7 +26,7 @@ export function useForYou(limit = 20) {
         rows.map(async (row) => {
           const details = await tmdb.getBasicDetails(row.media_type, row.tmdb_id).catch(() => null);
           if (!details?.id || !details.poster_path) return null;
-          return { ...details, media_type: row.media_type };
+          return { ...details, media_type: row.media_type, genre_ids: details.genres?.map(g => g.id) ?? [] };
         })
       );
 
