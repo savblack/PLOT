@@ -1,12 +1,20 @@
 /**
  * Daily, idempotent email alerts when a watchlist title becomes available on a
- * service the user has selected for their country.
+ * service the user has selected for their country. Also answers ad-hoc,
+ * user-triggered "send me a test" requests from Settings (no x-cron-secret
+ * header — authenticated by the caller's own Supabase JWT instead) so someone
+ * can confirm the email actually arrives without waiting for the daily cron.
  *
  * Required secrets: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, TMDB_API_KEY,
  * RESEND_API_KEY, AVAILABILITY_ALERTS_CRON_SECRET.
  * Optional: SENTRY_DSN (reports run failures to Sentry; safe to omit).
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
 
 const TMDB_BASE = 'https://api.themoviedb.org/3'
 const RESEND_API_URL = 'https://api.resend.com/emails'
@@ -95,17 +103,88 @@ async function sendEmail(resendKey: string, email: string, matches: Match[]) {
   if (!response.ok) throw new Error(`Resend request failed (${response.status}): ${await response.text()}`)
 }
 
+// Fallback used when the caller has no watchlist item to preview with —
+// still proves the send pipeline (Resend key, from address, template) works.
+const DEMO_MATCH = { tmdb_id: 27205, media_type: 'movie' as const, title: 'Inception', providerId: 8, providerName: 'Netflix' }
+
+/**
+ * Manual, user-triggered test send — authenticated by the caller's own
+ * Supabase JWT rather than the cron secret. Sends a real preview (the
+ * caller's own most-recent watchlist item, dressed up with their first
+ * selected provider) so "does this feature work" can be answered without
+ * waiting for a real availability match or the daily cron run. Deliberately
+ * does not touch the `watchlist_availability_alerts` dedup table — a test
+ * send must never suppress the genuine alert for the same title later.
+ */
+async function handleTestRequest(req: Request, admin: ReturnType<typeof createClient>, resendKey: string) {
+  const authHeader = req.headers.get('Authorization')
+  if (!authHeader) return Response.json({ error: 'Unauthorized' }, { status: 401, headers: corsHeaders })
+
+  const supabaseUser = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+    { global: { headers: { Authorization: authHeader } } },
+  )
+  const { data: { user }, error: authError } = await supabaseUser.auth.getUser()
+  if (authError || !user?.email) return Response.json({ error: 'Unauthorized' }, { status: 401, headers: corsHeaders })
+
+  const { data: profile } = await admin
+    .from('profiles')
+    .select('region, streaming_providers, guide_channels')
+    .eq('id', user.id)
+    .maybeSingle()
+  const selected = [...(profile?.streaming_providers ?? []), ...(profile?.guide_channels ?? [])]
+    .filter((provider: Provider) => provider?.name)
+  const region = profile?.region || 'US'
+
+  const { data: item } = await admin
+    .from('list_items')
+    .select('tmdb_id, media_type, title, lists!inner(name)')
+    .eq('user_id', user.id)
+    .eq('lists.name', 'My List')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  const demoMatch: Match = {
+    user_id: user.id,
+    tmdb_id: item?.tmdb_id ?? DEMO_MATCH.tmdb_id,
+    media_type: item?.media_type ?? DEMO_MATCH.media_type,
+    title: item?.title ?? DEMO_MATCH.title,
+    providerId: Number(selected[0]?.id ?? DEMO_MATCH.providerId),
+    providerName: selected[0]?.name || DEMO_MATCH.providerName,
+    region,
+  }
+
+  try {
+    await sendEmail(resendKey, user.email, [demoMatch])
+  } catch (error) {
+    return Response.json(
+      { ok: false, error: error instanceof Error ? error.message : 'Could not send the test email.' },
+      { status: 500, headers: corsHeaders },
+    )
+  }
+  return Response.json({ ok: true, email: user.email }, { headers: corsHeaders })
+}
+
 Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 })
-  if (req.headers.get('x-cron-secret') !== Deno.env.get('AVAILABILITY_ALERTS_CRON_SECRET')) return new Response('Forbidden', { status: 403 })
+
+  const cronHeader = req.headers.get('x-cron-secret')
+  const isCron = !!cronHeader && cronHeader === Deno.env.get('AVAILABILITY_ALERTS_CRON_SECRET')
+  if (cronHeader && !isCron) return new Response('Forbidden', { status: 403 })
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
   const serviceRole = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
   const tmdbKey = Deno.env.get('TMDB_API_KEY')
   const resendKey = Deno.env.get('RESEND_API_KEY')
-  if (!supabaseUrl || !serviceRole || !tmdbKey || !resendKey) return Response.json({ ok: false, error: 'Availability alerts are not configured.' }, { status: 500 })
+  if (!supabaseUrl || !serviceRole || !tmdbKey || !resendKey) return Response.json({ ok: false, error: 'Availability alerts are not configured.' }, { status: 500, headers: corsHeaders })
 
   const admin = createClient(supabaseUrl, serviceRole)
+
+  if (!isCron) return handleTestRequest(req, admin, resendKey)
+
   const { data: profiles, error: profileError } = await admin
     .from('profiles')
     .select('id, region, streaming_providers, guide_channels')
