@@ -1368,8 +1368,7 @@ svg { stroke-width: 1.5; }
   flex-shrink: 0;
 }
 
-/* Onboarding footer CTAs — chunky pill styling matching the auth pages.
-   Fill variant (right) and hairline outline variant (left). */
+/* Onboarding footer CTA — outlined pill, hugs its label. */
 .onboarding-cta {
   display: inline-flex;
   align-items: center;
@@ -1378,9 +1377,9 @@ svg { stroke-width: 1.5; }
   padding: clamp(0.75rem, 1.3vh, 0.95rem) 1.5rem;
   min-height: 48px;
   border-radius: var(--radius-pill);
-  border: none;
-  background: var(--text-primary);
-  color: var(--bg);
+  border: 1.5px solid var(--text-primary);
+  background: var(--surface);
+  color: var(--text-primary);
   font-family: var(--font-sans);
   font-size: 0.95rem;
   font-weight: 600;
@@ -1389,15 +1388,8 @@ svg { stroke-width: 1.5; }
   transition: opacity 0.2s ease, transform 0.15s ease;
   -webkit-tap-highlight-color: transparent;
 }
-.onboarding-cta:hover:not(:disabled) { opacity: 0.85; transform: scale(0.99); }
-.onboarding-cta:disabled { background: var(--text-muted); cursor: not-allowed; }
-
-.onboarding-cta--outline {
-  background: transparent;
-  color: var(--text-primary);
-  border: 0.75px solid var(--text-primary);
-}
-.onboarding-cta--outline:hover:not(:disabled) { opacity: 0.6; }
+.onboarding-cta:hover:not(:disabled) { opacity: 0.7; transform: scale(0.99); }
+.onboarding-cta:disabled { border-color: var(--text-muted); color: var(--text-muted); cursor: not-allowed; }
 
 /* Onboarding header back button — icon-only chevron, top-left. */
 .onboarding-back {
