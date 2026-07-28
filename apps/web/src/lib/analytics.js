@@ -1,4 +1,3 @@
-import posthog from 'posthog-js';
 import { readStorage, writeStorage } from '../utils/storage.js';
 
 /**
@@ -12,7 +11,28 @@ import { readStorage, writeStorage } from '../utils/storage.js';
  * globally via PostHog super properties — registered once in main.jsx from
  * utils/attribution.js — so every event captured here already carries it. There
  * is intentionally no per-call attribution merge.
+ *
+ * posthog-js is dynamically imported in main.jsx (it's the largest chunk in the
+ * app) so it isn't ready the instant the app renders. Calls made before then are
+ * queued here and replayed in order once _setPostHogClient() hands us the real
+ * client.
  */
+let posthogClient = null;
+const pendingCalls = [];
+
+function withPostHog(fn) {
+  if (posthogClient) {
+    try { fn(posthogClient); } catch { /* analytics must never break UX */ }
+  } else {
+    pendingCalls.push(fn);
+  }
+}
+
+export function _setPostHogClient(client) {
+  posthogClient = client;
+  const queued = pendingCalls.splice(0, pendingCalls.length);
+  queued.forEach(fn => { try { fn(client); } catch { /* analytics must never break UX */ } });
+}
 export const EVENTS = Object.freeze({
   USER_SIGNED_UP: 'user_signed_up',
   USER_LOGGED_IN: 'user_logged_in',
@@ -63,12 +83,12 @@ export const EVENTS = Object.freeze({
 });
 
 export function track(event, props) {
-  try { posthog.capture(event, props); } catch { /* analytics must never break UX */ }
+  withPostHog(ph => ph.capture(event, props));
 }
 
 export function identifyUser(id, traits) {
   if (!id) return;
-  try { posthog.identify(id, traits); } catch { /* ignore */ }
+  withPostHog(ph => ph.identify(id, traits));
 }
 
 /**
@@ -77,11 +97,11 @@ export function identifyUser(id, traits) {
  */
 export function setPersonProps(props) {
   if (!props || typeof props !== 'object') return;
-  try { posthog.setPersonProperties(props); } catch { /* ignore */ }
+  withPostHog(ph => ph.setPersonProperties(props));
 }
 
 export function captureException(error, props) {
-  try { posthog.captureException(error, props); } catch { /* ignore */ }
+  withPostHog(ph => ph.captureException(error, props));
 }
 
 /**
