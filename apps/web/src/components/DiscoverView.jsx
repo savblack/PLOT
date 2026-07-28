@@ -6,6 +6,7 @@ import { useGenres } from '../hooks/useGenres.js';
 import { useHistory } from '../hooks/useHistory.js';
 import { useDiscover } from '../hooks/useDiscover.js';
 import { useForYou } from '../hooks/useForYou.js';
+import { useNewReleases } from '../hooks/useNewReleases.js';
 import { usePlatformCharts } from '../hooks/usePlatformCharts.js';
 import { UpcomingContent, filterByType, filterByGenre } from './GuideView.jsx';
 import EpgView from './EpgView.jsx';
@@ -460,13 +461,12 @@ function DiscoverContent({ openPanel, watchlist, history, openSections, setOpenS
   const { hero } = data;
   const onThisDay        = data.onThisDay;
   const hotRail           = applyFilters(data.hotRail);
-  const recentReleases    = applyFilters(data.recentReleases);
   const weekly            = applyFilters(data.weekly);
   const bingedShows       = applyFilters(data.bingedShows);
   const realityShows      = applyFilters(data.realityShows);
   const anticipatedMovies = applyFilters(data.anticipatedMovies);
   const forYou            = applyFilters(forYouItems);
-  const hasContent = hero || hotRail.length > 0 || recentReleases.length > 0 || weekly.length > 0 || bingedShows.length > 0 || realityShows.length > 0 || anticipatedMovies.length > 0 || platformList.length > 0 || forYou.length > 0;
+  const hasContent = hero || hotRail.length > 0 || weekly.length > 0 || bingedShows.length > 0 || realityShows.length > 0 || anticipatedMovies.length > 0 || platformList.length > 0 || forYou.length > 0;
 
   if (!hasContent) {
     return (
@@ -482,7 +482,7 @@ function DiscoverContent({ openPanel, watchlist, history, openSections, setOpenS
   };
   return (
     <div>
-      {hero && (
+      {hero && genreFilters.length === 0 && (
         <section className="discover-section discover-featured-section">
           <DiscoverSectionHeader
             kicker="Featured"
@@ -575,24 +575,6 @@ function DiscoverContent({ openPanel, watchlist, history, openSections, setOpenS
         </section>
       )}
 
-      {recentReleases.length > 0 && (
-        <section className="discover-section">
-          <DiscoverSectionHeader
-            kicker="Last 14 days"
-            title="Recently Released"
-            open={openSections.recent}
-            onToggle={() => toggleSection('recent')}
-          />
-          {openSections.recent && (
-            <Rail>
-              {recentReleases.map(item => (
-                <RankedCard key={`${item.media_type}-${item.id}`} item={item} showRank={false} openPanel={openPanel} watchlist={watchlist} />
-              ))}
-            </Rail>
-          )}
-        </section>
-      )}
-
       {anticipatedMovies.length > 0 && (
         <section className="discover-section discover-binge-section">
           <DiscoverSectionHeader
@@ -648,6 +630,72 @@ function DiscoverContent({ openPanel, watchlist, history, openSections, setOpenS
   );
 }
 
+/* ── New Releases tab content ── */
+function NewReleasesContent({ openPanel, watchlist, typeFilters, genreFilters, openSections, setOpenSections }) {
+  const { data, loading } = useNewReleases();
+  if (loading) {
+    return <LoadingSpinner />;
+  }
+
+  const applyFilters = (items) => filterByGenre(filterByType(items, typeFilters), genreFilters);
+  const recent = applyFilters(data.recent);
+  const genreRails = data.genreRails.map(rail => ({ ...rail, items: applyFilters(rail.items) }));
+  const hasContent = recent.length > 0 || genreRails.some(rail => rail.items.length > 0);
+
+  if (!hasContent) {
+    return (
+      <div className="empty-state" style={{ marginTop: '1rem' }}>
+        <div className="empty-title">Nothing new</div>
+        <div className="empty-body">Nothing matches right now. Try widening your filters.</div>
+      </div>
+    );
+  }
+
+  const toggleSection = (section) => {
+    setOpenSections(prev => ({ ...prev, [section]: !prev[section] }));
+  };
+
+  return (
+    <div>
+      {recent.length > 0 && (
+        <section className="discover-section">
+          <DiscoverSectionHeader
+            kicker="Last 30 days"
+            title="Recently Released"
+            open={openSections.recent}
+            onToggle={() => toggleSection('recent')}
+          />
+          {openSections.recent && (
+            <Rail>
+              {recent.map(item => (
+                <RankedCard key={`${item.media_type}-${item.id}`} item={item} showRank={false} openPanel={openPanel} watchlist={watchlist} />
+              ))}
+            </Rail>
+          )}
+        </section>
+      )}
+
+      {genreRails.filter(rail => rail.items.length > 0).map(rail => (
+        <section className="discover-section" key={rail.key}>
+          <DiscoverSectionHeader
+            kicker="New releases"
+            title={rail.label}
+            open={openSections[rail.key]}
+            onToggle={() => toggleSection(rail.key)}
+          />
+          {openSections[rail.key] && (
+            <Rail>
+              {rail.items.map(item => (
+                <RankedCard key={`${item.media_type}-${item.id}`} item={item} showRank={false} openPanel={openPanel} watchlist={watchlist} />
+              ))}
+            </Rail>
+          )}
+        </section>
+      ))}
+    </div>
+  );
+}
+
 /* ═══════════════════════════════════════
    DiscoverView — unified home with 3 tabs
 ═══════════════════════════════════════ */
@@ -662,7 +710,6 @@ export default function DiscoverView() {
     featured: true,
     hot: true,
     forYou: true,
-    recent: true,
     binge: true,
     anticipated: true,
     reality: true,
@@ -683,6 +730,16 @@ export default function DiscoverView() {
     setReleasesToggleToken(t => t + 1);
   };
   const releasesExpandSignal = { token: releasesToggleToken, open: releasesAllOpen };
+
+  const [newReleasesSections, setNewReleasesSections] = useState({
+    recent: true, horror: true, comedy: true, action: true, scifi: true, thriller: true,
+  });
+  const allNewReleasesSectionsOpen = Object.values(newReleasesSections).every(Boolean);
+  const toggleAllNewReleasesSections = () => {
+    setNewReleasesSections(prev => Object.fromEntries(
+      Object.keys(prev).map(section => [section, !allNewReleasesSectionsOpen]),
+    ));
+  };
 
   const changeTab = (next) => {
     if (next === tab) return;
@@ -718,10 +775,16 @@ export default function DiscoverView() {
             Discover
           </button>
           <button
+            className={`sub-tab-btn${tab === 'new' ? ' active' : ''}`}
+            onClick={() => changeTab('new')}
+          >
+            New Releases
+          </button>
+          <button
             className={`sub-tab-btn${tab === 'releases' ? ' active' : ''}`}
             onClick={() => changeTab('releases')}
           >
-            Releases
+            Upcoming
           </button>
           <button
             className={`sub-tab-btn${tab === 'guide' ? ' active' : ''}`}
@@ -731,10 +794,10 @@ export default function DiscoverView() {
           </button>
         </div>
 
-        {(tab === 'releases' || tab === 'discover') && (
+        {(tab === 'releases' || tab === 'discover' || tab === 'new') && (
           <div className="sub-tabs-filters">
             <GroupedFilterMenu
-              ariaLabel={tab === 'releases' ? 'Filter releases' : 'Filter discover'}
+              ariaLabel={tab === 'releases' ? 'Filter upcoming' : tab === 'new' ? 'Filter new releases' : 'Filter discover'}
               groups={[
                 {
                   heading: 'Type',
@@ -773,12 +836,25 @@ export default function DiscoverView() {
               <button
                 className="section-expand-all-btn"
                 onClick={toggleAllReleasesSections}
-                aria-label={releasesAllOpen ? 'Collapse all Releases sections' : 'Expand all Releases sections'}
+                aria-label={releasesAllOpen ? 'Collapse all Upcoming sections' : 'Expand all Upcoming sections'}
                 aria-pressed={!releasesAllOpen}
                 title={releasesAllOpen ? 'Collapse all sections' : 'Expand all sections'}
                 type="button"
               >
                 <SectionToggleIcon collapse={releasesAllOpen} />
+              </button>
+            )}
+
+            {tab === 'new' && (
+              <button
+                className="section-expand-all-btn"
+                onClick={toggleAllNewReleasesSections}
+                aria-label={allNewReleasesSectionsOpen ? 'Collapse all New Releases sections' : 'Expand all New Releases sections'}
+                aria-pressed={!allNewReleasesSectionsOpen}
+                title={allNewReleasesSectionsOpen ? 'Collapse all sections' : 'Expand all sections'}
+                type="button"
+              >
+                <SectionToggleIcon collapse={allNewReleasesSectionsOpen} />
               </button>
             )}
           </div>
@@ -801,6 +877,17 @@ export default function DiscoverView() {
           setOpenSections={setDiscoverSections}
           typeFilters={typeFilters}
           genreFilters={genreFilters}
+        />
+      )}
+
+      {tab === 'new' && (
+        <NewReleasesContent
+          openPanel={openPanel}
+          watchlist={watchlist}
+          typeFilters={typeFilters}
+          genreFilters={genreFilters}
+          openSections={newReleasesSections}
+          setOpenSections={setNewReleasesSections}
         />
       )}
 

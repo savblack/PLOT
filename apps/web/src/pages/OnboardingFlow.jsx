@@ -485,14 +485,14 @@ export default function OnboardingFlow() {
           <button
             className="onboarding-cta"
             onClick={step === TOTAL ? finish : goNext}
-            disabled={saving || (step === 1 && !firstName.trim()) || (step === 3 && genres.length === 0)}
+            disabled={saving || (step === 1 && !firstName.trim())}
             aria-busy={saving}
             aria-label={saving ? 'Setting up account' : step === TOTAL ? 'Start watching' : 'Continue'}
           >
             {step === TOTAL ? (saving ? <Spinner size="button" ariaHidden /> : 'Start watching →') : 'Continue →'}
           </button>
-          {step === TOTAL && !saving && (
-            <button type="button" className="onboarding-skip" onClick={finish}>Skip this step</button>
+          {(step === 3 || step === TOTAL) && !saving && (
+            <button type="button" className="onboarding-skip" onClick={step === TOTAL ? finish : goNext}>Skip this step</button>
           )}
         </div>
       </div>

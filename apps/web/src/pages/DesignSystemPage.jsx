@@ -314,7 +314,8 @@ export default function DesignSystemPage() {
             <div className="ds-bar-copy"><strong>Sub-tab toolbar</strong><p>In-view navigation for modes inside one destination.</p></div>
             <div className="sub-tabs ds-fake-subtabs">
               <button className="sub-tab-btn active">Discover</button>
-              <button className="sub-tab-btn">Releases</button>
+              <button className="sub-tab-btn">New Releases</button>
+              <button className="sub-tab-btn">Upcoming</button>
               <button className="sub-tab-btn">Guide</button>
             </div>
           </div>
@@ -1315,7 +1316,7 @@ export default function DesignSystemPage() {
               <span className="ds-phone-glyph" aria-hidden="true">⌕</span>
             </div>
             <div className="ds-phone-subtabs">
-              <span className="active">Discover</span><span>Releases</span><span>Guide</span>
+              <span className="active">Discover</span><span>New Releases</span><span>Upcoming</span><span>Guide</span>
             </div>
             <div className="ds-phone-chiprow">
               <span className="chip chip-now">Now</span>
