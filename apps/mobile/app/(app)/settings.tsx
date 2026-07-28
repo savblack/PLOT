@@ -319,6 +319,63 @@ function ProviderModal({
 }
 
 // ── Feedback modal ────────────────────────────────────────────────────
+// ── Genre picker modal ─────────────────────────────────────────────────
+function GenreModal({ selected, onSave, onClose }: { selected: string[]; onSave: (names: string[]) => void; onClose: () => void }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const insets = useSafeAreaInsets();
+  const [all,     setAll]     = useState<{ id: number; name: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [chosen,  setChosen]  = useState<number[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    tmdb.getGenres().then((list: { id: number; name: string }[]) => {
+      if (cancelled) return;
+      setAll(list || []);
+      setChosen((list || []).filter(g => selected.includes(g.name)).map(g => g.id));
+      setLoading(false);
+    }).catch(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [selected]);
+
+  const toggle = (id: number) => {
+    const next = chosen.includes(id) ? chosen.filter(i => i !== id) : [...chosen, id];
+    setChosen(next);
+    onSave(all.filter(g => next.includes(g.id)).map(g => g.name));
+  };
+
+  return (
+    <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+      <View style={[styles.modalContainer, { paddingTop: insets.top }]}>
+        <View style={styles.modalHeader}>
+          <Text style={styles.modalTitle}>Genres</Text>
+          <TouchableOpacity onPress={onClose}><Text style={styles.modalCancel}>Done</Text></TouchableOpacity>
+        </View>
+        {loading ? (
+          <ActivityIndicator color={colors.accent} style={{ marginTop: spacing.xl }} />
+        ) : (
+          <ScrollView contentContainerStyle={styles.regionGrid}>
+            {all.map(g => {
+              const active = chosen.includes(g.id);
+              return (
+                <TouchableOpacity
+                  key={g.id}
+                  style={[styles.regionCard, active && styles.regionCardActive]}
+                  onPress={() => toggle(g.id)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.regionCardText, active && styles.regionCardTextActive]}>{g.name}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        )}
+      </View>
+    </Modal>
+  );
+}
+
 function FeedbackModal({ userId, userEmail, initialType, onClose }: { userId: string; userEmail: string; initialType: string; onClose: () => void }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -418,6 +475,7 @@ export default function SettingsScreen() {
 
   const [showProviders,  setShowProviders]  = useState(false);
   const [showChannels,   setShowChannels]   = useState(false);
+  const [showGenres,     setShowGenres]     = useState(false);
   const [showRegion,     setShowRegion]     = useState(false);
   const [showTimezone,   setShowTimezone]   = useState(false);
   const [feedbackType,   setFeedbackType]   = useState<string | null>(null);
@@ -427,6 +485,7 @@ export default function SettingsScreen() {
 
   const providers     = profile?.streaming_providers || [];
   const guideChannels = profile?.guide_channels || [];
+  const genres        = profile?.genres || [];
   const region        = profile?.region || 'US';
   const timezone      = profile?.timezone || '';
   const regionName    = REGIONS.find(r => r.code === region)?.name ?? region;
@@ -434,6 +493,7 @@ export default function SettingsScreen() {
   const username    = profile?.username || '';
   const isPublic    = !!profile?.is_public;
   const logRewatches = profile?.log_rewatches ?? true;
+  const includeKidsContent = profile?.include_kids_content ?? true;
   const { count: requestCount } = useFollowRequests(userId);
 
   const toggleVisibility = async () => {
@@ -445,6 +505,12 @@ export default function SettingsScreen() {
   const toggleLogRewatches = async () => {
     if (!userId) return;
     await supabase.from('profiles').update({ log_rewatches: !logRewatches }).eq('id', userId);
+    refreshProfile();
+  };
+
+  const toggleKidsContent = async () => {
+    if (!userId) return;
+    await supabase.from('profiles').update({ include_kids_content: !includeKidsContent }).eq('id', userId);
     refreshProfile();
   };
 
@@ -529,6 +595,11 @@ export default function SettingsScreen() {
 
   const saveChannels = async (newChannels: any[]) => {
     await supabase.from('profiles').update({ guide_channels: newChannels }).eq('id', userId!);
+    refreshProfile();
+  };
+
+  const saveGenres = async (newGenres: string[]) => {
+    await supabase.from('profiles').update({ genres: newGenres }).eq('id', userId!);
     refreshProfile();
   };
 
@@ -685,6 +756,11 @@ export default function SettingsScreen() {
             trailing={<Switch value={logRewatches} onValueChange={toggleLogRewatches} trackColor={{ true: colors.accent }} />}
           />
           <SettingsRow
+            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Circle cx={12} cy={12} r={10}/><Circle cx={8.5} cy={10} r={1}/><Circle cx={15.5} cy={10} r={1}/><Path d="M8 15s1.5 2 4 2 4-2 4-2"/></Svg>}
+            label="Kids content"
+            trailing={<Switch value={includeKidsContent} onValueChange={toggleKidsContent} trackColor={{ true: colors.accent }} />}
+          />
+          <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Rect x={2} y={3} width={20} height={14} rx={2}/><Path d="M8 21h8M12 17v4"/></Svg>}
             label="Streaming Platforms"
             value={providers.length > 0 ? `${providers.length} selected` : 'None'}
@@ -695,6 +771,12 @@ export default function SettingsScreen() {
             label="My Channels"
             value={guideChannels.length > 0 ? `${guideChannels.length} selected` : 'None'}
             onPress={() => setShowChannels(true)}
+          />
+          <SettingsRow
+            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><Path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></Svg>}
+            label="Genres"
+            value={genres.length > 0 ? `${genres.length} selected` : 'None'}
+            onPress={() => setShowGenres(true)}
           />
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Circle cx={12} cy={12} r={10}/><Line x1={2} y1={12} x2={22} y2={12}/><Path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></Svg>}
@@ -838,6 +920,9 @@ export default function SettingsScreen() {
           onSave={saveChannels}
           onClose={() => setShowChannels(false)}
         />
+      )}
+      {showGenres && (
+        <GenreModal selected={genres} onSave={saveGenres} onClose={() => setShowGenres(false)} />
       )}
       {showRegion && (
         <RegionModal current={region} onSave={saveRegion} onClose={() => setShowRegion(false)} />

@@ -8,6 +8,7 @@ import { edgeFunctionUrl } from '../api/functions.js';
 import { useMediaSync } from '../hooks/useMediaSync.js';
 import { useTraktSync } from '../hooks/useTraktSync.js';
 import { usePremium } from '../hooks/usePremium.js';
+import { useGenres } from '../hooks/useGenres.js';
 import { track, EVENTS } from '../lib/analytics.js';
 import { useCalendar } from '../hooks/useCalendar.js';
 import { useShare } from '../hooks/useShare.js';
@@ -479,6 +480,72 @@ function ProviderPicker({ title, hint, region, selected, onSave, onClose, limit 
                 >
                   <img src={logoUrl(p.logo_path, 'w92')} alt={p.provider_name} />
                   <span>{p.provider_name}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </>,
+    document.body
+  );
+}
+
+/* ── Genre picker modal ── */
+function GenrePicker({ selected, onSave, onClose }) {
+  const allGenres = useGenres();
+  const [chosen, setChosen] = useState(
+    allGenres.filter(g => selected.includes(g.name)).map(g => g.id)
+  );
+
+  useEffect(() => {
+    if (allGenres.length === 0) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- seed local selection once genres load
+    setChosen(allGenres.filter(g => selected.includes(g.name)).map(g => g.id));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-seed when the genre list itself loads
+  }, [allGenres.length]);
+
+  const toggle = (id) => {
+    const next = chosen.includes(id) ? chosen.filter(i => i !== id) : [...chosen, id];
+    setChosen(next);
+    onSave(allGenres.filter(g => next.includes(g.id)).map(g => g.name));
+  };
+
+  return createPortal(
+    <>
+      <div className="panel-overlay" onClick={onClose} />
+      <div className="panel">
+        <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--surface)' }}>
+          <SheetHeader title="Genres" onClose={onClose} />
+        </div>
+        {allGenres.length === 0 ? (
+          <div className="loading-state"><PlotLoader size="sm" /></div>
+        ) : (
+          <div style={{ padding: '1rem' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+              {allGenres.map(g => (
+                <div
+                  key={g.id}
+                  className={`interactive-surface${chosen.includes(g.id) ? ' selected' : ''}`}
+                  onClick={() => toggle(g.id)}
+                  style={{
+                    padding: '0.55rem 1rem',
+                    borderRadius: 'var(--radius-pill)',
+                    border: chosen.includes(g.id) ? '2px solid var(--accent)' : '1.5px solid var(--border)',
+                    background: chosen.includes(g.id) ? 'var(--accent-dim)' : 'var(--surface)',
+                    color: chosen.includes(g.id) ? 'var(--accent)' : 'var(--text-primary)',
+                    fontWeight: 600,
+                    fontSize: '0.82rem',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                  }}
+                  {...getButtonLikeProps({
+                    onPress: () => toggle(g.id),
+                    label: `${chosen.includes(g.id) ? 'Deselect' : 'Select'} ${g.name}`,
+                    pressed: chosen.includes(g.id),
+                  })}
+                >
+                  {g.name}
                 </div>
               ))}
             </div>
@@ -1015,6 +1082,9 @@ export default function SettingsView() {
   const [savingGuideChannels, setSavingGuideChannels] = useState(false);
   const [providerDraft,       setProviderDraft]       = useState(null);
   const [guideChannelDraft,   setGuideChannelDraft]   = useState(null);
+  const [showGenres,          setShowGenres]          = useState(false);
+  const [savingGenres,        setSavingGenres]        = useState(false);
+  const [genreDraft,          setGenreDraft]          = useState(null);
   const [showRegion,          setShowRegion]          = useState(false);
   const [showTimezone,        setShowTimezone]        = useState(false);
   const [feedbackType,        setFeedbackType]        = useState(null);
@@ -1113,6 +1183,14 @@ export default function SettingsView() {
     setSavingGuideChannels(false);
   }, [profile?.guide_channels, guideChannelDraft]);
 
+  useEffect(() => {
+    if (!genreDraft) return;
+    if (JSON.stringify(profile?.genres ?? []) !== JSON.stringify(genreDraft)) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- clear optimistic state once persisted profile data catches up
+    setGenreDraft(null);
+    setSavingGenres(false);
+  }, [profile?.genres, genreDraft]);
+
   // Load integrations on mount
   // eslint-disable-next-line react-hooks/exhaustive-deps -- loadIntegration is provided by the integration controller
   useEffect(() => { sync.loadIntegration(); }, [sync.loadIntegration]);
@@ -1122,8 +1200,10 @@ export default function SettingsView() {
   const providers      = providerDraft ?? profile?.streaming_providers ?? [];
   const availabilityAlertsEnabled = !!profile?.watchlist_availability_alerts;
   const guideChannels  = guideChannelDraft ?? profile?.guide_channels ?? [];
+  const genres         = genreDraft ?? profile?.genres ?? [];
   const region         = profile?.region || 'US';
   const timezone  = profile?.timezone || '';
+  const includeKidsContent = profile?.include_kids_content ?? true;
 
   const saveProviders = async (newProviders) => {
     setActionError(null);
@@ -1165,6 +1245,34 @@ export default function SettingsView() {
 
     refreshProfile();
     return true;
+  };
+
+  const saveGenres = async (newGenres) => {
+    setActionError(null);
+    setGenreDraft(newGenres);
+    setSavingGenres(true);
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ genres: newGenres })
+      .eq('id', user.id);
+
+    setSavingGenres(false);
+
+    if (error) {
+      setActionError(error.message || 'Failed to save your genres.');
+      return false;
+    }
+
+    refreshProfile();
+    return true;
+  };
+
+  const handleToggleKidsContent = async () => {
+    setActionError(null);
+    const { error } = await supabase.from('profiles').update({ include_kids_content: !includeKidsContent }).eq('id', user.id);
+    if (error) { setActionError(error.message); return; }
+    refreshProfile();
   };
 
   const toggleAvailabilityAlerts = async () => {
@@ -1782,6 +1890,23 @@ export default function SettingsView() {
           </div>
         </div>
 
+        <div
+          className="settings-row interactive-surface"
+          onClick={() => { if (!savingGenres) setShowGenres(true); }}
+          {...getButtonLikeProps({ onPress: () => { if (!savingGenres) setShowGenres(true); }, label: 'Open genres', disabled: savingGenres })}
+        >
+          <div className="settings-row-left">
+            <div className="settings-row-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+            </div>
+            <span className="settings-row-label">Genres</span>
+          </div>
+          <div className="settings-row-value">
+            <span>{savingGenres ? 'Saving…' : genres.length > 0 ? `${genres.length} selected` : 'None'}</span>
+            <Chevron />
+          </div>
+        </div>
+
         <div className="settings-row" style={{ cursor: 'default' }}>
           <div className="settings-row-left">
             <div className="settings-row-icon">
@@ -1819,6 +1944,28 @@ export default function SettingsView() {
           <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
             <SettingsTextAction onClick={handleToggleLogRewatches}>
               {logRewatches ? 'Turn off' : 'Turn on'}
+            </SettingsTextAction>
+          </div>
+        </div>
+
+        {/* Kids content */}
+        <div className="settings-row" style={{ cursor: 'default' }}>
+          <div className="settings-row-left">
+            <div className="settings-row-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="8.5" cy="10" r="1"/><circle cx="15.5" cy="10" r="1"/><path d="M8 15s1.5 2 4 2 4-2 4-2"/></svg>
+            </div>
+            <div>
+              <div className="settings-row-label">Kids content</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                {includeKidsContent
+                  ? 'Show movies and shows made for kids in Discover and recommendations.'
+                  : 'Kids and family content is hidden from Discover and recommendations.'}
+              </div>
+            </div>
+          </div>
+          <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
+            <SettingsTextAction onClick={handleToggleKidsContent}>
+              {includeKidsContent ? 'Turn off' : 'Turn on'}
             </SettingsTextAction>
           </div>
         </div>
@@ -2346,6 +2493,17 @@ export default function SettingsView() {
           onClose={() => {
             setShowGuideChannels(false);
             if (!savingGuideChannels) setGuideChannelDraft(null);
+          }}
+        />
+      )}
+
+      {showGenres && (
+        <GenrePicker
+          selected={genres}
+          onSave={saveGenres}
+          onClose={() => {
+            setShowGenres(false);
+            if (!savingGenres) setGenreDraft(null);
           }}
         />
       )}

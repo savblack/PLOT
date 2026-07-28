@@ -7,6 +7,18 @@ export const getTmdbRegion = () => userRegion;
 
 const ENGLISH_SPEAKING_REGIONS = new Set(['AU', 'CA', 'GB', 'IE', 'NZ', 'US']);
 
+const KIDS_GENRE_IDS = new Set([10751, 10762]); // Family (movie+tv), Kids (tv)
+
+/**
+ * @param {Array<{genre_ids?: number[]}>} items
+ * @param {boolean} hideKids
+ * @returns {Array<any>}
+ */
+export function excludeKidsContent(items = [], hideKids) {
+  if (!hideKids) return items;
+  return items.filter(item => !(item.genre_ids || []).some(id => KIDS_GENRE_IDS.has(id)));
+}
+
 /**
  * @param {{original_language?: string, origin_country?: string[]}} item
  * @returns {boolean}
