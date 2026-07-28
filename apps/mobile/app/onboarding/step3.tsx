@@ -1,12 +1,12 @@
 /**
  * Onboarding Step 3 — Seed the watchlist.
  * Prefills a "trending this week" poster grid before the user searches
- * (mirrors web), renders results as posters, and shows a removable
- * "Added (n)" row. Seeds a "My List" custom list via idempotent upserts.
+ * (mirrors web); the active-border overlay on a poster is the only
+ * selection indicator. Seeds a "My List" custom list via idempotent upserts.
  */
 import { useState, useMemo, useEffect } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, FlatList, Image, ScrollView,
+  View, Text, TextInput, TouchableOpacity, FlatList, Image,
   StyleSheet, ActivityIndicator, Dimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -210,21 +210,6 @@ export default function Step3() {
         />
       </View>
 
-      {/* Added chips */}
-      {selected.length > 0 && (
-        <View style={styles.addedWrap}>
-          <Text style={styles.addedLabel}>Added ({selected.length})</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm, paddingHorizontal: spacing.xl }}>
-            {selected.map(item => (
-              <TouchableOpacity key={item.id} style={styles.chip} onPress={() => toggle(item)} activeOpacity={0.7}>
-                <Image source={{ uri: posterUrl(item.poster_path, 'w92') ?? '' }} style={styles.chipThumb} resizeMode="cover" />
-                <Text style={styles.chipText} numberOfLines={1}>{item.title || item.name}</Text>
-                <Text style={styles.chipX}>×</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-      )}
 
       {/* Footer */}
       <View style={styles.footer}>
@@ -275,16 +260,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   cardCheckMark: { color: colors.accent, fontSize: 28, fontFamily: fontFamily.sansBold },
   cardTitle:   { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textSecondary, marginTop: 4 },
   empty:       { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, textAlign: 'center', paddingVertical: spacing.xl },
-  addedWrap:   { paddingVertical: spacing.sm, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
-  addedLabel:  { fontFamily: fontFamily.sansMedium, fontSize: fontSize.xs, color: colors.textMuted, paddingHorizontal: spacing.xl, marginBottom: spacing.sm },
-  chip: {
-    flexDirection: 'row', alignItems: 'center', gap: spacing.xs,
-    backgroundColor: colors.surfaceSunken, borderRadius: radii.pill,
-    paddingLeft: 4, paddingRight: spacing.sm, paddingVertical: 4, maxWidth: 160,
-  },
-  chipThumb: { width: 18, height: 18, borderRadius: 4, backgroundColor: colors.surface },
-  chipText:  { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textPrimary, flexShrink: 1 },
-  chipX:     { fontFamily: fontFamily.sansBold, fontSize: fontSize.md, color: colors.textMuted },
   footer:  { padding: spacing.xl, gap: spacing.md },
   btn:     { alignSelf: 'center', backgroundColor: colors.accent, borderRadius: radii.pill, paddingVertical: 15, paddingHorizontal: 40, alignItems: 'center' },
   btnDisabled: { opacity: 0.6 },

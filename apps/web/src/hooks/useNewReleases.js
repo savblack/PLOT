@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { tmdb } from '../api/tmdb.js';
-import { isEnglishOriginTitle } from '@plot/core/tmdb.js';
+import { isEnglishOriginTitle, excludeKidsContent } from '@plot/core/tmdb.js';
+import { useApp } from '../App.jsx';
 
 const hasPoster = item => !!item.poster_path;
 const MIN_RAIL_SIZE = 14;
@@ -19,21 +20,22 @@ const GENRE_RAILS = [
   { key: 'thriller', label: 'New in Thriller', movieGenreId: 53,  tvGenreId: null   },
 ];
 
-async function loadGenreRail({ movieGenreId, tvGenreId }) {
+async function loadGenreRail({ movieGenreId, tvGenreId }, hideKids) {
   const [movieRes, tvRes] = await Promise.all([
     tmdb.discoverNewestByGenre('movie', movieGenreId).catch(() => null),
     tvGenreId ? tmdb.discoverNewestByGenre('tv', tvGenreId).catch(() => null) : Promise.resolve(null),
   ]);
   const movies = (movieRes?.results || []).map(m => ({ ...m, media_type: 'movie' }));
   const tv     = (tvRes?.results || []).map(s => ({ ...s, media_type: 'tv' }));
-  return [...movies, ...tv]
-    .filter(isEnglishOriginTitle)
+  return excludeKidsContent([...movies, ...tv].filter(isEnglishOriginTitle), hideKids)
     .filter(hasPoster)
     .sort((a, b) => (b.release_date || b.first_air_date || '').localeCompare(a.release_date || a.first_air_date || ''))
     .slice(0, Math.max(MIN_RAIL_SIZE, 18));
 }
 
 export function useNewReleases() {
+  const { profile } = useApp();
+  const hideKids = !(profile?.include_kids_content ?? true);
   const [data,    setData]    = useState({ recent: [], genreRails: [] });
   const [loading, setLoading] = useState(true);
 
@@ -47,13 +49,13 @@ export function useNewReleases() {
       try {
         const [recentReleases, ...genreResults] = await Promise.all([
           tmdb.getRecentReleases(30, []),
-          ...GENRE_RAILS.map(loadGenreRail),
+          ...GENRE_RAILS.map(rail => loadGenreRail(rail, hideKids)),
         ]);
 
         if (cancelled) return;
 
-        const recentByDate = [...(recentReleases?.tv || []), ...(recentReleases?.movies || [])]
-          .filter(isEnglishOriginTitle)
+        const recentByDate = excludeKidsContent([...(recentReleases?.tv || []), ...(recentReleases?.movies || [])]
+          .filter(isEnglishOriginTitle), hideKids)
           .sort((a, b) => (b.release_date || b.first_air_date || '').localeCompare(a.release_date || a.first_air_date || ''));
         const seenIds = new Set();
         const recent = recentByDate.filter(item => {
@@ -75,7 +77,7 @@ export function useNewReleases() {
     }
     load();
     return () => { cancelled = true; };
-  }, []);
+  }, [hideKids]);
 
   return { data, loading };
 }
