@@ -2,6 +2,12 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../api/supabase';
 import { tmdb } from '../api/tmdb';
+// This route renders outside the App-shell layout, but reuses several of its
+// classes (onboarding-cta, interactive-surface, providers-select-grid, ...).
+// Its named import from App.jsx doesn't pull in App's CSS on its own (that
+// only rides along on App.jsx's own lazy-loaded chunk), so import app.css
+// explicitly — Vite dedupes it against App's stylesheet rather than doubling it.
+import '../styles/app.css';
 import { logoUrl, posterUrl } from '../App.jsx';
 import PlotLoader from '../components/PlotLoader.jsx';
 import Spinner from '../components/Spinner.jsx';
