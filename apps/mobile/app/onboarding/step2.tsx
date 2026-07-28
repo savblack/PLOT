@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Path } from 'react-native-svg';
 import { supabase } from '../../lib/supabase';
 import { tmdb, getTmdbRegion } from '../../lib/tmdb';
 import { Palette, fontFamily, fontSize, spacing, radii, logoUrl } from '../../lib/tokens';
@@ -77,8 +78,22 @@ export default function Step2() {
     <View style={[styles.screen, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.wordmark}>PLOT</Text>
-        <Text style={styles.stepLabel}>Step 2 of 3</Text>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backBtn}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel="Go back"
+          accessibilityRole="button"
+        >
+          <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={colors.textPrimary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            <Path d="M15 18l-6-6 6-6" />
+          </Svg>
+        </TouchableOpacity>
+        <View style={styles.headerCenter}>
+          <Text style={styles.wordmark}>PLOT</Text>
+          <Text style={styles.stepLabel}>Step 2 of 3</Text>
+        </View>
+        <View style={styles.backBtn} />
       </View>
 
       {/* Content */}
@@ -163,6 +178,8 @@ export default function Step2() {
 const makeStyles = (colors: Palette) => StyleSheet.create({
   screen:    { flex: 1, backgroundColor: colors.bg },
   header:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.xl, paddingVertical: spacing.lg },
+  backBtn:   { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
+  headerCenter: { alignItems: 'center' },
   wordmark:  { fontFamily: fontFamily.serif, fontSize: fontSize.xl, color: colors.textPrimary },
   stepLabel: { fontFamily: fontFamily.sans,  fontSize: fontSize.sm, color: colors.textMuted },
   content:   { flex: 1, paddingHorizontal: spacing.xl },
@@ -198,7 +215,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   name:       { fontFamily: fontFamily.sans,       fontSize: fontSize.xs, color: colors.textSecondary, textAlign: 'center' },
   nameActive: { fontFamily: fontFamily.sansMedium, color: colors.accent },
   footer:  { padding: spacing.xl, gap: spacing.md },
-  btn:     { backgroundColor: colors.accent, borderRadius: radii.md, paddingVertical: 15, alignItems: 'center' },
+  btn:     { alignSelf: 'center', backgroundColor: colors.accent, borderRadius: radii.pill, paddingVertical: 15, paddingHorizontal: 40, alignItems: 'center' },
   btnDisabled: { opacity: 0.6 },
   btnText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.md, color: '#fff' },
   skipBtn: { alignItems: 'center', paddingVertical: spacing.sm },

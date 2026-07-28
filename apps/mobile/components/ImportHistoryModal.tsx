@@ -241,7 +241,7 @@ export default function ImportHistoryModal({ userId, onClose }: Props) {
         {/* Header */}
         <View style={styles.header}>
           {step !== 'pick-platform' && step !== 'done' ? (
-            <TouchableOpacity onPress={reset} style={styles.backBtn}>
+            <TouchableOpacity onPress={reset} style={styles.backBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Go back" accessibilityRole="button">
               <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={colors.textSecondary} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
                 <Path d="M19 12H5M12 5l-7 7 7 7" />
               </Svg>
@@ -250,7 +250,7 @@ export default function ImportHistoryModal({ userId, onClose }: Props) {
             <View style={styles.backBtn} />
           )}
           <Text style={styles.headerTitle}>Import Watch History</Text>
-          <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
+          <TouchableOpacity onPress={onClose} style={styles.closeBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Close" accessibilityRole="button">
             <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={colors.textSecondary} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
               <Path d="M18 6L6 18M6 6l12 12" />
             </Svg>

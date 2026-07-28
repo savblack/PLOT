@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Path } from 'react-native-svg';
 import { supabase } from '../../lib/supabase';
 import { tmdb } from '../../lib/tmdb';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
@@ -43,12 +44,16 @@ export default function Step3() {
   const [selected, setSelected] = useState<SearchResult[]>([]);
   const [saving,   setSaving]   = useState(false);
   const [searching,setSearching]= useState(false);
+  const [trendingFailed, setTrendingFailed] = useState(false);
 
   // Trending prefill (shown until the user searches)
   useEffect(() => {
     tmdb.getTrending('all', 'week').then((data: any) => {
       setTrending((data?.results ?? []).filter(keep).slice(0, 12));
-    }).catch(() => {});
+    }).catch((e) => {
+      console.warn('[onboarding step3] trending prefill failed', e);
+      setTrendingFailed(true);
+    });
   }, []);
 
   // Debounced search
@@ -120,8 +125,22 @@ export default function Step3() {
     <View style={[styles.screen, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.wordmark}>PLOT</Text>
-        <Text style={styles.stepLabel}>Step 3 of 3</Text>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backBtn}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel="Go back"
+          accessibilityRole="button"
+        >
+          <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={colors.textPrimary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            <Path d="M15 18l-6-6 6-6" />
+          </Svg>
+        </TouchableOpacity>
+        <View style={styles.headerCenter}>
+          <Text style={styles.wordmark}>PLOT</Text>
+          <Text style={styles.stepLabel}>Step 3 of 3</Text>
+        </View>
+        <View style={styles.backBtn} />
       </View>
 
       {/* Content */}
@@ -181,9 +200,13 @@ export default function Step3() {
           columnWrapperStyle={{ gap: spacing.sm }}
           showsVerticalScrollIndicator={false}
           style={styles.grid}
-          ListEmptyComponent={query.trim() && !searching
-            ? <Text style={styles.empty}>No titles found.</Text>
-            : null}
+          ListEmptyComponent={
+            query.trim() && !searching
+              ? <Text style={styles.empty}>No titles found.</Text>
+              : !query.trim() && trendingFailed
+              ? <Text style={styles.empty}>Couldn't load trending titles. Try searching instead.</Text>
+              : null
+          }
         />
       </View>
 
@@ -228,6 +251,8 @@ export default function Step3() {
 const makeStyles = (colors: Palette) => StyleSheet.create({
   screen:    { flex: 1, backgroundColor: colors.bg },
   header:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.xl, paddingVertical: spacing.lg },
+  backBtn:   { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
+  headerCenter: { alignItems: 'center' },
   wordmark:  { fontFamily: fontFamily.serif, fontSize: fontSize.xl, color: colors.textPrimary },
   stepLabel: { fontFamily: fontFamily.sans,  fontSize: fontSize.sm, color: colors.textMuted },
   content:   { flex: 1, paddingHorizontal: spacing.xl },
@@ -261,7 +286,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   chipText:  { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textPrimary, flexShrink: 1 },
   chipX:     { fontFamily: fontFamily.sansBold, fontSize: fontSize.md, color: colors.textMuted },
   footer:  { padding: spacing.xl, gap: spacing.md },
-  btn:     { backgroundColor: colors.accent, borderRadius: radii.md, paddingVertical: 15, alignItems: 'center' },
+  btn:     { alignSelf: 'center', backgroundColor: colors.accent, borderRadius: radii.pill, paddingVertical: 15, paddingHorizontal: 40, alignItems: 'center' },
   btnDisabled: { opacity: 0.6 },
   btnText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.md, color: '#fff' },
   skipBtn: { alignItems: 'center', paddingVertical: spacing.sm },

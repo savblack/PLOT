@@ -5,16 +5,14 @@ import {
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Circle, Line } from 'react-native-svg';
-import { useRouter } from 'expo-router';
 import PlotLoader from '../../components/PlotLoader';
-import HamburgerIcon from '../../components/HamburgerIcon';
-import { useDrawer } from '../../contexts/DrawerContext';
+import ErrorState from '../../components/ErrorState';
+import ScreenHeaderBar from '../../components/ScreenHeaderBar';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 import { ListType } from '../../hooks/useTopLists';
 import { useAppData } from '../../contexts/AppDataContext';
 import { tmdb } from '../../lib/tmdb';
-import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
+import { posterUrl, Palette, fontFamily, fontSize, spacing, radii, iconButtonSize } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 
 // ── Search / pick modal ───────────────────────────────────────────────
@@ -160,6 +158,8 @@ function RankRow({ rank, item, editMode, onRemove, onMoveUp, onMoveDown, canMove
                 disabled={!canMoveUp}
                 style={styles.rankActionBtn}
                 hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                accessibilityLabel="Move up in ranking"
+                accessibilityRole="button"
               >
                 <Text style={{ color: canMoveUp ? colors.textPrimary : colors.textMuted, fontSize: 14, opacity: canMoveUp ? 1 : 0.3 }}>↑</Text>
               </TouchableOpacity>
@@ -168,10 +168,18 @@ function RankRow({ rank, item, editMode, onRemove, onMoveUp, onMoveDown, canMove
                 disabled={!canMoveDown}
                 style={styles.rankActionBtn}
                 hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                accessibilityLabel="Move down in ranking"
+                accessibilityRole="button"
               >
                 <Text style={{ color: canMoveDown ? colors.textPrimary : colors.textMuted, fontSize: 14, opacity: canMoveDown ? 1 : 0.3 }}>↓</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={onRemove} style={styles.rankActionBtn} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
+              <TouchableOpacity
+                onPress={onRemove}
+                style={styles.rankActionBtn}
+                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                accessibilityLabel="Remove from Top 10"
+                accessibilityRole="button"
+              >
                 <Text style={{ color: colors.textMuted, fontSize: 12 }}>✕</Text>
               </TouchableOpacity>
             </View>
@@ -257,13 +265,12 @@ function TopTenSection({ listType, title, topLists, history }: {
 // ── Main screen ───────────────────────────────────────────────────────
 export default function Top10Screen() {
   const insets  = useSafeAreaInsets();
-  const router  = useRouter();
-  const { open } = useDrawer();
   const { colors, resolved } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { userId, topLists, history } = useAppData();
 
   if (topLists.loading) return <PlotLoader />;
+  if (topLists.error) return <ErrorState onRetry={topLists.reload} />;
 
   const HEADER_H = insets.top + 56;
 
@@ -285,26 +292,7 @@ export default function Top10Screen() {
         tint={resolved === 'dark' ? 'systemChromeMaterialDark' : 'systemChromeMaterialLight'}
         style={[styles.fixedHeader, { height: HEADER_H, paddingTop: insets.top }]}
       >
-        <View style={styles.headerInner}>
-          <TouchableOpacity
-            style={styles.hamburgerBtn}
-            onPress={() => open()}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <HamburgerIcon />
-          </TouchableOpacity>
-          <Text style={styles.screenTitle} pointerEvents="none">Top 10</Text>
-          <TouchableOpacity
-            style={styles.searchBtn}
-            onPress={() => router.push('/(app)/search')}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={colors.textPrimary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-              <Circle cx={11} cy={11} r={7} />
-              <Line x1={16.5} y1={16.5} x2={21} y2={21} />
-            </Svg>
-          </TouchableOpacity>
-        </View>
+        <ScreenHeaderBar title="Top 10" />
       </BlurView>
 
     </View>
@@ -321,25 +309,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
-  headerInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.md,
-  },
-  screenTitle: {
-    position: 'absolute',
-    left: 0, right: 0,
-    textAlign: 'center',
-    fontFamily: fontFamily.serif,
-    fontSize: fontSize.xl,
-    color: colors.textPrimary,
-  },
-  hamburgerBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-  searchBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -406,7 +375,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     color: colors.textMuted,
   },
   rankActions: { flexDirection: 'row', gap: 2 },
-  rankActionBtn: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
+  rankActionBtn: { width: iconButtonSize.md, height: iconButtonSize.md, alignItems: 'center', justifyContent: 'center' },
 
   // Modal
   modalContainer: { flex: 1, backgroundColor: colors.bg },

@@ -28,6 +28,15 @@ export const radii = {
 // Shared with web via the @plot/core package so the base-4 spacing scale can't drift across platforms.
 export const spacing = coreSpacing;
 
+// Square icon-button hit areas (mobile-only — RN has no CSS equivalent to
+// share with web). Screens previously duplicated ad hoc sizes (22/28/34px)
+// per-component; use these instead so icon buttons stay consistent.
+export const iconButtonSize = {
+  sm: 22, // compact inline toggles (e.g. list-check circles)
+  md: 28, // default poster-card/rail action buttons
+  lg: 34, // primary row actions (e.g. search result save/favorite/watched)
+} as const;
+
 export const fontFamily = {
   serif:       'InstrumentSerif-Regular',
   serifItalic: 'InstrumentSerif-Italic',

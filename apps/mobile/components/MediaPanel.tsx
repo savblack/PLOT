@@ -140,7 +140,13 @@ function StarRow({ rating, onChange }: { rating: number; onChange: (r: number) =
   return (
     <View style={{ flexDirection: 'row', gap: 4 }}>
       {Array.from({ length: STAR_COUNT }, (_, i) => i + 1).map(n => (
-        <TouchableOpacity key={n} onPress={() => onChange(rating === n ? 0 : n)} hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}>
+        <TouchableOpacity
+          key={n}
+          onPress={() => onChange(rating === n ? 0 : n)}
+          hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
+          accessibilityLabel={rating === n ? 'Clear rating' : `Rate ${n} star${n > 1 ? 's' : ''}`}
+          accessibilityRole="button"
+        >
           <Svg width={24} height={24} viewBox="0 0 24 24">
             <Polygon
               points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
@@ -242,7 +248,12 @@ function EpisodeGuide({ tvId, progress, details, watching }: { tvId: number; pro
                 isToggling ? (
                   <ActivityIndicator size="small" color={colors.chipEpisode} />
                 ) : (
-                  <TouchableOpacity onPress={() => handleToggle(ep)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <TouchableOpacity
+                    onPress={() => handleToggle(ep)}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    accessibilityLabel={watched ? `Mark ${epCode} unwatched` : `Mark ${epCode} watched`}
+                    accessibilityRole="button"
+                  >
                     <IconCircleCheck filled={watched} />
                   </TouchableOpacity>
                 )
@@ -592,7 +603,12 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
       providerUrl: p.providerUrl,
       justwatchLink: whereToWatch.justwatchLink,
     });
-    if (link?.url) Linking.openURL(link.url).catch(() => {});
+    if (link?.url) {
+      Linking.openURL(link.url).catch((e) => {
+        console.warn('[MediaPanel] failed to open watch link', e);
+        Alert.alert("Couldn't open link", 'Please try again in a moment.');
+      });
+    }
   };
   const year   = (details?.release_date || details?.first_air_date || '').slice(0, 4);
   const rating = details?.vote_average ? `${details.vote_average.toFixed(1)} ★` : '';
@@ -630,7 +646,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
               : <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.surfaceSunken }]} />
             }
             <View style={styles.backdropGradient} />
-            <TouchableOpacity style={styles.closeBtn} onPress={close}>
+            <TouchableOpacity style={styles.closeBtn} onPress={close} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Close" accessibilityRole="button">
               <IconX />
             </TouchableOpacity>
           </View>

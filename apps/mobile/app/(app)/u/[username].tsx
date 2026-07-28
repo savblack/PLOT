@@ -95,7 +95,7 @@ export default function ProfileScreen() {
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       {/* Back bar */}
       <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={styles.backBtn}>
+        <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={styles.backBtn} accessibilityLabel="Go back" accessibilityRole="button">
           <Svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={colors.textPrimary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
             <Path d="M15 18l-6-6 6-6" />
           </Svg>
@@ -249,7 +249,7 @@ function FollowListModal({
       <View style={[styles.sheet, { paddingBottom: insets.bottom + spacing.xl }]}>
         <View style={styles.sheetHead}>
           <Text style={styles.sheetTitle}>{kind === 'followers' ? 'Followers' : 'Following'}</Text>
-          <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Close" accessibilityRole="button">
             <Text style={styles.sheetClose}>×</Text>
           </TouchableOpacity>
         </View>

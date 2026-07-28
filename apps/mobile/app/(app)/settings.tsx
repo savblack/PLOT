@@ -14,8 +14,7 @@ import { useAppData } from '../../contexts/AppDataContext';
 import { useFollowRequests } from '../../hooks/useFollowRequests';
 import { useTraktSync } from '../../hooks/useTraktSync';
 import { useMediaSync } from '../../hooks/useMediaSync';
-import HamburgerIcon from '../../components/HamburgerIcon';
-import { useDrawer } from '../../contexts/DrawerContext';
+import ScreenHeaderBar from '../../components/ScreenHeaderBar';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
 import { edgeFunctionUrl } from '@plot/core/functions.js';
@@ -181,7 +180,7 @@ function TimezoneModal({ current, onSave, onClose }: { current: string; onSave: 
               autoCorrect={false}
             />
             {query.length > 0 && (
-              <TouchableOpacity onPress={() => setQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <TouchableOpacity onPress={() => setQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Clear search" accessibilityRole="button">
                 <Text style={styles.modalSearchClear}>✕</Text>
               </TouchableOpacity>
             )}
@@ -267,7 +266,7 @@ function ProviderModal({
       <View style={[styles.modalContainer, { paddingTop: insets.top }]}>
         <View style={styles.modalHeader}>
           <Text style={styles.modalTitle}>{title}</Text>
-          <TouchableOpacity onPress={onClose}>
+          <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Close" accessibilityRole="button">
             <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={colors.textSecondary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
               <Line x1="18" y1="6" x2="6" y2="18" />
               <Line x1="6" y1="6" x2="18" y2="18" />
@@ -284,7 +283,7 @@ function ProviderModal({
               onChangeText={setSearch}
             />
             {search.length > 0 && (
-              <TouchableOpacity onPress={() => setSearch('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <TouchableOpacity onPress={() => setSearch('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Clear search" accessibilityRole="button">
                 <Text style={styles.modalSearchClear}>✕</Text>
               </TouchableOpacity>
             )}
@@ -414,7 +413,6 @@ export default function SettingsScreen() {
   const { colors, resolved, preference, setPreference } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
-  const { open } = useDrawer();
   const router = useRouter();
   const { userId, user, profile, refreshProfile } = useAppData();
 
@@ -818,12 +816,7 @@ export default function SettingsScreen() {
         tint={resolved === 'dark' ? 'systemChromeMaterialDark' : 'systemChromeMaterialLight'}
         style={[styles.fixedHeader, { height: HEADER_H, paddingTop: insets.top }]}
       >
-        <View style={styles.headerInner}>
-          <TouchableOpacity style={styles.hamburgerBtn} onPress={() => open()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <HamburgerIcon />
-          </TouchableOpacity>
-          <Text style={styles.screenTitle} pointerEvents="none">Settings</Text>
-        </View>
+        <ScreenHeaderBar title="Settings" showSearch={false} />
       </BlurView>
 
       {/* Modals */}
@@ -869,20 +862,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   fixedHeader: {
     position: 'absolute', top: 0, left: 0, right: 0, zIndex: 100,
     borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border,
-  },
-  headerInner: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.sm, paddingBottom: spacing.md,
-  },
-  hamburgerBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-  screenTitle: {
-    position: 'absolute',
-    left: 0, right: 0,
-    textAlign: 'center',
-    fontFamily: fontFamily.serif,
-    fontSize: fontSize.xl,
-    color: colors.textPrimary,
   },
 
   group: { marginTop: spacing.lg },

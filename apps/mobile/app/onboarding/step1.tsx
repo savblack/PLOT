@@ -55,11 +55,14 @@ export default function Step1() {
     if (session?.user) {
       setTmdbRegion(region);
       const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      await supabase.from('profiles').upsert({
-        id: session.user.id,
-        region,
-        timezone: tz,
-      });
+      const profileRow = { id: session.user.id, region, timezone: tz };
+
+      let { error } = await supabase.from('profiles').upsert(profileRow);
+      if (error) {
+        console.warn('[onboarding step1] region save failed, retrying once', error);
+        ({ error } = await supabase.from('profiles').upsert(profileRow));
+        if (error) console.warn('[onboarding step1] region save failed after retry, proceeding anyway', error);
+      }
     }
     setSaving(false);
     router.push('/onboarding/step2');
@@ -168,9 +171,11 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     padding: spacing.xl,
   },
   btn: {
+    alignSelf: 'center',
     backgroundColor: colors.accent,
-    borderRadius: radii.md,
+    borderRadius: radii.pill,
     paddingVertical: 15,
+    paddingHorizontal: 40,
     alignItems: 'center',
   },
   btnDisabled: { opacity: 0.6 },

@@ -12,6 +12,7 @@ import { getNextEpisodeProgress } from './watchingProgress.js';
  * @returns {{
  *   items: any[];
  *   loading: boolean;
+ *   error: boolean;
  *   startWatching: (item: any) => Promise<any>;
  *   markEpisodeWatched: (tmdbId: number) => Promise<any>;
  *   stopWatching: (tmdbId: number) => Promise<any>;
@@ -25,18 +26,28 @@ import { getNextEpisodeProgress } from './watchingProgress.js';
 export function useWatching(userId) {
   const [items,   setItems]   = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error,   setError]   = useState(false);
   const seasonCache = useRef({}); // keyed by "tmdbId-sN" — useRef avoids re-creating fetchSeason on every write
 
   /* ── Load all watching_progress rows ── */
   const loadWatching = useCallback(async () => {
     if (!userId) { setLoading(false); return; }
-    const { data } = await supabase
-      .from('watching_progress')
-      .select('*')
-      .eq('user_id', userId)
-      .order('updated_at', { ascending: false });
-    setItems(data || []);
-    setLoading(false);
+    setError(false);
+    setLoading(true);
+    try {
+      const { data, error: selErr } = await supabase
+        .from('watching_progress')
+        .select('*')
+        .eq('user_id', userId)
+        .order('updated_at', { ascending: false });
+      if (selErr) throw selErr;
+      setItems(data || []);
+    } catch (e) {
+      console.error('[useWatching] load failed', e);
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
   }, [userId]);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect -- loading is delegated to the stable loader callback
@@ -169,6 +180,7 @@ export function useWatching(userId) {
     items,
 
     loading,
+    error,
     startWatching,
     markEpisodeWatched,
     stopWatching,

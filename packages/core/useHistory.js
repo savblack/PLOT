@@ -17,6 +17,7 @@ function notifyHistoryChanged() {
  * @returns {{
  *   entries: any[];
  *   loading: boolean;
+ *   loadError: boolean;
  *   logWatched: (item: any, opts?: { rating?: number; note?: string; dnf?: boolean; watchedAt?: string; logRewatches?: boolean }) => Promise<any>;
  *   updateEntry: (tmdbId: number, updates: any, mediaType?: string) => Promise<any>;
  *   removeEntry: (tmdbId: number, mediaType?: string) => Promise<boolean>;
@@ -27,6 +28,7 @@ function notifyHistoryChanged() {
 export function useHistory(userId) {
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   // A ref, not state: callers read this synchronously right after an await
   // resolves (same tick), before any re-render — state would still hold the
   // pre-call value at that point since React re-renders are async relative to
@@ -36,25 +38,34 @@ export function useHistory(userId) {
 
   const load = useCallback(async () => {
     if (!userId) { setLoading(false); return; }
-    // Fetch all entries — no cap, so isWatched() is always accurate
-    const PAGE_SIZE = 1000;
-    let all = [];
-    let page = 0;
-    let done = false;
-    while (!done) {
-      const from = page * PAGE_SIZE;
-      const { data } = await supabase
-        .from('history')
-        .select('*')
-        .eq('user_id', userId)
-        .order('watched_at', { ascending: false })
-        .range(from, from + PAGE_SIZE - 1);
-      if (!data || data.length < PAGE_SIZE) done = true;
-      if (data) all = [...all, ...data];
-      page++;
+    setLoadError(false);
+    setLoading(true);
+    try {
+      // Fetch all entries — no cap, so isWatched() is always accurate
+      const PAGE_SIZE = 1000;
+      let all = [];
+      let page = 0;
+      let done = false;
+      while (!done) {
+        const from = page * PAGE_SIZE;
+        const { data, error } = await supabase
+          .from('history')
+          .select('*')
+          .eq('user_id', userId)
+          .order('watched_at', { ascending: false })
+          .range(from, from + PAGE_SIZE - 1);
+        if (error) throw error;
+        if (!data || data.length < PAGE_SIZE) done = true;
+        if (data) all = [...all, ...data];
+        page++;
+      }
+      setEntries(all);
+    } catch (e) {
+      console.error('[useHistory] load failed', e);
+      setLoadError(true);
+    } finally {
+      setLoading(false);
     }
-    setEntries(all);
-    setLoading(false);
   }, [userId]);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect -- loading is delegated to the stable loader callback
@@ -154,5 +165,5 @@ export function useHistory(userId) {
     [entries]
   );
 
-  return { entries, loading, logWatched, updateEntry, removeEntry, isWatched, reload: load, getLastError };
+  return { entries, loading, loadError, logWatched, updateEntry, removeEntry, isWatched, reload: load, getLastError };
 }
