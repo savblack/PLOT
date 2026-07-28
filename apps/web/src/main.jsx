@@ -58,6 +58,9 @@ const isDnt = /(?:^|; )plot_dnt=1/.test(document.cookie);
 const posthogToken = !isDnt && import.meta.env.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN;
 if (posthogToken) posthog.init(posthogToken, {
   api_host: import.meta.env.VITE_PUBLIC_POSTHOG_HOST,
+  // Required alongside a reverse-proxy api_host so PostHog's own links
+  // (e.g. session replay URLs) still point back at the real dashboard.
+  ui_host: 'https://us.posthog.com',
   defaults: '2026-01-30',
   // Capture in-app navigation. This is an SPA (react-router createBrowserRouter),
   // so there are no full page loads after boot — 'history_change' fires a single
