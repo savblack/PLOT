@@ -85,9 +85,14 @@ repo-side cleanup is complete:
 ## Known risks
 
 1. **Monorepo build:** if Pages doesn't pick up `functions/` with
-   root-dir = repo root, fall back to a root `wrangler.toml` with
-   `pages_build_output_dir = "apps/web/dist"`, or relocate `functions/` to repo
-   root. Validate on the first build.
+   root-dir = repo root, fall back to a `wrangler.toml` with
+   `pages_build_output_dir`, or relocate `functions/` to repo root. Validate on
+   the first build. This file now lives at `apps/web/wrangler.toml` (moved
+   2026-07-28) — a repo-root copy was getting auto-discovered by Cloudflare's
+   "v2 root directory strategy" build config detection for the *other* Pages
+   project (`plot-site`, theplot.tv), whose scoped root is `apps/website`, and
+   broke its builds since the output path resolved outside that project's
+   directory.
 2. **OG CPU on Cloudflare free:** Satori rendering may exceed the free Workers
    per-request CPU limit; if so, `plot-og` needs Workers Paid ($5/mo).
 3. **`_routes.json`:** confirm dynamic paths invoke Functions and a static asset
