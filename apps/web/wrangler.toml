@@ -3,13 +3,22 @@
 # (git-connected build) up to now; this file adds ONLY the Ratelimit binding
 # the Pages Functions in functions/*.js need (functions/_lib/rateLimit.js).
 #
-# If Cloudflare Pages doesn't pick this file up for an already dashboard
-# git-connected project, add the same binding manually instead:
+# Moved here from the repo root (2026-07-28): Cloudflare's "v2 root directory
+# strategy" build-config auto-detection started picking up a repo-root
+# wrangler.toml for the UNRELATED plot-site (theplot.tv) Pages project too,
+# whose scoped root directory is apps/website — this file's
+# pages_build_output_dir resolved outside that project's directory and broke
+# its builds ("build output directory is outside of the repository"). Living
+# under apps/web/ keeps it out of plot-site's discovery entirely.
+#
+# If Cloudflare Pages doesn't pick this file up for the plot-app project from
+# its new location (project root directory is the repo root, not apps/web/),
+# add the same binding manually instead:
 #   Pages project → Settings → Functions → Bindings → Add → Rate Limiting →
 #   Variable name "RL", same limit/period as below. Either path produces the
 # same env.RL binding the functions call.
 name = "plot-app"
-pages_build_output_dir = "apps/web/dist"
+pages_build_output_dir = "dist"
 compatibility_date = "2025-06-01"
 
 # 60 requests per 10s per client IP on /u/*, /list/*, /save — generous enough
