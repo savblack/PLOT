@@ -4,7 +4,7 @@ import { favoriteWords } from '../utils/spelling.js';
 import { localDateStr, dateToLocalStr } from '../utils/date.js';
 import { useDragScroll } from '../hooks/useDragScroll.js';
 import { useGenres } from '../hooks/useGenres.js';
-import { tmdb, getTmdbRegion, isEnglishOriginTitle } from '../api/tmdb.js';
+import { tmdb, getTmdbRegion, isEnglishOriginTitle, excludeKidsContent } from '../api/tmdb.js';
 import { buildProviderLogoCacheKey, collectPendingProviderLogoRequests } from '../utils/providerLogos.js';
 import EpgView from './EpgView.jsx';
 import LoadingSpinner from './LoadingSpinner.jsx';
@@ -228,6 +228,8 @@ function DateGroup({ label, items, openPanel, providerLogos, watchlist, defaultO
 
 /* ── Upcoming content (global, date-grouped) ── */
 export function UpcomingContent({ typeFilters, genreFilters, providers, openPanel, watchlist, expandSignal }) {
+  const { profile } = useApp();
+  const hideKids = !(profile?.include_kids_content ?? true);
   const [data,       setData]       = useState({ today: [], upcomingGrouped: {}, upcomingDates: [] });
   const [loading,    setLoading]    = useState(true);
   const [loadedProviderLogos, setLoadedProviderLogos] = useState({});
@@ -317,7 +319,7 @@ export function UpcomingContent({ typeFilters, genreFilters, providers, openPane
 
   const { today, upcomingGrouped, upcomingDates } = data;
 
-  const applyFilters = (items) => filterByGenre(filterByType(items.filter(isEnglishOriginTitle), typeFilters), genreFilters);
+  const applyFilters = (items) => excludeKidsContent(filterByGenre(filterByType(items.filter(isEnglishOriginTitle), typeFilters), genreFilters), hideKids);
 
   const filteredToday = applyFilters(today);
   const filteredUpcoming = {};

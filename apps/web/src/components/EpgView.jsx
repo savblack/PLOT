@@ -122,7 +122,7 @@ async function fetchWebSchedule(date) {
 
 /* ── Build a flat, deduped, time-sorted programme list for a day.
    Posters come free from TVMaze's show.image (no per-title TMDB lookup). ── */
-function buildPrograms(broadcastEps, webEps, timezone) {
+function buildPrograms(broadcastEps, webEps, timezone, hideKids) {
   const out = [];
   const push = (ep, container, type) => {
     if (!container?.id) return;
@@ -132,6 +132,7 @@ function buildPrograms(broadcastEps, webEps, timezone) {
     } else if (looksNonEnglishTitle(show?.name ?? ep.name)) {
       return;
     }
+    if (hideKids && show?.genres?.includes('Children')) return;
     const resolved = resolveAirtime(ep, timezone);
     if (!resolved) return;
     out.push({
@@ -239,11 +240,12 @@ export default function EpgView() {
   const { profile } = useApp();
   const country  = profile?.region   ?? 'US';
   const timezone = profile?.timezone ?? null;
+  const hideKids = !(profile?.include_kids_content ?? true);
   const channelNames = useMemo(
     () => (profile?.guide_channels ?? []).map(c => c.name || '').filter(Boolean),
     [profile?.guide_channels]
   );
-  const cacheKey = `${country}:${timezone}`;
+  const cacheKey = `${country}:${timezone}:${hideKids}`;
   const todayStr = dateInTimezone(new Date(), timezone);
 
   const [date,           setDate]           = useState(todayStr);
@@ -280,13 +282,13 @@ export default function EpgView() {
       ]);
       if (cancelled) return;
       setProgramsByDate(prev => {
-        const next = { ...prev, [dateStr]: buildPrograms(broadcastEps, webEps, timezone) };
+        const next = { ...prev, [dateStr]: buildPrograms(broadcastEps, webEps, timezone, hideKids) };
         epgCache = { key: cacheKey, data: next };
         return next;
       });
     });
     return () => { cancelled = true; };
-  }, [country, timezone, dayKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [country, timezone, hideKids, dayKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const isToday  = date === todayStr;
   const nowMins  = isToday ? nowMinsInWindow(timezone) : null;
