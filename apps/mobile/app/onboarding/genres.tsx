@@ -1,54 +1,43 @@
 /**
- * Onboarding Step 2 — Streaming platform selection.
- * Fetches the region's real providers from TMDB (top 30 by display priority)
- * and persists profiles.streaming_providers as {id,name,logo_path} objects —
- * the same shape the web app + downstream "where to watch" reads.
+ * Onboarding Step 4 — Genre selection.
+ * Fetches the combined TMDB movie+TV genre list and persists
+ * profiles.genres as {id,name} objects — same shape convention as
+ * streaming_providers.
  */
 import { useState, useMemo, useEffect } from 'react';
 import {
-  View, Text, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator, Image, TextInput,
+  View, Text, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { supabase } from '../../lib/supabase';
-import { tmdb, getTmdbRegion } from '../../lib/tmdb';
-import { Palette, fontFamily, fontSize, spacing, radii, logoUrl } from '../../lib/tokens';
+import { tmdb } from '../../lib/tmdb';
+import { Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 
-interface Provider { provider_id: number; provider_name: string; logo_path: string | null; display_priority: number }
+interface Genre { id: number; name: string }
 
-export default function Step2() {
+export default function Genres() {
   const router  = useRouter();
   const insets  = useSafeAreaInsets();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
-  const [all,      setAll]      = useState<Provider[]>([]);
+  const [all,      setAll]      = useState<Genre[]>([]);
   const [loading,  setLoading]  = useState(true);
-  const [query,    setQuery]    = useState('');
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [saving,   setSaving]   = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    tmdb.getWatchProvidersForRegion('tv', getTmdbRegion()).then((data: any) => {
+    tmdb.getGenres().then((list: Genre[]) => {
       if (cancelled) return;
-      // Deduping of TMDB's occasional duplicate provider_ids happens in
-      // tmdb.getWatchProvidersForRegion (packages/core/tmdb.js) so every
-      // caller benefits.
-      const list = (data?.results || [])
-        .sort((a: Provider, b: Provider) => a.display_priority - b.display_priority)
-        .slice(0, 30);
-      setAll(list);
+      setAll(list || []);
       setLoading(false);
     }).catch(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, []);
-
-  const filtered = query.trim()
-    ? all.filter(p => p.provider_name.toLowerCase().includes(query.toLowerCase()))
-    : all;
 
   const toggle = (id: number) => {
     setSelected(prev => {
@@ -59,20 +48,16 @@ export default function Step2() {
   };
 
   const handleContinue = async () => {
+    if (selected.size === 0) return;
     setSaving(true);
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) {
-      // Store {id,name,logo_path} objects — same shape as web streaming_providers.
-      const payload = all
-        .filter(p => selected.has(p.provider_id))
-        .map(p => ({ id: p.provider_id, name: p.provider_name, logo_path: p.logo_path }));
-      await supabase.from('profiles').update({ streaming_providers: payload }).eq('id', session.user.id);
+      const payload = all.filter(g => selected.has(g.id));
+      await supabase.from('profiles').update({ genres: payload }).eq('id', session.user.id);
     }
     setSaving(false);
-    router.push('/onboarding/genres');
+    router.push('/onboarding/step3');
   };
-
-  const handleSkip = () => router.push('/onboarding/genres');
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
@@ -91,56 +76,33 @@ export default function Step2() {
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           <Text style={styles.wordmark}>PLOT</Text>
-          <Text style={styles.stepLabel}>Step 3 of 5</Text>
+          <Text style={styles.stepLabel}>Step 4 of 5</Text>
         </View>
         <View style={styles.backBtn} />
       </View>
 
       {/* Content */}
       <View style={styles.content}>
-        <Text style={styles.heading}>Your platforms</Text>
-        <Text style={styles.body}>Select the streaming services you subscribe to.</Text>
-
-        <View style={styles.searchWrap}>
-          <TextInput
-            style={styles.search}
-            placeholder="Search platforms…"
-            placeholderTextColor={colors.textMuted}
-            value={query}
-            onChangeText={setQuery}
-            autoCorrect={false}
-          />
-          {query.length > 0 && (
-            <TouchableOpacity onPress={() => setQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={styles.clearBtnWrap}>
-              <Text style={styles.clearBtn}>✕</Text>
-            </TouchableOpacity>
-          )}
-        </View>
+        <Text style={styles.heading}>What do you like?</Text>
+        <Text style={styles.body}>Pick a few genres to help us recommend the right titles.</Text>
 
         {loading ? (
           <View style={styles.loadingWrap}><ActivityIndicator color={colors.accent} /></View>
         ) : (
           <FlatList
-            data={filtered}
-            keyExtractor={p => String(p.provider_id)}
-            numColumns={3}
+            data={all}
+            keyExtractor={g => String(g.id)}
+            numColumns={2}
             renderItem={({ item }) => {
-              const active = selected.has(item.provider_id);
-              const logo = logoUrl(item.logo_path, 'w92');
+              const active = selected.has(item.id);
               return (
                 <TouchableOpacity
                   style={[styles.card, active && styles.cardActive]}
-                  onPress={() => toggle(item.provider_id)}
+                  onPress={() => toggle(item.id)}
                   activeOpacity={0.7}
                 >
-                  <View style={styles.logoWrap}>
-                    {logo
-                      ? <Image source={{ uri: logo }} style={StyleSheet.absoluteFill} resizeMode="cover" />
-                      : <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.surfaceSunken }]} />
-                    }
-                  </View>
-                  <Text style={[styles.name, active && styles.nameActive]} numberOfLines={2}>
-                    {item.provider_name}
+                  <Text style={[styles.name, active && styles.nameActive]} numberOfLines={1}>
+                    {item.name}
                   </Text>
                 </TouchableOpacity>
               );
@@ -156,9 +118,9 @@ export default function Step2() {
       {/* Footer */}
       <View style={styles.footer}>
         <TouchableOpacity
-          style={[styles.btn, saving && styles.btnDisabled]}
+          style={[styles.btn, (saving || selected.size === 0) && styles.btnDisabled]}
           onPress={handleContinue}
-          disabled={saving}
+          disabled={saving || selected.size === 0}
         >
           {saving
             ? <ActivityIndicator color="#fff" />
@@ -166,9 +128,6 @@ export default function Step2() {
                 {selected.size > 0 ? `Continue with ${selected.size} selected` : 'Continue'}
               </Text>
           }
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.skipBtn} onPress={handleSkip}>
-          <Text style={styles.skipText}>Skip this step</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -185,39 +144,22 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   content:   { flex: 1, paddingHorizontal: spacing.xl },
   heading:   { fontFamily: fontFamily.serif, fontSize: fontSize.xxl, color: colors.textPrimary, textAlign: 'center', marginBottom: spacing.sm },
   body:      { fontFamily: fontFamily.sans,  fontSize: fontSize.sm,  color: colors.textMuted, textAlign: 'center', marginBottom: spacing.lg },
-  searchWrap: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: colors.surface, borderRadius: radii.md,
-    borderWidth: 1, borderColor: colors.border, marginBottom: spacing.md,
-    paddingRight: spacing.md,
-  },
-  search: {
-    flex: 1,
-    paddingHorizontal: spacing.lg, paddingVertical: spacing.sm,
-    fontFamily: fontFamily.sans, fontSize: fontSize.md, color: colors.textPrimary,
-  },
-  clearBtnWrap: { paddingLeft: spacing.sm },
-  clearBtn: { fontSize: 14, color: colors.textMuted },
   loadingWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   list:      { flex: 1 },
   card: {
-    flex: 1 / 3,
+    flex: 1 / 2,
     backgroundColor: colors.surface,
     borderRadius: radii.md,
     paddingVertical: spacing.md,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: colors.border,
-    gap: spacing.sm,
   },
   cardActive: { borderColor: colors.accent, backgroundColor: colors.accentDim },
-  logoWrap:  { width: 44, height: 44, borderRadius: radii.sm, overflow: 'hidden', backgroundColor: colors.surfaceSunken },
-  name:       { fontFamily: fontFamily.sans,       fontSize: fontSize.xs, color: colors.textSecondary, textAlign: 'center' },
+  name:       { fontFamily: fontFamily.sans,       fontSize: fontSize.sm, color: colors.textSecondary, textAlign: 'center' },
   nameActive: { fontFamily: fontFamily.sansMedium, color: colors.accent },
   footer:  { padding: spacing.xl, gap: spacing.md },
   btn:     { alignSelf: 'center', backgroundColor: colors.accent, borderRadius: radii.pill, paddingVertical: 15, paddingHorizontal: 40, alignItems: 'center' },
   btnDisabled: { opacity: 0.6 },
   btnText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.md, color: '#fff' },
-  skipBtn: { alignItems: 'center', paddingVertical: spacing.sm },
-  skipText:{ fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted },
 });

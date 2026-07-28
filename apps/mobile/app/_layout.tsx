@@ -35,7 +35,7 @@ function AuthGuard({ session, onboardingComplete }: {
       if (!inAuth) router.replace('/(auth)');
     } else if (onboardingComplete === false) {
       // Logged in but onboarding not done
-      if (!inOnboarding) router.replace('/onboarding/step1');
+      if (!inOnboarding) router.replace('/onboarding/name');
     } else if (onboardingComplete === true) {
       // Fully onboarded
       if (inAuth || inOnboarding) router.replace('/(app)');

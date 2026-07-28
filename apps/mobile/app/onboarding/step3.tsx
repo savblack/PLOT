@@ -138,7 +138,7 @@ export default function Step3() {
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           <Text style={styles.wordmark}>PLOT</Text>
-          <Text style={styles.stepLabel}>Step 3 of 3</Text>
+          <Text style={styles.stepLabel}>Step 5 of 5</Text>
         </View>
         <View style={styles.backBtn} />
       </View>

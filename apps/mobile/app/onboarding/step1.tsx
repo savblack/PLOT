@@ -1,13 +1,16 @@
 /**
  * Onboarding Step 1 — Region selection.
- * Pre-selects based on device timezone, just like the web app.
+ * Pre-selects based on device timezone, then refines with IP geolocation
+ * (via app.theplot.tv/api/region, a Cloudflare Pages Function reading
+ * request.cf.country), just like the web app.
  */
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Path } from 'react-native-svg';
 import { supabase } from '../../lib/supabase';
 import { setTmdbRegion } from '../../lib/tmdb';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
@@ -30,6 +33,8 @@ function guessRegion(): string {
   } catch { return 'US'; }
 }
 
+const REGION_API = 'https://app.theplot.tv/api/region';
+
 const REGIONS = [
   { code: 'US', name: 'United States' }, { code: 'AU', name: 'Australia' },
   { code: 'GB', name: 'United Kingdom' }, { code: 'CA', name: 'Canada' },
@@ -48,6 +53,19 @@ export default function Step1() {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [region,  setRegion]  = useState(guessRegion());
   const [saving,  setSaving]  = useState(false);
+  const regionTouched = useRef(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(REGION_API)
+      .then(r => (r.ok ? r.json() : null))
+      .then(data => {
+        if (cancelled || regionTouched.current || !data?.country) return;
+        if (REGIONS.some(r => r.code === data.country)) setRegion(data.country);
+      })
+      .catch(() => { /* keep the timezone guess */ });
+    return () => { cancelled = true; };
+  }, []);
 
   const handleContinue = async () => {
     setSaving(true);
@@ -72,8 +90,22 @@ export default function Step1() {
     <View style={[styles.screen, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.wordmark}>PLOT</Text>
-        <Text style={styles.stepLabel}>Step 1 of 3</Text>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backBtn}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel="Go back"
+          accessibilityRole="button"
+        >
+          <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={colors.textPrimary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            <Path d="M15 18l-6-6 6-6" />
+          </Svg>
+        </TouchableOpacity>
+        <View style={styles.headerCenter}>
+          <Text style={styles.wordmark}>PLOT</Text>
+          <Text style={styles.stepLabel}>Step 2 of 5</Text>
+        </View>
+        <View style={styles.backBtn} />
       </View>
 
       {/* Content */}
@@ -87,7 +119,7 @@ export default function Step1() {
           renderItem={({ item }) => (
             <TouchableOpacity
               style={[styles.regionRow, region === item.code && styles.regionRowSelected]}
-              onPress={() => setRegion(item.code)}
+              onPress={() => { regionTouched.current = true; setRegion(item.code); }}
               activeOpacity={0.7}
             >
               <Text style={[styles.regionName, region === item.code && styles.regionNameSelected]}>
@@ -129,6 +161,8 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.lg,
   },
+  backBtn:   { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
+  headerCenter: { alignItems: 'center' },
   wordmark:  { fontFamily: fontFamily.serif, fontSize: fontSize.xl, color: colors.textPrimary },
   stepLabel: { fontFamily: fontFamily.sans,  fontSize: fontSize.sm, color: colors.textMuted },
   content: { flex: 1, paddingHorizontal: spacing.xl },
