@@ -58,6 +58,8 @@ export default function Genres() {
     router.push('/onboarding/step3');
   };
 
+  const handleSkip = () => router.push('/onboarding/step3');
+
   return (
     <View style={[styles.screen, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       {/* Header */}
@@ -128,6 +130,9 @@ export default function Genres() {
               </Text>
           }
         </TouchableOpacity>
+        <TouchableOpacity style={styles.skipBtn} onPress={handleSkip}>
+          <Text style={styles.skipText}>Skip this step</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -161,4 +166,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   btn:     { alignSelf: 'center', backgroundColor: colors.accent, borderRadius: radii.pill, paddingVertical: 15, paddingHorizontal: 40, alignItems: 'center' },
   btnDisabled: { opacity: 0.6 },
   btnText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.md, color: '#fff' },
+  skipBtn: { alignItems: 'center', paddingVertical: spacing.sm },
+  skipText:{ fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted },
 });

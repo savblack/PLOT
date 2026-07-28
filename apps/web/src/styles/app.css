@@ -1379,7 +1379,7 @@ svg { stroke-width: 1.5; }
   min-height: 48px;
   border-radius: var(--radius-pill);
   border: 1px solid var(--text-primary);
-  background: var(--surface);
+  background: transparent;
   color: var(--text-primary);
   font-family: var(--font-sans);
   font-size: 0.95rem;
