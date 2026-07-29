@@ -14,30 +14,24 @@ const MIN_RAIL_SIZE = 14;
 export function useDiscover() {
   const { profile } = useApp();
   const hideKids = !(profile?.include_kids_content ?? true);
-  const [data, setData]       = useState({ hero: null, onThisDay: null, hotRail: [], weekly: [], bingedShows: [], realityShows: [], anticipatedMovies: [] });
+  const [data, setData]       = useState({ hero: null, onThisDay: null, hotRail: [], weekly: [], bingedShows: [], anticipatedMovies: [] });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
-    const emptyData = { hero: null, onThisDay: null, hotRail: [], weekly: [], bingedShows: [], realityShows: [], anticipatedMovies: [] };
+    const emptyData = { hero: null, onThisDay: null, hotRail: [], weekly: [], bingedShows: [], anticipatedMovies: [] };
 
     async function load() {
       setLoading(true);
       setData(emptyData);
       try {
-        const [trendingDay, trendingWeek, trendingTVDay, onThisDay, genres, upcoming] = await Promise.all([
+        const [trendingDay, trendingWeek, trendingTVDay, onThisDay, upcoming] = await Promise.all([
           tmdb.getTrending('all', 'day'),
           tmdb.getTrending('all', 'week'),
           tmdb.getTrending('tv', 'day'),
           tmdb.getOnThisDay().catch(() => null),
-          tmdb.getGenres().catch(() => []),
           tmdb.getUpcoming([]).catch(() => null),
         ]);
-
-        const realityGenre = genres.find(genre => genre.name === 'Reality');
-        const realityTV = realityGenre
-          ? await tmdb.discoverNewestByGenre('tv', realityGenre.id).catch(() => null)
-          : null;
 
         if (cancelled) return;
 
@@ -49,15 +43,11 @@ export function useDiscover() {
           .filter(hasPoster)
           .slice(0, Math.max(MIN_RAIL_SIZE, 18))
           .map(show => ({ ...show, media_type: 'tv' }));
-        const realityShows = excludeKidsContent((realityTV?.results || []).filter(isEnglishOriginTitle), hideKids)
-          .filter(hasPoster)
-          .slice(0, Math.max(MIN_RAIL_SIZE, 18))
-          .map(show => ({ ...show, media_type: 'tv' }));
         const anticipatedMovies = excludeKidsContent((upcoming?.results || []).filter(isEnglishOriginTitle), hideKids)
           .slice(0, 10)
           .map(movie => ({ ...movie, media_type: 'movie' }));
 
-        setData({ hero, onThisDay, hotRail, weekly, bingedShows, realityShows, anticipatedMovies });
+        setData({ hero, onThisDay, hotRail, weekly, bingedShows, anticipatedMovies });
       } catch (error) {
         console.error('Discover load failed:', error);
         if (!cancelled) setData(emptyData);

@@ -565,6 +565,24 @@ export const tmdb = {
     return { results: pages.flatMap(p => p?.results ?? []) };
   },
 
+  /* ── Newest released titles by keyword — for genres TMDB has no TV/movie
+     category for (e.g. TV has no "Horror" or "Thriller" genre, but titles are
+     still tagged with the matching keyword) ── */
+  discoverNewestByKeyword: async (type, keywordId) => {
+    if (!keywordId) return Promise.resolve(null);
+    const dateField = type === 'tv' ? 'first_air_date' : 'primary_release_date';
+    const params = {
+      with_keywords: keywordId,
+      sort_by: `${dateField}.desc`,
+      [`${dateField}.lte`]: localDateStr(),
+      'vote_count.gte': 1,
+    };
+    const pages = await Promise.all(
+      [1, 2, 3].map(page => fetchFromTMDB(`/discover/${type}`, { ...params, page }))
+    );
+    return { results: pages.flatMap(p => p?.results ?? []) };
+  },
+
   getTopRated: (type) => fetchFromTMDB(`/${type}/top_rated`),
 
   discoverByGenres: (type, genreIds) => {
