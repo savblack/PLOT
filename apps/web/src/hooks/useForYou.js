@@ -7,13 +7,17 @@ import { tmdb } from '../api/tmdb.js';
 // see supabase/migrations/20260726020000_for_you_recommendations.sql) and
 // hydrates each {tmdb_id, media_type} row with poster/title/date via TMDB.
 // Returns [] for signed-out users or anyone TMDB can't resolve a row for.
-export function useForYou(limit = 20) {
+// `enabled` gates the whole rail behind SHOW_FOR_YOU_RAIL (launchFeatures.js)
+// — false skips the RPC + TMDB hydration entirely rather than just hiding it.
+export function useForYou(limit = 20, enabled = true) {
   const [items, setItems]     = useState([]);
   const [reason, setReason]   = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
+
+    if (!enabled) { setItems([]); setReason(null); setLoading(false); return; }
 
     async function load() {
       const { data: { session } } = await supabase.auth.getSession();
@@ -38,7 +42,7 @@ export function useForYou(limit = 20) {
 
     load();
     return () => { cancelled = true; };
-  }, [limit]);
+  }, [limit, enabled]);
 
   return { items, reason, loading };
 }

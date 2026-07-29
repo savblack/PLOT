@@ -16,7 +16,7 @@ import { track, EVENTS } from '../lib/analytics.js';
 import GroupedFilterMenu from './GroupedFilterMenu.jsx';
 import SectionToggleIcon from './SectionToggleIcon.jsx';
 import { getButtonLikeProps } from '../utils/interactive.js';
-import { SHOW_SOCIAL_FEED } from '../launchFeatures.js';
+import { SHOW_SOCIAL_FEED, SHOW_FOR_YOU_RAIL } from '../launchFeatures.js';
 
 const ALL_TYPES = ['tv', 'cinema', 'movie'];
 
@@ -452,7 +452,7 @@ function DiscoverContent({ openPanel, watchlist, history, openSections, setOpenS
   // to the user's own streaming selections. Only platforms with real synced
   // Top 10 data are returned.
   const platformList = usePlatformCharts();
-  const { items: forYouItems } = useForYou(28);
+  const { items: forYouItems } = useForYou(28, SHOW_FOR_YOU_RAIL);
   if (loading) {
     return <LoadingSpinner />;
   }
