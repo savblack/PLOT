@@ -6,8 +6,6 @@ import PlotLogo from './PlotLogo.jsx';
 // Dark, centered, minimal error design — matches the marketing site's
 // website/404.html so the app and theplot.tv share one error aesthetic.
 const styles = `
-  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap');
-
   .plot-error-page {
     min-height: 100vh;
     min-height: 100dvh;

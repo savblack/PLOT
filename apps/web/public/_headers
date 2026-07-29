@@ -15,6 +15,18 @@
 /
   Link: </llms.txt>; rel="describedby"; type="text/plain"
 
+# Hashed build output and fonts never change content under a given URL — cache
+# them for a year. Images may be replaced in place, so a shorter, revalidated
+# TTL is safer there.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/website-images/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
 # iOS universal links file must be served as JSON.
 /.well-known/apple-app-site-association
   Content-Type: application/json
