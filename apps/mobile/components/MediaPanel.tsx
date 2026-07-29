@@ -17,6 +17,7 @@ import { favoriteWords } from '../lib/spelling';
 import { findDuplicateCustomList } from '@plot/core/customLists.js';
 import { buildWatchLink } from '@plot/core/watchLinks.js';
 import { fetchVerifiedAvailability, offersFromTmdb } from '@plot/core/availability.js';
+import { fetchCriticScore, pickAudienceQuote, getConsensusLine } from '@plot/core/reviews.js';
 import { canCreateCustomList, FREE_CUSTOM_LIST_CAP } from '@plot/core/premium.js';
 import { TrailerPlayer } from './TrailerPlayer';
 
@@ -300,6 +301,7 @@ interface TMDBDetails {
   next_episode_to_air?: TMDBNextEpisode | null;
   status?: string;
   videos?: { results: Array<{ site: string; type: string; key: string; name?: string }> };
+  external_ids?: { imdb_id?: string | null };
 }
 
 // ── Main panel ────────────────────────────────────────────────────────
@@ -500,6 +502,8 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
   const [whereToWatch, setWhereToWatch] = useState<{ streaming: any[]; rentBuy: any[]; inCinemas: boolean; region: string; justwatchLink: string | null }>({ streaming: [], rentBuy: [], inCinemas: false, region: 'US', justwatchLink: null });
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState(false);
+  const [criticScore,   setCriticScore]   = useState<{ criticScore: number; source: string } | null>(null);
+  const [audienceQuote, setAudienceQuote] = useState<{ text: string; author: string } | null>(null);
   const [retryKey,  setRetryKey]  = useState(0);
   const [trailerPlaying, setTrailerPlaying] = useState(false);
 
@@ -550,6 +554,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
     let cancelled = false;
     (async () => {
       setLoading(true); setError(false); setTrailerPlaying(false);
+      setCriticScore(null); setAudienceQuote(null);
       const region = getTmdbRegion();
       const [det, prov, verified] = await Promise.all([
         isMovie ? tmdb.getMovieDetails(itemId) : tmdb.getTVDetails(itemId),
@@ -588,6 +593,12 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
           inCinemas = det.status === 'Released' && days >= 0 && days <= 90 && streaming.length === 0 && rentBuy.length === 0;
         }
         setWhereToWatch({ streaming, rentBuy, inCinemas, region, justwatchLink: verified?.title_url || regionData.link || null });
+        // Critic score + audience quote depend on the imdb_id this same call just
+        // returned, so they can't join the Promise.all above. Fire-and-forget
+        // rather than block the panel on a third-party lookup.
+        const imdbId = det.external_ids?.imdb_id;
+        if (imdbId) fetchCriticScore(imdbId).then((r) => { if (!cancelled) setCriticScore(r); });
+        tmdb.getReviews(itemType, itemId).then((reviews: any) => { if (!cancelled) setAudienceQuote(pickAudienceQuote(reviews)); });
       }
       setLoading(false);
     })();
@@ -613,6 +624,8 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
   const year   = (details?.release_date || details?.first_air_date || '').slice(0, 4);
   const rating = details?.vote_average ? `${details.vote_average.toFixed(1)} ★` : '';
   const genres = (details?.genres || []).slice(0, 3).map((g: any) => g.name).join(' · ');
+  const audienceScore = Number.isFinite(details?.vote_average) ? Math.round((details!.vote_average as number) * 10) : null;
+  const consensusLine = criticScore ? getConsensusLine(criticScore.criticScore, audienceScore) : null;
 
   // Prefer an official Trailer, then Teaser, then any YouTube clip (mirrors web).
   const vids = details?.videos?.results || [];
@@ -679,8 +692,34 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
 
                 {genres ? <Text style={styles.genres}>{genres}</Text> : null}
 
+                {/* Critic / audience scores */}
+                {(criticScore || Number.isFinite(audienceScore)) && (
+                  <View style={styles.scoresRow}>
+                    {criticScore && (
+                      <View style={styles.scorePill}>
+                        <Text style={styles.scorePillText}>◆ {criticScore.criticScore} Critics</Text>
+                      </View>
+                    )}
+                    {Number.isFinite(audienceScore) && (
+                      <View style={styles.scorePill}>
+                        <Text style={styles.scorePillText}><Text style={styles.scoreMarkAudience}>●</Text> {audienceScore} Audience</Text>
+                      </View>
+                    )}
+                  </View>
+                )}
+                {consensusLine ? <Text style={styles.consensusLine}>{consensusLine}</Text> : null}
+
                 {/* Overview */}
                 {details?.overview ? <Text style={styles.overview}>{details.overview}</Text> : null}
+
+                {audienceQuote && (
+                  <View style={styles.audienceQuote}>
+                    <Text style={styles.audienceQuoteText}>&ldquo;{audienceQuote.text}&rdquo;</Text>
+                    <Text style={styles.audienceQuoteAttr}>
+                      From a TMDB audience review{audienceQuote.author ? `, ${audienceQuote.author}` : ''}
+                    </Text>
+                  </View>
+                )}
 
                 {/* Trailer — plays inline, inside the app */}
                 {trailerKey && (
@@ -931,7 +970,19 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   metaType: { fontFamily: fontFamily.sansBold, fontSize: 11, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
   metaRating: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: '#F59E0B' },
   genres:   { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted, marginBottom: spacing.md },
+  scoresRow: { flexDirection: 'row', gap: 6, marginBottom: spacing.sm },
+  scorePill: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    paddingHorizontal: 9, paddingVertical: 3, borderRadius: radii.pill,
+    borderWidth: 1, borderColor: colors.border,
+  },
+  scorePillText: { fontFamily: fontFamily.sansBold, fontSize: 11, color: colors.textPrimary },
+  scoreMarkAudience: { color: colors.accent },
+  consensusLine: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textSecondary, marginBottom: spacing.sm, lineHeight: 17 },
   overview: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary, lineHeight: 20, marginBottom: spacing.lg },
+  audienceQuote: { borderLeftWidth: 2, borderLeftColor: colors.accent, paddingLeft: spacing.md, marginBottom: spacing.md },
+  audienceQuoteText: { fontFamily: fontFamily.serif, fontStyle: 'italic', fontSize: fontSize.md, color: colors.textSecondary, lineHeight: 21 },
+  audienceQuoteAttr: { fontFamily: fontFamily.sansBold, fontSize: 10, color: colors.textMuted, marginTop: 4, letterSpacing: 0.3 },
 
   // Single-source spacing.sm rhythm for the action block: the col gap handles
   // Save↔row1 and its marginBottom handles row1↔watching-row. Rows carry no

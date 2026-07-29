@@ -14,6 +14,7 @@ configure({
   supabaseAnonKey: import.meta.env.VITE_SUPABASE_ANON_KEY,
   tmdbProxyUrl: import.meta.env.VITE_TMDB_PROXY_URL,
   watchAvailabilityUrl: `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/watch-availability`,
+  criticScoreUrl: `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/critic-score`,
   traktClientId: import.meta.env.VITE_TRAKT_CLIENT_ID,
   isDev: import.meta.env.DEV,
   affiliate: {

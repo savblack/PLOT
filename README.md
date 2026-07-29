@@ -64,6 +64,7 @@ Deploy functions with the Supabase CLI after configuring project secrets:
 supabase functions deploy tmdb-proxy
 supabase functions deploy media-sync
 supabase functions deploy delete-account
+supabase functions deploy critic-score
 ```
 
 Required function secrets:
@@ -73,6 +74,7 @@ Required function secrets:
 - `SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `PLEX_TOKEN_SECRET` for encrypting Plex auth tokens at rest
+- `OMDB_API_KEY` for the `critic-score` function's Rotten Tomatoes lookups (already used by the marketing scripts — same key, needs setting separately for Supabase via `supabase secrets set OMDB_API_KEY=...`)
 
 ## Plex Sync
 
