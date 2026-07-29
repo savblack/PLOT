@@ -19,7 +19,7 @@ import { downloadICS } from '../utils/ics.js';
 import { setUserTimezone } from '../utils/date.js';
 import { getButtonLikeProps } from '../utils/interactive.js';
 import { IANA_TIMEZONES } from '../utils/timezones.js';
-import { SHOW_MEDIA_SYNC_INTEGRATIONS } from '../launchFeatures.js';
+import { SHOW_MEDIA_SYNC_INTEGRATIONS, SHOW_WATCHLIST_AVAILABILITY_ALERTS } from '../launchFeatures.js';
 import SheetHeader from './SheetHeader.jsx';
 import ConfirmModal from './ConfirmModal.jsx';
 import PlotLoader from './PlotLoader.jsx';
@@ -2114,31 +2114,33 @@ export default function SettingsView() {
           </div>
         </div>
 
-        <div className="settings-row" style={{ cursor: 'default' }}>
-          <div className="settings-row-left">
-            <div className="settings-row-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-            </div>
-            <div>
-              <div className="settings-row-label">Watchlist availability alerts</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.12rem' }}>
-                {testAlertNotice === 'sent'
-                  ? "Sent — check your inbox."
-                  : testAlertNotice === 'error'
-                  ? 'Could not send a test email. Try again.'
-                  : "Email me when a saved title arrives on a streaming platform or channel I've selected"}
+        {SHOW_WATCHLIST_AVAILABILITY_ALERTS && (
+          <div className="settings-row" style={{ cursor: 'default' }}>
+            <div className="settings-row-left">
+              <div className="settings-row-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              </div>
+              <div>
+                <div className="settings-row-label">Watchlist availability alerts</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.12rem' }}>
+                  {testAlertNotice === 'sent'
+                    ? "Sent — check your inbox."
+                    : testAlertNotice === 'error'
+                    ? 'Could not send a test email. Try again.'
+                    : "Email me when a saved title arrives on a streaming platform or channel I've selected"}
+                </div>
               </div>
             </div>
+            <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
+              <SettingsTextAction onClick={sendTestAvailabilityAlert} disabled={testingAvailabilityAlert}>
+                {testingAvailabilityAlert ? 'Sending…' : 'Send test'}
+              </SettingsTextAction>
+              <SettingsTextAction onClick={toggleAvailabilityAlerts} disabled={savingAvailabilityAlerts}>
+                {savingAvailabilityAlerts ? 'Saving…' : availabilityAlertsEnabled ? 'Turn off' : 'Turn on'}
+              </SettingsTextAction>
+            </div>
           </div>
-          <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
-            <SettingsTextAction onClick={sendTestAvailabilityAlert} disabled={testingAvailabilityAlert}>
-              {testingAvailabilityAlert ? 'Sending…' : 'Send test'}
-            </SettingsTextAction>
-            <SettingsTextAction onClick={toggleAvailabilityAlerts} disabled={savingAvailabilityAlerts}>
-              {savingAvailabilityAlerts ? 'Saving…' : availabilityAlertsEnabled ? 'Turn off' : 'Turn on'}
-            </SettingsTextAction>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* PLOT Premium — only shown to existing subscribers; checkout is offline for now */}
