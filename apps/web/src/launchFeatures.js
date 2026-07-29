@@ -21,3 +21,8 @@ export const SHOW_SOCIAL_FEED = false;
 // all the code (toggle, test-send, edge function) stays in place. Flip to true
 // to bring it back.
 export const SHOW_WATCHLIST_AVAILABILITY_ALERTS = false;
+
+// "Your Next Watch" For You rail on Discover. On by default; flip to false to
+// pull it instantly (e.g. bad recommendations, RPC issues) without touching
+// the underlying get_for_you() pipeline.
+export const SHOW_FOR_YOU_RAIL = true;
