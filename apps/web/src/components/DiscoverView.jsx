@@ -463,10 +463,9 @@ function DiscoverContent({ openPanel, watchlist, history, openSections, setOpenS
   const hotRail           = applyFilters(data.hotRail);
   const weekly            = applyFilters(data.weekly);
   const bingedShows       = applyFilters(data.bingedShows);
-  const realityShows      = applyFilters(data.realityShows);
   const anticipatedMovies = applyFilters(data.anticipatedMovies);
   const forYou            = applyFilters(forYouItems);
-  const hasContent = hero || hotRail.length > 0 || weekly.length > 0 || bingedShows.length > 0 || realityShows.length > 0 || anticipatedMovies.length > 0 || platformList.length > 0 || forYou.length > 0;
+  const hasContent = hero || hotRail.length > 0 || weekly.length > 0 || bingedShows.length > 0 || anticipatedMovies.length > 0 || platformList.length > 0 || forYou.length > 0;
 
   if (!hasContent) {
     return (
@@ -594,24 +593,6 @@ function DiscoverContent({ openPanel, watchlist, history, openSections, setOpenS
         </section>
       )}
 
-      {realityShows.length > 0 && (
-        <section className="discover-section">
-          <DiscoverSectionHeader
-            kicker="Reality TV"
-            title="Worth Talking About"
-            open={openSections.reality}
-            onToggle={() => toggleSection('reality')}
-          />
-          {openSections.reality && (
-            <Rail>
-              {realityShows.map((item, i) => (
-                <RankedCard key={item.id} item={item} rank={i + 1} showRank={false} openPanel={openPanel} watchlist={watchlist} />
-              ))}
-            </Rail>
-          )}
-        </section>
-      )}
-
       {platformList.length > 0 && (
         <section className="discover-section discover-section--list">
           <DiscoverSectionHeader
@@ -712,7 +693,6 @@ export default function DiscoverView() {
     forYou: true,
     binge: true,
     anticipated: true,
-    reality: true,
     weekly: true,
     platforms: true,
   });
@@ -733,6 +713,7 @@ export default function DiscoverView() {
 
   const [newReleasesSections, setNewReleasesSections] = useState({
     recent: true, horror: true, comedy: true, action: true, scifi: true, thriller: true,
+    romance: true, drama: true, documentary: true, truecrime: true, reality: true,
   });
   const allNewReleasesSectionsOpen = Object.values(newReleasesSections).every(Boolean);
   const toggleAllNewReleasesSections = () => {
