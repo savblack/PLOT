@@ -318,6 +318,67 @@ function ProviderModal({
   );
 }
 
+// ── Name edit modal ─────────────────────────────────────────────────────
+function NameModal({ current, onSave, onClose }: { current: string; onSave: (name: string) => Promise<void>; onClose: () => void }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const insets = useSafeAreaInsets();
+  const [value,  setValue]  = useState(current);
+  const [saving, setSaving] = useState(false);
+  const [error,  setError]  = useState<string | null>(null);
+
+  const dirty = value.trim() !== current.trim();
+
+  const handleSave = async () => {
+    const next = value.trim();
+    if (!next) { setError('Enter a name.'); return; }
+    if (next.length > 50) { setError('Keep it under 50 characters.'); return; }
+    setSaving(true);
+    setError(null);
+    try {
+      await onSave(next);
+      onClose();
+    } catch (e: any) {
+      setError(e?.message || 'Could not update name. Try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+      <View style={[styles.modalContainer, { paddingTop: insets.top }]}>
+        <View style={styles.modalHeader}>
+          <Text style={styles.modalTitle}>Name</Text>
+          <TouchableOpacity onPress={onClose}><Text style={styles.modalCancel}>Cancel</Text></TouchableOpacity>
+        </View>
+        <View style={styles.modalSearchWrap}>
+          <TextInput
+            style={styles.modalSearchInput}
+            placeholder="Your name"
+            placeholderTextColor={colors.textMuted}
+            value={value}
+            onChangeText={(t) => { setValue(t); if (error) setError(null); }}
+            maxLength={50}
+            autoFocus
+          />
+          {error && <Text style={{ color: '#e5484d', fontSize: fontSize.xs, marginTop: spacing.xs }}>{error}</Text>}
+        </View>
+        <View style={[styles.modalFooter, { paddingBottom: insets.bottom + spacing.md }]}>
+          <TouchableOpacity
+            style={[styles.saveBtn, (!dirty || saving) && styles.saveBtnDisabled]}
+            onPress={handleSave}
+            disabled={!dirty || saving}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.saveBtnText}>{saving ? 'Saving…' : 'Save'}</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 // ── Feedback modal ────────────────────────────────────────────────────
 // ── Genre picker modal ─────────────────────────────────────────────────
 function GenreModal({ selected, onSave, onClose }: { selected: string[]; onSave: (names: string[]) => void; onClose: () => void }) {
@@ -476,6 +537,7 @@ export default function SettingsScreen() {
   const [showProviders,  setShowProviders]  = useState(false);
   const [showChannels,   setShowChannels]   = useState(false);
   const [showGenres,     setShowGenres]     = useState(false);
+  const [showName,       setShowName]       = useState(false);
   const [showRegion,     setShowRegion]     = useState(false);
   const [showTimezone,   setShowTimezone]   = useState(false);
   const [feedbackType,   setFeedbackType]   = useState<string | null>(null);
@@ -490,6 +552,7 @@ export default function SettingsScreen() {
   const timezone      = profile?.timezone || '';
   const regionName    = REGIONS.find(r => r.code === region)?.name ?? region;
 
+  const displayName = profile?.display_name || '';
   const username    = profile?.username || '';
   const isPublic    = !!profile?.is_public;
   const logRewatches = profile?.log_rewatches ?? true;
@@ -603,6 +666,12 @@ export default function SettingsScreen() {
     refreshProfile();
   };
 
+  const saveName = async (name: string) => {
+    const { error } = await supabase.from('profiles').update({ display_name: name }).eq('id', userId!);
+    if (error) throw error;
+    refreshProfile();
+  };
+
   const saveRegion = async (code: string) => {
     await supabase.from('profiles').update({ region: code }).eq('id', userId!);
     setTmdbRegion(code);
@@ -698,7 +767,44 @@ export default function SettingsScreen() {
         <SettingsGroup title="Account">
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><Circle cx={12} cy={7} r={4}/></Svg>}
+            label={displayName || 'Add your name'}
+            onPress={() => setShowName(true)}
+          />
+          <SettingsRow
+            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><Circle cx={12} cy={7} r={4}/></Svg>}
             label={user?.email ?? 'Account'}
+          />
+          <SettingsRow
+            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Circle cx={12} cy={12} r={4}/><Path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></Svg>}
+            label="Appearance"
+            trailing={
+              <View style={styles.themeTabs}>
+                {(['light', 'dark', 'system'] as const).map(t => (
+                  <TouchableOpacity
+                    key={t}
+                    style={[styles.themeTab, preference === t && styles.themeTabActive]}
+                    onPress={() => setPreference(t)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.themeTabText, preference === t && styles.themeTabTextActive]}>
+                      {t.charAt(0).toUpperCase() + t.slice(1)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            }
+          />
+          <SettingsRow
+            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Circle cx={12} cy={12} r={10}/><Line x1={2} y1={12} x2={22} y2={12}/><Path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></Svg>}
+            label="Region"
+            value={regionName}
+            onPress={() => setShowRegion(true)}
+          />
+          <SettingsRow
+            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Circle cx={12} cy={12} r={10}/><Polyline points="12,6 12,12 16,14"/></Svg>}
+            label="Timezone"
+            value={timezone ? fmtTz(timezone) : 'Not set'}
+            onPress={() => setShowTimezone(true)}
           />
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><Polyline points="16,17 21,12 16,7"/><Line x1={21} y1={12} x2={9} y2={12}/></Svg>}
@@ -731,26 +837,6 @@ export default function SettingsScreen() {
         {/* Viewing */}
         <SettingsGroup title="Viewing">
           <SettingsRow
-            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Circle cx={12} cy={12} r={4}/><Path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></Svg>}
-            label="Appearance"
-            trailing={
-              <View style={styles.themeTabs}>
-                {(['light', 'dark', 'system'] as const).map(t => (
-                  <TouchableOpacity
-                    key={t}
-                    style={[styles.themeTab, preference === t && styles.themeTabActive]}
-                    onPress={() => setPreference(t)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.themeTabText, preference === t && styles.themeTabTextActive]}>
-                      {t.charAt(0).toUpperCase() + t.slice(1)}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            }
-          />
-          <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><Path d="M3 3v5h5"/></Svg>}
             label="Log rewatches"
             trailing={<Switch value={logRewatches} onValueChange={toggleLogRewatches} trackColor={{ true: colors.accent }} />}
@@ -777,18 +863,6 @@ export default function SettingsScreen() {
             label="Genres"
             value={genres.length > 0 ? `${genres.length} selected` : 'None'}
             onPress={() => setShowGenres(true)}
-          />
-          <SettingsRow
-            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Circle cx={12} cy={12} r={10}/><Line x1={2} y1={12} x2={22} y2={12}/><Path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></Svg>}
-            label="Region"
-            value={regionName}
-            onPress={() => setShowRegion(true)}
-          />
-          <SettingsRow
-            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Circle cx={12} cy={12} r={10}/><Polyline points="12,6 12,12 16,14"/></Svg>}
-            label="Timezone"
-            value={timezone ? fmtTz(timezone) : 'Not set'}
-            onPress={() => setShowTimezone(true)}
           />
         </SettingsGroup>
 
@@ -923,6 +997,9 @@ export default function SettingsScreen() {
       )}
       {showGenres && (
         <GenreModal selected={genres} onSave={saveGenres} onClose={() => setShowGenres(false)} />
+      )}
+      {showName && (
+        <NameModal current={displayName} onSave={saveName} onClose={() => setShowName(false)} />
       )}
       {showRegion && (
         <RegionModal current={region} onSave={saveRegion} onClose={() => setShowRegion(false)} />

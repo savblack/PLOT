@@ -16,3 +16,8 @@ export const SHOW_APPLE_LOGIN = false;
 // from users for now while it's still being finished; all the code stays in place
 // (FeedView, FeedPost, useFeed, etc.). Flip to true to bring it back.
 export const SHOW_SOCIAL_FEED = false;
+
+// Watchlist availability alerts row in Settings. Hidden from all users for now;
+// all the code (toggle, test-send, edge function) stays in place. Flip to true
+// to bring it back.
+export const SHOW_WATCHLIST_AVAILABILITY_ALERTS = false;

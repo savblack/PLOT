@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useApp, logoUrl } from '../App.jsx';
 import { tmdb, setTmdbRegion } from '../api/tmdb.js';
 import { supabase } from '../api/supabase.js';
-import { edgeFunctionUrl } from '../api/functions.js';
+import { edgeFunctionUrl, callAuthenticatedFunction } from '../api/functions.js';
 import { useMediaSync } from '../hooks/useMediaSync.js';
 import { useTraktSync } from '../hooks/useTraktSync.js';
 import { usePremium } from '../hooks/usePremium.js';
@@ -19,7 +19,7 @@ import { downloadICS } from '../utils/ics.js';
 import { setUserTimezone } from '../utils/date.js';
 import { getButtonLikeProps } from '../utils/interactive.js';
 import { IANA_TIMEZONES } from '../utils/timezones.js';
-import { SHOW_MEDIA_SYNC_INTEGRATIONS } from '../launchFeatures.js';
+import { SHOW_MEDIA_SYNC_INTEGRATIONS, SHOW_WATCHLIST_AVAILABILITY_ALERTS } from '../launchFeatures.js';
 import SheetHeader from './SheetHeader.jsx';
 import ConfirmModal from './ConfirmModal.jsx';
 import PlotLoader from './PlotLoader.jsx';
@@ -1079,6 +1079,8 @@ export default function SettingsView() {
   const [showGuideChannels,   setShowGuideChannels]   = useState(false);
   const [savingProviders,     setSavingProviders]     = useState(false);
   const [savingAvailabilityAlerts, setSavingAvailabilityAlerts] = useState(false);
+  const [testingAvailabilityAlert, setTestingAvailabilityAlert] = useState(false);
+  const [testAlertNotice,     setTestAlertNotice]     = useState(null); // null|'sent'|'error'
   const [savingGuideChannels, setSavingGuideChannels] = useState(false);
   const [providerDraft,       setProviderDraft]       = useState(null);
   const [guideChannelDraft,   setGuideChannelDraft]   = useState(null);
@@ -1098,6 +1100,9 @@ export default function SettingsView() {
   const [localCalToken,       setLocalCalToken]       = useState(null);
   const [usernameDraft,       setUsernameDraft]       = useState(null);
   const [usernameStatus,      setUsernameStatus]      = useState(null); // null|checking|available|taken|invalid|saving|saved|error
+  const [nameDraft,           setNameDraft]           = useState(null); // null = display, string = editing
+  const [savingName,          setSavingName]          = useState(false);
+  const [nameError,           setNameError]           = useState(null);
   const [emailDraft,          setEmailDraft]          = useState(null); // null = display, string = editing
   const [emailSaving,         setEmailSaving]         = useState(false);
   const [emailError,          setEmailError]          = useState(null); // inline error shown while editing
@@ -1293,6 +1298,26 @@ export default function SettingsView() {
       return;
     }
     refreshProfile();
+  };
+
+  // Manual, on-demand send — mirrors the request-function shape of Plex/Trakt
+  // sync (an authenticated Edge Function call with its own loading + error
+  // state) so someone can confirm the alert email actually arrives without
+  // waiting for a real match or the daily cron run.
+  const sendTestAvailabilityAlert = async () => {
+    if (testingAvailabilityAlert) return;
+    setActionError(null);
+    setTestAlertNotice(null);
+    setTestingAvailabilityAlert(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      await callAuthenticatedFunction('watchlist-availability-alerts', session, {});
+      setTestAlertNotice('sent');
+    } catch {
+      setTestAlertNotice('error');
+    } finally {
+      setTestingAvailabilityAlert(false);
+    }
   };
 
   const saveRegion = async (code) => {
@@ -1508,6 +1533,28 @@ export default function SettingsView() {
     refreshProfile();
   };
 
+  // ── Name change ───────────────────────────────────────────────────────────
+  const currentName = profile?.display_name || '';
+  const nameValue    = nameDraft ?? '';
+  const nameDirty    = nameDraft !== null && nameValue.trim() !== currentName.trim();
+
+  const startEditName  = () => { setNameError(null); setNameDraft(currentName); };
+  const cancelEditName = () => { setNameDraft(null); setNameError(null); };
+
+  const handleSaveName = async () => {
+    const next = nameValue.trim();
+    if (next === currentName.trim()) { cancelEditName(); return; }
+    if (!next) { setNameError('Enter a name.'); return; }
+    if (next.length > 50) { setNameError('Keep it under 50 characters.'); return; }
+    setSavingName(true);
+    setNameError(null);
+    const { error } = await supabase.from('profiles').update({ display_name: next }).eq('id', user.id);
+    setSavingName(false);
+    if (error) { setNameError(error.message || 'Could not update name. Try again.'); return; }
+    setNameDraft(null);
+    refreshProfile();
+  };
+
   // ── Email change ──────────────────────────────────────────────────────────
   // Supabase requires the new address to be confirmed via a link before the
   // change takes effect, so the row shows a "check your inbox" note rather than
@@ -1609,6 +1656,60 @@ export default function SettingsView() {
       {/* Account */}
       <div className="settings-group" style={{ marginTop: '0.75rem' }}>
         <div className="settings-group-title">Account</div>
+        <div className="settings-row" style={{ cursor: 'default', alignItems: nameDraft === null ? 'center' : 'flex-start' }}>
+          <div className="settings-row-left" style={{ flex: 1, minWidth: 0 }}>
+            <div className="settings-row-icon">
+              <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </div>
+            {nameDraft === null ? (
+              <div style={{ minWidth: 0 }}>
+                <span className="settings-row-label" style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {currentName || 'Add your name'}
+                </span>
+              </div>
+            ) : (
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="settings-row-label">Name</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.35rem' }}>
+                  <input
+                    type="text"
+                    value={nameValue}
+                    maxLength={50}
+                    autoFocus
+                    aria-label="Name"
+                    onChange={(e) => { setNameDraft(e.target.value); if (nameError) setNameError(null); }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && nameDirty && !savingName) handleSaveName();
+                      if (e.key === 'Escape') cancelEditName();
+                    }}
+                    style={{
+                      flex: 1, minWidth: 0, padding: '0.45rem 0.6rem',
+                      borderRadius: 'var(--radius-sm, 8px)', border: '1px solid var(--border)',
+                      background: 'var(--surface)', color: 'var(--text-primary)', fontSize: '0.9rem',
+                    }}
+                  />
+                </div>
+                <div style={{
+                  fontSize: '0.72rem', marginTop: '0.3rem', minHeight: '1rem',
+                  color: nameError ? 'var(--danger)' : 'var(--text-muted)',
+                }}>
+                  {nameError || (savingName ? 'Saving…' : '')}
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
+            {nameDraft === null ? (
+              <SettingsTextAction onClick={startEditName}>Edit</SettingsTextAction>
+            ) : (
+              <>
+                <SettingsTextAction onClick={cancelEditName}>Cancel</SettingsTextAction>
+                <SettingsTextAction onClick={handleSaveName} disabled={savingName || !nameDirty}>Save</SettingsTextAction>
+              </>
+            )}
+          </div>
+        </div>
+
         <div className="settings-row" style={{ cursor: 'default', alignItems: emailDraft === null ? 'center' : 'flex-start' }}>
           <div className="settings-row-left" style={{ flex: 1, minWidth: 0 }}>
             <div className="settings-row-icon">
@@ -1663,6 +1764,66 @@ export default function SettingsView() {
                 <SettingsTextAction onClick={handleSaveEmail} disabled={emailSaving || !emailDirty}>Save</SettingsTextAction>
               </>
             )}
+          </div>
+        </div>
+
+        <div
+          className="settings-row interactive-surface"
+          onClick={() => { setActionError(null); setShowRegion(true); }}
+          {...getButtonLikeProps({ onPress: () => { setActionError(null); setShowRegion(true); }, label: 'Open region settings' })}
+        >
+          <div className="settings-row-left">
+            <div className="settings-row-icon">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            </div>
+            <span className="settings-row-label">Region</span>
+          </div>
+          <div className="settings-row-value">
+            <span>{REGIONS.find(r => r.code === region)?.name ?? region}</span>
+            <Chevron />
+          </div>
+        </div>
+
+        <div
+          className="settings-row interactive-surface"
+          onClick={() => setShowTimezone(true)}
+          {...getButtonLikeProps({ onPress: () => setShowTimezone(true), label: 'Open timezone settings' })}
+        >
+          <div className="settings-row-left">
+            <div className="settings-row-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+            </div>
+            <span className="settings-row-label">Timezone</span>
+          </div>
+          <div className="settings-row-value">
+            <span style={{ fontSize: '0.78rem', maxWidth: 160, textAlign: 'right', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {timezone ? fmtTz(timezone) : 'Not set'}
+            </span>
+            <Chevron />
+          </div>
+        </div>
+
+        {/* Theme */}
+        <div className="settings-row" style={{ cursor: 'default' }}>
+          <div className="settings-row-left">
+            <div className="settings-row-icon">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+            </div>
+            <span className="settings-row-label">Appearance</span>
+          </div>
+          <div className="settings-theme-tabs" role="tablist" aria-label="Appearance options">
+            {['light','dark','system'].map(t => (
+              <button
+                key={t}
+                type="button"
+                role="tab"
+                aria-selected={theme === t}
+                className={`settings-theme-tab${theme === t ? ' is-active' : ''}`}
+                onClick={() => setTheme(t)}
+              >
+                {t.charAt(0).toUpperCase() + t.slice(1)}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -1907,23 +2068,6 @@ export default function SettingsView() {
           </div>
         </div>
 
-        <div className="settings-row" style={{ cursor: 'default' }}>
-          <div className="settings-row-left">
-            <div className="settings-row-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-            </div>
-            <div>
-              <div className="settings-row-label">Watchlist availability alerts</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.12rem' }}>Email me when a saved title arrives on a streaming platform or channel I've selected</div>
-            </div>
-          </div>
-          <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
-            <SettingsTextAction onClick={toggleAvailabilityAlerts} disabled={savingAvailabilityAlerts}>
-              {savingAvailabilityAlerts ? 'Saving…' : availabilityAlertsEnabled ? 'Turn off' : 'Turn on'}
-            </SettingsTextAction>
-          </div>
-        </div>
-
         {/* Rewatches */}
         <div className="settings-row" style={{ cursor: 'default' }}>
           <div className="settings-row-left">
@@ -1970,65 +2114,33 @@ export default function SettingsView() {
           </div>
         </div>
 
-        <div
-          className="settings-row interactive-surface"
-          onClick={() => { setActionError(null); setShowRegion(true); }}
-          {...getButtonLikeProps({ onPress: () => { setActionError(null); setShowRegion(true); }, label: 'Open region settings' })}
-        >
-          <div className="settings-row-left">
-            <div className="settings-row-icon">
-              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        {SHOW_WATCHLIST_AVAILABILITY_ALERTS && (
+          <div className="settings-row" style={{ cursor: 'default' }}>
+            <div className="settings-row-left">
+              <div className="settings-row-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              </div>
+              <div>
+                <div className="settings-row-label">Watchlist availability alerts</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.12rem' }}>
+                  {testAlertNotice === 'sent'
+                    ? "Sent — check your inbox."
+                    : testAlertNotice === 'error'
+                    ? 'Could not send a test email. Try again.'
+                    : "Email me when a saved title arrives on a streaming platform or channel I've selected"}
+                </div>
+              </div>
             </div>
-            <span className="settings-row-label">Region</span>
-          </div>
-          <div className="settings-row-value">
-            <span>{REGIONS.find(r => r.code === region)?.name ?? region}</span>
-            <Chevron />
-          </div>
-        </div>
-
-        <div
-          className="settings-row interactive-surface"
-          onClick={() => setShowTimezone(true)}
-          {...getButtonLikeProps({ onPress: () => setShowTimezone(true), label: 'Open timezone settings' })}
-        >
-          <div className="settings-row-left">
-            <div className="settings-row-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+            <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
+              <SettingsTextAction onClick={sendTestAvailabilityAlert} disabled={testingAvailabilityAlert}>
+                {testingAvailabilityAlert ? 'Sending…' : 'Send test'}
+              </SettingsTextAction>
+              <SettingsTextAction onClick={toggleAvailabilityAlerts} disabled={savingAvailabilityAlerts}>
+                {savingAvailabilityAlerts ? 'Saving…' : availabilityAlertsEnabled ? 'Turn off' : 'Turn on'}
+              </SettingsTextAction>
             </div>
-            <span className="settings-row-label">Timezone</span>
           </div>
-          <div className="settings-row-value">
-            <span style={{ fontSize: '0.78rem', maxWidth: 160, textAlign: 'right', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {timezone ? fmtTz(timezone) : 'Not set'}
-            </span>
-            <Chevron />
-          </div>
-        </div>
-
-        {/* Theme */}
-        <div className="settings-row" style={{ cursor: 'default' }}>
-          <div className="settings-row-left">
-            <div className="settings-row-icon">
-              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-            </div>
-            <span className="settings-row-label">Appearance</span>
-          </div>
-          <div className="settings-theme-tabs" role="tablist" aria-label="Appearance options">
-            {['light','dark','system'].map(t => (
-              <button
-                key={t}
-                type="button"
-                role="tab"
-                aria-selected={theme === t}
-                className={`settings-theme-tab${theme === t ? ' is-active' : ''}`}
-                onClick={() => setTheme(t)}
-              >
-                {t.charAt(0).toUpperCase() + t.slice(1)}
-              </button>
-            ))}
-          </div>
-        </div>
+        )}
       </div>
 
       {/* PLOT Premium — only shown to existing subscribers; checkout is offline for now */}
