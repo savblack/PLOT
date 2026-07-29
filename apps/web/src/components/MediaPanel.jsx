@@ -18,6 +18,7 @@ import { dedupedActingCredits, shortBiography } from '../utils/talentCredits.js'
 import { canCreateCustomList, FREE_CUSTOM_LIST_CAP } from '@plot/core/premium.js';
 import { buildWatchLink } from '@plot/core/watchLinks.js';
 import { fetchVerifiedAvailability, formatOfferPrice, offersFromTmdb } from '@plot/core/availability.js';
+import { fetchCriticScore, pickAudienceQuote, getConsensusLine } from '@plot/core/reviews.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import SheetHeader from './SheetHeader.jsx';
 import PlotLoader from './PlotLoader.jsx';
@@ -879,6 +880,8 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
   const [whereToWatch, setWhereToWatch] = useState({ streaming: [], rentBuy: [], inCinemas: false, justwatchLink: null, region: null });
   const [loading,      setLoading]      = useState(true);
   const [detailsError, setDetailsError] = useState(false);
+  const [criticScore,    setCriticScore]    = useState(null);
+  const [audienceQuote,  setAudienceQuote]  = useState(null);
 
   const [showListSheet,     setShowListSheet]     = useState(false);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
@@ -997,6 +1000,8 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
     if (!itemId) return;
     setLoading(true);
     setDetailsError(false);
+    setCriticScore(null);
+    setAudienceQuote(null);
     const region = getTmdbRegion();
     const [det, prov, verified] = await Promise.all([
       isMovie ? tmdb.getMovieDetails(itemId) : tmdb.getTVDetails(itemId),
@@ -1038,6 +1043,12 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
         justwatchLink: verified?.title_url || regionData.link || null,
         region,
       });
+      // Critic score + audience quote depend on the imdb_id this same call just
+      // returned, so they can't join the Promise.all above. Fire-and-forget
+      // rather than block the panel on a third-party lookup.
+      const imdbId = det.external_ids?.imdb_id;
+      if (imdbId) fetchCriticScore(imdbId).then(setCriticScore);
+      tmdb.getReviews(itemType, itemId).then((reviews) => setAudienceQuote(pickAudienceQuote(reviews)));
     }
     setLoading(false);
   }, [itemId, itemType, isMovie]);
@@ -1051,6 +1062,9 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
   const date    = details?.release_date || details?.first_air_date;
   const chip    = date ? countdownChip(date) : null;
   const cast = (details?.credits?.cast || details?.aggregate_credits?.cast || []).slice(0, 12);
+
+  const audienceScore = Number.isFinite(details?.vote_average) ? Math.round(details.vote_average * 10) : null;
+  const consensusLine = criticScore ? getConsensusLine(criticScore.criticScore, audienceScore) : null;
 
   const runStatusAction = useCallback(async (actionLabel, action) => {
     if (statusActionPending) return;
@@ -1217,9 +1231,39 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
               <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>{genres}</div>
             )}
 
+            {/* Critic / audience scores */}
+            {(criticScore || Number.isFinite(audienceScore)) && (
+              <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
+                {criticScore && (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.2rem 0.55rem 0.2rem 0.45rem', borderRadius: 'var(--radius-pill)', border: '1px solid var(--border-strong)', fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                    <span aria-hidden="true">◆</span> {criticScore.criticScore} Critics
+                  </span>
+                )}
+                {Number.isFinite(audienceScore) && (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.2rem 0.55rem 0.2rem 0.45rem', borderRadius: 'var(--radius-pill)', border: '1px solid var(--border-strong)', fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                    <span aria-hidden="true" style={{ color: 'var(--accent)' }}>●</span> {audienceScore} Audience
+                  </span>
+                )}
+              </div>
+            )}
+            {consensusLine && (
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>{consensusLine}</div>
+            )}
+
             {/* Overview */}
             {details?.overview && (
               <p className="panel-overview">{details.overview}</p>
+            )}
+
+            {audienceQuote && (
+              <blockquote style={{ borderLeft: '2px solid var(--accent)', margin: '0 0 0.75rem', padding: '0.4rem 0 0.4rem 0.75rem' }}>
+                <p style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '1rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
+                  &ldquo;{audienceQuote.text}&rdquo;
+                </p>
+                <cite style={{ display: 'block', fontStyle: 'normal', fontSize: '0.68rem', fontWeight: 600, color: 'var(--text-muted)', marginTop: '0.25rem', letterSpacing: '0.02em' }}>
+                  From a TMDB audience review{audienceQuote.author ? `, ${audienceQuote.author}` : ''}
+                </cite>
+              </blockquote>
             )}
 
             {cast.length > 0 && (

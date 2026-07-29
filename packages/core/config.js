@@ -17,6 +17,7 @@
  * @property {string} supabaseAnonKey
  * @property {string} tmdbProxyUrl
  * @property {string} watchAvailabilityUrl Server-side JustWatch partner availability resolver.
+ * @property {string} criticScoreUrl Server-side OMDb-backed critic score resolver.
  * @property {string} traktClientId
  * @property {boolean} isDev
  * @property {Record<string, any>} [supabaseClientOptions] Optional createClient()
@@ -52,6 +53,7 @@ const defaults = {
   supabaseAnonKey: '',
   tmdbProxyUrl: '',
   watchAvailabilityUrl: '',
+  criticScoreUrl: '',
   traktClientId: '',
   isDev: false,
   supabaseClientOptions: undefined,

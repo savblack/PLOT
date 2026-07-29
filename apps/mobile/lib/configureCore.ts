@@ -9,6 +9,7 @@ configure({
   supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL ?? '',
   supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '',
   tmdbProxyUrl: process.env.EXPO_PUBLIC_TMDB_PROXY_URL ?? '',
+  criticScoreUrl: `${process.env.EXPO_PUBLIC_SUPABASE_URL ?? ''}/functions/v1/critic-score`,
   traktClientId: process.env.EXPO_PUBLIC_TRAKT_CLIENT_ID ?? '',
   isDev: typeof __DEV__ !== 'undefined' ? __DEV__ : false,
   // The storage seam: mobile persists the Supabase session encrypted, key held

@@ -200,11 +200,11 @@ export const tmdb = {
 
   /* ── Details ── */
   getMovieDetails: async (id) => {
-    const movie = await fetchFromTMDB(`/movie/${id}`, { append_to_response: 'watch/providers,recommendations,videos,credits,release_dates' });
+    const movie = await fetchFromTMDB(`/movie/${id}`, { append_to_response: 'watch/providers,recommendations,videos,credits,release_dates,external_ids' });
     return withRegionalMovieReleaseDate(movie);
   },
   getTVDetails: (id) =>
-    fetchFromTMDB(`/tv/${id}`, { append_to_response: 'watch/providers,recommendations,videos,aggregate_credits' }),
+    fetchFromTMDB(`/tv/${id}`, { append_to_response: 'watch/providers,recommendations,videos,aggregate_credits,external_ids' }),
 
   /**
    * Resolve a movie/TV detail record, surfacing transient vs. terminal failure
@@ -219,13 +219,16 @@ export const tmdb = {
     const path = mediaType === 'tv' ? `/tv/${id}` : `/movie/${id}`;
     const result = await fetchFromTMDBResolved(path, {
       append_to_response: mediaType === 'tv'
-        ? 'watch/providers,recommendations,videos,aggregate_credits'
-        : 'watch/providers,recommendations,videos,credits,release_dates',
+        ? 'watch/providers,recommendations,videos,aggregate_credits,external_ids'
+        : 'watch/providers,recommendations,videos,credits,release_dates,external_ids',
     });
     return result.ok && mediaType !== 'tv'
       ? { ...result, data: withRegionalMovieReleaseDate(result.data) }
       : result;
   },
+
+  /* ── Reviews (audience-submitted, via TMDB) ── */
+  getReviews: (mediaType, id) => fetchFromTMDB(`/${mediaType}/${id}/reviews`),
 
   /**
    * Lightweight title lookup — poster, name, dates — without the
