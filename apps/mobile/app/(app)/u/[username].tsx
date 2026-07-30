@@ -17,6 +17,7 @@ import { useTheme } from '../../../contexts/ThemeContext';
 import { useMediaPanel } from '../../../contexts/MediaPanelContext';
 import { useAppData } from '../../../contexts/AppDataContext';
 import { usePublicProfile } from '../../../hooks/usePublicProfile';
+import { favoriteWords } from '../../../lib/spelling';
 import { useFollows } from '../../../hooks/useFollows';
 import { Avatar, PremiumBadge } from '../../../components/Avatar';
 import { UserList, SocialUser } from '../../../components/UserList';
@@ -44,7 +45,7 @@ export default function ProfileScreen() {
   const router = useRouter();
   const { open: openPanel } = useMediaPanel();
   const { username = '' } = useLocalSearchParams<{ username: string }>();
-  const { userId: viewerId } = useAppData();
+  const { userId: viewerId, profile: viewerProfile } = useAppData();
 
   const { loading, profile, locked, watchCount, avgRating, recent, topMovies, topTv, favourites } =
     usePublicProfile(username, viewerId);
@@ -54,6 +55,7 @@ export default function ProfileScreen() {
   const [followList, setFollowList] = useState<'followers' | 'following' | null>(null);
 
   const isOwn = !!viewerId && !!profile?.id && viewerId === profile.id;
+  const fw = favoriteWords(isOwn ? viewerProfile?.region : undefined);
   const found = !loading && !!profile;
   const isPrivate = !!profile && !profile.is_public;
   const name = profile ? (profile.display_name || profile.username) : '';
@@ -185,7 +187,7 @@ export default function ProfileScreen() {
               <Section title="Top 10 TV" colors={colors}><PosterGrid items={topTv} ranked /></Section>
             )}
             {favourites.length > 0 && (
-              <Section title="Favorites" colors={colors}><PosterGrid items={favourites} /></Section>
+              <Section title={fw.plural} colors={colors}><PosterGrid items={favourites} /></Section>
             )}
 
             {noPublicContent && (

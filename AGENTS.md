@@ -76,6 +76,9 @@ CI on Node 22.
 - **The brand is always written `PLOT`** (all caps) in any prose, copy, or comments —
   never "Plot" or "plot". The only exceptions are code identifiers, tags, and URLs
   (e.g. the `@plot/core` package, the `plot` deploy project, `theplot.tv`).
+- **Never use em dashes in user-facing copy.** Use a period, colon, comma, or parentheses
+  instead. This applies to copy shown to users (UI strings, marketing, emails, legal
+  pages) — code comments are unaffected.
 - Match the surrounding file — no reformatting drive-bys. No Prettier config; don't add one.
 - Web/core: components `PascalCase.jsx` (CSS co-located), hooks `useX.js` camelCase, core
   modules camelCase `.js`. Semicolons in source. Mobile route files follow expo-router naming.
@@ -84,6 +87,26 @@ CI on Node 22.
   `@typedef`/`@param` blocks accurate when you change a core signature.
 - When logic is shared, put it in `@plot/core` and re-export from the web hook
   (e.g. `apps/web/src/hooks/useWatchlist.js` is just `export * from '@plot/core/useWatchlist.js'`).
+
+## Region-aware spelling (US/UK)
+
+PLOT spells words that differ between US and UK English (favorite/favourite, color/colour,
+organize/organise, etc.) according to the viewer's own `profile.region`, via
+`apps/web/src/utils/spelling.js` (mirrored in `apps/mobile/lib/spelling.ts`). Whenever new
+copy contains one of these words:
+
+- Check whether it already has a block in `spelling.js`/`spelling.ts`. If so, call the
+  existing accessor (`favoriteWords(region)`, `colorWords(region)`, etc.) — never hardcode
+  the literal string.
+- If not, add a new block to **both** files (web and mobile) — `[US, UK]` pairs for each
+  inflected form the copy needs (noun, plural, verb, -ing, -ed, …) — then call it. Don't
+  hardcode the string and move on; the whole point is that the next word is a lookup, not
+  a fresh hardcode.
+- Region comes from the *viewer's own* profile (`useApp()` on web / `useAppData()` on
+  mobile), not the profile being looked at — e.g. on someone else's public profile, pass
+  `undefined` (US default) rather than that profile owner's region.
+- Exception: Terms of Service and Privacy Policy copy is fixed British English regardless
+  of viewer region — legal text stays one canonical wording, not personalized per reader.
 
 ## Architecture — seams that matter
 
