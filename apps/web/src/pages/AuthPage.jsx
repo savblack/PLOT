@@ -65,8 +65,19 @@ export default function AuthPage({ initialMode = 'signup' }) {
   const [resendStatus, setResendStatus] = useState(null); // null | 'sending' | 'sent' | 'error'
   const [captchaToken, setCaptchaToken] = useState(null);
   const [captchaNonce, setCaptchaNonce] = useState(0); // bump to force a fresh Turnstile token
+  const [formStarted, setFormStarted] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Fires once per visit, on the first keystroke in either field — never the
+  // value itself. Distinguishes "opened the form but never engaged" from
+  // "engaged but abandoned before submitting."
+  const markFormStarted = () => {
+    if (mode === 'signup' && !formStarted) {
+      setFormStarted(true);
+      track(EVENTS.SIGNUP_FORM_STARTED);
+    }
+  };
 
   // A pricing visitor must not lose their selected billing period while they
   // create an account, confirm their email, and complete onboarding.
@@ -134,6 +145,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
         navigate(plan ? `/pricing?billing=${plan}` : '/app');
       }
     } else {
+      track(EVENTS.SIGNUP_SUBMIT_CLICKED);
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -194,6 +206,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
     setSuccess(false);
     setMagicSent(false);
     setResendStatus(null);
+    setFormStarted(false);
   };
 
   const handleResend = async () => {
@@ -337,7 +350,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
                     type="email"
                     placeholder="you@example.com"
                     value={email}
-                    onChange={e => setEmail(e.target.value)}
+                    onChange={e => { setEmail(e.target.value); markFormStarted(); }}
                     required
                     autoFocus
                     autoComplete="email"
@@ -353,7 +366,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
                         type={showPassword ? 'text' : 'password'}
                         placeholder={mode === 'signup' ? 'At least 6 characters' : 'Your password'}
                         value={password}
-                        onChange={e => setPassword(e.target.value)}
+                        onChange={e => { setPassword(e.target.value); markFormStarted(); }}
                         required
                         minLength={6}
                         autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}

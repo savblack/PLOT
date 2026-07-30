@@ -35,6 +35,8 @@ export function _setPostHogClient(client) {
 }
 export const EVENTS = Object.freeze({
   SIGNUP_FORM_VIEWED: 'signup_form_viewed',
+  SIGNUP_FORM_STARTED: 'signup_form_started',
+  SIGNUP_SUBMIT_CLICKED: 'signup_submit_clicked',
   SIGNUP_SUBMIT_FAILED: 'signup_submit_failed',
   SIGNUP_CAPTCHA_BLOCKED: 'signup_captcha_blocked',
   USER_SIGNED_UP: 'user_signed_up',
