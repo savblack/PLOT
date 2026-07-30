@@ -1855,7 +1855,7 @@ export default function SettingsView() {
 
       {/* Public profile */}
       <div className="settings-group">
-        <div className="settings-group-title">Public profile</div>
+        <div className="settings-group-title">Profile</div>
         <AvatarSetting
           user={user}
           profile={profile}
