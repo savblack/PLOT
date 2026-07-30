@@ -23,6 +23,17 @@ function friendlyError(msg) {
   return msg;
 }
 
+// Short, stable slugs for signup_submit_failed — group failures in PostHog
+// without leaking the raw (occasionally wordy) Supabase error message.
+function errorReason(msg) {
+  if (!msg) return 'unknown';
+  if (msg.includes('User already registered'))      return 'already_registered';
+  if (msg.includes('Password should be at least'))  return 'weak_password';
+  if (msg.includes('Unable to validate email'))      return 'invalid_email';
+  if (msg.includes('rate limit') || msg.includes('too many')) return 'rate_limited';
+  return 'unknown';
+}
+
 function GoogleIcon() {
   return (
     <svg viewBox="0 0 18 18" aria-hidden="true">
@@ -70,13 +81,26 @@ export default function AuthPage({ initialMode = 'signup' }) {
   const captchaReady = !TURNSTILE_SITE_KEY || !!captchaToken;
 
   // Auto-redirect if already logged in
+  const [hasSession, setHasSession] = useState(null); // null = still checking
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) return;
-      const plan = getPremiumCheckoutIntent();
+      if (session) {
+        const plan = getPremiumCheckoutIntent();
         navigate(plan ? `/pricing?billing=${plan}` : '/app', { replace: true });
+      } else {
+        setHasSession(false);
+      }
     });
   }, [navigate]);
+
+  // Localizes drop-off between the marketing-site signup_click and
+  // user_signed_up: without this, PostHog can't tell "never reached the
+  // in-app form" from "reached it but didn't finish." Gated on hasSession
+  // === false so an already-logged-in visitor auto-redirecting away doesn't
+  // count as having viewed the form.
+  useEffect(() => {
+    if (mode === 'signup' && hasSession === false) track(EVENTS.SIGNUP_FORM_VIEWED);
+  }, [mode, hasSession]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -115,7 +139,12 @@ export default function AuthPage({ initialMode = 'signup' }) {
         password,
         options: { emailRedirectTo: getAuthCallbackUrl(), captchaToken },
       });
-      if (error) { setError(friendlyError(error.message)); setLoading(false); resetCaptcha(); }
+      if (error) {
+        setError(friendlyError(error.message));
+        setLoading(false);
+        resetCaptcha();
+        track(EVENTS.SIGNUP_SUBMIT_FAILED, { reason: errorReason(error.message) });
+      }
       else {
         // Identify on signup (not just login) so the anonymous pre-signup
         // session — carrying first-touch attribution — stitches to this user.
@@ -352,6 +381,9 @@ export default function AuthPage({ initialMode = 'signup' }) {
                   siteKey={TURNSTILE_SITE_KEY}
                   onToken={setCaptchaToken}
                   resetSignal={captchaNonce}
+                  onBlocked={mode === 'signup'
+                    ? (attempt) => track(EVENTS.SIGNUP_CAPTCHA_BLOCKED, { attempt })
+                    : undefined}
                 />
 
                 <button
