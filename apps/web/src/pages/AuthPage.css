@@ -258,6 +258,27 @@
   border: 1px solid color-mix(in srgb, #f59e0b 30%, var(--border));
 }
 
+.auth-turnstile-error {
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--text-muted);
+  text-align: center;
+  margin: -0.4rem 0 0;
+}
+
+.auth-turnstile-error button {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  font-size: inherit;
+  color: var(--text-secondary);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.auth-turnstile-error button:hover { color: var(--text-primary); }
+
 /* CTA button */
 .auth-cta {
   width: 100%;

@@ -67,7 +67,7 @@ posthog.init('phc_uS3JEJC7s6T2WdsQToCZA3eRjLNakgc3EF3YPbza9Q6U', {
     if (!a) return;
     var path;
     try { path = new URL(a.href).pathname; } catch { return; }
-    var action = path.indexOf('/signup') === 0 ? 'signup_click'
+    var action = path.indexOf('/signup') === 0 ? 'signup_cta_clicked'
                : path.indexOf('/login') === 0 ? 'login_click'
                : null;
     if (!action) return;
