@@ -475,14 +475,14 @@ export default function MyListsScreen() {
                 open={favsOpen}
                 onToggle={() => setFavsOpen(o => !o)}
                 onAdd={() => setShowAddFav(true)}
-                addLabel="Add to favourites"
+                addLabel={`Add to ${fw.pluralLower}`}
               />
             )}
             {(!isAll || favsOpen) && (
               favList.length === 0 ? (
                 <View style={styles.empty}>
                   <Text style={styles.emptyBody}>{favorites.favorites.length === 0 ? 'Heart any title to add it here.' : 'No matching titles'}</Text>
-                  <TouchableOpacity style={styles.emptyAddBtn} onPress={() => setShowAddFav(true)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Add to favourites" accessibilityRole="button">
+                  <TouchableOpacity style={styles.emptyAddBtn} onPress={() => setShowAddFav(true)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel={`Add to ${fw.pluralLower}`} accessibilityRole="button">
                     <Text style={{ color: colors.textMuted, fontSize: 20 }}>+</Text>
                   </TouchableOpacity>
                 </View>
@@ -490,7 +490,7 @@ export default function MyListsScreen() {
                 <PosterGrid
                   horizontal
                   items={favList}
-                  removeLabel="Remove favourite"
+                  removeLabel={`Remove ${fw.nounLower}`}
                   onRemove={(tmdbId) => {
                     const item = favorites.favorites.find((f: any) => f.tmdb_id === tmdbId);
                     if (item) favorites.toggleFavorite({ ...item, id: undefined });

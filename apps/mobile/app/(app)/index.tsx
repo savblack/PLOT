@@ -22,6 +22,7 @@ import { excludeKidsContent } from '@plot/core/tmdb.js';
 import { posterUrl, backdropUrl, Palette, fontFamily, fontSize, spacing, radii, iconButtonSize } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
+import { favoriteWords } from '../../lib/spelling';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -79,6 +80,8 @@ function PosterCard({ item, onPress, saved, onSave, isFav, onFavorite }: {
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { profile } = useAppData();
+  const fw       = favoriteWords(profile?.region);
   const title    = item.title || item.name || '';
   const img      = posterUrl(item.poster_path, 'w185');
   const type     = item.media_type === 'tv' ? 'TV' : 'Movie';
@@ -99,7 +102,7 @@ function PosterCard({ item, onPress, saved, onSave, isFav, onFavorite }: {
           style={[styles.saveBtn, styles.saveBtnLeft]}
           onPress={onFavorite}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityLabel={isFav ? 'Remove favourite' : 'Add favourite'}
+          accessibilityLabel={isFav ? `Remove ${fw.nounLower}` : `Add ${fw.nounLower}`}
           accessibilityRole="button"
         >
           <Text style={{ color: isFav ? colors.accent : '#fff', fontSize: 13 }}>
@@ -352,6 +355,8 @@ function PosterCardRanked({ item, rank, saved, onSave, isFav, onFavorite }: {
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { profile } = useAppData();
+  const fw        = favoriteWords(profile?.region);
   const title     = item.title || item.name || '';
   const img       = posterUrl(item.poster_path, 'w185');
   const type      = item.media_type === 'tv' ? 'TV' : 'Movie';
@@ -374,7 +379,7 @@ function PosterCardRanked({ item, rank, saved, onSave, isFav, onFavorite }: {
           style={[styles.saveBtn, styles.saveBtnLeft]}
           onPress={onFavorite}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityLabel={isFav ? 'Remove favourite' : 'Add favourite'}
+          accessibilityLabel={isFav ? `Remove ${fw.nounLower}` : `Add ${fw.nounLower}`}
           accessibilityRole="button"
         >
           <Text style={{ color: isFav ? colors.accent : '#fff', fontSize: 13 }}>

@@ -39,8 +39,8 @@ export default function TermsPage() {
         <p>The Service may integrate with or link to third-party platforms and services. We have no control over, and assume no responsibility for, the content, privacy practices, or terms of any third-party service. Your dealings with third parties are solely between you and them.</p>
 
         <h2>5. User Content</h2>
-        <p>You retain ownership of content you create on PLOT. By submitting content, you grant SUSUMU HOUSE a perpetual, worldwide, non-exclusive, royalty-free, sublicensable license to use, store, display, reproduce, and distribute that content for the purpose of operating and improving the Service.</p>
-        <p>You are solely responsible for all content you submit and represent that you have all rights necessary to grant the above license. You agree to indemnify and hold harmless SUSUMU HOUSE from any claims arising from your content. We are not responsible for and expressly disclaim liability for any user-generated content on the Service.</p>
+        <p>You retain ownership of content you create on PLOT. By submitting content, you grant SUSUMU HOUSE a perpetual, worldwide, non-exclusive, royalty-free, sublicensable licence to use, store, display, reproduce, and distribute that content for the purpose of operating and improving the Service.</p>
+        <p>You are solely responsible for all content you submit and represent that you have all rights necessary to grant the above licence. You agree to indemnify and hold harmless SUSUMU HOUSE from any claims arising from your content. We are not responsible for and expressly disclaim liability for any user-generated content on the Service.</p>
 
         <h2>6. No Warranties: Service Provided "As Is"</h2>
         <p><strong>THE SERVICE IS PROVIDED STRICTLY ON AN "AS IS" AND "AS AVAILABLE" BASIS WITHOUT WARRANTY OF ANY KIND, WHETHER EXPRESS, IMPLIED, STATUTORY, OR OTHERWISE. SUSUMU HOUSE EXPRESSLY DISCLAIMS ALL WARRANTIES, INCLUDING BUT NOT LIMITED TO IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND NON-INFRINGEMENT.</strong></p>
