@@ -18,6 +18,9 @@ import { buildFeedbackAttachmentPath } from '../utils/feedback.js';
 import { downloadICS } from '../utils/ics.js';
 import { setUserTimezone } from '../utils/date.js';
 import { getButtonLikeProps } from '../utils/interactive.js';
+import { getAuthCallbackUrl } from '../utils/redirects.js';
+import { COMMON } from '../copy/common.js';
+import { SETTINGS_VIEW } from '../copy/settingsView.js';
 import { IANA_TIMEZONES } from '../utils/timezones.js';
 import { SHOW_MEDIA_SYNC_INTEGRATIONS, SHOW_WATCHLIST_AVAILABILITY_ALERTS } from '../launchFeatures.js';
 import SheetHeader from './SheetHeader.jsx';
@@ -102,9 +105,9 @@ function RegionPicker({ current, onSave, onClose }) {
             onClick={handleSave}
             disabled={saving || chosen === current}
             aria-busy={saving}
-            aria-label={saving ? 'Saving region' : 'Save region'}
+            aria-label={saving ? SETTINGS_VIEW.region.savingRegion : SETTINGS_VIEW.region.saveRegion}
           >
-            {saving ? <Spinner size="button" ariaHidden /> : 'Save Region'}
+            {saving ? <Spinner size="button" ariaHidden /> : SETTINGS_VIEW.region.saveRegionLabel}
           </button>
         </div>
       </div>
@@ -251,7 +254,7 @@ function ClearWatchlistModal({ savedCount, watchingCount, customLists = [], onCl
             onClick={handleClear}
             disabled={!count}
           >
-            {count ? `Clear Selected (${count})` : 'Select lists to clear'}
+            {count ? SETTINGS_VIEW.clearSelected(count) : SETTINGS_VIEW.selectListsToClear}
           </button>
         </div>
       </div>
@@ -377,9 +380,9 @@ function TimezonePicker({ current, onSave, onClose }) {
             onClick={handleSave}
             disabled={!chosen || saving}
             aria-busy={saving}
-            aria-label={saving ? 'Saving timezone' : 'Save timezone'}
+            aria-label={saving ? SETTINGS_VIEW.timezone.savingTimezone : SETTINGS_VIEW.timezone.saveTimezone}
           >
-            {saving ? <Spinner size="button" ariaHidden /> : 'Save'}
+            {saving ? <Spinner size="button" ariaHidden /> : COMMON.save}
           </button>
         </div>
       </div>
@@ -474,7 +477,7 @@ function ProviderPicker({ title, hint, region, selected, onSave, onClose, limit 
                   onClick={() => toggle(p.provider_id)}
                   {...getButtonLikeProps({
                     onPress: () => toggle(p.provider_id),
-                    label: `${chosen.includes(p.provider_id) ? 'Deselect' : 'Select'} ${p.provider_name}`,
+                    label: `${chosen.includes(p.provider_id) ? COMMON.deselect : COMMON.select} ${p.provider_name}`,
                     pressed: chosen.includes(p.provider_id),
                   })}
                 >
@@ -541,7 +544,7 @@ function GenrePicker({ selected, onSave, onClose }) {
                   }}
                   {...getButtonLikeProps({
                     onPress: () => toggle(g.id),
-                    label: `${chosen.includes(g.id) ? 'Deselect' : 'Select'} ${g.name}`,
+                    label: `${chosen.includes(g.id) ? COMMON.deselect : COMMON.select} ${g.name}`,
                     pressed: chosen.includes(g.id),
                   })}
                 >
@@ -683,14 +686,14 @@ function AvatarCropModal({ src, saving, onCancel, onSave }) {
         />
 
         <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.9rem', justifyContent: 'flex-end' }}>
-          <button className="btn btn-ghost btn-sm" onClick={onCancel} disabled={saving}>Cancel</button>
+          <button className="btn btn-ghost btn-sm" onClick={onCancel} disabled={saving}>{COMMON.cancel}</button>
           <button
             className="btn btn-primary btn-sm"
             onClick={handleSave}
             disabled={saving || !nat}
             aria-busy={saving}
           >
-            {saving ? <Spinner size="button" ariaHidden /> : 'Save photo'}
+            {saving ? <Spinner size="button" ariaHidden /> : SETTINGS_VIEW.avatar.savePhoto}
           </button>
         </div>
       </div>
@@ -713,8 +716,8 @@ function AvatarSetting({ user, profile, refreshProfile, onError }) {
     e.target.value = '';
     if (!file) return;
     onError(null);
-    if (!file.type.startsWith('image/')) { onError('Please choose an image file.'); return; }
-    if (file.size > AVATAR_MAX_MB * 1024 * 1024) { onError(`Profile photos must be under ${AVATAR_MAX_MB}MB.`); return; }
+    if (!file.type.startsWith('image/')) { onError(SETTINGS_VIEW.avatar.chooseImageFile); return; }
+    if (file.size > AVATAR_MAX_MB * 1024 * 1024) { onError(SETTINGS_VIEW.avatar.tooLarge(AVATAR_MAX_MB)); return; }
     setCropSrc(URL.createObjectURL(file));
   };
 
@@ -728,7 +731,7 @@ function AvatarSetting({ user, profile, refreshProfile, onError }) {
     const { error: upErr } = await supabase.storage
       .from('avatars')
       .upload(path, blob, { upsert: true, contentType: 'image/jpeg' });
-    if (upErr) { setBusy(false); onError(upErr.message || 'We could not upload your photo. Please try again.'); return; }
+    if (upErr) { setBusy(false); onError(upErr.message || SETTINGS_VIEW.avatar.uploadFailed); return; }
 
     const { data } = supabase.storage.from('avatars').getPublicUrl(path);
     // Cache-bust so a replaced photo at the same path refreshes immediately.
@@ -736,7 +739,7 @@ function AvatarSetting({ user, profile, refreshProfile, onError }) {
     const { error: dbErr } = await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', user.id);
     setBusy(false);
     closeCrop();
-    if (dbErr) { onError(dbErr.message || 'We could not save your photo. Please try again.'); return; }
+    if (dbErr) { onError(dbErr.message || SETTINGS_VIEW.avatar.saveFailed); return; }
     refreshProfile();
   };
 
@@ -751,7 +754,7 @@ function AvatarSetting({ user, profile, refreshProfile, onError }) {
     }
     const { error } = await supabase.from('profiles').update({ avatar_url: null }).eq('id', user.id);
     setBusy(false);
-    if (error) { onError(error.message || 'We could not remove your photo. Please try again.'); return; }
+    if (error) { onError(error.message || SETTINGS_VIEW.avatar.removeFailed); return; }
     refreshProfile();
   };
 
@@ -774,15 +777,15 @@ function AvatarSetting({ user, profile, refreshProfile, onError }) {
               : initial}
           </div>
           <div>
-            <div className="settings-row-label">Profile Photo</div>
+            <div className="settings-row-label">{SETTINGS_VIEW.avatar.profilePhoto}</div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-              {busy ? 'Saving…' : avatarUrl ? 'Shown on your public profile' : `JPG or PNG · up to ${AVATAR_MAX_MB}MB`}
+              {busy ? COMMON.saving : avatarUrl ? SETTINGS_VIEW.avatar.shownOnProfile : SETTINGS_VIEW.avatar.sizeHint(AVATAR_MAX_MB)}
             </div>
           </div>
         </div>
         <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
           <SettingsTextAction onClick={handlePick} disabled={busy}>
-            {avatarUrl ? 'Change' : 'Add photo'}
+            {avatarUrl ? SETTINGS_VIEW.avatar.change : SETTINGS_VIEW.avatar.addPhoto}
           </SettingsTextAction>
           {avatarUrl && (
             <SettingsTextAction onClick={handleRemove} disabled={busy} tone="danger">
@@ -814,21 +817,21 @@ function AvatarSetting({ user, profile, refreshProfile, onError }) {
 const FEEDBACK_TYPES = [
   {
     id: 'bug',
-    label: 'Bug report',
+    label: SETTINGS_VIEW.feedback.bugReportLabel,
     icon: '✦',
-    description: 'Something broke, behaved oddly, or felt unreliable.',
+    description: SETTINGS_VIEW.feedback.bugReportDescription,
   },
   {
     id: 'feature',
-    label: 'Feature request',
+    label: SETTINGS_VIEW.feedback.featureRequestLabel,
     icon: '✳',
-    description: 'An idea that would make PLOT more useful or more delightful.',
+    description: SETTINGS_VIEW.feedback.featureRequestDescription,
   },
   {
     id: 'general',
-    label: 'General feedback',
+    label: SETTINGS_VIEW.feedback.generalFeedbackLabel,
     icon: '✺',
-    description: 'Anything else about the experience, product, or taste of the app.',
+    description: SETTINGS_VIEW.feedback.generalFeedbackDescription,
   },
 ];
 
@@ -917,7 +920,7 @@ function FeedbackPanel({ user, initialType, onClose }) {
         await supabase.storage.from('feedback-attachments').remove(attachmentPaths);
       }
       setStatus('error');
-      setErrorMessage('Your feedback was not saved. Please try again.');
+      setErrorMessage(SETTINGS_VIEW.feedback.notSaved);
       return;
     }
 
@@ -944,7 +947,7 @@ function FeedbackPanel({ user, initialType, onClose }) {
             <div className="feedback-success-body">
               Thanks. This has been captured for the product backlog, and any attachments will stay linked to the report.
             </div>
-            <button className="btn btn-primary btn-sm" style={{ marginTop: '0.5rem' }} onClick={onClose}>Done</button>
+            <button className="btn btn-primary btn-sm" style={{ marginTop: '0.5rem' }} onClick={onClose}>{COMMON.done}</button>
           </div>
         ) : (
           <div className="feedback-panel-body">
@@ -1032,7 +1035,7 @@ function FeedbackPanel({ user, initialType, onClose }) {
 
             {status === 'error' && (
               <p className="feedback-error">
-                {errorMessage || 'Something went wrong. Please try again.'}
+                {errorMessage || COMMON.genericError}
               </p>
             )}
 
@@ -1049,7 +1052,7 @@ function FeedbackPanel({ user, initialType, onClose }) {
               onClick={handleSubmit}
               disabled={!message.trim() || status === 'submitting'}
             >
-              {status === 'submitting' ? 'Sending…' : 'Send'}
+              {status === 'submitting' ? COMMON.sending : COMMON.send}
             </button>
           </div>
         )}
@@ -1107,6 +1110,7 @@ export default function SettingsView() {
   const [emailSaving,         setEmailSaving]         = useState(false);
   const [emailError,          setEmailError]          = useState(null); // inline error shown while editing
   const [emailNotice,         setEmailNotice]         = useState(null); // post-save confirmation note shown in display mode
+  const [resendVerifyStatus,  setResendVerifyStatus]  = useState(null); // null|sending|sent|error
   const [actionError,         setActionError]         = useState(null);
   const [confirmModal,        setConfirmModal]        = useState(null); // { title, message, confirmLabel, danger, onConfirm }
   const [billingReturn,       setBillingReturn]       = useState(null); // null|'premium'|'tip'
@@ -1223,7 +1227,7 @@ export default function SettingsView() {
     setSavingProviders(false);
 
     if (error) {
-      setActionError(error.message || 'Failed to save your streaming platforms.');
+      setActionError(error.message || SETTINGS_VIEW.errors.failedToSaveStreamingPlatforms);
       return false;
     }
 
@@ -1244,7 +1248,7 @@ export default function SettingsView() {
     setSavingGuideChannels(false);
 
     if (error) {
-      setActionError(error.message || 'Failed to save your channels.');
+      setActionError(error.message || SETTINGS_VIEW.errors.failedToSaveChannels);
       return false;
     }
 
@@ -1265,7 +1269,7 @@ export default function SettingsView() {
     setSavingGenres(false);
 
     if (error) {
-      setActionError(error.message || 'Failed to save your genres.');
+      setActionError(error.message || SETTINGS_VIEW.errors.failedToSaveGenres);
       return false;
     }
 
@@ -1294,7 +1298,7 @@ export default function SettingsView() {
       .eq('id', user.id);
     setSavingAvailabilityAlerts(false);
     if (error) {
-      setActionError(error.message || 'Failed to update availability alerts.');
+      setActionError(error.message || SETTINGS_VIEW.errors.failedToUpdateAvailabilityAlerts);
       return;
     }
     refreshProfile();
@@ -1328,7 +1332,7 @@ export default function SettingsView() {
       .eq('id', user.id);
 
     if (error) {
-      setActionError(error.message || 'Failed to save your region.');
+      setActionError(error.message || SETTINGS_VIEW.region.failedToSaveRegion);
       return false;
     }
 
@@ -1352,9 +1356,9 @@ export default function SettingsView() {
 
   const handleClearHistory = () => {
     showConfirm({
-      title: 'Clear watch history?',
-      message: 'This will permanently delete all your watched entries. This cannot be undone.',
-      confirmLabel: 'Clear history',
+      title: SETTINGS_VIEW.confirm.clearWatchHistoryTitle,
+      message: SETTINGS_VIEW.confirm.clearWatchHistoryMessage,
+      confirmLabel: SETTINGS_VIEW.confirm.clearHistory,
       danger: true,
       onConfirm: async () => {
         setActionError(null);
@@ -1362,7 +1366,7 @@ export default function SettingsView() {
         const { error } = await supabase.from('history').delete().eq('user_id', user.id);
         setClearingHistory(false);
         if (error) {
-          setActionError(error.message || 'Failed to clear watch history.');
+          setActionError(error.message || SETTINGS_VIEW.errors.failedToClearWatchHistory);
           return false;
         }
         return true;
@@ -1380,7 +1384,7 @@ export default function SettingsView() {
       const { data: myList, error: listLookupError } = await supabase.from('lists')
         .select('id').eq('user_id', user.id).eq('name', 'My List').maybeSingle();
       if (listLookupError) {
-        setActionError(listLookupError.message || 'Failed to clear your lists.');
+        setActionError(listLookupError.message || SETTINGS_VIEW.errors.failedToClearLists);
         setClearingWatchlist(false);
         return;
       }
@@ -1390,11 +1394,11 @@ export default function SettingsView() {
     const results = await Promise.all([
       saved && myListId ? supabase.from('list_items').delete().eq('list_id', myListId) : Promise.resolve({ error: null }),
       clearWatching ? supabase.from('watching_progress').delete().eq('user_id', user.id) : Promise.resolve({ error: null }),
-      ...customListIds.map(id => customLists.deleteList(id).then(ok => ({ error: ok ? null : new Error('Failed to delete a custom list.') }))),
+      ...customListIds.map(id => customLists.deleteList(id).then(ok => ({ error: ok ? null : new Error(SETTINGS_VIEW.errors.failedToDeleteCustomList) }))),
     ]);
     const firstError = results.find(result => result.error)?.error;
     if (firstError) {
-      setActionError(firstError.message || 'Failed to clear your lists.');
+      setActionError(firstError.message || SETTINGS_VIEW.errors.failedToClearLists);
       setClearingWatchlist(false);
       return;
     }
@@ -1409,11 +1413,11 @@ export default function SettingsView() {
 
   const handleDeleteAccount = () => {
     showConfirm({
-      title: 'Delete account?',
-      message: 'This will permanently delete your account and all your data. This cannot be undone.',
-      confirmLabel: 'Delete account',
+      title: SETTINGS_VIEW.confirm.deleteAccountTitle,
+      message: SETTINGS_VIEW.confirm.deleteAccountMessage,
+      confirmLabel: SETTINGS_VIEW.confirm.deleteAccount,
       danger: true,
-      confirmPhrase: 'delete account',
+      confirmPhrase: SETTINGS_VIEW.confirm.deleteAccountPhrase,
       onConfirm: async (typedPhrase) => {
         setActionError(null);
         const result = await deleteAccountAndSignOut({
@@ -1455,7 +1459,7 @@ export default function SettingsView() {
       else downloadDataExport(result.payload);
       track(EVENTS.DATA_EXPORTED, { format });
     } catch (err) {
-      setActionError(err?.message || 'Failed to export your data.');
+      setActionError(err?.message || SETTINGS_VIEW.errors.failedToExportData);
     } finally {
       setExportingData(false);
     }
@@ -1478,9 +1482,9 @@ export default function SettingsView() {
 
   const handleRevokeCalToken = () => {
     showConfirm({
-      title: 'Revoke calendar link?',
-      message: 'Your calendar app will stop receiving updates. You can generate a new link at any time.',
-      confirmLabel: 'Revoke',
+      title: SETTINGS_VIEW.confirm.revokeCalendarLinkTitle,
+      message: SETTINGS_VIEW.confirm.revokeCalendarLinkMessage,
+      confirmLabel: SETTINGS_VIEW.confirm.revoke,
       danger: true,
       onConfirm: async () => {
         await supabase.from('profiles').update({ calendar_token: null }).eq('id', user.id);
@@ -1544,13 +1548,13 @@ export default function SettingsView() {
   const handleSaveName = async () => {
     const next = nameValue.trim();
     if (next === currentName.trim()) { cancelEditName(); return; }
-    if (!next) { setNameError('Enter a name.'); return; }
+    if (!next) { setNameError(SETTINGS_VIEW.errors.enterAName); return; }
     if (next.length > 50) { setNameError('Keep it under 50 characters.'); return; }
     setSavingName(true);
     setNameError(null);
     const { error } = await supabase.from('profiles').update({ display_name: next }).eq('id', user.id);
     setSavingName(false);
-    if (error) { setNameError(error.message || 'Could not update name. Try again.'); return; }
+    if (error) { setNameError(error.message || SETTINGS_VIEW.errors.couldNotUpdateName); return; }
     setNameDraft(null);
     refreshProfile();
   };
@@ -1565,14 +1569,28 @@ export default function SettingsView() {
   const emailDirty   = emailDraft !== null
     && emailValue.trim() !== ''
     && emailValue.trim().toLowerCase() !== currentEmail.toLowerCase();
+  // Confirm email is off at the Supabase project level, so signup no longer
+  // blocks on this — it's surfaced here instead, checkable any time.
+  const emailVerified = !!user?.email_confirmed_at;
 
   const startEditEmail  = () => { setEmailNotice(null); setEmailError(null); setEmailDraft(currentEmail); };
   const cancelEditEmail = () => { setEmailDraft(null); setEmailError(null); };
 
+  const handleResendVerification = async () => {
+    if (resendVerifyStatus === 'sending' || resendVerifyStatus === 'sent') return;
+    setResendVerifyStatus('sending');
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email: currentEmail,
+      options: { emailRedirectTo: getAuthCallbackUrl() },
+    });
+    setResendVerifyStatus(error ? 'error' : 'sent');
+  };
+
   const handleSaveEmail = async () => {
     const next = emailValue.trim();
     if (next.toLowerCase() === currentEmail.toLowerCase()) { cancelEditEmail(); return; }
-    if (!EMAIL_RE.test(next)) { setEmailError('Enter a valid email address.'); return; }
+    if (!EMAIL_RE.test(next)) { setEmailError(SETTINGS_VIEW.errors.enterAValidEmail); return; }
     setEmailSaving(true);
     setEmailError(null);
     const { error } = await supabase.auth.updateUser({ email: next });
@@ -1580,8 +1598,8 @@ export default function SettingsView() {
     if (error) {
       setEmailError(
         /already|registered|exists|in use/i.test(error.message || '')
-          ? 'That email is already in use.'
-          : (error.message || 'Could not update email. Try again.')
+          ? SETTINGS_VIEW.errors.emailAlreadyInUse
+          : (error.message || SETTINGS_VIEW.errors.couldNotUpdateEmail)
       );
       return;
     }
@@ -1606,19 +1624,14 @@ export default function SettingsView() {
 
   // A little personality for profile shares — one picked at random (the card
   // already carries the avatar, stats and PLOT branding).
-  const PROFILE_SHARE_LINES = [
-    'This is where my evenings and weekends go.',
-    'Everything I love to watch, in one place.',
-    'A curated view of my screen time.',
-    "Keep up with what I'm watching, on PLOT.",
-  ];
+  const PROFILE_SHARE_LINES = SETTINGS_VIEW.shareTaglines;
 
   const handleShareProfile = () => {
     if (!profileUrl) return;
     // Native share sheet where available, clipboard fallback otherwise.
     return shareProfileLink({
       url: profileUrl,
-      title: username ? `@${username} on PLOT` : 'My PLOT profile',
+      title: username ? SETTINGS_VIEW.shareTitleWithUsername(username) : SETTINGS_VIEW.shareTitleDefault,
       text: PROFILE_SHARE_LINES[Math.floor(Math.random() * PROFILE_SHARE_LINES.length)],
       event: 'profile_shared',
     });
@@ -1628,8 +1641,8 @@ export default function SettingsView() {
     if (!inviteUrl) return;
     return shareInvite({
       url: inviteUrl,
-      title: 'Join me on PLOT',
-      text: "Join me on PLOT. Here's what I'm watching.",
+      title: SETTINGS_VIEW.shareJoinMe,
+      text: SETTINGS_VIEW.inviteText,
       event: EVENTS.INVITE_SHARED,
     });
   };
@@ -1664,7 +1677,7 @@ export default function SettingsView() {
             {nameDraft === null ? (
               <div style={{ minWidth: 0 }}>
                 <span className="settings-row-label" style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {currentName || 'Add your name'}
+                  {currentName || SETTINGS_VIEW.addYourName}
                 </span>
               </div>
             ) : (
@@ -1700,11 +1713,11 @@ export default function SettingsView() {
           </div>
           <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
             {nameDraft === null ? (
-              <SettingsTextAction onClick={startEditName}>Edit</SettingsTextAction>
+              <SettingsTextAction onClick={startEditName}>{COMMON.edit}</SettingsTextAction>
             ) : (
               <>
-                <SettingsTextAction onClick={cancelEditName}>Cancel</SettingsTextAction>
-                <SettingsTextAction onClick={handleSaveName} disabled={savingName || !nameDirty}>Save</SettingsTextAction>
+                <SettingsTextAction onClick={cancelEditName}>{COMMON.cancel}</SettingsTextAction>
+                <SettingsTextAction onClick={handleSaveName} disabled={savingName || !nameDirty}>{COMMON.save}</SettingsTextAction>
               </>
             )}
           </div>
@@ -1720,6 +1733,19 @@ export default function SettingsView() {
                 <span className="settings-row-label" style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentEmail}</span>
                 {emailNotice && (
                   <div style={{ fontSize: '0.72rem', marginTop: '0.3rem', color: 'var(--accent)', lineHeight: 1.4 }}>{emailNotice}</div>
+                )}
+                {!emailNotice && !emailVerified && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.72rem', marginTop: '0.3rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>
+                    <span>Not verified</span>
+                    <button
+                      type="button"
+                      onClick={handleResendVerification}
+                      disabled={resendVerifyStatus === 'sending' || resendVerifyStatus === 'sent'}
+                      style={{ background: 'none', border: 'none', padding: 0, font: 'inherit', color: 'var(--text-secondary)', textDecoration: 'underline', cursor: 'pointer' }}
+                    >
+                      {resendVerifyStatus === 'sending' ? COMMON.sending : resendVerifyStatus === 'sent' ? SETTINGS_VIEW.verifyEmail.sent : resendVerifyStatus === 'error' ? SETTINGS_VIEW.verifyEmail.tryAgain : SETTINGS_VIEW.verifyEmail.verifyNow}
+                    </button>
+                  </div>
                 )}
               </div>
             ) : (
@@ -1757,11 +1783,11 @@ export default function SettingsView() {
           </div>
           <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
             {emailDraft === null ? (
-              <SettingsTextAction onClick={startEditEmail}>Edit</SettingsTextAction>
+              <SettingsTextAction onClick={startEditEmail}>{COMMON.edit}</SettingsTextAction>
             ) : (
               <>
-                <SettingsTextAction onClick={cancelEditEmail}>Cancel</SettingsTextAction>
-                <SettingsTextAction onClick={handleSaveEmail} disabled={emailSaving || !emailDirty}>Save</SettingsTextAction>
+                <SettingsTextAction onClick={cancelEditEmail}>{COMMON.cancel}</SettingsTextAction>
+                <SettingsTextAction onClick={handleSaveEmail} disabled={emailSaving || !emailDirty}>{COMMON.save}</SettingsTextAction>
               </>
             )}
           </div>
@@ -1770,7 +1796,7 @@ export default function SettingsView() {
         <div
           className="settings-row interactive-surface"
           onClick={() => { setActionError(null); setShowRegion(true); }}
-          {...getButtonLikeProps({ onPress: () => { setActionError(null); setShowRegion(true); }, label: 'Open region settings' })}
+          {...getButtonLikeProps({ onPress: () => { setActionError(null); setShowRegion(true); }, label: SETTINGS_VIEW.region.openRegionSettings })}
         >
           <div className="settings-row-left">
             <div className="settings-row-icon">
@@ -1787,7 +1813,7 @@ export default function SettingsView() {
         <div
           className="settings-row interactive-surface"
           onClick={() => setShowTimezone(true)}
-          {...getButtonLikeProps({ onPress: () => setShowTimezone(true), label: 'Open timezone settings' })}
+          {...getButtonLikeProps({ onPress: () => setShowTimezone(true), label: SETTINGS_VIEW.timezone.openTimezoneSettings })}
         >
           <div className="settings-row-left">
             <div className="settings-row-icon">
@@ -1797,7 +1823,7 @@ export default function SettingsView() {
           </div>
           <div className="settings-row-value">
             <span style={{ fontSize: '0.78rem', maxWidth: 160, textAlign: 'right', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {timezone ? fmtTz(timezone) : 'Not set'}
+              {timezone ? fmtTz(timezone) : COMMON.notSet}
             </span>
             <Chevron />
           </div>
@@ -1830,7 +1856,7 @@ export default function SettingsView() {
         <div
           className="settings-row interactive-surface"
           onClick={() => setConfirmSignOut(true)}
-          {...getButtonLikeProps({ onPress: () => setConfirmSignOut(true), label: 'Sign out' })}
+          {...getButtonLikeProps({ onPress: () => setConfirmSignOut(true), label: SETTINGS_VIEW.signOut })}
         >
           <div className="settings-row-left">
             <div className="settings-row-icon">
@@ -1883,7 +1909,7 @@ export default function SettingsView() {
           </div>
           <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
             <SettingsTextAction onClick={handleTogglePublic} tone={isPublic ? 'danger' : 'default'}>
-              {isPublic ? 'Make private' : 'Make public'}
+              {isPublic ? SETTINGS_VIEW.makePrivate : SETTINGS_VIEW.makePublic}
             </SettingsTextAction>
           </div>
         </div>
@@ -1927,13 +1953,13 @@ export default function SettingsView() {
                       : usernameStatus === 'taken' || usernameStatus === 'invalid' || usernameStatus === 'error' ? 'var(--danger)'
                       : 'var(--text-muted)',
                   }}>
-                    {usernameStatus === 'checking' && 'Checking availability…'}
-                    {usernameStatus === 'available' && 'Available'}
-                    {usernameStatus === 'taken' && 'That username is taken'}
-                    {usernameStatus === 'invalid' && '3–30 chars · lowercase letters, numbers, hyphens'}
-                    {usernameStatus === 'saving' && 'Saving…'}
-                    {usernameStatus === 'saved' && 'Saved'}
-                    {usernameStatus === 'error' && 'Something went wrong. Try again'}
+                    {usernameStatus === 'checking' && SETTINGS_VIEW.username.checkingAvailability}
+                    {usernameStatus === 'available' && SETTINGS_VIEW.username.available}
+                    {usernameStatus === 'taken' && SETTINGS_VIEW.username.taken}
+                    {usernameStatus === 'invalid' && SETTINGS_VIEW.username.formatHint}
+                    {usernameStatus === 'saving' && COMMON.saving}
+                    {usernameStatus === 'saved' && SETTINGS_VIEW.username.saved}
+                    {usernameStatus === 'error' && SETTINGS_VIEW.username.error}
                   </div>
                 </>
               )}
@@ -1975,7 +2001,7 @@ export default function SettingsView() {
             </div>
             <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
               <SettingsTextAction onClick={handleShareProfile}>
-                {profileUrlCopied ? 'Copied!' : 'Share'}
+                {profileUrlCopied ? COMMON.copied : COMMON.share}
               </SettingsTextAction>
               <a className="settings-text-action" href={profileUrl} target="_blank" rel="noreferrer">
                 <span>View</span><span aria-hidden="true">›</span>
@@ -2006,7 +2032,7 @@ export default function SettingsView() {
             </div>
             <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
               <SettingsTextAction onClick={handleInvite}>
-                {inviteCopied ? 'Copied!' : 'Invite'}
+                {inviteCopied ? COMMON.copied : SETTINGS_VIEW.invite}
               </SettingsTextAction>
             </div>
           </div>
@@ -2020,16 +2046,16 @@ export default function SettingsView() {
         <div
           className="settings-row interactive-surface"
           onClick={() => { if (!savingProviders) setShowProviders(true); }}
-          {...getButtonLikeProps({ onPress: () => { if (!savingProviders) setShowProviders(true); }, label: 'Open streaming platforms', disabled: savingProviders })}
+          {...getButtonLikeProps({ onPress: () => { if (!savingProviders) setShowProviders(true); }, label: SETTINGS_VIEW.integrations.openStreamingPlatforms, disabled: savingProviders })}
         >
           <div className="settings-row-left">
             <div className="settings-row-icon">
               <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
             </div>
-            <span className="settings-row-label">Streaming Platforms</span>
+            <span className="settings-row-label">{SETTINGS_VIEW.integrations.streamingPlatformsLabel}</span>
           </div>
           <div className="settings-row-value">
-            <span>{savingProviders ? 'Saving…' : providers.length > 0 ? `${providers.length} selected` : 'None'}</span>
+            <span>{savingProviders ? COMMON.saving : providers.length > 0 ? SETTINGS_VIEW.integrations.selectedCount(providers.length) : COMMON.none}</span>
             <Chevron />
           </div>
         </div>
@@ -2037,16 +2063,16 @@ export default function SettingsView() {
         <div
           className="settings-row interactive-surface"
           onClick={() => { if (!savingGuideChannels) setShowGuideChannels(true); }}
-          {...getButtonLikeProps({ onPress: () => { if (!savingGuideChannels) setShowGuideChannels(true); }, label: 'Open my channels', disabled: savingGuideChannels })}
+          {...getButtonLikeProps({ onPress: () => { if (!savingGuideChannels) setShowGuideChannels(true); }, label: SETTINGS_VIEW.integrations.openMyChannels, disabled: savingGuideChannels })}
         >
           <div className="settings-row-left">
             <div className="settings-row-icon">
               <svg viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
             </div>
-            <span className="settings-row-label">My Channels</span>
+            <span className="settings-row-label">{SETTINGS_VIEW.integrations.myChannelsLabel}</span>
           </div>
           <div className="settings-row-value">
-            <span>{savingGuideChannels ? 'Saving…' : guideChannels.length > 0 ? `${guideChannels.length} selected` : 'None'}</span>
+            <span>{savingGuideChannels ? COMMON.saving : guideChannels.length > 0 ? SETTINGS_VIEW.integrations.selectedCount(guideChannels.length) : COMMON.none}</span>
             <Chevron />
           </div>
         </div>
@@ -2054,16 +2080,16 @@ export default function SettingsView() {
         <div
           className="settings-row interactive-surface"
           onClick={() => { if (!savingGenres) setShowGenres(true); }}
-          {...getButtonLikeProps({ onPress: () => { if (!savingGenres) setShowGenres(true); }, label: 'Open genres', disabled: savingGenres })}
+          {...getButtonLikeProps({ onPress: () => { if (!savingGenres) setShowGenres(true); }, label: SETTINGS_VIEW.integrations.openGenres, disabled: savingGenres })}
         >
           <div className="settings-row-left">
             <div className="settings-row-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
             </div>
-            <span className="settings-row-label">Genres</span>
+            <span className="settings-row-label">{SETTINGS_VIEW.integrations.genresLabel}</span>
           </div>
           <div className="settings-row-value">
-            <span>{savingGenres ? 'Saving…' : genres.length > 0 ? `${genres.length} selected` : 'None'}</span>
+            <span>{savingGenres ? COMMON.saving : genres.length > 0 ? SETTINGS_VIEW.integrations.selectedCount(genres.length) : COMMON.none}</span>
             <Chevron />
           </div>
         </div>
@@ -2077,17 +2103,17 @@ export default function SettingsView() {
               </svg>
             </div>
             <div>
-              <div className="settings-row-label">Log rewatches</div>
+              <div className="settings-row-label">{SETTINGS_VIEW.rewatches.label}</div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                 {logRewatches
-                  ? 'Rewatching a title adds a new entry to your history.'
-                  : 'Rewatching a title updates the existing entry instead of adding a new one.'}
+                  ? SETTINGS_VIEW.rewatches.onHint
+                  : SETTINGS_VIEW.rewatches.offHint}
               </div>
             </div>
           </div>
           <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
             <SettingsTextAction onClick={handleToggleLogRewatches}>
-              {logRewatches ? 'Turn off' : 'Turn on'}
+              {logRewatches ? COMMON.turnOff : COMMON.turnOn}
             </SettingsTextAction>
           </div>
         </div>
@@ -2099,17 +2125,17 @@ export default function SettingsView() {
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="8.5" cy="10" r="1"/><circle cx="15.5" cy="10" r="1"/><path d="M8 15s1.5 2 4 2 4-2 4-2"/></svg>
             </div>
             <div>
-              <div className="settings-row-label">Kids content</div>
+              <div className="settings-row-label">{SETTINGS_VIEW.kidsContent.label}</div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                 {includeKidsContent
-                  ? 'Show movies and shows made for kids in Discover and recommendations.'
-                  : 'Kids and family content is hidden from Discover and recommendations.'}
+                  ? SETTINGS_VIEW.kidsContent.onHint
+                  : SETTINGS_VIEW.kidsContent.offHint}
               </div>
             </div>
           </div>
           <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
             <SettingsTextAction onClick={handleToggleKidsContent}>
-              {includeKidsContent ? 'Turn off' : 'Turn on'}
+              {includeKidsContent ? COMMON.turnOff : COMMON.turnOn}
             </SettingsTextAction>
           </div>
         </div>
@@ -2121,22 +2147,22 @@ export default function SettingsView() {
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
               </div>
               <div>
-                <div className="settings-row-label">Watchlist availability alerts</div>
+                <div className="settings-row-label">{SETTINGS_VIEW.availabilityAlerts.label}</div>
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.12rem' }}>
                   {testAlertNotice === 'sent'
-                    ? "Sent — check your inbox."
+                    ? SETTINGS_VIEW.availabilityAlerts.sentNotice
                     : testAlertNotice === 'error'
-                    ? 'Could not send a test email. Try again.'
-                    : "Email me when a saved title arrives on a streaming platform or channel I've selected"}
+                    ? SETTINGS_VIEW.errors.couldNotSendTestEmail
+                    : SETTINGS_VIEW.availabilityAlerts.idleHint}
                 </div>
               </div>
             </div>
             <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
               <SettingsTextAction onClick={sendTestAvailabilityAlert} disabled={testingAvailabilityAlert}>
-                {testingAvailabilityAlert ? 'Sending…' : 'Send test'}
+                {testingAvailabilityAlert ? COMMON.sending : SETTINGS_VIEW.availabilityAlerts.sendTest}
               </SettingsTextAction>
               <SettingsTextAction onClick={toggleAvailabilityAlerts} disabled={savingAvailabilityAlerts}>
-                {savingAvailabilityAlerts ? 'Saving…' : availabilityAlertsEnabled ? 'Turn off' : 'Turn on'}
+                {savingAvailabilityAlerts ? COMMON.saving : availabilityAlertsEnabled ? COMMON.turnOff : COMMON.turnOn}
               </SettingsTextAction>
             </div>
           </div>
@@ -2146,26 +2172,26 @@ export default function SettingsView() {
       {/* PLOT Premium — only shown to existing subscribers; checkout is offline for now */}
       {premium.isPremium && (
         <div className="settings-group">
-          <div className="settings-group-title">PLOT Premium</div>
+          <div className="settings-group-title">{SETTINGS_VIEW.premium.groupTitle}</div>
           <div className="settings-row" style={{ cursor: 'default' }}>
             <div className="settings-row-left">
               <div className="settings-row-icon" style={{ color: 'var(--accent)' }}>
                 <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
               </div>
               <div>
-                <div className="settings-row-label">You have PLOT Premium</div>
+                <div className="settings-row-label">{SETTINGS_VIEW.premium.youHavePremium}</div>
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                  Thank you for keeping PLOT running
+                  {SETTINGS_VIEW.premium.thankYou}
                 </div>
               </div>
             </div>
             <SettingsTextAction onClick={premium.openPortal} disabled={premium.busy}>
-              {premium.busy ? 'Opening…' : 'Manage subscription'}
+              {premium.busy ? SETTINGS_VIEW.premium.opening : SETTINGS_VIEW.premium.manageSubscription}
             </SettingsTextAction>
           </div>
           {billingReturn && (
             <div style={{ padding: '0.5rem 1rem', fontSize: '0.78rem', color: 'var(--accent)', background: 'var(--accent-dim)', borderRadius: 8, margin: '0.25rem 1rem' }}>
-              {billingReturn === 'tip' ? 'Thanks for supporting PLOT ♥' : 'PLOT Premium is active. Thank you ♥'}
+              {billingReturn === 'tip' ? SETTINGS_VIEW.premium.thanksForTip : SETTINGS_VIEW.premium.activeThankYou}
             </div>
           )}
           {premium.error && (
@@ -2178,12 +2204,12 @@ export default function SettingsView() {
 
       {/* Plex */}
       <div className="settings-group">
-        <div className="settings-group-title">Integrations</div>
+        <div className="settings-group-title">{SETTINGS_VIEW.integrations.groupTitle}</div>
         {SHOW_MEDIA_SYNC_INTEGRATIONS && !premium.isPremium ? (
           <>
             {[
-              { name: 'Plex',  blurb: 'Sync your Plex watchlist and history', connected: sync.isConnected,  disconnect: sync.disconnect,  icon: PLEX_ICON },
-              { name: 'Trakt', blurb: 'Sync Netflix, Prime, Disney+ & more',  connected: trakt.isConnected, disconnect: trakt.disconnect, icon: TRAKT_ICON },
+              { name: SETTINGS_VIEW.integrations.plexName,  blurb: SETTINGS_VIEW.integrations.plexBlurb, connected: sync.isConnected,  disconnect: sync.disconnect,  icon: PLEX_ICON },
+              { name: SETTINGS_VIEW.integrations.traktName, blurb: SETTINGS_VIEW.integrations.traktBlurb,  connected: trakt.isConnected, disconnect: trakt.disconnect, icon: TRAKT_ICON },
             ].map(row => {
               const feature = `${row.name.toLowerCase()}_sync`;
               const requested = requestedIntegrations.has(feature);
@@ -2196,7 +2222,7 @@ export default function SettingsView() {
                         {row.name}<PremiumBadge />
                       </div>
                       <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                        {row.connected ? 'Paused, needs PLOT Premium to sync' : row.blurb}
+                        {row.connected ? SETTINGS_VIEW.integrations.pausedNeedsPremium : row.blurb}
                       </div>
                     </div>
                   </div>
@@ -2210,7 +2236,7 @@ export default function SettingsView() {
                           user_id:    user?.id ?? null,
                           user_email: user?.email ?? null,
                           type:       'feature',
-                          message:    `Requested access: ${row.name} sync`,
+                          message:    SETTINGS_VIEW.integrations.requestedAccessMessage(row.name),
                         });
                         setRequestingIntegration(null);
                         if (!error) {
@@ -2218,11 +2244,11 @@ export default function SettingsView() {
                         }
                       }}
                     >
-                      {requested ? 'Requested ✓' : requestingIntegration === feature ? 'Sending…' : 'Request access'}
+                      {requested ? SETTINGS_VIEW.integrations.requested : requestingIntegration === feature ? COMMON.sending : SETTINGS_VIEW.integrations.requestAccess}
                     </SettingsTextAction>
                     {row.connected && (
                       <SettingsTextAction onClick={row.disconnect} tone="danger">
-                        Disconnect
+                        {SETTINGS_VIEW.integrations.disconnect}
                       </SettingsTextAction>
                     )}
                   </div>
@@ -2236,13 +2262,13 @@ export default function SettingsView() {
               <div className="settings-row-left">
                 <div className="settings-row-icon">{PLEX_ICON}</div>
                 <div>
-                  <div className="settings-row-label">Plex</div>
+                  <div className="settings-row-label">{SETTINGS_VIEW.integrations.plexName}</div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                    {sync.isConnected ? `Connected · Last synced ${
+                    {sync.isConnected ? SETTINGS_VIEW.integrations.connectedLastSynced(
                       sync.integration?.last_sync_at
                         ? new Date(sync.integration.last_sync_at).toLocaleDateString()
-                        : 'never'
-                    }` : 'Not connected'}
+                        : SETTINGS_VIEW.integrations.never
+                    ) : SETTINGS_VIEW.integrations.notConnected}
                   </div>
                 </div>
               </div>
@@ -2250,15 +2276,15 @@ export default function SettingsView() {
                 {sync.isConnected ? (
                   <>
                     <SettingsTextAction onClick={sync.sync} disabled={sync.syncing}>
-                      {sync.syncing ? 'Syncing…' : 'Sync now'}
+                      {sync.syncing ? COMMON.syncing : SETTINGS_VIEW.integrations.syncNow}
                     </SettingsTextAction>
                     <SettingsTextAction onClick={sync.disconnect} tone="danger">
-                      Disconnect
+                      {SETTINGS_VIEW.integrations.disconnect}
                     </SettingsTextAction>
                   </>
                 ) : (
                   <SettingsTextAction onClick={sync.startPlexAuth}>
-                    Connect Plex
+                    {SETTINGS_VIEW.integrations.connectPlex}
                   </SettingsTextAction>
                 )}
               </div>
@@ -2273,15 +2299,15 @@ export default function SettingsView() {
               <div className="settings-row-left">
                 <div className="settings-row-icon">{TRAKT_ICON}</div>
                 <div>
-                  <div className="settings-row-label">Trakt</div>
+                  <div className="settings-row-label">{SETTINGS_VIEW.integrations.traktName}</div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                     {trakt.isConnected
-                      ? `Connected · Last synced ${
+                      ? SETTINGS_VIEW.integrations.connectedLastSynced(
                           trakt.integration?.last_sync_at
                             ? new Date(trakt.integration.last_sync_at).toLocaleDateString()
-                            : 'never'
-                        }`
-                      : 'Connect to sync Netflix, Prime, Disney+ & more'}
+                            : SETTINGS_VIEW.integrations.never
+                        )
+                      : SETTINGS_VIEW.integrations.connectTraktToSync}
                   </div>
                 </div>
               </div>
@@ -2289,15 +2315,15 @@ export default function SettingsView() {
                 {trakt.isConnected ? (
                   <>
                     <SettingsTextAction onClick={trakt.sync} disabled={trakt.syncing}>
-                      {trakt.syncing ? 'Syncing…' : 'Sync now'}
+                      {trakt.syncing ? COMMON.syncing : SETTINGS_VIEW.integrations.syncNow}
                     </SettingsTextAction>
                     <SettingsTextAction onClick={trakt.disconnect} tone="danger">
-                      Disconnect
+                      {SETTINGS_VIEW.integrations.disconnect}
                     </SettingsTextAction>
                   </>
                 ) : (
                   <SettingsTextAction onClick={trakt.connect}>
-                    Connect Trakt
+                    {SETTINGS_VIEW.integrations.connectTrakt}
                   </SettingsTextAction>
                 )}
               </div>
@@ -2310,7 +2336,7 @@ export default function SettingsView() {
           </>
         ) : (
           <div style={{ padding: '0 1rem 0.75rem', fontSize: '0.78rem', lineHeight: 1.45, color: 'var(--text-muted)' }}>
-            Direct Plex and Trakt account sync is being held for post-launch while the full production credential set and support runbook are completed.
+            {SETTINGS_VIEW.integrations.syncingHeldForLaunch}
           </div>
         )}
 
@@ -2319,7 +2345,7 @@ export default function SettingsView() {
           className="settings-row interactive-surface"
           onClick={() => navigate('/import')}
           style={{ cursor: 'pointer' }}
-          {...getButtonLikeProps({ onPress: () => navigate('/import'), label: 'Import watch history' })}
+          {...getButtonLikeProps({ onPress: () => navigate('/import'), label: SETTINGS_VIEW.integrations.importWatchHistory })}
         >
           <div className="settings-row-left">
             <div className="settings-row-icon">
@@ -2330,9 +2356,9 @@ export default function SettingsView() {
               </svg>
             </div>
             <div>
-              <div className="settings-row-label">Import Watch History</div>
+              <div className="settings-row-label">{SETTINGS_VIEW.integrations.importWatchHistoryLabel}</div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                Import from Netflix, Prime, Disney+, Max or Apple TV+
+                {SETTINGS_VIEW.integrations.importWatchHistoryHint}
               </div>
             </div>
           </div>
@@ -2343,7 +2369,7 @@ export default function SettingsView() {
 
       {/* Calendar */}
       <div className="settings-group">
-        <div className="settings-group-title">Calendar</div>
+        <div className="settings-group-title">{SETTINGS_VIEW.calendarFeed.groupTitle}</div>
 
         {/* Subscribe */}
         <div className="settings-row" style={{ cursor: 'default' }}>
@@ -2356,12 +2382,12 @@ export default function SettingsView() {
             </div>
             <div>
               <div className="settings-row-label">
-                Subscribe to Calendar{!premium.isPremium && <PremiumBadge />}
+                {SETTINGS_VIEW.calendarFeed.subscribeLabel}{!premium.isPremium && <PremiumBadge />}
               </div>
               <div className={!premium.isPremium ? 'settings-row-hint settings-row-hint--hide-mobile' : undefined} style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                 {!premium.isPremium
-                  ? 'A live calendar feed needs PLOT Premium'
-                  : (calendarToken ? 'Live feed · keep this link private' : 'Get a URL for Google or Apple Calendar')}
+                  ? SETTINGS_VIEW.calendarFeed.needsPremium
+                  : (calendarToken ? SETTINGS_VIEW.calendarFeed.liveFeedPrivate : SETTINGS_VIEW.calendarFeed.getUrlHint)}
               </div>
             </div>
           </div>
@@ -2377,7 +2403,7 @@ export default function SettingsView() {
                       user_id:    user?.id ?? null,
                       user_email: user?.email ?? null,
                       type:       'feature',
-                      message:    'Requested access: Calendar subscribe',
+                      message:    SETTINGS_VIEW.calendarFeed.requestedCalendarSubscribeMessage,
                     });
                     setRequestingIntegration(null);
                     if (!error) {
@@ -2386,27 +2412,27 @@ export default function SettingsView() {
                   }}
                 >
                   {requestedIntegrations.has('calendar_subscribe')
-                    ? 'Requested ✓'
-                    : requestingIntegration === 'calendar_subscribe' ? 'Sending…' : 'Request access'}
+                    ? SETTINGS_VIEW.integrations.requested
+                    : requestingIntegration === 'calendar_subscribe' ? COMMON.sending : SETTINGS_VIEW.integrations.requestAccess}
                 </SettingsTextAction>
                 {calendarToken && (
                   <SettingsTextAction onClick={handleRevokeCalToken} tone="danger">
-                    Revoke
+                    {SETTINGS_VIEW.confirm.revoke}
                   </SettingsTextAction>
                 )}
               </>
             ) : calendarToken ? (
               <>
                 <SettingsTextAction onClick={handleCopyCalUrl}>
-                  {calTokenCopied ? 'Copied!' : 'Copy link'}
+                  {calTokenCopied ? COMMON.copied : SETTINGS_VIEW.calendarFeed.copyLink}
                 </SettingsTextAction>
                 <SettingsTextAction onClick={handleRevokeCalToken} tone="danger">
-                  Revoke
+                  {SETTINGS_VIEW.confirm.revoke}
                 </SettingsTextAction>
               </>
             ) : (
               <SettingsTextAction disabled={generatingCalToken} onClick={handleGenerateCalToken}>
-                {generatingCalToken ? 'Generating…' : 'Generate link'}
+                {generatingCalToken ? SETTINGS_VIEW.calendarFeed.generating : SETTINGS_VIEW.calendarFeed.generateLink}
               </SettingsTextAction>
             )}
           </div>
@@ -2423,9 +2449,9 @@ export default function SettingsView() {
               </svg>
             </div>
             <div>
-              <div className="settings-row-label">Export to Calendar</div>
+              <div className="settings-row-label">{SETTINGS_VIEW.calendarFeed.exportLabel}</div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                {calLoading ? 'Loading events…' : `${calEvents.length} event${calEvents.length !== 1 ? 's' : ''} · one-time snapshot`}
+                {calLoading ? SETTINGS_VIEW.calendarFeed.loadingEvents : SETTINGS_VIEW.calendarFeed.eventCount(calEvents.length)}
               </div>
             </div>
           </div>
@@ -2433,7 +2459,7 @@ export default function SettingsView() {
             disabled={calLoading || calEvents.length === 0}
             onClick={() => downloadICS(calEvents)}
           >
-            Download .ics
+            {SETTINGS_VIEW.calendarFeed.downloadIcs}
           </SettingsTextAction>
         </div>
 
@@ -2447,9 +2473,9 @@ export default function SettingsView() {
               </svg>
             </div>
             <div>
-              <div className="settings-row-label">Export Your Data</div>
+              <div className="settings-row-label">{SETTINGS_VIEW.export.label}</div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                Watchlist, history, lists and more as JSON or CSV
+                {SETTINGS_VIEW.export.hint}
               </div>
             </div>
           </div>
@@ -2458,13 +2484,13 @@ export default function SettingsView() {
               disabled={!!exportingData}
               onClick={() => handleExportData('json')}
             >
-              {exportingData === 'json' ? 'Preparing…' : 'Download .json'}
+              {exportingData === 'json' ? SETTINGS_VIEW.export.preparing : SETTINGS_VIEW.export.downloadJson}
             </SettingsTextAction>
             <SettingsTextAction
               disabled={!!exportingData}
               onClick={() => handleExportData('csv')}
             >
-              {exportingData === 'csv' ? 'Preparing…' : 'Download .csv'}
+              {exportingData === 'csv' ? SETTINGS_VIEW.export.preparing : SETTINGS_VIEW.export.downloadCsv}
             </SettingsTextAction>
           </div>
         </div>
@@ -2472,16 +2498,16 @@ export default function SettingsView() {
 
       {/* Support */}
       <div className="settings-group">
-        <div className="settings-group-title">Support</div>
+        <div className="settings-group-title">{SETTINGS_VIEW.support.groupTitle}</div>
         <div className="settings-row" style={{ cursor: 'default' }}>
           <div className="settings-row-left">
             <div className="settings-row-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
             </div>
             <div>
-              <div className="settings-row-label">Support PLOT</div>
+              <div className="settings-row-label">{SETTINGS_VIEW.support.supportPlot}</div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                Help keep PLOT <br className="support-plot-hint-break" />subscription-free
+                {SETTINGS_VIEW.support.kofiHint}<br className="support-plot-hint-break" />{SETTINGS_VIEW.support.kofiHintContinued}
               </div>
             </div>
           </div>
@@ -2492,13 +2518,13 @@ export default function SettingsView() {
         <div
           className="settings-row interactive-surface"
           onClick={() => setFeedbackType('bug')}
-          {...getButtonLikeProps({ onPress: () => setFeedbackType('bug'), label: 'Report a bug' })}
+          {...getButtonLikeProps({ onPress: () => setFeedbackType('bug'), label: SETTINGS_VIEW.support.reportABugAria })}
         >
           <div className="settings-row-left">
             <div className="settings-row-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L14.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
             </div>
-            <span className="settings-row-label">Report a Bug</span>
+            <span className="settings-row-label">{SETTINGS_VIEW.support.reportABugLabel}</span>
           </div>
           <div className="settings-row-value">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ width: 14, height: 14, opacity: 0.4 }}><polyline points="9 18 15 12 9 6"/></svg>
@@ -2507,13 +2533,13 @@ export default function SettingsView() {
         <div
           className="settings-row interactive-surface"
           onClick={() => setFeedbackType('feature')}
-          {...getButtonLikeProps({ onPress: () => setFeedbackType('feature'), label: 'Leave feedback' })}
+          {...getButtonLikeProps({ onPress: () => setFeedbackType('feature'), label: SETTINGS_VIEW.support.leaveFeedbackAria })}
         >
           <div className="settings-row-left">
             <div className="settings-row-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
             </div>
-            <span className="settings-row-label">Leave Feedback</span>
+            <span className="settings-row-label">{SETTINGS_VIEW.support.leaveFeedbackLabel}</span>
           </div>
           <div className="settings-row-value">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ width: 14, height: 14, opacity: 0.4 }}><polyline points="9 18 15 12 9 6"/></svg>
@@ -2523,7 +2549,7 @@ export default function SettingsView() {
 
       {/* Danger zone */}
       <div className="settings-group">
-        <div className="settings-group-title">Danger Zone</div>
+        <div className="settings-group-title">{SETTINGS_VIEW.dangerZone.groupTitle}</div>
 
         <div
           className="settings-row interactive-surface"
@@ -2532,7 +2558,7 @@ export default function SettingsView() {
           {...getButtonLikeProps({
             onPress: () => setShowClearWatchlist(true),
             disabled: clearingWatchlist,
-            label: 'Clear lists',
+            label: SETTINGS_VIEW.dangerZone.clearListsAria,
           })}
         >
           <div className="settings-row-left">
@@ -2540,7 +2566,7 @@ export default function SettingsView() {
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
             </div>
             <span className="settings-row-label" style={{ color: clearingWatchlist ? 'var(--text-muted)' : undefined }}>
-              {clearingWatchlist ? 'Clearing…' : 'Clear Lists'}
+              {clearingWatchlist ? SETTINGS_VIEW.clearing : SETTINGS_VIEW.dangerZone.clearListsLabel}
             </span>
           </div>
         </div>
@@ -2552,7 +2578,7 @@ export default function SettingsView() {
           {...getButtonLikeProps({
             onPress: handleClearHistory,
             disabled: clearingHistory,
-            label: 'Clear watch history',
+            label: SETTINGS_VIEW.dangerZone.clearWatchHistoryAria,
           })}
         >
           <div className="settings-row-left">
@@ -2560,7 +2586,7 @@ export default function SettingsView() {
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
             </div>
             <span className="settings-row-label" style={{ color: clearingHistory ? 'var(--text-muted)' : undefined }}>
-              {clearingHistory ? 'Clearing…' : 'Clear Watch History'}
+              {clearingHistory ? SETTINGS_VIEW.clearing : SETTINGS_VIEW.dangerZone.clearWatchHistoryLabel}
             </span>
           </div>
         </div>
@@ -2569,13 +2595,13 @@ export default function SettingsView() {
           className="settings-row interactive-surface"
           onClick={handleDeleteAccount}
           style={{ color: 'var(--danger)' }}
-          {...getButtonLikeProps({ onPress: handleDeleteAccount, label: 'Delete account' })}
+          {...getButtonLikeProps({ onPress: handleDeleteAccount, label: SETTINGS_VIEW.dangerZone.deleteAccountAria })}
         >
           <div className="settings-row-left">
             <div className="settings-row-icon" style={{ borderColor: 'var(--danger-border)', color: 'var(--danger)' }}>
               <svg viewBox="0 0 24 24"><polyline points="3,6 5,6 21,6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
             </div>
-            <span className="settings-row-label" style={{ color: 'var(--danger)' }}>Delete Account</span>
+            <span className="settings-row-label" style={{ color: 'var(--danger)' }}>{SETTINGS_VIEW.dangerZone.deleteAccountLabel}</span>
           </div>
         </div>
       </div>
@@ -2583,7 +2609,7 @@ export default function SettingsView() {
       {/* Provider picker modal */}
       {showProviders && (
         <ProviderPicker
-          title="My Platforms"
+          title={SETTINGS_VIEW.myPlatforms}
           region={region}
           selected={providers}
           onSave={saveProviders}

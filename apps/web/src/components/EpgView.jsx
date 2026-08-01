@@ -4,6 +4,8 @@ import { dateToLocalStr } from '../utils/date.js';
 import { useDragScroll } from '../hooks/useDragScroll.js';
 import { channelNamesMatch } from '../utils/channelAliases.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
+import { COMMON } from '../copy/common.js';
+import { EPG_VIEW } from '../copy/epgView.js';
 
 /* ── Constants ── */
 const START_H = 6;   // guide window opens 6:00 AM
@@ -196,9 +198,9 @@ function ProgramSheet({ prog, onClose }) {
           onClick={async (e) => { e.stopPropagation(); await reminders.toggleReminder(prog); }}
         >
           <BellIcon filled={isSet} />
-          {isSet ? 'Remove reminder' : 'Add to Calendar'}
+          {isSet ? EPG_VIEW.removeReminder : EPG_VIEW.addToCalendar}
         </button>
-        <button className="program-sheet-close-btn" onClick={onClose}>Close</button>
+        <button className="program-sheet-close-btn" onClick={onClose}>{COMMON.close}</button>
       </div>
     </div>
   );
@@ -224,7 +226,7 @@ function PosterCard({ prog, live, onSelect }) {
       <div className="epg-card-meta">
         {live
           ? prog.channelName
-          : <><span className="epg-card-time">{prog.available ? 'Available' : fmtTime(prog.airtime)}</span>{` · ${prog.channelName}`}</>}
+          : <><span className="epg-card-time">{prog.available ? EPG_VIEW.available : fmtTime(prog.airtime)}</span>{` · ${prog.channelName}`}</>}
       </div>
     </button>
   );
@@ -321,9 +323,9 @@ export default function EpgView() {
       else if (s > nowMins + 180) later.push(p);
     }
     return [
-      { label: 'On Now', items: now, live: true },
-      { label: 'Up Next', items: next, live: false },
-      { label: 'Later', items: later, live: false },
+      { label: EPG_VIEW.onNow, items: now, live: true },
+      { label: EPG_VIEW.upNext, items: next, live: false },
+      { label: EPG_VIEW.later, items: later, live: false },
     ].filter(b => b.items.length);
   }, [programs, nowMins]);
 

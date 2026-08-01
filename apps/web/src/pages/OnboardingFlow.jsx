@@ -13,6 +13,8 @@ import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import Spinner from '../components/Spinner.jsx';
 import { getButtonLikeProps } from '../utils/interactive.js';
 import { track, markActivated, EVENTS } from '../lib/analytics.js';
+import { COMMON } from '../copy/common.js';
+import { ONBOARDING_FLOW } from '../copy/onboardingFlow.js';
 import { getOrCreateMyListId, saveOnboardingSeedTitles } from '@plot/core/onboarding.js';
 import { usePremium } from '../hooks/usePremium.js';
 import { takePremiumCheckoutIntent } from '../utils/premiumCheckoutIntent.js';
@@ -293,7 +295,7 @@ export default function OnboardingFlow() {
         {/* Header */}
         <div style={{ width: '100%', maxWidth: 420, padding: '2rem 0 1.5rem', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.5rem' }}>
           {step > 1 ? (
-            <button type="button" className="onboarding-back" onClick={() => setStep(s => s - 1)} aria-label="Go back" style={{ marginTop: '0.4rem' }}>
+            <button type="button" className="onboarding-back" onClick={() => setStep(s => s - 1)} aria-label={ONBOARDING_FLOW.goBack} style={{ marginTop: '0.4rem' }}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
             </button>
           ) : <div style={{ width: 28, flexShrink: 0 }} />}
@@ -317,14 +319,14 @@ export default function OnboardingFlow() {
         {step === 1 && (
           <div style={card}>
             <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.8rem', fontWeight: 500, letterSpacing: '-0.03em', marginBottom: '0.4rem', textAlign: 'center' }}>
-              What's your name?
+              {ONBOARDING_FLOW.step1.title}
             </h1>
             <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '1.5rem', lineHeight: 1.5, textAlign: 'center' }}>
-              So we can make PLOT yours.
+              {ONBOARDING_FLOW.step1.subtitle}
             </p>
             <input
               style={{ width: '100%', padding: '0.7rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', background: 'var(--surface)', fontSize: '0.9rem', fontFamily: 'var(--font-sans)', color: 'var(--text-primary)', outline: 'none' }}
-              placeholder="First name"
+              placeholder={ONBOARDING_FLOW.step1.placeholder}
               value={firstName}
               onChange={e => setFirstName(e.target.value)}
               autoFocus
@@ -336,10 +338,10 @@ export default function OnboardingFlow() {
         {step === 2 && (
           <div style={card}>
             <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.8rem', fontWeight: 500, letterSpacing: '-0.03em', marginBottom: '0.4rem', textAlign: 'center' }}>
-              Where are you?
+              {ONBOARDING_FLOW.step2.title}
             </h1>
             <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '1.5rem', lineHeight: 1.5, textAlign: 'center' }}>
-              We use this to show content available in your region.
+              {ONBOARDING_FLOW.step2.subtitle}
             </p>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', paddingBottom: '1rem' }}>
               {REGIONS.map(r => (
@@ -371,10 +373,10 @@ export default function OnboardingFlow() {
         {step === 3 && (
           <div style={card}>
             <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.8rem', fontWeight: 500, letterSpacing: '-0.03em', marginBottom: '0.4rem', textAlign: 'center' }}>
-              What do you like?
+              {ONBOARDING_FLOW.step3.title}
             </h1>
             <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '1.25rem', lineHeight: 1.5, textAlign: 'center' }}>
-              Pick a few to shape what we recommend.
+              {ONBOARDING_FLOW.step3.subtitle}
             </p>
             {loadingGenres ? (
               <div className="loading-state"><PlotLoader size="sm" /></div>
@@ -416,21 +418,21 @@ export default function OnboardingFlow() {
         {step === 4 && (
           <div style={card}>
             <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.8rem', fontWeight: 500, letterSpacing: '-0.03em', marginBottom: '0.4rem', textAlign: 'center' }}>
-              What are you watching?
+              {ONBOARDING_FLOW.step4.title}
             </h1>
             <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '1.25rem', lineHeight: 1.5, textAlign: 'center' }}>
-              Give your watchlist a head start.
+              {ONBOARDING_FLOW.step4.subtitle}
             </p>
             <div style={{ position: 'relative', marginBottom: '0.4rem' }}>
               <input
                 style={{ width: '100%', padding: '0.65rem 2.25rem 0.65rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', background: 'var(--surface)', fontSize: '0.82rem', fontFamily: 'var(--font-sans)', color: 'var(--text-primary)', outline: 'none' }}
-                placeholder="Search for a show or movie…"
+                placeholder={ONBOARDING_FLOW.step4.searchPlaceholder}
                 value={seedQuery}
                 onChange={e => setSeedQuery(e.target.value)}
                 autoFocus
               />
               {seedQuery && (
-                <button type="button" className="search-input-clear" onClick={() => setSeedQuery('')} aria-label="Clear search">
+                <button type="button" className="search-input-clear" onClick={() => setSeedQuery('')} aria-label={ONBOARDING_FLOW.clearSearch}>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
               )}
@@ -438,7 +440,7 @@ export default function OnboardingFlow() {
             {seedSearching && <div className="loading-state" style={{ minHeight: 60 }}><PlotLoader size="sm" /></div>}
             {!seedQuery.trim() && trending.length > 0 && (
               <div style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-secondary)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
-                Trending this week
+                {ONBOARDING_FLOW.step4.trendingThisWeek}
               </div>
             )}
             {seedGridItems.length > 0 && (
@@ -454,7 +456,7 @@ export default function OnboardingFlow() {
                       style={{ cursor: 'pointer', borderRadius: 'var(--radius-md)', overflow: 'hidden', border: sel ? '2px solid var(--accent)' : '2px solid transparent', position: 'relative', transition: 'border-color 0.15s ease' }}
                       {...getButtonLikeProps({
                         onPress: () => toggleSeed(item),
-                        label: `${sel ? 'Deselect' : 'Select'} ${item.title || item.name || 'title'}`,
+                        label: `${sel ? ONBOARDING_FLOW.deselect : ONBOARDING_FLOW.select} ${item.title || item.name || ONBOARDING_FLOW.untitled}`,
                         pressed: sel,
                       })}
                     >
@@ -487,12 +489,12 @@ export default function OnboardingFlow() {
             onClick={step === TOTAL ? finish : goNext}
             disabled={saving || (step === 1 && !firstName.trim())}
             aria-busy={saving}
-            aria-label={saving ? 'Setting up account' : step === TOTAL ? 'Start watching' : 'Continue'}
+            aria-label={saving ? ONBOARDING_FLOW.settingUpAccount : step === TOTAL ? ONBOARDING_FLOW.startWatching : COMMON.continue}
           >
-            {step === TOTAL ? (saving ? <Spinner size="button" ariaHidden /> : 'Start watching →') : 'Continue →'}
+            {step === TOTAL ? (saving ? <Spinner size="button" ariaHidden /> : ONBOARDING_FLOW.startWatchingArrow) : ONBOARDING_FLOW.continueArrow}
           </button>
           {(step === 3 || step === TOTAL) && !saving && (
-            <button type="button" className="onboarding-skip" onClick={step === TOTAL ? finish : goNext}>Skip this step</button>
+            <button type="button" className="onboarding-skip" onClick={step === TOTAL ? finish : goNext}>{ONBOARDING_FLOW.skipThisStep}</button>
           )}
         </div>
       </div>

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   usePostComments, addComment, editComment, deleteComment, toggleCommentLike,
 } from '../hooks/usePostEngagement.js';
+import { COMMON } from '../copy/common.js';
 
 const PREVIEW = 2; // comments shown before "View all"
 
@@ -113,7 +114,7 @@ export default function CommentsInline({ post, user, profile, commentCount, onCo
       )}
 
       {visible.map(c => {
-        const name = c.display_name || c.username || 'Someone';
+        const name = c.display_name || c.username || COMMON.someone;
         const mine = user?.id && c.user_id === user.id;
         const editing = editingId === c.id;
         return (
@@ -132,8 +133,8 @@ export default function CommentsInline({ post, user, profile, commentCount, onCo
                     value={editBody} onChange={(e) => setEditBody(e.target.value)} maxLength={500} autoFocus
                     style={{ flex: 1, background: 'var(--surface-raised)', border: '1px solid var(--border)', borderRadius: 8, padding: '5px 9px', fontSize: '0.85rem', color: 'var(--text-primary)', outline: 'none' }}
                   />
-                  <button type="submit" style={{ ...linkBtn, color: 'var(--text-primary)' }}>Save</button>
-                  <button type="button" style={linkBtn} onClick={() => setEditingId(null)}>Cancel</button>
+                  <button type="submit" style={{ ...linkBtn, color: 'var(--text-primary)' }}>{COMMON.save}</button>
+                  <button type="button" style={linkBtn} onClick={() => setEditingId(null)}>{COMMON.cancel}</button>
                 </form>
               ) : (
                 <div style={{ fontSize: '0.85rem', lineHeight: 1.45, color: 'var(--text-primary)' }}>
@@ -154,8 +155,8 @@ export default function CommentsInline({ post, user, profile, commentCount, onCo
                       {c.like_count} {Number(c.like_count) === 1 ? 'like' : 'likes'}
                     </span>
                   )}
-                  {mine && <button type="button" style={linkBtn} onClick={() => { setEditingId(c.id); setEditBody(c.body); }}>Edit</button>}
-                  {mine && <button type="button" style={linkBtn} onClick={() => remove(c)}>Delete</button>}
+                  {mine && <button type="button" style={linkBtn} onClick={() => { setEditingId(c.id); setEditBody(c.body); }}>{COMMON.edit}</button>}
+                  {mine && <button type="button" style={linkBtn} onClick={() => remove(c)}>{COMMON.delete}</button>}
                 </div>
               )}
             </div>
@@ -177,8 +178,8 @@ export default function CommentsInline({ post, user, profile, commentCount, onCo
           value={body}
           onChange={(e) => setBody(e.target.value)}
           maxLength={500}
-          placeholder="Add a comment…"
-          aria-label="Add a comment"
+          placeholder={`${COMMON.addComment}…`}
+          aria-label={COMMON.addComment}
           style={{ flex: 1, background: 'var(--surface-raised)', border: '1px solid var(--border)', borderRadius: 999, padding: '8px 13px', fontSize: '0.85rem', color: 'var(--text-primary)', outline: 'none' }}
         />
         <button type="submit" disabled={!body.trim() || posting}

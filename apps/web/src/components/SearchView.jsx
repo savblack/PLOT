@@ -11,6 +11,7 @@ import Spinner from './Spinner.jsx';
 import UserList from './UserList.jsx';
 import { classifySearchResults } from '../utils/search.js';
 import { track, EVENTS } from '../lib/analytics.js';
+import { MEDIA } from '../copy/media.js';
 
 function BookmarkIcon({ filled }) {
   return (
@@ -39,7 +40,7 @@ function ResultRow({ item, openPanel, watchlist, favorites, history, region }) {
   const fw    = favoriteWords(region);
   const id    = item.id;
   const type  = item.media_type || 'movie';
-  const title = item.title || item.name || 'Unknown';
+  const title = item.title || item.name || MEDIA.unknown;
   const img   = posterUrl(item.poster_path, 'w92');
   const releaseDate = item.release_date || item.first_air_date || '';
   const comingSoon = releaseDate > localDateStr();
@@ -68,7 +69,7 @@ function ResultRow({ item, openPanel, watchlist, favorites, history, region }) {
         <div className="list-row-title">{title}</div>
         <div className="list-row-meta">
           <span style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-            {type === 'tv' ? 'Series' : 'Movie'}
+            {type === 'tv' ? MEDIA.series : MEDIA.movie}
           </span>
         </div>
       </div>
@@ -76,8 +77,8 @@ function ResultRow({ item, openPanel, watchlist, favorites, history, region }) {
       {/* Actions */}
       {(watched || comingSoon) && (
         <div className="list-row-end search-row-status">
-          {watched && <span className="chip chip-episode">Watched</span>}
-          {comingSoon && <span className="chip chip-soon">Coming Soon</span>}
+          {watched && <span className="chip chip-episode">{MEDIA.watched}</span>}
+          {comingSoon && <span className="chip chip-soon">{MEDIA.comingSoon}</span>}
         </div>
       )}
       <div className="list-row-end search-row-actions">
@@ -88,7 +89,7 @@ function ResultRow({ item, openPanel, watchlist, favorites, history, region }) {
             e.stopPropagation();
             watchlist.toggle({ ...item, id, media_type: type });
           }}
-          data-tip={inList ? 'Remove from watch list' : 'Save to watch list'}
+          data-tip={inList ? MEDIA.removeFromWatchlist : MEDIA.saveToWatchlist}
           aria-label={inList ? `Remove ${title} from list` : `Add ${title} to list`}
         >
           <BookmarkIcon filled={inList} />

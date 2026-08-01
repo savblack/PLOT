@@ -7,6 +7,7 @@ import { findDuplicateCustomList } from '../domain/customLists.js';
 import { useHistory } from '../hooks/useHistory.js';
 import { localDateStr } from '../utils/date.js';
 import { favoriteWords } from '../utils/spelling.js';
+import { COMMON } from '../copy/common.js';
 import { entriesForMonth, historyMonthEmptyCopy, historyRatingLabel, monthLabel } from '../utils/history.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import CollapsibleSection from './CollapsibleSection.jsx';
@@ -813,7 +814,7 @@ function CreateListModal({ lists, onConfirm, onClose }) {
           <button className="btn btn-primary btn-sm" style={{ flex: 1 }} disabled={!name.trim() || isSubmitting} onClick={handleSubmit}>
             {isSubmitting ? 'Creating…' : 'Create'}
           </button>
-          <button className="btn btn-ghost btn-sm" disabled={isSubmitting} onClick={onClose}>Cancel</button>
+          <button className="btn btn-ghost btn-sm" disabled={isSubmitting} onClick={onClose}>{COMMON.cancel}</button>
         </div>
       </div>
     </div>
@@ -1000,7 +1001,7 @@ function CustomListsSection({ customLists: clHook, filterItems, hideHeader }) {
                 title="Done selecting"
                 onClick={exitEditMode}
               >
-                <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Done</span>
+                <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)' }}>{COMMON.done}</span>
               </button>
             )}
 
@@ -1097,7 +1098,7 @@ function CustomListsSection({ customLists: clHook, filterItems, hideHeader }) {
                   fontSize: '0.875rem', outline: 'none',
                 }}
               />
-              <button className="btn btn-primary btn-xs" onClick={() => handleRename(list.id)}>Save</button>
+              <button className="btn btn-primary btn-xs" onClick={() => handleRename(list.id)}>{COMMON.save}</button>
               <button className="btn btn-ghost btn-xs" onClick={() => setRenamingId(null)}>✕</button>
             </div>
           )}

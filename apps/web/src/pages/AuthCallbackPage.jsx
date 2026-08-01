@@ -4,6 +4,8 @@ import { supabase } from '../api/supabase';
 import { track, identifyUser, EVENTS } from '../lib/analytics.js';
 import { resolveAuthCallback } from '../utils/authCallback.js';
 import PlotLogo from '../components/PlotLogo.jsx';
+import { AUTH_PAGE } from '../copy/authPage.js';
+import { AUTH_CALLBACK_PAGE } from '../copy/authCallbackPage.js';
 
 // Report a social / magic-link auth exactly once. Email+password already fires
 // its event at form submit, so we only report when AuthPage stashed a method
@@ -75,10 +77,10 @@ export default function AuthCallbackPage() {
         <PlotLogo style={{ fontSize: '2rem' }} />
         <p style={{ color: '#c0392b', fontSize: '0.95rem' }}>
           {error === 'no-session'
-            ? "We couldn't finish signing you in. Please try again."
-            : 'This link has expired or is invalid.'}
+            ? AUTH_CALLBACK_PAGE.couldNotFinishSignIn
+            : AUTH_CALLBACK_PAGE.linkExpiredOrInvalid}
         </p>
-        <a href="/login" style={{ color: '#1a1a1a', fontWeight: 600, fontSize: '0.9rem' }}>Back to sign in</a>
+        <a href="/login" style={{ color: '#1a1a1a', fontWeight: 600, fontSize: '0.9rem' }}>{AUTH_PAGE.backToSignIn}</a>
       </div>
     );
   }

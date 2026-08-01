@@ -10,6 +10,7 @@ import EpgView from './EpgView.jsx';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import GroupedFilterMenu from './GroupedFilterMenu.jsx';
 import CollapsibleSection from './CollapsibleSection.jsx';
+import { MEDIA } from '../copy/media.js';
 
 /* ── Module-level provider logo cache (keyed with region to avoid stale logos after region change) ── */
 const _providerCache = new Map();
@@ -122,7 +123,7 @@ function SaveBtn({ item, watchlist }) {
     <button
       className={`card-save-btn${saved ? ' saved' : ''}`}
       onClick={e => { e.stopPropagation(); watchlist.toggle({ ...item, id }); }}
-      aria-label={saved ? 'Remove from list' : 'Add to list'}
+      aria-label={saved ? MEDIA.removeFromList : MEDIA.addToList}
       disabled={watchlist.loading}
     >
       <svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
@@ -154,7 +155,7 @@ function MediaCard({ item, openPanel, providerLogo, watchlist }) {
   const type  = item.media_type || 'movie';
   const title = item.title || item.name;
   const year  = (item.release_date || item.first_air_date || '').slice(0, 4);
-  const typeLabel = type === 'tv' ? 'TV' : item._cinema ? 'Cinema' : 'Movie';
+  const typeLabel = type === 'tv' ? MEDIA.tv : item._cinema ? MEDIA.cinema : MEDIA.movie;
   const meta  = [year, typeLabel].filter(Boolean).join(' · ');
 
   return (
@@ -183,9 +184,9 @@ function formatDayLabel(dateStr) {
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const d     = new Date(dateStr + 'T00:00:00'); // force local-time parse (bare YYYY-MM-DD parses as UTC)
   const diff  = Math.round((d - today) / 86400000);
-  if (diff === 0)  return 'Today';
-  if (diff === 1)  return 'Tomorrow';
-  if (diff === -1) return 'Yesterday';
+  if (diff === 0)  return MEDIA.today;
+  if (diff === 1)  return MEDIA.tomorrow;
+  if (diff === -1) return MEDIA.yesterday;
   return d.toLocaleDateString('en', { weekday: 'long', month: 'long', day: 'numeric' });
 }
 
@@ -352,7 +353,7 @@ export function UpcomingContent({ typeFilters, genreFilters, providers, openPane
 
   return (
     <div className="upcoming-content">
-      <DateGroup label="Today" items={filteredToday} openPanel={openPanel} providerLogos={providerLogos} watchlist={watchlist} defaultOpen expandSignal={expandSignal} />
+      <DateGroup label={MEDIA.today} items={filteredToday} openPanel={openPanel} providerLogos={providerLogos} watchlist={watchlist} defaultOpen expandSignal={expandSignal} />
 
       {filteredUpDates.map(date => (
         <DateGroup
@@ -405,18 +406,18 @@ export default function GuideView() {
               ariaLabel="Filter releases"
               groups={[
                 {
-                  heading: 'Type',
+                  heading: MEDIA.typeHeading,
                   options: [
-                    { id: 'tv',     label: 'TV'     },
-                    { id: 'cinema', label: 'Cinema' },
-                    { id: 'movie',  label: 'Movies' },
+                    { id: 'tv',     label: MEDIA.tv     },
+                    { id: 'cinema', label: MEDIA.cinema },
+                    { id: 'movie',  label: MEDIA.movies },
                   ],
                   value: typeFilters,
                   onChange: setTypeFilters,
                   defaultValue: ['tv', 'cinema', 'movie'],
                 },
                 {
-                  heading: 'Genre',
+                  heading: MEDIA.genreHeading,
                   options: genres.map(g => ({ id: g.id, label: g.name })),
                   value: genreFilters,
                   onChange: setGenreFilters,

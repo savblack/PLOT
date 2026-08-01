@@ -1,5 +1,6 @@
 import { useApp } from '../App.jsx';
 import { useFollowRequests } from '../hooks/useFollowRequests.js';
+import { COMMON } from '../copy/common.js';
 
 const styles = `
   .req-view { max-width: 560px; margin: 0 auto; padding: 1rem 1rem 3rem; }
@@ -40,7 +41,7 @@ export default function RequestsView() {
         <p className="req-intro">People asking to follow your private profile. Approving lets them see your watch count, recent watches and lists.</p>
 
         {loading ? (
-          <p className="req-empty">Loading…</p>
+          <p className="req-empty">{COMMON.loading}</p>
         ) : requests.length === 0 ? (
           <p className="req-empty">No pending requests.<br />When someone asks to follow you, they’ll show up here.</p>
         ) : (
