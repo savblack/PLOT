@@ -1064,7 +1064,9 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
   const cast = (details?.credits?.cast || details?.aggregate_credits?.cast || []).slice(0, 12);
 
   const audienceScore = Number.isFinite(details?.vote_average) ? Math.round(details.vote_average * 10) : null;
-  const consensusLine = criticScore ? getConsensusLine(criticScore.criticScore, audienceScore) : null;
+  const consensusLine = criticScore
+    ? getConsensusLine(criticScore.criticScore, audienceScore, { audienceVoteCount: details?.vote_count, seed: details?.id })
+    : null;
 
   const runStatusAction = useCallback(async (actionLabel, action) => {
     if (statusActionPending) return;
