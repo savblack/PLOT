@@ -34,6 +34,13 @@ verify_jwt = false
 [functions.newsletter-subscribe]
 verify_jwt = false
 
+# Exceptional signup path for browsers where Turnstile has persistently
+# failed — no session exists yet when this is called (that's the point), so
+# the gateway JWT check can't apply. Does its own bot mitigation (honeypot,
+# submit timing, per-IP rate limit) instead. See supabase/functions/signup-bypass.
+[functions.signup-bypass]
+verify_jwt = false
+
 [functions.calendar-feed]
 verify_jwt = false
 

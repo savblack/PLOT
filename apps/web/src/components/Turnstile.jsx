@@ -37,18 +37,24 @@ const PERSISTENT_FAILURE_THRESHOLD = 2;
  * @param {number}   [props.resetSignal] Bump this number to force the widget to issue a fresh token.
  * @param {Function} [props.onBlocked]  Called with the 1-based attempt number each time the
  *                                      widget fails to load or errors, for tracking incidence.
+ * @param {Function} [props.onPersistentlyBlocked] Called with true once failures cross
+ *                                      PERSISTENT_FAILURE_THRESHOLD (signals a caller may want
+ *                                      to offer an alternate path), and again with false if the
+ *                                      widget later succeeds (e.g. after Retry actually works).
  */
-export default function Turnstile({ siteKey, onToken, resetSignal = 0, onBlocked }) {
+export default function Turnstile({ siteKey, onToken, resetSignal = 0, onBlocked, onPersistentlyBlocked }) {
   const containerRef = useRef(null);
   const widgetIdRef = useRef(null);
   const onTokenRef = useRef(onToken);
   const onBlockedRef = useRef(onBlocked);
+  const onPersistentlyBlockedRef = useRef(onPersistentlyBlocked);
   const [failCount, setFailCount] = useState(0);
   const [retryNonce, setRetryNonce] = useState(0);
 
   // Keep the latest callbacks without re-running the render effect below.
   useEffect(() => { onTokenRef.current = onToken; }, [onToken]);
   useEffect(() => { onBlockedRef.current = onBlocked; }, [onBlocked]);
+  useEffect(() => { onPersistentlyBlockedRef.current = onPersistentlyBlocked; }, [onPersistentlyBlocked]);
 
   // Render once per site key (and again on manual retry).
   useEffect(() => {
@@ -59,6 +65,7 @@ export default function Turnstile({ siteKey, onToken, resetSignal = 0, onBlocked
       setFailCount((n) => {
         const next = n + 1;
         onBlockedRef.current?.(next);
+        if (next === PERSISTENT_FAILURE_THRESHOLD) onPersistentlyBlockedRef.current?.(true);
         return next;
       });
     };
@@ -70,7 +77,11 @@ export default function Turnstile({ siteKey, onToken, resetSignal = 0, onBlocked
           // Hidden unless a challenge genuinely needs interaction — no visible
           // Cloudflare box in the normal auto-pass flow.
           appearance: 'interaction-only',
-          callback: (token) => { onTokenRef.current?.(token); if (!cancelled) setFailCount(0); },
+          callback: (token) => {
+            onTokenRef.current?.(token);
+            if (cancelled) return;
+            setFailCount((n) => { if (n >= PERSISTENT_FAILURE_THRESHOLD) onPersistentlyBlockedRef.current?.(false); return 0; });
+          },
           'expired-callback': () => onTokenRef.current?.(null),
           'error-callback': () => { onTokenRef.current?.(null); reportFailure(); },
         });

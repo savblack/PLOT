@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../api/supabase';
 import './AuthPage.css';
@@ -34,6 +34,15 @@ function errorReason(msg) {
   return 'unknown';
 }
 
+// Friendly copy for the signup-bypass Edge Function's structured error
+// reasons (distinct from friendlyError/errorReason above, which parse raw
+// Supabase Auth messages — the bypass path returns its own reason strings).
+function bypassErrorMessage(reason) {
+  if (reason === 'rate_limited') return 'Too many attempts. Please wait a moment and try again.';
+  if (reason === 'already_registered') return 'An account with this email already exists. Try signing in instead.';
+  return 'Something went wrong. Please try again.';
+}
+
 function GoogleIcon() {
   return (
     <svg viewBox="0 0 18 18" aria-hidden="true">
@@ -65,7 +74,13 @@ export default function AuthPage({ initialMode = 'signup' }) {
   const [resendStatus, setResendStatus] = useState(null); // null | 'sending' | 'sent' | 'error'
   const [captchaToken, setCaptchaToken] = useState(null);
   const [captchaNonce, setCaptchaNonce] = useState(0); // bump to force a fresh Turnstile token
+  const [captchaPersistentlyBlocked, setCaptchaPersistentlyBlocked] = useState(false);
   const [formStarted, setFormStarted] = useState(false);
+  const [website, setWebsite] = useState(''); // honeypot — real users never see or fill this
+  // Signed {iat} token from signup-bypass's GET endpoint — a server-observed
+  // clock the bypass path checks submission timing against, since a raw
+  // client-supplied timestamp could just be claimed, not proven.
+  const formTokenRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -79,6 +94,14 @@ export default function AuthPage({ initialMode = 'signup' }) {
     }
   };
 
+  // Only offered when Turnstile has genuinely, repeatedly failed in this
+  // browser (see Turnstile.jsx's onPersistentlyBlocked) — the normal signup
+  // path is untouched for everyone else.
+  const handleCaptchaPersistentlyBlocked = (blocked) => {
+    setCaptchaPersistentlyBlocked(blocked);
+    if (blocked) track(EVENTS.SIGNUP_BYPASS_OFFERED);
+  };
+
   // A pricing visitor must not lose their selected billing period while they
   // create an account, confirm their email, and complete onboarding.
   useEffect(() => {
@@ -88,8 +111,10 @@ export default function AuthPage({ initialMode = 'signup' }) {
   // Turnstile tokens are single-use; clear and re-issue after every auth attempt.
   const resetCaptcha = () => { setCaptchaToken(null); setCaptchaNonce((n) => n + 1); };
 
-  // When no site key is configured the widget never renders, so don't gate on it.
-  const captchaReady = !TURNSTILE_SITE_KEY || !!captchaToken;
+  // When no site key is configured the widget never renders, so don't gate on
+  // it. Also unblocked in signup mode once Turnstile has persistently failed
+  // — that path submits through the bypass function instead of signUp().
+  const captchaReady = !TURNSTILE_SITE_KEY || !!captchaToken || (mode === 'signup' && captchaPersistentlyBlocked);
 
   // Auto-redirect if already logged in
   const [hasSession, setHasSession] = useState(null); // null = still checking
@@ -110,7 +135,15 @@ export default function AuthPage({ initialMode = 'signup' }) {
   // === false so an already-logged-in visitor auto-redirecting away doesn't
   // count as having viewed the form.
   useEffect(() => {
-    if (mode === 'signup' && hasSession === false) track(EVENTS.SIGNUP_FORM_VIEWED);
+    if (mode === 'signup' && hasSession === false) {
+      track(EVENTS.SIGNUP_FORM_VIEWED);
+      // Fetched unconditionally (not just once Turnstile fails) so the token's
+      // age reflects real time-on-page even if bypass turns out to be needed
+      // later. No side effects server-side — safe to call every visit.
+      supabase.functions.invoke('signup-bypass', { method: 'GET' })
+        .then(({ data }) => { if (data?.formToken) formTokenRef.current = data.formToken; })
+        .catch(() => { /* bypass simply won't be available if this fails */ });
+    }
   }, [mode, hasSession]);
 
   const handleSubmit = async (e) => {
@@ -146,6 +179,14 @@ export default function AuthPage({ initialMode = 'signup' }) {
       }
     } else {
       track(EVENTS.SIGNUP_SUBMIT_CLICKED);
+
+      // Turnstile has persistently failed in this browser — route through
+      // the bypass function's own bot mitigation instead of hard-blocking.
+      if (captchaPersistentlyBlocked && !captchaToken) {
+        await submitViaBypass();
+        return;
+      }
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -165,6 +206,53 @@ export default function AuthPage({ initialMode = 'signup' }) {
         setSuccess(true);
       }
     }
+  };
+
+  // Fallback signup path for browsers where Turnstile has persistently
+  // failed: the Edge Function does its own bot mitigation (honeypot, submit
+  // timing, per-IP rate limit) and creates the account via the Admin API,
+  // bypassing the need for a Turnstile token. On success it hands back a
+  // magic-link token_hash we verify client-side to get a live session
+  // immediately — no "check your email" round-trip for this path.
+  const submitViaBypass = async () => {
+    const { data, error } = await supabase.functions.invoke('signup-bypass', {
+      method: 'POST',
+      body: { email, password, website, formToken: formTokenRef.current },
+    });
+    if (error) {
+      setError('Something went wrong. Please try again.');
+      setLoading(false);
+      track(EVENTS.SIGNUP_SUBMIT_FAILED, { reason: 'bypass_create_failed' });
+      return;
+    }
+    if (data?.error) {
+      setError(bypassErrorMessage(data.reason));
+      setLoading(false);
+      track(EVENTS.SIGNUP_SUBMIT_FAILED, { reason: `bypass_${data.reason || 'unknown'}` });
+      return;
+    }
+    if (!data?.token_hash) {
+      // Honeypot/timing fake-success — indistinguishable from a real success
+      // response, but no account was actually created. A genuine user can
+      // never hit this branch (the honeypot field is invisible to humans).
+      setLoading(false);
+      setSuccess(true);
+      return;
+    }
+    const { data: verifyData, error: verifyError } = await supabase.auth.verifyOtp({
+      token_hash: data.token_hash,
+      type: 'magiclink',
+    });
+    if (verifyError) {
+      setError(friendlyError(verifyError.message));
+      setLoading(false);
+      track(EVENTS.SIGNUP_SUBMIT_FAILED, { reason: 'bypass_verify_failed' });
+      return;
+    }
+    identifyUser(verifyData.user?.id, { email: verifyData.user?.email || email });
+    track(EVENTS.USER_SIGNED_UP, { method: 'bypass' });
+    const plan = getPremiumCheckoutIntent();
+    navigate(plan ? `/pricing?billing=${plan}` : '/onboarding');
   };
 
   // OAuth: hand off to the provider. We can't fire the signup/login event here
@@ -207,6 +295,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
     setMagicSent(false);
     setResendStatus(null);
     setFormStarted(false);
+    formTokenRef.current = null;
   };
 
   const handleResend = async () => {
@@ -357,6 +446,19 @@ export default function AuthPage({ initialMode = 'signup' }) {
                   />
                 </div>
 
+                {mode === 'signup' && (
+                  <input
+                    type="text"
+                    name="website"
+                    value={website}
+                    onChange={e => setWebsite(e.target.value)}
+                    className="fn-website"
+                    tabIndex={-1}
+                    autoComplete="off"
+                    aria-hidden="true"
+                  />
+                )}
+
                 {mode !== 'forgot' && (
                   <div className="auth-field">
                     <label htmlFor="auth-password">Password</label>
@@ -397,6 +499,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
                   onBlocked={mode === 'signup'
                     ? (attempt) => track(EVENTS.SIGNUP_CAPTCHA_BLOCKED, { attempt })
                     : undefined}
+                  onPersistentlyBlocked={mode === 'signup' ? handleCaptchaPersistentlyBlocked : undefined}
                 />
 
                 <button

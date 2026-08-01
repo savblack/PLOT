@@ -1,3 +1,7 @@
+/* Honeypot: invisible to humans, tempting to bots (see fn-website on the
+   marketing site for the same pattern). */
+.fn-website { position: absolute; left: -9999px; opacity: 0; pointer-events: none; }
+
 /* ── Auth Page ───────────────────────────────────────────── */
 .auth-page {
   display: flex;

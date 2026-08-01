@@ -39,6 +39,7 @@ export const EVENTS = Object.freeze({
   SIGNUP_SUBMIT_CLICKED: 'signup_submit_clicked',
   SIGNUP_SUBMIT_FAILED: 'signup_submit_failed',
   SIGNUP_CAPTCHA_BLOCKED: 'signup_captcha_blocked',
+  SIGNUP_BYPASS_OFFERED: 'signup_bypass_offered',
   USER_SIGNED_UP: 'user_signed_up',
   USER_LOGGED_IN: 'user_logged_in',
   PASSWORD_RESET_REQUESTED: 'password_reset_requested',
