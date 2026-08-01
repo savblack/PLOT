@@ -1233,21 +1233,20 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
 
             {/* Critic / audience scores */}
             {(criticScore || Number.isFinite(audienceScore)) && (
-              <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '0.25rem', fontSize: '0.9rem', fontWeight: 700 }}>
                 {criticScore && (
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.2rem 0.55rem 0.2rem 0.45rem', borderRadius: 'var(--radius-pill)', border: '1px solid var(--border-strong)', fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                    <span aria-hidden="true">◆</span> {criticScore.criticScore} Critics
-                  </span>
+                  <span style={{ color: 'var(--text-primary)' }}>{criticScore.criticScore}% Critics</span>
+                )}
+                {criticScore && Number.isFinite(audienceScore) && (
+                  <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>·</span>
                 )}
                 {Number.isFinite(audienceScore) && (
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.2rem 0.55rem 0.2rem 0.45rem', borderRadius: 'var(--radius-pill)', border: '1px solid var(--border-strong)', fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                    <span aria-hidden="true" style={{ color: 'var(--accent)' }}>●</span> {audienceScore} Audience
-                  </span>
+                  <span style={{ color: 'var(--accent)' }}>{audienceScore}% Audience</span>
                 )}
               </div>
             )}
             {consensusLine && (
-              <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>{consensusLine}</div>
+              <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>{consensusLine}</div>
             )}
 
             {/* Overview */}

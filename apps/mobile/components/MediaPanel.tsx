@@ -694,18 +694,11 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
 
                 {/* Critic / audience scores */}
                 {(criticScore || Number.isFinite(audienceScore)) && (
-                  <View style={styles.scoresRow}>
-                    {criticScore && (
-                      <View style={styles.scorePill}>
-                        <Text style={styles.scorePillText}>◆ {criticScore.criticScore} Critics</Text>
-                      </View>
-                    )}
-                    {Number.isFinite(audienceScore) && (
-                      <View style={styles.scorePill}>
-                        <Text style={styles.scorePillText}><Text style={styles.scoreMarkAudience}>●</Text> {audienceScore} Audience</Text>
-                      </View>
-                    )}
-                  </View>
+                  <Text style={styles.scoresRow}>
+                    {criticScore && <Text style={styles.scoreCritics}>{criticScore.criticScore}% Critics</Text>}
+                    {criticScore && Number.isFinite(audienceScore) && <Text style={styles.scoreDivider}> · </Text>}
+                    {Number.isFinite(audienceScore) && <Text style={styles.scoreAudience}>{audienceScore}% Audience</Text>}
+                  </Text>
                 )}
                 {consensusLine ? <Text style={styles.consensusLine}>{consensusLine}</Text> : null}
 
@@ -970,14 +963,10 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   metaType: { fontFamily: fontFamily.sansBold, fontSize: 11, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
   metaRating: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: '#F59E0B' },
   genres:   { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted, marginBottom: spacing.md },
-  scoresRow: { flexDirection: 'row', gap: 6, marginBottom: spacing.sm },
-  scorePill: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    paddingHorizontal: 9, paddingVertical: 3, borderRadius: radii.pill,
-    borderWidth: 1, borderColor: colors.border,
-  },
-  scorePillText: { fontFamily: fontFamily.sansBold, fontSize: 11, color: colors.textPrimary },
-  scoreMarkAudience: { color: colors.accent },
+  scoresRow: { fontSize: fontSize.md, marginBottom: 4 },
+  scoreCritics: { fontFamily: fontFamily.sansBold, fontSize: fontSize.md, color: colors.textPrimary },
+  scoreAudience: { fontFamily: fontFamily.sansBold, fontSize: fontSize.md, color: colors.accent },
+  scoreDivider: { fontFamily: fontFamily.sans, fontSize: fontSize.md, color: colors.textMuted },
   consensusLine: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textSecondary, marginBottom: spacing.sm, lineHeight: 17 },
   overview: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary, lineHeight: 20, marginBottom: spacing.lg },
   audienceQuote: { borderLeftWidth: 2, borderLeftColor: colors.accent, paddingLeft: spacing.md, marginBottom: spacing.md },
