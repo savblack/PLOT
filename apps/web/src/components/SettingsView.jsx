@@ -2334,11 +2334,7 @@ export default function SettingsView() {
               </div>
             )}
           </>
-        ) : (
-          <div style={{ padding: '0 1rem 0.75rem', fontSize: '0.78rem', lineHeight: 1.45, color: 'var(--text-muted)' }}>
-            {SETTINGS_VIEW.integrations.syncingHeldForLaunch}
-          </div>
-        )}
+        ) : null}
 
         {/* ── Import watch history ── */}
         <div

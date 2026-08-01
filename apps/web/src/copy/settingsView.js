@@ -121,7 +121,6 @@ export const SETTINGS_VIEW = {
     connectPlex: 'Connect Plex',
     connectTraktToSync: 'Connect to sync Netflix, Prime, Disney+ & more',
     connectTrakt: 'Connect Trakt',
-    syncingHeldForLaunch: 'Direct Plex and Trakt account sync is being held for post-launch while the full production credential set and support runbook are completed.',
     syncNow: 'Sync now',
     importWatchHistory: 'Import watch history',
     importWatchHistoryLabel: 'Import Watch History',
