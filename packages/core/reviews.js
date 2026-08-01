@@ -110,7 +110,7 @@ const CRITIC_MILD_LINES = [
 ];
 
 const CRITIC_STRONG_LINES = [
-  'Loved by critics, more divisive with viewers.',
+  'Adored by critics. Audiences, less so.',
   "A critics' favorite. Audiences were considerably cooler on it.",
   'Critics were far more enthusiastic than audiences here.',
 ];
