@@ -4127,6 +4127,13 @@ a.provider-chip--link:hover {
   opacity: 1;
   pointer-events: auto;
 }
+/* This row hugs the right edge of a narrow card, so even the first
+   action button sits close enough to the edge that a left-anchored
+   tooltip can spill past the viewport. Anchor both to the right. */
+.discover-chart-right.search-row-actions .search-action-btn:first-child::after {
+  right: 0;
+  left: auto;
+}
 
 .discover-chart-rank {
   font-family: var(--font-serif);

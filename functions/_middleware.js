@@ -61,6 +61,11 @@ export async function onRequest(context) {
   const nonce = randomNonce();
   const headers = new Headers(response.headers);
   headers.set('Content-Security-Policy', CSP(nonce));
+  // Every execution stamps a fresh nonce onto this exact response body — a
+  // cached/revalidated copy would pair yesterday's stamped nonce with
+  // today's header nonce and get its inline scripts blocked. Never let this
+  // response be cached or reused.
+  headers.set('Cache-Control', 'no-store');
   if (isPreview) headers.set('X-Robots-Tag', 'noindex, nofollow');
 
   const rewritten = new Response(response.body, { status: response.status, statusText: response.statusText, headers });

@@ -14,9 +14,13 @@ import { isPreviewDeployment } from './utils/previewDeployment.js';
 // the main bundle means the app can always get you in or out.
 import AuthPage from './pages/AuthPage.jsx';
 import LogoutPage from './pages/LogoutPage.jsx';
+// App is the shell almost every visitor hits, so it's bundled eagerly too —
+// lazy-loading it meant its own boot loader (auth/profile fetch) had to wait
+// on a chunk fetch first, showing an unstyled flash before the real one even
+// started.
+import App from './App.jsx';
 
 // Layout + views
-const App         = lazy(() => import('./App.jsx'));
 const DiscoverView = lazy(() => import('./components/DiscoverView.jsx'));
 const CalendarView= lazy(() => import('./components/CalendarView.jsx'));
 const MyListsView   = lazy(() => import('./components/MyListsView.jsx'));
