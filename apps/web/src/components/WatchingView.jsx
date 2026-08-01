@@ -1,5 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
-import { useApp, backdropUrl, TodayLabel } from '../App.jsx';
+import { useApp } from '../hooks/useApp.js';
+import { TodayLabel } from './TodayLabel.jsx';
+import { backdropUrl } from '../utils/images.js';
 import { localDateStr } from '../utils/date.js';
 import { getEpisodeGuideState } from '../utils/episodeProgress.js';
 import LoadingSpinner from './LoadingSpinner.jsx';

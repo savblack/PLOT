@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { useApp, posterUrl, backdropUrl, TodayLabel } from '../App.jsx';
+import { useApp } from '../hooks/useApp.js';
+import { TodayLabel } from './TodayLabel.jsx';
+import { posterUrl, backdropUrl } from '../utils/images.js';
 import { favoriteWords } from '../utils/spelling.js';
 import { useDragScroll } from '../hooks/useDragScroll.js';
 import { useGenres } from '../hooks/useGenres.js';

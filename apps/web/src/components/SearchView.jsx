@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useApp, posterUrl, profileUrl } from '../App.jsx';
+import { useApp } from '../hooks/useApp.js';
+import { posterUrl, profileUrl } from '../utils/images.js';
 import { tmdb } from '../api/tmdb.js';
 import { supabase } from '../api/supabase.js';
 import { useHistory } from '../hooks/useHistory.js';

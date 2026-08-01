@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useApp, posterUrl } from '../App.jsx';
+import { useApp } from '../hooks/useApp.js';
+import { posterUrl } from '../utils/images.js';
 import { starFillPercent, STAR_COUNT } from '../utils/ratings.js';
 import { favoriteWords } from '../utils/spelling.js';
 import { toggleLike } from '../hooks/usePostEngagement.js';

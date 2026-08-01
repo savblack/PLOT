@@ -1,5 +1,7 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { useApp, posterUrl, TodayLabel } from '../App.jsx';
+import { useApp } from '../hooks/useApp.js';
+import { TodayLabel } from './TodayLabel.jsx';
+import { posterUrl } from '../utils/images.js';
 import { localDateStr, dateToLocalStr } from '../utils/date.js';
 import { getCalendarRelativeLabel, msUntilNextLocalMidnight } from '../utils/calendar.js';
 import { useCalendar } from '../hooks/useCalendar.js';

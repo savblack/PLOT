@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { useApp } from '../App.jsx';
+import { useApp } from '../hooks/useApp.js';
 import { supabase } from '../api/supabase.js';
 import { usePublicProfile } from '../hooks/usePublicProfile.js';
 import { useFollows } from '../hooks/useFollows.js';

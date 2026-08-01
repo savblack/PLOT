@@ -1,5 +1,8 @@
 import { useState } from 'react';
-import { useApp, posterUrl, countdownChip, TodayLabel } from '../App.jsx';
+import { useApp } from '../hooks/useApp.js';
+import { countdownChip } from '../utils/countdown.js';
+import { TodayLabel } from './TodayLabel.jsx';
+import { posterUrl } from '../utils/images.js';
 import { localDateStr } from '../utils/date.js';
 import { useGenres } from '../hooks/useGenres.js';
 import { getButtonLikeProps } from '../utils/interactive.js';

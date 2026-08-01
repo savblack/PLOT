@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { useApp, posterUrl, logoUrl, TodayLabel } from '../App.jsx';
+import { useApp } from '../hooks/useApp.js';
+import { TodayLabel } from './TodayLabel.jsx';
+import { posterUrl, logoUrl } from '../utils/images.js';
 import { favoriteWords } from '../utils/spelling.js';
 import { localDateStr, dateToLocalStr } from '../utils/date.js';
 import { useDragScroll } from '../hooks/useDragScroll.js';

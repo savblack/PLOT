@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { useApp, logoUrl } from '../App.jsx';
+import { useApp } from '../hooks/useApp.js';
+import { logoUrl } from '../utils/images.js';
 import { tmdb, setTmdbRegion } from '../api/tmdb.js';
 import { supabase } from '../api/supabase.js';
 import { edgeFunctionUrl, callAuthenticatedFunction } from '../api/functions.js';
