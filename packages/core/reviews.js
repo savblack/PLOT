@@ -52,7 +52,8 @@ export function pickAudienceQuote(reviewsResponse) {
   return { text, author: pick.author };
 }
 
-const GAP_THRESHOLD = 15;
+const GAP_MILD = 15;
+const GAP_STRONG = 25;
 
 // TMDB vote_count below this reads as "early days" rather than a settled
 // verdict. There's no equivalent signal for the critic side — OMDb no longer
@@ -100,19 +101,33 @@ const LEVEL_BANDS = [
   ] },
 ];
 
-const CRITIC_HEAVY_LINES = [
-  'Loved by critics, more divisive with viewers.',
-  "A critics' favorite. Audiences were cooler on it.",
-  'Higher marks from critics than from viewers.',
+// A 15-24 point gap is a mild lean, not a split — "divisive" language doesn't
+// fit an 80/70. That framing is reserved for GAP_STRONG (25+).
+const CRITIC_MILD_LINES = [
+  'Critics rated it a bit higher than audiences did.',
+  'Slightly more love from critics than from viewers.',
+  'Critics were a touch more enthusiastic here.',
 ];
 
-const AUDIENCE_HEAVY_LINES = [
+const CRITIC_STRONG_LINES = [
+  'Loved by critics, more divisive with viewers.',
+  "A critics' favorite. Audiences were considerably cooler on it.",
+  'Critics were far more enthusiastic than audiences here.',
+];
+
+const AUDIENCE_MILD_LINES = [
+  'Audiences rated it a bit higher than critics did.',
+  'Slightly more love from viewers than from critics.',
+  'A touch more popular with audiences than critics.',
+];
+
+const AUDIENCE_STRONG_LINES = [
   "The people have spoken: it's a resounding yes.",
   'A bigger hit with viewers than with critics.',
-  'Audiences are more enthusiastic than critics here.',
+  'Audiences are far more enthusiastic than critics here.',
 ];
 
-const AUDIENCE_HEAVY_LOW_VOLUME_LINES = [
+const AUDIENCE_STRONG_LOW_VOLUME_LINES = [
   'Early audience reaction is strongly positive, still catching on with critics.',
   "So far, viewers are loving it more than critics are.",
   'Early word from viewers is glowing.',
@@ -142,11 +157,13 @@ export function getConsensusLine(criticScore, audienceScore, { audienceVoteCount
   if (!Number.isFinite(criticScore) || !Number.isFinite(audienceScore)) return null;
 
   const gap = criticScore - audienceScore;
-  if (gap >= GAP_THRESHOLD) return pick(CRITIC_HEAVY_LINES, seed);
-  if (-gap >= GAP_THRESHOLD) {
+  if (gap >= GAP_STRONG) return pick(CRITIC_STRONG_LINES, seed);
+  if (gap >= GAP_MILD) return pick(CRITIC_MILD_LINES, seed);
+  if (-gap >= GAP_STRONG) {
     const lowVolume = Number.isFinite(audienceVoteCount) && audienceVoteCount < LOW_AUDIENCE_VOTES;
-    return pick(lowVolume ? AUDIENCE_HEAVY_LOW_VOLUME_LINES : AUDIENCE_HEAVY_LINES, seed);
+    return pick(lowVolume ? AUDIENCE_STRONG_LOW_VOLUME_LINES : AUDIENCE_STRONG_LINES, seed);
   }
+  if (-gap >= GAP_MILD) return pick(AUDIENCE_MILD_LINES, seed);
 
   const lower = Math.min(criticScore, audienceScore);
   const band = LEVEL_BANDS.find(b => lower >= b.min);
