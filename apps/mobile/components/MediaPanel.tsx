@@ -712,7 +712,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                   <View style={styles.audienceQuote}>
                     <Text style={styles.audienceQuoteText}>&ldquo;{audienceQuote.text}&rdquo;</Text>
                     <Text style={styles.audienceQuoteAttr}>
-                      From a TMDB audience review{audienceQuote.author ? `, ${audienceQuote.author}` : ''}
+                      {audienceQuote.author || 'A TMDB audience review'}
                     </Text>
                   </View>
                 )}

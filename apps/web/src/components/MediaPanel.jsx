@@ -1262,7 +1262,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                   &ldquo;{audienceQuote.text}&rdquo;
                 </p>
                 <cite style={{ display: 'block', fontStyle: 'normal', fontSize: '0.68rem', fontWeight: 600, color: 'var(--text-muted)', marginTop: '0.25rem', letterSpacing: '0.02em' }}>
-                  From a TMDB audience review{audienceQuote.author ? `, ${audienceQuote.author}` : ''}
+                  {audienceQuote.author || 'A TMDB audience review'}
                 </cite>
               </blockquote>
             )}
