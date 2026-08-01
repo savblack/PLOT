@@ -96,7 +96,7 @@ const LEVEL_BANDS = [
   ] },
   { min: 0, lines: [
     'Panned across the board.',
-    'One of the worst reviewed titles this year, by both counts.',
+    'About as poorly reviewed as a title gets.',
     'Rock bottom for critics and audiences alike.',
   ] },
 ];
