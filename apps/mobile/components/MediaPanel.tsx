@@ -295,6 +295,7 @@ interface TMDBDetails {
   backdrop_path?: string | null;
   poster_path?: string | null;
   vote_average?: number;
+  vote_count?: number;
   genres?: TMDBGenre[];
   number_of_seasons?: number;
   seasons?: TMDBSeason[];
@@ -625,7 +626,9 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
   const rating = details?.vote_average ? `${details.vote_average.toFixed(1)} ★` : '';
   const genres = (details?.genres || []).slice(0, 3).map((g: any) => g.name).join(' · ');
   const audienceScore = Number.isFinite(details?.vote_average) ? Math.round((details!.vote_average as number) * 10) : null;
-  const consensusLine = criticScore ? getConsensusLine(criticScore.criticScore, audienceScore) : null;
+  const consensusLine = criticScore
+    ? getConsensusLine(criticScore.criticScore, audienceScore, { audienceVoteCount: details?.vote_count, seed: details?.id })
+    : null;
 
   // Prefer an official Trailer, then Teaser, then any YouTube clip (mirrors web).
   const vids = details?.videos?.results || [];
