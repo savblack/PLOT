@@ -6,7 +6,7 @@ import {
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Polyline, Line } from 'react-native-svg';
-import PlotLoader from '../../components/PlotLoader';
+import PlotLoader from '@plot/ui/PlotLoader';
 import ScreenHeaderBar from '../../components/ScreenHeaderBar';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 import { useMediaPanel } from '../../contexts/MediaPanelContext';
@@ -354,7 +354,7 @@ export default function MyListsScreen() {
   const [showAddToList,  setShowAddToList]  = useState<string | null>(null);
 
   const isLoading = watchlist.loading || watching.loading || favorites.loading || customLists.loading;
-  if (isLoading) return <PlotLoader />;
+  if (isLoading) return <PlotLoader backgroundColor={colors.bg} color={colors.textPrimary} />;
 
   const todayStr = (() => {
     const d = new Date();

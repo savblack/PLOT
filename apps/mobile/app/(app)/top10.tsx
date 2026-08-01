@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import PlotLoader from '../../components/PlotLoader';
+import PlotLoader from '@plot/ui/PlotLoader';
 import ErrorState from '../../components/ErrorState';
 import ScreenHeaderBar from '../../components/ScreenHeaderBar';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
@@ -269,7 +269,7 @@ export default function Top10Screen() {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { userId, topLists, history } = useAppData();
 
-  if (topLists.loading) return <PlotLoader />;
+  if (topLists.loading) return <PlotLoader backgroundColor={colors.bg} color={colors.textPrimary} />;
   if (topLists.error) return <ErrorState onRetry={topLists.reload} />;
 
   const HEADER_H = insets.top + 56;

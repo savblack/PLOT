@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../api/supabase.js';
 import { tmdb } from '../api/tmdb.js';
 import { writePendingSave } from '../utils/pendingSave.js';
-import PlotLoader from '../components/PlotLoader.jsx';
+import PlotLoader from '@plot/ui/PlotLoader.jsx';
 
 /**
  * /save?media_type=movie&tmdb_id=12345

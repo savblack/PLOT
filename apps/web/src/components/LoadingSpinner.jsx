@@ -1,4 +1,4 @@
-import PlotLoader from './PlotLoader';
+import PlotLoader from '@plot/ui/PlotLoader.jsx';
 
 export default function LoadingSpinner() {
   return (

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../api/supabase';
 import { HERO_POSTERS } from '../constants/heroPosters.js';
-import PlotLoader from '../components/PlotLoader.jsx';
+import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import './AuthPage.css';
 
 // The marketing site doubles as the logged-out home.

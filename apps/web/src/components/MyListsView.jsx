@@ -12,7 +12,7 @@ import LoadingSpinner from './LoadingSpinner.jsx';
 import CollapsibleSection from './CollapsibleSection.jsx';
 import GroupedFilterMenu from './GroupedFilterMenu.jsx';
 import SectionToggleIcon from './SectionToggleIcon.jsx';
-import PlotLoader from './PlotLoader.jsx';
+import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import SheetHeader from './SheetHeader.jsx';
 import { getButtonLikeProps } from '../utils/interactive.js';
 import { useShare } from '../hooks/useShare.js';

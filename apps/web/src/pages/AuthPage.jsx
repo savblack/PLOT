@@ -6,7 +6,7 @@ import { track, identifyUser, EVENTS } from '../lib/analytics.js';
 import { getAuthCallbackUrl } from '../utils/redirects.js';
 import { SHOW_GOOGLE_LOGIN, SHOW_APPLE_LOGIN } from '../launchFeatures.js';
 import { HERO_POSTERS } from '../constants/heroPosters.js';
-import PlotLoader from '../components/PlotLoader.jsx';
+import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import Turnstile from '../components/Turnstile.jsx';
 import { getPremiumCheckoutIntent, rememberPremiumCheckoutIntent } from '../utils/premiumCheckoutIntent.js';
 

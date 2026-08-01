@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { supabase } from '../api/supabase';
-import PlotLoader from '../components/PlotLoader';
+import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import { isPreviewDeployment } from '../utils/previewDeployment.js';
 
 // The marketing site is the only landing page — the app never serves one.

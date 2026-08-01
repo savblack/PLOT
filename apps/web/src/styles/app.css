@@ -3176,58 +3176,11 @@ a.provider-chip--link:hover {
   min-height: 200px;
 }
 
-.page-loader {
-  min-height: calc(100dvh - var(--header-h) - var(--tabbar-h) - 4.5rem);
-  display: grid;
-  place-items: center;
-}
-
-.app-boot-loader {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  display: grid;
-  place-items: center;
-  background: var(--bg);
-}
-
-.plot-loader {
-  --plot-loader-font-size: 28px;
-  --plot-loader-color: #0a0a0a;
-  display: inline-block;
-  width: fit-content;
-  font-family: var(--font-serif);
-  font-size: var(--plot-loader-font-size);
-  font-weight: 400;
-  letter-spacing: -0.05em;
-  line-height: 1;
-  color: var(--plot-loader-color);
-  user-select: none;
-  vertical-align: middle;
-  margin-inline: auto;
-}
-
-.plot-loader__letter {
-  display: inline-block;
-  opacity: 0.18;
-  animation: plot-letter-pulse 2s ease-in-out infinite;
-}
-
-.plot-loader__letter:nth-child(2) { animation-delay: 0.3s; }
-.plot-loader__letter:nth-child(3) { animation-delay: 0.6s; }
-.plot-loader__letter:nth-child(4) { animation-delay: 0.9s; }
-
-@media (max-width: 720px) {
-  .page-loader .plot-loader,
-  .app-boot-loader .plot-loader {
-    --plot-loader-font-size: 24px;
-  }
-}
-
-@keyframes plot-letter-pulse {
-  0%, 60%, 100% { opacity: 0.18; }
-  20%            { opacity: 1; }
-}
+/* .page-loader / .app-boot-loader moved to packages/ui/PlotLoader.css —
+   LoadingSpinner (which uses .page-loader) is the Suspense fallback shown
+   while this file's own lazy-loaded chunk (App.jsx) is still downloading, so
+   its positioning can't live here or it flashes unstyled at the top-left
+   first. */
 
 /* Small circular loader — inline/small-component loading (buttons, rows,
    inline sections). PlotLoader (the wordmark) is reserved for full pages. */

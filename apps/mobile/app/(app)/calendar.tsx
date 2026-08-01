@@ -6,7 +6,7 @@ import {
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Polyline } from 'react-native-svg';
-import PlotLoader from '../../components/PlotLoader';
+import PlotLoader from '@plot/ui/PlotLoader';
 import ErrorState from '../../components/ErrorState';
 import ScreenHeaderBar from '../../components/ScreenHeaderBar';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
@@ -220,7 +220,7 @@ export default function CalendarScreen() {
   const isDataLoading = loading || watchlist.loading || watching.loading;
   const dataError = !!watchlist.error || !!watching.error;
 
-  if (isDataLoading) return <PlotLoader />;
+  if (isDataLoading) return <PlotLoader backgroundColor={colors.bg} color={colors.textPrimary} />;
   if (dataError) {
     return <ErrorState onRetry={() => { watchlist.reload(); watching.reload(); }} />;
   }

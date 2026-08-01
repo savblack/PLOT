@@ -1,3 +1,5 @@
+import './PlotLoader.css';
+
 const LETTERS = ['P', 'L', 'O', 'T'];
 
 const SIZE_MAP = {

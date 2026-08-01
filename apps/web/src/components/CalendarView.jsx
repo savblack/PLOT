@@ -5,7 +5,7 @@ import { getCalendarRelativeLabel, msUntilNextLocalMidnight } from '../utils/cal
 import { useCalendar } from '../hooks/useCalendar.js';
 import { tmdb } from '../api/tmdb.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
-import PlotLoader from './PlotLoader.jsx';
+import PlotLoader from '@plot/ui/PlotLoader.jsx';
 
 
 /* ── Helpers ── */

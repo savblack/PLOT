@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import './DesignSystemPage.css';
-import PlotLoader from '../components/PlotLoader.jsx';
+import PlotLoader from '@plot/ui/PlotLoader.jsx';
 
 const colorTokens = [
   ['--bg', 'App background', 'The quiet canvas behind every primary view.'],

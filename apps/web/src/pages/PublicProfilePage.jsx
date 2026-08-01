@@ -12,7 +12,7 @@ import { favoriteWords } from '../utils/spelling.js';
 import { getButtonLikeProps } from '../utils/interactive.js';
 import UserList from '../components/UserList.jsx';
 import SheetHeader from '../components/SheetHeader.jsx';
-import PlotLoader from '../components/PlotLoader.jsx';
+import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import { EVENTS } from '../lib/analytics.js';
 
 const posterUrl = (path, size = 'w342') =>

@@ -3,7 +3,7 @@
  * Sections: Hero → Hot Right Now → Most Binged → Top 20 This Week
  */
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import PlotLoader from '../../components/PlotLoader';
+import PlotLoader from '@plot/ui/PlotLoader';
 import ErrorState from '../../components/ErrorState';
 import HomeReleases from '../../components/HomeReleases';
 import ScreenHeaderBar from '../../components/ScreenHeaderBar';
@@ -588,7 +588,7 @@ export default function HomeScreen() {
     }
   }, [listId, userId, savedIds]);
 
-  if (loading) return <PlotLoader />;
+  if (loading) return <PlotLoader backgroundColor={colors.bg} color={colors.textPrimary} />;
   if (error) return <ErrorState onRetry={() => setRetryKey(k => k + 1)} />;
 
   const HEADER_H = insets.top + 56;

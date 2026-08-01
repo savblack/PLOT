@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../api/supabase';
 import './AuthPage.css';
-import PlotLoader from '../components/PlotLoader.jsx';
+import PlotLoader from '@plot/ui/PlotLoader.jsx';
 
 function friendlyError(msg) {
   if (!msg) return 'Something went wrong. Please try again.';

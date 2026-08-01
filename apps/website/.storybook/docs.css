@@ -1,0 +1,29 @@
+/* Storybook-canvas-only helpers. Never linked from an actual site page. */
+.sb-swatch-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+.sb-swatch {
+  width: 120px;
+  font-family: var(--sans);
+  font-size: 0.7rem;
+  color: var(--text);
+}
+.sb-swatch-chip {
+  height: 64px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--glass-border);
+  margin-bottom: 0.4rem;
+}
+.sb-type-row {
+  margin-bottom: 1.5rem;
+}
+.sb-type-label {
+  font-family: var(--sans);
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.25rem;
+}

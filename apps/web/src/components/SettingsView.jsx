@@ -22,7 +22,7 @@ import { IANA_TIMEZONES } from '../utils/timezones.js';
 import { SHOW_MEDIA_SYNC_INTEGRATIONS, SHOW_WATCHLIST_AVAILABILITY_ALERTS } from '../launchFeatures.js';
 import SheetHeader from './SheetHeader.jsx';
 import ConfirmModal from './ConfirmModal.jsx';
-import PlotLoader from './PlotLoader.jsx';
+import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import Spinner from './Spinner.jsx';
 
 const USERNAME_RE = /^[a-z0-9](?:[a-z0-9-]{1,28}[a-z0-9])$/;

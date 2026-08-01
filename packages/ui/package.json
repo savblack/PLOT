@@ -1,0 +1,11 @@
+{
+  "name": "@plot/ui",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Shared visual components for the web app and Expo mobile app. Web variants are plain .jsx; native variants are explicit .native.tsx — each app imports the exact filename it needs (same convention as @plot/core), since Vite and Metro don't share one resolution strategy.",
+  "exports": {
+    "./PlotLoader": "./PlotLoader.native.tsx",
+    "./*": "./*"
+  }
+}

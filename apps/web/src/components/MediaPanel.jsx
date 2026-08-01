@@ -21,7 +21,7 @@ import { fetchVerifiedAvailability, formatOfferPrice, offersFromTmdb } from '@pl
 import { fetchCriticScore, pickAudienceQuote, getConsensusLine } from '@plot/core/reviews.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import SheetHeader from './SheetHeader.jsx';
-import PlotLoader from './PlotLoader.jsx';
+import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import Spinner from './Spinner.jsx';
 
 /* ── Close icon ── */

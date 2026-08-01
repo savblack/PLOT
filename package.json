@@ -5,8 +5,10 @@
   "type": "module",
   "workspaces": [
     "packages/core",
+    "packages/ui",
     "apps/web",
-    "apps/mobile"
+    "apps/mobile",
+    "apps/website"
   ],
   "scripts": {
     "dev": "npm run dev -w @plot/web",
@@ -21,6 +23,8 @@
     "tokens:build": "node scripts/build-tokens.mjs --write",
     "tokens:check": "node scripts/build-tokens.mjs --check",
     "tokens:marketing": "node scripts/check-marketing-tokens.mjs",
+    "storybook:website": "npm run storybook -w @plot/website-storybook",
+    "storybook:web": "npm run storybook -w @plot/web",
     "emails:check": "node scripts/push-auth-emails.mjs --check",
     "mkt:plan": "node marketing/planner/plan.mjs",
     "mkt:guides": "node marketing/planner/guides.mjs",

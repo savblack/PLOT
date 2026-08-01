@@ -9,7 +9,7 @@ import { tmdb } from '../api/tmdb';
 // explicitly — Vite dedupes it against App's stylesheet rather than doubling it.
 import '../styles/app.css';
 import { posterUrl } from '../App.jsx';
-import PlotLoader from '../components/PlotLoader.jsx';
+import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import Spinner from '../components/Spinner.jsx';
 import { getButtonLikeProps } from '../utils/interactive.js';
 import { track, markActivated, EVENTS } from '../lib/analytics.js';

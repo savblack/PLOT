@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { supabase } from '../api/supabase';
-import PlotLoader from './PlotLoader';
+import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import { isPreviewDeployment } from '../utils/previewDeployment.js';
 
 export default function ProtectedRoute({ children, skipOnboardingCheck = false, publicPrefixes = [] }) {
