@@ -4299,9 +4299,18 @@ a.provider-chip--link:hover {
 }
 
 /* Section headers stack flush — the grey bands meet with no gap above or
-   below, collapsed or expanded, so the list reads as one continuous accordion. */
+   below, collapsed or expanded, so the list reads as one continuous accordion.
+   Unlike CollapsibleSection.jsx's <div class="collapse-head">, this is a
+   <button>, so the browser's default button border needs resetting too —
+   .collapse-head only ever overrides border-bottom. Left alone, the native
+   top border stacked with the previous header's border-bottom into a heavy
+   double line wherever two collapsed sections sat flush against each other. */
 .discover-section-header {
   margin-top: 0;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  appearance: none;
+  -webkit-appearance: none;
 }
 
 .section-expand-all-btn {
