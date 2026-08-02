@@ -13,6 +13,7 @@ import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 import { useMediaPanel } from '../../contexts/MediaPanelContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import { useCalendarEvents, CalendarEvent } from '../../hooks/useCalendarEvents';
+import { dateToLocalStr } from '@plot/core/date.js';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 
@@ -21,10 +22,6 @@ const SCREEN_W = Dimensions.get('window').width;
 type CalView = 'agenda' | 'week' | 'month';
 
 // ── Date helpers ──────────────────────────────────────────────────────
-function localDateStr(d?: Date) {
-  const date = d ?? new Date();
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-}
 
 // Parse a YYYY-MM-DD string into a local Date without UTC shifting.
 // new Date('2024-03-15') parses as UTC midnight; this gives local midnight.
@@ -145,7 +142,7 @@ export default function CalendarScreen() {
   const { events, loading, eventsForDate } = useCalendarEvents(watchlist.items, watching.items);
 
   const today    = useMemo(() => new Date(), []);
-  const todayStr = useMemo(() => localDateStr(today), [today]);
+  const todayStr = useMemo(() => dateToLocalStr(today), [today]);
 
   const [view,         setView]         = useState<CalView>('agenda');
   const [year,         setYear]         = useState(today.getFullYear());
@@ -207,8 +204,8 @@ export default function CalendarScreen() {
     const isCurrentMonth = year === today.getFullYear() && month === today.getMonth();
     return days
       .filter(d => d.current)
-      .filter(d => !isCurrentMonth || localDateStr(d.date) >= todayStr)
-      .map(d => { const ds = localDateStr(d.date); return { date: d.date, ds, events: eventsForDate(ds) }; })
+      .filter(d => !isCurrentMonth || dateToLocalStr(d.date) >= todayStr)
+      .map(d => { const ds = dateToLocalStr(d.date); return { date: d.date, ds, events: eventsForDate(ds) }; })
       .filter(d => d.events.length > 0);
   }, [days, eventsForDate, year, month, today, todayStr]);
 
@@ -251,7 +248,7 @@ export default function CalendarScreen() {
             ).map((row, rowIdx) => (
               <View key={rowIdx} style={styles.gridRow}>
                 {row.map(({ date, current }, i) => {
-                  const ds         = localDateStr(date);
+                  const ds         = dateToLocalStr(date);
                   const cellEvents = current ? eventsForDate(ds) : [];
                   const isToday    = ds === todayStr;
                   const isSelected = ds === selectedDate;
@@ -292,7 +289,7 @@ export default function CalendarScreen() {
           <>
             <View style={[styles.weekStrip, { paddingHorizontal: spacing.xl }]}>
               {weekDays.map((date, i) => {
-                const ds         = localDateStr(date);
+                const ds         = dateToLocalStr(date);
                 const cellEvents = eventsForDate(ds);
                 const isToday    = ds === todayStr;
                 const isSelected = ds === selectedDate;

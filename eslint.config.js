@@ -7,7 +7,10 @@ import { defineConfig, globalIgnores } from 'eslint/config'
 export default defineConfig([
   // The mobile workspace is TypeScript/Expo with its own tsc typecheck (npm run
   // typecheck -w @plot/mobile); the web flat config does not apply to it.
-  globalIgnores(['dist', '**/dist/**', '.claude', 'apps/website/.claude', 'supabase/.temp', 'node_modules', 'archive/', 'apps/mobile']),
+  // storybook-static is gitignored build output, but ESLint doesn't read
+  // .gitignore — without this, `npm run check` fails locally for anyone who has
+  // run a Storybook build, while passing in CI's clean checkout.
+  globalIgnores(['dist', '**/dist/**', 'storybook-static', '**/storybook-static/**', '.claude', 'apps/website/.claude', 'supabase/.temp', 'node_modules', 'archive/', 'apps/mobile']),
   {
     files: ['**/*.{js,jsx}'],
     extends: [

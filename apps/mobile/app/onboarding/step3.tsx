@@ -16,6 +16,7 @@ import { supabase } from '../../lib/supabase';
 import { tmdb } from '../../lib/tmdb';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
+import { getOrCreateMyListId, saveOnboardingSeedTitles } from '@plot/core/onboarding.js';
 
 const SCREEN_W = Dimensions.get('window').width;
 const CARD_W = (SCREEN_W - spacing.xl * 2 - spacing.sm * 2) / 3;
@@ -78,19 +79,12 @@ export default function Step3() {
   };
   const isSelected = (item: SearchResult) => selected.some(i => i.id === item.id);
 
-  // Always create My List so the Home Save action has somewhere to write
-  // into, even for a user who skips title selection entirely.
-  const ensureMyList = async (userId: string) => {
-    const listRes = await supabase.from('lists')
-      .upsert({ user_id: userId, name: 'My List', is_public: false }, { onConflict: 'user_id,name' })
-      .select('id').single();
-    return listRes?.data?.id ?? null;
-  };
-
   const handleSkip = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) {
-      await ensureMyList(session.user.id);
+      // Always create My List so the Home Save action has somewhere to write
+      // into, even for a user who skips title selection entirely.
+      await getOrCreateMyListId({ supabase, userId: session.user.id });
       await supabase.from('profiles').update({ onboarding_complete: true }).eq('id', session.user.id);
     }
     router.replace('/(app)');
@@ -100,21 +94,14 @@ export default function Step3() {
     setSaving(true);
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) {
-      const listId = await ensureMyList(session.user.id);
-      if (listId && selected.length > 0) {
-        const rows = selected.map(item => ({
-          list_id: listId,
-          user_id: session.user.id,
-          tmdb_id: item.id,
-          media_type: item.media_type ?? 'movie',
-          title: item.title || item.name || '',
-          poster_path: item.poster_path ?? null,
-          release_date: item.release_date || item.first_air_date || null,
-        }));
-        await supabase.from('list_items').upsert(rows, { onConflict: 'list_id,tmdb_id' });
+      // saveOnboardingSeedTitles creates My List itself and writes each row
+      // through the shared saveListItem, so seeded titles carry genre_ids and
+      // provider ids like every other saved title does.
+      if (selected.length > 0) {
+        await saveOnboardingSeedTitles({ supabase, userId: session.user.id, items: selected });
+      } else {
+        await getOrCreateMyListId({ supabase, userId: session.user.id });
       }
-    }
-    if (session?.user) {
       await supabase.from('profiles').update({ onboarding_complete: true }).eq('id', session.user.id);
     }
     setSaving(false);

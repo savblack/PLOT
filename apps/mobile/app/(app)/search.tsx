@@ -15,6 +15,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import { favoriteWords } from '../../lib/spelling';
 import { UserRow, SocialUser } from '../../components/UserList';
+import { classifySearchResults } from '@plot/core/search.js';
 
 type Mode = 'titles' | 'people';
 
@@ -75,6 +76,9 @@ export default function SearchScreen() {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [users,   setUsers]   = useState<SocialUser[]>([]);
   const [loading, setLoading] = useState(false);
+  // 'none' | 'title-guidance' | 'generic' — see @plot/core/search.js.
+  // 'title-guidance' means only people matched, so nudge toward a title.
+  const [emptyMode, setEmptyMode] = useState('none');
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reqRef = useRef(0);
@@ -90,10 +94,9 @@ export default function SearchScreen() {
     } else {
       const data = await tmdb.search(q);
       if (reqId !== reqRef.current) return;
-      const valid = (data?.results ?? []).filter(
-        (r: SearchResult) => r.media_type !== 'person' && (r.title || r.name)
-      );
-      setResults(valid.slice(0, 20));
+      const { filtered, emptyMode: nextEmptyMode } = classifySearchResults(data?.results ?? []);
+      setResults(filtered.slice(0, 20) as SearchResult[]);
+      setEmptyMode(nextEmptyMode);
     }
     setLoading(false);
   };
@@ -193,6 +196,17 @@ export default function SearchScreen() {
           renderItem={({ item }) => <SearchRow item={item} hooks={hooks} signedIn={!!userId} />}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }}
+          ListEmptyComponent={loading ? null : emptyMode === 'title-guidance' ? (
+            <View style={styles.empty}>
+              <Text style={styles.emptyTitle}>Try searching by title</Text>
+              <Text style={styles.emptyBody}>Search works best with a movie or TV title rather than a director, cast member, or creator name.</Text>
+            </View>
+          ) : (
+            <View style={styles.empty}>
+              <Text style={styles.emptyTitle}>No results</Text>
+              <Text style={styles.emptyBody}>Try a different title or spelling.</Text>
+            </View>
+          )}
         />
       )}
     </View>

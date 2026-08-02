@@ -8,5 +8,9 @@
   "exports": {
     ".": "./index.js",
     "./*": "./*"
+  },
+  "peerDependencies": {
+    "@supabase/supabase-js": "^2.110.7",
+    "react": ">=19"
   }
 }
