@@ -341,28 +341,32 @@ export default function AuthScreen() {
                 )}
               </View>
 
-              {/* Cloudflare Turnstile — required by the Supabase project's captcha */}
-              {TURNSTILE_SITE_KEY ? (
-                <View style={styles.captcha}>
-                  <Turnstile
-                    siteKey={TURNSTILE_SITE_KEY}
-                    onToken={setCaptchaToken}
-                    resetSignal={captchaNonce}
-                  />
-                </View>
-              ) : null}
-
-              {/* CTA — solid ink, like the web .auth-cta */}
-              <TouchableOpacity
-                style={[styles.cta, (loading || !captchaReady) && { opacity: 0.6 }]}
-                onPress={handleSubmit}
-                disabled={loading || !captchaReady}
-                activeOpacity={0.85}
-              >
-                {loading
-                  ? <ActivityIndicator color="#fff" />
-                  : <Text style={styles.ctaText}>{submitLabel}</Text>}
-              </TouchableOpacity>
+              {/* CTA — solid ink, like the web .auth-cta. Turnstile takes no space
+                  and ignores touches by default (see its own pointerEvents) — if
+                  Cloudflare ever decides this sign-in needs a real interactive
+                  check, it pops up over the fields above instead of permanently
+                  reserving a gap for something that's normally invisible. */}
+              <View style={styles.ctaWrap}>
+                {TURNSTILE_SITE_KEY ? (
+                  <View style={styles.captcha}>
+                    <Turnstile
+                      siteKey={TURNSTILE_SITE_KEY}
+                      onToken={setCaptchaToken}
+                      resetSignal={captchaNonce}
+                    />
+                  </View>
+                ) : null}
+                <TouchableOpacity
+                  style={[styles.cta, (loading || !captchaReady) && { opacity: 0.6 }]}
+                  onPress={handleSubmit}
+                  disabled={loading || !captchaReady}
+                  activeOpacity={0.85}
+                >
+                  {loading
+                    ? <ActivityIndicator color="#fff" />
+                    : <Text style={styles.ctaText}>{submitLabel}</Text>}
+                </TouchableOpacity>
+              </View>
 
               {/* Mode switcher — show only the opposite mode, like web .auth-toggle */}
               {mode === 'forgot' ? (
@@ -492,8 +496,15 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     color: '#09090B',
   },
+  ctaWrap: {
+    marginBottom: spacing.lg,
+  },
   captcha: {
-    marginBottom: spacing.md,
+    position: 'absolute',
+    bottom: '100%',
+    left: 0,
+    right: 0,
+    marginBottom: spacing.xs,
     alignItems: 'center',
   },
   cta: {
@@ -501,7 +512,6 @@ const styles = StyleSheet.create({
     borderRadius: radii.pill,
     paddingVertical: 15,
     alignItems: 'center',
-    marginBottom: spacing.lg,
   },
   ctaText: {
     fontFamily: fontFamily.sansMedium,
