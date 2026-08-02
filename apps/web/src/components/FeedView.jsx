@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { useApp } from '../App.jsx';
+import { useApp } from '../hooks/useApp.js';
 import { useFeed } from '../hooks/useFeed.js';
 import FeedPost from './FeedPost.jsx';
 import SuggestedUsers from './SuggestedUsers.jsx';

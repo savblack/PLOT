@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useApp, backdropUrl, logoUrl, profileUrl, countdownChip, formatDate } from '../App.jsx';
+import { useApp } from '../hooks/useApp.js';
+import { countdownChip, formatDate } from '../utils/countdown.js';
+import { backdropUrl, logoUrl, profileUrl } from '../utils/images.js';
 import { tmdb, getTmdbRegion } from '../api/tmdb.js';
 import { findDuplicateCustomList } from '../domain/customLists.js';
 import { useHistory } from '../hooks/useHistory.js';

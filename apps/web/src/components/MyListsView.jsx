@@ -1,7 +1,10 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocation } from 'react-router-dom';
-import { useApp, posterUrl, countdownChip, TodayLabel } from '../App.jsx';
+import { useApp } from '../hooks/useApp.js';
+import { countdownChip } from '../utils/countdown.js';
+import { TodayLabel } from './TodayLabel.jsx';
+import { posterUrl } from '../utils/images.js';
 import { tmdb } from '../api/tmdb.js';
 import { findDuplicateCustomList } from '../domain/customLists.js';
 import { useHistory } from '../hooks/useHistory.js';

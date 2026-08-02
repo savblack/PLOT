@@ -8,7 +8,7 @@ import { tmdb } from '../api/tmdb';
 // only rides along on App.jsx's own lazy-loaded chunk), so import app.css
 // explicitly — Vite dedupes it against App's stylesheet rather than doubling it.
 import '../styles/app.css';
-import { posterUrl } from '../App.jsx';
+import { posterUrl } from '../utils/images.js';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import Spinner from '../components/Spinner.jsx';
 import { getButtonLikeProps } from '../utils/interactive.js';

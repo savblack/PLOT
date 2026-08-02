@@ -1,11 +1,12 @@
-import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 // The bulk of the app's CSS (~4800 lines: every authenticated view — Discover,
 // Settings, Calendar, etc.) lives here instead of the global stylesheet, so
 // visitors who never reach the app shell (/login, /terms, /save, ...) don't pay
-// for it. Anything outside the shell that statically imports from this module
-// (e.g. OnboardingFlow, for logoUrl/posterUrl) pulls this chunk — and its CSS —
-// in too, so it stays styled.
+// for it. Pure/context helpers that other code needs (TMDB image helpers,
+// AppContext/useApp, date-display helpers) live in their own modules under
+// ./utils and ./hooks so code outside the shell can use them without pulling
+// in this chunk.
 import './styles/app.css';
 import { supabase } from './api/supabase.js';
 import { setTmdbRegion } from './api/tmdb.js';
@@ -26,54 +27,14 @@ import { pathForView, viewFromPath } from './navigation.js';
 import { readStorage, writeStorage } from './utils/storage.js';
 import { readCachedSession, writeCachedSession, clearCachedSession } from './utils/sessionCache.js';
 import { track, EVENTS, setPersonProps } from './lib/analytics.js';
+import { posterUrl, backdropUrl, logoUrl, profileUrl } from './utils/images.js';
+import { AppContext, useApp } from './hooks/useApp.js';
+import { countdownChip, formatDate } from './utils/countdown.js';
+import { TodayLabel } from './components/TodayLabel.jsx';
 
-/* ── App Context ─────────────────────── */
-export const AppContext = createContext(null);
-export const useApp = () => useContext(AppContext);
-
-/* ── TMDB image helpers ──────────────── */
-export const posterUrl   = (path, size = 'w342') =>
-  path ? `https://image.tmdb.org/t/p/${size}${path}` : null;
-export const backdropUrl = (path, size = 'w780') =>
-  path ? `https://image.tmdb.org/t/p/${size}${path}` : null;
-export const logoUrl     = (path, size = 'w45')  =>
-  path ? `https://image.tmdb.org/t/p/${size}${path}` : null;
-export const profileUrl  = (path, size = 'w185') =>
-  path ? `https://image.tmdb.org/t/p/${size}${path}` : null;
-
-/* ── Countdown chip helper ───────────── */
-export function countdownChip(dateStr) {
-  if (!dateStr) return null;
-  // Parse YYYY-MM-DD as local midnight to avoid UTC offset shifting the date
-  const [y, m, day] = dateStr.split('-').map(Number);
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const d = new Date(y, m - 1, day);
-  const diff = Math.round((d - today) / 86400000);
-  if (diff < 0)   return { label: 'Released',    cls: 'chip-muted' };
-  if (diff === 0) return { label: 'Today',        cls: 'chip-today' };
-  if (diff === 1) return { label: 'Tomorrow',     cls: 'chip-tomorrow' };
-  if (diff <= 7)  return { label: `${diff} days`, cls: 'chip-soon' };
-  const fmt = new Date(dateStr).toLocaleDateString('en', { month: 'short', day: 'numeric' });
-  return { label: fmt, cls: 'chip-muted' };
-}
-
-export function formatDate(dateStr) {
-  if (!dateStr) return '';
-  return new Date(dateStr).toLocaleDateString('en', { month: 'short', day: 'numeric', year: 'numeric' });
-}
-
-/* ── Today label for view headers ("Fri, May 22") ── */
-export function TodayLabel({ onClick }) {
-  const label = new Date().toLocaleDateString('en', { weekday: 'short', month: 'short', day: 'numeric' });
-  return (
-    <span
-      onClick={onClick}
-      className={`today-label${onClick ? ' today-label--clickable' : ''}`}
-    >
-      {label}
-    </span>
-  );
-}
+export { posterUrl, backdropUrl, logoUrl, profileUrl };
+export { AppContext, useApp };
+export { countdownChip, formatDate, TodayLabel };
 
 /* ── Timezone mismatch banner ─────────── */
 const TZ_DISMISS_KEY = 'plot_tz_dismissed';
