@@ -67,6 +67,12 @@ gtag('js',new Date());gtag('config','G-PYLHY9JMK1');
 const GTM_NOSCRIPT = `<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PC72PHBN" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>`;
 
 const STYLE = `
+/* Self-hosted from apps/website/fonts — this function is proxied under
+   theplot.tv, so an absolute path resolves against that origin regardless
+   of where the HTML itself is generated. */
+@font-face { font-family: 'DM Sans'; src: url('${SITE}/fonts/DMSans-Variable.ttf') format('truetype-variations'); font-weight: 100 900; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Instrument Serif'; src: url('${SITE}/fonts/InstrumentSerif-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Instrument Serif'; src: url('${SITE}/fonts/InstrumentSerif-Italic.ttf') format('truetype'); font-weight: 400; font-style: italic; font-display: swap; }
 :root{--ink:#0c0c0c;--paper:#F4F4F5;--pink:#E05578;--mut:#6b6b70;--faint:#a1a1a6;--hair:rgba(12,12,12,0.14);--serif:'Instrument Serif',Georgia,serif;--ease:cubic-bezier(0.23,1,0.32,1);}
 *{margin:0;padding:0;box-sizing:border-box;}
 body{background:#fff;color:var(--ink);font-family:'DM Sans',system-ui,sans-serif;line-height:1.6;position:relative;}
@@ -135,9 +141,8 @@ function page(title: string, head: string, body: string, status = 200, cache = t
 ${PH}
 ${GA_GTM}
 ${head}
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="preload" href="${SITE}/fonts/DMSans-Variable.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="preload" href="${SITE}/fonts/InstrumentSerif-Regular.ttf" as="font" type="font/ttf" crossorigin>
 <style>${STYLE}</style>
 </head>
 <body>

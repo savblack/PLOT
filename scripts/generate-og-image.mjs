@@ -2,18 +2,25 @@
 // Usage: node scripts/generate-og-image.mjs
 import { chromium } from 'playwright';
 import { fileURLToPath } from 'node:url';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
 const OUT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'apps', 'website', 'og-image.png');
+const FONTS_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'apps', 'web', 'public', 'fonts');
+
+// page.setContent() below never navigates to a real URL, so relative/absolute
+// font paths can't resolve — read the same files apps/web self-hosts and embed
+// them as data URIs instead of a Google Fonts round trip.
+const fontDataUri = (file) => `data:font/ttf;base64,${readFileSync(path.join(FONTS_DIR, file)).toString('base64')}`;
 
 const html = `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@200;300&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
 <style>
+  @font-face { font-family: 'DM Sans'; src: url(${fontDataUri('DMSans-Variable.ttf')}) format('truetype-variations'); font-weight: 100 900; font-style: normal; font-display: swap; }
+  @font-face { font-family: 'Instrument Serif'; src: url(${fontDataUri('InstrumentSerif-Regular.ttf')}) format('truetype'); font-weight: 400; font-style: normal; font-display: swap; }
+  @font-face { font-family: 'Instrument Serif'; src: url(${fontDataUri('InstrumentSerif-Italic.ttf')}) format('truetype'); font-weight: 400; font-style: italic; font-display: swap; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
     width: 1200px;

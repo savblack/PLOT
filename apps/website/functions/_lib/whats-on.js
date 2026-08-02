@@ -33,7 +33,7 @@ export async function whatsOn(request, slug) {
       // The upstream feed is a complete server-rendered document with inline
       // presentation and navigation scripts. Keep this aligned with _headers:
       // Pages Functions replace the static-header policy for this route.
-      'Content-Security-Policy': "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; img-src 'self' data: https://image.tmdb.org https://theplot.tv https://a.theplot.tv https://us-assets.i.posthog.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self' 'unsafe-inline' https://a.theplot.tv https://us-assets.i.posthog.com https://www.googletagmanager.com; connect-src 'self' https://a.theplot.tv https://us.i.posthog.com https://us-assets.i.posthog.com https://www.googletagmanager.com; frame-src https://www.googletagmanager.com; worker-src 'self' blob:; form-action 'self'; upgrade-insecure-requests",
+      'Content-Security-Policy': "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; img-src 'self' data: https://image.tmdb.org https://theplot.tv https://a.theplot.tv https://us-assets.i.posthog.com; style-src 'self' 'unsafe-inline'; font-src 'self'; script-src 'self' 'unsafe-inline' https://a.theplot.tv https://us-assets.i.posthog.com https://www.googletagmanager.com; connect-src 'self' https://a.theplot.tv https://us.i.posthog.com https://us-assets.i.posthog.com https://www.googletagmanager.com; frame-src https://www.googletagmanager.com; worker-src 'self' blob:; form-action 'self'; upgrade-insecure-requests",
       'X-Content-Type-Options': 'nosniff',
       'X-Frame-Options': 'DENY',
       'Referrer-Policy': 'strict-origin-when-cross-origin',
