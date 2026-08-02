@@ -103,7 +103,7 @@ const getShow = (ep) => ep.show ?? ep._embedded?.show;
 // TVMaze's `show.language` is often missing entirely, so a title with non-Latin
 // script (CJK, Hangul, Cyrillic, Arabic, Thai, Devanagari, etc.) is the fallback
 // signal that a show isn't English-language, even when the language field is unset.
-const NON_LATIN_SCRIPT_RE = /[぀-ヿ㐀-鿿가-힯Ѐ-ӿ؀-ۿ฀-๿ऀ-ॿ]/;
+const NON_LATIN_SCRIPT_RE = /[぀-ヿ㐀-鿿가-힯Ѐ-ӿ؀-ۿ฀-๿\u0904-ॿ]/;
 function looksNonEnglishTitle(title) {
   return NON_LATIN_SCRIPT_RE.test(title || '');
 }
