@@ -2,6 +2,11 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
-    "allowJs": true
-  }
+    "allowJs": true,
+    "paths": {
+      "react-native": ["./node_modules/react-native"],
+      "react-native/*": ["./node_modules/react-native/*"]
+    }
+  },
+  "exclude": ["node_modules", ".storybook", ".storybook-web", "app/storybook.tsx", "storybook-static"]
 }

@@ -1796,6 +1796,8 @@ svg { stroke-width: 1.5; }
   transition: background 0.12s ease, color 0.12s ease;
 }
 .cal-month-btn:hover { background: var(--surface-sunken); color: var(--text-primary); }
+.cal-month-btn:disabled { color: var(--text-muted); opacity: 0.4; cursor: default; }
+.cal-month-btn:disabled:hover { background: transparent; }
 .cal-month-btn svg { width: 10px; height: 10px; stroke: currentColor; fill: none; stroke-width: 2.5; }
 .cal-month-nav-label {
   font-size: 0.72rem;
@@ -2010,26 +2012,42 @@ svg { stroke-width: 1.5; }
 }
 .history-list-row {
   align-items: center;
+  flex-wrap: wrap;
 }
-.history-list-row .list-row-info {
-  flex: 0 0 clamp(240px, 42vw, 560px);
+.history-list-row .collapse-body {
+  flex: 0 0 100%;
 }
 .history-row-rating {
   color: #f59e0b;
   font-weight: 600;
 }
-.history-row-review {
-  flex: 1 1 auto;
-  min-width: 120px;
-  text-align: right;
+.history-row-toggle {
+  flex: 0 0 auto;
+  margin-left: auto;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.history-row-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.history-row-quote {
+  margin: 0 1rem 0.7rem 0;
+  padding-top: 0.85rem;
   color: var(--text-secondary);
-  font-family: 'Nothing You Could Do', cursive;
+  font-family: var(--font-serif);
+  font-style: italic;
   font-size: 0.92rem;
   line-height: 1.3;
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
 }
 
 .half-star-rating {
@@ -3165,6 +3183,36 @@ a.provider-chip--link:hover {
   opacity: 0.9;
 }
 
+/* Dropdown panel opened by KebabMenu.jsx (and reused-shape panels like it) */
+.kebab-menu {
+  position: relative;
+}
+.kebab-menu-panel {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  z-index: 100;
+  min-width: 120px;
+  overflow: hidden;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+.kebab-menu-item {
+  display: block;
+  width: 100%;
+  padding: 0.6rem 0.8rem;
+  background: none;
+  border: none;
+  font-size: 0.8rem;
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+.kebab-menu-item:hover { background: color-mix(in srgb, var(--surface-raised) 85%, var(--text-primary) 15%); }
+.kebab-menu-item--danger { color: #ef4444; }
+
 /* ═══════════════════════════════════════
    LOADING
 ═══════════════════════════════════════ */
@@ -3311,26 +3359,51 @@ a.provider-chip--link:hover {
 
 /* ── Shared collapsible section (CollapsibleSection.jsx) ───────────────
    One fixed-height banner + an animated body. Every banner is the same
-   height regardless of its contents (label / count). */
+   height regardless of its contents (label / count). The banner is a plain
+   row — the chevron/label/count toggle and any header actions (kebab menu,
+   etc.) are separate sibling buttons so actions never nest inside the
+   toggle button. */
+.collapse-section {
+  /* Leaves room for the sticky .sub-tabs-bar when a section is scrolled
+     into view via its id (e.g. jumping to a month in History). */
+  scroll-margin-top: 52px;
+}
 .collapse-head {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
   width: 100%;
   min-height: 46px;
   padding: 0 1rem;
   background: var(--bg);
-  border: none;
   border-bottom: 1px solid var(--border);
+  transition: background 0.15s ease;
+}
+.collapse-head:hover { background: color-mix(in srgb, var(--bg) 85%, var(--accent) 15%); }
+.collapse-head-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
   cursor: pointer;
   text-align: left;
   color: inherit;
   font: inherit;
-  transition: background 0.15s ease;
   -webkit-tap-highlight-color: transparent;
 }
-.collapse-head:hover { background: color-mix(in srgb, var(--bg) 85%, var(--accent) 15%); }
-.collapse-head:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.collapse-head-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.collapse-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+  margin-left: 0.4rem;
+}
 
 .collapse-chevron {
   width: 14px;
