@@ -13,6 +13,9 @@ jobs:
   changes:
     name: Detect changed areas
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
     outputs:
       mobile: ${{ steps.filter.outputs.mobile }}
     steps:
@@ -25,8 +28,9 @@ jobs:
         with:
           filters: |
             mobile:
-              - 'packages/mobile/**'
+              - 'apps/mobile/**'
               - 'packages/core/**'
+              - 'packages/ui/**'
               - 'package.json'
               - 'package-lock.json'
 

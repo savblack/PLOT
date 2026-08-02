@@ -495,7 +495,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { userId, profile, watchlist, watching, favorites, history, customLists } = useAppData();
+  const { userId, profile, watchlist, watching, favorites, history, customLists, topLists } = useAppData();
   const fw = favoriteWords(profile?.region);
 
   const [showListSheet, setShowListSheet] = useState(false);
