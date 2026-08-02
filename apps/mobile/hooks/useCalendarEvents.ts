@@ -147,7 +147,6 @@ export function useCalendarEvents(
     });
 
     return () => { cancelledRef.current = true; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watchlistKey, watchingKey]);
 
   const eventsForDate = useCallback(

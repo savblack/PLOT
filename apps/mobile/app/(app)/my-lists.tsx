@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   View, Text, ScrollView, FlatList, Image, TouchableOpacity, TextInput,
   Modal, StyleSheet, Dimensions, ActivityIndicator, Alert, Share,
@@ -194,7 +194,6 @@ function SearchPickModal({
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { open: openPanel } = useMediaPanel();
   const [tab,      setTab]      = useState<'history' | 'search'>('history');
   const [query,    setQuery]    = useState('');
   const [results,  setResults]  = useState<any[]>([]);
@@ -329,7 +328,7 @@ export default function MyListsScreen() {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
   const { open: openPanel } = useMediaPanel();
-  const { userId, watchlist, watching, favorites, customLists, history, profile } = useAppData();
+  const { watchlist, watching, favorites, customLists, history, profile } = useAppData();
   const fw = favoriteWords(profile?.region);
 
   const [tab,          setTab]          = useState('all');

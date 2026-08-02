@@ -11,7 +11,6 @@ import {
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ScreenHeaderBar from '../../components/ScreenHeaderBar';
-import { useDrawer } from '../../contexts/DrawerContext';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 import { supabase } from '../../lib/supabase';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
@@ -278,7 +277,6 @@ function ProgramBlock({ prog, nowMins, onPress, channelType }: { prog: Program; 
 // ── Program detail sheet ──────────────────────────────────────────────
 function ProgramSheet({ prog, onClose }: { prog: Program | null; onClose: () => void }) {
   const insets = useSafeAreaInsets();
-  const { open } = useDrawer();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   if (!prog) return null;
@@ -386,7 +384,7 @@ export default function GuideScreen() {
           style={styles.dayTabs}
           contentContainerStyle={{ paddingHorizontal: spacing.md, gap: spacing.xs, alignItems: 'center' }}
         >
-          {days.map((d, i) => (
+          {days.map((d) => (
             <TouchableOpacity
               key={d.dateStr}
               style={[styles.dayTab, d.dateStr === selectedDate && styles.dayTabActive]}
