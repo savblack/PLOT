@@ -12,6 +12,7 @@ import ScreenHeaderBar from '../../components/ScreenHeaderBar';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 import { HistoryEntry } from '../../hooks/useHistory';
 import { useAppData } from '../../contexts/AppDataContext';
+import { useMediaPanel } from '../../contexts/MediaPanelContext';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii, iconButtonSize } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 import { ratingToStars } from '@plot/core/ratings.js';
@@ -35,6 +36,7 @@ const THUMB_H = 44;
 function HistoryRow({ entry }: { entry: HistoryEntry }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { open: openPanel } = useMediaPanel();
   const [expanded, setExpanded] = useState(false);
   const img   = posterUrl(entry.poster_path, 'w92');
   const type  = entry.media_type === 'tv' ? 'Series' : 'Movie';
@@ -44,6 +46,7 @@ function HistoryRow({ entry }: { entry: HistoryEntry }) {
   const ratingLabel = historyRatingLabel(entry.rating);
   const hasNote = !!entry.note;
 
+  const openDetails = () => { if (entry.tmdb_id) openPanel(entry.tmdb_id, entry.media_type === 'tv' ? 'tv' : 'movie'); };
   const toggle = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setExpanded(v => !v);
@@ -53,11 +56,9 @@ function HistoryRow({ entry }: { entry: HistoryEntry }) {
     <TouchableOpacity
       style={styles.row}
       activeOpacity={0.7}
-      disabled={!hasNote}
-      onPress={hasNote ? toggle : undefined}
-      accessibilityRole={hasNote ? 'button' : undefined}
-      accessibilityLabel={hasNote ? (expanded ? `Hide review for ${entry.title}` : `Show review for ${entry.title}`) : undefined}
-      accessibilityState={hasNote ? { expanded } : undefined}
+      onPress={openDetails}
+      accessibilityRole="button"
+      accessibilityLabel={`View details for ${entry.title}`}
     >
       <View style={styles.rowHeader}>
         <View style={styles.rowPoster}>
@@ -77,7 +78,17 @@ function HistoryRow({ entry }: { entry: HistoryEntry }) {
           </View>
         </View>
         {hasNote && (
-          <View style={styles.rowToggle}>
+          // Own tap zone (with a hitSlop buffer well past the visible glyph) so a
+          // fat-finger tap toggles the review instead of falling through to the
+          // row's onPress, which opens the detail panel.
+          <TouchableOpacity
+            style={styles.rowToggle}
+            hitSlop={{ top: 11, bottom: 11, left: 11, right: 11 }}
+            onPress={toggle}
+            accessibilityRole="button"
+            accessibilityLabel={expanded ? `Hide review for ${entry.title}` : `Show review for ${entry.title}`}
+            accessibilityState={{ expanded }}
+          >
             <Svg
               width={iconButtonSize.sm * 0.5} height={iconButtonSize.sm * 0.5} viewBox="0 0 24 24"
               fill="none" stroke={colors.textMuted} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"
@@ -85,7 +96,7 @@ function HistoryRow({ entry }: { entry: HistoryEntry }) {
             >
               <Polyline points="6 9 12 15 18 9" />
             </Svg>
-          </View>
+          </TouchableOpacity>
         )}
       </View>
       {hasNote && expanded && (
@@ -299,14 +310,10 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     justifyContent: 'center',
   },
   rowQuote: {
-    marginTop: spacing.sm,
-    marginLeft: 44 + spacing.md,
-    paddingLeft: spacing.sm,
-    borderLeftWidth: 2,
-    borderLeftColor: colors.borderStrong,
+    paddingTop: spacing.lg,
     fontFamily: fontFamily.serifItalic,
-    fontSize: fontSize.md,
-    lineHeight: fontSize.md * 1.3,
+    fontSize: fontSize.sm,
+    lineHeight: fontSize.sm * 1.3,
     color: colors.textSecondary,
   },
 

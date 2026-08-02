@@ -2022,8 +2022,8 @@ svg { stroke-width: 1.5; }
 .history-row-toggle {
   flex: 0 0 auto;
   margin-left: auto;
-  width: 28px;
-  height: 28px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2039,12 +2039,12 @@ svg { stroke-width: 1.5; }
   outline-offset: -2px;
 }
 .history-row-quote {
-  margin: 0.15rem 1rem 0.7rem calc(42px + 0.85rem);
-  padding-left: 0.6rem;
-  border-left: 2px solid var(--border-strong);
+  margin: 0 1rem 0.7rem 0;
+  padding-top: 0.85rem;
   color: var(--text-secondary);
-  font-family: 'Nothing You Could Do', cursive;
-  font-size: 1.05rem;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 0.92rem;
   line-height: 1.3;
 }
 
