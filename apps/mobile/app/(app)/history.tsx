@@ -1,8 +1,9 @@
 import { useMemo, useRef, useState } from 'react';
 import {
   View, Text, FlatList, Image, TouchableOpacity,
-  StyleSheet, PanResponder,
+  StyleSheet, PanResponder, LayoutAnimation, Platform, UIManager,
 } from 'react-native';
+import Svg, { Polyline } from 'react-native-svg';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import PlotLoader from '@plot/ui/PlotLoader';
@@ -11,9 +12,14 @@ import ScreenHeaderBar from '../../components/ScreenHeaderBar';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 import { HistoryEntry } from '../../hooks/useHistory';
 import { useAppData } from '../../contexts/AppDataContext';
-import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
+import { posterUrl, Palette, fontFamily, fontSize, spacing, radii, iconButtonSize } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 import { ratingToStars } from '@plot/core/ratings.js';
+
+// Mirrors the same one-time enable in app/(app)/index.tsx — safe to repeat.
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 // Mirrors web's historyRatingLabel (src/utils/history.js): "4 ★" / "3.5 ★".
 function historyRatingLabel(value?: number | null): string {
@@ -29,33 +35,63 @@ const THUMB_H = 44;
 function HistoryRow({ entry }: { entry: HistoryEntry }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const [expanded, setExpanded] = useState(false);
   const img   = posterUrl(entry.poster_path, 'w92');
   const type  = entry.media_type === 'tv' ? 'Series' : 'Movie';
   const date  = entry.watched_at
     ? new Date(entry.watched_at).toLocaleDateString('en', { month: 'short', day: 'numeric' })
     : '';
   const ratingLabel = historyRatingLabel(entry.rating);
+  const hasNote = !!entry.note;
+
+  const toggle = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setExpanded(v => !v);
+  };
 
   return (
-    <View style={styles.row}>
-      <View style={styles.rowPoster}>
-        {img
-          ? <Image source={{ uri: img }} style={styles.rowImg} resizeMode="cover" />
-          : <View style={[styles.rowImg, { backgroundColor: colors.surfaceSunken }]} />
-        }
-      </View>
-      <View style={styles.rowInfo}>
-        <Text style={styles.rowTitle} numberOfLines={2}>{entry.title}</Text>
-        <View style={styles.rowMeta}>
-          <View style={styles.typeBadge}>
-            <Text style={styles.typeBadgeText}>{type}</Text>
-          </View>
-          {date ? <Text style={styles.rowDate}>{date}</Text> : null}
-          {ratingLabel ? <Text style={styles.rowRating}>{ratingLabel}</Text> : null}
+    <TouchableOpacity
+      style={styles.row}
+      activeOpacity={0.7}
+      disabled={!hasNote}
+      onPress={hasNote ? toggle : undefined}
+      accessibilityRole={hasNote ? 'button' : undefined}
+      accessibilityLabel={hasNote ? (expanded ? `Hide review for ${entry.title}` : `Show review for ${entry.title}`) : undefined}
+      accessibilityState={hasNote ? { expanded } : undefined}
+    >
+      <View style={styles.rowHeader}>
+        <View style={styles.rowPoster}>
+          {img
+            ? <Image source={{ uri: img }} style={styles.rowImg} resizeMode="cover" />
+            : <View style={[styles.rowImg, { backgroundColor: colors.surfaceSunken }]} />
+          }
         </View>
+        <View style={styles.rowInfo}>
+          <Text style={styles.rowTitle} numberOfLines={2}>{entry.title}</Text>
+          <View style={styles.rowMeta}>
+            <View style={styles.typeBadge}>
+              <Text style={styles.typeBadgeText}>{type}</Text>
+            </View>
+            {date ? <Text style={styles.rowDate}>{date}</Text> : null}
+            {ratingLabel ? <Text style={styles.rowRating}>{ratingLabel}</Text> : null}
+          </View>
+        </View>
+        {hasNote && (
+          <View style={styles.rowToggle}>
+            <Svg
+              width={iconButtonSize.sm * 0.5} height={iconButtonSize.sm * 0.5} viewBox="0 0 24 24"
+              fill="none" stroke={colors.textMuted} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"
+              style={{ transform: [{ rotate: expanded ? '0deg' : '-90deg' }] }}
+            >
+              <Polyline points="6 9 12 15 18 9" />
+            </Svg>
+          </View>
+        )}
       </View>
-      {entry.note ? <Text style={styles.rowReview} numberOfLines={3}>{entry.note}</Text> : null}
-    </View>
+      {hasNote && expanded && (
+        <Text style={styles.rowQuote}>{entry.note}</Text>
+      )}
+    </TouchableOpacity>
   );
 }
 
@@ -221,13 +257,12 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   },
 
   row: {
-    flexDirection: 'row',
-    alignItems: 'center',
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.md,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
+  rowHeader: { flexDirection: 'row', alignItems: 'center' },
   rowPoster: { marginRight: spacing.md },
   rowImg: { width: 44, height: 66, borderRadius: radii.sm },
   rowInfo: { flex: 1 },
@@ -256,12 +291,22 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     fontSize: fontSize.xs,
     color: '#F59E0B',
   },
-  rowReview: {
-    flexShrink: 1,
-    marginLeft: spacing.md,
-    textAlign: 'right',
+  rowToggle: {
+    width: iconButtonSize.sm,
+    height: iconButtonSize.sm,
+    marginLeft: spacing.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rowQuote: {
+    marginTop: spacing.sm,
+    marginLeft: 44 + spacing.md,
+    paddingLeft: spacing.sm,
+    borderLeftWidth: 2,
+    borderLeftColor: colors.borderStrong,
     fontFamily: fontFamily.serifItalic,
     fontSize: fontSize.md,
+    lineHeight: fontSize.md * 1.3,
     color: colors.textSecondary,
   },
 

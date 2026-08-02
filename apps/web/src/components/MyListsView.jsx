@@ -1420,6 +1420,7 @@ function WantToWatchSection({ watchlist, watching, hideHeader }) {
 
 /* ── History row ── */
 function HistoryRow({ entry, openPanel }) {
+  const [expanded, setExpanded] = useState(false);
   const img   = posterUrl(entry.poster_path, 'w92');
   const title = entry.title || 'Unknown';
   const date  = entry.watched_at
@@ -1427,6 +1428,7 @@ function HistoryRow({ entry, openPanel }) {
     : '';
   const ratingLabel = historyRatingLabel(entry.rating);
   const openDetails = () => openPanel(entry.tmdb_id, entry.media_type || 'movie');
+  const hasNote = !!entry.note;
 
   return (
     <div
@@ -1444,7 +1446,26 @@ function HistoryRow({ entry, openPanel }) {
           {ratingLabel && <span className="history-row-rating">{ratingLabel}</span>}
         </div>
       </div>
-      {entry.note && <div className="history-row-review">{entry.note}</div>}
+      {hasNote && (
+        <button
+          type="button"
+          className="history-row-toggle"
+          aria-expanded={expanded}
+          aria-label={expanded ? `Hide review for ${title}` : `Show review for ${title}`}
+          onClick={(e) => { e.stopPropagation(); setExpanded(v => !v); }}
+        >
+          <svg className={`collapse-chevron${expanded ? ' open' : ''}`} viewBox="0 0 24 24" aria-hidden="true">
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </button>
+      )}
+      {hasNote && (
+        <div className={`collapse-body${expanded ? '' : ' collapsed'}`}>
+          <div className="collapse-body-inner">
+            <div className="history-row-quote">{entry.note}</div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
