@@ -10,6 +10,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as Linking from 'expo-linking';
 import { supabase } from '../lib/supabase';
 import { setTmdbRegion } from '../lib/tmdb';
+import { setUserTimezone } from '@plot/core/date.js';
 import { consumeTraktState, exchangeTraktCode } from '../hooks/useTraktSync';
 import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
 import { AppDataProvider } from '../contexts/AppDataContext';
@@ -95,10 +96,13 @@ function RootInner() {
   const loadProfile = async (userId: string) => {
     const { data } = await supabase
       .from('profiles')
-      .select('region, onboarding_complete')
+      .select('region, timezone, onboarding_complete')
       .eq('id', userId)
       .maybeSingle();
     if (data?.region) setTmdbRegion(data.region);
+    // Set alongside the region at boot, before any screen renders a date —
+    // AppDataProvider applies it again on its own profile load.
+    setUserTimezone(data?.timezone || null);
     setOnboardingComplete(data?.onboarding_complete ?? false);
   };
 

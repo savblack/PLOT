@@ -10,6 +10,7 @@ import { useRouter } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { tmdb, setTmdbRegion } from '../../lib/tmdb';
 import { IANA_TIMEZONES } from '@plot/core/timezones.js';
+import { setUserTimezone } from '@plot/core/date.js';
 import { useAppData } from '../../contexts/AppDataContext';
 import { useFollowRequests } from '../../hooks/useFollowRequests';
 import { useTraktSync } from '../../hooks/useTraktSync';
@@ -681,6 +682,9 @@ export default function SettingsScreen() {
 
   const saveTimezone = async (tz: string) => {
     await supabase.from('profiles').update({ timezone: tz }).eq('id', userId!);
+    // Apply immediately rather than waiting on the refreshProfile round-trip,
+    // so dates re-render in the new timezone as soon as the modal closes.
+    setUserTimezone(tz);
     refreshProfile();
     setShowTimezone(false);
   };
