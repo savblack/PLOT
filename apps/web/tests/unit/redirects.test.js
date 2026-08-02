@@ -15,7 +15,7 @@ test('getAppUrl builds paths from an explicit callback base', () => {
 });
 
 test('callback helpers use the current browser origin when no env base is configured', () => {
-  globalThis.window = { location: { origin: 'https://local.example' } };
+  globalThis.window = { location: { origin: 'https://local.example', hostname: 'local.example' } };
   globalThis.document = {};
 
   assert.equal(getAuthCallbackUrl(), 'https://local.example/auth/callback');
@@ -26,7 +26,7 @@ test('callback helpers use the current browser origin when no env base is config
 });
 
 test('buildTraktAuthorizeUrl includes the configured callback URL', () => {
-  globalThis.window = { location: { origin: 'https://local.example' } };
+  globalThis.window = { location: { origin: 'https://local.example', hostname: 'local.example' } };
   globalThis.document = {};
 
   const url = new URL(buildTraktAuthorizeUrl('client-123'));
