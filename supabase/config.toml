@@ -55,6 +55,13 @@ verify_jwt = false
 [functions.stripe-webhook]
 verify_jwt = false
 
+# Ko-fi webhook — Ko-fi sends no Supabase JWT and no signature header; it
+# authenticates with the verification_token inside the form body, checked
+# inside the function. With verify_jwt = true every tip dies at the gateway
+# with 401 and supporters are silently never recorded.
+[functions.kofi-webhook]
+verify_jwt = false
+
 # --- Authenticated functions: require a Supabase JWT ------------------------
 # Declared explicitly (verify_jwt = true is the CLI default) so this file is a
 # complete source of truth and no function silently relies on the default.

@@ -33,6 +33,12 @@ export const colors = {
     chipCinema: '#D95C66',
     chipStreaming: '#68AFA8',
     chipEpisode: '#6D68D9',
+    // Profile badges. Two distinct things, so two distinct colours: blue =
+    // paid Premium (entitlement), pink = Ko-fi supporter (recognition). Pink
+    // tracks the accent ladder; blue is its own hue so the two never read as
+    // shades of one badge.
+    badgePremium: '#1A8CD8',
+    badgeSupporter: '#E05578',
   },
   dark: {
     // Warm-neutral scale anchored on the brand/editorial dark (#0c0c0c / #f0efe8),
@@ -57,6 +63,8 @@ export const colors = {
     chipCinema: '#E16A73',
     chipStreaming: '#78BDB7',
     chipEpisode: '#7A75E0',
+    badgePremium: '#1D9BF0',
+    badgeSupporter: '#F06A88',
   },
 };
 
