@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { supabase } from '../lib/supabase';
 import { useTheme } from '../contexts/ThemeContext';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
-import { Avatar, PremiumBadge } from './Avatar';
+import { Avatar, ProfileBadges } from './Avatar';
 
 export interface SocialUser {
   id: string;
@@ -12,6 +12,7 @@ export interface SocialUser {
   display_name?: string | null;
   avatar_url?: string | null;
   is_premium?: boolean;
+  is_supporter?: boolean;
   is_public?: boolean;
   follow_status?: string | null;
 }
@@ -88,7 +89,7 @@ export function UserRow({
         <View style={styles2.rowText}>
           <View style={styles2.nameLine}>
             <Text style={styles2.name} numberOfLines={1}>{name}</Text>
-            {user.is_premium && <PremiumBadge />}
+            <ProfileBadges isPremium={user.is_premium} isSupporter={user.is_supporter} colors={colors} />
           </View>
           <Text style={styles2.handle} numberOfLines={1}>@{user.username}</Text>
         </View>

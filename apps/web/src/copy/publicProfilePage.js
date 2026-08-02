@@ -15,6 +15,5 @@ export const PUBLIC_PROFILE_PAGE = {
   editProfile: 'Edit profile',
   namePlaceholder: 'Your name',
   bioPlaceholder: 'A little about you',
-  verified: 'Verified',
   shareProfile: 'Share profile',
 };

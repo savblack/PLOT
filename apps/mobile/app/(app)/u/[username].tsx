@@ -19,7 +19,7 @@ import { useAppData } from '../../../contexts/AppDataContext';
 import { usePublicProfile } from '../../../hooks/usePublicProfile';
 import { favoriteWords } from '../../../lib/spelling';
 import { useFollows } from '../../../hooks/useFollows';
-import { Avatar, PremiumBadge } from '../../../components/Avatar';
+import { Avatar, ProfileBadges } from '../../../components/Avatar';
 import { UserList, SocialUser } from '../../../components/UserList';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../../lib/tokens';
 import { TAB_BAR_CLEARANCE } from '../../../lib/tabBar';
@@ -132,7 +132,12 @@ export default function ProfileScreen() {
               <View style={styles.headerText}>
                 <View style={styles.nameLine}>
                   <Text style={styles.name} numberOfLines={2}>{name}</Text>
-                  {profile!.is_premium && <PremiumBadge size={18} />}
+                  <ProfileBadges
+                    isPremium={profile!.is_premium}
+                    isSupporter={profile!.is_supporter}
+                    size={18}
+                    colors={colors}
+                  />
                 </View>
                 <Text style={styles.handle}>@{profile!.username}</Text>
               </View>
