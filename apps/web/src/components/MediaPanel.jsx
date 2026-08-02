@@ -12,7 +12,7 @@ import { resolveMediaPanelEscapeAction } from '../utils/mediaPanel.js';
 import { ratingFromPointer, ratingToStars, starFillPercent, STAR_COUNT } from '../utils/ratings.js';
 import { pickBestTvmazeShowMatch } from '../utils/tvmaze.js';
 import { favoriteWords } from '../utils/spelling.js';
-import { getButtonLikeProps } from '../utils/interactive.js';
+import { handleActivationKeyDown } from '../utils/interactive.js';
 import { useShareTitle } from '../hooks/useShareTitle.js';
 import { track, EVENTS } from '../lib/analytics.js';
 import CreditsGrid from './TalentCredits.jsx';
@@ -326,9 +326,10 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone }) {
                 key={ep.episode_number}
                 className={`ep-row${watched ? ' watched' : ''}${isCurrent ? ' ep-current' : ''}`}
                 onClick={isTracking && !isChecking ? () => handleCheckEp(ep, watched) : undefined}
-                {...(isTracking && !isChecking
-                  ? getButtonLikeProps({ onPress: () => handleCheckEp(ep, watched), label: watched ? MEDIA_PANEL.markUnwatched : MEDIA_PANEL.markWatched })
-                  : {})}
+                onKeyDown={isTracking && !isChecking ? (e) => handleActivationKeyDown(e, () => handleCheckEp(ep, watched)) : undefined}
+                role={isTracking && !isChecking ? 'button' : undefined}
+                tabIndex={isTracking && !isChecking ? 0 : undefined}
+                aria-label={isTracking && !isChecking ? (watched ? MEDIA_PANEL.markUnwatched : MEDIA_PANEL.markWatched) : undefined}
               >
                 <span className="ep-num">E{String(ep.episode_number).padStart(2,'0')}</span>
                 <div className="ep-info">
@@ -1143,7 +1144,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
         : { ok: false, error: MEDIA_PANEL.couldNotClearWatchStatus };
     }
     return { ok: true };
-  }, [history, isWatching, itemId, watched, watching]);
+  }, [history, isWatching, itemId, itemType, watched, watching]);
 
   return (
     <>

@@ -336,8 +336,9 @@ function TopTenSection({ listType, title, topLists }) {
     }
   }, [listType, topLists]);
 
-  const handleDragStart = (rank, e) => {
+  const handleDragStart = (e) => {
     if (!editMode || e.target.closest('button')) return;
+    const rank = Number(e.currentTarget.dataset.rank);
     e.currentTarget.setPointerCapture?.(e.pointerId);
     dragInfoRef.current = { startY: e.clientY, rowHeight: rowRefs.current[rank]?.offsetHeight || 76 };
     setDragRank(rank);
@@ -359,8 +360,6 @@ function TopTenSection({ listType, title, topLists }) {
     setDragOffset(0);
     if (targetRank !== dragRank) moveItemToRank(dragRank, targetRank);
   };
-
-  const nextOpenRank = slots.find(rank => !items.find(i => i.rank === rank));
 
   return (
     <div>
@@ -466,6 +465,7 @@ function TopTenSection({ listType, title, topLists }) {
           <div
             key={rank}
             ref={el => { rowRefs.current[rank] = el; }}
+            data-rank={rank}
             className={!editMode ? 'interactive-surface' : undefined}
             style={{
               display: 'flex', alignItems: 'center', gap: '0.75rem',
@@ -480,7 +480,7 @@ function TopTenSection({ listType, title, topLists }) {
               boxShadow: isDragging ? 'var(--shadow-overlay)' : undefined,
             }}
             onClick={!editMode ? openDetails : undefined}
-            onPointerDown={editMode ? (e) => handleDragStart(rank, e) : undefined}
+            onPointerDown={editMode ? handleDragStart : undefined}
             onPointerMove={editMode ? handleDragMove : undefined}
             onPointerUp={editMode ? handleDragEnd : undefined}
             onPointerCancel={editMode ? handleDragEnd : undefined}

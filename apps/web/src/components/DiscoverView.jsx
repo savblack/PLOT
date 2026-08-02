@@ -5,12 +5,12 @@ import { posterUrl, backdropUrl } from '../utils/images.js';
 import { favoriteWords } from '../utils/spelling.js';
 import { useDragScroll } from '../hooks/useDragScroll.js';
 import { useGenres } from '../hooks/useGenres.js';
-import { useHistory } from '../hooks/useHistory.js';
 import { useDiscover } from '../hooks/useDiscover.js';
 import { useForYou } from '../hooks/useForYou.js';
 import { useNewReleases } from '../hooks/useNewReleases.js';
 import { usePlatformCharts } from '../hooks/usePlatformCharts.js';
-import { UpcomingContent, filterByType, filterByGenre } from './GuideView.jsx';
+import { UpcomingContent } from './GuideView.jsx';
+import { filterByType, filterByGenre } from '../utils/mediaFilters.js';
 import EpgView from './EpgView.jsx';
 import { MEDIA } from '../copy/media.js';
 import FeedView from './FeedView.jsx';
@@ -448,7 +448,7 @@ function PlatformSection({ platform, openPanel, watchlist, typeFilters, genreFil
 }
 
 /* ── Discover tab content ── */
-function DiscoverContent({ openPanel, watchlist, history, openSections, setOpenSections, typeFilters, genreFilters }) {
+function DiscoverContent({ openPanel, watchlist, openSections, setOpenSections, typeFilters, genreFilters }) {
   const { favorites, profile } = useApp();
   const { data, loading } = useDiscover();
   // Hard-coded official-chart platforms — the same set for everyone, unrelated
@@ -685,7 +685,6 @@ function NewReleasesContent({ openPanel, watchlist, typeFilters, genreFilters, o
 ═══════════════════════════════════════ */
 export default function DiscoverView() {
   const app = useApp();
-  const history        = useHistory(app?.user?.id);
   const genres        = useGenres();
   const [tab,          setTab]          = useState(SHOW_SOCIAL_FEED ? 'feed' : 'discover');
   const [typeFilters,  setTypeFilters]  = useState(ALL_TYPES);
@@ -856,7 +855,6 @@ export default function DiscoverView() {
         <DiscoverContent
           openPanel={openPanel}
           watchlist={watchlist}
-          history={history}
           openSections={discoverSections}
           setOpenSections={setDiscoverSections}
           typeFilters={typeFilters}
