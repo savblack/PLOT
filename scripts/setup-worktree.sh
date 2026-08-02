@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
-# Copies gitignored .env files from the main checkout into the current worktree.
-# Worktrees don't share gitignored files, so a fresh worktree has none of them
-# and the app errors, or silently can't authenticate, before rendering
-# (missing Supabase/PostHog/etc vars). Re-run with --force to refresh a
-# worktree after rotating a key in the main checkout's .env.
+# Symlinks gitignored .env files from the main checkout into the current
+# worktree, so every worktree always reads the exact same live file instead
+# of a point-in-time copy. Worktrees don't share gitignored files on their
+# own, so a fresh worktree has none of them and the app errors, or silently
+# can't authenticate, before rendering (missing Supabase/PostHog/etc vars).
+# Because it's a link, not a copy, rotating a key in the main checkout's
+# .env takes effect everywhere immediately, no re-run needed.
 set -euo pipefail
 
 FORCE=false
@@ -34,24 +36,24 @@ ENV_FILES=(
   "apps/mobile/.env"
 )
 
-copied_any=false
+linked_any=false
 for rel in "${ENV_FILES[@]}"; do
   src="$MAIN_DIR/$rel"
   dest="$CURRENT_DIR/$rel"
 
   [[ -f "$src" ]] || continue
 
-  if [[ -f "$dest" && "$FORCE" != true ]]; then
-    echo "$rel already exists in $CURRENT_DIR — use --force to overwrite."
+  if [[ -e "$dest" && "$FORCE" != true ]]; then
+    echo "$rel already exists in $CURRENT_DIR — use --force to relink."
     continue
   fi
 
   mkdir -p "$(dirname "$dest")"
-  cp "$src" "$dest"
-  echo "Copied $rel from $MAIN_DIR to $CURRENT_DIR"
-  copied_any=true
+  ln -sf "$src" "$dest"
+  echo "Linked $rel -> $src"
+  linked_any=true
 done
 
-if [[ "$copied_any" != true ]]; then
-  echo "Nothing new to copy."
+if [[ "$linked_any" != true ]]; then
+  echo "Nothing new to link."
 fi

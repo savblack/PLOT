@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # Fires after any checkout, including the implicit checkout git performs
-# when creating a new worktree (git worktree add). Copies .env from the
+# when creating a new worktree (git worktree add). Symlinks .env from the
 # main checkout so worktrees don't start without Supabase/PostHog/etc vars.
 # Tool-agnostic: runs for worktrees created by Claude Code, Codex, or a
 # plain `git worktree add` from the terminal.
