@@ -48,6 +48,14 @@ function formatDayLabel(dateStr: string): string {
   return d.toLocaleDateString('en', { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
+function hasImage(item: ReleaseItem): boolean {
+  return Boolean(posterUrl(item.poster_path) || backdropUrl(item.backdrop_path));
+}
+// Stable partition keeps titles without any usable artwork from breaking up the rail visually — they still show, just last.
+function imageLast(items: ReleaseItem[]): ReleaseItem[] {
+  return [...items.filter(hasImage), ...items.filter(i => !hasImage(i))];
+}
+
 function dayColor(dateStr: string, colors: Palette): string {
   const [y, m, day] = dateStr.split('-').map(Number);
   const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -142,9 +150,9 @@ async function loadReleases(): Promise<ReleasesData> {
     (recentByDay[(d && recentByDay[d] !== undefined) ? d : fallback]).push({ ...movie, release_date: null });
     seenIds.add(movie.id);
   }
-  const recent = Object.keys(recentByDay)
+  const recent = imageLast(Object.keys(recentByDay)
     .sort((a, b) => b.localeCompare(a))
-    .flatMap(d => recentByDay[d])
+    .flatMap(d => recentByDay[d]))
     .slice(0, 18);
 
   // Coming soon (tomorrow → 6 months), soonest first, tagged with its day
@@ -165,9 +173,9 @@ async function loadReleases(): Promise<ReleasesData> {
       seenIds.add(show.id);
     }
   }
-  const comingSoon = Object.keys(upcomingByDay)
+  const comingSoon = imageLast(Object.keys(upcomingByDay)
     .sort()
-    .flatMap(d => upcomingByDay[d])
+    .flatMap(d => upcomingByDay[d]))
     .slice(0, 24);
 
   return { today, comingSoon, recent };
@@ -178,7 +186,7 @@ function ReleaseCard({ item, providerLogo, onPress }: { item: ReleaseItem; provi
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const title = item.title || item.name || '';
-  const img   = posterUrl(item.poster_path, 'w185');
+  const img   = posterUrl(item.poster_path, 'w185') || backdropUrl(item.backdrop_path, 'w300');
   const isTV  = item.media_type === 'tv';
   const chipBg = isTV ? colors.chipEpisode : item._cinema ? colors.chipCinema : colors.chipStreaming;
   const chipLabel = isTV ? 'TV' : item._cinema ? 'Cinema' : 'Movie';

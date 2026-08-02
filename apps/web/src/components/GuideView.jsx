@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useApp, posterUrl, logoUrl, TodayLabel } from '../App.jsx';
+import { useApp, posterUrl, backdropUrl, logoUrl, TodayLabel } from '../App.jsx';
 import { favoriteWords } from '../utils/spelling.js';
 import { localDateStr, dateToLocalStr } from '../utils/date.js';
 import { useDragScroll } from '../hooks/useDragScroll.js';
@@ -151,7 +151,7 @@ function FavBtn({ item }) {
 }
 
 function MediaCard({ item, openPanel, providerLogo, watchlist }) {
-  const img   = posterUrl(item.poster_path, 'w185');
+  const img   = posterUrl(item.poster_path, 'w185') || backdropUrl(item.backdrop_path, 'w300');
   const type  = item.media_type || 'movie';
   const title = item.title || item.name;
   const year  = (item.release_date || item.first_air_date || '').slice(0, 4);
@@ -320,7 +320,11 @@ export function UpcomingContent({ typeFilters, genreFilters, providers, openPane
 
   const { today, upcomingGrouped, upcomingDates } = data;
 
-  const applyFilters = (items) => excludeKidsContent(filterByGenre(filterByType(items.filter(isEnglishOriginTitle), typeFilters), genreFilters), hideKids);
+  const hasImage = (item) => Boolean(posterUrl(item.poster_path) || backdropUrl(item.backdrop_path));
+  // Stable partition keeps titles without any usable artwork from breaking up the rail visually — they still show, just last.
+  const imageLast = (items) => [...items.filter(hasImage), ...items.filter(i => !hasImage(i))];
+
+  const applyFilters = (items) => imageLast(excludeKidsContent(filterByGenre(filterByType(items.filter(isEnglishOriginTitle), typeFilters), genreFilters), hideKids));
 
   const filteredToday = applyFilters(today);
   const filteredUpcoming = {};
