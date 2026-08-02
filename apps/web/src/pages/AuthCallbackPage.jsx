@@ -7,6 +7,17 @@ import PlotLogo from '../components/PlotLogo.jsx';
 import { AUTH_PAGE } from '../copy/authPage.js';
 import { AUTH_CALLBACK_PAGE } from '../copy/authCallbackPage.js';
 
+// Replace the current history entry with a bare /auth/callback (no query, no
+// hash) so the access/refresh tokens Supabase just consumed stop living in the
+// URL. replaceState (not pushState) keeps the back button clean.
+function clearAuthParamsFromUrl() {
+  try {
+    if (window.location.search || window.location.hash) {
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+  } catch { /* non-fatal: navigation below still moves off the token URL */ }
+}
+
 // Report a social / magic-link auth exactly once. Email+password already fires
 // its event at form submit, so we only report when AuthPage stashed a method
 // marker before redirecting (OAuth / magic link). New-vs-returning is inferred
@@ -48,6 +59,11 @@ export default function AuthCallbackPage() {
           search: window.location.search,
           hash: window.location.hash,
         });
+        // The session has now been consumed out of the URL; scrub the token-
+        // bearing fragment/query from the address bar so the credentials can't
+        // linger in browser history or get captured by analytics/replay — this
+        // matters most on the error branch below, which never navigates away.
+        clearAuthParamsFromUrl();
         if (err) { setError(err); return; }
         reportAuth(session);
         // resolveAuthCallback guarantees a confirmed session before returning a

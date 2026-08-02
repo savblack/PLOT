@@ -5,6 +5,7 @@ import { configure } from '@plot/core/config.js';
 import router from './router.jsx';
 import './index.css';
 import { captureAttribution } from './utils/attribution.js';
+import { redactSensitiveUrl } from './utils/redactUrl.js';
 import { track, markActivated, EVENTS, _setPostHogClient } from './lib/analytics.js';
 
 // Inject web env into the shared core before anything renders or fetches.
@@ -91,6 +92,32 @@ if (posthogToken) {
       // not just the ones our ErrorBoundaries catch. Turn on Error Tracking in the
       // PostHog project for these to show up.
       capture_exceptions: true,
+      // Never let auth credentials reach session replay. The OAuth/magic-link
+      // callback lands on /auth/callback with the Supabase session in the URL
+      // (#access_token=…&refresh_token=…), and this callback runs against the
+      // page URL captured in each replay snapshot (the URL shown in the player),
+      // not just network-request URLs — so it strips the tokens out of what the
+      // recording stores. Redacting only `name` (the URL) leaves PostHog's
+      // default header/body redaction untouched. See utils/redactUrl.js.
+      session_recording: {
+        maskCapturedNetworkRequestFn: (request) => {
+          if (request?.name) request.name = redactSensitiveUrl(request.name);
+          return request;
+        },
+      },
+      // Belt-and-braces for the analytics side: scrub the same credential params
+      // from the URL properties PostHog stamps on every event ($pageview,
+      // autocapture, …) before it leaves the browser. maskCapturedNetworkRequestFn
+      // covers the replay player; this covers $current_url and friends.
+      before_send: (event) => {
+        const props = event?.properties;
+        if (props) {
+          for (const key of ['$current_url', '$referrer', '$session_entry_url', '$pathname']) {
+            if (typeof props[key] === 'string') props[key] = redactSensitiveUrl(props[key]);
+          }
+        }
+        return event;
+      },
     });
     if (Object.keys(attribution).length > 0) {
       posthog.register(attribution);
