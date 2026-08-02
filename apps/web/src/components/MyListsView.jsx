@@ -16,6 +16,7 @@ import LoadingSpinner from './LoadingSpinner.jsx';
 import CollapsibleSection from './CollapsibleSection.jsx';
 import GroupedFilterMenu from './GroupedFilterMenu.jsx';
 import SectionToggleIcon from './SectionToggleIcon.jsx';
+import KebabMenu from './KebabMenu.jsx';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import SheetHeader from './SheetHeader.jsx';
 import { getButtonLikeProps } from '../utils/interactive.js';
@@ -43,16 +44,6 @@ function PlusIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <path d="M12 5v14M5 12h14" />
-    </svg>
-  );
-}
-
-/* ── Multi-select mode toggle (a checked circle) ── */
-function SelectModeIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }}>
-      <circle cx="12" cy="12" r="9" />
-      <polyline points="8.5 12.5 11 15 15.5 9" />
     </svg>
   );
 }
@@ -636,7 +627,7 @@ function PosterGrid({ items, openPanel, editMode, selectedIds, onToggleSelect })
 }
 
 /* ── Favorites section ── */
-function FavoritesSection({ favorites: favsHook, filterItems, hideHeader }) {
+function FavoritesSection({ favorites: favsHook, filterItems, open, onOpenChange }) {
   const { openPanel, profile } = useApp();
   const fw = favoriteWords(profile?.region);
   const [showAdd, setShowAdd] = useState(false);
@@ -665,13 +656,14 @@ function FavoritesSection({ favorites: favsHook, filterItems, hideHeader }) {
   };
 
   return (
-    <div>
-      {!hideHeader && (
-        <div className="date-group-header">
-          <span className="date-group-label" style={{ fontSize: '0.62rem' }}>{fw.plural}</span>
-          {visible.length > 0 && (
-            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginRight: '0.25rem' }}>{visible.length}</span>
-          )}
+    <CollapsibleSection
+      id="favorites"
+      label={fw.plural}
+      count={visible.length}
+      open={open}
+      onOpenChange={onOpenChange}
+      headerRight={
+        <>
           {editMode && selected.size > 0 && (
             <button
               className="date-group-action-btn date-group-action-btn--plain"
@@ -684,18 +676,18 @@ function FavoritesSection({ favorites: favsHook, filterItems, hideHeader }) {
               <TrashIcon />
             </button>
           )}
-          {visible.length > 0 && (
+          {editMode ? (
             <button
               className="date-group-action-btn date-group-action-btn--plain"
               type="button"
-              aria-label={editMode ? 'Done selecting' : 'Select'}
-              title={editMode ? 'Done selecting' : 'Select'}
-              onClick={() => (editMode ? exitEditMode() : setEditMode(true))}
+              aria-label="Done selecting"
+              title="Done selecting"
+              onClick={exitEditMode}
             >
-              {editMode
-                ? <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Done</span>
-                : <SelectModeIcon />}
+              <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Done</span>
             </button>
+          ) : visible.length > 0 && (
+            <KebabMenu ariaLabel={`${fw.plural} options`} items={[{ label: 'Select', onClick: () => setEditMode(true) }]} />
           )}
           <button
             className="date-group-action-btn date-group-action-btn--plain"
@@ -706,9 +698,9 @@ function FavoritesSection({ favorites: favsHook, filterItems, hideHeader }) {
           >
             <PlusIcon />
           </button>
-        </div>
-      )}
-
+        </>
+      }
+    >
       {favorites.length === 0 ? (
         <div style={{ padding: '2rem 1rem', textAlign: 'center' }}>
           <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
@@ -747,7 +739,7 @@ function FavoritesSection({ favorites: favsHook, filterItems, hideHeader }) {
           onClose={() => setShowAdd(false)}
         />
       )}
-    </div>
+    </CollapsibleSection>
   );
 }
 
@@ -825,7 +817,7 @@ function CreateListModal({ lists, onConfirm, onClose }) {
 }
 
 /* ── Custom lists section ── */
-function CustomListsSection({ customLists: clHook, filterItems, hideHeader }) {
+function CustomListsSection({ customLists: clHook, filterItems, open, onOpenChange }) {
   const { openPanel, profile, navigateTo } = useApp();
   const { lists, createList, deleteList, renameList, setListPublic, addItem, removeItem } = clHook;
   const { share } = useShare();
@@ -895,22 +887,24 @@ function CustomListsSection({ customLists: clHook, filterItems, hideHeader }) {
   }, [renameList, renameValue]);
 
   return (
-    <div style={{ marginBottom: '2rem' }}>
-      {!hideHeader && (
-        <div className="date-group-header">
-          <span className="date-group-label" style={{ fontSize: '0.62rem' }}>My Lists</span>
-          <button
-            className="date-group-action-btn date-group-action-btn--plain"
-            type="button"
-            aria-label="Create new list"
-            title="Create new list"
-            onClick={requestCreate}
-          >
-            <PlusIcon />
-          </button>
-        </div>
-      )}
-
+    <CollapsibleSection
+      id="lists"
+      label="My Lists"
+      count={lists.length}
+      open={open}
+      onOpenChange={onOpenChange}
+      headerRight={
+        <button
+          className="date-group-action-btn date-group-action-btn--plain"
+          type="button"
+          aria-label="Create new list"
+          title="Create new list"
+          onClick={requestCreate}
+        >
+          <PlusIcon />
+        </button>
+      }
+    >
       {showCapNotice && (
         <div style={{
           margin: '0.5rem 1rem', padding: '0.65rem 0.85rem',
@@ -1155,12 +1149,12 @@ function CustomListsSection({ customLists: clHook, filterItems, hideHeader }) {
           onClose={() => setShowAddToList(null)}
         />
       )}
-    </div>
+    </CollapsibleSection>
   );
 }
 
 /* ── Currently-watching section ── */
-function WatchingSection({ watching, hideHeader }) {
+function WatchingSection({ watching, open, onOpenChange }) {
   const { openPanel } = useApp();
   const items = watching.items || [];
   const [editMode, setEditMode] = useState(false);
@@ -1199,23 +1193,15 @@ function WatchingSection({ watching, hideHeader }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on seasonKey; `watching`/`items` identity churns each render
   }, [seasonKey]);
 
-  if (items.length === 0) {
-    return (
-      <div style={{ padding: '2rem 1rem', textAlign: 'center' }}>
-        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Not watching anything yet</div>
-        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 4 }}>
-          Start a series from Want to Watch or from Search
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div>
-      {!hideHeader && (
-        <div className="date-group-header">
-          <span className="date-group-label">Watching</span>
-          <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginRight: '0.25rem' }}>{items.length}</span>
+    <CollapsibleSection
+      id="watching"
+      label="Watching"
+      count={items.length}
+      open={open}
+      onOpenChange={onOpenChange}
+      headerRight={
+        <>
           {editMode && selected.size > 0 && (
             <button
               className="date-group-action-btn date-group-action-btn--plain"
@@ -1228,20 +1214,30 @@ function WatchingSection({ watching, hideHeader }) {
               <TrashIcon />
             </button>
           )}
-          <button
-            className="date-group-action-btn date-group-action-btn--plain"
-            type="button"
-            aria-label={editMode ? 'Done selecting' : 'Select'}
-            title={editMode ? 'Done selecting' : 'Select'}
-            onClick={() => (editMode ? exitEditMode() : setEditMode(true))}
-          >
-            {editMode
-              ? <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Done</span>
-              : <SelectModeIcon />}
-          </button>
+          {editMode ? (
+            <button
+              className="date-group-action-btn date-group-action-btn--plain"
+              type="button"
+              aria-label="Done selecting"
+              title="Done selecting"
+              onClick={exitEditMode}
+            >
+              <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Done</span>
+            </button>
+          ) : items.length > 0 && (
+            <KebabMenu ariaLabel="Watching options" items={[{ label: 'Select', onClick: () => setEditMode(true) }]} />
+          )}
+        </>
+      }
+    >
+      {items.length === 0 ? (
+        <div style={{ padding: '2rem 1rem', textAlign: 'center' }}>
+          <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Not watching anything yet</div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 4 }}>
+            Start a series from Want to Watch or from Search
+          </div>
         </div>
-      )}
-      {items.map(item => {
+      ) : items.map(item => {
         const img    = posterUrl(item.poster_path, 'w92');
         const epCode = `S${String(item.current_season).padStart(2,'0')}E${String(item.current_episode).padStart(2,'0')}`;
         // Episodes in the current season (fetched above; total_episodes on the row
@@ -1291,12 +1287,12 @@ function WatchingSection({ watching, hideHeader }) {
           </div>
         );
       })}
-    </div>
+    </CollapsibleSection>
   );
 }
 
 /* ── Want to watch section ── */
-function WantToWatchSection({ watchlist, watching, hideHeader }) {
+function WantToWatchSection({ watchlist, watching, open, onOpenChange }) {
   const { openPanel } = useApp();
   const todayStr = localDateStr();
   const [editMode, setEditMode] = useState(false);
@@ -1323,23 +1319,15 @@ function WantToWatchSection({ watchlist, watching, hideHeader }) {
     exitEditMode();
   };
 
-  if (sorted.length === 0) {
-    return (
-      <div style={{ padding: '2rem 1rem', textAlign: 'center' }}>
-        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Nothing saved yet</div>
-        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 4 }}>
-          Tap the bookmark on any title to save it here
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div>
-      {!hideHeader && (
-        <div className="date-group-header">
-          <span className="date-group-label">Want to Watch</span>
-          <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginRight: '0.25rem' }}>{sorted.length}</span>
+    <CollapsibleSection
+      id="want"
+      label="Want to Watch"
+      count={sorted.length}
+      open={open}
+      onOpenChange={onOpenChange}
+      headerRight={
+        <>
           {editMode && selected.size > 0 && (
             <button
               className="date-group-action-btn date-group-action-btn--plain"
@@ -1352,20 +1340,30 @@ function WantToWatchSection({ watchlist, watching, hideHeader }) {
               <TrashIcon />
             </button>
           )}
-          <button
-            className="date-group-action-btn date-group-action-btn--plain"
-            type="button"
-            aria-label={editMode ? 'Done selecting' : 'Select'}
-            title={editMode ? 'Done selecting' : 'Select'}
-            onClick={() => (editMode ? exitEditMode() : setEditMode(true))}
-          >
-            {editMode
-              ? <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Done</span>
-              : <SelectModeIcon />}
-          </button>
+          {editMode ? (
+            <button
+              className="date-group-action-btn date-group-action-btn--plain"
+              type="button"
+              aria-label="Done selecting"
+              title="Done selecting"
+              onClick={exitEditMode}
+            >
+              <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Done</span>
+            </button>
+          ) : sorted.length > 0 && (
+            <KebabMenu ariaLabel="Want to Watch options" items={[{ label: 'Select', onClick: () => setEditMode(true) }]} />
+          )}
+        </>
+      }
+    >
+      {sorted.length === 0 ? (
+        <div style={{ padding: '2rem 1rem', textAlign: 'center' }}>
+          <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Nothing saved yet</div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 4 }}>
+            Tap the bookmark on any title to save it here
+          </div>
         </div>
-      )}
-      {sorted.map(item => {
+      ) : sorted.map(item => {
         const img           = posterUrl(item.poster_path, 'w92');
         const title         = item.title || item.name || 'Unknown';
         const isTV          = item.media_type === 'tv';
@@ -1414,7 +1412,7 @@ function WantToWatchSection({ watchlist, watching, hideHeader }) {
           </div>
         );
       })}
-    </div>
+    </CollapsibleSection>
   );
 }
 
@@ -1471,18 +1469,20 @@ function HistoryRow({ entry, openPanel }) {
 }
 
 /* ── History section (month-scoped watch history) ── */
-function HistorySection({ entries, loading, year, month }) {
+function HistorySection({ entries, loading, year, month, filterItems, open, onOpenChange }) {
   const { openPanel } = useApp();
   const today = useMemo(() => new Date(), []);
 
   const isCurrentMonth = year === today.getFullYear() && month === today.getMonth();
-  const monthHistory   = useMemo(() => entriesForMonth(entries, year, month), [entries, year, month]);
+  const monthEntries   = useMemo(() => entriesForMonth(entries, year, month), [entries, year, month]);
+  const monthHistory   = filterItems ? filterItems(monthEntries) : monthEntries;
   const emptyMonthState = historyMonthEmptyCopy({ year, month, isCurrentMonth });
 
-  if (loading) return <LoadingSpinner />;
-
-  if (entries.length === 0) {
-    return (
+  let body;
+  if (loading) {
+    body = <LoadingSpinner />;
+  } else if (entries.length === 0) {
+    body = (
       <div className="empty-state" style={{ marginTop: '1rem' }}>
         <div className="empty-title">Nothing watched yet</div>
         <div className="empty-body">
@@ -1490,26 +1490,36 @@ function HistorySection({ entries, loading, year, month }) {
         </div>
       </div>
     );
-  }
-
-  if (monthHistory.length === 0) {
-    return (
+  } else if (monthEntries.length === 0) {
+    body = (
       <div className="empty-state" style={{ marginTop: '1rem' }}>
         <div className="empty-title">{emptyMonthState.title}</div>
         <div className="empty-body">{emptyMonthState.body}</div>
       </div>
     );
+  } else if (monthHistory.length === 0) {
+    body = (
+      <div className="empty-state" style={{ marginTop: '1rem' }}>
+        <div className="empty-title">No matches</div>
+        <div className="empty-body">No history matches the current filters.</div>
+      </div>
+    );
+  } else {
+    body = monthHistory.map(entry => (
+      <HistoryRow key={entry.id} entry={entry} openPanel={openPanel} />
+    ));
   }
 
   return (
-    <div style={{ paddingBottom: '2rem' }}>
-      <div className="date-group-header">
-        <span className="date-group-label">{monthLabel(year, month)}</span>
-      </div>
-      {monthHistory.map(entry => (
-        <HistoryRow key={entry.id} entry={entry} openPanel={openPanel} />
-      ))}
-    </div>
+    <CollapsibleSection
+      id="history"
+      label={monthLabel(year, month)}
+      count={loading ? null : monthHistory.length}
+      open={open}
+      onOpenChange={onOpenChange}
+    >
+      <div style={{ paddingBottom: '2rem' }}>{body}</div>
+    </CollapsibleSection>
   );
 }
 
@@ -1523,7 +1533,7 @@ export default function MyListsView() {
   const [tab,          setTab]          = useState(location.state?.tab || 'all');
   const [typeFilters,  setTypeFilters]  = useState([]);
   const [listSectionsOpen, setListSectionsOpen] = useState(() => Object.fromEntries(
-    ALL_LIST_SECTION_IDS.map(id => [id, getStoredSectionOpen(id)]),
+    [...ALL_LIST_SECTION_IDS, 'history'].map(id => [id, getStoredSectionOpen(id)]),
   ));
 
   // History tab month navigation
@@ -1576,20 +1586,23 @@ export default function MyListsView() {
   const showTop10    = isAll || tab === 'top10';
   const showFavs     = isAll || tab === 'favorites';
   const showLists    = isAll || tab === 'lists';
-  const allListSectionsOpen = ALL_LIST_SECTION_IDS.every(id => listSectionsOpen[id]);
+
+  // Expand/collapse-all acts on every section on the "All" tab, or just the
+  // one section relevant to whichever single tab is active (tab ids already
+  // match section ids 1:1 for watching/want/top10/favorites/lists/history).
+  const relevantSectionIds = isAll ? ALL_LIST_SECTION_IDS : [tab];
+  const sectionsOpenForView = relevantSectionIds.every(id => listSectionsOpen[id]);
   const setListSectionOpen = (id, open) => {
     setListSectionsOpen(prev => ({ ...prev, [id]: open }));
   };
-  const toggleAllListSections = () => {
-    const next = !allListSectionsOpen;
-    setListSectionsOpen(Object.fromEntries(ALL_LIST_SECTION_IDS.map(id => [id, next])));
-    ALL_LIST_SECTION_IDS.forEach(id => storeSectionOpen(id, next));
+  const toggleSectionsForView = () => {
+    const next = !sectionsOpenForView;
+    setListSectionsOpen(prev => ({ ...prev, ...Object.fromEntries(relevantSectionIds.map(id => [id, next])) }));
+    relevantSectionIds.forEach(id => storeSectionOpen(id, next));
   };
-
-  const watchingItems  = watching.items || [];
-  // Count for the "Want to Watch" banner — saved titles not already being watched.
-  const watchingIdSet  = new Set(watchingItems.map(i => i.tmdb_id));
-  const savedCount     = (watchlist.items || []).filter(i => !watchingIdSet.has(Number(i.tmdb_id))).length;
+  const sectionsToggleLabel = isAll
+    ? (sectionsOpenForView ? 'Collapse all sections' : 'Expand all sections')
+    : (sectionsOpenForView ? 'Collapse section' : 'Expand section');
 
   return (
     <div style={{ paddingBottom: '2rem' }}>
@@ -1611,7 +1624,7 @@ export default function MyListsView() {
           ))}
         </div>
         <div className="sub-tabs-filters">
-          {isHistory ? (
+          {isHistory && (
             <div className="cal-month-nav">
               <button className="cal-month-btn" onClick={prevHistoryMonth} aria-label="Previous month">
                 <svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>
@@ -1621,60 +1634,52 @@ export default function MyListsView() {
                 <svg viewBox="0 0 24 24"><polyline points="9,18 15,12 9,6"/></svg>
               </button>
             </div>
-          ) : (
-            <>
-              <GroupedFilterMenu
-                ariaLabel="Filter lists"
-                groups={[
-                  {
-                    heading: 'Type',
-                    options: [
-                      { id: 'movie',  label: 'Movies' },
-                      { id: 'tv',     label: 'TV'     },
-                      { id: 'cinema', label: 'Cinema' },
-                    ],
-                    value: typeFilters,
-                    onChange: setTypeFilters,
-                  },
-                ]}
-              />
-              {isAll && (
-                <button
-                  className="section-expand-all-btn"
-                  onClick={toggleAllListSections}
-                  aria-label={allListSectionsOpen ? 'Collapse all list sections' : 'Expand all list sections'}
-                  aria-pressed={allListSectionsOpen}
-                  title={allListSectionsOpen ? 'Collapse all sections' : 'Expand all sections'}
-                  type="button"
-                >
-                  <SectionToggleIcon collapse={allListSectionsOpen} />
-                </button>
-              )}
-            </>
           )}
+          <GroupedFilterMenu
+            ariaLabel="Filter lists"
+            groups={[
+              {
+                heading: 'Type',
+                options: [
+                  { id: 'movie',  label: 'Movies' },
+                  { id: 'tv',     label: 'TV'     },
+                  { id: 'cinema', label: 'Cinema' },
+                ],
+                value: typeFilters,
+                onChange: setTypeFilters,
+              },
+            ]}
+          />
+          <button
+            className="section-expand-all-btn"
+            onClick={toggleSectionsForView}
+            aria-label={sectionsToggleLabel}
+            aria-pressed={sectionsOpenForView}
+            title={sectionsToggleLabel}
+            type="button"
+          >
+            <SectionToggleIcon collapse={sectionsOpenForView} />
+          </button>
         </div>
       </div>
 
       {/* ── Watching ── */}
       {showWatching && (
-        isAll
-          ? (watchingItems.length > 0 && (
-              <CollapsibleSection id="watching" label="Watching" count={watchingItems.length} open={listSectionsOpen.watching} onOpenChange={open => setListSectionOpen('watching', open)}>
-                <WatchingSection watching={watching} hideHeader />
-              </CollapsibleSection>
-            ))
-          : <WatchingSection watching={watching} />
+        <WatchingSection
+          watching={watching}
+          open={listSectionsOpen.watching}
+          onOpenChange={open => setListSectionOpen('watching', open)}
+        />
       )}
 
       {/* ── Want to Watch ── */}
       {showWant && (
-        isAll
-          ? (
-              <CollapsibleSection id="want" label="Want to Watch" count={savedCount} open={listSectionsOpen.want} onOpenChange={open => setListSectionOpen('want', open)}>
-                <WantToWatchSection watchlist={watchlist} watching={watching} hideHeader />
-              </CollapsibleSection>
-            )
-          : <WantToWatchSection watchlist={watchlist} watching={watching} />
+        <WantToWatchSection
+          watchlist={watchlist}
+          watching={watching}
+          open={listSectionsOpen.want}
+          onOpenChange={open => setListSectionOpen('want', open)}
+        />
       )}
 
       {/* ── Top 10 (keeps a banner on its own tab too) ── */}
@@ -1691,24 +1696,22 @@ export default function MyListsView() {
 
       {/* ── Favorites ── */}
       {showFavs && (
-        isAll
-          ? (
-              <CollapsibleSection id="favorites" label={fw.plural} count={favorites.favorites.length} open={listSectionsOpen.favorites} onOpenChange={open => setListSectionOpen('favorites', open)}>
-                <FavoritesSection favorites={favorites} filterItems={filterItems} hideHeader />
-              </CollapsibleSection>
-            )
-          : <FavoritesSection favorites={favorites} filterItems={filterItems} />
+        <FavoritesSection
+          favorites={favorites}
+          filterItems={filterItems}
+          open={listSectionsOpen.favorites}
+          onOpenChange={open => setListSectionOpen('favorites', open)}
+        />
       )}
 
       {/* ── My Lists ── */}
       {showLists && (
-        isAll
-          ? (
-              <CollapsibleSection id="lists" label="My Lists" count={customLists.lists.length} open={listSectionsOpen.lists} onOpenChange={open => setListSectionOpen('lists', open)}>
-                <CustomListsSection customLists={customLists} filterItems={filterItems} hideHeader />
-              </CollapsibleSection>
-            )
-          : <CustomListsSection customLists={customLists} filterItems={filterItems} />
+        <CustomListsSection
+          customLists={customLists}
+          filterItems={filterItems}
+          open={listSectionsOpen.lists}
+          onOpenChange={open => setListSectionOpen('lists', open)}
+        />
       )}
 
       {/* ── History ── */}
@@ -1718,6 +1721,9 @@ export default function MyListsView() {
           loading={historyLoading}
           year={historyYear}
           month={historyMonth}
+          filterItems={filterItems}
+          open={listSectionsOpen.history}
+          onOpenChange={open => setListSectionOpen('history', open)}
         />
       )}
     </div>
