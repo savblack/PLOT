@@ -103,7 +103,12 @@ const getShow = (ep) => ep.show ?? ep._embedded?.show;
 // TVMaze's `show.language` is often missing entirely, so a title with non-Latin
 // script (CJK, Hangul, Cyrillic, Arabic, Thai, Devanagari, etc.) is the fallback
 // signal that a show isn't English-language, even when the language field is unset.
-const NON_LATIN_SCRIPT_RE = /[぀-ヿ㐀-鿿가-힯Ѐ-ӿ؀-ۿ฀-๿ऀ-ॿ]/;
+// Devanagari range starts at U+0905 (अ), skipping U+0900-U+0904 (combining
+// marks / reserved) — those never appear without a base letter, so this is
+// still a complete detector, and starting mid-block avoids ESLint's
+// no-misleading-character-class warning for a combining mark next to the
+// preceding Thai range.
+const NON_LATIN_SCRIPT_RE = /[぀-ヿ㐀-鿿가-힯Ѐ-ӿ؀-ۿ฀-๿अ-ॿ]/;
 function looksNonEnglishTitle(title) {
   return NON_LATIN_SCRIPT_RE.test(title || '');
 }

@@ -87,6 +87,9 @@ function buildProviderLogoState(items, region) {
 
 /* ── Type filter helper ── */
 const ALL_TYPES = ['tv', 'cinema', 'movie'];
+// Not a component — also imported by DiscoverView.jsx — but kept here
+// alongside filterByGenre and UpcomingContent rather than split into its own module.
+// eslint-disable-next-line react-refresh/only-export-components
 export function filterByType(items, typeFilters) {
   if (!items) return items;
   if (!typeFilters.length || typeFilters.length === ALL_TYPES.length) return items;
@@ -99,6 +102,7 @@ export function filterByType(items, typeFilters) {
 }
 
 /* ── Genre filter helper ── */
+// eslint-disable-next-line react-refresh/only-export-components
 export function filterByGenre(items, genreFilters) {
   if (!items) return items;
   if (!genreFilters.length) return items;

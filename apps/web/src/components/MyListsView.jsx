@@ -309,6 +309,150 @@ function AddToFavoritesModal({ title = 'Add to Favorites', onAdd, onClose }) {
 }
 
 /* ── Top 10 section ── */
+function rankColor(rank) {
+  if (rank === 1) return 'var(--accent)';
+  if (rank <= 3)  return 'var(--text-secondary)';
+  return 'var(--text-muted)';
+}
+
+/* ── Top 10 rows — kept as its own component so the drag-reorder ref access
+   isn't nested inside TopTenSection's `open` toggle (the refs lint rule
+   flags a ref read as unsafe when the JSX that reads it sits under an
+   unrelated outer conditional in the same function) ── */
+function TopTenRows({
+  items, slots, editMode, dragRank, dragOffset, rowRefs, openPanel,
+  onDragStart, onDragMove, onDragEnd, onAddAtRank, listType, topLists,
+}) {
+  return slots.map(rank => {
+    const item = items.find(i => i.rank === rank);
+
+    if (!item) {
+      return (
+        <button
+          key={rank}
+          onClick={() => onAddAtRank(rank)}
+          style={{
+            display: 'flex', alignItems: 'center', gap: '0.75rem',
+            width: '100%', padding: '0.6rem 1rem',
+            border: 'none', borderBottom: '1px solid var(--border)',
+            background: 'none', cursor: 'pointer', textAlign: 'left',
+          }}
+        >
+          <span style={{
+            fontFamily: 'var(--font-serif)',
+            fontSize: '1.4rem', fontWeight: 600,
+            width: '2rem', textAlign: 'center', flexShrink: 0,
+            color: rankColor(rank),
+          }}>
+            {rank}
+          </span>
+          <div style={{
+            width: 40, height: 60,
+            border: '1.5px dashed var(--border-strong)',
+            borderRadius: 4, flexShrink: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: 'var(--text-muted)', fontSize: '1.2rem',
+          }}>
+            +
+          </div>
+          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+            {rank === 1 ? "What's your GOAT?" : 'Add a title'}
+          </span>
+        </button>
+      );
+    }
+
+    const img   = posterUrl(item.poster_path, 'w92');
+    const title = item.title;
+    const openDetails = () => {
+      if (!editMode) openPanel(item.tmdb_id, item.media_type);
+    };
+
+    const isDragging = dragRank === rank;
+
+    return (
+      <div
+        key={rank}
+        ref={el => { rowRefs.current[rank] = el; }}
+        className={!editMode ? 'interactive-surface' : undefined}
+        style={{
+          display: 'flex', alignItems: 'center', gap: '0.75rem',
+          padding: '0.6rem 1rem',
+          borderBottom: '1px solid var(--border)',
+          touchAction: editMode ? 'none' : undefined,
+          position: isDragging ? 'relative' : undefined,
+          zIndex: isDragging ? 2 : undefined,
+          transform: isDragging ? `translateY(${dragOffset}px)` : undefined,
+          transition: isDragging ? 'none' : undefined,
+          background: isDragging ? 'var(--surface-raised)' : undefined,
+          boxShadow: isDragging ? 'var(--shadow-overlay)' : undefined,
+        }}
+        onClick={!editMode ? openDetails : undefined}
+        onPointerDown={editMode ? (e) => onDragStart(rank, e) : undefined}
+        onPointerMove={editMode ? onDragMove : undefined}
+        onPointerUp={editMode ? onDragEnd : undefined}
+        onPointerCancel={editMode ? onDragEnd : undefined}
+        {...(!editMode
+          ? getButtonLikeProps({ onPress: openDetails, label: `View details for ${title}` })
+          : {})}
+      >
+        <span style={{
+          fontFamily: 'var(--font-serif)',
+          fontSize: '1.4rem', fontWeight: 600,
+          width: '2rem', textAlign: 'center', flexShrink: 0,
+          color: rankColor(rank),
+        }}>
+          {rank}
+        </span>
+        <div
+          style={{
+            width: 40, height: 60, borderRadius: 4, overflow: 'hidden',
+            background: 'var(--surface-raised)', flexShrink: 0,
+          }}
+        >
+          {img && <img src={img} alt={title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+        </div>
+        <div
+          style={{ flex: 1, minWidth: 0 }}
+        >
+          <div style={{ fontWeight: 500, fontSize: '0.875rem', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {title}
+          </div>
+        </div>
+        {editMode && (
+          <div style={{ display: 'flex', gap: '0.25rem', flexShrink: 0 }}>
+            <button
+              className="btn btn-ghost btn-xs"
+              disabled={rank === 1}
+              onClick={() => topLists.moveUp(listType, rank)}
+              style={{ opacity: rank === 1 ? 0.3 : 1 }}
+              title="Move up"
+            >
+              ↑
+            </button>
+            <button
+              className="btn btn-ghost btn-xs"
+              disabled={rank === 10 || !items.find(i => i.rank === rank + 1)}
+              onClick={() => topLists.moveDown(listType, rank)}
+              style={{ opacity: (rank === 10 || !items.find(i => i.rank === rank + 1)) ? 0.3 : 1 }}
+              title="Move down"
+            >
+              ↓
+            </button>
+            <button
+              className="btn btn-ghost btn-xs"
+              onClick={() => topLists.removeSlot(listType, item.tmdb_id)}
+              style={{ color: 'var(--text-muted)' }}
+            >
+              ✕
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  });
+}
+
 function TopTenSection({ listType, title, topLists }) {
   const { openPanel } = useApp();
   const [open,        setOpen]        = useState(true);
@@ -321,12 +465,6 @@ function TopTenSection({ listType, title, topLists }) {
 
   const items = topLists.lists[listType] || [];
   const slots = Array.from({ length: 10 }, (_, i) => i + 1);
-
-  const rankColor = (rank) => {
-    if (rank === 1) return 'var(--accent)';
-    if (rank <= 3)  return 'var(--text-secondary)';
-    return 'var(--text-muted)';
-  };
 
   const moveItemToRank = useCallback(async (fromRank, toRank) => {
     let current = fromRank;
@@ -368,8 +506,6 @@ function TopTenSection({ listType, title, topLists }) {
     setDragOffset(0);
     if (targetRank !== dragRank) moveItemToRank(dragRank, targetRank);
   };
-
-  const nextOpenRank = slots.find(rank => !items.find(i => i.rank === rank));
 
   return (
     <div>
@@ -424,134 +560,23 @@ function TopTenSection({ listType, title, topLists }) {
         )}
       </div>
 
-      {open && slots.map(rank => {
-        const item = items.find(i => i.rank === rank);
-
-        if (!item) {
-          return (
-            <button
-              key={rank}
-              onClick={() => setAddingRank(rank)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '0.75rem',
-                width: '100%', padding: '0.6rem 1rem',
-                border: 'none', borderBottom: '1px solid var(--border)',
-                background: 'none', cursor: 'pointer', textAlign: 'left',
-              }}
-            >
-              <span style={{
-                fontFamily: 'var(--font-serif)',
-                fontSize: '1.4rem', fontWeight: 600,
-                width: '2rem', textAlign: 'center', flexShrink: 0,
-                color: rankColor(rank),
-              }}>
-                {rank}
-              </span>
-              <div style={{
-                width: 40, height: 60,
-                border: '1.5px dashed var(--border-strong)',
-                borderRadius: 4, flexShrink: 0,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: 'var(--text-muted)', fontSize: '1.2rem',
-              }}>
-                +
-              </div>
-              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
-                {rank === 1 ? "What's your GOAT?" : 'Add a title'}
-              </span>
-            </button>
-          );
-        }
-
-        const img   = posterUrl(item.poster_path, 'w92');
-        const title = item.title;
-        const openDetails = () => {
-          if (!editMode) openPanel(item.tmdb_id, item.media_type);
-        };
-
-        const isDragging = dragRank === rank;
-
-        return (
-          <div
-            key={rank}
-            ref={el => { rowRefs.current[rank] = el; }}
-            className={!editMode ? 'interactive-surface' : undefined}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '0.75rem',
-              padding: '0.6rem 1rem',
-              borderBottom: '1px solid var(--border)',
-              touchAction: editMode ? 'none' : undefined,
-              position: isDragging ? 'relative' : undefined,
-              zIndex: isDragging ? 2 : undefined,
-              transform: isDragging ? `translateY(${dragOffset}px)` : undefined,
-              transition: isDragging ? 'none' : undefined,
-              background: isDragging ? 'var(--surface-raised)' : undefined,
-              boxShadow: isDragging ? 'var(--shadow-overlay)' : undefined,
-            }}
-            onClick={!editMode ? openDetails : undefined}
-            onPointerDown={editMode ? (e) => handleDragStart(rank, e) : undefined}
-            onPointerMove={editMode ? handleDragMove : undefined}
-            onPointerUp={editMode ? handleDragEnd : undefined}
-            onPointerCancel={editMode ? handleDragEnd : undefined}
-            {...(!editMode
-              ? getButtonLikeProps({ onPress: openDetails, label: `View details for ${title}` })
-              : {})}
-          >
-            <span style={{
-              fontFamily: 'var(--font-serif)',
-              fontSize: '1.4rem', fontWeight: 600,
-              width: '2rem', textAlign: 'center', flexShrink: 0,
-              color: rankColor(rank),
-            }}>
-              {rank}
-            </span>
-            <div
-              style={{
-                width: 40, height: 60, borderRadius: 4, overflow: 'hidden',
-                background: 'var(--surface-raised)', flexShrink: 0,
-              }}
-            >
-              {img && <img src={img} alt={title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
-            </div>
-            <div
-              style={{ flex: 1, minWidth: 0 }}
-            >
-              <div style={{ fontWeight: 500, fontSize: '0.875rem', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {title}
-              </div>
-            </div>
-            {editMode && (
-              <div style={{ display: 'flex', gap: '0.25rem', flexShrink: 0 }}>
-                <button
-                  className="btn btn-ghost btn-xs"
-                  disabled={rank === 1}
-                  onClick={() => topLists.moveUp(listType, rank)}
-                  style={{ opacity: rank === 1 ? 0.3 : 1 }}
-                  title="Move up"
-                >
-                  ↑
-                </button>
-                <button
-                  className="btn btn-ghost btn-xs"
-                  disabled={rank === 10 || !items.find(i => i.rank === rank + 1)}
-                  onClick={() => topLists.moveDown(listType, rank)}
-                  style={{ opacity: (rank === 10 || !items.find(i => i.rank === rank + 1)) ? 0.3 : 1 }}
-                  title="Move down"
-                >
-                  ↓
-                </button>
-                <button
-                  className="btn btn-ghost btn-xs"
-                  onClick={() => topLists.removeSlot(listType, item.tmdb_id)}
-                  style={{ color: 'var(--text-muted)' }}
-                >
-                  ✕
-                </button>
-              </div>
-            )}
-          </div>
-        );
-      })}
+      {open && (
+        <TopTenRows
+          items={items}
+          slots={slots}
+          editMode={editMode}
+          dragRank={dragRank}
+          dragOffset={dragOffset}
+          rowRefs={rowRefs}
+          openPanel={openPanel}
+          onDragStart={handleDragStart}
+          onDragMove={handleDragMove}
+          onDragEnd={handleDragEnd}
+          onAddAtRank={setAddingRank}
+          listType={listType}
+          topLists={topLists}
+        />
+      )}
 
       {addingRank && (
         <AddToRankModal

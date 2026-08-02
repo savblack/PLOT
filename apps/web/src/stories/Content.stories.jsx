@@ -71,7 +71,7 @@ function allRows() {
 
 function ContentCatalog() {
   const [query, setQuery] = useState('');
-  const rows = useMemo(allRows, []);
+  const rows = useMemo(() => allRows(), []);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
