@@ -1,5 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { COMMON } from '../copy/common.js';
+import { CONFIRM_MODAL } from '../copy/confirmModal.js';
 
 /**
  * ConfirmModal — replaces window.confirm() with a styled, accessible modal.
@@ -11,7 +13,7 @@ import { createPortal } from 'react-dom';
  *   // trigger: setConfirm({ message: '…', onConfirm: () => doThing() })
  *   {confirm && <ConfirmModal {...confirm} onClose={() => setConfirm(null)} />}
  */
-export default function ConfirmModal({ title, message, confirmLabel = 'Confirm', danger = false, onConfirm, onClose, confirmPhrase = null }) {
+export default function ConfirmModal({ title, message, confirmLabel = COMMON.confirm, danger = false, onConfirm, onClose, confirmPhrase = null }) {
   const cancelRef = useRef(null);
   const confirmRef = useRef(null);
   const restoreFocusRef = useRef(null);
@@ -127,7 +129,7 @@ export default function ConfirmModal({ title, message, confirmLabel = 'Confirm',
           {confirmPhrase && (
             <div style={{ marginBottom: '1.25rem' }}>
               <label htmlFor={phraseId} style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>
-                Type "{confirmPhrase}" to confirm
+                {CONFIRM_MODAL.typeToConfirm(confirmPhrase)}
               </label>
               <input
                 id={phraseId}
@@ -168,7 +170,7 @@ export default function ConfirmModal({ title, message, confirmLabel = 'Confirm',
                 transition: 'border-color 0.15s, color 0.15s',
               }}
             >
-              Cancel
+              {COMMON.cancel}
             </button>
             <button
               ref={confirmRef}
@@ -188,7 +190,7 @@ export default function ConfirmModal({ title, message, confirmLabel = 'Confirm',
                 transition: 'opacity 0.15s',
               }}
             >
-              {submitting ? 'Working…' : confirmLabel}
+              {submitting ? CONFIRM_MODAL.working : confirmLabel}
             </button>
           </div>
         </div>

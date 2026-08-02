@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PRIMARY_NAV_ITEMS, VIEW_TITLES } from '../navigation.js';
 import { useNotifications } from '../hooks/useNotifications.js';
+import { APP_SHELL } from '../copy/appShell.js';
 
 /* ── SVG Icons ───────────────────────── */
 function IconMenu() {
@@ -144,7 +145,7 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
             type="button"
             className="icon-btn"
             onClick={openDrawer}
-            aria-label="Open menu"
+            aria-label={APP_SHELL.openMenu}
             aria-expanded={drawerOpen}
             aria-controls="app-nav-drawer"
           >
@@ -157,7 +158,7 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
             type="button"
             className="app-header-logo"
             onClick={() => navigateTo('home')}
-            aria-label="Go to home"
+            aria-label={APP_SHELL.goToHome}
           >
             <span className="app-header-logo-text">PLOT</span>
           </button>
@@ -172,7 +173,7 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
             className="icon-btn"
             onClick={() => navigateTo('notifications')}
             aria-label={`Notifications${unread ? ` (${unread} unread)` : ''}`}
-            title="Notifications"
+            title={APP_SHELL.notifications}
             aria-current={currentView === 'notifications' ? 'page' : undefined}
             style={{ position: 'relative' }}
           >
@@ -193,8 +194,8 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
             type="button"
             className="icon-btn"
             onClick={() => navigateTo('search')}
-            aria-label="Open search"
-            title="Search"
+            aria-label={APP_SHELL.openSearch}
+            title={APP_SHELL.search}
             aria-current={currentView === 'search' ? 'page' : undefined}
           >
             <IconSearch />
@@ -212,7 +213,7 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
         type="button"
         className={`scroll-top-btn${showScrollTop ? ' visible' : ''}`}
         onClick={scrollToTop}
-        aria-label="Scroll to top"
+        aria-label={APP_SHELL.scrollToTop}
         aria-hidden={!showScrollTop}
         tabIndex={showScrollTop ? 0 : -1}
       >
@@ -241,7 +242,7 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
             type="button"
             className={`tab-btn${isOwnProfile ? ' active' : ''}`}
             onClick={() => navigate(`/u/${profile.username}`)}
-            aria-label="Profile"
+            aria-label={APP_SHELL.profile}
             aria-current={isOwnProfile ? 'page' : undefined}
           >
             {profile.avatar_url
@@ -262,7 +263,7 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
       >
         <div className="nav-drawer-header">
           <span className="nav-drawer-logo-text">PLOT</span>
-          <button type="button" className="icon-btn" onClick={closeDrawer} aria-label="Close menu">
+          <button type="button" className="icon-btn" onClick={closeDrawer} aria-label={APP_SHELL.closeMenu}>
             <IconClose />
           </button>
         </div>

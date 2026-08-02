@@ -4,6 +4,7 @@ import { supabase } from '../api/supabase';
 import { callAuthenticatedFunction, edgeFunctionUrl } from '../api/functions.js';
 import { consumeTraktState, getTraktCallbackUrl } from '../utils/redirects.js';
 import PlotLogo from '../components/PlotLogo.jsx';
+import { TRAKT_CALLBACK_PAGE } from '../copy/traktCallbackPage.js';
 
 export default function TraktCallbackPage() {
   const navigate = useNavigate();
@@ -19,11 +20,11 @@ export default function TraktCallbackPage() {
       const code = searchParams.get('code');
       const state = searchParams.get('state');
       if (!code) {
-        setError('No authorization code received from Trakt.');
+        setError(TRAKT_CALLBACK_PAGE.noAuthCode);
         return;
       }
       if (!consumeTraktState(state)) {
-        setError('This Trakt connection request is invalid or has expired. Please try again from Settings.');
+        setError(TRAKT_CALLBACK_PAGE.invalidOrExpired);
         return;
       }
 
@@ -33,7 +34,7 @@ export default function TraktCallbackPage() {
         return;
       }
       if (!edgeFunctionUrl('trakt-sync')) {
-        setError('Trakt sync is not configured.');
+        setError(TRAKT_CALLBACK_PAGE.notConfigured);
         return;
       }
 
@@ -44,7 +45,7 @@ export default function TraktCallbackPage() {
           redirect_uri: getTraktCallbackUrl(),
         });
       } catch (e) {
-        setError(`Could not connect Trakt: ${e.message}`);
+        setError(TRAKT_CALLBACK_PAGE.couldNotConnect(e.message));
         return;
       }
 
@@ -69,7 +70,7 @@ export default function TraktCallbackPage() {
       }}>
         <PlotLogo style={{ fontSize: '2rem' }} />
         <p style={{ color: '#c0392b', fontSize: '0.95rem', maxWidth: 360 }}>{error}</p>
-        <a href="/settings" style={{ color: '#1a1a1a', fontWeight: 600, fontSize: '0.9rem' }}>Back to settings</a>
+        <a href="/settings" style={{ color: '#1a1a1a', fontWeight: 600, fontSize: '0.9rem' }}>{TRAKT_CALLBACK_PAGE.backToSettings}</a>
       </div>
     );
   }
@@ -85,7 +86,7 @@ export default function TraktCallbackPage() {
       gap: '0.75rem',
     }}>
       <PlotLogo style={{ fontSize: '2rem' }} />
-      <p style={{ fontSize: '0.9rem', color: '#666', margin: 0 }}>Connecting Trakt…</p>
+      <p style={{ fontSize: '0.9rem', color: '#666', margin: 0 }}>{TRAKT_CALLBACK_PAGE.connecting}</p>
     </div>
   );
 }

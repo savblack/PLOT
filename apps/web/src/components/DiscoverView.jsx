@@ -12,6 +12,7 @@ import { useNewReleases } from '../hooks/useNewReleases.js';
 import { usePlatformCharts } from '../hooks/usePlatformCharts.js';
 import { UpcomingContent, filterByType, filterByGenre } from './GuideView.jsx';
 import EpgView from './EpgView.jsx';
+import { MEDIA } from '../copy/media.js';
 import FeedView from './FeedView.jsx';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import { track, EVENTS } from '../lib/analytics.js';
@@ -69,7 +70,7 @@ function SaveBtn({ item, watchlist }) {
     <button
       className={`card-save-btn${saved ? ' saved' : ''}`}
       onClick={e => { e.stopPropagation(); watchlist.toggle({ ...item, id }); }}
-      aria-label={saved ? 'Remove from list' : 'Add to list'}
+      aria-label={saved ? MEDIA.removeFromList : MEDIA.addToList}
       disabled={watchlist.loading}
     >
       <svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
@@ -99,7 +100,7 @@ function FavBtn({ item }) {
 /* ── Compact "year · type" meta line for poster cards ── */
 function cardMeta(item) {
   const year = (item.release_date || item.first_air_date || '').slice(0, 4);
-  const type = item.media_type === 'tv' ? 'TV' : item._cinema ? 'Cinema' : 'Movie';
+  const type = item.media_type === 'tv' ? MEDIA.tv : item._cinema ? MEDIA.cinema : MEDIA.movie;
   return [year, type].filter(Boolean).join(' · ');
 }
 
@@ -164,7 +165,7 @@ function BingeCard({ item, openPanel, watchlist }) {
       <span className="discover-binge-card-copy">
         <span className="discover-binge-card-title">{title}</span>
         <span className="discover-binge-card-meta">
-          {year ? `${year} • ` : ''}{type === 'tv' ? 'TV Series' : 'Movie'}
+          {year ? `${year} • ` : ''}{type === 'tv' ? MEDIA.tvSeries : MEDIA.movie}
         </span>
       </span>
 
@@ -209,7 +210,7 @@ function HeroCard({ item, openPanel, watchlist, badge = 'Trending #1' }) {
   const type     = item.media_type || 'movie';
   const yearsAgo = item.anniversary_years;
   const archiveYear = item.archive_year;
-  const note     = yearsAgo ? `${yearsAgo} years ago today` : archiveYear ? 'From the archive' : null;
+  const note     = yearsAgo ? `${yearsAgo} years ago today` : archiveYear ? MEDIA.fromTheArchive : null;
   const year     = yearsAgo
     ? String(new Date().getFullYear() - yearsAgo)
     : archiveYear
@@ -236,7 +237,7 @@ function HeroCard({ item, openPanel, watchlist, badge = 'Trending #1' }) {
         <h2 className="discover-hero-title">{title}</h2>
         {year && (
           <p className="discover-hero-meta">
-            {year} · {type === 'tv' ? 'TV Series' : 'Movie'}{note ? ` · ${note}` : ''}
+            {year} · {type === 'tv' ? MEDIA.tvSeries : MEDIA.movie}{note ? ` · ${note}` : ''}
           </p>
         )}
       </div>
@@ -330,7 +331,7 @@ function ChartRow({ item, rank, openPanel, watchlist, favorites, region }) {
           type="button"
           className={`search-action-btn${inList ? ' active' : ''}`}
           onClick={e => { e.stopPropagation(); watchlist.toggle({ ...item, id, media_type: type }); }}
-          data-tip={inList ? 'Remove from watch list' : 'Save to watch list'}
+          data-tip={inList ? MEDIA.removeFromWatchlist : MEDIA.saveToWatchlist}
           aria-label={inList ? `Remove ${title} from list` : `Add ${title} to list`}
         >
           <BookmarkIcon filled={inList} />
@@ -499,7 +500,7 @@ function DiscoverContent({ openPanel, watchlist, history, openSections, setOpenS
                   item={onThisDay}
                   openPanel={openPanel}
                   watchlist={watchlist}
-                  badge={onThisDay.archive_year ? 'From the Archive' : 'On This Day'}
+                  badge={onThisDay.archive_year ? MEDIA.fromTheArchiveBadge : MEDIA.onThisDay}
                 />
               )}
             </div>
@@ -579,7 +580,7 @@ function DiscoverContent({ openPanel, watchlist, history, openSections, setOpenS
       {anticipatedMovies.length > 0 && (
         <section className="discover-section discover-binge-section">
           <DiscoverSectionHeader
-            kicker="Coming Soon"
+            kicker={MEDIA.comingSoon}
             title="Most Anticipated"
             open={openSections.anticipated}
             onToggle={() => toggleSection('anticipated')}
@@ -783,18 +784,18 @@ export default function DiscoverView() {
               ariaLabel={tab === 'releases' ? 'Filter upcoming' : tab === 'new' ? 'Filter new releases' : 'Filter discover'}
               groups={[
                 {
-                  heading: 'Type',
+                  heading: MEDIA.typeHeading,
                   options: [
-                    { id: 'tv',     label: 'TV'     },
-                    { id: 'cinema', label: 'Cinema' },
-                    { id: 'movie',  label: 'Movies' },
+                    { id: 'tv',     label: MEDIA.tv     },
+                    { id: 'cinema', label: MEDIA.cinema },
+                    { id: 'movie',  label: MEDIA.movies },
                   ],
                   value: typeFilters,
                   onChange: setTypeFilters,
                   defaultValue: ALL_TYPES,
                 },
                 {
-                  heading: 'Genre',
+                  heading: MEDIA.genreHeading,
                   options: genres.map(g => ({ id: g.id, label: g.name })),
                   value: genreFilters,
                   onChange: setGenreFilters,
@@ -808,7 +809,7 @@ export default function DiscoverView() {
                 onClick={toggleAllDiscoverSections}
                 aria-label={allDiscoverSectionsOpen ? 'Collapse all Discover sections' : 'Expand all Discover sections'}
                 aria-pressed={!allDiscoverSectionsOpen}
-                title={allDiscoverSectionsOpen ? 'Collapse all sections' : 'Expand all sections'}
+                title={allDiscoverSectionsOpen ? MEDIA.collapseAllSections : MEDIA.expandAllSections}
                 type="button"
               >
                 <SectionToggleIcon collapse={allDiscoverSectionsOpen} />
@@ -821,7 +822,7 @@ export default function DiscoverView() {
                 onClick={toggleAllReleasesSections}
                 aria-label={releasesAllOpen ? 'Collapse all Upcoming sections' : 'Expand all Upcoming sections'}
                 aria-pressed={!releasesAllOpen}
-                title={releasesAllOpen ? 'Collapse all sections' : 'Expand all sections'}
+                title={releasesAllOpen ? MEDIA.collapseAllSections : MEDIA.expandAllSections}
                 type="button"
               >
                 <SectionToggleIcon collapse={releasesAllOpen} />
@@ -834,7 +835,7 @@ export default function DiscoverView() {
                 onClick={toggleAllNewReleasesSections}
                 aria-label={allNewReleasesSectionsOpen ? 'Collapse all New Releases sections' : 'Expand all New Releases sections'}
                 aria-pressed={!allNewReleasesSectionsOpen}
-                title={allNewReleasesSectionsOpen ? 'Collapse all sections' : 'Expand all sections'}
+                title={allNewReleasesSectionsOpen ? MEDIA.collapseAllSections : MEDIA.expandAllSections}
                 type="button"
               >
                 <SectionToggleIcon collapse={allNewReleasesSectionsOpen} />

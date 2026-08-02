@@ -2,12 +2,15 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../api/supabase';
 import './AuthPage.css';
-import PlotLoader from '../components/PlotLoader.jsx';
+import PlotLoader from '@plot/ui/PlotLoader.jsx';
+import { COMMON } from '../copy/common.js';
+import { AUTH_PAGE } from '../copy/authPage.js';
+import { RESET_PASSWORD_PAGE } from '../copy/resetPasswordPage.js';
 
 function friendlyError(msg) {
-  if (!msg) return 'Something went wrong. Please try again.';
-  if (msg.includes('Password should be at least')) return 'Password must be at least 6 characters.';
-  if (msg.includes('same password')) return 'New password must be different from your current one.';
+  if (!msg) return COMMON.genericError;
+  if (msg.includes('Password should be at least')) return AUTH_PAGE.weakPassword;
+  if (msg.includes('same password')) return RESET_PASSWORD_PAGE.samePassword;
   return msg;
 }
 
@@ -75,21 +78,21 @@ export default function ResetPasswordPage() {
                       type="button"
                       className="auth-show-pw"
                       onClick={() => setShowPassword(v => !v)}
-                      aria-label={showPassword ? 'Hide passwords' : 'Show passwords'}
+                      aria-label={showPassword ? RESET_PASSWORD_PAGE.hidePasswords : RESET_PASSWORD_PAGE.showPasswords}
                       aria-pressed={showPassword}
-                      title={showPassword ? 'Hide passwords' : 'Show passwords'}
+                      title={showPassword ? RESET_PASSWORD_PAGE.hidePasswords : RESET_PASSWORD_PAGE.showPasswords}
                     >
-                      {showPassword ? 'Hide' : 'Show'}
+                      {showPassword ? AUTH_PAGE.hide : AUTH_PAGE.show}
                     </button>
                   </div>
                 </div>
 
                 <div className="auth-field">
-                  <label htmlFor="rp-confirm">Confirm password</label>
+                  <label htmlFor="rp-confirm">{RESET_PASSWORD_PAGE.confirmPasswordLabel}</label>
                   <input
                     id="rp-confirm"
                     type={showPassword ? 'text' : 'password'}
-                    placeholder="Same again"
+                    placeholder={RESET_PASSWORD_PAGE.confirmPasswordPlaceholder}
                     value={confirm}
                     onChange={e => setConfirm(e.target.value)}
                     required
@@ -102,9 +105,9 @@ export default function ResetPasswordPage() {
                   className="auth-cta"
                   disabled={loading}
                   aria-busy={loading}
-                  aria-label={loading ? 'Updating password' : 'Update password'}
+                  aria-label={loading ? RESET_PASSWORD_PAGE.updatingPassword : RESET_PASSWORD_PAGE.updatePassword}
                 >
-                  {loading ? <PlotLoader size="button" tone="dark" ariaHidden /> : 'Update password'}
+                  {loading ? <PlotLoader size="button" tone="dark" ariaHidden /> : RESET_PASSWORD_PAGE.updatePassword}
                 </button>
               </form>
             </>

@@ -6,7 +6,7 @@ import { localDateStr } from '../utils/date.js';
 import { getEpisodeGuideState } from '../utils/episodeProgress.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import ConfirmModal from './ConfirmModal.jsx';
-import PlotLoader from './PlotLoader.jsx';
+import PlotLoader from '@plot/ui/PlotLoader.jsx';
 
 /* ── Icons ── */
 function CheckCircleIcon() {

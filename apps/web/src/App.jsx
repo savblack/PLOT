@@ -22,7 +22,7 @@ import { useReminders }    from './hooks/useReminders.js';
 import { useTopLists }     from './hooks/useTopLists.js';
 import { useFavorites }    from './hooks/useFavorites.js';
 import { useCustomLists }  from './hooks/useCustomLists.js';
-import PlotLoader from './components/PlotLoader.jsx';
+import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import { pathForView, viewFromPath } from './navigation.js';
 import { readStorage, writeStorage } from './utils/storage.js';
 import { track, EVENTS, setPersonProps } from './lib/analytics.js';

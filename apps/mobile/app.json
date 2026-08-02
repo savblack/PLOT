@@ -12,7 +12,10 @@
       "supportsTablet": true,
       "associatedDomains": [
         "applinks:app.theplot.tv"
-      ]
+      ],
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "tv.theplot.app",
@@ -60,6 +63,12 @@
       "expo-font",
       "expo-status-bar",
       "expo-secure-store"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "af5eb12a-a0c5-41b0-9d14-5bef0b2279ab"
+      }
+    }
   }
 }

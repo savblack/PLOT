@@ -23,8 +23,11 @@ import { fetchVerifiedAvailability, formatOfferPrice, offersFromTmdb } from '@pl
 import { fetchCriticScore, pickAudienceQuote, getConsensusLine } from '@plot/core/reviews.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import SheetHeader from './SheetHeader.jsx';
-import PlotLoader from './PlotLoader.jsx';
+import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import Spinner from './Spinner.jsx';
+import { COMMON } from '../copy/common.js';
+import { MEDIA } from '../copy/media.js';
+import { MEDIA_PANEL } from '../copy/mediaPanel.js';
 
 /* ── Close icon ── */
 function CloseIcon() {
@@ -62,7 +65,7 @@ function TalentPanelView({ person, credits, error, onOpenTitle }) {
 
   const actingCredits = dedupedActingCredits(credits?.cast).slice(0, 12);
   const image = profileUrl(person.profile_path, 'h632');
-  const knownFor = person.known_for_department || 'Talent';
+  const knownFor = person.known_for_department || MEDIA_PANEL.talentFallback;
   const biographyPreview = shortBiography(person.biography);
 
   return (
@@ -301,7 +304,7 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone }) {
         <LoadingSpinner />
       ) : episodes.length === 0 ? (
         <div style={{ padding: '1rem 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-          {epError ? 'Could not load episodes. Try again later.' : 'No episodes available yet.'}
+          {epError ? MEDIA_PANEL.episodesLoadError : MEDIA_PANEL.noEpisodesAvailable}
         </div>
       ) : (
         <div className="episode-list">
@@ -324,7 +327,7 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone }) {
                 className={`ep-row${watched ? ' watched' : ''}${isCurrent ? ' ep-current' : ''}`}
                 onClick={isTracking && !isChecking ? () => handleCheckEp(ep, watched) : undefined}
                 {...(isTracking && !isChecking
-                  ? getButtonLikeProps({ onPress: () => handleCheckEp(ep, watched), label: watched ? 'Mark unwatched' : 'Mark watched' })
+                  ? getButtonLikeProps({ onPress: () => handleCheckEp(ep, watched), label: watched ? MEDIA_PANEL.markUnwatched : MEDIA_PANEL.markWatched })
                   : {})}
               >
                 <span className="ep-num">E{String(ep.episode_number).padStart(2,'0')}</span>
@@ -355,8 +358,8 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone }) {
                     <button
                       className={`ep-check-btn${isActive ? ' checked' : ''}`}
                       onClick={(e) => { e.stopPropagation(); handleCheckEp(ep, watched); }}
-                      aria-label={watched ? 'Mark unwatched' : 'Mark watched'}
-                      title={watched ? 'Unmark as watched' : 'Mark as watched'}
+                      aria-label={watched ? MEDIA_PANEL.markUnwatched : MEDIA_PANEL.markWatched}
+                      title={watched ? MEDIA_PANEL.unmarkAsWatched : MEDIA_PANEL.markAsWatched}
                     >
                       <CheckCircleIcon filled={watched} />
                     </button>
@@ -521,7 +524,7 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
     try {
       const newList = await createList(creatingName);
       if (!newList) {
-        setCreateError('Could not create the list. Please try again.');
+        setCreateError(MEDIA_PANEL.couldNotCreateList);
         return;
       }
 
@@ -566,10 +569,10 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
             >
               <div>
                 <div style={{ fontWeight: 500, fontSize: '0.875rem', color: 'var(--text-primary)' }}>
-                  Top 10 {topListType === 'tv' ? 'TV Shows' : 'Movies'}
+                  Top 10 {topListType === 'tv' ? MEDIA_PANEL.top10TvShows : MEDIA_PANEL.top10Movies}
                 </div>
                 <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                  {currentRank ? `Currently #${currentRank}` : 'Not ranked'}
+                  {currentRank ? MEDIA_PANEL.currentlyRanked(currentRank) : MEDIA_PANEL.notRanked}
                 </div>
               </div>
               <div style={{
@@ -767,7 +770,7 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
                   }}
                 />
                 <button className="btn btn-primary btn-xs" disabled={!creatingName.trim() || isCreating} onClick={handleCreate}>
-                  {isCreating ? 'Creating…' : 'Create'}
+                  {isCreating ? MEDIA_PANEL.creating : MEDIA_PANEL.create}
                 </button>
                 <button
                   className="icon-btn"
@@ -1066,7 +1069,9 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
   const cast = (details?.credits?.cast || details?.aggregate_credits?.cast || []).slice(0, 12);
 
   const audienceScore = Number.isFinite(details?.vote_average) ? Math.round(details.vote_average * 10) : null;
-  const consensusLine = criticScore ? getConsensusLine(criticScore.criticScore, audienceScore) : null;
+  const consensusLine = criticScore
+    ? getConsensusLine(criticScore.criticScore, audienceScore, { audienceVoteCount: details?.vote_count, seed: details?.id })
+    : null;
 
   const runStatusAction = useCallback(async (actionLabel, action) => {
     if (statusActionPending) return;
@@ -1075,7 +1080,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
     try {
       const result = await action();
       if (!result?.ok) {
-        setStatusActionError(result?.error || 'Could not update watch status. Please try again.');
+        setStatusActionError(result?.error || MEDIA_PANEL.couldNotUpdateWatchStatus);
       }
     } finally {
       setStatusActionPending('');
@@ -1104,7 +1109,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
       const removed = await history.removeEntry(itemId, itemType);
       return removed
         ? { ok: true }
-        : { ok: false, error: 'Could not clear watch status. Please try again.' };
+        : { ok: false, error: MEDIA_PANEL.couldNotClearWatchStatus };
     }
 
     const result = await markMediaAsWatched({
@@ -1129,13 +1134,13 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
       const stopped = await watching.stopWatching(itemId);
       return stopped
         ? { ok: true }
-        : { ok: false, error: 'Could not clear watch status. Please try again.' };
+        : { ok: false, error: MEDIA_PANEL.couldNotClearWatchStatus };
     }
     if (watched) {
       const removed = await history.removeEntry(itemId, itemType);
       return removed
         ? { ok: true }
-        : { ok: false, error: 'Could not clear watch status. Please try again.' };
+        : { ok: false, error: MEDIA_PANEL.couldNotClearWatchStatus };
     }
     return { ok: true };
   }, [history, isWatching, itemId, watched, watching]);
@@ -1235,21 +1240,20 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
 
             {/* Critic / audience scores */}
             {(criticScore || Number.isFinite(audienceScore)) && (
-              <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '0.25rem', fontSize: '0.9rem', fontWeight: 700 }}>
                 {criticScore && (
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.2rem 0.55rem 0.2rem 0.45rem', borderRadius: 'var(--radius-pill)', border: '1px solid var(--border-strong)', fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                    <span aria-hidden="true">◆</span> {criticScore.criticScore} Critics
-                  </span>
+                  <span style={{ color: 'var(--text-primary)' }}>{criticScore.criticScore}% Critics</span>
+                )}
+                {criticScore && Number.isFinite(audienceScore) && (
+                  <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>·</span>
                 )}
                 {Number.isFinite(audienceScore) && (
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.2rem 0.55rem 0.2rem 0.45rem', borderRadius: 'var(--radius-pill)', border: '1px solid var(--border-strong)', fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                    <span aria-hidden="true" style={{ color: 'var(--accent)' }}>●</span> {audienceScore} Audience
-                  </span>
+                  <span style={{ color: 'var(--accent)' }}>{audienceScore}% Audience</span>
                 )}
               </div>
             )}
             {consensusLine && (
-              <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>{consensusLine}</div>
+              <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>{consensusLine}</div>
             )}
 
             {/* Overview */}
@@ -1263,7 +1267,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                   &ldquo;{audienceQuote.text}&rdquo;
                 </p>
                 <cite style={{ display: 'block', fontStyle: 'normal', fontSize: '0.68rem', fontWeight: 600, color: 'var(--text-muted)', marginTop: '0.25rem', letterSpacing: '0.02em' }}>
-                  From a TMDB audience review{audienceQuote.author ? `, ${audienceQuote.author}` : ''}
+                  {audienceQuote.author || 'A TMDB audience review'}
                 </cite>
               </blockquote>
             )}
@@ -1308,7 +1312,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                 <div style={{ marginBottom: '1rem', borderRadius: '0.75rem', overflow: 'hidden', aspectRatio: '16/9' }}>
                   <iframe
                     src={`https://www.youtube.com/embed/${trailer.key}?rel=0`}
-                    title={trailer.name || 'Trailer'}
+                    title={trailer.name || MEDIA_PANEL.trailerFallback}
                     style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
@@ -1329,10 +1333,10 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                 };
 
                 const statusLabel = statusActionPending ? statusActionPending
-                  : isWatching ? 'Watching'
-                  : watched && watchedEntry?.dnf ? "Didn't finish"
-                  : watched ? 'Watched'
-                  : 'Status';
+                  : isWatching ? MEDIA_PANEL.watching
+                  : watched && watchedEntry?.dnf ? MEDIA_PANEL.didntFinish
+                  : watched ? MEDIA.watched
+                  : MEDIA_PANEL.status;
                 const statusActive = isWatching || watched;
                 const statusColors = isWatching
                   ? { background: 'rgba(99,102,241,0.12)', border: '1.5px solid rgba(99,102,241,0.45)', color: '#818cf8' }
@@ -1355,7 +1359,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                 }}
               >
                 {inList ? <CheckIcon /> : <BookmarkIcon />}
-                {inList ? 'Saved' : 'Save'}
+                {inList ? MEDIA_PANEL.inWatchlist : MEDIA_PANEL.addToWatchlist}
               </button>
 
               {/* Secondary tray */}
@@ -1378,10 +1382,10 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                       boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
                     }}>
                       {[
-                        { label: 'Watching', action: () => runStatusAction('Updating…', handleWatchingStatus), hidden: isMovie },
-                        { label: 'Watched', action: () => runStatusAction('Updating…', () => handleWatchedStatus(false)) },
-                        { label: "Didn't finish", action: () => runStatusAction('Updating…', () => handleWatchedStatus(true)) },
-                        { label: 'Clear status', action: () => runStatusAction('Clearing…', handleClearStatus), hidden: !statusActive, muted: true },
+                        { label: MEDIA_PANEL.watching, action: () => runStatusAction(MEDIA_PANEL.updating, handleWatchingStatus), hidden: isMovie },
+                        { label: MEDIA.watched, action: () => runStatusAction(MEDIA_PANEL.updating, () => handleWatchedStatus(false)) },
+                        { label: MEDIA_PANEL.didntFinish, action: () => runStatusAction(MEDIA_PANEL.updating, () => handleWatchedStatus(true)) },
+                        { label: MEDIA_PANEL.clearStatus, action: () => runStatusAction(MEDIA_PANEL.clearing, handleClearStatus), hidden: !statusActive, muted: true },
                       ].filter(o => !o.hidden).map((opt, i, arr) => (
                         <button
                           key={opt.label}
@@ -1431,7 +1435,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                   }}
                 >
                   <ListIcon />
-                  {isInAnyList ? 'On list' : 'List'}
+                  {isInAnyList ? MEDIA_PANEL.onList : MEDIA_PANEL.list}
                 </button>
 
                 {/* Share */}
@@ -1445,7 +1449,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                   }}
                 >
                   <ShareIcon />
-                  {shareCopied ? 'Copied!' : 'Share'}
+                  {shareCopied ? COMMON.copied : COMMON.share}
                 </button>
               </div>
 
@@ -1485,7 +1489,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                 <div style={{ marginBottom: '0.65rem' }}>
                   <div
                     className="half-star-rating"
-                    aria-label={localRating ? `${ratingToStars(localRating)} out of 5 stars` : 'No rating'}
+                    aria-label={localRating ? `${ratingToStars(localRating)} out of 5 stars` : MEDIA_PANEL.noRating}
                   >
                     {Array.from({ length: STAR_COUNT }, (_, i) => i + 1).map(n => (
                       <button
@@ -1547,7 +1551,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                     className={`review-action-btn${reviewDirty || (!hasSavedReview && hasReviewDraft) ? ' review-action-btn--active' : hasSavedReview ? ' review-action-btn--saved' : ''}`}
                     disabled={reviewSaving}
                     aria-busy={reviewSaving}
-                    aria-label={reviewSaving ? 'Saving review' : hasSavedReview ? (reviewDirty ? 'Save changes' : 'Edit review') : 'Save review'}
+                    aria-label={reviewSaving ? MEDIA_PANEL.savingReview : hasSavedReview ? (reviewDirty ? MEDIA_PANEL.saveChanges : MEDIA_PANEL.editReview) : MEDIA_PANEL.saveReview}
                     onClick={async () => {
                       if (hasSavedReview && !reviewDirty) {
                         reviewInputRef.current?.focus();
@@ -1573,8 +1577,8 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                     {reviewSaving
                       ? <Spinner size="button" ariaHidden />
                       : hasSavedReview
-                        ? reviewDirty ? 'Save changes' : 'Edit review'
-                        : 'Save review'
+                        ? reviewDirty ? MEDIA_PANEL.saveChanges : MEDIA_PANEL.editReview
+                        : MEDIA_PANEL.saveReview
                     }
                   </button>
                 )}

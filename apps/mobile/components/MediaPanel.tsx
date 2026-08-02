@@ -295,6 +295,7 @@ interface TMDBDetails {
   backdrop_path?: string | null;
   poster_path?: string | null;
   vote_average?: number;
+  vote_count?: number;
   genres?: TMDBGenre[];
   number_of_seasons?: number;
   seasons?: TMDBSeason[];
@@ -625,7 +626,9 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
   const rating = details?.vote_average ? `${details.vote_average.toFixed(1)} ★` : '';
   const genres = (details?.genres || []).slice(0, 3).map((g: any) => g.name).join(' · ');
   const audienceScore = Number.isFinite(details?.vote_average) ? Math.round((details!.vote_average as number) * 10) : null;
-  const consensusLine = criticScore ? getConsensusLine(criticScore.criticScore, audienceScore) : null;
+  const consensusLine = criticScore
+    ? getConsensusLine(criticScore.criticScore, audienceScore, { audienceVoteCount: details?.vote_count, seed: details?.id })
+    : null;
 
   // Prefer an official Trailer, then Teaser, then any YouTube clip (mirrors web).
   const vids = details?.videos?.results || [];
@@ -694,18 +697,11 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
 
                 {/* Critic / audience scores */}
                 {(criticScore || Number.isFinite(audienceScore)) && (
-                  <View style={styles.scoresRow}>
-                    {criticScore && (
-                      <View style={styles.scorePill}>
-                        <Text style={styles.scorePillText}>◆ {criticScore.criticScore} Critics</Text>
-                      </View>
-                    )}
-                    {Number.isFinite(audienceScore) && (
-                      <View style={styles.scorePill}>
-                        <Text style={styles.scorePillText}><Text style={styles.scoreMarkAudience}>●</Text> {audienceScore} Audience</Text>
-                      </View>
-                    )}
-                  </View>
+                  <Text style={styles.scoresRow}>
+                    {criticScore && <Text style={styles.scoreCritics}>{criticScore.criticScore}% Critics</Text>}
+                    {criticScore && Number.isFinite(audienceScore) && <Text style={styles.scoreDivider}> · </Text>}
+                    {Number.isFinite(audienceScore) && <Text style={styles.scoreAudience}>{audienceScore}% Audience</Text>}
+                  </Text>
                 )}
                 {consensusLine ? <Text style={styles.consensusLine}>{consensusLine}</Text> : null}
 
@@ -716,7 +712,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                   <View style={styles.audienceQuote}>
                     <Text style={styles.audienceQuoteText}>&ldquo;{audienceQuote.text}&rdquo;</Text>
                     <Text style={styles.audienceQuoteAttr}>
-                      From a TMDB audience review{audienceQuote.author ? `, ${audienceQuote.author}` : ''}
+                      {audienceQuote.author || 'A TMDB audience review'}
                     </Text>
                   </View>
                 )}
@@ -970,14 +966,10 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   metaType: { fontFamily: fontFamily.sansBold, fontSize: 11, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
   metaRating: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: '#F59E0B' },
   genres:   { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted, marginBottom: spacing.md },
-  scoresRow: { flexDirection: 'row', gap: 6, marginBottom: spacing.sm },
-  scorePill: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    paddingHorizontal: 9, paddingVertical: 3, borderRadius: radii.pill,
-    borderWidth: 1, borderColor: colors.border,
-  },
-  scorePillText: { fontFamily: fontFamily.sansBold, fontSize: 11, color: colors.textPrimary },
-  scoreMarkAudience: { color: colors.accent },
+  scoresRow: { fontSize: fontSize.md, marginBottom: 4 },
+  scoreCritics: { fontFamily: fontFamily.sansBold, fontSize: fontSize.md, color: colors.textPrimary },
+  scoreAudience: { fontFamily: fontFamily.sansBold, fontSize: fontSize.md, color: colors.accent },
+  scoreDivider: { fontFamily: fontFamily.sans, fontSize: fontSize.md, color: colors.textMuted },
   consensusLine: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textSecondary, marginBottom: spacing.sm, lineHeight: 17 },
   overview: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary, lineHeight: 20, marginBottom: spacing.lg },
   audienceQuote: { borderLeftWidth: 2, borderLeftColor: colors.accent, paddingLeft: spacing.md, marginBottom: spacing.md },

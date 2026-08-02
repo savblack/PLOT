@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { useNotifications } from '../hooks/useNotifications.js';
+import { COMMON } from '../copy/common.js';
 
 function relativeTime(iso) {
   const then = new Date(iso).getTime();
@@ -47,7 +48,7 @@ export default function NotificationsView() {
   return (
     <div style={{ maxWidth: 560, margin: '0 auto', padding: '1rem 1rem 3rem' }}>
       {loading ? (
-        <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '3rem 1rem' }}>Loading…</p>
+        <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '3rem 1rem' }}>{COMMON.loading}</p>
       ) : list.length === 0 ? (
         <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '3rem 1rem', lineHeight: 1.6 }}>
           No notifications yet.<br />Follows and requests will show up here.

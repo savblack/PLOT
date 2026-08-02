@@ -3,7 +3,8 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../api/supabase.js';
 import { tmdb } from '../api/tmdb.js';
 import { writePendingSave } from '../utils/pendingSave.js';
-import PlotLoader from '../components/PlotLoader.jsx';
+import PlotLoader from '@plot/ui/PlotLoader.jsx';
+import { SAVE_PAGE } from '../copy/savePage.js';
 
 /**
  * /save?media_type=movie&tmdb_id=12345
@@ -117,7 +118,7 @@ export default function SavePage() {
 
         <p className="save-kicker">Save to your PLOT</p>
         <h1 className="save-title">
-          {name || 'This title'}
+          {name || SAVE_PAGE.thisTitleFallback}
           {year && <span className="save-year"> ({year})</span>}
         </h1>
 

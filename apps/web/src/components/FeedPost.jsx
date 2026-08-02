@@ -4,6 +4,7 @@ import { useApp } from '../hooks/useApp.js';
 import { posterUrl } from '../utils/images.js';
 import { starFillPercent, STAR_COUNT } from '../utils/ratings.js';
 import { favoriteWords } from '../utils/spelling.js';
+import { COMMON } from '../copy/common.js';
 import { toggleLike } from '../hooks/usePostEngagement.js';
 import { buildTitleShareUrl, shareUrl } from '../utils/share.js';
 import { track, EVENTS } from '../lib/analytics.js';
@@ -117,7 +118,7 @@ export default function FeedPost({ post }) {
     openPanel(tmdb_id, media_type === 'tv' ? 'tv' : 'movie', 'feed');
   };
   const goAuthor = () => author_username && navigate(`/u/${author_username}`);
-  const displayName = author_display_name || author_username || 'Someone';
+  const displayName = author_display_name || author_username || COMMON.someone;
   const img = posterUrl(poster_path, 'w500');
 
   const onLike = async () => {
@@ -231,21 +232,21 @@ export default function FeedPost({ post }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.1rem', marginTop: '0.65rem' }}>
           <button
             type="button" onClick={onLike} style={actionBtn(liked)}
-            aria-pressed={liked} aria-label={liked ? 'Unlike' : 'Like'}
+            aria-pressed={liked} aria-label={liked ? COMMON.unlike : COMMON.like}
           >
             <HeartIcon filled={liked} />
             {likeCount > 0 && <span>{likeCount}</span>}
           </button>
           <button
             type="button" onClick={() => composerRef.current?.focus()} style={actionBtn(false)}
-            aria-label="Add a comment"
+            aria-label={COMMON.addComment}
           >
             <CommentIcon />
             {commentCount > 0 && <span>{commentCount}</span>}
           </button>
           <button
             type="button" onClick={onShare} style={{ ...actionBtn(false), marginLeft: 'auto' }}
-            aria-label="Share"
+            aria-label={COMMON.share}
           >
             <ShareIcon />
           </button>

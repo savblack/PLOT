@@ -6,20 +6,22 @@ import { track, identifyUser, EVENTS } from '../lib/analytics.js';
 import { getAuthCallbackUrl } from '../utils/redirects.js';
 import { SHOW_GOOGLE_LOGIN, SHOW_APPLE_LOGIN } from '../launchFeatures.js';
 import { HERO_POSTERS } from '../constants/heroPosters.js';
-import PlotLoader from '../components/PlotLoader.jsx';
+import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import Turnstile from '../components/Turnstile.jsx';
 import { getPremiumCheckoutIntent, rememberPremiumCheckoutIntent } from '../utils/premiumCheckoutIntent.js';
+import { COMMON } from '../copy/common.js';
+import { AUTH_PAGE } from '../copy/authPage.js';
 
 const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY;
 
 function friendlyError(msg) {
-  if (!msg) return 'Something went wrong. Please try again.';
-  if (msg.includes('Invalid login credentials'))    return 'Oops! Incorrect email or password.';
-  if (msg.includes('Email not confirmed'))          return '__warning__Almost in! Your activation email is waiting in your inbox.';
-  if (msg.includes('User already registered'))      return 'An account with this email already exists. Try signing in instead.';
-  if (msg.includes('Password should be at least'))  return 'Password must be at least 6 characters.';
-  if (msg.includes('Unable to validate email'))     return 'Please enter a valid email address.';
-  if (msg.includes('rate limit') || msg.includes('too many')) return 'Too many attempts. Please wait a moment and try again.';
+  if (!msg) return COMMON.genericError;
+  if (msg.includes('Invalid login credentials'))    return AUTH_PAGE.incorrectCredentials;
+  if (msg.includes('Email not confirmed'))          return AUTH_PAGE.activationEmailWaiting;
+  if (msg.includes('User already registered'))      return AUTH_PAGE.accountAlreadyExists;
+  if (msg.includes('Password should be at least'))  return AUTH_PAGE.weakPassword;
+  if (msg.includes('Unable to validate email'))     return AUTH_PAGE.invalidEmail;
+  if (msg.includes('rate limit') || msg.includes('too many')) return AUTH_PAGE.rateLimited;
   return msg;
 }
 
@@ -38,9 +40,9 @@ function errorReason(msg) {
 // reasons (distinct from friendlyError/errorReason above, which parse raw
 // Supabase Auth messages — the bypass path returns its own reason strings).
 function bypassErrorMessage(reason) {
-  if (reason === 'rate_limited') return 'Too many attempts. Please wait a moment and try again.';
-  if (reason === 'already_registered') return 'An account with this email already exists. Try signing in instead.';
-  return 'Something went wrong. Please try again.';
+  if (reason === 'rate_limited') return AUTH_PAGE.rateLimited;
+  if (reason === 'already_registered') return AUTH_PAGE.accountAlreadyExists;
+  return COMMON.genericError;
 }
 
 function GoogleIcon() {
@@ -203,7 +205,17 @@ export default function AuthPage({ initialMode = 'signup' }) {
         // session — carrying first-touch attribution — stitches to this user.
         identifyUser(data.user?.id, { email: data.user?.email || email });
         track(EVENTS.USER_SIGNED_UP, { method: 'email' });
-        setSuccess(true);
+        // Confirm email is off, so signUp returns a live session immediately —
+        // let them straight into the app instead of gating on the inbox click.
+        // Users still get the confirmation email and can verify any time from
+        // Settings. If a session ever isn't present (e.g. confirmation gets
+        // re-enabled later), fall back to the "check your inbox" screen.
+        if (data.session) {
+          const plan = getPremiumCheckoutIntent();
+          navigate(plan ? `/pricing?billing=${plan}` : '/onboarding');
+        } else {
+          setSuccess(true);
+        }
       }
     }
   };
@@ -220,7 +232,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
       body: { email, password, website, formToken: formTokenRef.current },
     });
     if (error) {
-      setError('Something went wrong. Please try again.');
+      setError(COMMON.genericError);
       setLoading(false);
       track(EVENTS.SIGNUP_SUBMIT_FAILED, { reason: 'bypass_create_failed' });
       return;
@@ -311,23 +323,9 @@ export default function AuthPage({ initialMode = 'signup' }) {
 
   const scrollPosters = [...HERO_POSTERS, ...HERO_POSTERS];
 
-  const headings = {
-    signup: 'Create your account',
-    login:  'Welcome back',
-    forgot: 'Reset your password',
-  };
-
-  const subheadings = {
-    signup: 'For people who think about what they watch.',
-    login:  'Good to see you again.',
-    forgot: 'We\'ll send a link to your inbox.',
-  };
-
-  const ctaLabels = {
-    signup: 'Create account',
-    login:  'Sign in',
-    forgot: 'Send reset link',
-  };
+  const headings = AUTH_PAGE.heading;
+  const subheadings = AUTH_PAGE.subheading;
+  const ctaLabels = AUTH_PAGE.submitLabel;
 
   return (
     <div className="auth-page">
@@ -362,17 +360,17 @@ export default function AuthPage({ initialMode = 'signup' }) {
                   <polyline points="2 4 12 13 22 4"/>
                 </svg>
               </div>
-              <h1>Almost there!</h1>
-              <p>We sent a confirmation link to <strong>{email}</strong>. Click it to activate your account, then come back to sign in.</p>
-              <button className="auth-cta auth-cta--outline" onClick={() => switchMode('login')}>Back to sign in</button>
+              <h1>{AUTH_PAGE.almostThereTitle}</h1>
+              <p>{AUTH_PAGE.almostThereBefore}<strong>{email}</strong>{AUTH_PAGE.almostThereAfter}</p>
+              <button className="auth-cta auth-cta--outline" onClick={() => switchMode('login')}>{AUTH_PAGE.backToSignIn}</button>
               <p className="auth-success-resend">
-                Didn't get it? Check spam or{' '}
+                {AUTH_PAGE.resendPrompt}{' '}
                 <button
                   className={`auth-resend-btn${resendStatus === 'sent' ? ' auth-resend-btn--sent' : ''}`}
                   onClick={handleResend}
                   disabled={resendStatus === 'sending' || resendStatus === 'sent'}
                 >
-                  {resendStatus === 'sending' ? 'sending' : resendStatus === 'sent' ? 'sent' : resendStatus === 'error' ? 'try again' : 'resend'}
+                  {resendStatus === 'sending' ? AUTH_PAGE.resendState.sending : resendStatus === 'sent' ? AUTH_PAGE.resendState.sent : resendStatus === 'error' ? AUTH_PAGE.resendState.error : AUTH_PAGE.resendState.idle}
                 </button>.</p>
             </div>
           )}
@@ -380,9 +378,9 @@ export default function AuthPage({ initialMode = 'signup' }) {
           {success && mode === 'forgot' && (
             <div className="auth-success">
               <div className="auth-success-icon">✓</div>
-              <h1>Link sent</h1>
-              <p>Check <strong>{email}</strong> for a password reset link. It'll expire in an hour.</p>
-              <button className="auth-cta" onClick={() => switchMode('login')}>Back to sign in</button>
+              <h1>{AUTH_PAGE.linkSentTitle}</h1>
+              <p>{AUTH_PAGE.linkSentBefore}<strong>{email}</strong> {AUTH_PAGE.linkSentAfter}</p>
+              <button className="auth-cta" onClick={() => switchMode('login')}>{AUTH_PAGE.backToSignIn}</button>
             </div>
           )}
 
@@ -394,9 +392,9 @@ export default function AuthPage({ initialMode = 'signup' }) {
                   <polyline points="2 4 12 13 22 4"/>
                 </svg>
               </div>
-              <h1>Check your inbox</h1>
-              <p>We sent a one-time sign-in link to <strong>{email}</strong>. Open it on this device and you're straight in, no password needed.</p>
-              <button className="auth-cta auth-cta--outline" onClick={() => { setMagicSent(false); resetCaptcha(); }}>Back</button>
+              <h1>{AUTH_PAGE.checkInboxTitle}</h1>
+              <p>{AUTH_PAGE.checkInboxBefore}<strong>{email}</strong>. {AUTH_PAGE.checkInboxAfter}</p>
+              <button className="auth-cta auth-cta--outline" onClick={() => { setMagicSent(false); resetCaptcha(); }}>{AUTH_PAGE.back}</button>
             </div>
           )}
 
@@ -433,7 +431,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
                 )}
 
                 <div className="auth-field">
-                  <label htmlFor="auth-email">Email</label>
+                  <label htmlFor="auth-email">{AUTH_PAGE.emailLabel}</label>
                   <input
                     id="auth-email"
                     type="email"
@@ -461,12 +459,12 @@ export default function AuthPage({ initialMode = 'signup' }) {
 
                 {mode !== 'forgot' && (
                   <div className="auth-field">
-                    <label htmlFor="auth-password">Password</label>
+                    <label htmlFor="auth-password">{AUTH_PAGE.passwordLabel}</label>
                     <div className="auth-password-wrap">
                       <input
                         id="auth-password"
                         type={showPassword ? 'text' : 'password'}
-                        placeholder={mode === 'signup' ? 'At least 6 characters' : 'Your password'}
+                        placeholder={mode === 'signup' ? AUTH_PAGE.passwordPlaceholder.signup : AUTH_PAGE.passwordPlaceholder.login}
                         value={password}
                         onChange={e => { setPassword(e.target.value); markFormStarted(); }}
                         required
@@ -477,16 +475,16 @@ export default function AuthPage({ initialMode = 'signup' }) {
                         type="button"
                         className="auth-show-pw"
                         onClick={() => setShowPassword(v => !v)}
-                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                        aria-label={showPassword ? AUTH_PAGE.hidePassword : AUTH_PAGE.showPassword}
                         aria-pressed={showPassword}
-                        title={showPassword ? 'Hide password' : 'Show password'}
+                        title={showPassword ? AUTH_PAGE.hidePassword : AUTH_PAGE.showPassword}
                       >
-                        {showPassword ? 'Hide' : 'Show'}
+                        {showPassword ? AUTH_PAGE.hide : AUTH_PAGE.show}
                       </button>
                     </div>
                     {mode === 'login' && (
                       <button type="button" className="auth-forgot-link" onClick={() => switchMode('forgot')}>
-                        Forgot password?
+                        {AUTH_PAGE.forgotPassword}
                       </button>
                     )}
                   </div>
@@ -520,17 +518,17 @@ export default function AuthPage({ initialMode = 'signup' }) {
                   onClick={sendMagicLink}
                   disabled={loading || !captchaReady}
                 >
-                  Email me a magic link instead
+                  {AUTH_PAGE.magicLinkInstead}
                 </button>
               )}
 
               <div className="auth-toggle">
                 {mode === 'forgot' ? (
-                  <button onClick={() => switchMode('login')}>Back to sign in</button>
+                  <button onClick={() => switchMode('login')}>{AUTH_PAGE.backToSignIn}</button>
                 ) : mode === 'signup' ? (
-                  <p>Already have an account? <button onClick={() => switchMode('login')}>Sign in</button></p>
+                  <p>{AUTH_PAGE.alreadyHaveAccount} <button onClick={() => switchMode('login')}>{AUTH_PAGE.signIn}</button></p>
                 ) : (
-                  <p>Don't have an account? <button onClick={() => switchMode('signup')}>Sign up</button></p>
+                  <p>{AUTH_PAGE.noAccountYet} <button onClick={() => switchMode('signup')}>{AUTH_PAGE.signUp}</button></p>
                 )}
               </div>
             </>
@@ -538,7 +536,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
         </div>
 
         <p className="auth-panel-footer">
-          By continuing you agree to our <Link to="/terms">Terms</Link> and <Link to="/privacy">Privacy Policy</Link>.
+          {AUTH_PAGE.termsAgreement} <Link to="/terms">{AUTH_PAGE.terms}</Link> {AUTH_PAGE.and} <Link to="/privacy">{AUTH_PAGE.privacyPolicy}</Link>.
         </p>
       </div>
     </div>

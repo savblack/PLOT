@@ -7,7 +7,9 @@ import { getCalendarRelativeLabel, msUntilNextLocalMidnight } from '../utils/cal
 import { useCalendar } from '../hooks/useCalendar.js';
 import { tmdb } from '../api/tmdb.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
-import PlotLoader from './PlotLoader.jsx';
+import PlotLoader from '@plot/ui/PlotLoader.jsx';
+import { MEDIA } from '../copy/media.js';
+import { CALENDAR_VIEW } from '../copy/calendarView.js';
 
 
 /* ── Helpers ── */
@@ -44,10 +46,10 @@ const PILL_COLORS = {
   reminder:  'cal-pill-reminder',
 };
 const EVENT_LABELS = {
-  episode:   'Episode',
-  cinema:    'Cinema',
-  streaming: 'Streaming',
-  reminder:  'Reminder',
+  episode:   CALENDAR_VIEW.eventLabel.episode,
+  cinema:    MEDIA.cinema,
+  streaming: CALENDAR_VIEW.eventLabel.streaming,
+  reminder:  CALENDAR_VIEW.eventLabel.reminder,
 };
 const CHIP_COLORS = {
   episode:   'chip-episode',
@@ -78,7 +80,7 @@ function EventRowList({ events, openPanel }) {
     const id         = item?.tmdb_id;
     const type       = item?.media_type || 'movie';
     const img        = posterUrl(item?.poster_path, 'w92');
-    const title      = item?.title || item?.name || 'Unknown';
+    const title      = item?.title || item?.name || MEDIA.unknown;
     const isReminder = ev.type === 'reminder';
     const isLoading  = isReminder && resolving === item?.id;
 

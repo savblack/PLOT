@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import PlotLoader from '../../components/PlotLoader';
+import PlotLoader from '@plot/ui/PlotLoader';
 import ErrorState from '../../components/ErrorState';
 import ScreenHeaderBar from '../../components/ScreenHeaderBar';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
@@ -111,7 +111,7 @@ export default function HistoryScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [maxScroll, timeline]);
 
-  if (loading) return <PlotLoader />;
+  if (loading) return <PlotLoader backgroundColor={colors.bg} color={colors.textPrimary} />;
   if (loadError) return <ErrorState onRetry={reload} />;
 
   return (

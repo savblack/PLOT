@@ -4,6 +4,7 @@ import { useFeed } from '../hooks/useFeed.js';
 import FeedPost from './FeedPost.jsx';
 import SuggestedUsers from './SuggestedUsers.jsx';
 import PublicProfileNudge from './PublicProfileNudge.jsx';
+import { COMMON } from '../copy/common.js';
 
 export default function FeedView() {
   const { user } = useApp();
@@ -38,7 +39,7 @@ export default function FeedView() {
       )}
 
       {loading ? (
-        <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '3rem 1rem' }}>Loading…</p>
+        <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '3rem 1rem' }}>{COMMON.loading}</p>
       ) : items.length === 0 ? (
         <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '3rem 1rem', lineHeight: 1.6 }}>
           Your feed is empty.<br />Follow people to see what they're watching.
@@ -48,7 +49,7 @@ export default function FeedView() {
           {items.map(post => <FeedPost key={post.id} post={post} />)}
           <div ref={sentinelRef} style={{ height: 1 }} />
           {loadingMore && (
-            <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '1.5rem 1rem' }}>Loading…</p>
+            <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '1.5rem 1rem' }}>{COMMON.loading}</p>
           )}
           {!hasMore && (
             <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '1.5rem 1rem', fontSize: '0.82rem' }}>

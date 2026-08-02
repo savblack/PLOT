@@ -7,6 +7,8 @@ import { parsePlatform } from '../domain/importParsing.js';
 import { dedupeEntries } from '../domain/importDedup.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import { track, EVENTS } from '../lib/analytics.js';
+import { MEDIA } from '../copy/media.js';
+import { IMPORT_VIEW } from '../copy/importView.js';
 
 /* ─────────────────────────── Platform icons ─────────────────────────── */
 
@@ -526,7 +528,7 @@ export default function ImportView() {
                   ? `${alreadyCount} already in your history`
                   : unmatchedCount > 0
                     ? `${unmatchedCount} couldn't be matched`
-                    : 'None already in your history'}
+                    : IMPORT_VIEW.noneAlreadyInHistory}
             </div>
           </div>
 
@@ -553,7 +555,7 @@ export default function ImportView() {
                       {r.status === 'matched' ? r.tmdbTitle : r.title}
                     </div>
                     <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
-                      {unmatched ? 'Not matched' : alreadyHave ? 'Already in history' : r.mediaType === 'tv' ? 'TV Series' : 'Movie'}
+                      {unmatched ? IMPORT_VIEW.notMatched : alreadyHave ? IMPORT_VIEW.alreadyInHistory : r.mediaType === 'tv' ? MEDIA.tvSeries : MEDIA.movie}
                       {r.date ? ` · ${r.date}` : ''}
                     </div>
                   </div>
@@ -564,7 +566,7 @@ export default function ImportView() {
                       textTransform: 'uppercase', flexShrink: 0,
                       background: 'rgba(224,90,122,0.12)', color: 'var(--accent)',
                       border: '1px solid rgba(224,90,122,0.25)',
-                    }}>New</div>
+                    }}>{IMPORT_VIEW.newBadge}</div>
                   )}
                   {alreadyHave && (
                     <div style={{
@@ -573,7 +575,7 @@ export default function ImportView() {
                       textTransform: 'uppercase', flexShrink: 0,
                       background: 'rgba(74,222,128,0.08)', color: '#4ade80',
                       border: '1px solid rgba(74,222,128,0.2)',
-                    }}>Have</div>
+                    }}>{IMPORT_VIEW.haveBadge}</div>
                   )}
                 </div>
               );
@@ -597,7 +599,7 @@ export default function ImportView() {
                 flexShrink: 0,
               }}
             >
-              {importing ? 'Importing…' : newCount === 0 ? 'Nothing new' : `Import →`}
+              {importing ? IMPORT_VIEW.importing : newCount === 0 ? IMPORT_VIEW.nothingNew : IMPORT_VIEW.importArrow}
             </button>
           </div>
         </>

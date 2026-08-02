@@ -1,0 +1,51 @@
+/* Mirror of the .btn rules inline in apps/website/index.html (and duplicated
+   into about.html/plans.html/etc — see nav.css's header comment for the same
+   pattern on the nav). Storybook has no other page to read these from since
+   they're not in theme.css. If you change a page's .btn rules, update this
+   file too so the docs don't silently drift from the live site. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1.4rem;
+  border-radius: var(--r-pill);
+  font-family: var(--sans);
+  font-size: 0.68rem;
+  font-weight: 300;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.25s var(--ease);
+  border: none;
+}
+.btn-primary {
+  background: var(--ink);
+  color: #fff;
+}
+.btn-primary:hover {
+  background: var(--ink-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+}
+.btn-outline {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--text);
+}
+.btn-outline:hover {
+  background: var(--text);
+  color: #fff;
+  transform: translateY(-1px);
+}
+.btn-outline-white {
+  background: transparent;
+  color: #fff;
+  border: 1px solid #fff;
+}
+.btn-outline-white:hover {
+  background: #fff;
+  color: #0e0e0e;
+  transform: translateY(-1px);
+}
+.btn-large {
+  padding: 0.85rem 2.2rem;
+}

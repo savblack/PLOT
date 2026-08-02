@@ -9,6 +9,8 @@ import { getButtonLikeProps } from '../utils/interactive.js';
 import { moveSavedShowToWatching } from '../utils/mediaStatus.js';
 import MultiSelect from './MultiSelect.jsx';
 import LoadingSpinner from './LoadingSpinner.jsx';
+import { MEDIA } from '../copy/media.js';
+import { WATCHLIST_VIEW } from '../copy/watchlistView.js';
 
 
 /* ─── Chevron for "Start Watching" ── */
@@ -86,8 +88,8 @@ export default function WatchlistView() {
           <span className="sub-tabs-date"><TodayLabel /></span>
           {[
             { id: 'all',      label: 'All'      },
-            { id: 'watching', label: 'Watching' },
-            { id: 'saved',    label: 'Saved'    },
+            { id: 'watching', label: WATCHLIST_VIEW.watchingTab },
+            { id: 'saved',    label: WATCHLIST_VIEW.savedTab    },
           ].map(({ id, label }) => (
             <button
               key={id}
@@ -100,10 +102,10 @@ export default function WatchlistView() {
         </div>
         <div className="sub-tabs-right">
           <MultiSelect
-            placeholder="Type"
+            placeholder={MEDIA.typeHeading}
             options={[
-              { id: 'tv',    label: 'TV'    },
-              { id: 'movie', label: 'Movie' },
+              { id: 'tv',    label: MEDIA.tv    },
+              { id: 'movie', label: MEDIA.movie },
             ]}
             value={typeFilters}
             onChange={setTypeFilters}
@@ -227,7 +229,7 @@ function WatchingRow({ item, openPanel }) {
 /* ── Saved-for-later row ── */
 function SavedRow({ item, openPanel, watchlist, watching }) {
   const img            = posterUrl(item.poster_path, 'w92');
-  const title          = item.title || item.name || 'Unknown';
+  const title          = item.title || item.name || MEDIA.unknown;
   const isTV           = item.media_type === 'tv';
   const chip           = item.release_date ? countdownChip(item.release_date) : null;
   const streamingChip  = item.streaming_date ? countdownChip(item.streaming_date) : null;
@@ -294,7 +296,7 @@ function SavedRow({ item, openPanel, watchlist, watching }) {
           <button
             className="btn-start-watching"
             onClick={handleStartWatching}
-            title={pending ? 'Moving to Watching' : 'Start watching'}
+            title={pending ? WATCHLIST_VIEW.movingToWatching : WATCHLIST_VIEW.startWatching}
             disabled={pending}
             aria-busy={pending}
           >

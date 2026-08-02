@@ -1,0 +1,29 @@
+// Shared copy for browsing/discovery surfaces (Search, Discover, Guide,
+// Watchlist) — media-type labels, watchlist actions, and section chrome that
+// repeat identically across those views.
+
+export const MEDIA = {
+  movie: 'Movie',
+  movies: 'Movies',
+  tv: 'TV',
+  tvSeries: 'TV Series',
+  series: 'Series',
+  cinema: 'Cinema',
+  unknown: 'Unknown',
+  saveToWatchlist: 'Add to watchlist',
+  removeFromWatchlist: 'Remove from watchlist',
+  today: 'Today',
+  tomorrow: 'Tomorrow',
+  yesterday: 'Yesterday',
+  typeHeading: 'Type',
+  genreHeading: 'Genre',
+  collapseAllSections: 'Collapse all sections',
+  expandAllSections: 'Expand all sections',
+  fromTheArchive: 'From the archive',
+  fromTheArchiveBadge: 'From the Archive',
+  onThisDay: 'On This Day',
+  watched: 'Watched',
+  comingSoon: 'Coming Soon',
+  removeFromList: 'Remove from list',
+  addToList: 'Add to list',
+};

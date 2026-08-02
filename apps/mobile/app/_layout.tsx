@@ -4,7 +4,7 @@ import { View } from 'react-native';
 import { Slot, useRouter, useSegments } from 'expo-router';
 import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
-import PlotLoader from '../components/PlotLoader';
+import PlotLoader from '@plot/ui/PlotLoader';
 import ErrorBoundary from '../components/ErrorBoundary';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as Linking from 'expo-linking';
@@ -78,6 +78,7 @@ export default function RootLayout() {
 }
 
 function RootInner() {
+  const { colors } = useTheme();
   const [session,            setSession]            = useState<Session | null>(null);
   const [onboardingComplete, setOnboardingComplete] = useState<boolean | null>(null);
   const [authReady,          setAuthReady]          = useState(false);
@@ -145,7 +146,7 @@ function RootInner() {
   // The wordmark loader needs Instrument Serif — before the fonts are in it
   // would render in the system fallback with mangled spacing. Blank until then.
   if (!fontsLoaded) return <ThemedBlank />;
-  if (!authReady)   return <PlotLoader />;
+  if (!authReady)   return <PlotLoader backgroundColor={colors.bg} color={colors.textPrimary} />;
 
   return (
     <SafeAreaProvider>

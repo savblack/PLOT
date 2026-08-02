@@ -7,6 +7,7 @@ import LoadingSpinner from '../components/LoadingSpinner.jsx';
 import CreditsGrid from '../components/TalentCredits.jsx';
 import { dedupedActingCredits, shortBiography } from '../utils/talentCredits.js';
 import './TalentPage.css';
+import { MEDIA_PANEL } from '../copy/mediaPanel.js';
 
 function BackIcon() {
   return (
@@ -51,7 +52,7 @@ function TalentPageContent({ personId }) {
   );
 
   const image = profileUrl(person.profile_path, 'h632');
-  const knownFor = person.known_for_department || 'Talent';
+  const knownFor = person.known_for_department || MEDIA_PANEL.talentFallback;
   const biographyPreview = shortBiography(person.biography);
   return (
     <main className="talent-page">
