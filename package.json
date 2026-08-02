@@ -25,6 +25,8 @@
     "tokens:marketing": "node scripts/check-marketing-tokens.mjs",
     "storybook:website": "npm run storybook -w @plot/website-storybook",
     "storybook:web": "npm run storybook -w @plot/web",
+    "storybook:web:deploy": "bash scripts/deploy-storybook.sh apps/web plot-storybook-web-app",
+    "storybook:website:deploy": "bash scripts/deploy-storybook.sh apps/website plot-storybook-website",
     "emails:check": "node scripts/push-auth-emails.mjs --check",
     "mkt:plan": "node marketing/planner/plan.mjs",
     "mkt:guides": "node marketing/planner/guides.mjs",
