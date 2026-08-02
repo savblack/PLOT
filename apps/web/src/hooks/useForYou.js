@@ -15,9 +15,8 @@ export function useForYou(limit = 20, enabled = true) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!enabled) return;
     let cancelled = false;
-
-    if (!enabled) { setItems([]); setReason(null); setLoading(false); return; }
 
     async function load() {
       const { data: { session } } = await supabase.auth.getSession();
@@ -43,6 +42,10 @@ export function useForYou(limit = 20, enabled = true) {
     load();
     return () => { cancelled = true; };
   }, [limit, enabled]);
+
+  if (!enabled) {
+    return { items: [], reason: null, loading: false };
+  }
 
   return { items, reason, loading };
 }
