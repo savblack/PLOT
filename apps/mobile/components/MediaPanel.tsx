@@ -19,6 +19,7 @@ import { buildWatchLink } from '@plot/core/watchLinks.js';
 import { fetchVerifiedAvailability, offersFromTmdb } from '@plot/core/availability.js';
 import { fetchCriticScore, pickAudienceQuote, getConsensusLine } from '@plot/core/reviews.js';
 import { canCreateCustomList, FREE_CUSTOM_LIST_CAP } from '@plot/core/premium.js';
+import { localDateStr } from '@plot/core/date.js';
 import { TrailerPlayer } from './TrailerPlayer';
 
 // Shared link points at the web /save route (works for anyone, app or not) —
@@ -32,10 +33,6 @@ const SCREEN_W = Dimensions.get('window').width;
 const PANEL_H  = SCREEN_H * 0.92;
 
 // ── helpers ───────────────────────────────────────────────────────────
-function localDateStr(offsetDays = 0): string {
-  const d = new Date(); d.setDate(d.getDate() + offsetDays);
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-}
 
 // ── SVG icons ─────────────────────────────────────────────────────────
 function IconX() {

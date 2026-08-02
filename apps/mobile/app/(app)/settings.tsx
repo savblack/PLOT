@@ -9,7 +9,7 @@ import Svg, { Path, Polyline, Circle, Rect, Line, Polygon } from 'react-native-s
 import { useRouter } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { tmdb, setTmdbRegion } from '../../lib/tmdb';
-import { IANA_TIMEZONES } from '../../lib/timezones';
+import { IANA_TIMEZONES } from '@plot/core/timezones.js';
 import { useAppData } from '../../contexts/AppDataContext';
 import { useFollowRequests } from '../../hooks/useFollowRequests';
 import { useTraktSync } from '../../hooks/useTraktSync';
