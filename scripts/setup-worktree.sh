@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
-# Copies .env from the main checkout into the current worktree.
-# Worktrees don't share gitignored files, so a fresh worktree has no .env
-# and the app errors before rendering (missing Supabase/PostHog/etc vars).
+# Copies gitignored .env files from the main checkout into the current worktree.
+# Worktrees don't share gitignored files, so a fresh worktree has none of them
+# and the app errors, or silently can't authenticate, before rendering
+# (missing Supabase/PostHog/etc vars). Re-run with --force to refresh a
+# worktree after rotating a key in the main checkout's .env.
 set -euo pipefail
 
 FORCE=false
@@ -24,15 +26,32 @@ if [[ "$MAIN_DIR" == "$CURRENT_DIR" ]]; then
   exit 0
 fi
 
-if [[ ! -f "$MAIN_DIR/.env" ]]; then
-  echo "No .env found in main checkout at $MAIN_DIR — nothing to copy." >&2
-  exit 1
-fi
+# Add a new gitignored env file here whenever another app in the monorepo
+# grows one (each app loads its own, e.g. Expo reads apps/mobile/.env, Vite
+# reads the repo-root .env).
+ENV_FILES=(
+  ".env"
+  "apps/mobile/.env"
+)
 
-if [[ -f "$CURRENT_DIR/.env" && "$FORCE" != true ]]; then
-  echo ".env already exists in $CURRENT_DIR — use --force to overwrite."
-  exit 0
-fi
+copied_any=false
+for rel in "${ENV_FILES[@]}"; do
+  src="$MAIN_DIR/$rel"
+  dest="$CURRENT_DIR/$rel"
 
-cp "$MAIN_DIR/.env" "$CURRENT_DIR/.env"
-echo "Copied .env from $MAIN_DIR to $CURRENT_DIR"
+  [[ -f "$src" ]] || continue
+
+  if [[ -f "$dest" && "$FORCE" != true ]]; then
+    echo "$rel already exists in $CURRENT_DIR — use --force to overwrite."
+    continue
+  fi
+
+  mkdir -p "$(dirname "$dest")"
+  cp "$src" "$dest"
+  echo "Copied $rel from $MAIN_DIR to $CURRENT_DIR"
+  copied_any=true
+done
+
+if [[ "$copied_any" != true ]]; then
+  echo "Nothing new to copy."
+fi
