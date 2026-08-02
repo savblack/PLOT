@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useApp } from '../App.jsx';
+import { useApp } from '../hooks/useApp.js';
 import { useNotifications } from '../hooks/useNotifications.js';
 import { COMMON } from '../copy/common.js';
 

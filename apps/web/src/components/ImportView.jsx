@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useApp } from '../App.jsx';
+import { useApp } from '../hooks/useApp.js';
 import { tmdb } from '../api/tmdb.js';
 import { supabase } from '../api/supabase.js';
 import { parsePlatform } from '../domain/importParsing.js';

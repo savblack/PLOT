@@ -1,4 +1,4 @@
-import { useApp } from '../App.jsx';
+import { useApp } from '../hooks/useApp.js';
 import { useSuggestedUsers } from '../hooks/useSuggestedUsers.js';
 import UserList from './UserList.jsx';
 

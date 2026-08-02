@@ -1,4 +1,4 @@
-import { posterUrl } from '../App.jsx';
+import { posterUrl } from '../utils/images.js';
 import { creditMeta, creditTitle, mediaType } from '../utils/talentCredits.js';
 import './TalentCredits.css';
 

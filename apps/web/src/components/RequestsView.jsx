@@ -1,4 +1,4 @@
-import { useApp } from '../App.jsx';
+import { useApp } from '../hooks/useApp.js';
 import { useFollowRequests } from '../hooks/useFollowRequests.js';
 import { COMMON } from '../copy/common.js';
 

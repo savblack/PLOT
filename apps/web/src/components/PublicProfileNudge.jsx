@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useApp } from '../App.jsx';
+import { useApp } from '../hooks/useApp.js';
 import { supabase } from '../api/supabase.js';
 
 const DISMISS_KEY = 'plot_public_nudge_dismissed';

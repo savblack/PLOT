@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useApp } from '../App.jsx';
+import { useApp } from '../hooks/useApp.js';
 import { dateToLocalStr } from '../utils/date.js';
 import { useDragScroll } from '../hooks/useDragScroll.js';
 import { channelNamesMatch } from '../utils/channelAliases.js';
