@@ -3,5 +3,6 @@
   "compilerOptions": {
     "strict": true,
     "allowJs": true
-  }
+  },
+  "exclude": ["node_modules", ".storybook", "app/storybook.tsx"]
 }

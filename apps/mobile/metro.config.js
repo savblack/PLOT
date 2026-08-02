@@ -1,5 +1,6 @@
 // Learn more https://docs.expo.dev/guides/monorepos
 const { getDefaultConfig } = require('expo/metro-config');
+const { withStorybook } = require('@storybook/react-native/metro/withStorybook');
 const path = require('path');
 
 const projectRoot = __dirname;
@@ -23,4 +24,9 @@ config.resolver.nodeModulesPaths = [
 //    hierarchical (walk-up) lookup makes resolution deterministic.
 config.resolver.disableHierarchicalLookup = true;
 
-module.exports = config;
+// Storybook is bundled behind STORYBOOK_ENABLED so `npm start` for the real
+// app doesn't pay for story discovery; `npm run storybook` sets it.
+module.exports = withStorybook(config, {
+  enabled: process.env.STORYBOOK_ENABLED === 'true',
+  configPath: path.resolve(projectRoot, '.storybook'),
+});

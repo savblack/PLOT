@@ -6,3 +6,4 @@ dist/
 .env.local
 ios/
 android/
+.storybook/storybook.requires.ts
