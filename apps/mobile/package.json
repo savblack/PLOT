@@ -39,10 +39,15 @@
     "@storybook/addon-ondevice-controls": "^10.5.4",
     "@storybook/addon-ondevice-notes": "^10.5.4",
     "@storybook/react-native": "^10.5.4",
+    "@storybook/react-vite": "^10.5.5",
     "@types/aes-js": "^3.1.4",
     "@types/react": "~19.2.2",
+    "@vitejs/plugin-react": "^6.0.5",
+    "react-dom": "19.2.3",
+    "react-native-web": "^0.21.2",
     "storybook": "^10.5.5",
-    "typescript": "~6.0.3"
+    "typescript": "~6.0.3",
+    "vite": "^8.2.0"
   },
   "scripts": {
     "start": "expo start",
@@ -50,7 +55,9 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
-    "storybook": "STORYBOOK_ENABLED=true expo start"
+    "storybook": "STORYBOOK_ENABLED=true expo start",
+    "storybook:web": "storybook dev -p 6008 -c .storybook-web",
+    "build-storybook": "storybook build -c .storybook-web -o storybook-static"
   },
   "private": true
 }
