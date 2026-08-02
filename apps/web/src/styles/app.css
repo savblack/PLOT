@@ -1796,6 +1796,8 @@ svg { stroke-width: 1.5; }
   transition: background 0.12s ease, color 0.12s ease;
 }
 .cal-month-btn:hover { background: var(--surface-sunken); color: var(--text-primary); }
+.cal-month-btn:disabled { color: var(--text-muted); opacity: 0.4; cursor: default; }
+.cal-month-btn:disabled:hover { background: transparent; }
 .cal-month-btn svg { width: 10px; height: 10px; stroke: currentColor; fill: none; stroke-width: 2.5; }
 .cal-month-nav-label {
   font-size: 0.72rem;
@@ -3361,6 +3363,11 @@ a.provider-chip--link:hover {
    row — the chevron/label/count toggle and any header actions (kebab menu,
    etc.) are separate sibling buttons so actions never nest inside the
    toggle button. */
+.collapse-section {
+  /* Leaves room for the sticky .sub-tabs-bar when a section is scrolled
+     into view via its id (e.g. jumping to a month in History). */
+  scroll-margin-top: 52px;
+}
 .collapse-head {
   display: flex;
   align-items: center;
@@ -3369,7 +3376,9 @@ a.provider-chip--link:hover {
   padding: 0 1rem;
   background: var(--bg);
   border-bottom: 1px solid var(--border);
+  transition: background 0.15s ease;
 }
+.collapse-head:hover { background: color-mix(in srgb, var(--bg) 85%, var(--accent) 15%); }
 .collapse-head-toggle {
   display: flex;
   align-items: center;
@@ -3385,10 +3394,8 @@ a.provider-chip--link:hover {
   text-align: left;
   color: inherit;
   font: inherit;
-  transition: background 0.15s ease;
   -webkit-tap-highlight-color: transparent;
 }
-.collapse-head-toggle:hover { background: color-mix(in srgb, var(--bg) 85%, var(--accent) 15%); }
 .collapse-head-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .collapse-head-actions {
   display: flex;

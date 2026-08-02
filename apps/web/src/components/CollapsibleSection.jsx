@@ -22,7 +22,7 @@ export default function CollapsibleSection({ id, label, count, defaultOpen = tru
   }, [id, isControlled, isOpen, onOpenChange]);
 
   return (
-    <section className="collapse-section">
+    <section className="collapse-section" id={id}>
       <div className="collapse-head">
         <button
           type="button"
