@@ -24,6 +24,7 @@ import { useCustomLists }  from './hooks/useCustomLists.js';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import { pathForView, viewFromPath } from './navigation.js';
 import { readStorage, writeStorage } from './utils/storage.js';
+import { readCachedSession, writeCachedSession, clearCachedSession } from './utils/sessionCache.js';
 import { track, EVENTS, setPersonProps } from './lib/analytics.js';
 
 /* ── App Context ─────────────────────── */
@@ -154,9 +155,12 @@ export default function App() {
   const location  = useLocation();
   const { theme, setTheme } = useTheme();
 
-  const [user,    setUser]    = useState(null);
-  const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [user,    setUser]    = useState(() => {
+    const cached = readCachedSession();
+    return cached ? { id: cached.userId } : null;
+  });
+  const [profile, setProfile] = useState(() => readCachedSession()?.profile ?? null);
+  const [loading, setLoading] = useState(() => !readCachedSession());
 
   // Media panel state
   const [panelItem,    setPanelItem]    = useState(null);
@@ -180,6 +184,8 @@ export default function App() {
     // Keep is_premium on the PostHog person so any event can be segmented by it.
     if (data) setPersonProps({ is_premium: !!data.is_premium });
     setLoading(false);
+    if (data) writeCachedSession(userId, data);
+    else clearCachedSession();
   }, []);
 
   /* ── Auth ── */
@@ -187,13 +193,13 @@ export default function App() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       if (session?.user) loadProfile(session.user.id);
-      else setLoading(false);
+      else { setLoading(false); clearCachedSession(); }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
       setUser(session?.user ?? null);
       if (session?.user) loadProfile(session.user.id);
-      else { setProfile(null); setLoading(false); }
+      else { setProfile(null); setLoading(false); clearCachedSession(); }
     });
     return () => subscription.unsubscribe();
   }, [loadProfile]);

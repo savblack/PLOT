@@ -3,13 +3,21 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { supabase } from '../api/supabase';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import { isPreviewDeployment } from '../utils/previewDeployment.js';
+import { readCachedSession, clearCachedSession } from '../utils/sessionCache.js';
 
 export default function ProtectedRoute({ children, skipOnboardingCheck = false, publicPrefixes = [] }) {
   const location = useLocation();
   const isPreview = isPreviewDeployment();
-  const [loading, setLoading] = useState(true);
-  const [authenticated, setAuthenticated] = useState(false);
-  const [needsOnboarding, setNeedsOnboarding] = useState(false);
+  // This gate sits above App.jsx, so its own loading state blocks App from
+  // ever mounting (and thus from ever reaching App's own optimistic cache) —
+  // it needs the same last-known-good guess so a returning, already-logged-in
+  // visit doesn't sit behind a boot loader for the round-trip below.
+  const cached = readCachedSession();
+  const [loading, setLoading] = useState(!cached);
+  const [authenticated, setAuthenticated] = useState(!!cached);
+  const [needsOnboarding, setNeedsOnboarding] = useState(() =>
+    cached && !skipOnboardingCheck && !isPreview ? !cached.profile?.onboarding_complete : false
+  );
 
   useEffect(() => {
     const checkSession = async (session) => {
@@ -17,6 +25,7 @@ export default function ProtectedRoute({ children, skipOnboardingCheck = false, 
         setAuthenticated(false);
         setNeedsOnboarding(false);
         setLoading(false);
+        clearCachedSession();
         return;
       }
       setAuthenticated(true);
