@@ -1,5 +1,13 @@
 # Web ↔ Mobile Reconciliation (Track 0)
 
+> **Historical — kept for the source-of-truth decisions, not as a current status
+> report.** This documents the pre-extraction state, when web and mobile were
+> separate repos. `packages/core` now exists and both apps consume it. The
+> `importParsing` action item below was finished later than the rest: core was
+> authored during Track 1 but mobile only switched off its own
+> `lib/importParsers.ts` in the Phase 1 core-hoist. For how parity is maintained
+> today, see the "Web → mobile parity" section of `AGENTS.md`.
+
 Source-of-truth decisions for the shared `core/` extraction, from a direct file-by-file
 diff of web `src/` against `plot-mobile` (`savblack/plot-mobile`, last commit `869c3cd`).
 

@@ -440,7 +440,7 @@ export default function HomeScreen() {
     const init = async () => {
       setError(false);
       setLoading(true);
-      let profile: { region?: string; streaming_providers?: StreamingProvider[]; include_kids_content?: boolean } | null = null;
+      let profile: { region?: string; streaming_providers?: StreamingProvider[]; include_kids_content?: boolean } | null;
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session?.user || cancelled) return;

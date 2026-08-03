@@ -12,6 +12,7 @@ import { useMediaPanel } from '../contexts/MediaPanelContext';
 import { tmdb, getTmdbRegion } from '../lib/tmdb';
 import { supabase } from '../lib/supabase';
 import { buildProviderLogoCacheKey, collectPendingProviderLogoRequests } from '@plot/core/providerLogos.js';
+import { localDateStr } from '@plot/core/date.js';
 import { posterUrl, backdropUrl, logoUrl, Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -35,11 +36,6 @@ interface ReleaseItem {
 }
 
 // ── date helpers (ported from the old releases screen) ───────────────
-function localDateStr(offsetDays = 0): string {
-  const d = new Date();
-  d.setDate(d.getDate() + offsetDays);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
 
 function formatDayLabel(dateStr: string): string {
   const d = new Date(dateStr + 'T00:00:00');

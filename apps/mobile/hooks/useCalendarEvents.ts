@@ -14,10 +14,6 @@ export interface CalendarEvent {
   };
 }
 
-function localDateStr(d?: Date) {
-  const date = d ?? new Date();
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-}
 
 export function useCalendarEvents(
   watchlistItems: any[],
@@ -151,7 +147,6 @@ export function useCalendarEvents(
     });
 
     return () => { cancelledRef.current = true; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watchlistKey, watchingKey]);
 
   const eventsForDate = useCallback(

@@ -7,6 +7,7 @@ export interface PublicProfile {
   display_name: string | null;
   avatar_url: string | null;
   is_premium: boolean;
+  is_supporter: boolean;
   is_public: boolean;
   follow_status: string | null;
   bio?: string | null;

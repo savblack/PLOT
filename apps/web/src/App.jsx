@@ -136,14 +136,15 @@ export default function App() {
   const loadProfile = useCallback(async (userId) => {
     const { data } = await supabase
       .from('profiles')
-      .select('id, region, timezone, onboarding_complete, guide_channels, streaming_providers, genres, include_kids_content, watchlist_availability_alerts, calendar_token, username, display_name, is_public, is_premium, avatar_url, log_rewatches, bio, links')
+      .select('id, region, timezone, onboarding_complete, guide_channels, streaming_providers, genres, include_kids_content, watchlist_availability_alerts, calendar_token, username, display_name, is_public, is_premium, is_supporter, avatar_url, log_rewatches, bio, links')
       .eq('id', userId)
       .maybeSingle();
     setProfile(data);
     if (data?.region) setTmdbRegion(data.region);
     setUserTimezone(data?.timezone || null);
-    // Keep is_premium on the PostHog person so any event can be segmented by it.
-    if (data) setPersonProps({ is_premium: !!data.is_premium });
+    // Keep both badges on the PostHog person so any event can be segmented by
+    // them — paying and tipping are different behaviours worth telling apart.
+    if (data) setPersonProps({ is_premium: !!data.is_premium, is_supporter: !!data.is_supporter });
     setLoading(false);
     if (data) writeCachedSession(userId, data);
     else clearCachedSession();

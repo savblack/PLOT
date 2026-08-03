@@ -58,7 +58,7 @@ Run from repo root unless noted. Use **npm** (workspaces), never yarn/pnpm.
 - `npm run test:unit` — `node --test` unit tests (`apps/web/tests/unit/`)
 - `npm run test:smoke` — Playwright smoke (`vite build` + chromium; run
   `npx playwright install chromium` once on a fresh machine)
-- `npm run typecheck -w @plot/mobile` — **required when touching mobile** (ESLint ignores it)
+- `npm run typecheck -w @plot/mobile` — **required when touching mobile**; `npm run lint` covers it too
 - Deploy: web app and marketing site both auto-deploy via Cloudflare Pages on merge to `main`;
   Supabase functions via `supabase functions deploy <name>`; Worker via
   `cd apps/web/workers/tmdb-proxy && npx wrangler deploy`.
@@ -92,13 +92,15 @@ CI on Node 22.
 
 PLOT spells words that differ between US and UK English (favorite/favourite, color/colour,
 organize/organise, etc.) according to the viewer's own `profile.region`, via
-`apps/web/src/utils/spelling.js` (mirrored in `apps/mobile/lib/spelling.ts`). Whenever new
-copy contains one of these words:
+**`packages/core/spelling.js`** — one shared dictionary for both apps. (`apps/web/src/utils/spelling.js`
+and `apps/mobile/lib/spelling.ts` are re-export shims kept so existing import sites still
+resolve; there is no longer a second copy to keep in sync.) Whenever new copy contains one
+of these words:
 
-- Check whether it already has a block in `spelling.js`/`spelling.ts`. If so, call the
-  existing accessor (`favoriteWords(region)`, `colorWords(region)`, etc.) — never hardcode
-  the literal string.
-- If not, add a new block to **both** files (web and mobile) — `[US, UK]` pairs for each
+- Check whether it already has a block in the `SPELLING` dictionary. If so, call
+  `regionalWords('color', region)` (or `favoriteWords(region)`, the one named shortcut) —
+  never hardcode the literal string.
+- If not, add a new block to `packages/core/spelling.js` — `[US, UK]` pairs for each
   inflected form the copy needs (noun, plural, verb, -ing, -ed, …) — then call it. Don't
   hardcode the string and move on; the whole point is that the next word is a lookup, not
   a fresh hardcode.
@@ -107,6 +109,31 @@ copy contains one of these words:
   `undefined` (US default) rather than that profile owner's region.
 - Exception: Terms of Service and Privacy Policy copy is fixed British English regardless
   of viewer region — legal text stays one canonical wording, not personalized per reader.
+
+## Web → mobile parity
+
+Drift between the apps has historically been one-directional: web ships a feature, mobile
+doesn't, and a few months later the two apps disagree about what PLOT is. `packages/core` is
+the mechanism that prevents it, but only if you use it deliberately.
+
+When you add or change a feature in `apps/web`:
+
+- **Put the logic in `@plot/core` first**, not in `apps/web/src`. Anything free of DOM APIs
+  belongs there — hooks included (`useDiscover`, `usePlatformCharts` and friends are core
+  modules for exactly this reason). Web then imports it like mobile does. Rendering stays
+  per-app; derivation, fetching and business rules do not.
+- **If it can't be shared** (it's genuinely DOM- or RN-specific), say so in a comment at the
+  top of the file and open a mobile parity issue in the same PR. "Mobile will catch up later"
+  with nothing written down is how the last round of drift happened.
+- **Never hand-port a core module into `apps/mobile/lib`.** If mobile needs a variant, widen
+  the core module's arguments. Mobile previously carried its own `timezones.ts`,
+  `importParsers.ts`, `spelling.ts` and five copies of `localDateStr`, all shadowing code that
+  already existed in core.
+- **Copy strings live in the shared catalog**, not inline in JSX, so both apps read the same
+  wording. See `apps/web/src/copy/`.
+
+Nothing in CI enforces this — lint and `tsc --noEmit` can't tell that a feature is missing.
+It's a review-time responsibility.
 
 ## Architecture — seams that matter
 
@@ -138,7 +165,12 @@ file, not the `--no-verify-jwt` flag.
 
 - Add/adjust unit tests for domain logic in `packages/core` and `apps/web/tests/unit/`.
 - Run `npm run check` and any test suite touching your change before calling it done.
-- Mobile has no test runner — `tsc --noEmit` is the safety net; run it for mobile changes.
+- Mobile has no test runner — `tsc --noEmit` plus ESLint are the safety net; run both for
+  mobile changes.
+- Mobile lint is ratcheted: `no-explicit-any` (~127) and `react-hooks/refs` (~34) are `warn`,
+  not `error`, because of a pre-existing backlog. Don't add new ones, and don't "fix" a
+  warning count by widening the rule — burn them down instead. Everything else is an error
+  and must stay at zero.
 - No coverage thresholds; use judgment. Cover the logic that would silently break.
 
 ## Git & PRs

@@ -1,6 +1,20 @@
 // Shared, pure helpers for parsing watch-history exports.
 // Kept framework-free so they can be unit-tested directly (ImportView is .jsx).
 
+/**
+ * A single parsed row from a platform export, before TMDB resolution.
+ *
+ * @typedef {object} ParsedImportEntry
+ * @property {string} title Raw title text as it appeared in the export.
+ * @property {'movie' | 'tv' | 'unknown'} hint Best-guess media type. TMDB
+ *   search is the source of truth; this only biases the lookup.
+ * @property {string | null} [date] "YYYY-MM-DD", or null when the export had
+ *   no usable date column. Use `watchedAtFor` rather than reading this
+ *   directly when you need a definite watch date.
+ */
+
+/** @typedef {'netflix' | 'prime' | 'disney' | 'max' | 'apple' | 'letterboxd'} ImportPlatform */
+
 export function parseCSV(text) {
   const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
 
@@ -234,7 +248,13 @@ export function parseApple(text) {
   }).filter(Boolean);
 }
 
-/** Dispatch raw export text to the right parser by platform id. */
+/**
+ * Dispatch raw export text to the right parser by platform id.
+ *
+ * @param {ImportPlatform | string} platformId
+ * @param {string} text
+ * @returns {ParsedImportEntry[]}
+ */
 export function parsePlatform(platformId, text) {
   switch (platformId) {
     case 'netflix':    return parseNetflix(text);
@@ -245,4 +265,19 @@ export function parsePlatform(platformId, text) {
     case 'letterboxd': return parseLetterboxd(text);
     default:           return [];
   }
+}
+
+/**
+ * Normalise a parsed entry's date into the history's watched_at format —
+ * shared by the import write and every "already have this exact watch"
+ * check so they agree on what counts as a duplicate. Entries with no date
+ * in the source export fall back to today.
+ *
+ * @param {ParsedImportEntry} entry
+ * @returns {string} "YYYY-MM-DD"
+ */
+export function watchedAtFor(entry) {
+  return entry.date
+    ? new Date(entry.date + 'T12:00:00').toISOString().slice(0, 10)
+    : new Date().toISOString().slice(0, 10);
 }

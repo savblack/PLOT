@@ -19,7 +19,7 @@ import { useAppData } from '../../../contexts/AppDataContext';
 import { usePublicProfile } from '../../../hooks/usePublicProfile';
 import { favoriteWords } from '../../../lib/spelling';
 import { useFollows } from '../../../hooks/useFollows';
-import { Avatar, PremiumBadge } from '../../../components/Avatar';
+import { Avatar, ProfileBadges } from '../../../components/Avatar';
 import { UserList, SocialUser } from '../../../components/UserList';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../../lib/tokens';
 import { TAB_BAR_CLEARANCE } from '../../../lib/tabBar';
@@ -64,32 +64,6 @@ export default function ProfileScreen() {
     if (it.tmdb_id) openPanel(it.tmdb_id, it.media_type === 'tv' ? 'tv' : 'movie');
   };
 
-  const PosterGrid = ({ items, ranked = false }: { items: PosterItem[]; ranked?: boolean }) => {
-    if (!items?.length) return null;
-    return (
-      <View style={styles.grid}>
-        {items.map((it, i) => {
-          const img = posterUrl(it.poster_path, 'w185');
-          return (
-            <TouchableOpacity
-              key={`${it.tmdb_id}-${it.rank ?? i}`}
-              style={styles.poster}
-              activeOpacity={0.8}
-              onPress={() => openMedia(it)}
-            >
-              {img
-                ? <Image source={{ uri: img }} style={StyleSheet.absoluteFill} resizeMode="cover" />
-                : <View style={styles.posterFallback}><Text style={styles.posterFallbackText} numberOfLines={3}>{it.title}</Text></View>}
-              {ranked && it.rank != null && (
-                <View style={styles.rankBadge}><Text style={styles.rankText}>{it.rank}</Text></View>
-              )}
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-    );
-  };
-
   const noPublicContent = !locked && watchCount === 0 && recent.length === 0
     && topMovies.length === 0 && topTv.length === 0 && favourites.length === 0;
 
@@ -132,7 +106,12 @@ export default function ProfileScreen() {
               <View style={styles.headerText}>
                 <View style={styles.nameLine}>
                   <Text style={styles.name} numberOfLines={2}>{name}</Text>
-                  {profile!.is_premium && <PremiumBadge size={18} />}
+                  <ProfileBadges
+                    isPremium={profile!.is_premium}
+                    isSupporter={profile!.is_supporter}
+                    size={18}
+                    colors={colors}
+                  />
                 </View>
                 <Text style={styles.handle}>@{profile!.username}</Text>
               </View>
@@ -178,16 +157,16 @@ export default function ProfileScreen() {
             )}
 
             {!locked && recent.length > 0 && (
-              <Section title="Recently watched" colors={colors}><PosterGrid items={recent} /></Section>
+              <Section title="Recently watched" colors={colors}><PosterGrid items={recent} styles={styles} onPress={openMedia} /></Section>
             )}
             {topMovies.length > 0 && (
-              <Section title="Top 10 films" colors={colors}><PosterGrid items={topMovies} ranked /></Section>
+              <Section title="Top 10 films" colors={colors}><PosterGrid items={topMovies} ranked styles={styles} onPress={openMedia} /></Section>
             )}
             {topTv.length > 0 && (
-              <Section title="Top 10 TV" colors={colors}><PosterGrid items={topTv} ranked /></Section>
+              <Section title="Top 10 TV" colors={colors}><PosterGrid items={topTv} ranked styles={styles} onPress={openMedia} /></Section>
             )}
             {favourites.length > 0 && (
-              <Section title={fw.plural} colors={colors}><PosterGrid items={favourites} /></Section>
+              <Section title={fw.plural} colors={colors}><PosterGrid items={favourites} styles={styles} onPress={openMedia} /></Section>
             )}
 
             {noPublicContent && (
@@ -217,6 +196,40 @@ function Stat({ num, label, colors }: { num: string; label: string; colors: Pale
     <View style={{ alignItems: 'center' }}>
       <Text style={{ fontFamily: fontFamily.serif, fontSize: fontSize.xxl, color: colors.textPrimary, lineHeight: fontSize.xxl + 2 }}>{num}</Text>
       <Text style={{ fontFamily: fontFamily.sans, fontSize: 11, letterSpacing: 0.6, textTransform: 'uppercase', color: colors.textMuted, marginTop: 3 }}>{label}</Text>
+    </View>
+  );
+}
+
+// Module scope, not defined inside ProfileScreen: a component declared during
+// render gets a new identity every render, so React unmounts and remounts the
+// whole grid each time — losing scroll position and re-fetching every poster.
+function PosterGrid({ items, ranked = false, styles, onPress }: {
+  items: PosterItem[];
+  ranked?: boolean;
+  styles: ReturnType<typeof makeStyles>;
+  onPress: (it: PosterItem) => void;
+}) {
+  if (!items?.length) return null;
+  return (
+    <View style={styles.grid}>
+      {items.map((it, i) => {
+        const img = posterUrl(it.poster_path, 'w185');
+        return (
+          <TouchableOpacity
+            key={`${it.tmdb_id}-${it.rank ?? i}`}
+            style={styles.poster}
+            activeOpacity={0.8}
+            onPress={() => onPress(it)}
+          >
+            {img
+              ? <Image source={{ uri: img }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+              : <View style={styles.posterFallback}><Text style={styles.posterFallbackText} numberOfLines={3}>{it.title}</Text></View>}
+            {ranked && it.rank != null && (
+              <View style={styles.rankBadge}><Text style={styles.rankText}>{it.rank}</Text></View>
+            )}
+          </TouchableOpacity>
+        );
+      })}
     </View>
   );
 }

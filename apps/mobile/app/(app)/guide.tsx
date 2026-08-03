@@ -11,11 +11,11 @@ import {
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ScreenHeaderBar from '../../components/ScreenHeaderBar';
-import { useDrawer } from '../../contexts/DrawerContext';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 import { supabase } from '../../lib/supabase';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
+import { localDateStr, dateToLocalStr } from '@plot/core/date.js';
 
 const SCREEN_W   = Dimensions.get('window').width;
 const MINUTE_PX  = 3.2;
@@ -28,10 +28,6 @@ const ROW_H      = 52;
 const RULER_H    = 32;
 
 // ── helpers ───────────────────────────────────────────────────────────
-function localDateStr(d?: Date): string {
-  const date = d ?? new Date();
-  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
-}
 
 function stampToLocalHHMM(airstamp: string, timezone?: string | null): string {
   const d = new Date(airstamp);
@@ -281,7 +277,6 @@ function ProgramBlock({ prog, nowMins, onPress, channelType }: { prog: Program; 
 // ── Program detail sheet ──────────────────────────────────────────────
 function ProgramSheet({ prog, onClose }: { prog: Program | null; onClose: () => void }) {
   const insets = useSafeAreaInsets();
-  const { open } = useDrawer();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   if (!prog) return null;
@@ -345,7 +340,7 @@ export default function GuideScreen() {
   const days = useMemo(() => Array.from({ length: 7 }, (_, i) => {
     const d = new Date(); d.setDate(d.getDate() + i);
     return {
-      dateStr:  localDateStr(d),
+      dateStr:  dateToLocalStr(d),
       label:    i === 0 ? 'Today' : d.toLocaleDateString('en', { weekday: 'short' }),
       num:      d.getDate(),
       month:    d.toLocaleDateString('en', { month: 'short' }),
@@ -389,7 +384,7 @@ export default function GuideScreen() {
           style={styles.dayTabs}
           contentContainerStyle={{ paddingHorizontal: spacing.md, gap: spacing.xs, alignItems: 'center' }}
         >
-          {days.map((d, i) => (
+          {days.map((d) => (
             <TouchableOpacity
               key={d.dateStr}
               style={[styles.dayTab, d.dateStr === selectedDate && styles.dayTabActive]}

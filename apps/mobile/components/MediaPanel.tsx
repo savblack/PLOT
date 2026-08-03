@@ -2,7 +2,7 @@
  * MediaPanel — slide-up detail sheet, mobile port of web MediaPanel.jsx.
  * Sections: backdrop → title/meta → actions → watching/watched → where to watch → episodes (TV)
  */
-import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import {
   View, Text, Image, ScrollView, TouchableOpacity, Modal,
   StyleSheet, Dimensions, ActivityIndicator, TextInput, Animated, Share, Linking, Alert,
@@ -32,10 +32,6 @@ const SCREEN_W = Dimensions.get('window').width;
 const PANEL_H  = SCREEN_H * 0.92;
 
 // ── helpers ───────────────────────────────────────────────────────────
-function localDateStr(offsetDays = 0): string {
-  const d = new Date(); d.setDate(d.getDate() + offsetDays);
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-}
 
 // ── SVG icons ─────────────────────────────────────────────────────────
 function IconX() {
@@ -495,7 +491,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { userId, profile, watchlist, watching, favorites, history, customLists, topLists } = useAppData();
+  const { profile, watchlist, watching, favorites, history, customLists, topLists } = useAppData();
   const fw = favoriteWords(profile?.region);
 
   const [showListSheet, setShowListSheet] = useState(false);

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { tmdb } from '../api/tmdb.js';
 import { supabase } from '../api/supabase.js';
-import { parsePlatform } from '../domain/importParsing.js';
+import { parsePlatform, watchedAtFor } from '../domain/importParsing.js';
 import { dedupeEntries } from '../domain/importDedup.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import { track, EVENTS } from '../lib/analytics.js';
@@ -128,15 +128,6 @@ const PLATFORMS = [
 
 /* Platform parsers (parseNetflix/Prime/Disney/Max/Apple/Letterboxd + parsePlatform)
    now live in the shared core: @plot/core/importParsing.js. */
-
-// Normalise a parsed entry's date into the history's watched_at format —
-// shared by the import write and every "already have this exact watch"
-// check so they agree on what counts as a duplicate.
-function watchedAtFor(r) {
-  return r.date
-    ? new Date(r.date + 'T12:00:00').toISOString().slice(0, 10)
-    : new Date().toISOString().slice(0, 10);
-}
 
 /* ─────────────────────────── TMDB resolution ─────────────────────────── */
 

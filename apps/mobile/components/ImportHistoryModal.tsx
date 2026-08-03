@@ -9,9 +9,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Polyline, Line } from 'react-native-svg';
 import { supabase } from '../lib/supabase';
 import { tmdb } from '../lib/tmdb';
-import { parseExport, deduplicateEntries, type Platform, type RawEntry } from '../lib/importParsers';
+import { parsePlatform, watchedAtFor, type ParsedImportEntry } from '@plot/core/importParsing.js';
+import { dedupeEntries } from '@plot/core/importDedup.js';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import { useTheme } from '../contexts/ThemeContext';
+
+// Narrower than core's ImportPlatform: mobile offers no Letterboxd upload.
+type Platform = 'netflix' | 'prime' | 'disney' | 'max' | 'apple';
 
 // ── Platform config ───────────────────────────────────────────────────
 
@@ -56,7 +60,10 @@ const PLATFORMS: { id: Platform; name: string; color: string; hint: string; acce
 // ── Types ─────────────────────────────────────────────────────────────
 
 interface ResolvedEntry {
-  raw: RawEntry;
+  raw: ParsedImportEntry;
+  // Normalised once at resolve time via core's watchedAtFor — the source
+  // export's date column is optional, so raw.date can be null.
+  watchedAt: string;
   tmdbId: number;
   mediaType: 'movie' | 'tv';
   title: string;
@@ -69,7 +76,7 @@ type Step = 'pick-platform' | 'pick-file' | 'resolving' | 'preview' | 'importing
 // ── Helpers ───────────────────────────────────────────────────────────
 
 async function resolveEntries(
-  entries: RawEntry[],
+  entries: ParsedImportEntry[],
   existingWatches: Set<string>,
   onProgress: (done: number) => void,
 ): Promise<ResolvedEntry[]> {
@@ -79,7 +86,7 @@ async function resolveEntries(
   for (let i = 0; i < entries.length; i += BATCH) {
     const batch = entries.slice(i, i + BATCH);
     const results = await Promise.all(batch.map(async (e) => {
-      const hint = e.mediaTypeHint === 'unknown' ? undefined : e.mediaTypeHint;
+      const hint = e.hint === 'unknown' ? undefined : e.hint;
       const data = await tmdb.search(e.title);
       const candidates = (data?.results ?? []) as any[];
       // Prefer hint type, then take first result of any type
@@ -87,15 +94,17 @@ async function resolveEntries(
         ? (candidates.find((r: any) => r.media_type === hint) ?? candidates.find((r: any) => r.media_type === 'movie' || r.media_type === 'tv'))
         : candidates.find((r: any) => r.media_type === 'movie' || r.media_type === 'tv');
       if (!match) return null;
+      const watchedAt = watchedAtFor(e);
       return {
         raw: e,
+        watchedAt,
         tmdbId: match.id as number,
         mediaType: match.media_type as 'movie' | 'tv',
         title: (match.title ?? match.name ?? e.title) as string,
         posterPath: (match.poster_path ?? null) as string | null,
         // Only skip an exact (title, date) match already in the history —
         // a rewatch on a different date is a new entry, not a duplicate.
-        alreadyImported: existingWatches.has(`${match.id}::${e.watchedAt}`),
+        alreadyImported: existingWatches.has(`${match.id}::${watchedAt}`),
       } satisfies ResolvedEntry;
     }));
     resolved.push(...results.filter((r): r is ResolvedEntry => r !== null));
@@ -120,7 +129,7 @@ export default function ImportHistoryModal({ userId, onClose }: Props) {
 
   const [step,         setStep]         = useState<Step>('pick-platform');
   const [platform,     setPlatform]     = useState<Platform | null>(null);
-  const [rawEntries,   setRawEntries]   = useState<RawEntry[]>([]);
+  const [rawEntries,   setRawEntries]   = useState<ParsedImportEntry[]>([]);
   const [resolved,     setResolved]     = useState<ResolvedEntry[]>([]);
   const [resolveTotal, setResolveTotal] = useState(0);
   const [resolveDone,  setResolveDone]  = useState(0);
@@ -145,12 +154,12 @@ export default function ImportHistoryModal({ userId, onClose }: Props) {
       const uri = result.assets[0].uri;
       const text = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.UTF8 });
 
-      const raw = parseExport(platform, text);
+      const raw = parsePlatform(platform, text);
       if (raw.length === 0) {
         Alert.alert('No entries found', 'The file could not be parsed or contains no viewing history. Make sure you selected the right platform and file.');
         return;
       }
-      const deduped = deduplicateEntries(raw);
+      const deduped = dedupeEntries(raw);
       setRawEntries(deduped);
       setResolveTotal(deduped.length);
       setResolveDone(0);
@@ -168,7 +177,7 @@ export default function ImportHistoryModal({ userId, onClose }: Props) {
       const results = await resolveEntries(deduped, existingWatches, (done) => setResolveDone(done));
       setResolved(results);
       setStep('preview');
-    } catch (err) {
+    } catch {
       Alert.alert('Error', 'Could not read the file. Please try again.');
       setStep('pick-file');
     }
@@ -192,7 +201,7 @@ export default function ImportHistoryModal({ userId, onClose }: Props) {
       const latestByTmdbId = new Map<number, ResolvedEntry>();
       for (const r of toImport) {
         const existing = latestByTmdbId.get(r.tmdbId);
-        if (!existing || r.raw.watchedAt > existing.raw.watchedAt) latestByTmdbId.set(r.tmdbId, r);
+        if (!existing || r.watchedAt > existing.watchedAt) latestByTmdbId.set(r.tmdbId, r);
       }
       toImport = Array.from(latestByTmdbId.values());
       await supabase.from('history').delete().eq('user_id', userId).in('tmdb_id', toImport.map(r => r.tmdbId));
@@ -211,7 +220,7 @@ export default function ImportHistoryModal({ userId, onClose }: Props) {
         media_type: r.mediaType,
         title:      r.title,
         poster_path: r.posterPath,
-        watched_at: r.raw.watchedAt,
+        watched_at: r.watchedAt,
       }));
       if (logRewatches) {
         await supabase.from('history').upsert(rows, { onConflict: 'user_id,tmdb_id,watched_at', ignoreDuplicates: true });
@@ -347,7 +356,7 @@ export default function ImportHistoryModal({ userId, onClose }: Props) {
                     )}
                     <View style={{ flex: 1 }}>
                       <Text style={styles.previewTitle} numberOfLines={1}>{item.title}</Text>
-                      <Text style={styles.previewMeta}>{item.mediaType === 'tv' ? 'TV Series' : 'Movie'} · {item.raw.watchedAt}</Text>
+                      <Text style={styles.previewMeta}>{item.mediaType === 'tv' ? 'TV Series' : 'Movie'} · {item.watchedAt}</Text>
                     </View>
                     {item.alreadyImported && (
                       <View style={styles.alreadyBadge}>
