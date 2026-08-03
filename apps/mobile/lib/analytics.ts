@@ -13,12 +13,21 @@
  *    queued here and replayed in order once init() resolves.
  *
  * Deliberately unlike web:
- *  - No autocapture. There's no DOM to autocapture, and RN's screen tracking
- *    would need the navigation container wired up; the curated events below
- *    are the whole story on mobile for now.
+ *  - No interaction autocapture. There's no DOM to autocapture, and RN screen
+ *    tracking would need the navigation container wired up, so the curated
+ *    track() calls are the only user-action events mobile emits.
  *  - No cross-subdomain cookie. That exists on web to stitch
  *    theplot.tv → app.theplot.tv into one funnel; a native app has no such
  *    hand-off, so mobile users are their own distinct_id until identify().
+ *
+ * NOTE: posthog-react-native still captures app lifecycle events on its own —
+ * `captureAppLifecycleEvents` defaults to true, which is where "Application
+ * Opened" / "Became Active" / "Backgrounded" / "Installed" / "Updated" come
+ * from. They're the standard mobile DAU + retention signal, so they're left
+ * on, but they are the highest-volume thing this file produces: Became Active
+ * and Backgrounded fire on every task switch, not just cold starts. Pass
+ * `captureAppLifecycleEvents: false` below if that ever matters for the
+ * PostHog free-tier event budget.
  */
 import PostHog from 'posthog-react-native';
 import { EVENTS } from '@plot/core/analyticsEvents.js';

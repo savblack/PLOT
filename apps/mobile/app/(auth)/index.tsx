@@ -181,7 +181,6 @@ export default function AuthScreen() {
     if (!email || !password) return;
     if (!isValidEmail(email)) { Alert.alert('Please enter a valid email address.'); return; }
     setLoading(true);
-    track(EVENTS.SIGNUP_SUBMIT_CLICKED, { mode: 'signin' });
     const { error } = await supabase.auth.signInWithPassword({
       email: email.trim(), password, options: { captchaToken: captchaToken ?? undefined },
     });
@@ -189,7 +188,7 @@ export default function AuthScreen() {
     refreshCaptcha();
     if (!error) track(EVENTS.USER_LOGGED_IN, { method: 'password' });
     if (error) {
-      track(EVENTS.SIGNUP_SUBMIT_FAILED, { mode: 'signin', reason: authErrorReason(error.message) });
+      track(EVENTS.LOGIN_SUBMIT_FAILED, { reason: authErrorReason(error.message) });
       // Offer to resend the confirmation email when the account isn't verified.
       if (error.message.includes('Email not confirmed')) {
         Alert.alert(friendlyAuthError(error.message), undefined, [
@@ -235,14 +234,14 @@ export default function AuthScreen() {
     if (!isValidEmail(email)) { Alert.alert('Please enter a valid email address.'); return; }
     if (password.length < 6) { Alert.alert('Password must be at least 6 characters.'); return; }
     setLoading(true);
-    track(EVENTS.SIGNUP_SUBMIT_CLICKED, { mode: 'signup' });
+    track(EVENTS.SIGNUP_SUBMIT_CLICKED);
     const { error } = await supabase.auth.signUp({
       email: email.trim(), password, options: { captchaToken: captchaToken ?? undefined },
     });
     setLoading(false);
     refreshCaptcha();
     if (error) {
-      track(EVENTS.SIGNUP_SUBMIT_FAILED, { mode: 'signup', reason: authErrorReason(error.message) });
+      track(EVENTS.SIGNUP_SUBMIT_FAILED, { reason: authErrorReason(error.message) });
       Alert.alert(friendlyAuthError(error.message));
     }
     else Alert.alert('Almost there!', `We sent a confirmation link to ${email.trim()}.`, [
@@ -263,10 +262,9 @@ export default function AuthScreen() {
     setLoading(false);
     refreshCaptcha();
     if (error) {
-      track(EVENTS.SIGNUP_SUBMIT_FAILED, { mode: 'magic_link', reason: authErrorReason(error.message) });
+      track(EVENTS.LOGIN_SUBMIT_FAILED, { method: 'magic_link', reason: authErrorReason(error.message) });
       Alert.alert(friendlyAuthError(error.message));
     } else {
-      track(EVENTS.SIGNUP_SUBMIT_CLICKED, { mode: 'magic_link' });
       Alert.alert('Magic link sent.', 'Check your inbox to sign in.');
     }
   };
