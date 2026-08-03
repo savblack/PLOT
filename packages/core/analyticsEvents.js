@@ -16,7 +16,12 @@ export const EVENTS = Object.freeze({
   SIGNUP_FORM_VIEWED: 'signup_form_viewed',
   SIGNUP_FORM_STARTED: 'signup_form_started',
   SIGNUP_SUBMIT_CLICKED: 'signup_submit_clicked',
+  // Signup path only — keep it that way. A failed *sign in* is not a failed
+  // signup, and mixing them silently inflates every signup-attempt funnel.
   SIGNUP_SUBMIT_FAILED: 'signup_submit_failed',
+  // The sign-in equivalent. Mobile-only so far; web currently tracks nothing
+  // for a failed login, and could adopt this whenever that's useful.
+  LOGIN_SUBMIT_FAILED: 'login_submit_failed',
   SIGNUP_CAPTCHA_BLOCKED: 'signup_captcha_blocked',
   SIGNUP_BYPASS_OFFERED: 'signup_bypass_offered',
   USER_SIGNED_UP: 'user_signed_up',
