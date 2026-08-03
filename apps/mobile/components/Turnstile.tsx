@@ -5,7 +5,7 @@
  * (the widget's domain allowlist is checked against window.location.hostname).
  * Renders nothing when no site key is configured.
  */
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { WebView } from 'react-native-webview';
 
@@ -55,24 +55,33 @@ const html = (siteKey: string) => `<!DOCTYPE html><html><head>
 
 export default function Turnstile({ siteKey, onToken, resetSignal = 0, baseUrl = 'https://app.theplot.tv' }: TurnstileProps) {
   const ref = useRef<WebView>(null);
-  const lastReset = useRef(resetSignal);
   // Whether Cloudflare is currently showing something a visitor could see or
   // tap — drives pointerEvents below so the (normally invisible) widget never
   // steals touches from whatever's positioned behind it.
   const [visible, setVisible] = useState(false);
 
-  if (!siteKey) return null;
-
   // Re-issue a fresh token when the reset signal changes (tokens are single-use).
   // Un-hides #cf too, in case the next round needs to show a real challenge.
-  if (resetSignal !== lastReset.current) {
-    lastReset.current = resetSignal;
+  //
+  // Runs in an effect, mirroring Turnstile.web.tsx. This used to compare against
+  // a `lastReset` ref and inject inline in the render body — mutating a ref and
+  // firing an imperative WebView call mid-render, the exact pattern
+  // react-hooks/refs flags. It happened to work, but under StrictMode's double
+  // render or a future concurrent re-render it could fire twice or be discarded.
+  //
+  // The `!resetSignal` guard skips the initial render: callers start the nonce
+  // at 0 and bump it, and the widget issues its own first challenge on load, so
+  // resetting at 0 would throw away the token already in flight.
+  useEffect(() => {
+    if (!resetSignal) return;
     ref.current?.injectJavaScript(
       "window.__wid && window.turnstile.reset(window.__wid); " +
       "var el = document.getElementById('cf'); if (el) el.style.display = 'flex'; " +
       "true;"
     );
-  }
+  }, [resetSignal]);
+
+  if (!siteKey) return null;
 
   return (
     <View style={styles.wrap} pointerEvents={visible ? 'auto' : 'none'}>
