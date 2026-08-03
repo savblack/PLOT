@@ -14,6 +14,8 @@ import { tmdb } from '../../lib/tmdb';
 // mirroring the web AuthPage) — it deliberately doesn't follow the app theme.
 import { fontFamily, fontSize, radii, spacing } from '../../lib/tokens';
 import Turnstile from '../../components/Turnstile';
+import { track, EVENTS } from '../../lib/analytics';
+import { authErrorReason } from '@plot/core/authErrors.js';
 
 const { width: W, height: H } = Dimensions.get('window');
 
@@ -145,6 +147,23 @@ export default function AuthScreen() {
   const captchaReady = !TURNSTILE_SITE_KEY || !!captchaToken;
   const refreshCaptcha = () => setCaptchaNonce((n) => n + 1);
 
+  // Funnel head, mirroring web: one view event per time the signup form is
+  // shown, then one "started" on the first keystroke. The typed value is never
+  // captured — only the fact that typing began.
+  const signupStarted = useRef(false);
+  useEffect(() => {
+    if (mode === 'signup') {
+      track(EVENTS.SIGNUP_FORM_VIEWED);
+      signupStarted.current = false;
+    }
+  }, [mode]);
+
+  const noteSignupStarted = () => {
+    if (mode !== 'signup' || signupStarted.current) return;
+    signupStarted.current = true;
+    track(EVENTS.SIGNUP_FORM_STARTED);
+  };
+
   useEffect(() => {
     tmdb.getTrending('all', 'week').then((data) => {
       const paths = data?.results
@@ -162,12 +181,15 @@ export default function AuthScreen() {
     if (!email || !password) return;
     if (!isValidEmail(email)) { Alert.alert('Please enter a valid email address.'); return; }
     setLoading(true);
+    track(EVENTS.SIGNUP_SUBMIT_CLICKED, { mode: 'signin' });
     const { error } = await supabase.auth.signInWithPassword({
       email: email.trim(), password, options: { captchaToken: captchaToken ?? undefined },
     });
     setLoading(false);
     refreshCaptcha();
+    if (!error) track(EVENTS.USER_LOGGED_IN, { method: 'password' });
     if (error) {
+      track(EVENTS.SIGNUP_SUBMIT_FAILED, { mode: 'signin', reason: authErrorReason(error.message) });
       // Offer to resend the confirmation email when the account isn't verified.
       if (error.message.includes('Email not confirmed')) {
         Alert.alert(friendlyAuthError(error.message), undefined, [
@@ -202,7 +224,10 @@ export default function AuthScreen() {
     setLoading(false);
     refreshCaptcha();
     if (error) Alert.alert(friendlyAuthError(error.message));
-    else Alert.alert('Check your email', 'We sent a link to reset your password.');
+    else {
+      track(EVENTS.PASSWORD_RESET_REQUESTED);
+      Alert.alert('Check your email', 'We sent a link to reset your password.');
+    }
   };
 
   const handleSignUp = async () => {
@@ -210,12 +235,16 @@ export default function AuthScreen() {
     if (!isValidEmail(email)) { Alert.alert('Please enter a valid email address.'); return; }
     if (password.length < 6) { Alert.alert('Password must be at least 6 characters.'); return; }
     setLoading(true);
+    track(EVENTS.SIGNUP_SUBMIT_CLICKED, { mode: 'signup' });
     const { error } = await supabase.auth.signUp({
       email: email.trim(), password, options: { captchaToken: captchaToken ?? undefined },
     });
     setLoading(false);
     refreshCaptcha();
-    if (error) Alert.alert(friendlyAuthError(error.message));
+    if (error) {
+      track(EVENTS.SIGNUP_SUBMIT_FAILED, { mode: 'signup', reason: authErrorReason(error.message) });
+      Alert.alert(friendlyAuthError(error.message));
+    }
     else Alert.alert('Almost there!', `We sent a confirmation link to ${email.trim()}.`, [
       { text: 'Resend', onPress: handleResend },
       { text: 'OK', style: 'cancel' },
@@ -233,8 +262,13 @@ export default function AuthScreen() {
     });
     setLoading(false);
     refreshCaptcha();
-    if (error) Alert.alert(friendlyAuthError(error.message));
-    else Alert.alert('Magic link sent.', 'Check your inbox to sign in.');
+    if (error) {
+      track(EVENTS.SIGNUP_SUBMIT_FAILED, { mode: 'magic_link', reason: authErrorReason(error.message) });
+      Alert.alert(friendlyAuthError(error.message));
+    } else {
+      track(EVENTS.SIGNUP_SUBMIT_CLICKED, { mode: 'magic_link' });
+      Alert.alert('Magic link sent.', 'Check your inbox to sign in.');
+    }
   };
 
   const handleSubmit = () => {
@@ -309,7 +343,7 @@ export default function AuthScreen() {
                     placeholder="your@email.com"
                     placeholderTextColor="#898989"
                     value={email}
-                    onChangeText={setEmail}
+                    onChangeText={(t) => { setEmail(t); noteSignupStarted(); }}
                     autoCapitalize="none"
                     keyboardType="email-address"
                     autoComplete="email"
@@ -326,7 +360,7 @@ export default function AuthScreen() {
                       placeholder="••••••••"
                       placeholderTextColor="#898989"
                       value={password}
-                      onChangeText={setPassword}
+                      onChangeText={(t) => { setPassword(t); noteSignupStarted(); }}
                       secureTextEntry
                       autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
                       returnKeyType="go"

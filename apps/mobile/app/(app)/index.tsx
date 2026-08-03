@@ -18,6 +18,7 @@ import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../../lib/supabase';
 import { tmdb, setTmdbRegion, getTmdbRegion, prioritiseEnglishSpeakingTitles } from '../../lib/tmdb';
+import { SHOW_FOR_YOU_RAIL } from '../../lib/launchFeatures';
 import { excludeKidsContent } from '@plot/core/tmdb.js';
 import { posterUrl, backdropUrl, Palette, fontFamily, fontSize, spacing, radii, iconButtonSize } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -493,7 +494,10 @@ export default function HomeScreen() {
       // supabase/migrations/20260726020000_for_you_recommendations.sql).
       // Non-blocking — hydrate rows with TMDB after the rest of the screen loads.
       setForYouError(false);
-      (async () => {
+      // The flag gates the RPC and the TMDB hydration, not just the render —
+      // flipping it off pulls the rail instantly without touching the
+      // get_for_you() pipeline, and costs nothing while it's off.
+      if (SHOW_FOR_YOU_RAIL) (async () => {
         try {
           const { data: rows, error: rpcError } = await supabase.rpc('get_for_you', { p_limit: 20 });
           if (cancelled) return;

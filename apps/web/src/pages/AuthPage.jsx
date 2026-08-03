@@ -11,6 +11,7 @@ import Turnstile from '../components/Turnstile.jsx';
 import { getPremiumCheckoutIntent, rememberPremiumCheckoutIntent } from '../utils/premiumCheckoutIntent.js';
 import { COMMON } from '../copy/common.js';
 import { AUTH_PAGE } from '../copy/authPage.js';
+import { authErrorReason } from '@plot/core/authErrors.js';
 
 const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY;
 
@@ -27,14 +28,9 @@ function friendlyError(msg) {
 
 // Short, stable slugs for signup_submit_failed — group failures in PostHog
 // without leaking the raw (occasionally wordy) Supabase error message.
-function errorReason(msg) {
-  if (!msg) return 'unknown';
-  if (msg.includes('User already registered'))      return 'already_registered';
-  if (msg.includes('Password should be at least'))  return 'weak_password';
-  if (msg.includes('Unable to validate email'))      return 'invalid_email';
-  if (msg.includes('rate limit') || msg.includes('too many')) return 'rate_limited';
-  return 'unknown';
-}
+// Stable analytics slugs live in core so web and mobile group failures the
+// same way — see @plot/core/authErrors.js.
+const errorReason = authErrorReason;
 
 // Friendly copy for the signup-bypass Edge Function's structured error
 // reasons (distinct from friendlyError/errorReason above, which parse raw

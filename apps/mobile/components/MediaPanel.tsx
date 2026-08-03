@@ -16,6 +16,7 @@ import { useAppData } from '../contexts/AppDataContext';
 import { favoriteWords } from '../lib/spelling';
 import { findDuplicateCustomList } from '@plot/core/customLists.js';
 import { buildWatchLink } from '@plot/core/watchLinks.js';
+import { track, markActivated, EVENTS } from '../lib/analytics';
 import { fetchVerifiedAvailability, offersFromTmdb } from '@plot/core/availability.js';
 import { fetchCriticScore, pickAudienceQuote, getConsensusLine } from '@plot/core/reviews.js';
 import { canCreateCustomList, FREE_CUSTOM_LIST_CAP } from '@plot/core/premium.js';
@@ -561,6 +562,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
       if (cancelled) return;
       if (!det) { setError(true); } else {
         setDetails(det);
+        track(EVENTS.TITLE_VIEWED, { tmdb_id: itemId, media_type: itemType });
         const regionData = prov?.results?.[region] || {};
         const fallbackOffers = offersFromTmdb(regionData).map((offer) => ({
           provider_id: offer.providerId,
@@ -612,6 +614,10 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
       justwatchLink: whereToWatch.justwatchLink,
     });
     if (link?.url) {
+      track(EVENTS.WATCH_LINK_CLICKED, {
+        tmdb_id: itemId, media_type: itemType,
+        provider: p.provider_name ?? null, link_kind: link.kind ?? null,
+      });
       Linking.openURL(link.url).catch((e) => {
         console.warn('[MediaPanel] failed to open watch link', e);
         Alert.alert("Couldn't open link", 'Please try again in a moment.');
@@ -741,7 +747,14 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                   {!isWatching && (
                     <TouchableOpacity
                       style={[styles.btnPrimary, inList && styles.btnSaved]}
-                      onPress={() => watchlist.toggle({ ...details, id: itemId, media_type: itemType })}
+                      onPress={() => {
+                        // `inList` is the state *before* the toggle resolves.
+                        track(inList ? EVENTS.WATCHLIST_REMOVED : EVENTS.WATCHLIST_SAVED, {
+                          tmdb_id: itemId, media_type: itemType,
+                        });
+                        if (!inList) markActivated('first_save');
+                        watchlist.toggle({ ...details, id: itemId, media_type: itemType });
+                      }}
                     >
                       {inList && <IconCheck color="#4ade80" />}
                       <Text style={[styles.btnPrimaryText, inList && { color: '#4ade80' }]}>
@@ -802,6 +815,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                       style={styles.btnSecondary}
                       onPress={async () => {
                         await history.logWatched({ ...details, id: itemId, media_type: itemType }, { logRewatches: profile?.log_rewatches ?? true });
+                        track(EVENTS.MARKED_WATCHED, { tmdb_id: itemId, media_type: itemType });
                         if (!isMovie && isWatching) await watching.stopWatching(itemId);
                       }}
                     >

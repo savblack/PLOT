@@ -11,6 +11,7 @@ import * as Linking from 'expo-linking';
 import { supabase } from '../lib/supabase';
 import { setTmdbRegion } from '../lib/tmdb';
 import { setUserTimezone } from '@plot/core/date.js';
+import { initAnalytics, identifyUser } from '../lib/analytics';
 import { consumeTraktState, exchangeTraktCode } from '../hooks/useTraktSync';
 import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
 import { AppDataProvider } from '../contexts/AppDataContext';
@@ -107,10 +108,15 @@ function RootInner() {
   };
 
   useEffect(() => {
+    // Before the first session check, so nothing captured during boot is lost —
+    // calls made before the SDK is ready queue inside lib/analytics.
+    initAnalytics();
+
     // Initial session check
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session?.user) {
+        identifyUser(session.user.id);
         loadProfile(session.user.id);
       } else {
         setOnboardingComplete(null);
@@ -122,6 +128,7 @@ function RootInner() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       if (session?.user) {
+        identifyUser(session.user.id);
         loadProfile(session.user.id);
       } else {
         setOnboardingComplete(null);

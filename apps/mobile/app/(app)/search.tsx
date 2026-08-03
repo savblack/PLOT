@@ -16,6 +16,7 @@ import { useAppData } from '../../contexts/AppDataContext';
 import { favoriteWords } from '../../lib/spelling';
 import { UserRow, SocialUser } from '../../components/UserList';
 import { classifySearchResults } from '@plot/core/search.js';
+import { track, EVENTS } from '../../lib/analytics';
 
 type Mode = 'titles' | 'people';
 
@@ -97,6 +98,9 @@ export default function SearchScreen() {
       const { filtered, emptyMode: nextEmptyMode } = classifySearchResults(data?.results ?? []);
       setResults(filtered.slice(0, 20) as SearchResult[]);
       setEmptyMode(nextEmptyMode);
+      // Query text is deliberately not captured — only that a search ran and
+      // whether it found anything, which is what the funnel needs.
+      track(EVENTS.SEARCH_PERFORMED, { mode: 'titles', result_count: filtered.length });
     }
     setLoading(false);
   };
