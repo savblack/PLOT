@@ -1,24 +1,33 @@
 /**
- * Onboarding Step 1 — First name.
+ * Onboarding step 1 — First name.
  * Collects the user's first name for personalized greetings.
  */
-import { useState, useMemo } from 'react';
-import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator,
-} from 'react-native';
+import { useState, useMemo, useRef, useEffect } from 'react';
+import { TextInput, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ONBOARDING_FLOW } from '@plot/core/copy/onboardingFlow.js';
 import { supabase } from '../../lib/supabase';
+import { track, EVENTS } from '../../lib/analytics';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
+import OnboardingScaffold from '../../components/OnboardingScaffold';
 
 export default function Name() {
   const router  = useRouter();
-  const insets  = useSafeAreaInsets();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [firstName, setFirstName] = useState('');
   const [saving,    setSaving]    = useState(false);
+
+  // Step 1 is where the auth guard drops a user with onboarding still to do,
+  // so this is the top of the funnel. Web fires it from OnboardingFlow's own
+  // mount for the same reason.
+  const started = useRef(false);
+  useEffect(() => {
+    if (started.current) return;
+    started.current = true;
+    track(EVENTS.ONBOARDING_STARTED);
+  }, []);
 
   const handleContinue = async () => {
     const trimmed = firstName.trim();
@@ -35,76 +44,36 @@ export default function Name() {
       }
     }
     setSaving(false);
-    router.push('/onboarding/step1');
+    track(EVENTS.ONBOARDING_STEP_COMPLETED, { step: 1, step_name: 'name', skipped: false });
+    router.push('/onboarding/region');
   };
 
   return (
-    <View style={[styles.screen, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.wordmark}>PLOT</Text>
-        <Text style={styles.stepLabel}>Step 1 of 4</Text>
-      </View>
-
-      {/* Content */}
-      <View style={styles.content}>
-        <Text style={styles.heading}>What's your name?</Text>
-        <Text style={styles.body}>So we can make PLOT yours.</Text>
-
-        <TextInput
-          style={styles.input}
-          placeholder="First name"
-          placeholderTextColor={colors.textMuted}
-          value={firstName}
-          onChangeText={setFirstName}
-          autoFocus
-          autoCorrect={false}
-        />
-      </View>
-
-      {/* Footer */}
-      <View style={styles.footer}>
-        <TouchableOpacity
-          style={[styles.btn, (saving || !firstName.trim()) && styles.btnDisabled]}
-          onPress={handleContinue}
-          disabled={saving || !firstName.trim()}
-        >
-          {saving
-            ? <ActivityIndicator color="#fff" />
-            : <Text style={styles.btnText}>Continue</Text>
-          }
-        </TouchableOpacity>
-      </View>
-    </View>
+    <OnboardingScaffold
+      step={1}
+      title={ONBOARDING_FLOW.step1.title}
+      subtitle={ONBOARDING_FLOW.step1.subtitle}
+      ctaLabel={ONBOARDING_FLOW.continueArrow}
+      onContinue={handleContinue}
+      ctaDisabled={!firstName.trim()}
+      saving={saving}
+    >
+      <TextInput
+        style={styles.input}
+        placeholder={ONBOARDING_FLOW.step1.placeholder}
+        placeholderTextColor={colors.textMuted}
+        value={firstName}
+        onChangeText={setFirstName}
+        autoFocus
+        autoCorrect={false}
+        returnKeyType="next"
+        onSubmitEditing={handleContinue}
+      />
+    </OnboardingScaffold>
   );
 }
 
 const makeStyles = (colors: Palette) => StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.bg },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.lg,
-  },
-  wordmark:  { fontFamily: fontFamily.serif, fontSize: fontSize.xl, color: colors.textPrimary },
-  stepLabel: { fontFamily: fontFamily.sans,  fontSize: fontSize.sm, color: colors.textMuted },
-  content: { flex: 1, paddingHorizontal: spacing.xl },
-  heading: {
-    fontFamily: fontFamily.serif,
-    fontSize: fontSize.xxl,
-    color: colors.textPrimary,
-    textAlign: 'center',
-    marginBottom: spacing.sm,
-  },
-  body: {
-    fontFamily: fontFamily.sans,
-    fontSize: fontSize.sm,
-    color: colors.textMuted,
-    textAlign: 'center',
-    marginBottom: spacing.xl,
-  },
   input: {
     backgroundColor: colors.surface,
     borderRadius: radii.md,
@@ -116,17 +85,4 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     fontSize: fontSize.md,
     color: colors.textPrimary,
   },
-  footer: {
-    padding: spacing.xl,
-  },
-  btn: {
-    alignSelf: 'center',
-    backgroundColor: colors.accent,
-    borderRadius: radii.pill,
-    paddingVertical: 15,
-    paddingHorizontal: 40,
-    alignItems: 'center',
-  },
-  btnDisabled: { opacity: 0.6 },
-  btnText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.md, color: '#fff' },
 });

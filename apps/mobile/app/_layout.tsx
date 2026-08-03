@@ -11,7 +11,7 @@ import * as Linking from 'expo-linking';
 import { supabase } from '../lib/supabase';
 import { setTmdbRegion } from '../lib/tmdb';
 import { setUserTimezone } from '@plot/core/date.js';
-import { initAnalytics, identifyUser } from '../lib/analytics';
+import { initAnalytics, identifyUser, resetAnalytics } from '../lib/analytics';
 import { consumeTraktState, exchangeTraktCode } from '../hooks/useTraktSync';
 import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
 import { AppDataProvider } from '../contexts/AppDataContext';
@@ -119,6 +119,7 @@ function RootInner() {
         identifyUser(session.user.id);
         loadProfile(session.user.id);
       } else {
+        resetAnalytics();
         setOnboardingComplete(null);
       }
       setAuthReady(true);
@@ -131,6 +132,7 @@ function RootInner() {
         identifyUser(session.user.id);
         loadProfile(session.user.id);
       } else {
+        resetAnalytics();
         setOnboardingComplete(null);
       }
     });
