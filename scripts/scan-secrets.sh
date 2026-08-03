@@ -8,7 +8,7 @@
 # Usage: scan-secrets.sh <git-diff-args...>   e.g. --cached, or <base> <head>
 set -euo pipefail
 
-patterns='eyJhbGciOiJ|-----BEGIN[A-Z ]*PRIVATE KEY-----|service_role|PGPASSWORD=|sk_live_|rk_live_|whsec_|sk-ant-|AKIA[0-9A-Z]{16}|re_[A-Za-z0-9]{20,}|AIza[0-9A-Za-z_-]{35}|api_key=[0-9a-f]{32}'
+patterns='eyJhbGciOiJ|-----BEGIN[A-Z ]*PRIVATE KEY-----|service_role|PGPASSWORD=|sk_live_|rk_live_|whsec_|sk-ant-|AKIA[0-9A-Z]{16}|re_[A-Za-z0-9]{20,}|xkeysib-[A-Za-z0-9-]{20,}|AIza[0-9A-Za-z_-]{35}|api_key=[0-9a-f]{32}'
 # .env.example holds placeholders by design; this script and the hook that
 # calls it necessarily contain the patterns they scan for.
 exclude='\.env\.example|\.githooks/pre-commit|scripts/scan-secrets\.sh'

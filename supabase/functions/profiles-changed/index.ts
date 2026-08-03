@@ -1,0 +1,120 @@
+/**
+ * profiles-changed
+ *
+ * Triggered by a Supabase Database Webhook on INSERT/UPDATE to public.profiles.
+ * Best-effort keeps a Brevo contact's USERNAME/FIRSTNAME/IS_PREMIUM in sync —
+ * these don't exist at signup time (see notify-signup), only once onboarding
+ * creates the profiles row, and username/is_premium can keep changing after.
+ *
+ * Wired via the Supabase dashboard (Database -> Webhooks): public.profiles,
+ * INSERT + UPDATE, HTTP request to this function, with its service-role auth
+ * option checked. Unlike auth.users, this is a plain public-schema table so
+ * the dashboard can target it directly - no Vault/SQL-trigger workaround
+ * needed (contrast supabase/notify-signup-trigger.sql).
+ *
+ * Required secrets:
+ *   BREVO_API_KEY   - Brevo API key; unset skips the sync entirely
+ *   BREVO_LIST_ID   - Brevo "PLOT App Users" list id
+ */
+import { hasServiceRoleBearer } from '../_shared/internalWebhook.ts'
+import { captureSentryError } from '../_shared/sentry.ts'
+import { upsertBrevoContact } from '../_shared/brevo.ts'
+import { adminClient } from '../_shared/supabaseAdmin.ts'
+
+const TRACKED_FIELDS = ['username', 'first_name', 'is_premium'] as const
+const BREVO_ATTRIBUTE_NAME: Record<(typeof TRACKED_FIELDS)[number], string> = {
+  username: 'USERNAME',
+  first_name: 'FIRSTNAME',
+  is_premium: 'IS_PREMIUM',
+}
+
+// Only the fields we actually mirror to Brevo, and only when they're present
+// and (for an UPDATE) actually changed — region/timezone/genre/bio edits etc.
+// shouldn't trigger a call.
+function relevantChanges(
+  record: Record<string, unknown>,
+  oldRecord: Record<string, unknown> | null | undefined,
+) {
+  const attributes: Record<string, unknown> = {}
+  for (const field of TRACKED_FIELDS) {
+    const value = record[field]
+    if (value === undefined || value === null) continue
+    if (!oldRecord || oldRecord[field] !== value) attributes[BREVO_ATTRIBUTE_NAME[field]] = value
+  }
+  return attributes
+}
+
+Deno.serve(async (req) => {
+  if (req.method !== 'POST') {
+    return new Response('Method not allowed', { status: 405 })
+  }
+
+  if (!hasServiceRoleBearer(req)) {
+    return new Response('Forbidden', { status: 403 })
+  }
+
+  let body: { record?: Record<string, unknown>; old_record?: Record<string, unknown> }
+  try {
+    body = await req.json()
+  } catch {
+    return new Response('Invalid JSON', { status: 400 })
+  }
+
+  const record = body?.record
+  if (!record) {
+    return new Response('No record in payload', { status: 400 })
+  }
+
+  const userId = record.id ? String(record.id) : ''
+  if (!userId) {
+    return new Response('Profile record is missing an id', { status: 400 })
+  }
+
+  const brevoKey = Deno.env.get('BREVO_API_KEY')
+  const brevoListId = Deno.env.get('BREVO_LIST_ID')
+  if (!brevoKey || !brevoListId) {
+    console.error('Brevo sync is not configured (missing BREVO_API_KEY / BREVO_LIST_ID).')
+    return new Response(JSON.stringify({ ok: false, error: 'Brevo sync not configured' }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+
+  const attributes = relevantChanges(record, body.old_record)
+  if (Object.keys(attributes).length === 0) {
+    return new Response(JSON.stringify({ ok: true, skipped: true }), {
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+
+  try {
+    const { data, error } = await adminClient().auth.admin.getUserById(userId)
+    const email = data?.user?.email
+    if (error || !email) {
+      console.error('profiles-changed: could not resolve email for user', userId, error?.message)
+      return new Response(JSON.stringify({ ok: false, error: 'No email for user' }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
+
+    await upsertBrevoContact({
+      apiKey: brevoKey,
+      email,
+      attributes,
+      listIds: [Number(brevoListId)],
+    })
+
+    return new Response(JSON.stringify({ ok: true }), {
+      headers: { 'Content-Type': 'application/json' },
+    })
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown profiles-changed error'
+    console.error('Failed to sync profile change to Brevo:', errorMessage)
+    await captureSentryError('profiles-changed', error, { userId })
+    return new Response(JSON.stringify({ ok: false, error: errorMessage }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+})

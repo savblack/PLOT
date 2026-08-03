@@ -8,8 +8,13 @@
  *                                  Outlook one-click List-Unsubscribe POSTs.
  *
  * Deploy with --no-verify-jwt (public website form + email clients call this).
+ *
+ * Optional secrets (best-effort Brevo sync, skipped entirely if unset):
+ *   BREVO_API_KEY             - Brevo API key
+ *   BREVO_MARKETING_LIST_ID   - Brevo "PLOT Marketing Subscribers" list id
  */
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { upsertBrevoContact, removeContactFromList } from '../_shared/brevo.ts';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -77,7 +82,7 @@ Deno.serve(async (req) => {
 
     const { data: sub } = await supabase
       .from('marketing_subscribers')
-      .select('id, status')
+      .select('id, status, email')
       .eq('unsubscribe_token', token)
       .maybeSingle();
     if (!sub) return page('PLOT', '<h1>Link not valid</h1>', 404);
@@ -96,6 +101,18 @@ Deno.serve(async (req) => {
         .from('marketing_subscribers')
         .update({ status: 'unsubscribed', unsubscribed_at: new Date().toISOString() })
         .eq('id', sub.id);
+
+      const brevoKey = Deno.env.get('BREVO_API_KEY');
+      const brevoMarketingListId = Deno.env.get('BREVO_MARKETING_LIST_ID');
+      if (brevoKey && brevoMarketingListId && sub.email) {
+        try {
+          await upsertBrevoContact({ apiKey: brevoKey, email: sub.email, attributes: { OPT_IN: false } });
+          await removeContactFromList({ apiKey: brevoKey, listId: Number(brevoMarketingListId), email: sub.email });
+        } catch (error) {
+          console.error('Failed to sync unsubscribe to Brevo:', error instanceof Error ? error.message : error);
+        }
+      }
+
       return page('PLOT', '<h1>Unsubscribed</h1><p>You will not receive the PLOT digest again.</p>');
     }
     return page('PLOT', '<h1>Method not allowed</h1>', 405);
@@ -145,6 +162,30 @@ Deno.serve(async (req) => {
   if (error) {
     console.error('Subscribe failed:', error.message);
     return json({ error: 'Something went wrong' }, 500);
+  }
+
+  const brevoKey = Deno.env.get('BREVO_API_KEY');
+  const brevoMarketingListId = Deno.env.get('BREVO_MARKETING_LIST_ID');
+  if (brevoKey && brevoMarketingListId) {
+    try {
+      // ignoreDuplicates means a previously-unsubscribed row is left
+      // untouched by the upsert above — re-read the actual status so a
+      // resubmit never incorrectly flips someone's Brevo OPT_IN to true.
+      const { data: current } = await supabase
+        .from('marketing_subscribers')
+        .select('status')
+        .eq('email', email)
+        .maybeSingle();
+      const optedIn = current?.status === 'active';
+      await upsertBrevoContact({
+        apiKey: brevoKey,
+        email,
+        attributes: { OPT_IN: optedIn },
+        listIds: optedIn ? [Number(brevoMarketingListId)] : undefined,
+      });
+    } catch (error) {
+      console.error('Failed to sync subscribe to Brevo:', error instanceof Error ? error.message : error);
+    }
   }
 
   return json({ ok: true });

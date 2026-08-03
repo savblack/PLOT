@@ -2,20 +2,28 @@
  * notify-signup
  *
  * Triggered by a Supabase Database Webhook on INSERT to auth.users.
- * Sends an email via Resend so we hear about every new signup in real time.
+ * Sends an email via Resend so we hear about every new signup in real time,
+ * and (best-effort) upserts the new user into Brevo as a contact.
  *
  * Fires on the auth.users insert, i.e. the moment someone signs up — for
- * email/password signups this is before they confirm their address.
+ * email/password signups this is before they confirm their address. profiles
+ * doesn't exist yet at this point (see supabase/functions/profiles-changed
+ * for username/first_name/is_premium, which only exist post-onboarding).
  *
  * Required secrets:
  *   RESEND_API_KEY            - Resend API key (theplot.tv is a verified sender)
  *
  * Optional secrets:
  *   SIGNUP_NOTIFY_TO_EMAIL    - recipient of the alert (defaults to TO_EMAIL below)
+ *   BREVO_API_KEY             - Brevo API key; unset skips the Brevo sync entirely
+ *   BREVO_LIST_ID             - Brevo "PLOT App Users" list id
+ *   BREVO_MARKETING_LIST_ID   - Brevo "PLOT Marketing Subscribers" list id (opted-in only)
  */
 
 import { hasServiceRoleBearer } from '../_shared/internalWebhook.ts'
 import { captureSentryError } from '../_shared/sentry.ts'
+import { upsertBrevoContact } from '../_shared/brevo.ts'
+import { adminClient } from '../_shared/supabaseAdmin.ts'
 
 const RESEND_API_URL = 'https://api.resend.com/emails'
 const TO_EMAIL = Deno.env.get('SIGNUP_NOTIFY_TO_EMAIL') || 'sav.black@outlook.com'
@@ -134,6 +142,39 @@ Deno.serve(async (req) => {
 
   const email = record.email ? String(record.email) : ''
   const method = signupMethodFrom(record)
+
+  // Best-effort Brevo contact sync — independent of the Resend notification
+  // below, never throws. USERNAME/FIRSTNAME aren't knowable yet: profiles
+  // doesn't exist until onboarding finishes (see profiles-changed).
+  const brevoKey = Deno.env.get('BREVO_API_KEY')
+  const brevoListId = Deno.env.get('BREVO_LIST_ID')
+  const brevoMarketingListId = Deno.env.get('BREVO_MARKETING_LIST_ID')
+  if (brevoKey && brevoListId && email) {
+    try {
+      const { data: subscriber } = await adminClient()
+        .from('marketing_subscribers')
+        .select('status')
+        .eq('email', email.toLowerCase())
+        .maybeSingle()
+      const optedIn = subscriber?.status === 'active'
+      const listIds = [Number(brevoListId)]
+      if (optedIn && brevoMarketingListId) listIds.push(Number(brevoMarketingListId))
+
+      // Brevo's "date" attribute type expects YYYY-MM-DD; anything else is
+      // silently dropped, not stored wrong, but keep this consistent with
+      // the backfill script's SIGNUP_DATE format regardless.
+      const signupDate = record.created_at ? String(record.created_at).slice(0, 10) : undefined
+
+      await upsertBrevoContact({
+        apiKey: brevoKey,
+        email,
+        attributes: { SIGNUP_DATE: signupDate, IS_PREMIUM: false, OPT_IN: optedIn },
+        listIds,
+      })
+    } catch (error) {
+      console.error('Failed to sync signup to Brevo:', error instanceof Error ? error.message : error)
+    }
+  }
 
   try {
     await sendSignupEmail({
