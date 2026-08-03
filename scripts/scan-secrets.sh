@@ -15,7 +15,7 @@ set -euo pipefail
 # fired on four such lines in #400 with no secret present. A leaked service-role
 # credential is a JWT and is still caught by the eyJhbGciOiJ pattern regardless
 # of what variable it lands in, so narrowing this costs no real coverage.
-patterns='eyJhbGciOiJ|-----BEGIN[A-Z ]*PRIVATE KEY-----|SERVICE_ROLE_KEY[[:space:]]*[:=][[:space:]]*.?[A-Za-z0-9._-]{20,}|PGPASSWORD=|sk_live_|rk_live_|whsec_|sk-ant-|AKIA[0-9A-Z]{16}|re_[A-Za-z0-9]{20,}|AIza[0-9A-Za-z_-]{35}|api_key=[0-9a-f]{32}'
+patterns='eyJhbGciOiJ|-----BEGIN[A-Z ]*PRIVATE KEY-----|SERVICE_ROLE_KEY[[:space:]]*[:=][[:space:]]*.?[A-Za-z0-9._-]{20,}|PGPASSWORD=|sk_live_|rk_live_|whsec_|sk-ant-|AKIA[0-9A-Z]{16}|re_[A-Za-z0-9]{20,}|xkeysib-[A-Za-z0-9-]{20,}|AIza[0-9A-Za-z_-]{35}|api_key=[0-9a-f]{32}'
 # .env.example holds placeholders by design; this script and the hook that
 # calls it necessarily contain the patterns they scan for.
 exclude='\.env\.example|\.githooks/pre-commit|scripts/scan-secrets\.sh'

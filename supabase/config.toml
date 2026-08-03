@@ -91,6 +91,13 @@ verify_jwt = true
 [functions.notify-signup]
 verify_jwt = true
 
+# Profile-change notifier for Brevo sync — invoked by a Database Webhook on
+# public.profiles (INSERT + UPDATE), configured via the Supabase dashboard.
+# The dashboard's own service-role auth option supplies the bearer, so
+# verify_jwt stays true and the gateway rejects anything unsigned.
+[functions.profiles-changed]
+verify_jwt = true
+
 [functions.trakt-sync]
 verify_jwt = true
 

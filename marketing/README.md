@@ -147,6 +147,13 @@ The validation boundary remains in `marketing/copy/schema.mjs`.
 5. Schedule the local Sunday runner to call `npm run learn:apply`.
    A ready-to-install `launchd` template lives at
    `marketing/ops/com.plot.marketing-learning.plist`.
+6. Brevo contact sync (optional): set `BREVO_API_KEY`, run
+   `node marketing/setup/brevo-sync.mjs --dry-run` first, then for real. Copy
+   the two list ids it prints into the Supabase Edge Function secrets
+   `BREVO_LIST_ID` / `BREVO_MARKETING_LIST_ID` (alongside `BREVO_API_KEY`) so
+   `notify-signup` and `profiles-changed` can keep new/changed users in sync
+   going forward. Also add `BREVO_API_KEY` as a GitHub Actions secret if you
+   want the `brevo-sync.yml` manual re-run button to work.
 
 ## TMDB guardrail
 

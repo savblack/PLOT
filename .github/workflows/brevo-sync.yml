@@ -1,0 +1,51 @@
+name: Marketing — Brevo sync
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Log instead of writing to Brevo'
+        type: boolean
+        default: false
+      limit:
+        description: 'Only process the first N users (0 = no limit)'
+        type: string
+        default: '0'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: brevo-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Sync users to Brevo
+        env:
+          DRY_RUN: ${{ inputs.dry_run && '1' || '' }}
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+        run: |
+          if [ "${{ inputs.limit }}" != "0" ] && [ -n "${{ inputs.limit }}" ]; then
+            node marketing/setup/brevo-sync.mjs --limit=${{ inputs.limit }}
+          else
+            node marketing/setup/brevo-sync.mjs
+          fi
+      - name: Alert on failure
+        if: failure()
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          ADMIN_EMAIL: ${{ secrets.MARKETING_ADMIN_EMAIL }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          WORKFLOW_NAME: brevo-sync
+        run: bash .github/scripts/marketing-alert.sh
