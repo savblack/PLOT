@@ -233,7 +233,7 @@ export default function OnboardingFlow() {
       // bounce the user back here since onboarding_complete never got set,
       // leaving them stuck in a neither-done-nor-in-flow loop.
       setSaving(false);
-      setSaveError('Something went wrong saving your setup. Please try again.');
+      setSaveError(ONBOARDING_FLOW.saveError);
       return;
     }
 
@@ -309,7 +309,7 @@ export default function OnboardingFlow() {
               ))}
             </div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-              Step {step} of {TOTAL}
+              {ONBOARDING_FLOW.stepLabel(step, TOTAL)}
             </div>
           </div>
           <div style={{ width: 28, flexShrink: 0 }} />
