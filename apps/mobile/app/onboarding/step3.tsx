@@ -17,6 +17,7 @@ import { tmdb } from '../../lib/tmdb';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 import { getOrCreateMyListId, saveOnboardingSeedTitles } from '@plot/core/onboarding.js';
+import { track, markActivated, EVENTS } from '../../lib/analytics';
 
 const SCREEN_W = Dimensions.get('window').width;
 const CARD_W = (SCREEN_W - spacing.xl * 2 - spacing.sm * 2) / 3;
@@ -86,6 +87,8 @@ export default function Step3() {
       // into, even for a user who skips title selection entirely.
       await getOrCreateMyListId({ supabase, userId: session.user.id });
       await supabase.from('profiles').update({ onboarding_complete: true }).eq('id', session.user.id);
+      track(EVENTS.ONBOARDING_COMPLETED, { skipped_seed: true });
+      markActivated('onboarding');
     }
     router.replace('/(app)');
   };
@@ -103,6 +106,8 @@ export default function Step3() {
         await getOrCreateMyListId({ supabase, userId: session.user.id });
       }
       await supabase.from('profiles').update({ onboarding_complete: true }).eq('id', session.user.id);
+      track(EVENTS.ONBOARDING_COMPLETED, { seed_count: selected.length });
+      markActivated('onboarding');
     }
     setSaving(false);
     router.replace('/(app)');
