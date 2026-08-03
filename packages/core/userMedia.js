@@ -1,5 +1,5 @@
 import { supabase } from './supabase.js';
-import { baseMediaRow } from './media.js';
+import { baseMediaRow, genreIdsFromItem } from './media.js';
 import { localDateStr } from './date.js';
 import { normalizeRating } from './ratings.js';
 
@@ -11,7 +11,7 @@ export async function saveListItem({ listId, userId, item, providerIds = [], str
     list_id: listId,
     user_id: userId,
     ...mediaRow,
-    genre_ids: Array.isArray(item?.genre_ids) ? item.genre_ids : [],
+    genre_ids: genreIdsFromItem(item),
     provider_ids: providerIds,
     streaming_date: streamingDate,
   };
@@ -52,6 +52,13 @@ export async function logWatchedItem({ userId, item, rating, note, dnf, watchedA
   const row = {
     user_id: userId,
     ...mediaRow,
+    // Mirrors saveListItem. user_title_signals (the materialized view behind
+    // get_for_you's content-similarity tier) unions list_items and history and
+    // reads genre_ids from both — so leaving this off made every watched title
+    // contribute zero genre signal. Column is nullable here, unlike
+    // list_items', so default to [] rather than null to match that view's
+    // coalesce and keep the two arms shaped the same.
+    genre_ids: genreIdsFromItem(item),
     watched_at: safeWatchedAt,
     rating: normalizedRating || null,
     note: note ?? null,
