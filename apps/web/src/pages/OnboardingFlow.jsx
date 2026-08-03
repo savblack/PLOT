@@ -149,9 +149,18 @@ export default function OnboardingFlow() {
     }
   }, [user]);
 
-  const goNext = () => {
-    track(EVENTS.ONBOARDING_STEP_COMPLETED, { step, step_name: STEP_NAMES[step] });
+  const goNext = ({ skipped = false } = {}) => {
+    track(EVENTS.ONBOARDING_STEP_COMPLETED, { step, step_name: STEP_NAMES[step], skipped });
     setStep((s) => s + 1);
+  };
+
+  // Skipping discards what was picked on the step being skipped — otherwise
+  // "Skip this step" saves the same selections Continue does, which is not
+  // what anyone means by skipping.
+  const skipStep = () => {
+    if (step === TOTAL) return finish({ skipSeeds: true });
+    setGenres([]);
+    return goNext({ skipped: true });
   };
 
   /* ── Refine the timezone-based region guess with IP geolocation ── */
@@ -208,10 +217,12 @@ export default function OnboardingFlow() {
   }, [seedQuery, step]);
 
   /* ── Save and complete ── */
-  const finish = async () => {
+  const finish = async ({ skipSeeds = false } = {}) => {
     if (!user) return;
     setSaving(true);
     setSaveError(null);
+
+    const seeds = skipSeeds ? [] : seedSelected;
 
     const genrePayload = allGenres.filter(g => genres.includes(g.id)).map(g => g.name);
 
@@ -242,17 +253,18 @@ export default function OnboardingFlow() {
     await getOrCreateMyListId({ supabase, userId: user.id });
 
     // Seed selected titles into watching_progress or My List
-    if (seedSelected.length > 0) {
-      await saveOnboardingSeedTitles({ supabase, userId: user.id, items: seedSelected });
+    if (seeds.length > 0) {
+      await saveOnboardingSeedTitles({ supabase, userId: user.id, items: seeds });
     }
 
     track(EVENTS.ONBOARDING_COMPLETED, {
       region,
       genres_count: genres.length,
-      seed_titles_added: seedSelected.length,
+      seed_titles_added: seeds.length,
+      skipped: skipSeeds,
     });
     // Completing onboarding is an activation signal (first-of wins).
-    markActivated('onboarding', { seed_titles_added: seedSelected.length });
+    markActivated('onboarding', { seed_titles_added: seeds.length });
 
     const plan = takePremiumCheckoutIntent();
     if (plan) {
@@ -486,7 +498,7 @@ export default function OnboardingFlow() {
           )}
           <button
             className="onboarding-cta"
-            onClick={step === TOTAL ? finish : goNext}
+            onClick={() => (step === TOTAL ? finish() : goNext())}
             disabled={saving || (step === 1 && !firstName.trim())}
             aria-busy={saving}
             aria-label={saving ? ONBOARDING_FLOW.settingUpAccount : step === TOTAL ? ONBOARDING_FLOW.startWatching : COMMON.continue}
@@ -494,7 +506,7 @@ export default function OnboardingFlow() {
             {step === TOTAL ? (saving ? <Spinner size="button" ariaHidden /> : ONBOARDING_FLOW.startWatchingArrow) : ONBOARDING_FLOW.continueArrow}
           </button>
           {(step === 3 || step === TOTAL) && !saving && (
-            <button type="button" className="onboarding-skip" onClick={step === TOTAL ? finish : goNext}>{ONBOARDING_FLOW.skipThisStep}</button>
+            <button type="button" className="onboarding-skip" onClick={skipStep}>{ONBOARDING_FLOW.skipThisStep}</button>
           )}
         </div>
       </div>

@@ -14,6 +14,7 @@ import Svg, { Line } from 'react-native-svg';
 import { ONBOARDING_FLOW } from '@plot/core/copy/onboardingFlow.js';
 import { supabase } from '../../lib/supabase';
 import { tmdb } from '../../lib/tmdb';
+import { track, markActivated, EVENTS } from '../../lib/analytics';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 import { getOrCreateMyListId, saveOnboardingSeedTitles } from '@plot/core/onboarding.js';
@@ -87,18 +88,23 @@ export default function Seed() {
   };
   const isSelected = (item: SearchResult) => selected.some(i => i.id === item.id);
 
-  // Web's step-4 skip calls the same finish handler as the CTA, so both save
-  // whatever titles are selected and complete onboarding.
-  const handleFinish = async () => {
+  // Skipping completes onboarding without seeding anything, even if posters
+  // are still selected — that's what skipping the step means.
+  const finish = async (skipSeeds: boolean) => {
+    const seeds = skipSeeds ? [] : selected;
     setSaving(true);
     setSaveError(null);
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) {
       // Flip onboarding_complete first: on failure the user stays here rather
       // than landing in the app with the auth guard bouncing them back.
-      const { error } = await supabase.from('profiles')
+      // Read the row back in the same round trip: region and genres were
+      // written by the earlier steps and are what onboarding_completed reports.
+      const { data: profile, error } = await supabase.from('profiles')
         .update({ onboarding_complete: true })
-        .eq('id', session.user.id);
+        .eq('id', session.user.id)
+        .select('region, genres')
+        .maybeSingle();
 
       if (error) {
         console.warn('[onboarding seed] completing onboarding failed', error);
@@ -111,11 +117,20 @@ export default function Seed() {
       // through the shared saveListItem, so seeded titles carry genre_ids and
       // provider ids like every other saved title does. With nothing selected
       // the list still gets created, so Home's Save action has a target.
-      if (selected.length > 0) {
-        await saveOnboardingSeedTitles({ supabase, userId: session.user.id, items: selected });
+      if (seeds.length > 0) {
+        await saveOnboardingSeedTitles({ supabase, userId: session.user.id, items: seeds });
       } else {
         await getOrCreateMyListId({ supabase, userId: session.user.id });
       }
+
+      track(EVENTS.ONBOARDING_COMPLETED, {
+        region: profile?.region ?? null,
+        genres_count: profile?.genres?.length ?? 0,
+        seed_titles_added: seeds.length,
+        skipped: skipSeeds,
+      });
+      // Completing onboarding is an activation signal (first-of wins).
+      markActivated('onboarding', { seed_titles_added: seeds.length });
     }
     setSaving(false);
     router.replace('/(app)');
@@ -128,9 +143,9 @@ export default function Seed() {
       subtitle={ONBOARDING_FLOW.step4.subtitle}
       onBack={() => router.back()}
       ctaLabel={ONBOARDING_FLOW.startWatchingArrow}
-      onContinue={handleFinish}
+      onContinue={() => finish(false)}
       saving={saving}
-      onSkip={handleFinish}
+      onSkip={() => finish(true)}
       error={saveError}
     >
       {/* Search */}

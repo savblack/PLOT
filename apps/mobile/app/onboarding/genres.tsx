@@ -11,6 +11,7 @@ import { useRouter } from 'expo-router';
 import { ONBOARDING_FLOW } from '@plot/core/copy/onboardingFlow.js';
 import { supabase } from '../../lib/supabase';
 import { tmdb } from '../../lib/tmdb';
+import { track, EVENTS } from '../../lib/analytics';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 import OnboardingScaffold from '../../components/OnboardingScaffold';
@@ -45,16 +46,17 @@ export default function Genres() {
     });
   };
 
-  // Web's step-3 skip is literally its Continue (no minimum selection, and the
-  // genres already picked still get saved), so both actions run this.
-  const handleContinue = async () => {
+  // Skipping discards the picks made here, so it writes an empty list rather
+  // than leaving genres from an earlier pass through onboarding in place.
+  const advance = async (skipped: boolean) => {
     setSaving(true);
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) {
-      const payload = all.filter(g => selected.has(g.id)).map(g => g.name);
+      const payload = skipped ? [] : all.filter(g => selected.has(g.id)).map(g => g.name);
       await supabase.from('profiles').update({ genres: payload }).eq('id', session.user.id);
     }
     setSaving(false);
+    track(EVENTS.ONBOARDING_STEP_COMPLETED, { step: 3, step_name: 'genres', skipped });
     router.push('/onboarding/seed');
   };
 
@@ -65,9 +67,9 @@ export default function Genres() {
       subtitle={ONBOARDING_FLOW.step3.subtitle}
       onBack={() => router.back()}
       ctaLabel={ONBOARDING_FLOW.continueArrow}
-      onContinue={handleContinue}
+      onContinue={() => advance(false)}
       saving={saving}
-      onSkip={handleContinue}
+      onSkip={() => advance(true)}
     >
       {loading ? (
         <View style={styles.loadingWrap}><ActivityIndicator color={colors.accent} /></View>

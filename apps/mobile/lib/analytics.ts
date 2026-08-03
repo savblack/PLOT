@@ -82,6 +82,16 @@ export function identifyUser(id?: string | null, traits?: AnalyticsProps) {
 }
 
 /**
+ * Drop the identified user on sign-out so the next person to use the device
+ * starts as a fresh anonymous distinct_id rather than inheriting the previous
+ * account's identity. Web gets this for free by clearing its cookie on logout;
+ * a native app persists the id until told otherwise.
+ */
+export function resetAnalytics() {
+  withPostHog(ph => ph.reset());
+}
+
+/**
  * Attach properties to the current person (e.g. is_premium) so events stay
  * segmentable in PostHog without threading traits through every capture.
  */

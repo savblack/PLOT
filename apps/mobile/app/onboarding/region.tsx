@@ -12,6 +12,7 @@ import { useRouter } from 'expo-router';
 import { ONBOARDING_FLOW } from '@plot/core/copy/onboardingFlow.js';
 import { supabase } from '../../lib/supabase';
 import { setTmdbRegion } from '../../lib/tmdb';
+import { track, EVENTS } from '../../lib/analytics';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 import OnboardingScaffold from '../../components/OnboardingScaffold';
@@ -82,6 +83,7 @@ export default function Region() {
       }
     }
     setSaving(false);
+    track(EVENTS.ONBOARDING_STEP_COMPLETED, { step: 2, step_name: 'region', skipped: false });
     router.push('/onboarding/genres');
   };
 

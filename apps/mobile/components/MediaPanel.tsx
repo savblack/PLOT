@@ -16,7 +16,7 @@ import { useAppData } from '../contexts/AppDataContext';
 import { favoriteWords } from '../lib/spelling';
 import { findDuplicateCustomList } from '@plot/core/customLists.js';
 import { buildWatchLink } from '@plot/core/watchLinks.js';
-import { track, markActivated, EVENTS } from '../lib/analytics';
+import { track, EVENTS } from '../lib/analytics';
 import { fetchVerifiedAvailability, offersFromTmdb } from '@plot/core/availability.js';
 import { fetchCriticScore, pickAudienceQuote, getConsensusLine } from '@plot/core/reviews.js';
 import { canCreateCustomList, FREE_CUSTOM_LIST_CAP } from '@plot/core/premium.js';
@@ -747,14 +747,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                   {!isWatching && (
                     <TouchableOpacity
                       style={[styles.btnPrimary, inList && styles.btnSaved]}
-                      onPress={() => {
-                        // `inList` is the state *before* the toggle resolves.
-                        track(inList ? EVENTS.WATCHLIST_REMOVED : EVENTS.WATCHLIST_SAVED, {
-                          tmdb_id: itemId, media_type: itemType,
-                        });
-                        if (!inList) markActivated('first_save');
-                        watchlist.toggle({ ...details, id: itemId, media_type: itemType });
-                      }}
+                      onPress={() => watchlist.toggle({ ...details, id: itemId, media_type: itemType })}
                     >
                       {inList && <IconCheck color="#4ade80" />}
                       <Text style={[styles.btnPrimaryText, inList && { color: '#4ade80' }]}>
@@ -815,7 +808,6 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                       style={styles.btnSecondary}
                       onPress={async () => {
                         await history.logWatched({ ...details, id: itemId, media_type: itemType }, { logRewatches: profile?.log_rewatches ?? true });
-                        track(EVENTS.MARKED_WATCHED, { tmdb_id: itemId, media_type: itemType });
                         if (!isMovie && isWatching) await watching.stopWatching(itemId);
                       }}
                     >
