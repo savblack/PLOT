@@ -177,7 +177,7 @@ export default function ImportHistoryModal({ userId, onClose }: Props) {
       const results = await resolveEntries(deduped, existingWatches, (done) => setResolveDone(done));
       setResolved(results);
       setStep('preview');
-    } catch (err) {
+    } catch {
       Alert.alert('Error', 'Could not read the file. Please try again.');
       setStep('pick-file');
     }

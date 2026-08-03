@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback } from 'react';
+import { useMemo, useState } from 'react';
 import {
   View, Text, ScrollView, FlatList, Image, TouchableOpacity,
   StyleSheet, Dimensions,
@@ -139,7 +139,7 @@ export default function CalendarScreen() {
   const insets = useSafeAreaInsets();
   const { open: openPanel } = useMediaPanel();
   const { watchlist, watching } = useAppData();
-  const { events, loading, eventsForDate } = useCalendarEvents(watchlist.items, watching.items);
+  const { loading, eventsForDate } = useCalendarEvents(watchlist.items, watching.items);
 
   const today    = useMemo(() => new Date(), []);
   const todayStr = useMemo(() => dateToLocalStr(today), [today]);

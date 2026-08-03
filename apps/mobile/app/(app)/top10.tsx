@@ -267,7 +267,7 @@ export default function Top10Screen() {
   const insets  = useSafeAreaInsets();
   const { colors, resolved } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { userId, topLists, history } = useAppData();
+  const { topLists, history } = useAppData();
 
   if (topLists.loading) return <PlotLoader backgroundColor={colors.bg} color={colors.textPrimary} />;
   if (topLists.error) return <ErrorState onRetry={topLists.reload} />;

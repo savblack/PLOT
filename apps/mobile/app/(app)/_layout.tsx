@@ -4,7 +4,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import Svg, { Path, Rect, Line, Polyline, Circle } from 'react-native-svg';
 import { useTheme } from '../../contexts/ThemeContext';
-import { useDrawer } from '../../contexts/DrawerContext';
 import { spacing } from '../../lib/tokens';
 import { TAB_BAR_HEIGHT, tabBarBottom } from '../../lib/tabBar';
 
@@ -137,4 +136,3 @@ export default function AppLayout() {
   return <TabsLayout />;
 }
 
-const styles = StyleSheet.create({});

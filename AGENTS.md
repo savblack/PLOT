@@ -58,7 +58,7 @@ Run from repo root unless noted. Use **npm** (workspaces), never yarn/pnpm.
 - `npm run test:unit` — `node --test` unit tests (`apps/web/tests/unit/`)
 - `npm run test:smoke` — Playwright smoke (`vite build` + chromium; run
   `npx playwright install chromium` once on a fresh machine)
-- `npm run typecheck -w @plot/mobile` — **required when touching mobile** (ESLint ignores it)
+- `npm run typecheck -w @plot/mobile` — **required when touching mobile**; `npm run lint` covers it too
 - Deploy: web app and marketing site both auto-deploy via Cloudflare Pages on merge to `main`;
   Supabase functions via `supabase functions deploy <name>`; Worker via
   `cd apps/web/workers/tmdb-proxy && npx wrangler deploy`.
@@ -132,8 +132,8 @@ When you add or change a feature in `apps/web`:
 - **Copy strings live in the shared catalog**, not inline in JSX, so both apps read the same
   wording. See `apps/web/src/copy/`.
 
-Nothing in CI enforces this — `mobile-typecheck` only runs `tsc --noEmit`, and it can't tell
-that a feature is missing. It's a review-time responsibility.
+Nothing in CI enforces this — lint and `tsc --noEmit` can't tell that a feature is missing.
+It's a review-time responsibility.
 
 ## Architecture — seams that matter
 
@@ -165,7 +165,12 @@ file, not the `--no-verify-jwt` flag.
 
 - Add/adjust unit tests for domain logic in `packages/core` and `apps/web/tests/unit/`.
 - Run `npm run check` and any test suite touching your change before calling it done.
-- Mobile has no test runner — `tsc --noEmit` is the safety net; run it for mobile changes.
+- Mobile has no test runner — `tsc --noEmit` plus ESLint are the safety net; run both for
+  mobile changes.
+- Mobile lint is ratcheted: `no-explicit-any` (~127) and `react-hooks/refs` (~34) are `warn`,
+  not `error`, because of a pre-existing backlog. Don't add new ones, and don't "fix" a
+  warning count by widening the rule — burn them down instead. Everything else is an error
+  and must stay at zero.
 - No coverage thresholds; use judgment. Cover the logic that would silently break.
 
 ## Git & PRs
