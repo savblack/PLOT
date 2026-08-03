@@ -2,11 +2,12 @@
  * Onboarding step 1 — First name.
  * Collects the user's first name for personalized greetings.
  */
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { TextInput, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ONBOARDING_FLOW } from '@plot/core/copy/onboardingFlow.js';
 import { supabase } from '../../lib/supabase';
+import { track, EVENTS } from '../../lib/analytics';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 import OnboardingScaffold from '../../components/OnboardingScaffold';
@@ -17,6 +18,16 @@ export default function Name() {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [firstName, setFirstName] = useState('');
   const [saving,    setSaving]    = useState(false);
+
+  // Step 1 is where the auth guard drops a user with onboarding still to do,
+  // so this is the top of the funnel. Web fires it from OnboardingFlow's own
+  // mount for the same reason.
+  const started = useRef(false);
+  useEffect(() => {
+    if (started.current) return;
+    started.current = true;
+    track(EVENTS.ONBOARDING_STARTED);
+  }, []);
 
   const handleContinue = async () => {
     const trimmed = firstName.trim();
@@ -33,6 +44,7 @@ export default function Name() {
       }
     }
     setSaving(false);
+    track(EVENTS.ONBOARDING_STEP_COMPLETED, { step: 1, step_name: 'name', skipped: false });
     router.push('/onboarding/region');
   };
 

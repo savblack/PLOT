@@ -10,6 +10,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as Linking from 'expo-linking';
 import { supabase } from '../lib/supabase';
 import { setTmdbRegion } from '../lib/tmdb';
+import { identifyUser, resetAnalytics } from '../lib/analytics';
 import { consumeTraktState, exchangeTraktCode } from '../hooks/useTraktSync';
 import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
 import { AppDataProvider } from '../contexts/AppDataContext';
@@ -107,8 +108,10 @@ function RootInner() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session?.user) {
+        identifyUser(session.user.id);
         loadProfile(session.user.id);
       } else {
+        resetAnalytics();
         setOnboardingComplete(null);
       }
       setAuthReady(true);
@@ -118,8 +121,10 @@ function RootInner() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       if (session?.user) {
+        identifyUser(session.user.id);
         loadProfile(session.user.id);
       } else {
+        resetAnalytics();
         setOnboardingComplete(null);
       }
     });
