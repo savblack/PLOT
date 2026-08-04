@@ -177,15 +177,12 @@ async function loadReleases(): Promise<ReleasesData> {
   return { today, comingSoon, recent };
 }
 
-// ── Card (poster + type chip + provider badge + optional day label) ───
+// ── Card (poster + provider badge + optional day label) ───────────────
 function ReleaseCard({ item, providerLogo, onPress }: { item: ReleaseItem; providerLogo?: string | null; onPress: () => void }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const title = item.title || item.name || '';
   const img   = posterUrl(item.poster_path, 'w185') || backdropUrl(item.backdrop_path, 'w300');
-  const isTV  = item.media_type === 'tv';
-  const chipBg = isTV ? colors.chipEpisode : item._cinema ? colors.chipCinema : colors.chipStreaming;
-  const chipLabel = isTV ? 'TV' : item._cinema ? 'Cinema' : 'Movie';
   const logo = logoUrl(providerLogo);
 
   return (
@@ -195,9 +192,6 @@ function ReleaseCard({ item, providerLogo, onPress }: { item: ReleaseItem; provi
           ? <Image source={{ uri: img }} style={StyleSheet.absoluteFill} resizeMode="cover" />
           : <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.surfaceSunken }]} />
         }
-        <View style={[styles.chip, { backgroundColor: chipBg }]}>
-          <Text style={styles.chipText}>{chipLabel}</Text>
-        </View>
         {logo && (
           <View style={styles.platformBadge}>
             <Image source={{ uri: logo }} style={StyleSheet.absoluteFill} resizeMode="cover" />
@@ -403,14 +397,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     backgroundColor: colors.surfaceSunken,
     marginBottom: spacing.sm,
   },
-  chip: {
-    position: 'absolute',
-    top: 6, left: 6,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: radii.badge,
-  },
-  chipText: { fontFamily: fontFamily.sansBold, fontSize: 9, color: '#fff' },
   platformBadge: {
     position: 'absolute',
     bottom: 6, right: 6,

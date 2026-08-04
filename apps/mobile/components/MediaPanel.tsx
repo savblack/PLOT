@@ -743,7 +743,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
 
                 {/* ── Action buttons ── */}
                 <View style={styles.actionsCol}>
-                  {/* Save */}
+                  {/* Watchlist — same copy as the web panel's primary action */}
                   {!isWatching && (
                     <TouchableOpacity
                       style={[styles.btnPrimary, inList && styles.btnSaved]}
@@ -751,7 +751,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                     >
                       {inList && <IconCheck color="#4ade80" />}
                       <Text style={[styles.btnPrimaryText, inList && { color: '#4ade80' }]}>
-                        {inList ? 'Saved' : 'Save'}
+                        {inList ? 'In watchlist' : 'Add to watchlist'}
                       </Text>
                     </TouchableOpacity>
                   )}
