@@ -613,7 +613,9 @@
       position: relative;
       background: var(--dark);
       color: var(--text-dark);
-      padding: 8rem 2rem;
+      /* Extra top padding gives the black → poster fade room to breathe,
+         so the headline never sits in the thick of the gradient */
+      padding: 13rem 2rem 8rem;
       overflow: hidden;
       isolation: isolate;
       z-index: 3;
@@ -654,6 +656,9 @@
       inset: 0;
       z-index: -1;
       background:
+        /* mirrors the bottom fade below, so black bleeds into the wall
+           at both edges instead of cutting off hard at the top */
+        linear-gradient(to bottom, var(--dark) 1%, transparent 38%),
         linear-gradient(to bottom, transparent 62%, var(--dark) 99%),
         radial-gradient(ellipse 72% 78% at 50% 50%, rgba(12,12,12,0.46) 0%, rgba(12,12,12,0.82) 52%, rgba(12,12,12,0.96) 100%);
     }
