@@ -58,6 +58,12 @@ export const EVENTS = Object.freeze({
   USER_UNFOLLOWED: 'user_unfollowed',
   IMPORT_STARTED: 'import_started',
   IMPORT_COMPLETED: 'import_completed',
+  // Marketing email consent. `source` distinguishes the Settings toggle from the
+  // in-app prompt so we can tell which surface actually earns opt-ins.
+  MARKETING_EMAILS_OPTED_IN: 'marketing_emails_opted_in',
+  MARKETING_EMAILS_OPTED_OUT: 'marketing_emails_opted_out',
+  DIGEST_PROMPT_VIEWED: 'digest_prompt_viewed',
+  DIGEST_PROMPT_DISMISSED: 'digest_prompt_dismissed',
   // Settings / account actions
   FEEDBACK_SUBMITTED: 'feedback_submitted',
   ACCOUNT_DELETED: 'account_deleted',

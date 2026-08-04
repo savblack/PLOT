@@ -92,7 +92,7 @@ Deno.serve(async (req) => {
         return page('PLOT', '<h1>Unsubscribed</h1><p>You will not receive the PLOT digest again.</p>');
       }
       return page('PLOT — unsubscribe', `
-        <h1>Unsubscribe from the PLOT weekly digest?</h1>
+        <h1>Unsubscribe from the PLOT digest?</h1>
         <button onclick="fetch(location.href,{method:'POST'}).then(()=>location.reload())">Unsubscribe</button>`);
     }
 

@@ -85,6 +85,13 @@ async function providersForTitle(item: WatchlistItem, region: string, tmdbKey: s
   return body?.results?.[region]?.flatrate ?? []
 }
 
+// This alert is transactional — someone asked to be told when their saved
+// titles land — so the only marketing here is one link to the public archive,
+// where subscribing is the reader's move to make. Nothing is opted into by
+// receiving this.
+const ALERT_FOOTER = `<p style="font-size:12px;color:#666;line-height:1.6">You can change these alerts in PLOT Settings.<br>`
+  + `Like knowing what's worth watching? <a href="https://theplot.tv/newsletter?utm_source=app&utm_medium=email&utm_campaign=availability_alert" style="color:#666">Read the latest digest</a>.</p>`
+
 async function sendEmail(resendKey: string, email: string, matches: Match[]) {
   const rows = matches.map(match => {
     const link = `https://app.theplot.tv/save?media_type=${encodeURIComponent(match.media_type)}&tmdb_id=${match.tmdb_id}&src=availability-alert`
@@ -97,7 +104,7 @@ async function sendEmail(resendKey: string, email: string, matches: Match[]) {
       from: FROM_EMAIL,
       to: [email],
       subject: `${matches.length === 1 ? 'A title on your PLOT watchlist is ready' : `${matches.length} watchlist titles are ready`}`,
-      html: `<div style="font-family:Arial,sans-serif;max-width:560px;color:#171717"><h2 style="margin:0 0 12px">Ready to watch</h2><p style="line-height:1.5">A title on your PLOT watchlist is now included with one of your selected streaming platforms or channels.</p><ul style="padding-left:20px;line-height:1.5">${rows}</ul><p style="font-size:12px;color:#666">You can change these alerts in PLOT Settings.</p></div>`,
+      html: `<div style="font-family:Arial,sans-serif;max-width:560px;color:#171717"><h2 style="margin:0 0 12px">Ready to watch</h2><p style="line-height:1.5">A title on your PLOT watchlist is now included with one of your selected streaming platforms or channels.</p><ul style="padding-left:20px;line-height:1.5">${rows}</ul>${ALERT_FOOTER}</div>`,
     }),
   })
   if (!response.ok) throw new Error(`Resend request failed (${response.status}): ${await response.text()}`)

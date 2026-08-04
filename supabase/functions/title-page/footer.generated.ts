@@ -7,6 +7,7 @@ export const FOOTER_HTML = `
       <div class="footer-nav">
         <a href="/" data-cta="footer">Home</a>
         <a href="/whats-on" data-cta="footer">What's On</a>
+        <a href="/newsletter" data-cta="footer">Newsletter</a>
         <a href="https://app.theplot.tv/login" data-cta="footer">Log in</a>
         <a href="https://app.theplot.tv/signup" data-cta="footer">Sign up</a>
         <a href="/privacy.html" data-cta="footer">Privacy</a>

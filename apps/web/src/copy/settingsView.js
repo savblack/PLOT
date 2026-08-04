@@ -45,6 +45,7 @@ export const SETTINGS_VIEW = {
     failedToSaveChannels: 'Failed to save your channels.',
     failedToSaveGenres: 'Failed to save your genres.',
     failedToUpdateAvailabilityAlerts: 'Failed to update availability alerts.',
+    failedToUpdateMarketingEmails: 'Failed to update your email preference.',
     failedToClearWatchHistory: 'Failed to clear watch history.',
     failedToClearLists: 'Failed to clear your lists.',
     failedToDeleteCustomList: 'Failed to delete a custom list.',
@@ -144,6 +145,14 @@ export const SETTINGS_VIEW = {
     sentNotice: 'Sent — check your inbox.',
     idleHint: "Email me when a saved title arrives on a streaming platform or channel I've selected",
     sendTest: 'Send test',
+  },
+
+  // Deliberately makes no promise about frequency — the digest is sent by hand,
+  // so a stated cadence would be a promise nothing keeps. See copy/digestNudge.js.
+  marketingEmails: {
+    label: 'Email digest',
+    onHint: "You'll get the PLOT digest by email. Unsubscribe any time.",
+    offHint: 'The chart, what to watch this weekend, and what just landed on streaming.',
   },
 
   premium: {

@@ -9,6 +9,7 @@ import { getButtonLikeProps } from '../utils/interactive.js';
 import { moveSavedShowToWatching } from '../utils/mediaStatus.js';
 import MultiSelect from './MultiSelect.jsx';
 import LoadingSpinner from './LoadingSpinner.jsx';
+import DigestNudge from './DigestNudge.jsx';
 import { MEDIA } from '../copy/media.js';
 import { WATCHLIST_VIEW } from '../copy/watchlistView.js';
 
@@ -120,6 +121,10 @@ export default function WatchlistView() {
           )}
         </div>
       </div>
+
+      {/* Self-hiding: only renders for someone with a few saves who hasn't
+          already opted in or said no. */}
+      <DigestNudge />
 
       {isEmpty ? (
         <div className="empty-state" style={{ marginTop: '1rem' }}>
