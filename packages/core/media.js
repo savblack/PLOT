@@ -25,8 +25,23 @@ export function releaseDateFromItem(item) {
   return item?.release_date || item?.first_air_date || null;
 }
 
+/**
+ * TMDB reports genres in two different shapes and which one you get depends on
+ * the endpoint, not the title:
+ *   list/search/trending → genre_ids: [18, 80]
+ *   movie|tv details     → genres: [{ id: 18, name: 'Drama' }]
+ * A detail payload has no genre_ids at all, so reading that field directly
+ * silently yields [] for anything saved from the media panel. Normalise both.
+ *
+ * @param {any} item
+ * @returns {number[]}
+ */
 export function genreIdsFromItem(item) {
-  return Array.isArray(item?.genre_ids) ? item.genre_ids : [];
+  if (Array.isArray(item?.genre_ids)) return item.genre_ids.filter(Number.isInteger);
+  if (Array.isArray(item?.genres)) {
+    return item.genres.map(g => (typeof g === 'number' ? g : g?.id)).filter(Number.isInteger);
+  }
+  return [];
 }
 
 export function providerIdsForRegion(item, region) {
