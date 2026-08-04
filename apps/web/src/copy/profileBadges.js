@@ -1,8 +1,4 @@
-// Labels for the badges that sit next to a display name. Both are read by
-// screen readers, so they have to say what the badge means, not what it looks
-// like ("Supporter", never "pink heart").
-
-export const PROFILE_BADGES = {
-  premium: 'PLOT Premium',
-  supporter: 'Supporter',
-};
+// Shared with the mobile app, so the strings live in @plot/core/copy.
+// Re-exported here so src/copy/ stays the one place the web app — and the
+// Storybook Content page — looks for copy.
+export { PROFILE_BADGES } from '@plot/core/copy/profileBadges.js';
