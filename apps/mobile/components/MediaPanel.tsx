@@ -16,6 +16,8 @@ import { useAppData } from '../contexts/AppDataContext';
 import { favoriteWords } from '../lib/spelling';
 import { findDuplicateCustomList } from '@plot/core/customLists.js';
 import { buildWatchLink } from '@plot/core/watchLinks.js';
+import { MEDIA_PANEL } from '@plot/core/copy/mediaPanel.js';
+import { COMMON } from '@plot/core/copy/common.js';
 import { track, EVENTS } from '../lib/analytics';
 import { fetchVerifiedAvailability, offersFromTmdb } from '@plot/core/availability.js';
 import { fetchCriticScore, pickAudienceQuote, getConsensusLine } from '@plot/core/reviews.js';
@@ -336,7 +338,7 @@ function AddToListSheet({ item, customLists, topLists, onClose }: {
     }
     setBusy(true);
     const newList = await createList(trimmed);
-    if (!newList) { setBusy(false); setError('Could not create the list. Please try again.'); return; }
+    if (!newList) { setBusy(false); setError(MEDIA_PANEL.couldNotCreateList); return; }
     await addItem(newList.id, item);   // create + immediately add this title, like web
     setBusy(false); setCreating(false); setName(''); setError('');
   };
@@ -353,7 +355,7 @@ function AddToListSheet({ item, customLists, topLists, onClose }: {
             <TouchableOpacity style={styles.lsRow} onPress={() => setTopOpen(o => !o)} activeOpacity={0.7}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.lsName}>Top 10 {topListType === 'tv' ? 'TV Shows' : 'Movies'}</Text>
-                <Text style={styles.lsCount}>{currentRank ? `Currently #${currentRank}` : 'Not ranked'}</Text>
+                <Text style={styles.lsCount}>{currentRank ? MEDIA_PANEL.currentlyRanked(currentRank) : MEDIA_PANEL.notRanked}</Text>
               </View>
               <View style={[styles.lsCheck, currentRank && styles.lsCheckOn]}>
                 {currentRank ? <Text style={styles.lsTopCheckNum}>{currentRank}</Text> : null}
@@ -773,7 +775,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                     >
                       <IconList active={isInAnyList} />
                       <Text style={[styles.btnSecondaryText, isInAnyList && { color: colors.accent }]}>
-                        {isInAnyList ? 'On list' : 'List'}
+                        {isInAnyList ? MEDIA_PANEL.onList : MEDIA_PANEL.list}
                       </Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.btnSecondary} onPress={handleShare}>
@@ -812,7 +814,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                       }}
                     >
                       <IconCheck />
-                      <Text style={styles.btnSecondaryText}>{isMovie ? 'Mark watched' : 'Mark all watched'}</Text>
+                      <Text style={styles.btnSecondaryText}>{isMovie ? MEDIA_PANEL.markWatched : 'Mark all watched'}</Text>
                     </TouchableOpacity>
                   </View>
                 ) : (
@@ -834,7 +836,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                         onPress={() => setLocalDnf(d => !d)}
                       >
                         {localDnf && <IconCheck color="#fb923c" />}
-                        <Text style={[styles.dnfText, localDnf && { color: '#fb923c' }]}>Didn't finish</Text>
+                        <Text style={[styles.dnfText, localDnf && { color: '#fb923c' }]}>{MEDIA_PANEL.didntFinish}</Text>
                       </TouchableOpacity>
                     </View>
                     <TextInput
@@ -857,7 +859,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                           setSavingReview(false);
                         }}
                       >
-                        <Text style={styles.btnPrimaryText}>{savingReview ? 'Saving…' : reviewDirty ? 'Save changes' : hasSavedReview ? 'Edit review' : 'Save review'}</Text>
+                        <Text style={styles.btnPrimaryText}>{savingReview ? COMMON.saving : reviewDirty ? MEDIA_PANEL.saveChanges : hasSavedReview ? MEDIA_PANEL.editReview : MEDIA_PANEL.saveReview}</Text>
                       </TouchableOpacity>
                     )}
                   </View>
