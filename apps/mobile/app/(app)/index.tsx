@@ -62,10 +62,19 @@ interface PlatformData extends StreamingProvider {
 }
 
 // ── Bookmark SVG ─────────────────────────────────────────────────────
-function BookmarkIcon({ size = 14, color = '#fff', filled = false }: { size?: number; color?: string; filled?: boolean }) {
+function BookmarkIcon({ size = 14, color = '#fff', filled = false, strokeWidth = 2 }: { size?: number; color?: string; filled?: boolean; strokeWidth?: number }) {
   return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? color : 'none'} stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? color : 'none'} stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
       <Path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+    </Svg>
+  );
+}
+
+// ── Heart SVG — same outline/fill treatment as the web card heart ─────
+function HeartIcon({ size = 15, color = '#fff', filled = false, strokeWidth = 2.5 }: { size?: number; color?: string; filled?: boolean; strokeWidth?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? color : 'none'} stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
     </Svg>
   );
 }
@@ -85,8 +94,6 @@ function PosterCard({ item, onPress, saved, onSave, isFav, onFavorite }: {
   const fw       = favoriteWords(profile?.region);
   const title    = item.title || item.name || '';
   const img      = posterUrl(item.poster_path, 'w185');
-  const type     = item.media_type === 'tv' ? 'TV' : 'Movie';
-  const chipColor = item.media_type === 'tv' ? colors.chipEpisode : colors.chipStreaming;
 
   return (
     <TouchableOpacity style={[styles.card, { width: CARD_W }]} onPress={onPress} activeOpacity={0.8}>
@@ -95,30 +102,25 @@ function PosterCard({ item, onPress, saved, onSave, isFav, onFavorite }: {
           ? <Image source={{ uri: img }} style={StyleSheet.absoluteFill} resizeMode="cover" />
           : <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.surfaceSunken }]} />
         }
-        <View style={[styles.chip, { backgroundColor: chipColor }]}>
-          <Text style={styles.chipText}>{type}</Text>
-        </View>
-        {/* Heart — favourite (bottom left) */}
+        {/* Heart — favourite (top left, in the former type-chip slot) */}
         <TouchableOpacity
-          style={[styles.saveBtn, styles.saveBtnLeft]}
+          style={[styles.cardActionBtn, styles.cardActionBtnLeft]}
           onPress={onFavorite}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           accessibilityLabel={isFav ? `Remove ${fw.nounLower}` : `Add ${fw.nounLower}`}
           accessibilityRole="button"
         >
-          <Text style={{ color: isFav ? colors.accent : '#fff', fontSize: 13 }}>
-            {isFav ? '♥' : '♡'}
-          </Text>
+          <HeartIcon color={isFav ? colors.accent : '#fff'} filled={isFav} />
         </TouchableOpacity>
-        {/* Bookmark — watchlist (bottom right) */}
+        {/* Bookmark — watchlist (top right) */}
         <TouchableOpacity
-          style={styles.saveBtn}
+          style={styles.cardActionBtn}
           onPress={onSave}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           accessibilityLabel={saved ? 'Remove from watchlist' : 'Add to watchlist'}
           accessibilityRole="button"
         >
-          <BookmarkIcon color={saved ? colors.accent : '#fff'} filled={saved} />
+          <BookmarkIcon size={15} strokeWidth={2.5} filled={saved} />
         </TouchableOpacity>
       </View>
       <Text style={styles.cardTitle} numberOfLines={2}>{title}</Text>
@@ -360,8 +362,6 @@ function PosterCardRanked({ item, rank, saved, onSave, isFav, onFavorite }: {
   const fw        = favoriteWords(profile?.region);
   const title     = item.title || item.name || '';
   const img       = posterUrl(item.poster_path, 'w185');
-  const type      = item.media_type === 'tv' ? 'TV' : 'Movie';
-  const chipColor = item.media_type === 'tv' ? colors.chipEpisode : colors.chipStreaming;
 
   return (
     <TouchableOpacity style={[styles.card, { width: CARD_W }]} activeOpacity={0.8}>
@@ -370,32 +370,27 @@ function PosterCardRanked({ item, rank, saved, onSave, isFav, onFavorite }: {
           ? <Image source={{ uri: img }} style={StyleSheet.absoluteFill} resizeMode="cover" />
           : <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.surfaceSunken }]} />
         }
-        <View style={[styles.chip, { backgroundColor: chipColor }]}>
-          <Text style={styles.chipText}>{type}</Text>
-        </View>
-        {/* Rank number — top right, no circle */}
+        {/* Rank number — bottom left, no circle (matches web) */}
         <Text style={styles.rankBadgeText}>{rank}</Text>
-        {/* Heart — favourite (bottom left) */}
+        {/* Heart — favourite (top left, in the former type-chip slot) */}
         <TouchableOpacity
-          style={[styles.saveBtn, styles.saveBtnLeft]}
+          style={[styles.cardActionBtn, styles.cardActionBtnLeft]}
           onPress={onFavorite}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           accessibilityLabel={isFav ? `Remove ${fw.nounLower}` : `Add ${fw.nounLower}`}
           accessibilityRole="button"
         >
-          <Text style={{ color: isFav ? colors.accent : '#fff', fontSize: 13 }}>
-            {isFav ? '♥' : '♡'}
-          </Text>
+          <HeartIcon color={isFav ? colors.accent : '#fff'} filled={isFav} />
         </TouchableOpacity>
-        {/* Bookmark — watchlist (bottom right) */}
+        {/* Bookmark — watchlist (top right) */}
         <TouchableOpacity
-          style={styles.saveBtn}
+          style={styles.cardActionBtn}
           onPress={onSave}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           accessibilityLabel={saved ? 'Remove from watchlist' : 'Add to watchlist'}
           accessibilityRole="button"
         >
-          <BookmarkIcon size={13} color={saved ? colors.accent : '#fff'} filled={saved} />
+          <BookmarkIcon size={15} strokeWidth={2.5} filled={saved} />
         </TouchableOpacity>
       </View>
       <Text style={styles.cardTitle} numberOfLines={2}>{title}</Text>
@@ -893,33 +888,25 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     backgroundColor: colors.surfaceSunken,
     marginBottom: spacing.sm,
   },
-  chip: {
+  // Naked corner icons over the poster — same treatment as the web card
+  // buttons (no pill, no circle; a drop shadow keeps them legible on light
+  // artwork).
+  cardActionBtn: {
     position: 'absolute',
-    top: 6,
-    left: 6,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: radii.badge,
-  },
-  chipText: {
-    fontFamily: fontFamily.sansBold,
-    fontSize: 9,
-    color: '#fff',
-  },
-  saveBtn: {
-    position: 'absolute',
-    bottom: 6,
-    right: 6,
-    width: iconButtonSize.md,
-    height: iconButtonSize.md,
-    borderRadius: iconButtonSize.md / 2,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    top: 3,
+    right: 3,
+    width: iconButtonSize.lg,
+    height: iconButtonSize.lg,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.65,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 1 },
   },
-  saveBtnLeft: {
+  cardActionBtnLeft: {
     right: undefined,
-    left: 6,
+    left: 3,
   },
   cardTitle: {
     fontFamily: fontFamily.sans,
@@ -1015,8 +1002,8 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   // ── Rank number on poster card ──
   rankBadgeText: {
     position: 'absolute',
-    top: 10,
-    right: 12,
+    bottom: 4,
+    left: 10,
     fontFamily: fontFamily.serif,
     fontSize: 28,
     color: '#fff',
