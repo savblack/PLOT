@@ -466,9 +466,10 @@ function DiscoverContent({ openPanel, watchlist, openSections, setOpenSections, 
   const hotRail           = applyFilters(data.hotRail);
   const weekly            = applyFilters(data.weekly);
   const bingedShows       = applyFilters(data.bingedShows);
+  const cinemaMovies      = applyFilters(data.cinemaMovies);
   const anticipatedMovies = applyFilters(data.anticipatedMovies);
   const forYou            = applyFilters(forYouItems);
-  const hasContent = hero || hotRail.length > 0 || weekly.length > 0 || bingedShows.length > 0 || anticipatedMovies.length > 0 || platformList.length > 0 || forYou.length > 0;
+  const hasContent = hero || hotRail.length > 0 || weekly.length > 0 || bingedShows.length > 0 || cinemaMovies.length > 0 || anticipatedMovies.length > 0 || platformList.length > 0 || forYou.length > 0;
 
   if (!hasContent) {
     return (
@@ -574,6 +575,25 @@ function DiscoverContent({ openPanel, watchlist, openSections, setOpenSections, 
           {openSections.weekly && weekly.map((item, i) => (
             <ChartRow key={item.id} item={item} rank={i + 1} openPanel={openPanel} watchlist={watchlist} favorites={favorites} region={profile?.region} />
           ))}
+        </section>
+      )}
+
+      {cinemaMovies.length > 0 && (
+        <section className="discover-section discover-binge-section">
+          <DiscoverSectionHeader
+            kicker={MEDIA.inCinemas}
+            title="Now Showing"
+            open={openSections.cinemas}
+            onToggle={() => toggleSection('cinemas')}
+            className="discover-binge-header"
+          />
+          {openSections.cinemas && (
+            <BingeRail>
+              {cinemaMovies.map(item => (
+                <BingeCard key={item.id} item={item} openPanel={openPanel} watchlist={watchlist} />
+              ))}
+            </BingeRail>
+          )}
         </section>
       )}
 
@@ -694,6 +714,7 @@ export default function DiscoverView() {
     hot: true,
     forYou: true,
     binge: true,
+    cinemas: true,
     anticipated: true,
     weekly: true,
     platforms: true,
