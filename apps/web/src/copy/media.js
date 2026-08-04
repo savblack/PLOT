@@ -24,6 +24,7 @@ export const MEDIA = {
   onThisDay: 'On This Day',
   watched: 'Watched',
   comingSoon: 'Coming Soon',
+  inCinemas: 'In Cinemas',
   removeFromList: 'Remove from list',
   addToList: 'Add to list',
 };

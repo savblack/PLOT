@@ -269,13 +269,20 @@ export const tmdb = {
     const today = localDateStr();
     const sixMonths = new Date(); sixMonths.setMonth(sixMonths.getMonth() + 6);
     const end = dateToLocalStr(sixMonths);
+    // Anniversary re-releases and 4K restorations are recorded as future release
+    // dates against decades-old films, so a plain release-date window drags
+    // titles like The Prestige into "upcoming". Bounding the *primary* release
+    // date keeps them out while still allowing a film that opened elsewhere
+    // recently and reaches this region later.
+    const twelveMonthsAgo = new Date(); twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
+    const earliestPrimary = dateToLocalStr(twelveMonthsAgo);
     const providerParams = providerIds.length
       ? { watch_region: userRegion, with_watch_providers: providerIds.join('|'), with_watch_monetization_types: monetizationTypes }
       : {};
     // `region` makes TMDB filter/sort by the release date for that market
     // (theatrical dates vary by country) instead of always the primary
     // (usually US) release date.
-    const baseParams = { 'release_date.gte': today, 'release_date.lte': end, sort_by: 'popularity.desc', region: userRegion, ...providerParams };
+    const baseParams = { 'release_date.gte': today, 'release_date.lte': end, 'primary_release_date.gte': earliestPrimary, sort_by: 'popularity.desc', region: userRegion, ...providerParams };
     const [theatricalPages, streamingPages] = await Promise.all([
       Promise.all([1, 2, 3, 4, 5].map(page =>
         fetchFromTMDB('/discover/movie', { ...baseParams, 'with_release_type': '2|3', page })
