@@ -109,6 +109,26 @@ Question posts are generic everywhere. They are not tied to a specific title.
 ## Newsletter and metrics
 
 - Newsletter sends are logged as weekly issue snapshots for learning.
+- Every logged issue is also published at `theplot.tv/newsletter/<week_start>`,
+  with an index at `theplot.tv/newsletter`. Rendered by the `marketing-feed`
+  edge function (reserved `newsletter` route), proxied by
+  `apps/website/functions/newsletter.js`. Nothing extra to run: sending an issue
+  publishes it.
+- Recipients come from the `marketing_recipient_list()` RPC, not a plain select
+  on `marketing_subscribers` — app opt-ins are linked to an account whose email
+  can change, and the RPC resolves the current address from `auth.users`.
+- Two ways to subscribe now: the forms on theplot.tv, and the in-app opt-in
+  (Settings toggle + the watchlist prompt) which writes `profiles.marketing_emails`
+  and is mirrored onto the sending list by a database trigger.
+- **No opt-in surface states a send frequency**, because `npm run newsletter` has
+  no cron behind it — the digest goes out when someone runs it. If a schedule is
+  added (a workflow on a cron, like `marketing-publish.yml`), the copy can start
+  promising a cadence again: `apps/web/src/copy/digestNudge.js`,
+  `apps/web/src/copy/settingsView.js` (`marketingEmails`), the archive strings in
+  `supabase/functions/marketing-feed/index.ts`, and the homepage newsletter hint
+  and success message in `apps/website/index.html`.
+- The trending chart page carries no cadence claim either, for the same reason:
+  `marketing/snapshot/write-snapshot.mjs` is also manual.
 - IG and Threads metrics are collected automatically for the Sunday learning loop.
 - X is treated as copy-diff only unless a real analytics path is added later.
 - Missing metrics do not block learning; copy diffs still feed rule updates.

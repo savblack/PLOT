@@ -1,5 +1,5 @@
-// /whats-on and /whats-on/<slug> — proxy to the `marketing-feed` Edge Function.
-// Port of apps/website/api/whats-on.mjs.
+// /whats-on, /whats-on/<slug> and /newsletter[/<issue>] — proxy to the
+// `marketing-feed` Edge Function. Port of apps/website/api/whats-on.mjs.
 import { SUPABASE_FN, AUTH_HEADERS, htmlError } from './proxy.js';
 
 const UPSTREAM = `${SUPABASE_FN}/marketing-feed`;
@@ -7,13 +7,19 @@ const FALLBACK = '<!doctype html><meta charset="utf-8">'
   + '<title>What\'s On</title>'
   + '<p style="font-family:sans-serif;padding:40px">What\'s On is briefly unavailable. Please try again in a moment.</p>';
 
-export async function whatsOn(request, slug) {
+/**
+ * @param {Request} request
+ * @param {string|null} slug   trailing path segment, or null for an index
+ * @param {string|null} prefix reserved first segment (e.g. 'newsletter'); the
+ *                             feed function routes on it the way it does 'chart'
+ */
+export async function marketingFeedPage(request, slug, prefix = null) {
   // Forward the index's query params (page, type, utm_*). The slug is a path
   // segment on Pages, so it isn't in searchParams.
   const { searchParams } = new URL(request.url);
   const qs = searchParams.toString();
-  const path = slug ? `/${encodeURIComponent(slug)}` : '';
-  const url = `${UPSTREAM}${path}${qs ? `?${qs}` : ''}`;
+  const path = [prefix, slug].filter(Boolean).map(encodeURIComponent).join('/');
+  const url = `${UPSTREAM}${path ? `/${path}` : ''}${qs ? `?${qs}` : ''}`;
 
   let upstream;
   try {
@@ -41,3 +47,7 @@ export async function whatsOn(request, slug) {
     },
   });
 }
+
+export const whatsOn = (request, slug) => marketingFeedPage(request, slug);
+
+export const newsletter = (request, slug) => marketingFeedPage(request, slug, 'newsletter');

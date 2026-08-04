@@ -732,6 +732,8 @@
     .woc-form button:disabled { opacity: 0.6; cursor: default; }
 
     .woc-hint { font-size: 0.76rem; font-weight: 300; color: rgba(240,239,232,0.5); align-self: stretch; text-align: center; }
+    .woc-hint a { color: rgba(240,239,232,0.72); text-decoration: none; border-bottom: 1px solid rgba(240,239,232,0.24); transition: color 0.2s, border-color 0.2s; }
+    .woc-hint a:hover { color: #F0EFE8; border-color: rgba(240,239,232,0.6); }
     .woc-msg { font-size: 0.78rem; color: rgba(240,239,232,0.6); min-height: 1.1em; padding-left: 0.5rem; }
 
     /* Honeypot: invisible to humans, tempting to bots */
@@ -1984,7 +1986,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             <input type="text" name="website" class="fn-website" tabindex="-1" autocomplete="off" aria-hidden="true">
             <button type="submit">Subscribe</button>
           </form>
-          <span class="woc-hint">Or get it in your inbox, weekly.</span>
+          <span class="woc-hint">Or get it in your inbox. <a href="/newsletter" data-cta="newsletter-archive">Read the latest issue &rarr;</a></span>
           <div class="woc-msg" id="newsletterMsg" role="status"></div>
         </div>
       </div>
@@ -1999,6 +2001,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <div class="footer-nav">
         <a href="/" data-cta="footer">Home</a>
         <a href="/whats-on" data-cta="footer">What's On</a>
+        <a href="/newsletter" data-cta="footer">Newsletter</a>
         <a href="https://app.theplot.tv/login" data-cta="footer">Log in</a>
         <a href="https://app.theplot.tv/signup" data-cta="footer">Sign up</a>
         <a href="/privacy.html" data-cta="footer">Privacy</a>
@@ -2060,7 +2063,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           });
         });
       }
-      wire(document.getElementById('newsletterForm'), document.getElementById('newsletterMsg'), "You're in — first digest this Sunday.", 'newsletter');
+      wire(document.getElementById('newsletterForm'), document.getElementById('newsletterMsg'), "You're in. We'll email you the next issue.", 'newsletter');
       wire(document.getElementById('appNotifyForm'), document.getElementById('appNotifyMsg'), "You're on the list — we'll email you the moment the app lands.", 'mobile-app');
     })();
     // Cache by full query string so identical calls across the page (e.g.

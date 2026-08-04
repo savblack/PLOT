@@ -1083,6 +1083,7 @@ export default function SettingsView() {
   const [showGuideChannels,   setShowGuideChannels]   = useState(false);
   const [savingProviders,     setSavingProviders]     = useState(false);
   const [savingAvailabilityAlerts, setSavingAvailabilityAlerts] = useState(false);
+  const [savingMarketingEmails, setSavingMarketingEmails] = useState(false);
   const [testingAvailabilityAlert, setTestingAvailabilityAlert] = useState(false);
   const [testAlertNotice,     setTestAlertNotice]     = useState(null); // null|'sent'|'error'
   const [savingGuideChannels, setSavingGuideChannels] = useState(false);
@@ -1209,6 +1210,7 @@ export default function SettingsView() {
 
   const providers      = providerDraft ?? profile?.streaming_providers ?? [];
   const availabilityAlertsEnabled = !!profile?.watchlist_availability_alerts;
+  const marketingEmailsEnabled = !!profile?.marketing_emails;
   const guideChannels  = guideChannelDraft ?? profile?.guide_channels ?? [];
   const genres         = genreDraft ?? profile?.genres ?? [];
   const region         = profile?.region || 'US';
@@ -1302,6 +1304,26 @@ export default function SettingsView() {
       setActionError(error.message || SETTINGS_VIEW.errors.failedToUpdateAvailabilityAlerts);
       return;
     }
+    refreshProfile();
+  };
+
+  // Marketing consent, so it only ever moves on a deliberate action here (or in
+  // the digest prompt). A database trigger mirrors the flag onto the sending
+  // list, which is also what an unsubscribe link writes back to.
+  const toggleMarketingEmails = async () => {
+    if (savingMarketingEmails) return;
+    const next = !marketingEmailsEnabled;
+    setActionError(null);
+    setSavingMarketingEmails(true);
+    const { error } = await supabase.from('profiles')
+      .update({ marketing_emails: next })
+      .eq('id', user.id);
+    setSavingMarketingEmails(false);
+    if (error) {
+      setActionError(error.message || SETTINGS_VIEW.errors.failedToUpdateMarketingEmails);
+      return;
+    }
+    track(next ? EVENTS.MARKETING_EMAILS_OPTED_IN : EVENTS.MARKETING_EMAILS_OPTED_OUT, { source: 'settings' });
     refreshProfile();
   };
 
@@ -2168,6 +2190,27 @@ export default function SettingsView() {
             </div>
           </div>
         )}
+
+        <div className="settings-row" style={{ cursor: 'default' }}>
+          <div className="settings-row-left">
+            <div className="settings-row-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 6 10-6"/></svg>
+            </div>
+            <div>
+              <div className="settings-row-label">{SETTINGS_VIEW.marketingEmails.label}</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.12rem' }}>
+                {marketingEmailsEnabled
+                  ? SETTINGS_VIEW.marketingEmails.onHint
+                  : SETTINGS_VIEW.marketingEmails.offHint}
+              </div>
+            </div>
+          </div>
+          <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
+            <SettingsTextAction onClick={toggleMarketingEmails} disabled={savingMarketingEmails}>
+              {savingMarketingEmails ? COMMON.saving : marketingEmailsEnabled ? COMMON.turnOff : COMMON.turnOn}
+            </SettingsTextAction>
+          </div>
+        </div>
       </div>
 
       {/* PLOT Premium — only shown to existing subscribers; checkout is offline for now */}

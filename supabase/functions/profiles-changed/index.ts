@@ -12,13 +12,19 @@
  * the dashboard can target it directly - no Vault/SQL-trigger workaround
  * needed (contrast supabase/notify-signup-trigger.sql).
  *
+ * marketing_emails is handled separately from the other fields: it is consent,
+ * so it also has to move the contact on and off the marketable list, not just
+ * set an attribute.
+ *
  * Required secrets:
- *   BREVO_API_KEY   - Brevo API key; unset skips the sync entirely
- *   BREVO_LIST_ID   - Brevo "PLOT App Users" list id
+ *   BREVO_API_KEY            - Brevo API key; unset skips the sync entirely
+ *   BREVO_LIST_ID            - Brevo "PLOT App Users" list id
+ *   BREVO_MARKETING_LIST_ID  - Brevo "PLOT Marketing Subscribers" list id;
+ *                              unset skips only the opt-in half of the sync
  */
 import { hasServiceRoleBearer } from '../_shared/internalWebhook.ts'
 import { captureSentryError } from '../_shared/sentry.ts'
-import { upsertBrevoContact } from '../_shared/brevo.ts'
+import { upsertBrevoContact, removeContactFromList } from '../_shared/brevo.ts'
 import { adminClient } from '../_shared/supabaseAdmin.ts'
 
 const TRACKED_FIELDS = ['username', 'first_name', 'is_premium'] as const
@@ -42,6 +48,20 @@ function relevantChanges(
     if (!oldRecord || oldRecord[field] !== value) attributes[BREVO_ATTRIBUTE_NAME[field]] = value
   }
   return attributes
+}
+
+// Consent changed in either direction? Null when it didn't, so an unrelated
+// profile edit never touches the marketable list.
+function marketingConsentChange(
+  record: Record<string, unknown>,
+  oldRecord: Record<string, unknown> | null | undefined,
+): boolean | null {
+  const value = record.marketing_emails
+  if (typeof value !== 'boolean') return null
+  // An INSERT (no old_record) only counts when it arrives already opted in;
+  // the column defaults to false, so the common case is a no-op.
+  if (!oldRecord) return value ? true : null
+  return oldRecord.marketing_emails === value ? null : value
 }
 
 Deno.serve(async (req) => {
@@ -81,7 +101,8 @@ Deno.serve(async (req) => {
   }
 
   const attributes = relevantChanges(record, body.old_record)
-  if (Object.keys(attributes).length === 0) {
+  const optedIn = marketingConsentChange(record, body.old_record)
+  if (Object.keys(attributes).length === 0 && optedIn === null) {
     return new Response(JSON.stringify({ ok: true, skipped: true }), {
       headers: { 'Content-Type': 'application/json' },
     })
@@ -98,12 +119,32 @@ Deno.serve(async (req) => {
       })
     }
 
+    const marketingListId = Deno.env.get('BREVO_MARKETING_LIST_ID')
+    if (optedIn !== null) {
+      if (!marketingListId) {
+        // The Supabase row is already correct, so the digest still reaches them.
+        // Only Brevo's view of the list is behind until the secret is set.
+        console.error('BREVO_MARKETING_LIST_ID is not set — marketing_emails not synced to Brevo.')
+      } else {
+        attributes.OPT_IN = optedIn
+      }
+    }
+
     await upsertBrevoContact({
       apiKey: brevoKey,
       email,
       attributes,
-      listIds: [Number(brevoListId)],
+      // Opting in adds the marketing list alongside the app-users list. Opting
+      // out can't be expressed as a list set here (upserts only ever add), so it
+      // takes the explicit removal below.
+      listIds: optedIn && marketingListId
+        ? [Number(brevoListId), Number(marketingListId)]
+        : [Number(brevoListId)],
     })
+
+    if (optedIn === false && marketingListId) {
+      await removeContactFromList({ apiKey: brevoKey, listId: Number(marketingListId), email })
+    }
 
     return new Response(JSON.stringify({ ok: true }), {
       headers: { 'Content-Type': 'application/json' },
