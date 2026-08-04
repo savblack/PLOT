@@ -87,6 +87,12 @@ jobs:
       - name: Check auth email templates are in sync
         run: npm run emails:check
 
+      # Catches a migration recreating a function with a different ON CONFLICT
+      # target, which is how every write to `history` broke for two weeks in
+      # July 2026. Static — reads supabase/migrations only, no credentials.
+      - name: Check migrations don't silently change an upsert key
+        run: npm run migrations:check
+
       - name: Unit tests
         run: npm run test:unit
 
