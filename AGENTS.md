@@ -149,12 +149,39 @@ It's a review-time responsibility.
 
 ## CI sync-guards — regenerate, don't hand-patch one side
 
-Four checks fail the build if two sources drift. Fix by regenerating both, not editing one:
+These checks fail the build if two sources drift. Fix by regenerating both, not editing one:
 
 - `tokens:check` — `apps/web/src/styles/tokens.css` must match `@plot/core/tokens.js`
   (canonical colors/radii; also feeds mobile).
 - `footer:check` · `tokens:marketing` · `emails:check` — shared footer / website+email
   tokens / auth email templates.
+- `migrations:check` — no migration may recreate a function with a different
+  `ON CONFLICT` target without acknowledging it. See below.
+
+## Migrations: `create or replace function` replaces the WHOLE body
+
+Recreating a function you didn't author means inheriting everything the previous version
+fixed, and Postgres accepts a stale body silently. This has already caused a two-week
+production outage: `20260718120000` widened `feed_posts`' unique key to include
+`source_type` and updated the trigger's `ON CONFLICT` to match; `20260725000001` then
+recreated the same function from the pre-widening body, pointing the upsert at a
+constraint that no longer existed. Every write to `history` raised 42P10 and, because it
+is an AFTER trigger in the same transaction, the user-facing write failed. Marking a title
+watched was broken from 2026-07-25 to 2026-08-03 and nothing detected it.
+
+So:
+
+- **Before recreating an existing function, diff against what's live** — not against the
+  migration you remember. `select pg_get_functiondef(oid) from pg_proc where proname = '…'`.
+- `npm run migrations:check` fails the build if a redefinition changes the `ON CONFLICT`
+  target. If the change is deliberate, add `-- redefines: <fn> (…why…)` to the migration.
+- `npm run db:write-paths` checks the live database: every trigger function's upsert key
+  must resolve against a real constraint, and every table it references must exist. Runs
+  daily via `.github/workflows/db-write-paths.yml` and on any PR touching migrations.
+  Read-only; it deliberately does not write-and-rollback, because `http_request` triggers
+  on `profiles`/`feedback` are not reliably transactional.
+- **A migration merged to `main` applies to PRODUCTION automatically** via the Supabase
+  GitHub integration. There is no staging gate — write it as if it runs immediately.
 
 **Supabase `config.toml` pins `verify_jwt` per function.** Public functions set
 `verify_jwt = false`; forgetting it on redeploy makes the gateway reject requests before the
