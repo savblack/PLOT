@@ -16,7 +16,7 @@ import { track, markActivated, EVENTS } from '../lib/analytics.js';
 import { COMMON } from '../copy/common.js';
 import { ONBOARDING_FLOW } from '../copy/onboardingFlow.js';
 import { getOrCreateMyListId, saveOnboardingSeedTitles } from '@plot/core/onboarding.js';
-import { detectRegion, detectTimezone, guessRegionFromTimezone } from '@plot/core/region.js';
+import { detectRegion, detectTimezone, guessRegionFromTimezone } from '@plot/core/regions.js';
 import { usePremium } from '../hooks/usePremium.js';
 import { takePremiumCheckoutIntent } from '../utils/premiumCheckoutIntent.js';
 

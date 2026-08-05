@@ -1,10 +1,4 @@
-export const APP_SHELL = {
-  openMenu: 'Open menu',
-  closeMenu: 'Close menu',
-  goToHome: 'Go to home',
-  notifications: 'Notifications',
-  openSearch: 'Open search',
-  search: 'Search',
-  scrollToTop: 'Scroll to top',
-  profile: 'Profile',
-};
+// Shared with the mobile app, so the strings live in @plot/core/copy.
+// Re-exported here so src/copy/ stays the one place the web app — and the
+// Storybook Content page — looks for copy.
+export { APP_SHELL } from '@plot/core/copy/appShell.js';

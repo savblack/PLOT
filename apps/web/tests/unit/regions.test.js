@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { detectRegion, guessRegionFromTimezone, SUPPORTED_REGIONS } from '@plot/core/region.js';
+import { detectRegion, guessRegionFromTimezone, SUPPORTED_REGIONS } from '@plot/core/regions.js';
 
 const ok = (body) => async () => ({ ok: true, json: async () => body });
 

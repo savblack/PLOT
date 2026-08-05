@@ -1,8 +1,4 @@
-export const EPG_VIEW = {
-  removeReminder: 'Remove reminder',
-  addToCalendar: 'Add to Calendar',
-  available: 'Available',
-  onNow: 'On Now',
-  upNext: 'Up Next',
-  later: 'Later',
-};
+// Shared with the mobile app, so the strings live in @plot/core/copy.
+// Re-exported here so src/copy/ stays the one place the web app — and the
+// Storybook Content page — looks for copy.
+export { EPG_VIEW } from '@plot/core/copy/epgView.js';

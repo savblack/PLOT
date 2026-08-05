@@ -10,6 +10,7 @@ import { useRouter } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { tmdb, setTmdbRegion } from '../../lib/tmdb';
 import { IANA_TIMEZONES } from '@plot/core/timezones.js';
+import { REGIONS, DEFAULT_REGION, regionName } from '@plot/core/regions.js';
 import { setUserTimezone } from '@plot/core/date.js';
 import { useAppData } from '../../contexts/AppDataContext';
 import { useFollowRequests } from '../../hooks/useFollowRequests';
@@ -20,6 +21,8 @@ import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
 import { edgeFunctionUrl } from '@plot/core/functions.js';
 import { SHOW_MEDIA_SYNC_INTEGRATIONS } from '../../lib/launchFeatures';
+import { SETTINGS_VIEW } from '@plot/core/copy/settingsView.js';
+import { COMMON } from '@plot/core/copy/common.js';
 
 // UUID token for the private calendar feed. Uses native crypto when the RN
 // runtime provides it, else an RFC4122-shaped Math.random fallback (RN has no
@@ -35,17 +38,6 @@ function generateCalendarToken(): string {
 }
 import { useTheme } from '../../contexts/ThemeContext';
 import ImportHistoryModal from '../../components/ImportHistoryModal';
-
-const REGIONS = [
-  { code: 'US', name: 'United States' }, { code: 'AU', name: 'Australia' },
-  { code: 'GB', name: 'United Kingdom' }, { code: 'CA', name: 'Canada' },
-  { code: 'NZ', name: 'New Zealand' },   { code: 'FR', name: 'France' },
-  { code: 'DE', name: 'Germany' },       { code: 'JP', name: 'Japan' },
-  { code: 'IN', name: 'India' },         { code: 'BR', name: 'Brazil' },
-  { code: 'MX', name: 'Mexico' },        { code: 'IT', name: 'Italy' },
-  { code: 'ES', name: 'Spain' },         { code: 'NL', name: 'Netherlands' },
-  { code: 'SE', name: 'Sweden' },        { code: 'SG', name: 'Singapore' },
-];
 
 const FEEDBACK_TYPES = [
   { id: 'bug',     label: 'Bug report' },
@@ -144,7 +136,7 @@ function RegionModal({ current, onSave, onClose }: { current: string; onSave: (c
             disabled={saving || chosen === current}
             activeOpacity={0.8}
           >
-            <Text style={styles.saveBtnText}>{saving ? 'Saving…' : 'Save Region'}</Text>
+            <Text style={styles.saveBtnText}>{saving ? COMMON.saving : SETTINGS_VIEW.region.saveRegion}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -510,7 +502,7 @@ function FeedbackModal({ userId, userEmail, initialType, onClose }: { userId: st
             />
             {status === 'error' && (
               <Text style={{ color: colors.danger, fontFamily: fontFamily.sans, fontSize: fontSize.sm }}>
-                Something went wrong — please try again.
+                {SETTINGS_VIEW.username.error}
               </Text>
             )}
             <TouchableOpacity
@@ -550,26 +542,19 @@ export default function SettingsScreen() {
   const providers     = profile?.streaming_providers || [];
   const guideChannels = profile?.guide_channels || [];
   const genres        = profile?.genres || [];
-  const region        = profile?.region || 'US';
+  const region        = profile?.region || DEFAULT_REGION;
   const timezone      = profile?.timezone || '';
-  const regionName    = REGIONS.find(r => r.code === region)?.name ?? region;
+  const regionLabel   = regionName(region);
 
   const displayName = profile?.display_name || '';
   const username    = profile?.username || '';
   const isPublic    = !!profile?.is_public;
-  const logRewatches = profile?.log_rewatches ?? true;
   const includeKidsContent = profile?.include_kids_content ?? true;
   const { count: requestCount } = useFollowRequests(userId);
 
   const toggleVisibility = async () => {
     if (!userId) return;
     await supabase.from('profiles').update({ is_public: !isPublic }).eq('id', userId);
-    refreshProfile();
-  };
-
-  const toggleLogRewatches = async () => {
-    if (!userId) return;
-    await supabase.from('profiles').update({ log_rewatches: !logRewatches }).eq('id', userId);
     refreshProfile();
   };
 
@@ -610,7 +595,7 @@ export default function SettingsScreen() {
   const handleRevokeCalToken = () => {
     Alert.alert(
       'Revoke calendar link?',
-      'Your calendar app will stop receiving updates. You can generate a new link any time.',
+      SETTINGS_VIEW.confirm.revokeCalendarLinkMessage,
       [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Revoke', style: 'destructive', onPress: async () => {
@@ -625,7 +610,7 @@ export default function SettingsScreen() {
   const openCalendarMenu = () => {
     Alert.alert(
       'Your calendar feed',
-      'Live feed of your releases and watchlist — keep this link private.',
+      SETTINGS_VIEW.calendarFeed.liveFeedPrivate,
       [
         { text: 'Add to Apple Calendar', onPress: handleAddToCalendar },
         { text: 'Share / copy link', onPress: handleShareCalUrl },
@@ -735,11 +720,11 @@ export default function SettingsScreen() {
 
   const handleDeleteAccount = () => {
     Alert.alert(
-      'Delete account?',
+      SETTINGS_VIEW.confirm.deleteAccountTitle,
       'This will permanently delete your account and all your data. This cannot be undone.',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete account', style: 'destructive', onPress: async () => {
+        { text: SETTINGS_VIEW.confirm.deleteAccount, style: 'destructive', onPress: async () => {
           const { data: { session } } = await supabase.auth.getSession();
           if (!session) return;
           const url = `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/delete-account`;
@@ -802,13 +787,13 @@ export default function SettingsScreen() {
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Circle cx={12} cy={12} r={10}/><Line x1={2} y1={12} x2={22} y2={12}/><Path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></Svg>}
             label="Region"
-            value={regionName}
+            value={regionLabel}
             onPress={() => setShowRegion(true)}
           />
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Circle cx={12} cy={12} r={10}/><Polyline points="12,6 12,12 16,14"/></Svg>}
             label="Timezone"
-            value={timezone ? fmtTz(timezone) : 'Not set'}
+            value={timezone ? fmtTz(timezone) : SETTINGS_VIEW.integrations.notConnected}
             onPress={() => setShowTimezone(true)}
           />
           <SettingsRow
@@ -842,24 +827,19 @@ export default function SettingsScreen() {
         {/* Viewing */}
         <SettingsGroup title="Viewing">
           <SettingsRow
-            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><Path d="M3 3v5h5"/></Svg>}
-            label="Log rewatches"
-            trailing={<Switch value={logRewatches} onValueChange={toggleLogRewatches} trackColor={{ true: colors.accent }} />}
-          />
-          <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Circle cx={12} cy={12} r={10}/><Circle cx={8.5} cy={10} r={1}/><Circle cx={15.5} cy={10} r={1}/><Path d="M8 15s1.5 2 4 2 4-2 4-2"/></Svg>}
             label="Kids content"
             trailing={<Switch value={includeKidsContent} onValueChange={toggleKidsContent} trackColor={{ true: colors.accent }} />}
           />
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Rect x={2} y={3} width={20} height={14} rx={2}/><Path d="M8 21h8M12 17v4"/></Svg>}
-            label="Streaming Platforms"
+            label={SETTINGS_VIEW.integrations.streamingPlatformsLabel}
             value={providers.length > 0 ? `${providers.length} selected` : 'None'}
             onPress={() => setShowProviders(true)}
           />
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Polygon points="23,7 16,12 23,17 23,7"/><Rect x={1} y={5} width={15} height={14} rx={2}/></Svg>}
-            label="My Channels"
+            label={SETTINGS_VIEW.integrations.myChannelsLabel}
             value={guideChannels.length > 0 ? `${guideChannels.length} selected` : 'None'}
             onPress={() => setShowChannels(true)}
           />
@@ -913,7 +893,7 @@ export default function SettingsScreen() {
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><Path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></Svg>}
             label="Trakt"
-            value={trakt.isConnected ? syncedLabel(trakt.integration?.last_sync_at) : 'Sync Netflix, Prime, Disney+ & more'}
+            value={trakt.isConnected ? syncedLabel(trakt.integration?.last_sync_at) : SETTINGS_VIEW.integrations.connectTraktToSync}
             onPress={trakt.isConnected ? () => openIntegrationMenu('Trakt', trakt) : () => trakt.connect()}
             trailing={trakt.isConnected ? undefined
               : <Text style={{ color: colors.accent, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm }}>Connect</Text>}
@@ -925,17 +905,17 @@ export default function SettingsScreen() {
         <SettingsGroup title="Support">
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/><Polyline points="16,17 21,12 16,7"/><Line x1={21} y1={12} x2={9} y2={12}/></Svg>}
-            label="Import Watch History"
+            label={SETTINGS_VIEW.integrations.importWatchHistory}
             onPress={() => setShowImport(true)}
           />
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M12 9v4"/><Path d="M12 17h.01"/><Path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L14.71 3.86a2 2 0 0 0-3.42 0z"/></Svg>}
-            label="Report a Bug"
+            label={SETTINGS_VIEW.feedback.reportABug}
             onPress={() => setFeedbackType('bug')}
           />
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></Svg>}
-            label="Leave Feedback"
+            label={SETTINGS_VIEW.feedback.leaveFeedback}
             onPress={() => setFeedbackType('feature')}
           />
           <SettingsRow
@@ -966,7 +946,7 @@ export default function SettingsScreen() {
           />
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.danger} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Polyline points="3,6 5,6 21,6"/><Path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><Path d="M10 11v6M14 11v6"/><Path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></Svg>}
-            label="Delete Account"
+            label={SETTINGS_VIEW.dangerZone.deleteAccountLabel}
             onPress={handleDeleteAccount}
             danger
           />

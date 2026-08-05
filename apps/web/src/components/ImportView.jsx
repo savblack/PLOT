@@ -1,10 +1,12 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { tmdb } from '../api/tmdb.js';
 import { supabase } from '../api/supabase.js';
 import { parsePlatform, watchedAtFor } from '../domain/importParsing.js';
 import { dedupeEntries } from '../domain/importDedup.js';
+import { planHistoryImport } from '../domain/importPlan.js';
+import { HISTORY_CONFLICT_TARGET } from '@plot/core/userMedia.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import { track, EVENTS } from '../lib/analytics.js';
 import { MEDIA } from '../copy/media.js';
@@ -180,24 +182,24 @@ async function resolveAll(entries, onProgress) {
 
 /* ─────────────────────────── Bulk insert ─────────────────────────── */
 
-async function bulkInsert(userId, rows, logRewatches) {
+/* Write the planned rows. Purely additive: planHistoryImport has already
+   resolved every collision, so each batch is a plain upsert on the real
+   constraint and nothing is deleted. Batches that fail are counted rather than
+   swallowed — the old version discarded the error and reported the rows as
+   imported anyway, which is why a two-week outage went unnoticed. */
+async function bulkInsert(rows) {
   const BATCH = 50;
   let inserted = 0;
-  if (!logRewatches) {
-    // Collapsing to one row per title: clear existing rows for these titles
-    // first since there's no more DB-level unique(user_id,tmdb_id) to
-    // upsert against (it was relaxed so rewatches can coexist).
-    const tmdbIds = [...new Set(rows.map(r => r.tmdb_id))];
-    if (tmdbIds.length) await supabase.from('history').delete().eq('user_id', userId).in('tmdb_id', tmdbIds);
-  }
+  let failed = 0;
   for (let i = 0; i < rows.length; i += BATCH) {
     const batch = rows.slice(i, i + BATCH);
-    const { error } = logRewatches
-      ? await supabase.from('history').upsert(batch, { onConflict: 'user_id,tmdb_id,watched_at' })
-      : await supabase.from('history').insert(batch);
-    if (!error) inserted += batch.length;
+    const { error } = await supabase
+      .from('history')
+      .upsert(batch, { onConflict: HISTORY_CONFLICT_TARGET });
+    if (error) failed += batch.length;
+    else inserted += batch.length;
   }
-  return inserted;
+  return { inserted, failed };
 }
 
 /* ─────────────────────────── UI helpers ─────────────────────────── */
@@ -233,7 +235,7 @@ function PosterThumb({ path }) {
 /* ─────────────────────────── Main component ─────────────────────────── */
 
 export default function ImportView() {
-  const { user, profile } = useApp();
+  const { user } = useApp();
   const navigate = useNavigate();
 
   const [step, setStep] = useState(1); // 1=platform 2=file 3=resolving 4=preview 5=done
@@ -241,8 +243,9 @@ export default function ImportView() {
   const [parseError, setParseError] = useState('');
   const [resolveProgress, setResolveProgress] = useState({ done: 0, total: 0 });
   const [results, setResults] = useState([]);
-  const [existingIds, setExistingIds] = useState(new Set());
+  const [existingRows, setExistingRows] = useState([]);
   const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState('');
   const [importedCount, setImportedCount] = useState(0);
   const [providerLogos, setProviderLogos] = useState({});
   const fileRef = useRef(null);
@@ -285,56 +288,70 @@ export default function ImportView() {
       setResolveProgress({ done, total });
     });
 
-    // Fetch existing (tmdb_id, watched_at) pairs, scoped to just the titles
-    // this import resolved to — not the user's whole history, which would
-    // grow unbounded as they log more over time.
+    // Fetch the history rows already held for the titles this import resolved
+    // to — not the user's whole history, which would grow unbounded as they log
+    // more over time. media_type comes back too: without it a movie and a TV
+    // show whose TMDB ids collide look like the same title.
     const resolvedIds = [...new Set(resolved.filter(r => r.status === 'matched').map(r => r.tmdbId))];
     const { data: existing } = resolvedIds.length
-      ? await supabase.from('history').select('tmdb_id, watched_at').eq('user_id', user.id).in('tmdb_id', resolvedIds)
+      ? await supabase.from('history').select('tmdb_id, media_type, watched_at').eq('user_id', user.id).in('tmdb_id', resolvedIds)
       : { data: [] };
-    const ids = new Set((existing || []).map(r => `${r.tmdb_id}::${r.watched_at}`));
-    setExistingIds(ids);
+    setExistingRows(existing || []);
 
     setResults(resolved);
     setStep(4);
   }, [platform, user]);
 
+  /* One plan, used for both the preview and the write, so what the preview
+     promises is exactly what gets imported. */
+  const candidates = useMemo(() => {
+    if (!user) return [];
+    return results.flatMap((r, i) => {
+      if (r.status !== 'matched') return [];
+      const row = {
+        user_id:     user.id,
+        tmdb_id:     r.tmdbId,
+        media_type:  r.mediaType,
+        title:       r.tmdbTitle,
+        poster_path: r.posterPath || null,
+        watched_at:  watchedAtFor(r),
+      };
+      // Letterboxd carries ratings/reviews; clamp to the 1–10 history scale
+      if (r.rating != null) row.rating = Math.min(10, Math.max(1, Math.round(r.rating)));
+      if (r.note) row.note = r.note;
+      return [{ index: i, row }];
+    });
+  }, [results, user]);
+
+  const plan = useMemo(
+    () => planHistoryImport({ rows: candidates.map(c => c.row), existing: existingRows }),
+    [candidates, existingRows],
+  );
+
+  /* Row identity is preserved through the planner, so the preview can mark each
+     result by whether its own row survived planning. */
+  const plannedRows = useMemo(() => new Set(plan.rows), [plan]);
+  const rowByIndex = useMemo(() => new Map(candidates.map(c => [c.index, c.row])), [candidates]);
+
   /* Step 4 → 5 */
   const handleImport = useCallback(async () => {
     setImporting(true);
-    const toInsert = results
-      .filter(r => r.status === 'matched')
-      .map(r => {
-        const watchedAt = watchedAtFor(r);
-        const row = {
-          user_id:    user.id,
-          tmdb_id:    r.tmdbId,
-          media_type: r.mediaType,
-          title:      r.tmdbTitle,
-          poster_path: r.posterPath || null,
-          watched_at: watchedAt,
-        };
-        // Letterboxd carries ratings/reviews; clamp to the 1–10 history scale
-        if (r.rating != null) row.rating = Math.min(10, Math.max(1, Math.round(r.rating)));
-        if (r.note) row.note = r.note;
-        return row;
-      })
-      // Only skip an exact (title, date) match already in the history — a
-      // rewatch on a different date is a new entry, not a duplicate.
-      .filter(row => !existingIds.has(`${row.tmdb_id}::${row.watched_at}`));
+    setImportError('');
 
-    const count = await bulkInsert(user.id, toInsert, profile?.log_rewatches ?? true);
-    track(EVENTS.IMPORT_COMPLETED, { source: platform?.id, count });
+    const { inserted, failed } = await bulkInsert(plan.rows);
+    track(EVENTS.IMPORT_COMPLETED, { source: platform?.id, count: inserted });
     // Notify history hook to reload
     if (typeof window !== 'undefined') window.dispatchEvent(new Event('plot:history-changed'));
-    setImportedCount(count);
+    setImportedCount(inserted);
+    if (failed) setImportError(IMPORT_VIEW.partialFailure(failed));
     setImporting(false);
     setStep(5);
-  }, [results, existingIds, user, platform?.id, profile?.log_rewatches]);
+  }, [plan, platform?.id]);
 
-  const newCount      = results.filter(r => r.status === 'matched' && !existingIds.has(`${r.tmdbId}::${watchedAtFor(r)}`)).length;
-  const alreadyCount  = results.filter(r => r.status === 'matched' && existingIds.has(`${r.tmdbId}::${watchedAtFor(r)}`)).length;
+  const newCount       = plan.rows.length;
+  const alreadyCount   = plan.alreadyInHistory;
   const unmatchedCount = results.filter(r => r.status === 'unmatched').length;
+  const matchedCount   = results.length - unmatchedCount;
 
   return (
     <div style={{ maxWidth: 480, margin: '0 auto', padding: '1rem 1rem 6rem' }}>
@@ -510,7 +527,7 @@ export default function ImportView() {
           {/* Editorial headline */}
           <div style={{ marginBottom: '1.25rem' }}>
             <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1.5rem', fontWeight: 400, lineHeight: 1.25, letterSpacing: '-0.03em', color: 'var(--text-primary)', marginBottom: '0.35rem' }}>
-              Found <span style={{ color: 'var(--accent)' }}>{newCount + alreadyCount + unmatchedCount} title{newCount + alreadyCount + unmatchedCount !== 1 ? 's' : ''}</span> from {platform?.name}
+              Found <span style={{ color: 'var(--accent)' }}>{results.length} title{results.length !== 1 ? 's' : ''}</span> from {platform?.name}
             </div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
               {alreadyCount > 0 && unmatchedCount > 0
@@ -529,9 +546,16 @@ export default function ImportView() {
           {/* Results list */}
           <div style={{ display: 'flex', flexDirection: 'column', marginBottom: '1.5rem', maxHeight: '52vh', overflowY: 'auto' }}>
             {results.map((r, i) => {
-              const alreadyHave = r.status === 'matched' && existingIds.has(`${r.tmdbId}::${watchedAtFor(r)}`);
               const unmatched = r.status === 'unmatched';
-              const isNew = !alreadyHave && !unmatched;
+              const isNew = !unmatched && plannedRows.has(rowByIndex.get(i));
+              // Matched but not planned: either the user already has this exact
+              // watch, or it merged into another entry for the same title and
+              // date — a Netflix export lists one row per episode, so a night
+              // of one series arrives as several rows describing one watch.
+              const watchedAt = watchedAtFor(r);
+              const alreadyHave = !unmatched && !isNew;
+              const merged = alreadyHave && !existingRows.some(
+                e => e.tmdb_id === r.tmdbId && e.media_type === r.mediaType && e.watched_at === watchedAt);
               return (
                 <div key={i} style={{
                   display: 'flex', alignItems: 'center', gap: '0.75rem',
@@ -546,7 +570,7 @@ export default function ImportView() {
                       {r.status === 'matched' ? r.tmdbTitle : r.title}
                     </div>
                     <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
-                      {unmatched ? IMPORT_VIEW.notMatched : alreadyHave ? IMPORT_VIEW.alreadyInHistory : r.mediaType === 'tv' ? MEDIA.tvSeries : MEDIA.movie}
+                      {unmatched ? IMPORT_VIEW.notMatched : merged ? IMPORT_VIEW.mergedIntoOneEntry : alreadyHave ? IMPORT_VIEW.alreadyInHistory : r.mediaType === 'tv' ? MEDIA.tvSeries : MEDIA.movie}
                       {r.date ? ` · ${r.date}` : ''}
                     </div>
                   </div>
@@ -576,7 +600,7 @@ export default function ImportView() {
           {/* Footer */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <div style={{ flex: 1, fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-              {newCount} new{alreadyCount > 0 ? ` · ${alreadyCount} skipped` : ''}{unmatchedCount > 0 ? ` · ${unmatchedCount} unmatched` : ''}
+              {newCount} new{matchedCount - newCount > 0 ? ` · ${matchedCount - newCount} skipped` : ''}{unmatchedCount > 0 ? ` · ${unmatchedCount} unmatched` : ''}
             </div>
             <button
               onClick={handleImport}
@@ -605,9 +629,14 @@ export default function ImportView() {
           <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
             {importedCount} title{importedCount !== 1 ? 's' : ''} added
           </div>
-          <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '2rem' }}>
+          <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: importError ? '1rem' : '2rem' }}>
             Your watch history has been imported to PLOT.
           </div>
+          {importError && (
+            <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 8, padding: '0.75rem', fontSize: '0.8rem', color: '#ef4444', marginBottom: '2rem', textAlign: 'left' }}>
+              {importError}
+            </div>
+          )}
           <button
             onClick={() => navigate('/history')}
             style={{

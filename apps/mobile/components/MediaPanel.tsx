@@ -16,6 +16,8 @@ import { useAppData } from '../contexts/AppDataContext';
 import { favoriteWords } from '../lib/spelling';
 import { findDuplicateCustomList } from '@plot/core/customLists.js';
 import { buildWatchLink } from '@plot/core/watchLinks.js';
+import { MEDIA_PANEL } from '@plot/core/copy/mediaPanel.js';
+import { COMMON } from '@plot/core/copy/common.js';
 import { track, EVENTS } from '../lib/analytics';
 import { fetchVerifiedAvailability, offersFromTmdb } from '@plot/core/availability.js';
 import { fetchCriticScore, pickAudienceQuote, getConsensusLine } from '@plot/core/reviews.js';
@@ -336,7 +338,7 @@ function AddToListSheet({ item, customLists, topLists, onClose }: {
     }
     setBusy(true);
     const newList = await createList(trimmed);
-    if (!newList) { setBusy(false); setError('Could not create the list. Please try again.'); return; }
+    if (!newList) { setBusy(false); setError(MEDIA_PANEL.couldNotCreateList); return; }
     await addItem(newList.id, item);   // create + immediately add this title, like web
     setBusy(false); setCreating(false); setName(''); setError('');
   };
@@ -353,7 +355,7 @@ function AddToListSheet({ item, customLists, topLists, onClose }: {
             <TouchableOpacity style={styles.lsRow} onPress={() => setTopOpen(o => !o)} activeOpacity={0.7}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.lsName}>Top 10 {topListType === 'tv' ? 'TV Shows' : 'Movies'}</Text>
-                <Text style={styles.lsCount}>{currentRank ? `Currently #${currentRank}` : 'Not ranked'}</Text>
+                <Text style={styles.lsCount}>{currentRank ? MEDIA_PANEL.currentlyRanked(currentRank) : MEDIA_PANEL.notRanked}</Text>
               </View>
               <View style={[styles.lsCheck, currentRank && styles.lsCheckOn]}>
                 {currentRank ? <Text style={styles.lsTopCheckNum}>{currentRank}</Text> : null}
@@ -743,7 +745,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
 
                 {/* ── Action buttons ── */}
                 <View style={styles.actionsCol}>
-                  {/* Save */}
+                  {/* Watchlist — same copy as the web panel's primary action */}
                   {!isWatching && (
                     <TouchableOpacity
                       style={[styles.btnPrimary, inList && styles.btnSaved]}
@@ -751,7 +753,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                     >
                       {inList && <IconCheck color="#4ade80" />}
                       <Text style={[styles.btnPrimaryText, inList && { color: '#4ade80' }]}>
-                        {inList ? 'Saved' : 'Save'}
+                        {inList ? MEDIA_PANEL.inWatchlist : MEDIA_PANEL.addToWatchlist}
                       </Text>
                     </TouchableOpacity>
                   )}
@@ -773,7 +775,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                     >
                       <IconList active={isInAnyList} />
                       <Text style={[styles.btnSecondaryText, isInAnyList && { color: colors.accent }]}>
-                        {isInAnyList ? 'On list' : 'List'}
+                        {isInAnyList ? MEDIA_PANEL.onList : MEDIA_PANEL.list}
                       </Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.btnSecondary} onPress={handleShare}>
@@ -807,12 +809,12 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                     <TouchableOpacity
                       style={styles.btnSecondary}
                       onPress={async () => {
-                        await history.logWatched({ ...details, id: itemId, media_type: itemType }, { logRewatches: profile?.log_rewatches ?? true });
+                        await history.logWatched({ ...details, id: itemId, media_type: itemType });
                         if (!isMovie && isWatching) await watching.stopWatching(itemId);
                       }}
                     >
                       <IconCheck />
-                      <Text style={styles.btnSecondaryText}>{isMovie ? 'Mark watched' : 'Mark all watched'}</Text>
+                      <Text style={styles.btnSecondaryText}>{isMovie ? MEDIA_PANEL.markWatched : MEDIA_PANEL.markAllWatched}</Text>
                     </TouchableOpacity>
                   </View>
                 ) : (
@@ -834,7 +836,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                         onPress={() => setLocalDnf(d => !d)}
                       >
                         {localDnf && <IconCheck color="#fb923c" />}
-                        <Text style={[styles.dnfText, localDnf && { color: '#fb923c' }]}>Didn't finish</Text>
+                        <Text style={[styles.dnfText, localDnf && { color: '#fb923c' }]}>{MEDIA_PANEL.didntFinish}</Text>
                       </TouchableOpacity>
                     </View>
                     <TextInput
@@ -857,7 +859,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                           setSavingReview(false);
                         }}
                       >
-                        <Text style={styles.btnPrimaryText}>{savingReview ? 'Saving…' : reviewDirty ? 'Save changes' : hasSavedReview ? 'Edit review' : 'Save review'}</Text>
+                        <Text style={styles.btnPrimaryText}>{savingReview ? COMMON.saving : reviewDirty ? MEDIA_PANEL.saveChanges : hasSavedReview ? MEDIA_PANEL.editReview : MEDIA_PANEL.saveReview}</Text>
                       </TouchableOpacity>
                     )}
                   </View>
@@ -1027,8 +1029,8 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   trailerPlayBtn: { width: 56, height: 56, borderRadius: 28, backgroundColor: 'rgba(0,0,0,0.55)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.85)', alignItems: 'center', justifyContent: 'center' },
   trailerLabel: { position: 'absolute', bottom: spacing.md, fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, letterSpacing: 0.5, textTransform: 'uppercase', color: '#fff' },
 
-  epRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingLeft: spacing.sm, paddingRight: spacing.md, borderLeftWidth: 3, borderLeftColor: 'transparent', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border, gap: spacing.md },
-  epRowCurrent: { backgroundColor: colors.accentDim, borderLeftColor: colors.accent },
+  epRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingLeft: spacing.sm, paddingRight: spacing.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border, gap: spacing.md },
+  epRowCurrent: { backgroundColor: colors.accentDim },
   epCode:        { fontFamily: fontFamily.sansBold, fontSize: 10, color: colors.chipEpisode, letterSpacing: 0.4 },
   epCodeCurrent: { color: colors.accent },
   epAirDate:   { fontFamily: fontFamily.sans, fontSize: 10, color: colors.textMuted },

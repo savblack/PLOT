@@ -23,6 +23,7 @@ import { getAuthCallbackUrl } from '../utils/redirects.js';
 import { COMMON } from '../copy/common.js';
 import { SETTINGS_VIEW } from '../copy/settingsView.js';
 import { IANA_TIMEZONES } from '../utils/timezones.js';
+import { REGIONS, DEFAULT_REGION, regionName } from '@plot/core/regions.js';
 import { SHOW_MEDIA_SYNC_INTEGRATIONS, SHOW_WATCHLIST_AVAILABILITY_ALERTS } from '../launchFeatures.js';
 import SheetHeader from './SheetHeader.jsx';
 import ConfirmModal from './ConfirmModal.jsx';
@@ -46,20 +47,9 @@ const TRAKT_ICON = (
   </svg>
 );
 
-const REGIONS = [
-  { code: 'US', name: 'United States' }, { code: 'AU', name: 'Australia' },
-  { code: 'GB', name: 'United Kingdom' }, { code: 'CA', name: 'Canada' },
-  { code: 'NZ', name: 'New Zealand' },   { code: 'FR', name: 'France' },
-  { code: 'DE', name: 'Germany' },       { code: 'JP', name: 'Japan' },
-  { code: 'IN', name: 'India' },         { code: 'BR', name: 'Brazil' },
-  { code: 'MX', name: 'Mexico' },        { code: 'IT', name: 'Italy' },
-  { code: 'ES', name: 'Spain' },         { code: 'NL', name: 'Netherlands' },
-  { code: 'SE', name: 'Sweden' },        { code: 'SG', name: 'Singapore' },
-];
-
 /* ── Region picker modal ── */
 function RegionPicker({ current, onSave, onClose }) {
-  const [chosen, setChosen] = useState(current || 'US');
+  const [chosen, setChosen] = useState(current || DEFAULT_REGION);
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
@@ -1158,7 +1148,6 @@ export default function SettingsView() {
 
   const username      = profile?.username || '';
   const isPublic      = !!profile?.is_public;
-  const logRewatches  = profile?.log_rewatches ?? true;
   const usernameValue = usernameDraft ?? username;
   const usernameDirty = usernameValue.trim().toLowerCase() !== username.toLowerCase();
   const profileUrl    = username ? `${window.location.origin}/u/${username}` : null;
@@ -1213,7 +1202,7 @@ export default function SettingsView() {
   const marketingEmailsEnabled = !!profile?.marketing_emails;
   const guideChannels  = guideChannelDraft ?? profile?.guide_channels ?? [];
   const genres         = genreDraft ?? profile?.genres ?? [];
-  const region         = profile?.region || 'US';
+  const region         = profile?.region || DEFAULT_REGION;
   const timezone  = profile?.timezone || '';
   const includeKidsContent = profile?.include_kids_content ?? true;
 
@@ -1638,13 +1627,6 @@ export default function SettingsView() {
     refreshProfile();
   };
 
-  const handleToggleLogRewatches = async () => {
-    if (!user) return;
-    const { error } = await supabase.from('profiles').update({ log_rewatches: !logRewatches }).eq('id', user.id);
-    if (error) { setActionError(error.message); return; }
-    refreshProfile();
-  };
-
   // A little personality for profile shares — one picked at random (the card
   // already carries the avatar, stats and PLOT branding).
   const PROFILE_SHARE_LINES = SETTINGS_VIEW.shareTaglines;
@@ -1828,7 +1810,7 @@ export default function SettingsView() {
             <span className="settings-row-label">Region</span>
           </div>
           <div className="settings-row-value">
-            <span>{REGIONS.find(r => r.code === region)?.name ?? region}</span>
+            <span>{regionName(region)}</span>
             <Chevron />
           </div>
         </div>
@@ -2114,30 +2096,6 @@ export default function SettingsView() {
           <div className="settings-row-value">
             <span>{savingGenres ? COMMON.saving : genres.length > 0 ? SETTINGS_VIEW.integrations.selectedCount(genres.length) : COMMON.none}</span>
             <Chevron />
-          </div>
-        </div>
-
-        {/* Rewatches */}
-        <div className="settings-row" style={{ cursor: 'default' }}>
-          <div className="settings-row-left">
-            <div className="settings-row-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>
-              </svg>
-            </div>
-            <div>
-              <div className="settings-row-label">{SETTINGS_VIEW.rewatches.label}</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                {logRewatches
-                  ? SETTINGS_VIEW.rewatches.onHint
-                  : SETTINGS_VIEW.rewatches.offHint}
-              </div>
-            </div>
-          </div>
-          <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
-            <SettingsTextAction onClick={handleToggleLogRewatches}>
-              {logRewatches ? COMMON.turnOff : COMMON.turnOn}
-            </SettingsTextAction>
           </div>
         </div>
 
@@ -2662,7 +2620,7 @@ export default function SettingsView() {
 
       {showGuideChannels && (
         <ProviderPicker
-          title="My Channels"
+          title={SETTINGS_VIEW.integrations.myChannelsLabel}
           hint="Select the free-to-air and broadcast channels to include in your Guide. For example, ABC iview, SBS On Demand, 9Now, 7Plus, 10 Play."
           region={region}
           selected={guideChannels}

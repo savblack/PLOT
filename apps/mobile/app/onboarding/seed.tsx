@@ -20,7 +20,7 @@ import { track, markActivated, EVENTS } from '../../lib/analytics';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 import { getOrCreateMyListId, saveOnboardingSeedTitles } from '@plot/core/onboarding.js';
-import { detectRegion, detectTimezone, guessRegionFromTimezone } from '@plot/core/region.js';
+import { detectRegion, detectTimezone, guessRegionFromTimezone } from '@plot/core/regions.js';
 import OnboardingScaffold from '../../components/OnboardingScaffold';
 
 // Four columns, same as web — the flow is capped at the web card width (420),
