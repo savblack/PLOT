@@ -235,7 +235,7 @@ function PosterThumb({ path }) {
 /* ─────────────────────────── Main component ─────────────────────────── */
 
 export default function ImportView() {
-  const { user, profile } = useApp();
+  const { user } = useApp();
   const navigate = useNavigate();
 
   const [step, setStep] = useState(1); // 1=platform 2=file 3=resolving 4=preview 5=done
@@ -323,11 +323,10 @@ export default function ImportView() {
     });
   }, [results, user]);
 
-  const plan = useMemo(() => planHistoryImport({
-    rows: candidates.map(c => c.row),
-    existing: existingRows,
-    logRewatches: profile?.log_rewatches ?? true,
-  }), [candidates, existingRows, profile?.log_rewatches]);
+  const plan = useMemo(
+    () => planHistoryImport({ rows: candidates.map(c => c.row), existing: existingRows }),
+    [candidates, existingRows],
+  );
 
   /* Row identity is preserved through the planner, so the preview can mark each
      result by whether its own row survived planning. */
@@ -549,11 +548,14 @@ export default function ImportView() {
             {results.map((r, i) => {
               const unmatched = r.status === 'unmatched';
               const isNew = !unmatched && plannedRows.has(rowByIndex.get(i));
-              // Matched but not planned: either the user already has this
-              // watch, or it merged into another row of the same title (only
-              // possible with log_rewatches off).
+              // Matched but not planned: either the user already has this exact
+              // watch, or it merged into another entry for the same title and
+              // date — a Netflix export lists one row per episode, so a night
+              // of one series arrives as several rows describing one watch.
+              const watchedAt = watchedAtFor(r);
               const alreadyHave = !unmatched && !isNew;
-              const merged = alreadyHave && !existingRows.some(e => e.tmdb_id === r.tmdbId && e.media_type === r.mediaType);
+              const merged = alreadyHave && !existingRows.some(
+                e => e.tmdb_id === r.tmdbId && e.media_type === r.mediaType && e.watched_at === watchedAt);
               return (
                 <div key={i} style={{
                   display: 'flex', alignItems: 'center', gap: '0.75rem',

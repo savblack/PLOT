@@ -139,7 +139,6 @@ export default function ImportHistoryModal({ userId, onClose }: Props) {
   const [rawEntries,   setRawEntries]   = useState<ParsedImportEntry[]>([]);
   const [resolved,     setResolved]     = useState<ResolvedEntry[]>([]);
   const [existingRows, setExistingRows] = useState<{ tmdb_id: number; media_type: string; watched_at: string }[]>([]);
-  const [logRewatches, setLogRewatches] = useState(true);
   const [resolveTotal, setResolveTotal] = useState(0);
   const [resolveDone,  setResolveDone]  = useState(0);
   const [importDone,   setImportDone]   = useState(0);
@@ -175,15 +174,13 @@ export default function ImportHistoryModal({ userId, onClose }: Props) {
       setResolveDone(0);
       setStep('resolving');
 
-      // The history the user already has, plus the preference that decides
-      // what counts as a duplicate. Both feed planHistoryImport, so the
+      // The history the user already has. Feeds planHistoryImport, so the
       // preview and the write agree on exactly which rows are new.
-      const [{ data: existing }, { data: profile }] = await Promise.all([
-        supabase.from('history').select('tmdb_id, media_type, watched_at').eq('user_id', userId),
-        supabase.from('profiles').select('log_rewatches').eq('id', userId).maybeSingle(),
-      ]);
+      const { data: existing } = await supabase
+        .from('history')
+        .select('tmdb_id, media_type, watched_at')
+        .eq('user_id', userId);
       setExistingRows(existing ?? []);
-      setLogRewatches(profile?.log_rewatches ?? true);
 
       const results = await resolveEntries(deduped, (done) => setResolveDone(done));
       setResolved(results);
@@ -212,8 +209,8 @@ export default function ImportHistoryModal({ userId, onClose }: Props) {
   })), [resolved, userId]);
 
   const plan = useMemo(
-    () => planHistoryImport({ rows: candidates.map(c => c.row), existing: existingRows, logRewatches }),
-    [candidates, existingRows, logRewatches],
+    () => planHistoryImport({ rows: candidates.map(c => c.row), existing: existingRows }),
+    [candidates, existingRows],
   );
 
   const plannedRows = useMemo(() => new Set<HistoryRow>(plan.rows), [plan]);

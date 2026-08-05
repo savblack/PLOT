@@ -547,19 +547,12 @@ export default function SettingsScreen() {
   const displayName = profile?.display_name || '';
   const username    = profile?.username || '';
   const isPublic    = !!profile?.is_public;
-  const logRewatches = profile?.log_rewatches ?? true;
   const includeKidsContent = profile?.include_kids_content ?? true;
   const { count: requestCount } = useFollowRequests(userId);
 
   const toggleVisibility = async () => {
     if (!userId) return;
     await supabase.from('profiles').update({ is_public: !isPublic }).eq('id', userId);
-    refreshProfile();
-  };
-
-  const toggleLogRewatches = async () => {
-    if (!userId) return;
-    await supabase.from('profiles').update({ log_rewatches: !logRewatches }).eq('id', userId);
     refreshProfile();
   };
 
@@ -831,11 +824,6 @@ export default function SettingsScreen() {
 
         {/* Viewing */}
         <SettingsGroup title="Viewing">
-          <SettingsRow
-            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><Path d="M3 3v5h5"/></Svg>}
-            label="Log rewatches"
-            trailing={<Switch value={logRewatches} onValueChange={toggleLogRewatches} trackColor={{ true: colors.accent }} />}
-          />
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Circle cx={12} cy={12} r={10}/><Circle cx={8.5} cy={10} r={1}/><Circle cx={15.5} cy={10} r={1}/><Path d="M8 15s1.5 2 4 2 4-2 4-2"/></Svg>}
             label="Kids content"

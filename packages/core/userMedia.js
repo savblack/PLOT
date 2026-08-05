@@ -50,7 +50,7 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
    unrelated titles. */
 export const HISTORY_CONFLICT_TARGET = 'user_id,tmdb_id,media_type,watched_at';
 
-export async function logWatchedItem({ userId, item, rating, note, dnf, watchedAt = localDateStr(), logRewatches = true }) {
+export async function logWatchedItem({ userId, item, rating, note, dnf, watchedAt = localDateStr() }) {
   const mediaRow = baseMediaRow(item);
   if (!userId || !mediaRow) return { data: null, error: null, row: null };
 
@@ -75,31 +75,8 @@ export async function logWatchedItem({ userId, item, rating, note, dnf, watchedA
     dnf: dnf ?? false,
   };
 
-  // logRewatches: a rewatch on a new date becomes its own history row (the same
-  // date still overwrites, so duplicate taps and re-imports don't create
-  // duplicate rows). With the preference off, collapse back to the old
-  // single-row-per-title behavior — there's no more DB-level
-  // unique(user_id,tmdb_id,media_type) to upsert against (it was relaxed so
-  // rewatches can coexist), so do it explicitly. Write the new row first and
-  // only then clear the superseded ones: deleting first means a failed insert
-  // takes the user's history with it, which is exactly how the bulk import
-  // destroyed data.
-  if (!logRewatches) {
-    const { data, error } = await supabase
-      .from('history')
-      .upsert(row, { onConflict: HISTORY_CONFLICT_TARGET })
-      .select()
-      .single();
-    if (!error) {
-      await supabase.from('history').delete()
-        .eq('user_id', userId)
-        .eq('tmdb_id', row.tmdb_id)
-        .eq('media_type', row.media_type)
-        .neq('watched_at', row.watched_at);
-    }
-    return { data, error, row };
-  }
-
+  // A rewatch on a new date becomes its own history row; the same date
+  // overwrites in place, so duplicate taps and re-imports don't pile up.
   const { data, error } = await supabase
     .from('history')
     .upsert(row, { onConflict: HISTORY_CONFLICT_TARGET })

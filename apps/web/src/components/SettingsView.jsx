@@ -1148,7 +1148,6 @@ export default function SettingsView() {
 
   const username      = profile?.username || '';
   const isPublic      = !!profile?.is_public;
-  const logRewatches  = profile?.log_rewatches ?? true;
   const usernameValue = usernameDraft ?? username;
   const usernameDirty = usernameValue.trim().toLowerCase() !== username.toLowerCase();
   const profileUrl    = username ? `${window.location.origin}/u/${username}` : null;
@@ -1628,13 +1627,6 @@ export default function SettingsView() {
     refreshProfile();
   };
 
-  const handleToggleLogRewatches = async () => {
-    if (!user) return;
-    const { error } = await supabase.from('profiles').update({ log_rewatches: !logRewatches }).eq('id', user.id);
-    if (error) { setActionError(error.message); return; }
-    refreshProfile();
-  };
-
   // A little personality for profile shares — one picked at random (the card
   // already carries the avatar, stats and PLOT branding).
   const PROFILE_SHARE_LINES = SETTINGS_VIEW.shareTaglines;
@@ -2104,30 +2096,6 @@ export default function SettingsView() {
           <div className="settings-row-value">
             <span>{savingGenres ? COMMON.saving : genres.length > 0 ? SETTINGS_VIEW.integrations.selectedCount(genres.length) : COMMON.none}</span>
             <Chevron />
-          </div>
-        </div>
-
-        {/* Rewatches */}
-        <div className="settings-row" style={{ cursor: 'default' }}>
-          <div className="settings-row-left">
-            <div className="settings-row-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>
-              </svg>
-            </div>
-            <div>
-              <div className="settings-row-label">{SETTINGS_VIEW.rewatches.label}</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                {logRewatches
-                  ? SETTINGS_VIEW.rewatches.onHint
-                  : SETTINGS_VIEW.rewatches.offHint}
-              </div>
-            </div>
-          </div>
-          <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
-            <SettingsTextAction onClick={handleToggleLogRewatches}>
-              {logRewatches ? COMMON.turnOff : COMMON.turnOn}
-            </SettingsTextAction>
           </div>
         </div>
 

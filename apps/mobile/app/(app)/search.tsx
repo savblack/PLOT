@@ -295,7 +295,7 @@ function SearchRow({ item, hooks, signedIn }: { item: SearchResult; hooks: Media
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.actionBtn, watched && styles.actionBtnActive]}
-            onPress={() => watched ? history.removeEntry(item.id) : history.logWatched(payload, { logRewatches: profile?.log_rewatches ?? true })}
+            onPress={() => watched ? history.removeEntry(item.id) : history.logWatched(payload)}
             hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
             accessibilityLabel={watched ? 'Mark unwatched' : 'Mark watched'}
           >

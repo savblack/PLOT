@@ -807,7 +807,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                     <TouchableOpacity
                       style={styles.btnSecondary}
                       onPress={async () => {
-                        await history.logWatched({ ...details, id: itemId, media_type: itemType }, { logRewatches: profile?.log_rewatches ?? true });
+                        await history.logWatched({ ...details, id: itemId, media_type: itemType });
                         if (!isMovie && isWatching) await watching.stopWatching(itemId);
                       }}
                     >
