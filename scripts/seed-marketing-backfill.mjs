@@ -53,11 +53,25 @@ const ANNIVERSARY_MARKS = [50, 30, 25, 20, 10];
 const YEAR_MOVIE_MIN_VOTES = 1500;
 
 // The marketing libs read SUPABASE_URL at import time; default it (like
-// scripts/seed-journal.mjs does) so only SUPABASE_SERVICE_KEY + TMDB_API_KEY
-// are strictly required. Override by exporting SUPABASE_URL yourself.
+// scripts/sync-streaming-top10.mjs does) so only SUPABASE_SERVICE_KEY +
+// TMDB_API_KEY are strictly required. Override by exporting SUPABASE_URL yourself.
 const DEFAULT_SUPABASE_URL = 'https://mkegtssedjyqldysvzga.supabase.co';
 if (!process.env.SUPABASE_URL && !process.env.VITE_SUPABASE_URL) {
   process.env.SUPABASE_URL = DEFAULT_SUPABASE_URL;
+}
+
+// Name the target project before writing anything. Falling through to the
+// default means production, so a typo'd override (SUPBASE_URL=…) looks exactly
+// like a staging run — this line is the only thing that gives it away.
+// (Skipped for --selftest, which is an offline copy check that never opens a
+// connection — naming a target there would be misleading.)
+const TARGET_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+if (!SELFTEST) {
+  console.log(
+    `Target: ${new URL(TARGET_URL).host}`
+    + (TARGET_URL === DEFAULT_SUPABASE_URL ? ' (production, from default)' : '')
+    + (DRY_RUN ? ' — dry run, no writes' : '')
+  );
 }
 
 // ── Copy (hand-written, per marketing/VOICE.md) ──────────────────────────────
