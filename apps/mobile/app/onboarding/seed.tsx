@@ -29,6 +29,9 @@ const COLUMNS = 4;
 const CONTENT_W = Math.min(Dimensions.get('window').width, 420) - spacing.xl * 2;
 const CARD_W = (CONTENT_W - spacing.sm * (COLUMNS - 1)) / COLUMNS;
 
+// Web caps the poster grid at 42vh so the footer stays hugged to the content.
+const GRID_MAX_H = Math.round(Dimensions.get('window').height * 0.42);
+
 // Web detects region against its own /api/region Pages Function; mobile has no
 // origin of its own, so it hits the deployed one.
 const REGION_API = 'https://app.theplot.tv/api/region';
@@ -310,6 +313,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     lineHeight: 22,
     color: colors.textSecondary,
     textAlign: 'center',
+    marginBottom: spacing.xl,
   },
   searchBar: {
     flexDirection: 'row', alignItems: 'center',
@@ -320,7 +324,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   searchInput:    { flex: 1, paddingVertical: 12, fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textPrimary },
   searchTrailing: { marginLeft: spacing.sm },
   gridLabel:   { fontFamily: fontFamily.sansBold, fontSize: 11, letterSpacing: 0.7, textTransform: 'uppercase', color: colors.textSecondary, marginBottom: spacing.sm },
-  grid:        { flex: 1 },
+  grid:        { maxHeight: GRID_MAX_H, marginBottom: spacing.md },
   row:         { gap: spacing.sm, marginBottom: spacing.sm },
   card:        { width: CARD_W, aspectRatio: 2 / 3, borderRadius: radii.md, overflow: 'hidden', backgroundColor: colors.surfaceRaised, borderWidth: 2, borderColor: 'transparent' },
   cardActive:  { borderColor: colors.accent },

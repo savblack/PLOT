@@ -144,8 +144,14 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     textTransform: 'uppercase',
     color: colors.textMuted,
   },
+  // Sized to its content rather than stretched to fill the screen, so the
+  // footer below hugs whatever the step renders instead of being pinned to the
+  // bottom with a block of empty background above it. Mirrors web, where the
+  // scroll area has no flex-grow and the footer is only sticky once the page
+  // scrolls. Steps whose content can be tall cap their own scroller (see the
+  // genre list and the poster grid) exactly as web caps its with vh.
   content: {
-    flex: 1,
+    flexShrink: 1,
     width: '100%',
     maxWidth: CARD_MAX_W,
     alignSelf: 'center',
