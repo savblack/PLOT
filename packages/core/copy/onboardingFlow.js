@@ -11,18 +11,32 @@ export const ONBOARDING_FLOW = {
     placeholder: 'First name',
   },
   step2: {
-    title: 'Where are you?',
-    subtitle: 'We use this to show content available in your region.',
-  },
-  step3: {
     title: 'What do you like?',
     subtitle: 'Pick a few to shape what we recommend.',
   },
-  step4: {
-    title: 'What are you watching?',
-    subtitle: 'Give your watchlist a head start.',
+  // Step 3 opens on an intro rather than dropping the user straight into a
+  // poster grid: picking titles reads as ambiguous ("have I watched these?")
+  // without a line first saying what the picks are for.
+  step3: {
+    intro: {
+      greeting: (name) => (name ? `Hi ${name}!` : 'Hi there!'),
+      lead: "Let's start on a good note.",
+      // Honest, not aspirational: list_items feeds user_title_signals, which
+      // is what get_for_you() scores. See the for_you_weighted_signals
+      // migration.
+      pitch: 'Tell us what you want to watch and your recommendations get better.',
+      cta: "Let's go",
+      ctaArrow: "Let's go →",
+      toApp: 'Take me to the app instead',
+    },
+    title: 'What do you want to watch?',
+    // Says where the picks go, because "what are you watching" read as a
+    // question about history: already-watched, in progress, or want to watch.
+    subtitle: "Pick anything you'd like to get to. We'll add it to your watchlist.",
     searchPlaceholder: 'Search for a show or movie…',
     trendingThisWeek: 'Trending this week',
+    add: 'Add',
+    remove: 'Remove',
   },
   stepLabel: (step, total) => `Step ${step} of ${total}`,
   clearSearch: 'Clear search',

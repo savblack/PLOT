@@ -1,5 +1,5 @@
 /**
- * Shared chrome for the four onboarding steps — the mobile counterpart of the
+ * Shared chrome for the three onboarding steps — the mobile counterpart of the
  * web app's single OnboardingFlow page (apps/web/src/pages/OnboardingFlow.jsx).
  * Mobile splits the flow across expo-router screens, so the header (wordmark,
  * progress bar, step label, back chevron) and the sticky footer (outline CTA,
@@ -15,7 +15,7 @@ import { ONBOARDING_FLOW } from '@plot/core/copy/onboardingFlow.js';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import { useTheme } from '../contexts/ThemeContext';
 
-export const TOTAL_STEPS = 4;
+export const TOTAL_STEPS = 3;
 
 interface Props {
   step: number;
@@ -27,15 +27,18 @@ interface Props {
   onContinue: () => void;
   ctaDisabled?: boolean;
   saving?: boolean;
-  /** Steps 3 and 4 only, matching web. */
+  /** Steps 2 and 3 only, matching web. */
   onSkip?: () => void;
+  /** Defaults to "Skip this step"; step 3's intro leaves for the app instead. */
+  skipLabel?: string;
   error?: string | null;
   children: ReactNode;
 }
 
 export default function OnboardingScaffold({
   step, title, subtitle, onBack, ctaLabel, onContinue,
-  ctaDisabled = false, saving = false, onSkip, error, children,
+  ctaDisabled = false, saving = false, onSkip,
+  skipLabel = ONBOARDING_FLOW.skipThisStep, error, children,
 }: Props) {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
@@ -100,7 +103,7 @@ export default function OnboardingScaffold({
         </TouchableOpacity>
         {onSkip && !saving ? (
           <TouchableOpacity style={styles.skipBtn} onPress={onSkip} accessibilityRole="button">
-            <Text style={styles.skipText}>{ONBOARDING_FLOW.skipThisStep}</Text>
+            <Text style={styles.skipText}>{skipLabel}</Text>
           </TouchableOpacity>
         ) : null}
       </View>

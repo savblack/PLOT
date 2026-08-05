@@ -1,5 +1,5 @@
 /**
- * Onboarding step 3 — Genre selection.
+ * Onboarding step 2 — Genre selection.
  * Fetches the combined TMDB movie+TV genre list and persists profiles.genres
  * as a text[] of genre names, matching the pre-existing column shape.
  */
@@ -56,15 +56,15 @@ export default function Genres() {
       await supabase.from('profiles').update({ genres: payload }).eq('id', session.user.id);
     }
     setSaving(false);
-    track(EVENTS.ONBOARDING_STEP_COMPLETED, { step: 3, step_name: 'genres', skipped });
+    track(EVENTS.ONBOARDING_STEP_COMPLETED, { step: 2, step_name: 'genres', skipped });
     router.push('/onboarding/seed');
   };
 
   return (
     <OnboardingScaffold
-      step={3}
-      title={ONBOARDING_FLOW.step3.title}
-      subtitle={ONBOARDING_FLOW.step3.subtitle}
+      step={2}
+      title={ONBOARDING_FLOW.step2.title}
+      subtitle={ONBOARDING_FLOW.step2.subtitle}
       onBack={() => router.back()}
       ctaLabel={ONBOARDING_FLOW.continueArrow}
       onContinue={() => advance(false)}
