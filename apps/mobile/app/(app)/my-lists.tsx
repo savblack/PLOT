@@ -16,6 +16,8 @@ import { tmdb } from '../../lib/tmdb';
 import { favoriteWords } from '../../lib/spelling';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii, iconButtonSize } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
+import { COMMON } from '@plot/core/copy/common.js';
+import { MEDIA } from '@plot/core/copy/media.js';
 
 const SCREEN_W = Dimensions.get('window').width;
 const POSTER_W = (SCREEN_W - spacing.xl * 2 - spacing.sm * 2) / 3;
@@ -628,7 +630,7 @@ function CustomListCard({
   const openMenu = () => {
     const buttons: any[] = [
       { text: 'Rename', onPress: () => setRenaming(true) },
-      { text: list.is_public ? 'Make private' : 'Make public', onPress: () => onSetPublic(!list.is_public) },
+      { text: list.is_public ? COMMON.makePrivate : 'Make public', onPress: () => onSetPublic(!list.is_public) },
     ];
     if (list.is_public) buttons.push({ text: 'Share link', onPress: onShare });
     buttons.push({ text: 'Delete', style: 'destructive', onPress: onDelete });
@@ -691,7 +693,7 @@ function CustomListCard({
             <Text style={styles.emptyBody}>{(list.items?.length || 0) === 0 ? 'No items yet — tap + to add' : 'No matching titles'}</Text>
           </TouchableOpacity>
         ) : (
-          <PosterGrid items={items} onRemove={onRemoveItem} removeLabel="Remove from list" />
+          <PosterGrid items={items} onRemove={onRemoveItem} removeLabel={MEDIA.removeFromList} />
         )
       )}
     </View>

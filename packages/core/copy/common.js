@@ -42,5 +42,10 @@ export const COMMON = {
   none: 'None',
   notSet: 'Not set',
   syncing: 'Syncing…',
+  clearSearch: 'Clear search',
+  makePublic: 'Make public',
+  makePrivate: 'Make private',
+  privacyPolicy: 'Privacy Policy',
+  termsOfService: 'Terms of Service',
   loading: 'Loading…',
 };

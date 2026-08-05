@@ -23,6 +23,7 @@ import { Avatar, ProfileBadges } from '../../../components/Avatar';
 import { UserList, SocialUser } from '../../../components/UserList';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../../lib/tokens';
 import { TAB_BAR_CLEARANCE } from '../../../lib/tabBar';
+import { PUBLIC_PROFILE_PAGE } from '@plot/core/copy/publicProfilePage.js';
 
 const SCREEN_W = Dimensions.get('window').width;
 const GRID_GAP = spacing.sm;
@@ -130,7 +131,7 @@ export default function ProfileScreen() {
                   </TouchableOpacity>
                 ) : (
                   <TouchableOpacity style={styles.btnPrimary} onPress={follow} disabled={busy}>
-                    <Text style={styles.btnPrimaryText}>{isPrivate ? 'Request to follow' : 'Follow'}</Text>
+                    <Text style={styles.btnPrimaryText}>{isPrivate ? PUBLIC_PROFILE_PAGE.requestToFollow : 'Follow'}</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -271,7 +272,7 @@ function FollowListModal({
         <ScrollView showsVerticalScrollIndicator={false}>
           {users === null
             ? <ActivityIndicator color={colors.accent} style={{ paddingVertical: spacing.xl }} />
-            : <UserList users={users} viewerId={viewerId} onNavigate={onClose} empty={kind === 'followers' ? 'No followers yet.' : 'Not following anyone yet.'} />}
+            : <UserList users={users} viewerId={viewerId} onNavigate={onClose} empty={kind === 'followers' ? PUBLIC_PROFILE_PAGE.noFollowersYet : PUBLIC_PROFILE_PAGE.notFollowingAnyoneYet} />}
         </ScrollView>
       </View>
     </View>

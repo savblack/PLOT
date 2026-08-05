@@ -93,6 +93,12 @@ jobs:
       - name: Check migrations don't silently change an upsert key
         run: npm run migrations:check
 
+      # The shared copy catalog only prevents web↔mobile drift if both apps read
+      # from it. A literal that matches today diverges the first time either side
+      # is reworded, so hardcoding a string the catalog owns fails the build.
+      - name: Check no app hardcodes shared copy
+        run: npm run copy:check
+
       - name: Unit tests
         run: npm run test:unit
 

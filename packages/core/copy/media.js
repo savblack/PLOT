@@ -30,6 +30,17 @@ export const MEDIA = {
   watched: 'Watched',
   comingSoon: 'Coming Soon',
   inCinemas: 'In Cinemas',
+  // Watch-status actions. These live here rather than in mediaPanel because
+  // three surfaces render them — the detail panel, the search rows and the
+  // Watching list — and a per-surface copy is how the same label ends up
+  // worded two ways. onboardingFlow.startWatchingArrow is a DIFFERENT concept
+  // (the onboarding CTA, "begin using PLOT"), so it stays where it is.
+  markWatched: 'Mark watched',
+  markUnwatched: 'Mark unwatched',
+  markAllWatched: 'Mark all watched',
+  startWatching: 'Start watching',
+  stopWatching: 'Stop watching',
+  couldNotCreateList: 'Could not create the list. Please try again.',
   removeFromList: 'Remove from list',
   addToList: 'Add to list',
 };

@@ -23,6 +23,7 @@ import { fetchVerifiedAvailability, offersFromTmdb } from '@plot/core/availabili
 import { fetchCriticScore, pickAudienceQuote, getConsensusLine } from '@plot/core/reviews.js';
 import { canCreateCustomList, FREE_CUSTOM_LIST_CAP } from '@plot/core/premium.js';
 import { TrailerPlayer } from './TrailerPlayer';
+import { MEDIA } from '@plot/core/copy/media.js';
 
 // Shared link points at the web /save route (works for anyone, app or not) —
 // mirrors web buildTitleShareUrl.
@@ -338,7 +339,7 @@ function AddToListSheet({ item, customLists, topLists, onClose }: {
     }
     setBusy(true);
     const newList = await createList(trimmed);
-    if (!newList) { setBusy(false); setError(MEDIA_PANEL.couldNotCreateList); return; }
+    if (!newList) { setBusy(false); setError(MEDIA.couldNotCreateList); return; }
     await addItem(newList.id, item);   // create + immediately add this title, like web
     setBusy(false); setCreating(false); setName(''); setError('');
   };
@@ -802,7 +803,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                       >
                         {isWatching ? <IconStop /> : <IconPlay />}
                         <Text style={[styles.btnSecondaryText, isWatching && { color: '#818cf8' }]}>
-                          {isWatching ? 'Stop watching' : 'Start watching'}
+                          {isWatching ? MEDIA.stopWatching : MEDIA.startWatching}
                         </Text>
                       </TouchableOpacity>
                     )}
@@ -814,7 +815,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                       }}
                     >
                       <IconCheck />
-                      <Text style={styles.btnSecondaryText}>{isMovie ? MEDIA_PANEL.markWatched : MEDIA_PANEL.markAllWatched}</Text>
+                      <Text style={styles.btnSecondaryText}>{isMovie ? MEDIA.markWatched : MEDIA.markAllWatched}</Text>
                     </TouchableOpacity>
                   </View>
                 ) : (

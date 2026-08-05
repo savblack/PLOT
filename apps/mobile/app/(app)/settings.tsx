@@ -41,8 +41,8 @@ import ImportHistoryModal from '../../components/ImportHistoryModal';
 
 const FEEDBACK_TYPES = [
   { id: 'bug',     label: 'Bug report' },
-  { id: 'feature', label: 'Feature request' },
-  { id: 'general', label: 'General feedback' },
+  { id: 'feature', label: SETTINGS_VIEW.feedback.featureRequestLabel },
+  { id: 'general', label: SETTINGS_VIEW.feedback.generalFeedbackLabel },
 ];
 
 function fmtTz(tz: string) {
@@ -174,7 +174,7 @@ function TimezoneModal({ current, onSave, onClose }: { current: string; onSave: 
               autoCorrect={false}
             />
             {query.length > 0 && (
-              <TouchableOpacity onPress={() => setQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Clear search" accessibilityRole="button">
+              <TouchableOpacity onPress={() => setQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel={COMMON.clearSearch} accessibilityRole="button">
                 <Text style={styles.modalSearchClear}>✕</Text>
               </TouchableOpacity>
             )}
@@ -277,7 +277,7 @@ function ProviderModal({
               onChangeText={setSearch}
             />
             {search.length > 0 && (
-              <TouchableOpacity onPress={() => setSearch('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Clear search" accessibilityRole="button">
+              <TouchableOpacity onPress={() => setSearch('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel={COMMON.clearSearch} accessibilityRole="button">
                 <Text style={styles.modalSearchClear}>✕</Text>
               </TouchableOpacity>
             )}
@@ -325,7 +325,7 @@ function NameModal({ current, onSave, onClose }: { current: string; onSave: (nam
 
   const handleSave = async () => {
     const next = value.trim();
-    if (!next) { setError('Enter a name.'); return; }
+    if (!next) { setError(SETTINGS_VIEW.errors.enterAName); return; }
     if (next.length > 50) { setError('Keep it under 50 characters.'); return; }
     setSaving(true);
     setError(null);
@@ -333,7 +333,7 @@ function NameModal({ current, onSave, onClose }: { current: string; onSave: (nam
       await onSave(next);
       onClose();
     } catch (e: any) {
-      setError(e?.message || 'Could not update name. Try again.');
+      setError(e?.message || SETTINGS_VIEW.errors.couldNotUpdateName);
     } finally {
       setSaving(false);
     }
@@ -594,7 +594,7 @@ export default function SettingsScreen() {
 
   const handleRevokeCalToken = () => {
     Alert.alert(
-      'Revoke calendar link?',
+      SETTINGS_VIEW.confirm.revokeCalendarLinkTitle,
       SETTINGS_VIEW.confirm.revokeCalendarLinkMessage,
       [
         { text: 'Cancel', style: 'cancel' },
@@ -683,9 +683,9 @@ export default function SettingsScreen() {
   };
 
   const handleClearHistory = () => {
-    Alert.alert('Clear watch history?', 'This will permanently delete all your watched entries. This cannot be undone.', [
+    Alert.alert(SETTINGS_VIEW.confirm.clearWatchHistoryTitle, SETTINGS_VIEW.confirm.clearWatchHistoryMessage, [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Clear history', style: 'destructive', onPress: async () => {
+      { text: SETTINGS_VIEW.confirm.clearHistory, style: 'destructive', onPress: async () => {
         setClearingHist(true);
         await supabase.from('history').delete().eq('user_id', userId!);
         setClearingHist(false);
@@ -721,7 +721,7 @@ export default function SettingsScreen() {
   const handleDeleteAccount = () => {
     Alert.alert(
       SETTINGS_VIEW.confirm.deleteAccountTitle,
-      'This will permanently delete your account and all your data. This cannot be undone.',
+      SETTINGS_VIEW.confirm.deleteAccountMessage,
       [
         { text: 'Cancel', style: 'cancel' },
         { text: SETTINGS_VIEW.confirm.deleteAccount, style: 'destructive', onPress: async () => {
@@ -757,7 +757,7 @@ export default function SettingsScreen() {
         <SettingsGroup title="Account">
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><Circle cx={12} cy={7} r={4}/></Svg>}
-            label={displayName || 'Add your name'}
+            label={displayName || SETTINGS_VIEW.addYourName}
             onPress={() => setShowName(true)}
           />
           <SettingsRow
@@ -828,7 +828,7 @@ export default function SettingsScreen() {
         <SettingsGroup title="Viewing">
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Circle cx={12} cy={12} r={10}/><Circle cx={8.5} cy={10} r={1}/><Circle cx={15.5} cy={10} r={1}/><Path d="M8 15s1.5 2 4 2 4-2 4-2"/></Svg>}
-            label="Kids content"
+            label={SETTINGS_VIEW.kidsContent.label}
             trailing={<Switch value={includeKidsContent} onValueChange={toggleKidsContent} trackColor={{ true: colors.accent }} />}
           />
           <SettingsRow
@@ -855,7 +855,7 @@ export default function SettingsScreen() {
         <SettingsGroup title="Calendar">
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Rect x={3} y={4} width={18} height={18} rx={2} ry={2}/><Line x1={16} y1={2} x2={16} y2={6}/><Line x1={8} y1={2} x2={8} y2={6}/><Line x1={3} y1={10} x2={21} y2={10}/></Svg>}
-            label="Subscribe to Calendar"
+            label={SETTINGS_VIEW.calendarFeed.subscribeLabel}
             value={calendarToken ? 'On' : undefined}
             onPress={calendarToken ? openCalendarMenu : handleGenerateCalToken}
             trailing={calendarToken
@@ -869,10 +869,10 @@ export default function SettingsScreen() {
         {/* PLOT Premium — status only; purchases and subscription management
             stay on the web app (Apple IAP rules: no external purchase links). */}
         {profile?.is_premium && (
-          <SettingsGroup title="PLOT Premium">
+          <SettingsGroup title={SETTINGS_VIEW.premium.groupTitle}>
             <SettingsRow
               icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill={colors.accent} stroke="none"><Path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></Svg>}
-              label="You have PLOT Premium"
+              label={SETTINGS_VIEW.premium.youHavePremium}
               value="Thank you"
             />
           </SettingsGroup>
@@ -920,12 +920,12 @@ export default function SettingsScreen() {
           />
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><Polyline points="14,2 14,8 20,8"/></Svg>}
-            label="Terms of Service"
+            label={COMMON.termsOfService}
             onPress={() => Linking.openURL('https://theplot.tv/terms.html')}
           />
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></Svg>}
-            label="Privacy Policy"
+            label={COMMON.privacyPolicy}
             onPress={() => Linking.openURL('https://theplot.tv/privacy.html')}
           />
         </SettingsGroup>
@@ -934,7 +934,7 @@ export default function SettingsScreen() {
         <SettingsGroup title="Danger Zone">
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.danger} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><Path d="M3 3v5h5"/><Path d="M12 7v5l4 2"/></Svg>}
-            label={clearingHist ? 'Clearing…' : 'Clear Watch History'}
+            label={clearingHist ? 'Clearing…' : SETTINGS_VIEW.dangerZone.clearWatchHistoryLabel}
             onPress={clearingHist ? undefined : handleClearHistory}
             danger
           />

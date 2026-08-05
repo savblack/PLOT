@@ -17,6 +17,7 @@ import { favoriteWords } from '../../lib/spelling';
 import { UserRow, SocialUser } from '../../components/UserList';
 import { classifySearchResults } from '@plot/core/search.js';
 import { track, EVENTS } from '../../lib/analytics';
+import { MEDIA } from '@plot/core/copy/media.js';
 
 type Mode = 'titles' | 'people';
 
@@ -281,7 +282,7 @@ function SearchRow({ item, hooks, signedIn }: { item: SearchResult; hooks: Media
             style={[styles.actionBtn, inList && styles.actionBtnActive]}
             onPress={() => watchlist.toggle(payload)}
             hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-            accessibilityLabel={inList ? 'Remove from watchlist' : 'Add to watchlist'}
+            accessibilityLabel={inList ? MEDIA.removeFromWatchlist : MEDIA.saveToWatchlist}
           >
             <BookmarkIcon size={15} color={inList ? colors.accent : colors.textMuted} filled={inList} />
           </TouchableOpacity>
@@ -297,7 +298,7 @@ function SearchRow({ item, hooks, signedIn }: { item: SearchResult; hooks: Media
             style={[styles.actionBtn, watched && styles.actionBtnActive]}
             onPress={() => watched ? history.removeEntry(item.id) : history.logWatched(payload)}
             hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-            accessibilityLabel={watched ? 'Mark unwatched' : 'Mark watched'}
+            accessibilityLabel={watched ? MEDIA.markUnwatched : MEDIA.markWatched}
           >
             <CheckIcon size={15} color={watched ? colors.chipStreaming : colors.textMuted} />
           </TouchableOpacity>

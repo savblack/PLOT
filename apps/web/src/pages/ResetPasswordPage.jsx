@@ -66,7 +66,7 @@ export default function ResetPasswordPage() {
                     <input
                       id="rp-password"
                       type={showPassword ? 'text' : 'password'}
-                      placeholder="At least 6 characters"
+                      placeholder={AUTH_PAGE.passwordPlaceholder.signup}
                       value={password}
                       onChange={e => setPassword(e.target.value)}
                       required

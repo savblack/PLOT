@@ -32,6 +32,7 @@
     "storybook:mobile:deploy": "bash scripts/deploy-storybook.sh apps/mobile plot-storybook-mobile",
     "emails:check": "node scripts/push-auth-emails.mjs --check",
     "migrations:check": "node scripts/check-migration-redefinitions.mjs",
+    "copy:check": "node scripts/check-hardcoded-copy.mjs",
     "db:write-paths": "node scripts/check-db-write-paths.mjs",
     "mkt:plan": "node marketing/planner/plan.mjs",
     "mkt:guides": "node marketing/planner/guides.mjs",

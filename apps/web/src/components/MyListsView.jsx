@@ -24,6 +24,7 @@ import { useShare } from '../hooks/useShare.js';
 import { EVENTS, track } from '../lib/analytics.js';
 import { canCreateCustomList, FREE_CUSTOM_LIST_CAP } from '@plot/core/premium.js';
 import { getStoredSectionOpen, storeSectionOpen } from '../utils/sectionOpenState.js';
+import { MEDIA } from '../copy/media.js';
 
 const ALL_LIST_SECTION_IDS = ['watching', 'want', 'top10', 'favorites', 'lists'];
 
@@ -762,7 +763,7 @@ function CreateListModal({ lists, onConfirm, onClose }) {
     try {
       const created = await onConfirm(name);
       if (!created) {
-        setError('Could not create the list. Please try again.');
+        setError(MEDIA.couldNotCreateList);
       }
     } finally {
       setIsSubmitting(false);
@@ -1053,7 +1054,7 @@ function CustomListsSection({ customLists: clHook, filterItems, open, onOpenChan
                       }}
                       aria-label={list.is_public ? `Make ${list.name} private` : `Make ${list.name} public`}
                     >
-                      {list.is_public ? 'Make private' : 'Make public'}
+                      {list.is_public ? COMMON.makePrivate : 'Make public'}
                     </button>
                     {list.is_public && (
                       <button
@@ -1644,7 +1645,7 @@ export default function MyListsView() {
     relevantSectionIds.forEach(id => storeSectionOpen(id, next));
   };
   const sectionsToggleLabel = (isAll || isHistory)
-    ? (sectionsOpenForView ? 'Collapse all sections' : 'Expand all sections')
+    ? (sectionsOpenForView ? MEDIA.collapseAllSections : MEDIA.expandAllSections)
     : (sectionsOpenForView ? 'Collapse section' : 'Expand section');
 
   return (

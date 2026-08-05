@@ -13,6 +13,7 @@ import UserList from './UserList.jsx';
 import { classifySearchResults } from '../utils/search.js';
 import { track, EVENTS } from '../lib/analytics.js';
 import { MEDIA } from '../copy/media.js';
+import { COMMON } from '../copy/common.js';
 
 function BookmarkIcon({ filled }) {
   return (
@@ -203,7 +204,7 @@ export default function SearchView() {
               type="button"
               className="search-input-clear"
               onClick={() => { setQuery(''); runSearch('', mode); }}
-              aria-label="Clear search"
+              aria-label={COMMON.clearSearch}
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
