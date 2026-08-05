@@ -2620,7 +2620,7 @@ export default function SettingsView() {
 
       {showGuideChannels && (
         <ProviderPicker
-          title="My Channels"
+          title={SETTINGS_VIEW.integrations.myChannelsLabel}
           hint="Select the free-to-air and broadcast channels to include in your Guide. For example, ABC iview, SBS On Demand, 9Now, 7Plus, 10 Play."
           region={region}
           selected={guideChannels}
