@@ -18,7 +18,7 @@ function notifyHistoryChanged() {
  *   entries: any[];
  *   loading: boolean;
  *   loadError: boolean;
- *   logWatched: (item: any, opts?: { rating?: number; note?: string; dnf?: boolean; watchedAt?: string; logRewatches?: boolean }) => Promise<any>;
+ *   logWatched: (item: any, opts?: { rating?: number; note?: string; dnf?: boolean; watchedAt?: string }) => Promise<any>;
  *   updateEntry: (tmdbId: number, updates: any, mediaType?: string) => Promise<any>;
  *   removeEntry: (tmdbId: number, mediaType?: string) => Promise<boolean>;
  *   isWatched: (tmdbId: number, mediaType?: string) => boolean;
@@ -73,12 +73,11 @@ export function useHistory(userId) {
   useEffect(() => on(HISTORY_CHANGED_EVENT, load), [load]);
 
   /* ── Log a watched item ──
-     logRewatches (default true): a rewatch on a new date becomes its own
-     history row instead of overwriting the previous watch (see SUS-66 /
-     profiles.log_rewatches). */
-  const logWatched = useCallback(async (item, { rating, note, dnf, watchedAt, logRewatches = true } = {}) => {
+     A rewatch on a new date becomes its own history row instead of overwriting
+     the previous watch (see SUS-66). */
+  const logWatched = useCallback(async (item, { rating, note, dnf, watchedAt } = {}) => {
     if (!userId) { lastErrorRef.current = 'You need to be signed in to log a watch.'; return null; }
-    const { data, error, row } = await logWatchedItem({ userId, item, rating, note, dnf, watchedAt, logRewatches });
+    const { data, error, row } = await logWatchedItem({ userId, item, rating, note, dnf, watchedAt });
     if (error) {
       console.error('Failed to log watched item', error);
       lastErrorRef.current = error.message || 'Unknown error saving watch status.';
@@ -88,13 +87,10 @@ export function useHistory(userId) {
 
     if (data) {
       setEntries(prev => {
-        // Same-title-same-date always replaces in place. A same-title
-        // different-date row is a preserved rewatch (kept) unless rewatches
-        // are off, in which case the DB write already collapsed to one row
-        // per title and every stale local entry for it must go too.
-        const withoutStale = prev.filter(e => logRewatches
-          ? !(e.tmdb_id === row.tmdb_id && e.media_type === row.media_type && e.watched_at === row.watched_at)
-          : !(e.tmdb_id === row.tmdb_id && e.media_type === row.media_type));
+        // Same-title-same-date replaces in place; a same-title different-date
+        // row is a preserved rewatch and stays.
+        const withoutStale = prev.filter(e =>
+          !(e.tmdb_id === row.tmdb_id && e.media_type === row.media_type && e.watched_at === row.watched_at));
         return [data, ...withoutStale].sort((a, b) => (a.watched_at < b.watched_at ? 1 : -1));
       });
       notifyHistoryChanged();

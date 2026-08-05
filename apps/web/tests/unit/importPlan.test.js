@@ -48,47 +48,34 @@ test('source rows that collide on the unique key collapse to one', () => {
   assert.equal(plan.collapsed, 2);
 });
 
-test('with rewatches off a title collapses to its most recent watch', () => {
-  const plan = planHistoryImport({
-    rows: [row(1, 'movie', '2024-01-01'), row(1, 'movie', '2024-06-15'), row(1, 'movie', '2024-03-09')],
-    logRewatches: false,
-  });
-  assert.deepEqual(keys(plan), ['1::movie::2024-06-15']);
-  assert.equal(plan.collapsed, 2);
-});
-
-test('with rewatches off a title already in the history is left untouched', () => {
-  // The data-loss case. The old import deleted every history row for the
-  // titles in the file and then inserted a set that had already had these rows
-  // filtered out of it, so the user's existing watches were destroyed and not
-  // replaced. Planning is additive: an already-logged title yields no row, and
-  // nothing asks for a delete.
+test('an earlier watch of a title already in the history still imports', () => {
+  // The data-loss case, now structurally impossible. The old import deleted
+  // every history row for the titles in the file and then inserted a set those
+  // rows had already been filtered out of, destroying watches it never
+  // replaced. Planning is additive: it yields rows to add and never asks for a
+  // delete, so the 2019 watch survives an import that mentions the same title.
   const plan = planHistoryImport({
     rows: [row(1, 'movie', '2024-06-15'), row(2, 'movie', '2024-06-15')],
     existing: [{ tmdb_id: 1, media_type: 'movie', watched_at: '2019-01-01' }],
-    logRewatches: false,
   });
-  assert.deepEqual(keys(plan), ['2::movie::2024-06-15']);
-  assert.equal(plan.alreadyInHistory, 1);
+  assert.deepEqual(keys(plan).sort(), ['1::movie::2024-06-15', '2::movie::2024-06-15']);
+  assert.equal(plan.alreadyInHistory, 0);
 });
 
 test('planned rows never collide with each other or with existing history', () => {
   const existing = [{ tmdb_id: 1, media_type: 'movie', watched_at: '2024-01-01' }];
-  for (const logRewatches of [true, false]) {
-    const plan = planHistoryImport({
-      rows: [
-        row(1, 'movie', '2024-01-01'), row(1, 'movie', '2024-01-01'),
-        row(1, 'movie', '2024-02-02'), row(1, 'tv', '2024-02-02'),
-        row(2, 'tv', '2024-02-02'), row(2, 'tv', '2024-05-05'),
-      ],
-      existing,
-      logRewatches,
-    });
-    const planned = keys(plan);
-    assert.equal(new Set(planned).size, planned.length, `duplicate planned row (logRewatches=${logRewatches})`);
-    for (const e of existing) {
-      assert.ok(!planned.includes(`${e.tmdb_id}::${e.media_type}::${e.watched_at}`));
-    }
+  const plan = planHistoryImport({
+    rows: [
+      row(1, 'movie', '2024-01-01'), row(1, 'movie', '2024-01-01'),
+      row(1, 'movie', '2024-02-02'), row(1, 'tv', '2024-02-02'),
+      row(2, 'tv', '2024-02-02'), row(2, 'tv', '2024-05-05'),
+    ],
+    existing,
+  });
+  const planned = keys(plan);
+  assert.equal(new Set(planned).size, planned.length, 'duplicate planned row');
+  for (const e of existing) {
+    assert.ok(!planned.includes(`${e.tmdb_id}::${e.media_type}::${e.watched_at}`));
   }
 });
 

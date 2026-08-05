@@ -1116,7 +1116,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
     const result = await markMediaAsWatched({
       logWatched: () => history.logWatched(
         { ...details, id: itemId, media_type: itemType, dnf },
-        { logRewatches: profile?.log_rewatches ?? true, watchedAt: defaultWatchedAt },
+        { watchedAt: defaultWatchedAt },
       ),
       clearWatching: () => watching.stopWatching(itemId),
       removeFromSaved: () => watchlist.removeFromList(itemId),
@@ -1128,7 +1128,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
     // of the generic fallback message, so a recurrence is actually diagnosable.
     const realError = !result.ok && history.getLastError();
     return realError ? { ok: false, error: realError } : result;
-  }, [defaultWatchedAt, details, history, inList, isMovie, isWatching, itemId, itemType, profile?.log_rewatches, watched, watchedEntry?.dnf, watchlist, watching]);
+  }, [defaultWatchedAt, details, history, inList, isMovie, isWatching, itemId, itemType, watched, watchedEntry?.dnf, watchlist, watching]);
 
   const handleClearStatus = useCallback(async () => {
     if (isWatching) {
@@ -1569,7 +1569,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                       } else {
                         await history.logWatched(
                           { ...details, id: itemId, media_type: itemType },
-                          { rating: localRating || null, note: localReview.trim() || null, dnf: localDnf, watchedAt: localWatchedAt || defaultWatchedAt, logRewatches: profile?.log_rewatches ?? true }
+                          { rating: localRating || null, note: localReview.trim() || null, dnf: localDnf, watchedAt: localWatchedAt || defaultWatchedAt }
                         );
                       }
                       setReviewSaving(false);

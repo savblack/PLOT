@@ -128,12 +128,6 @@ export const SETTINGS_VIEW = {
     importWatchHistoryHint: 'Import from Netflix, Prime, Disney+, Max or Apple TV+',
   },
 
-  rewatches: {
-    label: 'Log rewatches',
-    onHint: 'Rewatching a title adds a new entry to your history.',
-    offHint: 'Rewatching a title updates the existing entry instead of adding a new one.',
-  },
-
   kidsContent: {
     label: 'Kids content',
     onHint: 'Show movies and shows made for kids in Discover and recommendations.',
