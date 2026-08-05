@@ -1,10 +1,12 @@
 /**
- * Onboarding step 4 — Seed the watchlist.
- * Prefills a "trending this week" poster grid before the user searches
- * (mirrors web); the accent border plus tint overlay on a poster is the only
- * selection indicator. Seeds a "My List" custom list via idempotent upserts.
+ * Onboarding step 3 — Seed the watchlist.
+ * Opens on an intro that says what picking titles is for (the grid on its own
+ * read as a question about viewing history), then prefills a "trending this
+ * week" poster grid before the user searches (mirrors web); the accent border
+ * plus tint overlay on a poster is the only selection indicator. Seeds a
+ * "My List" custom list via idempotent upserts.
  */
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, FlatList, Image,
   StyleSheet, ActivityIndicator, Dimensions,
@@ -13,11 +15,12 @@ import { useRouter } from 'expo-router';
 import Svg, { Line } from 'react-native-svg';
 import { ONBOARDING_FLOW } from '@plot/core/copy/onboardingFlow.js';
 import { supabase } from '../../lib/supabase';
-import { tmdb } from '../../lib/tmdb';
+import { tmdb, setTmdbRegion } from '../../lib/tmdb';
 import { track, markActivated, EVENTS } from '../../lib/analytics';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 import { getOrCreateMyListId, saveOnboardingSeedTitles } from '@plot/core/onboarding.js';
+import { detectRegion, detectTimezone, guessRegionFromTimezone } from '@plot/core/regions.js';
 import OnboardingScaffold from '../../components/OnboardingScaffold';
 
 // Four columns, same as web — the flow is capped at the web card width (420),
@@ -25,6 +28,13 @@ import OnboardingScaffold from '../../components/OnboardingScaffold';
 const COLUMNS = 4;
 const CONTENT_W = Math.min(Dimensions.get('window').width, 420) - spacing.xl * 2;
 const CARD_W = (CONTENT_W - spacing.sm * (COLUMNS - 1)) / COLUMNS;
+
+// Web caps the poster grid at 42vh so the footer stays hugged to the content.
+const GRID_MAX_H = Math.round(Dimensions.get('window').height * 0.42);
+
+// Web detects region against its own /api/region Pages Function; mobile has no
+// origin of its own, so it hits the deployed one.
+const REGION_API = 'https://app.theplot.tv/api/region';
 
 // Web tints the selected poster with the light-theme accent at 30% in both
 // themes and stamps a white tick, so the same literal is used here.
@@ -47,6 +57,11 @@ export default function Seed() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
+  // The intro is the landing state; the poster grid is revealed by its CTA.
+  const [showPicker, setShowPicker] = useState(false);
+  const [firstName, setFirstName] = useState('');
+  // Region is detected, not asked: the region step it used to come from is gone.
+  const region = useRef(guessRegionFromTimezone());
   const [query,    setQuery]    = useState('');
   const [results,  setResults]  = useState<SearchResult[]>([]);
   const [trending, setTrending] = useState<SearchResult[]>([]);
@@ -55,6 +70,36 @@ export default function Seed() {
   const [searching,setSearching]= useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [trendingFailed, setTrendingFailed] = useState(false);
+
+  // The greeting needs the name captured back on step 1; web still has it in
+  // component state, mobile has to read it back.
+  useEffect(() => {
+    let cancelled = false;
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (cancelled || !session?.user) return;
+      return supabase.from('profiles')
+        .select('first_name')
+        .eq('id', session.user.id)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (!cancelled && data?.first_name) setFirstName(data.first_name);
+        });
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  // Refine the timezone guess with IP geolocation while the intro is up, so
+  // the completing write below has the better value. Also sets the TMDB region
+  // for this session, which the deleted region screen used to do.
+  useEffect(() => {
+    let cancelled = false;
+    detectRegion({ endpoint: REGION_API }).then(detected => {
+      if (cancelled) return;
+      region.current = detected;
+      setTmdbRegion(detected);
+    });
+    return () => { cancelled = true; };
+  }, []);
 
   // Trending prefill (shown until the user searches)
   useEffect(() => {
@@ -97,13 +142,19 @@ export default function Seed() {
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) {
       // Flip onboarding_complete first: on failure the user stays here rather
-      // than landing in the app with the auth guard bouncing them back.
-      // Read the row back in the same round trip: region and genres were
-      // written by the earlier steps and are what onboarding_completed reports.
+      // than landing in the app with the auth guard bouncing them back. Region
+      // and timezone ride along, since this is the only step that writes them
+      // and _layout reads profiles.region at boot to set the TMDB region.
+      // Read genres back in the same round trip: the step before wrote them and
+      // they are what onboarding_completed reports.
       const { data: profile, error } = await supabase.from('profiles')
-        .update({ onboarding_complete: true })
+        .update({
+          onboarding_complete: true,
+          region: region.current,
+          timezone: detectTimezone(),
+        })
         .eq('id', session.user.id)
-        .select('region, genres')
+        .select('genres')
         .maybeSingle();
 
       if (error) {
@@ -124,7 +175,7 @@ export default function Seed() {
       }
 
       track(EVENTS.ONBOARDING_COMPLETED, {
-        region: profile?.region ?? null,
+        region: region.current,
         genres_count: profile?.genres?.length ?? 0,
         seed_titles_added: seeds.length,
         skipped: skipSeeds,
@@ -136,12 +187,35 @@ export default function Seed() {
     router.replace('/(app)');
   };
 
+  const intro = ONBOARDING_FLOW.step3.intro;
+
+  // The intro reuses the scaffold's heading and body slots for the greeting and
+  // the lead, so the two states share one header, footer and progress bar.
+  if (!showPicker) {
+    return (
+      <OnboardingScaffold
+        step={3}
+        title={intro.greeting(firstName)}
+        subtitle={intro.lead}
+        onBack={() => router.back()}
+        ctaLabel={intro.ctaArrow}
+        onContinue={() => setShowPicker(true)}
+        saving={saving}
+        onSkip={() => finish(true)}
+        skipLabel={intro.toApp}
+        error={saveError}
+      >
+        <Text style={styles.pitch}>{intro.pitch}</Text>
+      </OnboardingScaffold>
+    );
+  }
+
   return (
     <OnboardingScaffold
-      step={4}
-      title={ONBOARDING_FLOW.step4.title}
-      subtitle={ONBOARDING_FLOW.step4.subtitle}
-      onBack={() => router.back()}
+      step={3}
+      title={ONBOARDING_FLOW.step3.title}
+      subtitle={ONBOARDING_FLOW.step3.subtitle}
+      onBack={() => setShowPicker(false)}
       ctaLabel={ONBOARDING_FLOW.startWatchingArrow}
       onContinue={() => finish(false)}
       saving={saving}
@@ -152,7 +226,7 @@ export default function Seed() {
       <View style={styles.searchBar}>
         <TextInput
           style={styles.searchInput}
-          placeholder={ONBOARDING_FLOW.step4.searchPlaceholder}
+          placeholder={ONBOARDING_FLOW.step3.searchPlaceholder}
           placeholderTextColor={colors.textMuted}
           value={query}
           onChangeText={setQuery}
@@ -179,7 +253,7 @@ export default function Seed() {
       </View>
 
       {!query.trim() && trending.length > 0 && (
-        <Text style={styles.gridLabel}>{ONBOARDING_FLOW.step4.trendingThisWeek}</Text>
+        <Text style={styles.gridLabel}>{ONBOARDING_FLOW.step3.trendingThisWeek}</Text>
       )}
 
       {/* Poster grid: trending until the user searches, then results */}
@@ -197,7 +271,7 @@ export default function Seed() {
               activeOpacity={0.8}
               accessibilityRole="button"
               accessibilityState={{ selected: active }}
-              accessibilityLabel={`${active ? ONBOARDING_FLOW.deselect : ONBOARDING_FLOW.select} ${label}`}
+              accessibilityLabel={`${active ? ONBOARDING_FLOW.step3.remove : ONBOARDING_FLOW.step3.add} ${label}`}
             >
               <View style={[styles.card, active && styles.cardActive]}>
                 {img
@@ -231,6 +305,16 @@ export default function Seed() {
 }
 
 const makeStyles = (colors: Palette) => StyleSheet.create({
+  // Sits under the scaffold's subtitle (the lead), so it reads as the third
+  // line of one centred block rather than as body copy for a picker.
+  pitch: {
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.md,
+    lineHeight: 22,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: spacing.xl,
+  },
   searchBar: {
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: colors.surface, borderRadius: radii.md,
@@ -240,7 +324,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   searchInput:    { flex: 1, paddingVertical: 12, fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textPrimary },
   searchTrailing: { marginLeft: spacing.sm },
   gridLabel:   { fontFamily: fontFamily.sansBold, fontSize: 11, letterSpacing: 0.7, textTransform: 'uppercase', color: colors.textSecondary, marginBottom: spacing.sm },
-  grid:        { flex: 1 },
+  grid:        { maxHeight: GRID_MAX_H, marginBottom: spacing.md },
   row:         { gap: spacing.sm, marginBottom: spacing.sm },
   card:        { width: CARD_W, aspectRatio: 2 / 3, borderRadius: radii.md, overflow: 'hidden', backgroundColor: colors.surfaceRaised, borderWidth: 2, borderColor: 'transparent' },
   cardActive:  { borderColor: colors.accent },

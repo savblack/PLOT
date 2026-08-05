@@ -61,3 +61,70 @@ export function isSupportedRegion(code) {
 export function regionName(code) {
   return REGIONS.find(r => r.code === code)?.name ?? String(code ?? '');
 }
+
+/* ── Detection ──────────────────────────────────────────────────────────────
+ * Onboarding no longer asks for a region: it detects one. The timezone map is
+ * the cheap synchronous guess, refined by IP geolocation where available. Both
+ * apps read profiles.region at boot to set the TMDB region, so onboarding still
+ * has to write a value; these helpers make sure it always has one to write.
+ */
+
+const TZ_MAP = {
+  'America/New_York': 'US', 'America/Chicago': 'US', 'America/Denver': 'US',
+  'America/Los_Angeles': 'US', 'America/Toronto': 'CA', 'America/Vancouver': 'CA',
+  'Europe/London': 'GB', 'Europe/Paris': 'FR', 'Europe/Berlin': 'DE',
+  'Australia/Sydney': 'AU', 'Australia/Melbourne': 'AU', 'Australia/Brisbane': 'AU',
+  'Asia/Tokyo': 'JP', 'Asia/Seoul': 'KR', 'Asia/Singapore': 'SG',
+  'Pacific/Auckland': 'NZ',
+};
+
+/**
+ * Device IANA timezone (e.g. "Australia/Sydney"), or "UTC" where unsupported.
+ * @returns {string}
+ */
+export function detectTimezone() {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+  } catch {
+    return 'UTC';
+  }
+}
+
+/**
+ * Cheap synchronous first guess, good enough to render with immediately.
+ * @param {string} [timezone]
+ * @returns {string}
+ */
+export function guessRegionFromTimezone(timezone = detectTimezone()) {
+  // Any Australian zone maps to AU, not just the three listed above.
+  if (timezone.startsWith('Australia/')) return 'AU';
+  return TZ_MAP[timezone] || DEFAULT_REGION;
+}
+
+/**
+ * Refine the timezone guess with IP geolocation. The endpoint differs per
+ * platform (web hits its own /api/region, mobile the deployed one), so it is
+ * passed in. Never throws and never returns null: on any failure the timezone
+ * guess stands, since onboarding has to write some region.
+ * @param {{ endpoint?: string, fetchImpl?: typeof fetch, fallback?: string }} [opts]
+ * @returns {Promise<string>}
+ */
+export async function detectRegion({
+  endpoint,
+  fetchImpl = fetch,
+  fallback = guessRegionFromTimezone(),
+} = {}) {
+  if (!endpoint) return fallback;
+
+  try {
+    const res = await fetchImpl(endpoint);
+    if (!res?.ok) return fallback;
+
+    const data = await res.json();
+    if (isSupportedRegion(data?.country)) return String(data.country).toUpperCase();
+  } catch {
+    /* keep the timezone guess */
+  }
+
+  return fallback;
+}

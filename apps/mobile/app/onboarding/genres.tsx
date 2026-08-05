@@ -1,11 +1,11 @@
 /**
- * Onboarding step 3 — Genre selection.
+ * Onboarding step 2 — Genre selection.
  * Fetches the combined TMDB movie+TV genre list and persists profiles.genres
  * as a text[] of genre names, matching the pre-existing column shape.
  */
 import { useState, useMemo, useEffect } from 'react';
 import {
-  View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator,
+  View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Dimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ONBOARDING_FLOW } from '@plot/core/copy/onboardingFlow.js';
@@ -17,6 +17,10 @@ import { useTheme } from '../../contexts/ThemeContext';
 import OnboardingScaffold from '../../components/OnboardingScaffold';
 
 interface Genre { id: number; name: string }
+
+// Web caps this scroller at 50vh so the footer keeps hugging the content rather
+// than being pushed off-screen by a long genre list. Same fraction here.
+const LIST_MAX_H = Math.round(Dimensions.get('window').height * 0.5);
 
 export default function Genres() {
   const router  = useRouter();
@@ -56,15 +60,15 @@ export default function Genres() {
       await supabase.from('profiles').update({ genres: payload }).eq('id', session.user.id);
     }
     setSaving(false);
-    track(EVENTS.ONBOARDING_STEP_COMPLETED, { step: 3, step_name: 'genres', skipped });
+    track(EVENTS.ONBOARDING_STEP_COMPLETED, { step: 2, step_name: 'genres', skipped });
     router.push('/onboarding/seed');
   };
 
   return (
     <OnboardingScaffold
-      step={3}
-      title={ONBOARDING_FLOW.step3.title}
-      subtitle={ONBOARDING_FLOW.step3.subtitle}
+      step={2}
+      title={ONBOARDING_FLOW.step2.title}
+      subtitle={ONBOARDING_FLOW.step2.subtitle}
       onBack={() => router.back()}
       ctaLabel={ONBOARDING_FLOW.continueArrow}
       onContinue={() => advance(false)}
@@ -102,14 +106,16 @@ export default function Genres() {
 }
 
 const makeStyles = (colors: Palette) => StyleSheet.create({
-  loadingWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  list:  { flex: 1 },
+  loadingWrap: { minHeight: 120, alignItems: 'center', justifyContent: 'center' },
+  list:  { maxHeight: LIST_MAX_H },
   chips: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
     gap: spacing.sm,
-    paddingBottom: spacing.md,
+    // Web's chip scroller pads 1rem below the last row, so the gap to the CTA
+    // comes to that plus the footer's own 0.75rem.
+    paddingBottom: spacing.lg,
   },
   chip: {
     paddingHorizontal: spacing.lg,
