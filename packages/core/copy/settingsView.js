@@ -83,7 +83,7 @@ export const SETTINGS_VIEW = {
     "Keep up with what I'm watching, on PLOT.",
   ],
   shareTitleWithUsername: (username) => `@${username} on PLOT`,
-  shareTitleDefault: 'My PLOT profile',
+  shareTitleDefault: 'My profile',
   shareJoinMe: 'Join me on PLOT',
   inviteText: "Join me on PLOT. Here's what I'm watching.",
 
@@ -106,9 +106,9 @@ export const SETTINGS_VIEW = {
   integrations: {
     groupTitle: 'Integrations',
     openStreamingPlatforms: 'Open streaming platforms',
-    streamingPlatformsLabel: 'Streaming Platforms',
+    streamingPlatformsLabel: 'Streaming platforms',
     openMyChannels: 'Open my channels',
-    myChannelsLabel: 'My Channels',
+    myChannelsLabel: 'Channels',
     openGenres: 'Open genres',
     genresLabel: 'Genres',
     selectedCount: (n) => `${n} selected`,
@@ -142,7 +142,7 @@ export const SETTINGS_VIEW = {
 
   availabilityAlerts: {
     label: 'Watchlist availability alerts',
-    sentNotice: 'Sent — check your inbox.',
+    sentNotice: 'Sent. Check your inbox.',
     idleHint: "Email me when a saved title arrives on a streaming platform or channel I've selected",
     sendTest: 'Send test',
   },
@@ -169,7 +169,7 @@ export const SETTINGS_VIEW = {
     groupTitle: 'Calendar',
     subscribeLabel: 'Subscribe to Calendar',
     needsPremium: 'A live calendar feed needs PLOT Premium',
-    liveFeedPrivate: 'Live feed · keep this link private',
+    liveFeedPrivate: 'Live feed of your watchlist',
     getUrlHint: 'Get a URL for Google or Apple Calendar',
     requestedCalendarSubscribeMessage: 'Requested access: Calendar subscribe',
     copyLink: 'Copy link',
@@ -210,7 +210,7 @@ export const SETTINGS_VIEW = {
     deleteAccountLabel: 'Delete Account',
   },
 
-  myPlatforms: 'My Platforms',
+  myPlatforms: 'Streaming platforms',
   clearing: 'Clearing…',
   verifyEmail: {
     sent: 'Sent',

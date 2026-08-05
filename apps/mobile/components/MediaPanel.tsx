@@ -753,7 +753,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                     >
                       {inList && <IconCheck color="#4ade80" />}
                       <Text style={[styles.btnPrimaryText, inList && { color: '#4ade80' }]}>
-                        {inList ? 'In watchlist' : 'Add to watchlist'}
+                        {inList ? MEDIA_PANEL.inWatchlist : MEDIA_PANEL.addToWatchlist}
                       </Text>
                     </TouchableOpacity>
                   )}
@@ -814,7 +814,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                       }}
                     >
                       <IconCheck />
-                      <Text style={styles.btnSecondaryText}>{isMovie ? MEDIA_PANEL.markWatched : 'Mark all watched'}</Text>
+                      <Text style={styles.btnSecondaryText}>{isMovie ? MEDIA_PANEL.markWatched : MEDIA_PANEL.markAllWatched}</Text>
                     </TouchableOpacity>
                   </View>
                 ) : (
