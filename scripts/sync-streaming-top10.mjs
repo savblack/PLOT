@@ -72,6 +72,15 @@ if (!DRY_RUN && !SERVICE_KEY) {
   process.exit(1);
 }
 
+// Name the target project before writing anything. SUPABASE_URL falling through
+// to the default means production, so a typo'd override (SUPBASE_URL=…) looks
+// exactly like a staging run — this line is the only thing that gives it away.
+console.log(
+  `Target: ${new URL(SUPABASE_URL).host}`
+  + (SUPABASE_URL === DEFAULT_SUPABASE_URL ? ' (production, from default)' : '')
+  + (DRY_RUN ? ' — dry run, no writes' : '')
+);
+
 // "movie/12345" | "tv/678" → { media_type, id }
 function parseTmdbId(tmdbId) {
   const m = /^(movie|tv)\/(\d+)$/.exec(tmdbId || '');
