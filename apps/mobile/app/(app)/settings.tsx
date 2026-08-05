@@ -382,17 +382,34 @@ function GenreModal({ selected, onSave, onClose }: { selected: string[]; onSave:
   const [all,     setAll]     = useState<{ id: number; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [chosen,  setChosen]  = useState<number[]>([]);
+  const [loadError, setLoadError] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
+  // Snapshot the profile's genre names once, at open. The parent passes
+  // `profile?.genres || []`, so for anyone with no genres saved that prop is a
+  // fresh array on every render; depending on it re-ran this fetch in a loop
+  // against the rate-limited proxy, because each setAll triggered a re-render
+  // that minted another array. The modal owns the selection after mount anyway.
+  const [initialSelected] = useState(selected);
+
+  // An empty list means the load failed rather than "no genres" — fetchFromTMDB
+  // collapses proxy errors to null, and TMDB always has genres.
   useEffect(() => {
     let cancelled = false;
     tmdb.getGenres().then((list: { id: number; name: string }[]) => {
       if (cancelled) return;
       setAll(list || []);
-      setChosen((list || []).filter(g => selected.includes(g.name)).map(g => g.id));
+      setChosen((list || []).filter(g => initialSelected.includes(g.name)).map(g => g.id));
+      setLoadError(!list?.length);
       setLoading(false);
-    }).catch(() => { if (!cancelled) setLoading(false); });
+    }).catch(() => {
+      if (cancelled) return;
+      setLoadError(true);
+      setLoading(false);
+    });
     return () => { cancelled = true; };
-  }, [selected]);
+    // initialSelected is a mount-time snapshot, so it never changes identity.
+  }, [attempt, initialSelected]);
 
   const toggle = (id: number) => {
     const next = chosen.includes(id) ? chosen.filter(i => i !== id) : [...chosen, id];
@@ -409,6 +426,17 @@ function GenreModal({ selected, onSave, onClose }: { selected: string[]; onSave:
         </View>
         {loading ? (
           <ActivityIndicator color={colors.accent} style={{ marginTop: spacing.xl }} />
+        ) : loadError ? (
+          <View style={styles.genreErrorWrap}>
+            <Text style={styles.genreErrorText}>{SETTINGS_VIEW.genres.loadError}</Text>
+            <TouchableOpacity
+              style={styles.genreRetryBtn}
+              onPress={() => { setLoading(true); setLoadError(false); setAttempt(n => n + 1); }}
+              accessibilityRole="button"
+            >
+              <Text style={styles.genreRetryText}>{SETTINGS_VIEW.genres.tryAgain}</Text>
+            </TouchableOpacity>
+          </View>
         ) : (
           <ScrollView contentContainerStyle={styles.regionGrid}>
             {all.map(g => {
@@ -1089,6 +1117,17 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   modalFooter: { paddingHorizontal: spacing.xl, paddingTop: spacing.md },
 
   regionGrid: { flexDirection: 'row', flexWrap: 'wrap', padding: spacing.xl, gap: spacing.sm },
+  genreErrorWrap: { alignItems: 'center', justifyContent: 'center', padding: spacing.xl, gap: spacing.md },
+  genreErrorText: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary, textAlign: 'center' },
+  genreRetryBtn: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceRaised,
+  },
+  genreRetryText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textPrimary },
   regionCard: {
     width: '47%', padding: spacing.md,
     borderRadius: radii.md, borderWidth: 1.5, borderColor: colors.border,

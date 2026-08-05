@@ -33,7 +33,7 @@ function PlayIcon() {
 ═══════════════════════════════════════ */
 export default function WatchlistView() {
   const { openPanel, watchlist, watching } = useApp();
-  const genres   = useGenres();
+  const { genres } = useGenres();
 
   const [tab,              setTab]              = useState('all');
   const [typeFilters,      setTypeFilters]      = useState([]);
