@@ -33,7 +33,7 @@ const DIR = 'supabase/migrations';
 // resolved rather than outstanding:
 //   20260718120000 — the intentional widening to include source_type.
 //   20260725000001 — the accidental revert that caused the outage; fixed
-//                    forward by 20260803000000_fix_history_feed_trigger.sql.
+//                    forward by 20260803000001_fix_history_feed_trigger.sql.
 // Nothing else should ever be added here: new migrations are editable, so they
 // use the `-- redefines:` acknowledgement instead.
 const GRANDFATHERED = new Set([
@@ -61,6 +61,32 @@ function parseDefinitions(sql) {
 }
 
 const files = readdirSync(DIR).filter(f => f.endsWith('.sql')).sort();
+
+// ── Two migrations must never share a version ───────────────────────────────
+// supabase_migrations.schema_migrations has version as its primary key, so the
+// second file carrying a version aborts the whole run with
+//   23505: duplicate key value violates unique constraint "schema_migrations_pkey"
+// and every migration after it silently never applies. That is not theoretical:
+// 20260803000000 was used twice, and the drop of profiles.log_rewatches sat
+// unapplied behind it while CI stayed green — the merge reports success because
+// the failure happens out of band, in the Supabase integration.
+const versionOwners = new Map();
+for (const file of files) {
+  const version = file.split('_')[0];
+  if (!versionOwners.has(version)) versionOwners.set(version, []);
+  versionOwners.get(version).push(file);
+}
+const collisions = [...versionOwners.entries()].filter(([, f]) => f.length > 1);
+if (collisions.length) {
+  console.error('✗ migrations share a version — the pipeline stops here and nothing after applies:\n');
+  for (const [version, dupes] of collisions) {
+    console.error(`  ${version}`);
+    for (const d of dupes) console.error(`    ${d}`);
+  }
+  console.error('\nRename all but one to the next free timestamp. Renaming is safe when the');
+  console.error('migration is idempotent (create or replace, if not exists); check before you do.');
+  process.exit(1);
+}
 
 // name -> { file, targets } for the most recent definition seen so far
 const latest = new Map();
@@ -104,7 +130,7 @@ for (const p of problems) {
 console.error('`create or replace function` replaces the whole body, so recreating a function');
 console.error('inherits everything the previous version fixed. A changed upsert key is exactly');
 console.error('how the two-week history-write outage happened — see');
-console.error('supabase/migrations/20260803000000_fix_history_feed_trigger.sql.');
+console.error('supabase/migrations/20260803000001_fix_history_feed_trigger.sql.');
 console.error('');
 console.error('If the change is deliberate, diff against the previous definition first, then add');
 console.error('a line to the migration acknowledging it:');

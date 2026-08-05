@@ -281,5 +281,5 @@ for (const p of problems) {
 }
 console.error('An AFTER trigger that raises takes the triggering statement down with it, so');
 console.error('this is not cosmetic — the user-facing write fails. See');
-console.error('supabase/migrations/20260803000000_fix_history_feed_trigger.sql for the last one.');
+console.error('supabase/migrations/20260803000001_fix_history_feed_trigger.sql for the last one.');
 process.exit(1);
