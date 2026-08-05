@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   colKey, extractConflictTargets, extractTableRefs, resolveConflictTargets,
+  extractStringConstants, extractAppConflictTargets,
 } from '../../../../scripts/lib/dbWritePathChecks.mjs';
 
 // These are the real definitions either side of the two-week production outage
@@ -106,4 +107,54 @@ test('extractConflictTargets finds every clause, not just the first', () => {
 test('a function with no upsert yields nothing to check', () => {
   const plain = `begin update public.profiles set x = 1; return new; end;`;
   assert.deepEqual(extractConflictTargets(plain), []);
+});
+
+/* ── The same failure in application code ─────────────────────────────────── */
+
+// The real web import, before and after. 20260727010000 replaced history's
+// (user_id, tmdb_id, watched_at) constraint with one including media_type; the
+// import kept naming the old one, so every batch answered 42P10 and wrote
+// nothing while reporting the rows as imported.
+const APP_BROKEN = `
+  const { error } = await supabase
+    .from('history')
+    .upsert(batch, { onConflict: 'user_id,tmdb_id,watched_at' });`;
+
+const APP_FIXED = `
+  export const HISTORY_CONFLICT_TARGET = 'user_id,tmdb_id,media_type,watched_at';
+  const { error } = await supabase
+    .from('history')
+    .upsert(batch, { onConflict: HISTORY_CONFLICT_TARGET });`;
+
+test('the stale application target is flagged', () => {
+  const [target] = extractAppConflictTargets(APP_BROKEN);
+  assert.equal(target.table, 'history');
+  assert.equal(target.key, 'tmdb_id,user_id,watched_at');
+});
+
+test('a target written as a shared constant is resolved, not skipped', () => {
+  const constants = extractStringConstants(APP_FIXED);
+  assert.equal(constants.get('HISTORY_CONFLICT_TARGET'), 'user_id,tmdb_id,media_type,watched_at');
+  const [target] = extractAppConflictTargets(APP_FIXED, constants);
+  assert.equal(target.key, 'media_type,tmdb_id,user_id,watched_at');
+});
+
+test('an unresolvable target is reported as unknown rather than guessed', () => {
+  const [target] = extractAppConflictTargets(APP_FIXED);
+  assert.equal(target.key, null, 'no constants supplied, so nothing to resolve');
+  assert.equal(target.raw, 'HISTORY_CONFLICT_TARGET');
+});
+
+test('a later statement is not mistaken for this one\'s conflict target', () => {
+  const source = `
+    await supabase.from('history').delete().eq('user_id', userId);
+    await supabase.from('list_items').upsert(rows, { onConflict: 'list_id,tmdb_id' });`;
+  assert.deepEqual(extractAppConflictTargets(source), [
+    { table: 'list_items', key: 'list_id,tmdb_id', raw: 'list_id,tmdb_id' },
+  ]);
+});
+
+test('reads with no upsert yield nothing to check', () => {
+  const source = `const { data } = await supabase.from('history').select('tmdb_id').eq('user_id', id);`;
+  assert.deepEqual(extractAppConflictTargets(source), []);
 });

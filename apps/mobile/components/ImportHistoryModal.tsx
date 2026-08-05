@@ -11,6 +11,8 @@ import { supabase } from '../lib/supabase';
 import { tmdb } from '../lib/tmdb';
 import { parsePlatform, watchedAtFor, type ParsedImportEntry } from '@plot/core/importParsing.js';
 import { dedupeEntries } from '@plot/core/importDedup.js';
+import { planHistoryImport } from '@plot/core/importPlan.js';
+import { HISTORY_CONFLICT_TARGET } from '@plot/core/userMedia.js';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -68,7 +70,16 @@ interface ResolvedEntry {
   mediaType: 'movie' | 'tv';
   title: string;
   posterPath: string | null;
-  alreadyImported: boolean;
+}
+
+/** A history row as it will be written, matching the `history` table. */
+interface HistoryRow {
+  user_id: string;
+  tmdb_id: number;
+  media_type: 'movie' | 'tv';
+  title: string;
+  poster_path: string | null;
+  watched_at: string;
 }
 
 type Step = 'pick-platform' | 'pick-file' | 'resolving' | 'preview' | 'importing' | 'done';
@@ -77,7 +88,6 @@ type Step = 'pick-platform' | 'pick-file' | 'resolving' | 'preview' | 'importing
 
 async function resolveEntries(
   entries: ParsedImportEntry[],
-  existingWatches: Set<string>,
   onProgress: (done: number) => void,
 ): Promise<ResolvedEntry[]> {
   const resolved: ResolvedEntry[] = [];
@@ -102,9 +112,6 @@ async function resolveEntries(
         mediaType: match.media_type as 'movie' | 'tv',
         title: (match.title ?? match.name ?? e.title) as string,
         posterPath: (match.poster_path ?? null) as string | null,
-        // Only skip an exact (title, date) match already in the history —
-        // a rewatch on a different date is a new entry, not a duplicate.
-        alreadyImported: existingWatches.has(`${match.id}::${watchedAt}`),
       } satisfies ResolvedEntry;
     }));
     resolved.push(...results.filter((r): r is ResolvedEntry => r !== null));
@@ -131,10 +138,13 @@ export default function ImportHistoryModal({ userId, onClose }: Props) {
   const [platform,     setPlatform]     = useState<Platform | null>(null);
   const [rawEntries,   setRawEntries]   = useState<ParsedImportEntry[]>([]);
   const [resolved,     setResolved]     = useState<ResolvedEntry[]>([]);
+  const [existingRows, setExistingRows] = useState<{ tmdb_id: number; media_type: string; watched_at: string }[]>([]);
+  const [logRewatches, setLogRewatches] = useState(true);
   const [resolveTotal, setResolveTotal] = useState(0);
   const [resolveDone,  setResolveDone]  = useState(0);
   const [importDone,   setImportDone]   = useState(0);
   const [importTotal,  setImportTotal]  = useState(0);
+  const [importedCount, setImportedCount] = useState(0);
 
   const handleSelectPlatform = (p: Platform) => {
     setPlatform(p);
@@ -165,16 +175,17 @@ export default function ImportHistoryModal({ userId, onClose }: Props) {
       setResolveDone(0);
       setStep('resolving');
 
-      // Fetch existing (tmdb_id, watched_at) pairs to flag exact duplicates —
-      // a different date for a title already in the history is a rewatch,
-      // not a duplicate, so it must still import.
-      const { data: existing } = await supabase
-        .from('history')
-        .select('tmdb_id, watched_at')
-        .eq('user_id', userId);
-      const existingWatches = new Set<string>((existing ?? []).map((r: any) => `${r.tmdb_id}::${r.watched_at}`));
+      // The history the user already has, plus the preference that decides
+      // what counts as a duplicate. Both feed planHistoryImport, so the
+      // preview and the write agree on exactly which rows are new.
+      const [{ data: existing }, { data: profile }] = await Promise.all([
+        supabase.from('history').select('tmdb_id, media_type, watched_at').eq('user_id', userId),
+        supabase.from('profiles').select('log_rewatches').eq('id', userId).maybeSingle(),
+      ]);
+      setExistingRows(existing ?? []);
+      setLogRewatches(profile?.log_rewatches ?? true);
 
-      const results = await resolveEntries(deduped, existingWatches, (done) => setResolveDone(done));
+      const results = await resolveEntries(deduped, (done) => setResolveDone(done));
       setResolved(results);
       setStep('preview');
     } catch {
@@ -183,64 +194,77 @@ export default function ImportHistoryModal({ userId, onClose }: Props) {
     }
   }, [platform, userId]);
 
+  /* One plan drives both the preview and the write. Nothing here deletes: the
+     old version cleared every history row for the titles in the file before
+     inserting, so a batch that failed left the user's history shorter than it
+     started. planHistoryImport resolves the collisions instead, and the write
+     is a plain upsert on the constraint that actually exists. */
+  const candidates = useMemo(() => resolved.map(entry => ({
+    entry,
+    row: {
+      user_id:     userId,
+      tmdb_id:     entry.tmdbId,
+      media_type:  entry.mediaType,
+      title:       entry.title,
+      poster_path: entry.posterPath,
+      watched_at:  entry.watchedAt,
+    } satisfies HistoryRow,
+  })), [resolved, userId]);
+
+  const plan = useMemo(
+    () => planHistoryImport({ rows: candidates.map(c => c.row), existing: existingRows, logRewatches }),
+    [candidates, existingRows, logRewatches],
+  );
+
+  const plannedRows = useMemo(() => new Set<HistoryRow>(plan.rows), [plan]);
+  const rowByEntry = useMemo(() => new Map(candidates.map(c => [c.entry, c.row])), [candidates]);
+  const isNew = useCallback((entry: ResolvedEntry) => {
+    const row = rowByEntry.get(entry);
+    return row != null && plannedRows.has(row);
+  }, [rowByEntry, plannedRows]);
+
   const handleImport = useCallback(async () => {
-    let toImport = resolved.filter(r => !r.alreadyImported);
-    if (toImport.length === 0) {
+    const rows = plan.rows;
+    if (rows.length === 0) {
+      setImportedCount(0);
       setStep('done');
       return;
     }
 
-    const { data: profile } = await supabase.from('profiles').select('log_rewatches').eq('id', userId).maybeSingle();
-    const logRewatches = profile?.log_rewatches ?? true;
-
-    if (!logRewatches) {
-      // Collapse to one row per title (most-recent watch) — this preference
-      // means "don't clutter my history with rewatches" — and clear out any
-      // existing rows for those titles first since there's no more DB-level
-      // unique(user_id,tmdb_id) to upsert against.
-      const latestByTmdbId = new Map<number, ResolvedEntry>();
-      for (const r of toImport) {
-        const existing = latestByTmdbId.get(r.tmdbId);
-        if (!existing || r.watchedAt > existing.watchedAt) latestByTmdbId.set(r.tmdbId, r);
-      }
-      toImport = Array.from(latestByTmdbId.values());
-      await supabase.from('history').delete().eq('user_id', userId).in('tmdb_id', toImport.map(r => r.tmdbId));
-    }
-
-    setImportTotal(toImport.length);
+    setImportTotal(rows.length);
     setImportDone(0);
     setStep('importing');
 
     const BATCH = 50;
-    for (let i = 0; i < toImport.length; i += BATCH) {
-      const batch = toImport.slice(i, i + BATCH);
-      const rows = batch.map(r => ({
-        user_id:    userId,
-        tmdb_id:    r.tmdbId,
-        media_type: r.mediaType,
-        title:      r.title,
-        poster_path: r.posterPath,
-        watched_at: r.watchedAt,
-      }));
-      if (logRewatches) {
-        await supabase.from('history').upsert(rows, { onConflict: 'user_id,tmdb_id,watched_at', ignoreDuplicates: true });
-      } else {
-        await supabase.from('history').insert(rows);
-      }
-      setImportDone(Math.min(i + BATCH, toImport.length));
+    let inserted = 0;
+    let failed = 0;
+    for (let i = 0; i < rows.length; i += BATCH) {
+      const batch = rows.slice(i, i + BATCH);
+      const { error } = await supabase.from('history').upsert(batch, { onConflict: HISTORY_CONFLICT_TARGET });
+      if (error) failed += batch.length;
+      else inserted += batch.length;
+      setImportDone(Math.min(i + BATCH, rows.length));
+    }
+    setImportedCount(inserted);
+    if (failed) {
+      Alert.alert(
+        'Some titles could not be saved',
+        `${failed} title${failed !== 1 ? 's' : ''} could not be saved. Nothing already in your history was changed, so you can safely run the import again.`,
+      );
     }
     setStep('done');
-  }, [resolved, userId]);
+  }, [plan]);
 
   const reset = () => {
     setStep('pick-platform');
     setPlatform(null);
     setRawEntries([]);
     setResolved([]);
+    setExistingRows([]);
   };
 
-  const newToImport = resolved.filter(r => !r.alreadyImported).length;
-  const alreadyHave = resolved.filter(r => r.alreadyImported).length;
+  const newToImport = plan.rows.length;
+  const alreadyHave = resolved.length - newToImport;
   const unmatched   = rawEntries.length - resolved.length;
 
   return (
@@ -344,7 +368,7 @@ export default function ImportHistoryModal({ userId, onClose }: Props) {
                 keyExtractor={(_, i) => String(i)}
                 contentContainerStyle={{ paddingBottom: 120 }}
                 renderItem={({ item }) => (
-                  <View style={[styles.previewRow, item.alreadyImported && styles.previewRowDim]}>
+                  <View style={[styles.previewRow, !isNew(item) && styles.previewRowDim]}>
                     {item.posterPath ? (
                       <Image
                         source={{ uri: `https://image.tmdb.org/t/p/w92${item.posterPath}` }}
@@ -358,7 +382,7 @@ export default function ImportHistoryModal({ userId, onClose }: Props) {
                       <Text style={styles.previewTitle} numberOfLines={1}>{item.title}</Text>
                       <Text style={styles.previewMeta}>{item.mediaType === 'tv' ? 'TV Series' : 'Movie'} · {item.watchedAt}</Text>
                     </View>
-                    {item.alreadyImported && (
+                    {!isNew(item) && (
                       <View style={styles.alreadyBadge}>
                         <Text style={styles.alreadyBadgeText}>In history</Text>
                       </View>
@@ -404,7 +428,7 @@ export default function ImportHistoryModal({ userId, onClose }: Props) {
             </View>
             <Text style={styles.resolvingTitle}>Import complete</Text>
             <Text style={styles.resolvingSub}>
-              {newToImport} title{newToImport !== 1 ? 's' : ''} added to your watch history.
+              {importedCount} title{importedCount !== 1 ? 's' : ''} added to your watch history.
             </Text>
             <TouchableOpacity style={[styles.importBtn, { marginTop: spacing.lg }]} onPress={onClose} activeOpacity={0.85}>
               <Text style={styles.importBtnText}>Done</Text>
