@@ -9,7 +9,7 @@
 // rating and editing a review all failed silently for two weeks. It only
 // surfaced because an unrelated backfill happened to touch the table.
 //
-// Two checks, both pure introspection. Neither writes anything:
+// Three checks, all pure introspection. None of them writes anything:
 //
 //   1. ON CONFLICT targets resolve. For every trigger function, every
 //      `insert … on conflict (cols)` must match a real unique/primary-key
@@ -19,6 +19,17 @@
 //      public.journal, renamed to public.history in 20260726010000 — the
 //      function was renamed, its body was not. That would have broken deletes
 //      as soon as the insert path was fixed.
+//
+//   3. Application ON CONFLICT targets resolve. Check 1 for app code: every
+//      `.from('t').upsert(…, { onConflict: … })` must name a real constraint
+//      too. Missed the first time round, and it cost the same outage twice —
+//      the web import upserted history against the constraint 20260727010000
+//      dropped, so from that migration onward it wrote nothing at all and
+//      reported success. Only code that is actually deployed fails the build;
+//      the mobile app and the hand-deployed edge functions are checked and
+//      warned about, since a stale target there blocks a release rather than
+//      breaking one. Operator tooling (scripts/, marketing/) is out of scope —
+//      no user-facing write goes through it.
 //
 // DELIBERATELY NOT a write probe. Inserting into a real table inside a
 // transaction and rolling back would be a more general check, but `profiles`
@@ -36,7 +47,12 @@
 // no new secret is needed. Read-only either way.
 
 import { execFileSync } from 'node:child_process';
-import { colKey, resolveConflictTargets, extractTableRefs } from './lib/dbWritePathChecks.mjs';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import {
+  colKey, resolveConflictTargets, extractTableRefs,
+  extractStringConstants, extractAppConflictTargets,
+} from './lib/dbWritePathChecks.mjs';
 
 // Two transports so this runs both locally and in CI without a new secret:
 //   SUPABASE_ACCESS_TOKEN → Supabase Management API (what the root .env has)
@@ -127,6 +143,11 @@ for (const r of indexRows) {
   constraintsByTable.get(r.tbl).push({ name: r.idx, key: colKey(r.cols || '') });
 }
 
+// A unique constraint and the index backing it are the same key under the same
+// name, so list each only once when reporting what a table actually offers.
+const availableKeys = table =>
+  [...new Set((constraintsByTable.get(table) || []).map(c => `${c.name} (${c.key})`))];
+
 // ── Existing tables/views, for the dangling-reference check ──────────────────
 const relRows = await query(`
   select c.relname from pg_class c join pg_namespace n on n.oid = c.relnamespace
@@ -147,7 +168,7 @@ for (const t of triggers) {
         kind: '42P10',
         detail: `${t.fn}() inserts into ${table} with on conflict (${key}), but that table has no matching unique/PK constraint.`,
         table: t.tbl,
-        available: (constraintsByTable.get(table) || []).map(c => `${c.name} (${c.key})`),
+        available: availableKeys(table),
       });
     }
   }
@@ -169,10 +190,83 @@ for (const t of triggers) {
 }
 if (!problems.some(p => p.kind === 'missing-relation')) console.log('  ✓ every referenced table exists');
 
+// ── Check 3: application ON CONFLICT targets resolve ────────────────────────
+// Split by what is actually in users' hands. The web app and the core it shares
+// deploy on merge, so a stale target there is a live fault and fails the build.
+// The mobile app is not released yet and edge functions deploy by hand, so a
+// stale target on those is a real bug but a deploy blocker rather than an
+// outage — warned about, loudly, without holding up unrelated work. Move a
+// directory up to LIVE the moment it starts shipping.
+const LIVE = ['packages/core', 'apps/web/src'];
+const NOT_YET_DEPLOYED = ['apps/mobile', 'supabase/functions'];
+const SOURCE_EXT = /\.(js|jsx|ts|tsx|mjs)$/;
+const SKIP_DIRS = new Set(['node_modules', 'dist', 'build', 'ios', 'android', '.expo']);
+
+function sourceFiles(dir) {
+  let out = [];
+  let entries;
+  try { entries = readdirSync(dir, { withFileTypes: true }); } catch { return out; }
+  for (const e of entries) {
+    if (e.name.startsWith('.') || SKIP_DIRS.has(e.name)) continue;
+    const path = join(dir, e.name);
+    if (e.isDirectory()) out = out.concat(sourceFiles(path));
+    else if (SOURCE_EXT.test(e.name)) out.push(path);
+  }
+  return out;
+}
+
+const scanned = [
+  ...LIVE.flatMap(d => sourceFiles(d).map(file => ({ file, fatal: true }))),
+  ...NOT_YET_DEPLOYED.flatMap(d => sourceFiles(d).map(file => ({ file, fatal: false }))),
+].map(f => ({ ...f, source: readFileSync(f.file, 'utf8') }));
+
+// Constants resolve across files: the canonical target lives in one module and
+// is imported by every write site, which is the point of naming it once.
+const constants = new Map();
+for (const { source } of scanned) {
+  for (const [name, value] of extractStringConstants(source)) constants.set(name, value);
+}
+
+console.log('\n── ON CONFLICT targets in application code ──');
+let appChecks = 0;
+const warnings = [];
+for (const { file, source, fatal } of scanned) {
+  for (const { table, key, raw } of extractAppConflictTargets(source, constants)) {
+    appChecks++;
+    if (key === null) {
+      console.log(`  ? ${file}  →  ${table} (${raw})  target not statically resolvable, skipped`);
+      continue;
+    }
+    const match = (constraintsByTable.get(table) || []).find(c => c.key === key);
+    if (match) {
+      console.log(`  ✓ ${file}  →  ${table} (${key})  matches ${match.name}`);
+      continue;
+    }
+    const detail = `${file} upserts into ${table} with onConflict (${key}), but that table has no matching unique/PK constraint.`;
+    const available = availableKeys(table);
+    if (fatal) {
+      console.log(`  ✗ ${file}  →  ${table} (${key})  NO MATCHING CONSTRAINT`);
+      problems.push({ kind: '42P10-app', detail, table, available });
+    } else {
+      console.log(`  ! ${file}  →  ${table} (${key})  NO MATCHING CONSTRAINT (not yet deployed)`);
+      warnings.push({ detail, available });
+    }
+  }
+}
+if (appChecks === 0) console.log('  (no onConflict clauses in application code)');
+
 // ── Report ──────────────────────────────────────────────────────────────────
+if (warnings.length) {
+  console.log(`\n⚠ ${warnings.length} stale target(s) in code that is not deployed yet — not a live fault, but a release blocker:`);
+  for (const w of warnings) {
+    console.log(`    ${w.detail}`);
+    if (w.available.length) console.log(`      available keys: ${w.available.join('; ')}`);
+  }
+}
+
 console.log('');
 if (problems.length === 0) {
-  console.log(`✓ write paths healthy — ${triggers.length} trigger(s), ${conflictChecks} on-conflict clause(s) verified`);
+  console.log(`✓ write paths healthy — ${triggers.length} trigger(s), ${conflictChecks} trigger and ${appChecks} application on-conflict clause(s) verified`);
   process.exit(0);
 }
 

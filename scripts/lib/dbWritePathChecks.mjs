@@ -54,3 +54,41 @@ export function resolveConflictTargets(def, constraintsByTable) {
     return { table, key, matched: match ? match.name : null };
   });
 }
+
+/* ── The same 42P10 failure, one layer up ────────────────────────────────────
+ *
+ * The checks above cover trigger functions. Application code names constraints
+ * too — `.upsert(rows, { onConflict: 'a,b,c' })` — and drifts the same way, for
+ * the same reason: PostgREST answers 42P10 and the write simply never lands, so
+ * a stale target is invisible until someone reads the table. The web import
+ * spent from 20260727010000 (which dropped history's old constraint) onward
+ * upserting against a target that no longer existed, writing nothing.
+ */
+
+/** `export const NAME = 'value'` / `const NAME = "value"`, for resolving an
+ *  onConflict written as a shared constant rather than a literal. */
+export function extractStringConstants(source) {
+  const re = /(?:export\s+)?const\s+([A-Za-z_$][\w$]*)\s*=\s*['"]([^'"\n]*)['"]/g;
+  return new Map([...String(source || '').matchAll(re)].map(m => [m[1], m[2]]));
+}
+
+/**
+ * Every `.from('<table>')… onConflict: <target>` in application source.
+ *
+ * The gap between the two is bounded and may not cross another `.from(`, so a
+ * later unrelated statement cannot be mistaken for this one's target.
+ *
+ * @param {string} source
+ * @param {Map<string, string>} [constants] Names from extractStringConstants.
+ * @returns {{ table: string, key: string | null, raw: string }[]}
+ *   `key` is null when the target is an identifier this file cannot resolve.
+ */
+export function extractAppConflictTargets(source, constants = new Map()) {
+  const re = /\.from\(\s*['"]([a-z0-9_]+)['"]\s*\)(?:(?!\.from\()[\s\S]){0,400}?onConflict\s*:\s*(?:['"]([^'"]+)['"]|([A-Za-z_$][\w$]*))/gi;
+  return [...String(source || '').matchAll(re)].map(m => {
+    const [, table, literal, ident] = m;
+    const raw = literal ?? ident;
+    const value = literal ?? constants.get(ident);
+    return { table: table.toLowerCase(), key: value == null ? null : colKey(value), raw };
+  });
+}

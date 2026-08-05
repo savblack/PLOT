@@ -40,6 +40,16 @@ export async function deleteListItem({ listId, tmdbId, userId }) {
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
+/* The unique constraint every history upsert targets. Named once so the app
+   cannot drift from the database: it must stay in step with
+   history_user_id_tmdb_id_media_type_watched_at_key (migration 20260727010000).
+   Naming a constraint that no longer exists does not fail loudly — PostgREST
+   returns 42P10 and the write simply never happens, which is how the import
+   spent two weeks silently writing nothing. media_type is part of the key
+   because TMDB numbers movies and TV separately: movie 262 and tv 262 are
+   unrelated titles. */
+export const HISTORY_CONFLICT_TARGET = 'user_id,tmdb_id,media_type,watched_at';
+
 export async function logWatchedItem({ userId, item, rating, note, dnf, watchedAt = localDateStr(), logRewatches = true }) {
   const mediaRow = baseMediaRow(item);
   if (!userId || !mediaRow) return { data: null, error: null, row: null };
@@ -65,25 +75,34 @@ export async function logWatchedItem({ userId, item, rating, note, dnf, watchedA
     dnf: dnf ?? false,
   };
 
-  // logRewatches: a rewatch on a new date becomes its own history row (upsert
-  // on user_id,tmdb_id,media_type,watched_at — the same date still overwrites,
-  // so duplicate taps/re-imports don't create duplicate rows; media_type is
-  // required in the key because movie and TV TMDB ids are separate numbering
-  // sequences that can collide, e.g. movie 262 vs tv 262 are unrelated titles).
-  // With the preference off, collapse back to the old single-row-per-title
-  // behavior — there's no more DB-level unique(user_id,tmdb_id,media_type) to
-  // upsert against (it was relaxed so rewatches can coexist), so do it
-  // explicitly: clear any existing rows for this title first, then insert the
-  // one true row.
+  // logRewatches: a rewatch on a new date becomes its own history row (the same
+  // date still overwrites, so duplicate taps and re-imports don't create
+  // duplicate rows). With the preference off, collapse back to the old
+  // single-row-per-title behavior — there's no more DB-level
+  // unique(user_id,tmdb_id,media_type) to upsert against (it was relaxed so
+  // rewatches can coexist), so do it explicitly. Write the new row first and
+  // only then clear the superseded ones: deleting first means a failed insert
+  // takes the user's history with it, which is exactly how the bulk import
+  // destroyed data.
   if (!logRewatches) {
-    await supabase.from('history').delete().eq('user_id', userId).eq('tmdb_id', row.tmdb_id).eq('media_type', row.media_type);
-    const { data, error } = await supabase.from('history').insert(row).select().single();
+    const { data, error } = await supabase
+      .from('history')
+      .upsert(row, { onConflict: HISTORY_CONFLICT_TARGET })
+      .select()
+      .single();
+    if (!error) {
+      await supabase.from('history').delete()
+        .eq('user_id', userId)
+        .eq('tmdb_id', row.tmdb_id)
+        .eq('media_type', row.media_type)
+        .neq('watched_at', row.watched_at);
+    }
     return { data, error, row };
   }
 
   const { data, error } = await supabase
     .from('history')
-    .upsert(row, { onConflict: 'user_id,tmdb_id,media_type,watched_at' })
+    .upsert(row, { onConflict: HISTORY_CONFLICT_TARGET })
     .select()
     .single();
 
