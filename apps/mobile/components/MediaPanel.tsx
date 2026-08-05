@@ -1027,8 +1027,8 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   trailerPlayBtn: { width: 56, height: 56, borderRadius: 28, backgroundColor: 'rgba(0,0,0,0.55)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.85)', alignItems: 'center', justifyContent: 'center' },
   trailerLabel: { position: 'absolute', bottom: spacing.md, fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, letterSpacing: 0.5, textTransform: 'uppercase', color: '#fff' },
 
-  epRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingLeft: spacing.sm, paddingRight: spacing.md, borderLeftWidth: 3, borderLeftColor: 'transparent', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border, gap: spacing.md },
-  epRowCurrent: { backgroundColor: colors.accentDim, borderLeftColor: colors.accent },
+  epRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingLeft: spacing.sm, paddingRight: spacing.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border, gap: spacing.md },
+  epRowCurrent: { backgroundColor: colors.accentDim },
   epCode:        { fontFamily: fontFamily.sansBold, fontSize: 10, color: colors.chipEpisode, letterSpacing: 0.4 },
   epCodeCurrent: { color: colors.accent },
   epAirDate:   { fontFamily: fontFamily.sans, fontSize: 10, color: colors.textMuted },
