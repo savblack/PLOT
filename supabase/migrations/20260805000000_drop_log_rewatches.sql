@@ -1,0 +1,26 @@
+-- Drop profiles.log_rewatches, added in 20260725000001 and now unread.
+--
+-- The preference chose between logging every rewatch as its own history entry
+-- and collapsing a title to a single entry. Only the first behaviour survives,
+-- so nothing reads the column any more (the web and mobile Settings rows, the
+-- App.jsx profile select and the logRewatches option threaded through
+-- logWatchedItem / planHistoryImport were all removed alongside this).
+--
+-- Safe to drop, checked against production before writing this:
+--   * every profile holds the default `true`, so no user's choice is lost
+--   * no view, rule, RLS policy, index or function references the column
+--   * no application query names it, and none selects profiles with `*`
+--
+-- Ordering matters and is deliberate: the code that selected this column
+-- shipped out first. Dropping a column a live query still names would make
+-- that query 400 and take the profile load down with it, so this migration
+-- deliberately lands after the release that stopped reading it.
+--
+-- The collapse behaviour is gone for a reason worth recording. It could not be
+-- expressed as an upsert — there is no unique(user_id, tmdb_id, media_type) to
+-- target once rewatches are allowed to coexist — so every write path that
+-- honoured it had to delete the other rows by hand first. That delete is what
+-- destroyed history in the bulk import. Removing the preference removed the
+-- only reason those paths deleted anything at all.
+alter table public.profiles
+  drop column if exists log_rewatches;
