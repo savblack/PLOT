@@ -207,7 +207,9 @@ export const SETTINGS_VIEW = {
     clearWatchHistoryAria: 'Clear watch history',
     clearWatchHistoryLabel: 'Clear Watch History',
     deleteAccountAria: 'Delete account',
-    deleteAccountLabel: 'Delete Account',
+    // Same string as deleteAccountAria above; kept as separate keys because the
+    // visible label and the aria label are free to diverge.
+    deleteAccountLabel: 'Delete account',
   },
 
   myPlatforms: 'Streaming platforms',
