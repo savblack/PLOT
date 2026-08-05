@@ -23,6 +23,7 @@ import { getAuthCallbackUrl } from '../utils/redirects.js';
 import { COMMON } from '../copy/common.js';
 import { SETTINGS_VIEW } from '../copy/settingsView.js';
 import { IANA_TIMEZONES } from '../utils/timezones.js';
+import { REGIONS, DEFAULT_REGION, regionName } from '@plot/core/regions.js';
 import { SHOW_MEDIA_SYNC_INTEGRATIONS, SHOW_WATCHLIST_AVAILABILITY_ALERTS } from '../launchFeatures.js';
 import SheetHeader from './SheetHeader.jsx';
 import ConfirmModal from './ConfirmModal.jsx';
@@ -46,20 +47,9 @@ const TRAKT_ICON = (
   </svg>
 );
 
-const REGIONS = [
-  { code: 'US', name: 'United States' }, { code: 'AU', name: 'Australia' },
-  { code: 'GB', name: 'United Kingdom' }, { code: 'CA', name: 'Canada' },
-  { code: 'NZ', name: 'New Zealand' },   { code: 'FR', name: 'France' },
-  { code: 'DE', name: 'Germany' },       { code: 'JP', name: 'Japan' },
-  { code: 'IN', name: 'India' },         { code: 'BR', name: 'Brazil' },
-  { code: 'MX', name: 'Mexico' },        { code: 'IT', name: 'Italy' },
-  { code: 'ES', name: 'Spain' },         { code: 'NL', name: 'Netherlands' },
-  { code: 'SE', name: 'Sweden' },        { code: 'SG', name: 'Singapore' },
-];
-
 /* ── Region picker modal ── */
 function RegionPicker({ current, onSave, onClose }) {
-  const [chosen, setChosen] = useState(current || 'US');
+  const [chosen, setChosen] = useState(current || DEFAULT_REGION);
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
@@ -1213,7 +1203,7 @@ export default function SettingsView() {
   const marketingEmailsEnabled = !!profile?.marketing_emails;
   const guideChannels  = guideChannelDraft ?? profile?.guide_channels ?? [];
   const genres         = genreDraft ?? profile?.genres ?? [];
-  const region         = profile?.region || 'US';
+  const region         = profile?.region || DEFAULT_REGION;
   const timezone  = profile?.timezone || '';
   const includeKidsContent = profile?.include_kids_content ?? true;
 
@@ -1828,7 +1818,7 @@ export default function SettingsView() {
             <span className="settings-row-label">Region</span>
           </div>
           <div className="settings-row-value">
-            <span>{REGIONS.find(r => r.code === region)?.name ?? region}</span>
+            <span>{regionName(region)}</span>
             <Chevron />
           </div>
         </div>
