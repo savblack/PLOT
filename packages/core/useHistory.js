@@ -73,8 +73,8 @@ export function useHistory(userId) {
   useEffect(() => on(HISTORY_CHANGED_EVENT, load), [load]);
 
   /* ── Log a watched item ──
-     A rewatch on a new date becomes its own history row instead of overwriting
-     the previous watch (see SUS-66). */
+     One row per title: logging a title watched again updates the entry already
+     there and moves its date. */
   const logWatched = useCallback(async (item, { rating, note, dnf, watchedAt } = {}) => {
     if (!userId) { lastErrorRef.current = 'You need to be signed in to log a watch.'; return null; }
     const { data, error, row } = await logWatchedItem({ userId, item, rating, note, dnf, watchedAt });
@@ -87,10 +87,11 @@ export function useHistory(userId) {
 
     if (data) {
       setEntries(prev => {
-        // Same-title-same-date replaces in place; a same-title different-date
-        // row is a preserved rewatch and stays.
+        // The write replaced this title's only row, so drop any local entry
+        // for it whatever its date — matching on watched_at as well would leave
+        // the pre-update copy behind whenever the date moved.
         const withoutStale = prev.filter(e =>
-          !(e.tmdb_id === row.tmdb_id && e.media_type === row.media_type && e.watched_at === row.watched_at));
+          !(e.tmdb_id === row.tmdb_id && e.media_type === row.media_type));
         return [data, ...withoutStale].sort((a, b) => (a.watched_at < b.watched_at ? 1 : -1));
       });
       notifyHistoryChanged();
@@ -105,11 +106,8 @@ export function useHistory(userId) {
   }, [userId]);
 
   /* ── Update rating / note ──
-     A title can now have multiple history rows (rewatches), so this targets
-     the most recent entry for tmdbId — i.e. the one representing "current"
-     status in every existing caller (MediaPanel's status panel, SearchView) —
-     by row id, not a blind tmdb_id match that could hit several rows. mediaType
-     is required to disambiguate: movie and TV TMDB ids are separate numbering
+     Targets the row by id rather than by a blind tmdb_id match. mediaType is
+     required to disambiguate: movie and TV TMDB ids are separate numbering
      sequences that can collide (e.g. movie 262 vs tv 262 are unrelated), so a
      tmdb_id-only match can silently grab the wrong title's row. */
   const updateEntry = useCallback(async (tmdbId, updates, mediaType) => {
@@ -137,9 +135,7 @@ export function useHistory(userId) {
   }, [entries]);
 
   /* ── Remove entry ──
-     Same row-id targeting (and same mediaType disambiguation) as updateEntry —
-     removes only the most recent watch of this title, leaving earlier
-     rewatches intact. */
+     Same row-id targeting (and same mediaType disambiguation) as updateEntry. */
   const removeEntry = useCallback(async (tmdbId, mediaType) => {
     const target = entries.find(e => e.tmdb_id === Number(tmdbId) && (!mediaType || e.media_type === mediaType));
     if (!target) return false;

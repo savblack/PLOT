@@ -42,13 +42,14 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 /* The unique constraint every history upsert targets. Named once so the app
    cannot drift from the database: it must stay in step with
-   history_user_id_tmdb_id_media_type_watched_at_key (migration 20260727010000).
+   history_user_id_tmdb_id_media_type_key (migration 20260806000001).
    Naming a constraint that no longer exists does not fail loudly — PostgREST
    returns 42P10 and the write simply never happens, which is how the import
    spent two weeks silently writing nothing. media_type is part of the key
    because TMDB numbers movies and TV separately: movie 262 and tv 262 are
-   unrelated titles. */
-export const HISTORY_CONFLICT_TARGET = 'user_id,tmdb_id,media_type,watched_at';
+   unrelated titles. watched_at is not: history holds one row per title, so a
+   second watch updates that row rather than adding another. */
+export const HISTORY_CONFLICT_TARGET = 'user_id,tmdb_id,media_type';
 
 /** Targeted existence check — does NOT load the full history list. */
 export async function findHistoryEntry({ userId, tmdbId, mediaType }) {
@@ -89,8 +90,8 @@ export async function logWatchedItem({ userId, item, rating, note, dnf, watchedA
     dnf: dnf ?? false,
   };
 
-  // A rewatch on a new date becomes its own history row; the same date
-  // overwrites in place, so duplicate taps and re-imports don't pile up.
+  // One row per title: watching something again updates the row already there,
+  // moving its date, so duplicate taps and re-imports don't pile up either.
   const { data, error } = await supabase
     .from('history')
     .upsert(row, { onConflict: HISTORY_CONFLICT_TARGET })
