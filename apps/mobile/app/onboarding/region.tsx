@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ONBOARDING_FLOW } from '@plot/core/copy/onboardingFlow.js';
+import { REGIONS, DEFAULT_REGION, isSupportedRegion } from '@plot/core/regions.js';
 import { supabase } from '../../lib/supabase';
 import { setTmdbRegion } from '../../lib/tmdb';
 import { track, EVENTS } from '../../lib/analytics';
@@ -30,22 +31,11 @@ function guessRegion(): string {
   try {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
     if (tz.startsWith('Australia/')) return 'AU';
-    return TZ_MAP[tz] || 'US';
-  } catch { return 'US'; }
+    return TZ_MAP[tz] || DEFAULT_REGION;
+  } catch { return DEFAULT_REGION; }
 }
 
 const REGION_API = 'https://app.theplot.tv/api/region';
-
-const REGIONS = [
-  { code: 'US', name: 'United States' }, { code: 'AU', name: 'Australia' },
-  { code: 'GB', name: 'United Kingdom' }, { code: 'CA', name: 'Canada' },
-  { code: 'NZ', name: 'New Zealand' },    { code: 'FR', name: 'France' },
-  { code: 'DE', name: 'Germany' },        { code: 'JP', name: 'Japan' },
-  { code: 'IN', name: 'India' },          { code: 'BR', name: 'Brazil' },
-  { code: 'MX', name: 'Mexico' },         { code: 'IT', name: 'Italy' },
-  { code: 'ES', name: 'Spain' },          { code: 'NL', name: 'Netherlands' },
-  { code: 'SE', name: 'Sweden' },         { code: 'SG', name: 'Singapore' },
-];
 
 export default function Region() {
   const router  = useRouter();
@@ -61,7 +51,7 @@ export default function Region() {
       .then(r => (r.ok ? r.json() : null))
       .then(data => {
         if (cancelled || regionTouched.current || !data?.country) return;
-        if (REGIONS.some(r => r.code === data.country)) setRegion(data.country);
+        if (isSupportedRegion(data.country)) setRegion(data.country);
       })
       .catch(() => { /* keep the timezone guess */ });
     return () => { cancelled = true; };

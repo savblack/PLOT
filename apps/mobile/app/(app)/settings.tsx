@@ -10,6 +10,7 @@ import { useRouter } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { tmdb, setTmdbRegion } from '../../lib/tmdb';
 import { IANA_TIMEZONES } from '@plot/core/timezones.js';
+import { REGIONS, DEFAULT_REGION, regionName } from '@plot/core/regions.js';
 import { setUserTimezone } from '@plot/core/date.js';
 import { useAppData } from '../../contexts/AppDataContext';
 import { useFollowRequests } from '../../hooks/useFollowRequests';
@@ -35,17 +36,6 @@ function generateCalendarToken(): string {
 }
 import { useTheme } from '../../contexts/ThemeContext';
 import ImportHistoryModal from '../../components/ImportHistoryModal';
-
-const REGIONS = [
-  { code: 'US', name: 'United States' }, { code: 'AU', name: 'Australia' },
-  { code: 'GB', name: 'United Kingdom' }, { code: 'CA', name: 'Canada' },
-  { code: 'NZ', name: 'New Zealand' },   { code: 'FR', name: 'France' },
-  { code: 'DE', name: 'Germany' },       { code: 'JP', name: 'Japan' },
-  { code: 'IN', name: 'India' },         { code: 'BR', name: 'Brazil' },
-  { code: 'MX', name: 'Mexico' },        { code: 'IT', name: 'Italy' },
-  { code: 'ES', name: 'Spain' },         { code: 'NL', name: 'Netherlands' },
-  { code: 'SE', name: 'Sweden' },        { code: 'SG', name: 'Singapore' },
-];
 
 const FEEDBACK_TYPES = [
   { id: 'bug',     label: 'Bug report' },
@@ -550,9 +540,9 @@ export default function SettingsScreen() {
   const providers     = profile?.streaming_providers || [];
   const guideChannels = profile?.guide_channels || [];
   const genres        = profile?.genres || [];
-  const region        = profile?.region || 'US';
+  const region        = profile?.region || DEFAULT_REGION;
   const timezone      = profile?.timezone || '';
-  const regionName    = REGIONS.find(r => r.code === region)?.name ?? region;
+  const regionLabel   = regionName(region);
 
   const displayName = profile?.display_name || '';
   const username    = profile?.username || '';
@@ -802,7 +792,7 @@ export default function SettingsScreen() {
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Circle cx={12} cy={12} r={10}/><Line x1={2} y1={12} x2={22} y2={12}/><Path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></Svg>}
             label="Region"
-            value={regionName}
+            value={regionLabel}
             onPress={() => setShowRegion(true)}
           />
           <SettingsRow
