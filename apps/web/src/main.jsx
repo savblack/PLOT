@@ -91,6 +91,17 @@ if (posthogToken) {
       // not just the ones our ErrorBoundaries catch. Turn on Error Tracking in the
       // PostHog project for these to show up.
       capture_exceptions: true,
+      // Never send the URL fragment to PostHog. /auth/callback receives Supabase's
+      // implicit-flow session as `#access_token=…&refresh_token=…`, and $current_url
+      // is window.location.href verbatim, so the fragment was landing in captured
+      // events and session recordings. The access token expires in an hour; the
+      // refresh token alongside it does not, and can be exchanged for new sessions
+      // indefinitely using only the public anon key.
+      //
+      // posthog-js turns this on by default only from `defaults: '2026-06-25'`
+      // onward, and we pin '2026-01-30' above, so it has to be set explicitly.
+      // Bumping `defaults` instead would silently change unrelated behaviour.
+      disable_capture_url_hashes: true,
     });
     if (Object.keys(attribution).length > 0) {
       posthog.register(attribution);
