@@ -27,11 +27,21 @@ on:
   schedule:
     - cron: '25 6 * * *'    # 06:25 UTC daily, after the nightly backup
   workflow_dispatch: {}      # manual runs for testing
-  # Also on changes to migrations or the checks themselves, so a bad migration
-  # is caught on the PR that introduces it rather than up to a day later.
+  # Also on changes to anything that can name a constraint, so a mismatch is
+  # caught on the PR that introduces it rather than up to a day later.
+  #
+  # Application code is in this list because leaving it out cost us the bug the
+  # check was extended to catch: the web import upserted `history` against a
+  # dropped constraint, and the PR that fixed it touched no migration, so this
+  # workflow never ran on it. An `onConflict` string is a reference to a
+  # database object wherever it is written.
   pull_request:
     paths:
       - 'supabase/migrations/**'
+      - 'supabase/functions/**'
+      - 'packages/core/**'
+      - 'apps/web/src/**'
+      - 'apps/mobile/**'
       - 'scripts/check-db-write-paths.mjs'
       - 'scripts/lib/dbWritePathChecks.mjs'
       - '.github/workflows/db-write-paths.yml'

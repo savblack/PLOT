@@ -87,12 +87,32 @@ export function useWatchlist(userId) {
           .select('id')
           .single();
 
-        if (insErr) {
+        // Another flow (onboarding, the mobile lazy-create) can create the
+        // default list between the read above and this insert. lists carries a
+        // unique (user_id, name), so that race surfaces as 23505 rather than a
+        // second list — recover by reading the winner instead of failing the
+        // whole bootstrap, which would leave the user with no watchlist.
+        if (insErr?.code === '23505') {
+          const { data: raced, error: raceErr } = await supabase
+            .from('lists')
+            .select('id')
+            .eq('user_id', userId)
+            .eq('name', LIST_NAME)
+            .maybeSingle();
+
+          if (raceErr || !raced) {
+            console.error('[useWatchlist] re-read after INSERT race failed:', raceErr);
+            setListError(raceErr?.message || 'Could not read the list after a create race');
+            return;
+          }
+          listData = raced;
+        } else if (insErr) {
           console.error('[useWatchlist] INSERT lists failed:', insErr);
           setListError(insErr.message);
           return;
+        } else {
+          listData = created;
         }
-        listData = created;
       }
 
       if (!listData?.id) {
