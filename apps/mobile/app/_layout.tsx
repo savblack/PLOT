@@ -12,6 +12,7 @@ import { supabase } from '../lib/supabase';
 import { setTmdbRegion } from '../lib/tmdb';
 import { setUserTimezone } from '@plot/core/date.js';
 import { initAnalytics, identifyUser, resetAnalytics } from '../lib/analytics';
+import { hydrateSectionOpenState } from '../lib/sectionOpenState';
 import { consumeTraktState, exchangeTraktCode } from '../hooks/useTraktSync';
 import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
 import { AppDataProvider } from '../contexts/AppDataContext';
@@ -111,6 +112,11 @@ function RootInner() {
     // Before the first session check, so nothing captured during boot is lost —
     // calls made before the SDK is ready queue inside lib/analytics.
     initAnalytics();
+
+    // Read every persisted section open/closed state into memory before any
+    // list screen mounts. CollapsibleSection seeds from that cache
+    // synchronously; without this a collapsed section flashes open first.
+    hydrateSectionOpenState();
 
     // Initial session check
     supabase.auth.getSession().then(({ data: { session } }) => {

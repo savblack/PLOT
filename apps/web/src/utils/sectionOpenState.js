@@ -1,7 +1,11 @@
+// Web half of the section open/closed persistence. The key format and encoding
+// are shared with mobile via @plot/core/sectionOpenState.js; only the storage
+// mechanism is per-platform (localStorage here, AsyncStorage on mobile).
+import { sectionStorageKey, parseSectionOpen, serialiseSectionOpen } from '@plot/core/sectionOpenState.js';
+
 export function getStoredSectionOpen(id, fallback = true) {
   try {
-    const value = localStorage.getItem(`plot.section.${id}`);
-    return value == null ? fallback : value === '1';
+    return parseSectionOpen(localStorage.getItem(sectionStorageKey(id)), fallback);
   } catch {
     return fallback;
   }
@@ -9,7 +13,7 @@ export function getStoredSectionOpen(id, fallback = true) {
 
 export function storeSectionOpen(id, open) {
   try {
-    localStorage.setItem(`plot.section.${id}`, open ? '1' : '0');
+    localStorage.setItem(sectionStorageKey(id), serialiseSectionOpen(open));
   } catch {
     // Storage may be unavailable in private browsing contexts.
   }
