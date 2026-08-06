@@ -37,9 +37,9 @@ the fix is the `core/` extraction (Track 1), **not** hand-patching mobile's stan
 | useHistory | 100 | 75 | subset |
 | useFavorites | 81 | 65 | subset |
 
-`api/tmdb`: web 340 loc / ~30 methods, mobile 170 loc — **missing 12**: `getNowPlaying`,
+`api/tmdb`: web 340 loc / ~30 methods, mobile 170 loc — **missing 11**: `getNowPlaying`,
 `getAiringToday`, `getTVOnTheAir`, `getStreamingMovies`, `getStreamingTV`, `getTopRated`,
-`getGenres`, `getEpisode`, `getDigitalReleaseDate`, `discoverBrowse`, `discoverByGenres`,
+`getGenres`, `getEpisode`, `getDigitalReleaseDate`, `discoverBrowse`,
 `discoverNewByProviders`.
 
 Of web's 23 hooks, mobile has 8. The 15 absent are mostly web-specific (DOM/theme/follows/
