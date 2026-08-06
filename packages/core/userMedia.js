@@ -1,5 +1,5 @@
 import { supabase } from './supabase.js';
-import { baseMediaRow, genreIdsFromItem } from './media.js';
+import { baseMediaRow, mediaIdentityRow, genreIdsFromItem } from './media.js';
 import { localDateStr } from './date.js';
 import { normalizeRating } from './ratings.js';
 
@@ -19,6 +19,21 @@ export async function saveListItem({ listId, userId, item, providerIds = [], str
   const { data, error } = await supabase
     .from('list_items')
     .insert(row)
+    .select()
+    .single();
+
+  return { data, error, row };
+}
+
+// Shared by useFavorites' toggleFavorite (the "add" branch) and onboarding's
+// bulk favourite-save, so both paths write the identical row shape.
+export async function saveFavorite({ userId, item }) {
+  const row = mediaIdentityRow(item);
+  if (!userId || !row) return { data: null, error: null, row: null };
+
+  const { data, error } = await supabase
+    .from('user_favourites')
+    .upsert({ user_id: userId, ...row }, { onConflict: 'user_id,tmdb_id' })
     .select()
     .single();
 
