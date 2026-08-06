@@ -614,7 +614,7 @@
       /* Fallback if the poster wall never loads — fades the same
          direction as the scrim above it so there's no visible seam */
       background: linear-gradient(to bottom, var(--bg), var(--dark));
-      color: var(--text);
+      color: var(--text-dark);
       /* Extra top padding gives the white → poster fade room to breathe,
          so the section starts from pure white before any poster appears
          and the headline never sits in the thick of the gradient */
@@ -659,13 +659,13 @@
       inset: 0;
       z-index: -1;
       background:
-        /* White bleeds into the wall at the top, same as before. The
-           bottom fade is pushed much later (82% vs the old 62%) and
-           lands on black instead of white, so it clears the headline/
-           form before the section darkens into the footer below. */
+        /* White bleeds into the wall at the top so the section opens on
+           pure white, then the vignette darkens behind the headline/form
+           so the white text sitting there stays legible, fading to solid
+           black by the bottom to flow into the dark footer below. */
         linear-gradient(to bottom, var(--bg) 1%, transparent 38%),
         linear-gradient(to bottom, transparent 91%, var(--dark) 99%),
-        radial-gradient(ellipse 72% 60% at 50% 46%, rgba(255,255,255,0.46) 0%, rgba(255,255,255,0.82) 52%, rgba(255,255,255,0.96) 100%);
+        radial-gradient(ellipse 72% 60% at 50% 46%, rgba(12,12,12,0.5) 0%, rgba(12,12,12,0.82) 52%, rgba(12,12,12,0.96) 100%);
     }
 
     .woc-inner { max-width: 720px; margin: 0 auto; text-align: center; }
@@ -677,14 +677,14 @@
       font-size: clamp(2.8rem, 6vw, 4.8rem);
       line-height: 0.95;
       margin-bottom: 1.1rem;
-      color: var(--text);
+      color: var(--text-dark);
     }
     .woc-headline em { font-style: italic; }
 
     .woc-sub {
       font-size: 1.05rem;
       font-weight: 300;
-      color: rgba(26,26,26,0.72);
+      color: rgba(240,239,232,0.72);
       max-width: 44ch;
       margin: 0 auto 1.6rem;
       line-height: 1.5;
@@ -741,23 +741,13 @@
     .woc-form button:hover:not(:disabled) { background: #fff; color: #0e0e0e; }
     .woc-form button:disabled { opacity: 0.6; cursor: default; }
 
-    .woc-hint { font-size: 0.76rem; font-weight: 300; color: rgba(26,26,26,0.5); align-self: stretch; text-align: center; }
-    .woc-hint a { color: rgba(26,26,26,0.72); text-decoration: none; border-bottom: 1px solid rgba(26,26,26,0.24); transition: color 0.2s, border-color 0.2s; }
-    .woc-hint a:hover { color: #000; border-color: rgba(26,26,26,0.6); }
+    .woc-hint { font-size: 0.76rem; font-weight: 300; color: rgba(240,239,232,0.5); align-self: stretch; text-align: center; }
+    .woc-hint a { color: rgba(240,239,232,0.72); text-decoration: none; border-bottom: 1px solid rgba(240,239,232,0.24); transition: color 0.2s, border-color 0.2s; }
+    .woc-hint a:hover { color: #F0EFE8; border-color: rgba(240,239,232,0.6); }
     .woc-msg { font-size: 0.78rem; color: rgba(240,239,232,0.6); min-height: 1.1em; padding-left: 0.5rem; }
 
     /* Honeypot: invisible to humans, tempting to bots */
     .woc-form .fn-website { position: absolute; left: -9999px; opacity: 0; pointer-events: none; }
-
-    /* Light-theme overrides for the "What's On" CTA — .woc-form/.woc-msg
-       default dark (shared with the #app-soon notify form), so this section
-       gets its own scoped colors rather than flipping the shared base. */
-    #whats-on-cta .woc-form { border-color: rgba(26,26,26,0.22); }
-    #whats-on-cta .woc-form input[type="email"] { color: var(--text); }
-    #whats-on-cta .woc-form input[type="email"]::placeholder { color: rgba(26,26,26,0.45); }
-    #whats-on-cta .woc-form button { border-color: rgba(26,26,26,0.6); color: var(--text); }
-    #whats-on-cta .woc-form button:hover:not(:disabled) { background: var(--ink); color: #fff; }
-    #whats-on-cta .woc-msg { color: rgba(26,26,26,0.6); }
 
     /* Footer — lean nav rail, continuous with the dark section above */
     footer {
@@ -2030,7 +2020,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <h2 class="woc-headline">What's on, <em>daily.</em></h2>
       <p class="woc-sub">Your daily briefing on everything worth watching.</p>
       <div class="woc-actions">
-        <a href="/whats-on" class="demo-link dark-link">Browse What's On &rarr;</a>
+        <a href="/whats-on" class="demo-link">Browse What's On &rarr;</a>
         <div class="woc-sub-wrap">
           <form class="woc-form" id="newsletterForm">
             <input type="email" name="email" placeholder="your@email.com" required autocomplete="email" aria-label="Email address">
