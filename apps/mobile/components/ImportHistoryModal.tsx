@@ -138,7 +138,7 @@ export default function ImportHistoryModal({ userId, onClose }: Props) {
   const [platform,     setPlatform]     = useState<Platform | null>(null);
   const [rawEntries,   setRawEntries]   = useState<ParsedImportEntry[]>([]);
   const [resolved,     setResolved]     = useState<ResolvedEntry[]>([]);
-  const [existingRows, setExistingRows] = useState<{ tmdb_id: number; media_type: string; watched_at: string }[]>([]);
+  const [existingRows, setExistingRows] = useState<{ tmdb_id: number; media_type: string }[]>([]);
   const [resolveTotal, setResolveTotal] = useState(0);
   const [resolveDone,  setResolveDone]  = useState(0);
   const [importDone,   setImportDone]   = useState(0);
@@ -178,7 +178,7 @@ export default function ImportHistoryModal({ userId, onClose }: Props) {
       // preview and the write agree on exactly which rows are new.
       const { data: existing } = await supabase
         .from('history')
-        .select('tmdb_id, media_type, watched_at')
+        .select('tmdb_id, media_type')
         .eq('user_id', userId);
       setExistingRows(existing ?? []);
 

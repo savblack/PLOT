@@ -294,7 +294,7 @@ export default function ImportView() {
     // show whose TMDB ids collide look like the same title.
     const resolvedIds = [...new Set(resolved.filter(r => r.status === 'matched').map(r => r.tmdbId))];
     const { data: existing } = resolvedIds.length
-      ? await supabase.from('history').select('tmdb_id, media_type, watched_at').eq('user_id', user.id).in('tmdb_id', resolvedIds)
+      ? await supabase.from('history').select('tmdb_id, media_type').eq('user_id', user.id).in('tmdb_id', resolvedIds)
       : { data: [] };
     setExistingRows(existing || []);
 
@@ -548,14 +548,13 @@ export default function ImportView() {
             {results.map((r, i) => {
               const unmatched = r.status === 'unmatched';
               const isNew = !unmatched && plannedRows.has(rowByIndex.get(i));
-              // Matched but not planned: either the user already has this exact
-              // watch, or it merged into another entry for the same title and
-              // date — a Netflix export lists one row per episode, so a night
-              // of one series arrives as several rows describing one watch.
-              const watchedAt = watchedAtFor(r);
+              // Matched but not planned: either the user already has this
+              // title, or it merged into another entry for the same title — a
+              // Netflix export lists one row per episode, so a night of one
+              // series arrives as several rows describing one title.
               const alreadyHave = !unmatched && !isNew;
               const merged = alreadyHave && !existingRows.some(
-                e => e.tmdb_id === r.tmdbId && e.media_type === r.mediaType && e.watched_at === watchedAt);
+                e => e.tmdb_id === r.tmdbId && e.media_type === r.mediaType);
               return (
                 <div key={i} style={{
                   display: 'flex', alignItems: 'center', gap: '0.75rem',
