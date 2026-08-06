@@ -519,10 +519,10 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
   const inList     = watchlist.isInList(itemId);
   const isWatching = !isMovie && watching.isWatching(itemId);
   const progress   = watching.getProgress(itemId);
-  const watched    = history.isWatched(itemId);
+  const watched    = history.isWatched(itemId, itemType);
   const isFav      = favorites.isFavorite(itemId);
   const isInAnyList = customLists.lists.some((l: any) => customLists.isInList(l.id, itemId));
-  const watchedEntry = history.entries?.find((e: any) => e.tmdb_id === Number(itemId));
+  const watchedEntry = history.entries?.find((e: any) => e.tmdb_id === Number(itemId) && e.media_type === itemType);
 
   const handleShare = async () => {
     try {
@@ -822,7 +822,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                   <View style={{ marginBottom: spacing.lg }}>
                     <TouchableOpacity
                       style={[styles.btnPrimary, styles.btnSaved]}
-                      onPress={() => history.removeEntry(itemId)}
+                      onPress={() => history.removeEntry(itemId, itemType)}
                     >
                       <IconCheck color="#4ade80" />
                       <Text style={[styles.btnPrimaryText, { color: '#4ade80' }]}>Watched</Text>
@@ -856,7 +856,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                         disabled={savingReview}
                         onPress={async () => {
                           setSavingReview(true);
-                          await history.updateEntry(itemId, { rating: localRating || null, note: localReview.trim() || null, dnf: localDnf });
+                          await history.updateEntry(itemId, { rating: localRating || null, note: localReview.trim() || null, dnf: localDnf }, itemType);
                           setSavingReview(false);
                         }}
                       >
