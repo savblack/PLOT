@@ -17,7 +17,7 @@ export function buildWatchlistMovieCalendarEvents(item, todayStr) {
   const events = [];
 
   if (hasUpcomingRelease) {
-    const isCinemaWindow = hasUpcomingStreaming && !isSameDayStreamingRelease;
+    const isCinemaWindow = !isSameDayStreamingRelease;
     events.push({
       date: item.release_date,
       type: isSameDayStreamingRelease ? 'streaming' : isCinemaWindow ? 'cinema' : 'streaming',

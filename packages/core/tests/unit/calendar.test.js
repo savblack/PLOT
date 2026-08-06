@@ -59,23 +59,22 @@ test('buildWatchlistMovieCalendarEvents emits a cinema event plus a later separa
   ]);
 });
 
-test('BUG: a release date with no known streaming date at all is labeled "streaming", not "cinema"', () => {
+test('buildWatchlistMovieCalendarEvents labels a release date with no known streaming date at all as "cinema"', () => {
   // Compare with the case above: knowing about a *later* streaming date makes
-  // the release-date event "cinema", but not knowing about one at all makes it
-  // "streaming" — the same label as a same-day digital release. That reads
-  // backwards: a bare release_date with no streaming_date is the one case that
+  // the release-date event "cinema", and not knowing about one at all should
+  // too — a bare release_date with no streaming_date is the one case that
   // most needs a "Cinema" label, since nothing else marks it as a theatrical
   // date rather than a streaming one.
   const item = { media_type: 'movie', release_date: '2024-07-01' };
   assert.deepEqual(buildWatchlistMovieCalendarEvents(item, today), [
-    { date: '2024-07-01', type: 'streaming', label: 'Streaming', item },
+    { date: '2024-07-01', type: 'cinema', label: 'Cinema', item },
   ]);
 });
 
 test('buildWatchlistMovieCalendarEvents treats a release date equal to today as upcoming', () => {
   const item = { media_type: 'movie', release_date: today };
   assert.deepEqual(buildWatchlistMovieCalendarEvents(item, today), [
-    { date: today, type: 'streaming', label: 'Streaming', item },
+    { date: today, type: 'cinema', label: 'Cinema', item },
   ]);
 });
 
