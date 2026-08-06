@@ -651,7 +651,12 @@ function FavoritesSection({ favorites: favsHook, filterItems, open, onOpenChange
   const deleteSelected = () => {
     selected.forEach(tmdbId => {
       const item = favorites.find(f => f.tmdb_id === tmdbId);
-      if (item) toggleFavorite(item);
+      // toggleFavorite resolves the id via tmdbIdFromItem, which reads `id`
+      // before `tmdb_id` — right for a TMDB result, wrong for a row out of
+      // user_favourites whose `id` is the row's uuid. Number(uuid) is NaN, so
+      // passing the row unchanged resolved to null and the delete silently did
+      // nothing. Hand it the tmdb id explicitly.
+      if (item) toggleFavorite({ ...item, id: item.tmdb_id });
     });
     exitEditMode();
   };
