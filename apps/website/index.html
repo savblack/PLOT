@@ -611,7 +611,9 @@
     /* What's On — closing CTA over a poster wall */
     #whats-on-cta {
       position: relative;
-      background: var(--bg);
+      /* Fallback if the poster wall never loads — fades the same
+         direction as the scrim above it so there's no visible seam */
+      background: linear-gradient(to bottom, var(--bg), var(--dark));
       color: var(--text);
       /* Extra top padding gives the white → poster fade room to breathe,
          so the section starts from pure white before any poster appears
@@ -657,11 +659,13 @@
       inset: 0;
       z-index: -1;
       background:
-        /* mirrors the bottom fade below, so white bleeds into the wall
-           at both edges instead of cutting off hard at the top */
+        /* White bleeds into the wall at the top, same as before. The
+           bottom fade is pushed much later (82% vs the old 62%) and
+           lands on black instead of white, so it clears the headline/
+           form before the section darkens into the footer below. */
         linear-gradient(to bottom, var(--bg) 1%, transparent 38%),
-        linear-gradient(to bottom, transparent 62%, var(--bg) 99%),
-        radial-gradient(ellipse 72% 78% at 50% 50%, rgba(255,255,255,0.46) 0%, rgba(255,255,255,0.82) 52%, rgba(255,255,255,0.96) 100%);
+        linear-gradient(to bottom, transparent 91%, var(--dark) 99%),
+        radial-gradient(ellipse 72% 60% at 50% 46%, rgba(255,255,255,0.46) 0%, rgba(255,255,255,0.82) 52%, rgba(255,255,255,0.96) 100%);
     }
 
     .woc-inner { max-width: 720px; margin: 0 auto; text-align: center; }
@@ -755,10 +759,10 @@
     #whats-on-cta .woc-form button:hover:not(:disabled) { background: var(--ink); color: #fff; }
     #whats-on-cta .woc-msg { color: rgba(26,26,26,0.6); }
 
-    /* Footer — lean nav rail, continuous with the light section above */
+    /* Footer — lean nav rail, continuous with the dark section above */
     footer {
-      background: var(--bg);
-      color: var(--text);
+      background: var(--dark);
+      color: var(--text-dark);
       padding: 2.6rem 3rem calc(2.6rem + var(--ticker-height) + env(safe-area-inset-bottom, 0px));
       margin-top: -1px;
       position: relative;
@@ -782,7 +786,7 @@
       letter-spacing: var(--serif-tracking);
       font-size: 1.8rem;
       line-height: 1;
-      color: var(--text);
+      color: var(--text-dark);
       user-select: none;
     }
 
@@ -790,18 +794,18 @@
 
     .footer-nav a {
       font-size: 0.82rem;
-      color: rgba(26,26,26,0.72);
+      color: rgba(240,239,232,0.82);
       text-decoration: none;
       transition: color 0.2s;
       white-space: nowrap;
     }
-    .footer-nav a:hover { color: #000; }
+    .footer-nav a:hover { color: #fff; }
 
     .footer-bottom {
       width: 100%;
       padding-top: 1.2rem;
       margin-top: 0.4rem;
-      border-top: 1px solid rgba(26,26,26,0.08);
+      border-top: 1px solid rgba(255,255,255,0.08);
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -811,17 +815,17 @@
 
     .footer-copy {
       font-size: 0.75rem;
-      color: rgba(26,26,26,0.6);
+      color: rgba(240,239,232,0.7);
     }
 
     .footer-social { display: flex; gap: 1rem; align-items: center; }
 
     .footer-social a {
-      color: rgba(26,26,26,0.6);
+      color: rgba(240,239,232,0.7);
       display: inline-flex;
       transition: color 0.2s;
     }
-    .footer-social a:hover { color: #000; }
+    .footer-social a:hover { color: #fff; }
     .footer-social svg { width: 19px; height: 19px; display: block; }
 
     @media (max-width: 820px) { .woc-wall { grid-template-columns: repeat(6, 1fr); } }
@@ -1222,7 +1226,7 @@
     #app-soon { background: var(--dark); padding: 10rem 2rem; }
 
     /* Origin — built by one person */
-    #origin { background: var(--dark); padding: 10rem 2rem; }
+    #origin { background: var(--bg); padding: 10rem 2rem; }
     .app-eyebrow {
       display: inline-block; font-size: 0.62rem; font-weight: 600;
       letter-spacing: 0.22em; text-transform: uppercase;
@@ -1997,12 +2001,12 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   <!-- ── Origin — built by one person ─────────────────────────── -->
   <section id="origin">
     <div class="origin-split">
-      <h2 class="demo-headline reveal">Built by a<br><em style="font-style:italic">solo</em> developer.</h2>
+      <h2 class="demo-headline reveal" style="color:var(--text)">Built by a<br><em style="font-style:italic">solo</em> developer.</h2>
       <div class="reveal">
-        <p class="demo-body">PLOT is built by one person around a full time job. No team, no investors, nothing to answer to except the people using it. So the roadmap gets written with you. Tell me what would make PLOT better for the way you watch and it shapes what I build or fix next. Support along the way is what lets me keep building a product you love.</p>
+        <p class="demo-body" style="color:var(--text-secondary)">PLOT is built by one person around a full time job. No team, no investors, nothing to answer to except the people using it. So the roadmap gets written with you. Tell me what would make PLOT better for the way you watch and it shapes what I build or fix next. Support along the way is what lets me keep building a product you love.</p>
         <div class="origin-actions">
-          <a href="https://ko-fi.com/J7P123TYGK" class="btn btn-outline-white btn-large" target="_blank" rel="noopener" data-cta="origin-kofi">Support PLOT on Ko-fi</a>
-          <a href="/about.html" class="demo-link" data-cta="origin-about">Read the story &rarr;</a>
+          <a href="https://ko-fi.com/J7P123TYGK" class="btn btn-outline btn-large" target="_blank" rel="noopener" data-cta="origin-kofi">Support PLOT on Ko-fi</a>
+          <a href="/about.html" class="demo-link dark-link" data-cta="origin-about">Read the story &rarr;</a>
         </div>
       </div>
     </div>
