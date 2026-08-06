@@ -14,10 +14,13 @@ import { useAppData } from '../../contexts/AppDataContext';
 import { canCreateCustomList, FREE_CUSTOM_LIST_CAP } from '@plot/core/premium.js';
 import { tmdb } from '../../lib/tmdb';
 import { favoriteWords } from '../../lib/spelling';
+import CollapsibleSection from '../../components/CollapsibleSection';
+import SectionToggleIcon from '../../components/SectionToggleIcon';
+import { getSectionOpen } from '../../lib/sectionOpenState';
+import { MEDIA } from '@plot/core/copy/media.js';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii, iconButtonSize } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 import { COMMON } from '@plot/core/copy/common.js';
-import { MEDIA } from '@plot/core/copy/media.js';
 
 const SCREEN_W = Dimensions.get('window').width;
 const POSTER_W = (SCREEN_W - spacing.xl * 2 - spacing.sm * 2) / 3;
@@ -28,6 +31,11 @@ const SHARE_BASE = 'https://app.theplot.tv';
 const buildListShareUrl = (listId: string) => `${SHARE_BASE}/list/${listId}`;
 
 // Filter list items by media type. Items are treated as movies when untyped.
+// Mirrors web's ALL_LIST_SECTION_IDS (MyListsView.jsx). Tab ids match section
+// ids 1:1, which is what lets the expand/collapse-all control scope itself to
+// whichever tab is active.
+const LIST_SECTION_IDS = ['watching', 'want', 'favorites', 'lists'];
+
 type TypeFilter = 'all' | 'movie' | 'tv';
 const applyTypeFilter = (items: any[], filter: TypeFilter) =>
   filter === 'all' ? items : items.filter(i => (i.media_type || 'movie') === filter);
@@ -71,35 +79,24 @@ function SubTab({ label, active, onPress }: { label: string; active: boolean; on
   );
 }
 
-// ── Section header bar ────────────────────────────────────────────────
-function SectionBar({
-  label, count, open, onToggle, onAdd, addLabel = 'Add item',
-}: { label: string; count?: number; open: boolean; onToggle: () => void; onAdd?: () => void; addLabel?: string }) {
+// ── Section add button ────────────────────────────────────────────────
+// The "+" that used to live inside SectionBar. Now passed to
+// CollapsibleSection's headerRight slot, matching web's headerRight pattern.
+function SectionAddButton({ onPress, label }: { onPress: () => void; label: string }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
-    <TouchableOpacity style={styles.sectionBar} onPress={onToggle} activeOpacity={0.7}>
-      <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"
-        style={{ transform: [{ rotate: open ? '90deg' : '0deg' }] }}
-      >
-        <Polyline points="9,18 15,12 9,6" />
+    <TouchableOpacity
+      style={styles.sectionAddBtn}
+      onPress={onPress}
+      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      accessibilityLabel={label}
+      accessibilityRole="button"
+    >
+      <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+        <Line x1={12} y1={5} x2={12} y2={19} />
+        <Line x1={5} y1={12} x2={19} y2={12} />
       </Svg>
-      <Text style={styles.sectionBarLabel}>{label}</Text>
-      {count !== undefined && <Text style={styles.sectionBarCount}>{count}</Text>}
-      {onAdd && (
-        <TouchableOpacity
-          style={styles.sectionAddBtn}
-          onPress={(e) => { e.stopPropagation?.(); onAdd(); }}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityLabel={addLabel}
-          accessibilityRole="button"
-        >
-          <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-            <Line x1={12} y1={5} x2={12} y2={19} />
-            <Line x1={5} y1={12} x2={19} y2={12} />
-          </Svg>
-        </TouchableOpacity>
-      )}
     </TouchableOpacity>
   );
 }
@@ -335,10 +332,13 @@ export default function MyListsScreen() {
 
   const [tab,          setTab]          = useState('all');
   const [typeFilter,   setTypeFilter]   = useState<TypeFilter>('all');
-  const [watchingOpen, setWatchingOpen] = useState(true);
-  const [wantOpen,     setWantOpen]     = useState(true);
-  const [favsOpen,     setFavsOpen]     = useState(true);
-  const [listsOpen,    setListsOpen]    = useState(true);
+  // Section ids match web's ALL_LIST_SECTION_IDS so a section means the same
+  // thing on both platforms and shares the `plot.section.<id>` storage key.
+  // Seeded synchronously from the cache hydrated at app start.
+  const [sectionsOpen, setSectionsOpen] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(LIST_SECTION_IDS.map(id => [id, getSectionOpen(id, true)])));
+  const setSectionOpenFor = (id: string, open: boolean) =>
+    setSectionsOpen(prev => ({ ...prev, [id]: open }));
 
   const [showAddFav,     setShowAddFav]     = useState(false);
   const [showCreateList, setShowCreateList] = useState(false);
@@ -398,19 +398,17 @@ export default function MyListsScreen() {
 
         {/* ── Watching ── */}
         {showWatching && watchingList.length > 0 && (
-          <>
-            {isAll && (
-              <SectionBar
-                label="Watching"
-                count={watchingList.length}
-                open={watchingOpen}
-                onToggle={() => setWatchingOpen(o => !o)}
-              />
-            )}
-            {(!isAll || watchingOpen) && watchingList.map(item => (
+          <CollapsibleSection
+            id="watching"
+            label="Watching"
+            count={watchingList.length}
+            open={sectionsOpen.watching}
+            onOpenChange={(next) => setSectionOpenFor('watching', next)}
+          >
+            {watchingList.map(item => (
               <ListRow key={item.tmdb_id} item={{ ...item, media_type: 'tv' }} onPress={() => openPanel(item.tmdb_id, 'tv')} />
             ))}
-          </>
+          </CollapsibleSection>
         )}
         {tab === 'watching' && watching.items.length === 0 && (
           <View style={styles.empty}>
@@ -421,16 +419,14 @@ export default function MyListsScreen() {
 
         {/* ── Want to Watch ── */}
         {showWant && (
-          <>
-            {isAll && (
-              <SectionBar
-                label="Want to Watch"
-                count={sortedSaved.length}
-                open={wantOpen}
-                onToggle={() => setWantOpen(o => !o)}
-              />
-            )}
-            {(!isAll || wantOpen) && (
+          <CollapsibleSection
+            id="want"
+            label="Want to Watch"
+            count={sortedSaved.length}
+            open={sectionsOpen.want}
+            onOpenChange={(next) => setSectionOpenFor('want', next)}
+          >
+            {(
               sortedSaved.length === 0 ? (
                 <View style={styles.empty}>
                   <Text style={styles.emptyBody}>Tap the bookmark on any title to save it here.</Text>
@@ -463,23 +459,20 @@ export default function MyListsScreen() {
                 })
               )
             )}
-          </>
+          </CollapsibleSection>
         )}
 
         {/* ── Favourites ── */}
         {showFavs && (
-          <>
-            {isAll && (
-              <SectionBar
-                label={fw.plural}
-                count={favList.length}
-                open={favsOpen}
-                onToggle={() => setFavsOpen(o => !o)}
-                onAdd={() => setShowAddFav(true)}
-                addLabel={`Add to ${fw.pluralLower}`}
-              />
-            )}
-            {(!isAll || favsOpen) && (
+          <CollapsibleSection
+            id="favorites"
+            label={fw.plural}
+            count={favList.length}
+            open={sectionsOpen.favorites}
+            onOpenChange={(next) => setSectionOpenFor('favorites', next)}
+            headerRight={<SectionAddButton onPress={() => setShowAddFav(true)} label={`Add to ${fw.pluralLower}`} />}
+          >
+            {(
               favList.length === 0 ? (
                 <View style={styles.empty}>
                   <Text style={styles.emptyBody}>{favorites.favorites.length === 0 ? 'Heart any title to add it here.' : 'No matching titles'}</Text>
@@ -499,22 +492,20 @@ export default function MyListsScreen() {
                 />
               )
             )}
-          </>
+          </CollapsibleSection>
         )}
 
         {/* ── My Lists ── */}
         {showLists && (
-          <>
-            {isAll && (
-              <SectionBar
-                label="My Lists"
-                open={listsOpen}
-                onToggle={() => setListsOpen(o => !o)}
-                onAdd={requestCreateList}
-                addLabel="Create list"
-              />
-            )}
-            {(!isAll || listsOpen) && (
+          <CollapsibleSection
+            id="lists"
+            label="My Lists"
+            count={customLists.lists.length}
+            open={sectionsOpen.lists}
+            onOpenChange={(next) => setSectionOpenFor('lists', next)}
+            headerRight={<SectionAddButton onPress={requestCreateList} label="Create list" />}
+          >
+            {(
               <>
                 {!isAll && (
                   <TouchableOpacity style={styles.newListRow} onPress={requestCreateList}>
@@ -547,7 +538,7 @@ export default function MyListsScreen() {
                 ))}
               </>
             )}
-          </>
+          </CollapsibleSection>
         )}
       </ScrollView>
 
@@ -766,18 +757,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   subTabText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.xs, color: colors.textMuted },
   subTabTextActive: { color: colors.accent },
 
-  sectionBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
-    backgroundColor: colors.surfaceRaised,
-    gap: spacing.sm,
-  },
-  sectionBarLabel: { fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, color: colors.textSecondary, flex: 1, textTransform: 'uppercase', letterSpacing: 0.5 },
-  sectionBarCount: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted },
   sectionAddBtn: { marginLeft: spacing.xs },
 
   listRow: {
