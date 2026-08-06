@@ -9,7 +9,11 @@
 // rating and editing a review all failed silently for two weeks. It only
 // surfaced because an unrelated backfill happened to touch the table.
 //
-// Three checks, all pure introspection. None of them writes anything:
+// Three checks, all pure introspection. None of them writes anything. Each one
+// resolves against the live database with this branch's unapplied migrations
+// folded in, so the question answered is "will these write paths work once this
+// merges" rather than "do they work against a schema this branch has not
+// created yet":
 //
 //   1. ON CONFLICT targets resolve. For every trigger function, every
 //      `insert … on conflict (cols)` must match a real unique/primary-key
@@ -52,6 +56,7 @@ import { join } from 'node:path';
 import {
   colKey, resolveConflictTargets, extractTableRefs,
   extractStringConstants, extractAppConflictTargets,
+  projectPendingSchema,
 } from './lib/dbWritePathChecks.mjs';
 
 // Two transports so this runs both locally and in CI without a new secret:
@@ -96,6 +101,8 @@ async function query(sql) {
 }
 
 const problems = [];
+// Targets that only resolve because of a migration in this branch.
+let pendingMatches = 0;
 
 console.log(`▶ checking write paths on ${TARGET}\n`);
 
@@ -121,7 +128,7 @@ const constraintRows = await query(`
   join pg_namespace n on n.oid = c.relnamespace
   where n.nspname = 'public' and con.contype in ('u','p')`);
 
-const constraintsByTable = new Map();
+let constraintsByTable = new Map();
 for (const r of constraintRows) {
   if (!constraintsByTable.has(r.tbl)) constraintsByTable.set(r.tbl, []);
   constraintsByTable.get(r.tbl).push({ name: r.conname, key: colKey(r.cols || '') });
@@ -143,10 +150,71 @@ for (const r of indexRows) {
   constraintsByTable.get(r.tbl).push({ name: r.idx, key: colKey(r.cols || '') });
 }
 
+// ── Migrations this database has not run yet ────────────────────────────────
+// A PR that adds an upsert and the migration creating its constraint is correct
+// but describes a schema that does not exist yet, and checking it against the
+// live one alone fails every time. So fold the unapplied migrations in: the
+// question this answers is "will these write paths work once this branch is
+// merged", which is the question a PR is actually asking.
+//
+// Only unapplied files are read. Everything already applied is taken from the
+// database as before, so no amount of SQL parsing can misdescribe the schema
+// that exists — only the schema that is about to.
+let pending = [];
+let pendingNote = '';
+try {
+  const applied = new Set(
+    (await query('select version from supabase_migrations.schema_migrations')).map(r => String(r.version))
+  );
+  pending = readdirSync('supabase/migrations')
+    .filter(f => f.endsWith('.sql'))
+    .sort()
+    .filter(f => !applied.has(f.split('_')[0]))
+    .map(file => ({ file, sql: readFileSync(join('supabase/migrations', file), 'utf8') }));
+} catch (e) {
+  // Without the migration table there is nothing to fold in, so fall back to
+  // checking the live schema alone — the behaviour before this existed. Said
+  // out loud, because silently checking less is how a guard rots.
+  pendingNote = `could not read supabase_migrations.schema_migrations (${e.message.split('\n')[0]}) — checking the live schema only`;
+}
+
+if (pendingNote) {
+  console.log(`  ! ${pendingNote}\n`);
+} else if (pending.length) {
+  console.log(`  ${pending.length} migration(s) not applied yet, folded in: ${pending.map(p => p.file).join(', ')}\n`);
+}
+
+const liveConstraintsByTable = constraintsByTable;
+constraintsByTable = projectPendingSchema(liveConstraintsByTable, pending);
+
+// Which migration, if any, is the only reason a key resolves. Null when the
+// constraint is really there.
+const pendingSource = (table, key) =>
+  (constraintsByTable.get(table) || []).find(c => c.key === key)?.pending ?? null;
+
+// The reverse: a key that works today and stops working on merge, because an
+// unapplied migration drops it and nothing in the branch re-adds it. This is
+// the original outage read forwards — 20260727010000 dropped the constraint the
+// import still named, and nothing said so until the writes had been failing for
+// two weeks. Now the migration that would do it cannot merge quietly.
+const droppedByPending = (table, key) => {
+  if ((constraintsByTable.get(table) || []).some(c => c.key === key)) return null;
+  return (liveConstraintsByTable.get(table) || []).find(c => c.key === key)?.name ?? null;
+};
+
+/** Failure wording that says which of the two situations this is. */
+const missingDetail = (who, table, key, verb) => {
+  const dropped = droppedByPending(table, key);
+  return dropped
+    ? `${who} ${verb} ${table} with (${key}), which ${dropped} satisfies today — but a migration in this branch drops it and nothing re-creates it.`
+    : `${who} ${verb} ${table} with (${key}), but that table has no matching unique/PK constraint.`;
+};
+
 // A unique constraint and the index backing it are the same key under the same
 // name, so list each only once when reporting what a table actually offers.
+// Reports the live schema: what a failing target has to choose from today.
 const availableKeys = table =>
-  [...new Set((constraintsByTable.get(table) || []).map(c => `${c.name} (${c.key})`))];
+  [...new Set((liveConstraintsByTable.get(table) || []).map(c => `${c.name} (${c.key})`))];
 
 // ── Existing tables/views, for the dangling-reference check ──────────────────
 const relRows = await query(`
@@ -161,12 +229,17 @@ for (const t of triggers) {
   for (const { table, key, matched } of resolveConflictTargets(t.def, constraintsByTable)) {
     conflictChecks++;
     if (matched) {
-      console.log(`  ✓ ${t.fn}()  →  ${table} (${key})  matches ${matched}`);
+      const from = pendingSource(table, key);
+      if (from) pendingMatches++;
+      console.log(from
+        ? `  ⋯ ${t.fn}()  →  ${table} (${key})  matches ${matched}, created by ${from} (not applied yet)`
+        : `  ✓ ${t.fn}()  →  ${table} (${key})  matches ${matched}`);
     } else {
-      console.log(`  ✗ ${t.fn}()  →  ${table} (${key})  NO MATCHING CONSTRAINT`);
+      const dropped = droppedByPending(table, key);
+      console.log(`  ✗ ${t.fn}()  →  ${table} (${key})  ${dropped ? `DROPPED BY A PENDING MIGRATION (${dropped})` : 'NO MATCHING CONSTRAINT'}`);
       problems.push({
         kind: '42P10',
-        detail: `${t.fn}() inserts into ${table} with on conflict (${key}), but that table has no matching unique/PK constraint.`,
+        detail: missingDetail(`${t.fn}() inserts into`, table, key, ''),
         table: t.tbl,
         available: availableKeys(table),
       });
@@ -197,11 +270,11 @@ if (!problems.some(p => p.kind === 'missing-relation')) console.log('  ✓ every
 // are fixed, so the split is gone: a warning nobody has to act on is how the
 // Plex/Trakt functions kept a dropped constraint for weeks.
 //
-// Caveat worth knowing before you debug a red build: this resolves against the
-// LIVE database, so a PR that adds an upsert and the migration creating its
-// constraint in one go will fail until it merges and the migration applies.
-// That is inherent to checking the real schema rather than a parsed one, and it
-// applies to the trigger checks above just the same. Land the constraint first.
+// A PR may add an upsert and the migration creating its constraint together;
+// that used to fail here until the merge applied it, and the advice was to land
+// the constraint first. It no longer is — unapplied migrations are folded into
+// the schema this resolves against, and such a target reports as ⋯ pending.
+// What still fails is a target no migration in the branch accounts for.
 const SCANNED = ['packages/core', 'apps/web/src', 'apps/mobile', 'supabase/functions'];
 const SOURCE_EXT = /\.(js|jsx|ts|tsx|mjs)$/;
 const SKIP_DIRS = new Set(['node_modules', 'dist', 'build', 'ios', 'android', '.expo']);
@@ -225,15 +298,24 @@ const scanned = SCANNED
 
 // Constants resolve across files: the canonical target lives in one module and
 // is imported by every write site, which is the point of naming it once.
+//
+// A file's own definition wins over the shared pool, though, because the same
+// name is deliberately defined twice — packages/core/userMedia.js for the app
+// and supabase/functions/_shared/historyConflict.ts for Deno, which cannot
+// import the workspace. Those two are supposed to fail this check if they ever
+// disagree. Folded into one map they could not: whichever file was scanned last
+// silently answered for both, so a drift between them resolved to a single
+// value and looked consistent no matter what the other one said.
 const constants = new Map();
 for (const { source } of scanned) {
   for (const [name, value] of extractStringConstants(source)) constants.set(name, value);
 }
+const scopeFor = source => new Map([...constants, ...extractStringConstants(source)]);
 
 console.log('\n── ON CONFLICT targets in application code ──');
 let appChecks = 0;
 for (const { file, source } of scanned) {
-  for (const { table, key, raw } of extractAppConflictTargets(source, constants)) {
+  for (const { table, key, raw } of extractAppConflictTargets(source, scopeFor(source))) {
     appChecks++;
     if (key === null) {
       console.log(`  ? ${file}  →  ${table} (${raw})  target not statically resolvable, skipped`);
@@ -241,13 +323,17 @@ for (const { file, source } of scanned) {
     }
     const match = (constraintsByTable.get(table) || []).find(c => c.key === key);
     if (match) {
-      console.log(`  ✓ ${file}  →  ${table} (${key})  matches ${match.name}`);
+      if (match.pending) pendingMatches++;
+      console.log(match.pending
+        ? `  ⋯ ${file}  →  ${table} (${key})  matches ${match.name}, created by ${match.pending} (not applied yet)`
+        : `  ✓ ${file}  →  ${table} (${key})  matches ${match.name}`);
       continue;
     }
-    console.log(`  ✗ ${file}  →  ${table} (${key})  NO MATCHING CONSTRAINT`);
+    const dropped = droppedByPending(table, key);
+    console.log(`  ✗ ${file}  →  ${table} (${key})  ${dropped ? `DROPPED BY A PENDING MIGRATION (${dropped})` : 'NO MATCHING CONSTRAINT'}`);
     problems.push({
       kind: '42P10-app',
-      detail: `${file} upserts into ${table} with onConflict (${key}), but that table has no matching unique/PK constraint.`,
+      detail: missingDetail(file, table, key, 'upserts into'),
       table,
       available: availableKeys(table),
     });
@@ -259,6 +345,9 @@ if (appChecks === 0) console.log('  (no onConflict clauses in application code)'
 console.log('');
 if (problems.length === 0) {
   console.log(`✓ write paths healthy — ${triggers.length} trigger(s), ${conflictChecks} trigger and ${appChecks} application on-conflict clause(s) verified`);
+  if (pendingMatches) {
+    console.log(`  ${pendingMatches} of them resolve only once this branch's migrations apply — green here means green after the merge, not before it.`);
+  }
   process.exit(0);
 }
 

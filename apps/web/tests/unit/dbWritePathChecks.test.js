@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   colKey, extractConflictTargets, extractTableRefs, resolveConflictTargets,
   extractStringConstants, extractAppConflictTargets,
+  extractMigrationKeyChanges, projectPendingSchema,
 } from '../../../../scripts/lib/dbWritePathChecks.mjs';
 
 // These are the real definitions either side of the two-week production outage
@@ -157,4 +158,118 @@ test('a later statement is not mistaken for this one\'s conflict target', () => 
 test('reads with no upsert yield nothing to check', () => {
   const source = `const { data } = await supabase.from('history').select('tmdb_id').eq('user_id', id);`;
   assert.deepEqual(extractAppConflictTargets(source), []);
+});
+
+/* ── Migrations that have not run yet ─────────────────────────────────────── */
+
+// The real pair from 2026-08-06: one migration swaps history's unique key while
+// the code that names it changes in the same branch. Checked against the live
+// schema alone, every one of those call sites fails until the merge applies it.
+
+const SWAP_KEY = `
+-- Remove rewatch logging: one history row per title, always.
+-- Reverts 20260725000001. Nothing here touches feed_post_from_history().
+alter table public.history
+  drop constraint if exists history_user_id_tmdb_id_media_type_watched_at_key;
+
+alter table public.history
+  add constraint history_user_id_tmdb_id_media_type_key
+  unique (user_id, tmdb_id, media_type);`;
+
+const ADD_INDEX = `
+create unique index if not exists lists_user_id_name_key
+  on public.lists (user_id, name);`;
+
+const LIVE = () => new Map([
+  ['history', [
+    { name: 'history_pkey', key: 'id' },
+    { name: 'history_user_id_tmdb_id_media_type_watched_at_key', key: colKey('user_id,tmdb_id,media_type,watched_at') },
+  ]],
+  ['lists', [{ name: 'lists_pkey', key: 'id' }]],
+]);
+
+test('a key swap is read as both a drop and an add', () => {
+  const { adds, drops } = extractMigrationKeyChanges(SWAP_KEY);
+  assert.deepEqual(drops, ['history_user_id_tmdb_id_media_type_watched_at_key']);
+  assert.deepEqual(adds, [{
+    table: 'history',
+    name: 'history_user_id_tmdb_id_media_type_key',
+    key: 'media_type,tmdb_id,user_id',
+  }]);
+});
+
+test('a unique index counts as a key, the same as a constraint', () => {
+  const { adds } = extractMigrationKeyChanges(ADD_INDEX);
+  assert.deepEqual(adds, [{ table: 'lists', name: 'lists_user_id_name_key', key: 'name,user_id' }]);
+});
+
+test('a CHECK constraint is not a key and never satisfies ON CONFLICT', () => {
+  const sql = `alter table public.marketing_posts
+                 add constraint marketing_posts_status_check check (status in ('draft','approved'));`;
+  assert.deepEqual(extractMigrationKeyChanges(sql).adds, []);
+});
+
+test('a migration describing a constraint in prose does not declare one', () => {
+  // Migrations in this repo explain themselves at length, and name constraints
+  // while doing it. Comments are not DDL.
+  const sql = `
+    -- add constraint history_fake_key unique (a, b) would be wrong because …
+    /* drop constraint history_pkey is also discussed here */
+    select 1;`;
+  assert.deepEqual(extractMigrationKeyChanges(sql), { adds: [], drops: [] });
+});
+
+test('dynamic DDL is left alone rather than guessed at', () => {
+  const sql = `loop execute format('alter table public.feed_posts drop constraint %I', r.conname); end loop;`;
+  assert.deepEqual(extractMigrationKeyChanges(sql).drops, []);
+});
+
+test('several add-constraint clauses attach to their own alter table', () => {
+  const sql = `
+    alter table public.a add constraint a_key unique (x);
+    alter table public.b add constraint b_key unique (y);`;
+  assert.deepEqual(extractMigrationKeyChanges(sql).adds, [
+    { table: 'a', name: 'a_key', key: 'x' },
+    { table: 'b', name: 'b_key', key: 'y' },
+  ]);
+});
+
+test('the swapped-in key resolves, and says which migration owes it', () => {
+  const projected = projectPendingSchema(LIVE(), [{ file: '20260806000001_remove_rewatch_logging.sql', sql: SWAP_KEY }]);
+  const match = projected.get('history').find(c => c.key === colKey('user_id,tmdb_id,media_type'));
+  assert.ok(match, 'the new key must resolve before the migration applies');
+  assert.equal(match.pending, '20260806000001_remove_rewatch_logging.sql');
+});
+
+test('the swapped-out key stops resolving, so code still naming it fails', () => {
+  const projected = projectPendingSchema(LIVE(), [{ file: 'swap.sql', sql: SWAP_KEY }]);
+  const gone = projected.get('history').find(c => c.key === colKey('user_id,tmdb_id,media_type,watched_at'));
+  assert.equal(gone, undefined, 'a dropped key must not keep resolving');
+});
+
+test('a live constraint the branch does not touch is untouched', () => {
+  const projected = projectPendingSchema(LIVE(), [{ file: 'swap.sql', sql: SWAP_KEY }]);
+  assert.ok(projected.get('history').some(c => c.name === 'history_pkey'));
+  assert.ok(projected.get('lists').some(c => c.name === 'lists_pkey'));
+});
+
+test('with nothing pending the live schema is passed through unchanged', () => {
+  const live = LIVE();
+  const projected = projectPendingSchema(live, []);
+  assert.deepEqual([...projected.get('history')], [...live.get('history')]);
+  assert.ok([...projected.get('history')].every(c => c.pending === undefined));
+});
+
+test('projecting does not mutate the live schema it was given', () => {
+  // The failure report lists what the table offers *today*, so the live map has
+  // to survive projection intact or that advice becomes fiction.
+  const live = LIVE();
+  projectPendingSchema(live, [{ file: 'swap.sql', sql: SWAP_KEY }]);
+  assert.equal(live.get('history').length, 2);
+  assert.ok(live.get('history').some(c => c.name === 'history_user_id_tmdb_id_media_type_watched_at_key'));
+});
+
+test('a table created by a pending migration resolves too', () => {
+  const projected = projectPendingSchema(LIVE(), [{ file: 'new.sql', sql: ADD_INDEX }]);
+  assert.equal(projected.get('lists').find(c => c.key === 'name,user_id').pending, 'new.sql');
 });
