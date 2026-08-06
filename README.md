@@ -36,6 +36,8 @@ This repo is an npm-workspaces monorepo. `npm ci` at the root installs every wor
 
 3. Fill in the browser-safe `VITE_*` values in `.env`. Keep service-role and TMDB API keys server-side or local-script-only.
 
+   `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` ship in `.env.example` already pointed at PLOT Staging, PLOT's preview Supabase project — local dev has no backend of its own, so it borrows a real project, and Staging keeps that off real user data. Don't repoint these at Production for routine dev.
+
    `VITE_AUTH_REDIRECT_BASE_URL` is optional for local web development. Set it when auth and provider callbacks must use a stable production URL or a native deep-link base.
 
 4. Start the app:
