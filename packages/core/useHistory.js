@@ -5,7 +5,7 @@ import { normalizeRating } from './ratings.js';
 import { on, emit } from './events.js';
 import { getConfig } from './config.js';
 
-const HISTORY_CHANGED_EVENT = 'plot:history-changed';
+export const HISTORY_CHANGED_EVENT = 'plot:history-changed';
 
 function notifyHistoryChanged() {
   emit(HISTORY_CHANGED_EVENT);

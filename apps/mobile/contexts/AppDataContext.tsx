@@ -32,7 +32,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const { userId, user, profile, refreshProfile } = useCurrentUser();
   const watchlist   = useWatchlist(userId);
   const watching    = useWatching(userId);
-  const favorites   = useFavorites(userId);
+  const favorites   = useFavorites(userId, { watching, watchlist });
   const customLists = useCustomLists(userId);
   const topLists    = useTopLists(userId);
   const history     = useHistory(userId);
