@@ -20,7 +20,7 @@ import { supabase } from '../../lib/supabase';
 import { tmdb, setTmdbRegion, getTmdbRegion, prioritiseEnglishSpeakingTitles } from '../../lib/tmdb';
 import { SHOW_FOR_YOU_RAIL } from '../../lib/launchFeatures';
 import { excludeKidsContent } from '@plot/core/tmdb.js';
-import { getOrCreateMyListId } from '@plot/core/onboarding.js';
+import { getOrCreateMyListId } from '@plot/core/userMedia.js';
 import { posterUrl, backdropUrl, Palette, fontFamily, fontSize, spacing, radii, iconButtonSize } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
@@ -554,15 +554,13 @@ export default function HomeScreen() {
     if (!tmdbId) return;
     const isSaved = savedIds.has(tmdbId);
 
-    // Accounts onboarded before My List was guaranteed at signup may still
-    // be missing it — create it lazily so Save works immediately instead
-    // of silently no-oping. Shares core's helper rather than upserting: an
-    // upsert has to supply is_public, so losing the race would quietly reset a
-    // list the user had made public. The helper reads first and only inserts
-    // when the list is genuinely absent.
+    // Accounts onboarded before My List was guaranteed at signup may still be
+    // missing it — create it lazily so Save works immediately instead of
+    // silently no-oping. See getOrCreateMyListId for why it reads before it
+    // inserts rather than upserting.
     let currentListId = listId;
     if (!currentListId) {
-      currentListId = await getOrCreateMyListId({ supabase, userId });
+      currentListId = await getOrCreateMyListId({ userId });
       if (!currentListId) return;
       setListId(currentListId);
     }
