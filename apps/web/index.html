@@ -2,6 +2,41 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <script data-cfasync="false">
+      (function () {
+        // A deploy can invalidate JS this page already asked for (Cloudflare
+        // doesn't keep old builds' hashed files around — a stale request gets
+        // the SPA-fallback HTML back instead of the script). A failed entry or
+        // vendor script/modulepreload happens before React mounts, so no error
+        // boundary ever sees it — this is the only place that can catch it.
+        // Shares the reload budget (sessionStorage key + window) with
+        // src/utils/chunkError.js so the two never fight over how many reloads
+        // are allowed; keep the constants below in sync with that file.
+        try {
+          window.addEventListener('error', function (event) {
+            var el = event.target;
+            if (!el || !el.tagName) return;
+            var tag = el.tagName.toLowerCase();
+            var isEntryScript = tag === 'script' && el.getAttribute('type') === 'module';
+            var isPreload = tag === 'link' && el.getAttribute('rel') === 'modulepreload';
+            if (!isEntryScript && !isPreload) return;
+            var url = el.src || el.href || '';
+            if (url.indexOf('/assets/') === -1) return;
+
+            var KEY = 'plot_chunk_reload';
+            var WINDOW_MS = 20000;
+            var MAX = 2;
+            var parts = (sessionStorage.getItem(KEY) || '').split(',');
+            var count = Number(parts[0]) || 0;
+            var ts = Number(parts[1]) || 0;
+            if (count >= MAX && Date.now() - ts < WINDOW_MS) return; // let the app's own crash screen show
+            var next = Date.now() - ts < WINDOW_MS ? count + 1 : 1;
+            sessionStorage.setItem(KEY, next + ',' + Date.now());
+            window.location.reload();
+          }, true);
+        } catch (e) {}
+      })();
+    </script>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
