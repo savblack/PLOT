@@ -611,9 +611,9 @@
     /* What's On — closing CTA over a poster wall */
     #whats-on-cta {
       position: relative;
-      background: var(--dark);
-      color: var(--text-dark);
-      /* Extra top padding gives the black → poster fade room to breathe,
+      background: var(--bg);
+      color: var(--text);
+      /* Extra top padding gives the white → poster fade room to breathe,
          so the headline never sits in the thick of the gradient */
       padding: 13rem 2rem 8rem;
       overflow: hidden;
@@ -637,7 +637,7 @@
       aspect-ratio: 2 / 3;
       border-radius: 8px;
       overflow: hidden;
-      background: #1c1c1f;
+      background: #e5e3db;
     }
 
     .woc-tile img {
@@ -656,11 +656,11 @@
       inset: 0;
       z-index: -1;
       background:
-        /* mirrors the bottom fade below, so black bleeds into the wall
+        /* mirrors the bottom fade below, so white bleeds into the wall
            at both edges instead of cutting off hard at the top */
-        linear-gradient(to bottom, var(--dark) 1%, transparent 38%),
-        linear-gradient(to bottom, transparent 62%, var(--dark) 99%),
-        radial-gradient(ellipse 72% 78% at 50% 50%, rgba(12,12,12,0.46) 0%, rgba(12,12,12,0.82) 52%, rgba(12,12,12,0.96) 100%);
+        linear-gradient(to bottom, var(--bg) 1%, transparent 38%),
+        linear-gradient(to bottom, transparent 62%, var(--bg) 99%),
+        radial-gradient(ellipse 72% 78% at 50% 50%, rgba(255,255,255,0.46) 0%, rgba(255,255,255,0.82) 52%, rgba(255,255,255,0.96) 100%);
     }
 
     .woc-inner { max-width: 720px; margin: 0 auto; text-align: center; }
@@ -672,14 +672,14 @@
       font-size: clamp(2.8rem, 6vw, 4.8rem);
       line-height: 0.95;
       margin-bottom: 1.1rem;
-      color: var(--text-dark);
+      color: var(--text);
     }
     .woc-headline em { font-style: italic; }
 
     .woc-sub {
       font-size: 1.05rem;
       font-weight: 300;
-      color: rgba(240,239,232,0.72);
+      color: rgba(26,26,26,0.72);
       max-width: 44ch;
       margin: 0 auto 1.6rem;
       line-height: 1.5;
@@ -736,18 +736,28 @@
     .woc-form button:hover:not(:disabled) { background: #fff; color: #0e0e0e; }
     .woc-form button:disabled { opacity: 0.6; cursor: default; }
 
-    .woc-hint { font-size: 0.76rem; font-weight: 300; color: rgba(240,239,232,0.5); align-self: stretch; text-align: center; }
-    .woc-hint a { color: rgba(240,239,232,0.72); text-decoration: none; border-bottom: 1px solid rgba(240,239,232,0.24); transition: color 0.2s, border-color 0.2s; }
-    .woc-hint a:hover { color: #F0EFE8; border-color: rgba(240,239,232,0.6); }
+    .woc-hint { font-size: 0.76rem; font-weight: 300; color: rgba(26,26,26,0.5); align-self: stretch; text-align: center; }
+    .woc-hint a { color: rgba(26,26,26,0.72); text-decoration: none; border-bottom: 1px solid rgba(26,26,26,0.24); transition: color 0.2s, border-color 0.2s; }
+    .woc-hint a:hover { color: #000; border-color: rgba(26,26,26,0.6); }
     .woc-msg { font-size: 0.78rem; color: rgba(240,239,232,0.6); min-height: 1.1em; padding-left: 0.5rem; }
 
     /* Honeypot: invisible to humans, tempting to bots */
     .woc-form .fn-website { position: absolute; left: -9999px; opacity: 0; pointer-events: none; }
 
-    /* Footer — lean nav rail, continuous with the dark section above */
+    /* Light-theme overrides for the "What's On" CTA — .woc-form/.woc-msg
+       default dark (shared with the #app-soon notify form), so this section
+       gets its own scoped colors rather than flipping the shared base. */
+    #whats-on-cta .woc-form { border-color: rgba(26,26,26,0.22); }
+    #whats-on-cta .woc-form input[type="email"] { color: var(--text); }
+    #whats-on-cta .woc-form input[type="email"]::placeholder { color: rgba(26,26,26,0.45); }
+    #whats-on-cta .woc-form button { border-color: rgba(26,26,26,0.6); color: var(--text); }
+    #whats-on-cta .woc-form button:hover:not(:disabled) { background: var(--ink); color: #fff; }
+    #whats-on-cta .woc-msg { color: rgba(26,26,26,0.6); }
+
+    /* Footer — lean nav rail, continuous with the light section above */
     footer {
-      background: var(--dark);
-      color: var(--text-dark);
+      background: var(--bg);
+      color: var(--text);
       padding: 2.6rem 3rem calc(2.6rem + var(--ticker-height) + env(safe-area-inset-bottom, 0px));
       margin-top: -1px;
       position: relative;
@@ -771,7 +781,7 @@
       letter-spacing: var(--serif-tracking);
       font-size: 1.8rem;
       line-height: 1;
-      color: var(--text-dark);
+      color: var(--text);
       user-select: none;
     }
 
@@ -779,18 +789,18 @@
 
     .footer-nav a {
       font-size: 0.82rem;
-      color: rgba(240,239,232,0.82);
+      color: rgba(26,26,26,0.72);
       text-decoration: none;
       transition: color 0.2s;
       white-space: nowrap;
     }
-    .footer-nav a:hover { color: #fff; }
+    .footer-nav a:hover { color: #000; }
 
     .footer-bottom {
       width: 100%;
       padding-top: 1.2rem;
       margin-top: 0.4rem;
-      border-top: 1px solid rgba(255,255,255,0.08);
+      border-top: 1px solid rgba(26,26,26,0.08);
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -800,17 +810,17 @@
 
     .footer-copy {
       font-size: 0.75rem;
-      color: rgba(240,239,232,0.7);
+      color: rgba(26,26,26,0.6);
     }
 
     .footer-social { display: flex; gap: 1rem; align-items: center; }
 
     .footer-social a {
-      color: rgba(240,239,232,0.7);
+      color: rgba(26,26,26,0.6);
       display: inline-flex;
       transition: color 0.2s;
     }
-    .footer-social a:hover { color: #fff; }
+    .footer-social a:hover { color: #000; }
     .footer-social svg { width: 19px; height: 19px; display: block; }
 
     @media (max-width: 820px) { .woc-wall { grid-template-columns: repeat(6, 1fr); } }
@@ -2015,7 +2025,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <h2 class="woc-headline">What's on, <em>daily.</em></h2>
       <p class="woc-sub">Your daily briefing on everything worth watching.</p>
       <div class="woc-actions">
-        <a href="/whats-on" class="demo-link">Browse What's On &rarr;</a>
+        <a href="/whats-on" class="demo-link dark-link">Browse What's On &rarr;</a>
         <div class="woc-sub-wrap">
           <form class="woc-form" id="newsletterForm">
             <input type="email" name="email" placeholder="your@email.com" required autocomplete="email" aria-label="Email address">
