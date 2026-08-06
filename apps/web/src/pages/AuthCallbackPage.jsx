@@ -7,6 +7,22 @@ import PlotLogo from '../components/PlotLogo.jsx';
 import { AUTH_PAGE } from '../copy/authPage.js';
 import { AUTH_CALLBACK_PAGE } from '../copy/authCallbackPage.js';
 
+// Replace the current history entry with a bare /auth/callback (no query, no
+// hash) once the credential in it has been consumed. replaceState rather than
+// pushState so the back button stays clean.
+//
+// MUST run only after resolveAuthCallback has resolved the session — clearing
+// the URL first is exactly the regression utils/authCallback.js documents,
+// where the hash was stripped before Supabase could read it and real signups
+// looped back to /login.
+function clearAuthParamsFromUrl() {
+  try {
+    if (window.location.search || window.location.hash) {
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+  } catch { /* non-fatal: navigation below still moves off the credential URL */ }
+}
+
 // Report a social / magic-link auth exactly once. Email+password already fires
 // its event at form submit, so we only report when AuthPage stashed a method
 // marker before redirecting (OAuth / magic link). New-vs-returning is inferred
@@ -48,6 +64,11 @@ export default function AuthCallbackPage() {
           search: window.location.search,
           hash: window.location.hash,
         });
+        // The credential has now been consumed out of the URL, so scrub it from
+        // the address bar. Matters most on the error branch just below, which
+        // renders in place and never navigates away — leaving the token sitting
+        // in the URL and in browser history.
+        clearAuthParamsFromUrl();
         if (err) { setError(err); return; }
         reportAuth(session);
         // resolveAuthCallback guarantees a confirmed session before returning a
