@@ -659,13 +659,13 @@
       inset: 0;
       z-index: -1;
       background:
-        /* White bleeds into the wall at the top so the section opens on
-           pure white, then the vignette darkens behind the headline/form
-           so the white text sitting there stays legible, fading to solid
-           black by the bottom to flow into the dark footer below. */
-        linear-gradient(to bottom, var(--bg) 1%, transparent 38%),
-        linear-gradient(to bottom, transparent 91%, var(--dark) 99%),
-        radial-gradient(ellipse 72% 60% at 50% 46%, rgba(12,12,12,0.5) 0%, rgba(12,12,12,0.82) 52%, rgba(12,12,12,0.96) 100%);
+        /* One continuous fade: white at the top, a long clear stretch to
+           see the posters, then black by the bottom into the footer.
+           The vignette is a separate soft spotlight — darkest right behind
+           the headline/form, fading OUT to transparent at its own edges —
+           so it reads as a glow, not a ring, and doesn't fight the fade. */
+        linear-gradient(to bottom, var(--bg) 0%, transparent 32%, transparent 85%, var(--dark) 99%),
+        radial-gradient(ellipse 62% 42% at 50% 58%, rgba(12,12,12,0.82) 0%, rgba(12,12,12,0.45) 60%, transparent 100%);
     }
 
     .woc-inner { max-width: 720px; margin: 0 auto; text-align: center; }
