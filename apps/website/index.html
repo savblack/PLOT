@@ -1010,6 +1010,19 @@
     }
     .demo-link.dark-link:hover { border-bottom-color: var(--text); }
 
+    /* Origin section — asymmetric text/text split, no sticky (unlike
+       .demo-split, which pairs copy with a scrolling phone mockup) */
+    .origin-split {
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 5rem;
+      align-items: start;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .origin-actions { display: flex; align-items: center; gap: 1.8rem; flex-wrap: wrap; margin-top: 2.2rem; }
+    .origin-actions .demo-link { margin-top: 0; }
+
     /* "Pulls from" platform-proof row — substantiates the "every platform"
        claim. Logos in their own brand colours (most are already white; Netflix
        + Prime carry the only colour), sized per-logo for even optical weight. */
@@ -1196,6 +1209,9 @@
 
     /* Mobile app — coming soon (reuses the phone frame + Discover screen) */
     #app-soon { background: var(--dark); padding: 10rem 2rem; }
+
+    /* Origin — built by one person */
+    #origin { background: var(--dark); padding: 10rem 2rem; }
     .app-eyebrow {
       display: inline-block; font-size: 0.62rem; font-weight: 600;
       letter-spacing: 0.22em; text-transform: uppercase;
@@ -1345,8 +1361,9 @@
       .demo-split { grid-template-columns: 1fr; gap: 3.5rem; }
       .demo-copy { position: static; order: 1 !important; }
       .phone-wrap { order: 2 !important; }
+      .origin-split { grid-template-columns: 1fr; gap: 2.6rem; }
       /* Guide demo — tighten the stacked layout on mobile */
-      section#guide-demo, section#app-soon { padding-top: 5rem; padding-bottom: 5rem; }
+      section#guide-demo, section#app-soon, section#origin { padding-top: 5rem; padding-bottom: 5rem; }
       #guide-demo .demo-split { gap: 2.4rem; }
       #guide-demo .marquee-track { gap: 2.2rem; }
     }
@@ -1961,6 +1978,20 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             </div>
           </div>
           <div class="app-phone-badge">Coming soon</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Origin — built by one person ─────────────────────────── -->
+  <section id="origin">
+    <div class="origin-split">
+      <h2 class="demo-headline reveal">Built by a<br><em style="font-style:italic">solo</em> developer.</h2>
+      <div class="reveal">
+        <p class="demo-body">PLOT is built by one person around a full time job. No team, no investors, nothing to answer to except the people using it. So the roadmap gets written with you. Tell me what would make PLOT better for the way you watch and it shapes what I build or fix next. Support along the way is what lets me keep building a product you love.</p>
+        <div class="origin-actions">
+          <a href="https://ko-fi.com/J7P123TYGK" class="btn btn-outline-white btn-large" target="_blank" rel="noopener" data-cta="origin-kofi">Support PLOT on Ko-fi</a>
+          <a href="/about.html" class="demo-link" data-cta="origin-about">Read the story &rarr;</a>
         </div>
       </div>
     </div>
