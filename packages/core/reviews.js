@@ -142,19 +142,29 @@ function pick(lines, seed) {
   return lines[index];
 }
 
+// Every score-based branch below (gap math, LEVEL_BANDS) assumes a 0-100
+// scale. 0 and 100 are legitimate scores, not error cases — LEVEL_BANDS has
+// an explicit `min: 0` band — so the bounds are inclusive.
+function isValidScore(score) {
+  return Number.isFinite(score) && score >= 0 && score <= 100;
+}
+
 /**
  * Consensus line for a critic/audience score pair. Gap-based lines take
  * priority over level-based ones — a wide split is more informative than
  * either score's absolute level. `seed` (e.g. the title's TMDB id) picks a
  * stable variant per title so repeat viewing doesn't feel copy-pasted.
  *
- * @param {number|null|undefined} criticScore
- * @param {number|null|undefined} audienceScore
+ * Returns null when either score isn't a finite number in the 0-100 range,
+ * so callers can hide the consensus UI rather than show garbage (or crash).
+ *
+ * @param {number|null|undefined} criticScore 0-100
+ * @param {number|null|undefined} audienceScore 0-100
  * @param {{audienceVoteCount?: number, seed?: number}} [opts]
  * @returns {string|null}
  */
 export function getConsensusLine(criticScore, audienceScore, { audienceVoteCount, seed } = {}) {
-  if (!Number.isFinite(criticScore) || !Number.isFinite(audienceScore)) return null;
+  if (!isValidScore(criticScore) || !isValidScore(audienceScore)) return null;
 
   const gap = criticScore - audienceScore;
   if (gap >= GAP_STRONG) return pick(CRITIC_STRONG_LINES, seed);

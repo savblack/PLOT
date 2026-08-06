@@ -136,6 +136,13 @@ test('getConsensusLine seed picks a stable line deterministically, defaulting to
   assert.equal(getConsensusLine(95, 95), 'The reviews are unanimous. A must-watch.');
 });
 
-test('BUG: getConsensusLine throws instead of returning null when both scores are negative (out of the 0-100 domain)', () => {
-  assert.throws(() => getConsensusLine(-5, -10), TypeError);
+test('getConsensusLine returns null instead of throwing when scores are outside the 0-100 domain', () => {
+  assert.equal(getConsensusLine(-5, -10), null);
+  assert.equal(getConsensusLine(101, 50), null);
+  assert.equal(getConsensusLine(50, 150), null);
+});
+
+test('getConsensusLine treats 0 and 100 as valid boundary scores, not out-of-range', () => {
+  assert.equal(getConsensusLine(100, 100), 'The reviews are unanimous. A must-watch.');
+  assert.equal(getConsensusLine(100, 0), 'Adored by critics. Audiences, less so.');
 });
