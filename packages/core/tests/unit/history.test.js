@@ -41,18 +41,20 @@ test('entryMonthKey reads the correct month in UTC', () => {
   });
 });
 
-test('BUG: entryMonthKey can file a date-only watched_at under the wrong month (even wrong year) for timezones behind UTC', () => {
-  // watched_at is a plain "YYYY-MM-DD" string, so `new Date(watched_at)` parses
-  // it as UTC midnight (per the Date-only ISO 8601 rule), but this then reads
-  // it back with the LOCAL getFullYear()/getMonth() — exactly the anti-pattern
-  // date.js's own header comment warns about, just inverted (wrong for
-  // UTC-behind users instead of UTC-ahead ones). The whole Americas is behind
-  // UTC, so this is not a narrow edge case.
+test('entryMonthKey reads the calendar date directly, unaffected by timezones behind UTC', () => {
+  // watched_at is a plain "YYYY-MM-DD" string with no time-of-day or timezone
+  // meaning. Routing it through `new Date(watched_at)` would parse it as UTC
+  // midnight (per the Date-only ISO 8601 rule) and then reading that back
+  // with LOCAL getFullYear()/getMonth() would roll it back a day for anyone
+  // behind UTC — exactly the anti-pattern date.js's own header comment warns
+  // about, just inverted (wrong for UTC-behind users instead of UTC-ahead
+  // ones). The whole Americas is behind UTC, so this is not a narrow edge
+  // case. entryMonthKey must parse the string's digits directly instead.
   withTZ('America/Los_Angeles', () => {
-    assert.equal(entryMonthKey({ watched_at: '2026-03-01' }), '2026-02');
+    assert.equal(entryMonthKey({ watched_at: '2026-03-01' }), '2026-03');
   });
   withTZ('America/New_York', () => {
-    assert.equal(entryMonthKey({ watched_at: '2026-01-01' }), '2025-12', 'rolls back a full year, not just a month');
+    assert.equal(entryMonthKey({ watched_at: '2026-01-01' }), '2026-01', 'does not roll back into the previous year at a year boundary');
   });
 });
 
@@ -91,6 +93,18 @@ test('groupEntriesByMonth buckets by month in first-seen order and drops undated
 
 test('groupEntriesByMonth returns an empty array for entries with no watched_at', () => {
   assert.deepEqual(groupEntriesByMonth([{ id: 1 }, { id: 2, watched_at: null }]), []);
+});
+
+test('groupEntriesByMonth derives year/month from the calendar date, unaffected by timezones behind UTC', () => {
+  // group.year/month are computed separately from group.key, so both must be
+  // fixed the same way — otherwise a timezone behind UTC could leave them
+  // disagreeing with each other even if entryMonthKey alone were correct.
+  withTZ('America/New_York', () => {
+    const entries = [{ id: 1, watched_at: '2026-01-01' }];
+    const [group] = groupEntriesByMonth(entries);
+    assert.deepEqual(group, { year: 2026, month: 0, key: '2026-01', entries: [entries[0]] });
+    assert.equal(group.key, monthKey(group.year, group.month), 'key and year/month must be derived consistently');
+  });
 });
 
 test('historyMonthEmptyCopy varies its body between the current month and any other month', () => {
