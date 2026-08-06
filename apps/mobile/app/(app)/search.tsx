@@ -235,7 +235,7 @@ function SearchRow({ item, hooks, signedIn }: { item: SearchResult; hooks: Media
 
   const inList  = watchlist.isInList(item.id);
   const isFav   = favorites.isFavorite(item.id);
-  const watched = history.isWatched(item.id);
+  const watched = history.isWatched(item.id, mediaType);
   const comingSoon = !!releaseDate && releaseDate > todayStr();
 
   // Shape passed to the shared hooks — same as web ResultRow.
@@ -296,7 +296,7 @@ function SearchRow({ item, hooks, signedIn }: { item: SearchResult; hooks: Media
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.actionBtn, watched && styles.actionBtnActive]}
-            onPress={() => watched ? history.removeEntry(item.id) : history.logWatched(payload)}
+            onPress={() => watched ? history.removeEntry(item.id, mediaType) : history.logWatched(payload)}
             hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
             accessibilityLabel={watched ? MEDIA.markUnwatched : MEDIA.markWatched}
           >
