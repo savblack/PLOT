@@ -191,14 +191,18 @@ for (const t of triggers) {
 if (!problems.some(p => p.kind === 'missing-relation')) console.log('  ✓ every referenced table exists');
 
 // ── Check 3: application ON CONFLICT targets resolve ────────────────────────
-// Split by what is actually in users' hands. The web app and the core it shares
-// deploy on merge, so a stale target there is a live fault and fails the build.
-// The mobile app is not released yet and edge functions deploy by hand, so a
-// stale target on those is a real bug but a deploy blocker rather than an
-// outage — warned about, loudly, without holding up unrelated work. Move a
-// directory up to LIVE the moment it starts shipping.
-const LIVE = ['packages/core', 'apps/web/src'];
-const NOT_YET_DEPLOYED = ['apps/mobile', 'supabase/functions'];
+// Every scanned directory fails the build. This started split, with the mobile
+// app and the edge functions only warned about because neither is deployed yet
+// and both carried stale targets that would have blocked unrelated work. Those
+// are fixed, so the split is gone: a warning nobody has to act on is how the
+// Plex/Trakt functions kept a dropped constraint for weeks.
+//
+// Caveat worth knowing before you debug a red build: this resolves against the
+// LIVE database, so a PR that adds an upsert and the migration creating its
+// constraint in one go will fail until it merges and the migration applies.
+// That is inherent to checking the real schema rather than a parsed one, and it
+// applies to the trigger checks above just the same. Land the constraint first.
+const SCANNED = ['packages/core', 'apps/web/src', 'apps/mobile', 'supabase/functions'];
 const SOURCE_EXT = /\.(js|jsx|ts|tsx|mjs)$/;
 const SKIP_DIRS = new Set(['node_modules', 'dist', 'build', 'ios', 'android', '.expo']);
 
@@ -215,10 +219,9 @@ function sourceFiles(dir) {
   return out;
 }
 
-const scanned = [
-  ...LIVE.flatMap(d => sourceFiles(d).map(file => ({ file, fatal: true }))),
-  ...NOT_YET_DEPLOYED.flatMap(d => sourceFiles(d).map(file => ({ file, fatal: false }))),
-].map(f => ({ ...f, source: readFileSync(f.file, 'utf8') }));
+const scanned = SCANNED
+  .flatMap(d => sourceFiles(d))
+  .map(file => ({ file, source: readFileSync(file, 'utf8') }));
 
 // Constants resolve across files: the canonical target lives in one module and
 // is imported by every write site, which is the point of naming it once.
@@ -229,8 +232,7 @@ for (const { source } of scanned) {
 
 console.log('\n── ON CONFLICT targets in application code ──');
 let appChecks = 0;
-const warnings = [];
-for (const { file, source, fatal } of scanned) {
+for (const { file, source } of scanned) {
   for (const { table, key, raw } of extractAppConflictTargets(source, constants)) {
     appChecks++;
     if (key === null) {
@@ -242,28 +244,18 @@ for (const { file, source, fatal } of scanned) {
       console.log(`  ✓ ${file}  →  ${table} (${key})  matches ${match.name}`);
       continue;
     }
-    const detail = `${file} upserts into ${table} with onConflict (${key}), but that table has no matching unique/PK constraint.`;
-    const available = availableKeys(table);
-    if (fatal) {
-      console.log(`  ✗ ${file}  →  ${table} (${key})  NO MATCHING CONSTRAINT`);
-      problems.push({ kind: '42P10-app', detail, table, available });
-    } else {
-      console.log(`  ! ${file}  →  ${table} (${key})  NO MATCHING CONSTRAINT (not yet deployed)`);
-      warnings.push({ detail, available });
-    }
+    console.log(`  ✗ ${file}  →  ${table} (${key})  NO MATCHING CONSTRAINT`);
+    problems.push({
+      kind: '42P10-app',
+      detail: `${file} upserts into ${table} with onConflict (${key}), but that table has no matching unique/PK constraint.`,
+      table,
+      available: availableKeys(table),
+    });
   }
 }
 if (appChecks === 0) console.log('  (no onConflict clauses in application code)');
 
 // ── Report ──────────────────────────────────────────────────────────────────
-if (warnings.length) {
-  console.log(`\n⚠ ${warnings.length} stale target(s) in code that is not deployed yet — not a live fault, but a release blocker:`);
-  for (const w of warnings) {
-    console.log(`    ${w.detail}`);
-    if (w.available.length) console.log(`      available keys: ${w.available.join('; ')}`);
-  }
-}
-
 console.log('');
 if (problems.length === 0) {
   console.log(`✓ write paths healthy — ${triggers.length} trigger(s), ${conflictChecks} trigger and ${appChecks} application on-conflict clause(s) verified`);

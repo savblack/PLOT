@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { isSafePlexConnectionUrl } from '../_shared/plexConnectionPolicy.js'
+import { HISTORY_CONFLICT_TARGET, dedupeHistoryRows } from '../_shared/historyConflict.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -349,14 +350,18 @@ async function upsertSnapshot(
       watched_at: cleanDate(item.watched_at) || new Date().toISOString().slice(0, 10),
     }))
 
-  if (historyRows.length > 0) {
+  // Plex reports a title once per play, so one sync can carry the same title
+  // and date several times over; collapse those before the upsert sees them.
+  const uniqueHistoryRows = dedupeHistoryRows(historyRows)
+
+  if (uniqueHistoryRows.length > 0) {
     const { error } = await supabaseAdmin
       .from('history')
-      .upsert(historyRows, { onConflict: 'user_id,tmdb_id' })
+      .upsert(uniqueHistoryRows, { onConflict: HISTORY_CONFLICT_TARGET })
     if (error) throw error
   }
 
-  return { watchlistCount: rows.length, watchedCount: historyRows.length }
+  return { watchlistCount: rows.length, watchedCount: uniqueHistoryRows.length }
 }
 
 async function fetchPlexWatchlist(token: string) {
