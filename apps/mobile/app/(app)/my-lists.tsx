@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
   View, Text, ScrollView, FlatList, Image, TouchableOpacity, TextInput,
-  Modal, StyleSheet, Dimensions, ActivityIndicator, Alert, Share,
+  Modal, StyleSheet, Dimensions, ActivityIndicator, Alert, Share, LayoutAnimation,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,7 +16,7 @@ import { tmdb } from '../../lib/tmdb';
 import { favoriteWords } from '../../lib/spelling';
 import CollapsibleSection from '../../components/CollapsibleSection';
 import SectionToggleIcon from '../../components/SectionToggleIcon';
-import { getSectionOpen } from '../../lib/sectionOpenState';
+import { getSectionOpen, setSectionOpen } from '../../lib/sectionOpenState';
 import { MEDIA } from '@plot/core/copy/media.js';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii, iconButtonSize } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -386,6 +386,21 @@ export default function MyListsScreen() {
   const showFavs      = isAll || tab === 'favorites';
   const showLists     = isAll || tab === 'lists';
 
+  // Expand/collapse-all scopes itself to the active tab, exactly as web does:
+  // every section on "All", or just the one section the current tab shows
+  // (tab ids match section ids 1:1). Web: MyListsView's relevantSectionIds.
+  const relevantSectionIds = isAll ? LIST_SECTION_IDS : LIST_SECTION_IDS.filter(id => id === tab);
+  const sectionsOpenForView = relevantSectionIds.length > 0
+    && relevantSectionIds.every(id => sectionsOpen[id]);
+  const toggleSectionsForView = () => {
+    const next = !sectionsOpenForView;
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setSectionsOpen(prev => ({ ...prev, ...Object.fromEntries(relevantSectionIds.map(id => [id, next])) }));
+    // CollapsibleSection persists on its own toggle, but a bulk change never
+    // goes through it — write these directly or the choice is forgotten.
+    relevantSectionIds.forEach(id => setSectionOpen(id, next));
+  };
+
   const HEADER_H = insets.top + 148;
 
   return (
@@ -572,6 +587,21 @@ export default function MyListsScreen() {
               </Text>
             </TouchableOpacity>
           ))}
+          <View style={{ flex: 1 }} />
+          {relevantSectionIds.length > 0 && (
+            <TouchableOpacity
+              onPress={toggleSectionsForView}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              accessibilityRole="button"
+              accessibilityLabel={
+                isAll
+                  ? (sectionsOpenForView ? MEDIA.collapseAllSections : MEDIA.expandAllSections)
+                  : (sectionsOpenForView ? 'Collapse section' : 'Expand section')
+              }
+            >
+              <SectionToggleIcon collapse={sectionsOpenForView} />
+            </TouchableOpacity>
+          )}
         </View>
       </BlurView>
 
