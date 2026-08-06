@@ -20,7 +20,7 @@ import { detectRegion, detectTimezone, guessRegionFromTimezone } from '@plot/cor
 import { usePremium } from '../hooks/usePremium.js';
 import { takePremiumCheckoutIntent } from '../utils/premiumCheckoutIntent.js';
 
-const STEP_NAMES = { 1: 'name', 2: 'genres', 3: 'seed' };
+const STEP_NAMES = { 1: 'name', 2: 'seed' };
 
 /* ── Shared styles ── */
 // Outer: grows with content instead of forcing full-viewport height, so short
@@ -76,12 +76,7 @@ export default function OnboardingFlow() {
   // Region is detected rather than asked for — see the effect below.
   const [region, setRegion] = useState(guessRegionFromTimezone);
 
-  // Step 2: Genres
-  const [genres,       setGenres]       = useState([]);
-  const [allGenres,    setAllGenres]    = useState([]);
-  const [loadingGenres, setLoadingGenres] = useState(false);
-
-  // Step 3: Seed shows (optional). The step opens on an intro that says what
+  // Step 2: Seed shows (optional). The step opens on an intro that says what
   // picking titles is for, and only reveals the poster grid once the user opts
   // in — the grid on its own read as a question about viewing history.
   const [seedIntro,    setSeedIntro]    = useState(true);
@@ -91,7 +86,7 @@ export default function OnboardingFlow() {
   const [seedSearching, setSeedSearching] = useState(false);
   const [trending,     setTrending]     = useState([]);
 
-  const TOTAL = 3;
+  const TOTAL = 2;
 
   /* ── Auth check ── */
   useEffect(() => {
@@ -131,11 +126,7 @@ export default function OnboardingFlow() {
   // Skipping discards what was picked on the step being skipped — otherwise
   // "Skip this step" saves the same selections Continue does, which is not
   // what anyone means by skipping.
-  const skipStep = () => {
-    if (step === TOTAL) return finish({ skipSeeds: true });
-    setGenres([]);
-    return goNext({ skipped: true });
-  };
+  const skipStep = () => finish({ skipSeeds: true });
 
   /* ── Refine the timezone-based region guess with IP geolocation ── */
   useEffect(() => {
@@ -146,21 +137,10 @@ export default function OnboardingFlow() {
     return () => { alive = false; };
   }, []);
 
-  /* ── Load genres when moving to step 2 ── */
-  useEffect(() => {
-    if (step !== 2 || allGenres.length > 0) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- genre fetch toggles local loading state for this onboarding step
-    setLoadingGenres(true);
-    tmdb.getGenres().then(list => {
-      setAllGenres(list || []);
-      setLoadingGenres(false);
-    });
-  }, [step, allGenres.length]);
-
-  /* ── Trending prefill for step 3 — starts during the intro so the grid is
+  /* ── Trending prefill for step 2 — starts during the intro so the grid is
        already populated the moment the user opts in ── */
   useEffect(() => {
-    if (step !== 3 || trending.length > 0) return;
+    if (step !== 2 || trending.length > 0) return;
     tmdb.getTrending('all', 'week').then(data => {
       const list = (data?.results || [])
         .filter(r => (r.media_type === 'tv' || r.media_type === 'movie') && r.poster_path)
@@ -171,7 +151,7 @@ export default function OnboardingFlow() {
 
   /* ── Seed search ── */
   useEffect(() => {
-    if (step !== 3 || !seedQuery.trim()) {
+    if (step !== 2 || !seedQuery.trim()) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- clear transient onboarding search results when the query is empty
       setSeedResults([]);
       return;
@@ -197,14 +177,11 @@ export default function OnboardingFlow() {
 
     const seeds = skipSeeds ? [] : seedSelected;
 
-    const genrePayload = allGenres.filter(g => genres.includes(g.id)).map(g => g.name);
-
     const { error: profileError } = await supabase.from('profiles').upsert({
       id:                  user.id,
       first_name:          firstName.trim(),
       region,
       timezone:            detectTimezone(),
-      genres:              genrePayload,
       onboarding_complete: true,
     });
 
@@ -229,7 +206,6 @@ export default function OnboardingFlow() {
 
     track(EVENTS.ONBOARDING_COMPLETED, {
       region,
-      genres_count: genres.length,
       seed_titles_added: seeds.length,
       skipped: skipSeeds,
     });
@@ -246,9 +222,6 @@ export default function OnboardingFlow() {
     navigate('/home', { replace: true });
   };
 
-  const toggleGenre = (id) =>
-    setGenres(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
-
   const toggleSeed = (item) => {
     const id = item.id;
     setSeedSelected(prev =>
@@ -263,12 +236,12 @@ export default function OnboardingFlow() {
   // The intro owns the footer while it's up: its CTA reveals the poster grid
   // instead of completing onboarding, and its secondary link leaves for the app
   // rather than skipping a single step.
-  const onSeedIntro = step === 3 && seedIntro;
-  const ctaText  = onSeedIntro ? ONBOARDING_FLOW.step3.intro.ctaArrow
+  const onSeedIntro = step === 2 && seedIntro;
+  const ctaText  = onSeedIntro ? ONBOARDING_FLOW.step2.intro.ctaArrow
     : step === TOTAL ? ONBOARDING_FLOW.startWatchingArrow : ONBOARDING_FLOW.continueArrow;
-  const ctaLabel = onSeedIntro ? ONBOARDING_FLOW.step3.intro.cta
+  const ctaLabel = onSeedIntro ? ONBOARDING_FLOW.step2.intro.cta
     : step === TOTAL ? ONBOARDING_FLOW.startWatching : COMMON.continue;
-  const secondaryLabel = onSeedIntro ? ONBOARDING_FLOW.step3.intro.toApp : ONBOARDING_FLOW.skipThisStep;
+  const secondaryLabel = onSeedIntro ? ONBOARDING_FLOW.step2.intro.toApp : ONBOARDING_FLOW.skipThisStep;
 
   if (authLoading) {
     return (
@@ -287,7 +260,7 @@ export default function OnboardingFlow() {
         {/* Header */}
         <div style={{ width: '100%', maxWidth: 420, padding: '2rem 0 1.5rem', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.5rem' }}>
           {step > 1 ? (
-            <button type="button" className="onboarding-back" onClick={() => (step === 3 && !seedIntro ? setSeedIntro(true) : setStep(s => s - 1))} aria-label={ONBOARDING_FLOW.goBack} style={{ marginTop: '0.4rem' }}>
+            <button type="button" className="onboarding-back" onClick={() => (step === 2 && !seedIntro ? setSeedIntro(true) : setStep(s => s - 1))} aria-label={ONBOARDING_FLOW.goBack} style={{ marginTop: '0.4rem' }}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
             </button>
           ) : <div style={{ width: 28, flexShrink: 0 }} />}
@@ -326,8 +299,23 @@ export default function OnboardingFlow() {
           </div>
         )}
 
-        {/* ── Step 2: Genres ── */}
-        {step === 2 && (
+        {/* ── Step 2a: Seed intro ── */}
+        {step === 2 && seedIntro && (
+          <div style={{ ...card, textAlign: 'center', paddingTop: '1.5rem' }}>
+            <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.8rem', fontWeight: 500, letterSpacing: '-0.03em', marginBottom: '1.25rem' }}>
+              {ONBOARDING_FLOW.step2.intro.greeting(firstName.trim())}
+            </h1>
+            <p style={{ fontSize: '0.95rem', color: 'var(--text-primary)', marginBottom: '1rem', lineHeight: 1.5 }}>
+              {ONBOARDING_FLOW.step2.intro.lead}
+            </p>
+            <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', marginBottom: '1.5rem', lineHeight: 1.5 }}>
+              {ONBOARDING_FLOW.step2.intro.pitch}
+            </p>
+          </div>
+        )}
+
+        {/* ── Step 2b: Seed shows ── */}
+        {step === 2 && !seedIntro && (
           <div style={card}>
             <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.8rem', fontWeight: 500, letterSpacing: '-0.03em', marginBottom: '0.4rem', textAlign: 'center' }}>
               {ONBOARDING_FLOW.step2.title}
@@ -335,70 +323,10 @@ export default function OnboardingFlow() {
             <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '1.25rem', lineHeight: 1.5, textAlign: 'center' }}>
               {ONBOARDING_FLOW.step2.subtitle}
             </p>
-            {loadingGenres ? (
-              <div className="loading-state"><PlotLoader size="sm" /></div>
-            ) : (
-              <div style={{ maxHeight: '50vh', overflowY: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: '1rem', paddingRight: '0.15rem' }}>
-                <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '0.5rem' }}>
-                {allGenres.map(g => (
-                  <div
-                    key={g.id}
-                    className={`interactive-surface${genres.includes(g.id) ? ' selected' : ''}`}
-                    onClick={() => toggleGenre(g.id)}
-                    style={{
-                      padding: '0.55rem 1rem',
-                      borderRadius: 'var(--radius-pill)',
-                      border: genres.includes(g.id) ? '2px solid var(--accent)' : '1.5px solid var(--border)',
-                      background: genres.includes(g.id) ? 'var(--accent-dim)' : 'var(--surface)',
-                      color: genres.includes(g.id) ? 'var(--accent)' : 'var(--text-primary)',
-                      fontWeight: 600,
-                      fontSize: '0.82rem',
-                      cursor: 'pointer',
-                      transition: 'all 0.15s ease',
-                    }}
-                    {...getButtonLikeProps({
-                      onPress: () => toggleGenre(g.id),
-                      label: `${genres.includes(g.id) ? ONBOARDING_FLOW.deselect : ONBOARDING_FLOW.select} ${g.name}`,
-                      pressed: genres.includes(g.id),
-                    })}
-                  >
-                    {g.name}
-                  </div>
-                ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ── Step 3a: Seed intro ── */}
-        {step === 3 && seedIntro && (
-          <div style={{ ...card, textAlign: 'center', paddingTop: '1.5rem' }}>
-            <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.8rem', fontWeight: 500, letterSpacing: '-0.03em', marginBottom: '1.25rem' }}>
-              {ONBOARDING_FLOW.step3.intro.greeting(firstName.trim())}
-            </h1>
-            <p style={{ fontSize: '0.95rem', color: 'var(--text-primary)', marginBottom: '1rem', lineHeight: 1.5 }}>
-              {ONBOARDING_FLOW.step3.intro.lead}
-            </p>
-            <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', marginBottom: '1.5rem', lineHeight: 1.5 }}>
-              {ONBOARDING_FLOW.step3.intro.pitch}
-            </p>
-          </div>
-        )}
-
-        {/* ── Step 3b: Seed shows ── */}
-        {step === 3 && !seedIntro && (
-          <div style={card}>
-            <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.8rem', fontWeight: 500, letterSpacing: '-0.03em', marginBottom: '0.4rem', textAlign: 'center' }}>
-              {ONBOARDING_FLOW.step3.title}
-            </h1>
-            <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '1.25rem', lineHeight: 1.5, textAlign: 'center' }}>
-              {ONBOARDING_FLOW.step3.subtitle}
-            </p>
             <div style={{ position: 'relative', marginBottom: '0.4rem' }}>
               <input
                 style={{ width: '100%', padding: '0.65rem 2.25rem 0.65rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', background: 'var(--surface)', fontSize: '0.82rem', fontFamily: 'var(--font-sans)', color: 'var(--text-primary)', outline: 'none' }}
-                placeholder={ONBOARDING_FLOW.step3.searchPlaceholder}
+                placeholder={ONBOARDING_FLOW.step2.searchPlaceholder}
                 value={seedQuery}
                 onChange={e => setSeedQuery(e.target.value)}
                 autoFocus
@@ -412,7 +340,7 @@ export default function OnboardingFlow() {
             {seedSearching && <div className="loading-state" style={{ minHeight: 60 }}><PlotLoader size="sm" /></div>}
             {!seedQuery.trim() && trending.length > 0 && (
               <div style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-secondary)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
-                {ONBOARDING_FLOW.step3.trendingThisWeek}
+                {ONBOARDING_FLOW.step2.trendingThisWeek}
               </div>
             )}
             {seedGridItems.length > 0 && (
@@ -428,7 +356,7 @@ export default function OnboardingFlow() {
                       style={{ cursor: 'pointer', borderRadius: 'var(--radius-md)', overflow: 'hidden', border: sel ? '2px solid var(--accent)' : '2px solid transparent', position: 'relative', transition: 'border-color 0.15s ease' }}
                       {...getButtonLikeProps({
                         onPress: () => toggleSeed(item),
-                        label: `${sel ? ONBOARDING_FLOW.step3.remove : ONBOARDING_FLOW.step3.add} ${item.title || item.name || ONBOARDING_FLOW.untitled}`,
+                        label: `${sel ? ONBOARDING_FLOW.step2.remove : ONBOARDING_FLOW.step2.add} ${item.title || item.name || ONBOARDING_FLOW.untitled}`,
                         pressed: sel,
                       })}
                     >
@@ -468,7 +396,7 @@ export default function OnboardingFlow() {
           >
             {saving ? <Spinner size="button" ariaHidden /> : ctaText}
           </button>
-          {(step === 2 || step === TOTAL) && !saving && (
+          {step === TOTAL && !saving && (
             <button type="button" className="onboarding-skip" onClick={skipStep}>{secondaryLabel}</button>
           )}
         </div>
