@@ -76,10 +76,9 @@ export default function OnboardingFlow() {
   // Region is detected rather than asked for — see the effect below.
   const [region, setRegion] = useState(guessRegionFromTimezone);
 
-  // Step 2: Seed shows (optional). The step opens on an intro that says what
-  // picking titles is for, and only reveals the poster grid once the user opts
-  // in — the grid on its own read as a question about viewing history.
-  const [seedIntro,    setSeedIntro]    = useState(true);
+  // Step 2: Seed shows (optional). Mobile still opens this step on an intro
+  // card (see app/onboarding/seed.tsx); web goes straight to the poster grid,
+  // whose own title/subtitle already say what the picks are for.
   const [seedQuery,    setSeedQuery]    = useState('');
   const [seedResults,  setSeedResults]  = useState([]);
   const [seedSelected, setSeedSelected] = useState([]);
@@ -137,8 +136,8 @@ export default function OnboardingFlow() {
     return () => { alive = false; };
   }, []);
 
-  /* ── Trending prefill for step 2 — starts during the intro so the grid is
-       already populated the moment the user opts in ── */
+  /* ── Trending prefill for step 2 — fetches as soon as the step mounts so
+       the grid has data immediately ── */
   useEffect(() => {
     if (step !== 2 || trending.length > 0) return;
     tmdb.getTrending('all', 'week').then(data => {
@@ -233,15 +232,8 @@ export default function OnboardingFlow() {
 
   const seedGridItems = seedQuery.trim() ? seedResults : trending;
 
-  // The intro owns the footer while it's up: its CTA reveals the poster grid
-  // instead of completing onboarding, and its secondary link leaves for the app
-  // rather than skipping a single step.
-  const onSeedIntro = step === 2 && seedIntro;
-  const ctaText  = onSeedIntro ? ONBOARDING_FLOW.step2.intro.ctaArrow
-    : step === TOTAL ? ONBOARDING_FLOW.startWatchingArrow : ONBOARDING_FLOW.continueArrow;
-  const ctaLabel = onSeedIntro ? ONBOARDING_FLOW.step2.intro.cta
-    : step === TOTAL ? ONBOARDING_FLOW.startWatching : COMMON.continue;
-  const secondaryLabel = onSeedIntro ? ONBOARDING_FLOW.step2.intro.toApp : ONBOARDING_FLOW.skipThisStep;
+  const ctaText  = step === TOTAL ? ONBOARDING_FLOW.startWatchingArrow : ONBOARDING_FLOW.continueArrow;
+  const ctaLabel = step === TOTAL ? ONBOARDING_FLOW.startWatching : COMMON.continue;
 
   if (authLoading) {
     return (
@@ -260,7 +252,7 @@ export default function OnboardingFlow() {
         {/* Header */}
         <div style={{ width: '100%', maxWidth: 420, padding: '2rem 0 1.5rem', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.5rem' }}>
           {step > 1 ? (
-            <button type="button" className="onboarding-back" onClick={() => (step === 2 && !seedIntro ? setSeedIntro(true) : setStep(s => s - 1))} aria-label={ONBOARDING_FLOW.goBack} style={{ marginTop: '0.4rem' }}>
+            <button type="button" className="onboarding-back" onClick={() => setStep(s => s - 1)} aria-label={ONBOARDING_FLOW.goBack} style={{ marginTop: '0.4rem' }}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
             </button>
           ) : <div style={{ width: 28, flexShrink: 0 }} />}
@@ -299,23 +291,8 @@ export default function OnboardingFlow() {
           </div>
         )}
 
-        {/* ── Step 2a: Seed intro ── */}
-        {step === 2 && seedIntro && (
-          <div style={{ ...card, textAlign: 'center', paddingTop: '1.5rem' }}>
-            <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.8rem', fontWeight: 500, letterSpacing: '-0.03em', marginBottom: '1.25rem' }}>
-              {ONBOARDING_FLOW.step2.intro.greeting(firstName.trim())}
-            </h1>
-            <p style={{ fontSize: '0.95rem', color: 'var(--text-primary)', marginBottom: '1rem', lineHeight: 1.5 }}>
-              {ONBOARDING_FLOW.step2.intro.lead}
-            </p>
-            <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', marginBottom: '1.5rem', lineHeight: 1.5 }}>
-              {ONBOARDING_FLOW.step2.intro.pitch}
-            </p>
-          </div>
-        )}
-
-        {/* ── Step 2b: Seed shows ── */}
-        {step === 2 && !seedIntro && (
+        {/* ── Step 2: Seed shows ── */}
+        {step === 2 && (
           <div style={card}>
             <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.8rem', fontWeight: 500, letterSpacing: '-0.03em', marginBottom: '0.4rem', textAlign: 'center' }}>
               {ONBOARDING_FLOW.step2.title}
@@ -386,10 +363,7 @@ export default function OnboardingFlow() {
           )}
           <button
             className="onboarding-cta"
-            onClick={() => {
-              if (onSeedIntro) return setSeedIntro(false);
-              return step === TOTAL ? finish() : goNext();
-            }}
+            onClick={() => (step === TOTAL ? finish() : goNext())}
             disabled={saving || (step === 1 && !firstName.trim())}
             aria-busy={saving}
             aria-label={saving ? ONBOARDING_FLOW.settingUpAccount : ctaLabel}
@@ -397,7 +371,7 @@ export default function OnboardingFlow() {
             {saving ? <Spinner size="button" ariaHidden /> : ctaText}
           </button>
           {step === TOTAL && !saving && (
-            <button type="button" className="onboarding-skip" onClick={skipStep}>{secondaryLabel}</button>
+            <button type="button" className="onboarding-skip" onClick={skipStep}>{ONBOARDING_FLOW.skipThisStep}</button>
           )}
         </div>
       </div>
