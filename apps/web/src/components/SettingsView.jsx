@@ -313,7 +313,7 @@ function TimezonePicker({ current, onSave, onClose }) {
               className="search-input-clear"
               style={{ right: '1.75rem' }}
               onClick={() => setQuery('')}
-              aria-label="Clear search"
+              aria-label={COMMON.clearSearch}
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
@@ -454,7 +454,7 @@ function ProviderPicker({ title, hint, region, selected, onSave, onClose, limit 
                   type="button"
                   className="search-input-clear"
                   onClick={() => setSearch('')}
-                  aria-label="Clear search"
+                  aria-label={COMMON.clearSearch}
                 >
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
@@ -1914,7 +1914,7 @@ export default function SettingsView() {
           </div>
           <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
             <SettingsTextAction onClick={handleTogglePublic} tone={isPublic ? 'danger' : 'default'}>
-              {isPublic ? SETTINGS_VIEW.makePrivate : SETTINGS_VIEW.makePublic}
+              {isPublic ? COMMON.makePrivate : COMMON.makePublic}
             </SettingsTextAction>
           </div>
         </div>

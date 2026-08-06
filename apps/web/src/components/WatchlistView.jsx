@@ -301,7 +301,7 @@ function SavedRow({ item, openPanel, watchlist, watching }) {
           <button
             className="btn-start-watching"
             onClick={handleStartWatching}
-            title={pending ? WATCHLIST_VIEW.movingToWatching : WATCHLIST_VIEW.startWatching}
+            title={pending ? WATCHLIST_VIEW.movingToWatching : MEDIA.startWatching}
             disabled={pending}
             aria-busy={pending}
           >

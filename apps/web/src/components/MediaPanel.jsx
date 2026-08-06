@@ -329,7 +329,7 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone }) {
                 onKeyDown={isTracking && !isChecking ? (e) => handleActivationKeyDown(e, () => handleCheckEp(ep, watched)) : undefined}
                 role={isTracking && !isChecking ? 'button' : undefined}
                 tabIndex={isTracking && !isChecking ? 0 : undefined}
-                aria-label={isTracking && !isChecking ? (watched ? MEDIA_PANEL.markUnwatched : MEDIA_PANEL.markWatched) : undefined}
+                aria-label={isTracking && !isChecking ? (watched ? MEDIA.markUnwatched : MEDIA.markWatched) : undefined}
               >
                 <span className="ep-num">E{String(ep.episode_number).padStart(2,'0')}</span>
                 <div className="ep-info">
@@ -359,7 +359,7 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone }) {
                     <button
                       className={`ep-check-btn${isActive ? ' checked' : ''}`}
                       onClick={(e) => { e.stopPropagation(); handleCheckEp(ep, watched); }}
-                      aria-label={watched ? MEDIA_PANEL.markUnwatched : MEDIA_PANEL.markWatched}
+                      aria-label={watched ? MEDIA.markUnwatched : MEDIA.markWatched}
                       title={watched ? MEDIA_PANEL.unmarkAsWatched : MEDIA_PANEL.markAsWatched}
                     >
                       <CheckCircleIcon filled={watched} />
@@ -525,7 +525,7 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
     try {
       const newList = await createList(creatingName);
       if (!newList) {
-        setCreateError(MEDIA_PANEL.couldNotCreateList);
+        setCreateError(MEDIA.couldNotCreateList);
         return;
       }
 

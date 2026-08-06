@@ -25,6 +25,7 @@ import { posterUrl, backdropUrl, Palette, fontFamily, fontSize, spacing, radii, 
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import { favoriteWords } from '../../lib/spelling';
+import { MEDIA } from '@plot/core/copy/media.js';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -118,7 +119,7 @@ function PosterCard({ item, onPress, saved, onSave, isFav, onFavorite }: {
           style={styles.cardActionBtn}
           onPress={onSave}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityLabel={saved ? 'Remove from watchlist' : 'Add to watchlist'}
+          accessibilityLabel={saved ? MEDIA.removeFromWatchlist : MEDIA.saveToWatchlist}
           accessibilityRole="button"
         >
           <BookmarkIcon size={15} strokeWidth={2.5} filled={saved} />
@@ -187,7 +188,7 @@ function ChartRow({ item, rank, saved, onSave, onPress }: {
         style={[styles.chartSaveBtn, saved && styles.chartSaveBtnSaved]}
         onPress={onSave}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        accessibilityLabel={saved ? 'Remove from watchlist' : 'Add to watchlist'}
+        accessibilityLabel={saved ? MEDIA.removeFromWatchlist : MEDIA.saveToWatchlist}
         accessibilityRole="button"
       >
         <BookmarkIcon size={13} color={saved ? colors.accent : colors.textMuted} filled={saved} />
@@ -218,7 +219,7 @@ function HeroCard({ item, onPress, saved, onSave }: {
         style={styles.heroSaveCircle}
         onPress={onSave}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        accessibilityLabel={saved ? 'Remove from watchlist' : 'Add to watchlist'}
+        accessibilityLabel={saved ? MEDIA.removeFromWatchlist : MEDIA.saveToWatchlist}
         accessibilityRole="button"
       >
         <BookmarkIcon size={16} color={saved ? colors.accent : '#fff'} filled={saved} />
@@ -388,7 +389,7 @@ function PosterCardRanked({ item, rank, saved, onSave, isFav, onFavorite }: {
           style={styles.cardActionBtn}
           onPress={onSave}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityLabel={saved ? 'Remove from watchlist' : 'Add to watchlist'}
+          accessibilityLabel={saved ? MEDIA.removeFromWatchlist : MEDIA.saveToWatchlist}
           accessibilityRole="button"
         >
           <BookmarkIcon size={15} strokeWidth={2.5} filled={saved} />

@@ -157,6 +157,31 @@ These checks fail the build if two sources drift. Fix by regenerating both, not 
   tokens / auth email templates.
 - `migrations:check` — no migration may recreate a function with a different
   `ON CONFLICT` target without acknowledging it. See below.
+- `copy:check` — no app file may hardcode a string that `packages/core/copy` owns.
+
+## Copy lives in `packages/core/copy` — never retype a shared string
+
+Every user-facing string that both apps show comes from `packages/core/copy`, and both
+apps import it. `apps/web/src/copy/*` are re-export shims so web's existing import paths
+still resolve; the strings themselves live in core.
+
+`npm run copy:check` fails the build if an app file contains a literal the catalog already
+owns. This exists because a hardcoded string that happens to match today is invisible drift:
+it diverges the moment either side is reworded, which is exactly what the catalog was built
+to prevent. The catalog being *shared* is necessary but not sufficient — it has to be *read*.
+
+- Adding copy? Put it in the surface's module (`settingsView.js`, `mediaPanel.js`, …).
+- Used on three or more surfaces? It belongs in `common.js`, or `media.js` for anything
+  about a title (watch status, list actions). Those two are the designated cross-surface
+  modules and may be imported from anywhere.
+- **Never define the same string in two catalog modules.** That reintroduces the drift one
+  level up. `onboardingFlow.startWatchingArrow` ("begin using PLOT") and
+  `media.startWatching` (the watch toggle) are deliberately different concepts that happen
+  to share words — that's the one shape worth duplicating, and it's commented as such.
+- Genuinely per-platform wording (mobile's compact labels, say) stays in the app file, but
+  say why in a comment so the next person doesn't "fix" it into the catalog.
+- `scripts/adopt-shared-copy.mjs` is a codemod that does the mechanical replacement when a
+  new batch of copy moves into core. Run it with `--dry-run` first.
 
 ## Migrations: `create or replace function` replaces the WHOLE body
 

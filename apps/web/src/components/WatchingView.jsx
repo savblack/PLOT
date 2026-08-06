@@ -7,6 +7,7 @@ import { getEpisodeGuideState } from '../utils/episodeProgress.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import ConfirmModal from './ConfirmModal.jsx';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
+import { MEDIA } from '../copy/media.js';
 
 /* ── Icons ── */
 function CheckCircleIcon() {
@@ -221,7 +222,7 @@ function WatchingCard({ progress, watching, onOpen, onStop }) {
                     className={`ep-check-btn${isActive ? ' checked' : ''}`}
                     onClick={() => handleToggle(ep)}
                     disabled={!aired || isLoading}
-                    aria-label={watched ? 'Mark unwatched' : 'Mark watched'}
+                    aria-label={watched ? MEDIA.markUnwatched : MEDIA.markWatched}
                   >
                     {isLoading
                       ? <PlotLoader size={14} ariaHidden />

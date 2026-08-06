@@ -7,15 +7,11 @@ export const MEDIA_PANEL = {
   talentFallback: 'Talent',
   episodesLoadError: 'Could not load episodes. Try again later.',
   noEpisodesAvailable: 'No episodes available yet.',
-  markUnwatched: 'Mark unwatched',
-  markWatched: 'Mark watched',
   // The TV-season bulk action. Mobile renders it today; web has no such
   // control yet, so this is here for when it gains one — the wording is
   // agreed now so the two can't diverge later.
-  markAllWatched: 'Mark all watched',
   unmarkAsWatched: 'Unmark as watched',
   markAsWatched: 'Mark as watched',
-  couldNotCreateList: 'Could not create the list. Please try again.',
   top10TvShows: 'TV Shows',
   top10Movies: 'Movies',
   currentlyRanked: (rank) => `Currently #${rank}`,
