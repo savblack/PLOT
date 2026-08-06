@@ -15,7 +15,7 @@ import { ONBOARDING_FLOW } from '@plot/core/copy/onboardingFlow.js';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import { useTheme } from '../contexts/ThemeContext';
 
-export const TOTAL_STEPS = 3;
+export const TOTAL_STEPS = 2;
 
 interface Props {
   step: number;

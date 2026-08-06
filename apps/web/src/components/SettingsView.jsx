@@ -487,7 +487,7 @@ function ProviderPicker({ title, hint, region, selected, onSave, onClose, limit 
 
 /* ── Genre picker modal ── */
 function GenrePicker({ selected, onSave, onClose }) {
-  const allGenres = useGenres();
+  const { genres: allGenres, loading, error, retry } = useGenres();
   const [chosen, setChosen] = useState(
     allGenres.filter(g => selected.includes(g.name)).map(g => g.id)
   );
@@ -512,8 +512,20 @@ function GenrePicker({ selected, onSave, onClose }) {
         <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--surface)' }}>
           <SheetHeader title="Genres" onClose={onClose} />
         </div>
-        {allGenres.length === 0 ? (
+        {/* Keyed off `loading`, not `allGenres.length` — an empty list used to
+            be indistinguishable from "still fetching", so a failed load left
+            this sheet spinning forever with no way to recover. */}
+        {loading ? (
           <div className="loading-state"><PlotLoader size="sm" /></div>
+        ) : error ? (
+          <div style={{ padding: '2rem 1rem', textAlign: 'center' }}>
+            <p style={{ margin: '0 0 1rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+              {SETTINGS_VIEW.genres.loadError}
+            </p>
+            <button type="button" className="btn btn-secondary" onClick={retry}>
+              {SETTINGS_VIEW.genres.tryAgain}
+            </button>
+          </div>
         ) : (
           <div style={{ padding: '1rem' }}>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>

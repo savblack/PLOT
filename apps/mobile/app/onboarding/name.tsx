@@ -45,7 +45,7 @@ export default function Name() {
     }
     setSaving(false);
     track(EVENTS.ONBOARDING_STEP_COMPLETED, { step: 1, step_name: 'name', skipped: false });
-    router.push('/onboarding/genres');
+    router.push('/onboarding/seed');
   };
 
   return (

@@ -219,4 +219,8 @@ export const SETTINGS_VIEW = {
     tryAgain: 'Try again',
     verifyNow: 'Verify now',
   },
+  genres: {
+    loadError: "We couldn't load the genre list.",
+    tryAgain: 'Try again',
+  },
 };

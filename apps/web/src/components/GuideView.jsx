@@ -362,7 +362,7 @@ export function UpcomingContent({ typeFilters, genreFilters, providers, openPane
 export default function GuideView() {
   const { openPanel, watchlist, profile } = useApp();
   const guideChannels = profile?.guide_channels || [];
-  const genres = useGenres();
+  const { genres } = useGenres();
 
   const [guideTab,     setGuideTab]     = useState('releases');
   const [typeFilters,  setTypeFilters]  = useState(['tv', 'cinema', 'movie']);

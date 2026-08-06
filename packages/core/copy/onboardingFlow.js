@@ -10,14 +10,14 @@ export const ONBOARDING_FLOW = {
     subtitle: 'So we can make PLOT yours.',
     placeholder: 'First name',
   },
-  step2: {
-    title: 'What do you like?',
-    subtitle: 'Pick a few to shape what we recommend.',
-  },
-  // Step 3 opens on an intro rather than dropping the user straight into a
+  // Genre picking used to be step 2. It was the only step that couldn't render
+  // without a live TMDB call, and nothing downstream read profiles.genres, so it
+  // was cut from signup — genres are set in Settings instead.
+  //
+  // Step 2 opens on an intro rather than dropping the user straight into a
   // poster grid: picking titles reads as ambiguous ("have I watched these?")
   // without a line first saying what the picks are for.
-  step3: {
+  step2: {
     intro: {
       greeting: (name) => (name ? `Hi ${name}!` : 'Hi there!'),
       lead: "Let's start on a good note.",

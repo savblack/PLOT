@@ -17,6 +17,19 @@ configure({
   criticScoreUrl: `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/critic-score`,
   traktClientId: import.meta.env.VITE_TRAKT_CLIENT_ID,
   isDev: import.meta.env.DEV,
+  // PKCE instead of Supabase's default implicit flow. Implicit returns the
+  // session in the URL fragment (`#access_token=…&refresh_token=…`), which puts
+  // a long-lived refresh token into the address bar, browser history, and every
+  // analytics tool watching the page. PKCE returns a single-use `?code=` bound
+  // to a verifier held in this browser's localStorage, so the URL carries
+  // nothing reusable. utils/authCallback.js already handles the `code` branch.
+  //
+  // Safe only because the email templates now link to /auth/callback with
+  // `?token_hash=…&type=…` rather than {{ .ConfirmationURL }}: token_hash goes
+  // through verifyOtp, which needs no verifier, so opening a magic link or a
+  // password reset on a different device than the one that requested it still
+  // works. Reverting the templates without reverting this breaks that.
+  supabaseClientOptions: { auth: { flowType: 'pkce' } },
   affiliate: {
     amazonTags: {
       AU: import.meta.env.VITE_AMZ_TAG_AU,
@@ -91,6 +104,17 @@ if (posthogToken) {
       // not just the ones our ErrorBoundaries catch. Turn on Error Tracking in the
       // PostHog project for these to show up.
       capture_exceptions: true,
+      // Never send the URL fragment to PostHog. /auth/callback receives Supabase's
+      // implicit-flow session as `#access_token=…&refresh_token=…`, and $current_url
+      // is window.location.href verbatim, so the fragment was landing in captured
+      // events and session recordings. The access token expires in an hour; the
+      // refresh token alongside it does not, and can be exchanged for new sessions
+      // indefinitely using only the public anon key.
+      //
+      // posthog-js turns this on by default only from `defaults: '2026-06-25'`
+      // onward, and we pin '2026-01-30' above, so it has to be set explicitly.
+      // Bumping `defaults` instead would silently change unrelated behaviour.
+      disable_capture_url_hashes: true,
     });
     if (Object.keys(attribution).length > 0) {
       posthog.register(attribution);

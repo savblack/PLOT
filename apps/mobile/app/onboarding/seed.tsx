@@ -145,17 +145,13 @@ export default function Seed() {
       // than landing in the app with the auth guard bouncing them back. Region
       // and timezone ride along, since this is the only step that writes them
       // and _layout reads profiles.region at boot to set the TMDB region.
-      // Read genres back in the same round trip: the step before wrote them and
-      // they are what onboarding_completed reports.
-      const { data: profile, error } = await supabase.from('profiles')
+      const { error } = await supabase.from('profiles')
         .update({
           onboarding_complete: true,
           region: region.current,
           timezone: detectTimezone(),
         })
-        .eq('id', session.user.id)
-        .select('genres')
-        .maybeSingle();
+        .eq('id', session.user.id);
 
       if (error) {
         console.warn('[onboarding seed] completing onboarding failed', error);
@@ -176,7 +172,6 @@ export default function Seed() {
 
       track(EVENTS.ONBOARDING_COMPLETED, {
         region: region.current,
-        genres_count: profile?.genres?.length ?? 0,
         seed_titles_added: seeds.length,
         skipped: skipSeeds,
       });
@@ -187,14 +182,14 @@ export default function Seed() {
     router.replace('/(app)');
   };
 
-  const intro = ONBOARDING_FLOW.step3.intro;
+  const intro = ONBOARDING_FLOW.step2.intro;
 
   // The intro reuses the scaffold's heading and body slots for the greeting and
   // the lead, so the two states share one header, footer and progress bar.
   if (!showPicker) {
     return (
       <OnboardingScaffold
-        step={3}
+        step={2}
         title={intro.greeting(firstName)}
         subtitle={intro.lead}
         onBack={() => router.back()}
@@ -212,9 +207,9 @@ export default function Seed() {
 
   return (
     <OnboardingScaffold
-      step={3}
-      title={ONBOARDING_FLOW.step3.title}
-      subtitle={ONBOARDING_FLOW.step3.subtitle}
+      step={2}
+      title={ONBOARDING_FLOW.step2.title}
+      subtitle={ONBOARDING_FLOW.step2.subtitle}
       onBack={() => setShowPicker(false)}
       ctaLabel={ONBOARDING_FLOW.startWatchingArrow}
       onContinue={() => finish(false)}
@@ -226,7 +221,7 @@ export default function Seed() {
       <View style={styles.searchBar}>
         <TextInput
           style={styles.searchInput}
-          placeholder={ONBOARDING_FLOW.step3.searchPlaceholder}
+          placeholder={ONBOARDING_FLOW.step2.searchPlaceholder}
           placeholderTextColor={colors.textMuted}
           value={query}
           onChangeText={setQuery}
@@ -253,7 +248,7 @@ export default function Seed() {
       </View>
 
       {!query.trim() && trending.length > 0 && (
-        <Text style={styles.gridLabel}>{ONBOARDING_FLOW.step3.trendingThisWeek}</Text>
+        <Text style={styles.gridLabel}>{ONBOARDING_FLOW.step2.trendingThisWeek}</Text>
       )}
 
       {/* Poster grid: trending until the user searches, then results */}
@@ -271,7 +266,7 @@ export default function Seed() {
               activeOpacity={0.8}
               accessibilityRole="button"
               accessibilityState={{ selected: active }}
-              accessibilityLabel={`${active ? ONBOARDING_FLOW.step3.remove : ONBOARDING_FLOW.step3.add} ${label}`}
+              accessibilityLabel={`${active ? ONBOARDING_FLOW.step2.remove : ONBOARDING_FLOW.step2.add} ${label}`}
             >
               <View style={[styles.card, active && styles.cardActive]}>
                 {img

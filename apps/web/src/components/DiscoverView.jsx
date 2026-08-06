@@ -705,7 +705,7 @@ function NewReleasesContent({ openPanel, watchlist, typeFilters, genreFilters, o
 ═══════════════════════════════════════ */
 export default function DiscoverView() {
   const app = useApp();
-  const genres        = useGenres();
+  const { genres }    = useGenres();
   const [tab,          setTab]          = useState(SHOW_SOCIAL_FEED ? 'feed' : 'discover');
   const [typeFilters,  setTypeFilters]  = useState(ALL_TYPES);
   const [genreFilters, setGenreFilters] = useState([]);

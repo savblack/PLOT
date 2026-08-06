@@ -35,13 +35,13 @@
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin: 0 auto;">
   <tr>
     <td style="border-radius: 9999px; background-color: transparent; border: 1px solid #09090B;">
-      <a href="{{ .ConfirmationURL }}" target="_blank" style="display: inline-block; padding: 13px 30px; font-family: 'DM Sans', -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 300; color: #09090B; text-decoration: none; border-radius: 9999px; line-height: 1.2;">Confirm change</a>
+      <a href="{{ if .RedirectTo }}{{ .RedirectTo }}{{ else }}{{ .SiteURL }}/auth/callback{{ end }}?token_hash={{ .TokenHash }}&amp;type=email_change" target="_blank" style="display: inline-block; padding: 13px 30px; font-family: 'DM Sans', -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 300; color: #09090B; text-decoration: none; border-radius: 9999px; line-height: 1.2;">Confirm change</a>
     </td>
   </tr>
 </table>
 <p style="margin: 28px 0 0; font-family: 'DM Sans', -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif; font-size: 12px; line-height: 1.6; color: #A1A1AA; text-align: center;">
   Prefer to paste the link manually?<br>
-  <a href="{{ .ConfirmationURL }}" target="_blank" style="color: #A1A1AA; text-decoration: underline; word-break: break-all;">{{ .ConfirmationURL }}</a>
+  <a href="{{ if .RedirectTo }}{{ .RedirectTo }}{{ else }}{{ .SiteURL }}/auth/callback{{ end }}?token_hash={{ .TokenHash }}&amp;type=email_change" target="_blank" style="color: #A1A1AA; text-decoration: underline; word-break: break-all;">{{ if .RedirectTo }}{{ .RedirectTo }}{{ else }}{{ .SiteURL }}/auth/callback{{ end }}?token_hash={{ .TokenHash }}&amp;type=email_change</a>
 </p>
               
 <div style="margin-top: 22px; padding: 14px 16px; border-radius: 12px; background-color: #FFF5F7; border: 1px solid #F7C7D3; text-align: center;">
