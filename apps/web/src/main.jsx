@@ -5,6 +5,7 @@ import { configure } from '@plot/core/config.js';
 import router from './router.jsx';
 import './index.css';
 import { captureAttribution } from './utils/attribution.js';
+import { redactSensitiveUrl } from './utils/redactUrl.js';
 import { track, markActivated, EVENTS, _setPostHogClient } from './lib/analytics.js';
 
 // Inject web env into the shared core before anything renders or fetches.
@@ -115,6 +116,32 @@ if (posthogToken) {
       // onward, and we pin '2026-01-30' above, so it has to be set explicitly.
       // Bumping `defaults` instead would silently change unrelated behaviour.
       disable_capture_url_hashes: true,
+      // disable_capture_url_hashes only drops the *fragment*. Since the move to
+      // PKCE the callback carries its credential in the query instead —
+      // `?code=…` for OAuth, `?token_hash=…` for email links — so those still
+      // reach $current_url untouched. Both are single-use and short-lived, which
+      // is why this is defence in depth rather than the fix, but there's no
+      // reason to ship credentials to analytics at all. Scrub the URL-ish
+      // properties on every event before it leaves the browser.
+      before_send: (event) => {
+        const props = event?.properties;
+        if (props) {
+          for (const key of ['$current_url', '$referrer', '$session_entry_url', '$pathname']) {
+            if (typeof props[key] === 'string') props[key] = redactSensitiveUrl(props[key]);
+          }
+        }
+        return event;
+      },
+      session_recording: {
+        // Applies to captured network requests, not the replay's page URL
+        // (posthog-recorder.js runs it over request/response headers). Inert
+        // unless network capture is enabled — kept so that turning it on later
+        // can't start recording the Supabase auth calls with their tokens.
+        maskCapturedNetworkRequestFn: (request) => {
+          if (request?.name) request.name = redactSensitiveUrl(request.name);
+          return request;
+        },
+      },
     });
     if (Object.keys(attribution).length > 0) {
       posthog.register(attribution);
