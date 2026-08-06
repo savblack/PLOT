@@ -86,15 +86,29 @@ test('guessRegionFromTimezone defaults to the device timezone when no argument i
   });
 });
 
-test('BUG: TZ_MAP maps Asia/Seoul to KR, a code that is not in SUPPORTED_REGIONS', () => {
-  assert.equal(guessRegionFromTimezone('Asia/Seoul'), 'KR');
+test('guessRegionFromTimezone falls back to DEFAULT_REGION when the TZ_MAP entry is not a supported region (e.g. Asia/Seoul maps to KR, which is not in SUPPORTED_REGIONS)', () => {
   assert.equal(isSupportedRegion('KR'), false);
   assert.equal(SUPPORTED_REGIONS.includes('KR'), false);
+  assert.equal(guessRegionFromTimezone('Asia/Seoul'), DEFAULT_REGION);
 });
 
-test('BUG: detectRegion returns that unsupported timezone-derived fallback unvalidated when there is no endpoint', async () => {
+test('detectRegion resolves to DEFAULT_REGION when the timezone-derived fallback is unsupported and there is no endpoint', async () => {
   const region = await detectRegion({ fallback: guessRegionFromTimezone('Asia/Seoul') });
-  assert.equal(region, 'KR');
+  assert.equal(region, DEFAULT_REGION);
+});
+
+test('detectRegion falls back to DEFAULT_REGION when a caller-supplied fallback is itself unsupported, even with no endpoint', async () => {
+  const region = await detectRegion({ fallback: 'KR' });
+  assert.equal(region, DEFAULT_REGION);
+});
+
+test('detectRegion falls back to DEFAULT_REGION when both the geolocation result and the caller-supplied fallback are unsupported', async () => {
+  const region = await detectRegion({
+    endpoint: 'https://example.test/region',
+    fetchImpl: async () => ({ ok: true, json: async () => ({ country: 'zz' }) }),
+    fallback: 'KR',
+  });
+  assert.equal(region, DEFAULT_REGION);
 });
 
 test('detectRegion returns the fallback immediately when no endpoint is given', async () => {
