@@ -595,15 +595,6 @@ export const tmdb = {
 
   getTopRated: (type) => fetchFromTMDB(`/${type}/top_rated`),
 
-  discoverByGenres: (type, genreIds) => {
-    if (!genreIds?.length) return Promise.resolve(null);
-    return fetchFromTMDB(`/discover/${type}`, {
-      with_genres: genreIds.join('|'),
-      sort_by: 'popularity.desc',
-      'vote_count.gte': 100,
-    });
-  },
-
   /* ── Combined genre list (movie + TV, deduplicated) ── */
   getGenres: async () => {
     const [movieRes, tvRes] = await Promise.all([
