@@ -261,16 +261,21 @@ test('watchedAtFor keeps the given date for typical timezone offsets', () => {
   });
 });
 
-test('BUG: watchedAtFor rolls the date back a day in timezones 13+ hours ahead of UTC', () => {
+test('watchedAtFor keeps the given date in timezones 13+ hours ahead of UTC', () => {
   withTZ('Pacific/Kiritimati', () => {
-    assert.equal(watchedAtFor({ date: '2024-06-15' }), '2024-06-14');
+    assert.equal(watchedAtFor({ date: '2024-06-15' }), '2024-06-15');
   });
 });
 
-test('BUG: watchedAtFor with no source date uses the UTC date regardless of the local timezone', () => {
-  const expectedUtcToday = new Date().toISOString().slice(0, 10);
-  const utcResult = withTZ('UTC', () => watchedAtFor({}));
-  const kiritimatiResult = withTZ('Pacific/Kiritimati', () => watchedAtFor({}));
-  assert.equal(utcResult, expectedUtcToday);
-  assert.equal(kiritimatiResult, expectedUtcToday);
+test('watchedAtFor with no source date falls back to the local date, not the UTC date', () => {
+  withTZ('UTC', () => {
+    const d = new Date();
+    const expected = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    assert.equal(watchedAtFor({}), expected);
+  });
+  withTZ('Pacific/Kiritimati', () => {
+    const d = new Date();
+    const expected = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    assert.equal(watchedAtFor({}), expected);
+  });
 });
