@@ -50,6 +50,20 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
    unrelated titles. */
 export const HISTORY_CONFLICT_TARGET = 'user_id,tmdb_id,media_type,watched_at';
 
+/** Targeted existence check — does NOT load the full history list. */
+export async function findHistoryEntry({ userId, tmdbId, mediaType }) {
+  if (!userId || !tmdbId) return null;
+  const { data } = await supabase
+    .from('history')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('tmdb_id', Number(tmdbId))
+    .eq('media_type', mediaType)
+    .limit(1)
+    .maybeSingle();
+  return data || null;
+}
+
 export async function logWatchedItem({ userId, item, rating, note, dnf, watchedAt = localDateStr() }) {
   const mediaRow = baseMediaRow(item);
   if (!userId || !mediaRow) return { data: null, error: null, row: null };

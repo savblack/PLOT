@@ -223,7 +223,7 @@ export default function App() {
   const watching     = useWatching(user?.id);
   const reminders    = useReminders(user?.id);
   const topLists     = useTopLists(user?.id);
-  const favorites    = useFavorites(user?.id);
+  const favorites    = useFavorites(user?.id, { watching, watchlist });
   const customLists  = useCustomLists(user?.id);
 
   /* ── Pending "save to watchlist" deep link (newsletter / chart page) ── */
