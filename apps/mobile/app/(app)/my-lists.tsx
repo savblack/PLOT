@@ -16,6 +16,8 @@ import { tmdb } from '../../lib/tmdb';
 import { favoriteWords } from '../../lib/spelling';
 import CollapsibleSection from '../../components/CollapsibleSection';
 import SectionToggleIcon from '../../components/SectionToggleIcon';
+import SelectCircle from '../../components/SelectCircle';
+import KebabMenu, { KebabMenuItem } from '../../components/KebabMenu';
 import { getSectionOpen, setSectionOpen } from '../../lib/sectionOpenState';
 import { MEDIA } from '@plot/core/copy/media.js';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii, iconButtonSize } from '../../lib/tokens';
@@ -101,8 +103,83 @@ function SectionAddButton({ onPress, label }: { onPress: () => void; label: stri
   );
 }
 
+// ── Multi-select ──────────────────────────────────────────────────────
+// Edit state for one selectable section. Web keeps this inside each of its
+// section components (FavoritesSection, WatchingSection, WantToWatchSection,
+// CustomListsSection); mobile renders those sections inline in one screen, so
+// it lives in a hook rather than four near-identical copies.
+function useSelection() {
+  const [editMode, setEditMode] = useState(false);
+  const [selected, setSelected] = useState<Set<number>>(() => new Set());
+
+  const toggle = (tmdbId: number) => setSelected(prev => {
+    const next = new Set(prev);
+    if (next.has(tmdbId)) next.delete(tmdbId); else next.add(tmdbId);
+    return next;
+  });
+  const exit = () => { setEditMode(false); setSelected(new Set()); };
+
+  return { editMode, selected, toggle, exit, enter: () => setEditMode(true) };
+}
+type Selection = ReturnType<typeof useSelection>;
+
+function TrashIcon({ color }: { color: string }) {
+  return (
+    <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Polyline points="3,6 5,6 21,6" />
+      <Path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+    </Svg>
+  );
+}
+
+// Header-right cluster for a selectable section: a trash once something is
+// picked, Done to leave edit mode, otherwise a kebab offering "Select".
+// Mirrors the headerRight web builds in each section of MyListsView.jsx.
+function SectionSelectActions({
+  sel, count, deleteLabel, menuLabel, onDelete,
+}: {
+  sel: Selection;
+  count: number;
+  deleteLabel: string;
+  menuLabel: string;
+  onDelete: () => void;
+}) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const hitSlop = { top: 8, bottom: 8, left: 8, right: 8 };
+
+  if (sel.editMode) {
+    return (
+      <>
+        {sel.selected.size > 0 && (
+          <TouchableOpacity
+            onPress={onDelete}
+            hitSlop={hitSlop}
+            accessibilityLabel={`${deleteLabel} (${sel.selected.size})`}
+            accessibilityRole="button"
+          >
+            <TrashIcon color={colors.danger} />
+          </TouchableOpacity>
+        )}
+        <TouchableOpacity onPress={sel.exit} hitSlop={hitSlop} accessibilityLabel={COMMON.done} accessibilityRole="button">
+          <Text style={styles.sectionActionText}>{COMMON.done}</Text>
+        </TouchableOpacity>
+      </>
+    );
+  }
+  // Nothing to select yet — web hides the kebab on an empty section too.
+  if (count === 0) return null;
+  return <KebabMenu accessibilityLabel={menuLabel} items={[{ label: COMMON.select, onPress: sel.enter }]} />;
+}
+
 // ── List row ──────────────────────────────────────────────────────────
-function ListRow({ item, trailing, onPress }: { item: any; trailing?: React.ReactNode; onPress?: () => void }) {
+function ListRow({ item, trailing, onPress, sel }: {
+  item: any;
+  trailing?: React.ReactNode;
+  onPress?: () => void;
+  /** Present when the row's section supports multi-select. */
+  sel?: Selection;
+}) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const img    = posterUrl(item.poster_path, 'w92');
@@ -112,13 +189,32 @@ function ListRow({ item, trailing, onPress }: { item: any; trailing?: React.Reac
     ? `S${String(item.current_season).padStart(2,'0')}E${String(item.current_episode).padStart(2,'0')}`
     : null;
 
+  const editing    = !!sel?.editMode;
+  const isSelected = !!sel?.selected.has(item.tmdb_id);
+  // In edit mode the whole row toggles selection instead of opening the panel,
+  // so a mis-tap picks a title rather than navigating away. Same as web.
+  const handlePress = editing ? () => sel!.toggle(item.tmdb_id) : onPress;
+
   return (
-    <TouchableOpacity style={styles.listRow} onPress={onPress} activeOpacity={onPress ? 0.7 : 1}>
+    <TouchableOpacity
+      style={styles.listRow}
+      onPress={handlePress}
+      activeOpacity={handlePress ? 0.7 : 1}
+      accessibilityLabel={editing ? `${isSelected ? COMMON.deselect : COMMON.select} ${title}` : undefined}
+    >
       <View style={styles.listRowPoster}>
         {img
           ? <Image source={{ uri: img }} style={StyleSheet.absoluteFill} resizeMode="cover" />
           : <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.surfaceSunken }]} />
         }
+        {editing && (
+          <SelectCircle
+            variant="row"
+            selected={isSelected}
+            onPress={() => sel!.toggle(item.tmdb_id)}
+            label={`${isSelected ? COMMON.deselect : COMMON.select} ${title}`}
+          />
+        )}
       </View>
       <View style={styles.listRowInfo}>
         <Text style={styles.listRowTitle} numberOfLines={2}>{title}</Text>
@@ -137,20 +233,48 @@ function ListRow({ item, trailing, onPress }: { item: any; trailing?: React.Reac
 }
 
 // ── Poster grid ───────────────────────────────────────────────────────
-function PosterGrid({ items, onRemove, horizontal, removeLabel = 'Remove' }: { items: any[]; onRemove?: (tmdbId: number) => void; horizontal?: boolean; removeLabel?: string }) {
+function PosterGrid({ items, onRemove, horizontal, removeLabel = COMMON.remove, onPress, sel }: {
+  items: any[];
+  onRemove?: (tmdbId: number) => void;
+  horizontal?: boolean;
+  removeLabel?: string;
+  onPress?: (item: any) => void;
+  /** Present when the grid's section supports multi-select. */
+  sel?: Selection;
+}) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const editing = !!sel?.editMode;
 
   const renderCard = (item: any) => {
-    const img = posterUrl(item.poster_path, 'w185');
+    const img   = posterUrl(item.poster_path, 'w185');
+    const title = item.title || item.name || '';
+    const isSelected = !!sel?.selected.has(item.tmdb_id);
+    const handlePress = editing
+      ? () => sel!.toggle(item.tmdb_id)
+      : (onPress ? () => onPress(item) : undefined);
+
     return (
       <View key={item.id || item.tmdb_id} style={{ width: POSTER_W }}>
-        <View style={styles.posterCard}>
+        <TouchableOpacity
+          style={styles.posterCard}
+          onPress={handlePress}
+          disabled={!handlePress}
+          activeOpacity={0.7}
+          accessibilityRole={handlePress ? 'button' : undefined}
+          accessibilityLabel={
+            editing ? `${isSelected ? COMMON.deselect : COMMON.select} ${title}`
+            : handlePress ? `View details for ${title}`
+            : undefined
+          }
+        >
           {img
             ? <Image source={{ uri: img }} style={StyleSheet.absoluteFill} resizeMode="cover" />
             : <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.surfaceSunken }]} />
           }
-          {onRemove && (
+          {/* The per-card ✕ and the selection circle claim the same corner —
+              edit mode owns it while active, so only one is ever drawn. */}
+          {onRemove && !editing && (
             <TouchableOpacity
               style={styles.removeBtn}
               onPress={() => onRemove(item.tmdb_id)}
@@ -161,8 +285,16 @@ function PosterGrid({ items, onRemove, horizontal, removeLabel = 'Remove' }: { i
               <Text style={{ color: '#fff', fontSize: 10, lineHeight: 14 }}>✕</Text>
             </TouchableOpacity>
           )}
-        </View>
-        <Text style={styles.posterTitle} numberOfLines={1}>{item.title || item.name}</Text>
+          {editing && (
+            <SelectCircle
+              variant="grid"
+              selected={isSelected}
+              onPress={() => sel!.toggle(item.tmdb_id)}
+              label={`${isSelected ? COMMON.deselect : COMMON.select} ${title}`}
+            />
+          )}
+        </TouchableOpacity>
+        <Text style={styles.posterTitle} numberOfLines={1}>{title}</Text>
       </View>
     );
   };
@@ -340,6 +472,12 @@ export default function MyListsScreen() {
   const setSectionOpenFor = (id: string, open: boolean) =>
     setSectionsOpen(prev => ({ ...prev, [id]: open }));
 
+  // One edit state per selectable section. Independent, as on web: putting
+  // Watching into select mode leaves Favourites alone.
+  const watchingSel = useSelection();
+  const wantSel     = useSelection();
+  const favSel      = useSelection();
+
   const [showAddFav,     setShowAddFav]     = useState(false);
   const [showCreateList, setShowCreateList] = useState(false);
 
@@ -419,9 +557,21 @@ export default function MyListsScreen() {
             count={watchingList.length}
             open={sectionsOpen.watching}
             onOpenChange={(next) => setSectionOpenFor('watching', next)}
+            headerRight={
+              <SectionSelectActions
+                sel={watchingSel}
+                count={watchingList.length}
+                deleteLabel={MEDIA.stopWatching}
+                menuLabel="Watching options"
+                onDelete={() => {
+                  watchingSel.selected.forEach(tmdbId => watching.stopWatching(tmdbId));
+                  watchingSel.exit();
+                }}
+              />
+            }
           >
             {watchingList.map(item => (
-              <ListRow key={item.tmdb_id} item={{ ...item, media_type: 'tv' }} onPress={() => openPanel(item.tmdb_id, 'tv')} />
+              <ListRow key={item.tmdb_id} item={{ ...item, media_type: 'tv' }} sel={watchingSel} onPress={() => openPanel(item.tmdb_id, 'tv')} />
             ))}
           </CollapsibleSection>
         )}
@@ -440,6 +590,18 @@ export default function MyListsScreen() {
             count={sortedSaved.length}
             open={sectionsOpen.want}
             onOpenChange={(next) => setSectionOpenFor('want', next)}
+            headerRight={
+              <SectionSelectActions
+                sel={wantSel}
+                count={sortedSaved.length}
+                deleteLabel={MEDIA.removeFromWatchlist}
+                menuLabel="Want to Watch options"
+                onDelete={() => {
+                  wantSel.selected.forEach(tmdbId => watchlist.removeFromList(tmdbId));
+                  wantSel.exit();
+                }}
+              />
+            }
           >
             {(
               sortedSaved.length === 0 ? (
@@ -454,6 +616,7 @@ export default function MyListsScreen() {
                     <ListRow
                       key={item.id}
                       item={item}
+                      sel={wantSel}
                       onPress={() => item.tmdb_id && openPanel(item.tmdb_id, item.media_type === 'tv' ? 'tv' : 'movie')}
                       trailing={(rel || strm) ? (
                         <View style={styles.statusChips}>
@@ -485,7 +648,24 @@ export default function MyListsScreen() {
             count={favList.length}
             open={sectionsOpen.favorites}
             onOpenChange={(next) => setSectionOpenFor('favorites', next)}
-            headerRight={<SectionAddButton onPress={() => setShowAddFav(true)} label={`Add to ${fw.pluralLower}`} />}
+            headerRight={
+              <>
+                <SectionSelectActions
+                  sel={favSel}
+                  count={favList.length}
+                  deleteLabel={`${COMMON.remove} ${fw.pluralLower}`}
+                  menuLabel={`${fw.plural} options`}
+                  onDelete={() => {
+                    favSel.selected.forEach(tmdbId => {
+                      const item = favorites.favorites.find((f: any) => f.tmdb_id === tmdbId);
+                      if (item) favorites.toggleFavorite({ ...item, id: undefined });
+                    });
+                    favSel.exit();
+                  }}
+                />
+                <SectionAddButton onPress={() => setShowAddFav(true)} label={`Add to ${fw.pluralLower}`} />
+              </>
+            }
           >
             {(
               favList.length === 0 ? (
@@ -499,7 +679,9 @@ export default function MyListsScreen() {
                 <PosterGrid
                   horizontal
                   items={favList}
-                  removeLabel={`Remove ${fw.nounLower}`}
+                  sel={favSel}
+                  onPress={(item) => item.tmdb_id && openPanel(item.tmdb_id, item.media_type === 'tv' ? 'tv' : 'movie')}
+                  removeLabel={`${COMMON.remove} ${fw.nounLower}`}
                   onRemove={(tmdbId) => {
                     const item = favorites.favorites.find((f: any) => f.tmdb_id === tmdbId);
                     if (item) favorites.toggleFavorite({ ...item, id: undefined });
@@ -642,22 +824,23 @@ function CustomListCard({
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { open: openPanel } = useMediaPanel();
   const [open,     setOpen]     = useState(true);
   const [renaming, setRenaming] = useState(false);
   const [name,     setName]     = useState(list.name);
+  const sel = useSelection();
 
   const items = applyTypeFilter(list.items || [], typeFilter);
 
-  const openMenu = () => {
-    const buttons: any[] = [
-      { text: 'Rename', onPress: () => setRenaming(true) },
-      { text: list.is_public ? COMMON.makePrivate : 'Make public', onPress: () => onSetPublic(!list.is_public) },
-    ];
-    if (list.is_public) buttons.push({ text: 'Share link', onPress: onShare });
-    buttons.push({ text: 'Delete', style: 'destructive', onPress: onDelete });
-    buttons.push({ text: 'Cancel', style: 'cancel' });
-    Alert.alert(list.name, list.is_public ? 'This list is public — anyone with the link can view it.' : '', buttons);
-  };
+  // Same item order as web's list kebab: Select, Rename, visibility, Share,
+  // Delete. Deleting the list itself still goes through onDelete's confirm.
+  const menuItems: KebabMenuItem[] = [
+    ...((list.items || []).length > 0 ? [{ label: COMMON.select, onPress: sel.enter }] : []),
+    { label: 'Rename', onPress: () => setRenaming(true) },
+    { label: list.is_public ? COMMON.makePrivate : COMMON.makePublic, onPress: () => onSetPublic(!list.is_public) },
+    ...(list.is_public ? [{ label: 'Share link', onPress: onShare }] : []),
+    { label: COMMON.delete, onPress: onDelete, danger: true },
+  ];
 
   return (
     <View style={styles.customList}>
@@ -694,18 +877,40 @@ function CustomListCard({
           <View style={styles.publicBadge}><Text style={styles.publicBadgeText}>Public</Text></View>
         )}
         <Text style={styles.customListCount}>{list.items?.length || 0}</Text>
-        <TouchableOpacity onPress={onAddItem} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Add item to list" accessibilityRole="button">
-          <Text style={{ color: colors.textMuted, fontSize: 16, marginLeft: spacing.sm }}>+</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={openMenu}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          style={{ marginLeft: spacing.sm }}
-          accessibilityLabel="List options"
-          accessibilityRole="button"
-        >
-          <Text style={{ color: colors.textMuted, fontSize: 16 }}>···</Text>
-        </TouchableOpacity>
+        {sel.editMode ? (
+          <>
+            {sel.selected.size > 0 && (
+              <TouchableOpacity
+                onPress={() => {
+                  sel.selected.forEach(tmdbId => onRemoveItem(tmdbId));
+                  sel.exit();
+                }}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                style={{ marginLeft: spacing.sm }}
+                accessibilityLabel={`${MEDIA.removeFromList} (${sel.selected.size})`}
+                accessibilityRole="button"
+              >
+                <TrashIcon color={colors.danger} />
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity
+              onPress={sel.exit}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              style={{ marginLeft: spacing.sm }}
+              accessibilityLabel={COMMON.done}
+              accessibilityRole="button"
+            >
+              <Text style={styles.sectionActionText}>{COMMON.done}</Text>
+            </TouchableOpacity>
+          </>
+        ) : (
+          <>
+            <TouchableOpacity onPress={onAddItem} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Add item to list" accessibilityRole="button">
+              <Text style={{ color: colors.textMuted, fontSize: 16, marginLeft: spacing.sm }}>+</Text>
+            </TouchableOpacity>
+            <KebabMenu accessibilityLabel={`Open options for ${list.name}`} items={menuItems} />
+          </>
+        )}
       </TouchableOpacity>
 
       {open && (
@@ -714,7 +919,13 @@ function CustomListCard({
             <Text style={styles.emptyBody}>{(list.items?.length || 0) === 0 ? 'No items yet — tap + to add' : 'No matching titles'}</Text>
           </TouchableOpacity>
         ) : (
-          <PosterGrid items={items} onRemove={onRemoveItem} removeLabel={MEDIA.removeFromList} />
+          <PosterGrid
+            items={items}
+            sel={sel}
+            onPress={(item) => item.tmdb_id && openPanel(item.tmdb_id, item.media_type === 'tv' ? 'tv' : 'movie')}
+            onRemove={onRemoveItem}
+            removeLabel={MEDIA.removeFromList}
+          />
         )
       )}
     </View>
@@ -788,6 +999,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   subTabTextActive: { color: colors.accent },
 
   sectionAddBtn: { marginLeft: spacing.xs },
+  sectionActionText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textSecondary },
 
   listRow: {
     flexDirection: 'row',
