@@ -4,11 +4,6 @@
 // it from src/copy/onboardingFlow.js so the Storybook Content page still sees
 // every string in one place.
 
-// Soft target for onboarding step 2's swipe deck — shown in the heading and
-// the progress bar's segment count, never enforced as a minimum (Continue
-// and Skip are always tappable regardless of how many titles are liked).
-export const SEED_LIKE_TARGET = 6;
-
 export const ONBOARDING_FLOW = {
   step1: {
     title: "What's your name?",
@@ -34,16 +29,17 @@ export const ONBOARDING_FLOW = {
       ctaArrow: "Let's go →",
       toApp: 'Take me to the app instead',
     },
-    title: (target) => `Swipe right on ${target} titles you like`,
-    subtitle: 'Curating your recommendations…',
-    progressA11yLabel: (count, target) => `${count} of ${target} liked`,
-    likeLabel: (title) => `Like ${title}`,
-    passLabel: (title) => `Pass on ${title}`,
-    deckComplete: "You've swiped through today's trending picks.",
-    loadError: "Couldn't load titles to swipe on.",
-    retry: 'Try again',
+    title: 'What do you want to watch?',
+    // Says where the picks go, because "what are you watching" read as a
+    // question about history: already-watched, in progress, or want to watch.
+    subtitle: "Pick anything you'd like to get to. We'll add it to your watchlist.",
+    searchPlaceholder: 'Search for a show or movie…',
+    trendingThisWeek: 'Trending this week',
+    add: 'Add',
+    remove: 'Remove',
   },
   stepLabel: (step, total) => `Step ${step} of ${total}`,
+  clearSearch: 'Clear search',
   goBack: 'Go back',
   untitled: 'title',
   saveError: 'Something went wrong saving your setup. Please try again.',
