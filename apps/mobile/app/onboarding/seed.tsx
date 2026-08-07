@@ -1,25 +1,44 @@
 /**
- * Onboarding step 2 — Seed the watchlist via a swipe deck (mirrors web).
- * Opens on an intro that says what picking titles is for (the deck on its own
- * reads as a question about viewing history), then swipe right (or tap the
- * heart) to like a trending title, left (or the X) to pass; a soft progress
- * bar tracks likes toward SEED_LIKE_TARGET, but Continue/Skip below stay
- * tappable throughout — reaching the target is encouragement, never a gate.
- * Seeds a "My List" custom list via idempotent upserts.
+ * Onboarding step 2 — Seed the watchlist via a poster grid (mirrors web).
+ * Opens on an intro that says what picking titles is for (the grid on its own
+ * reads as a question about viewing history), then prefills a "trending this
+ * week" poster grid before the user searches; the accent border plus tint
+ * overlay on a poster is the only selection indicator. Seeds a "My List"
+ * custom list via idempotent upserts.
  */
-import { useState, useEffect, useMemo, useRef } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import { useState, useMemo, useEffect, useRef } from 'react';
+import {
+  View, Text, TextInput, TouchableOpacity, FlatList, Image,
+  StyleSheet, ActivityIndicator, Dimensions,
+} from 'react-native';
 import { useRouter } from 'expo-router';
-import { ONBOARDING_FLOW, SEED_LIKE_TARGET } from '@plot/core/copy/onboardingFlow.js';
+import Svg, { Line } from 'react-native-svg';
+import { ONBOARDING_FLOW } from '@plot/core/copy/onboardingFlow.js';
 import { supabase } from '../../lib/supabase';
 import { tmdb, setTmdbRegion } from '../../lib/tmdb';
 import { track, markActivated, EVENTS } from '../../lib/analytics';
-import { detectRegion, detectTimezone, guessRegionFromTimezone } from '@plot/core/regions.js';
-import { Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
+import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
+import { detectRegion, detectTimezone, guessRegionFromTimezone } from '@plot/core/regions.js';
 import OnboardingScaffold from '../../components/OnboardingScaffold';
-import TitleSwipeDeck from '../../components/TitleSwipeDeck';
+
+// Four columns, same as web — the flow is capped at the web card width (420),
+// so the poster size matches between platforms on a phone-width screen.
+const COLUMNS = 4;
+const CONTENT_W = Math.min(Dimensions.get('window').width, 420) - spacing.xl * 2;
+const CARD_W = (CONTENT_W - spacing.sm * (COLUMNS - 1)) / COLUMNS;
+
+// Web caps the poster grid at 42vh so the footer stays hugged to the content.
+const GRID_MAX_H = Math.round(Dimensions.get('window').height * 0.42);
+
+// Web detects region against its own /api/region Pages Function; mobile has no
+// origin of its own, so it hits the deployed one.
+const REGION_API = 'https://app.theplot.tv/api/region';
+
+// Web tints the selected poster with the light-theme accent at 30% in both
+// themes and stamps a white tick, so the same literal is used here.
+const SELECTED_TINT = 'rgba(224,85,120,0.3)';
 
 interface SearchResult {
   id: number;
@@ -33,27 +52,25 @@ interface SearchResult {
 
 const keep = (r: SearchResult) => (r.media_type === 'tv' || r.media_type === 'movie') && !!r.poster_path;
 
-// Web detects region against its own /api/region Pages Function; mobile has no
-// origin of its own, so it hits the deployed one.
-const REGION_API = 'https://app.theplot.tv/api/region';
-
 export default function Seed() {
   const router  = useRouter();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { watchlist } = useAppData();
 
-  // The intro is the landing state; the swipe deck is revealed by its CTA.
+  // The intro is the landing state; the poster grid is revealed by its CTA.
   const [showPicker, setShowPicker] = useState(false);
   const [firstName, setFirstName] = useState('');
   // Region is detected, not asked: the region step it used to come from is gone.
   const region = useRef(guessRegionFromTimezone());
-
-  const [trending,       setTrending]       = useState<SearchResult[]>([]);
-  const [trendingLoaded, setTrendingLoaded] = useState(false);
+  const [query,    setQuery]    = useState('');
+  const [results,  setResults]  = useState<SearchResult[]>([]);
+  const [trending, setTrending] = useState<SearchResult[]>([]);
   const [selected, setSelected] = useState<SearchResult[]>([]);
   const [saving,   setSaving]   = useState(false);
+  const [searching,setSearching]= useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [trendingFailed, setTrendingFailed] = useState(false);
 
   // The greeting needs the name captured back on step 1; web still has it in
   // component state, mobile has to read it back.
@@ -85,31 +102,40 @@ export default function Seed() {
     return () => { cancelled = true; };
   }, []);
 
-  // getTrending() never rejects (it retries internally and resolves to an
-  // empty list on total failure), so "failed" is read off the resolved
-  // result, not a catch — the .catch() below is defensive only.
-  const loadTrending = () => {
-    setTrendingLoaded(false);
+  // Trending prefill (shown until the user searches)
+  useEffect(() => {
     tmdb.getTrending('all', 'week').then((data: any) => {
       setTrending((data?.results ?? []).filter(keep).slice(0, 24));
-      setTrendingLoaded(true);
     }).catch((e: unknown) => {
       console.warn('[onboarding seed] trending prefill failed', e);
-      setTrendingLoaded(true);
+      setTrendingFailed(true);
     });
-  };
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot prefill fetch on mount, mirroring the web step's equivalent effect
-    loadTrending();
   }, []);
 
-  const handleResolve = (item: SearchResult, direction: 'like' | 'pass') => {
-    if (direction === 'like') setSelected((prev) => [...prev, item]);
-  };
+  // Debounced search
+  useEffect(() => {
+    const q = query.trim();
+    if (!q) { setResults([]); setSearching(false); return; }
+    setSearching(true);
+    const t = setTimeout(async () => {
+      const data = await tmdb.search(q);
+      setResults((data?.results ?? []).filter(keep).slice(0, 24));
+      setSearching(false);
+    }, 350);
+    return () => clearTimeout(t);
+  }, [query]);
 
-  // Skipping completes onboarding without seeding anything, even if likes
-  // are still pending — that's what skipping the step means.
+  const gridItems = query.trim() ? results : trending;
+
+  const toggle = (item: SearchResult) => {
+    setSelected(prev =>
+      prev.some(i => i.id === item.id) ? prev.filter(i => i.id !== item.id) : [...prev, item]
+    );
+  };
+  const isSelected = (item: SearchResult) => selected.some(i => i.id === item.id);
+
+  // Skipping completes onboarding without seeding anything, even if posters
+  // are still selected — that's what skipping the step means.
   const finish = async (skipSeeds: boolean) => {
     const seeds = skipSeeds ? [] : selected;
     setSaving(true);
@@ -137,8 +163,8 @@ export default function Seed() {
 
       // useAppData's watchlist is already bootstrapped by the time onboarding
       // reaches this step (AppDataProvider wraps the whole app), so Save
-      // works immediately even if the user liked nothing while swiping.
-      // Liked titles go through the same addToList every bookmark tap
+      // works immediately even if the user selects nothing here. Selected
+      // titles go through the same addToList every other bookmark tap
       // elsewhere in the app uses — provider ids, Trakt sync, and the
       // analytics seam all match. Sequential, not Promise.all: addToList's
       // duplicate check reads state closed over at call time, which only
@@ -185,7 +211,7 @@ export default function Seed() {
   return (
     <OnboardingScaffold
       step={2}
-      title={ONBOARDING_FLOW.step2.title(SEED_LIKE_TARGET)}
+      title={ONBOARDING_FLOW.step2.title}
       subtitle={ONBOARDING_FLOW.step2.subtitle}
       onBack={() => setShowPicker(false)}
       ctaLabel={ONBOARDING_FLOW.startWatchingArrow}
@@ -194,31 +220,84 @@ export default function Seed() {
       onSkip={() => finish(true)}
       error={saveError}
     >
-      {!trendingLoaded ? (
-        <View style={styles.loading}><ActivityIndicator color={colors.accent} /></View>
-      ) : trending.length === 0 ? (
-        <View style={styles.errorState}>
-          <Text style={styles.errorText}>{ONBOARDING_FLOW.step2.loadError}</Text>
-          <TouchableOpacity style={styles.retryBtn} onPress={loadTrending} accessibilityRole="button">
-            <Text style={styles.retryText}>{ONBOARDING_FLOW.step2.retry}</Text>
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <>
-          <View
-            style={styles.progress}
-            accessibilityLabel={ONBOARDING_FLOW.step2.progressA11yLabel(selected.length, SEED_LIKE_TARGET)}
-          >
-            {Array.from({ length: SEED_LIKE_TARGET }, (_, i) => (
-              <View
-                key={i}
-                style={[styles.progressSeg, { backgroundColor: i < selected.length ? colors.accent : colors.border }]}
-              />
-            ))}
-          </View>
-          <TitleSwipeDeck items={trending} onResolve={handleResolve} />
-        </>
+      {/* Search */}
+      <View style={styles.searchBar}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder={ONBOARDING_FLOW.step2.searchPlaceholder}
+          placeholderTextColor={colors.textMuted}
+          value={query}
+          onChangeText={setQuery}
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
+        {searching
+          ? <ActivityIndicator color={colors.accent} style={styles.searchTrailing} />
+          : query.length > 0 && (
+            <TouchableOpacity
+              onPress={() => setQuery('')}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              style={styles.searchTrailing}
+              accessibilityRole="button"
+              accessibilityLabel={ONBOARDING_FLOW.clearSearch}
+            >
+              <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round">
+                <Line x1="18" y1="6" x2="6" y2="18" />
+                <Line x1="6" y1="6" x2="18" y2="18" />
+              </Svg>
+            </TouchableOpacity>
+          )
+        }
+      </View>
+
+      {!query.trim() && trending.length > 0 && (
+        <Text style={styles.gridLabel}>{ONBOARDING_FLOW.step2.trendingThisWeek}</Text>
       )}
+
+      {/* Poster grid: trending until the user searches, then results */}
+      <FlatList
+        data={gridItems}
+        keyExtractor={item => String(item.id)}
+        numColumns={COLUMNS}
+        renderItem={({ item }) => {
+          const img = posterUrl(item.poster_path, 'w185');
+          const active = isSelected(item);
+          const label = item.title || item.name || ONBOARDING_FLOW.untitled;
+          return (
+            <TouchableOpacity
+              onPress={() => toggle(item)}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityState={{ selected: active }}
+              accessibilityLabel={`${active ? ONBOARDING_FLOW.step2.remove : ONBOARDING_FLOW.step2.add} ${label}`}
+            >
+              <View style={[styles.card, active && styles.cardActive]}>
+                {img
+                  ? <Image source={{ uri: img }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+                  : <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.surfaceSunken }]} />
+                }
+                {active && (
+                  <View style={styles.cardCheck}>
+                    <Text style={styles.cardCheckMark}>✓</Text>
+                  </View>
+                )}
+              </View>
+            </TouchableOpacity>
+          );
+        }}
+        columnWrapperStyle={styles.row}
+        showsVerticalScrollIndicator={false}
+        style={styles.grid}
+        // Mobile-only fallbacks: web leaves the grid blank, but on a phone the
+        // grid is the whole screen, so say why it's empty.
+        ListEmptyComponent={
+          query.trim() && !searching
+            ? <Text style={styles.empty}>No titles found.</Text>
+            : !query.trim() && trendingFailed
+            ? <Text style={styles.empty}>Couldn't load trending titles. Try searching instead.</Text>
+            : null
+        }
+      />
     </OnboardingScaffold>
   );
 }
@@ -234,16 +313,20 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     textAlign: 'center',
     marginBottom: spacing.xl,
   },
-  loading: { flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 200 },
-  errorState: { alignItems: 'center', justifyContent: 'center', paddingVertical: spacing.xxl, gap: spacing.md },
-  errorText: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, textAlign: 'center' },
-  // Outline pill, matching web's .onboarding-cta / OnboardingScaffold's own CTA styling.
-  retryBtn: {
-    minHeight: 44, paddingHorizontal: 24, borderRadius: radii.pill,
-    borderWidth: 1, borderColor: colors.textPrimary,
-    alignItems: 'center', justifyContent: 'center',
+  searchBar: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: colors.surface, borderRadius: radii.md,
+    paddingHorizontal: spacing.md, borderWidth: 1, borderColor: colors.border,
+    marginBottom: spacing.sm,
   },
-  retryText: { fontFamily: fontFamily.sans, fontSize: fontSize.md, color: colors.textPrimary },
-  progress: { flexDirection: 'row', gap: 6, justifyContent: 'center', marginBottom: spacing.lg },
-  progressSeg: { width: 28, height: 3, borderRadius: 2 },
+  searchInput:    { flex: 1, paddingVertical: 12, fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textPrimary },
+  searchTrailing: { marginLeft: spacing.sm },
+  gridLabel:   { fontFamily: fontFamily.sansBold, fontSize: 11, letterSpacing: 0.7, textTransform: 'uppercase', color: colors.textSecondary, marginBottom: spacing.sm },
+  grid:        { maxHeight: GRID_MAX_H, marginBottom: spacing.md },
+  row:         { gap: spacing.sm, marginBottom: spacing.sm },
+  card:        { width: CARD_W, aspectRatio: 2 / 3, borderRadius: radii.md, overflow: 'hidden', backgroundColor: colors.surfaceRaised, borderWidth: 2, borderColor: 'transparent' },
+  cardActive:  { borderColor: colors.accent },
+  cardCheck:   { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: SELECTED_TINT, alignItems: 'center', justifyContent: 'center' },
+  cardCheckMark: { color: '#fff', fontSize: 22, fontFamily: fontFamily.sansBold },
+  empty:       { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, textAlign: 'center', paddingVertical: spacing.xl },
 });
