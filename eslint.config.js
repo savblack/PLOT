@@ -46,6 +46,14 @@ export default defineConfig([
     },
   },
   {
+    // packages/core's tests run under `node --test`, unlike the browser/RN
+    // source they cover — same reasoning as the scripts/** block above.
+    files: ['packages/core/tests/**/*.js'],
+    languageOptions: {
+      globals: globals.node,
+    },
+  },
+  {
     // Cloudflare Pages Functions (SSR routes) for the app (repo-root functions/)
     // and the marketing site (apps/website/functions/).
     files: ['functions/**/*.{js,mjs}', 'apps/website/functions/**/*.{js,mjs}'],
