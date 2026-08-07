@@ -158,6 +158,19 @@ These checks fail the build if two sources drift. Fix by regenerating both, not 
 - `migrations:check` — no migration may recreate a function with a different
   `ON CONFLICT` target without acknowledging it. See below.
 - `copy:check` — no app file may hardcode a string that `packages/core/copy` owns.
+- `core:check` — every `@plot/core/…` import must resolve to a file in this checkout.
+
+**Why `core:check` exists when `tsc` already does this:** `tsc` is only reliable
+from the repo root. Git worktrees live at `<repo>/.claude/worktrees/<name>`, i.e.
+*inside* the main checkout, so a failed module lookup walks up the ancestor
+`node_modules` chain and lands on the **parent** checkout's `@plot/core`. You
+then typecheck against a tree you are not editing: a core module you deleted
+still resolves, and a core export you just added does not — both pass silently.
+A `tsconfig` `paths` mapping does **not** fix it (a mapping is a first attempt;
+when it misses, resolution falls back to the same walk). If you need to trust a
+local typecheck of `@plot/*`, run it from the main checkout or put the worktree
+outside the repo. This blind spot is how #446 deleted `core/onboarding.js` with
+a live importer still on `main`.
 
 ## Copy lives in `packages/core/copy` — never retype a shared string
 

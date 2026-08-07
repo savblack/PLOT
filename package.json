@@ -33,6 +33,7 @@
     "emails:check": "node scripts/push-auth-emails.mjs --check",
     "migrations:check": "node scripts/check-migration-redefinitions.mjs",
     "copy:check": "node scripts/check-hardcoded-copy.mjs",
+    "core:check": "node scripts/check-core-imports.mjs",
     "db:write-paths": "node scripts/check-db-write-paths.mjs",
     "mkt:plan": "node marketing/planner/plan.mjs",
     "mkt:guides": "node marketing/planner/guides.mjs",
