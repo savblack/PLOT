@@ -99,6 +99,14 @@ jobs:
       - name: Check no app hardcodes shared copy
         run: npm run copy:check
 
+      # An app importing a @plot/core module that no longer exists. tsc catches
+      # this in CI but NOT from a git worktree: worktrees live inside the main
+      # checkout, so a failed lookup walks up into the parent's node_modules and
+      # resolves against a different tree. That blind spot is how #446 deleted
+      # core/onboarding.js with a live importer and shipped an unbuildable main.
+      - name: Check every @plot/core import resolves
+        run: npm run core:check
+
       - name: Unit tests
         run: npm run test:unit
 

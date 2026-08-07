@@ -32,3 +32,40 @@ SENTRY_DSN = "https://3bedccb283d603faea535c5bd3625b71@o4511806617092096.ingest.
 name = "RL"
 namespace_id = "1001"
 simple = { limit = 100, period = 10 }
+
+# ── Staging ───────────────────────────────────────────────────────────────
+# Local dev points at the Staging Supabase project (uzrhfiv…), but there was
+# only ever one Worker and it forwards to PRODUCTION's Edge Function. A staging
+# anon key sent to the production function is rejected — Supabase answers
+# `401 UNAUTHORIZED_LEGACY_JWT`, whose wording suggests an expired or outdated
+# key and sends you looking for a key to rotate. It is not: the key is fine and
+# belongs to the wrong project. Every TMDB surface is empty in local dev until
+# this Worker exists, which also blocks seeding any data through the UI.
+#
+# Deploy (one-off, needs a Workers-scoped token or `npx wrangler login`):
+#   cd apps/web/workers/tmdb-proxy
+#   npx wrangler secret put UPSTREAM_SHARED_SECRET --env staging
+#     ^ paste the Staging project's TMDB_PROXY_SHARED_SECRET, from
+#       Supabase → uzrhfivnhdcfieuaxzip → Edge Functions → Secrets.
+#       It is already set there; it must match on both sides.
+#   npx wrangler deploy --env staging
+#
+# Then point local dev at it (these are URLs, not secrets):
+#   .env             VITE_TMDB_PROXY_URL        = https://tmdb-proxy-staging.<subdomain>.workers.dev
+#   apps/mobile/.env EXPO_PUBLIC_TMDB_PROXY_URL = https://tmdb-proxy-staging.<subdomain>.workers.dev
+#
+# Production is untouched by any of this — it keeps using the default env.
+[env.staging]
+name = "tmdb-proxy-staging"
+workers_dev = true
+
+[env.staging.vars]
+UPSTREAM = "https://uzrhfivnhdcfieuaxzip.supabase.co/functions/v1/tmdb-proxy"
+SENTRY_DSN = "https://3bedccb283d603faea535c5bd3625b71@o4511806617092096.ingest.us.sentry.io/4511806906105857"
+
+# Same shape as production; a separate namespace so staging traffic can't eat
+# into real users' rate budget.
+[[env.staging.ratelimits]]
+name = "RL"
+namespace_id = "1002"
+simple = { limit = 100, period = 10 }
