@@ -14,6 +14,14 @@
  * ko-fi.com/manage/webhooks. Because it travels in the body, treat it as a
  * bearer secret — compare in constant time and never log the payload.
  *
+ * Every newly-recorded tip (not a replay) also fires a `support_converted`
+ * PostHog event — PLOT's second paid-conversion type alongside
+ * `premium_converted` (see packages/core/analyticsEvents.js). Ko-fi hosts its
+ * own checkout, so there's no client-side redirect-back to hook the way
+ * Premium does; this calls PostHog's HTTP capture API directly instead of
+ * posthog-js. Only non-PII fields (amount, currency, Ko-fi's own `type`) are
+ * sent — never the donor's email, name or message.
+ *
  * Deploy with verify_jwt = false (see supabase/config.toml) — Ko-fi sends no
  * Supabase JWT, so the gateway would otherwise 401 every delivery.
  *
@@ -26,6 +34,42 @@ const json = (body: unknown, status = 200) =>
     status,
     headers: { 'Content-Type': 'application/json' },
   });
+
+// Same PostHog project token hardcoded elsewhere in this repo (e.g.
+// supabase/functions/marketing-feed/index.ts) — it's a public write-only
+// token, not a secret.
+const POSTHOG_TOKEN = 'phc_uS3JEJC7s6T2WdsQToCZA3eRjLNakgc3EF3YPbza9Q6U';
+
+// Fires the support_converted paid-conversion event for a newly-recorded tip.
+// Best-effort: a PostHog outage must never fail the webhook ack Ko-fi is
+// waiting on. Fields are whitelisted rather than forwarding the payload, so a
+// donor's email/name/message can never end up in PostHog even by accident.
+async function captureSupportConversion(payload: Record<string, unknown>, userId: string | null, txn: string) {
+  try {
+    await fetch('https://us.i.posthog.com/i/v0/e/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        api_key: POSTHOG_TOKEN,
+        event: 'support_converted',
+        properties: {
+          distinct_id: userId ?? `kofi:${txn}`,
+          channel: 'kofi',
+          matched: userId !== null,
+          amount: typeof payload.amount === 'string' ? Number(payload.amount) : null,
+          currency: typeof payload.currency === 'string' ? payload.currency : null,
+          kofi_type: typeof payload.type === 'string' ? payload.type : null,
+          is_first_subscription_payment: payload.is_first_subscription_payment === true,
+        },
+        timestamp: typeof payload.timestamp === 'string' ? payload.timestamp : undefined,
+      }),
+    });
+  } catch (err) {
+    // Analytics must never break the webhook ack. Log the transaction id
+    // only, matching the rest of this file's logging discipline.
+    console.error(`kofi-webhook: PostHog capture failed for ${txn}: ${(err as Error).message}`);
+  }
+}
 
 // Length-independent equality. Hashing both sides first means the comparison
 // runs over fixed-width digests, so neither length nor content leaks by timing.
@@ -89,10 +133,22 @@ Deno.serve(async (req) => {
     return json({ error: 'Failed to record tip' }, 500);
   }
 
-  const result = (data ?? {}) as { recorded?: boolean; duplicate?: boolean; matched?: boolean };
+  const result = (data ?? {}) as {
+    recorded?: boolean;
+    duplicate?: boolean;
+    matched?: boolean;
+    user_id?: string | null;
+  };
   console.log(
     `kofi-webhook: ${txn} recorded=${!!result.recorded} duplicate=${!!result.duplicate} matched=${!!result.matched}`,
   );
+
+  // Only a genuinely new tip is a new conversion — never double-count a
+  // replayed delivery (Ko-fi retries, and its test button resends the same
+  // fake transaction id).
+  if (result.recorded) {
+    await captureSupportConversion(payload, result.user_id ?? null, txn);
+  }
 
   // Always 200 once stored: an unmatched tip is an expected outcome, not a
   // failure, and returning non-2xx would make Ko-fi retry it forever.
