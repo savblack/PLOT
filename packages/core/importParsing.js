@@ -1,6 +1,8 @@
 // Shared, pure helpers for parsing watch-history exports.
 // Kept framework-free so they can be unit-tested directly (ImportView is .jsx).
 
+import { localDateStr } from './date.js';
+
 /**
  * A single parsed row from a platform export, before TMDB resolution.
  *
@@ -273,11 +275,17 @@ export function parsePlatform(platformId, text) {
  * check so they agree on what counts as a duplicate. Entries with no date
  * in the source export fall back to today.
  *
+ * `entry.date` is already a clean "YYYY-MM-DD" string by the time it gets
+ * here (every parser above produces it via `normaliseDate`), so it's used
+ * as-is rather than round-tripped through `Date` — that round trip previously
+ * anchored at *local* noon and converted to UTC, which rolled the date back
+ * a day for anyone 13+ hours ahead of UTC. The no-date fallback uses
+ * `localDateStr()` (see date.js) instead of `new Date().toISOString()` so it
+ * reflects the user's local "today" rather than UTC's.
+ *
  * @param {ParsedImportEntry} entry
  * @returns {string} "YYYY-MM-DD"
  */
 export function watchedAtFor(entry) {
-  return entry.date
-    ? new Date(entry.date + 'T12:00:00').toISOString().slice(0, 10)
-    : new Date().toISOString().slice(0, 10);
+  return entry.date || localDateStr();
 }

@@ -92,20 +92,26 @@ export function detectTimezone() {
 
 /**
  * Cheap synchronous first guess, good enough to render with immediately.
+ * Always a region from SUPPORTED_REGIONS: falls back to DEFAULT_REGION if
+ * the matching TZ_MAP entry isn't (or is no longer) in REGIONS, so a
+ * TZ_MAP/REGIONS drift can never hand back a code the rest of the app
+ * doesn't recognize.
  * @param {string} [timezone]
  * @returns {string}
  */
 export function guessRegionFromTimezone(timezone = detectTimezone()) {
   // Any Australian zone maps to AU, not just the three listed above.
-  if (timezone.startsWith('Australia/')) return 'AU';
-  return TZ_MAP[timezone] || DEFAULT_REGION;
+  const guess = timezone.startsWith('Australia/') ? 'AU' : TZ_MAP[timezone];
+  return isSupportedRegion(guess) ? guess : DEFAULT_REGION;
 }
 
 /**
  * Refine the timezone guess with IP geolocation. The endpoint differs per
  * platform (web hits its own /api/region, mobile the deployed one), so it is
- * passed in. Never throws and never returns null: on any failure the timezone
- * guess stands, since onboarding has to write some region.
+ * passed in. Never throws and never returns null or an unsupported code: the
+ * caller-supplied fallback is validated too, not just the geolocation result,
+ * since this is what ultimately gets written to profiles.region when nothing
+ * better is available.
  * @param {{ endpoint?: string, fetchImpl?: typeof fetch, fallback?: string }} [opts]
  * @returns {Promise<string>}
  */
@@ -114,11 +120,13 @@ export async function detectRegion({
   fetchImpl = fetch,
   fallback = guessRegionFromTimezone(),
 } = {}) {
-  if (!endpoint) return fallback;
+  const safeFallback = isSupportedRegion(fallback) ? fallback : DEFAULT_REGION;
+
+  if (!endpoint) return safeFallback;
 
   try {
     const res = await fetchImpl(endpoint);
-    if (!res?.ok) return fallback;
+    if (!res?.ok) return safeFallback;
 
     const data = await res.json();
     if (isSupportedRegion(data?.country)) return String(data.country).toUpperCase();
@@ -126,5 +134,5 @@ export async function detectRegion({
     /* keep the timezone guess */
   }
 
-  return fallback;
+  return safeFallback;
 }

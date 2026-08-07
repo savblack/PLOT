@@ -9,6 +9,9 @@
     ".": "./index.js",
     "./*": "./*"
   },
+  "scripts": {
+    "test:unit": "node --test tests/unit/*.test.js"
+  },
   "peerDependencies": {
     "@supabase/supabase-js": "^2.110.7",
     "react": ">=19"
