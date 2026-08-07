@@ -46,6 +46,48 @@ This repo is an npm-workspaces monorepo. `npm ci` at the root installs every wor
    npm run dev
    ```
 
+## Staging
+
+`localhost:5177` and `https://preview.theplot.tv` use the separate PLOT Staging
+Supabase project. Their accounts and data never overlap with Production.
+
+Use the guarded command for any routine staging backend work. It always targets
+PLOT Staging and refuses a user-supplied project reference:
+
+```sh
+npm run supabase:staging -- functions deploy tmdb-proxy
+npm run supabase:staging -- secrets list
+```
+
+The wrapper covers Supabase Functions, Secrets, and project configuration. Database
+commands require an explicit staging database connection and are intentionally not
+wrapped. Do not use an unqualified `supabase db push` or `supabase functions deploy`
+for staging: the repository's default Supabase configuration is intentionally linked
+to Production for production releases.
+
+### Agent-ready staging login
+
+Keep the dedicated staging account credentials in macOS Keychain, not in a prompt,
+`.env`, or the repository. In **Keychain Access**, create two Password items named
+`com.theplot.staging.test.email` and `com.theplot.staging.test.password` with the
+account's email and password respectively.
+
+Create an ignored Playwright session for local testing with:
+
+```sh
+npm run staging:session
+```
+
+For the hosted preview instead:
+
+```sh
+npm run staging:session -- --origin https://preview.theplot.tv
+```
+
+The command refuses non-staging Supabase configuration and writes a token-bearing
+file under `.playwright/` with owner-only permissions. An agent can use that session
+for browser tests, but must never print, commit, upload, or share the file.
+
 ## Scripts
 
 - `npm run dev` starts Vite locally.
