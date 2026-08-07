@@ -38,10 +38,17 @@ export const EVENTS = Object.freeze({
   INVITE_SHARED: 'invite_shared',
   REFERRAL_COMPLETED: 'referral_completed',
   PREMIUM_CHECKOUT_STARTED: 'premium_checkout_started',
-  PREMIUM_ACTIVATED: 'premium_activated',
+  PREMIUM_CONVERTED: 'premium_converted',
   PREMIUM_GATE_HIT: 'premium_gate_hit',
   WATCH_LINK_CLICKED: 'watch_link_clicked',
   TIP_JAR_CLICKED: 'tip_jar_clicked',
+  // PLOT's second paid-conversion type alongside premium_converted — a Ko-fi
+  // tip (recognition-only, see kofi_supporters/is_supporter; grants no
+  // entitlement). Fired server-side from supabase/functions/kofi-webhook via
+  // PostHog's HTTP capture API, not posthog-js: Ko-fi hosts its own checkout,
+  // so there's no client-side redirect-back moment to hook the way Premium's
+  // checkout return has. Neither app ever calls this directly.
+  SUPPORT_CONVERTED: 'support_converted',
   // Engagement — the high-value product actions worth naming. Autocapture
   // (web only) backstops the long tail of raw clicks; these are the ones we
   // build funnels and retention analyses on. Props stay minimal + PII-free.

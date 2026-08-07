@@ -40,6 +40,17 @@ export { countdownChip, formatDate, TodayLabel };
 const TZ_DISMISS_KEY = 'plot_tz_dismissed';
 const TZ_NUDGE_DAYS  = 7;
 
+/* ── Ko-fi supporter recency ───────────── */
+// Ko-fi sends no cancellation signal, so a supporter's most recent tip is the
+// only lapse signal available — is_supporter itself never flips back to
+// false (recognition is permanent by design, see kofi_supporters), and
+// Ko-fi supports monthly memberships as well as one-off tips, so mirroring
+// that boolean would never read "inactive". This is a recency window
+// ("supported within N days"), not a claim we can't back up ("still
+// subscribed") — roughly a monthly cadence plus slack for payment-date
+// drift. Tune here; no migration needed.
+const KOFI_ACTIVE_WINDOW_DAYS = 35;
+
 function TimezoneBanner({ deviceTz, onUpdate, onDismiss }) {
   return (
     <div style={{
@@ -136,15 +147,30 @@ export default function App() {
   const loadProfile = useCallback(async (userId) => {
     const { data } = await supabase
       .from('profiles')
-      .select('id, region, timezone, onboarding_complete, guide_channels, streaming_providers, genres, include_kids_content, watchlist_availability_alerts, marketing_emails, digest_prompt_dismissed_at, calendar_token, username, display_name, is_public, is_premium, is_supporter, avatar_url, bio, links')
+      .select('id, region, timezone, onboarding_complete, guide_channels, streaming_providers, genres, include_kids_content, watchlist_availability_alerts, marketing_emails, digest_prompt_dismissed_at, calendar_token, username, display_name, is_public, is_premium, is_supporter, last_kofi_tip_at, avatar_url, bio, links')
       .eq('id', userId)
       .maybeSingle();
     setProfile(data);
     if (data?.region) setTmdbRegion(data.region);
     setUserTimezone(data?.timezone || null);
-    // Keep both badges on the PostHog person so any event can be segmented by
+    // Keep all badges on the PostHog person so any event can be segmented by
     // them — paying and tipping are different behaviours worth telling apart.
-    if (data) setPersonProps({ is_premium: !!data.is_premium, is_supporter: !!data.is_supporter });
+    // premium_status mirrors is_premium directly (a real lapse: was active,
+    // then stopped). supporter_status is a different kind of signal, not
+    // just a different source: is_supporter never resets, so it's a recency
+    // window on last_kofi_tip_at instead — see KOFI_ACTIVE_WINDOW_DAYS above.
+    if (data) {
+      const premium = !!data.is_premium;
+      const daysSinceTip = data.last_kofi_tip_at
+        ? (Date.now() - new Date(data.last_kofi_tip_at).getTime()) / 86_400_000
+        : null;
+      setPersonProps({
+        is_premium: premium,
+        premium_status: premium ? 'active' : 'inactive',
+        is_supporter: !!data.is_supporter,
+        supporter_status: daysSinceTip !== null && daysSinceTip <= KOFI_ACTIVE_WINDOW_DAYS ? 'active' : 'inactive',
+      });
+    }
     setLoading(false);
     if (data) writeCachedSession(userId, data);
     else clearCachedSession();

@@ -1147,7 +1147,7 @@ export default function SettingsView() {
   useEffect(() => {
     if (billingReturn === 'premium' && profile?.is_premium && !premiumEventFired.current) {
       premiumEventFired.current = true;
-      track(EVENTS.PREMIUM_ACTIVATED, {});
+      track(EVENTS.PREMIUM_CONVERTED, {});
     }
   }, [billingReturn, profile?.is_premium]);
 
