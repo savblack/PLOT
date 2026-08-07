@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from './supabase.js';
 import { mediaIdentityRow, tmdbIdFromItem } from './media.js';
-import { findHistoryEntry, logWatchedItem } from './userMedia.js';
+import { findHistoryEntry, logWatchedItem, saveFavorite } from './userMedia.js';
 import { markMediaAsWatched } from './mediaStatus.js';
 import { emit } from './events.js';
 import { HISTORY_CHANGED_EVENT } from './useHistory.js';
@@ -113,14 +113,7 @@ export function useFavorites(userId, { watching, watchlist } = {}) {
         prev.some(f => f.tmdb_id === tmdbId) ? prev : [optimistic, ...prev]
       ));
 
-      const { data, error } = await supabase
-        .from('user_favourites')
-        .upsert({
-          user_id:     userId,
-          ...row,
-        }, { onConflict: 'user_id,tmdb_id' })
-        .select()
-        .single();
+      const { data, error } = await saveFavorite({ userId, item });
 
       if (error) {
         console.error('Failed to save favourite', error);
