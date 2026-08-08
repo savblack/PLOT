@@ -13,9 +13,11 @@ import { useAppData } from '../contexts/AppDataContext';
 const DRAWER_W = Dimensions.get('window').width * 0.58;
 
 const NAV_ITEMS = [
-  { id: 'index',    label: 'Discover', path: '/(app)/'         },
+  { id: 'index',    label: 'Home',     path: '/(app)/'         },
   { id: 'search',   label: 'Search',   path: '/(app)/search'   },
-  { id: 'guide',    label: 'Guide',    path: '/(app)/guide'    },
+  // Guide is not a destination of its own: it is a sub-tab of Home, matching
+  // web, where DiscoverView renders it under its own toolbar and there is no
+  // /guide route at all.
   { id: 'calendar', label: 'Calendar', path: '/(app)/calendar' },
   { id: 'my-lists', label: 'My Lists', path: '/(app)/my-lists' },
   { id: 'top10',    label: 'Top 10',   path: '/(app)/top10'    },

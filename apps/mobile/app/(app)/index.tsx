@@ -18,7 +18,9 @@ import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../../lib/supabase';
 import { tmdb, setTmdbRegion, getTmdbRegion, prioritiseEnglishSpeakingTitles } from '../../lib/tmdb';
-import { SHOW_FOR_YOU_RAIL } from '../../lib/launchFeatures';
+import { SHOW_FOR_YOU_RAIL, SHOW_SOCIAL_FEED } from '../../lib/launchFeatures';
+import { DISCOVER_TABS } from '@plot/core/navigation.js';
+import GuideView from '../../components/GuideView';
 import { excludeKidsContent } from '@plot/core/tmdb.js';
 import { getOrCreateMyListId } from '@plot/core/userMedia.js';
 import { posterUrl, backdropUrl, Palette, fontFamily, fontSize, spacing, radii, iconButtonSize } from '../../lib/tokens';
@@ -36,6 +38,20 @@ const SCREEN_W = Dimensions.get('window').width;
 const CARD_W   = (SCREEN_W - spacing.xl * 2 - spacing.md * 2) / 3;
 const BINGE_W  = SCREEN_W * 0.62;
 const BINGE_H  = BINGE_W * 0.56;
+
+// ── Sub-tab (underline style) ─────────────────────────────────────────
+// Mirrors My Lists' sub-tabs so both headers read the same. Kept local for now;
+// worth extracting to components/ once My Lists is touched again.
+function SubTab({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  return (
+    <TouchableOpacity style={styles.subTab} onPress={onPress} activeOpacity={0.7}>
+      <Text style={[styles.subTabText, active && styles.subTabTextActive]}>{label}</Text>
+      <View style={[styles.subTabUnderline, active && styles.subTabUnderlineActive]} />
+    </TouchableOpacity>
+  );
+}
 
 // ── Types ────────────────────────────────────────────────────────────
 interface MediaItem {
@@ -415,6 +431,7 @@ export default function HomeScreen() {
   const [bingedShows,  setBingedShows]  = useState<MediaItem[]>([]);
   const [platforms,    setPlatforms]    = useState<PlatformData[]>([]);
   const [forYou,       setForYou]       = useState<MediaItem[]>([]);
+  const [tab,          setTab]          = useState('discover');
   const [loading,      setLoading]      = useState(true);
   const [error,        setError]        = useState(false);
   const [retryKey,     setRetryKey]     = useState(0);
@@ -590,12 +607,25 @@ export default function HomeScreen() {
   if (loading) return <PlotLoader backgroundColor={colors.bg} color={colors.textPrimary} />;
   if (error) return <ErrorState onRetry={() => setRetryKey(k => k + 1)} />;
 
-  const HEADER_H = insets.top + 56;
+  // Sub-tabs nested under Home, ids and order from the shared nav list.
+  // Only the two mobile can serve today: New Releases and Upcoming arrive
+  // with the Discover hooks, and an empty tab is worse than an absent one.
+  const MOBILE_READY = new Set(['feed', 'discover', 'guide']);
+  const subTabs = DISCOVER_TABS.filter(
+    (t: { id: string; flag?: string }) =>
+      MOBILE_READY.has(t.id) && (t.flag !== 'SHOW_SOCIAL_FEED' || SHOW_SOCIAL_FEED));
+
+  const HEADER_H = insets.top + 100;
   const hero     = trending[0];
   const hotRail  = trending.slice(1, 10);
 
   return (
     <View style={styles.screen}>
+      {tab === 'guide' ? (
+        <View style={{ flex: 1, paddingTop: HEADER_H }}>
+          <GuideView />
+        </View>
+      ) : (
       <ScrollView
         style={styles.screen}
         contentContainerStyle={{ paddingTop: HEADER_H + 20, paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }}
@@ -765,6 +795,7 @@ export default function HomeScreen() {
         )}
 
       </ScrollView>
+      )}
 
       {/* ── Fixed blurred header ── */}
       <BlurView
@@ -779,6 +810,16 @@ export default function HomeScreen() {
             </Text>
           }
         />
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.subTabsRow}
+          style={styles.subTabsScroll}
+        >
+          {subTabs.map((t: { id: string; label: string }) => (
+            <SubTab key={t.id} label={t.label} active={tab === t.id} onPress={() => setTab(t.id)} />
+          ))}
+        </ScrollView>
       </BlurView>
 
     </View>
@@ -790,6 +831,14 @@ const HERO_H = SCREEN_W * 0.5;
 
 const makeStyles = (colors: Palette) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
+  subTabsScroll: { maxHeight: 44 },
+  subTabsRow: { paddingHorizontal: spacing.xl, gap: spacing.lg, alignItems: 'flex-end' },
+  subTab: { alignItems: 'center', paddingBottom: spacing.xs },
+  subTabText: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted },
+  subTabTextActive: { fontFamily: fontFamily.sansMedium, color: colors.textPrimary },
+  subTabUnderline: { height: 2, width: '100%', marginTop: spacing.xs, backgroundColor: 'transparent' },
+  subTabUnderlineActive: { backgroundColor: colors.accent },
+
   fixedHeader: {
     position: 'absolute',
     top: 0,

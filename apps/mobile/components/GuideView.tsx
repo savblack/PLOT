@@ -8,13 +8,11 @@ import {
   View, Text, ScrollView, TouchableOpacity, Modal,
   StyleSheet, Dimensions, ActivityIndicator,
 } from 'react-native';
-import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import ScreenHeaderBar from '../../components/ScreenHeaderBar';
-import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
-import { supabase } from '../../lib/supabase';
-import { Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
-import { useTheme } from '../../contexts/ThemeContext';
+import { TAB_BAR_CLEARANCE } from '../lib/tabBar';
+import { supabase } from '../lib/supabase';
+import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
+import { useTheme } from '../contexts/ThemeContext';
 import { localDateStr, dateToLocalStr } from '@plot/core/date.js';
 
 const SCREEN_W   = Dimensions.get('window').width;
@@ -300,9 +298,8 @@ function ProgramSheet({ prog, onClose }: { prog: Program | null; onClose: () => 
 }
 
 // ── Main screen ───────────────────────────────────────────────────────
-export default function GuideScreen() {
-  const insets = useSafeAreaInsets();
-  const { colors, resolved } = useTheme();
+export default function GuideView() {
+  const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const [country,         setCountry]         = useState('US');
@@ -365,19 +362,12 @@ export default function GuideScreen() {
     return () => { cancelled = true; };
   }, [country, timezone, hideKids]);
 
-  const HEADER_H = insets.top + 56;
-
+  // No screen chrome of its own: Guide is a sub-tab of Home, so the Discover
+  // screen owns the header and this renders inside it — matching web, where
+  // DiscoverView renders <EpgView /> under its own sub-tab toolbar.
   return (
     <View style={styles.screen}>
-
-      {/* ── Fixed blurred header ── */}
-      <BlurView intensity={80} tint={resolved === 'dark' ? 'systemChromeMaterialDark' : 'systemChromeMaterialLight'}
-        style={[styles.fixedHeader, { height: HEADER_H, paddingTop: insets.top }]}
-      >
-        <ScreenHeaderBar title="Guide" />
-      </BlurView>
-
-      <View style={{ flex: 1, paddingTop: HEADER_H }}>
+      <View style={{ flex: 1 }}>
 
         {/* ── Day tabs ── */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false}
