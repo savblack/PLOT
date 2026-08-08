@@ -25,7 +25,7 @@ jobs:
       - name: Sync Prime / Max / Apple / Disney Top 10
         run: node scripts/sync-streaming-top10.mjs
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
           RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}

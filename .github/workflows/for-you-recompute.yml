@@ -17,5 +17,11 @@ jobs:
           curl --fail --silent --show-error --request POST "$SUPABASE_URL/functions/v1/for-you-recompute" \
             --header "x-cron-secret: $FOR_YOU_CRON_SECRET"
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          # There is no repo secret literally named SUPABASE_URL (only
+          # VITE_SUPABASE_URL and SUPABASE_DB_URL exist) — referencing it
+          # directly silently resolves to an empty string, which made curl
+          # fail client-side ("URL rejected: No host part in the URL")
+          # before the request ever reached Supabase. See marketing
+          # workflows (e.g. marketing-weekly-batch.yml) for the same pattern.
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           FOR_YOU_CRON_SECRET: ${{ secrets.FOR_YOU_CRON_SECRET }}
