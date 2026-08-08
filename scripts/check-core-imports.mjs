@@ -128,15 +128,10 @@ for (const file of walk(CORE_DIR)) {
   for (const [, name] of src.matchAll(/^export\s+const\s+(\w+)/gm)) coreExports.set(name, file);
 }
 
-// Names an app may legitimately redefine, with the reason. Keep this short —
-// each entry is a known divergence someone has to own.
-const SHADOW_ALLOWLIST = new Map([
-  // Web has TWO contradictory username rules: SettingsView allows hyphens and
-  // rejects underscores, PublicProfilePage (which core took) does the reverse.
-  // Existing handles were created under Settings' rule, so collapsing them is a
-  // product decision about which wins, not a mechanical de-duplication.
-  ['USERNAME_RE', 'apps/web/src/components/SettingsView.jsx'],
-]);
+// Names an app may legitimately redefine, keyed to the one file allowed to do
+// it. Keep this short — each entry is a known divergence someone has to own.
+// Empty is the goal.
+const SHADOW_ALLOWLIST = new Map();
 
 const shadows = [];
 for (const rel of SCAN) {

@@ -9,6 +9,7 @@ export const PUBLIC_PROFILE_PAGE = {
   noFollowersYet: 'No followers yet.',
   notFollowingAnyoneYet: 'Not following anyone yet.',
   usernameTaken: 'That username is taken.',
+  usernameRule: '3-30 characters: letters, numbers, hyphens.',
   saveFailed: 'Couldn’t save. Please try again.',
   saving: 'Saving…',
   saveDisplayName: 'Save display name',

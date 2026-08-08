@@ -16,7 +16,7 @@ import SheetHeader from '../components/SheetHeader.jsx';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import { COMMON } from '../copy/common.js';
 import { MEDIA } from '../copy/media.js';
-import { SOCIAL_LINKS } from '@plot/core/profileFields.js';
+import { SOCIAL_LINKS, USERNAME_RE } from '@plot/core/profileFields.js';
 import { PUBLIC_PROFILE_PAGE } from '../copy/publicProfilePage.js';
 import { EVENTS } from '../lib/analytics.js';
 
@@ -369,7 +369,7 @@ function EditProfileModal({ userId, current, onClose, onSaved, favWord }) {
 
   const cleanUname = uname.trim().toLowerCase();
   const unameChanged = cleanUname !== current.username.toLowerCase();
-  const validUname = /^[a-z0-9_]{3,30}$/.test(cleanUname);
+  const validUname = USERNAME_RE.test(cleanUname);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- debounced availability check
@@ -526,7 +526,7 @@ function EditProfileModal({ userId, current, onClose, onSaved, favWord }) {
             {unameStatus === 'checking' && <div className="pp-hint">Checking…</div>}
             {unameStatus === 'ok'       && <div className="pp-hint" style={{ color: 'var(--chip-today, #16a34a)' }}>Available</div>}
             {unameStatus === 'taken'    && <div className="pp-hint" style={{ color: 'var(--accent)' }}>That username is taken.</div>}
-            {unameStatus === 'invalid'  && <div className="pp-hint" style={{ color: 'var(--accent)' }}>3–30 characters: letters, numbers, underscores.</div>}
+            {unameStatus === 'invalid'  && <div className="pp-hint" style={{ color: 'var(--accent)' }}>{PUBLIC_PROFILE_PAGE.usernameRule}</div>}
           </div>
 
           {/* Fixed set of social/external links */}
