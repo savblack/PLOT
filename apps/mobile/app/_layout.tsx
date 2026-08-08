@@ -11,7 +11,8 @@ import * as Linking from 'expo-linking';
 import { supabase } from '../lib/supabase';
 import { setTmdbRegion } from '../lib/tmdb';
 import { setUserTimezone } from '@plot/core/date.js';
-import { initAnalytics, identifyUser, resetAnalytics } from '../lib/analytics';
+import { personPropsFromProfile } from '@plot/core/analyticsEvents.js';
+import { initAnalytics, identifyUser, resetAnalytics, setPersonProps } from '../lib/analytics';
 import { hydrateSectionOpenState } from '../lib/sectionOpenState';
 import { consumeTraktState, exchangeTraktCode } from '../hooks/useTraktSync';
 import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
@@ -98,7 +99,7 @@ function RootInner() {
   const loadProfile = async (userId: string) => {
     const { data } = await supabase
       .from('profiles')
-      .select('region, timezone, onboarding_complete')
+      .select('region, timezone, onboarding_complete, is_premium, is_supporter, last_kofi_tip_at')
       .eq('id', userId)
       .maybeSingle();
     if (data?.region) setTmdbRegion(data.region);
@@ -106,6 +107,9 @@ function RootInner() {
     // AppDataProvider applies it again on its own profile load.
     setUserTimezone(data?.timezone || null);
     setOnboardingComplete(data?.onboarding_complete ?? false);
+    // Keep all badges on the PostHog person so any event can be segmented by
+    // them — paying and tipping are different behaviours worth telling apart.
+    if (data) setPersonProps(personPropsFromProfile(data));
   };
 
   useEffect(() => {
