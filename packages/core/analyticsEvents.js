@@ -84,3 +84,34 @@ export const EVENTS = Object.freeze({
   TRAKT_CONNECTED: 'trakt_connected',
   TRAKT_SYNCED: 'trakt_synced',
 });
+
+// Ko-fi sends no cancellation signal, so a supporter's most recent tip is the
+// only lapse signal available — is_supporter itself never flips back to false
+// (recognition is permanent by design, see kofi_supporters), and Ko-fi
+// supports monthly memberships as well as one-off tips, so mirroring that
+// boolean would never read "inactive". supporter_status is therefore a
+// recency window ("supported within N days"), not a claim we can't back up
+// ("still subscribed") — roughly a monthly cadence plus slack for
+// payment-date drift. Tune here; no migration needed. premium_status just
+// mirrors is_premium directly, since premium genuinely does lapse.
+//
+// Shared so both apps attach identical PostHog person props after loading a
+// profile — see setPersonProps in apps/web/src/lib/analytics.js and
+// apps/mobile/lib/analytics.ts.
+const KOFI_ACTIVE_WINDOW_DAYS = 35;
+
+/**
+ * @param {{ is_premium?: boolean, is_supporter?: boolean, last_kofi_tip_at?: string | null } | null | undefined} profile
+ */
+export function personPropsFromProfile(profile) {
+  const premium = !!profile?.is_premium;
+  const daysSinceTip = profile?.last_kofi_tip_at
+    ? (Date.now() - new Date(profile.last_kofi_tip_at).getTime()) / 86_400_000
+    : null;
+  return {
+    is_premium: premium,
+    premium_status: premium ? 'active' : 'inactive',
+    is_supporter: !!profile?.is_supporter,
+    supporter_status: daysSinceTip !== null && daysSinceTip <= KOFI_ACTIVE_WINDOW_DAYS ? 'active' : 'inactive',
+  };
+}

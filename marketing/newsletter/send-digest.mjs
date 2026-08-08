@@ -8,8 +8,8 @@
 //
 // Each issue covers a week of film and TV, but this script has no cron: it sends
 // only when someone runs `npm run newsletter`. That is why no opt-in surface
-// claims a frequency — see apps/web/src/copy/digestNudge.js. Add a schedule
-// before promising one.
+// claims a frequency — see packages/core/copy/settingsView.js's marketingEmails
+// entry. Add a schedule before promising one.
 import { getSupabase, supabaseUrl } from '../lib/supabase.mjs';
 import { sendBatch, FROM_MARKETING } from '../lib/email.mjs';
 import { recentSnapshots, withMovement } from '../lib/trending.mjs';

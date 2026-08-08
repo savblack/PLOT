@@ -110,6 +110,9 @@ jobs:
       - name: Unit tests
         run: npm run test:unit
 
+      - name: Website unit tests
+        run: npm run test:website
+
       - name: Build
         run: npm run build
         env:

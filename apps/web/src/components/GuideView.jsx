@@ -1,17 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { useApp } from '../hooks/useApp.js';
-import { TodayLabel } from './TodayLabel.jsx';
 import { posterUrl, backdropUrl, logoUrl } from '../utils/images.js';
 import { favoriteWords } from '../utils/spelling.js';
 import { localDateStr, dateToLocalStr } from '../utils/date.js';
 import { useDragScroll } from '../hooks/useDragScroll.js';
-import { useGenres } from '../hooks/useGenres.js';
 import { tmdb, getTmdbRegion, isEnglishOriginTitle, excludeKidsContent } from '../api/tmdb.js';
 import { buildProviderLogoCacheKey, collectPendingProviderLogoRequests } from '../utils/providerLogos.js';
 import { ALL_TYPES, filterByType, filterByGenre } from '../utils/mediaFilters.js';
-import EpgView from './EpgView.jsx';
 import LoadingSpinner from './LoadingSpinner.jsx';
-import GroupedFilterMenu from './GroupedFilterMenu.jsx';
 import CollapsibleSection from './CollapsibleSection.jsx';
 import { MEDIA } from '../copy/media.js';
 
@@ -352,72 +348,6 @@ export function UpcomingContent({ typeFilters, genreFilters, providers, openPane
           expandSignal={expandSignal}
         />
       ))}
-    </div>
-  );
-}
-
-/* ═══════════════════════════════════════
-   GuideView
-═══════════════════════════════════════ */
-export default function GuideView() {
-  const { openPanel, watchlist, profile } = useApp();
-  const guideChannels = profile?.guide_channels || [];
-  const { genres } = useGenres();
-
-  const [guideTab,     setGuideTab]     = useState('releases');
-  const [typeFilters,  setTypeFilters]  = useState(['tv', 'cinema', 'movie']);
-  const [genreFilters, setGenreFilters] = useState([]);
-
-  return (
-    <div className={guideTab === 'onair' ? 'guide-schedule-mode' : ''}>
-      {/* ── Toolbar: date left | tabs | filters right ── */}
-      <div className="sub-tabs">
-        <span className="sub-tabs-date"><TodayLabel /></span>
-        <button
-          className={`sub-tab-btn${guideTab === 'releases' ? ' active' : ''}`}
-          onClick={() => setGuideTab('releases')}
-        >
-          Releases
-        </button>
-        <button
-          className={`sub-tab-btn${guideTab === 'onair' ? ' active' : ''}`}
-          onClick={() => setGuideTab('onair')}
-        >
-          Guide
-        </button>
-        {guideTab === 'releases' && (
-          <div className="sub-tabs-filters">
-            <GroupedFilterMenu
-              ariaLabel="Filter releases"
-              groups={[
-                {
-                  heading: MEDIA.typeHeading,
-                  options: [
-                    { id: 'tv',     label: MEDIA.tv     },
-                    { id: 'cinema', label: MEDIA.cinema },
-                    { id: 'movie',  label: MEDIA.movies },
-                  ],
-                  value: typeFilters,
-                  onChange: setTypeFilters,
-                  defaultValue: ['tv', 'cinema', 'movie'],
-                },
-                {
-                  heading: MEDIA.genreHeading,
-                  options: genres.map(g => ({ id: g.id, label: g.name })),
-                  value: genreFilters,
-                  onChange: setGenreFilters,
-                },
-              ]}
-            />
-          </div>
-        )}
-      </div>
-
-      {guideTab === 'onair' ? (
-        <EpgView />
-      ) : (
-        <UpcomingContent typeFilters={typeFilters} genreFilters={genreFilters} providers={guideChannels} openPanel={openPanel} watchlist={watchlist} />
-      )}
     </div>
   );
 }

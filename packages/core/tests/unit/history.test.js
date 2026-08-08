@@ -5,9 +5,7 @@ import {
   monthKey,
   entryMonthKey,
   monthLabel,
-  entriesForMonth,
   groupEntriesByMonth,
-  historyMonthEmptyCopy,
   historyRatingLabel,
 } from '../../history.js';
 
@@ -63,18 +61,6 @@ test('monthLabel formats a long or short month name with the year', () => {
   assert.equal(monthLabel(2026, 2, 'short'), 'Mar 2026');
 });
 
-test('entriesForMonth keeps only entries whose watched_at falls in the given month', () => {
-  withTZ('UTC', () => {
-    const entries = [
-      { id: 1, watched_at: '2026-03-15' },
-      { id: 2, watched_at: '2026-03-01' },
-      { id: 3, watched_at: null },
-      { id: 4, watched_at: '2026-02-20' },
-    ];
-    assert.deepEqual(entriesForMonth(entries, 2026, 2), [entries[0], entries[1]]);
-  });
-});
-
 test('groupEntriesByMonth buckets by month in first-seen order and drops undated entries', () => {
   withTZ('UTC', () => {
     const entries = [
@@ -104,17 +90,6 @@ test('groupEntriesByMonth derives year/month from the calendar date, unaffected 
     const [group] = groupEntriesByMonth(entries);
     assert.deepEqual(group, { year: 2026, month: 0, key: '2026-01', entries: [entries[0]] });
     assert.equal(group.key, monthKey(group.year, group.month), 'key and year/month must be derived consistently');
-  });
-});
-
-test('historyMonthEmptyCopy varies its body between the current month and any other month', () => {
-  assert.deepEqual(historyMonthEmptyCopy({ year: 2026, month: 2, isCurrentMonth: true }), {
-    title: 'Nothing in March 2026',
-    body: 'Try another month or mark a title as watched to start filling your history.',
-  });
-  assert.deepEqual(historyMonthEmptyCopy({ year: 2026, month: 2, isCurrentMonth: false }), {
-    title: 'Nothing in March 2026',
-    body: 'Try another month, or tap Today to jump back to your latest activity.',
   });
 });
 

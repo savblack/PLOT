@@ -49,7 +49,6 @@ Production functions expected for launch:
 
 - Public:
   - `marketing-feed`
-  - `marketing-veto`
   - `newsletter-subscribe`
   - `calendar-feed`
 - Authenticated:
