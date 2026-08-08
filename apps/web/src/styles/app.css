@@ -965,8 +965,8 @@ svg { stroke-width: 1.5; }
   z-index: 900;
   background: var(--surface);
   /* overflow-x intentionally omitted — putting it here would clip absolutely-positioned
-     dropdowns (MultiSelect menus) inside .sub-tabs-filters. Scrolling is handled by
-     the inner .sub-tabs-scroll wrapper instead. */
+     dropdowns (filter menus, e.g. GroupedFilterMenu) inside .sub-tabs-filters. Scrolling
+     is handled by the inner .sub-tabs-scroll wrapper instead. */
 }
 
 /* Scrollable area that wraps only the tab buttons (not filters/dropdowns) */

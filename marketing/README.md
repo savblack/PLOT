@@ -123,8 +123,8 @@ Question posts are generic everywhere. They are not tied to a specific title.
 - **No opt-in surface states a send frequency**, because `npm run newsletter` has
   no cron behind it — the digest goes out when someone runs it. If a schedule is
   added (a workflow on a cron, like `marketing-publish.yml`), the copy can start
-  promising a cadence again: `apps/web/src/copy/digestNudge.js`,
-  `apps/web/src/copy/settingsView.js` (`marketingEmails`), the archive strings in
+  promising a cadence again: `packages/core/copy/settingsView.js`
+  (`marketingEmails`), the archive strings in
   `supabase/functions/marketing-feed/index.ts`, and the homepage newsletter hint
   and success message in `apps/website/index.html`.
 - The trending chart page carries no cadence claim either, for the same reason:

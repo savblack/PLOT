@@ -148,7 +148,7 @@ export const SETTINGS_VIEW = {
   },
 
   // Deliberately makes no promise about frequency — the digest is sent by hand,
-  // so a stated cadence would be a promise nothing keeps. See copy/digestNudge.js.
+  // so a stated cadence would be a promise nothing keeps.
   marketingEmails: {
     label: 'Email digest',
     onHint: "You'll get the PLOT digest by email. Unsubscribe any time.",
