@@ -20,7 +20,7 @@ const NAV_ITEMS = [
   // /guide route at all.
   { id: 'calendar', label: 'Calendar', path: '/(app)/calendar' },
   { id: 'my-lists', label: 'My Lists', path: '/(app)/my-lists' },
-  { id: 'top10',    label: 'Top 10',   path: '/(app)/top10'    },
+  // Top 10 is a section of My Lists, not a destination — same as web.
   { id: 'history',  label: 'History',  path: '/(app)/history'  },
 ];
 
