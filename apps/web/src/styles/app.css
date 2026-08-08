@@ -1369,21 +1369,21 @@ svg { stroke-width: 1.5; }
 }
 
 /* Onboarding footer CTA — outlined pill, hugs its label. Matches the
-   website's .btn-outline exactly: light weight, fills solid on hover. */
+   website's .btn-outline exactly: medium weight, fills solid on hover. */
 .onboarding-cta {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: clamp(0.75rem, 1.3vh, 0.95rem) 1.5rem;
-  min-height: 48px;
+  padding: clamp(0.7rem, 1.2vh, 0.85rem) 1.25rem;
+  min-height: 44px;
   border-radius: var(--radius-pill);
   border: 1px solid var(--text-primary);
   background: transparent;
   color: var(--text-primary);
   font-family: var(--font-sans);
-  font-size: 0.95rem;
-  font-weight: 300;
+  font-size: 0.9rem;
+  font-weight: 500;
   cursor: pointer;
   white-space: nowrap;
   transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease;
@@ -1391,6 +1391,10 @@ svg { stroke-width: 1.5; }
 }
 .onboarding-cta:hover:not(:disabled) { background: var(--text-primary); color: var(--bg); transform: translateY(-1px); }
 .onboarding-cta:disabled { border-color: var(--text-muted); color: var(--text-muted); cursor: not-allowed; }
+
+/* Onboarding text inputs (name field, step 2 search) — browser default
+   placeholder color isn't a token, so it can drift from the app's palette. */
+.onboarding-input::placeholder { color: var(--text-muted); }
 
 /* Onboarding header back button — icon-only chevron, top-left. */
 .onboarding-back {

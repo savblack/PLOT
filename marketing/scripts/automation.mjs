@@ -175,7 +175,6 @@ const runLearningPrepare = () => {
     ['SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_SERVICE_KEY'],
   ]);
 
-  run('Collect fresh metrics', process.execPath, ['marketing/metrics/collect.mjs']);
   run('Prepare Sunday learning artifact', process.execPath, ['marketing/learning/prepare.mjs']);
 };
 

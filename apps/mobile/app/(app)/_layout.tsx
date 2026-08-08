@@ -1,9 +1,11 @@
 import { Tabs } from 'expo-router';
-import { StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import Svg, { Path, Rect, Line, Polyline, Circle } from 'react-native-svg';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useAppData } from '../../contexts/AppDataContext';
+import { Avatar } from '../../components/Avatar';
 import { spacing } from '../../lib/tokens';
 import { TAB_BAR_HEIGHT, tabBarBottom } from '../../lib/tabBar';
 
@@ -35,22 +37,31 @@ function IconLists({ color }: { color: any }) {
   );
 }
 
-function IconHistory({ color }: { color: any }) {
-  return (
-    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-      <Path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-      <Path d="M3 3v5h5" />
-      <Path d="M12 7v5l4 2" />
-    </Svg>
-  );
-}
-
 function IconSettings({ color }: { color: any }) {
   return (
     <Svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
       <Circle cx={12} cy={12} r={3} />
       <Path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
     </Svg>
+  );
+}
+
+function IconProfile({ profile, focused, colors }: { profile: any; focused: boolean; colors: any }) {
+  return (
+    <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{
+        width: 26, height: 26, borderRadius: 13, overflow: 'hidden',
+        borderWidth: 1.5,
+        borderColor: focused ? colors.accent : colors.textMuted,
+      }}>
+        <Avatar
+          url={profile?.avatar_url}
+          name={profile?.display_name || profile?.username}
+          size={23}
+          colors={colors}
+        />
+      </View>
+    </View>
   );
 }
 
@@ -74,6 +85,7 @@ function TabBarBackground() {
 function TabsLayout() {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
+  const { profile } = useAppData();
 
   return (
     <Tabs
@@ -121,12 +133,20 @@ function TabsLayout() {
         name="my-lists"
         options={{ tabBarIcon: ({ color }) => <IconLists color={color} /> }}
       />
-      <Tabs.Screen name="top10"    options={{ href: null }} />
-      <Tabs.Screen name="history"  options={{ href: null }} />
+      {/* Profile is the 4th tab, after My Lists — the position web renders it
+          in (AppShell puts it last in .tab-bar). Falls back to a hidden route
+          until the profile has loaded and has a username to link to. */}
+      <Tabs.Screen
+        name="profile"
+        options={{
+          // No explicit `href` — a static route provides its own, and passing
+          // one as a string makes the tab item lay out ~16pt above the others.
+          tabBarIcon: ({ focused }) => <IconProfile profile={profile} focused={focused} colors={colors} />,
+        }}
+      />
+      <Tabs.Screen name="u/[username]" options={{ href: null }} />
       <Tabs.Screen name="settings" options={{ href: null }} />
       <Tabs.Screen name="search"   options={{ href: null }} />
-      <Tabs.Screen name="guide"    options={{ href: null }} />
-      <Tabs.Screen name="u/[username]" options={{ href: null }} />
       <Tabs.Screen name="requests" options={{ href: null }} />
     </Tabs>
   );

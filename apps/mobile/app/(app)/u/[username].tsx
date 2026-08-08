@@ -9,7 +9,10 @@ import {
   View, Text, ScrollView, TouchableOpacity, Image, StyleSheet,
   ActivityIndicator, Dimensions, Modal,
 } from 'react-native';
+import { Linking } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import EditProfileModal from '../../../components/EditProfileModal';
+import { SOCIAL_LINKS } from '@plot/core/profileFields.js';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { supabase } from '../../../lib/supabase';
@@ -39,13 +42,22 @@ interface PosterItem {
   rank?: number;
 }
 
-export default function ProfileScreen() {
+/**
+ * `usernameOverride` lets the profile tab reuse this screen for the signed-in
+ * user without going through the dynamic route. That matters for layout, not
+ * just convenience: a Tabs.Screen pointed at the nested `u/[username]` route
+ * renders its icon ~16pt above the other tabs, which the static `profile`
+ * route does not.
+ */
+export default function ProfileScreen({ usernameOverride }: { usernameOverride?: string } = {}) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { open: openPanel } = useMediaPanel();
-  const { username = '' } = useLocalSearchParams<{ username: string }>();
+  const [editing, setEditing] = useState(false);
+  const params = useLocalSearchParams<{ username: string }>();
+  const username = usernameOverride ?? params.username ?? '';
   const { userId: viewerId, profile: viewerProfile } = useAppData();
 
   const { loading, profile, locked, watchCount, avgRating, recent, topMovies, topTv, favourites } =
@@ -80,7 +92,7 @@ export default function ProfileScreen() {
         {found && isOwn && (
           <>
             <View style={{ flex: 1 }} />
-            <TouchableOpacity onPress={() => router.push('/(app)/settings' as any)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ paddingRight: spacing.md }}>
+            <TouchableOpacity onPress={() => setEditing(true)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ paddingRight: spacing.md }}>
               <Text style={styles.editTop}>Edit</Text>
             </TouchableOpacity>
           </>
@@ -117,6 +129,25 @@ export default function ProfileScreen() {
                 <Text style={styles.handle}>@{profile!.username}</Text>
               </View>
             </View>
+
+            {!!profile!.bio && <Text style={styles.bio}>{profile!.bio}</Text>}
+
+            {/* Fixed set of external links, rendered from the shared definition
+                so a link added on web can't go missing here. */}
+            {!!profile!.links && Object.keys(profile!.links).length > 0 && (
+              <View style={styles.linksRow}>
+                {SOCIAL_LINKS.filter((l: any) => profile!.links?.[l.key]).map((l: any) => (
+                  <TouchableOpacity
+                    key={l.key}
+                    onPress={() => Linking.openURL(l.url(profile!.links?.[l.key]))}
+                    accessibilityRole="link"
+                    accessibilityLabel={l.label}
+                  >
+                    <Text style={styles.linkChip}>{l.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
 
             {/* Actions (follow) — own-profile edit lives in the top bar */}
             {!isOwn && canFollow && (
@@ -188,6 +219,23 @@ export default function ProfileScreen() {
           />
         )}
       </Modal>
+
+      {editing && isOwn && profile && (
+        <EditProfileModal
+          userId={viewerId!}
+          current={profile}
+          onClose={() => setEditing(false)}
+          onSaved={(patch) => {
+            setEditing(false);
+            // A username change moves the canonical route, so re-enter it —
+            // otherwise a refresh or a back-navigation lands on the old handle
+            // and 404s.
+            if (patch.username && patch.username !== profile.username) {
+              router.replace(`/(app)/u/${patch.username}` as any);
+            }
+          }}
+        />
+      )}
     </View>
   );
 }
@@ -297,6 +345,19 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   btnPrimaryText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.bg },
   btnSecondary: { minHeight: 44, justifyContent: 'center', paddingHorizontal: spacing.xl, borderRadius: radii.pill, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.textPrimary },
   btnSecondaryText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textPrimary },
+  bio: {
+    fontFamily: fontFamily.sans, fontSize: fontSize.sm, lineHeight: 21,
+    color: colors.textSecondary, paddingHorizontal: spacing.xl, marginTop: spacing.lg,
+  },
+  linksRow: {
+    flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm,
+    paddingHorizontal: spacing.xl, marginTop: spacing.md,
+  },
+  linkChip: {
+    fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted,
+    borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border,
+    borderRadius: radii.pill, paddingHorizontal: spacing.md, paddingVertical: 4,
+  },
   editTop: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted },
   stats: { flexDirection: 'row', justifyContent: 'center', gap: spacing.xxl, marginTop: spacing.xl, flexWrap: 'wrap' },
   lockCard: { marginTop: spacing.xl, padding: spacing.lg, borderRadius: radii.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surfaceRaised },

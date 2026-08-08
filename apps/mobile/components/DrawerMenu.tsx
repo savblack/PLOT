@@ -15,13 +15,11 @@ const DRAWER_W = Dimensions.get('window').width * 0.58;
 const NAV_ITEMS = [
   { id: 'index',    label: 'Home',     path: '/(app)/'         },
   { id: 'search',   label: 'Search',   path: '/(app)/search'   },
-  // Guide is not a destination of its own: it is a sub-tab of Home, matching
-  // web, where DiscoverView renders it under its own toolbar and there is no
-  // /guide route at all.
   { id: 'calendar', label: 'Calendar', path: '/(app)/calendar' },
   { id: 'my-lists', label: 'My Lists', path: '/(app)/my-lists' },
-  { id: 'top10',    label: 'Top 10',   path: '/(app)/top10'    },
-  { id: 'history',  label: 'History',  path: '/(app)/history'  },
+  // Guide, Top 10 and History used to sit here as destinations of their own.
+  // None is one on web: Guide is a sub-tab of Home, Top 10 a section of My
+  // Lists, History a tab of it. This list now matches APP_NAV_ITEMS.
 ];
 
 const BOTTOM_NAV_ITEMS = [
