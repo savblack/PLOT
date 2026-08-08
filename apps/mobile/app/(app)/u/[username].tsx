@@ -39,13 +39,21 @@ interface PosterItem {
   rank?: number;
 }
 
-export default function ProfileScreen() {
+/**
+ * `usernameOverride` lets the profile tab reuse this screen for the signed-in
+ * user without going through the dynamic route. That matters for layout, not
+ * just convenience: a Tabs.Screen pointed at the nested `u/[username]` route
+ * renders its icon ~16pt above the other tabs, which the static `profile`
+ * route does not.
+ */
+export default function ProfileScreen({ usernameOverride }: { usernameOverride?: string } = {}) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { open: openPanel } = useMediaPanel();
-  const { username = '' } = useLocalSearchParams<{ username: string }>();
+  const params = useLocalSearchParams<{ username: string }>();
+  const username = usernameOverride ?? params.username ?? '';
   const { userId: viewerId, profile: viewerProfile } = useAppData();
 
   const { loading, profile, locked, watchCount, avgRating, recent, topMovies, topTv, favourites } =
