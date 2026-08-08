@@ -32,11 +32,3 @@ export const feedHeroUrl = (postType, payload) => {
   if (title.poster_path) return `${IMG_BASE}/${POSTER_HERO}${title.poster_path}`;
   return null;
 };
-
-// Resolve poster/backdrop data URIs for a list of TMDB items, in parallel.
-export const hydrateImages = async (items, { posterSize = POSTER_HERO, backdrops = false } = {}) =>
-  Promise.all(items.map(async (item) => ({
-    ...item,
-    poster_data_uri: await fetchImageDataUri(item.poster_path, posterSize),
-    backdrop_data_uri: backdrops ? await fetchImageDataUri(item.backdrop_path, BACKDROP) : null,
-  })));

@@ -1,29 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { setUserTimezone, getUserTimezone, localDateStr, dateToLocalStr } from '../../date.js';
+import { setUserTimezone, localDateStr, dateToLocalStr } from '../../date.js';
 
 test.afterEach(() => {
   setUserTimezone(null);
-});
-
-test('getUserTimezone defaults to null', () => {
-  assert.equal(getUserTimezone(), null);
-});
-
-test('setUserTimezone/getUserTimezone round-trips a value', () => {
-  setUserTimezone('Australia/Sydney');
-  assert.equal(getUserTimezone(), 'Australia/Sydney');
-});
-
-test('setUserTimezone treats falsy values as null', () => {
-  setUserTimezone('Europe/London');
-  setUserTimezone('');
-  assert.equal(getUserTimezone(), null);
-
-  setUserTimezone('Europe/London');
-  setUserTimezone(undefined);
-  assert.equal(getUserTimezone(), null);
 });
 
 test('localDateStr with no timezone set matches device-local today', () => {

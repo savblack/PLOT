@@ -58,18 +58,6 @@ export function monthLabel(year, month, format = 'long') {
 }
 
 /**
- * @template {{ watched_at?: string | null }} T
- * @param {T[]} entries
- * @param {number} year
- * @param {number} month Zero-based.
- * @returns {T[]}
- */
-export function entriesForMonth(entries, year, month) {
-  const selectedMonth = monthKey(year, month);
-  return entries.filter(entry => entryMonthKey(entry) === selectedMonth);
-}
-
-/**
  * Buckets entries by watched month, skipping months with nothing in them.
  * Assumes `entries` is already sorted newest-first (as useHistory returns
  * it) — groups come out in that same newest-month-first order for free,

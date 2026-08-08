@@ -40,15 +40,3 @@ export const DISCOVER_TABS = [
   { id: 'releases', label: 'Upcoming' },
   { id: 'guide',    label: 'Guide' },
 ];
-
-/* Tabs nested under My Lists. Ids match the collapsible section ids so the
-   expand/collapse-all control can scope itself to the active tab. */
-export const MY_LISTS_TABS = [
-  { id: 'all',       label: 'All'           },
-  { id: 'watching',  label: 'Watching'      },
-  { id: 'want',      label: 'Want to Watch' },
-  { id: 'top10',     label: 'Top 10'        },
-  { id: 'favorites', label: null            }, // region-spelled at the call site
-  { id: 'lists',     label: 'Lists'         },
-  { id: 'history',   label: 'History'       },
-];
