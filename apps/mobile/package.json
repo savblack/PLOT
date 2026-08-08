@@ -5,7 +5,7 @@
   "dependencies": {
     "@plot/core": "*",
     "@plot/ui": "*",
-    "@react-native-async-storage/async-storage": "2.2.0",
+    "@react-native-async-storage/async-storage": "3.1.1",
     "@react-native-community/datetimepicker": "9.1.0",
     "@supabase/supabase-js": "^2.110.7",
     "aes-js": "^3.1.2",
