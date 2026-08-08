@@ -23,6 +23,7 @@ import Svg, { Polyline } from 'react-native-svg';
 import { Avatar } from './Avatar';
 import { supabase } from '../lib/supabase';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAppData } from '../contexts/AppDataContext';
 import { favoriteWords } from '../lib/spelling';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import { PUBLIC_PROFILE_PAGE } from '@plot/core/copy/publicProfilePage.js';
@@ -43,7 +44,11 @@ export default function EditProfileModal({
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const fw = favoriteWords(current?.region);
+  // Region lives on the viewer's own profile row; the public-profile shape
+  // this sheet is handed doesn't carry it, which spelled this "Favorites"
+  // while My Lists said "Favourites" two taps away.
+  const { profile: viewerProfile } = useAppData();
+  const fw = favoriteWords(viewerProfile?.region);
 
   const [displayName, setDisplayName] = useState(current.display_name || '');
   const [bio, setBio]                 = useState(current.bio || '');
@@ -231,22 +236,27 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: spacing.xl, paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl,
+    // Extra top padding: a pageSheet has no status bar of its own, so without
+    // it the controls sit hard against the card's rounded edge.
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.lg,
     borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border,
   },
-  title:  { fontFamily: fontFamily.serif, fontSize: fontSize.lg, color: colors.textPrimary },
+  title:  { fontFamily: fontFamily.serif, fontSize: fontSize.xl, color: colors.textPrimary },
   cancel: { fontFamily: fontFamily.sans, fontSize: fontSize.md, color: colors.textMuted },
   save:   { fontFamily: fontFamily.sansMedium, fontSize: fontSize.md, color: colors.accent },
   saveDisabled: { color: colors.textMuted },
 
-  body: { padding: spacing.xl, gap: spacing.xl, paddingBottom: spacing.xl * 3 },
+  body: { padding: spacing.xl, paddingTop: spacing.xl * 1.5, gap: spacing.xl * 1.5, paddingBottom: spacing.xl * 3 },
   photoRow: { alignItems: 'center' },
   error: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.danger, textAlign: 'center' },
 
-  field: { gap: spacing.sm },
+  field: { gap: spacing.md },
   label: {
-    fontFamily: fontFamily.sansBold, fontSize: 10, letterSpacing: 0.6,
-    textTransform: 'uppercase', color: colors.textMuted,
+    fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, letterSpacing: 0.9,
+    textTransform: 'uppercase', color: colors.textSecondary,
+    marginBottom: spacing.xs,
   },
   input: {
     backgroundColor: colors.surface, borderRadius: radii.md,
@@ -262,14 +272,14 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   hintOk:  { color: colors.textMuted },
   hintBad: { color: colors.accent },
 
-  linkRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  linkLabel: { width: 82, fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary },
+  linkRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.sm },
+  linkLabel: { width: 90, fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted },
 
-  sectionRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.sm },
+  sectionRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.md },
   checkbox: {
     width: 18, height: 18, borderRadius: 4, borderWidth: 1.5,
     borderColor: colors.borderStrong, alignItems: 'center', justifyContent: 'center',
   },
   checkboxOn: { backgroundColor: colors.accent, borderColor: colors.accent },
-  sectionLabel: { fontFamily: fontFamily.sans, fontSize: fontSize.md, color: colors.textPrimary },
+  sectionLabel: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textPrimary },
 });
