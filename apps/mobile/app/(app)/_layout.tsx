@@ -125,6 +125,7 @@ function TabsLayout() {
       <Tabs.Screen name="history"  options={{ href: null }} />
       <Tabs.Screen name="settings" options={{ href: null }} />
       <Tabs.Screen name="search"   options={{ href: null }} />
+      <Tabs.Screen name="guide"    options={{ href: null }} />
       <Tabs.Screen name="u/[username]" options={{ href: null }} />
       <Tabs.Screen name="requests" options={{ href: null }} />
     </Tabs>
