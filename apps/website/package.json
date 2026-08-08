@@ -2,6 +2,7 @@
   "name": "@plot/website-storybook",
   "version": "0.0.0",
   "private": true,
+  "type": "module",
   "description": "Documentation-only Storybook for the theplot.tv static marketing site. Does not build or serve the site itself — see apps/website/README.md.",
   "scripts": {
     "storybook": "storybook dev -p 6007",

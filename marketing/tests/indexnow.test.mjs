@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { submitIndexNow } from './indexnow.mjs';
+import { submitIndexNow } from '../lib/indexnow.mjs';
 
 test('submitIndexNow sends unique canonical PLOT URLs', async () => {
   let request;
