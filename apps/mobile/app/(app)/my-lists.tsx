@@ -23,6 +23,8 @@ import { TopTenSection } from '../../components/TopTenSection';
 import { MY_LISTS_TABS } from '@plot/core/navigation.js';
 import GroupedFilterMenu from '../../components/GroupedFilterMenu';
 import { filterByType } from '@plot/core/mediaFilters.js';
+import HistorySection from '../../components/HistorySection';
+import { groupEntriesByMonth, monthLabel } from '@plot/core/history.js';
 import { getSectionOpen, setSectionOpen } from '../../lib/sectionOpenState';
 import { MEDIA } from '@plot/core/copy/media.js';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
@@ -53,9 +55,9 @@ const TYPE_OPTIONS = [
 ];
 
 // Tab list comes from the shared nav definition so web and mobile can't
-// diverge on which tabs exist or their order. `history` is filtered out
-// until mobile's History section lands; favourites is region-spelled below.
-const TABS = MY_LISTS_TABS.filter((t: { id: string }) => t.id !== 'history');
+// diverge on which tabs exist or their order. Favourites is region-spelled
+// at the call site — it carries a null label here for exactly that reason.
+const TABS = MY_LISTS_TABS;
 
 // Release / streaming countdown chip — ports web countdownChip(); maps onto
 // the shared status-colour tokens (today / tomorrow / soon / muted).
@@ -352,9 +354,24 @@ export default function MyListsScreen() {
 
   const [tab,          setTab]          = useState('all');
   const [typeFilters,  setTypeFilters]  = useState<string[]>([]);
+  const today = useMemo(() => new Date(), []);
+  const [historyYear,  setHistoryYear]  = useState(today.getFullYear());
+  const [historyMonth, setHistoryMonth] = useState(today.getMonth());
+  // Month groups come and go with the data, so they can't be driven by the
+  // static sectionsOpen map — the bulk control signals them instead.
+  const [historyExpand, setHistoryExpand] = useState<{ token: number; open: boolean } | null>(null);
+  const [historyOpen,   setHistoryOpen]   = useState(true);
   // core's filterByType passes null/undefined straight through, which is the
   // right contract for it but not worth threading through every call site here.
   const byType = (items: any[]): any[] => (filterByType(items, typeFilters) ?? []) as any[];
+
+  // Every month with activity, newest first, empty months skipped. The nav
+  // widget's year/month is only "which month did we last jump to" — it does
+  // not filter what renders, exactly as on web.
+  const historyGroups = useMemo(
+    () => groupEntriesByMonth(byType(history.entries || [])) as any[],
+    [history.entries, typeFilters], // eslint-disable-line react-hooks/exhaustive-deps
+  );
   // Section ids match web's ALL_LIST_SECTION_IDS so a section means the same
   // thing on both platforms and shares the `plot.section.<id>` storage key.
   // Seeded synchronously from the cache hydrated at app start.
@@ -415,14 +432,37 @@ export default function MyListsScreen() {
   const showTop10     = isAll || tab === 'top10';
   const showFavs      = isAll || tab === 'favorites';
   const showLists     = isAll || tab === 'lists';
+  // History is the one tab that isn't part of "All" — web scopes it the
+  // same way, since a full watch history would bury every other section.
+  const isHistory     = tab === 'history';
+
+  const historyIndex = historyGroups.findIndex(
+    (g: any) => g.year === historyYear && g.month === historyMonth);
+  const canGoOlder = historyIndex === -1 ? historyGroups.length > 0 : historyIndex < historyGroups.length - 1;
+  const canGoNewer = historyIndex > 0;
+
+  const jumpTo = (g: any) => {
+    if (!g) return;
+    setHistoryYear(g.year);
+    setHistoryMonth(g.month);
+  };
 
   // Expand/collapse-all scopes itself to the active tab, exactly as web does:
   // every section on "All", or just the one section the current tab shows
   // (tab ids match section ids 1:1). Web: MyListsView's relevantSectionIds.
   const relevantSectionIds = isAll ? LIST_SECTION_IDS : LIST_SECTION_IDS.filter(id => id === tab);
-  const sectionsOpenForView = relevantSectionIds.length > 0
-    && relevantSectionIds.every(id => sectionsOpen[id]);
+  const sectionsOpenForView = isHistory
+    ? historyOpen
+    : relevantSectionIds.length > 0 && relevantSectionIds.every(id => sectionsOpen[id]);
   const toggleSectionsForView = () => {
+    // History's sections are the month groups, which own their own state —
+    // bump a token so they re-apply even when the value hasn't changed.
+    if (isHistory) {
+      const next = !historyOpen;
+      setHistoryOpen(next);
+      setHistoryExpand({ token: Date.now(), open: next });
+      return;
+    }
     const next = !sectionsOpenForView;
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setSectionsOpen(prev => ({ ...prev, ...Object.fromEntries(relevantSectionIds.map(id => [id, next])) }));
@@ -597,6 +637,15 @@ export default function MyListsScreen() {
           </CollapsibleSection>
         )}
 
+        {/* ── History ── */}
+        {isHistory && (
+          <HistorySection
+            groups={historyGroups}
+            hasAnyEntries={(history.entries || []).length > 0}
+            expandSignal={historyExpand}
+          />
+        )}
+
         {/* ── My Lists ── */}
         {showLists && (
           <CollapsibleSection
@@ -667,6 +716,35 @@ export default function MyListsScreen() {
             ))}
           </ScrollView>
           <View style={styles.tabsRowActions}>
+            {/* ‹ Mar 2026 › — jumps to the adjacent month that actually has
+                entries, so empty months are never a dead step. */}
+            {isHistory && historyGroups.length > 0 && (
+              <View style={styles.monthNav}>
+                <TouchableOpacity
+                  onPress={() => jumpTo(historyIndex === -1 ? historyGroups[0] : historyGroups[historyIndex + 1])}
+                  disabled={!canGoOlder}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Jump to an older month"
+                >
+                  <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={canGoOlder ? colors.textSecondary : colors.borderStrong} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                    <Polyline points="15,18 9,12 15,6" />
+                  </Svg>
+                </TouchableOpacity>
+                <Text style={styles.monthNavLabel}>{monthLabel(historyYear, historyMonth, 'short')}</Text>
+                <TouchableOpacity
+                  onPress={() => jumpTo(historyGroups[historyIndex - 1])}
+                  disabled={!canGoNewer}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Jump to a more recent month"
+                >
+                  <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={canGoNewer ? colors.textSecondary : colors.borderStrong} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                    <Polyline points="9,18 15,12 9,6" />
+                  </Svg>
+                </TouchableOpacity>
+              </View>
+            )}
             <GroupedFilterMenu
               accessibilityLabel="Filter lists"
               groups={[{
@@ -676,7 +754,7 @@ export default function MyListsScreen() {
                 onChange: setTypeFilters,
               }]}
             />
-            {relevantSectionIds.length > 0 && (
+            {(relevantSectionIds.length > 0 || (isHistory && historyGroups.length > 0)) && (
               <TouchableOpacity
                 onPress={toggleSectionsForView}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -850,6 +928,19 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     paddingRight: spacing.xl,
   },
   tabsRowActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  monthNav: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.xs,
+    // The tab row scrolls under this, so give it a hairline and some air —
+    // without it the nav butts straight against a half-clipped tab label.
+    marginLeft: spacing.xs,
+    paddingLeft: spacing.sm,
+    borderLeftWidth: StyleSheet.hairlineWidth,
+    borderLeftColor: colors.border,
+  },
+  monthNavLabel: {
+    fontFamily: fontFamily.sansMedium, fontSize: fontSize.xs,
+    color: colors.textSecondary, minWidth: 54, textAlign: 'center',
+  },
   // 44 leaves room for the tab label plus its underline; the previous height
   // clipped descenders on "Watching"/"Want to Watch".
   subTabsScroll: { flex: 1, height: 44 },
