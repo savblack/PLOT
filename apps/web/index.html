@@ -9,9 +9,30 @@
         // the SPA-fallback HTML back instead of the script). A failed entry or
         // vendor script/modulepreload happens before React mounts, so no error
         // boundary ever sees it — this is the only place that can catch it.
+        //
         // Shares the reload budget (sessionStorage key + window) with
         // src/utils/chunkError.js so the two never fight over how many reloads
-        // are allowed; keep the constants below in sync with that file.
+        // are allowed. The constants below are duplicated there because this
+        // script runs before any module can be imported; a unit test asserts
+        // the two copies stay identical rather than trusting this comment.
+        // Deliberately inline-styled and dependency-free: the stylesheet may
+        // have failed the same way the script did.
+        function showFallback() {
+          try {
+            var root = document.getElementById('root');
+            if (!root || root.firstChild) return;
+            root.innerHTML =
+              '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;' +
+              'padding:1.5rem;font-family:Georgia,serif;color:#1a1a1a;background:#faf9f7;text-align:center">' +
+              '<div><p style="font-size:1.5rem;margin:0 0 .5rem">PLOT</p>' +
+              '<p style="font-family:system-ui,sans-serif;font-size:.9rem;line-height:1.5;color:#6b6b6b;margin:0 0 1.25rem">' +
+              'Couldn\u2019t finish loading. This usually means an update landed mid-visit.</p>' +
+              '<button onclick="location.reload()" style="font:inherit;font-family:system-ui,sans-serif;font-size:.85rem;' +
+              'padding:.5rem 1rem;border:1px solid #1a1a1a;border-radius:999px;background:none;cursor:pointer">' +
+              'Reload</button></div></div>';
+          } catch (e) {}
+        }
+
         try {
           window.addEventListener('error', function (event) {
             var el = event.target;
@@ -29,7 +50,14 @@
             var parts = (sessionStorage.getItem(KEY) || '').split(',');
             var count = Number(parts[0]) || 0;
             var ts = Number(parts[1]) || 0;
-            if (count >= MAX && Date.now() - ts < WINDOW_MS) return; // let the app's own crash screen show
+            if (count >= MAX && Date.now() - ts < WINDOW_MS) {
+              // Out of budget: the reloads didn't help, so this is a genuinely
+              // broken deploy rather than a race. There is no app crash screen
+              // to fall back to — that's a React boundary, and React never
+              // mounted — so #root would just stay empty. Say something.
+              showFallback();
+              return;
+            }
             var next = Date.now() - ts < WINDOW_MS ? count + 1 : 1;
             sessionStorage.setItem(KEY, next + ',' + Date.now());
             window.location.reload();
