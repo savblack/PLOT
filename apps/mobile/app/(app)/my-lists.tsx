@@ -21,6 +21,8 @@ import SubTab from '../../components/SubTab';
 import SearchPickModal from '../../components/SearchPickModal';
 import { TopTenSection } from '../../components/TopTenSection';
 import { MY_LISTS_TABS } from '@plot/core/navigation.js';
+import GroupedFilterMenu from '../../components/GroupedFilterMenu';
+import { filterByType } from '@plot/core/mediaFilters.js';
 import { getSectionOpen, setSectionOpen } from '../../lib/sectionOpenState';
 import { MEDIA } from '@plot/core/copy/media.js';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
@@ -41,9 +43,14 @@ const buildListShareUrl = (listId: string) => `${SHARE_BASE}/list/${listId}`;
 // whichever tab is active.
 const LIST_SECTION_IDS = ['watching', 'want', 'top10', 'favorites', 'lists'];
 
-type TypeFilter = 'all' | 'movie' | 'tv';
-const applyTypeFilter = (items: any[], filter: TypeFilter) =>
-  filter === 'all' ? items : items.filter(i => (i.media_type || 'movie') === filter);
+// Type filter options match web's, and the filtering itself runs through
+// core's filterByType so `cinema` (a client-side flag, not a TMDB
+// media_type) is handled the same way on both platforms.
+const TYPE_OPTIONS = [
+  { id: 'movie',  label: 'Movies' },
+  { id: 'tv',     label: 'TV'     },
+  { id: 'cinema', label: 'Cinema' },
+];
 
 // Tab list comes from the shared nav definition so web and mobile can't
 // diverge on which tabs exist or their order. `history` is filtered out
@@ -344,7 +351,10 @@ export default function MyListsScreen() {
   const fw = favoriteWords(profile?.region);
 
   const [tab,          setTab]          = useState('all');
-  const [typeFilter,   setTypeFilter]   = useState<TypeFilter>('all');
+  const [typeFilters,  setTypeFilters]  = useState<string[]>([]);
+  // core's filterByType passes null/undefined straight through, which is the
+  // right contract for it but not worth threading through every call site here.
+  const byType = (items: any[]): any[] => (filterByType(items, typeFilters) ?? []) as any[];
   // Section ids match web's ALL_LIST_SECTION_IDS so a section means the same
   // thing on both platforms and shares the `plot.section.<id>` storage key.
   // Seeded synchronously from the cache hydrated at app start.
@@ -386,11 +396,11 @@ export default function MyListsScreen() {
   const comingSoon  = savedItems.filter((i: any) => i.release_date && i.release_date > todayStr)
     .sort((a: any, b: any) => a.release_date.localeCompare(b.release_date));
   const available   = savedItems.filter((i: any) => !i.release_date || i.release_date <= todayStr);
-  const sortedSaved = applyTypeFilter([...comingSoon, ...available], typeFilter);
+  const sortedSaved = byType([...comingSoon, ...available]);
 
   // Watching items are always TV (episode progress); type them so the Movies filter excludes them.
-  const watchingList = applyTypeFilter(watching.items.map((i: any) => ({ ...i, media_type: 'tv' })), typeFilter);
-  const favList      = applyTypeFilter(favorites.favorites, typeFilter);
+  const watchingList = byType(watching.items.map((i: any) => ({ ...i, media_type: 'tv' })));
+  const favList      = byType(favorites.favorites);
 
   const handleShareList = async (list: any) => {
     try {
@@ -421,7 +431,7 @@ export default function MyListsScreen() {
     relevantSectionIds.forEach(id => setSectionOpen(id, next));
   };
 
-  const HEADER_H = insets.top + 148;
+  const HEADER_H = insets.top + 106;
 
   return (
     <View style={styles.screen}>
@@ -616,7 +626,7 @@ export default function MyListsScreen() {
                   <CustomListCard
                     key={list.id}
                     list={list}
-                    typeFilter={typeFilter}
+                    typeFilters={typeFilters}
                     onDelete={() => Alert.alert('Delete list?', `"${list.name}" will be removed.`, [
                       { text: 'Cancel', style: 'cancel' },
                       { text: 'Delete', style: 'destructive', onPress: () => customLists.deleteList(list.id) },
@@ -641,46 +651,46 @@ export default function MyListsScreen() {
         style={[styles.fixedHeader, { height: HEADER_H, paddingTop: insets.top }]}
       >
         <ScreenHeaderBar title="My Lists" />
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.subTabsRow}
-          style={styles.subTabsScroll}
-        >
-          {/* favourites carries a null label in the shared list — it is the one
-              tab whose wording is region-dependent (Favourites/Favorites). */}
-          {TABS.map(t => (
-            <SubTab key={t.id} label={t.label ?? fw.plural} active={tab === t.id} onPress={() => setTab(t.id)} />
-          ))}
-        </ScrollView>
-        <View style={styles.filterRow}>
-          {(['all', 'movie', 'tv'] as TypeFilter[]).map(f => (
-            <TouchableOpacity
-              key={f}
-              style={[styles.filterChip, typeFilter === f && styles.filterChipActive]}
-              onPress={() => setTypeFilter(f)}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.filterChipText, typeFilter === f && styles.filterChipTextActive]}>
-                {f === 'all' ? 'All' : f === 'movie' ? 'Movies' : 'TV'}
-              </Text>
-            </TouchableOpacity>
-          ))}
-          <View style={{ flex: 1 }} />
-          {relevantSectionIds.length > 0 && (
-            <TouchableOpacity
-              onPress={toggleSectionsForView}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              accessibilityRole="button"
-              accessibilityLabel={
-                isAll
-                  ? (sectionsOpenForView ? MEDIA.collapseAllSections : MEDIA.expandAllSections)
-                  : (sectionsOpenForView ? 'Collapse section' : 'Expand section')
-              }
-            >
-              <SectionToggleIcon collapse={sectionsOpenForView} />
-            </TouchableOpacity>
-          )}
+        {/* Tabs and the filter/collapse controls share one row, as on web —
+            the old second row of All/Movies/TV chips is gone. */}
+        <View style={styles.tabsRow}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.subTabsRow}
+            style={styles.subTabsScroll}
+          >
+            {/* favourites carries a null label in the shared list — it is the one
+                tab whose wording is region-dependent (Favourites/Favorites). */}
+            {TABS.map(t => (
+              <SubTab key={t.id} label={t.label ?? fw.plural} active={tab === t.id} onPress={() => setTab(t.id)} />
+            ))}
+          </ScrollView>
+          <View style={styles.tabsRowActions}>
+            <GroupedFilterMenu
+              accessibilityLabel="Filter lists"
+              groups={[{
+                heading: 'Type',
+                options: TYPE_OPTIONS,
+                value: typeFilters,
+                onChange: setTypeFilters,
+              }]}
+            />
+            {relevantSectionIds.length > 0 && (
+              <TouchableOpacity
+                onPress={toggleSectionsForView}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  isAll
+                    ? (sectionsOpenForView ? MEDIA.collapseAllSections : MEDIA.expandAllSections)
+                    : (sectionsOpenForView ? 'Collapse section' : 'Expand section')
+                }
+              >
+                <SectionToggleIcon collapse={sectionsOpenForView} />
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
       </BlurView>
 
@@ -714,10 +724,10 @@ export default function MyListsScreen() {
 
 // ── Custom list card ──────────────────────────────────────────────────
 function CustomListCard({
-  list, onDelete, onAddItem, onRemoveItem, onSetPublic, onShare, onRename, typeFilter,
+  list, onDelete, onAddItem, onRemoveItem, onSetPublic, onShare, onRename, typeFilters,
 }: {
   list: any; onDelete: () => void; onAddItem: () => void; onRemoveItem: (tmdbId: number) => void;
-  onSetPublic: (isPublic: boolean) => void; onShare: () => void; onRename: (name: string) => void; typeFilter: TypeFilter;
+  onSetPublic: (isPublic: boolean) => void; onShare: () => void; onRename: (name: string) => void; typeFilters: string[];
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -727,7 +737,7 @@ function CustomListCard({
   const [name,     setName]     = useState(list.name);
   const sel = useSelection();
 
-  const items = applyTypeFilter(list.items || [], typeFilter);
+  const items = (filterByType(list.items || [], typeFilters) ?? []) as any[];
 
   // Same item order as web's list kebab: Select, Rename, visibility, Share,
   // Delete. Deleting the list itself still goes through onDelete's confirm.
@@ -832,6 +842,19 @@ function CustomListCard({
 const makeStyles = (colors: Palette) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
 
+  tabsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+    paddingRight: spacing.xl,
+  },
+  tabsRowActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  // 44 leaves room for the tab label plus its underline; the previous height
+  // clipped descenders on "Watching"/"Want to Watch".
+  subTabsScroll: { flex: 1, height: 44 },
+  subTabsRow: { paddingHorizontal: spacing.xl, alignItems: 'center' },
+
   fixedHeader: {
     position: 'absolute',
     top: 0, left: 0, right: 0,
@@ -840,24 +863,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
-  filterRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.md,
-  },
-  filterChip: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: 5,
-    borderRadius: radii.pill,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  filterChipActive: { backgroundColor: colors.accentDim, borderColor: colors.accent + '55' },
-  filterChipText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.xs, color: colors.textMuted },
-  filterChipTextActive: { color: colors.accent },
   publicBadge: {
     marginLeft: spacing.sm,
     paddingHorizontal: 6,
@@ -868,17 +873,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     backgroundColor: colors.accent + '1F',
   },
   publicBadgeText: { fontFamily: fontFamily.sansBold, fontSize: 9, letterSpacing: 0.5, textTransform: 'uppercase', color: colors.accent },
-  subTabsScroll: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
-  },
-  subTabsRow: {
-    flexDirection: 'row',
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.md,
-    alignItems: 'stretch',
-  },
-
   subTab: {
     alignItems: 'center',
     justifyContent: 'center',
