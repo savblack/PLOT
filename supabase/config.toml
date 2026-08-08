@@ -48,6 +48,15 @@ verify_jwt = false
 [functions.watchlist-availability-alerts]
 verify_jwt = false
 
+# Same pattern as watchlist-availability-alerts above — called only by the
+# scheduled GitHub workflow (for-you-recompute.yml), which supplies its own
+# x-cron-secret header instead of a Supabase JWT. Already deployed with
+# verify_jwt false; this entry just makes that the documented, pinned state
+# so a future `supabase functions deploy for-you-recompute` can't silently
+# flip it back to the true default.
+[functions.for-you-recompute]
+verify_jwt = false
+
 # Stripe webhook — Stripe signs requests with STRIPE_WEBHOOK_SECRET; there is
 # no Supabase JWT on deliveries, so the gateway must let them through. With
 # verify_jwt = true every delivery dies at the gateway with 401 and billing
