@@ -8,7 +8,7 @@ import { useRouter } from 'expo-router';
 import { ONBOARDING_FLOW } from '@plot/core/copy/onboardingFlow.js';
 import { supabase } from '../../lib/supabase';
 import { track, EVENTS } from '../../lib/analytics';
-import { Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
+import { Palette, fontFamily, spacing, radii } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 import OnboardingScaffold from '../../components/OnboardingScaffold';
 
@@ -82,7 +82,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     fontFamily: fontFamily.sans,
-    fontSize: fontSize.md,
+    fontSize: 14,
     color: colors.textPrimary,
   },
 });

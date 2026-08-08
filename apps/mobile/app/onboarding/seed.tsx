@@ -319,7 +319,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     paddingHorizontal: spacing.md, borderWidth: 1, borderColor: colors.border,
     marginBottom: spacing.sm,
   },
-  searchInput:    { flex: 1, paddingVertical: 12, fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textPrimary },
+  searchInput:    { flex: 1, paddingVertical: 12, fontFamily: fontFamily.sans, fontSize: 14, color: colors.textPrimary },
   searchTrailing: { marginLeft: spacing.sm },
   gridLabel:   { fontFamily: fontFamily.sansBold, fontSize: 11, letterSpacing: 0.7, textTransform: 'uppercase', color: colors.textSecondary, marginBottom: spacing.sm },
   grid:        { maxHeight: GRID_MAX_H, marginBottom: spacing.md },

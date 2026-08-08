@@ -47,7 +47,7 @@ const footer = {
   position: 'sticky',
   bottom: 0,
   flexShrink: 0,
-  padding: '0.75rem 1.25rem',
+  padding: '2rem 1.25rem',
   paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))',
   background: 'var(--bg)',
   borderTop: 'none',
@@ -259,10 +259,10 @@ export default function OnboardingFlow() {
             </button>
           ) : <div style={{ width: 28, flexShrink: 0 }} />}
           <div style={{ flex: 1, textAlign: 'center' }}>
-            <div style={{ fontFamily: 'var(--font-serif)', fontSize: '2rem', fontWeight: 500, letterSpacing: '-0.05em', textTransform: 'uppercase', marginBottom: '1.5rem' }}>
+            <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1.375rem', fontWeight: 400, letterSpacing: '-0.05em', textTransform: 'uppercase', marginBottom: '1rem' }}>
               PLOT
             </div>
-            <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'center', marginBottom: '0.6rem' }}>
+            <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'center', marginBottom: '0.5rem' }}>
               {Array.from({ length: TOTAL }, (_, i) => (
                 <div key={i} style={{ flex: 1, maxWidth: 60, height: 3, borderRadius: 2, background: i < step ? 'var(--accent)' : 'var(--border)', transition: 'background 0.3s ease' }} />
               ))}
@@ -277,14 +277,15 @@ export default function OnboardingFlow() {
         {/* ── Step 1: First name ── */}
         {step === 1 && (
           <div style={card}>
-            <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.8rem', fontWeight: 500, letterSpacing: '-0.03em', marginBottom: '0.4rem', textAlign: 'center' }}>
+            <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: '2rem', fontWeight: 400, letterSpacing: '-0.02em', marginBottom: '0.5rem', textAlign: 'center' }}>
               {ONBOARDING_FLOW.step1.title}
             </h1>
-            <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '1.5rem', lineHeight: 1.5, textAlign: 'center' }}>
+            <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', marginBottom: '1.5rem', lineHeight: 1.5, textAlign: 'center' }}>
               {ONBOARDING_FLOW.step1.subtitle}
             </p>
             <input
-              style={{ width: '100%', padding: '0.7rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', background: 'var(--surface)', fontSize: '0.9rem', fontFamily: 'var(--font-sans)', color: 'var(--text-primary)', outline: 'none' }}
+              className="onboarding-input"
+              style={{ width: '100%', padding: '0.7rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', background: 'var(--surface)', fontSize: '0.875rem', fontFamily: 'var(--font-sans)', color: 'var(--text-primary)', outline: 'none' }}
               placeholder={ONBOARDING_FLOW.step1.placeholder}
               value={firstName}
               onChange={e => setFirstName(e.target.value)}
@@ -296,15 +297,16 @@ export default function OnboardingFlow() {
         {/* ── Step 2: Seed shows ── */}
         {step === 2 && (
           <div style={card}>
-            <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.8rem', fontWeight: 500, letterSpacing: '-0.03em', marginBottom: '0.4rem', textAlign: 'center' }}>
+            <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: '2rem', fontWeight: 400, letterSpacing: '-0.02em', marginBottom: '0.5rem', textAlign: 'center' }}>
               {ONBOARDING_FLOW.step2.title}
             </h1>
-            <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '1.25rem', lineHeight: 1.5, textAlign: 'center' }}>
+            <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', marginBottom: '1.25rem', lineHeight: 1.5, textAlign: 'center' }}>
               {ONBOARDING_FLOW.step2.subtitle}
             </p>
             <div style={{ position: 'relative', marginBottom: '0.4rem' }}>
               <input
-                style={{ width: '100%', padding: '0.65rem 2.25rem 0.65rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', background: 'var(--surface)', fontSize: '0.82rem', fontFamily: 'var(--font-sans)', color: 'var(--text-primary)', outline: 'none' }}
+                className="onboarding-input"
+                style={{ width: '100%', padding: '0.65rem 2.25rem 0.65rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', background: 'var(--surface)', fontSize: '0.875rem', fontFamily: 'var(--font-sans)', color: 'var(--text-primary)', outline: 'none' }}
                 placeholder={ONBOARDING_FLOW.step2.searchPlaceholder}
                 value={seedQuery}
                 onChange={e => setSeedQuery(e.target.value)}
