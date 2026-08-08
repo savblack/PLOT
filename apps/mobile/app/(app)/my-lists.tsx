@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import {
   View, Text, ScrollView, FlatList, Image, TouchableOpacity, TextInput,
   Modal, StyleSheet, Dimensions, ActivityIndicator, Alert, Share, LayoutAnimation,
@@ -12,15 +12,20 @@ import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 import { useMediaPanel } from '../../contexts/MediaPanelContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import { canCreateCustomList, FREE_CUSTOM_LIST_CAP } from '@plot/core/premium.js';
-import { tmdb } from '../../lib/tmdb';
 import { favoriteWords } from '../../lib/spelling';
 import CollapsibleSection from '../../components/CollapsibleSection';
 import SectionToggleIcon from '../../components/SectionToggleIcon';
 import SelectCircle from '../../components/SelectCircle';
 import KebabMenu, { KebabMenuItem } from '../../components/KebabMenu';
+import SubTab from '../../components/SubTab';
+import SearchPickModal from '../../components/SearchPickModal';
+import { TopTenSection } from '../../components/TopTenSection';
+import { MY_LISTS_TABS } from '@plot/core/navigation.js';
+import GroupedFilterMenu from '../../components/GroupedFilterMenu';
+import { filterByType } from '@plot/core/mediaFilters.js';
 import { getSectionOpen, setSectionOpen } from '../../lib/sectionOpenState';
 import { MEDIA } from '@plot/core/copy/media.js';
-import { posterUrl, Palette, fontFamily, fontSize, spacing, radii, iconButtonSize } from '../../lib/tokens';
+import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 import { COMMON } from '@plot/core/copy/common.js';
 
@@ -36,19 +41,21 @@ const buildListShareUrl = (listId: string) => `${SHARE_BASE}/list/${listId}`;
 // Mirrors web's ALL_LIST_SECTION_IDS (MyListsView.jsx). Tab ids match section
 // ids 1:1, which is what lets the expand/collapse-all control scope itself to
 // whichever tab is active.
-const LIST_SECTION_IDS = ['watching', 'want', 'favorites', 'lists'];
+const LIST_SECTION_IDS = ['watching', 'want', 'top10', 'favorites', 'lists'];
 
-type TypeFilter = 'all' | 'movie' | 'tv';
-const applyTypeFilter = (items: any[], filter: TypeFilter) =>
-  filter === 'all' ? items : items.filter(i => (i.media_type || 'movie') === filter);
-
-const TABS = [
-  { id: 'all',       label: 'All'           },
-  { id: 'watching',  label: 'Watching'      },
-  { id: 'want',      label: 'Want to Watch' },
-  { id: 'favorites', label: 'Favourites'    },
-  { id: 'lists',     label: 'Lists'         },
+// Type filter options match web's, and the filtering itself runs through
+// core's filterByType so `cinema` (a client-side flag, not a TMDB
+// media_type) is handled the same way on both platforms.
+const TYPE_OPTIONS = [
+  { id: 'movie',  label: 'Movies' },
+  { id: 'tv',     label: 'TV'     },
+  { id: 'cinema', label: 'Cinema' },
 ];
+
+// Tab list comes from the shared nav definition so web and mobile can't
+// diverge on which tabs exist or their order. `history` is filtered out
+// until mobile's History section lands; favourites is region-spelled below.
+const TABS = MY_LISTS_TABS.filter((t: { id: string }) => t.id !== 'history');
 
 // Release / streaming countdown chip — ports web countdownChip(); maps onto
 // the shared status-colour tokens (today / tomorrow / soon / muted).
@@ -65,21 +72,6 @@ function countdownChip(dateStr: string | null | undefined, colors: Palette): { l
   return { label: d.toLocaleDateString('en', { month: 'short', day: 'numeric' }), color: colors.textMuted };
 }
 
-// ── Sub-tab (underline style) ─────────────────────────────────────────
-function SubTab({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
-  const { colors } = useTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
-  return (
-    <TouchableOpacity
-      style={styles.subTab}
-      onPress={onPress}
-      activeOpacity={0.7}
-    >
-      <Text style={[styles.subTabText, active && styles.subTabTextActive]}>{label}</Text>
-      <View style={[styles.subTabUnderline, active && styles.subTabUnderlineActive]} />
-    </TouchableOpacity>
-  );
-}
 
 // ── Section add button ────────────────────────────────────────────────
 // The "+" that used to live inside SectionBar. Now passed to
@@ -313,110 +305,6 @@ function PosterGrid({ items, onRemove, horizontal, removeLabel = COMMON.remove, 
   return <View style={styles.posterGrid}>{items.map(renderCard)}</View>;
 }
 
-// ── Search / pick modal ───────────────────────────────────────────────
-function SearchPickModal({
-  title, mediaFilter, historyEntries, onSelect, onClose,
-}: {
-  title: string;
-  mediaFilter?: 'movie' | 'tv';
-  historyEntries: any[];
-  onSelect: (item: any) => void;
-  onClose: () => void;
-}) {
-  const { colors } = useTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
-  const [tab,      setTab]      = useState<'history' | 'search'>('history');
-  const [query,    setQuery]    = useState('');
-  const [results,  setResults]  = useState<any[]>([]);
-  const [loading,  setLoading]  = useState(false);
-
-  const filtered = historyEntries.filter(e =>
-    (!mediaFilter || e.media_type === mediaFilter) &&
-    (!query.trim() || (e.title || '').toLowerCase().includes(query.toLowerCase()))
-  );
-
-  useEffect(() => {
-    if (tab !== 'search' || !query.trim()) { setResults([]); return; }
-    setLoading(true);
-    const t = setTimeout(async () => {
-      const data = await tmdb.search(query);
-      setResults(
-        (data?.results || [])
-          .filter((r: any) => r.media_type === 'movie' || r.media_type === 'tv')
-          .filter((r: any) => !mediaFilter || r.media_type === mediaFilter)
-          .slice(0, 15)
-      );
-      setLoading(false);
-    }, 400);
-    return () => clearTimeout(t);
-  }, [query, tab, mediaFilter]);
-
-  const rows = tab === 'history' ? filtered : results;
-
-  return (
-    <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <View style={styles.modalContainer}>
-        <View style={styles.modalHeader}>
-          <Text style={styles.modalTitle}>{title}</Text>
-          <TouchableOpacity onPress={onClose}>
-            <Text style={{ color: colors.accent, fontFamily: fontFamily.sansMedium, fontSize: fontSize.md }}>Done</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Tabs */}
-        <View style={styles.modalTabs}>
-          <SubTab label="From history" active={tab === 'history'} onPress={() => { setTab('history'); setQuery(''); }} />
-          <SubTab label="Search all"   active={tab === 'search'}  onPress={() => setTab('search')} />
-        </View>
-
-        {/* Search input */}
-        <View style={styles.modalSearch}>
-          <TextInput
-            style={styles.modalSearchInput}
-            placeholder={tab === 'history' ? 'Filter…' : 'Search…'}
-            placeholderTextColor={colors.textMuted}
-            value={query}
-            onChangeText={setQuery}
-            autoCorrect={false}
-          />
-        </View>
-
-        {loading && <ActivityIndicator color={colors.accent} style={{ marginTop: spacing.xl }} />}
-        <ScrollView style={{ flex: 1 }}>
-          {rows.map((item: any) => {
-            const img = posterUrl(item.poster_path, 'w92');
-            return (
-              <TouchableOpacity
-                key={item.id || item.tmdb_id}
-                style={styles.modalRow}
-                onPress={() => { onSelect(item); onClose(); }}
-                activeOpacity={0.7}
-              >
-                <View style={styles.modalRowPoster}>
-                  {img
-                    ? <Image source={{ uri: img }} style={StyleSheet.absoluteFill} resizeMode="cover" />
-                    : <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.surfaceSunken }]} />
-                  }
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.modalRowTitle}>{item.title || item.name}</Text>
-                  <Text style={styles.modalRowMeta}>
-                    {(item.release_date || item.first_air_date || '').slice(0, 4)}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            );
-          })}
-          {!loading && rows.length === 0 && (
-            <Text style={styles.modalEmpty}>
-              {tab === 'search' && !query.trim() ? 'Start typing to search' : 'No results'}
-            </Text>
-          )}
-        </ScrollView>
-      </View>
-    </Modal>
-  );
-}
 
 // ── Create list modal ─────────────────────────────────────────────────
 function CreateListModal({ onConfirm, onClose }: { onConfirm: (name: string) => void; onClose: () => void }) {
@@ -459,11 +347,14 @@ export default function MyListsScreen() {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
   const { open: openPanel } = useMediaPanel();
-  const { watchlist, watching, favorites, customLists, history, profile } = useAppData();
+  const { watchlist, watching, favorites, customLists, topLists, history, profile } = useAppData();
   const fw = favoriteWords(profile?.region);
 
   const [tab,          setTab]          = useState('all');
-  const [typeFilter,   setTypeFilter]   = useState<TypeFilter>('all');
+  const [typeFilters,  setTypeFilters]  = useState<string[]>([]);
+  // core's filterByType passes null/undefined straight through, which is the
+  // right contract for it but not worth threading through every call site here.
+  const byType = (items: any[]): any[] => (filterByType(items, typeFilters) ?? []) as any[];
   // Section ids match web's ALL_LIST_SECTION_IDS so a section means the same
   // thing on both platforms and shares the `plot.section.<id>` storage key.
   // Seeded synchronously from the cache hydrated at app start.
@@ -505,11 +396,11 @@ export default function MyListsScreen() {
   const comingSoon  = savedItems.filter((i: any) => i.release_date && i.release_date > todayStr)
     .sort((a: any, b: any) => a.release_date.localeCompare(b.release_date));
   const available   = savedItems.filter((i: any) => !i.release_date || i.release_date <= todayStr);
-  const sortedSaved = applyTypeFilter([...comingSoon, ...available], typeFilter);
+  const sortedSaved = byType([...comingSoon, ...available]);
 
   // Watching items are always TV (episode progress); type them so the Movies filter excludes them.
-  const watchingList = applyTypeFilter(watching.items.map((i: any) => ({ ...i, media_type: 'tv' })), typeFilter);
-  const favList      = applyTypeFilter(favorites.favorites, typeFilter);
+  const watchingList = byType(watching.items.map((i: any) => ({ ...i, media_type: 'tv' })));
+  const favList      = byType(favorites.favorites);
 
   const handleShareList = async (list: any) => {
     try {
@@ -521,6 +412,7 @@ export default function MyListsScreen() {
   const isAll       = tab === 'all';
   const showWatching  = isAll || tab === 'watching';
   const showWant      = isAll || tab === 'want';
+  const showTop10     = isAll || tab === 'top10';
   const showFavs      = isAll || tab === 'favorites';
   const showLists     = isAll || tab === 'lists';
 
@@ -539,7 +431,7 @@ export default function MyListsScreen() {
     relevantSectionIds.forEach(id => setSectionOpen(id, next));
   };
 
-  const HEADER_H = insets.top + 148;
+  const HEADER_H = insets.top + 106;
 
   return (
     <View style={styles.screen}>
@@ -640,6 +532,19 @@ export default function MyListsScreen() {
           </CollapsibleSection>
         )}
 
+        {/* ── Top 10 ── */}
+        {showTop10 && (
+          <CollapsibleSection
+            id="top10"
+            label="Top 10"
+            open={sectionsOpen.top10}
+            onOpenChange={(next) => setSectionOpenFor('top10', next)}
+          >
+            <TopTenSection listType="movies" title="Movies"   topLists={topLists} history={history.entries} />
+            <TopTenSection listType="tv"     title="TV Shows" topLists={topLists} history={history.entries} />
+          </CollapsibleSection>
+        )}
+
         {/* ── Favourites ── */}
         {showFavs && (
           <CollapsibleSection
@@ -721,7 +626,7 @@ export default function MyListsScreen() {
                   <CustomListCard
                     key={list.id}
                     list={list}
-                    typeFilter={typeFilter}
+                    typeFilters={typeFilters}
                     onDelete={() => Alert.alert('Delete list?', `"${list.name}" will be removed.`, [
                       { text: 'Cancel', style: 'cancel' },
                       { text: 'Delete', style: 'destructive', onPress: () => customLists.deleteList(list.id) },
@@ -746,44 +651,46 @@ export default function MyListsScreen() {
         style={[styles.fixedHeader, { height: HEADER_H, paddingTop: insets.top }]}
       >
         <ScreenHeaderBar title="My Lists" />
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.subTabsRow}
-          style={styles.subTabsScroll}
-        >
-          {TABS.map(t => (
-            <SubTab key={t.id} label={t.id === 'favorites' ? fw.plural : t.label} active={tab === t.id} onPress={() => setTab(t.id)} />
-          ))}
-        </ScrollView>
-        <View style={styles.filterRow}>
-          {(['all', 'movie', 'tv'] as TypeFilter[]).map(f => (
-            <TouchableOpacity
-              key={f}
-              style={[styles.filterChip, typeFilter === f && styles.filterChipActive]}
-              onPress={() => setTypeFilter(f)}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.filterChipText, typeFilter === f && styles.filterChipTextActive]}>
-                {f === 'all' ? 'All' : f === 'movie' ? 'Movies' : 'TV'}
-              </Text>
-            </TouchableOpacity>
-          ))}
-          <View style={{ flex: 1 }} />
-          {relevantSectionIds.length > 0 && (
-            <TouchableOpacity
-              onPress={toggleSectionsForView}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              accessibilityRole="button"
-              accessibilityLabel={
-                isAll
-                  ? (sectionsOpenForView ? MEDIA.collapseAllSections : MEDIA.expandAllSections)
-                  : (sectionsOpenForView ? 'Collapse section' : 'Expand section')
-              }
-            >
-              <SectionToggleIcon collapse={sectionsOpenForView} />
-            </TouchableOpacity>
-          )}
+        {/* Tabs and the filter/collapse controls share one row, as on web —
+            the old second row of All/Movies/TV chips is gone. */}
+        <View style={styles.tabsRow}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.subTabsRow}
+            style={styles.subTabsScroll}
+          >
+            {/* favourites carries a null label in the shared list — it is the one
+                tab whose wording is region-dependent (Favourites/Favorites). */}
+            {TABS.map(t => (
+              <SubTab key={t.id} label={t.label ?? fw.plural} active={tab === t.id} onPress={() => setTab(t.id)} />
+            ))}
+          </ScrollView>
+          <View style={styles.tabsRowActions}>
+            <GroupedFilterMenu
+              accessibilityLabel="Filter lists"
+              groups={[{
+                heading: 'Type',
+                options: TYPE_OPTIONS,
+                value: typeFilters,
+                onChange: setTypeFilters,
+              }]}
+            />
+            {relevantSectionIds.length > 0 && (
+              <TouchableOpacity
+                onPress={toggleSectionsForView}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  isAll
+                    ? (sectionsOpenForView ? MEDIA.collapseAllSections : MEDIA.expandAllSections)
+                    : (sectionsOpenForView ? 'Collapse section' : 'Expand section')
+                }
+              >
+                <SectionToggleIcon collapse={sectionsOpenForView} />
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
       </BlurView>
 
@@ -817,10 +724,10 @@ export default function MyListsScreen() {
 
 // ── Custom list card ──────────────────────────────────────────────────
 function CustomListCard({
-  list, onDelete, onAddItem, onRemoveItem, onSetPublic, onShare, onRename, typeFilter,
+  list, onDelete, onAddItem, onRemoveItem, onSetPublic, onShare, onRename, typeFilters,
 }: {
   list: any; onDelete: () => void; onAddItem: () => void; onRemoveItem: (tmdbId: number) => void;
-  onSetPublic: (isPublic: boolean) => void; onShare: () => void; onRename: (name: string) => void; typeFilter: TypeFilter;
+  onSetPublic: (isPublic: boolean) => void; onShare: () => void; onRename: (name: string) => void; typeFilters: string[];
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -830,7 +737,7 @@ function CustomListCard({
   const [name,     setName]     = useState(list.name);
   const sel = useSelection();
 
-  const items = applyTypeFilter(list.items || [], typeFilter);
+  const items = (filterByType(list.items || [], typeFilters) ?? []) as any[];
 
   // Same item order as web's list kebab: Select, Rename, visibility, Share,
   // Delete. Deleting the list itself still goes through onDelete's confirm.
@@ -935,6 +842,19 @@ function CustomListCard({
 const makeStyles = (colors: Palette) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
 
+  tabsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+    paddingRight: spacing.xl,
+  },
+  tabsRowActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  // 44 leaves room for the tab label plus its underline; the previous height
+  // clipped descenders on "Watching"/"Want to Watch".
+  subTabsScroll: { flex: 1, height: 44 },
+  subTabsRow: { paddingHorizontal: spacing.xl, alignItems: 'center' },
+
   fixedHeader: {
     position: 'absolute',
     top: 0, left: 0, right: 0,
@@ -943,24 +863,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
-  filterRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.md,
-  },
-  filterChip: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: 5,
-    borderRadius: radii.pill,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  filterChipActive: { backgroundColor: colors.accentDim, borderColor: colors.accent + '55' },
-  filterChipText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.xs, color: colors.textMuted },
-  filterChipTextActive: { color: colors.accent },
   publicBadge: {
     marginLeft: spacing.sm,
     paddingHorizontal: 6,
@@ -971,17 +873,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     backgroundColor: colors.accent + '1F',
   },
   publicBadgeText: { fontFamily: fontFamily.sansBold, fontSize: 9, letterSpacing: 0.5, textTransform: 'uppercase', color: colors.accent },
-  subTabsScroll: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
-  },
-  subTabsRow: {
-    flexDirection: 'row',
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.md,
-    alignItems: 'stretch',
-  },
-
   subTab: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -1044,26 +935,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   posterCard: { height: POSTER_H, borderRadius: radii.sm, overflow: 'hidden', backgroundColor: colors.surfaceSunken, marginBottom: spacing.xs },
   removeBtn: { position: 'absolute', top: 4, right: 4, width: 18, height: 18, borderRadius: 9, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center' },
   posterTitle: { fontFamily: fontFamily.sans, fontSize: 10, color: colors.textMuted, textAlign: 'center' },
-
-  rankRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.sm,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
-    gap: spacing.md,
-  },
-  rankNum: { fontFamily: fontFamily.serif, fontSize: 22, width: 28, textAlign: 'center' },
-  rankPoster: { width: 36, height: 54, borderRadius: radii.sm, overflow: 'hidden', backgroundColor: colors.surfaceSunken, flexShrink: 0 },
-  rankEmptyPoster: { width: 36, height: 54, borderRadius: radii.sm, borderWidth: 1.5, borderStyle: 'dashed', borderColor: colors.borderStrong, alignItems: 'center', justifyContent: 'center' },
-  rankEmptyPrompt: { flex: 1, fontFamily: fontFamily.serifItalic, fontSize: fontSize.sm, color: colors.textMuted },
-  rankTitle: { flex: 1, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textPrimary },
-  rankActions: { flexDirection: 'row', gap: 2 },
-  rankActionBtn: { width: iconButtonSize.md, height: iconButtonSize.md, alignItems: 'center', justifyContent: 'center' },
-
-  topTenHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.xl, paddingVertical: spacing.sm, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
-  topTenTypeLabel: { fontFamily: fontFamily.sansBold, fontSize: 10, letterSpacing: 0.6, textTransform: 'uppercase', color: colors.textMuted },
 
   empty: { padding: spacing.xl, alignItems: 'center' },
   emptyTitle: { fontFamily: fontFamily.serif, fontSize: fontSize.xl, color: colors.textPrimary, marginBottom: spacing.sm },
