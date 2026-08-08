@@ -45,7 +45,7 @@ const applyTypeFilter = (items: any[], filter: TypeFilter) =>
 const TABS = [
   { id: 'all',       label: 'All'           },
   { id: 'watching',  label: 'Watching'      },
-  { id: 'want',      label: 'Saved'         },
+  { id: 'want',      label: 'Want to Watch' },
   { id: 'favorites', label: 'Favourites'    },
   { id: 'lists',     label: 'Lists'         },
 ];
