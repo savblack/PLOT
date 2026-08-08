@@ -129,8 +129,10 @@ Question posts are generic everywhere. They are not tied to a specific title.
   and success message in `apps/website/index.html`.
 - The trending chart page carries no cadence claim either, for the same reason:
   `marketing/snapshot/write-snapshot.mjs` is also manual.
-- IG and Threads metrics are collected automatically for the Sunday learning loop.
-- X is treated as copy-diff only unless a real analytics path is added later.
+- IG, Threads, and X are all copy-diff only — none has a $0 auto-collected
+  analytics path (the Meta-direct token/insights pipeline for IG/Threads was
+  retired; it depended on a 60-day token refresh that was never wired back up
+  after GitHub workflows were trimmed, so it had been silently dead anyway).
 - Missing metrics do not block learning; copy diffs still feed rule updates.
 
 ## Output paths

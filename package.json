@@ -43,7 +43,6 @@
     "mkt:copy:save": "node marketing/copy/save.mjs",
     "mkt:generate": "node marketing/generate/generate.mjs",
     "mkt:publish": "node marketing/publish/publish.mjs",
-    "mkt:metrics": "node marketing/metrics/collect.mjs",
     "mkt:report": "node marketing/metrics/report.mjs",
     "mkt:newsletter": "node marketing/newsletter/send-digest.mjs",
     "mkt:snapshot": "node marketing/snapshot/write-snapshot.mjs",
