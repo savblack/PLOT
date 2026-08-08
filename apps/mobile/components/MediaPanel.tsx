@@ -2,6 +2,7 @@
  * MediaPanel — slide-up detail sheet, mobile port of web MediaPanel.jsx.
  * Sections: backdrop → title/meta → actions → watching/watched → where to watch → episodes (TV)
  */
+import { STAR_COUNT } from '@plot/core/ratings.js';
 import { useEffect, useState, useRef, useMemo } from 'react';
 import {
   View, Text, Image, ScrollView, TouchableOpacity, Modal,
@@ -136,7 +137,6 @@ function IconShare() {
 }
 
 // ── Star rating ───────────────────────────────────────────────────────
-const STAR_COUNT = 5;
 function StarRow({ rating, onChange }: { rating: number; onChange: (r: number) => void }) {
   return (
     <View style={{ flexDirection: 'row', gap: 4 }}>

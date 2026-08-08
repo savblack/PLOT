@@ -57,8 +57,18 @@ export function isSectionEnabled(enabled, key) {
   return enabled.includes(key);
 }
 
-/** Username rule shared by the availability check on both platforms. */
-export const USERNAME_RE = /^[a-z0-9_]{3,30}$/;
+/**
+ * Username rule, shared by the availability check on both platforms.
+ *
+ * Hyphens, not underscores: 3-30 characters, starting and ending with an
+ * alphanumeric so a handle can't lead or trail with punctuation. Web used to
+ * hold two contradictory rules — SettingsView's (this one) and
+ * PublicProfilePage's `/^[a-z0-9_]{3,30}$/`, which rejected hyphens. Every
+ * existing handle was created under Settings' rule, and three of them contain
+ * a hyphen, so this is the one that keeps them valid. No account uses an
+ * underscore, so nothing needed migrating.
+ */
+export const USERNAME_RE = /^[a-z0-9](?:[a-z0-9-]{1,28}[a-z0-9])$/;
 
 /** @param {string} value */
 export function normaliseUsername(value) {

@@ -16,6 +16,7 @@ import SheetHeader from '../components/SheetHeader.jsx';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import { COMMON } from '../copy/common.js';
 import { MEDIA } from '../copy/media.js';
+import { SOCIAL_LINKS, USERNAME_RE } from '@plot/core/profileFields.js';
 import { PUBLIC_PROFILE_PAGE } from '../copy/publicProfilePage.js';
 import { EVENTS } from '../lib/analytics.js';
 
@@ -90,14 +91,17 @@ function WebsiteIcon() {
   );
 }
 
-const SOCIAL_LINKS = [
-  { key: 'instagram',  label: 'Instagram',  icon: InstagramIcon,  placeholder: 'username',      url: (v) => `https://instagram.com/${v}` },
-  { key: 'x',          label: 'X',          icon: XIcon,          placeholder: 'username',      url: (v) => `https://x.com/${v}` },
-  { key: 'tiktok',     label: 'TikTok',     icon: TikTokIcon,     placeholder: 'username',      url: (v) => `https://tiktok.com/@${v}` },
-  { key: 'youtube',    label: 'YouTube',    icon: YouTubeIcon,    placeholder: 'channel',        url: (v) => `https://youtube.com/@${v}` },
-  { key: 'letterboxd', label: 'Letterboxd', icon: LetterboxdIcon, placeholder: 'username',      url: (v) => `https://letterboxd.com/${v}` },
-  { key: 'website',    label: 'Website',    icon: WebsiteIcon,    placeholder: 'yoursite.com',  url: (v) => (/^https?:\/\//i.test(v) ? v : `https://${v}`) },
-];
+// Icons stay here — they're JSX, so they can't live in core alongside the
+// data. Keyed by the shared definition's ids so a link added to
+// @plot/core/profileFields.js shows up here the moment it has an icon.
+const SOCIAL_ICONS = {
+  instagram:  InstagramIcon,
+  x:          XIcon,
+  tiktok:     TikTokIcon,
+  youtube:    YouTubeIcon,
+  letterboxd: LetterboxdIcon,
+  website:    WebsiteIcon,
+};
 
 // Content rails a user can show/hide. profile_sections null = show all.
 const SECTIONS = [
@@ -365,7 +369,7 @@ function EditProfileModal({ userId, current, onClose, onSaved, favWord }) {
 
   const cleanUname = uname.trim().toLowerCase();
   const unameChanged = cleanUname !== current.username.toLowerCase();
-  const validUname = /^[a-z0-9_]{3,30}$/.test(cleanUname);
+  const validUname = USERNAME_RE.test(cleanUname);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- debounced availability check
@@ -522,13 +526,13 @@ function EditProfileModal({ userId, current, onClose, onSaved, favWord }) {
             {unameStatus === 'checking' && <div className="pp-hint">Checking…</div>}
             {unameStatus === 'ok'       && <div className="pp-hint" style={{ color: 'var(--chip-today, #16a34a)' }}>Available</div>}
             {unameStatus === 'taken'    && <div className="pp-hint" style={{ color: 'var(--accent)' }}>That username is taken.</div>}
-            {unameStatus === 'invalid'  && <div className="pp-hint" style={{ color: 'var(--accent)' }}>3–30 characters: letters, numbers, underscores.</div>}
+            {unameStatus === 'invalid'  && <div className="pp-hint" style={{ color: 'var(--accent)' }}>{PUBLIC_PROFILE_PAGE.usernameRule}</div>}
           </div>
 
           {/* Fixed set of social/external links */}
           <div>
             <label className="pp-field-label">Links</label>
-            {SOCIAL_LINKS.map(({ key, label, icon: Icon, placeholder }) => (
+            {SOCIAL_LINKS.map(({ key, label, placeholder }) => { const Icon = SOCIAL_ICONS[key]; return (
               <div key={key} className="pp-social-input-row">
                 <span className="pp-social-input-icon" aria-hidden="true"><Icon /></span>
                 <input
@@ -540,7 +544,7 @@ function EditProfileModal({ userId, current, onClose, onSaved, favWord }) {
                   autoCorrect="off"
                 />
               </div>
-            ))}
+            ); })}
           </div>
 
           {/* Which sections show on the profile */}
@@ -680,7 +684,7 @@ export default function PublicProfilePage() {
                 <div className="pp-footer-row">
                   {p.links && Object.keys(p.links).length > 0 && (
                     <div className="pp-social-row">
-                      {SOCIAL_LINKS.filter(({ key }) => p.links[key]).map(({ key, label, icon: Icon, url }) => (
+                      {SOCIAL_LINKS.filter(({ key }) => p.links[key]).map(({ key, label, url }) => { const Icon = SOCIAL_ICONS[key]; return (
                         <a
                           key={key}
                           className="pp-social-btn"
@@ -692,7 +696,7 @@ export default function PublicProfilePage() {
                         >
                           <Icon />
                         </a>
-                      ))}
+                      ); })}
                     </div>
                   )}
 

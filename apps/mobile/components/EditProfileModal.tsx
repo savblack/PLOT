@@ -112,7 +112,7 @@ export default function EditProfileModal({
   const unameHint =
     unameStatus === 'checking' ? 'Checking…'
     : unameStatus === 'taken'  ? PUBLIC_PROFILE_PAGE.usernameTaken
-    : unameStatus === 'invalid' ? '3–30 characters: letters, numbers, underscores.'
+    : unameStatus === 'invalid' ? PUBLIC_PROFILE_PAGE.usernameRule
     : unameStatus === 'ok'      ? 'Available.'
     : '';
 
