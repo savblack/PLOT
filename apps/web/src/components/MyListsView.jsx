@@ -96,7 +96,10 @@ function AddToRankModal({ listType, rank, onAdd, onClose }) {
   }, [query, tab, mediaFilter]);
 
   const handleSelect = (item) => {
-    onAdd(item);
+    // `entries` are raw `history` rows: `.id` is the row's own primary key,
+    // not a TMDB id (that's `.tmdb_id`). Normalize before handing off so
+    // `onAdd` always sees a TMDB-result-shaped item, same as the search tab.
+    onAdd(tab === 'history' ? { ...item, id: item.tmdb_id } : item);
     onClose();
   };
 
@@ -239,7 +242,13 @@ function AddToFavoritesModal({ title = 'Add to Favorites', onAdd, onClose }) {
     return () => clearTimeout(timer);
   }, [query, tab]);
 
-  const handleSelect = (item) => { onAdd(item); onClose(); };
+  const handleSelect = (item) => {
+    // `entries` are raw `history` rows: `.id` is the row's own primary key,
+    // not a TMDB id (that's `.tmdb_id`). Normalize before handing off so
+    // `onAdd` always sees a TMDB-result-shaped item, same as the search tab.
+    onAdd(tab === 'history' ? { ...item, id: item.tmdb_id } : item);
+    onClose();
+  };
 
   return createPortal(
     <div style={{
