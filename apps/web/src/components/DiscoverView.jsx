@@ -539,7 +539,7 @@ function DiscoverContent({ openPanel, watchlist, openSections, setOpenSections, 
           {openSections.hot && (
             <BingeRail>
               {hotRail.map(item => (
-                <BingeCard key={item.id} item={item} openPanel={openPanel} watchlist={watchlist} />
+                <BingeCard key={`${item.media_type}-${item.id}`} item={item} openPanel={openPanel} watchlist={watchlist} />
               ))}
             </BingeRail>
           )}
@@ -557,7 +557,7 @@ function DiscoverContent({ openPanel, watchlist, openSections, setOpenSections, 
           {openSections.binge && (
             <Rail>
               {bingedShows.map(item => (
-                <RankedCard key={item.id} item={item} showRank={false} openPanel={openPanel} watchlist={watchlist} />
+                <RankedCard key={`${item.media_type}-${item.id}`} item={item} showRank={false} openPanel={openPanel} watchlist={watchlist} />
               ))}
             </Rail>
           )}
@@ -573,7 +573,7 @@ function DiscoverContent({ openPanel, watchlist, openSections, setOpenSections, 
             onToggle={() => toggleSection('weekly')}
           />
           {openSections.weekly && weekly.map((item, i) => (
-            <ChartRow key={item.id} item={item} rank={i + 1} openPanel={openPanel} watchlist={watchlist} favorites={favorites} region={profile?.region} />
+            <ChartRow key={`${item.media_type}-${item.id}`} item={item} rank={i + 1} openPanel={openPanel} watchlist={watchlist} favorites={favorites} region={profile?.region} />
           ))}
         </section>
       )}
@@ -590,7 +590,7 @@ function DiscoverContent({ openPanel, watchlist, openSections, setOpenSections, 
           {openSections.cinemas && (
             <BingeRail>
               {cinemaMovies.map(item => (
-                <BingeCard key={item.id} item={item} openPanel={openPanel} watchlist={watchlist} />
+                <BingeCard key={`${item.media_type}-${item.id}`} item={item} openPanel={openPanel} watchlist={watchlist} />
               ))}
             </BingeRail>
           )}
@@ -609,7 +609,7 @@ function DiscoverContent({ openPanel, watchlist, openSections, setOpenSections, 
           {openSections.anticipated && (
             <BingeRail>
               {anticipatedMovies.map(item => (
-                <BingeCard key={item.id} item={item} openPanel={openPanel} watchlist={watchlist} />
+                <BingeCard key={`${item.media_type}-${item.id}`} item={item} openPanel={openPanel} watchlist={watchlist} />
               ))}
             </BingeRail>
           )}

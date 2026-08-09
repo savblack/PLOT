@@ -274,7 +274,10 @@ function TimezonePicker({ current, onSave, onClose }) {
   })();
 
   const filtered = query.trim()
-    ? allTzs.filter(tz => tz.toLowerCase().includes(query.toLowerCase()))
+    ? allTzs.filter(tz => {
+        const q = query.toLowerCase();
+        return tz.toLowerCase().includes(q) || fmtTz(tz).toLowerCase().includes(q);
+      })
     : allTzs;
 
   const handleSave = async () => {
@@ -1908,7 +1911,7 @@ export default function SettingsView() {
 
         {/* Visibility */}
         <div className="settings-row" style={{ cursor: 'default' }}>
-          <div className="settings-row-left">
+          <div className="settings-row-left" style={{ flex: 1, minWidth: 0 }}>
             <div className="settings-row-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>

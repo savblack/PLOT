@@ -12,7 +12,6 @@ import { resolveMediaPanelEscapeAction } from '../utils/mediaPanel.js';
 import { ratingFromPointer, ratingToStars, starFillPercent, STAR_COUNT } from '../utils/ratings.js';
 import { pickBestTvmazeShowMatch } from '../utils/tvmaze.js';
 import { favoriteWords } from '../utils/spelling.js';
-import { handleActivationKeyDown } from '../utils/interactive.js';
 import { useShareTitle } from '../hooks/useShareTitle.js';
 import { track, EVENTS } from '../lib/analytics.js';
 import CreditsGrid from './TalentCredits.jsx';
@@ -326,10 +325,6 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone }) {
                 key={ep.episode_number}
                 className={`ep-row${watched ? ' watched' : ''}${isCurrent ? ' ep-current' : ''}`}
                 onClick={isTracking && !isChecking ? () => handleCheckEp(ep, watched) : undefined}
-                onKeyDown={isTracking && !isChecking ? (e) => handleActivationKeyDown(e, () => handleCheckEp(ep, watched)) : undefined}
-                role={isTracking && !isChecking ? 'button' : undefined}
-                tabIndex={isTracking && !isChecking ? 0 : undefined}
-                aria-label={isTracking && !isChecking ? (watched ? MEDIA.markUnwatched : MEDIA.markWatched) : undefined}
               >
                 <span className="ep-num">E{String(ep.episode_number).padStart(2,'0')}</span>
                 <div className="ep-info">
@@ -923,7 +918,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
   const savedRating = watchedEntry?.rating || 0;
   const savedReview = watchedEntry?.note || '';
   const savedDnf = !!watchedEntry?.dnf;
-  const savedWatchedAt = watchedEntry?.watched_at || defaultWatchedAt;
+  const savedWatchedAt = watchedEntry?.watched_at ? watchedEntry.watched_at.slice(0, 10) : defaultWatchedAt;
   const hasReviewDraft = localRating > 0 || !!localReview.trim() || localDnf || (!!watchedEntry && localWatchedAt !== savedWatchedAt);
   const reviewDirty = !!watchedEntry && (
     localRating !== savedRating ||
@@ -998,7 +993,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
       setLocalRating(watchedEntry.rating || 0);
       setLocalReview(watchedEntry.note   || '');
       setLocalDnf(watchedEntry.dnf       || false);
-      setLocalWatchedAt(watchedEntry.watched_at || defaultWatchedAt);
+      setLocalWatchedAt(watchedEntry.watched_at ? watchedEntry.watched_at.slice(0, 10) : defaultWatchedAt);
     }
   }, [watchedEntry?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 

@@ -17,6 +17,7 @@ import CollapsibleSection from './CollapsibleSection.jsx';
 import GroupedFilterMenu from './GroupedFilterMenu.jsx';
 import SectionToggleIcon from './SectionToggleIcon.jsx';
 import KebabMenu from './KebabMenu.jsx';
+import ConfirmModal from './ConfirmModal.jsx';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import SheetHeader from './SheetHeader.jsx';
 import { getButtonLikeProps } from '../utils/interactive.js';
@@ -605,7 +606,7 @@ function PosterGrid({ items, openPanel, editMode, selectedIds, onToggleSelect })
                 cursor: 'pointer',
               }}
               onClick={openDetails}
-              {...getButtonLikeProps({ onPress: openDetails, label: editMode ? `${isSelected ? 'Deselect' : 'Select'} ${title}` : `View details for ${title}` })}
+              {...(!editMode ? getButtonLikeProps({ onPress: openDetails, label: `View details for ${title}` }) : {})}
             >
               {img
                 ? <img src={img} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -844,6 +845,7 @@ function CustomListsSection({ customLists: clHook, filterItems, open, onOpenChan
   const [showAddToList, setShowAddToList] = useState(null);
   const [editListId,   setEditListId]   = useState(null);
   const [selectedByList, setSelectedByList] = useState({});
+  const [confirmDeleteList, setConfirmDeleteList] = useState(null);
 
   const toggleList = (id) => setOpenItems(prev => ({ ...prev, [id]: !(prev[id] ?? true) }));
   const isOpen = (id) => openItems[id] ?? true;
@@ -1072,9 +1074,9 @@ function CustomListsSection({ customLists: clHook, filterItems, open, onOpenChan
                     )}
                     <button
                       style={{ display: 'block', width: '100%', padding: '0.6rem 0.8rem', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', fontSize: '0.8rem', color: '#ef4444' }}
-                      onClick={async () => {
-                        const deleted = await deleteList(list.id);
-                        if (deleted) setMenuOpen(null);
+                      onClick={() => {
+                        setConfirmDeleteList(list);
+                        setMenuOpen(null);
                       }}
                       aria-label={`Delete ${list.name}`}
                     >
@@ -1153,6 +1155,20 @@ function CustomListsSection({ customLists: clHook, filterItems, open, onOpenChan
           title="Add to List"
           onAdd={(item) => addItem(showAddToList, item)}
           onClose={() => setShowAddToList(null)}
+        />
+      )}
+      {confirmDeleteList && (
+        <ConfirmModal
+          title={`Delete "${confirmDeleteList.name}"?`}
+          message={
+            (confirmDeleteList.items || []).length > 0
+              ? `This list has ${confirmDeleteList.items.length} title${confirmDeleteList.items.length === 1 ? '' : 's'}. This can't be undone.`
+              : "This can't be undone."
+          }
+          confirmLabel="Delete list"
+          danger
+          onConfirm={() => deleteList(confirmDeleteList.id)}
+          onClose={() => setConfirmDeleteList(null)}
         />
       )}
     </CollapsibleSection>
@@ -1260,7 +1276,7 @@ function WatchingSection({ watching, open, onOpenChange }) {
             key={item.tmdb_id}
             className="list-row interactive-surface"
             onClick={openDetails}
-            {...getButtonLikeProps({ onPress: openDetails, label: editMode ? `${isSelected ? 'Deselect' : 'Select'} ${item.title}` : `View details for ${item.title}` })}
+            {...(!editMode ? getButtonLikeProps({ onPress: openDetails, label: `View details for ${item.title}` }) : {})}
           >
             <div className="list-row-poster">
               {img && <img src={img} alt={item.title} />}
@@ -1386,7 +1402,7 @@ function WantToWatchSection({ watchlist, watching, open, onOpenChange }) {
             key={item.id}
             className="list-row interactive-surface"
             onClick={openDetails}
-            {...getButtonLikeProps({ onPress: openDetails, label: editMode ? `${isSelected ? 'Deselect' : 'Select'} ${title}` : `View details for ${title}` })}
+            {...(!editMode ? getButtonLikeProps({ onPress: openDetails, label: `View details for ${title}` }) : {})}
           >
             <div className="list-row-poster">
               {img && <img src={img} alt={title} />}
@@ -1422,9 +1438,13 @@ function WantToWatchSection({ watchlist, watching, open, onOpenChange }) {
   );
 }
 
-/* ── History row ── */
+/* ── History row ──
+   No expand/collapse here on purpose: every row must stay the same height
+   whether or not it carries a review, so a written review is signalled by a
+   permanent icon in the meta line instead of a toggle that changes layout.
+   Reading the review itself happens in the media panel (tap the row), which
+   already shows it — this indicator's only job is "you wrote something here". */
 function HistoryRow({ entry, openPanel }) {
-  const [expanded, setExpanded] = useState(false);
   const img   = posterUrl(entry.poster_path, 'w92');
   const title = entry.title || 'Unknown';
   const date  = entry.watched_at
@@ -1438,7 +1458,7 @@ function HistoryRow({ entry, openPanel }) {
     <div
       className="list-row history-list-row interactive-surface"
       onClick={openDetails}
-      {...getButtonLikeProps({ onPress: openDetails, label: `View details for ${title}` })}
+      {...getButtonLikeProps({ onPress: openDetails, label: hasNote ? `View details for ${title} (reviewed)` : `View details for ${title}` })}
     >
       <div className="list-row-poster">
         {img && <img src={img} alt={title} />}
@@ -1448,28 +1468,15 @@ function HistoryRow({ entry, openPanel }) {
         <div className="list-row-meta">
           {date && <span>{date}</span>}
           {ratingLabel && <span className="history-row-rating">{ratingLabel}</span>}
+          {hasNote && (
+            <span className="history-row-note-indicator" title="You wrote a review" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 4h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8l-4 4V6a2 2 0 0 1 2-2z" />
+              </svg>
+            </span>
+          )}
         </div>
       </div>
-      {hasNote && (
-        <button
-          type="button"
-          className="history-row-toggle"
-          aria-expanded={expanded}
-          aria-label={expanded ? `Hide review for ${title}` : `Show review for ${title}`}
-          onClick={(e) => { e.stopPropagation(); setExpanded(v => !v); }}
-        >
-          <svg className={`collapse-chevron${expanded ? ' open' : ''}`} viewBox="0 0 24 24" aria-hidden="true">
-            <polyline points="6 9 12 15 18 9" />
-          </svg>
-        </button>
-      )}
-      {hasNote && (
-        <div className={`collapse-body${expanded ? '' : ' collapsed'}`}>
-          <div className="collapse-body-inner">
-            <div className="history-row-quote">{entry.note}</div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

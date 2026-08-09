@@ -8,6 +8,20 @@ import { useApp } from '../App.jsx';
 // a poster image are dropped before slicing to the section's display count.
 const hasPoster = item => !!item.poster_path;
 
+// TMDB's trending endpoints occasionally return the same title twice in one
+// response (observed on trending/tv/day in staging) — collapse before
+// slicing so a duplicate near the top can't crowd out a real title and so
+// React never sees two siblings with the same `${media_type}-${id}` key.
+const dedupeByMediaId = items => {
+  const seen = new Set();
+  return items.filter(item => {
+    const key = `${item.media_type}-${item.id}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
 // Floor every smaller-card rail aims to clear once poster-less items are
 // dropped, so sections rarely fall short of a full row.
 const MIN_RAIL_SIZE = 14;
@@ -37,14 +51,15 @@ export function useDiscover() {
 
         if (cancelled) return;
 
-        const trendingItems = excludeKidsContent((trendingDay?.results || []).filter(isEnglishOriginTitle), hideKids).slice(0, 20);
+        const trendingItems = dedupeByMediaId(excludeKidsContent((trendingDay?.results || []).filter(isEnglishOriginTitle), hideKids)).slice(0, 20);
         const hero    = trendingItems[0] || null;
         const hotRail = trendingItems.slice(1, 10);
-        const weekly  = excludeKidsContent((trendingWeek?.results || []).filter(isEnglishOriginTitle), hideKids).slice(0, 20);
-        const bingedShows = excludeKidsContent((trendingTVDay?.results || []).filter(isEnglishOriginTitle), hideKids)
-          .filter(hasPoster)
-          .slice(0, Math.max(MIN_RAIL_SIZE, 18))
-          .map(show => ({ ...show, media_type: 'tv' }));
+        const weekly  = dedupeByMediaId(excludeKidsContent((trendingWeek?.results || []).filter(isEnglishOriginTitle), hideKids)).slice(0, 20);
+        const bingedShows = dedupeByMediaId(
+          excludeKidsContent((trendingTVDay?.results || []).filter(isEnglishOriginTitle), hideKids)
+            .filter(hasPoster)
+            .map(show => ({ ...show, media_type: 'tv' }))
+        ).slice(0, Math.max(MIN_RAIL_SIZE, 18));
         // Now and next are separate rails, split strictly on today's date, so
         // neither can show the other's titles. The date TMDB reports on a
         // discover result is the film's *primary* release date, so a film that
@@ -52,14 +67,16 @@ export function useDiscover() {
         // dated in the past — those belong in the cinemas rail, not next to
         // Avengers: Doomsday with a stale year on the card.
         const today = localDateStr();
-        const cinemaMovies = excludeKidsContent((nowPlaying?.results || []).filter(isEnglishOriginTitle), hideKids)
-          .filter(movie => (movie.release_date || '') <= today)
-          .slice(0, 10)
-          .map(movie => ({ ...movie, media_type: 'movie', _cinema: true }));
-        const anticipatedMovies = excludeKidsContent((upcoming?.results || []).filter(isEnglishOriginTitle), hideKids)
-          .filter(movie => (movie.release_date || '') > today)
-          .slice(0, 10)
-          .map(movie => ({ ...movie, media_type: 'movie' }));
+        const cinemaMovies = dedupeByMediaId(
+          excludeKidsContent((nowPlaying?.results || []).filter(isEnglishOriginTitle), hideKids)
+            .filter(movie => (movie.release_date || '') <= today)
+            .map(movie => ({ ...movie, media_type: 'movie', _cinema: true }))
+        ).slice(0, 10);
+        const anticipatedMovies = dedupeByMediaId(
+          excludeKidsContent((upcoming?.results || []).filter(isEnglishOriginTitle), hideKids)
+            .filter(movie => (movie.release_date || '') > today)
+            .map(movie => ({ ...movie, media_type: 'movie' }))
+        ).slice(0, 10);
 
         setData({ hero, onThisDay, hotRail, weekly, bingedShows, cinemaMovies, anticipatedMovies });
       } catch (error) {
