@@ -28,9 +28,6 @@ verify_jwt = false
 [functions.admin-review]
 verify_jwt = false
 
-[functions.marketing-veto]
-verify_jwt = false
-
 [functions.newsletter-subscribe]
 verify_jwt = false
 
