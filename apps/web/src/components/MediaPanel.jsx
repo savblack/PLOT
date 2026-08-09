@@ -1345,10 +1345,17 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
 
                 return (<>
 
-              {/* Primary: Save (full width) */}
+              {/* Status row: watchlist and watch state are the two answers to
+                  "where is this for me", so they share a line rather than being
+                  separated by the secondary actions. Matches mobile. */}
+              {/* Grid rather than flex: a <button> flex item won't shrink to an
+                  even share the way a <div> does, so the two halves come out
+                  lopsided. 1fr 1fr splits them exactly. */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
               <button
                 onClick={() => watchlist.toggle({ ...details, id: itemId, media_type: itemType })}
                 style={{
+                  minWidth: 0,
                   padding: '0.6rem 0.5rem', borderRadius: '0.75rem', cursor: 'pointer',
                   fontSize: '0.9rem', fontWeight: 600, transition: 'all 0.18s', boxSizing: 'border-box',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
@@ -1361,10 +1368,8 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                 {inList ? MEDIA_PANEL.inWatchlist : MEDIA_PANEL.addToWatchlist}
               </button>
 
-              {/* Secondary tray */}
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
                 {/* Watch status (with dropdown) */}
-                <div style={{ flex: 1, minWidth: 0, position: 'relative' }} onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) setShowStatusDropdown(false); }}>
+                <div style={{ minWidth: 0, position: 'relative' }} onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) setShowStatusDropdown(false); }}>
                   <button
                     onClick={() => setShowStatusDropdown(v => !v)}
                     disabled={!!statusActionPending}
@@ -1409,6 +1414,10 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                   )}
                 </div>
 
+              </div>
+
+              {/* Secondary tray */}
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
                 {/* Favourite */}
                 <button
                   onClick={() => favorites.toggleFavorite({ ...details, id: itemId, media_type: itemType })}
