@@ -16,7 +16,7 @@
     "preview": "npm run preview -w @plot/web",
     "lint": "eslint .",
     "check": "npm run lint && npm run build",
-    "test:unit": "npm run test:unit -w @plot/web",
+    "test:unit": "npm run test:unit -w @plot/web && npm run test:unit -w @plot/core",
     "test:smoke": "npm run test:smoke -w @plot/web",
     "test:website": "node --test apps/website/functions/_lib/*.test.js",
     "footer": "node scripts/build-footer.mjs",
