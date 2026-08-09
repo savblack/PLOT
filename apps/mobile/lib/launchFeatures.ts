@@ -38,3 +38,9 @@ export const SHOW_WATCHLIST_AVAILABILITY_ALERTS = false;
 // pull it instantly (e.g. bad recommendations, RPC issues) without touching
 // the underlying get_for_you() pipeline.
 export const SHOW_FOR_YOU_RAIL = true;
+
+// Pricing/upgrade UI. Hidden while pricing isn't ready to be public. Mobile
+// has no upgrade nudge built yet — declared so the two flag sets stay
+// comparable. Mobile never gets a purchase button regardless of this flag
+// (Apple's anti-steering rules keep purchases on the web app).
+export const SHOW_PRICING_PAGE = false;

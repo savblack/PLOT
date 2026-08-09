@@ -29,3 +29,11 @@ export const SHOW_WATCHLIST_AVAILABILITY_ALERTS = false;
 // pull it instantly (e.g. bad recommendations, RPC issues) without touching
 // the underlying get_for_you() pipeline.
 export const SHOW_FOR_YOU_RAIL = true;
+
+// Pricing/plans page (/pricing, /plans) and the free-user "Upgrade" row in
+// Settings. Hidden while pricing isn't ready to be public; existing
+// subscribers can still manage their subscription regardless of this flag,
+// and the marketing site's own premium-intent signup link is gated
+// separately (see apps/website/functions/_middleware.js). Flip to true to
+// bring PlansPage back.
+export const SHOW_PRICING_PAGE = false;

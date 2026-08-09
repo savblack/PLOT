@@ -1,10 +1,19 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { FREE_CUSTOM_LIST_CAP, isPremiumProfile, canCreateCustomList, friendlyPremiumError } from '../../premium.js';
+import { FREE_CUSTOM_LIST_CAP, PREMIUM_PLANS, isPremiumProfile, canCreateCustomList, friendlyPremiumError } from '../../premium.js';
 
 test('FREE_CUSTOM_LIST_CAP is 3', () => {
   assert.equal(FREE_CUSTOM_LIST_CAP, 3);
+});
+
+test('PREMIUM_PLANS exposes the monthly and yearly plan labels and is frozen', () => {
+  assert.deepEqual(PREMIUM_PLANS, {
+    monthly: { id: 'monthly', label: '$3/mo' },
+    yearly: { id: 'yearly', label: '$25/yr' },
+  });
+  assert.ok(Object.isFrozen(PREMIUM_PLANS));
+  assert.throws(() => { PREMIUM_PLANS.monthly = 'x'; }, TypeError);
 });
 
 test('isPremiumProfile reads is_premium truthily and handles a missing profile', () => {
