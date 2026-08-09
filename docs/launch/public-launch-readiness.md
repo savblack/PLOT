@@ -1,6 +1,6 @@
 # PLOT Public Launch Readiness
 
-Last reviewed: 2026-06-21
+Last reviewed: 2026-08-09
 
 This document is the launch source of truth for the remaining public-release tickets in the `PLOT Web App` Linear project. It records the production checks that were verified live, the release decisions made for first launch, and the rollback/support plan.
 
@@ -11,21 +11,21 @@ The original launch shape was an invite-only beta (≤50). For an **open** publi
 Code changes (this repo):
 
 - **Bot-signup protection.** Auth forms now render a Cloudflare Turnstile widget and pass `captchaToken` on signup, login, password reset, and resend (`src/components/Turnstile.jsx`, `src/pages/AuthPage.jsx`). The widget is a no-op until `VITE_TURNSTILE_SITE_KEY` is set, so it stays inert in local dev and CI.
-- **`tmdb-proxy` lockdown.** CORS is restricted to `*.theplot.tv`, localhost, and `*.vercel.app`; cross-site browser origins get a 403 (`supabase/functions/tmdb-proxy/index.ts`). An earlier in-memory per-IP rate limit was **removed** as ineffective — Supabase spreads a burst across isolates, each with its own empty counter (verified: 400 concurrent requests all returned 200). Rate limiting is handled upstream by a Cloudflare Worker fronting the proxy (`workers/tmdb-proxy/`); the app reaches the Worker via `VITE_TMDB_PROXY_URL`.
+- **`tmdb-proxy` lockdown.** CORS is restricted to `theplot.tv` (+ subdomains), localhost, and `*.plot-5wr.pages.dev` (Cloudflare Pages preview deploys); cross-site browser origins get a 403 (`supabase/functions/tmdb-proxy/index.ts`). An earlier in-memory per-IP rate limit was **removed** as ineffective — Supabase spreads a burst across isolates, each with its own empty counter (verified: 400 concurrent requests all returned 200). Rate limiting is handled upstream by a Cloudflare Worker fronting the proxy (`workers/tmdb-proxy/`); the app reaches the Worker via `VITE_TMDB_PROXY_URL`.
 - **CI now runs `node --test tests/unit/*.test.js`** so the existing unit coverage gates merges (`.github/workflows/ci.yml`).
 
 Ops / dashboard steps required before flipping signups open (NOT in code):
 
-- Supabase Auth → Bot & Abuse Protection: enable Cloudflare Turnstile and set the **secret** key (the **site** key goes in Vercel as `VITE_TURNSTILE_SITE_KEY`).
+- Supabase Auth → Bot & Abuse Protection: enable Cloudflare Turnstile and set the **secret** key (the **site** key goes in the Cloudflare Pages project as a `VITE_TURNSTILE_SITE_KEY` build variable).
 - Supabase Auth → SMTP: point at Resend (`RESEND_API_KEY` + verified `theplot.tv` already exist). The built-in Supabase email sender is rate-limited and not for production — confirmation and reset emails will throttle under public volume without this.
 - Confirm Supabase Auth's built-in rate limits (sign-in / sign-up / email) are at production-appropriate values.
-- Vercel: add `VITE_TURNSTILE_SITE_KEY`. Redeploy `tmdb-proxy`.
+- Cloudflare Pages: add `VITE_TURNSTILE_SITE_KEY`. Redeploy `tmdb-proxy`.
 
 ## Production configuration snapshot
 
-Verified live on 2026-06-13:
+Verified live on 2026-06-13 against Vercel; hosting has since migrated to Cloudflare Pages, so re-verify env names against the current Cloudflare Pages project before relying on this list:
 
-- Vercel production env names present for `plot`:
+- Cloudflare Pages production build env names present for `plot`:
   - `VITE_SUPABASE_URL`
   - `VITE_SUPABASE_ANON_KEY`
   - `VITE_TMDB_PROXY_URL`
@@ -49,12 +49,12 @@ Production functions expected for launch:
 
 - Public:
   - `marketing-feed`
-  - `marketing-veto`
   - `newsletter-subscribe`
   - `calendar-feed`
 - Authenticated:
   - `tmdb-proxy`
   - `delete-account`
+  - `export-user-data`
   - `media-sync`
   - `notify-feedback`
   - `trakt-sync`
@@ -122,7 +122,7 @@ Monitoring stack:
 - Product analytics: PostHog
 - App-level crash containment: React `ErrorBoundary`
 - Backend health: Supabase function logs
-- Frontend error reporting decision for first launch: no extra Sentry-style SDK. Use Vercel deploy health, manual QA, PostHog funnel anomalies, and Supabase/Vercel logs; revisit a dedicated client error sink after launch.
+- Frontend error reporting decision for first launch: no extra Sentry-style SDK. Use Cloudflare Pages deploy health, manual QA, PostHog funnel anomalies, and Supabase/Cloudflare logs; revisit a dedicated client error sink after launch.
 
 Launch review cadence:
 
@@ -154,13 +154,13 @@ Release gate:
 - `npm run check`
 - `node --test tests/unit/*.test.js`
 - `npm run test:smoke` with Playwright Chromium installed
-- manual pass from [public-launch-checklist.md](/Users/savannahblack/.codex/worktrees/122d/PLOT/docs/qa/public-launch-checklist.md)
+- manual pass from [public-launch-checklist.md](../qa/public-launch-checklist.md)
 - legal/vendor checks complete:
   - TMDB attribution present
   - commercial-use decision recorded
   - privacy/terms updated
 - production config checks complete:
-  - required Vercel env names present
+  - required Cloudflare Pages env names present
   - required Supabase secrets present
   - required functions deployed
 
@@ -176,7 +176,7 @@ Launch blockers:
 
 Web rollback:
 
-- Re-promote the previous healthy Vercel deployment if the latest deploy breaks auth, routing, or core app rendering.
+- Re-promote the previous healthy Cloudflare Pages deployment if the latest deploy breaks auth, routing, or core app rendering.
 - If needed, revert the offending Git commit and redeploy to restore branch parity.
 
 Edge-function rollback:
@@ -192,7 +192,7 @@ Database rollback:
   - a corrective follow-up migration, or
   - restoring from the pre-deploy backup if the blast radius is unacceptable.
 
-Launch decision:
+Launch decision (superseded):
 
-- Data export is intentionally out of scope for first public release.
-- If a user requests export during beta, respond manually rather than promising an in-product export feature that does not exist.
+- Data export was originally scoped out of first public release; it has since shipped — Settings → "Export all data" (JSON/CSV) calls the `export-user-data` edge function (`apps/web/src/components/SettingsView.jsx`, `handleExportData`). Treat `export-user-data` as a launch-relevant production function alongside the ones listed above.
+- The one-time `.ics` calendar snapshot download (Settings → Calendar → "Download .ics") is also shipped and is not Premium-gated. Only the *live, subscribable* calendar feed link (Settings → Calendar → Subscribe) is Premium-gated — non-Premium accounts see a "Request access" action instead of "Generate link".
