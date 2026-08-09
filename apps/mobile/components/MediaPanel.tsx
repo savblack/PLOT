@@ -4,6 +4,7 @@
  */
 import { STAR_COUNT, ratingToStars, starsToRating } from '@plot/core/ratings.js';
 import { localDateStr } from '@plot/core/date.js';
+import { markMediaAsWatched } from '@plot/core/mediaStatus.js';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useEffect, useState, useRef, useMemo } from 'react';
 import {
@@ -857,8 +858,27 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                     <TouchableOpacity
                       style={styles.btnSecondary}
                       onPress={async () => {
-                        await history.logWatched({ ...details, id: itemId, media_type: itemType }, { watchedAt: defaultWatchedAt });
-                        if (!isMovie && isWatching) await watching.stopWatching(itemId);
+                        // Marking something watched retires it from the
+                        // watchlist: it's no longer something you want to watch.
+                        // core's markMediaAsWatched sequences that and rolls the
+                        // history entry back if a later step fails, so a half-
+                        // applied state can't be left behind. Web has used it
+                        // since it was written; mobile was doing a bare
+                        // logWatched and leaving the title sitting in Saved.
+                        const result = await markMediaAsWatched({
+                          logWatched: () => history.logWatched(
+                            { ...details, id: itemId, media_type: itemType },
+                            { watchedAt: defaultWatchedAt },
+                          ),
+                          clearWatching:   () => watching.stopWatching(itemId),
+                          removeFromSaved: () => watchlist.removeFromList(itemId),
+                          rollbackHistory: () => history.removeEntry(itemId, itemType),
+                          shouldClearWatching:   !isMovie && isWatching,
+                          shouldRemoveFromSaved: inList && !isWatching,
+                        });
+                        if (!result.ok) {
+                          Alert.alert('Could not update', history.getLastError() || result.error);
+                        }
                       }}
                     >
                       <IconCheck />
