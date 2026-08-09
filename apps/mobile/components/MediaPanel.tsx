@@ -684,7 +684,13 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
   const trailerKey = trailer?.key || null;
 
   const hasSavedReview = !!(watchedEntry?.rating || watchedEntry?.note?.trim() || watchedEntry?.dnf);
-  const reviewDirty    = !!watchedEntry && (localRating !== (watchedEntry.rating || 0) || localReview.trim() !== (watchedEntry.note || '').trim() || localDnf !== !!watchedEntry.dnf);
+  const savedWatchedAt = String(watchedEntry?.watched_at || defaultWatchedAt).slice(0, 10);
+  const reviewDirty    = !!watchedEntry && (
+    localRating !== (watchedEntry.rating || 0) ||
+    localReview.trim() !== (watchedEntry.note || '').trim() ||
+    localDnf !== !!watchedEntry.dnf ||
+    localWatchedAt !== savedWatchedAt
+  );
 
   return (
     <>
@@ -928,7 +934,8 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                       numberOfLines={3}
                       maxLength={280}
                     />
-                    {(hasSavedReview || localRating > 0 || localReview.trim() || localDnf) && (
+                    {/* Also when only the date moved — see web. */}
+                    {(hasSavedReview || localRating > 0 || localReview.trim() || localDnf || localWatchedAt !== savedWatchedAt) && (
                       <TouchableOpacity
                         style={[styles.btnPrimary, { marginTop: spacing.sm }]}
                         disabled={savingReview}

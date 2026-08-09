@@ -918,6 +918,9 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
   const savedRating = watchedEntry?.rating || 0;
   const savedReview = watchedEntry?.note || '';
   const savedDnf = !!watchedEntry?.dnf;
+  // watched_at is timestamptz, so Postgres hands back "2026-06-10T00:00:00+00:00".
+  // <input type="date"> only accepts yyyy-mm-dd and renders blank for anything
+  // else, so it has to be sliced before it reaches the field.
   const savedWatchedAt = watchedEntry?.watched_at ? watchedEntry.watched_at.slice(0, 10) : defaultWatchedAt;
   const hasReviewDraft = localRating > 0 || !!localReview.trim() || localDnf || (!!watchedEntry && localWatchedAt !== savedWatchedAt);
   const reviewDirty = !!watchedEntry && (
