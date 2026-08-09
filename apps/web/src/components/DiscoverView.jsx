@@ -21,7 +21,6 @@ import GroupedFilterMenu from './GroupedFilterMenu.jsx';
 import SectionToggleIcon from './SectionToggleIcon.jsx';
 import { SHOW_SOCIAL_FEED, SHOW_FOR_YOU_RAIL } from '../launchFeatures.js';
 
-
 /* ── Rail ── */
 function Rail({ children }) {
   const { ref, handlers } = useDragScroll();
