@@ -3,10 +3,13 @@
  * Sections: backdrop → title/meta → actions → watching/watched → where to watch → episodes (TV)
  */
 import { STAR_COUNT, ratingToStars, starsToRating } from '@plot/core/ratings.js';
+import { localDateStr } from '@plot/core/date.js';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useEffect, useState, useRef, useMemo } from 'react';
 import {
   View, Text, Image, ScrollView, TouchableOpacity, Modal,
   StyleSheet, Dimensions, ActivityIndicator, TextInput, Animated, Share, Linking, Alert,
+  Platform,
 } from 'react-native';
 import Svg, { Path, Line, Polyline, Circle, Polygon, Rect } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -497,6 +500,29 @@ interface MediaPanelProps {
   onClose: () => void;
 }
 
+/**
+ * "YYYY-MM-DD" from a Date, read in local time. The picker returns the calendar
+ * day the user tapped, so formatting via toISOString would shift it a day for
+ * anyone behind UTC. Core's localDateStr can't be used here: it takes a day
+ * offset from today, not a Date.
+ */
+function ymd(date: Date): string {
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${date.getFullYear()}-${m}-${d}`;
+}
+
+/**
+ * "12 Mar 2026" from a date string, without going through UTC. Tolerates a full
+ * ISO timestamp as well as a bare YYYY-MM-DD, because `history.watched_at`
+ * comes back from Postgres as the former.
+ */
+function formatWatchedOn(value: string): string {
+  const [y, m, d] = String(value).slice(0, 10).split('-').map(Number);
+  if (!y || !m || !d) return value;
+  return new Date(y, m - 1, d).toLocaleDateString('en', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
 export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProps) {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
@@ -516,6 +542,8 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
 
   const [localRating, setLocalRating] = useState(0);
   const [localReview, setLocalReview] = useState('');
+  const [localWatchedAt, setLocalWatchedAt] = useState('');
+  const [pickingDate, setPickingDate] = useState(false);
   const [localDnf,    setLocalDnf]    = useState(false);
   const [savingReview, setSavingReview] = useState(false);
 
@@ -529,6 +557,12 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
   const isFav      = favorites.isFavorite(itemId);
   const isInAnyList = customLists.lists.some((l: any) => customLists.isInList(l.id, itemId));
   const watchedEntry = history.entries?.find((e: any) => e.tmdb_id === Number(itemId) && e.media_type === itemType);
+  // Default to the day the title was SAVED, not today — if it sat on the
+  // watchlist for a month before being marked watched, "today" is the one date
+  // it almost certainly wasn't. Web makes the same call. Falls back to today
+  // when it was never saved first.
+  const watchlistEntry   = watchlist.items?.find((i: any) => Number(i.tmdb_id) === Number(itemId));
+  const defaultWatchedAt = watchlistEntry?.created_at ? String(watchlistEntry.created_at).slice(0, 10) : localDateStr();
 
   const handleShare = async () => {
     try {
@@ -544,6 +578,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
       setLocalRating(watchedEntry.rating || 0);
       setLocalReview(watchedEntry.note   || '');
       setLocalDnf(watchedEntry.dnf       || false);
+      setLocalWatchedAt(String(watchedEntry.watched_at || defaultWatchedAt).slice(0, 10));
     }
   }, [watchedEntry?.id]);
 
@@ -816,7 +851,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                     <TouchableOpacity
                       style={styles.btnSecondary}
                       onPress={async () => {
-                        await history.logWatched({ ...details, id: itemId, media_type: itemType });
+                        await history.logWatched({ ...details, id: itemId, media_type: itemType }, { watchedAt: defaultWatchedAt });
                         if (!isMovie && isWatching) await watching.stopWatching(itemId);
                       }}
                     >
@@ -833,6 +868,43 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                       <IconCheck color="#4ade80" />
                       <Text style={[styles.btnPrimaryText, { color: '#4ade80' }]}>Watched</Text>
                     </TouchableOpacity>
+
+                    {/* Date watched — mirrors web's "Watched on" row. Capped at
+                        today: a future watch date would sort into a month group
+                        that hasn't happened. */}
+                    <View style={styles.watchedOnRow}>
+                      <Text style={styles.watchedOnLabel}>Watched on</Text>
+                      <TouchableOpacity
+                        style={styles.watchedOnBtn}
+                        onPress={() => setPickingDate(true)}
+                        accessibilityRole="button"
+                        accessibilityLabel="Date watched"
+                      >
+                        <Text style={styles.watchedOnValue}>
+                          {formatWatchedOn(localWatchedAt || defaultWatchedAt)}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                    {pickingDate && (
+                      <DateTimePicker
+                        value={new Date(`${localWatchedAt || defaultWatchedAt}T12:00:00`)}
+                        mode="date"
+                        maximumDate={new Date()}
+                        display={Platform.OS === 'ios' ? 'inline' : 'default'}
+                        onChange={(event, date) => {
+                          // Android fires once and dismisses itself; iOS keeps the
+                          // inline picker open until it's closed explicitly.
+                          if (Platform.OS !== 'ios') setPickingDate(false);
+                          if (event.type === 'dismissed' || !date) return;
+                          setLocalWatchedAt(ymd(date));
+                        }}
+                      />
+                    )}
+                    {pickingDate && Platform.OS === 'ios' && (
+                      <TouchableOpacity style={styles.watchedOnDone} onPress={() => setPickingDate(false)}>
+                        <Text style={styles.watchedOnDoneText}>{COMMON.done}</Text>
+                      </TouchableOpacity>
+                    )}
 
                     {/* Review section */}
                     <Text style={styles.sectionTitle}>Your Review</Text>
@@ -862,7 +934,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                         disabled={savingReview}
                         onPress={async () => {
                           setSavingReview(true);
-                          await history.updateEntry(itemId, { rating: localRating || null, note: localReview.trim() || null, dnf: localDnf }, itemType);
+                          await history.updateEntry(itemId, { rating: localRating || null, note: localReview.trim() || null, dnf: localDnf, watched_at: localWatchedAt || defaultWatchedAt }, itemType);
                           setSavingReview(false);
                         }}
                       >
@@ -1016,6 +1088,20 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   dnfChip: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: spacing.md, paddingVertical: 5, borderRadius: radii.pill, borderWidth: 1.5, borderColor: colors.border },
   dnfChipActive: { borderColor: 'rgba(251,146,60,0.5)', backgroundColor: 'rgba(251,146,60,0.12)' },
   dnfText: { fontFamily: fontFamily.sansBold, fontSize: 11, color: colors.textMuted },
+  watchedOnRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    marginBottom: spacing.md,
+  },
+  watchedOnLabel: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted },
+  watchedOnBtn: {
+    paddingHorizontal: spacing.md, paddingVertical: 6,
+    borderRadius: radii.md, borderWidth: 1, borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  watchedOnValue: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textPrimary },
+  watchedOnDone: { alignSelf: 'flex-end', paddingVertical: spacing.xs, paddingHorizontal: spacing.sm },
+  watchedOnDoneText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.accent },
+
   reviewInput: {
     borderWidth: 1, borderColor: colors.border, borderRadius: radii.md,
     padding: spacing.md, fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textPrimary,
