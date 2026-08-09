@@ -794,18 +794,59 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
 
                 {/* ── Action buttons ── */}
                 <View style={styles.actionsCol}>
-                  {/* Watchlist — same copy as the web panel's primary action */}
-                  {!isWatching && (
-                    <TouchableOpacity
-                      style={[styles.btnPrimary, inList && styles.btnSaved]}
-                      onPress={() => watchlist.toggle({ ...details, id: itemId, media_type: itemType })}
-                    >
-                      {inList && <IconCheck color="#4ade80" />}
-                      <Text style={[styles.btnPrimaryText, inList && { color: '#4ade80' }]}>
-                        {inList ? MEDIA_PANEL.inWatchlist : MEDIA_PANEL.addToWatchlist}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
+                  {/* Status row: watchlist and watch state are the two answers to
+                      "where is this for me", so they sit side by side rather than
+                      stacked either side of the secondary actions. */}
+                  <View style={styles.actionsRow}>
+                    {!isWatching && (
+                      <TouchableOpacity
+                        style={[styles.btnPrimary, styles.btnHalf, inList && styles.btnSaved]}
+                        onPress={() => watchlist.toggle({ ...details, id: itemId, media_type: itemType })}
+                      >
+                        {inList && <IconCheck color="#4ade80" />}
+                        <Text style={[styles.btnPrimaryText, inList && { color: '#4ade80' }]}>
+                          {inList ? MEDIA_PANEL.inWatchlist : MEDIA_PANEL.addToWatchlist}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                    {watched ? (
+                      <TouchableOpacity
+                        style={[styles.btnPrimary, styles.btnHalf, styles.btnSaved]}
+                        onPress={() => history.removeEntry(itemId, itemType)}
+                      >
+                        <IconCheck color="#4ade80" />
+                        <Text style={[styles.btnPrimaryText, { color: '#4ade80' }]}>Watched</Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <TouchableOpacity
+                        style={styles.btnSecondary}
+                        onPress={async () => {
+                          // Marking something watched retires it from the
+                          // watchlist: it's no longer something you want to watch.
+                          // core's markMediaAsWatched sequences that and rolls the
+                          // history entry back if a later step fails, so a half-
+                          // applied state can't be left behind.
+                          const result = await markMediaAsWatched({
+                            logWatched: () => history.logWatched(
+                              { ...details, id: itemId, media_type: itemType },
+                              { watchedAt: defaultWatchedAt },
+                            ),
+                            clearWatching:   () => watching.stopWatching(itemId),
+                            removeFromSaved: () => watchlist.removeFromList(itemId),
+                            rollbackHistory: () => history.removeEntry(itemId, itemType),
+                            shouldClearWatching:   !isMovie && isWatching,
+                            shouldRemoveFromSaved: inList && !isWatching,
+                          });
+                          if (!result.ok) {
+                            Alert.alert('Could not update', history.getLastError() || result.error);
+                          }
+                        }}
+                      >
+                        <IconCheck />
+                        <Text style={styles.btnSecondaryText}>{isMovie ? MEDIA.markWatched : MEDIA.markAllWatched}</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
 
                   {/* Secondary row */}
                   <View style={styles.actionsRow}>
@@ -834,67 +875,29 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                   </View>
                 </View>
 
-                {/* ── Watching / watched ── */}
-                {!watched ? (
-                  <View style={styles.actionsRow}>
-                    {!isMovie && (
-                      <TouchableOpacity
-                        style={[styles.btnSecondary, isWatching && styles.btnWatching]}
-                        onPress={async () => {
-                          if (isWatching) {
-                            await watching.stopWatching(itemId);
-                          } else {
-                            await watching.startWatching({ ...details, id: itemId, media_type: 'tv' });
-                            if (inList) await watchlist.toggle({ ...details, id: itemId, media_type: itemType });
-                          }
-                        }}
-                      >
-                        {isWatching ? <IconStop /> : <IconPlay />}
-                        <Text style={[styles.btnSecondaryText, isWatching && { color: '#818cf8' }]}>
-                          {isWatching ? MEDIA.stopWatching : MEDIA.startWatching}
-                        </Text>
-                      </TouchableOpacity>
-                    )}
-                    <TouchableOpacity
-                      style={styles.btnSecondary}
-                      onPress={async () => {
-                        // Marking something watched retires it from the
-                        // watchlist: it's no longer something you want to watch.
-                        // core's markMediaAsWatched sequences that and rolls the
-                        // history entry back if a later step fails, so a half-
-                        // applied state can't be left behind. Web has used it
-                        // since it was written; mobile was doing a bare
-                        // logWatched and leaving the title sitting in Saved.
-                        const result = await markMediaAsWatched({
-                          logWatched: () => history.logWatched(
-                            { ...details, id: itemId, media_type: itemType },
-                            { watchedAt: defaultWatchedAt },
-                          ),
-                          clearWatching:   () => watching.stopWatching(itemId),
-                          removeFromSaved: () => watchlist.removeFromList(itemId),
-                          rollbackHistory: () => history.removeEntry(itemId, itemType),
-                          shouldClearWatching:   !isMovie && isWatching,
-                          shouldRemoveFromSaved: inList && !isWatching,
-                        });
-                        if (!result.ok) {
-                          Alert.alert('Could not update', history.getLastError() || result.error);
-                        }
-                      }}
-                    >
-                      <IconCheck />
-                      <Text style={styles.btnSecondaryText}>{isMovie ? MEDIA.markWatched : MEDIA.markAllWatched}</Text>
-                    </TouchableOpacity>
-                  </View>
-                ) : (
-                  <View style={{ marginBottom: spacing.lg }}>
-                    <TouchableOpacity
-                      style={[styles.btnPrimary, styles.btnSaved]}
-                      onPress={() => history.removeEntry(itemId, itemType)}
-                    >
-                      <IconCheck color="#4ade80" />
-                      <Text style={[styles.btnPrimaryText, { color: '#4ade80' }]}>Watched</Text>
-                    </TouchableOpacity>
+                {/* TV only: start/stop watching sits on its own line, since it
+                    is a third state rather than a peer of the two above. */}
+                {!watched && !isMovie && (
+                  <TouchableOpacity
+                    style={[styles.btnSecondary, styles.btnStandalone, isWatching && styles.btnWatching]}
+                    onPress={async () => {
+                      if (isWatching) {
+                        await watching.stopWatching(itemId);
+                      } else {
+                        await watching.startWatching({ ...details, id: itemId, media_type: 'tv' });
+                        if (inList) await watchlist.toggle({ ...details, id: itemId, media_type: itemType });
+                      }
+                    }}
+                  >
+                    {isWatching ? <IconStop /> : <IconPlay />}
+                    <Text style={[styles.btnSecondaryText, isWatching && { color: '#818cf8' }]}>
+                      {isWatching ? MEDIA.stopWatching : MEDIA.startWatching}
+                    </Text>
+                  </TouchableOpacity>
+                )}
 
+                {watched && (
+                  <View style={{ marginBottom: spacing.lg }}>
                     {/* Date watched — mirrors web's "Watched on" row. Capped at
                         today: a future watch date would sort into a month group
                         that hasn't happened. */}
@@ -1098,6 +1101,11 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   // below spaces itself (sectionTitle marginTop).
   actionsCol: { gap: spacing.sm, marginBottom: spacing.sm },
   actionsRow: { flexDirection: 'row', gap: spacing.sm },
+  // btnSecondary is flex:1 for row use; btnPrimary is not, so it needs this to
+  // share a row evenly. btnStandalone undoes the flex when one sits alone in a
+  // column, where flex:1 would stretch it to the container's height.
+  btnHalf: { flex: 1 },
+  btnStandalone: { flex: 0, marginBottom: spacing.sm },
 
   btnPrimary: {
     backgroundColor: colors.accent, borderRadius: radii.md,
