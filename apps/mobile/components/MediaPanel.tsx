@@ -892,24 +892,30 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                       </TouchableOpacity>
                     </View>
                     {pickingDate && (
-                      <DateTimePicker
-                        value={new Date(`${localWatchedAt || defaultWatchedAt}T12:00:00`)}
-                        mode="date"
-                        maximumDate={new Date()}
-                        display={Platform.OS === 'ios' ? 'inline' : 'default'}
-                        onChange={(event, date) => {
-                          // Android fires once and dismisses itself; iOS keeps the
-                          // inline picker open until it's closed explicitly.
-                          if (Platform.OS !== 'ios') setPickingDate(false);
-                          if (event.type === 'dismissed' || !date) return;
-                          setLocalWatchedAt(ymd(date));
-                        }}
-                      />
-                    )}
-                    {pickingDate && Platform.OS === 'ios' && (
-                      <TouchableOpacity style={styles.watchedOnDone} onPress={() => setPickingDate(false)}>
-                        <Text style={styles.watchedOnDoneText}>{COMMON.done}</Text>
-                      </TouchableOpacity>
+                      // The inline picker sizes itself to its content, so it needs
+                      // centring rather than stretching — left-aligned it sat off to
+                      // one side of the sheet with dead space beside it.
+                      <View style={styles.datePickerWrap}>
+                        <DateTimePicker
+                          value={new Date(`${localWatchedAt || defaultWatchedAt}T12:00:00`)}
+                          mode="date"
+                          maximumDate={new Date()}
+                          display={Platform.OS === 'ios' ? 'inline' : 'default'}
+                          style={styles.datePicker}
+                          onChange={(event, date) => {
+                            // Android fires once and dismisses itself; iOS keeps the
+                            // inline picker open until it's closed explicitly.
+                            if (Platform.OS !== 'ios') setPickingDate(false);
+                            if (event.type === 'dismissed' || !date) return;
+                            setLocalWatchedAt(ymd(date));
+                          }}
+                        />
+                        {Platform.OS === 'ios' && (
+                          <TouchableOpacity style={styles.watchedOnDone} onPress={() => setPickingDate(false)}>
+                            <Text style={styles.watchedOnDoneText}>{COMMON.done}</Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
                     )}
 
                     {/* Review section */}
@@ -1097,16 +1103,29 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   dnfText: { fontFamily: fontFamily.sansBold, fontSize: 11, color: colors.textMuted },
   watchedOnRow: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    // The Watched button above is a filled block, so the row needs real
+    // separation from it — butted up against the button they read as one
+    // control. Larger above than below, since the review block follows.
+    marginTop: spacing.lg,
     marginBottom: spacing.md,
   },
   watchedOnLabel: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted },
+  // Same pill as the Didn't finish chip beside it: pill radius, 1.5 border,
+  // small bold uppercase-ish label. They sit in the same block, so matching
+  // them stops the review area reading as two different control languages.
   watchedOnBtn: {
-    paddingHorizontal: spacing.md, paddingVertical: 6,
-    borderRadius: radii.md, borderWidth: 1, borderColor: colors.border,
-    backgroundColor: colors.surface,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 5,
+    borderRadius: radii.pill,
+    borderWidth: 1.5,
+    borderColor: colors.border,
   },
-  watchedOnValue: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textPrimary },
-  watchedOnDone: { alignSelf: 'flex-end', paddingVertical: spacing.xs, paddingHorizontal: spacing.sm },
+  watchedOnValue: { fontFamily: fontFamily.sansBold, fontSize: 11, color: colors.textMuted },
+  datePickerWrap: { alignItems: 'center', marginBottom: spacing.md },
+  // The inline picker reports no intrinsic width to flexbox, so it needs one
+  // to centre against; 320 is the widest the iOS calendar grid draws.
+  datePicker: { width: 320, alignSelf: 'center' },
+  watchedOnDone: { alignSelf: 'center', paddingVertical: spacing.sm, paddingHorizontal: spacing.lg },
   watchedOnDoneText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.accent },
 
   reviewInput: {
