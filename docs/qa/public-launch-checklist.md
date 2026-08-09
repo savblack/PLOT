@@ -1,6 +1,6 @@
 # PLOT Public Launch Checklist
 
-Last reviewed: 2026-06-13
+Last reviewed: 2026-08-09
 
 Use this checklist for the signed-in launch pass. Run it on desktop and at a mobile width around `390x844`.
 
@@ -54,9 +54,10 @@ Use this checklist for the signed-in launch pass. Run it on desktop and at a mob
 - Open History and move across months with and without entries.
 - Confirm same-day direct-to-streaming titles do not duplicate.
 - Leave the app open across a local date change if feasible, or simulate the date boundary, and confirm relative labels refresh.
-- Generate a calendar link.
+- On a non-Premium account, confirm the calendar Subscribe row shows "Request access" (Premium-gated) rather than a generate action, and that requesting access records feedback and flips the row to "Requested".
+- On a Premium account, generate a calendar link.
 - Revoke the calendar link.
-- Download the `.ics` snapshot export.
+- Download the `.ics` snapshot export (not Premium-gated — confirm it works on a non-Premium account too).
 
 ## Settings and Support
 
@@ -65,6 +66,7 @@ Use this checklist for the signed-in launch pass. Run it on desktop and at a mob
 - Submit feedback with no screenshot.
 - Submit feedback with screenshots.
 - Force an attachment failure if possible and confirm the new attachment-specific error message appears.
+- Export all data (JSON and CSV) and confirm both downloads succeed and are not Premium-gated.
 - Trigger account deletion only in a disposable test account and confirm the flow reaches a success state.
 
 ## Accessibility and Mobile

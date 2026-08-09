@@ -19,9 +19,7 @@ import LoadingSpinner from './LoadingSpinner.jsx';
 import { track, EVENTS } from '../lib/analytics.js';
 import GroupedFilterMenu from './GroupedFilterMenu.jsx';
 import SectionToggleIcon from './SectionToggleIcon.jsx';
-import { getButtonLikeProps } from '../utils/interactive.js';
 import { SHOW_SOCIAL_FEED, SHOW_FOR_YOU_RAIL } from '../launchFeatures.js';
-
 
 /* ── Rail ── */
 function Rail({ children }) {
@@ -112,29 +110,30 @@ function rankBadgeClass(rank) {
   return ' rank-rest';
 }
 
-/* ── Poster card with optional rank badge ── */
+/* ── Poster card with optional rank badge ──
+   Fav/Save stay real, always-visible buttons anchored to .media-card
+   (position:relative) rather than nested inside the "view details" button,
+   so no control ends up nested inside another one. */
 function RankedCard({ item, rank, showRank = true, openPanel, watchlist }) {
   const title = item.title || item.name;
   const img   = posterUrl(item.poster_path, 'w185');
   const type  = item.media_type || 'movie';
   const openDetails = () => openPanel(item.id, type);
   return (
-    <div
-      className="media-card interactive-surface"
-      onClick={openDetails}
-      {...getButtonLikeProps({ onPress: openDetails, label: `View details for ${title}` })}
-    >
-      <div className="media-card-img">
-        {img
-          ? <img src={img} alt={title} loading="lazy" />
-          : <div className="media-card-img-placeholder" />
-        }
-        <FavBtn item={item} />
-        <SaveBtn item={item} watchlist={watchlist} />
-        {showRank && <span className={`discover-rank-badge${rankBadgeClass(rank)}`}>{rank}</span>}
-      </div>
-      <div className="media-card-title">{title}</div>
-      <div className="media-card-meta">{cardMeta(item)}</div>
+    <div className="media-card">
+      <button type="button" className="media-card-hit interactive-surface" onClick={openDetails} aria-label={`View details for ${title}`}>
+        <div className="media-card-img">
+          {img
+            ? <img src={img} alt={title} loading="lazy" />
+            : <div className="media-card-img-placeholder" />
+          }
+          {showRank && <span className={`discover-rank-badge${rankBadgeClass(rank)}`}>{rank}</span>}
+        </div>
+        <div className="media-card-title">{title}</div>
+        <div className="media-card-meta">{cardMeta(item)}</div>
+      </button>
+      <FavBtn item={item} />
+      <SaveBtn item={item} watchlist={watchlist} />
     </div>
   );
 }
@@ -154,26 +153,23 @@ function BingeCard({ item, openPanel, watchlist }) {
 
   return (
     <div
-      className="discover-binge-card interactive-surface"
-      onClick={openDetails}
+      className="discover-binge-card"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{ backgroundImage: `url(${backdrop || poster || ''})` }}
-      {...getButtonLikeProps({ onPress: openDetails, label: `View details for ${title}` })}
     >
-      <span className="discover-binge-card-shade" />
-      <span className="discover-binge-card-copy">
-        <span className="discover-binge-card-title">{title}</span>
-        <span className="discover-binge-card-meta">
-          {year ? `${year} • ` : ''}{type === 'tv' ? MEDIA.tvSeries : MEDIA.movie}
+      <button type="button" className="discover-binge-card-hit interactive-surface" onClick={openDetails} aria-label={`View details for ${title}`}>
+        <span className="discover-binge-card-shade" />
+        <span className="discover-binge-card-copy">
+          <span className="discover-binge-card-title">{title}</span>
+          <span className="discover-binge-card-meta">
+            {year ? `${year} • ` : ''}{type === 'tv' ? MEDIA.tvSeries : MEDIA.movie}
+          </span>
         </span>
-      </span>
+      </button>
 
       {/* Corner action buttons — visible on hover or when active */}
-      <div
-        className={`discover-hero-corner-btns${hovered || saved || fav ? ' visible' : ''}`}
-        onClick={e => e.stopPropagation()}
-      >
+      <div className={`discover-hero-corner-btns${hovered || saved || fav ? ' visible' : ''}`}>
         <button
           className={`discover-hero-corner-btn${fav ? ' active' : ''}`}
           style={{ position: 'absolute', top: 10, left: 10 }}
@@ -222,31 +218,28 @@ function HeroCard({ item, openPanel, watchlist, badge = 'Trending #1' }) {
 
   return (
     <div
-      className="discover-hero interactive-surface"
-      onClick={openDetails}
+      className="discover-hero"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      {...getButtonLikeProps({ onPress: openDetails, label: `View details for ${title}` })}
     >
-      {backdrop
-        ? <img className="discover-hero-backdrop" src={backdrop} alt="" aria-hidden="true" />
-        : <div className="discover-hero-backdrop discover-hero-backdrop-fallback" />
-      }
-      <div className="discover-hero-overlay">
-        <span className="discover-hero-badge">{badge}</span>
-        <h2 className="discover-hero-title">{title}</h2>
-        {year && (
-          <p className="discover-hero-meta">
-            {year} · {type === 'tv' ? MEDIA.tvSeries : MEDIA.movie}{note ? ` · ${note}` : ''}
-          </p>
-        )}
-      </div>
+      <button type="button" className="discover-hero-hit interactive-surface" onClick={openDetails} aria-label={`View details for ${title}`}>
+        {backdrop
+          ? <img className="discover-hero-backdrop" src={backdrop} alt="" aria-hidden="true" />
+          : <div className="discover-hero-backdrop discover-hero-backdrop-fallback" />
+        }
+        <div className="discover-hero-overlay">
+          <span className="discover-hero-badge">{badge}</span>
+          <h2 className="discover-hero-title">{title}</h2>
+          {year && (
+            <p className="discover-hero-meta">
+              {year} · {type === 'tv' ? MEDIA.tvSeries : MEDIA.movie}{note ? ` · ${note}` : ''}
+            </p>
+          )}
+        </div>
+      </button>
 
       {/* Corner action buttons — visible on hover or when active */}
-      <div
-        className={`discover-hero-corner-btns${hovered || saved || fav ? ' visible' : ''}`}
-        onClick={e => e.stopPropagation()}
-      >
+      <div className={`discover-hero-corner-btns${hovered || saved || fav ? ' visible' : ''}`}>
         {/* Top-left: Favourite */}
         <button
           className={`discover-hero-corner-btn${fav ? ' active' : ''}`}
@@ -310,22 +303,20 @@ function ChartRow({ item, rank, openPanel, watchlist, favorites, region }) {
   const openDetails = () => openPanel(id, type);
 
   return (
-    <div
-      className="discover-chart-row interactive-surface"
-      onClick={openDetails}
-      {...getButtonLikeProps({ onPress: openDetails, label: `View details for ${title}` })}
-    >
-      <span className={`discover-chart-rank${rank <= 10 ? ' glow' : ' dim'}${rank <= 3 ? ' top3' : ''}`}>{rank}</span>
-      <div className="discover-chart-poster">
-        {img
-          ? <img src={img} alt={title} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          : <div style={{ width: '100%', height: '100%', background: 'var(--surface-sunken)' }} />
-        }
-      </div>
-      <div className="discover-chart-info">
-        <div className="discover-chart-title">{title}</div>
-        <div className="discover-chart-meta">{year}{year ? ' · ' : ''}{type === 'tv' ? 'TV' : 'Movie'}</div>
-      </div>
+    <div className="discover-chart-row">
+      <button type="button" className="list-row-hit interactive-surface" onClick={openDetails} aria-label={`View details for ${title}`}>
+        <span className={`discover-chart-rank${rank <= 10 ? ' glow' : ' dim'}${rank <= 3 ? ' top3' : ''}`}>{rank}</span>
+        <div className="discover-chart-poster">
+          {img
+            ? <img src={img} alt={title} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            : <div style={{ width: '100%', height: '100%', background: 'var(--surface-sunken)' }} />
+          }
+        </div>
+        <div className="discover-chart-info">
+          <div className="discover-chart-title">{title}</div>
+          <div className="discover-chart-meta">{year}{year ? ' · ' : ''}{type === 'tv' ? 'TV' : 'Movie'}</div>
+        </div>
+      </button>
       <div className="discover-chart-right search-row-actions">
         <button
           type="button"
@@ -388,22 +379,19 @@ function PlatformSection({ platform, openPanel, watchlist, typeFilters, genreFil
               <div className="discover-plat-type-label">Movies</div>
               <div className="discover-plat-grid">
                 {platform.movies.slice(0, 10).map((item, i) => (
-                  <div
-                    key={`${item.id}-${i}`}
-                    className="media-card interactive-surface"
-                    onClick={() => openPanel(item.id, 'movie')}
-                    {...getButtonLikeProps({ onPress: () => openPanel(item.id, 'movie'), label: `View details for ${item.title || item.name}` })}
-                  >
-                    <div className="media-card-img">
-                      {posterUrl(item.poster_path, 'w185')
-                        ? <img src={posterUrl(item.poster_path, 'w185')} alt={item.title || item.name} loading="lazy" />
-                        : <div className="media-card-img-placeholder" />
-                      }
-                      <FavBtn item={item} />
-                      <SaveBtn item={item} watchlist={watchlist} />
-                      <span className={`discover-rank-badge${rankBadgeClass(item._rank ?? i + 1)}`}>{item._rank ?? i + 1}</span>
-                    </div>
-                    <div className="media-card-title">{item.title || item.name}</div>
+                  <div key={`${item.id}-${i}`} className="media-card">
+                    <button type="button" className="media-card-hit interactive-surface" onClick={() => openPanel(item.id, 'movie')} aria-label={`View details for ${item.title || item.name}`}>
+                      <div className="media-card-img">
+                        {posterUrl(item.poster_path, 'w185')
+                          ? <img src={posterUrl(item.poster_path, 'w185')} alt={item.title || item.name} loading="lazy" />
+                          : <div className="media-card-img-placeholder" />
+                        }
+                        <span className={`discover-rank-badge${rankBadgeClass(item._rank ?? i + 1)}`}>{item._rank ?? i + 1}</span>
+                      </div>
+                      <div className="media-card-title">{item.title || item.name}</div>
+                    </button>
+                    <FavBtn item={item} />
+                    <SaveBtn item={item} watchlist={watchlist} />
                   </div>
                 ))}
               </div>
@@ -414,22 +402,19 @@ function PlatformSection({ platform, openPanel, watchlist, typeFilters, genreFil
               <div className="discover-plat-type-label">TV Shows</div>
               <div className="discover-plat-grid">
                 {platform.tv.slice(0, 10).map((item, i) => (
-                  <div
-                    key={`${item.id}-${i}`}
-                    className="media-card interactive-surface"
-                    onClick={() => openPanel(item.id, 'tv')}
-                    {...getButtonLikeProps({ onPress: () => openPanel(item.id, 'tv'), label: `View details for ${item.title || item.name}` })}
-                  >
-                    <div className="media-card-img">
-                      {posterUrl(item.poster_path, 'w185')
-                        ? <img src={posterUrl(item.poster_path, 'w185')} alt={item.title || item.name} loading="lazy" />
-                        : <div className="media-card-img-placeholder" />
-                      }
-                      <FavBtn item={item} />
-                      <SaveBtn item={item} watchlist={watchlist} />
-                      <span className={`discover-rank-badge${rankBadgeClass(item._rank ?? i + 1)}`}>{item._rank ?? i + 1}</span>
-                    </div>
-                    <div className="media-card-title">{item.title || item.name}</div>
+                  <div key={`${item.id}-${i}`} className="media-card">
+                    <button type="button" className="media-card-hit interactive-surface" onClick={() => openPanel(item.id, 'tv')} aria-label={`View details for ${item.title || item.name}`}>
+                      <div className="media-card-img">
+                        {posterUrl(item.poster_path, 'w185')
+                          ? <img src={posterUrl(item.poster_path, 'w185')} alt={item.title || item.name} loading="lazy" />
+                          : <div className="media-card-img-placeholder" />
+                        }
+                        <span className={`discover-rank-badge${rankBadgeClass(item._rank ?? i + 1)}`}>{item._rank ?? i + 1}</span>
+                      </div>
+                      <div className="media-card-title">{item.title || item.name}</div>
+                    </button>
+                    <FavBtn item={item} />
+                    <SaveBtn item={item} watchlist={watchlist} />
                   </div>
                 ))}
               </div>
@@ -539,7 +524,7 @@ function DiscoverContent({ openPanel, watchlist, openSections, setOpenSections, 
           {openSections.hot && (
             <BingeRail>
               {hotRail.map(item => (
-                <BingeCard key={item.id} item={item} openPanel={openPanel} watchlist={watchlist} />
+                <BingeCard key={`${item.media_type}-${item.id}`} item={item} openPanel={openPanel} watchlist={watchlist} />
               ))}
             </BingeRail>
           )}
@@ -557,7 +542,7 @@ function DiscoverContent({ openPanel, watchlist, openSections, setOpenSections, 
           {openSections.binge && (
             <Rail>
               {bingedShows.map(item => (
-                <RankedCard key={item.id} item={item} showRank={false} openPanel={openPanel} watchlist={watchlist} />
+                <RankedCard key={`${item.media_type}-${item.id}`} item={item} showRank={false} openPanel={openPanel} watchlist={watchlist} />
               ))}
             </Rail>
           )}
@@ -573,7 +558,7 @@ function DiscoverContent({ openPanel, watchlist, openSections, setOpenSections, 
             onToggle={() => toggleSection('weekly')}
           />
           {openSections.weekly && weekly.map((item, i) => (
-            <ChartRow key={item.id} item={item} rank={i + 1} openPanel={openPanel} watchlist={watchlist} favorites={favorites} region={profile?.region} />
+            <ChartRow key={`${item.media_type}-${item.id}`} item={item} rank={i + 1} openPanel={openPanel} watchlist={watchlist} favorites={favorites} region={profile?.region} />
           ))}
         </section>
       )}
@@ -590,7 +575,7 @@ function DiscoverContent({ openPanel, watchlist, openSections, setOpenSections, 
           {openSections.cinemas && (
             <BingeRail>
               {cinemaMovies.map(item => (
-                <BingeCard key={item.id} item={item} openPanel={openPanel} watchlist={watchlist} />
+                <BingeCard key={`${item.media_type}-${item.id}`} item={item} openPanel={openPanel} watchlist={watchlist} />
               ))}
             </BingeRail>
           )}
@@ -609,7 +594,7 @@ function DiscoverContent({ openPanel, watchlist, openSections, setOpenSections, 
           {openSections.anticipated && (
             <BingeRail>
               {anticipatedMovies.map(item => (
-                <BingeCard key={item.id} item={item} openPanel={openPanel} watchlist={watchlist} />
+                <BingeCard key={`${item.media_type}-${item.id}`} item={item} openPanel={openPanel} watchlist={watchlist} />
               ))}
             </BingeRail>
           )}

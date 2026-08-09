@@ -636,15 +636,21 @@ svg { stroke-width: 1.5; }
 }
 
 .list-row.interactive-surface:focus-visible,
-.settings-row.interactive-surface:focus-visible,
-.discover-chart-row.interactive-surface:focus-visible {
+.settings-row.interactive-surface:focus-visible {
   background: var(--surface-raised);
 }
 
-.media-card.interactive-surface:focus-visible,
-.discover-hero.interactive-surface:focus-visible,
 .provider-select-card.interactive-surface:focus-visible {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 32%, transparent);
+}
+
+/* Discover/Search cards below have their real "view details" control nested
+   one level in (a sibling of the always-visible Favorite/Save buttons rather
+   than a wrapper around them), so their focus indicator keys off :focus-within
+   on the row/card instead of :focus-visible + .interactive-surface on it. */
+.list-row.search-result-row:focus-within,
+.discover-chart-row:focus-within {
+  background: var(--surface-raised);
 }
 
 /* ═══════════════════════════════════════
@@ -652,14 +658,35 @@ svg { stroke-width: 1.5; }
 ═══════════════════════════════════════ */
 
 .media-card {
+  position: relative;
   flex-shrink: 0;
   width: 120px;
-  cursor: pointer;
   transition: transform 0.2s var(--ease);
-  -webkit-tap-highlight-color: transparent;
 }
 .media-card:hover  { transform: scale(0.97); }
 .media-card:active { transform: scale(0.93); }
+
+/* The actual "view details" control — a real button so Fav/Save (real
+   buttons anchored to .media-card, not nested inside this one) never end up
+   nested inside another interactive element. */
+.media-card-hit {
+  display: block;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.media-card-hit:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 32%, transparent);
+  border-radius: var(--radius-md);
+}
 
 .media-card-img {
   position: relative;
@@ -2016,42 +2043,21 @@ svg { stroke-width: 1.5; }
 }
 .history-list-row {
   align-items: center;
-  flex-wrap: wrap;
-}
-.history-list-row .collapse-body {
-  flex: 0 0 100%;
 }
 .history-row-rating {
   color: #f59e0b;
   font-weight: 600;
 }
-.history-row-toggle {
-  flex: 0 0 auto;
-  margin-left: auto;
-  width: 44px;
-  height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: none;
-  border: 0;
-  padding: 0;
-  color: inherit;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-.history-row-toggle:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: -2px;
-}
-.history-row-quote {
-  margin: 0 1rem 0.7rem 0;
-  padding-top: 0.85rem;
+/* Permanent "you wrote a review" signal — never toggled, so a row's height
+   never changes based on whether it has one. */
+.history-row-note-indicator {
+  display: inline-flex;
+  flex-shrink: 0;
   color: var(--text-secondary);
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 0.92rem;
-  line-height: 1.3;
+}
+.history-row-note-indicator svg {
+  width: 13px;
+  height: 13px;
 }
 
 .half-star-rating {
@@ -2728,6 +2734,7 @@ a.provider-chip--link:hover {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 0.75rem;
   padding: 0.85rem 1rem;
   border-bottom: 1px solid var(--border);
   cursor: pointer;
@@ -4126,6 +4133,31 @@ a.provider-chip--link:hover {
   font-weight: 500;
 }
 
+/* The actual "view details" control for hero/binge cards — sits between the
+   backdrop/overlay and the corner buttons so it catches everything except
+   the two circular buttons (which stay pointer-events:auto and paint after
+   it). Kept as a real button so Fav/Save (siblings, not children of this)
+   never end up nested inside another interactive element. inset box-shadow
+   because the card clips overflow, so an outward one would be invisible. */
+.discover-hero-hit,
+.discover-binge-card-hit {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  display: block;
+}
+.discover-hero-hit:focus-visible,
+.discover-binge-card-hit:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--accent) 32%, transparent);
+}
+
 .discover-hero-corner-btns {
   position: absolute;
   inset: 0;
@@ -4264,6 +4296,31 @@ a.provider-chip--link:hover {
 .discover-chart-meta {
   font-size: 0.63rem;
   color: var(--text-muted);
+}
+
+/* Shared "view details" hit area for list-row-style cards (discover chart
+   rows, search result rows) whose real Bookmark/Heart buttons must stay
+   siblings of this rather than nested inside it. Reproduces the row's own
+   gap internally so pulling poster+info+rank into one flex child doesn't
+   change the visual spacing. */
+.list-row-hit {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.list-row-hit:focus-visible {
+  outline: none;
 }
 
 .discover-chart-right {
