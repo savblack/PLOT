@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { MAX_RATING, STAR_COUNT, normalizeRating, ratingToStars, starFillPercent, ratingFromPointer } from '../../ratings.js';
+import { MAX_RATING, STAR_COUNT, normalizeRating, ratingToStars, starsToRating, starFillPercent, ratingFromPointer } from '../../ratings.js';
 
 test('MAX_RATING and STAR_COUNT are the expected constants', () => {
   assert.equal(MAX_RATING, 10);
@@ -31,6 +31,30 @@ test('ratingToStars halves a normalized rating and keeps 0 as 0', () => {
   assert.equal(ratingToStars(-3), 0);
   assert.equal(ratingToStars(7), 3.5);
   assert.equal(ratingToStars(10), 5);
+});
+
+test('starsToRating doubles a 1-5 star count into the shared 1-10 scale', () => {
+  assert.equal(starsToRating(1), 2);
+  assert.equal(starsToRating(3), 6);
+  assert.equal(starsToRating(5), 10);
+});
+
+test('starsToRating treats 0, negative, and non-finite input as a clear (0)', () => {
+  assert.equal(starsToRating(0), 0);
+  assert.equal(starsToRating(-2), 0);
+  assert.equal(starsToRating(undefined), 0);
+  assert.equal(starsToRating(NaN), 0);
+});
+
+test('starsToRating clamps a star count above STAR_COUNT to MAX_RATING instead of overflowing', () => {
+  assert.equal(starsToRating(6), 10);
+  assert.equal(starsToRating(100), 10);
+});
+
+test('ratingToStars(starsToRating(n)) round-trips for every whole 1-5 tap value, pinning the mobile StarRow contract', () => {
+  for (let n = 1; n <= STAR_COUNT; n++) {
+    assert.equal(ratingToStars(starsToRating(n)), n, `star ${n} must round-trip back to itself`);
+  }
 });
 
 test('starFillPercent reports 100 once the rating reaches a star\'s full step', () => {

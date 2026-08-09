@@ -12,6 +12,14 @@ export function ratingToStars(value) {
   return rating ? rating / 2 : 0;
 }
 
+// Inverse of ratingToStars: converts a 1-5 star count (e.g. a whole-star tap
+// target such as mobile's StarRow) into the shared 1-10 stored scale.
+export function starsToRating(stars) {
+  const value = Number(stars);
+  if (!Number.isFinite(value) || value <= 0) return 0;
+  return normalizeRating(value * 2);
+}
+
 export function starFillPercent(ratingValue, starIndex) {
   const rating = normalizeRating(ratingValue);
   const fullStep = starIndex * 2;
