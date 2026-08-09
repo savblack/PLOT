@@ -4641,6 +4641,24 @@ a.provider-chip--link:hover {
     height: 34px !important;
   }
 
+  /* Hover-only reveal doesn't exist on touch — these three surfaces show
+     their favourite/save/bookmark buttons the way desktop shows them on
+     hover, permanently. Pairs with hiding the elements they'd otherwise
+     sit on top of (the status chip below). */
+  .discover-hero-corner-btns,
+  .discover-chart-row .discover-chart-right.search-row-actions,
+  .search-result-row .search-row-actions {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .search-result-row .search-row-actions {
+    transform: translate(0, -50%);
+  }
+  .search-result-row .search-row-status {
+    opacity: 0;
+    pointer-events: none;
+  }
+
   .icon-btn,
   .tab-btn,
   .sub-tab-btn,
@@ -4748,6 +4766,20 @@ a.provider-chip--link:hover {
   .discover-chart-row .card-save-btn {
     width: 34px !important;
     height: 34px !important;
+  }
+
+  .discover-hero-corner-btns,
+  .discover-chart-row .discover-chart-right.search-row-actions,
+  .search-result-row .search-row-actions {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .search-result-row .search-row-actions {
+    transform: translate(0, -50%);
+  }
+  .search-result-row .search-row-status {
+    opacity: 0;
+    pointer-events: none;
   }
 
   .app-header {
