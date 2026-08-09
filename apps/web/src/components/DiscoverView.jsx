@@ -1,3 +1,4 @@
+import { ALL_TYPES } from '@plot/core/mediaFilters.js';
 import { useState } from 'react';
 import { useApp } from '../hooks/useApp.js';
 import { TodayLabel } from './TodayLabel.jsx';
@@ -20,7 +21,6 @@ import GroupedFilterMenu from './GroupedFilterMenu.jsx';
 import SectionToggleIcon from './SectionToggleIcon.jsx';
 import { SHOW_SOCIAL_FEED, SHOW_FOR_YOU_RAIL } from '../launchFeatures.js';
 
-const ALL_TYPES = ['tv', 'cinema', 'movie'];
 
 /* ── Rail ── */
 function Rail({ children }) {

@@ -992,8 +992,8 @@ svg { stroke-width: 1.5; }
   z-index: 900;
   background: var(--surface);
   /* overflow-x intentionally omitted — putting it here would clip absolutely-positioned
-     dropdowns (MultiSelect menus) inside .sub-tabs-filters. Scrolling is handled by
-     the inner .sub-tabs-scroll wrapper instead. */
+     dropdowns (filter menus, e.g. GroupedFilterMenu) inside .sub-tabs-filters. Scrolling
+     is handled by the inner .sub-tabs-scroll wrapper instead. */
 }
 
 /* Scrollable area that wraps only the tab buttons (not filters/dropdowns) */
@@ -4698,6 +4698,24 @@ a.provider-chip--link:hover {
     height: 34px !important;
   }
 
+  /* Hover-only reveal doesn't exist on touch — these three surfaces show
+     their favourite/save/bookmark buttons the way desktop shows them on
+     hover, permanently. Pairs with hiding the elements they'd otherwise
+     sit on top of (the status chip below). */
+  .discover-hero-corner-btns,
+  .discover-chart-row .discover-chart-right.search-row-actions,
+  .search-result-row .search-row-actions {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .search-result-row .search-row-actions {
+    transform: translate(0, -50%);
+  }
+  .search-result-row .search-row-status {
+    opacity: 0;
+    pointer-events: none;
+  }
+
   .icon-btn,
   .tab-btn,
   .sub-tab-btn,
@@ -4805,6 +4823,20 @@ a.provider-chip--link:hover {
   .discover-chart-row .card-save-btn {
     width: 34px !important;
     height: 34px !important;
+  }
+
+  .discover-hero-corner-btns,
+  .discover-chart-row .discover-chart-right.search-row-actions,
+  .search-result-row .search-row-actions {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .search-result-row .search-row-actions {
+    transform: translate(0, -50%);
+  }
+  .search-result-row .search-row-status {
+    opacity: 0;
+    pointer-events: none;
   }
 
   .app-header {

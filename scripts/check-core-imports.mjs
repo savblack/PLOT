@@ -104,10 +104,70 @@ for (const rel of SCAN) {
   }
 }
 
-if (problems.length === 0) {
+// ── Check 2: an app redefining something @plot/core already exports ──────
+//
+// Hoisting to core achieves nothing until a consumer actually switches, and
+// nothing was checking that they did. Four Phase 1 hoists sat unused for weeks
+// while the apps kept their own copies — two of them byte-identical. The ones
+// that were NOT identical are the reason this check exists: web's
+// usePublicProfile had grown a `.limit(2000)` on an unbounded query and three
+// extra profile sections that core's copy never got, while core's useFollows
+// had analytics seams web's copy never got. Each platform was silently missing
+// the other's fixes.
+//
+// Deliberately narrow: it only fires when an app file defines a name core
+// exports AND does not import that name from core. Same-named locals that do
+// import the real thing (destructuring, shadowed params) are not flagged.
+
+const CORE_DIR = join(ROOT, 'packages', 'core');
+const coreExports = new Map(); // name -> file
+
+for (const file of walk(CORE_DIR)) {
+  const src = readFileSync(file, 'utf8');
+  for (const [, name] of src.matchAll(/^export\s+(?:async\s+)?function\s+(\w+)/gm)) coreExports.set(name, file);
+  for (const [, name] of src.matchAll(/^export\s+const\s+(\w+)/gm)) coreExports.set(name, file);
+}
+
+// Names an app may legitimately redefine, keyed to the one file allowed to do
+// it. Keep this short — each entry is a known divergence someone has to own.
+// Empty is the goal.
+const SHADOW_ALLOWLIST = new Map();
+
+const shadows = [];
+for (const rel of SCAN) {
+  const base = join(ROOT, rel);
+  if (!existsSync(base)) continue;
+  for (const file of walk(base)) {
+    if (file.startsWith(CORE_DIR)) continue;
+    const relFile = relative(ROOT, file);
+    const src = readFileSync(file, 'utf8');
+    for (const [name, coreFile] of coreExports) {
+      if (SHADOW_ALLOWLIST.get(name) === relFile) continue;
+      const defines = new RegExp(`^(?:export\\s+)?(?:async\\s+)?(?:function|const)\\s+${name}\\b`, 'm').test(src);
+      if (!defines) continue;
+      const importsIt = new RegExp(`import[^;]*\\b${name}\\b[^;]*@plot/core`, 's').test(src);
+      if (!importsIt) shadows.push({ file: relFile, name, core: relative(ROOT, coreFile) });
+    }
+  }
+}
+
+if (problems.length === 0 && shadows.length === 0) {
   console.log(`✓ every @plot/core import resolves in this checkout (${checked} checked)`);
+  console.log(`✓ no app redefines one of core's ${coreExports.size} exports`);
   process.exit(0);
 }
+
+if (shadows.length) {
+  console.error(`\n✗ ${shadows.length} app definition(s) shadow a @plot/core export:\n`);
+  for (const { file, name, core } of shadows) {
+    console.error(`  ${file}`);
+    console.error(`    defines ${name}, which ${core} already exports\n`);
+  }
+  console.error('Import it from core instead. If the two genuinely have to differ,');
+  console.error('add it to SHADOW_ALLOWLIST in this file with the reason.\n');
+}
+
+if (problems.length === 0) process.exit(shadows.length ? 1 : 0);
 
 console.error(`\n✗ ${problems.length} @plot/core import(s) point at a module that does not exist here:\n`);
 for (const { file, spec, target } of problems) {

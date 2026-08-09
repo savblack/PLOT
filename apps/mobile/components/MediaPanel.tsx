@@ -2,6 +2,7 @@
  * MediaPanel — slide-up detail sheet, mobile port of web MediaPanel.jsx.
  * Sections: backdrop → title/meta → actions → watching/watched → where to watch → episodes (TV)
  */
+import { STAR_COUNT, ratingToStars, starsToRating } from '@plot/core/ratings.js';
 import { useEffect, useState, useRef, useMemo } from 'react';
 import {
   View, Text, Image, ScrollView, TouchableOpacity, Modal,
@@ -136,22 +137,27 @@ function IconShare() {
 }
 
 // ── Star rating ───────────────────────────────────────────────────────
-const STAR_COUNT = 5;
+// `rating`/`onChange` stay on the shared 1-10 scale (packages/core/ratings.js)
+// — the same contract localRating/watchedEntry.rating use everywhere else in
+// this file. This picker is whole-star-only (no half-star touch target), so
+// it converts at its own boundary: ratingToStars for what to display,
+// starsToRating for what a tap writes back.
 function StarRow({ rating, onChange }: { rating: number; onChange: (r: number) => void }) {
+  const displayStars = ratingToStars(rating);
   return (
     <View style={{ flexDirection: 'row', gap: 4 }}>
       {Array.from({ length: STAR_COUNT }, (_, i) => i + 1).map(n => (
         <TouchableOpacity
           key={n}
-          onPress={() => onChange(rating === n ? 0 : n)}
+          onPress={() => onChange(starsToRating(displayStars === n ? 0 : n))}
           hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
-          accessibilityLabel={rating === n ? 'Clear rating' : `Rate ${n} star${n > 1 ? 's' : ''}`}
+          accessibilityLabel={displayStars === n ? 'Clear rating' : `Rate ${n} star${n > 1 ? 's' : ''}`}
           accessibilityRole="button"
         >
           <Svg width={24} height={24} viewBox="0 0 24 24">
             <Polygon
               points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
-              fill={n <= rating ? '#F59E0B' : 'none'}
+              fill={n <= displayStars ? '#F59E0B' : 'none'}
               stroke="#F59E0B"
               strokeWidth={1.5}
               strokeLinejoin="round"
