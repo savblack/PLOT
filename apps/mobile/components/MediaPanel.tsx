@@ -3,10 +3,14 @@
  * Sections: backdrop → title/meta → actions → watching/watched → where to watch → episodes (TV)
  */
 import { STAR_COUNT, ratingToStars, starsToRating } from '@plot/core/ratings.js';
+import { localDateStr } from '@plot/core/date.js';
+import { markMediaAsWatched } from '@plot/core/mediaStatus.js';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useEffect, useState, useRef, useMemo } from 'react';
 import {
   View, Text, Image, ScrollView, TouchableOpacity, Modal,
   StyleSheet, Dimensions, ActivityIndicator, TextInput, Animated, Share, Linking, Alert,
+  Platform,
 } from 'react-native';
 import Svg, { Path, Line, Polyline, Circle, Polygon, Rect } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -497,6 +501,29 @@ interface MediaPanelProps {
   onClose: () => void;
 }
 
+/**
+ * "YYYY-MM-DD" from a Date, read in local time. The picker returns the calendar
+ * day the user tapped, so formatting via toISOString would shift it a day for
+ * anyone behind UTC. Core's localDateStr can't be used here: it takes a day
+ * offset from today, not a Date.
+ */
+function ymd(date: Date): string {
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${date.getFullYear()}-${m}-${d}`;
+}
+
+/**
+ * "12 Mar 2026" from a date string, without going through UTC. Tolerates a full
+ * ISO timestamp as well as a bare YYYY-MM-DD, because `history.watched_at`
+ * comes back from Postgres as the former.
+ */
+function formatWatchedOn(value: string): string {
+  const [y, m, d] = String(value).slice(0, 10).split('-').map(Number);
+  if (!y || !m || !d) return value;
+  return new Date(y, m - 1, d).toLocaleDateString('en', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
 export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProps) {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
@@ -516,6 +543,8 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
 
   const [localRating, setLocalRating] = useState(0);
   const [localReview, setLocalReview] = useState('');
+  const [localWatchedAt, setLocalWatchedAt] = useState('');
+  const [pickingDate, setPickingDate] = useState(false);
   const [localDnf,    setLocalDnf]    = useState(false);
   const [savingReview, setSavingReview] = useState(false);
 
@@ -529,6 +558,12 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
   const isFav      = favorites.isFavorite(itemId);
   const isInAnyList = customLists.lists.some((l: any) => customLists.isInList(l.id, itemId));
   const watchedEntry = history.entries?.find((e: any) => e.tmdb_id === Number(itemId) && e.media_type === itemType);
+  // Default to the day the title was SAVED, not today — if it sat on the
+  // watchlist for a month before being marked watched, "today" is the one date
+  // it almost certainly wasn't. Web makes the same call. Falls back to today
+  // when it was never saved first.
+  const watchlistEntry   = watchlist.items?.find((i: any) => Number(i.tmdb_id) === Number(itemId));
+  const defaultWatchedAt = watchlistEntry?.created_at ? String(watchlistEntry.created_at).slice(0, 10) : localDateStr();
 
   const handleShare = async () => {
     try {
@@ -544,6 +579,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
       setLocalRating(watchedEntry.rating || 0);
       setLocalReview(watchedEntry.note   || '');
       setLocalDnf(watchedEntry.dnf       || false);
+      setLocalWatchedAt(String(watchedEntry.watched_at || defaultWatchedAt).slice(0, 10));
     }
   }, [watchedEntry?.id]);
 
@@ -649,7 +685,13 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
   const trailerKey = trailer?.key || null;
 
   const hasSavedReview = !!(watchedEntry?.rating || watchedEntry?.note?.trim() || watchedEntry?.dnf);
-  const reviewDirty    = !!watchedEntry && (localRating !== (watchedEntry.rating || 0) || localReview.trim() !== (watchedEntry.note || '').trim() || localDnf !== !!watchedEntry.dnf);
+  const savedWatchedAt = String(watchedEntry?.watched_at || defaultWatchedAt).slice(0, 10);
+  const reviewDirty    = !!watchedEntry && (
+    localRating !== (watchedEntry.rating || 0) ||
+    localReview.trim() !== (watchedEntry.note || '').trim() ||
+    localDnf !== !!watchedEntry.dnf ||
+    localWatchedAt !== savedWatchedAt
+  );
 
   return (
     <>
@@ -752,18 +794,59 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
 
                 {/* ── Action buttons ── */}
                 <View style={styles.actionsCol}>
-                  {/* Watchlist — same copy as the web panel's primary action */}
-                  {!isWatching && (
-                    <TouchableOpacity
-                      style={[styles.btnPrimary, inList && styles.btnSaved]}
-                      onPress={() => watchlist.toggle({ ...details, id: itemId, media_type: itemType })}
-                    >
-                      {inList && <IconCheck color="#4ade80" />}
-                      <Text style={[styles.btnPrimaryText, inList && { color: '#4ade80' }]}>
-                        {inList ? MEDIA_PANEL.inWatchlist : MEDIA_PANEL.addToWatchlist}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
+                  {/* Status row: watchlist and watch state are the two answers to
+                      "where is this for me", so they sit side by side rather than
+                      stacked either side of the secondary actions. */}
+                  <View style={styles.actionsRow}>
+                    {!isWatching && (
+                      <TouchableOpacity
+                        style={[styles.btnPrimary, styles.btnHalf, inList && styles.btnSaved]}
+                        onPress={() => watchlist.toggle({ ...details, id: itemId, media_type: itemType })}
+                      >
+                        {inList && <IconCheck color="#4ade80" />}
+                        <Text style={[styles.btnPrimaryText, inList && { color: '#4ade80' }]}>
+                          {inList ? MEDIA_PANEL.inWatchlist : MEDIA_PANEL.addToWatchlist}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                    {watched ? (
+                      <TouchableOpacity
+                        style={[styles.btnPrimary, styles.btnHalf, styles.btnSaved]}
+                        onPress={() => history.removeEntry(itemId, itemType)}
+                      >
+                        <IconCheck color="#4ade80" />
+                        <Text style={[styles.btnPrimaryText, { color: '#4ade80' }]}>Watched</Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <TouchableOpacity
+                        style={styles.btnSecondary}
+                        onPress={async () => {
+                          // Marking something watched retires it from the
+                          // watchlist: it's no longer something you want to watch.
+                          // core's markMediaAsWatched sequences that and rolls the
+                          // history entry back if a later step fails, so a half-
+                          // applied state can't be left behind.
+                          const result = await markMediaAsWatched({
+                            logWatched: () => history.logWatched(
+                              { ...details, id: itemId, media_type: itemType },
+                              { watchedAt: defaultWatchedAt },
+                            ),
+                            clearWatching:   () => watching.stopWatching(itemId),
+                            removeFromSaved: () => watchlist.removeFromList(itemId),
+                            rollbackHistory: () => history.removeEntry(itemId, itemType),
+                            shouldClearWatching:   !isMovie && isWatching,
+                            shouldRemoveFromSaved: inList && !isWatching,
+                          });
+                          if (!result.ok) {
+                            Alert.alert('Could not update', history.getLastError() || result.error);
+                          }
+                        }}
+                      >
+                        <IconCheck />
+                        <Text style={styles.btnSecondaryText}>{isMovie ? MEDIA.markWatched : MEDIA.markAllWatched}</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
 
                   {/* Secondary row */}
                   <View style={styles.actionsRow}>
@@ -792,47 +875,71 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                   </View>
                 </View>
 
-                {/* ── Watching / watched ── */}
-                {!watched ? (
-                  <View style={styles.actionsRow}>
-                    {!isMovie && (
+                {/* TV only: start/stop watching sits on its own line, since it
+                    is a third state rather than a peer of the two above. */}
+                {!watched && !isMovie && (
+                  <TouchableOpacity
+                    style={[styles.btnSecondary, styles.btnStandalone, isWatching && styles.btnWatching]}
+                    onPress={async () => {
+                      if (isWatching) {
+                        await watching.stopWatching(itemId);
+                      } else {
+                        await watching.startWatching({ ...details, id: itemId, media_type: 'tv' });
+                        if (inList) await watchlist.toggle({ ...details, id: itemId, media_type: itemType });
+                      }
+                    }}
+                  >
+                    {isWatching ? <IconStop /> : <IconPlay />}
+                    <Text style={[styles.btnSecondaryText, isWatching && { color: '#818cf8' }]}>
+                      {isWatching ? MEDIA.stopWatching : MEDIA.startWatching}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+
+                {watched && (
+                  <View style={{ marginBottom: spacing.lg }}>
+                    {/* Date watched — mirrors web's "Watched on" row. Capped at
+                        today: a future watch date would sort into a month group
+                        that hasn't happened. */}
+                    <View style={styles.watchedOnRow}>
+                      <Text style={styles.watchedOnLabel}>Watched on</Text>
                       <TouchableOpacity
-                        style={[styles.btnSecondary, isWatching && styles.btnWatching]}
-                        onPress={async () => {
-                          if (isWatching) {
-                            await watching.stopWatching(itemId);
-                          } else {
-                            await watching.startWatching({ ...details, id: itemId, media_type: 'tv' });
-                            if (inList) await watchlist.toggle({ ...details, id: itemId, media_type: itemType });
-                          }
-                        }}
+                        style={styles.watchedOnBtn}
+                        onPress={() => setPickingDate(true)}
+                        accessibilityRole="button"
+                        accessibilityLabel="Date watched"
                       >
-                        {isWatching ? <IconStop /> : <IconPlay />}
-                        <Text style={[styles.btnSecondaryText, isWatching && { color: '#818cf8' }]}>
-                          {isWatching ? MEDIA.stopWatching : MEDIA.startWatching}
+                        <Text style={styles.watchedOnValue}>
+                          {formatWatchedOn(localWatchedAt || defaultWatchedAt)}
                         </Text>
                       </TouchableOpacity>
+                    </View>
+                    {pickingDate && (
+                      // The inline picker sizes itself to its content, so it needs
+                      // centring rather than stretching — left-aligned it sat off to
+                      // one side of the sheet with dead space beside it.
+                      <View style={styles.datePickerWrap}>
+                        <DateTimePicker
+                          value={new Date(`${localWatchedAt || defaultWatchedAt}T12:00:00`)}
+                          mode="date"
+                          maximumDate={new Date()}
+                          display={Platform.OS === 'ios' ? 'inline' : 'default'}
+                          style={styles.datePicker}
+                          onChange={(event, date) => {
+                            // Android fires once and dismisses itself; iOS keeps the
+                            // inline picker open until it's closed explicitly.
+                            if (Platform.OS !== 'ios') setPickingDate(false);
+                            if (event.type === 'dismissed' || !date) return;
+                            setLocalWatchedAt(ymd(date));
+                          }}
+                        />
+                        {Platform.OS === 'ios' && (
+                          <TouchableOpacity style={styles.watchedOnDone} onPress={() => setPickingDate(false)}>
+                            <Text style={styles.watchedOnDoneText}>{COMMON.done}</Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
                     )}
-                    <TouchableOpacity
-                      style={styles.btnSecondary}
-                      onPress={async () => {
-                        await history.logWatched({ ...details, id: itemId, media_type: itemType });
-                        if (!isMovie && isWatching) await watching.stopWatching(itemId);
-                      }}
-                    >
-                      <IconCheck />
-                      <Text style={styles.btnSecondaryText}>{isMovie ? MEDIA.markWatched : MEDIA.markAllWatched}</Text>
-                    </TouchableOpacity>
-                  </View>
-                ) : (
-                  <View style={{ marginBottom: spacing.lg }}>
-                    <TouchableOpacity
-                      style={[styles.btnPrimary, styles.btnSaved]}
-                      onPress={() => history.removeEntry(itemId, itemType)}
-                    >
-                      <IconCheck color="#4ade80" />
-                      <Text style={[styles.btnPrimaryText, { color: '#4ade80' }]}>Watched</Text>
-                    </TouchableOpacity>
 
                     {/* Review section */}
                     <Text style={styles.sectionTitle}>Your Review</Text>
@@ -856,13 +963,14 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                       numberOfLines={3}
                       maxLength={280}
                     />
-                    {(hasSavedReview || localRating > 0 || localReview.trim() || localDnf) && (
+                    {/* Also when only the date moved — see web. */}
+                    {(hasSavedReview || localRating > 0 || localReview.trim() || localDnf || localWatchedAt !== savedWatchedAt) && (
                       <TouchableOpacity
                         style={[styles.btnPrimary, { marginTop: spacing.sm }]}
                         disabled={savingReview}
                         onPress={async () => {
                           setSavingReview(true);
-                          await history.updateEntry(itemId, { rating: localRating || null, note: localReview.trim() || null, dnf: localDnf }, itemType);
+                          await history.updateEntry(itemId, { rating: localRating || null, note: localReview.trim() || null, dnf: localDnf, watched_at: localWatchedAt || defaultWatchedAt }, itemType);
                           setSavingReview(false);
                         }}
                       >
@@ -993,6 +1101,11 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   // below spaces itself (sectionTitle marginTop).
   actionsCol: { gap: spacing.sm, marginBottom: spacing.sm },
   actionsRow: { flexDirection: 'row', gap: spacing.sm },
+  // btnSecondary is flex:1 for row use; btnPrimary is not, so it needs this to
+  // share a row evenly. btnStandalone undoes the flex when one sits alone in a
+  // column, where flex:1 would stretch it to the container's height.
+  btnHalf: { flex: 1 },
+  btnStandalone: { flex: 0, marginBottom: spacing.sm },
 
   btnPrimary: {
     backgroundColor: colors.accent, borderRadius: radii.md,
@@ -1016,6 +1129,33 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   dnfChip: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: spacing.md, paddingVertical: 5, borderRadius: radii.pill, borderWidth: 1.5, borderColor: colors.border },
   dnfChipActive: { borderColor: 'rgba(251,146,60,0.5)', backgroundColor: 'rgba(251,146,60,0.12)' },
   dnfText: { fontFamily: fontFamily.sansBold, fontSize: 11, color: colors.textMuted },
+  watchedOnRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    // The Watched button above is a filled block, so the row needs real
+    // separation from it — butted up against the button they read as one
+    // control. Larger above than below, since the review block follows.
+    marginTop: spacing.lg,
+    marginBottom: spacing.md,
+  },
+  watchedOnLabel: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted },
+  // Same pill as the Didn't finish chip beside it: pill radius, 1.5 border,
+  // small bold uppercase-ish label. They sit in the same block, so matching
+  // them stops the review area reading as two different control languages.
+  watchedOnBtn: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: 5,
+    borderRadius: radii.pill,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+  },
+  watchedOnValue: { fontFamily: fontFamily.sansBold, fontSize: 11, color: colors.textMuted },
+  datePickerWrap: { alignItems: 'center', marginBottom: spacing.md },
+  // The inline picker reports no intrinsic width to flexbox, so it needs one
+  // to centre against; 320 is the widest the iOS calendar grid draws.
+  datePicker: { width: 320, alignSelf: 'center' },
+  watchedOnDone: { alignSelf: 'center', paddingVertical: spacing.sm, paddingHorizontal: spacing.lg },
+  watchedOnDoneText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.accent },
+
   reviewInput: {
     borderWidth: 1, borderColor: colors.border, borderRadius: radii.md,
     padding: spacing.md, fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textPrimary,
