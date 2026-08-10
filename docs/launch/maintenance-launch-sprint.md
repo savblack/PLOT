@@ -1,203 +1,228 @@
 # PLOT Maintenance → Relaunch Sprint
 
-Written 2026-08-10. This is the plan of record for taking PLOT dark to the public,
-finishing the mobile app, and relaunching web + iOS + pricing together.
-
-Decisions already made by Savannah on 2026-08-10 are recorded inline as **Decision**.
+Written 2026-08-10, revised the same day after a full decision review.
+This is the plan of record for taking PLOT dark to the public, finishing the iOS
+app, and relaunching web + iOS + pricing together.
 
 ## The shape of it
 
-PLOT goes into public maintenance now. Existing accounts keep working. Everything
-that isn't ready gets finished behind that curtain, and web, iOS, pricing and the
-marketing flow all go live on the same day.
+PLOT goes dark to the public now. All 20 existing users are blocked and emailed.
+Everything unfinished gets built behind that curtain, and web, iOS and pricing all
+go live on one day of your choosing.
 
-Sprint 0 ships in a day or two. Full relaunch is **7 to 9 weeks** from that point.
+Sprint 0 ships in about two days. Full relaunch is **5 to 7 weeks** from then.
 
-## Standing decisions
+## Decisions
 
-- **Existing accounts are grandfathered.** New signups are blocked; people who
-  already have an account can still sign in and use PLOT. See "Reconciling the
-  maintenance page with grandfathering" below for exactly what each visitor sees.
-- **Apple Developer Program is already paid and enrolled** (confirmed 2026-08-10).
-  This unblocks Sign in with Apple, APNs push, and TestFlight immediately. The
-  "no Apple Developer Program" comments in `apps/web/src/launchFeatures.js` and
-  `apps/mobile/lib/launchFeatures.ts` are now stale and should be corrected.
-- **Premium is sold on the web only at launch.** No native IAP, no RevenueCat,
-  no Apple cut. The existing Stripe Checkout is the single purchase path.
-- **Brevo owns marketing, Resend owns transactional.** Waitlist, newsletter,
-  lifecycle automation and campaigns in Brevo. Supabase auth email, feedback and
-  notification email stay on Resend.
+Every one of these was decided deliberately on 2026-08-10. Where a decision
+overturns an earlier assumption, the reasoning is kept so it is not silently
+re-litigated later.
 
-## Reconciling the maintenance page with grandfathering
-
-"Block logging in" and "grandfather existing accounts" pull in opposite
-directions, so the resolution is:
-
-| Visitor | Sees |
+| # | Decision |
 | --- | --- |
-| Logged out, arrives at `/`, `/signup`, or any app route | Maintenance splash + waitlist form |
-| Logged out, clicks "Already have an account? Sign in" on the splash | The real login form |
-| Existing account, signed in | The app, unchanged |
-| Anyone attempting to create an account | Blocked, in the UI *and* at Supabase |
-| Preview deployment | Everything, unchanged (your test bed) |
+| 1 | **No grandfathering.** Every account is blocked, not just new signups. |
+| 2 | Positioning is **"something bigger is coming"**, not "under maintenance". |
+| 3 | The **marketing surface stays fully live**, with every CTA retargeted to the waitlist. |
+| 4 | **Data rights move to email**, and the privacy policy is amended to say so. |
+| 5 | **iOS only** at launch. Android comes after. |
+| 6 | **All four mobile items ship**: Statistics v1, New Releases + Upcoming, the Paused/Watching status model, Talent pages. |
+| 7 | The **social feed stays off**, but **report + block ship**. |
+| 8 | **In-app + email + push**, with push scoped to watchlist availability alerts only. |
+| 9 | **Approve then hold**: get App Store approval, sit on it, release on your date. |
+| 10 | iOS auth is **email + Sign in with Apple + Google**. |
+| 11 | **Basic Statistics free, deeper Statistics Premium.** |
+| 12 | **Web inherits core work for free** and gets no dedicated sprint. |
+| 13 | **5 to 7 weeks**, with the cut list agreed in advance. |
 
-The public face is unambiguously "PLOT is under maintenance". Signup is closed
-for real, not just hidden. Current users are never locked out of their own data.
+### Why no grandfathering
 
-Blocking signups in the client alone is not enough — the Supabase anon key is
-public and `auth.signUp()` can be called directly. Sprint 0 therefore turns off
-"Allow new users to sign up" in the Supabase Auth dashboard as well, and gates
-the `signup-bypass` edge function.
+Production has 20 users, 6 of whom signed in during the last week, who have
+between them marked 13 titles as watched in the product's lifetime. Grandfathering
+would have bought very little and cost a standing "every merge must be safe for
+live traffic" constraint across the entire build. Blocking everyone removes that
+constraint, removes the sign-in escape hatch from the splash, and turns 20 users
+into 20 warm launch advocates instead of 20 people watching you rebuild underneath
+them.
 
-## Sprint 0 — Go dark (1 to 2 days)
+Each of the 20 gets a personal email: what is happening, that their data is safe,
+how to export or delete it, and an offer of first access plus one month of free
+Premium at relaunch.
 
-Ships first and independently. Everything after this happens behind the curtain.
+### Why not "under maintenance"
+
+"Maintenance" implies unplanned breakage and ages badly. Week six of "under
+maintenance" reads as abandoned. It also converts worse than anticipation, and
+anyone who lands on it, including an App Store reviewer, reads a product in
+trouble rather than one being invested in.
+
+### Why the feed stays off
+
+There is no reporting, blocking, or moderation anywhere in the codebase. App Store
+Guideline 1.2 requires content filtering, a report mechanism, user blocking, and
+published contact info for apps with user-generated content. The feed broadcasts
+review text to followers, which is squarely in scope. Shipping report + block
+anyway covers the avatars, usernames and follow graph that already exist on
+mobile, removes the likeliest rejection reason, and is a prerequisite for the feed
+whenever it does ship.
+
+## Sprint 0 — Go dark (about 2 days)
 
 1. **`MAINTENANCE_MODE` flag** in `apps/web/src/launchFeatures.js`, driven by
-   `VITE_MAINTENANCE_MODE` so it flips via a Cloudflare Pages variable + redeploy,
-   mirrored into `apps/mobile/lib/launchFeatures.ts` per the existing convention.
-2. **Maintenance splash** (`apps/web/src/pages/MaintenancePage.jsx`): Instrument
-   Serif wordmark, flat monochrome, hairline structure, no gradients or glows.
-   Copy: PLOT is under maintenance, bigger and better things are coming. Email
-   capture, plus the discreet "Already have an account? Sign in" affordance.
-   Strings go in `packages/core/copy` like everything else.
-3. **Router gating** in `apps/web/src/router.jsx`: `/`, `/signup`, `/save`,
-   `/u/:username` and all protected routes render the splash when logged out.
-   `/login`, `/terms`, `/privacy` and `/reset-password` stay reachable.
-   `isPreviewDeployment()` exempts preview deploys, as it already does today.
-4. **Email capture wired to the waitlist that already exists**: POST to
-   `newsletter-subscribe` with `list: 'mobile-app'`, landing in `app_waitlist`.
-   No new table, no new function.
-5. **Close the Brevo gap**: the `app_waitlist` branch of `newsletter-subscribe`
-   currently skips the Brevo sync that the newsletter branch does. Add it, into a
-   dedicated Brevo "PLOT Waitlist" list, so Sprint 6's automations have an
-   audience to address.
+   `VITE_MAINTENANCE_MODE` as a Cloudflare Pages variable, mirrored into
+   `apps/mobile/lib/launchFeatures.ts` per the existing convention.
+2. **The splash** (`apps/web/src/pages/MaintenancePage.jsx`): Instrument Serif
+   wordmark, flat monochrome, hairline structure, no gradients or glows.
+   "Something bigger is coming", not an apology. Email capture. No sign-in link.
+   Strings go in `packages/core/copy`.
+3. **Router gating**: `/`, `/login`, `/signup`, `/save`, `/u/:username` and every
+   protected route render the splash. `/terms` and `/privacy` stay reachable.
+   `isPreviewDeployment()` exempts preview deploys, which stay fully functional as
+   the test bed.
+4. **Public profiles are gated too**, and pulled from `sitemap-profiles.xml`. Nobody
+   should have an indexed profile they cannot log in to edit or remove.
+5. **Email capture** posts to `newsletter-subscribe` with `list: 'mobile-app'` and
+   `source: 'maintenance'`. Already built and verified end to end (PR #472).
 6. **Analytics**: a waitlist-signup event in `packages/core/analyticsEvents.js`,
-   fired from both the app splash and the website form, so the waitlist is a
-   measurable funnel rather than a table nobody looks at.
-7. **Website (`theplot.tv`)**: primary CTA becomes the waitlist instead of
-   "Get started". `plans.html` stays hidden (`SHOW_PRICING_PAGE` is already off).
-8. **Ops**: Supabase Auth → disable new signups. Gate `signup-bypass`.
-9. **Email current users once**, from Resend: what's happening, that their data is
-   safe, that their account still works, and when to expect the relaunch.
+   fired from both the splash and the website.
+7. **Website**: all 7 signup/login CTAs become waitlist CTAs. The site itself,
+   `/movie`, `/whats-on`, articles and sitemaps all stay live.
+8. **The publishing machine keeps running.** `marketing-publish.yml` posts daily and
+   `marketing-weekly-batch.yml` runs Sundays. The copy convention in
+   `marketing/copy/AGENT.md` must be retargeted from "start your PLOT" to the
+   waitlist, or nine weeks of daily posts drive traffic into a wall.
+9. **Ops**: disable signups in the Supabase Auth dashboard (the anon key is public,
+   so `auth.signUp()` is callable directly and a client gate alone is not a block).
+   Gate the `signup-bypass` edge function.
+10. **Privacy policy amended** — it currently promises deletion "at any time through
+    the account settings screen", which a blanket block breaks.
+11. **Email the 20**, from Resend.
 
-## Sprint 1 — Ops long-leads (starts day 1, runs in parallel)
+## Sprint 1 — Ops long-leads (parallel, from day 1)
 
-No longer blocking, since Apple is enrolled. Do these early anyway.
+- App Store Connect: app record for `tv.theplot.app`, agreements, banking, tax.
+  Nothing can be submitted until the agreements are signed.
+- APNs key; Sign in with Apple service ID + key; Google Cloud OAuth client.
+- Stripe live mode per `docs/billing/stripe-launch.md`.
+- Brevo: sender authentication for `theplot.tv`, plus the waitlist automation.
 
-- App Store Connect: create the app record for `tv.theplot.app`, agreements,
-  banking and tax. Nothing can be submitted until the agreements are signed.
-- APNs key + Sign in with Apple service ID and key (both needed in Sprint 3/5).
-- Stripe live mode: follow `docs/billing/stripe-launch.md` end to end.
-- Brevo: account, lists, sender authentication for `theplot.tv`.
+## Sprint 2 — Mobile to launch quality (1.5 to 2 weeks)
 
-## Sprint 2 — Mobile to launch quality (3 to 4 weeks)
+Smaller than first estimated: mobile already has Letterboxd/Netflix/CSV import
+(`ImportHistoryModal.tsx`) and watched-date editing (#468).
 
-The mobile app is the priority product; web is deliberately second class. Mobile
-today is 8 screens against web's much larger surface. Closing the gap that matters:
+- **Statistics v1** — absent from both apps, and the Cinephile parity bar. Core
+  module, both apps render. Basic tier free.
+- **Discover: New Releases + Upcoming** — mobile renders 3 of 5 tabs
+  (`apps/mobile/app/(app)/index.tsx:613`). Missing tabs read as an unfinished app.
+- **Status model** — Paused, and Watching for movies. Needs a
+  `watching_progress.media_type` column.
+- **Talent/person pages** on mobile.
+- **Import gets promoted in onboarding.** With 13 history rows in production,
+  Statistics renders an empty screen until people import. Whatever drives import
+  matters more than the stats themselves.
 
-- **Statistics v1** — the one genuinely absent capability versus Cinephile. All
-  derivable from existing `history` data, no schema change. Core module + both apps.
-- **Status model** — add Paused, make Watching work for movies. Needs a
-  `watching_progress.media_type` column first.
-- **Discover completion** — mobile renders only `feed`/`discover`/`guide`
-  (`apps/mobile/app/(app)/index.tsx:613`). New Releases genre rails and Upcoming
-  are missing, and Upcoming needs a net-new hook.
-- **Letterboxd import on mobile** — web has `ImportView`, mobile has nothing.
-- **Talent/person pages on mobile** — web has `TalentPage`, mobile has nothing.
-- **Mobile QA pass** — the launch-blocking bug sweep, matching what
-  `docs/qa/public-launch-checklist.md` does for web.
+## Sprint 2b — Report + block (2 to 3 days)
 
-Deliberately **not** in this sprint: rewatch tracking (reverted after a two-week
-production outage, see the parity program notes), social feed (needs a safety and
-moderation review before it can be flipped on), native IAP, Statistics v2.
+Reporting and user blocking for the profile and follow surface. Not the feed.
 
-## Sprint 3 — Notification system (1.5 to 2 weeks)
+## Sprint 3 — Notifications (1 to 1.5 weeks)
 
-Today "notifications" means social events only, web only, in `apps/web/src/hooks/`
-rather than core, with no preferences and no delivery channel other than the
-in-app bell.
+1. **Event taxonomy** written down first: every notifiable event, its in-app /
+   email / push routing, and its default.
+2. **Hoist `useNotifications` to `packages/core`** from `apps/web/src/hooks/`.
+3. **Mobile notification centre** — mobile has never had one.
+4. **Preferences**, per channel and category, enforced server-side.
+5. **Email channel** via Resend.
+6. **Push via APNs**, scoped to availability alerts. Needs `expo-notifications`
+   (not currently a dependency), token registration, permission UX, deep links.
+7. **Turn on watchlist availability alerts.** The cron in
+   `.github/workflows/watchlist-availability-alerts.yml` is commented out and has
+   never run. Dry-run via `workflow_dispatch` before enabling the schedule; it
+   shares a failure mode with `for-you-recompute`, which once failed silently 100%
+   of the time.
 
-1. **Define the event taxonomy** — one list of every notifiable event (follow,
-   follow request, request accepted, like, comment, watchlist availability,
-   release reminder, billing, onboarding milestones) with, per event, its
-   in-app / email / push routing and its default.
-2. **Hoist to core** — `useNotifications` moves to `packages/core`, both apps read it.
-3. **Mobile notification centre** — the screen mobile has never had.
-4. **Preferences surface** — per-channel, per-category, on both apps, honoured
-   server-side rather than only hidden in the UI.
-5. **Email channel via Resend**, driven off the same taxonomy.
-6. **Push via APNs** — add `expo-notifications` (not currently a dependency),
-   token registration, deep links into the notification centre. Sequenced after
-   the centre exists so a tapped push has somewhere to land.
-7. **Turn on watchlist availability alerts** — built, flag-off, and the cron has
-   never actually been exercised. Dry-run via `workflow_dispatch` before enabling
-   the schedule; it shares a failure mode with the `for-you-recompute` job that
-   silently failed 100% of the time.
-
-## Sprint 4 — Payments (3 to 5 days)
-
-Short, because the build already exists and was verified end to end on 2026-08-09
-before being hidden.
+## Sprint 4 — Payments (2 to 3 days)
 
 - Complete `docs/billing/stripe-launch.md` in live mode.
 - Flip `SHOW_PRICING_PAGE` on web, mobile and the website Pages variable.
 - **Manually re-add `/plans.html`** to `apps/website/llms.txt` and
-  `apps/website/sitemap.xml` — those entries were deleted outright, not gated, and
-  will not come back with the flag.
-- Re-verify the premium-intent onboarding path (`?intent=premium&plan=...`) now
-  that its gate is lifted.
-- One real low-value purchase, cancellation, and confirmed loss of access.
-- iOS shows Premium as a web upgrade, with no in-app purchase surface.
+  `apps/website/sitemap.xml`. Those entries were deleted outright, not gated, and
+  will not return with the flag.
+- Split Statistics: basic free, deeper Premium. Scope the Premium tier to metrics
+  derivable from `history` directly (genre breakdown, ratings distribution,
+  year-over-year). Watch-time and top-people need a nightly enrichment job and are
+  v2.
+- iOS shows Premium as a web upgrade. No in-app purchase surface.
 
-## Sprint 5 — App Store submission (1 week prep, then 1 to 2 review cycles)
+## Sprint 5 — App Store (3 to 5 days, then review)
 
-- Screenshots for every required device size, app preview, description, keywords.
-- App Privacy nutrition labels, mapped honestly against PostHog, Supabase, TMDB,
-  Stripe and Brevo.
-- **Sign in with Apple is mandatory** if any third-party sign-in ships on iOS.
-  Flip `SHOW_APPLE_LOGIN` and implement, or ship email-only on iOS.
-- Account deletion is already implemented (`delete-account`), which Apple requires.
-- Age rating, content rights (the TMDB attribution decision is already recorded),
-  support and marketing URLs.
-- TestFlight internal build, then external, then submit.
-- Budget for one rejection. First submissions usually get one.
+- Screenshots for every required device size, description, keywords.
+- App Privacy labels mapped honestly against PostHog, Supabase, TMDB, Stripe, Brevo.
+- Sign in with Apple and Google. Google makes Sign in with Apple mandatory under
+  Guideline 4.8.
+- Account deletion already exists (`delete-account`), which Apple requires.
+- TestFlight internal, then external, then submit.
+- **Hold at "Approved, Pending Developer Release"** until launch day.
 
-## Sprint 6 — Brevo marketing flow (1 week, overlaps Sprint 5)
+## Sprint 6 — Brevo marketing flow (3 to 5 days, overlaps Sprint 5)
 
-- Waitlist welcome, a short nurture sequence, and the relaunch announcement.
-- Segmentation: waitlist vs newsletter vs existing users vs Premium.
-- Wire the existing `marketing/` automation and the admin desk into Brevo where
-  it makes sense, rather than building a second system beside it.
-- Suppression and unsubscribe handling shared with `marketing_subscribers`.
+- Waitlist welcome, a short nurture sequence, the relaunch announcement.
+- Segmentation: waitlist (`WAITLIST_SOURCE`) vs newsletter vs the original 20.
+- Suppression and unsubscribe shared with `marketing_subscribers`.
 
 ## Timeline
 
-| Sprint | Duration | Notes |
-| --- | --- | --- |
-| 0 — Go dark | 1 to 2 days | Ships immediately, independent |
-| 1 — Ops long-leads | days, parallel | Apple already enrolled |
-| 2 — Mobile quality | 3 to 4 weeks | The critical path |
-| 3 — Notifications | 1.5 to 2 weeks | Partially parallel with 2 |
-| 4 — Payments | 3 to 5 days | Mostly dashboard work |
-| 5 — App Store | 1 week + review | Review is 24 to 48h per cycle |
-| 6 — Marketing | 1 week | Overlaps 5 |
+| Sprint | Duration |
+| --- | --- |
+| 0 — Go dark | ~2 days |
+| 1 — Ops long-leads | parallel |
+| 2 — Mobile | 1.5 to 2 weeks |
+| 2b — Report + block | 2 to 3 days |
+| 3 — Notifications | 1 to 1.5 weeks |
+| 4 — Payments | 2 to 3 days |
+| 5 — App Store | 3 to 5 days + review |
+| 6 — Brevo | 3 to 5 days, overlaps |
 
-**Maintenance page live: 1 to 2 days. Full relaunch: 7 to 9 weeks.**
+**5 to 7 weeks.** Roughly four of those are work; the rest is Apple and reality.
 
-The estimate assumes mobile stays the priority and web absorbs whatever falls out
-of core for free. The two things most likely to move it: the mobile QA pass finding
-more than a sprint's worth of problems, and App Store review cycles.
+The estimate is grounded in observed throughput (438 commits and 54 merges to
+`main` in the last 30 days, 40 PRs merged in the last 14). What does *not* compress
+with that throughput: App Store review cycles at 24 to 48 hours each with a likely
+first rejection, real-device testing on an app no real user has ever run on real
+hardware, APNs and Sign in with Apple certificate setup, and review time between
+sprints.
+
+## Cut list, agreed in advance
+
+If week four is behind, drop in this order. Each ships in the first post-launch
+update without the launch feeling unfinished.
+
+1. Talent/person pages
+2. The Paused/Watching status model (the only schema change, and rushing schema is
+   exactly how this project lost two weeks in July)
+3. Google sign-in (Sign in with Apple alone covers iOS)
+4. Push notifications
+
+## Implementation notes for the risky parts
+
+- **The one-month Premium grant** does not need a schema change or a card. `is_premium()`
+  is self-expiring: it reads `billing_customers.subscription_status` and
+  `current_period_end`, and a trigger forbids writing `profiles.is_premium` directly.
+  A `billing_customers` row with `subscription_status = 'trialing'` and
+  `current_period_end = now() + 30 days` grants entitlement and lapses on its own.
+- **The `watching_progress.media_type` migration** merges straight to production with
+  no staging gate. Write it purely additive, capture a backup snapshot first, and
+  require `npm run db:write-paths` green before merge.
+- **`create or replace function`** replaces the whole body and Postgres accepts a
+  stale one silently. This cost two weeks of failed `history` writes in July. Diff
+  against the live definition, never against the migration you remember.
 
 ## Risks
 
-- **Migrations merged to `main` apply to production immediately.** Sprint 2's
-  `watching_progress.media_type` column is the only schema change planned; write it
-  as if it runs the moment it merges.
-- **Grandfathered users are on live production the whole time.** Every change in
-  Sprints 2 to 4 has to stay safe for them. This is the cost of not blocking
-  everyone, and it is worth restating before each merge.
+- **The waitlist is currently one address.** The website's "notify me" form has been
+  live for some time and has collected a single signup. The splash is a far more
+  prominent capture point, but do not assume an audience exists yet.
+- **Statistics will look empty** until people import. See Sprint 2.
 - **Parallel sessions share this checkout.** Never `git add -A`; re-verify deletions
   against current `main` immediately before merging.
-- **The waitlist is only as good as its Brevo sync.** If step 5 of Sprint 0 slips,
-  emails accumulate in a table with no way to reach them.
+- **Nine weeks of daily posts pointing at a wall** if step 8 of Sprint 0 slips.
