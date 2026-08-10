@@ -1,8 +1,12 @@
 /**
  * newsletter-subscribe
  *
- * POST {email, website?}        -> subscribe (honeypot field 'website' must be empty).
- *                                  Always returns ok — no address enumeration.
+ * POST {email, website?, list?, source?}
+ *                                -> subscribe (honeypot field 'website' must be empty).
+ *                                  `list: 'mobile-app'` routes to the launch
+ *                                  waitlist; anything else to the newsletter.
+ *                                  `source` tags where a waitlist signup came
+ *                                  from. Always returns ok — no address enumeration.
  * GET  ?action=unsubscribe&token -> confirmation page with an unsubscribe button.
  * POST ?action=unsubscribe&token -> performs the unsubscribe. Also serves Gmail/
  *                                  Outlook one-click List-Unsubscribe POSTs.
@@ -12,6 +16,11 @@
  * Optional secrets (best-effort Brevo sync, skipped entirely if unset):
  *   BREVO_API_KEY             - Brevo API key
  *   BREVO_MARKETING_LIST_ID   - Brevo "PLOT Marketing Subscribers" list id
+ *   BREVO_WAITLIST_LIST_ID    - Brevo "PLOT Waitlist" list id
+ *
+ * The WAITLIST_SOURCE attribute must exist in Brevo before it will persist —
+ * Brevo silently drops unrecognized attribute keys. `marketing/setup/brevo-sync.mjs`
+ * creates it (and all three lists); run that once before relying on this.
  */
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { upsertBrevoContact, removeContactFromList } from '../_shared/brevo.ts';
@@ -23,6 +32,17 @@ const CORS = {
 };
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+// `app_waitlist.source` records which form an address arrived through, so the
+// launch email can be segmented (website hero vs the app's maintenance splash).
+// It is caller-supplied and lands in both our table and a Brevo attribute, so
+// constrain it to a slug rather than storing arbitrary text. Anything else
+// falls back to the column's own default.
+const SOURCE_RE = /^[a-z0-9-]{1,32}$/;
+const waitlistSource = (raw?: string): string => {
+  const source = String(raw ?? '').trim().toLowerCase();
+  return SOURCE_RE.test(source) ? source : 'website';
+};
 
 // Best-effort in-memory per-IP throttle on subscribe POSTs — raises the cost of
 // list-pollution / bulk address injection (the honeypot only stops naive bots).
@@ -128,7 +148,7 @@ Deno.serve(async (req) => {
     });
   }
 
-  let body: { email?: string; website?: string; list?: string };
+  let body: { email?: string; website?: string; list?: string; source?: string };
   try {
     body = await req.json();
   } catch {
@@ -146,11 +166,43 @@ Deno.serve(async (req) => {
   if (body.list === 'mobile-app') {
     const { error } = await supabase
       .from('app_waitlist')
-      .upsert({ email }, { onConflict: 'email', ignoreDuplicates: true });
+      .upsert({ email, source: waitlistSource(body.source) }, { onConflict: 'email', ignoreDuplicates: true });
     if (error) {
       console.error('Waitlist failed:', error.message);
       return json({ error: 'Something went wrong' }, 500);
     }
+
+    // Sync to Brevo so the waitlist is actually reachable. Without this the
+    // addresses only ever exist in a table with no sending path attached.
+    // Its own list, not the marketing one: joining the waitlist is consent to
+    // hear about the launch, not to receive the weekly digest. OPT_IN is
+    // deliberately not written here for the same reason — it belongs to the
+    // newsletter's own opt-in flow, and someone who unsubscribed from the
+    // digest may still legitimately want the launch email.
+    const brevoKey = Deno.env.get('BREVO_API_KEY');
+    const brevoWaitlistListId = Deno.env.get('BREVO_WAITLIST_LIST_ID');
+    if (brevoKey && brevoWaitlistListId) {
+      try {
+        // ignoreDuplicates leaves an existing row untouched, so read the stored
+        // source back rather than echoing this request's — otherwise Brevo would
+        // record where someone signed up the *second* time, disagreeing with our
+        // own table. Same reasoning as the status re-read in the newsletter path.
+        const { data: current } = await supabase
+          .from('app_waitlist')
+          .select('source')
+          .eq('email', email)
+          .maybeSingle();
+        await upsertBrevoContact({
+          apiKey: brevoKey,
+          email,
+          attributes: { WAITLIST_SOURCE: current?.source ?? 'website' },
+          listIds: [Number(brevoWaitlistListId)],
+        });
+      } catch (error) {
+        console.error('Failed to sync waitlist signup to Brevo:', error instanceof Error ? error.message : error);
+      }
+    }
+
     return json({ ok: true });
   }
 

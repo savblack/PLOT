@@ -1,21 +1,24 @@
 // One-time (re-runnable) backfill: syncs every PLOT app user into Brevo as a
-// contact, segmented by existing newsletter opt-in (marketing_subscribers).
-// Keeping it live afterward is handled by supabase/functions/notify-signup
-// and profiles-changed — this script is just the initial (and any later
-// manual re-) sync.
+// contact, segmented by existing newsletter opt-in (marketing_subscribers),
+// plus everyone on the launch waitlist (app_waitlist).
+// Keeping it live afterward is handled by supabase/functions/notify-signup,
+// profiles-changed and newsletter-subscribe — this script is just the initial
+// (and any later manual re-) sync.
 //
-// Usage:
-//   node marketing/setup/brevo-sync.mjs               # full backfill
-//   node marketing/setup/brevo-sync.mjs --limit=5      # first N users only
-//   DRY_RUN=1 node marketing/setup/brevo-sync.mjs       # no writes, just logs
+// Usage (run from the repo root — the env vars below come from .env, which this
+// script does not load on its own):
+//   node --env-file=.env marketing/setup/brevo-sync.mjs             # full backfill
+//   node --env-file=.env marketing/setup/brevo-sync.mjs --limit=5   # first N users/waitlist rows
+//   DRY_RUN=1 node --env-file=.env marketing/setup/brevo-sync.mjs   # no contact writes
 //
 // The attribute/folder/list "ensure" calls always run for real, even under
 // DRY_RUN — they're idempotent account setup, not user data. Only the bulk
 // import and list-add calls (the actual PII writes) are skipped in DRY_RUN.
+// So a DRY_RUN still creates the lists and attributes in the live Brevo account.
 //
-// After the first real run, copy the two printed list ids into the Supabase
-// Edge Function secrets (BREVO_LIST_ID / BREVO_MARKETING_LIST_ID) alongside
-// BREVO_API_KEY — see marketing/README.md.
+// After the first real run, copy the three printed list ids into the Supabase
+// Edge Function secrets (BREVO_LIST_ID / BREVO_MARKETING_LIST_ID /
+// BREVO_WAITLIST_LIST_ID) alongside BREVO_API_KEY — see marketing/README.md.
 //
 // Required env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, BREVO_API_KEY
 import { getSupabase } from '../lib/supabase.mjs';
@@ -30,6 +33,7 @@ const LIMIT = (() => {
 const FOLDER_NAME = 'PLOT';
 const APP_LIST_NAME = 'PLOT App Users';
 const MARKETING_LIST_NAME = 'PLOT Marketing Subscribers';
+const WAITLIST_LIST_NAME = 'PLOT Waitlist';
 
 const chunk = (array, size) => {
   const out = [];
@@ -56,6 +60,38 @@ async function fetchAllUsers(supabase) {
   return users;
 }
 
+// The website's "notify me when the app lands" form and the app's maintenance
+// splash both write to app_waitlist, which had no path into Brevo at all — the
+// addresses sat in a table with nothing able to send to them. Its own list,
+// separate from the marketing one: joining the waitlist is consent to hear
+// about the launch, not to receive the weekly digest, so OPT_IN is left alone.
+async function syncWaitlist(supabase, waitlistListId) {
+  let query = supabase.from('app_waitlist').select('email, source');
+  if (LIMIT) query = query.limit(LIMIT);
+  const { data: rows, error } = await query;
+  if (error) throw new Error(`app_waitlist query failed: ${error.message}`);
+  if (!rows?.length) {
+    console.log('Waitlist is empty — nothing to sync.');
+    return;
+  }
+
+  const contacts = rows.map(row => ({
+    email: row.email.toLowerCase(),
+    attributes: compact({ WAITLIST_SOURCE: row.source }),
+  }));
+  console.log(`${contacts.length} waitlist contact(s) to sync${LIMIT ? ` (limited to ${LIMIT})` : ''}.`);
+
+  if (DRY_RUN) {
+    console.log('DRY_RUN=1 — skipping waitlist import. Sample:', JSON.stringify(contacts.slice(0, 3), null, 2));
+    return;
+  }
+
+  for (const batch of chunk(contacts, 5000)) {
+    const result = await bulkImport({ jsonBody: batch, listIds: [waitlistListId] });
+    console.log(`Queued import of ${batch.length} waitlist contact(s), processId=${result?.processId}`);
+  }
+}
+
 async function main() {
   const supabase = getSupabase();
 
@@ -64,11 +100,17 @@ async function main() {
   await ensureAttribute('SIGNUP_DATE', 'date');
   await ensureAttribute('IS_PREMIUM', 'boolean');
   await ensureAttribute('OPT_IN', 'boolean');
+  await ensureAttribute('WAITLIST_SOURCE', 'text');
   const folderId = await ensureFolder(FOLDER_NAME);
   const appListId = await ensureList(APP_LIST_NAME, folderId);
   const marketingListId = await ensureList(MARKETING_LIST_NAME, folderId);
-  console.log(`Lists ready — ${APP_LIST_NAME}: ${appListId}, ${MARKETING_LIST_NAME}: ${marketingListId}`);
-  console.log('If these are new, set BREVO_LIST_ID / BREVO_MARKETING_LIST_ID as Supabase Edge Function secrets.');
+  const waitlistListId = await ensureList(WAITLIST_LIST_NAME, folderId);
+  console.log(`Lists ready — ${APP_LIST_NAME}: ${appListId}, ${MARKETING_LIST_NAME}: ${marketingListId}, ${WAITLIST_LIST_NAME}: ${waitlistListId}`);
+  console.log('If these are new, set BREVO_LIST_ID / BREVO_MARKETING_LIST_ID / BREVO_WAITLIST_LIST_ID as Supabase Edge Function secrets.');
+
+  // Before the app-user sync, and outside its early return — the waitlist is
+  // mostly people who have no account, so it must not depend on there being any.
+  await syncWaitlist(supabase, waitlistListId);
 
   const users = await fetchAllUsers(supabase);
   console.log(`Found ${users.length} auth user(s)${LIMIT ? ` (limited to ${LIMIT})` : ''}.`);
@@ -122,8 +164,17 @@ async function main() {
     console.log(`Queued import of ${batch.length} contact(s), processId=${result?.processId}`);
   }
 
+  // Brevo 400s when every address in the batch is already a member, and this
+  // script is meant to be re-runnable — by the second run the marketing list is
+  // already populated (notify-signup / profiles-changed keep it current), so a
+  // strict throw here fails a run that otherwise completed everything. Log the
+  // real Brevo message and carry on rather than exiting 1 on a no-op.
   for (const batch of chunk(optedInContactEmails, 1000)) {
-    await addContactsToList(marketingListId, batch);
+    try {
+      await addContactsToList(marketingListId, batch);
+    } catch (err) {
+      console.warn(`Marketing list add skipped for ${batch.length} contact(s) — ${err.message}`);
+    }
   }
 
   console.log('Done.');
