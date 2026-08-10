@@ -20,6 +20,7 @@ import { supabase } from '../../lib/supabase';
 import { tmdb, setTmdbRegion, getTmdbRegion, prioritiseEnglishSpeakingTitles } from '../../lib/tmdb';
 import { SHOW_FOR_YOU_RAIL, SHOW_SOCIAL_FEED } from '../../lib/launchFeatures';
 import { DISCOVER_TABS } from '@plot/core/navigation.js';
+import { useNewReleases } from '@plot/core/useNewReleases.js';
 import GuideView from '../../components/GuideView';
 import { excludeKidsContent } from '@plot/core/tmdb.js';
 import { posterUrl, backdropUrl, Palette, fontFamily, fontSize, spacing, radii, iconButtonSize } from '../../lib/tokens';
@@ -415,6 +416,74 @@ function PosterCardRanked({ item, rank, saved, onSave, isFav, onFavorite }: {
   );
 }
 
+// ── New Releases tab content ──────────────────────────────────────────
+// Mounted only while the tab is active. useNewReleases fires ~21 TMDB
+// requests (Recently Released plus a movie and a TV call per genre rail),
+// so calling it from HomeScreen would spend that budget on every app open
+// and trip the proxy's rate limit for people who never open the tab.
+function NewReleasesContent({ hideKids, savedIds, onSave, isFav, onFavorite, openPanel }: {
+  hideKids: boolean;
+  savedIds: Set<number>;
+  onSave: (item: MediaItem) => void;
+  isFav: (id: number) => boolean;
+  onFavorite: (item: MediaItem) => void;
+  openPanel: (id: number, type: 'movie' | 'tv') => void;
+}) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { data, loading } = useNewReleases({ hideKids });
+
+  if (loading) return <PlotLoader backgroundColor={colors.bg} color={colors.textPrimary} />;
+
+  const rails: Array<{ key: string; kicker: string; title: string; items: MediaItem[] }> = [
+    ...(data.recent.length ? [{ key: 'recent', kicker: 'Last 30 days', title: 'Recently Released', items: data.recent }] : []),
+    ...data.genreRails
+      .filter((rail: { items: MediaItem[] }) => rail.items.length > 0)
+      // GENRE_RAILS labels are already "New in Horror" — the kicker carries
+      // the section name, so the title drops the prefix web repeats.
+      .map((rail: { key: string; label: string; items: MediaItem[] }) => ({
+        key: rail.key, kicker: 'New releases', title: rail.label, items: rail.items,
+      })),
+  ];
+
+  if (!rails.length) {
+    return (
+      <View style={styles.section}>
+        <Text style={styles.emptyTitle}>Nothing new</Text>
+        <Text style={styles.emptyBody}>Nothing has landed in the last 30 days. Check back soon.</Text>
+      </View>
+    );
+  }
+
+  return (
+    <>
+      {rails.map(rail => (
+        <View key={rail.key} style={styles.section}>
+          <SectionHeader kicker={rail.kicker} title={rail.title} />
+          <FlatList
+            horizontal
+            data={rail.items}
+            keyExtractor={item => `${item.media_type}-${item.id}`}
+            renderItem={({ item }) => (
+              <PosterCard
+                item={item}
+                onPress={() => item.id && openPanel(item.id, (item.media_type === 'tv' ? 'tv' : 'movie'))}
+                saved={savedIds.has(item.id ?? 0)}
+                onSave={() => onSave(item)}
+                isFav={isFav(item.id ?? 0)}
+                onFavorite={() => onFavorite(item)}
+              />
+            )}
+            showsHorizontalScrollIndicator={false}
+            nestedScrollEnabled
+            contentContainerStyle={{ paddingHorizontal: spacing.xl, gap: spacing.md }}
+          />
+        </View>
+      ))}
+    </>
+  );
+}
+
 // ── Main screen ───────────────────────────────────────────────────────
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
@@ -433,6 +502,9 @@ export default function HomeScreen() {
   const [retryKey,     setRetryKey]     = useState(0);
   const [forYouError,  setForYouError]  = useState(false);
   const [platformsError, setPlatformsError] = useState(false);
+  // Lifted out of the bootstrap effect because the New Releases tab needs it
+  // too, and core's hooks take it as an argument rather than reading context.
+  const [hideKids,     setHideKids]     = useState(false);
 
   /* Home reads the same watchlist every other surface does. It used to keep
      its own copy — its own list_items query, its own insert — so saving here
@@ -471,6 +543,7 @@ export default function HomeScreen() {
         profile = profileData;
         if (profile?.region) setTmdbRegion(profile.region);
         const hideKids = !(profile?.include_kids_content ?? true);
+        setHideKids(hideKids);
 
         // The watchlist is no longer fetched here — useWatchlist (via
         // useAppData) owns loading it, for every surface at once.
@@ -568,9 +641,10 @@ export default function HomeScreen() {
   if (error) return <ErrorState onRetry={() => setRetryKey(k => k + 1)} />;
 
   // Sub-tabs nested under Home, ids and order from the shared nav list.
-  // Only the two mobile can serve today: New Releases and Upcoming arrive
-  // with the Discover hooks, and an empty tab is worse than an absent one.
-  const MOBILE_READY = new Set(['feed', 'discover', 'guide']);
+  // Upcoming is still absent: web builds it from guide_channels inside
+  // GuideView rather than from one of the hoisted hooks, so it needs its own
+  // extraction first, and an empty tab is worse than an absent one.
+  const MOBILE_READY = new Set(['feed', 'discover', 'new', 'guide']);
   const subTabs = DISCOVER_TABS.filter(
     (t: { id: string; flag?: string }) =>
       MOBILE_READY.has(t.id) && (t.flag !== 'SHOW_SOCIAL_FEED' || SHOW_SOCIAL_FEED));
@@ -585,6 +659,21 @@ export default function HomeScreen() {
         <View style={{ flex: 1, paddingTop: HEADER_H }}>
           <GuideView />
         </View>
+      ) : tab === 'new' ? (
+        <ScrollView
+          style={styles.screen}
+          contentContainerStyle={{ paddingTop: HEADER_H + 20, paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }}
+          showsVerticalScrollIndicator={false}
+        >
+          <NewReleasesContent
+            hideKids={hideKids}
+            savedIds={savedIds}
+            onSave={handleSave}
+            isFav={(id) => favorites.isFavorite(id)}
+            onFavorite={toggleFav}
+            openPanel={openPanel}
+          />
+        </ScrollView>
       ) : (
       <ScrollView
         style={styles.screen}
