@@ -170,12 +170,19 @@ The validation boundary remains in `marketing/copy/schema.mjs`.
    A ready-to-install `launchd` template lives at
    `marketing/ops/com.plot.marketing-learning.plist`.
 6. Brevo contact sync (optional): set `BREVO_API_KEY`, run
-   `node marketing/setup/brevo-sync.mjs --dry-run` first, then for real. Copy
-   the two list ids it prints into the Supabase Edge Function secrets
-   `BREVO_LIST_ID` / `BREVO_MARKETING_LIST_ID` (alongside `BREVO_API_KEY`) so
-   `notify-signup` and `profiles-changed` can keep new/changed users in sync
-   going forward. Also add `BREVO_API_KEY` as a GitHub Actions secret if you
-   want the `brevo-sync.yml` manual re-run button to work.
+   `DRY_RUN=1 node --env-file=.env marketing/setup/brevo-sync.mjs` first, then
+   for real (note `DRY_RUN` skips the contact import, but still creates the
+   lists and attributes in the live Brevo account). Copy
+   the three list ids it prints into the Supabase Edge Function secrets
+   `BREVO_LIST_ID` / `BREVO_MARKETING_LIST_ID` / `BREVO_WAITLIST_LIST_ID`
+   (alongside `BREVO_API_KEY`) so `notify-signup`, `profiles-changed` and
+   `newsletter-subscribe` can keep new/changed users, subscribers and waitlist
+   signups in sync going forward. Also add `BREVO_API_KEY` as a GitHub Actions
+   secret if you want the `brevo-sync.yml` manual re-run button to work.
+
+   Run this **before** relying on the waitlist sync: Brevo silently drops
+   attribute keys it does not recognise, so `WAITLIST_SOURCE` has to exist as an
+   attribute before `newsletter-subscribe` can record it.
 
 ## TMDB guardrail
 

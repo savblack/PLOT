@@ -8,7 +8,7 @@ on:
         type: boolean
         default: false
       limit:
-        description: 'Only process the first N users (0 = no limit)'
+        description: 'Only process the first N users and waitlist rows (0 = no limit)'
         type: string
         default: '0'
 
