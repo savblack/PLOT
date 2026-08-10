@@ -17,11 +17,12 @@ import Svg, { Path, Polyline } from 'react-native-svg';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../../lib/supabase';
-import { tmdb, setTmdbRegion, getTmdbRegion, prioritiseEnglishSpeakingTitles } from '../../lib/tmdb';
+import { tmdb, setTmdbRegion, prioritiseEnglishSpeakingTitles } from '../../lib/tmdb';
 import { SHOW_FOR_YOU_RAIL, SHOW_SOCIAL_FEED } from '../../lib/launchFeatures';
 import { DISCOVER_TABS } from '@plot/core/navigation.js';
 import { useNewReleases } from '@plot/core/useNewReleases.js';
 import { useForYou } from '@plot/core/useForYou.js';
+import { usePlatformCharts } from '@plot/core/usePlatformCharts.js';
 import GuideView from '../../components/GuideView';
 import { excludeKidsContent } from '@plot/core/tmdb.js';
 import { posterUrl, backdropUrl, Palette, fontFamily, fontSize, spacing, radii, iconButtonSize } from '../../lib/tokens';
@@ -67,6 +68,8 @@ interface MediaItem {
   first_air_date?: string;
   original_language?: string;
   origin_country?: string[];
+  /** True published chart position, present only on platform_charts rows. */
+  _rank?: number;
 }
 
 interface StreamingProvider {
@@ -75,7 +78,12 @@ interface StreamingProvider {
   logo_path?: string | null;
 }
 
-interface PlatformData extends StreamingProvider {
+/** Shape returned by core's usePlatformCharts. `id` is the platform key
+ *  ('netflix'), not a TMDB watch-provider id. */
+interface PlatformData {
+  id: string;
+  name: string;
+  logo_path?: string | null;
   movies: MediaItem[];
   tv: MediaItem[];
 }
@@ -324,7 +332,7 @@ function PlatformSection({ platform, saved, onSave, isFav, onFavorite }: {
                 renderItem={({ item, index }) => (
                   <PosterCardRanked
                     item={{ ...item, media_type: 'movie' }}
-                    rank={index + 1}
+                    rank={item._rank ?? index + 1}
                     saved={saved.has(item.id ?? 0)}
                     onSave={() => onSave({ ...item, media_type: 'movie' })}
                     isFav={isFav(item.id ?? 0)}
@@ -347,7 +355,7 @@ function PlatformSection({ platform, saved, onSave, isFav, onFavorite }: {
                 renderItem={({ item, index }) => (
                   <PosterCardRanked
                     item={{ ...item, media_type: 'tv' }}
-                    rank={index + 1}
+                    rank={item._rank ?? index + 1}
                     saved={saved.has(item.id ?? 0)}
                     onSave={() => onSave({ ...item, media_type: 'tv' })}
                     isFav={isFav(item.id ?? 0)}
@@ -495,17 +503,20 @@ export default function HomeScreen() {
   const [trending,     setTrending]     = useState<MediaItem[]>([]);
   const [weekly,       setWeekly]       = useState<MediaItem[]>([]);
   const [bingedShows,  setBingedShows]  = useState<MediaItem[]>([]);
-  const [platforms,    setPlatforms]    = useState<PlatformData[]>([]);
   // For You: item-item collaborative filtering over the user's own
   // watchlist/favourites/history, computed nightly in Postgres. The flag gates
   // the RPC and the TMDB hydration inside the hook, not just the render, so
   // flipping it off pulls the rail without touching the get_for_you pipeline.
   const { items: forYou, error: forYouError } = useForYou(20, SHOW_FOR_YOU_RAIL);
+
+  // Official published charts from platform_charts — a fixed platform list,
+  // identical for everyone, rather than TMDB popularity filtered to whatever
+  // the user happens to subscribe to.
+  const platforms = usePlatformCharts();
   const [tab,          setTab]          = useState('discover');
   const [loading,      setLoading]      = useState(true);
   const [error,        setError]        = useState(false);
   const [retryKey,     setRetryKey]     = useState(0);
-  const [platformsError, setPlatformsError] = useState(false);
   // Lifted out of the bootstrap effect because the New Releases tab needs it
   // too, and core's hooks take it as an argument rather than reading context.
   const [hideKids,     setHideKids]     = useState(false);
@@ -572,33 +583,6 @@ export default function HomeScreen() {
 
       setLoading(false);
 
-      // Load platform content in background (non-blocking)
-      const providers: StreamingProvider[] = profile?.streaming_providers ?? [];
-      if (providers.length > 0 && !cancelled) {
-        setPlatformsError(false);
-        try {
-          const region = getTmdbRegion();
-          const results = await Promise.all(
-            providers.map(async (p) => {
-              const [moviesRes, tvRes] = await Promise.all([
-                tmdb.discoverByProviders('movie', [p.id], region),
-                tmdb.discoverByProviders('tv',    [p.id], region),
-              ]);
-              return {
-                ...p,
-                movies: prioritiseEnglishSpeakingTitles(moviesRes?.results ?? []).slice(0, 10),
-                tv:     prioritiseEnglishSpeakingTitles(tvRes?.results ?? []).slice(0, 10),
-              } as PlatformData;
-            })
-          );
-          if (!cancelled) {
-            setPlatforms(results.filter(p => p.movies.length > 0 || p.tv.length > 0));
-          }
-        } catch (e) {
-          console.warn('[home] platform load failed', e);
-          if (!cancelled) setPlatformsError(true);
-        }
-      }
     };
 
     init();
@@ -764,16 +748,13 @@ export default function HomeScreen() {
         {/* ── Releases: recent + upcoming, below the chart ── */}
         <HomeReleases rails={['recent', 'comingSoon']} />
 
-        {/* ── Top 10 On Your Platforms ── */}
-        {platformsError && platforms.length === 0 && (
-          <View style={styles.section}>
-            <SectionHeader kicker="Your Streaming Services" title="Top 10 On Your Platforms" />
-            <Text style={styles.emptyBody}>Couldn't load your platforms right now.</Text>
-          </View>
-        )}
+        {/* ── Top 10 by Platform ──
+            The platforms' real published charts, not TMDB popularity within
+            the user's own subscriptions: a fixed set, the same for everyone,
+            so it needs the attribution line web carries. */}
         {platforms.length > 0 && (
           <View style={styles.section}>
-            <SectionHeader kicker="Your Streaming Services" title="Top 10 On Your Platforms" />
+            <SectionHeader kicker="Official charts" title="Top 10 by Platform" />
             {platforms.map(platform => (
               <PlatformSection
                 key={platform.id}
@@ -784,6 +765,9 @@ export default function HomeScreen() {
                 onFavorite={toggleFav}
               />
             ))}
+            <Text style={styles.platAttribution}>
+              Official Top 10 · Netflix and the Streaming Availability API.
+            </Text>
           </View>
         )}
 
@@ -1143,6 +1127,14 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     color: colors.textMuted,
     paddingHorizontal: spacing.xl,
     marginBottom: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  platAttribution: {
+    fontFamily: fontFamily.sans,
+    fontSize: 11,
+    lineHeight: 15,
+    color: colors.textMuted,
+    paddingHorizontal: spacing.xl,
     marginTop: spacing.sm,
   },
 

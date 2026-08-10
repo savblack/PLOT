@@ -26,8 +26,14 @@ export const OFFICIAL_PLATFORMS = [
 // omitted entirely, so the section only ever shows charts we actually have.
 // Only TMDB-matched rows are included (so cards stay clickable); each keeps its
 // true chart rank.
+/**
+ * @typedef {{ id: number, title: string, poster_path: string | null,
+ *             media_type: 'movie' | 'tv', _rank: number }} PlatformChartItem
+ * @typedef {{ key: string, id: string, name: string, logo_path: string | null,
+ *             official: true, movies: PlatformChartItem[], tv: PlatformChartItem[] }} PlatformChart
+ */
 export function usePlatformCharts() {
-  const [platforms, setPlatforms] = useState([]);
+  const [platforms, setPlatforms] = useState(/** @type {PlatformChart[]} */ ([]));
 
   useEffect(() => {
     let cancelled = false;
