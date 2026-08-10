@@ -1,4 +1,14 @@
-const HOMEPAGE_MARKDOWN = `# PLOT — Your film & TV companion
+// Pricing isn't public yet (SHOW_PRICING_PAGE, see _middleware.js) — don't
+// advertise the Plans page to AI crawlers while it 302s for everyone else.
+function homepageMarkdown(showPricingPage) {
+  const moreInfo = [
+    '- [About PLOT](https://theplot.tv/about.html)',
+    ...(showPricingPage ? ['- [Plans](https://theplot.tv/plans.html)'] : []),
+    '- [Privacy policy](https://theplot.tv/privacy.html)',
+    '- [Terms of service](https://theplot.tv/terms.html)',
+  ].join('\n');
+
+  return `# PLOT — Your film & TV companion
 
 PLOT is the beautiful way to track what you watch. Log, rate, and share your film and TV taste in one place.
 
@@ -15,13 +25,11 @@ Create an account or sign in at https://app.theplot.tv.
 
 ## More information
 
-- [About PLOT](https://theplot.tv/about.html)
-- [Plans](https://theplot.tv/plans.html)
-- [Privacy policy](https://theplot.tv/privacy.html)
-- [Terms of service](https://theplot.tv/terms.html)
+${moreInfo}
 
 PLOT does not offer a public third-party API. Personal viewing history, lists, ratings, notes, and account details require the member's authenticated, explicit permission.
 `;
+}
 
 /** @param {Request} request */
 export function acceptsMarkdown(request) {
@@ -34,11 +42,15 @@ export function acceptsMarkdown(request) {
     });
 }
 
-/** @param {Request} request */
-export function homepageMarkdownResponse(request) {
+/**
+ * @param {Request} request
+ * @param {{ SHOW_PRICING_PAGE?: string }} [env]
+ */
+export function homepageMarkdownResponse(request, env) {
   const headers = new Headers({
     'Content-Type': 'text/markdown; charset=utf-8',
     'Vary': 'Accept',
   });
-  return new Response(request.method === 'HEAD' ? null : HOMEPAGE_MARKDOWN, { headers });
+  const body = request.method === 'HEAD' ? null : homepageMarkdown(env?.SHOW_PRICING_PAGE === 'true');
+  return new Response(body, { headers });
 }

@@ -25,7 +25,7 @@ import { COMMON } from '../copy/common.js';
 import { SETTINGS_VIEW } from '../copy/settingsView.js';
 import { IANA_TIMEZONES } from '../utils/timezones.js';
 import { REGIONS, DEFAULT_REGION, regionName } from '@plot/core/regions.js';
-import { SHOW_MEDIA_SYNC_INTEGRATIONS, SHOW_WATCHLIST_AVAILABILITY_ALERTS } from '../launchFeatures.js';
+import { SHOW_MEDIA_SYNC_INTEGRATIONS, SHOW_WATCHLIST_AVAILABILITY_ALERTS, SHOW_PRICING_PAGE } from '../launchFeatures.js';
 import SheetHeader from './SheetHeader.jsx';
 import ConfirmModal from './ConfirmModal.jsx';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
@@ -2186,10 +2186,13 @@ export default function SettingsView() {
         </div>
       </div>
 
-      {/* PLOT Premium — only shown to existing subscribers; checkout is offline for now */}
-      {premium.isPremium && (
-        <div className="settings-group">
-          <div className="settings-group-title">{SETTINGS_VIEW.premium.groupTitle}</div>
+      {/* PLOT Premium — the free-user upsell branch is hidden while pricing
+          isn't public (SHOW_PRICING_PAGE); existing subscribers still see
+          their management row regardless. */}
+      {(premium.isPremium || SHOW_PRICING_PAGE) && (
+      <div className="settings-group">
+        <div className="settings-group-title">{SETTINGS_VIEW.premium.groupTitle}</div>
+        {premium.isPremium ? (
           <div className="settings-row" style={{ cursor: 'default' }}>
             <div className="settings-row-left">
               <div className="settings-row-icon" style={{ color: 'var(--accent)' }}>
@@ -2206,17 +2209,35 @@ export default function SettingsView() {
               {premium.busy ? SETTINGS_VIEW.premium.opening : SETTINGS_VIEW.premium.manageSubscription}
             </SettingsTextAction>
           </div>
-          {billingReturn && (
-            <div style={{ padding: '0.5rem 1rem', fontSize: '0.78rem', color: 'var(--accent)', background: 'var(--accent-dim)', borderRadius: 8, margin: '0.25rem 1rem' }}>
-              {billingReturn === 'tip' ? SETTINGS_VIEW.premium.thanksForTip : SETTINGS_VIEW.premium.activeThankYou}
+        ) : (
+          <div className="settings-row" style={{ cursor: 'default' }}>
+            <div className="settings-row-left">
+              <div className="settings-row-icon" style={{ color: 'var(--accent)' }}>
+                <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+              </div>
+              <div>
+                <div className="settings-row-label">{SETTINGS_VIEW.premium.upsellLabel}</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                  {SETTINGS_VIEW.premium.upsellBlurb}
+                </div>
+              </div>
             </div>
-          )}
-          {premium.error && (
-            <div style={{ padding: '0.5rem 1rem', fontSize: '0.78rem', color: 'var(--danger)', background: 'var(--danger-dim)', border: '1px solid var(--danger-border)', borderRadius: 8, margin: '0.25rem 1rem' }}>
-              {premium.error}
-            </div>
-          )}
-        </div>
+            <SettingsTextAction onClick={() => { track(EVENTS.PREMIUM_GATE_HIT, { feature: 'settings_upsell' }); navigate('/pricing'); }}>
+              {SETTINGS_VIEW.premium.upgradeButton}
+            </SettingsTextAction>
+          </div>
+        )}
+        {billingReturn && (
+          <div style={{ padding: '0.5rem 1rem', fontSize: '0.78rem', color: 'var(--accent)', background: 'var(--accent-dim)', borderRadius: 8, margin: '0.25rem 1rem' }}>
+            {billingReturn === 'tip' ? SETTINGS_VIEW.premium.thanksForTip : SETTINGS_VIEW.premium.activeThankYou}
+          </div>
+        )}
+        {premium.error && (
+          <div style={{ padding: '0.5rem 1rem', fontSize: '0.78rem', color: 'var(--danger)', background: 'var(--danger-dim)', border: '1px solid var(--danger-border)', borderRadius: 8, margin: '0.25rem 1rem' }}>
+            {premium.error}
+          </div>
+        )}
+      </div>
       )}
 
       {/* Plex */}
@@ -2384,7 +2405,9 @@ export default function SettingsView() {
       <div className="settings-group">
         <div className="settings-group-title">{SETTINGS_VIEW.calendarFeed.groupTitle}</div>
 
-        {/* Subscribe */}
+        {/* Subscribe — hidden for free users while pricing is dark (SHOW_PRICING_PAGE);
+            an existing subscriber still sees and uses their own feed regardless. */}
+        {(premium.isPremium || SHOW_PRICING_PAGE) && (
         <div className="settings-row" style={{ cursor: 'default' }}>
           <div className="settings-row-left">
             <div className="settings-row-icon">
@@ -2450,6 +2473,7 @@ export default function SettingsView() {
             )}
           </div>
         </div>
+        )}
 
         {/* Export */}
         <div className="settings-row" style={{ cursor: 'default' }}>

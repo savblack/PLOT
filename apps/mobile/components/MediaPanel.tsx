@@ -27,6 +27,7 @@ import { track, EVENTS } from '../lib/analytics';
 import { fetchVerifiedAvailability, offersFromTmdb } from '@plot/core/availability.js';
 import { fetchCriticScore, pickAudienceQuote, getConsensusLine } from '@plot/core/reviews.js';
 import { canCreateCustomList, FREE_CUSTOM_LIST_CAP } from '@plot/core/premium.js';
+import { SHOW_PRICING_PAGE } from '../lib/launchFeatures';
 import { TrailerPlayer } from './TrailerPlayer';
 import { MEDIA } from '@plot/core/copy/media.js';
 
@@ -344,7 +345,9 @@ function AddToListSheet({ item, customLists, topLists, onClose }: {
     if (!trimmed) return;
     if (findDuplicateCustomList(lists, trimmed)) { setError('A list with that name already exists.'); return; }
     if (!canCreateCustomList(lists.length, profile)) {
-      setError(`Free accounts can have ${FREE_CUSTOM_LIST_CAP} lists. PLOT Premium gets unlimited.`);
+      setError(SHOW_PRICING_PAGE
+        ? `Free accounts can have ${FREE_CUSTOM_LIST_CAP} lists. PLOT Premium gets unlimited.`
+        : `You've reached the ${FREE_CUSTOM_LIST_CAP}-list limit.`);
       return;
     }
     setBusy(true);

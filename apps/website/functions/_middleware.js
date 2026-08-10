@@ -7,14 +7,20 @@ import { admin } from './_lib/admin.js';
 import { acceptsMarkdown, homepageMarkdownResponse } from './_lib/markdown.js';
 
 export async function onRequest(context) {
-  const { request } = context;
+  const { request, env } = context;
   const url = new URL(request.url);
   const host = url.hostname;
   if (host === 'admin.theplot.tv') {
     return admin(request);
   }
+  // Pricing isn't public yet. Redirect rather than 404 so an old bookmark or
+  // shared link lands somewhere real. Flip SHOW_PRICING_PAGE=true (Cloudflare
+  // Pages env var) to bring it back — no code change needed.
+  if (url.pathname === '/plans.html' && env.SHOW_PRICING_PAGE !== 'true') {
+    return Response.redirect(new URL('/', url), 302);
+  }
   if ((request.method === 'GET' || request.method === 'HEAD') && url.pathname === '/' && acceptsMarkdown(request)) {
-    return homepageMarkdownResponse(request);
+    return homepageMarkdownResponse(request, env);
   }
   return context.next();
 }

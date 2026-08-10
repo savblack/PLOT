@@ -30,6 +30,7 @@ import { MEDIA } from '@plot/core/copy/media.js';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 import { COMMON } from '@plot/core/copy/common.js';
+import { SHOW_PRICING_PAGE } from '../../lib/launchFeatures';
 
 const SCREEN_W = Dimensions.get('window').width;
 const POSTER_W = (SCREEN_W - spacing.xl * 2 - spacing.sm * 2) / 3;
@@ -393,7 +394,9 @@ export default function MyListsScreen() {
   // (RLS insert policy) is the authority — this is just friendlier UX.
   const requestCreateList = () => {
     if (!canCreateCustomList(customLists.lists.length, profile)) {
-      Alert.alert('List limit', `You've got ${FREE_CUSTOM_LIST_CAP} lists. PLOT Premium gets unlimited.`);
+      Alert.alert('List limit', SHOW_PRICING_PAGE
+        ? `You've got ${FREE_CUSTOM_LIST_CAP} lists. PLOT Premium gets unlimited.`
+        : `You've reached the ${FREE_CUSTOM_LIST_CAP}-list limit.`);
       return;
     }
     setShowCreateList(true);

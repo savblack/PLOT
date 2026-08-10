@@ -24,6 +24,7 @@ import { getButtonLikeProps } from '../utils/interactive.js';
 import { useShare } from '../hooks/useShare.js';
 import { EVENTS, track } from '../lib/analytics.js';
 import { canCreateCustomList, FREE_CUSTOM_LIST_CAP } from '@plot/core/premium.js';
+import { SHOW_PRICING_PAGE } from '../launchFeatures.js';
 import { getStoredSectionOpen, storeSectionOpen } from '../utils/sectionOpenState.js';
 import { MEDIA } from '../copy/media.js';
 
@@ -929,14 +930,20 @@ function CustomListsSection({ customLists: clHook, filterItems, open, onOpenChan
           color: 'var(--text-secondary)', background: 'var(--surface)',
           border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
         }}>
-          You&rsquo;ve got {FREE_CUSTOM_LIST_CAP} lists. PLOT Premium gets unlimited.{' '}
-          <button
-            type="button"
-            onClick={() => navigateTo?.('settings')}
-            style={{ background: 'none', border: 'none', padding: 0, color: 'var(--accent)', fontWeight: 600, cursor: 'pointer', fontSize: 'inherit' }}
-          >
-            Get Premium
-          </button>
+          {SHOW_PRICING_PAGE ? (
+            <>
+              You&rsquo;ve got {FREE_CUSTOM_LIST_CAP} lists. PLOT Premium gets unlimited.{' '}
+              <button
+                type="button"
+                onClick={() => navigateTo?.('settings')}
+                style={{ background: 'none', border: 'none', padding: 0, color: 'var(--accent)', fontWeight: 600, cursor: 'pointer', fontSize: 'inherit' }}
+              >
+                Get Premium
+              </button>
+            </>
+          ) : (
+            <>You&rsquo;ve reached the {FREE_CUSTOM_LIST_CAP}-list limit.</>
+          )}
         </div>
       )}
 

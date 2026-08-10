@@ -19,6 +19,7 @@ import { detectRegion, detectTimezone, guessRegionFromTimezone } from '@plot/cor
 import { useWatchlist } from '../hooks/useWatchlist.js';
 import { usePremium } from '../hooks/usePremium.js';
 import { takePremiumCheckoutIntent } from '../utils/premiumCheckoutIntent.js';
+import { SHOW_PRICING_PAGE } from '../launchFeatures.js';
 
 const STEP_NAMES = { 1: 'name', 2: 'seed' };
 
@@ -213,7 +214,7 @@ export default function OnboardingFlow() {
     // Completing onboarding is an activation signal (first-of wins).
     markActivated('onboarding', { seed_titles_added: seeds.length });
 
-    const plan = takePremiumCheckoutIntent();
+    const plan = SHOW_PRICING_PAGE ? takePremiumCheckoutIntent() : null;
     if (plan) {
       const started = await premium.startCheckout(plan, 'premium_signup');
         if (!started) navigate(`/pricing?billing=${plan}`, { replace: true });

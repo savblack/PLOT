@@ -163,6 +163,9 @@ export const SETTINGS_VIEW = {
     manageSubscription: 'Manage subscription',
     thanksForTip: 'Thanks for supporting PLOT ♥',
     activeThankYou: 'PLOT Premium is active. Thank you ♥',
+    upsellLabel: 'Go Premium',
+    upsellBlurb: 'Unlimited custom lists and a live calendar feed.',
+    upgradeButton: 'Upgrade',
   },
 
   calendarFeed: {
