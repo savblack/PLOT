@@ -21,6 +21,7 @@ import { tmdb, setTmdbRegion, getTmdbRegion, prioritiseEnglishSpeakingTitles } f
 import { SHOW_FOR_YOU_RAIL, SHOW_SOCIAL_FEED } from '../../lib/launchFeatures';
 import { DISCOVER_TABS } from '@plot/core/navigation.js';
 import { useNewReleases } from '@plot/core/useNewReleases.js';
+import { useForYou } from '@plot/core/useForYou.js';
 import GuideView from '../../components/GuideView';
 import { excludeKidsContent } from '@plot/core/tmdb.js';
 import { posterUrl, backdropUrl, Palette, fontFamily, fontSize, spacing, radii, iconButtonSize } from '../../lib/tokens';
@@ -495,12 +496,15 @@ export default function HomeScreen() {
   const [weekly,       setWeekly]       = useState<MediaItem[]>([]);
   const [bingedShows,  setBingedShows]  = useState<MediaItem[]>([]);
   const [platforms,    setPlatforms]    = useState<PlatformData[]>([]);
-  const [forYou,       setForYou]       = useState<MediaItem[]>([]);
+  // For You: item-item collaborative filtering over the user's own
+  // watchlist/favourites/history, computed nightly in Postgres. The flag gates
+  // the RPC and the TMDB hydration inside the hook, not just the render, so
+  // flipping it off pulls the rail without touching the get_for_you pipeline.
+  const { items: forYou, error: forYouError } = useForYou(20, SHOW_FOR_YOU_RAIL);
   const [tab,          setTab]          = useState('discover');
   const [loading,      setLoading]      = useState(true);
   const [error,        setError]        = useState(false);
   const [retryKey,     setRetryKey]     = useState(0);
-  const [forYouError,  setForYouError]  = useState(false);
   const [platformsError, setPlatformsError] = useState(false);
   // Lifted out of the bootstrap effect because the New Releases tab needs it
   // too, and core's hooks take it as an argument rather than reading context.
@@ -567,34 +571,6 @@ export default function HomeScreen() {
       }
 
       setLoading(false);
-
-      // For You: item-item collaborative filtering over the user's own
-      // watchlist/favourites/history, computed nightly in Postgres (see
-      // supabase/migrations/20260726020000_for_you_recommendations.sql).
-      // Non-blocking — hydrate rows with TMDB after the rest of the screen loads.
-      setForYouError(false);
-      // The flag gates the RPC and the TMDB hydration, not just the render —
-      // flipping it off pulls the rail instantly without touching the
-      // get_for_you() pipeline, and costs nothing while it's off.
-      if (SHOW_FOR_YOU_RAIL) (async () => {
-        try {
-          const { data: rows, error: rpcError } = await supabase.rpc('get_for_you', { p_limit: 20 });
-          if (cancelled) return;
-          if (rpcError) { setForYouError(true); return; }
-          if (!rows?.length) return;
-          const hydrated = await Promise.all(
-            rows.map(async (row: { tmdb_id: number; media_type: 'movie' | 'tv' }) => {
-              const details = await tmdb.getBasicDetails(row.media_type, row.tmdb_id).catch(() => null);
-              if (!details?.id) return null;
-              return { ...details, media_type: row.media_type } as MediaItem;
-            })
-          );
-          if (!cancelled) setForYou(hydrated.filter((item): item is MediaItem => item !== null));
-        } catch (e) {
-          console.warn('[home] for-you load failed', e);
-          if (!cancelled) setForYouError(true);
-        }
-      })();
 
       // Load platform content in background (non-blocking)
       const providers: StreamingProvider[] = profile?.streaming_providers ?? [];

@@ -9,10 +9,21 @@ import { tmdb } from './tmdb.js';
 // Returns [] for signed-out users or anyone TMDB can't resolve a row for.
 // `enabled` gates the whole rail behind SHOW_FOR_YOU_RAIL (launchFeatures.js)
 // — false skips the RPC + TMDB hydration entirely rather than just hiding it.
+// `error` distinguishes "the RPC failed" from "you have no recommendations
+// yet" — mobile's own copy of this had it and showed a retry-ish message,
+// web's did not. Web is free to ignore it.
+/**
+ * A TMDB-hydrated recommendation. Loose by design: it's whatever
+ * getBasicDetails returned, plus the media_type and genre_ids we attach.
+ * @typedef {{ id: number, media_type: 'movie' | 'tv', poster_path?: string | null,
+ *             title?: string, name?: string, genre_ids?: number[],
+ *             [key: string]: unknown }} ForYouItem
+ */
 export function useForYou(limit = 20, enabled = true) {
-  const [items, setItems]     = useState([]);
-  const [reason, setReason]   = useState(null);
+  const [items, setItems]     = useState(/** @type {ForYouItem[]} */ ([]));
+  const [reason, setReason]   = useState(/** @type {string | null} */ (null));
   const [loading, setLoading] = useState(true);
+  const [error, setError]     = useState(false);
 
   useEffect(() => {
     if (!enabled) return;
@@ -22,8 +33,10 @@ export function useForYou(limit = 20, enabled = true) {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) { if (!cancelled) setLoading(false); return; }
 
-      const { data: rows, error } = await supabase.rpc('get_for_you', { p_limit: limit });
-      if (cancelled || error || !rows?.length) { if (!cancelled) setLoading(false); return; }
+      const { data: rows, error: rpcError } = await supabase.rpc('get_for_you', { p_limit: limit });
+      if (cancelled) return;
+      if (rpcError) { setError(true); setLoading(false); return; }
+      if (!rows?.length) { setLoading(false); return; }
 
       const hydrated = await Promise.all(
         rows.map(async (row) => {
@@ -39,13 +52,13 @@ export function useForYou(limit = 20, enabled = true) {
       setLoading(false);
     }
 
-    load();
+    load().catch(() => { if (!cancelled) { setError(true); setLoading(false); } });
     return () => { cancelled = true; };
   }, [limit, enabled]);
 
   if (!enabled) {
-    return { items: [], reason: null, loading: false };
+    return { items: [], reason: null, loading: false, error: false };
   }
 
-  return { items, reason, loading };
+  return { items, reason, loading, error };
 }
