@@ -28,6 +28,7 @@ import Spinner from './Spinner.jsx';
 import { COMMON } from '../copy/common.js';
 import { MEDIA } from '../copy/media.js';
 import { MEDIA_PANEL } from '../copy/mediaPanel.js';
+import { SHOW_PRICING_PAGE } from '../launchFeatures.js';
 
 /* ── Close icon ── */
 function CloseIcon() {
@@ -516,7 +517,9 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
     }
     if (!canCreateCustomList(lists.length, profile)) {
       track(EVENTS.PREMIUM_GATE_HIT, { feature: 'custom_lists' });
-      setCreateError(`Free accounts can have ${FREE_CUSTOM_LIST_CAP} lists. PLOT Premium gets unlimited. Upgrade from Settings to unlock.`);
+      setCreateError(SHOW_PRICING_PAGE
+        ? `Free accounts can have ${FREE_CUSTOM_LIST_CAP} lists. PLOT Premium gets unlimited. Upgrade from Settings to unlock.`
+        : `You've reached the ${FREE_CUSTOM_LIST_CAP}-list limit.`);
       return;
     }
 

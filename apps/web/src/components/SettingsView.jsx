@@ -2402,7 +2402,9 @@ export default function SettingsView() {
       <div className="settings-group">
         <div className="settings-group-title">{SETTINGS_VIEW.calendarFeed.groupTitle}</div>
 
-        {/* Subscribe */}
+        {/* Subscribe — hidden for free users while pricing is dark (SHOW_PRICING_PAGE);
+            an existing subscriber still sees and uses their own feed regardless. */}
+        {(premium.isPremium || SHOW_PRICING_PAGE) && (
         <div className="settings-row" style={{ cursor: 'default' }}>
           <div className="settings-row-left">
             <div className="settings-row-icon">
@@ -2468,6 +2470,7 @@ export default function SettingsView() {
             )}
           </div>
         </div>
+        )}
 
         {/* Export */}
         <div className="settings-row" style={{ cursor: 'default' }}>
