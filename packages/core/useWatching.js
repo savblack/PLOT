@@ -5,6 +5,8 @@ import { localDateStr } from './date.js';
 import { baseMediaRow, tmdbIdFromItem } from './media.js';
 import { logWatchedItem } from './userMedia.js';
 import { getNextEpisodeProgress } from './watchingProgress.js';
+import { emit } from './events.js';
+import { HISTORY_CHANGED_EVENT } from './useHistory.js';
 
 /**
  * Currently-watching shows + episode progress for a user.
@@ -131,11 +133,14 @@ export function useWatching(userId) {
 
     // Log completed episode to history via shared helper (includes date validation)
     if (userId) {
-      await logWatchedItem({
+      const { data: logged } = await logWatchedItem({
         userId,
         item: { ...progress, media_type: 'tv' },
         watchedAt: localDateStr(),
       });
+      // Anything that writes a history row has to signal it, or a mounted
+      // useHistory keeps serving the pre-write list until it remounts.
+      if (logged) emit(HISTORY_CHANGED_EVENT);
     }
 
     return { ok: true, data };
