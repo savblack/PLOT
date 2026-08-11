@@ -1122,14 +1122,15 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
       clearWatching: () => watching.stopWatching(itemId),
       removeFromSaved: () => watchlist.removeFromList(itemId),
       rollbackHistory: () => history.removeEntry(itemId, itemType),
-      shouldClearWatching: !isMovie && isWatching,
-      shouldRemoveFromSaved: inList && !isWatching,
+      mediaType: itemType,
+      isWatching,
+      inList,
     });
     // Surface the real Supabase error (e.g. constraint/network failure) instead
     // of the generic fallback message, so a recurrence is actually diagnosable.
     const realError = !result.ok && history.getLastError();
     return realError ? { ok: false, error: realError } : result;
-  }, [defaultWatchedAt, details, history, inList, isMovie, isWatching, itemId, itemType, watched, watchedEntry?.dnf, watchlist, watching]);
+  }, [defaultWatchedAt, details, history, inList, isWatching, itemId, itemType, watched, watchedEntry?.dnf, watchlist, watching]);
 
   const handleClearStatus = useCallback(async () => {
     if (isWatching) {

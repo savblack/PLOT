@@ -70,10 +70,9 @@ export function useFavorites(userId, { watching, watchlist } = {}) {
           await supabase.from('history').delete().eq('id', insertedId);
           emit(HISTORY_CHANGED_EVENT);
         },
-        // Movie/TV tmdb ids can collide (see userMedia.js), so only ever treat
-        // this as "currently watching" for TV, matching MediaPanel's own guard.
-        shouldClearWatching:   mediaType === 'tv' && !!watching?.isWatching?.(tmdbId),
-        shouldRemoveFromSaved: !!watchlist?.isInList?.(tmdbId),
+        mediaType,
+        isWatching: !!watching?.isWatching?.(tmdbId),
+        inList:     !!watchlist?.isInList?.(tmdbId),
       });
 
       if (!result.ok) console.error('[useFavorites] could not default watch status to watched:', result.error);

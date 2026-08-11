@@ -4,7 +4,7 @@
  */
 import { STAR_COUNT, ratingToStars, starsToRating } from '@plot/core/ratings.js';
 import { localDateStr } from '@plot/core/date.js';
-import { markMediaAsWatched } from '@plot/core/mediaStatus.js';
+import { markMediaAsWatched, moveSavedShowToWatching } from '@plot/core/mediaStatus.js';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useEffect, useState, useRef, useMemo } from 'react';
 import {
@@ -850,8 +850,9 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                             clearWatching:   () => watching.stopWatching(itemId),
                             removeFromSaved: () => watchlist.removeFromList(itemId),
                             rollbackHistory: () => history.removeEntry(itemId, itemType),
-                            shouldClearWatching:   !isMovie && isWatching,
-                            shouldRemoveFromSaved: inList && !isWatching,
+                            mediaType: itemType,
+                            isWatching,
+                            inList,
                           });
                           if (!result.ok) {
                             Alert.alert('Could not update', history.getLastError() || result.error);
@@ -900,8 +901,15 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                       if (isWatching) {
                         await watching.stopWatching(itemId);
                       } else {
-                        await watching.startWatching({ ...details, id: itemId, media_type: 'tv' });
-                        if (inList) await watchlist.toggle({ ...details, id: itemId, media_type: itemType });
+                        /* Two writes with no rollback left a show in both
+                           Watching and Saved permanently if the second failed.
+                           core sequences them and undoes the first. */
+                        const result = await moveSavedShowToWatching({
+                          startWatching:   () => watching.startWatching({ ...details, id: itemId, media_type: 'tv' }),
+                          removeFromSaved: () => inList ? watchlist.removeFromList(itemId) : Promise.resolve(true),
+                          rollbackWatching: () => watching.stopWatching(itemId),
+                        });
+                        if (!result.ok) Alert.alert('Could not update', result.error);
                       }
                     }}
                   >
