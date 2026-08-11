@@ -22,7 +22,6 @@ import { SHOW_FOR_YOU_RAIL, SHOW_SOCIAL_FEED } from '../../lib/launchFeatures';
 import { DISCOVER_TABS } from '@plot/core/navigation.js';
 import GuideView from '../../components/GuideView';
 import { excludeKidsContent } from '@plot/core/tmdb.js';
-import { getOrCreateMyListId } from '@plot/core/userMedia.js';
 import { posterUrl, backdropUrl, Palette, fontFamily, fontSize, spacing, radii, iconButtonSize } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
@@ -423,9 +422,6 @@ export default function HomeScreen() {
   const { colors, resolved } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
-  const [userId,       setUserId]       = useState<string | null>(null);
-  const [listId,       setListId]       = useState<string | null>(null);
-  const [watchlist,    setWatchlist]    = useState<MediaItem[]>([]);
   const [trending,     setTrending]     = useState<MediaItem[]>([]);
   const [weekly,       setWeekly]       = useState<MediaItem[]>([]);
   const [bingedShows,  setBingedShows]  = useState<MediaItem[]>([]);
@@ -438,10 +434,16 @@ export default function HomeScreen() {
   const [forYouError,  setForYouError]  = useState(false);
   const [platformsError, setPlatformsError] = useState(false);
 
-  const savedIds = new Set(watchlist.map(i => i.tmdb_id ?? i.id ?? 0));
-
-  // Favourites are a separate function from the watchlist bookmark.
-  const { favorites } = useAppData();
+  /* Home reads the same watchlist every other surface does. It used to keep
+     its own copy — its own list_items query, its own insert — so saving here
+     wrote a thinner row (no provider_ids, genre_ids, release_date or
+     streaming_date), skipped the Trakt outbox and the WATCHLIST_SAVED /
+     ACTIVATED analytics, and left the shared store stale until app restart:
+     save on Home, open the title's panel, and it still offered "Add to
+     Watchlist". */
+  const { favorites, watchlist } = useAppData();
+  const watchlistItems: MediaItem[] = watchlist.items;
+  const savedIds = new Set<number>(watchlistItems.map((i: MediaItem) => i.tmdb_id ?? i.id ?? 0));
   const toggleFav = useCallback((item: MediaItem) => {
     const id = item.id ?? item.tmdb_id ?? 0;
     if (!id) return;
@@ -460,7 +462,6 @@ export default function HomeScreen() {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session?.user || cancelled) return;
         const uid = session.user.id;
-        setUserId(uid);
 
         const { data: profileData } = await supabase
           .from('profiles')
@@ -471,11 +472,12 @@ export default function HomeScreen() {
         if (profile?.region) setTmdbRegion(profile.region);
         const hideKids = !(profile?.include_kids_content ?? true);
 
-        const [trendingDay, trendingWeek, trendingTV, listData] = await Promise.all([
+        // The watchlist is no longer fetched here — useWatchlist (via
+        // useAppData) owns loading it, for every surface at once.
+        const [trendingDay, trendingWeek, trendingTV] = await Promise.all([
           tmdb.getTrending('all', 'day'),
           tmdb.getTrending('all', 'week'),
           tmdb.getTrending('tv',  'day'),
-          supabase.from('lists').select('id').eq('user_id', uid).eq('name', 'My List').maybeSingle(),
         ]);
 
         if (cancelled) return;
@@ -483,16 +485,6 @@ export default function HomeScreen() {
         if (trendingDay?.results)  setTrending(excludeKidsContent(prioritiseEnglishSpeakingTitles(trendingDay.results), hideKids).slice(0, 20));
         if (trendingWeek?.results) setWeekly(excludeKidsContent(trendingWeek.results, hideKids).slice(0, 20));
         if (trendingTV?.results)   setBingedShows(excludeKidsContent(prioritiseEnglishSpeakingTitles(trendingTV.results), hideKids).slice(0, 10).map((s: MediaItem) => ({ ...s, media_type: 'tv' })));
-
-        const lid = listData.data?.id;
-        if (lid) {
-          setListId(lid);
-          const { data: items } = await supabase
-            .from('list_items')
-            .select('tmdb_id, media_type, title, poster_path')
-            .eq('list_id', lid);
-          if (!cancelled && items) setWatchlist(items);
-        }
       } catch (e) {
         if (cancelled) return;
         console.warn('[home] bootstrap failed', e);
@@ -565,44 +557,12 @@ export default function HomeScreen() {
   }, [retryKey]);
 
   // ── Watchlist toggle ─────────────────────────────────────────────
-  const handleSave = useCallback(async (item: MediaItem) => {
-    if (!userId) return;
-    const tmdbId = item.id ?? 0;
-    if (!tmdbId) return;
-    const isSaved = savedIds.has(tmdbId);
-
-    // Accounts onboarded before My List was guaranteed at signup may still be
-    // missing it — create it lazily so Save works immediately instead of
-    // silently no-oping. See getOrCreateMyListId for why it reads before it
-    // inserts rather than upserting.
-    let currentListId = listId;
-    if (!currentListId) {
-      currentListId = await getOrCreateMyListId({ userId });
-      if (!currentListId) return;
-      setListId(currentListId);
-    }
-
-    if (isSaved) {
-      await supabase
-        .from('list_items')
-        .delete()
-        .eq('list_id', currentListId)
-        .eq('tmdb_id', tmdbId)
-        .eq('user_id', userId);
-      setWatchlist(prev => prev.filter(i => (i.tmdb_id ?? i.id) !== tmdbId));
-    } else {
-      const row = {
-        list_id:    currentListId,
-        user_id:    userId,
-        tmdb_id:    tmdbId,
-        media_type: item.media_type ?? 'movie',
-        title:      item.title || item.name || '',
-        poster_path: item.poster_path ?? null,
-      };
-      const { data } = await supabase.from('list_items').insert(row).select().single();
-      if (data) setWatchlist(prev => [data, ...prev]);
-    }
-  }, [listId, userId, savedIds]);
+  // core's toggle owns the lazy My List creation, the enriched row, the Trakt
+  // outbox and the analytics seam. See the note on `watchlist` above.
+  const handleSave = useCallback(
+    (item: MediaItem) => watchlist.toggle({ ...item, id: item.id ?? item.tmdb_id }),
+    [watchlist],
+  );
 
   if (loading) return <PlotLoader backgroundColor={colors.bg} color={colors.textPrimary} />;
   if (error) return <ErrorState onRetry={() => setRetryKey(k => k + 1)} />;
@@ -763,12 +723,12 @@ export default function HomeScreen() {
         )}
 
         {/* ── Watchlist rail ── */}
-        {watchlist.length > 0 && (
+        {watchlistItems.length > 0 && (
           <View style={styles.section}>
             <SectionHeader kicker="Your list" title="Saved to watch" />
             <FlatList
               horizontal
-              data={watchlist}
+              data={watchlistItems}
               keyExtractor={item => String(item.tmdb_id ?? item.id)}
               renderItem={({ item }) => (
                 <PosterCard
@@ -787,7 +747,7 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {watchlist.length === 0 && !loading && (
+        {watchlistItems.length === 0 && !loading && (
           <View style={styles.emptyWatchlist}>
             <Text style={styles.emptyTitle}>Your list is empty</Text>
             <Text style={styles.emptyBody}>Tap the bookmark on any title above to save it here.</Text>
