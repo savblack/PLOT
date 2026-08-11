@@ -65,7 +65,7 @@ Run from repo root unless noted. Use **npm** (workspaces), never yarn/pnpm.
 
 ## Tech stack
 
-React 19 + react-router 7 + Vite 8 (web) · Expo 56 / RN 0.86 + TypeScript 6 (mobile) ·
+React 19 + react-router 7 + Vite 8 (web) · Expo 56 / RN 0.85 + TypeScript 6 (mobile) ·
 plain JS ESM + JSDoc (core) · Supabase (Postgres + Deno edge functions) ·
 Cloudflare Pages (web app + marketing site) hosting · Cloudflare Workers (TMDB proxy, OG) ·
 PostHog (analytics) · Stripe (billing) · Resend (email).
@@ -279,3 +279,14 @@ than shipping a guess.
 
 Model-agnostic runbooks: run from repo root on `main` with `.env` present, never a paid API
 for copy, and **confirm before anything posts publicly.**
+
+## Agent skills
+
+### Issue tracker
+
+Issues live in this repo's GitHub Issues, via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Domain docs
+
+Single-context: one `CONTEXT.md` plus `docs/adr/` at the repo root, shared by every
+workspace. See `docs/agents/domain.md`.
