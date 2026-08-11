@@ -17,6 +17,9 @@ import { useFollowRequests } from '../../hooks/useFollowRequests';
 import { useTraktSync } from '../../hooks/useTraktSync';
 import { useMediaSync } from '../../hooks/useMediaSync';
 import ScreenHeaderBar from '../../components/ScreenHeaderBar';
+import ConfirmPhraseModal from '../../components/ConfirmPhraseModal';
+import { track, EVENTS } from '../../lib/analytics';
+import { deleteAccountAndSignOut } from '@plot/core/deleteAccount.js';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
 import { edgeFunctionUrl } from '@plot/core/functions.js';
@@ -564,6 +567,7 @@ export default function SettingsScreen() {
   const [showTimezone,   setShowTimezone]   = useState(false);
   const [feedbackType,   setFeedbackType]   = useState<string | null>(null);
   const [showImport,     setShowImport]     = useState(false);
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const [clearingHist,   setClearingHist]   = useState(false);
   const [clearingList,   setClearingList]   = useState(false);
 
@@ -746,29 +750,26 @@ export default function SettingsScreen() {
     ]);
   };
 
-  const handleDeleteAccount = () => {
-    Alert.alert(
-      SETTINGS_VIEW.confirm.deleteAccountTitle,
-      SETTINGS_VIEW.confirm.deleteAccountMessage,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: SETTINGS_VIEW.confirm.deleteAccount, style: 'destructive', onPress: async () => {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (!session) return;
-          const url = `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/delete-account`;
-          try {
-            const response = await fetch(url, { method: 'POST', headers: { Authorization: `Bearer ${session.access_token}` } });
-            if (!response.ok) {
-              Alert.alert('Delete failed', 'We could not delete your account. Please try again.');
-              return;
-            }
-            await supabase.auth.signOut();
-          } catch {
-            Alert.alert('Delete failed', 'We could not delete your account. Please try again.');
-          }
-        }},
-      ]
-    );
+  /* Deletion goes through the shared core helper, which sends the
+     `confirmationPhrase` body the edge function requires. Mobile previously
+     POSTed with no body and so always hit the function's 400, meaning account
+     deletion never worked here. An Alert button cannot satisfy that contract,
+     hence the typed-phrase sheet. */
+  const handleDeleteAccount = () => setShowDeleteAccount(true);
+
+  const confirmDeleteAccount = async (typedPhrase: string) => {
+    const result = await deleteAccountAndSignOut({
+      supabase,
+      fetchImpl: fetch,
+      deleteAccountUrl: edgeFunctionUrl('delete-account'),
+      confirmationPhrase: typedPhrase,
+      onDeleted: async () => {
+        track(EVENTS.ACCOUNT_DELETED, {});
+        router.replace('/');
+      },
+    });
+    if (result.ok) setShowDeleteAccount(false);
+    return result;
   };
 
   const HEADER_H = insets.top + 56;
@@ -1028,6 +1029,16 @@ export default function SettingsScreen() {
       )}
       {showImport && userId && (
         <ImportHistoryModal userId={userId} onClose={() => setShowImport(false)} />
+      )}
+      {showDeleteAccount && (
+        <ConfirmPhraseModal
+          title={SETTINGS_VIEW.confirm.deleteAccountTitle}
+          message={SETTINGS_VIEW.confirm.deleteAccountMessage}
+          phrase={SETTINGS_VIEW.confirm.deleteAccountPhrase}
+          confirmLabel={SETTINGS_VIEW.confirm.deleteAccount}
+          onConfirm={confirmDeleteAccount}
+          onClose={() => setShowDeleteAccount(false)}
+        />
       )}
 
     </View>
