@@ -13,6 +13,9 @@
  * recovers from exactly that race, and there was previously no way to exercise it.
  */
 
+/** Supabase's db-max-rows. Reads past this truncate silently, as in production. */
+const MAX_ROWS = 1000;
+
 /** A thenable query builder: every method returns `this`, awaiting runs it. */
 class Query {
   constructor(db, table, op, payload) {
@@ -85,7 +88,13 @@ class Query {
       matched = [...matched].sort((a, b) =>
         (a[col] > b[col] ? 1 : a[col] < b[col] ? -1 : 0) * (asc ? 1 : -1));
     }
-    if (this.rangeArgs) matched = matched.slice(this.rangeArgs[0], this.rangeArgs[1] + 1);
+    const [from, to] = this.rangeArgs ?? [0, MAX_ROWS - 1];
+    // PostgREST caps a response at db-max-rows (1000 on Supabase) whether or
+    // not you asked for a range, and it does so silently. Modelling that is the
+    // whole point: a reader that doesn't page is indistinguishable from one
+    // that does until the data crosses the cap, which is exactly how the import
+    // shipped a read that truncated and then overwrote what it couldn't see.
+    matched = matched.slice(from, Math.min(to + 1, from + MAX_ROWS));
     return this.shape(matched);
   }
 
