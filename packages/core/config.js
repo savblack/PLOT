@@ -24,6 +24,12 @@
  *   options. Web leaves this undefined (default localStorage session); mobile
  *   injects `{ auth: { storage: AsyncStorage, … } }` so Supabase persists the
  *   session via AsyncStorage. This is the storage seam.
+ * @property {any} [supabaseClient] Optional pre-built client, used *instead of*
+ *   calling createClient. Neither app sets this: it is the seam that lets tests
+ *   drive core's data functions and hooks against an in-memory adapter
+ *   (tests/support/inMemorySupabase.js) rather than a live Postgres. Before it
+ *   existed, every module that touched the client was unreachable from a test,
+ *   which is why ~1,400 lines of hook logic had no coverage.
  * @property {{amazonTags?: Record<string, string>, appleToken?: string}} [affiliate]
  *   Affiliate parameters for outbound watch links (core/watchLinks.js).
  *   amazonTags is keyed by region code (AU, US, GB, …). Absent values degrade
@@ -57,6 +63,7 @@ const defaults = {
   traktClientId: '',
   isDev: false,
   supabaseClientOptions: undefined,
+  supabaseClient: undefined,
   affiliate: undefined,
   onWatchlistSave: undefined,
   onWatchlistRemove: undefined,
