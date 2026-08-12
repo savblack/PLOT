@@ -2,10 +2,45 @@ import { createClient } from '@supabase/supabase-js';
 import { getConfig } from './config.js';
 
 let client = null;
+// The inputs `client` was built from. Deliberately only the four that decide
+// *which* client this is — not the whole config object. Keying on config
+// identity would mean any later configure() call (to set an analytics seam,
+// say) silently rebuilt the client and dropped the user's auth session. Keying
+// on these means a swap happens exactly when the client should actually differ,
+// which is what lets a test inject an adapter and the next test replace it.
+let clientKey = null;
+
+function sameClientKey(cfg) {
+  return clientKey
+    && clientKey.injected === cfg.supabaseClient
+    && clientKey.url === cfg.supabaseUrl
+    && clientKey.anonKey === cfg.supabaseAnonKey
+    && clientKey.options === cfg.supabaseClientOptions;
+}
+
+function rememberClientKey(cfg) {
+  clientKey = {
+    injected: cfg.supabaseClient,
+    url:      cfg.supabaseUrl,
+    anonKey:  cfg.supabaseAnonKey,
+    options:  cfg.supabaseClientOptions,
+  };
+}
 
 function getClient() {
-  if (client) return client;
-  const { supabaseUrl, supabaseAnonKey, supabaseClientOptions } = getConfig();
+  const cfg = getConfig();
+  if (client && sameClientKey(cfg)) return client;
+
+  // An injected client is the seam: apps never set this, so they get a real
+  // createClient below. Tests pass an in-memory adapter and drive the same
+  // hooks and data functions the apps do, through the same interface.
+  if (cfg.supabaseClient) {
+    client = cfg.supabaseClient;
+    rememberClientKey(cfg);
+    return client;
+  }
+
+  const { supabaseUrl, supabaseAnonKey, supabaseClientOptions } = cfg;
   if (!supabaseUrl || !supabaseAnonKey) {
     // Throw (rather than warn) so the missing-config error surfaces during
     // React render/effect where the route error boundary can show a branded
@@ -18,6 +53,7 @@ function getClient() {
   // supabaseClientOptions is undefined on web (default session storage) and the
   // AsyncStorage auth config on mobile — see core/config.js.
   client = createClient(supabaseUrl, supabaseAnonKey, supabaseClientOptions);
+  rememberClientKey(cfg);
   return client;
 }
 

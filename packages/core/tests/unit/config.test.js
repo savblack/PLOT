@@ -13,6 +13,7 @@ test('getConfig starts with the documented defaults', () => {
     traktClientId: '',
     isDev: false,
     supabaseClientOptions: undefined,
+    supabaseClient: undefined,
     affiliate: undefined,
     onWatchlistSave: undefined,
     onWatchlistRemove: undefined,
