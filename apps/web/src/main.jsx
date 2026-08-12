@@ -104,7 +104,11 @@ if (posthogToken) {
       // Auto-report unhandled errors + promise rejections to PostHog Error Tracking,
       // not just the ones our ErrorBoundaries catch. Turn on Error Tracking in the
       // PostHog project for these to show up.
-      capture_exceptions: true,
+      //
+      // Off in dev: there is one PostHog project, so a localhost HMR error or a
+      // half-written component lands in the same Error Tracking inbox as real
+      // production failures, and the inbox is what triage reads.
+      capture_exceptions: !import.meta.env.DEV,
       // Never send the URL fragment to PostHog. /auth/callback receives Supabase's
       // implicit-flow session as `#access_token=…&refresh_token=…`, and $current_url
       // is window.location.href verbatim, so the fragment was landing in captured
