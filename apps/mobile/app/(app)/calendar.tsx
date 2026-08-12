@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, FlatList, Image, TouchableOpacity,
   StyleSheet, Dimensions,
@@ -13,7 +13,8 @@ import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 import { useMediaPanel } from '../../contexts/MediaPanelContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import { useCalendarEvents, CalendarEvent } from '../../hooks/useCalendarEvents';
-import { dateToLocalStr } from '@plot/core/date.js';
+import { dateToLocalStr, localDateStr } from '@plot/core/date.js';
+import { getCalendarRelativeLabel, msUntilNextLocalMidnight } from '@plot/core/calendar.js';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 
@@ -141,8 +142,23 @@ export default function CalendarScreen() {
   const { watchlist, watching } = useAppData();
   const { loading, eventsForDate } = useCalendarEvents(watchlist.items, watching.items);
 
-  const today    = useMemo(() => new Date(), []);
-  const todayStr = useMemo(() => dateToLocalStr(today), [today]);
+  /* "Today" has to survive the app being left open across midnight — it was
+     frozen at mount, so a backgrounded app kept highlighting yesterday and
+     kept filtering the agenda against it. Same rollover web does. */
+  const [todayStr, setTodayStr] = useState(() => localDateStr());
+  const today = useMemo(() => parseDateStr(todayStr), [todayStr]);
+
+  useEffect(() => {
+    let timerId: ReturnType<typeof setTimeout> | undefined;
+    const scheduleMidnightRefresh = () => {
+      timerId = setTimeout(() => {
+        setTodayStr(localDateStr());
+        scheduleMidnightRefresh();
+      }, msUntilNextLocalMidnight());
+    };
+    scheduleMidnightRefresh();
+    return () => { if (timerId) clearTimeout(timerId); };
+  }, []);
 
   const [view,         setView]         = useState<CalView>('agenda');
   const [year,         setYear]         = useState(today.getFullYear());
@@ -191,13 +207,9 @@ export default function CalendarScreen() {
     setView(v);
   };
 
-  const selectedLabel = (() => {
-    const d    = parseDateStr(selectedDate);
-    const diff = Math.round((d.getTime() - today.getTime()) / 86400000);
-    if (diff === 0) return 'Today';
-    if (diff === 1) return 'Tomorrow';
-    return d.toLocaleDateString('en', { weekday: 'long', month: 'short', day: 'numeric' });
-  })();
+  // Shared with web so the two never label the same day differently. The local
+  // version had no "Yesterday" branch, so yesterday read as a bare weekday.
+  const selectedLabel = getCalendarRelativeLabel(selectedDate, todayStr);
 
   // Agenda: upcoming days this month that have events
   const agendaDays = useMemo(() => {

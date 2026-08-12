@@ -4,7 +4,7 @@
  */
 import { STAR_COUNT, ratingToStars, starsToRating } from '@plot/core/ratings.js';
 import { localDateStr } from '@plot/core/date.js';
-import { markMediaAsWatched } from '@plot/core/mediaStatus.js';
+import { markMediaAsWatched, moveSavedShowToWatching } from '@plot/core/mediaStatus.js';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useEffect, useState, useRef, useMemo } from 'react';
 import {
@@ -183,6 +183,7 @@ function EpisodeGuide({ tvId, progress, details, watching }: { tvId: number; pro
   const [episodes,  setEpisodes]  = useState<any[]>([]);
   const [loading,   setLoading]   = useState(false);
   const [toggling,  setToggling]  = useState<number | null>(null);
+  const [actionError, setActionError] = useState('');
 
   useEffect(() => {
     setLoading(true);
@@ -200,9 +201,19 @@ function EpisodeGuide({ tvId, progress, details, watching }: { tvId: number; pro
   const handleToggle = async (ep: any) => {
     if (!progress || toggling !== null) return;
     setToggling(ep.episode_number);
+    setActionError('');
     const watched = isWatched(ep);
     if (!watched) {
-      if (ep.episode_number < episodes.length) {
+      /* Ticking the episode you're actually up to goes through
+         markEpisodeWatched, which logs a history row for the completed episode
+         and handles season rollover when the season's episode count isn't
+         known from `episodes`. Advancing progress directly (the branches
+         below) writes no history, so ticking episodes on mobile used to leave
+         no trace in your watch history at all. Mirrors web's MediaPanel. */
+      if (selSeason === curSeason && ep.episode_number === curEp) {
+        const result = await watching.markEpisodeWatched(tvId);
+        if (!result?.ok) setActionError(result?.error || MEDIA_PANEL.couldNotUpdateWatchStatus);
+      } else if (ep.episode_number < episodes.length) {
         await watching.setProgress(tvId, selSeason, ep.episode_number + 1);
       } else {
         await watching.setProgress(tvId, selSeason + 1, 1);
@@ -233,6 +244,8 @@ function EpisodeGuide({ tvId, progress, details, watching }: { tvId: number; pro
           ))}
         </ScrollView>
       )}
+
+      {actionError ? <Text style={styles.epActionError}>{actionError}</Text> : null}
 
       {loading ? (
         <ActivityIndicator color={colors.accent} style={{ marginVertical: spacing.lg }} />
@@ -837,8 +850,9 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                             clearWatching:   () => watching.stopWatching(itemId),
                             removeFromSaved: () => watchlist.removeFromList(itemId),
                             rollbackHistory: () => history.removeEntry(itemId, itemType),
-                            shouldClearWatching:   !isMovie && isWatching,
-                            shouldRemoveFromSaved: inList && !isWatching,
+                            mediaType: itemType,
+                            isWatching,
+                            inList,
                           });
                           if (!result.ok) {
                             Alert.alert('Could not update', history.getLastError() || result.error);
@@ -887,8 +901,15 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                       if (isWatching) {
                         await watching.stopWatching(itemId);
                       } else {
-                        await watching.startWatching({ ...details, id: itemId, media_type: 'tv' });
-                        if (inList) await watchlist.toggle({ ...details, id: itemId, media_type: itemType });
+                        /* Two writes with no rollback left a show in both
+                           Watching and Saved permanently if the second failed.
+                           core sequences them and undoes the first. */
+                        const result = await moveSavedShowToWatching({
+                          startWatching:   () => watching.startWatching({ ...details, id: itemId, media_type: 'tv' }),
+                          removeFromSaved: () => inList ? watchlist.removeFromList(itemId) : Promise.resolve(true),
+                          rollbackWatching: () => watching.stopWatching(itemId),
+                        });
+                        if (!result.ok) Alert.alert('Could not update', result.error);
                       }
                     }}
                   >
@@ -1181,6 +1202,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
 
   epRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingLeft: spacing.sm, paddingRight: spacing.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border, gap: spacing.md },
   epRowCurrent: { backgroundColor: colors.accentDim },
+  epActionError: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.danger, marginBottom: spacing.sm },
   epCode:        { fontFamily: fontFamily.sansBold, fontSize: 10, color: colors.chipEpisode, letterSpacing: 0.4 },
   epCodeCurrent: { color: colors.accent },
   epAirDate:   { fontFamily: fontFamily.sans, fontSize: 10, color: colors.textMuted },

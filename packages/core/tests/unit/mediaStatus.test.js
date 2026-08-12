@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { moveSavedShowToWatching, markMediaAsWatched } from '../../mediaStatus.js';
+import { moveSavedShowToWatching, markMediaAsWatched, resolveWatchedTransition } from '../../mediaStatus.js';
 
 test('moveSavedShowToWatching succeeds when both steps succeed', async () => {
   const calls = [];
@@ -54,8 +54,7 @@ test('markMediaAsWatched succeeds and skips optional steps when neither flag is 
     logWatched: async () => { calls.push('log'); return true; },
     clearWatching: async () => { calls.push('clear'); return true; },
     removeFromSaved: async () => { calls.push('remove'); return true; },
-    shouldClearWatching: false,
-    shouldRemoveFromSaved: false,
+    mediaType: 'movie', isWatching: false, inList: false,
   });
 
   assert.deepEqual(result, { ok: true });
@@ -67,7 +66,7 @@ test('markMediaAsWatched stops immediately when logWatched fails', async () => {
   const result = await markMediaAsWatched({
     logWatched: async () => { calls.push('log'); return false; },
     clearWatching: async () => { calls.push('clear'); return true; },
-    shouldClearWatching: true,
+    mediaType: 'tv', isWatching: true,
   });
 
   assert.deepEqual(result, { ok: false, error: 'Could not update watch status. Please try again.' });
@@ -80,8 +79,7 @@ test('markMediaAsWatched runs clearWatching then removeFromSaved when both flags
     logWatched: async () => { calls.push('log'); return true; },
     clearWatching: async () => { calls.push('clear'); return true; },
     removeFromSaved: async () => { calls.push('remove'); return true; },
-    shouldClearWatching: true,
-    shouldRemoveFromSaved: true,
+    mediaType: 'tv', isWatching: true, inList: true,
   });
 
   assert.deepEqual(result, { ok: true });
@@ -95,8 +93,7 @@ test('markMediaAsWatched rolls back and stops when clearWatching fails, without 
     clearWatching: async () => { calls.push('clear'); return false; },
     removeFromSaved: async () => { calls.push('remove'); return true; },
     rollbackHistory: async () => { calls.push('rollback'); },
-    shouldClearWatching: true,
-    shouldRemoveFromSaved: true,
+    mediaType: 'tv', isWatching: true, inList: true,
   });
 
   assert.deepEqual(result, { ok: false, error: 'Could not clear the active watching state. Please try again.' });
@@ -109,8 +106,7 @@ test('markMediaAsWatched rolls back when removeFromSaved fails', async () => {
     logWatched: async () => true,
     removeFromSaved: async () => { calls.push('remove'); return false; },
     rollbackHistory: async () => { calls.push('rollback'); },
-    shouldClearWatching: false,
-    shouldRemoveFromSaved: true,
+    mediaType: 'movie', isWatching: false, inList: true,
   });
 
   assert.deepEqual(result, { ok: false, error: 'Could not remove this show from Saved. Please try again.' });
@@ -121,8 +117,44 @@ test('markMediaAsWatched tolerates a missing rollbackHistory callback', async ()
   const result = await markMediaAsWatched({
     logWatched: async () => true,
     clearWatching: async () => false,
-    shouldClearWatching: true,
+    mediaType: 'tv', isWatching: true,
   });
 
   assert.deepEqual(result, { ok: false, error: 'Could not clear the active watching state. Please try again.' });
+});
+
+/* ── resolveWatchedTransition ─────────────────────────────────────────────
+   The rule callers used to each re-derive. Web guarded removal with
+   `&& !isWatching` and core's favourites path didn't guard it at all, so the
+   same action produced different results depending on where you did it.
+   Decided rule: finishing something takes it off every other list. */
+
+test('resolveWatchedTransition clears watching and removes from saved for a TV show in both states', () => {
+  assert.deepEqual(
+    resolveWatchedTransition({ mediaType: 'tv', isWatching: true, inList: true }),
+    { shouldClearWatching: true, shouldRemoveFromSaved: true },
+  );
+});
+
+test('resolveWatchedTransition never treats a movie as currently watching', () => {
+  // Movie and TV tmdb ids can collide (see userMedia.js), so an isWatching
+  // hit on a movie id is meaningless.
+  assert.deepEqual(
+    resolveWatchedTransition({ mediaType: 'movie', isWatching: true, inList: true }),
+    { shouldClearWatching: false, shouldRemoveFromSaved: true },
+  );
+});
+
+test('resolveWatchedTransition leaves saved alone when the title was never saved', () => {
+  assert.deepEqual(
+    resolveWatchedTransition({ mediaType: 'tv', isWatching: true, inList: false }),
+    { shouldClearWatching: true, shouldRemoveFromSaved: false },
+  );
+});
+
+test('resolveWatchedTransition coerces missing state to false rather than throwing', () => {
+  assert.deepEqual(
+    resolveWatchedTransition({ mediaType: 'movie' }),
+    { shouldClearWatching: false, shouldRemoveFromSaved: false },
+  );
 });

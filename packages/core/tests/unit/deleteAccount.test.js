@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { deleteAccountAndSignOut, parseDeleteAccountError } from '../../src/utils/deleteAccount.js';
+import { deleteAccountAndSignOut, parseDeleteAccountError } from '../../deleteAccount.js';
 
 function createSupabase({ session = { access_token: 'token-123' }, signOutError = null } = {}) {
   let signOutCalls = 0;
@@ -18,6 +18,48 @@ function createSupabase({ session = { access_token: 'token-123' }, signOutError 
     },
   };
 }
+
+/* The edge function requires `confirmationPhrase` in the body and 400s
+   without it. Mobile hand-rolled its own fetch with no body at all, so
+   deletion always failed there while web's went through this helper and
+   worked. Both apps now share this module; these two tests pin the body so a
+   future caller can't quietly drop it again. */
+test('deleteAccountAndSignOut sends the confirmation phrase in the request body', async () => {
+  const supabase = createSupabase();
+  let sent = null;
+
+  await deleteAccountAndSignOut({
+    supabase,
+    deleteAccountUrl: 'https://example.com/delete-account',
+    confirmationPhrase: 'delete account',
+    fetchImpl: async (_url, init) => {
+      sent = init;
+      return { ok: true, async json() { return {}; }, async text() { return ''; } };
+    },
+  });
+
+  assert.equal(sent.method, 'POST');
+  assert.equal(sent.headers['Content-Type'], 'application/json');
+  assert.deepEqual(JSON.parse(sent.body), { confirmationPhrase: 'delete account' });
+});
+
+test('deleteAccountAndSignOut surfaces the phrase rejection instead of signing out', async () => {
+  const supabase = createSupabase();
+
+  const result = await deleteAccountAndSignOut({
+    supabase,
+    deleteAccountUrl: 'https://example.com/delete-account',
+    confirmationPhrase: '',
+    fetchImpl: async () => ({
+      ok: false,
+      async json() { return { error: 'Type "delete account" to confirm.' }; },
+      async text() { return ''; },
+    }),
+  });
+
+  assert.deepEqual(result, { ok: false, error: 'Type "delete account" to confirm.' });
+  assert.equal(supabase.signOutCallsRef(), 0);
+});
 
 test('parseDeleteAccountError prefers JSON payload errors', async () => {
   const error = await parseDeleteAccountError({

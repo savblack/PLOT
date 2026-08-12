@@ -7,6 +7,8 @@ import { parsePlatform, watchedAtFor } from '../domain/importParsing.js';
 import { dedupeEntries } from '../domain/importDedup.js';
 import { planHistoryImport } from '../domain/importPlan.js';
 import { HISTORY_CONFLICT_TARGET } from '@plot/core/userMedia.js';
+import { emit } from '@plot/core/events.js';
+import { HISTORY_CHANGED_EVENT } from '@plot/core/useHistory.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import { track, EVENTS } from '../lib/analytics.js';
 import { MEDIA } from '../copy/media.js';
@@ -340,8 +342,10 @@ export default function ImportView() {
 
     const { inserted, failed } = await bulkInsert(plan.rows);
     track(EVENTS.IMPORT_COMPLETED, { source: platform?.id, count: inserted });
-    // Notify history hook to reload
-    if (typeof window !== 'undefined') window.dispatchEvent(new Event('plot:history-changed'));
+    // Notify history hook to reload. Must go through the core bus, not a raw
+    // `window` event — useHistory subscribes via events.js so the same hook
+    // works on React Native, and a `window` dispatch reaches nobody.
+    emit(HISTORY_CHANGED_EVENT);
     setImportedCount(inserted);
     if (failed) setImportError(IMPORT_VIEW.partialFailure(failed));
     setImporting(false);
