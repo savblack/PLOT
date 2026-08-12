@@ -10,7 +10,7 @@ PLOT goes dark to the public now. All 20 existing users are blocked and emailed.
 Everything unfinished gets built behind that curtain, and web, iOS and pricing all
 go live on one day of your choosing.
 
-Sprint 0 ships in about two days. Full relaunch is **5 to 7 weeks** from then.
+Sprint 0 ships in about two days. Full relaunch is **6 to 8 weeks** from then.
 
 ## Decisions
 
@@ -26,13 +26,13 @@ re-litigated later.
 | 4 | **Data rights move to email**, and the privacy policy is amended to say so. |
 | 5 | **iOS only** at launch. Android comes after. |
 | 6 | **All four mobile items ship**: Statistics v1, New Releases + Upcoming, the Paused/Watching status model, Talent pages. |
-| 7 | The **social feed stays off**, but **report + block ship**. |
+| 7 | **No social feed at all.** Profiles are the social surface; **report + block ship**; Fable-style **share cards** are the growth loop. Revised 2026-08-10, see below. |
 | 8 | **In-app + email + push**, with push scoped to watchlist availability alerts only. |
 | 9 | **Approve then hold**: get App Store approval, sit on it, release on your date. |
 | 10 | iOS auth is **email + Sign in with Apple + Google**. |
 | 11 | **Basic Statistics free, deeper Statistics Premium.** |
 | 12 | **Web inherits core work for free** and gets no dedicated sprint. |
-| 13 | **5 to 7 weeks**, with the cut list agreed in advance. |
+| 13 | **6 to 8 weeks**, with the cut list agreed in advance. Revised from 5 to 7 by the social rethink. |
 
 ### Why no grandfathering
 
@@ -55,15 +55,54 @@ maintenance" reads as abandoned. It also converts worse than anticipation, and
 anyone who lands on it, including an App Store reviewer, reads a product in
 trouble rather than one being invested in.
 
-### Why the feed stays off
+### Why there is no feed (revised 2026-08-10)
 
-There is no reporting, blocking, or moderation anywhere in the codebase. App Store
-Guideline 1.2 requires content filtering, a report mechanism, user blocking, and
-published contact info for apps with user-generated content. The feed broadcasts
-review text to followers, which is squarely in scope. Shipping report + block
-anyway covers the avatars, usernames and follow graph that already exist on
-mobile, removes the likeliest rejection reason, and is a prerequisite for the feed
-whenever it does ship.
+The original decision was that the feed stays off behind its flag. That has been
+superseded: PLOT is not getting a Twitter-shaped feed at all. The social surface is
+**profiles**, closer to Goodreads, and the engagement layer is deleted rather than
+dormant.
+
+The reason it is a deletion and not a flag is that it was provably never used.
+`post_likes` and `post_comments` both hold **0 rows** on production, so removing
+them destroys nothing, and this is the safest moment it will ever be. Half-removal
+is how PLOT has twice ended up doing dead-code cleanups, one of which accidentally
+deleted the live checkout page.
+
+What stays is the substrate. `feed_posts` holds 38 rows and is populated by three
+database triggers from real actions: watched, favourited, added to a top list. That
+is structurally the same activity model Goodreads uses. Keeping it recording while
+unsurfaced means a Goodreads-style activity stream stays possible later without
+starting from an empty history. It is not surfaced at launch because 20 users and 38
+activity rows render an empty room, and an empty social surface is worse than none.
+
+**Report and block still ship**, and are now scoped to what actually exists.
+Guideline 1.2 applies to PLOT regardless of the feed: the guideline reads
+"user-generated content **or** social networking services" and never mentions a
+feed, so avatars, usernames and bios clear the threshold on their own (see
+`docs/research/app-store-guideline-1-2.md`). Dropping comments shrinks the surface
+to profile fields and the profile social links that same research flagged as an
+unconstrained distribution channel.
+
+### Sharing is the growth loop instead
+
+Replacing the feed with something that actually acquires users: Fable-style
+shareable graphics, 1080x1920, for Instagram Stories and equivalents.
+
+**At launch: two artifacts.** Your Top 10, and just-watched-or-rated-a-title. Those
+cover identity and frequency, which is what a share loop needs. The Statistics /
+year-in-review card and the custom-list card are held for the first post-launch
+update. The Statistics card is deliberately last: against 13 history rows it renders
+empty for almost everyone, so it is a bet on the import flow rather than a
+sure thing.
+
+Two render paths, expressed from one template so they cannot drift: server-side via
+the existing `apps/web/workers/og/` Worker for web and link previews, and on-device
+for the mobile share sheet, because a local render into the native sheet beats a
+server round-trip and is what makes sharing feel instant.
+
+Net effect on the estimate is about **plus one week**, taking the plan to 6 to 8.
+Deleting the engagement layer and shrinking report/block and the notification
+taxonomy pays for part of the sharing work, but not all of it.
 
 ## Sprint 0 — Go dark (about 2 days)
 
@@ -121,14 +160,34 @@ Smaller than first estimated: mobile already has Letterboxd/Netflix/CSV import
   Statistics renders an empty screen until people import. Whatever drives import
   matters more than the stats themselves.
 
-## Sprint 2b — Report + block (2 to 3 days)
+## Sprint 2b — Remove the feed, then report + block (3 to 4 days)
 
-Reporting and user blocking for the profile and follow surface. Not the feed.
+First delete the engagement layer (#499): the feed UI, `useFeed`, `usePostEngagement`,
+the `feed` Discover tab, `SHOW_SOCIAL_FEED`, and the `post_likes` / `post_comments`
+tables with their notification triggers. Both tables are empty, so this destroys no
+data, but it is still a drop against production with no staging gate: snapshot first
+and run `npm run db:write-paths` green before merge.
+
+Then reporting and user blocking, scoped to what remains: profile fields, avatars,
+usernames, and the profile social links flagged by the Guideline 1.2 research.
+
+## Sprint 2c — Share cards (about 1 week)
+
+Design and build the Top 10 and just-watched artifacts (#501, #502). Two render
+paths from one template: the existing OG Worker for web and link previews, on-device
+for the mobile share sheet.
+
+Cache aggressively. On-the-fly Satori rendering was the heaviest CPU consumer in the
+app and once exhausted the Vercel Hobby caps, pausing production. Cloudflare's free
+tier is far more generous, but the lesson stands.
 
 ## Sprint 3 — Notifications (1 to 1.5 weeks)
 
 1. **Event taxonomy** written down first: every notifiable event, its in-app /
-   email / push routing, and its default.
+   email / push routing, and its default. Shorter than originally scoped, since
+   deleting the engagement layer removes post likes and comments outright rather
+   than leaving them dormant. Four events remain: follow request received, follow
+   request accepted, new follower, watchlist availability alert.
 2. **Hoist `useNotifications` to `packages/core`** from `apps/web/src/hooks/`.
 3. **Mobile notification centre** — mobile has never had one.
 4. **Preferences**, per channel and category, enforced server-side.
@@ -177,13 +236,19 @@ Reporting and user blocking for the profile and follow surface. Not the feed.
 | 0 — Go dark | ~2 days |
 | 1 — Ops long-leads | parallel |
 | 2 — Mobile | 1.5 to 2 weeks |
-| 2b — Report + block | 2 to 3 days |
+| 2b — Remove feed, then report + block | 3 to 4 days |
+| 2c — Share cards | ~1 week |
 | 3 — Notifications | 1 to 1.5 weeks |
 | 4 — Payments | 2 to 3 days |
 | 5 — App Store | 3 to 5 days + review |
 | 6 — Brevo | 3 to 5 days, overlaps |
 
-**5 to 7 weeks.** Roughly four of those are work; the rest is Apple and reality.
+**6 to 8 weeks.** Roughly five of those are work; the rest is Apple and reality.
+
+Revised up from 5 to 7 by the social rethink. Deleting the engagement layer and
+shrinking report/block and the notification taxonomy saves perhaps half a week, and
+holding two of the four share artifacts saves more, but Sprint 2c still adds about a
+week net. Calling that neutral would have been wishful.
 
 The estimate is grounded in observed throughput (438 commits and 54 merges to
 `main` in the last 30 days, 40 PRs merged in the last 14). What does *not* compress
