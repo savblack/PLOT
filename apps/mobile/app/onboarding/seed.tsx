@@ -21,6 +21,7 @@ import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import { detectRegion, detectTimezone, guessRegionFromTimezone } from '@plot/core/regions.js';
+import { updateProfile } from '@plot/core/profile.js';
 import OnboardingScaffold from '../../components/OnboardingScaffold';
 
 // Four columns, same as web — the flow is capped at the web card width (420),
@@ -146,13 +147,14 @@ export default function Seed() {
       // than landing in the app with the auth guard bouncing them back. Region
       // and timezone ride along, since this is the only step that writes them
       // and _layout reads profiles.region at boot to set the TMDB region.
-      const { error } = await supabase.from('profiles')
-        .update({
+      const { error } = await updateProfile({
+        userId: session.user.id,
+        patch: {
           onboarding_complete: true,
           region: region.current,
           timezone: detectTimezone(),
-        })
-        .eq('id', session.user.id);
+        },
+      });
 
       if (error) {
         console.warn('[onboarding seed] completing onboarding failed', error);

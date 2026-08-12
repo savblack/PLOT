@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useApp } from '../hooks/useApp.js';
-import { supabase } from '../api/supabase.js';
+import { updateProfile } from '@plot/core/profile.js';
 
 const DISMISS_KEY = 'plot_public_nudge_dismissed';
 
@@ -21,7 +21,7 @@ export default function PublicProfileNudge() {
   const goPublic = async () => {
     if (busy) return;
     setBusy(true);
-    const { error } = await supabase.from('profiles').update({ is_public: true }).eq('id', user.id);
+    const { error } = await updateProfile({ userId: user.id, patch: { is_public: true } });
     setBusy(false);
     if (!error) refreshProfile?.();
   };

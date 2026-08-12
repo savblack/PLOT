@@ -30,7 +30,9 @@ import { PUBLIC_PROFILE_PAGE } from '@plot/core/copy/publicProfilePage.js';
 import { COMMON } from '@plot/core/copy/common.js';
 import {
   SOCIAL_LINKS, PROFILE_SECTIONS, ALL_SECTION_KEYS, USERNAME_RE, normaliseUsername,
+  isDuplicateUsernameError,
 } from '@plot/core/profileFields.js';
+import { updateProfile } from '@plot/core/profile.js';
 
 type Status = '' | 'checking' | 'ok' | 'taken' | 'invalid';
 
@@ -93,17 +95,17 @@ export default function EditProfileModal({
     };
     if (unameChanged) patch.username = cleanUname;
 
-    const { error: e } = await supabase.from('profiles').update(patch).eq('id', userId);
+    const { error: e } = await updateProfile({ userId, patch });
     if (e) {
       setSaving(false);
-      setError(/duplicate/i.test(e.message) ? PUBLIC_PROFILE_PAGE.usernameTaken : PUBLIC_PROFILE_PAGE.saveFailed);
+      setError(isDuplicateUsernameError(e) ? PUBLIC_PROFILE_PAGE.usernameTaken : PUBLIC_PROFILE_PAGE.saveFailed);
       return;
     }
 
     // Section visibility is a separate best-effort write, as on web, so the
     // core save still succeeds if the profile_sections column isn't there yet.
     const sections = ALL_SECTION_KEYS.filter(k => enabled.includes(k));
-    await supabase.from('profiles').update({ profile_sections: sections }).eq('id', userId);
+    await updateProfile({ userId, patch: { profile_sections: sections } });
 
     setSaving(false);
     onSaved({ ...patch, username: unameChanged ? cleanUname : current.username, profile_sections: sections });

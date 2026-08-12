@@ -6,6 +6,7 @@ import { useState, useMemo, useRef, useEffect } from 'react';
 import { TextInput, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ONBOARDING_FLOW } from '@plot/core/copy/onboardingFlow.js';
+import { upsertProfile } from '@plot/core/profile.js';
 import { supabase } from '../../lib/supabase';
 import { track, EVENTS } from '../../lib/analytics';
 import { Palette, fontFamily, spacing, radii } from '../../lib/tokens';
@@ -35,11 +36,11 @@ export default function Name() {
     setSaving(true);
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) {
-      const profileRow = { id: session.user.id, first_name: trimmed };
-      let { error } = await supabase.from('profiles').upsert(profileRow);
+      const args = { userId: session.user.id, patch: { first_name: trimmed } };
+      let { error } = await upsertProfile(args);
       if (error) {
         console.warn('[onboarding name] first name save failed, retrying once', error);
-        ({ error } = await supabase.from('profiles').upsert(profileRow));
+        ({ error } = await upsertProfile(args));
         if (error) console.warn('[onboarding name] first name save failed after retry, proceeding anyway', error);
       }
     }

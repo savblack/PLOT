@@ -16,6 +16,10 @@ import { useCalendar } from '../hooks/useCalendar.js';
 import { useShare } from '../hooks/useShare.js';
 import { deleteAccountAndSignOut } from '../utils/deleteAccount.js';
 import { clearWatchHistory } from '@plot/core/userMedia.js';
+import { updateProfile } from '@plot/core/profile.js';
+import {
+  AVATAR_MAX_MB, validateAvatarFile, isDuplicateUsernameError,
+} from '@plot/core/profileFields.js';
 import { fetchUserDataExport, downloadDataExport, downloadCsvExport } from '../utils/exportData.js';
 import { buildFeedbackAttachmentPath } from '../utils/feedback.js';
 import { downloadICS } from '../utils/ics.js';
@@ -568,7 +572,8 @@ function GenrePicker({ selected, onSave, onClose }) {
 }
 
 /* ── Profile photo ── */
-const AVATAR_MAX_MB = 5;
+// AVATAR_MAX_MB comes from @plot/core/profileFields.js so the public profile
+// page's picker enforces the same cap this one does.
 const AVATAR_VIEW = 288;   // crop viewport size (css px)
 const AVATAR_OUT = 512;    // exported avatar size (px)
 
@@ -723,8 +728,13 @@ function AvatarSetting({ user, profile, refreshProfile, onError }) {
     e.target.value = '';
     if (!file) return;
     onError(null);
-    if (!file.type.startsWith('image/')) { onError(SETTINGS_VIEW.avatar.chooseImageFile); return; }
-    if (file.size > AVATAR_MAX_MB * 1024 * 1024) { onError(SETTINGS_VIEW.avatar.tooLarge(AVATAR_MAX_MB)); return; }
+    const check = validateAvatarFile(file);
+    if (!check.ok) {
+      onError(check.reason === 'too-large'
+        ? SETTINGS_VIEW.avatar.tooLarge(check.maxMb)
+        : SETTINGS_VIEW.avatar.chooseImageFile);
+      return;
+    }
     setCropSrc(URL.createObjectURL(file));
   };
 
@@ -743,7 +753,7 @@ function AvatarSetting({ user, profile, refreshProfile, onError }) {
     const { data } = supabase.storage.from('avatars').getPublicUrl(path);
     // Cache-bust so a replaced photo at the same path refreshes immediately.
     const publicUrl = `${data.publicUrl}?v=${Date.now()}`;
-    const { error: dbErr } = await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', user.id);
+    const { error: dbErr } = await updateProfile({ userId: user.id, patch: { avatar_url: publicUrl } });
     setBusy(false);
     closeCrop();
     if (dbErr) { onError(dbErr.message || SETTINGS_VIEW.avatar.saveFailed); return; }
@@ -759,7 +769,7 @@ function AvatarSetting({ user, profile, refreshProfile, onError }) {
     if (files?.length) {
       await supabase.storage.from('avatars').remove(files.map((f) => `${user.id}/${f.name}`));
     }
-    const { error } = await supabase.from('profiles').update({ avatar_url: null }).eq('id', user.id);
+    const { error } = await updateProfile({ userId: user.id, patch: { avatar_url: null } });
     setBusy(false);
     if (error) { onError(error.message || SETTINGS_VIEW.avatar.removeFailed); return; }
     refreshProfile();
@@ -1227,10 +1237,7 @@ export default function SettingsView() {
     setProviderDraft(newProviders);
     setSavingProviders(true);
 
-    const { error } = await supabase
-      .from('profiles')
-      .update({ streaming_providers: newProviders })
-      .eq('id', user.id);
+    const { error } = await updateProfile({ userId: user.id, patch: { streaming_providers: newProviders } });
 
     setSavingProviders(false);
 
@@ -1248,10 +1255,7 @@ export default function SettingsView() {
     setGuideChannelDraft(newChannels);
     setSavingGuideChannels(true);
 
-    const { error } = await supabase
-      .from('profiles')
-      .update({ guide_channels: newChannels })
-      .eq('id', user.id);
+    const { error } = await updateProfile({ userId: user.id, patch: { guide_channels: newChannels } });
 
     setSavingGuideChannels(false);
 
@@ -1269,10 +1273,7 @@ export default function SettingsView() {
     setGenreDraft(newGenres);
     setSavingGenres(true);
 
-    const { error } = await supabase
-      .from('profiles')
-      .update({ genres: newGenres })
-      .eq('id', user.id);
+    const { error } = await updateProfile({ userId: user.id, patch: { genres: newGenres } });
 
     setSavingGenres(false);
 
@@ -1287,7 +1288,7 @@ export default function SettingsView() {
 
   const handleToggleKidsContent = async () => {
     setActionError(null);
-    const { error } = await supabase.from('profiles').update({ include_kids_content: !includeKidsContent }).eq('id', user.id);
+    const { error } = await updateProfile({ userId: user.id, patch: { include_kids_content: !includeKidsContent } });
     if (error) { setActionError(error.message); return; }
     refreshProfile();
   };
@@ -1301,9 +1302,7 @@ export default function SettingsView() {
     }
     setActionError(null);
     setSavingAvailabilityAlerts(true);
-    const { error } = await supabase.from('profiles')
-      .update({ watchlist_availability_alerts: !availabilityAlertsEnabled })
-      .eq('id', user.id);
+    const { error } = await updateProfile({ userId: user.id, patch: { watchlist_availability_alerts: !availabilityAlertsEnabled } });
     setSavingAvailabilityAlerts(false);
     if (error) {
       setActionError(error.message || SETTINGS_VIEW.errors.failedToUpdateAvailabilityAlerts);
@@ -1320,9 +1319,7 @@ export default function SettingsView() {
     const next = !marketingEmailsEnabled;
     setActionError(null);
     setSavingMarketingEmails(true);
-    const { error } = await supabase.from('profiles')
-      .update({ marketing_emails: next })
-      .eq('id', user.id);
+    const { error } = await updateProfile({ userId: user.id, patch: { marketing_emails: next } });
     setSavingMarketingEmails(false);
     if (error) {
       setActionError(error.message || SETTINGS_VIEW.errors.failedToUpdateMarketingEmails);
@@ -1354,10 +1351,7 @@ export default function SettingsView() {
 
   const saveRegion = async (code) => {
     setActionError(null);
-    const { error } = await supabase
-      .from('profiles')
-      .update({ region: code })
-      .eq('id', user.id);
+    const { error } = await updateProfile({ userId: user.id, patch: { region: code } });
 
     if (error) {
       setActionError(error.message || SETTINGS_VIEW.region.failedToSaveRegion);
@@ -1371,10 +1365,7 @@ export default function SettingsView() {
   };
 
   const saveTimezone = async (tz) => {
-    await supabase
-      .from('profiles')
-      .update({ timezone: tz })
-      .eq('id', user.id);
+    await updateProfile({ userId: user.id, patch: { timezone: tz } });
     setUserTimezone(tz);
     refreshProfile();
     setShowTimezone(false);
@@ -1496,7 +1487,7 @@ export default function SettingsView() {
   const handleGenerateCalToken = async () => {
     setGeneratingCalToken(true);
     const token = crypto.randomUUID();
-    const { error } = await supabase.from('profiles').update({ calendar_token: token }).eq('id', user.id);
+    const { error } = await updateProfile({ userId: user.id, patch: { calendar_token: token } });
     if (error) {
       console.error('[calendar] failed to save token:', error.message);
       setGeneratingCalToken(false);
@@ -1515,7 +1506,7 @@ export default function SettingsView() {
       confirmLabel: SETTINGS_VIEW.confirm.revoke,
       danger: true,
       onConfirm: async () => {
-        await supabase.from('profiles').update({ calendar_token: null }).eq('id', user.id);
+        await updateProfile({ userId: user.id, patch: { calendar_token: null } });
         setLocalCalToken(null);
         refreshProfile();
       },
@@ -1557,8 +1548,8 @@ export default function SettingsView() {
     const { data: free, error: chkErr } = await supabase.rpc('username_available', { p_username: candidate });
     if (chkErr) { setUsernameStatus('error'); return; }
     if (!free) { setUsernameStatus('taken'); return; }
-    const { error } = await supabase.from('profiles').update({ username: candidate }).eq('id', user.id);
-    if (error) { setUsernameStatus(error.code === '23505' ? 'taken' : 'error'); return; }
+    const { error } = await updateProfile({ userId: user.id, patch: { username: candidate } });
+    if (error) { setUsernameStatus(isDuplicateUsernameError(error) ? 'taken' : 'error'); return; }
     setUsernameDraft(null);
     setUsernameStatus('saved');
     setTimeout(() => setUsernameStatus(null), 2000);
@@ -1580,7 +1571,7 @@ export default function SettingsView() {
     if (next.length > 50) { setNameError('Keep it under 50 characters.'); return; }
     setSavingName(true);
     setNameError(null);
-    const { error } = await supabase.from('profiles').update({ display_name: next }).eq('id', user.id);
+    const { error } = await updateProfile({ userId: user.id, patch: { display_name: next } });
     setSavingName(false);
     if (error) { setNameError(error.message || SETTINGS_VIEW.errors.couldNotUpdateName); return; }
     setNameDraft(null);
@@ -1637,7 +1628,7 @@ export default function SettingsView() {
 
   const handleTogglePublic = async () => {
     if (!user) return;
-    const { error } = await supabase.from('profiles').update({ is_public: !isPublic }).eq('id', user.id);
+    const { error } = await updateProfile({ userId: user.id, patch: { is_public: !isPublic } });
     if (error) { setActionError(error.message); return; }
     track(EVENTS.PROFILE_VISIBILITY_CHANGED, { is_public: !isPublic });
     refreshProfile();

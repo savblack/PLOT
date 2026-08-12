@@ -74,3 +74,49 @@ export const USERNAME_RE = /^[a-z0-9](?:[a-z0-9-]{1,28}[a-z0-9])$/;
 export function normaliseUsername(value) {
   return String(value ?? '').trim().toLowerCase();
 }
+
+/* ── Writing a profile ──────────────────────────────────────────────────────
+ *
+ * Every profile write was open-coded at its call site: set a per-field saving
+ * flag, `profiles.update(...).eq('id', userId)`, clear the flag, funnel the
+ * error, re-read the profile. Eighteen copies, twelve of them in one file.
+ *
+ * The copies drifted where it mattered. Settings and the public profile page
+ * both write `avatar_url` to the same bucket and the same path, but Settings
+ * cropped to 512², re-encoded as JPEG, capped at 5MB and checked the MIME
+ * type, while the profile page uploaded whatever it was handed. A 20MB HEIC
+ * was rejected on one screen and accepted on the other. They also disagreed on
+ * how a taken username surfaces: one read the Postgres error code, the other
+ * pattern-matched the message.
+ */
+
+/** Largest avatar we accept, before cropping. */
+export const AVATAR_MAX_MB = 5;
+
+/**
+ * Is this file usable as an avatar?
+ * @param {{ type?: string, size?: number } | null | undefined} file
+ * @param {{ maxMb?: number }} [opts]
+ * @returns {{ ok: true } | { ok: false, reason: 'missing' | 'not-image' | 'too-large', maxMb: number }}
+ */
+export function validateAvatarFile(file, { maxMb = AVATAR_MAX_MB } = {}) {
+  if (!file) return { ok: false, reason: 'missing', maxMb };
+  if (!String(file.type ?? '').startsWith('image/')) return { ok: false, reason: 'not-image', maxMb };
+  if (Number(file.size ?? 0) > maxMb * 1024 * 1024) return { ok: false, reason: 'too-large', maxMb };
+  return { ok: true };
+}
+
+/**
+ * Did this write fail because the username is taken?
+ *
+ * `profiles.username` is unique, so a collision arrives as 23505. Settings
+ * checked the code; the profile page tested the message with /duplicate/i,
+ * which is both looser (any message containing "duplicate") and tighter (it
+ * misses a 23505 whose message is worded differently).
+ * @param {{ code?: string, message?: string } | null | undefined} error
+ */
+export function isDuplicateUsernameError(error) {
+  if (!error) return false;
+  if (error.code === '23505') return true;
+  return /duplicate key|already exists/i.test(String(error.message ?? ''));
+}
