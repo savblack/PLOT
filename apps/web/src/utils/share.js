@@ -1,5 +1,5 @@
 import { canUseDOM } from './storage.js';
-import { normalizeMediaType } from '../domain/media.js';
+import { normalizeMediaType } from '@plot/core/media.js';
 
 /**
  * Sharing helpers — the app-wide primitive for "send this somewhere else".

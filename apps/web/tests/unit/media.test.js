@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { baseMediaRow, mediaIdentityRow } from '../../src/domain/media.js';
+import { baseMediaRow, mediaIdentityRow } from '@plot/core/media.js';
 
 test('baseMediaRow preserves release date for watchlist-style tables', () => {
   assert.deepEqual(baseMediaRow({

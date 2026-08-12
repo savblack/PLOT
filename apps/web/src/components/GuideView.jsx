@@ -4,7 +4,7 @@ import { posterUrl, backdropUrl, logoUrl } from '../utils/images.js';
 import { favoriteWords } from '../utils/spelling.js';
 import { localDateStr, dateToLocalStr } from '../utils/date.js';
 import { useDragScroll } from '../hooks/useDragScroll.js';
-import { tmdb, getTmdbRegion, isEnglishOriginTitle, excludeKidsContent } from '../api/tmdb.js';
+import { tmdb, getTmdbRegion, isEnglishOriginTitle, excludeKidsContent } from '@plot/core/tmdb.js';
 import { buildProviderLogoCacheKey, collectPendingProviderLogoRequests } from '../utils/providerLogos.js';
 import { ALL_TYPES, filterByType, filterByGenre } from '../utils/mediaFilters.js';
 import LoadingSpinner from './LoadingSpinner.jsx';

@@ -3,7 +3,7 @@ import test from 'node:test';
 import {
   parseNetflix, parsePrime, parseDisney, parseMax, parseApple, parsePlatform,
   normaliseDate, detectDayFirst,
-} from '../../src/domain/importParsing.js';
+} from '@plot/core/importParsing.js';
 
 test('parseNetflix detects TV from "Show: Season N: Episode" and parses date', () => {
   const csv = [

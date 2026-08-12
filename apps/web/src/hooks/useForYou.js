@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../api/supabase.js';
-import { tmdb } from '../api/tmdb.js';
+import { supabase } from '@plot/core/supabase.js';
+import { tmdb } from '@plot/core/tmdb.js';
 
 // Reads the get_for_you() RPC (item-item collaborative filtering over the
 // user's own watchlist/favourites/history, computed nightly in Postgres —

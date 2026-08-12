@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { profileUrl } from '../utils/images.js';
-import { tmdb } from '../api/tmdb.js';
+import { tmdb } from '@plot/core/tmdb.js';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
 import CreditsGrid from '../components/TalentCredits.jsx';
 import { dedupedActingCredits, shortBiography } from '../utils/talentCredits.js';

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../api/supabase';
-import { tmdb } from '../api/tmdb';
+import { supabase } from '@plot/core/supabase.js';
+import { tmdb } from '@plot/core/tmdb.js';
 // This route renders outside the App-shell layout, but reuses several of its
 // classes (onboarding-cta, interactive-surface, providers-select-grid, ...).
 // Its named import from App.jsx doesn't pull in App's CSS on its own (that

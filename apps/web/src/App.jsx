@@ -8,8 +8,8 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 // ./utils and ./hooks so code outside the shell can use them without pulling
 // in this chunk.
 import './styles/app.css';
-import { supabase } from './api/supabase.js';
-import { setTmdbRegion } from './api/tmdb.js';
+import { supabase } from '@plot/core/supabase.js';
+import { setTmdbRegion } from '@plot/core/tmdb.js';
 import { setUserTimezone } from './utils/date.js';
 import AppShell from './components/AppShell.jsx';
 import MediaPanel from './components/MediaPanel.jsx';

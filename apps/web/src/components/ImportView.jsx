@@ -1,10 +1,10 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
-import { tmdb } from '../api/tmdb.js';
-import { parsePlatform } from '../domain/importParsing.js';
-import { dedupeEntries } from '../domain/importDedup.js';
-import { planHistoryImport } from '../domain/importPlan.js';
+import { tmdb } from '@plot/core/tmdb.js';
+import { parsePlatform } from '@plot/core/importParsing.js';
+import { dedupeEntries } from '@plot/core/importDedup.js';
+import { planHistoryImport } from '@plot/core/importPlan.js';
 import {
   resolveImportEntries, readExistingHistory, buildImportRows, writeImportRows,
 } from '@plot/core/importPipeline.js';
