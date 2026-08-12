@@ -2,6 +2,7 @@ import { supabase } from './supabase.js';
 import { baseMediaRow, mediaIdentityRow, genreIdsFromItem } from './media.js';
 import { localDateStr } from './date.js';
 import { normalizeRating } from './ratings.js';
+import { emit, HISTORY_CHANGED_EVENT } from './events.js';
 
 export async function saveListItem({ listId, userId, item, providerIds = [], streamingDate = null }) {
   const mediaRow = baseMediaRow(item);
@@ -165,5 +166,30 @@ export async function logWatchedItem({ userId, item, rating, note, dnf, watchedA
     .select()
     .single();
 
+  // Signalling belongs to the write, not to whoever called it. Every caller
+  // used to emit this itself and one of them (markEpisodeWatched) simply
+  // didn't, so ticking an episode left every mounted useHistory stale.
+  if (data && !error) emit(HISTORY_CHANGED_EVENT);
+
   return { data, error, row };
+}
+
+/**
+ * Delete a user's entire watch history.
+ *
+ * Both settings screens ran this as a bare `.delete()` and neither signalled
+ * it, so after clearing your history a mounted useHistory kept serving the
+ * rows that no longer existed — My Lists still listed them and isWatched()
+ * still returned true. Mobile also discarded the error entirely.
+ *
+ * @param {{ userId: string }} args
+ * @returns {Promise<{ error: any }>}
+ */
+export async function clearWatchHistory({ userId }) {
+  if (!userId) return { error: null };
+
+  const { error } = await supabase.from('history').delete().eq('user_id', userId);
+  if (!error) emit(HISTORY_CHANGED_EVENT);
+
+  return { error };
 }

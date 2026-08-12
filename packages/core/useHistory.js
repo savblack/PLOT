@@ -2,10 +2,12 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from './supabase.js';
 import { logWatchedItem } from './userMedia.js';
 import { normalizeRating } from './ratings.js';
-import { on, emit } from './events.js';
+import { on, emit, HISTORY_CHANGED_EVENT } from './events.js';
 import { getConfig } from './config.js';
 
-export const HISTORY_CHANGED_EVENT = 'plot:history-changed';
+// Moved to events.js, alongside the bus. Re-exported so existing import sites
+// keep resolving.
+export { HISTORY_CHANGED_EVENT };
 
 function notifyHistoryChanged() {
   emit(HISTORY_CHANGED_EVENT);
@@ -94,7 +96,8 @@ export function useHistory(userId) {
           !(e.tmdb_id === row.tmdb_id && e.media_type === row.media_type));
         return [data, ...withoutStale].sort((a, b) => (a.watched_at < b.watched_at ? 1 : -1));
       });
-      notifyHistoryChanged();
+      // logWatchedItem already signalled the write; updateEntry and removeEntry
+      // below still do it themselves because they write the table directly.
       // Analytics seams (platform-injected; see config.js). Fired from the single
       // core spot so every surface that logs a watch is covered.
       getConfig().onWatched?.({ tmdb_id: row.tmdb_id, media_type: row.media_type });
