@@ -20,6 +20,7 @@ import ScreenHeaderBar from '../../components/ScreenHeaderBar';
 import ConfirmPhraseModal from '../../components/ConfirmPhraseModal';
 import { track, EVENTS } from '../../lib/analytics';
 import { deleteAccountAndSignOut } from '@plot/core/deleteAccount.js';
+import { clearWatchHistory } from '@plot/core/userMedia.js';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
 import { edgeFunctionUrl } from '@plot/core/functions.js';
@@ -719,8 +720,12 @@ export default function SettingsScreen() {
       { text: 'Cancel', style: 'cancel' },
       { text: SETTINGS_VIEW.confirm.clearHistory, style: 'destructive', onPress: async () => {
         setClearingHist(true);
-        await supabase.from('history').delete().eq('user_id', userId!);
+        // Shared helper: signals the change so a mounted useHistory reloads.
+        // This used to be a bare delete whose error was discarded, so a failed
+        // clear looked exactly like a successful one.
+        const { error } = await clearWatchHistory({ userId: userId! });
         setClearingHist(false);
+        if (error) Alert.alert('Could not clear', SETTINGS_VIEW.errors.failedToClearWatchHistory);
       }},
     ]);
   };

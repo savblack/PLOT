@@ -3,8 +3,7 @@ import { supabase } from './supabase.js';
 import { mediaIdentityRow, tmdbIdFromItem } from './media.js';
 import { findHistoryEntry, logWatchedItem, saveFavorite } from './userMedia.js';
 import { markMediaAsWatched } from './mediaStatus.js';
-import { emit } from './events.js';
-import { HISTORY_CHANGED_EVENT } from './useHistory.js';
+import { emit, HISTORY_CHANGED_EVENT } from './events.js';
 
 /**
  * Favourited titles for a user.
@@ -60,7 +59,6 @@ export function useFavorites(userId, { watching, watchlist } = {}) {
           const { data, error } = await logWatchedItem({ userId, item });
           if (error || !data) return false;
           insertedId = data.id;
-          emit(HISTORY_CHANGED_EVENT);
           return true;
         },
         clearWatching:   () => watching.stopWatching(tmdbId),

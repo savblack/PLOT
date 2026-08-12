@@ -18,8 +18,7 @@ import { supabase } from './supabase.js';
 import { genreIdsFromItem } from './media.js';
 import { HISTORY_CONFLICT_TARGET } from './userMedia.js';
 import { watchedAtFor } from './importParsing.js';
-import { emit } from './events.js';
-import { HISTORY_CHANGED_EVENT } from './useHistory.js';
+import { emit, HISTORY_CHANGED_EVENT } from './events.js';
 
 /** TMDB searches run concurrently in batches, with a pause between them. */
 const RESOLVE_BATCH = 4;

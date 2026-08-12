@@ -15,6 +15,7 @@ import { track, EVENTS } from '../lib/analytics.js';
 import { useCalendar } from '../hooks/useCalendar.js';
 import { useShare } from '../hooks/useShare.js';
 import { deleteAccountAndSignOut } from '../utils/deleteAccount.js';
+import { clearWatchHistory } from '@plot/core/userMedia.js';
 import { fetchUserDataExport, downloadDataExport, downloadCsvExport } from '../utils/exportData.js';
 import { buildFeedbackAttachmentPath } from '../utils/feedback.js';
 import { downloadICS } from '../utils/ics.js';
@@ -1390,7 +1391,7 @@ export default function SettingsView() {
       onConfirm: async () => {
         setActionError(null);
         setClearingHistory(true);
-        const { error } = await supabase.from('history').delete().eq('user_id', user.id);
+        const { error } = await clearWatchHistory({ userId: user.id });
         setClearingHistory(false);
         if (error) {
           setActionError(error.message || SETTINGS_VIEW.errors.failedToClearWatchHistory);
