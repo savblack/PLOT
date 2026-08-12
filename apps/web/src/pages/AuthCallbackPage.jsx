@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../api/supabase';
+import { supabase } from '@plot/core/supabase.js';
 import { track, identifyUser, EVENTS } from '../lib/analytics.js';
 import { resolveAuthCallback } from '../utils/authCallback.js';
 import PlotLogo from '../components/PlotLogo.jsx';

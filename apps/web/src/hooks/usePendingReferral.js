@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { supabase } from '../api/supabase.js';
+import { supabase } from '@plot/core/supabase.js';
 import { getAttribution } from '../utils/attribution.js';
 import { readStorage, writeStorage } from '../utils/storage.js';
 import { track, EVENTS } from '../lib/analytics.js';

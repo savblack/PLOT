@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../api/supabase.js';
+import { supabase } from '@plot/core/supabase.js';
 import { localDateStr } from '../utils/date.js';
 
 export function useReminders(userId) {

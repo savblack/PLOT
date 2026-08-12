@@ -11,6 +11,12 @@ export const PUBLIC_PROFILE_PAGE = {
   usernameTaken: 'That username is taken.',
   usernameRule: '3-30 characters: letters, numbers, hyphens.',
   saveFailed: 'Couldn’t save. Please try again.',
+  // Deliberately the same wording as SETTINGS_VIEW.avatar.chooseImageFile /
+  // .tooLarge: same rule, same bucket, same path, so the two screens should
+  // not phrase the rejection differently. Kept as separate keys because the
+  // surfaces are separate — see the note in AGENTS.md on duplicate strings.
+  avatarNotAnImage: 'Please choose an image file.',
+  avatarTooLarge: (maxMb) => `Profile photos must be under ${maxMb}MB.`,
   saving: 'Saving…',
   saveDisplayName: 'Save display name',
   editDisplayName: 'Edit display name',

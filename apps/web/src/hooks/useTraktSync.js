@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
-import { supabase } from '../api/supabase.js';
-import { callAuthenticatedFunction } from '../api/functions.js';
+import { supabase } from '@plot/core/supabase.js';
+import { callAuthenticatedFunction } from '@plot/core/functions.js';
 import { friendlyPremiumError } from '@plot/core/premium.js';
 import { buildTraktAuthorizeUrl, createTraktState, redirectToExternal } from '../utils/redirects.js';
 import { getConfig } from '@plot/core/config.js';

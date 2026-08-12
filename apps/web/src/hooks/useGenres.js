@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { tmdb } from '../api/tmdb.js';
+import { tmdb } from '@plot/core/tmdb.js';
 
 // Module-level cache so genres are only fetched once per session.
 //

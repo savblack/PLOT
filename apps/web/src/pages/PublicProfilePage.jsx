@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
-import { supabase } from '../api/supabase.js';
+import { supabase } from '@plot/core/supabase.js';
 import { usePublicProfile } from '../hooks/usePublicProfile.js';
 import { useFollows } from '../hooks/useFollows.js';
 import { useDragScroll } from '../hooks/useDragScroll.js';
@@ -16,7 +16,10 @@ import SheetHeader from '../components/SheetHeader.jsx';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import { COMMON } from '../copy/common.js';
 import { MEDIA } from '../copy/media.js';
-import { SOCIAL_LINKS, USERNAME_RE } from '@plot/core/profileFields.js';
+import {
+  SOCIAL_LINKS, USERNAME_RE, validateAvatarFile, isDuplicateUsernameError,
+} from '@plot/core/profileFields.js';
+import { updateProfile } from '@plot/core/profile.js';
 import { PUBLIC_PROFILE_PAGE } from '../copy/publicProfilePage.js';
 import { EVENTS } from '../lib/analytics.js';
 
@@ -390,6 +393,16 @@ function EditProfileModal({ userId, current, onClose, onSaved, favWord }) {
     e.target.value = '';
     if (!file) return;
     setError('');
+    // This picker used to accept anything the file input handed it, while
+    // Settings capped size and checked the type — same bucket, same path, two
+    // rules. A 20MB HEIC was rejected there and uploaded here.
+    const check = validateAvatarFile(file);
+    if (!check.ok) {
+      setError(check.reason === 'too-large'
+        ? PUBLIC_PROFILE_PAGE.avatarTooLarge(check.maxMb)
+        : PUBLIC_PROFILE_PAGE.avatarNotAnImage);
+      return;
+    }
     setPendingFile(file);
     setAvatar(URL.createObjectURL(file));
   };
@@ -417,13 +430,13 @@ function EditProfileModal({ userId, current, onClose, onSaved, favWord }) {
       }
     }
     if (unameChanged) patch.username = cleanUname;
-    const { error: e } = await supabase.from('profiles').update(patch).eq('id', userId);
-    if (e) { setSaving(false); setError(/duplicate/i.test(e.message) ? PUBLIC_PROFILE_PAGE.usernameTaken : PUBLIC_PROFILE_PAGE.saveFailed); return; }
+    const { error: e } = await updateProfile({ userId, patch });
+    if (e) { setSaving(false); setError(isDuplicateUsernameError(e) ? PUBLIC_PROFILE_PAGE.usernameTaken : PUBLIC_PROFILE_PAGE.saveFailed); return; }
 
     // Section visibility — separate best-effort update so the core save still
     // works before the profile_sections migration lands.
     const sections = SECTIONS.map((s) => s.key).filter((k) => enabled.includes(k));
-    await supabase.from('profiles').update({ profile_sections: sections }).eq('id', userId);
+    await updateProfile({ userId, patch: { profile_sections: sections } });
     setSaving(false);
     onSaved({ display_name: displayName.trim(), username: unameChanged ? cleanUname : current.username, is_public: current.is_public, avatar_url: patch.avatar_url, profile_sections: sections, bio: patch.bio, links: patch.links });
   };

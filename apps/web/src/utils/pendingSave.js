@@ -1,5 +1,5 @@
 import { readStorage, writeStorage, removeStorage } from './storage.js';
-import { normalizeMediaType } from '../domain/media.js';
+import { normalizeMediaType } from '@plot/core/media.js';
 
 /**
  * A "pending save" is a title a logged-out (or just-arriving) user asked to add

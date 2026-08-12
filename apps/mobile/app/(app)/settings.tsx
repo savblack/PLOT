@@ -21,6 +21,7 @@ import ConfirmPhraseModal from '../../components/ConfirmPhraseModal';
 import { track, EVENTS } from '../../lib/analytics';
 import { deleteAccountAndSignOut } from '@plot/core/deleteAccount.js';
 import { clearWatchHistory } from '@plot/core/userMedia.js';
+import { updateProfile } from '@plot/core/profile.js';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
 import { edgeFunctionUrl } from '@plot/core/functions.js';
@@ -587,13 +588,13 @@ export default function SettingsScreen() {
 
   const toggleVisibility = async () => {
     if (!userId) return;
-    await supabase.from('profiles').update({ is_public: !isPublic }).eq('id', userId);
+    await updateProfile({ userId, patch: { is_public: !isPublic } });
     refreshProfile();
   };
 
   const toggleKidsContent = async () => {
     if (!userId) return;
-    await supabase.from('profiles').update({ include_kids_content: !includeKidsContent }).eq('id', userId);
+    await updateProfile({ userId, patch: { include_kids_content: !includeKidsContent } });
     refreshProfile();
   };
 
@@ -608,7 +609,7 @@ export default function SettingsScreen() {
     if (!userId || generatingCalToken) return;
     setGeneratingCalToken(true);
     const token = generateCalendarToken();
-    const { error } = await supabase.from('profiles').update({ calendar_token: token }).eq('id', userId);
+    const { error } = await updateProfile({ userId, patch: { calendar_token: token } });
     if (error) { Alert.alert('Something went wrong', 'Could not create your calendar link. Please try again.'); }
     else { setLocalCalToken(token); refreshProfile(); }
     setGeneratingCalToken(false);
@@ -632,7 +633,7 @@ export default function SettingsScreen() {
       [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Revoke', style: 'destructive', onPress: async () => {
-          await supabase.from('profiles').update({ calendar_token: null }).eq('id', userId!);
+          await updateProfile({ userId: userId!, patch: { calendar_token: null } });
           setLocalCalToken(null);
           refreshProfile();
         }},
@@ -672,35 +673,35 @@ export default function SettingsScreen() {
   };
 
   const saveProviders = async (newProviders: any[]) => {
-    await supabase.from('profiles').update({ streaming_providers: newProviders }).eq('id', userId!);
+    await updateProfile({ userId: userId!, patch: { streaming_providers: newProviders } });
     refreshProfile();
   };
 
   const saveChannels = async (newChannels: any[]) => {
-    await supabase.from('profiles').update({ guide_channels: newChannels }).eq('id', userId!);
+    await updateProfile({ userId: userId!, patch: { guide_channels: newChannels } });
     refreshProfile();
   };
 
   const saveGenres = async (newGenres: string[]) => {
-    await supabase.from('profiles').update({ genres: newGenres }).eq('id', userId!);
+    await updateProfile({ userId: userId!, patch: { genres: newGenres } });
     refreshProfile();
   };
 
   const saveName = async (name: string) => {
-    const { error } = await supabase.from('profiles').update({ display_name: name }).eq('id', userId!);
+    const { error } = await updateProfile({ userId: userId!, patch: { display_name: name } });
     if (error) throw error;
     refreshProfile();
   };
 
   const saveRegion = async (code: string) => {
-    await supabase.from('profiles').update({ region: code }).eq('id', userId!);
+    await updateProfile({ userId: userId!, patch: { region: code } });
     setTmdbRegion(code);
     refreshProfile();
     setShowRegion(false);
   };
 
   const saveTimezone = async (tz: string) => {
-    await supabase.from('profiles').update({ timezone: tz }).eq('id', userId!);
+    await updateProfile({ userId: userId!, patch: { timezone: tz } });
     // Apply immediately rather than waiting on the refreshProfile round-trip,
     // so dates re-render in the new timezone as soon as the modal closes.
     setUserTimezone(tz);

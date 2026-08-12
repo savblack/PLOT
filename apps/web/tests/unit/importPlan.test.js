@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { planHistoryImport } from '../../src/domain/importPlan.js';
+import { planHistoryImport } from '@plot/core/importPlan.js';
 
 const row = (tmdb_id, media_type, watched_at) => ({
   user_id: 'u1', tmdb_id, media_type, watched_at, title: `t${tmdb_id}`, poster_path: null,

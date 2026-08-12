@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { normalizeCustomListName, findDuplicateCustomList } from '../../src/domain/customLists.js';
+import { normalizeCustomListName, findDuplicateCustomList } from '@plot/core/customLists.js';
 
 test('normalizeCustomListName trims, collapses whitespace, and lowercases', () => {
   assert.equal(normalizeCustomListName('  Friday   Movies  '), 'friday movies');

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../api/supabase.js';
-import { tmdb, getTmdbRegion } from '../api/tmdb.js';
+import { supabase } from '@plot/core/supabase.js';
+import { tmdb, getTmdbRegion } from '@plot/core/tmdb.js';
 
 // Canonical list of the platforms we publish a real OFFICIAL Top 10 for. This
 // section is intentionally hard-coded and independent of the user's own

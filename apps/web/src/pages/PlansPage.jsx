@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { supabase } from '../api/supabase.js';
+import { supabase } from '@plot/core/supabase.js';
 import { usePremium } from '../hooks/usePremium.js';
 import { useTheme } from '../hooks/useTheme.js';
 import { FREE_CUSTOM_LIST_CAP } from '@plot/core/premium.js';

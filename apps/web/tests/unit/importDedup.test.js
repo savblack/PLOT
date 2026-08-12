@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { dedupeEntries } from '../../src/domain/importDedup.js';
+import { dedupeEntries } from '@plot/core/importDedup.js';
 
 // History holds one row per title (20260806000001 removed rewatch logging), so
 // every date a file lists for a title describes that same row. Dedup collapses

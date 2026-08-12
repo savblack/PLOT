@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
-import { supabase } from '../api/supabase.js';
-import { edgeFunctionUrl } from '../api/functions.js';
+import { supabase } from '@plot/core/supabase.js';
+import { edgeFunctionUrl } from '@plot/core/functions.js';
 import { track, EVENTS } from '../lib/analytics.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
 

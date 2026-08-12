@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { tmdb } from '../api/tmdb.js';
+import { tmdb } from '@plot/core/tmdb.js';
 import { readPendingSave, clearPendingSave } from '../utils/pendingSave.js';
 import { drainPendingSave } from '../utils/drainPendingSave.js';
 import { track, EVENTS } from '../lib/analytics.js';

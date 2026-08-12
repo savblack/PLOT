@@ -87,6 +87,13 @@ CI on Node 22.
   `@typedef`/`@param` blocks accurate when you change a core signature.
 - When logic is shared, put it in `@plot/core` and re-export from the web hook
   (e.g. `apps/web/src/hooks/useWatchlist.js` is just `export * from '@plot/core/useWatchlist.js'`).
+  This applies to `hooks/`, `utils/` and `copy/`, which have their own reasons to keep a
+  stable local path (hooks are imported by name across the app; `src/copy/` is what the
+  Storybook Content pages read). It does **not** extend to inventing new shim directories:
+  `src/api/` and `src/domain/` were exactly that and are gone. They held nine files, 27
+  lines, zero behaviour, and 14 files imported both a shim *and* `@plot/core` directly for
+  the same symbol — two paths to one module, picked at random. Import `@plot/core/…`
+  directly unless a shim already exists.
 
 ## Region-aware spelling (US/UK)
 

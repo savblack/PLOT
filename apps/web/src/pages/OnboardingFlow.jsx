@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../api/supabase';
-import { tmdb } from '../api/tmdb';
+import { supabase } from '@plot/core/supabase.js';
+import { tmdb } from '@plot/core/tmdb.js';
 // This route renders outside the App-shell layout, but reuses several of its
 // classes (onboarding-cta, interactive-surface, providers-select-grid, ...).
 // Its named import from App.jsx doesn't pull in App's CSS on its own (that
@@ -16,6 +16,7 @@ import { track, markActivated, EVENTS } from '../lib/analytics.js';
 import { COMMON } from '../copy/common.js';
 import { ONBOARDING_FLOW } from '../copy/onboardingFlow.js';
 import { detectRegion, detectTimezone, guessRegionFromTimezone } from '@plot/core/regions.js';
+import { upsertProfile } from '@plot/core/profile.js';
 import { useWatchlist } from '../hooks/useWatchlist.js';
 import { usePremium } from '../hooks/usePremium.js';
 import { takePremiumCheckoutIntent } from '../utils/premiumCheckoutIntent.js';
@@ -178,12 +179,14 @@ export default function OnboardingFlow() {
 
     const seeds = skipSeeds ? [] : seedSelected;
 
-    const { error: profileError } = await supabase.from('profiles').upsert({
-      id:                  user.id,
-      first_name:          firstName.trim(),
-      region,
-      timezone:            detectTimezone(),
-      onboarding_complete: true,
+    const { error: profileError } = await upsertProfile({
+      userId: user.id,
+      patch: {
+        first_name:          firstName.trim(),
+        region,
+        timezone:            detectTimezone(),
+        onboarding_complete: true,
+      },
     });
 
     if (profileError) {

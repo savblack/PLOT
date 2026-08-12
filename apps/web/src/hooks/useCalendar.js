@@ -6,7 +6,7 @@ import {
   buildWatchlistCalendarSignature,
   buildCalendarEvents,
 } from '../utils/calendar.js';
-import { tmdb } from '../api/tmdb.js';
+import { tmdb } from '@plot/core/tmdb.js';
 
 /**
  * React plumbing around @plot/core's buildCalendarEvents: signatures so the

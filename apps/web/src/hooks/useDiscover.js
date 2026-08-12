@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { tmdb } from '../api/tmdb.js';
+import { tmdb } from '@plot/core/tmdb.js';
 import { isEnglishOriginTitle, excludeKidsContent } from '@plot/core/tmdb.js';
 import { localDateStr } from '../utils/date.js';
 import { useApp } from '../App.jsx';

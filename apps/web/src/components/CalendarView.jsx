@@ -5,7 +5,7 @@ import { posterUrl } from '../utils/images.js';
 import { localDateStr, dateToLocalStr } from '../utils/date.js';
 import { getCalendarRelativeLabel, msUntilNextLocalMidnight } from '../utils/calendar.js';
 import { useCalendar } from '../hooks/useCalendar.js';
-import { tmdb } from '../api/tmdb.js';
+import { tmdb } from '@plot/core/tmdb.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import { MEDIA } from '../copy/media.js';

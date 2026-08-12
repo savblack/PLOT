@@ -8,8 +8,8 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 // ./utils and ./hooks so code outside the shell can use them without pulling
 // in this chunk.
 import './styles/app.css';
-import { supabase } from './api/supabase.js';
-import { setTmdbRegion } from './api/tmdb.js';
+import { supabase } from '@plot/core/supabase.js';
+import { setTmdbRegion } from '@plot/core/tmdb.js';
 import { setUserTimezone } from './utils/date.js';
 import AppShell from './components/AppShell.jsx';
 import MediaPanel from './components/MediaPanel.jsx';
@@ -28,6 +28,7 @@ import { readStorage, writeStorage } from './utils/storage.js';
 import { readCachedSession, writeCachedSession, clearCachedSession } from './utils/sessionCache.js';
 import { track, EVENTS, setPersonProps } from './lib/analytics.js';
 import { personPropsFromProfile } from '@plot/core/analyticsEvents.js';
+import { updateProfile } from '@plot/core/profile.js';
 import { AppContext, useApp } from './hooks/useApp.js';
 
 export { useApp };
@@ -184,7 +185,7 @@ export default function App() {
 
   const handleTzUpdate = useCallback(async () => {
     if (!tzBanner || !user) return;
-    await supabase.from('profiles').update({ timezone: tzBanner.deviceTz }).eq('id', user.id);
+    await updateProfile({ userId: user.id, patch: { timezone: tzBanner.deviceTz } });
     loadProfile(user.id);
   }, [tzBanner, user, loadProfile]);
 
