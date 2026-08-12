@@ -11,6 +11,10 @@ export const IMPORT_VIEW = {
   // episode of a series watched on the same night.
   mergedIntoOneEntry: 'Merged into one entry',
   partialFailure: (n) => `${n} title${n !== 1 ? 's' : ''} could not be saved. Nothing already in your history was changed, so you can safely run the import again.`,
+  // Shown when the existing-history read fails. The import stops rather than
+  // continuing, because planning against a partial history would overwrite
+  // ratings and notes on titles it could not see.
+  couldNotReadHistory: 'We could not check what is already in your history, so the import stopped. Nothing was changed. Please try again.',
   newBadge: 'New',
   haveBadge: 'Have',
   importing: 'Importing…',

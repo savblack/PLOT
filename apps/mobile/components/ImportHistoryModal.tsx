@@ -7,12 +7,14 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Polyline, Line } from 'react-native-svg';
-import { supabase } from '../lib/supabase';
 import { tmdb } from '../lib/tmdb';
-import { parsePlatform, watchedAtFor, type ParsedImportEntry } from '@plot/core/importParsing.js';
+import { parsePlatform, type ParsedImportEntry } from '@plot/core/importParsing.js';
 import { dedupeEntries } from '@plot/core/importDedup.js';
 import { planHistoryImport } from '@plot/core/importPlan.js';
-import { HISTORY_CONFLICT_TARGET } from '@plot/core/userMedia.js';
+import {
+  resolveImportEntries, readExistingHistory, buildImportRows, writeImportRows,
+} from '@plot/core/importPipeline.js';
+import { IMPORT_VIEW } from '@plot/core/copy/importView.js';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -61,66 +63,43 @@ const PLATFORMS: { id: Platform; name: string; color: string; hint: string; acce
 
 // ── Types ─────────────────────────────────────────────────────────────
 
+/* Resolution, the existing-history read, row building and the batched write all
+   live in @plot/core/importPipeline.js so web runs the same rules. This file
+   previously carried its own copy of each, and every one of them differed:
+   release year was ignored when picking a TMDB match, ratings and reviews were
+   dropped, and the existing-history read was unscoped and unpaginated, so past
+   the row cap it overwrote what it could not see. */
+
+/** One entry after TMDB resolution — core's shape, matched or not. */
 interface ResolvedEntry {
-  raw: ParsedImportEntry;
-  // Normalised once at resolve time via core's watchedAtFor — the source
-  // export's date column is optional, so raw.date can be null.
-  watchedAt: string;
-  tmdbId: number;
-  mediaType: 'movie' | 'tv';
+  status: 'matched' | 'unmatched';
   title: string;
-  posterPath: string | null;
+  tmdbId?: number;
+  mediaType?: 'movie' | 'tv';
+  tmdbTitle?: string;
+  posterPath?: string | null;
 }
 
-/** A history row as it will be written, matching the `history` table. */
+/** A history row as core builds it, matching the `history` table. */
 interface HistoryRow {
   user_id: string;
   tmdb_id: number;
   media_type: 'movie' | 'tv';
   title: string;
   poster_path: string | null;
+  genre_ids: number[];
   watched_at: string;
+  rating?: number;
+  note?: string;
+}
+
+/** A row paired with the index of the resolved entry it came from. */
+interface ImportCandidate {
+  index: number;
+  row: HistoryRow;
 }
 
 type Step = 'pick-platform' | 'pick-file' | 'resolving' | 'preview' | 'importing' | 'done';
-
-// ── Helpers ───────────────────────────────────────────────────────────
-
-async function resolveEntries(
-  entries: ParsedImportEntry[],
-  onProgress: (done: number) => void,
-): Promise<ResolvedEntry[]> {
-  const resolved: ResolvedEntry[] = [];
-  const BATCH = 4; // concurrent TMDB searches per tick
-
-  for (let i = 0; i < entries.length; i += BATCH) {
-    const batch = entries.slice(i, i + BATCH);
-    const results = await Promise.all(batch.map(async (e) => {
-      const hint = e.hint === 'unknown' ? undefined : e.hint;
-      const data = await tmdb.search(e.title);
-      const candidates = (data?.results ?? []) as any[];
-      // Prefer hint type, then take first result of any type
-      const match = hint
-        ? (candidates.find((r: any) => r.media_type === hint) ?? candidates.find((r: any) => r.media_type === 'movie' || r.media_type === 'tv'))
-        : candidates.find((r: any) => r.media_type === 'movie' || r.media_type === 'tv');
-      if (!match) return null;
-      const watchedAt = watchedAtFor(e);
-      return {
-        raw: e,
-        watchedAt,
-        tmdbId: match.id as number,
-        mediaType: match.media_type as 'movie' | 'tv',
-        title: (match.title ?? match.name ?? e.title) as string,
-        posterPath: (match.poster_path ?? null) as string | null,
-      } satisfies ResolvedEntry;
-    }));
-    resolved.push(...results.filter((r): r is ResolvedEntry => r !== null));
-    onProgress(Math.min(i + BATCH, entries.length));
-    // Small rate-limit pause between batches
-    if (i + BATCH < entries.length) await new Promise(res => setTimeout(res, 250));
-  }
-  return resolved;
-}
 
 // ── Main modal ────────────────────────────────────────────────────────
 
@@ -136,7 +115,6 @@ export default function ImportHistoryModal({ userId, onClose }: Props) {
 
   const [step,         setStep]         = useState<Step>('pick-platform');
   const [platform,     setPlatform]     = useState<Platform | null>(null);
-  const [rawEntries,   setRawEntries]   = useState<ParsedImportEntry[]>([]);
   const [resolved,     setResolved]     = useState<ResolvedEntry[]>([]);
   const [existingRows, setExistingRows] = useState<{ tmdb_id: number; media_type: string }[]>([]);
   const [resolveTotal, setResolveTotal] = useState(0);
@@ -169,20 +147,34 @@ export default function ImportHistoryModal({ userId, onClose }: Props) {
         return;
       }
       const deduped = dedupeEntries(raw);
-      setRawEntries(deduped);
       setResolveTotal(deduped.length);
       setResolveDone(0);
       setStep('resolving');
 
-      // The history the user already has. Feeds planHistoryImport, so the
-      // preview and the write agree on exactly which rows are new.
-      const { data: existing } = await supabase
-        .from('history')
-        .select('tmdb_id, media_type')
-        .eq('user_id', userId);
-      setExistingRows(existing ?? []);
+      const results = await resolveImportEntries(deduped, {
+        search: (title: string) => tmdb.search(title),
+        onProgress: (done: number) => setResolveDone(done),
+      });
 
-      const results = await resolveEntries(deduped, (done) => setResolveDone(done));
+      // Only the titles this import resolved to, chunked and paged. Reading the
+      // whole history in one call truncated at the row cap, which made the
+      // planner treat rows already there as new and the write overwrite their
+      // rating and note.
+      const { rows: existing, error } = await readExistingHistory({
+        userId,
+        tmdbIds: (results as ResolvedEntry[])
+          .filter(r => r.status === 'matched')
+          .map(r => r.tmdbId as number),
+      });
+
+      // Planning against a partial history is the data-loss path. Stop.
+      if (error) {
+        Alert.alert('Import stopped', IMPORT_VIEW.couldNotReadHistory);
+        setStep('pick-file');
+        return;
+      }
+
+      setExistingRows(existing);
       setResolved(results);
       setStep('preview');
     } catch {
@@ -196,29 +188,33 @@ export default function ImportHistoryModal({ userId, onClose }: Props) {
      inserting, so a batch that failed left the user's history shorter than it
      started. planHistoryImport resolves the collisions instead, and the write
      is a plain upsert on the constraint that actually exists. */
-  const candidates = useMemo(() => resolved.map(entry => ({
-    entry,
-    row: {
-      user_id:     userId,
-      tmdb_id:     entry.tmdbId,
-      media_type:  entry.mediaType,
-      title:       entry.title,
-      poster_path: entry.posterPath,
-      watched_at:  entry.watchedAt,
-    } satisfies HistoryRow,
-  })), [resolved, userId]);
+  const candidates: ImportCandidate[] = useMemo(
+    () => buildImportRows({ userId, resolved }) as ImportCandidate[],
+    [resolved, userId],
+  );
 
   const plan = useMemo(
     () => planHistoryImport({ rows: candidates.map(c => c.row), existing: existingRows }),
     [candidates, existingRows],
   );
 
-  const plannedRows = useMemo(() => new Set<HistoryRow>(plan.rows), [plan]);
-  const rowByEntry = useMemo(() => new Map(candidates.map(c => [c.entry, c.row])), [candidates]);
-  const isNew = useCallback((entry: ResolvedEntry) => {
-    const row = rowByEntry.get(entry);
+  /* Row identity survives the planner, so the preview can mark each result by
+     whether its own row made it through. Keyed on the index into `resolved`,
+     which is what buildImportRows preserves. */
+  const plannedRows = useMemo(() => new Set(plan.rows), [plan]);
+  const rowByIndex = useMemo(
+    () => new Map(candidates.map(c => [c.index, c.row])),
+    [candidates],
+  );
+  const isNew = useCallback((index: number) => {
+    const row = rowByIndex.get(index);
     return row != null && plannedRows.has(row);
-  }, [rowByEntry, plannedRows]);
+  }, [rowByIndex, plannedRows]);
+
+  const matched = useMemo(
+    () => resolved.filter((r: ResolvedEntry) => r.status === 'matched'),
+    [resolved],
+  );
 
   const handleImport = useCallback(async () => {
     const rows = plan.rows;
@@ -232,22 +228,15 @@ export default function ImportHistoryModal({ userId, onClose }: Props) {
     setImportDone(0);
     setStep('importing');
 
-    const BATCH = 50;
-    let inserted = 0;
-    let failed = 0;
-    for (let i = 0; i < rows.length; i += BATCH) {
-      const batch = rows.slice(i, i + BATCH);
-      const { error } = await supabase.from('history').upsert(batch, { onConflict: HISTORY_CONFLICT_TARGET });
-      if (error) failed += batch.length;
-      else inserted += batch.length;
-      setImportDone(Math.min(i + BATCH, rows.length));
-    }
+    // Batches, counts failures rather than swallowing them, and signals the
+    // history change so a mounted useHistory reloads — mobile never did.
+    const { inserted, failed } = await writeImportRows(rows, {
+      onProgress: (done: number) => setImportDone(done),
+    });
+
     setImportedCount(inserted);
     if (failed) {
-      Alert.alert(
-        'Some titles could not be saved',
-        `${failed} title${failed !== 1 ? 's' : ''} could not be saved. Nothing already in your history was changed, so you can safely run the import again.`,
-      );
+      Alert.alert('Some titles could not be saved', IMPORT_VIEW.partialFailure(failed));
     }
     setStep('done');
   }, [plan]);
@@ -255,14 +244,13 @@ export default function ImportHistoryModal({ userId, onClose }: Props) {
   const reset = () => {
     setStep('pick-platform');
     setPlatform(null);
-    setRawEntries([]);
     setResolved([]);
     setExistingRows([]);
   };
 
   const newToImport = plan.rows.length;
-  const alreadyHave = resolved.length - newToImport;
-  const unmatched   = rawEntries.length - resolved.length;
+  const alreadyHave = matched.length - newToImport;
+  const unmatched   = resolved.length - matched.length;
 
   return (
     <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
@@ -361,14 +349,16 @@ export default function ImportHistoryModal({ userId, onClose }: Props) {
               </View>
             ) : (
               <FlatList
-                data={resolved}
-                keyExtractor={(_, i) => String(i)}
+                /* The rows themselves, so the preview shows exactly what the
+                   write will send — same list the planner ran against. */
+                data={candidates}
+                keyExtractor={(c: ImportCandidate) => String(c.index)}
                 contentContainerStyle={{ paddingBottom: 120 }}
-                renderItem={({ item }) => (
-                  <View style={[styles.previewRow, !isNew(item) && styles.previewRowDim]}>
-                    {item.posterPath ? (
+                renderItem={({ item }: { item: ImportCandidate }) => (
+                  <View style={[styles.previewRow, !isNew(item.index) && styles.previewRowDim]}>
+                    {item.row.poster_path ? (
                       <Image
-                        source={{ uri: `https://image.tmdb.org/t/p/w92${item.posterPath}` }}
+                        source={{ uri: `https://image.tmdb.org/t/p/w92${item.row.poster_path}` }}
                         style={styles.previewPoster}
                         resizeMode="cover"
                       />
@@ -376,10 +366,10 @@ export default function ImportHistoryModal({ userId, onClose }: Props) {
                       <View style={[styles.previewPoster, styles.previewPosterFallback]} />
                     )}
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.previewTitle} numberOfLines={1}>{item.title}</Text>
-                      <Text style={styles.previewMeta}>{item.mediaType === 'tv' ? 'TV Series' : 'Movie'} · {item.watchedAt}</Text>
+                      <Text style={styles.previewTitle} numberOfLines={1}>{item.row.title}</Text>
+                      <Text style={styles.previewMeta}>{item.row.media_type === 'tv' ? 'TV Series' : 'Movie'} · {item.row.watched_at}</Text>
                     </View>
-                    {!isNew(item) && (
+                    {!isNew(item.index) && (
                       <View style={styles.alreadyBadge}>
                         <Text style={styles.alreadyBadgeText}>In history</Text>
                       </View>

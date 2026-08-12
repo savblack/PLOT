@@ -2,13 +2,12 @@ import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { tmdb } from '../api/tmdb.js';
-import { supabase } from '../api/supabase.js';
-import { parsePlatform, watchedAtFor } from '../domain/importParsing.js';
+import { parsePlatform } from '../domain/importParsing.js';
 import { dedupeEntries } from '../domain/importDedup.js';
 import { planHistoryImport } from '../domain/importPlan.js';
-import { HISTORY_CONFLICT_TARGET } from '@plot/core/userMedia.js';
-import { emit } from '@plot/core/events.js';
-import { HISTORY_CHANGED_EVENT } from '@plot/core/useHistory.js';
+import {
+  resolveImportEntries, readExistingHistory, buildImportRows, writeImportRows,
+} from '@plot/core/importPipeline.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import { track, EVENTS } from '../lib/analytics.js';
 import { MEDIA } from '../copy/media.js';
@@ -133,76 +132,9 @@ const PLATFORMS = [
 /* Platform parsers (parseNetflix/Prime/Disney/Max/Apple/Letterboxd + parsePlatform)
    now live in the shared core: @plot/core/importParsing.js. */
 
-/* ─────────────────────────── TMDB resolution ─────────────────────────── */
-
-async function resolveTitle(entry) {
-  try {
-    const res = await tmdb.search(entry.title);
-    let results = res?.results || [];
-    // Narrow to the hinted media type when we have one (falls back to all results)
-    if (entry.hint && entry.hint !== 'unknown') {
-      const typed = results.filter(r => r.media_type === entry.hint);
-      if (typed.length) results = typed;
-    }
-    // Default to the most popular match, but if we know the release year
-    // (Letterboxd) prefer an exact year match to disambiguate remakes/same titles
-    let preferred = results[0];
-    if (entry.year) {
-      const yearMatch = results.find(r => {
-        const d = r.release_date || r.first_air_date || '';
-        return d.slice(0, 4) === String(entry.year);
-      });
-      if (yearMatch) preferred = yearMatch;
-    }
-    if (!preferred) return { ...entry, status: 'unmatched' };
-    return {
-      ...entry,
-      status: 'matched',
-      tmdbId: preferred.id,
-      mediaType: preferred.media_type,
-      tmdbTitle: preferred.title || preferred.name,
-      posterPath: preferred.poster_path,
-    };
-  } catch {
-    return { ...entry, status: 'unmatched' };
-  }
-}
-
-async function resolveAll(entries, onProgress) {
-  const BATCH = 4;
-  const DELAY = 250;
-  const results = [];
-  for (let i = 0; i < entries.length; i += BATCH) {
-    const batch = entries.slice(i, i + BATCH);
-    const resolved = await Promise.all(batch.map(resolveTitle));
-    results.push(...resolved);
-    onProgress(results.length, entries.length);
-    if (i + BATCH < entries.length) await new Promise(r => setTimeout(r, DELAY));
-  }
-  return results;
-}
-
-/* ─────────────────────────── Bulk insert ─────────────────────────── */
-
-/* Write the planned rows. Purely additive: planHistoryImport has already
-   resolved every collision, so each batch is a plain upsert on the real
-   constraint and nothing is deleted. Batches that fail are counted rather than
-   swallowed — the old version discarded the error and reported the rows as
-   imported anyway, which is why a two-week outage went unnoticed. */
-async function bulkInsert(rows) {
-  const BATCH = 50;
-  let inserted = 0;
-  let failed = 0;
-  for (let i = 0; i < rows.length; i += BATCH) {
-    const batch = rows.slice(i, i + BATCH);
-    const { error } = await supabase
-      .from('history')
-      .upsert(batch, { onConflict: HISTORY_CONFLICT_TARGET });
-    if (error) failed += batch.length;
-    else inserted += batch.length;
-  }
-  return { inserted, failed };
-}
+/* TMDB resolution, the existing-history read, row building and the batched
+   write all live in @plot/core/importPipeline.js, so mobile runs the same
+   rules. Only the step machine and the preview UI are web's. */
 
 /* ─────────────────────────── UI helpers ─────────────────────────── */
 
@@ -286,44 +218,35 @@ export default function ImportView() {
     setStep(3);
     setResolveProgress({ done: 0, total: deduped.length });
 
-    const resolved = await resolveAll(deduped, (done, total) => {
-      setResolveProgress({ done, total });
+    const resolved = await resolveImportEntries(deduped, {
+      search: (title) => tmdb.search(title),
+      onProgress: (done, total) => setResolveProgress({ done, total }),
     });
 
-    // Fetch the history rows already held for the titles this import resolved
-    // to — not the user's whole history, which would grow unbounded as they log
-    // more over time. media_type comes back too: without it a movie and a TV
-    // show whose TMDB ids collide look like the same title.
-    const resolvedIds = [...new Set(resolved.filter(r => r.status === 'matched').map(r => r.tmdbId))];
-    const { data: existing } = resolvedIds.length
-      ? await supabase.from('history').select('tmdb_id, media_type').eq('user_id', user.id).in('tmdb_id', resolvedIds)
-      : { data: [] };
-    setExistingRows(existing || []);
+    const { rows: existing, error: existingError } = await readExistingHistory({
+      userId: user.id,
+      tmdbIds: resolved.filter(r => r.status === 'matched').map(r => r.tmdbId),
+    });
 
+    // A partial read would make the planner treat rows already in history as
+    // new, and the write would overwrite their rating and note. Stop instead.
+    if (existingError) {
+      setImportError(IMPORT_VIEW.couldNotReadHistory);
+      setStep(2);
+      return;
+    }
+
+    setExistingRows(existing);
     setResults(resolved);
     setStep(4);
   }, [platform, user]);
 
   /* One plan, used for both the preview and the write, so what the preview
      promises is exactly what gets imported. */
-  const candidates = useMemo(() => {
-    if (!user) return [];
-    return results.flatMap((r, i) => {
-      if (r.status !== 'matched') return [];
-      const row = {
-        user_id:     user.id,
-        tmdb_id:     r.tmdbId,
-        media_type:  r.mediaType,
-        title:       r.tmdbTitle,
-        poster_path: r.posterPath || null,
-        watched_at:  watchedAtFor(r),
-      };
-      // Letterboxd carries ratings/reviews; clamp to the 1–10 history scale
-      if (r.rating != null) row.rating = Math.min(10, Math.max(1, Math.round(r.rating)));
-      if (r.note) row.note = r.note;
-      return [{ index: i, row }];
-    });
-  }, [results, user]);
+  const candidates = useMemo(
+    () => (user ? buildImportRows({ userId: user.id, resolved: results }) : []),
+    [results, user],
+  );
 
   const plan = useMemo(
     () => planHistoryImport({ rows: candidates.map(c => c.row), existing: existingRows }),
@@ -340,12 +263,10 @@ export default function ImportView() {
     setImporting(true);
     setImportError('');
 
-    const { inserted, failed } = await bulkInsert(plan.rows);
+    // writeImportRows batches, counts failures rather than swallowing them, and
+    // signals the history change on the core bus.
+    const { inserted, failed } = await writeImportRows(plan.rows);
     track(EVENTS.IMPORT_COMPLETED, { source: platform?.id, count: inserted });
-    // Notify history hook to reload. Must go through the core bus, not a raw
-    // `window` event — useHistory subscribes via events.js so the same hook
-    // works on React Native, and a `window` dispatch reaches nobody.
-    emit(HISTORY_CHANGED_EVENT);
     setImportedCount(inserted);
     if (failed) setImportError(IMPORT_VIEW.partialFailure(failed));
     setImporting(false);
