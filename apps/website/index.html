@@ -2133,7 +2133,21 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     function tmdbProxy(path, params) {
       var qs = '?path=' + encodeURIComponent(path) + (params ? '&' + params : '');
       if (!tmdbCache[qs]) {
-        tmdbCache[qs] = fetch(TMDB_PROXY + qs).then(function(r) { return r.json(); });
+        tmdbCache[qs] = fetch(TMDB_PROXY + qs).then(function(r) {
+          // A rejected proxy call still answers with a JSON body (e.g. 403
+          // {"error":"TMDB path not allowed"}), so resolving regardless of status
+          // handed callers an object with no .results — they rendered an empty
+          // strip and logged nothing. Reject instead, so a caller's catch can
+          // fall back and the reason shows up in the console.
+          if (!r.ok) {
+            return r.json().catch(function() { return {}; }).then(function(body) {
+              var reason = (body && body.error) || ('HTTP ' + r.status);
+              console.warn('[tmdb] ' + path + ' failed: ' + reason);
+              throw new Error('tmdb ' + path + ': ' + reason);
+            });
+          }
+          return r.json();
+        });
       }
       return tmdbCache[qs];
     }
@@ -2143,11 +2157,14 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     let trendingSetsPromise = null;
     function fetchTrendingSets() {
       if (!trendingSetsPromise) {
+        // Absorb each set separately: six strips share these promises, so one
+        // unavailable endpoint should empty only the strips that read it rather
+        // than every poster on the page. Callers already guard with `|| []`.
         trendingSetsPromise = Promise.all([
           tmdbProxy('trending/movie/week'),
           tmdbProxy('movie/now_playing'),
           tmdbProxy('trending/tv/week'),
-        ]);
+        ].map(function(p) { return p.catch(function() { return {}; }); }));
       }
       return trendingSetsPromise;
     }

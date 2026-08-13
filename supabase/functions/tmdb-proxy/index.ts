@@ -31,7 +31,7 @@ const ALLOWED_PATHS = [
   /^search\/multi$/,
   /^search\/person$/,
   /^trending\/(all|movie|tv)\/(day|week)$/,
-  /^movie\/(now_playing|top_rated)$/,
+  /^movie\/(now_playing|top_rated|upcoming)$/,
   /^tv\/(on_the_air|airing_today|top_rated)$/,
   /^discover\/(movie|tv)$/,
   /^(movie|tv)\/\d+$/,
