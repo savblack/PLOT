@@ -49,9 +49,13 @@
   --glass-bg:        rgba(255,255,255,0.8);
   --glass-border:    rgba(0,0,0,0.05);
 
-  /* Brand/editorial dark (shared with the app dark theme + error screens) */
-  --dark:            #0c0c0c;
-  --text-dark:       #f0efe8;
+  /* Editorial surface — the "second" ground the site alternates into for its
+     demo sections, closing CTA, footer and error screens. The marketing site
+     runs a single light palette: this ground is white and its text is the same
+     ink as body copy, so no section on theplot.tv inverts to black. The names
+     are historical (this used to be the near-black #0c0c0c / #f0efe8 pair). */
+  --dark:            #ffffff;
+  --text-dark:       #1a1a1a;
 
   /* Success — reconciled to the app's green. (CANON colors.light.chipNow) */
   --success:         #059669;
