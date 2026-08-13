@@ -15,8 +15,7 @@ import { sendBatch, FROM_MARKETING } from '../lib/email.mjs';
 import { recentSnapshots, withMovement } from '../lib/trending.mjs';
 import { tmdb } from '../lib/tmdb.mjs';
 import { getRatings } from '../lib/omdb.mjs';
-import { addDays } from '../lib/dates.mjs';
-import { tzDateParts } from '../learning/window.mjs';
+import { addDays, datePartsInTz } from '../lib/dates.mjs';
 import { colors } from '@plot/core/tokens.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -341,7 +340,7 @@ const main = async () => {
   const data = { dateLabel, featured, kicker: "This week's No.1", chart, weekend, streaming };
   const issueHtml = buildHtml(data, `${SITE}/?unsubscribe_preview`);
   const subject = 'This week in film & TV — PLOT';
-  const localIssueDate = tzDateParts(now);
+  const localIssueDate = datePartsInTz(now);
   const weekStart = addDays(localIssueDate.date, -ISSUE_WEEK_OFFSET[localIssueDate.weekday]);
 
   if (DRY_RUN) {

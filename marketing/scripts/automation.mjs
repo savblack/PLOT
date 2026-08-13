@@ -8,7 +8,6 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const MARKETING_ROOT = join(HERE, '..');
 const REPO_ROOT = join(MARKETING_ROOT, '..');
 const DEFAULT_ENV_FILE = join(REPO_ROOT, '.env');
-const LEARNING_SUMMARY_DIR = '/Users/savannahblack/Documents/Obsidian/Projects/PLOT/Marketing Automation/Learning Summaries';
 const MANUAL_OUTPUT_ROOT = join(MARKETING_ROOT, 'plot-posts');
 
 const parseArgs = (argv) => {
@@ -152,44 +151,6 @@ const runWeekly = (args) => {
   run('Render posts onto the review desk', process.execPath, ['marketing/generate/generate.mjs']);
 };
 
-const runLearningPrepare = () => {
-  requireEnv([
-    ['SUPABASE_URL', 'VITE_SUPABASE_URL'],
-    ['SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_SERVICE_KEY'],
-  ]);
-
-  run('Prepare Sunday learning artifact', process.execPath, ['marketing/learning/prepare.mjs']);
-};
-
-const runLearningApply = (args) => {
-  requireEnv([
-    ['SUPABASE_URL', 'VITE_SUPABASE_URL'],
-    ['SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_SERVICE_KEY'],
-  ]);
-  // Defaults to codex, matching apply.mjs's own default — checked here too so
-  // a missing CLI fails fast instead of after waiting on the learning artifact.
-  const runner = args.get('--runner', 'codex');
-  if (!hasCommand(runner)) {
-    throw new Error(`${runner} CLI is not installed. The Sunday learning writer depends on it (pass --runner=claude to use the other one).`);
-  }
-
-  const childArgs = ['marketing/learning/apply.mjs', `--runner=${runner}`];
-  const waitSeconds = Number(args.get('--wait-seconds', '2700')) || 2700;
-  childArgs.push(`--wait-seconds=${Math.max(60, waitSeconds)}`);
-  if (args.has('--allow-non-main')) childArgs.push('--allow-non-main');
-
-  run('Apply Sunday learning locally', process.execPath, childArgs);
-};
-
-const runLearningAssert = () => {
-  requireEnv([
-    ['SUPABASE_URL', 'VITE_SUPABASE_URL'],
-    ['SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_SERVICE_KEY'],
-  ]);
-
-  run('Check Sunday learning state', process.execPath, ['marketing/learning/assert-ready.mjs']);
-};
-
 const runPublish = (args) => {
   requireEnv([
     ['SUPABASE_URL', 'VITE_SUPABASE_URL'],
@@ -239,7 +200,6 @@ const printDoctor = () => {
     ['Claude runner', hasCommand('claude') ? 'available fallback' : 'not found'],
     ['Repo node_modules', existsSync(join(REPO_ROOT, 'node_modules')) ? 'present' : 'missing'],
     ['Manual fallback output', MANUAL_OUTPUT_ROOT],
-    ['Sunday learning summaries', LEARNING_SUMMARY_DIR],
   ];
 
   console.log('PLOT marketing automation');
@@ -250,9 +210,6 @@ const printDoctor = () => {
   console.log('  npm run publish -- --dry-run');
   console.log('  npm run newsletter -- --dry-run');
   console.log('  npm run snapshot');
-  console.log('  npm run learn:prepare');
-  console.log('  npm run learn:apply');
-  console.log('  npm run learn:assert');
 };
 
 const main = () => {
@@ -275,17 +232,8 @@ const main = () => {
     case 'snapshot':
       runSnapshot();
       return;
-    case 'learn:prepare':
-      runLearningPrepare();
-      return;
-    case 'learn:apply':
-      runLearningApply(args);
-      return;
-    case 'learn:assert':
-      runLearningAssert();
-      return;
     default:
-      throw new Error(`Unknown command "${command}". Use doctor, weekly, publish, newsletter, snapshot, learn:prepare, learn:apply, or learn:assert.`);
+      throw new Error(`Unknown command "${command}". Use doctor, weekly, publish, newsletter, or snapshot.`);
   }
 };
 

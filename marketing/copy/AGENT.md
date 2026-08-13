@@ -59,8 +59,8 @@ model-agnostic — nothing here depends on which CLI is executing it.
 - Claude Code CLI authenticated on the runner (production) or Codex CLI
   authenticated on the Mac (local/manual)
 
-## Sunday learning updates
+## Updating these rules
 
-The Sunday learning loop may update this file automatically. Those updates are
-limited to concrete, evidence-backed rule changes from shipped copy and weekly
-performance review.
+This file is maintained by hand. An automated Sunday learning loop used to
+rewrite it from the previous week's shipped copy; that loop has been removed, so
+a rule here only changes when a person changes it.
