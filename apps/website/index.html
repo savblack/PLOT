@@ -1110,6 +1110,15 @@
       height: 655px;
       flex-shrink: 0;
       overflow: hidden;
+      /* The bezel's glass cut-out is taller than .phone-frame below: the screen
+         runs up either side of the notch, where .phone-frame does not reach.
+         That strip used to fall through to a black section and read as screen;
+         on the white section it read as two white wedges beside the notch. So
+         back the whole wrap in screen black. The bezel (z-index 10) covers all
+         of it except the glass, and the radius keeps the fill inside the phone's
+         own outline (measured ~49px) rather than squaring off its corners. */
+      background: #0c0c0c;
+      border-radius: 50px;
     }
 
     .iphone-png-frame {
