@@ -1,6 +1,7 @@
-name: Marketing — Sunday learning prep
+name: Marketing — weekly metrics report
 
-# Runs after the Sunday publish slot and before the next weekly generation.
+# Emails the completed week's performance. Runs before the weekly generation
+# slot so the numbers land while the week they cover is still the current one.
 on:
   schedule:
     - cron: '45 23 * * 6' # 9:45am Sydney Sunday (AEST)
@@ -10,11 +11,11 @@ permissions:
   contents: read
 
 concurrency:
-  group: marketing-learning-prep
+  group: marketing-metrics-report
   cancel-in-progress: false
 
 jobs:
-  prepare:
+  report:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -25,12 +26,6 @@ jobs:
           cache: npm
 
       - run: npm ci
-
-      - name: Collect metrics and prepare learning artifact
-        run: node marketing/scripts/automation.mjs learn:prepare
-        env:
-          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Send weekly metrics report
         run: node marketing/metrics/report.mjs
@@ -46,6 +41,6 @@ jobs:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           ADMIN_EMAIL: ${{ secrets.MARKETING_ADMIN_EMAIL }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          WORKFLOW_NAME: Sunday learning prep
-          FAILURE_NOTE: 'The weekly comparison artifact was not prepared before the next batch window.'
+          WORKFLOW_NAME: Weekly metrics report
+          FAILURE_NOTE: 'The weekly performance report was not sent.'
         run: bash .github/scripts/marketing-alert.sh

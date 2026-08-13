@@ -167,11 +167,9 @@ const notifyReview = async (count, sheetUrl) => {
   }
 };
 
-// Durable run history (marketing_batch_runs), mirroring the shape
-// marketing_learning_runs already proved out for the Sunday learning loop.
-// Defensively wrapped, unlike that table's write: this is incidental
-// telemetry about generate.mjs, not its actual job, so a tracking failure
-// must never fail the real render run.
+// Durable run history (marketing_batch_runs). Defensively wrapped: this is
+// incidental telemetry about generate.mjs, not its actual job, so a tracking
+// failure must never fail the real render run.
 const startBatchRun = async (supabase) => {
   try {
     const { data } = await supabase.from('marketing_batch_runs').insert({ run_type: 'generate' }).select('id').single();

@@ -145,11 +145,9 @@ const notifyIndexNow = async (posts) => {
   }
 };
 
-// Durable run history (marketing_batch_runs), mirroring the shape
-// marketing_learning_runs already proved out for the Sunday learning loop.
-// Defensively wrapped, unlike that table's write: this is incidental
-// telemetry about publish.mjs, not its actual job, so a tracking failure
-// must never fail (or worse, retry) a real publish run.
+// Durable run history (marketing_batch_runs). Defensively wrapped: this is
+// incidental telemetry about publish.mjs, not its actual job, so a tracking
+// failure must never fail (or worse, retry) a real publish run.
 const startBatchRun = async (supabase) => {
   try {
     const { data } = await supabase.from('marketing_batch_runs').insert({ run_type: 'publish' }).select('id').single();

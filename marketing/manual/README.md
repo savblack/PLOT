@@ -7,7 +7,6 @@ Primary production flow is still:
 - GitHub prepares
 - `admin.theplot.tv` reviews
 - approved posts publish
-- Sunday learning updates the rules
 
 Use this manual flow only when you intentionally want a local, operator-led run.
 

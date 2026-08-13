@@ -247,8 +247,7 @@ file, not the `--no-verify-jwt` flag.
 
 ## Git & PRs
 
-- Branch off `main`; don't commit to `main` directly (except the marketing learning loop,
-  which is designed to). Commit/push only when asked.
+- Branch off `main`; don't commit to `main` directly. Commit/push only when asked.
 - Keep changes scoped to the ticket — no unrelated refactors or file churn.
 - Conventional-commit style prefixes (`feat(...)`, `fix(...)`, `refactor(...)`) as in history.
 
