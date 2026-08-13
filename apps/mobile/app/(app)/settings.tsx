@@ -965,6 +965,26 @@ export default function SettingsScreen() {
           />
         </SettingsGroup>
 
+        {/* Credits — TMDB's API terms ask for the notice on an About/Credits
+            surface, not only in the legal pages. Read-only, so these are plain
+            rows rather than SettingsRow (no icon, no chevron, not pressable).
+            TMDB also asks for their approved logo here; see the web equivalent. */}
+        <SettingsGroup title={SETTINGS_VIEW.credits.groupTitle}>
+          <View style={styles.credits}>
+            <Text style={styles.creditsIntro}>{SETTINGS_VIEW.credits.intro}</Text>
+            {[
+              { name: SETTINGS_VIEW.credits.tmdbName,   notice: SETTINGS_VIEW.credits.tmdbNotice },
+              { name: SETTINGS_VIEW.credits.tvmazeName, notice: SETTINGS_VIEW.credits.tvmazeNotice },
+              { name: SETTINGS_VIEW.credits.omdbName,   notice: SETTINGS_VIEW.credits.omdbNotice },
+            ].map((c) => (
+              <View key={c.name} style={styles.credit}>
+                <Text style={styles.creditName}>{c.name}</Text>
+                <Text style={styles.creditNotice}>{c.notice}</Text>
+              </View>
+            ))}
+          </View>
+        </SettingsGroup>
+
         {/* Danger zone */}
         <SettingsGroup title="Danger Zone">
           <SettingsRow
@@ -1071,6 +1091,22 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     overflow: 'hidden',
+  },
+
+  credits: { paddingHorizontal: spacing.lg, paddingTop: 12, paddingBottom: 4 },
+  creditsIntro: {
+    fontFamily: fontFamily.sans, fontSize: 13, color: colors.textSecondary,
+    marginBottom: 12,
+  },
+  credit: {
+    paddingVertical: 10,
+    borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border,
+  },
+  creditName: {
+    fontFamily: fontFamily.sansBold, fontSize: 13, color: colors.textPrimary, marginBottom: 3,
+  },
+  creditNotice: {
+    fontFamily: fontFamily.sans, fontSize: 12, lineHeight: 17, color: colors.textMuted,
   },
 
   row: {

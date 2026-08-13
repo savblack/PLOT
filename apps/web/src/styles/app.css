@@ -2730,6 +2730,39 @@ a.provider-chip--link:hover {
   color: var(--text-secondary);
   padding: 0 1rem 0.5rem;
 }
+/* Credits: a read-only group, so it deliberately has none of the .settings-row
+   affordances (no hover, no pointer, no chevron). */
+.settings-credits {
+  padding: 0.25rem 1rem 0.85rem;
+}
+.settings-credits-intro {
+  margin: 0 0 0.9rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+.settings-credit {
+  padding: 0.7rem 0;
+  border-top: 1px solid var(--border);
+}
+.settings-credit-logo {
+  display: block;
+  height: 35px;
+  width: auto;
+  margin-bottom: 0.4rem;
+}
+.settings-credit-name {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+.settings-credit-notice {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
 .settings-row {
   display: flex;
   align-items: center;
