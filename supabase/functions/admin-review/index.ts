@@ -189,7 +189,58 @@ const mergeCopyFromForm = async (supabase: ReturnType<typeof createClient>, post
   if (form.has('page_title')) copyPatch.page_title = String(form.get('page_title') || '');
   if (form.has('page_body')) copyPatch.page_body = String(form.get('page_body') || '').split(/\n\s*\n/).map((s) => s.trim()).filter(Boolean);
   const { data: cur } = await supabase.from('marketing_posts').select('copy').eq('id', postId).single();
-  return { ...(cur?.copy || {}), ...copyPatch };
+  const before = cur?.copy || {};
+  return { before, after: { ...before, ...copyPatch } };
+};
+
+// Append-only audit trail (marketing_review_events). actor is always
+// 'web_desk' here — the conversational marketing-week skill bypasses this
+// file entirely and writes its own rows directly (see marketing/REVIEW.md).
+// Wrapped so a logging failure can never block the real action it describes.
+const logEvent = async (
+  supabase: ReturnType<typeof createClient>,
+  entry: { postId?: string | null; action: string; before?: unknown; after?: unknown },
+) => {
+  try {
+    await supabase.from('marketing_review_events').insert({
+      post_id: entry.postId ?? null,
+      actor: 'web_desk',
+      action: entry.action,
+      before: entry.before ?? null,
+      after: entry.after ?? null,
+    });
+  } catch (err) {
+    console.error('Failed to log review event:', err);
+  }
+};
+
+// Last-run status for a workflow, for the topbar's health chips. Read-only
+// counterpart to dispatchWorkflow() — same auth, same repo. Time-boxed so a
+// slow GitHub API can't stall the whole page; returns null on any failure
+// (including no GH_TOKEN) rather than breaking the page for a diagnostic.
+const workflowStatus = async (workflow: string): Promise<{ conclusion: string; url: string } | null> => {
+  if (!GH_TOKEN) return null;
+  try {
+    const res = await fetch(
+      `https://api.github.com/repos/${GH_REPO}/actions/workflows/${workflow}/runs?per_page=1`,
+      {
+        headers: {
+          Authorization: `Bearer ${GH_TOKEN}`,
+          Accept: 'application/vnd.github+json',
+          'X-GitHub-Api-Version': '2022-11-28',
+          'User-Agent': 'plot-control-room',
+        },
+        signal: AbortSignal.timeout(3000),
+      },
+    );
+    if (!res.ok) return null;
+    const body = await res.json();
+    const run = body.workflow_runs?.[0];
+    if (!run) return null;
+    return { conclusion: run.status === 'in_progress' ? 'running' : (run.conclusion || run.status), url: run.html_url };
+  } catch {
+    return null;
+  }
 };
 
 const STATUS_BADGE: Record<string, { label: string; cls: string }> = {
@@ -371,6 +422,14 @@ const pubChips = (pubs: Row[]) => {
 
 const confirm = (msg: string) => ` onclick="return confirm('${msg.replace(/'/g, '')}')"`;
 
+const ghChip = (label: string, status: { conclusion: string; url: string } | null) => {
+  if (!status) return `<span class="chip" title="No GH_DISPATCH_TOKEN, or no runs yet">${esc(label)}: —</span>`;
+  const cls = status.conclusion === 'success' ? 'b-ok'
+    : status.conclusion === 'running' ? 'b-wait'
+    : 'b-no';
+  return `<a class="badge ${cls}" href="${esc(status.url)}" target="_blank" title="${esc(label)} — click for the run">${esc(label)}: ${esc(status.conclusion)}</a>`;
+};
+
 const postForm = (p: Row) => {
   const c = p.copy || {};
   const media = (p.media || []) as { portrait_path?: string; landscape_path?: string }[];
@@ -450,6 +509,26 @@ const histLine = (p: Row, metrics: Map<string, { views: number; likes: number }>
   </div>`;
 };
 
+const ACTOR_LABEL: Record<string, string> = { web_desk: 'Web desk', marketing_week_skill: 'Marketing-week skill' };
+
+const eventLine = (e: Row) => `<div class="hist">
+  <span class="small">${esc(fmtDay(e.occurred_at))} ${esc(fmtTime(e.occurred_at))}</span>
+  <span style="font-weight:600">${esc(e.action)}</span>
+  <span class="spacer"></span>
+  <span class="small">${esc(ACTOR_LABEL[e.actor] || e.actor)}</span>
+</div>`;
+
+const runLine = (r: Row) => {
+  const cls = r.status === 'succeeded' ? 'b-ok' : r.status === 'failed' ? 'b-no' : 'b-wait';
+  return `<div class="hist">
+    <span class="small">${esc(fmtDay(r.started_at))} ${esc(fmtTime(r.started_at))}</span>
+    <span style="font-weight:600">${esc(r.run_type)}</span>
+    <span class="badge ${cls}">${esc(r.status)}</span>
+    <span class="spacer"></span>
+    <span class="small" title="${esc(r.error || '')}">${esc(JSON.stringify(r.counts || {}))}</span>
+  </div>`;
+};
+
 Deno.serve(async (req) => {
   const url = new URL(req.url);
   // Read the body once: it carries either the sign-in password or a desk action.
@@ -511,6 +590,7 @@ Deno.serve(async (req) => {
       await supabase.from('marketing_settings')
         .update({ publishing_paused: action === 'pause', updated_at: now() }).eq('id', 1);
       flash = action === 'pause' ? 'Publishing paused — nothing will be sent until you resume.' : 'Publishing resumed.';
+      await logEvent(supabase, { action });
     } else if (action === 'approve_all') {
       const { data } = await supabase.from('marketing_posts')
         .update({ status: 'approved', updated_at: now() })
@@ -518,13 +598,16 @@ Deno.serve(async (req) => {
       const ids = (data || []).map((d) => d.id);
       if (ids.length) await requeuePubs(ids);
       flash = `Approved the week — ${data?.length || 0} post(s) cleared to publish.`;
+      await logEvent(supabase, { action, after: { post_ids: ids } });
     } else if (id && action === 'reject') {
       await supabase.from('marketing_posts').update({ status: 'vetoed', updated_at: now() }).eq('id', id);
       await supabase.from('marketing_post_publications').update({ status: 'skipped' }).eq('post_id', id).eq('status', 'queued');
       flash = 'Rejected — it will not publish.';
+      await logEvent(supabase, { postId: id, action });
     } else if (id && action === 'unapprove') {
       await supabase.from('marketing_posts').update({ status: 'needs_review', updated_at: now() }).eq('id', id);
       flash = 'Back in review.';
+      await logEvent(supabase, { postId: id, action });
     } else if (id && action === 'reschedule') {
       const d = String(form.get('scheduled_date') || '');
       if (/^\d{4}-\d{2}-\d{2}$/.test(d)) {
@@ -533,11 +616,12 @@ Deno.serve(async (req) => {
         await supabase.from('marketing_posts')
           .update({ scheduled_for: `${d}T12:00:00.000Z`, updated_at: now() }).eq('id', id);
         flash = `Rescheduled to ${d}.`;
+        await logEvent(supabase, { postId: id, action, after: { scheduled_date: d } });
       } else flash = 'Reschedule needs a valid date.';
     } else if (id && action === 'publish_now') {
       // Approve + bring the schedule forward so the publisher will pick it up,
       // then kick the publish run so it sends within minutes (if a token is set).
-      const merged = await mergeCopyFromForm(supabase, id, form);
+      const { before, after: merged } = await mergeCopyFromForm(supabase, id, form);
       await supabase.from('marketing_posts')
         .update({ copy: merged, status: 'approved', scheduled_for: now(), updated_at: now() }).eq('id', id);
       await requeuePubs([id]);
@@ -545,11 +629,13 @@ Deno.serve(async (req) => {
       flash = triggered.ok
         ? 'Saved edits and publishing now — sending approved copy to X / Instagram / Threads; it’ll show as published in a few minutes.'
         : `Approved and queued — the 5-minute publish runner will pick it up automatically. Instant trigger did not fire${triggered.reason ? ` (${triggered.reason})` : ''}.`;
+      await logEvent(supabase, { postId: id, action, before: { copy: before }, after: { copy: merged, triggered: triggered.ok } });
     } else if (id && action === 'retry') {
       await supabase.from('marketing_post_publications')
         .update({ status: 'queued', error: null }).eq('post_id', id).eq('status', 'failed');
       await supabase.from('marketing_posts').update({ status: 'approved', updated_at: now() }).eq('id', id);
       flash = 'Failed platforms re-queued — they retry on the next publish run.';
+      await logEvent(supabase, { postId: id, action });
     } else if (id && action === 'regenerate') {
       // Send it back to the start of the pipeline so the copy worker rewrites it
       // (keep media/slug — the render overwrites them). It stays visible as "Queued".
@@ -559,13 +645,15 @@ Deno.serve(async (req) => {
       flash = triggered.ok
         ? 'Regenerating — the Codex weekly worker will rewrite this post. Refresh in a few minutes.'
         : 'Marked for regeneration — it rebuilds on the next weekly batch.';
+      await logEvent(supabase, { postId: id, action, after: { triggered: triggered.ok } });
     } else if (id) {
-      const merged = await mergeCopyFromForm(supabase, id, form);
+      const { before, after: merged } = await mergeCopyFromForm(supabase, id, form);
       const patch: Record<string, unknown> = { copy: merged, updated_at: now() };
       if (action === 'approve') patch.status = 'approved';
       await supabase.from('marketing_posts').update(patch).eq('id', id);
       if (action === 'approve') await requeuePubs([id]);
       flash = action === 'approve' ? 'Approved — it will publish on its day.' : 'Saved.';
+      await logEvent(supabase, { postId: id, action, before: { copy: before }, after: { copy: merged } });
     }
   }
 
@@ -599,6 +687,28 @@ Deno.serve(async (req) => {
       if (!metrics.has(r.publication_id)) metrics.set(r.publication_id, { views: r.views || 0, likes: r.likes || 0 });
     }
   }
+
+  // In-product observability: recent audit-log events, recent batch runs, and
+  // last-run status for the 3 marketing GitHub Actions workflows. All purely
+  // additive/read-only — none of this can affect the actions above.
+  const { data: recentEvents } = await supabase
+    .from('marketing_review_events')
+    .select('actor, action, post_id, occurred_at')
+    .order('occurred_at', { ascending: false })
+    .limit(20);
+
+  const { data: recentRuns } = await supabase
+    .from('marketing_batch_runs')
+    .select('run_type, status, started_at, finished_at, counts, error')
+    .order('started_at', { ascending: false })
+    .limit(10);
+
+  const WORKFLOWS = [
+    { id: 'marketing-weekly-batch.yml', label: 'Weekly batch' },
+    { id: 'marketing-publish.yml', label: 'Publish' },
+    { id: 'marketing-learning-prep.yml', label: 'Learning prep' },
+  ];
+  const workflowStatuses = await Promise.all(WORKFLOWS.map((w) => workflowStatus(w.id)));
 
   const active = posts || [];
   const counts = {
@@ -634,6 +744,7 @@ Deno.serve(async (req) => {
       <button type="button" class="tab" data-show="approved">Approved ${counts.approved}</button>
       <button type="button" class="tab" data-show="rejected">Rejected ${counts.rejected}</button>
     </div>
+    <div class="stats">${WORKFLOWS.map((w, i) => ghChip(w.label, workflowStatuses[i])).join('')}</div>
   </div>`;
 
   const list = active.length ? dayBlocks
@@ -643,12 +754,23 @@ Deno.serve(async (req) => {
     ? `<div class="dayhead">Recently published</div>${(history || []).map((p) => histLine(p, metrics)).join('')}`
     : '';
 
+  // Secondary/diagnostic info, collapsed by default so it doesn't compete
+  // with the primary review flow above.
+  const activityHtml = (recentEvents || []).length
+    ? `<details class="src" style="margin-top:22px"><summary>Recent activity (${recentEvents!.length})</summary>${(recentEvents || []).map((e) => eventLine(e)).join('')}</details>`
+    : '';
+  const runsHtml = (recentRuns || []).length
+    ? `<details class="src"><summary>Recent batch runs (${recentRuns!.length})</summary>${(recentRuns || []).map((r) => runLine(r)).join('')}</details>`
+    : '';
+
   const html = shell(
     `${topbar}
      ${paused ? '<div class="paused-note">⏸ Publishing is paused — approved posts will not be sent until you resume.</div>' : ''}
      ${flash ? `<div class="flash">${esc(flash)}</div>` : ''}
      ${acted ? `<span id="acted" data-target="p-${esc(acted)}"></span>` : ''}
      ${list}
-     ${historyHtml}`);
+     ${historyHtml}
+     ${activityHtml}
+     ${runsHtml}`);
   return new Response(html, { headers: { 'content-type': 'text/html; charset=utf-8', ...setCookie } });
 });

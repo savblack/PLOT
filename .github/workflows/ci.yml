@@ -113,6 +113,12 @@ jobs:
       - name: Website unit tests
         run: npm run test:website
 
+      # marketing/ isn't an npm workspace, so this suite otherwise never runs
+      # anywhere — it caught nothing when the Codex/Claude CLI shell-outs broke
+      # twice in production (d1caa11, 31f4d72) because it wasn't wired in yet.
+      - name: Marketing unit tests
+        run: npm run test:marketing
+
       - name: Build
         run: npm run build
         env:

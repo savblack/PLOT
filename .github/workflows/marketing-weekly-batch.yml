@@ -27,8 +27,12 @@ jobs:
 
       - run: npm ci
 
+      # Pinned, not @latest: 31f4d72 is what an unpinned CLI install costs you
+      # here — a flag this workflow relied on was removed upstream and broke
+      # every run until someone noticed. Bump this version deliberately, in
+      # its own PR, not automatically.
       - name: Install Claude Code CLI
-        run: npm install -g @anthropic-ai/claude-code
+        run: npm install -g @anthropic-ai/claude-code@2.1.226
 
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium

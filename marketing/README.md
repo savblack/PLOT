@@ -8,8 +8,10 @@ This system now runs in one primary path:
 4. On Sunday, the learning loop compares generated copy with what actually shipped.
 5. That learning updates the voice/spec before the next weekly generation runs.
 
-The production worker is **Codex**. Local/manual commands still exist, but they
-are fallback and debug tools, not the primary operating model.
+The production worker is **Claude Code CLI** (`marketing-weekly-batch.yml` runs
+`--copy-runner=claude`). Codex remains the default for local/manual runs and is
+still fully supported — it just isn't what CI actually invokes. Local/manual
+commands exist as fallback and debug tools, not the primary operating model.
 
 ## Primary flow
 
@@ -27,7 +29,7 @@ Every day
 
 - **Primary operator UI:** `https://admin.theplot.tv`
 - **Primary automation layer:** GitHub Actions
-- **Primary copy worker:** Codex
+- **Primary copy worker:** Claude Code CLI in CI; Codex is the local/manual default
 - **Fallback/debug only:** local commands from `marketing/`
 
 ## Local commands
@@ -48,7 +50,8 @@ npm run learn:assert
 Notes:
 
 - `npm run weekly` is the local end-to-end batch runner.
-- Codex is the default copy runner.
+- Codex is the default copy runner **for local runs only** — pass
+  `--copy-runner=claude` to match what CI actually uses in production.
 - `--copy-command='...'` is still available for fallback/debug use.
 - `npm run learn:prepare` refreshes metrics and builds the Sunday comparison artifact.
 - `npm run learn:apply` waits for that artifact, writes the Markdown learning
@@ -149,7 +152,8 @@ is no longer a co-equal operating path. See
 
 ## Copy contract
 
-The copy contract is model-agnostic, but the production runner is Codex:
+The copy contract is model-agnostic, but the production runner is the Claude
+Code CLI (Codex is the local/manual default):
 
 - `marketing/copy/pull.mjs` writes one brief per pending post
 - the worker writes one `<post_id>.copy.json` response per brief
@@ -165,7 +169,9 @@ The validation boundary remains in `marketing/copy/schema.mjs`.
 2. Set secrets for Supabase, TMDB, OMDb, Buffer, Resend, the admin email, and
    `CODEX_AUTH` for the unattended GitHub Codex worker.
 3. Set `ADMIN_PASSWORD` on `admin-review` for `admin.theplot.tv`.
-4. Ensure Codex CLI is installed on the Mac that runs the Sunday learning writer.
+4. Ensure Codex CLI is installed on the Mac that runs the Sunday learning
+   writer (`npm run learn:apply -- --runner=claude` uses Claude Code CLI
+   instead, if Codex is ever unavailable).
 5. Schedule the local Sunday runner to call `npm run learn:apply`.
    A ready-to-install `launchd` template lives at
    `marketing/ops/com.plot.marketing-learning.plist`.

@@ -19,6 +19,7 @@
     "test:unit": "npm run test:unit -w @plot/web && npm run test:unit -w @plot/core",
     "test:smoke": "npm run test:smoke -w @plot/web",
     "test:website": "node --test apps/website/functions/_lib/*.test.js",
+    "test:marketing": "node --test marketing/tests/*.test.mjs",
     "footer": "node scripts/build-footer.mjs",
     "footer:check": "node scripts/build-footer.mjs --check",
     "tokens:build": "node scripts/build-tokens.mjs --write",

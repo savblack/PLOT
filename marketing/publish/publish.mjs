@@ -145,61 +145,96 @@ const notifyIndexNow = async (posts) => {
   }
 };
 
+// Durable run history (marketing_batch_runs), mirroring the shape
+// marketing_learning_runs already proved out for the Sunday learning loop.
+// Defensively wrapped, unlike that table's write: this is incidental
+// telemetry about publish.mjs, not its actual job, so a tracking failure
+// must never fail (or worse, retry) a real publish run.
+const startBatchRun = async (supabase) => {
+  try {
+    const { data } = await supabase.from('marketing_batch_runs').insert({ run_type: 'publish' }).select('id').single();
+    return data?.id ?? null;
+  } catch (err) {
+    console.error('Failed to start batch run record:', err.message);
+    return null;
+  }
+};
+
+const finishBatchRun = async (supabase, runId, patch) => {
+  if (!runId) return;
+  try {
+    await supabase.from('marketing_batch_runs').update({ finished_at: new Date().toISOString(), ...patch }).eq('id', runId);
+  } catch (err) {
+    console.error('Failed to finish batch run record:', err.message);
+  }
+};
+
 const main = async () => {
   const supabase = getSupabase();
+  const runId = await startBatchRun(supabase);
 
-  if (await publishingPaused(supabase)) {
-    console.log('Publishing is paused (marketing_settings.publishing_paused) — nothing sent.');
-    return;
-  }
-
-  if (process.argv.includes('--retry-failed')) {
-    const { data: requeued } = await supabase
-      .from('marketing_post_publications')
-      .update({ status: 'queued', error: null })
-      .eq('status', 'failed')
-      .select('id');
-    console.log(`Re-queued ${requeued?.length || 0} failed publication(s).`);
-    // Their posts need to be publishable again too.
-    await supabase
-      .from('marketing_posts')
-      .update({ status: 'approved' })
-      .in('status', ['partially_published', 'failed']);
-  }
-
-  const { data: posts, error } = await supabase
-    .from('marketing_posts')
-    .select('*, marketing_post_publications(*)')
-    .eq('status', 'approved')
-    .lte('scheduled_for', new Date().toISOString());
-  if (error) throw new Error(error.message);
-
-  if (!posts?.length) {
-    console.log('Nothing to publish.');
-    return;
-  }
-
-  const newlyPublic = [];
-  for (const post of posts) {
-    if (!(await stillPublishable(supabase, post.id))) continue;
-
-    const queued = (post.marketing_post_publications || []).filter(p => p.status === 'queued');
-    const outcomes = [];
-    for (const pub of queued) {
-      const outcome = await publishOne(supabase, post, pub);
-      if (outcome) outcomes.push(outcome);
+  try {
+    if (await publishingPaused(supabase)) {
+      console.log('Publishing is paused (marketing_settings.publishing_paused) — nothing sent.');
+      await finishBatchRun(supabase, runId, { status: 'succeeded', counts: { paused: true } });
+      return;
     }
-    if (!outcomes.length) continue;
 
-    const status = finalStatus(outcomes);
-    await supabase.from('marketing_posts')
-      .update({ status, updated_at: new Date().toISOString() })
-      .eq('id', post.id)
-      .eq('status', 'approved');
-    if (status === 'published' || status === 'partially_published') newlyPublic.push(post);
-    console.log(`${post.topic_key}: ${status} (${outcomes.join(', ')})`);
+    if (process.argv.includes('--retry-failed')) {
+      const { data: requeued } = await supabase
+        .from('marketing_post_publications')
+        .update({ status: 'queued', error: null })
+        .eq('status', 'failed')
+        .select('id');
+      console.log(`Re-queued ${requeued?.length || 0} failed publication(s).`);
+      // Their posts need to be publishable again too.
+      await supabase
+        .from('marketing_posts')
+        .update({ status: 'approved' })
+        .in('status', ['partially_published', 'failed']);
+    }
+
+    const { data: posts, error } = await supabase
+      .from('marketing_posts')
+      .select('*, marketing_post_publications(*)')
+      .eq('status', 'approved')
+      .lte('scheduled_for', new Date().toISOString());
+    if (error) throw new Error(error.message);
+
+    if (!posts?.length) {
+      console.log('Nothing to publish.');
+      await finishBatchRun(supabase, runId, { status: 'succeeded', counts: { posts: 0 } });
+      return;
+    }
+
+    const newlyPublic = [];
+    const statusCounts = {};
+    for (const post of posts) {
+      if (!(await stillPublishable(supabase, post.id))) continue;
+
+      const queued = (post.marketing_post_publications || []).filter(p => p.status === 'queued');
+      const outcomes = [];
+      for (const pub of queued) {
+        const outcome = await publishOne(supabase, post, pub);
+        if (outcome) outcomes.push(outcome);
+      }
+      if (!outcomes.length) continue;
+
+      const status = finalStatus(outcomes);
+      await supabase.from('marketing_posts')
+        .update({ status, updated_at: new Date().toISOString() })
+        .eq('id', post.id)
+        .eq('status', 'approved');
+      if (status === 'published' || status === 'partially_published') newlyPublic.push(post);
+      statusCounts[status] = (statusCounts[status] || 0) + 1;
+      console.log(`${post.topic_key}: ${status} (${outcomes.join(', ')})`);
+    }
+    if (!DRY_RUN) await notifyIndexNow(newlyPublic);
+    await finishBatchRun(supabase, runId, { status: 'succeeded', counts: { posts: posts.length, ...statusCounts } });
+  } catch (err) {
+    await finishBatchRun(supabase, runId, { status: 'failed', error: String(err.message || err).slice(0, 500) });
+    throw err;
   }
-  if (!DRY_RUN) await notifyIndexNow(newlyPublic);
 };
 
 main().catch((err) => { console.error(err); process.exit(1); });

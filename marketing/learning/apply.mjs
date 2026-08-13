@@ -5,6 +5,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { getSupabase } from '../lib/supabase.mjs';
 import { sundayLearningWindow } from './window.mjs';
+import { runCli } from '../lib/cli-runner.mjs';
 
 const REPO_ROOT = path.join(path.dirname(new URL(import.meta.url).pathname), '..', '..');
 const TARGET_FILES = ['marketing/VOICE.md', 'marketing/copy/AGENT.md'];
@@ -70,6 +71,9 @@ const main = async () => {
   const args = parseArgs(process.argv.slice(2));
   const waitSeconds = Math.max(60, Number(args.get('--wait-seconds', '2700')) || 2700);
   const allowNonMain = args.has('--allow-non-main');
+  // Defaults to codex (unchanged behavior); pass --runner=claude as a
+  // fallback if codex ever breaks again the way it did in 31f4d72.
+  const runner = args.get('--runner', 'codex');
   const supabase = getSupabase();
   const window = sundayLearningWindow(new Date());
 
@@ -103,16 +107,10 @@ const main = async () => {
   await mkdir(path.dirname(summaryPath), { recursive: true });
   await writeFile(artifactPath, JSON.stringify(runRow.artifact, null, 2));
 
-  const codex = spawnSync('codex', [
-    'exec',
-    '--dangerously-bypass-approvals-and-sandbox',
-    promptFor(artifactPath, summaryPath),
-  ], {
+  runCli('Sunday learning writer', runner, promptFor(artifactPath, summaryPath), { dangerous: true }, {
     cwd: REPO_ROOT,
-    stdio: 'inherit',
     env: process.env,
   });
-  if (codex.status !== 0) throw new Error(`Codex learning writer failed with exit code ${codex.status ?? 1}.`);
   if (!existsSync(summaryPath)) throw new Error(`Learning summary was not written to ${summaryPath}.`);
 
   run('git', ['add', ...TARGET_FILES]);

@@ -40,6 +40,24 @@ Supabase REST API. Everything is $0 and uses the repo's existing contracts.
 - Lifecycle: `planned → copy_ready → generated → needs_review → approved → published`.
   `vetoed` = rejected. **The publisher sends only `status='approved'` posts whose
   publication rows are `queued`.**
+- `marketing_review_events`: append-only audit trail, read on the web desk as
+  "Recent activity." **After every edit/approve/reject/publish action in §3–§5, POST
+  one row here** — this runbook bypasses `admin-review/index.ts` entirely, so nothing
+  else logs actions taken through you. Skipping it is a permanent blind spot in the
+  trail, not a cosmetic gap. `actor` is always `marketing_week_skill` (never a name —
+  auth here is one shared service key, same as the web desk's one shared password):
+  ```bash
+  node --env-file=.env -e '
+    const u=process.env.SUPABASE_URL||process.env.VITE_SUPABASE_URL, k=process.env.SUPABASE_SERVICE_ROLE_KEY||process.env.SUPABASE_SERVICE_KEY;
+    const h={apikey:k,Authorization:`Bearer ${k}`,"Content-Type":"application/json"};
+    fetch(`${u}/rest/v1/marketing_review_events`,{method:"POST",headers:h,
+      body:JSON.stringify({actor:"marketing_week_skill",action:"approve",post_id:"<id>",after:{note:"optional"}})});
+  '
+  ```
+  `action` is a free-text verb matching what you did (`edit`, `regenerate`, `reschedule`,
+  `approve`, `approve_all`, `reject`, `unapprove`, `publish_now`, `retry`, `pause`, `resume`).
+  `post_id` is required for per-post actions, omit it for week-wide ones (`approve_all`,
+  `pause`, `resume`).
 
 ## 1. Load & summarise the week
 Query active posts, grouped by AEST (Australia/Sydney) day:
@@ -83,6 +101,10 @@ a paid API; see `marketing/copy/AGENT.md`).
   `node --env-file=.env marketing/preview/copy-export.mjs && open marketing/preview/out/copy.csv`
   → edit the copy columns → `node --env-file=.env marketing/preview/copy-import.mjs --dry`
   to preview, then without `--dry` to apply. Keys by id, PATCHes only changed fields.
+- **Log it**: one `marketing_review_events` row per post touched (§0), `action` = `edit`
+  or `regenerate` or `reschedule`. For the bulk-spreadsheet path, one row per post is
+  still preferred, but a single row summarizing the whole batch (`after` listing the ids)
+  is acceptable if you edited many at once.
 
 ## 4. Approve / reject (mirror admin-review exactly)
 - **Approve**: set `status='approved'` AND re-queue its publication rows
@@ -91,6 +113,8 @@ a paid API; see `marketing/copy/AGENT.md`).
 - **Approve the week**: every `needs_review` → `approved`, then re-queue all their rows.
 - **Reject**: `status='vetoed'` and set its `queued` publication rows → `skipped`.
 - **Unapprove / restore**: back to `needs_review`.
+- **Log it**: one `marketing_review_events` row per action (§0) — `action` = `approve`,
+  `approve_all` (no `post_id`; put the affected ids in `after`), `reject`, or `unapprove`.
 
 ## 5. Publish
 Approved posts publish on their scheduled day via the daily GitHub run — nothing more
@@ -103,6 +127,8 @@ Single post now: set it `approved`, `scheduled_for=now()`, re-queue its rows, th
 Buffer gotcha (handled in `marketing/publish/buffer.mjs`): Instagram needs
 `metadata.instagram = { type: post, shouldShareToFeed: true }`; X copy must have no URL.
 After a run, verify each post's `marketing_post_publications.status`/`permalink`.
+- **Log it**: one `marketing_review_events` row (§0) — `action` = `publish_now`, `retry`,
+  `pause`, or `resume` (the last two take no `post_id`).
 
 ## 6. Newsletter
 Preview it in the sheet (§2). Edit subject/content on request (built in
