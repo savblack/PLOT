@@ -45,6 +45,9 @@ npm-workspaces monorepo. `npm ci` at root installs everything. `legacy-peer-deps
 - `apps/website/` — static marketing site (theplot.tv) → Cloudflare Pages. Plain
   HTML/CSS/JS, no build step, **not an npm workspace.** SSR routes are Pages Functions
   in `apps/website/functions/` (admin-host routing via `functions/_middleware.js`).
+  Serve it with `npm run dev:website`, never a plain static server — the pages render
+  either way, but `functions/` routes 404 and the homepage's TMDB surfaces go silently
+  empty. See `apps/website/README.md`.
 - `supabase/` — `functions/` (Deno edge functions), `migrations/`, `config.toml`.
 - `marketing/` — automation runbooks (see Marketing). `scripts/` — repo tooling.
 
@@ -53,6 +56,7 @@ npm-workspaces monorepo. `npm ci` at root installs everything. `legacy-peer-deps
 Run from repo root unless noted. Use **npm** (workspaces), never yarn/pnpm.
 
 - `npm run dev` — web dev server (Vite, port 5177)
+- `npm run dev:website` — marketing site + its Pages Functions (wrangler, port 5202)
 - `npm run check` — **lint + build; run this before every PR** (after `npm ci`)
 - `npm run lint` / `npm run build`
 - `npm run test:unit` — `node --test` unit tests (`apps/web/tests/unit/`)
