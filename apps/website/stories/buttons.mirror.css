@@ -38,12 +38,12 @@
 }
 .btn-outline-white {
   background: transparent;
-  color: #fff;
-  border: 1px solid #fff;
+  color: var(--text);
+  border: 1px solid var(--text);
 }
 .btn-outline-white:hover {
-  background: #fff;
-  color: #0e0e0e;
+  background: var(--text);
+  color: #fff;
   transform: translateY(-1px);
 }
 .btn-large {
