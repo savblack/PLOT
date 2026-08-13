@@ -203,6 +203,21 @@ export const SETTINGS_VIEW = {
     leaveFeedbackLabel: 'Leave Feedback',
   },
 
+  // Data-source attribution. TMDB's API terms require the notice below verbatim
+  // and ask for it on an About or Credits style surface rather than buried in
+  // legal pages, which is why this is its own settings group and not a line in
+  // the Terms page. TVMaze and OMDb ask for credit too, so they sit here with it.
+  credits: {
+    groupTitle: 'Credits',
+    intro: 'PLOT is built on data from these sources.',
+    tmdbName: 'TMDB',
+    tmdbNotice: 'This product uses the TMDB API but is not endorsed or certified by TMDB.',
+    tvmazeName: 'TVmaze',
+    tvmazeNotice: 'Episode air dates and the TV guide use the TVmaze API.',
+    omdbName: 'OMDb',
+    omdbNotice: 'Critic scores are retrieved through the OMDb API.',
+  },
+
   dangerZone: {
     groupTitle: 'Danger Zone',
     clearListsAria: 'Clear lists',

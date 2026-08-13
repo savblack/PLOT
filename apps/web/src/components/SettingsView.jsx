@@ -2576,6 +2576,32 @@ export default function SettingsView() {
         </div>
       </div>
 
+      {/* Credits — TMDB's API terms ask for the notice on an About/Credits
+          surface, not only in the legal pages. See copy/settingsView.js. */}
+      <div className="settings-group">
+        <div className="settings-group-title">{SETTINGS_VIEW.credits.groupTitle}</div>
+        <div className="settings-credits">
+          <p className="settings-credits-intro">{SETTINGS_VIEW.credits.intro}</p>
+          {/* TMDB also asks for their approved logo alongside this notice. Drop
+              the official SVG at apps/web/public/tmdb.svg and swap this span for
+              an <img src="/tmdb.svg" class="settings-credit-logo">; the style is
+              already defined. Not shipped yet because the asset is theirs to
+              provide, and a wrong or redrawn mark is worse than none. */}
+          <div className="settings-credit">
+            <span className="settings-credit-name">{SETTINGS_VIEW.credits.tmdbName}</span>
+            <p className="settings-credit-notice">{SETTINGS_VIEW.credits.tmdbNotice}</p>
+          </div>
+          <div className="settings-credit">
+            <span className="settings-credit-name">{SETTINGS_VIEW.credits.tvmazeName}</span>
+            <p className="settings-credit-notice">{SETTINGS_VIEW.credits.tvmazeNotice}</p>
+          </div>
+          <div className="settings-credit">
+            <span className="settings-credit-name">{SETTINGS_VIEW.credits.omdbName}</span>
+            <p className="settings-credit-notice">{SETTINGS_VIEW.credits.omdbNotice}</p>
+          </div>
+        </div>
+      </div>
+
       {/* Danger zone */}
       <div className="settings-group">
         <div className="settings-group-title">{SETTINGS_VIEW.dangerZone.groupTitle}</div>

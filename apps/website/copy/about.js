@@ -26,4 +26,17 @@ export const ABOUT_PAGE = {
     'If you enjoy using PLOT, you can support it directly on <a href="https://ko-fi.com/J7P123TYGK" target="_blank" rel="noopener">Ko-fi</a>, this helps cover what it actually costs to run and continue improving it.',
     "Thank you for reading this. Thank you for considering PLOT. And if you're already a user, thank you for backing a solo builder trying to make a life out of building beautiful things.",
   ],
+
+  // Data-source attribution. TMDB's API terms require their notice verbatim and
+  // ask for it on an About or Credits surface, not only in the legal pages.
+  // Mirrors the Credits group in packages/core/copy/settingsView.js.
+  credits: {
+    title: 'Credits',
+    intro: 'PLOT is built on data from these sources.',
+    items: [
+      { name: 'TMDB', notice: 'This product uses the TMDB API but is not endorsed or certified by TMDB.' },
+      { name: 'TVmaze', notice: 'Episode air dates and the TV guide use the TVmaze API.' },
+      { name: 'OMDb', notice: 'Critic scores are retrieved through the OMDb API.' },
+    ],
+  },
 };

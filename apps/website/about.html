@@ -130,6 +130,26 @@
       text-align: left;
     }
     .lead { font-size: 1.12rem; color: #1a1a1a; line-height: 1.6; }
+    .credits-title {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      margin: 3rem 0 0.75rem;
+      padding-top: 2rem;
+      border-top: 1px solid var(--border);
+    }
+    .credits-intro { font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.75rem; }
+    .credits-list { list-style: none; padding: 0; margin: 0; }
+    .credits-list li {
+      font-size: 0.85rem;
+      line-height: 1.5;
+      color: var(--text-secondary);
+      padding: 0.6rem 0;
+      border-top: 1px solid var(--border);
+    }
+    .credits-list strong { color: #1a1a1a; font-weight: 600; }
     p strong { color: var(--text); font-weight: 600; }
 
     a { color: var(--text); }
@@ -252,6 +272,17 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <p>If you enjoy using PLOT, you can support it directly on <a href="https://ko-fi.com/J7P123TYGK" target="_blank" rel="noopener" data-cta="about-kofi">Ko-fi</a>, this helps cover what it actually costs to run and continue improving it.</p>
 
     <p>Thank you for reading this. Thank you for considering PLOT. And if you're already a user, thank you for backing a solo builder trying to make a life out of building beautiful things.</p>
+
+    <!-- Credits. TMDB's API terms require their notice verbatim and ask for it on
+         an About or Credits surface rather than only in the legal pages. Keep in
+         sync with copy/about.js and with the app's Settings credits group. -->
+    <h2 class="credits-title">Credits</h2>
+    <p class="credits-intro">PLOT is built on data from these sources.</p>
+    <ul class="credits-list">
+      <li><strong>TMDB.</strong> This product uses the TMDB API but is not endorsed or certified by TMDB.</li>
+      <li><strong>TVmaze.</strong> Episode air dates and the TV guide use the TVmaze API.</li>
+      <li><strong>OMDb.</strong> Critic scores are retrieved through the OMDb API.</li>
+    </ul>
   </main>
 
   <!-- footer:start (generated from _partials/footer.html — edit there, then run `npm run footer`) -->
