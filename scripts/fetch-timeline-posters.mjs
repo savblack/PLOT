@@ -1,12 +1,20 @@
 // Resolves marketing-site timeline posters via TMDB search (never hardcoded IDs)
-// and downloads them to website/images/timeline/.
-// Usage: node scripts/fetch-timeline-posters.mjs
+// and downloads them to apps/website/images/timeline/.
+//
+// Usage — from the repo root (the main checkout, not a worktree: that's where
+// the root .env with TMDB_API_KEY lives):
+//   node --env-file=.env scripts/fetch-timeline-posters.mjs
+//
+// Talks to api.themoviedb.org directly, like every other server-side script
+// here. The tmdb-proxy Edge Function is not an option: it only answers requests
+// carrying TMDB_PROXY_SHARED_SECRET, which the Cloudflare Worker adds as the
+// admission-control boundary for browser traffic.
 import { writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
-const PROXY = 'https://mkegtssedjyqldysvzga.supabase.co/functions/v1/tmdb-proxy';
-const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1rZWd0c3NlZGp5cWxkeXN2emdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2MDgzMzUsImV4cCI6MjA4OTE4NDMzNX0.W-toEr3ftNeN0iTpRQ8Ord09sxBiwO2CQC6j2jszN6w';
+const BASE = 'https://api.themoviedb.org/3';
+const TMDB_KEY = process.env.TMDB_API_KEY;
 const IMG = 'https://image.tmdb.org/t/p/w342';
 const OUT_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'apps', 'website', 'images', 'timeline');
 
@@ -21,8 +29,14 @@ const WANTED = [
 ];
 
 async function search(query) {
-  const url = `${PROXY}?path=${encodeURIComponent('search/multi')}&query=${encodeURIComponent(query)}&language=en-US`;
-  const res = await fetch(url, { headers: { Authorization: `Bearer ${ANON_KEY}` } });
+  const url = new URL(`${BASE}/search/multi`);
+  url.searchParams.set('query', query);
+  url.searchParams.set('language', 'en-US');
+  const headers = {};
+  // v4 read tokens are JWTs (Bearer header); v3 keys go in the query string.
+  if (TMDB_KEY.startsWith('eyJ')) headers.Authorization = `Bearer ${TMDB_KEY}`;
+  else url.searchParams.set('api_key', TMDB_KEY);
+  const res = await fetch(url, { headers });
   if (!res.ok) throw new Error(`Search failed for "${query}": ${res.status}`);
   return (await res.json()).results || [];
 }
@@ -42,6 +56,11 @@ function pickMatch(results, { query, type, year }) {
     return bHit - aHit || b.popularity - a.popularity;
   });
   return candidates[0] || results.find(r => r.media_type === type && r.poster_path) || null;
+}
+
+if (!TMDB_KEY) {
+  console.error('TMDB_API_KEY is not set. Run from the repo root: node --env-file=.env scripts/fetch-timeline-posters.mjs');
+  process.exit(1);
 }
 
 for (const wanted of WANTED) {
