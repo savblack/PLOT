@@ -17,6 +17,10 @@ export default defineConfig([
     '.claude', 'apps/website/.claude',
     'supabase/.temp', 'node_modules', 'archive/',
     'apps/mobile/ios/**', 'apps/mobile/android/**', 'apps/mobile/.expo/**',
+    // Same story: `wrangler dev`/`pages dev` writes bundled worker JS under
+    // .wrangler/tmp/, so running `npm run dev:website` once leaves lint errors
+    // behind in generated code that nobody wrote.
+    '.wrangler', '**/.wrangler/**',
   ]),
   {
     files: ['**/*.{js,jsx}'],

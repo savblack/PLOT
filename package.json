@@ -12,6 +12,7 @@
   ],
   "scripts": {
     "dev": "npm run dev -w @plot/web",
+    "dev:website": "cd apps/website && wrangler pages dev . --port 5202 --compatibility-date=2025-06-01",
     "build": "npm run build -w @plot/web",
     "preview": "npm run preview -w @plot/web",
     "lint": "eslint .",
