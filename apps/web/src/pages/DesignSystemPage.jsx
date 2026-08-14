@@ -642,6 +642,17 @@ export default function DesignSystemPage() {
           </div>
 
           <div className="ds-card-example">
+            <span className="ds-example-label">Season bulk action</span>
+            <div className="season-bulk">
+              <div className="season-bulk-info">
+                <span className="season-bulk-title">Season 2</span>
+                <span className="season-bulk-count">4 of 10 watched</span>
+              </div>
+              <button className="season-bulk-btn">Mark season watched</button>
+            </div>
+          </div>
+
+          <div className="ds-card-example">
             <span className="ds-example-label">Episode row</span>
             <div className="episode-list ds-episode-sample">
               <div className="ep-row ep-current">
