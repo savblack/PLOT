@@ -15,11 +15,6 @@ export const SHOW_MEDIA_SYNC_INTEGRATIONS = false;
 export const SHOW_GOOGLE_LOGIN = import.meta.env.VITE_SHOW_GOOGLE_LOGIN === 'true';
 export const SHOW_APPLE_LOGIN = false;
 
-// Social activity feed (follow/global "what your friends are watching"). Hidden
-// from users for now while it's still being finished; all the code stays in place
-// (FeedView, FeedPost, useFeed, etc.). Flip to true to bring it back.
-export const SHOW_SOCIAL_FEED = false;
-
 // Watchlist availability alerts row in Settings. Hidden from all users for now;
 // all the code (toggle, test-send, edge function) stays in place. Flip to true
 // to bring it back.
