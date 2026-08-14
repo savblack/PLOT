@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { assess } from '../src/index.js';
+import { assess, assessSentinel } from '../src/index.js';
 
 const NOW = Date.parse('2026-08-15T05:00:00Z');
 const OPTS = { maxAgeHours: 26, minBytes: 500000, now: NOW };
@@ -41,4 +41,31 @@ test('a present but truncated dump fails — presence alone is not health', () =
 test('age is checked before size, so a stale tiny dump reports the missed run', () => {
   const v = assess(obj(40, 10), OPTS);
   assert.match(v.reason, /did not happen/);
+});
+
+const sentinel = (hoursAgo) => ({
+  key: 'storage-mirror/_synced-at.txt',
+  size: 21,
+  uploaded: new Date(NOW - hoursAgo * 36e5),
+});
+
+test('a recent Storage sentinel passes', () => {
+  assert.equal(assessSentinel(sentinel(3), OPTS).ok, true);
+});
+
+test('a missing Storage sentinel fails — the mirror never completed', () => {
+  const v = assessSentinel(null, OPTS);
+  assert.equal(v.ok, false);
+  assert.match(v.reason, /never completed a run/);
+});
+
+test('a stale Storage sentinel fails even though sync uploads nothing on quiet nights', () => {
+  const v = assessSentinel(sentinel(30), OPTS);
+  assert.equal(v.ok, false);
+  assert.match(v.reason, /last completed/);
+});
+
+test('the sentinel is aged, not sized — a 21-byte timestamp is legitimately tiny', () => {
+  // Guards against anyone reusing the dump's MIN_BYTES floor here by mistake.
+  assert.equal(assessSentinel({ ...sentinel(1), size: 21 }, OPTS).ok, true);
 });

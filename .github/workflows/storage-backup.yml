@@ -1,0 +1,81 @@
+# Nightly Supabase Storage → Cloudflare R2 mirror.
+#
+# WHY: db-backup.yml dumps the database, and `pg_dump` captures `storage.objects`
+# METADATA but not object bytes. A restore therefore rebuilds rows pointing at
+# avatars and marketing images that no longer exist. Found 2026-08-14 while
+# restore-testing the database backup, which had never been drilled.
+#
+# Uses the same R2 secrets as db-backup.yml — no new credentials needed.
+# Requires SUPABASE_SERVICE_ROLE_KEY (already set) to read private buckets.
+#
+# Restore: objects live under `storage-mirror/<bucket>/<path>` in the same
+# bucket as the database dumps. See docs/ops/db-restore.md.
+
+name: Storage backup (nightly → R2)
+
+on:
+  schedule:
+    - cron: '47 3 * * *'   # 30 min after the DB dump, so the two are close together
+  workflow_dispatch: {}
+
+concurrency:
+  group: storage-backup
+  cancel-in-progress: false
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      AWS_ACCESS_KEY_ID:     ${{ secrets.R2_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION:    auto
+      R2_ENDPOINT:           ${{ secrets.R2_ENDPOINT }}
+      R2_BUCKET:             ${{ secrets.R2_BUCKET }}
+      # Same aws-cli/R2 checksum incompatibility as db-backup.yml.
+      AWS_REQUEST_CHECKSUM_CALCULATION:  when_required
+      AWS_RESPONSE_CHECKSUM_VALIDATION:  when_required
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Download every Storage object
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/backup-storage-buckets.mjs ./storage-mirror
+
+      - name: Mirror to R2
+        run: |
+          set -euo pipefail
+          aws configure set default.s3.addressing_style path
+          # Deliberately NO --delete. This is a backup, not a replica: if an
+          # avatar is deleted in Supabase by mistake, propagating that deletion
+          # into R2 would destroy the very copy we are keeping it for. The cost
+          # is that removed objects linger; at ~80MB total against R2's 10GB
+          # free tier that is not a real constraint.
+          aws s3 sync ./storage-mirror "s3://${R2_BUCKET}/storage-mirror/" \
+            --endpoint-url "$R2_ENDPOINT" --only-show-errors
+          # Sentinel so the backup-heartbeat Worker can tell "synced, nothing
+          # changed" from "never ran". `aws s3 sync` uploads nothing on a quiet
+          # night, so object freshness alone cannot distinguish the two.
+          date -u +%Y-%m-%dT%H:%M:%SZ > synced-at.txt
+          aws s3 cp synced-at.txt "s3://${R2_BUCKET}/storage-mirror/_synced-at.txt" \
+            --endpoint-url "$R2_ENDPOINT" --only-show-errors
+          echo "Mirrored $(find ./storage-mirror -type f | wc -l | tr -d ' ') objects"
+
+      - name: Alert on failure
+        if: failure()
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          ADMIN_EMAIL: ${{ secrets.MARKETING_ADMIN_EMAIL }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          WORKFLOW_NAME: storage-backup
+          ALERT_SUBJECT: 'PLOT: nightly STORAGE BACKUP failed'
+          FAILURE_NOTE: 'Avatar and marketing files were not mirrored to R2. The database dump does not contain object bytes, so these files are unrecoverable without this job.'
+        run: bash .github/scripts/marketing-alert.sh

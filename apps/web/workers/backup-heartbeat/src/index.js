@@ -86,11 +86,64 @@ async function sendAlert(env, verdict) {
   return { sent: true };
 }
 
+/**
+ * The Storage mirror needs a different test. `aws s3 sync` uploads nothing on a
+ * night where no avatar changed, so object freshness cannot distinguish "synced,
+ * nothing to do" from "never ran". storage-backup.yml therefore writes a
+ * `_synced-at.txt` sentinel on every run, and we age that instead.
+ *
+ * Exported for tests.
+ */
+export function assessSentinel(sentinel, { maxAgeHours, now }) {
+  if (!sentinel) {
+    return { ok: false, reason: 'The Storage mirror has no _synced-at.txt sentinel, so it has never completed a run.' };
+  }
+  const ageHours = (now - sentinel.uploaded.getTime()) / 36e5;
+  if (ageHours > maxAgeHours) {
+    return {
+      ok: false,
+      reason: `The Storage mirror last completed ${ageHours.toFixed(1)}h ago (threshold ${maxAgeHours}h).`,
+      newest: sentinel,
+      ageHours,
+    };
+  }
+  return { ok: true, newest: sentinel, ageHours };
+}
+
 async function check(env) {
   const maxAgeHours = Number(env.MAX_AGE_HOURS ?? 26);
-  const minBytes = Number(env.MIN_BYTES ?? 500000);
+  const minBytes = Number(env.MIN_BYTES ?? 200000);
+  const now = Date.now();
+
   const newest = await newestObject(env.BACKUPS, env.PREFIX ?? 'db-backups/');
-  const verdict = assess(newest, { maxAgeHours, minBytes, now: Date.now() });
+  const db = assess(newest, { maxAgeHours, minBytes, now });
+
+  // Gated deliberately. storage-backup.yml has never run — GitHub Actions has
+  // been refusing to start jobs since 2026-08-14 — so the sentinel genuinely
+  // does not exist yet and an enabled check would mail a true-but-useless alarm
+  // every morning about a condition already known. Flip CHECK_STORAGE to "true"
+  // once the first mirror run has completed. The alternative (treating a missing
+  // sentinel as healthy) would bake in exactly the silent-failure behaviour this
+  // Worker exists to prevent, so the gate is explicit rather than implicit.
+  const checkStorage = String(env.CHECK_STORAGE ?? 'false') === 'true';
+  const storage = checkStorage
+    ? assessSentinel(await env.BACKUPS.head(env.STORAGE_SENTINEL ?? 'storage-mirror/_synced-at.txt'), {
+        maxAgeHours,
+        now,
+      })
+    : { ok: true, reason: 'Storage check disabled (CHECK_STORAGE is not "true").', disabled: true };
+
+  const verdict = {
+    ok: db.ok && storage.ok,
+    db,
+    storage,
+    // Whichever half is broken is what the alarm should say.
+    reason: [db.ok ? null : `Database: ${db.reason}`, storage.ok ? null : `Storage: ${storage.reason}`]
+      .filter(Boolean)
+      .join(' '),
+    newest: db.newest ?? null,
+    ageHours: db.ageHours,
+  };
 
   if (!verdict.ok) {
     const alert = await sendAlert(env, verdict);
@@ -99,18 +152,29 @@ async function check(env) {
   return verdict;
 }
 
+const describe = (part) =>
+  part.newest
+    ? {
+        ok: part.ok,
+        key: part.newest.key,
+        size: part.newest.size,
+        uploaded: part.newest.uploaded.toISOString(),
+        ageHours: Number(part.ageHours?.toFixed(2)),
+      }
+    : { ok: part.ok, key: null, reason: part.reason };
+
 function summarise(verdict) {
   return {
     ok: verdict.ok,
-    reason: verdict.reason ?? 'A fresh dump is present.',
-    newest: verdict.newest
-      ? {
-          key: verdict.newest.key,
-          size: verdict.newest.size,
-          uploaded: verdict.newest.uploaded.toISOString(),
-          ageHours: Number(verdict.ageHours?.toFixed(2)),
-        }
-      : null,
+    // Never claim the Storage mirror is healthy while its check is switched
+    // off — an over-broad all-clear is worse than no message.
+    reason:
+      verdict.reason ||
+      (verdict.storage.disabled
+        ? 'A fresh database dump is present. The Storage mirror is NOT being checked.'
+        : 'A fresh database dump and a recent Storage sync are both present.'),
+    database: describe(verdict.db),
+    storage: describe(verdict.storage),
     alertSent: verdict.alert?.sent ?? false,
   };
 }

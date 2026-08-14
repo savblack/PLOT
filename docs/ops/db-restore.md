@@ -108,8 +108,18 @@ pg_restore --clean --if-exists --no-owner --no-privileges \
 - Backups contain password hashes + PII. Delete local decrypted copies when done.
   Prefer `scripts/db-restore-drill.sh`, which pipes the dump and never writes one.
 - Storage **objects** (files in buckets) are not in these dumps — only the `storage`
-  schema metadata. A restore therefore leaves avatar rows pointing at objects that no
-  longer exist. File contents need a separate bucket sync.
+  schema metadata, so a database restore alone leaves avatar rows pointing at objects
+  that no longer exist. The bytes are mirrored nightly by `storage-backup.yml` to
+  `storage-mirror/<bucket>/<path>` in the same R2 bucket. To put them back:
+
+  ```sh
+  aws s3 sync "s3://<bucket>/storage-mirror/avatars/" ./avatars \
+    --endpoint-url https://<account-id>.r2.cloudflarestorage.com
+  # then re-upload with the Storage API / dashboard into the `avatars` bucket
+  ```
+
+  That mirror runs **without** `--delete` on purpose: propagating a Supabase deletion
+  into the backup would destroy the copy you are keeping it for. Expect orphans.
 - **Do not restore Production into Staging.** It would copy real users' emails and
   password hashes into a second, less-guarded project. Drill against a throwaway local
   cluster instead — that is what the drill script does.
