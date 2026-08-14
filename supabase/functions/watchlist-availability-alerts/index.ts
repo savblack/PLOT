@@ -7,7 +7,6 @@
  *
  * Required secrets: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, TMDB_API_KEY,
  * RESEND_API_KEY, AVAILABILITY_ALERTS_CRON_SECRET.
- * Optional: SENTRY_DSN (reports run failures to Sentry; safe to omit).
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -47,32 +46,6 @@ type Provider = { id?: number; name?: string }
 type Profile = { id: string; region?: string; streaming_providers?: Provider[]; guide_channels?: Provider[] }
 type WatchlistItem = { user_id: string; tmdb_id: number; media_type: 'movie' | 'tv'; title: string }
 type Match = WatchlistItem & { providerId: number; providerName: string; region: string }
-
-// Minimal Sentry capture over plain fetch — the official SDKs assume Node/
-// browser globals that don't reliably exist in this Deno edge runtime, and a
-// cron job only needs "tell me when it broke," not full tracing.
-async function captureSentryError(error: unknown, extra?: Record<string, unknown>) {
-  const dsn = Deno.env.get('SENTRY_DSN')
-  if (!dsn) return
-  const match = dsn.match(/^https:\/\/([^@]+)@([^/]+)\/(.+)$/)
-  if (!match) return
-  const [, publicKey, host, projectId] = match
-  try {
-    await fetch(`https://${host}/api/${projectId}/store/`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Sentry-Auth': `Sentry sentry_version=7, sentry_key=${publicKey}, sentry_client=plot-edge-function/1.0`,
-      },
-      body: JSON.stringify({
-        message: error instanceof Error ? error.message : String(error),
-        level: 'error',
-        extra,
-        tags: { runtime: 'supabase-edge-function', function: 'watchlist-availability-alerts' },
-      }),
-    })
-  } catch { /* telemetry is best-effort; never let it fail the job */ }
-}
 
 function escapeHtml(value: string) {
   return value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;')
@@ -196,7 +169,7 @@ Deno.serve(async (req) => {
     .from('profiles')
     .select('id, region, streaming_providers, guide_channels')
     .eq('watchlist_availability_alerts', true)
-  if (profileError) { await captureSentryError(profileError); return Response.json({ ok: false, error: profileError.message }, { status: 500 }) }
+  if (profileError) { console.error('Could not read alert-enabled profiles:', profileError.message); return Response.json({ ok: false, error: profileError.message }, { status: 500 }) }
 
   // Alerts match against whichever of "My Platforms" and "My Channels" the
   // user has selected — the two feed the same TMDB provider-id shape, so
@@ -223,7 +196,7 @@ Deno.serve(async (req) => {
       .eq('user_id', profile.id)
       .eq('lists.name', 'My List')
       .limit(MAX_ITEMS_PER_PROFILE)
-    if (itemError) { console.error(`Could not read watchlist for ${profile.id}: ${itemError.message}`); await captureSentryError(itemError, { profileId: profile.id }); failures++; continue }
+    if (itemError) { console.error(`Could not read watchlist for ${profile.id}: ${itemError.message}`); failures++; continue }
 
     const allItems = (items ?? []) as WatchlistItem[]
     const budget = Math.max(0, MAX_TMDB_CALLS_PER_RUN - tmdbCalls)
@@ -256,7 +229,7 @@ Deno.serve(async (req) => {
       .select('tmdb_id, media_type, region, provider_id')
       .eq('user_id', profile.id)
       .in('tmdb_id', matchedIds)
-    if (alertsError) { console.error(`Could not read alert history for ${profile.id}: ${alertsError.message}`); await captureSentryError(alertsError, { profileId: profile.id }); failures++; continue }
+    if (alertsError) { console.error(`Could not read alert history for ${profile.id}: ${alertsError.message}`); failures++; continue }
     const alertKey = (m: { tmdb_id: number; media_type: string; region: string; provider_id?: number; providerId?: number }) =>
       `${m.tmdb_id}:${m.media_type}:${m.region}:${m.provider_id ?? m.providerId}`
     const seen = new Set((existingAlerts ?? []).map(alertKey))
@@ -286,7 +259,7 @@ Deno.serve(async (req) => {
     console.error(`Availability alerts hit run caps: ${itemsSkippedForCap} items and ${profilesSkippedForCap} profiles skipped`)
   }
   if (!ok) {
-    await captureSentryError(new Error(`watchlist-availability-alerts failure rate ${(failureRate * 100).toFixed(0)}%`), {
+    console.error(`watchlist-availability-alerts failure rate ${(failureRate * 100).toFixed(0)}%`, {
       profiles: enabledProfiles.length, failures, sent, discovered,
     })
   }
