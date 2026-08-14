@@ -14,7 +14,9 @@
  *   RESEND_API_KEY            - Resend API key (theplot.tv is a verified sender)
  *
  * Optional secrets:
- *   SIGNUP_NOTIFY_TO_EMAIL    - recipient of the alert (defaults to TO_EMAIL below)
+ *   SIGNUP_NOTIFY_TO_EMAIL    - recipient of the alert. REQUIRED: there is no
+ *                               hardcoded fallback, so an unset value disables
+ *                               the notification rather than mailing a default.
  *   BREVO_API_KEY             - Brevo API key; unset skips the Brevo sync entirely
  *   BREVO_LIST_ID             - Brevo "PLOT App Users" list id
  *   BREVO_MARKETING_LIST_ID   - Brevo "PLOT Marketing Subscribers" list id (opted-in only)
@@ -26,7 +28,7 @@ import { upsertBrevoContact } from '../_shared/brevo.ts'
 import { adminClient } from '../_shared/supabaseAdmin.ts'
 
 const RESEND_API_URL = 'https://api.resend.com/emails'
-const TO_EMAIL = Deno.env.get('SIGNUP_NOTIFY_TO_EMAIL') || 'sav.black@outlook.com'
+const TO_EMAIL = Deno.env.get('SIGNUP_NOTIFY_TO_EMAIL')
 const FROM_EMAIL = 'PLOT <signups@theplot.tv>'
 
 function escapeHtml(value: string) {
@@ -133,6 +135,15 @@ Deno.serve(async (req) => {
   const resendKey = Deno.env.get('RESEND_API_KEY')
   if (!resendKey) {
     const errorMessage = 'Signup notifications are not configured (missing RESEND_API_KEY).'
+    console.error(errorMessage)
+    return new Response(JSON.stringify({ ok: false, error: errorMessage }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+
+  if (!TO_EMAIL) {
+    const errorMessage = 'Signup notifications are not configured (missing SIGNUP_NOTIFY_TO_EMAIL).'
     console.error(errorMessage)
     return new Response(JSON.stringify({ ok: false, error: errorMessage }), {
       status: 200,
