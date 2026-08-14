@@ -231,6 +231,17 @@ So:
   on `profiles`/`feedback` are not reliably transactional.
 - **A migration merged to `main` applies to PRODUCTION automatically** via the Supabase
   GitHub integration. There is no staging gate — write it as if it runs immediately.
+- **`npm run db:migration-test` before merging anything under `supabase/migrations/`.**
+  Both checks above are static — neither executes any SQL — so without this the first run
+  of a migration is on real user data. This restores a copy of production into a throwaway
+  local Postgres 17 cluster, applies whatever is pending, and exits non-zero if any of it
+  fails. Needs `brew install postgresql@17` and the main checkout's `.env`. It caught two
+  deliberately broken migrations (a bad column reference and a bad cast) in testing.
+  Limits: Vault and pg_net are stubbed, and RLS policies are created but not exercised, so
+  a policy's *correctness* still needs the Staging project.
+- **`npm run db:restore-drill`** proves the nightly backup still restores. `pg_restore`
+  exits 0 even when tables fail, so run this after any migration adding an extension type,
+  and compare the table count against production. See `docs/ops/db-restore.md`.
 
 **Supabase `config.toml` pins `verify_jwt` per function.** Public functions set
 `verify_jwt = false`; forgetting it on redeploy makes the gateway reject requests before the
