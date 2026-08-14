@@ -2,14 +2,14 @@
 //
 // The timeline is a growing watch history, so this appends rather than
 // replaces: newly trending titles join the end, the oldest scroll off, and an
-// entry that already has a hand-written note is never rewritten. Posters are
-// fetched from TMDB and encoded to webp, and the markup in index.html is
-// regenerated from apps/website/data/timeline.json.
+// entry that already has a hand-written note is never rewritten. Poster artwork
+// is not stored in this repo: the markup points at TMDB's image CDN, and this
+// script keeps each entry's poster_path current so those URLs stay valid. The
+// markup in index.html is regenerated from apps/website/data/timeline.json.
 //
 // Usage — from the repo root:
 //   node --env-file=.env scripts/refresh-timeline.mjs              # refresh
 //   node --env-file=.env scripts/refresh-timeline.mjs --dry-run    # report only
-//   node --env-file=.env scripts/refresh-timeline.mjs --force      # re-encode every poster
 //   node --env-file=.env scripts/refresh-timeline.mjs --no-append  # art + markup only, same lineup
 //
 // New entries land with an empty note. That is deliberate: the notes are
@@ -21,30 +21,22 @@
 // here. The tmdb-proxy Edge Function is not an option: it only answers requests
 // carrying TMDB_PROXY_SHARED_SECRET, which the Cloudflare Worker adds as the
 // admission-control boundary for browser traffic.
-import { access, mkdir, readdir, readFile, unlink, writeFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import sharp from 'sharp';
 
 const BASE = 'https://api.themoviedb.org/3';
 const TMDB_KEY = process.env.TMDB_API_KEY;
-const IMG = 'https://image.tmdb.org/t/p/w342'; // downscaled to POSTER_WIDTH below
+// Poster size used in the generated markup. w342 matches the artwork these
+// surfaces shipped with before they moved to the CDN, so nothing changes size.
+const IMG = 'https://image.tmdb.org/t/p/w342';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
-const OUT_DIR = path.join(ROOT, 'apps', 'website', 'images', 'timeline');
-const TRENDING_DIR = path.join(ROOT, 'apps', 'website', 'images', 'trending');
 const DATA_FILE = path.join(ROOT, 'apps', 'website', 'data', 'timeline.json');
 const INDEX_HTML = path.join(ROOT, 'apps', 'website', 'index.html');
 
 const DRY_RUN = process.argv.includes('--dry-run');
-const FORCE = process.argv.includes('--force');
 const NO_APPEND = process.argv.includes('--no-append'); // refresh art and markup, leave the lineup alone
-
-// Matches the posters already committed: 280 wide, height left to the source
-// aspect ratio. The cards render at 110px, so this covers 2x displays.
-const POSTER_WIDTH = 280;
-const WEBP_QUALITY = 75;
-const WEBP_EFFORT = 6; // slower encode, ~4% smaller than the default 4
 
 const MAX_CARDS = 15;     // keeps the horizontal scroll the length it was designed for
 const MAX_APPEND = 1;     // per run: at 2/week the whole curated timeline turns over in under two months
@@ -110,34 +102,6 @@ async function findCandidates(entries) {
     .sort((a, b) => b.popularity - a.popularity);
 }
 
-// A trimmed poster is only safe to delete if nothing else on the site uses it:
-// the hero collage and Discover mockup also point at images/timeline/.
-async function removeUnusedPoster(file, html) {
-  if (html.includes(`images/timeline/${file}`)) return false;
-  await unlink(path.join(OUT_DIR, file)).catch(() => {});
-  return true;
-}
-
-// entry.poster_path records what is actually on disk, so a run only downloads
-// when TMDB has swapped the artwork. Comparing bytes instead would not work:
-// TMDB serves several encodings of the same artwork from one path (the same
-// poster came back as 52KB and 67KB minutes apart).
-async function syncPoster(entry, currentPath, dir = OUT_DIR) {
-  await mkdir(dir, { recursive: true });
-  const file = path.join(dir, entry.file);
-  const exists = await access(file).then(() => true, () => false);
-  if (exists && currentPath === entry.poster_path && !FORCE) return false;
-
-  const res = await fetch(IMG + currentPath);
-  if (!res.ok) throw new Error(`Poster download failed for ${entry.title}: ${res.status}`);
-  const webp = await sharp(Buffer.from(await res.arrayBuffer()))
-    .resize({ width: POSTER_WIDTH })
-    .webp({ quality: WEBP_QUALITY, effort: WEBP_EFFORT })
-    .toBuffer();
-  if (!DRY_RUN) await writeFile(file, webp);
-  return true;
-}
-
 // Year headings come from the entries themselves, so a title that opens a new
 // year needs no special case.
 function renderTimeline(entries) {
@@ -156,7 +120,7 @@ function renderTimeline(entries) {
     }
     lines.push(
       '        <div class="tl-card">',
-      `          <div class="tl-poster" data-bg='images/timeline/${entry.file}'></div>`,
+      `          <div class="tl-poster" data-bg='${IMG}${entry.poster_path}'></div>`,
       `          <div class="tl-date">${entry.date_label}</div>`,
       `          <div class="tl-title">${esc(entry.title)}</div>`);
     if (entry.note) lines.push(`          <div class="tl-note">${entry.note}</div>`);
@@ -181,7 +145,7 @@ async function fetchTrending() {
   if (!item) return null;
   return {
     hero: {
-      file: `${slug(displayTitle(item))}.webp`,
+      slug: slug(displayTitle(item)),
       tmdb_id: item.id,
       media_type: item.media_type,
       poster_path: item.poster_path,
@@ -195,7 +159,7 @@ const KIND = { movie: 'Film', tv: 'Series' };
 
 const renderHeroCard = (hero) => [
   '',
-  `            <div class="af-card af-hero" style="background-image:url('images/trending/${hero.file}')">`,
+  `            <div class="af-card af-hero" style="background-image:url('${IMG}${hero.poster_path}')">`,
   '              <span class="af-badge">TRENDING #1</span>',
   `              <div class="af-cap">${esc(hero.title)}<small>${hero.year} &middot; ${KIND[hero.media_type]}</small></div>`,
   '            </div>',
@@ -221,7 +185,7 @@ let entries = [...data.entries];
 // 1. Extend the timeline with what is trending now.
 const candidates = NO_APPEND ? [] : await findCandidates(entries);
 const appended = candidates.slice(0, MAX_APPEND).map(item => ({
-  file: `${slug(displayTitle(item))}.webp`,
+  slug: slug(displayTitle(item)),
   tmdb_id: item.id,
   media_type: item.media_type,
   poster_path: item.poster_path,
@@ -243,15 +207,17 @@ for (const entry of entries) {
 }
 entries = entries.filter(entry => !trimmed.includes(entry));
 
-// 3. Refresh poster art for everything that survived.
+// 3. Re-point poster URLs for everything that survived. TMDB occasionally swaps
+// a title's primary artwork; the markup is generated from poster_path, so
+// picking the change up here is what keeps the CDN URLs from 404ing.
 let refreshed = 0;
 for (const entry of entries) {
   const details = await fetchTMDB(`/${entry.media_type}/${entry.tmdb_id}`).catch(() => null);
-  // A failed lookup leaves the committed artwork alone rather than dropping it.
+  // A failed lookup leaves the known-good path alone rather than dropping it.
   const currentPath = details?.poster_path || entry.poster_path;
-  if (await syncPoster(entry, currentPath)) {
+  if (currentPath !== entry.poster_path) {
     refreshed++;
-    console.log(`  poster  ${entry.file.padEnd(38)} ${entry.title}`);
+    console.log(`  poster  ${entry.slug.padEnd(38)} ${entry.title}`);
   }
   entry.poster_path = currentPath;
 }
@@ -263,16 +229,12 @@ for (const entry of entries) {
 const previousTrending = data.trending ?? {};
 // A failed lookup leaves the committed hero in place rather than blanking it.
 const trending = (await fetchTrending()) ?? previousTrending;
-if (trending.hero && await syncPoster(
-  { ...trending.hero, poster_path: previousTrending.hero?.poster_path },
-  trending.hero.poster_path,
-  TRENDING_DIR,
-)) {
+if (trending.hero && trending.hero.poster_path !== previousTrending.hero?.poster_path) {
   refreshed++;
-  console.log(`  trend   ${trending.hero.file.padEnd(38)} ${trending.hero.title}`);
+  console.log(`  trend   ${trending.hero.slug.padEnd(38)} ${trending.hero.title}`);
 }
 
-// 5. Write data, markup and clean up posters nothing references any more.
+// 5. Write data and markup. There is no image cleanup step: nothing is stored.
 const html = await readFile(INDEX_HTML, 'utf8');
 let nextHtml = replaceBlock(html, 'timeline', renderTimeline(entries));
 if (trending.hero) nextHtml = replaceBlock(nextHtml, 'hero-card', renderHeroCard(trending.hero), '            ');
@@ -280,18 +242,13 @@ if (trending.hero) nextHtml = replaceBlock(nextHtml, 'hero-card', renderHeroCard
 if (!DRY_RUN) {
   await writeFile(DATA_FILE, `${JSON.stringify({ entries, trending }, null, 2)}\n`);
   await writeFile(INDEX_HTML, nextHtml);
-  for (const entry of trimmed) await removeUnusedPoster(entry.file, nextHtml);
-  // Trending turns over weekly, so drop art for titles that dropped out.
-  for (const file of await readdir(TRENDING_DIR).catch(() => [])) {
-    if (!nextHtml.includes(`images/trending/${file}`)) await unlink(path.join(TRENDING_DIR, file));
-  }
 }
 
 for (const entry of appended) console.log(`  added   ${entry.date_label.padEnd(9)} ${entry.title}`);
 for (const entry of trimmed) console.log(`  dropped ${entry.date_label.padEnd(9)} ${entry.title}`);
 
 const needNotes = entries.filter(e => !e.note);
-console.log(`\n${appended.length} added, ${trimmed.length} dropped, ${refreshed} posters refreshed${DRY_RUN ? ' (--dry-run: nothing written)' : ''}`);
+console.log(`\n${appended.length} added, ${trimmed.length} dropped, ${refreshed} poster URLs re-pointed${DRY_RUN ? ' (--dry-run: nothing written)' : ''}`);
 if (needNotes.length) {
   console.log(`\n${needNotes.length} ${needNotes.length === 1 ? 'entry needs a note' : 'entries need notes'} before this ships:`);
   for (const entry of needNotes) console.log(`  ${entry.date_label.padEnd(9)} ${entry.title}`);
