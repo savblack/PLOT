@@ -17,9 +17,12 @@ import Svg, { Path, Polyline } from 'react-native-svg';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../../lib/supabase';
-import { tmdb, setTmdbRegion, getTmdbRegion, prioritiseEnglishSpeakingTitles } from '../../lib/tmdb';
+import { tmdb, setTmdbRegion, prioritiseEnglishSpeakingTitles } from '../../lib/tmdb';
 import { SHOW_FOR_YOU_RAIL, SHOW_SOCIAL_FEED } from '../../lib/launchFeatures';
 import { DISCOVER_TABS } from '@plot/core/navigation.js';
+import { useNewReleases } from '@plot/core/useNewReleases.js';
+import { useForYou } from '@plot/core/useForYou.js';
+import { usePlatformCharts } from '@plot/core/usePlatformCharts.js';
 import GuideView from '../../components/GuideView';
 import { excludeKidsContent } from '@plot/core/tmdb.js';
 import { posterUrl, backdropUrl, Palette, fontFamily, fontSize, spacing, radii, iconButtonSize } from '../../lib/tokens';
@@ -65,6 +68,8 @@ interface MediaItem {
   first_air_date?: string;
   original_language?: string;
   origin_country?: string[];
+  /** True published chart position, present only on platform_charts rows. */
+  _rank?: number;
 }
 
 interface StreamingProvider {
@@ -73,7 +78,12 @@ interface StreamingProvider {
   logo_path?: string | null;
 }
 
-interface PlatformData extends StreamingProvider {
+/** Shape returned by core's usePlatformCharts. `id` is the platform key
+ *  ('netflix'), not a TMDB watch-provider id. */
+interface PlatformData {
+  id: string;
+  name: string;
+  logo_path?: string | null;
   movies: MediaItem[];
   tv: MediaItem[];
 }
@@ -322,7 +332,7 @@ function PlatformSection({ platform, saved, onSave, isFav, onFavorite }: {
                 renderItem={({ item, index }) => (
                   <PosterCardRanked
                     item={{ ...item, media_type: 'movie' }}
-                    rank={index + 1}
+                    rank={item._rank ?? index + 1}
                     saved={saved.has(item.id ?? 0)}
                     onSave={() => onSave({ ...item, media_type: 'movie' })}
                     isFav={isFav(item.id ?? 0)}
@@ -345,7 +355,7 @@ function PlatformSection({ platform, saved, onSave, isFav, onFavorite }: {
                 renderItem={({ item, index }) => (
                   <PosterCardRanked
                     item={{ ...item, media_type: 'tv' }}
-                    rank={index + 1}
+                    rank={item._rank ?? index + 1}
                     saved={saved.has(item.id ?? 0)}
                     onSave={() => onSave({ ...item, media_type: 'tv' })}
                     isFav={isFav(item.id ?? 0)}
@@ -415,6 +425,74 @@ function PosterCardRanked({ item, rank, saved, onSave, isFav, onFavorite }: {
   );
 }
 
+// ── New Releases tab content ──────────────────────────────────────────
+// Mounted only while the tab is active. useNewReleases fires ~21 TMDB
+// requests (Recently Released plus a movie and a TV call per genre rail),
+// so calling it from HomeScreen would spend that budget on every app open
+// and trip the proxy's rate limit for people who never open the tab.
+function NewReleasesContent({ hideKids, savedIds, onSave, isFav, onFavorite, openPanel }: {
+  hideKids: boolean;
+  savedIds: Set<number>;
+  onSave: (item: MediaItem) => void;
+  isFav: (id: number) => boolean;
+  onFavorite: (item: MediaItem) => void;
+  openPanel: (id: number, type: 'movie' | 'tv') => void;
+}) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { data, loading } = useNewReleases({ hideKids });
+
+  if (loading) return <PlotLoader backgroundColor={colors.bg} color={colors.textPrimary} />;
+
+  const rails: Array<{ key: string; kicker: string; title: string; items: MediaItem[] }> = [
+    ...(data.recent.length ? [{ key: 'recent', kicker: 'Last 30 days', title: 'Recently Released', items: data.recent }] : []),
+    ...data.genreRails
+      .filter((rail: { items: MediaItem[] }) => rail.items.length > 0)
+      // GENRE_RAILS labels are already "New in Horror" — the kicker carries
+      // the section name, so the title drops the prefix web repeats.
+      .map((rail: { key: string; label: string; items: MediaItem[] }) => ({
+        key: rail.key, kicker: 'New releases', title: rail.label, items: rail.items,
+      })),
+  ];
+
+  if (!rails.length) {
+    return (
+      <View style={styles.section}>
+        <Text style={styles.emptyTitle}>Nothing new</Text>
+        <Text style={styles.emptyBody}>Nothing has landed in the last 30 days. Check back soon.</Text>
+      </View>
+    );
+  }
+
+  return (
+    <>
+      {rails.map(rail => (
+        <View key={rail.key} style={styles.section}>
+          <SectionHeader kicker={rail.kicker} title={rail.title} />
+          <FlatList
+            horizontal
+            data={rail.items}
+            keyExtractor={item => `${item.media_type}-${item.id}`}
+            renderItem={({ item }) => (
+              <PosterCard
+                item={item}
+                onPress={() => item.id && openPanel(item.id, (item.media_type === 'tv' ? 'tv' : 'movie'))}
+                saved={savedIds.has(item.id ?? 0)}
+                onSave={() => onSave(item)}
+                isFav={isFav(item.id ?? 0)}
+                onFavorite={() => onFavorite(item)}
+              />
+            )}
+            showsHorizontalScrollIndicator={false}
+            nestedScrollEnabled
+            contentContainerStyle={{ paddingHorizontal: spacing.xl, gap: spacing.md }}
+          />
+        </View>
+      ))}
+    </>
+  );
+}
+
 // ── Main screen ───────────────────────────────────────────────────────
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
@@ -425,14 +503,23 @@ export default function HomeScreen() {
   const [trending,     setTrending]     = useState<MediaItem[]>([]);
   const [weekly,       setWeekly]       = useState<MediaItem[]>([]);
   const [bingedShows,  setBingedShows]  = useState<MediaItem[]>([]);
-  const [platforms,    setPlatforms]    = useState<PlatformData[]>([]);
-  const [forYou,       setForYou]       = useState<MediaItem[]>([]);
+  // For You: item-item collaborative filtering over the user's own
+  // watchlist/favourites/history, computed nightly in Postgres. The flag gates
+  // the RPC and the TMDB hydration inside the hook, not just the render, so
+  // flipping it off pulls the rail without touching the get_for_you pipeline.
+  const { items: forYou, error: forYouError } = useForYou(20, SHOW_FOR_YOU_RAIL);
+
+  // Official published charts from platform_charts — a fixed platform list,
+  // identical for everyone, rather than TMDB popularity filtered to whatever
+  // the user happens to subscribe to.
+  const platforms = usePlatformCharts();
   const [tab,          setTab]          = useState('discover');
   const [loading,      setLoading]      = useState(true);
   const [error,        setError]        = useState(false);
   const [retryKey,     setRetryKey]     = useState(0);
-  const [forYouError,  setForYouError]  = useState(false);
-  const [platformsError, setPlatformsError] = useState(false);
+  // Lifted out of the bootstrap effect because the New Releases tab needs it
+  // too, and core's hooks take it as an argument rather than reading context.
+  const [hideKids,     setHideKids]     = useState(false);
 
   /* Home reads the same watchlist every other surface does. It used to keep
      its own copy — its own list_items query, its own insert — so saving here
@@ -471,6 +558,7 @@ export default function HomeScreen() {
         profile = profileData;
         if (profile?.region) setTmdbRegion(profile.region);
         const hideKids = !(profile?.include_kids_content ?? true);
+        setHideKids(hideKids);
 
         // The watchlist is no longer fetched here — useWatchlist (via
         // useAppData) owns loading it, for every surface at once.
@@ -495,61 +583,6 @@ export default function HomeScreen() {
 
       setLoading(false);
 
-      // For You: item-item collaborative filtering over the user's own
-      // watchlist/favourites/history, computed nightly in Postgres (see
-      // supabase/migrations/20260726020000_for_you_recommendations.sql).
-      // Non-blocking — hydrate rows with TMDB after the rest of the screen loads.
-      setForYouError(false);
-      // The flag gates the RPC and the TMDB hydration, not just the render —
-      // flipping it off pulls the rail instantly without touching the
-      // get_for_you() pipeline, and costs nothing while it's off.
-      if (SHOW_FOR_YOU_RAIL) (async () => {
-        try {
-          const { data: rows, error: rpcError } = await supabase.rpc('get_for_you', { p_limit: 20 });
-          if (cancelled) return;
-          if (rpcError) { setForYouError(true); return; }
-          if (!rows?.length) return;
-          const hydrated = await Promise.all(
-            rows.map(async (row: { tmdb_id: number; media_type: 'movie' | 'tv' }) => {
-              const details = await tmdb.getBasicDetails(row.media_type, row.tmdb_id).catch(() => null);
-              if (!details?.id) return null;
-              return { ...details, media_type: row.media_type } as MediaItem;
-            })
-          );
-          if (!cancelled) setForYou(hydrated.filter((item): item is MediaItem => item !== null));
-        } catch (e) {
-          console.warn('[home] for-you load failed', e);
-          if (!cancelled) setForYouError(true);
-        }
-      })();
-
-      // Load platform content in background (non-blocking)
-      const providers: StreamingProvider[] = profile?.streaming_providers ?? [];
-      if (providers.length > 0 && !cancelled) {
-        setPlatformsError(false);
-        try {
-          const region = getTmdbRegion();
-          const results = await Promise.all(
-            providers.map(async (p) => {
-              const [moviesRes, tvRes] = await Promise.all([
-                tmdb.discoverByProviders('movie', [p.id], region),
-                tmdb.discoverByProviders('tv',    [p.id], region),
-              ]);
-              return {
-                ...p,
-                movies: prioritiseEnglishSpeakingTitles(moviesRes?.results ?? []).slice(0, 10),
-                tv:     prioritiseEnglishSpeakingTitles(tvRes?.results ?? []).slice(0, 10),
-              } as PlatformData;
-            })
-          );
-          if (!cancelled) {
-            setPlatforms(results.filter(p => p.movies.length > 0 || p.tv.length > 0));
-          }
-        } catch (e) {
-          console.warn('[home] platform load failed', e);
-          if (!cancelled) setPlatformsError(true);
-        }
-      }
     };
 
     init();
@@ -568,9 +601,10 @@ export default function HomeScreen() {
   if (error) return <ErrorState onRetry={() => setRetryKey(k => k + 1)} />;
 
   // Sub-tabs nested under Home, ids and order from the shared nav list.
-  // Only the two mobile can serve today: New Releases and Upcoming arrive
-  // with the Discover hooks, and an empty tab is worse than an absent one.
-  const MOBILE_READY = new Set(['feed', 'discover', 'guide']);
+  // Upcoming is still absent: web builds it from guide_channels inside
+  // GuideView rather than from one of the hoisted hooks, so it needs its own
+  // extraction first, and an empty tab is worse than an absent one.
+  const MOBILE_READY = new Set(['feed', 'discover', 'new', 'guide']);
   const subTabs = DISCOVER_TABS.filter(
     (t: { id: string; flag?: string }) =>
       MOBILE_READY.has(t.id) && (t.flag !== 'SHOW_SOCIAL_FEED' || SHOW_SOCIAL_FEED));
@@ -585,6 +619,21 @@ export default function HomeScreen() {
         <View style={{ flex: 1, paddingTop: HEADER_H }}>
           <GuideView />
         </View>
+      ) : tab === 'new' ? (
+        <ScrollView
+          style={styles.screen}
+          contentContainerStyle={{ paddingTop: HEADER_H + 20, paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }}
+          showsVerticalScrollIndicator={false}
+        >
+          <NewReleasesContent
+            hideKids={hideKids}
+            savedIds={savedIds}
+            onSave={handleSave}
+            isFav={(id) => favorites.isFavorite(id)}
+            onFavorite={toggleFav}
+            openPanel={openPanel}
+          />
+        </ScrollView>
       ) : (
       <ScrollView
         style={styles.screen}
@@ -699,16 +748,13 @@ export default function HomeScreen() {
         {/* ── Releases: recent + upcoming, below the chart ── */}
         <HomeReleases rails={['recent', 'comingSoon']} />
 
-        {/* ── Top 10 On Your Platforms ── */}
-        {platformsError && platforms.length === 0 && (
-          <View style={styles.section}>
-            <SectionHeader kicker="Your Streaming Services" title="Top 10 On Your Platforms" />
-            <Text style={styles.emptyBody}>Couldn't load your platforms right now.</Text>
-          </View>
-        )}
+        {/* ── Top 10 by Platform ──
+            The platforms' real published charts, not TMDB popularity within
+            the user's own subscriptions: a fixed set, the same for everyone,
+            so it needs the attribution line web carries. */}
         {platforms.length > 0 && (
           <View style={styles.section}>
-            <SectionHeader kicker="Your Streaming Services" title="Top 10 On Your Platforms" />
+            <SectionHeader kicker="Official charts" title="Top 10 by Platform" />
             {platforms.map(platform => (
               <PlatformSection
                 key={platform.id}
@@ -719,6 +765,9 @@ export default function HomeScreen() {
                 onFavorite={toggleFav}
               />
             ))}
+            <Text style={styles.platAttribution}>
+              Official Top 10 · Netflix and the Streaming Availability API.
+            </Text>
           </View>
         )}
 
@@ -1078,6 +1127,14 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     color: colors.textMuted,
     paddingHorizontal: spacing.xl,
     marginBottom: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  platAttribution: {
+    fontFamily: fontFamily.sans,
+    fontSize: 11,
+    lineHeight: 15,
+    color: colors.textMuted,
+    paddingHorizontal: spacing.xl,
     marginTop: spacing.sm,
   },
 
