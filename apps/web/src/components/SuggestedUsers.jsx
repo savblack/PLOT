@@ -3,8 +3,15 @@ import { useSuggestedUsers } from '../hooks/useSuggestedUsers.js';
 import UserList from './UserList.jsx';
 
 /**
- * "People to follow" — the feed's find-friends block. Shown when the following
- * feed is thin (cold start), so there's always a path to fill it.
+ * "People to follow" — a find-friends block backed by the `suggested_users` RPC.
+ *
+ * ⚠️ INTENTIONALLY UNREFERENCED RIGHT NOW. Its only render site was FeedView,
+ * deleted with the social feed (#499). It is kept, not deleted, because #524
+ * rehomes it into the search empty state on both apps: with no feed, nothing
+ * else surfaces anyone, and mobile has no user search at all yet.
+ *
+ * Do not sweep this as dead code. That is exactly how the live checkout page
+ * was deleted in the 2026-08-08 orphan cleanup.
  */
 export default function SuggestedUsers({ heading = 'People To Follow' }) {
   const { user } = useApp();

@@ -30,11 +30,11 @@ export function viewFromPath(pathname) {
 }
 
 /* Sub-tabs nested under Home. Web renders these in DiscoverView's toolbar;
-   mobile renders the same ids in its Discover header. `feed` is gated by
-   SHOW_SOCIAL_FEED on both platforms — it is listed here so the order is shared,
-   not so it is always shown. */
+   mobile renders the same ids in its Discover header. A `feed` tab used to lead
+   this list, gated by SHOW_SOCIAL_FEED; the social feed was dropped in favour of
+   profiles, so it and its flag are gone. The feed_posts activity substrate is
+   still recording, unsurfaced, if an activity stream is ever wanted. */
 export const DISCOVER_TABS = [
-  { id: 'feed',     label: 'Feed',         flag: 'SHOW_SOCIAL_FEED' },
   { id: 'discover', label: 'Discover' },
   { id: 'new',      label: 'New Releases' },
   { id: 'releases', label: 'Upcoming' },

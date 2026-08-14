@@ -14,12 +14,11 @@ import { UpcomingContent } from './GuideView.jsx';
 import { filterByType, filterByGenre } from '../utils/mediaFilters.js';
 import EpgView from './EpgView.jsx';
 import { MEDIA } from '../copy/media.js';
-import FeedView from './FeedView.jsx';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import { track, EVENTS } from '../lib/analytics.js';
 import GroupedFilterMenu from './GroupedFilterMenu.jsx';
 import SectionToggleIcon from './SectionToggleIcon.jsx';
-import { SHOW_SOCIAL_FEED, SHOW_FOR_YOU_RAIL } from '../launchFeatures.js';
+import { SHOW_FOR_YOU_RAIL } from '../launchFeatures.js';
 
 /* ── Rail ── */
 function Rail({ children }) {
@@ -691,7 +690,7 @@ function NewReleasesContent({ openPanel, watchlist, typeFilters, genreFilters, o
 export default function DiscoverView() {
   const app = useApp();
   const { genres }    = useGenres();
-  const [tab,          setTab]          = useState(SHOW_SOCIAL_FEED ? 'feed' : 'discover');
+  const [tab,          setTab]          = useState('discover');
   const [typeFilters,  setTypeFilters]  = useState(ALL_TYPES);
   const [genreFilters, setGenreFilters] = useState([]);
   const [discoverSections, setDiscoverSections] = useState({
@@ -749,14 +748,6 @@ export default function DiscoverView() {
         <span className="sub-tabs-date"><TodayLabel /></span>
 
         <div className="sub-tabs-scroll">
-          {SHOW_SOCIAL_FEED && (
-            <button
-              className={`sub-tab-btn${tab === 'feed' ? ' active' : ''}`}
-              onClick={() => changeTab('feed')}
-            >
-              Feed
-            </button>
-          )}
           <button
             className={`sub-tab-btn${tab === 'discover' ? ' active' : ''}`}
             onClick={() => changeTab('discover')}
@@ -855,7 +846,6 @@ export default function DiscoverView() {
       </div>
 
       {/* ── Tab content ── */}
-      {SHOW_SOCIAL_FEED && tab === 'feed' && <FeedView />}
 
       {tab === 'discover' && (
         <DiscoverContent

@@ -25,11 +25,6 @@ export const SHOW_MEDIA_SYNC_INTEGRATIONS = false;
 export const SHOW_GOOGLE_LOGIN = process.env.EXPO_PUBLIC_SHOW_GOOGLE_LOGIN === 'true';
 export const SHOW_APPLE_LOGIN = false;
 
-// Social activity feed (follow/global "what your friends are watching"). Hidden
-// on web while it's still being finished. Mobile has no feed surface built yet,
-// so this is here for parity rather than gating anything today.
-export const SHOW_SOCIAL_FEED = false;
-
 // Watchlist availability alerts row in Settings. Hidden from all users for now.
 // Mobile has no alerts row yet — declared so the two flag sets stay comparable.
 export const SHOW_WATCHLIST_AVAILABILITY_ALERTS = false;

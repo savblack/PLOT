@@ -18,7 +18,7 @@ import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../../lib/supabase';
 import { tmdb, setTmdbRegion, prioritiseEnglishSpeakingTitles } from '../../lib/tmdb';
-import { SHOW_FOR_YOU_RAIL, SHOW_SOCIAL_FEED } from '../../lib/launchFeatures';
+import { SHOW_FOR_YOU_RAIL } from '../../lib/launchFeatures';
 import { DISCOVER_TABS } from '@plot/core/navigation.js';
 import { useNewReleases } from '@plot/core/useNewReleases.js';
 import { useForYou } from '@plot/core/useForYou.js';
@@ -604,10 +604,8 @@ export default function HomeScreen() {
   // Upcoming is still absent: web builds it from guide_channels inside
   // GuideView rather than from one of the hoisted hooks, so it needs its own
   // extraction first, and an empty tab is worse than an absent one.
-  const MOBILE_READY = new Set(['feed', 'discover', 'new', 'guide']);
-  const subTabs = DISCOVER_TABS.filter(
-    (t: { id: string; flag?: string }) =>
-      MOBILE_READY.has(t.id) && (t.flag !== 'SHOW_SOCIAL_FEED' || SHOW_SOCIAL_FEED));
+  const MOBILE_READY = new Set(['discover', 'new', 'guide']);
+  const subTabs = DISCOVER_TABS.filter((t: { id: string }) => MOBILE_READY.has(t.id));
 
   const HEADER_H = insets.top + 100;
   const hero     = trending[0];
