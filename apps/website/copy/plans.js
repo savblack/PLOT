@@ -8,7 +8,7 @@
 export const PLANS_PAGE = {
   meta: {
     title: 'Plans & Pricing — PLOT',
-    description: 'PLOT is free to use, forever. Go Premium for unlimited lists and automatic sync from Plex, Trakt, Netflix, Prime, Disney+ and more — A$3/mo or A$25/yr.',
+    description: 'PLOT is free to use, forever. Go Premium for unlimited lists and automatic sync from Plex, Trakt, Netflix, Prime, Disney+ and more: A$5/mo or A$40/yr.',
     ogDescription: 'Free to use, forever. Go Premium for unlimited lists and automatic sync across every service you watch.',
   },
 
@@ -21,7 +21,7 @@ export const PLANS_PAGE = {
   billingToggle: {
     monthly: 'Monthly',
     annual: 'Annual',
-    saveBadge: 'Save 31%', // hardcoded in HTML; JS recomputes the live % from MONTHLY/ANNUAL
+    saveBadge: 'Save 33%', // hardcoded in HTML; JS recomputes the live % from MONTHLY/ANNUAL
   },
 
   freePlan: {
@@ -44,9 +44,9 @@ export const PLANS_PAGE = {
     name: 'Premium',
     // Amount/billed line are recalculated by JS when the billing toggle
     // changes; these are the initial (annual) values rendered in the HTML.
-    amount: 'A$2.08',
+    amount: 'A$3.33',
     per: '/mo',
-    billed: 'Billed A$25 yearly · save 31%',
+    billed: 'Billed A$40 yearly · save 33%',
     billedMonthly: 'Billed monthly',
     tagline: 'Everything in Free, plus:',
     features: [

@@ -37,7 +37,7 @@
   </script>
   <!-- End Google Tag Manager -->
   <title>Plans &amp; Pricing — PLOT</title>
-  <meta name="description" content="PLOT is free to use, forever. Go Premium for unlimited lists and automatic sync from Plex, Trakt, Netflix, Prime, Disney+ and more — A$3/mo or A$25/yr." />
+  <meta name="description" content="PLOT is free to use, forever. Go Premium for unlimited lists and automatic sync from Plex, Trakt, Netflix, Prime, Disney+ and more: A$5/mo or A$40/yr." />
   <link rel="canonical" href="https://theplot.tv/plans.html" />
   <meta name="theme-color" content="#ffffff" />
 
@@ -445,7 +445,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <div class="billing-toggle" role="group" aria-label="Billing period">
         <button type="button" class="billing-opt" id="billMonthly" aria-pressed="false">Monthly</button>
         <button type="button" class="billing-opt is-active" id="billAnnual" aria-pressed="true">
-          Annual <span class="billing-save">Save 31%</span>
+          Annual <span class="billing-save">Save 33%</span>
         </button>
       </div>
     </section>
@@ -475,8 +475,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <span class="plan-flag">Recommended</span>
         <div class="plan-head">
           <h2 class="plan-name">Premium</h2>
-          <div class="plan-price"><span class="plan-amount" id="premiumAmount">A$2.08</span><span class="plan-per">/mo</span></div>
-          <p class="plan-billed" id="premiumBilled">Billed A$25 yearly · save 31%</p>
+          <div class="plan-price"><span class="plan-amount" id="premiumAmount">A$3.33</span><span class="plan-per">/mo</span></div>
+          <p class="plan-billed" id="premiumBilled">Billed A$40 yearly · save 33%</p>
           <p class="plan-tagline">Everything in Free, plus:</p>
         </div>
         <ul class="plan-features">
@@ -564,7 +564,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   <script>
     // Billing toggle — swaps the Premium price display and the checkout intent.
     (function () {
-      var MONTHLY = 3, ANNUAL = 25;
+      var MONTHLY = 5, ANNUAL = 40;
       var annualMonthly = (ANNUAL / 12).toFixed(2);
       var savePct = Math.round((1 - ANNUAL / (MONTHLY * 12)) * 100);
       var mo = document.getElementById('billMonthly');
