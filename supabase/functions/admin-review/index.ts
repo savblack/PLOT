@@ -706,7 +706,6 @@ Deno.serve(async (req) => {
   const WORKFLOWS = [
     { id: 'marketing-weekly-batch.yml', label: 'Weekly batch' },
     { id: 'marketing-publish.yml', label: 'Publish' },
-    { id: 'marketing-metrics-report.yml', label: 'Metrics report' },
   ];
   const workflowStatuses = await Promise.all(WORKFLOWS.map((w) => workflowStatus(w.id)));
 

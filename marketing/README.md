@@ -19,7 +19,6 @@ commands exist as fallback and debug tools, not the primary operating model.
 
 ```text
 Sunday morning
-  -> marketing-metrics-report.yml emails the completed week's performance
   -> marketing-weekly-batch.yml generates the next week
 
 Every day
@@ -98,8 +97,8 @@ Question posts are generic everywhere. They are not tied to a specific title.
   analytics path (the Meta-direct token/insights pipeline for IG/Threads was
   retired; it depended on a 60-day token refresh that was never wired back up
   after GitHub workflows were trimmed, so it had been silently dead anyway).
-- The weekly metrics report (`marketing-metrics-report.yml`) emails whatever
-  numbers do exist; nothing consumes them automatically.
+- Nothing emails performance numbers on a schedule any more. `npm run mkt:report`
+  still sends the report by hand (`marketing/metrics/report.mjs`) if you want it.
 
 ## Output paths
 
