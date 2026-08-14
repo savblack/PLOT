@@ -3,6 +3,13 @@ name: Timeline refresh — weekly PR
 # Keeps the marketing site's timeline and app-mockup hero on current titles.
 # Opens a PR rather than committing: a newly appended title lands with an empty
 # note, and the notes are title-specific jokes a human writes in review.
+#
+# ci.yml will not run on the PR this opens. GitHub deliberately does not trigger
+# workflows from events made with GITHUB_TOKEN, so the checks list looks emptier
+# than on a human PR: that is expected, not a broken pipeline. The Cloudflare
+# Pages preview still builds, because that is a GitHub App on push webhooks
+# rather than an Actions workflow, so the page can still be eyeballed before
+# merging. Swap in a PAT if the repo's own checks are ever wanted here.
 
 on:
   schedule:
@@ -87,7 +94,11 @@ jobs:
             echo 'Check the Cloudflare Pages preview on this PR to see the timeline and the app-mockup hero before merging.'
           } > pr-body.md
 
+          # Assigned, not just opened: a bot PR that mentions nobody is silent
+          # unless the repo is watched on "All activity", and this PR is only
+          # useful if it is seen (a new entry needs its note written here).
           gh pr create \
             --title "content(website): refresh timeline posters and trending hero" \
-            --body-file pr-body.md
+            --body-file pr-body.md \
+            --assignee "${{ github.repository_owner }}"
           rm -f notes.md pr-body.md
