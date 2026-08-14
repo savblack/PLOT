@@ -1048,10 +1048,14 @@
     .origin-actions .demo-link { margin-top: 0; }
 
     /* "Pulls from" platform-proof row — substantiates the "every platform"
-       claim. Logos in their own brand colours (Netflix, Prime, Crunchyroll,
-       Hulu, Stan, hayu and AMC+ carry colour), sized per-logo for even optical
-       weight. The rest ship as white artwork and would vanish on this white
-       section, so they're flattened to ink below. */
+       claim. Logos keep their own brand colours and are sized per-logo for even
+       optical weight. Every mark is a WebP cropped tight to its artwork, so the
+       heights below are true ink heights rather than boxes with padding.
+       Two marks ship recoloured rather than as supplied: AMC+ drew its "+" and
+       one frame corner in white, which left both invisible here, and its cyan
+       was too pale to read at the row's opacity — it's flattened to one darker
+       teal. Disney+ is darkened the same way for weight parity with Paramount+
+       and HBO max, which flank it. */
     .demo-copy .btn { margin-top: 2.6rem; }
     /* Let the column keep its grid share; the marquee's wide track clips inside. */
     .demo-copy { min-width: 0; }
@@ -1069,21 +1073,25 @@
     }
     @keyframes marquee-scroll { to { transform: translateX(-50%); } }
     .marquee .pl { width: auto; display: block; opacity: 0.55; }
-    /* White-artwork logos → solid ink, so they read on the white section.
-       brightness(0) keeps each mark's exact shape and alpha, unlike invert(),
-       which would push Disney+'s cool-tinted antialiasing to a warm brown. */
-    .pl-max, .pl-disney, .pl-paramount, .pl-peacock { filter: brightness(0); }
-    .pl-netflix     { height: 18px; }
+    /* No filter needed: every mark now ships dark enough to read on white, and
+       flattening would cost Peacock its colour dots and Disney+ its teal. */
+    .pl-netflix     { height: 13px; }   /* all-caps, so a shorter measure than the lowercase marks */
     .pl-prime       { height: 16px; }
     .pl-max         { height: 21px; }
     .pl-disney      { height: 20px; }
     .pl-paramount   { height: 21px; }
     .pl-amc         { height: 20px; }
     .pl-crunchyroll { height: 16px; }
-    .pl-hulu        { height: 15px; }
+    .pl-hulu        { height: 18px; }   /* ascenders eat the measure, so it runs taller than the row's other lowercase marks */
     .pl-peacock     { height: 15px; }
     .pl-stan        { height: 17px; }
     .pl-hayu        { height: 16px; }
+    /* Peacock opts out of the row's fade: its five colour dots are the point of
+       the mark, and mixing 45% white into them turns the amber one invisible.
+       Its wordmark is baked to the grey the fade used to produce, so it still
+       matches its neighbours. Needs the .marquee prefix to outrank the opacity
+       above; rebake the file if that opacity ever changes. */
+    .marquee .pl-peacock { opacity: 1; }
     @media (prefers-reduced-motion: reduce) { .marquee-track { animation: none; } }
 
     /* App UI shown as floating, deconstructed cards (replaces the phone frame).
@@ -1702,28 +1710,28 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           <div class="marquee-track">
             <!-- set 1 -->
             <img class="pl pl-netflix"     src="images/platforms/netflix.webp"            alt="" loading="lazy" decoding="async">
-            <img class="pl pl-prime"       src="images/platforms/amazon-prime-video.svg"  alt="" loading="lazy" decoding="async">
+            <img class="pl pl-prime"       src="images/platforms/amazon-prime-video.webp"  alt="" loading="lazy" decoding="async">
             <img class="pl pl-max"         src="images/platforms/hbo-max.webp"            alt="" loading="lazy" decoding="async">
             <img class="pl pl-disney"      src="images/platforms/disney-plus.webp"        alt="" loading="lazy" decoding="async">
-            <img class="pl pl-paramount"   src="images/platforms/paramount-plus.svg"      alt="" loading="lazy" decoding="async">
+            <img class="pl pl-paramount"   src="images/platforms/paramount-plus.webp"      alt="" loading="lazy" decoding="async">
             <img class="pl pl-amc"         src="images/platforms/amc-plus.webp"           alt="" loading="lazy" decoding="async">
-            <img class="pl pl-crunchyroll" src="images/platforms/crunchyroll.svg"         alt="" loading="lazy" decoding="async">
-            <img class="pl pl-hulu"        src="images/platforms/hulu.svg"                alt="" loading="lazy" decoding="async">
-            <img class="pl pl-peacock"     src="images/platforms/peacock.svg"             alt="" loading="lazy" decoding="async">
-            <img class="pl pl-stan"        src="images/platforms/stan.svg"                alt="" loading="lazy" decoding="async">
-            <img class="pl pl-hayu"        src="images/platforms/hayu.svg"                alt="" loading="lazy" decoding="async">
+            <img class="pl pl-crunchyroll" src="images/platforms/crunchyroll.webp"         alt="" loading="lazy" decoding="async">
+            <img class="pl pl-hulu"        src="images/platforms/hulu.webp"                alt="" loading="lazy" decoding="async">
+            <img class="pl pl-peacock"     src="images/platforms/peacock.webp"             alt="" loading="lazy" decoding="async">
+            <img class="pl pl-stan"        src="images/platforms/stan.webp"                alt="" loading="lazy" decoding="async">
+            <img class="pl pl-hayu"        src="images/platforms/hayu.webp"                alt="" loading="lazy" decoding="async">
             <!-- set 2 (duplicate for a seamless loop) -->
             <img class="pl pl-netflix"     src="images/platforms/netflix.webp"            alt="" loading="lazy" decoding="async">
-            <img class="pl pl-prime"       src="images/platforms/amazon-prime-video.svg"  alt="" loading="lazy" decoding="async">
+            <img class="pl pl-prime"       src="images/platforms/amazon-prime-video.webp"  alt="" loading="lazy" decoding="async">
             <img class="pl pl-max"         src="images/platforms/hbo-max.webp"            alt="" loading="lazy" decoding="async">
             <img class="pl pl-disney"      src="images/platforms/disney-plus.webp"        alt="" loading="lazy" decoding="async">
-            <img class="pl pl-paramount"   src="images/platforms/paramount-plus.svg"      alt="" loading="lazy" decoding="async">
+            <img class="pl pl-paramount"   src="images/platforms/paramount-plus.webp"      alt="" loading="lazy" decoding="async">
             <img class="pl pl-amc"         src="images/platforms/amc-plus.webp"           alt="" loading="lazy" decoding="async">
-            <img class="pl pl-crunchyroll" src="images/platforms/crunchyroll.svg"         alt="" loading="lazy" decoding="async">
-            <img class="pl pl-hulu"        src="images/platforms/hulu.svg"                alt="" loading="lazy" decoding="async">
-            <img class="pl pl-peacock"     src="images/platforms/peacock.svg"             alt="" loading="lazy" decoding="async">
-            <img class="pl pl-stan"        src="images/platforms/stan.svg"                alt="" loading="lazy" decoding="async">
-            <img class="pl pl-hayu"        src="images/platforms/hayu.svg"                alt="" loading="lazy" decoding="async">
+            <img class="pl pl-crunchyroll" src="images/platforms/crunchyroll.webp"         alt="" loading="lazy" decoding="async">
+            <img class="pl pl-hulu"        src="images/platforms/hulu.webp"                alt="" loading="lazy" decoding="async">
+            <img class="pl pl-peacock"     src="images/platforms/peacock.webp"             alt="" loading="lazy" decoding="async">
+            <img class="pl pl-stan"        src="images/platforms/stan.webp"                alt="" loading="lazy" decoding="async">
+            <img class="pl pl-hayu"        src="images/platforms/hayu.webp"                alt="" loading="lazy" decoding="async">
           </div>
         </div>
       </div>
