@@ -1,0 +1,59 @@
+# Watches that the nightly database backup actually landed in R2, and emails if
+# it did not.
+#
+# WHY THIS IS A WORKER AND NOT A WORKFLOW: db-backup.yml already alerts when it
+# runs and fails. It cannot alert when it never runs at all — and that is the
+# failure that actually happened. On 2026-08-14 GitHub Actions stopped starting
+# jobs entirely at 10:02Z on a billing block: no step of any workflow executed,
+# so no in-job alert could fire. A watchdog has to live outside the thing it
+# watches, which is why this runs on Cloudflare's cron instead.
+#
+# Deploy:
+#   cd apps/web/workers/backup-heartbeat
+#   npx wrangler secret put RESEND_API_KEY     # same key the marketing workflows use
+#   npx wrangler deploy
+#
+# Needs a Cloudflare API token with "Workers Scripts: Edit" plus R2 read. The
+# R2 binding below grants bucket access directly, so no R2 access keys are
+# involved — unlike the workflow, which needs R2_ACCESS_KEY_ID/SECRET.
+#
+# Check it by hand (HEARTBEAT_TOKEN secret required):
+#   curl -H "x-heartbeat-token: <token>" https://backup-heartbeat.<subdomain>.workers.dev
+
+name = "backup-heartbeat"
+main = "src/index.js"
+compatibility_date = "2025-06-01"
+workers_dev = true
+
+# 05:00 UTC — after the 03:17 backup, with room for a slow run. Early enough
+# that a missed backup is known the same morning.
+[triggers]
+crons = ["0 5 * * *"]
+
+[[r2_buckets]]
+binding = "BACKUPS"
+bucket_name = "plot-db-backups"
+
+[vars]
+PREFIX = "db-backups/"
+
+# One missed night is worth knowing about. The nightly cadence means anything
+# past ~26h is a skipped run, not a slow one. db-backup.yml's own alert covers
+# "ran and broke", so this firing means "did not run at all".
+MAX_AGE_HOURS = "26"
+
+# A dump that exists but is truncated or empty is still a dead backup, and its
+# mere presence would otherwise look healthy.
+#
+# Calibrated against the real artifact, not a guess: 2026-08-14's dump was
+# 563,726 bytes (a 20MB database compresses hard). An earlier 500KB floor was
+# only 13% below that and would have false-alarmed on ordinary variation. 200KB
+# keeps ~2.8x headroom while still catching an empty or aborted upload.
+# Revisit if the database grows by an order of magnitude.
+MIN_BYTES = "200000"
+
+# Where the alarm goes. Plain var, not a secret, so it is visible and easy to
+# change — feedback@theplot.tv is the inbox already used elsewhere in the repo
+# and routes through Cloudflare Email Routing.
+ALERT_EMAIL = "feedback@theplot.tv"
+ALERT_FROM = "PLOT <hello@theplot.tv>"

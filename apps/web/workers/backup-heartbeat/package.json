@@ -1,0 +1,13 @@
+{
+  "name": "plot-backup-heartbeat",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "description": "Cron Worker that verifies a fresh database dump exists in R2 and emails when it does not.",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail",
+    "check": "wrangler dev --remote --test-scheduled",
+    "test": "node test/assess.test.mjs"
+  }
+}
