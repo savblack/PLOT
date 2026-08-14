@@ -125,10 +125,28 @@ pg_restore --clean --if-exists --no-owner --no-privileges \
   cluster instead — that is what the drill script does.
 - Run `scripts/db-restore-drill.sh` after any migration that adds an extension type, and
   otherwise about monthly. Update the "Last verified" line above with the result.
-- ⚠️ **Two triggers embed a long-lived `service_role` JWT directly in their DDL**
-  (`on_feedback_insert` on `feedback`, `profiles-changed-brevo-sync` on `profiles`, both
-  calling `supabase_functions.http_request`). That token is therefore inside every dump,
-  and it appears in plaintext in any `pg_dump`/`pg_restore -l` output or schema diff. It
-  expires in 2036. Treat dumps as containing a full-privilege credential, and rotate the
-  key + recreate those triggers — see [[plot-secret-hygiene]] notes on service-role
-  rotation.
+- ⚠️ **Dumps taken before 2026-08-14 contain a live `service_role` JWT in plaintext.**
+  `on_feedback_insert` and `profiles-changed-brevo-sync` used
+  `supabase_functions.http_request`, which takes the Authorization header as a literal
+  trigger argument, so the key sat in the trigger DDL and therefore in every dump and any
+  `pg_restore -l` output. Fixed by `20260814120000_webhook_bearer_to_vault.sql`: the
+  bearer and base URL now come from Vault and the DDL carries only a function slug.
+
+  **The fix does not un-leak the old artifacts.** Up to 30 days of dumps in R2 still
+  embed that key, and it is valid until 2036. Two consequences:
+
+  - Treat any dump dated before 2026-08-14 as carrying a full-privilege credential.
+  - Rotating is still worth doing. Do **not** rotate the JWT secret — that also changes
+    the `anon` key and signs every user out. This project already has `sb_publishable_*` /
+    `sb_secret_*` keys and asymmetric signing keys, so the cheap path is to migrate
+    consumers to the new secret key and then disable legacy keys, with no session loss.
+    `internalWebhook.ts`, `notify-feedback`, `notify-signup` and `profiles-changed` assert
+    `role === 'service_role'` by decoding the bearer as a JWT, and an `sb_secret_*` key is
+    not a JWT — those four need updating first or they fail closed.
+
+  To rotate the webhook bearer itself now, it is a Vault update and nothing else:
+
+  ```sql
+  delete from vault.secrets where name = 'edge_webhook_bearer';
+  select vault.create_secret('<new key>', 'edge_webhook_bearer', 'Bearer for internal DB webhooks');
+  ```
