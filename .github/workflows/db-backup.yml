@@ -2,8 +2,15 @@
 #
 # WHY: the Supabase project is on the free plan (no managed backups / PITR), so a
 # destructive write is otherwise unrecoverable. This takes a nightly logical dump
-# of the public + auth + storage schemas (auth includes password hashes, so a
-# clobbered credential can be restored), encrypts it, and stores it in R2 for 30 days.
+# of the public + auth + storage + supabase_migrations schemas (auth includes
+# password hashes, so a clobbered credential can be restored; supabase_migrations
+# keeps the deploy history a restore needs), encrypts it, and stores it in R2 for
+# 30 days.
+#
+# SCOPE GAP: this covers the database only. Files in Supabase Storage buckets are
+# NOT here — pg_dump captures `storage.objects` metadata, not object bytes, so a
+# restore leaves avatar rows pointing at objects that no longer exist. The bucket
+# sync is a separate job.
 #
 # The dump contains password hashes and PII — it is ALWAYS gpg-encrypted before it
 # leaves the runner. Never store or commit an unencrypted dump.
@@ -73,8 +80,14 @@ jobs:
           # Custom format (-Fc) is compressed and restorable with pg_restore.
           # Limit to the schemas we actually need to recover (avoids noise/permission
           # errors on Supabase-internal schemas).
+          # supabase_migrations carries schema_migrations — the Supabase GitHub
+          # integration's own history. Restoring without it leaves that table
+          # empty, and a history that disagrees with supabase/migrations/ stops
+          # every subsequent deploy dead (that exact drift silently dropped 29
+          # consecutive merges between 2026-08-09 and 08-13). It is two small
+          # rows-per-migration, so there is no reason not to carry it.
           pg_dump -Fc --no-owner --no-privileges \
-            -n public -n auth -n storage \
+            -n public -n auth -n storage -n supabase_migrations \
             -d "$SUPABASE_DB_URL" -f "$FILE"
           gpg --batch --yes --symmetric --cipher-algo AES256 \
             --passphrase "$BACKUP_GPG_PASSPHRASE" -o "${FILE}.gpg" "$FILE"
@@ -102,3 +115,19 @@ jobs:
                 aws s3 rm "s3://${R2_BUCKET}/db-backups/${key}" --endpoint-url "$R2_ENDPOINT" --only-show-errors
               fi
             done
+
+      # Last, so it also catches a failing prune. Two layers exist because they
+      # catch different failures: this one covers "the job ran and broke". It
+      # CANNOT cover "the job never started" — a blocked spending limit means no
+      # step here executes at all, which is exactly what happened 2026-08-14.
+      # The backup-heartbeat Worker covers that case, from outside GitHub.
+      - name: Alert on failure
+        if: failure()
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          ADMIN_EMAIL: ${{ secrets.MARKETING_ADMIN_EMAIL }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          WORKFLOW_NAME: db-backup
+          ALERT_SUBJECT: 'PLOT: nightly DATABASE BACKUP failed'
+          FAILURE_NOTE: 'No new dump reached R2 tonight. The Supabase project is on the free plan, so there are no managed backups behind this.'
+        run: bash .github/scripts/marketing-alert.sh
