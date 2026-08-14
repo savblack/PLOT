@@ -4,9 +4,10 @@ name: Supabase deploy guard
 # `supabase/functions/*` to PRODUCTION on every push to main. It runs out of
 # band, so when it fails the merge is still green and nothing in this repo
 # notices — production silently stops tracking main until somebody thinks to
-# look. That has happened twice: 2026-08-08 went unnoticed for five days, and
-# on 2026-08-13 six consecutive merges were dropped over 2h20m, all reporting
-# `Remote migration versions not found in local migrations directory`.
+# look. Last occurrence: 29 consecutive merges were dropped between db08a72
+# (2026-08-09 00:40Z) and 8a3f716 (2026-08-13 12:32Z) — about four and a half
+# days — every one reporting `Remote migration versions not found in local
+# migrations directory`, and every one merging green. Found by accident.
 #
 # This job reads the integration's own check result and raises an alarm when it
 # did not succeed. It is deliberately an alarm and NOT a merge gate: the
@@ -25,6 +26,10 @@ on:
 
 permissions:
   contents: read
+  # `checks: read` is what makes the check-runs query work at all. Without it
+  # GITHUB_TOKEN gets `Resource not accessible by integration (HTTP 403)` and
+  # this job fails on every push — which is how it first shipped.
+  checks: read
   issues: write
 
 concurrency:
@@ -55,9 +60,22 @@ jobs:
           # pending to reach zero would always burn the full timeout.
           runs='[]'
           for _ in $(seq 1 20); do
-            runs=$(gh api \
+            # Do not let a transient API error read as a deploy failure — that
+            # would claim production is behind when we simply could not look.
+            if ! runs=$(gh api \
               "repos/$GITHUB_REPOSITORY/commits/$SHA/check-runs?filter=all&per_page=100" \
-              --jq '[.check_runs[] | select(.app.slug == "supabase")]')
+              --jq '[.check_runs[] | select(.app.slug == "supabase")]' 2>/tmp/gh-err); then
+              echo "::error title=Could not read the Supabase verdict::$(tr -d '\n' < /tmp/gh-err)"
+              {
+                echo "## Could not read the Supabase verdict"
+                echo ""
+                echo "The check-runs query failed, so this says nothing about whether"
+                echo "production received \`${SHA:0:7}\`. Verify by hand."
+                echo ""
+                echo "> $(tr -d '\n' < /tmp/gh-err)"
+              } >> "$GITHUB_STEP_SUMMARY"
+              exit 1
+            fi
 
             if [ "$(jq '[.[] | select(.conclusion == "success" or .conclusion == "failure")] | length' <<< "$runs")" -gt 0 ]; then
               break
@@ -94,6 +112,11 @@ jobs:
           fi
 
           if [ "$failed" -gt 0 ]; then
+            # Explicit flag for the issue step. Do not gate that step on
+            # `failed != '0'`: if this step dies early the output is empty, and
+            # GitHub's loose comparison treats '' and '0' as equal, so the gate
+            # would depend on coercion rather than on a real verdict.
+            echo "alarm=true" >> "$GITHUB_OUTPUT"
             echo "::error title=Supabase did not deploy::${reason:-The integration reported failure with no summary.}"
             {
               echo "## Production did not receive this commit"
@@ -129,7 +152,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Raise an issue so a red integration cannot go unnoticed
-        if: failure() && steps.verdict.outputs.failed != '0'
+        if: failure() && steps.verdict.outputs.alarm == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           SHA: ${{ github.sha }}
