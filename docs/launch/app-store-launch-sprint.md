@@ -10,7 +10,8 @@ PLOT goes dark to the public now. All 20 existing users are blocked and emailed.
 Everything unfinished gets built behind that curtain, and web, iOS and pricing all
 go live on one day of your choosing.
 
-Sprint 0 ships in about two days. Full relaunch is **6 to 8 weeks** from then.
+**6 to 8 weeks.** There is no go-dark sprint and no payments sprint; PLOT is live now and
+launches free.
 
 ## Decisions
 
@@ -30,7 +31,7 @@ re-litigated later.
 | 8 | **In-app + email + push**, with push scoped to watchlist availability alerts only. |
 | 9 | **Approve then hold**: get App Store approval, sit on it, release on your date. |
 | 10 | iOS auth is **email + Sign in with Apple + Google**. |
-| 11 | **Basic Statistics free, deeper Statistics Premium.** |
+| 11 | **Statistics ships entirely free. Premium is cut from this cycle** (2026-08-13); prices reset to A$5/mo, A$40/yr for whenever it does ship. |
 | 12 | **Web inherits core work for free** and gets no dedicated sprint. |
 | 13 | **6 to 8 weeks**, with the cut list agreed in advance. Revised from 5 to 7 by the social rethink. |
 
@@ -200,18 +201,40 @@ tier is far more generous, but the lesson stands.
    shares a failure mode with `for-you-recompute`, which once failed silently 100%
    of the time.
 
-## Sprint 4 — Payments (2 to 3 days)
+## Sprint 4 — Payments: CUT from this cycle (2026-08-13)
 
-- Complete `docs/billing/stripe-launch.md` in live mode.
+**PLOT launches free. Premium does not ship.**
+
+TMDB confirmed that monetising requires a **$150/month** contract, self-serve and
+month to month, for companies under $500k annual revenue. Enterprise starts at
+$3,500. Attribution is required but "does not have to be obtrusive", which the
+Credits surface already satisfies.
+
+At 22 users no price covers that. Even 100% conversion at A$8/month is roughly
+A$176, about US$115, against a fixed monthly nut of about US$158. The nut is
+fixed, not scaling: Supabase's free tier runs to 50,000 monthly active users and
+PLOT's database holds about 500 rows, and Cloudflare, Resend, Brevo, OMDb and
+PostHog are all comfortably inside free tiers. TMDB is 95% of the cost.
+
+**Prices are reset now, so the paywall is designed around a number that works:
+A$5/month or A$40/year**, up from A$3 and A$25. That moves breakeven from about 92
+monthly subscribers to about 53. For context, Letterboxd Pro is US$19/year, Patron
+US$49, Trakt VIP US$60. At A$25/year PLOT was priced below Letterboxd Pro while
+carrying a fixed cost Letterboxd amortises across millions of users.
+
+`SHOW_PRICING_PAGE` stays off. When Premium does ship:
+
+- Complete `docs/billing/stripe-launch.md` in live mode at the new prices.
 - Flip `SHOW_PRICING_PAGE` on web, mobile and the website Pages variable.
 - **Manually re-add `/plans.html`** to `apps/website/llms.txt` and
   `apps/website/sitemap.xml`. Those entries were deleted outright, not gated, and
   will not return with the flag.
-- Split Statistics: basic free, deeper Premium. Scope the Premium tier to metrics
-  derivable from `history` directly (genre breakdown, ratings distribution,
-  year-over-year). Watch-time and top-people need a nightly enrichment job and are
-  v2.
+- Take the TMDB contract first.
 - iOS shows Premium as a web upgrade. No in-app purchase surface.
+
+**Still open:** whether the existing Ko-fi tipping, live since 2026-08-02, already
+counts as revenue under "this includes all revenue". If it does, the contract is
+owed regardless of Premium. Awaiting TMDB's answer (#519).
 
 ## Sprint 5 — App Store (3 to 5 days, then review)
 
@@ -239,11 +262,14 @@ tier is far more generous, but the lesson stands.
 | 2b — Remove feed, then report + block | 3 to 4 days |
 | 2c — Share cards | ~1 week |
 | 3 — Notifications | 1 to 1.5 weeks |
-| 4 — Payments | 2 to 3 days |
+| 4 — Payments | **cut** |
 | 5 — App Store | 3 to 5 days + review |
 | 6 — Brevo | 3 to 5 days, overlaps |
 
 **6 to 8 weeks.** Roughly five of those are work; the rest is Apple and reality.
+
+Cutting the payments sprint saves two or three days, which is inside the noise of a
+six-to-eight-week range, so the headline does not move.
 
 Revised up from 5 to 7 by the social rethink. Deleting the engagement layer and
 shrinking report/block and the notification taxonomy saves perhaps half a week, and

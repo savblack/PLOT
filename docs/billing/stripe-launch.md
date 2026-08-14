@@ -1,13 +1,13 @@
 # PLOT Premium launch checklist
 
-PLOT Premium is A$3 monthly or A$25 yearly. The web app uses Stripe Checkout
+PLOT Premium is A$5 monthly or A$40 yearly. The web app uses Stripe Checkout
 for purchase and the Stripe Customer Portal for cancellation, payment-method
 updates, and switching between those two plans.
 
 ## Before going live
 
 1. In Stripe **live mode**, create a PLOT Premium product with two recurring
-   AUD prices: A$3/month and A$25/year. Record the two live price IDs.
+   AUD prices: A$5/month and A$40/year. Record the two live price IDs.
 2. Set the Stripe account's public business URL and support email. The Customer
    Portal should also show the PLOT terms and privacy URLs.
 3. In the live-mode Customer Portal, enable cancellation, payment-method
