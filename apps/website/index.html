@@ -2692,16 +2692,32 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       // Each list carries several on-theme posters. The coverflow shows one
       // cover per list on the first pass, then loops back with the next poster
       // for that same list — fresh artwork, same category.
+      //
+      // `imgs` are the stills the section ships with: they paint immediately and
+      // remain the fallback. `q` then pulls live artwork per list, because each
+      // heading needs its own query — the shared trending sets would put the
+      // same three films under all three headings, and a horror release is not
+      // a date-night pick. The counts stay hardcoded: they describe an imagined
+      // user's list, not anything TMDB knows.
+      //
+      // TMDB exposes no awards data, so "Award winners" uses acclaim (a high
+      // rating earned over a large vote count) as the closest honest proxy.
       const cats = [
-        { nm: 'Award winners', ct: '20 films', imgs: ['images/timeline/oppenheimer.webp', 'images/hero/anatomy-of-a-fall.webp', 'images/hero/aftersun.webp'] },
-        { nm: 'Date night',    ct: '12 films', imgs: ['images/hero/past-lives.webp', 'images/hero/anyone-but-you.webp', 'images/hero/people-we-meet-on-vacation.webp'] },
-        { nm: 'Spooky season', ct: '13 films', imgs: ['images/hero/nosferatu.webp', 'images/hero/longlegs.webp', 'images/hero/heretic.webp'] },
+        { nm: 'Award winners', ct: '20 films',
+          q: 'sort_by=vote_average.desc&vote_count.gte=2500',
+          imgs: ['images/timeline/oppenheimer.webp', 'images/hero/anatomy-of-a-fall.webp', 'images/hero/aftersun.webp'] },
+        { nm: 'Date night',    ct: '12 films',
+          q: 'with_genres=10749&sort_by=popularity.desc&vote_count.gte=200',   // 10749 = Romance
+          imgs: ['images/hero/past-lives.webp', 'images/hero/anyone-but-you.webp', 'images/hero/people-we-meet-on-vacation.webp'] },
+        { nm: 'Spooky season', ct: '13 films',
+          q: 'with_genres=27&sort_by=popularity.desc&vote_count.gte=200',      // 27 = Horror
+          imgs: ['images/hero/nosferatu.webp', 'images/hero/longlegs.webp', 'images/hero/heretic.webp'] },
       ];
       // Flatten round-by-round: list A #1, B #1, C #1, then A #2, B #2, C #2, …
       const rounds = Math.max(...cats.map(c => c.imgs.length));
       const covers = [];
       for (let r = 0; r < rounds; r++) {
-        cats.forEach(c => covers.push({ nm: c.nm, ct: c.ct, cat: cats.indexOf(c), img: c.imgs[r % c.imgs.length] }));
+        cats.forEach((c, ci) => covers.push({ nm: c.nm, ct: c.ct, cat: ci, img: c.imgs[r % c.imgs.length] }));
       }
       const nm = document.getElementById('cfNm'), ct = document.getElementById('cfCt');
       const dots = [...document.getElementById('cfDots').children];
@@ -2734,6 +2750,38 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         wrapper.style.transition = '';                        // … then restore its glide
       }
 
+      // Swap the shipped stills for live artwork, one query per list. A list is
+      // replaced only once all of its posters have decoded: .cf-card paints via
+      // background-image, which shows nothing while a new URL loads, so applying
+      // them eagerly would blink the ring. Each list resolves independently, so
+      // one failing query leaves only its own covers on the stills.
+      const POSTER = 'https://image.tmdb.org/t/p/w500';
+      const preload = (url) => new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = resolve;
+        img.onerror = reject;
+        img.src = url;
+      });
+
+      function loadLiveCovers() {
+        cats.forEach((c, ci) => {
+          tmdbProxy('discover/movie', c.q + '&include_adult=false')
+            .then((res) => {
+              const urls = (((res && res.results) || [])
+                .filter((m) => !!m.poster_path)
+                .slice(0, rounds)
+                .map((m) => POSTER + m.poster_path));
+              if (urls.length < rounds) throw new Error('too few posters for ' + c.nm);
+              return Promise.all(urls.map(preload)).then(() => urls);
+            })
+            .then((urls) => {
+              urls.forEach((url, r) => { covers[r * cats.length + ci].img = url; });
+              paint();
+            })
+            .catch(() => {});     // this list keeps the artwork it shipped with
+        });
+      }
+
       const INTERVAL = 2800, LEAD = 700;                      // ~2.8s dwell on each list
       let timer = null, lead = null;
       const start = () => {
@@ -2751,6 +2799,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         cf.innerHTML = '';
         ring = STATES.map(s => { const d = document.createElement('div'); d.className = 'cf-card ' + s; cf.appendChild(d); return d; });
         paint();
+        // Deliberately here rather than on page load: this section sits well
+        // below the fold, so its three queries wait until it is about to be seen,
+        // same as its posters and its timer.
+        loadLiveCovers();
         if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
         start();
         cf.parentElement.addEventListener('mouseenter', stop);  // pause to study
