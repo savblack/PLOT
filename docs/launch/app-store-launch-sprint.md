@@ -37,15 +37,14 @@ re-litigated later.
 
 ### Why no grandfathering
 
-Production has 20 users, 6 of whom signed in during the last week, who have
-between them marked 13 titles as watched in the product's lifetime. Grandfathering
-would have bought very little and cost a standing "every merge must be safe for
-live traffic" constraint across the entire build. Blocking everyone removes that
-constraint, removes the sign-in escape hatch from the splash, and turns 20 users
-into 20 warm launch advocates instead of 20 people watching you rebuild underneath
-them.
+The live user base is small, and the watch activity recorded across its lifetime
+is lighter still. Grandfathering would have bought very little and cost a standing
+"every merge must be safe for live traffic" constraint across the entire build.
+Blocking everyone removes that constraint, removes the sign-in escape hatch from
+the splash, and turns the existing users into warm launch advocates instead of
+people watching you rebuild underneath them.
 
-Each of the 20 gets a personal email: what is happening, that their data is safe,
+Every existing user gets a personal email: what is happening, that their data is safe,
 how to export or delete it, and an offer of first access plus one month of free
 Premium at relaunch.
 
@@ -69,12 +68,13 @@ them destroys nothing, and this is the safest moment it will ever be. Half-remov
 is how PLOT has twice ended up doing dead-code cleanups, one of which accidentally
 deleted the live checkout page.
 
-What stays is the substrate. `feed_posts` holds 38 rows and is populated by three
-database triggers from real actions: watched, favourited, added to a top list. That
-is structurally the same activity model Goodreads uses. Keeping it recording while
-unsurfaced means a Goodreads-style activity stream stays possible later without
-starting from an empty history. It is not surfaced at launch because 20 users and 38
-activity rows render an empty room, and an empty social surface is worse than none.
+What stays is the substrate. `feed_posts` is populated by three database triggers
+from real actions: watched, favourited, added to a top list. That is structurally
+the same activity model Goodreads uses. Keeping it recording while unsurfaced means
+a Goodreads-style activity stream stays possible later without starting from an
+empty history. It is not surfaced at launch because the current user base and the
+activity it has generated would render an empty room, and an empty social surface
+is worse than none.
 
 **Report and block still ship**, and are now scoped to what actually exists.
 Guideline 1.2 applies to PLOT regardless of the feed: the guideline reads
@@ -205,22 +205,24 @@ tier is far more generous, but the lesson stands.
 
 **PLOT launches free. Premium does not ship.**
 
-TMDB confirmed that monetising requires a **$150/month** contract, self-serve and
-month to month, for companies under $500k annual revenue. Enterprise starts at
-$3,500. Attribution is required but "does not have to be obtrusive", which the
-Credits surface already satisfies.
+TMDB confirmed that monetising requires a paid commercial licence — self-serve and
+month to month below an annual-revenue threshold, with an enterprise tier above it.
+Attribution is required but "does not have to be obtrusive", which the Credits
+surface already satisfies.
 
-At 22 users no price covers that. Even 100% conversion at A$8/month is roughly
-A$176, about US$115, against a fixed monthly nut of about US$158. The nut is
-fixed, not scaling: Supabase's free tier runs to 50,000 monthly active users and
-PLOT's database holds about 500 rows, and Cloudflare, Resend, Brevo, OMDb and
-PostHog are all comfortably inside free tiers. TMDB is 95% of the cost.
+At PLOT's current size no price covers that licence: even full conversion of the
+existing user base would not meet the monthly cost. That cost is fixed rather than
+scaling — Supabase's free tier runs to 50,000 monthly active users and PLOT's
+database is a rounding error against it, and Cloudflare, Resend, Brevo, OMDb and
+PostHog all sit comfortably inside free tiers. The TMDB licence is nearly the
+entire bill.
 
 **Prices are reset now, so the paywall is designed around a number that works:
-A$5/month or A$40/year**, up from A$3 and A$25. That moves breakeven from about 92
-monthly subscribers to about 53. For context, Letterboxd Pro is US$19/year, Patron
-US$49, Trakt VIP US$60. At A$25/year PLOT was priced below Letterboxd Pro while
-carrying a fixed cost Letterboxd amortises across millions of users.
+A$5/month or A$40/year**, up from the original A$3 and A$25. That roughly halves
+the number of subscribers needed to break even. For context, Letterboxd Pro is
+US$19/year, Patron US$49, Trakt VIP US$60. At A$25/year PLOT was priced below
+Letterboxd Pro while carrying a fixed cost Letterboxd amortises across millions
+of users.
 
 `SHOW_PRICING_PAGE` stays off. When Premium does ship:
 
