@@ -31,12 +31,5 @@ simple = { limit = 30, period = 60 }
 # /fonts). Points at the deployed app by default.
 FONT_BASE = "https://app.theplot.tv"
 
-# TMDB_API_KEY and SENTRY_DSN are SECRETS, not vars — set them with:
+# TMDB_API_KEY is a SECRET, not a var — set it with:
 #   npx wrangler secret put TMDB_API_KEY
-#   npx wrangler secret put SENTRY_DSN
-#
-# A DSN carries no read access and Sentry's browser SDK does embed it in client
-# code, but this Worker is server-side, so nothing forces it into the open and a
-# published DSN invites junk events against the free-tier quota. If SENTRY_DSN is
-# unset the SDK initialises with an undefined DSN and quietly no-ops, so error
-# reporting fails silently — set it as part of any first deploy.

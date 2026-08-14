@@ -8,7 +8,6 @@
     "deploy": "wrangler deploy"
   },
   "dependencies": {
-    "@sentry/cloudflare": "^9.0.0",
     "react": "^19.2.7",
     "workers-og": "^0.0.25"
   },

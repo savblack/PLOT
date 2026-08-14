@@ -15,8 +15,6 @@
 name = "tmdb-proxy"
 main = "src/index.js"
 compatibility_date = "2025-06-01"
-# Sentry's Cloudflare SDK needs AsyncLocalStorage.
-compatibility_flags = ["nodejs_compat"]
 workers_dev = true
 
 [vars]
@@ -24,16 +22,6 @@ workers_dev = true
 UPSTREAM = "https://mkegtssedjyqldysvzga.supabase.co/functions/v1/tmdb-proxy"
 # Set `UPSTREAM_SHARED_SECRET` as a Worker secret and set the identical
 # `TMDB_PROXY_SHARED_SECRET` in Supabase before deploying either side.
-#
-# SENTRY_DSN is a Worker secret, not a var. A DSN carries no read access and
-# Sentry's browser SDK does embed it in client code — but this Worker is
-# server-side, so nothing forces it into the open, and a published DSN is an
-# open invitation to spam the ingest endpoint and burn the free-tier event
-# quota. Set it per environment:
-#   npx wrangler secret put SENTRY_DSN
-#   npx wrangler secret put SENTRY_DSN --env staging
-# If it is unset the SDK initialises with an undefined DSN and quietly no-ops,
-# so error reporting fails silently — set it as part of any first deploy.
 
 # Distributed rate limit: 100 requests per 10s per client IP, enforced at
 # Cloudflare's edge (consistent across requests, unlike the per-isolate limiter).
@@ -70,7 +58,6 @@ workers_dev = true
 
 [env.staging.vars]
 UPSTREAM = "https://uzrhfivnhdcfieuaxzip.supabase.co/functions/v1/tmdb-proxy"
-# SENTRY_DSN is a secret here too — see the note in [vars] above.
 
 # Same shape as production; a separate namespace so staging traffic can't eat
 # into real users' rate budget.

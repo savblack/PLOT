@@ -24,7 +24,6 @@
 // app at it (set OG_BASE_URL / VITE_OG_BASE_URL — see the README).
 import { ImageResponse } from 'workers-og';
 import React from 'react';
-import * as Sentry from '@sentry/cloudflare';
 
 const h = React.createElement;
 
@@ -379,7 +378,4 @@ const handler = {
   },
 };
 
-export default Sentry.withSentry(
-  (env) => ({ dsn: env.SENTRY_DSN }),
-  handler,
-);
+export default handler;

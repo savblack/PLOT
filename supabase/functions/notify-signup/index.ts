@@ -12,18 +12,17 @@
  *
  * Required secrets:
  *   RESEND_API_KEY            - Resend API key (theplot.tv is a verified sender)
+ *   SIGNUP_NOTIFY_TO_EMAIL    - recipient of the alert. There is no hardcoded
+ *                               fallback: unset disables the notification
+ *                               rather than mailing a default address.
  *
  * Optional secrets:
- *   SIGNUP_NOTIFY_TO_EMAIL    - recipient of the alert. REQUIRED: there is no
- *                               hardcoded fallback, so an unset value disables
- *                               the notification rather than mailing a default.
  *   BREVO_API_KEY             - Brevo API key; unset skips the Brevo sync entirely
  *   BREVO_LIST_ID             - Brevo "PLOT App Users" list id
  *   BREVO_MARKETING_LIST_ID   - Brevo "PLOT Marketing Subscribers" list id (opted-in only)
  */
 
 import { hasServiceRoleBearer } from '../_shared/internalWebhook.ts'
-import { captureSentryError } from '../_shared/sentry.ts'
 import { upsertBrevoContact } from '../_shared/brevo.ts'
 import { adminClient } from '../_shared/supabaseAdmin.ts'
 
@@ -201,8 +200,7 @@ Deno.serve(async (req) => {
     })
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown signup notification error'
-    console.error('Failed to send signup notification:', errorMessage)
-    await captureSentryError('notify-signup', error, { userId })
+    console.error('Failed to send signup notification:', errorMessage, { userId })
     return new Response(JSON.stringify({ ok: false, error: errorMessage }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
