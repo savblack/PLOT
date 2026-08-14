@@ -24,9 +24,8 @@
  *      supabase/migrations/20260728000000_auth_fail_attempts.sql), NOT an
  *      in-memory Map: an earlier in-memory per-isolate limiter was proven
  *      ineffective (400 concurrent requests all returned 200, since Supabase
- *      spreads bursts across isolates with independent counters — see
- *      docs/launch/public-launch-readiness.md). This is a real rejection
- *      (429), not a faked success — it's capacity control, not bot
+ *      spreads bursts across isolates with independent counters). This is a
+ *      real rejection (429), not a faked success — it's capacity control, not bot
  *      detection.
  *
  * On success, creates the account via the Admin API (bypasses Supabase

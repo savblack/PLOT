@@ -1,6 +1,7 @@
 # Cloudflare Worker that fronts the Supabase `tmdb-proxy` Edge Function and adds
 # real, distributed per-IP rate limiting (the in-isolate limiter in the Edge
-# Function was ineffective — see docs/launch/public-launch-readiness.md).
+# Function was ineffective: Supabase spreads a burst across isolates, each with
+# its own empty counter — 400 concurrent requests all returned 200).
 #
 # Deploy:  cd workers/tmdb-proxy && npx wrangler deploy
 #   Requires a Cloudflare API token with "Workers Scripts: Edit" (the DNS-scoped
