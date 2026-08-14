@@ -704,7 +704,10 @@
     .woc-form {
       display: flex;
       align-items: center;
-      border: 1px solid rgba(0,0,0,0.22);
+      /* Full-strength ink, matching the outlined button that sits inside this
+         pill on the app-soon capture, so the two strokes read as one component
+         rather than a dark button floating in a grey ring. */
+      border: 1px solid var(--text);
       border-radius: var(--r-pill);
       padding: 6px;
       height: 56px;
@@ -760,14 +763,15 @@
     /* Honeypot: invisible to humans, tempting to bots */
     .woc-form .fn-website { position: absolute; left: -9999px; opacity: 0; pointer-events: none; }
 
-    /* Footer — lean nav rail; a hairline separates it from the section above,
-       which is now the same white ground */
+    /* Footer — lean nav rail. No hairline above it: the closing section now
+       fades its poster wall out to the same white ground the footer sits on, so
+       a rule there just draws a seam across an otherwise continuous surface.
+       (The old `margin-top: -1px` went with that border, pulling the footer up
+       to overlap the section edge so the two never doubled up.) */
     footer {
       background: var(--dark);
       color: var(--text-dark);
-      border-top: 1px solid var(--glass-border);
       padding: 2.6rem 3rem calc(2.6rem + var(--ticker-height) + env(safe-area-inset-bottom, 0px));
-      margin-top: -1px;
       position: relative;
       z-index: 3;
     }
