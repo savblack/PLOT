@@ -1,15 +1,6 @@
 {
   "entries": [
     {
-      "slug": "oppenheimer",
-      "tmdb_id": 872585,
-      "media_type": "movie",
-      "poster_path": "/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg",
-      "title": "Oppenheimer",
-      "date_label": "Oct 2023",
-      "note": "\"Three hours. Felt like one.\""
-    },
-    {
       "slug": "the-bear",
       "tmdb_id": 136315,
       "media_type": "tv",
@@ -134,15 +125,24 @@
       "title": "The Odyssey",
       "date_label": "Jul 2026",
       "note": "\"Nolan does Homer.\""
-    }
-  ],
-  "trending": {
-    "hero": {
+    },
+    {
       "slug": "spider-man-brand-new-day",
       "tmdb_id": 969681,
       "media_type": "movie",
       "poster_path": "/iPOn6DinuVyLY17YM9mKuPofV08.jpg",
       "title": "Spider-Man: Brand New Day",
+      "date_label": "Jul 2026",
+      "note": ""
+    }
+  ],
+  "trending": {
+    "hero": {
+      "slug": "lanterns",
+      "tmdb_id": 95350,
+      "media_type": "tv",
+      "poster_path": "/rb94rKVIzLyfWufIN7WqLvadBDH.jpg",
+      "title": "Lanterns",
       "year": "2026"
     }
   }
