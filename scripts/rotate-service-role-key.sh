@@ -65,6 +65,41 @@ except Exception: raise SystemExit(1)
 raise SystemExit(0 if any(k.get("type")=="secret" for k in d) else 1)'
 }
 
+dbq() { # dbq <ref> <sql> -> raw JSON rows
+  curl -s -m 40 -X POST \
+    -H "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}" \
+    -H "Content-Type: application/json" \
+    -d "$(python3 -c 'import json,sys; print(json.dumps({"query": sys.argv[1]}))' "$2")" \
+    "https://api.supabase.com/v1/projects/$1/database/query"
+}
+
+# Is the credential still embedded in the webhook trigger DDL?
+#
+# Asks the live schema rather than inferring from git. An earlier version of this
+# script grepped `git log` for the migration name, which silently reported the
+# wrong answer once the PR was squash-merged under an unrelated subject — and
+# would have been the wrong question anyway: what matters is whether the
+# migration APPLIED, and migrations here can fail silently behind a green merge.
+#
+# Selects booleans only. pg_get_triggerdef would echo the embedded key verbatim
+# if the old definition is still in place, so it is tested with LIKE, never
+# returned.
+schema_clean() { # schema_clean <ref> -> prints clean | leaking | unknown
+  local sql="select count(*) filter (where pg_get_triggerdef(t.oid) like '%Bearer%') as leaking,
+                    count(*) as total
+               from pg_trigger t
+              where t.tgname in ('on_feedback_insert','profiles-changed-brevo-sync')
+                and not t.tgisinternal;"
+  dbq "$1" "$sql" | python3 -c '
+import sys,json
+try: d=json.load(sys.stdin)
+except Exception: print("unknown"); raise SystemExit
+if isinstance(d,dict) or not d: print("unknown"); raise SystemExit
+r=d[0]
+if int(r.get("total") or 0)==0: print("unknown")
+else: print("leaking" if int(r.get("leaking") or 0)>0 else "clean")'
+}
+
 rule
 bold "Step 0 — where things stand"
 for ref in "$PROD_REF" "$STAGING_REF"; do
@@ -75,14 +110,21 @@ for ref in "$PROD_REF" "$STAGING_REF"; do
 done
 
 printf '\n'
-if git log --oneline origin/main 2>/dev/null | grep -q 'webhook_bearer_to_vault\|out of the schema'; then
-  ok "#541 (Vault migration) is on main — new backups no longer capture the key"
-else
-  warn "  ! #541 is NOT on main yet."
-  echo "    The triggers still embed the key, so every nightly backup keeps"
-  echo "    capturing it. Rotating first is still correct — the new key never"
-  echo "    enters the schema — but merge #541 before relying on this being over."
-fi
+for ref in "$PROD_REF" "$STAGING_REF"; do
+  label=$([ "$ref" = "$PROD_REF" ] && echo Production || echo Staging)
+  case "$(schema_clean "$ref")" in
+    clean)
+      ok "$label: no credential in the webhook trigger DDL — new backups are clean" ;;
+    leaking)
+      bad "$label: the trigger DDL STILL embeds the key."
+      echo "    Every nightly backup keeps capturing it. Rotating is still correct —"
+      echo "    the new key never enters the schema — but the #541 migration needs to"
+      echo "    apply before this is actually over. Check the Supabase deploy status." ;;
+    *)
+      warn "  ? $label: could not read the trigger definitions."
+      echo "    Verify by hand before trusting the rest of this run." ;;
+  esac
+done
 
 rule
 bold "Step 1 — copy the new secret key (dashboard, both projects)"
