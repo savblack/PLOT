@@ -9,31 +9,16 @@ on:
 permissions:
   contents: read
 
+# Supersede a PR's in-flight run when its branch is pushed again. Agent sessions
+# push repeatedly, and until now every abandoned run still ran to completion and
+# still billed a full minute per job. Pushes to main are deliberately NOT
+# cancelled: each commit that lands keeps its own smoke run, so main is never
+# left unverified.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
-  changes:
-    name: Detect changed areas
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: read
-    outputs:
-      mobile: ${{ steps.filter.outputs.mobile }}
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v7
-
-      - name: Filter paths
-        id: filter
-        uses: dorny/paths-filter@v4
-        with:
-          filters: |
-            mobile:
-              - 'apps/mobile/**'
-              - 'packages/core/**'
-              - 'packages/ui/**'
-              - 'package.json'
-              - 'package-lock.json'
-
   secret-scan:
     name: Secret scan (PR diff)
     runs-on: ubuntu-latest
@@ -170,10 +155,14 @@ jobs:
 
   mobile-typecheck:
     name: Mobile typecheck (Expo)
-    needs: changes
-    if: needs.changes.outputs.mobile == 'true'
     runs-on: ubuntu-latest
     steps:
+      # Runs on every PR rather than behind a path-filter gate. Actions bills each
+      # job rounded UP to a whole minute, and this job's median is 41s (it has
+      # never exceeded 60s), so a separate "did mobile change?" job spent a billed
+      # minute of its own to skip a single billed minute here. Measured across
+      # August that gate cost ~700 min/month to save ~350. Running unconditionally
+      # is cheaper and simpler, and type-checks mobile on 100% of PRs, not 58%.
       # The web and mobile apps now share one source of truth: the @plot/core
       # workspace package (packages/core). There is no copy to drift, so the old
       # mirror drift-guard is gone. This job just type-checks the Expo app, which
