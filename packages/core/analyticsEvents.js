@@ -22,6 +22,14 @@ export const EVENTS = Object.freeze({
   // The sign-in equivalent. Mobile-only so far; web currently tracks nothing
   // for a failed login, and could adopt this whenever that's useful.
   LOGIN_SUBMIT_FAILED: 'login_submit_failed',
+  // /auth/callback finished without a session. This is the ONLY signal for a
+  // dead OAuth or magic-link sign-in: the credential is consumed off-page, so no
+  // form-submit event covers it. Until this existed the branch was silent, and a
+  // Google signup that stranded its user left no trace anywhere but an orphaned
+  // auth.flow_state row (2026-08-07). Carries `reason` (an authErrorReason slug,
+  // never raw text) and `credential` (which *kind* of credential the URL held,
+  // never its value).
+  AUTH_CALLBACK_FAILED: 'auth_callback_failed',
   SIGNUP_CAPTCHA_BLOCKED: 'signup_captcha_blocked',
   SIGNUP_BYPASS_OFFERED: 'signup_bypass_offered',
   USER_SIGNED_UP: 'user_signed_up',

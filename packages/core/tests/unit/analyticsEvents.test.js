@@ -66,3 +66,9 @@ test('supporter_status is a 35-day recency window on last_kofi_tip_at, not is_su
     'inactive',
   );
 });
+
+test('the auth-callback failure event is in the shared catalog', () => {
+  // Web's /auth/callback is the only emitter today, but the name lives here so a
+  // future mobile deep-link failure reports into the same funnel.
+  assert.equal(EVENTS.AUTH_CALLBACK_FAILED, 'auth_callback_failed');
+});
