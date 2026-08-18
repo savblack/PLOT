@@ -35,7 +35,7 @@ posthog.init('phc_uS3JEJC7s6T2WdsQToCZA3eRjLNakgc3EF3YPbza9Q6U', {
 (function () {
   function forwardAttribution() {
     var here = new URLSearchParams(window.location.search);
-    var keys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'gclid', 'fbclid', 'msclkid', 'ref'];
+    var keys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'gclid', 'fbclid', 'msclkid', 'ref', 'src'];
     var carry = new URLSearchParams();
     keys.forEach(function (k) { if (here.get(k)) carry.set(k, here.get(k)); });
     if (document.referrer) {

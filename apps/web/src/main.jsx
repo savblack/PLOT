@@ -180,7 +180,18 @@ if (posthogToken) {
       },
     });
     if (Object.keys(attribution).length > 0) {
-      posthog.register(attribution);
+      // Register under first_* names, not the raw utm_* ones. Super properties
+      // are merged over PostHog's own per-event URL properties, so registering
+      // a raw `utm_source` stamps this person's FIRST-touch source onto every
+      // event, overwriting the campaign the event actually happened under. The
+      // two answer different questions and both are worth keeping.
+      const firstTouch = Object.fromEntries(
+        Object.entries(attribution).map(([k, v]) => [`first_${k}`, v]),
+      );
+      posthog.register(firstTouch);
+      // Person properties stay unprefixed: $set_once means first write wins, so
+      // these are already first-touch by construction and are what the
+      // acquisition cohorts break down on.
       posthog.setPersonProperties(undefined, attribution);
     }
     _setPostHogClient(posthog);
