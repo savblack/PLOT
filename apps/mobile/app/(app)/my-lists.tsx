@@ -23,6 +23,7 @@ import { TopTenSection } from '../../components/TopTenSection';
 import { MY_LISTS_TABS } from '@plot/core/navigation.js';
 import GroupedFilterMenu from '../../components/GroupedFilterMenu';
 import { filterByType } from '@plot/core/mediaFilters.js';
+import { track, EVENTS } from '../../lib/analytics';
 import HistorySection from '../../components/HistorySection';
 import { groupEntriesByMonth, monthLabel } from '@plot/core/history.js';
 import { getSectionOpen, setSectionOpen } from '../../lib/sectionOpenState';
@@ -426,6 +427,7 @@ export default function MyListsScreen() {
     try {
       const url = buildListShareUrl(list.id);
       await Share.share({ message: `My list "${list.name}" on PLOT. ${url}`, url });
+      track(EVENTS.LIST_SHARED, { list_id: list.id });
     } catch { /* user dismissed the share sheet */ }
   };
 

@@ -99,7 +99,10 @@ export function useCustomLists(userId) {
       console.error('Failed to update custom list visibility', error);
       return null;
     }
-    if (data) setLists(prev => prev.map(l => l.id === listId ? { ...l, is_public: data.is_public } : l));
+    if (data) {
+      setLists(prev => prev.map(l => l.id === listId ? { ...l, is_public: data.is_public } : l));
+      getConfig().onCustomListVisibility?.({ list_id: listId, is_public: !!data.is_public });
+    }
     return data;
   }, [userId]);
 
@@ -129,6 +132,9 @@ export function useCustomLists(userId) {
           ? { ...l, items: [data, ...(l.items || []).filter(i => i.tmdb_id !== tmdbId)] }
           : l
       ));
+      getConfig().onCustomListItemChange?.({
+        list_id: listId, tmdb_id: tmdbId, media_type: row.media_type, action: 'added',
+      });
     }
     return data ?? null;
   }, [userId]);
@@ -144,13 +150,17 @@ export function useCustomLists(userId) {
       console.error('Failed to remove custom list item', error);
       return false;
     }
+    const removed = lists.find(l => l.id === listId)?.items?.find(i => i.tmdb_id === Number(tmdbId));
     setLists(prev => prev.map(l =>
       l.id === listId
         ? { ...l, items: (l.items || []).filter(i => i.tmdb_id !== Number(tmdbId)) }
         : l
     ));
+    getConfig().onCustomListItemChange?.({
+      list_id: listId, tmdb_id: Number(tmdbId), media_type: removed?.media_type, action: 'removed',
+    });
     return true;
-  }, [userId]);
+  }, [userId, lists]);
 
   const isInList = useCallback((listId, tmdbId) => {
     const list = lists.find(l => l.id === listId);

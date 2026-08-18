@@ -21,6 +21,13 @@ test('getConfig starts with the documented defaults', () => {
     onRating: undefined,
     onFollow: undefined,
     onCustomListChange: undefined,
+    onCustomListItemChange: undefined,
+    onCustomListVisibility: undefined,
+    onFavourite: undefined,
+    onFollowRequestDecision: undefined,
+    onHistoryRemove: undefined,
+    onWatchProgress: undefined,
+    onProfileUpdate: undefined,
   });
 });
 

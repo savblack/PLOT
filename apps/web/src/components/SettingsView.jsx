@@ -1388,6 +1388,7 @@ export default function SettingsView() {
           setActionError(error.message || SETTINGS_VIEW.errors.failedToClearWatchHistory);
           return false;
         }
+        track(EVENTS.HISTORY_CLEARED, {});
         return true;
       },
     });

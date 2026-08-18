@@ -168,8 +168,12 @@ export default function AuthPage({ initialMode = 'signup' }) {
         password,
         options: { captchaToken },
       });
-      if (error) { setError(friendlyError(error.message)); setLoading(false); resetCaptcha(); }
-      else {
+      if (error) {
+        // Sign-in failures are their own funnel — deliberately not folded into
+        // signup_submit_failed, which would inflate every signup-attempt metric.
+        track(EVENTS.LOGIN_SUBMIT_FAILED, { reason: errorReason(error.message) });
+        setError(friendlyError(error.message)); setLoading(false); resetCaptcha();
+      } else {
         identifyUser(data.user.id, { email: data.user.email });
         track(EVENTS.USER_LOGGED_IN);
         const plan = getPremiumCheckoutIntent();
