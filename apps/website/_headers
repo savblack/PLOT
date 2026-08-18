@@ -10,3 +10,13 @@
 
 /
   Link: </llms.txt>; rel="describedby"; type="text/plain"
+
+# js/config.js is the only script here with a stable filename — the app's
+# bundles are content-hashed, so a new build is a new URL and caching busts
+# itself. Cloudflare Pages' default for static assets is 4 hours, which is the
+# window a change to this file cannot be pulled back in: it carries the PostHog
+# init and token, the production-host allowlist, and the CTA tracking. Five
+# minutes keeps the CDN doing its job while leaving a token rotation or a
+# snippet kill switch able to land the same day.
+/js/*
+  Cache-Control: public, max-age=300, must-revalidate
