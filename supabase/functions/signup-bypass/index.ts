@@ -37,6 +37,7 @@
  * see supabase/config.toml).
  */
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { serviceKey } from '../_shared/serviceKey.ts';
 
 function allowedOrigin(origin: string | null) {
   if (!origin) return 'https://app.theplot.tv';
@@ -88,7 +89,7 @@ const clientIp = (req: Request): string => req.headers.get('cf-connecting-ip') |
 // doesn't exist yet, with no session to act on behalf of) — unlike functions
 // that split anon (user-context) vs service-role (admin) clients, there is
 // no anon/user-context case here at all.
-const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const SERVICE_ROLE_KEY = serviceKey();
 const supabaseAdmin = createClient(Deno.env.get('SUPABASE_URL')!, SERVICE_ROLE_KEY);
 
 // --- Signed form-timing token ------------------------------------------

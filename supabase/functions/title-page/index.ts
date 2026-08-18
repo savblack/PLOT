@@ -18,6 +18,7 @@
  */
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { FOOTER_HTML } from './footer.generated.ts';
+import { serviceKey } from '../_shared/serviceKey.ts';
 
 const SITE = 'https://theplot.tv';
 const APP = 'https://app.theplot.tv';
@@ -221,7 +222,7 @@ const provChip = (p: Prov) =>
 async function titlesSitemap(): Promise<Response> {
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    serviceKey(),
   );
   const urls = new Map<string, string>(); // "type:id" -> loc (dedupes)
   const add = (mt: unknown, rawId: unknown, t: unknown) => {

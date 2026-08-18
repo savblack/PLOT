@@ -22,9 +22,10 @@
  * rather than an ad hoc palette — see the :root / .deck token blocks below.
  */
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { serviceKey } from '../_shared/serviceKey.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const SERVICE_KEY = serviceKey();
 const ADMIN_TOKEN = Deno.env.get('ADMIN_TOKEN') ?? '';
 const ADMIN_PASSWORD = Deno.env.get('ADMIN_PASSWORD') ?? '';
 // Either secret signs you in: the friendly ADMIN_PASSWORD (typed on the login

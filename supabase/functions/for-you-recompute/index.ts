@@ -15,6 +15,7 @@
  * cron step — there is no external error tracker.
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { serviceKey } from '../_shared/serviceKey.ts'
 
 const TMDB_BASE = 'https://api.themoviedb.org/3'
 // Bounds each run's TMDB call volume. A title only needs fetching once ever,
@@ -39,7 +40,7 @@ Deno.serve(async (req) => {
   if (req.headers.get('x-cron-secret') !== Deno.env.get('FOR_YOU_CRON_SECRET')) return new Response('Forbidden', { status: 403 })
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
-  const serviceRole = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+  const serviceRole = serviceKey()
   const tmdbKey = Deno.env.get('TMDB_API_KEY')
   if (!supabaseUrl || !serviceRole || !tmdbKey) return Response.json({ ok: false, error: 'For-you recompute is not configured.' }, { status: 500 })
 
