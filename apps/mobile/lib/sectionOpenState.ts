@@ -26,7 +26,8 @@ export async function hydrateSectionOpenState(): Promise<void> {
   try {
     const keys = (await AsyncStorage.getAllKeys()).filter(k => k.startsWith(sectionStorageKey('')));
     if (keys.length) {
-      for (const [key, value] of await AsyncStorage.multiGet(keys)) {
+      // v3 renamed multiGet -> getMany and returns a keyed object, not pairs.
+      for (const [key, value] of Object.entries(await AsyncStorage.getMany(keys))) {
         cache.set(key.slice(sectionStorageKey('').length), parseSectionOpen(value, true));
       }
     }
