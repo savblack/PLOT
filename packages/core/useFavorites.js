@@ -1,10 +1,16 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from './supabase.js';
 import { mediaIdentityRow, tmdbIdFromItem } from './media.js';
+import { findHistoryEntry, logWatchedItem, saveFavorite } from './userMedia.js';
+import { markMediaAsWatched } from './mediaStatus.js';
+import { emit, HISTORY_CHANGED_EVENT } from './events.js';
+import { getConfig } from './config.js';
 
 /**
  * Favourited titles for a user.
  * @param {string|null|undefined} userId
+ * @param {{ watching?: any, watchlist?: any }} [deps] - sibling hooks consulted
+ *   (and updated) when favouriting defaults a title's watch status to watched.
  * @returns {{
  *   favorites: any[];
  *   loading: boolean;
@@ -12,7 +18,7 @@ import { mediaIdentityRow, tmdbIdFromItem } from './media.js';
  *   toggleFavorite: (item: any) => Promise<any>;
  * }}
  */
-export function useFavorites(userId) {
+export function useFavorites(userId, { watching, watchlist } = {}) {
   const [favorites, setFavorites] = useState([]);
   const [loading,   setLoading]   = useState(true);
 
@@ -35,6 +41,45 @@ export function useFavorites(userId) {
     [favorites]
   );
 
+  /* Liking a title is a strong signal you've already seen it, so favouriting
+     defaults the watch status to watched — same transition the manual "Mark
+     as Watched" action makes (clears an in-progress "watching"/"want to
+     watch" state to match). Only runs on not-favourite → favourite, and only
+     when nothing has logged a watch for this title yet, so it never
+     overwrites an existing history entry (e.g. a past watch, or dnf) and
+     unfavouriting never touches watch status — the user can always change it
+     manually afterwards. */
+  const defaultToWatched = useCallback(async (item, tmdbId, mediaType) => {
+    try {
+      const existing = await findHistoryEntry({ userId, tmdbId, mediaType });
+      if (existing) return;
+
+      let insertedId = null;
+      const result = await markMediaAsWatched({
+        logWatched: async () => {
+          const { data, error } = await logWatchedItem({ userId, item });
+          if (error || !data) return false;
+          insertedId = data.id;
+          return true;
+        },
+        clearWatching:   () => watching.stopWatching(tmdbId),
+        removeFromSaved: () => watchlist.removeFromList(tmdbId),
+        rollbackHistory: async () => {
+          if (!insertedId) return;
+          await supabase.from('history').delete().eq('id', insertedId);
+          emit(HISTORY_CHANGED_EVENT);
+        },
+        mediaType,
+        isWatching: !!watching?.isWatching?.(tmdbId),
+        inList:     !!watchlist?.isInList?.(tmdbId),
+      });
+
+      if (!result.ok) console.error('[useFavorites] could not default watch status to watched:', result.error);
+    } catch (e) {
+      console.error('[useFavorites] default-to-watched failed', e);
+    }
+  }, [userId, watching, watchlist]);
+
   const toggleFavorite = useCallback(async (item) => {
     if (!userId) return;
     const tmdbId = tmdbIdFromItem(item);
@@ -52,6 +97,14 @@ export function useFavorites(userId) {
       if (error) {
         console.error('Failed to remove favourite', error);
         setFavorites(previous);
+      } else {
+        // Analytics seam (platform-injected; see config.js) — fired from the one
+        // canonical spot so every surface that toggles a favourite is covered.
+        getConfig().onFavourite?.({
+          tmdb_id: tmdbId,
+          media_type: previous.find(f => f.tmdb_id === tmdbId)?.media_type,
+          favourited: false,
+        });
       }
     } else {
       const row = mediaIdentityRow(item);
@@ -66,14 +119,7 @@ export function useFavorites(userId) {
         prev.some(f => f.tmdb_id === tmdbId) ? prev : [optimistic, ...prev]
       ));
 
-      const { data, error } = await supabase
-        .from('user_favourites')
-        .upsert({
-          user_id:     userId,
-          ...row,
-        }, { onConflict: 'user_id,tmdb_id' })
-        .select()
-        .single();
+      const { data, error } = await saveFavorite({ userId, item });
 
       if (error) {
         console.error('Failed to save favourite', error);
@@ -83,9 +129,11 @@ export function useFavorites(userId) {
 
       if (data) {
         setFavorites(prev => [data, ...prev.filter(f => f.tmdb_id !== tmdbId)]);
+        getConfig().onFavourite?.({ tmdb_id: tmdbId, media_type: row.media_type, favourited: true });
+        await defaultToWatched(item, tmdbId, row.media_type);
       }
     }
-  }, [userId, favorites, isFavorite]);
+  }, [userId, favorites, isFavorite, defaultToWatched]);
 
   return { favorites, loading, isFavorite, toggleFavorite };
 }

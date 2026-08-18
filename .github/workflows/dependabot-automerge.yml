@@ -56,9 +56,10 @@ jobs:
             exit 0
           fi
 
-          PR_JSON=$(gh pr view "$PR_NUM" --json title,author,url,labels)
+          PR_JSON=$(gh pr view "$PR_NUM" --json title,body,author,url,labels)
           AUTHOR=$(echo "$PR_JSON" | jq -r '.author.login')
           TITLE=$(echo "$PR_JSON" | jq -r '.title')
+          BODY=$(echo "$PR_JSON" | jq -r '.body // ""')
           URL=$(echo "$PR_JSON" | jq -r '.url')
 
           # Double-check authorship at the PR level (defence in depth).
@@ -69,27 +70,61 @@ jobs:
 
           echo "PR #$PR_NUM: $TITLE"
 
-          # --- Classify the bump deterministically from the title ---
+          # --- Classify the bump deterministically ---
           # Grouped PRs come from the 'app-minor-patch' group, which by config
           # only ever contains minor/patch updates -> always safe.
-          # Single-package PRs read "Bump <pkg> from X to Y" -> compare majors.
+          #
+          # Otherwise read every "from X to Y" pair we can find and hold if ANY
+          # of them crosses a release line. Two title shapes used to fall through
+          # here as unclassifiable and get held for no reason:
+          #   - bare majors: "bump actions/setup-node from 6 to 7" (every
+          #     github-actions bump looks like this; the old pattern demanded X.Y.Z)
+          #   - multi-package: "bump react-router and react-router-dom" — no
+          #     versions in the title at all, but the body lists them per package
+          # So versions may now be partial, and the body's "Updates `pkg` from X
+          # to Y" / "Bumps [pkg](url) from X to Y" lines are read as a fallback.
+          # Only those two line prefixes are scanned: Dependabot bodies also embed
+          # release notes and commit logs, which mention unrelated bumps.
+          #
+          # Unreadable stays `unknown` and is held — every failure mode here holds
+          # rather than merges.
+
+          # 0 = same release line, 1 = crosses one. For 0.x npm itself treats a
+          # minor bump as breaking (^0.34.5 does not allow 0.35.0), so that
+          # counts as crossing and gets held.
+          same_release_line() {
+            from="$1"; to="$2"
+            [ "${from%%.*}" = "${to%%.*}" ] || return 1
+            if [ "${from%%.*}" = "0" ]; then
+              [ "$(echo "$from" | cut -d. -f2)" = "$(echo "$to" | cut -d. -f2)" ] || return 1
+            fi
+            return 0
+          }
+
           CLASS="unknown"
           if echo "$TITLE" | grep -qiE 'bump the app-minor-patch group'; then
             CLASS="minor-patch"
-          elif echo "$TITLE" | grep -qiE 'bump .* from .* to '; then
-            FROM=$(echo "$TITLE" | sed -nE 's/.* from ([0-9]+\.[0-9]+\.[0-9]+[^ ]*) to .*/\1/p')
-            TO=$(echo "$TITLE" | sed -nE 's/.* to ([0-9]+\.[0-9]+\.[0-9]+[^ ]*).*/\1/p')
-            FROM_MAJOR=$(echo "$FROM" | cut -d. -f1)
-            TO_MAJOR=$(echo "$TO" | cut -d. -f1)
-            if [ -n "$FROM_MAJOR" ] && [ -n "$TO_MAJOR" ]; then
-              if [ "$FROM_MAJOR" = "$TO_MAJOR" ]; then
-                CLASS="minor-patch"
-              else
-                CLASS="major"
-              fi
+          else
+            PAIRS=$(
+              {
+                echo "$TITLE" | grep -oiE 'from [0-9]+(\.[0-9]+)* to [0-9]+(\.[0-9]+)*' || true
+                echo "$BODY" | grep -E '^(Updates|Bumps) ' \
+                  | grep -oiE 'from [0-9]+(\.[0-9]+)* to [0-9]+(\.[0-9]+)*' || true
+              } | sed -E 's/^[Ff]rom //; s/ [Tt]o / /' | sort -u
+            )
+            if [ -n "$PAIRS" ]; then
+              CLASS="minor-patch"
+              while read -r F T; do
+                [ -z "$F" ] && continue
+                if ! same_release_line "$F" "$T"; then
+                  CLASS="major"
+                  break
+                fi
+              done <<< "$PAIRS"
             fi
           fi
-          echo "Classified as: $CLASS  (from='${FROM:-}' to='${TO:-}')"
+          echo "Classified as: $CLASS"
+          echo "Version pairs read:"; echo "${PAIRS:-  (none)}"
 
           # --- Act ---
           if [ "$CLASS" = "major" ]; then

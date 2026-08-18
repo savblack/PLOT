@@ -19,7 +19,7 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { hasServiceRoleBearer } from '../_shared/internalWebhook.ts'
-import { captureSentryError } from '../_shared/sentry.ts'
+import { serviceKey } from '../_shared/serviceKey.ts'
 
 const RESEND_API_URL = 'https://api.resend.com/emails'
 const TO_EMAIL = 'feedback@theplot.tv'
@@ -315,7 +315,6 @@ async function sendFeedbackEmail({
     // Truncated: some APIs echo request fields back in validation errors, and
     // this request body includes the reporter's feedback message.
     console.error('Resend error:', res.status, err.slice(0, 200))
-    await captureSentryError('notify-feedback', new Error(`Resend request failed (${res.status})`))
   }
 }
 
@@ -358,7 +357,7 @@ Deno.serve(async (req) => {
 
   const supabaseAdmin = createClient(
     Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    serviceKey()
   )
 
   if (!linearApiKey || !linearTeamRef || !linearProjectId) {
@@ -422,8 +421,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown feedback sync error'
     await updateFeedbackSyncState(supabaseAdmin, feedbackId, { linear_sync_error: errorMessage })
-    console.error('Failed to mirror feedback:', errorMessage)
-    await captureSentryError('notify-feedback', error, { feedbackId })
+    console.error('Failed to mirror feedback:', errorMessage, { feedbackId })
     return new Response(JSON.stringify({ ok: false, error: errorMessage }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },

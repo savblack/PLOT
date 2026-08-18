@@ -10,13 +10,11 @@ import { IMPORT_VIEW } from '../copy/importView.js';
 import { MEDIA } from '../copy/media.js';
 import { MEDIA_PANEL } from '../copy/mediaPanel.js';
 import { ONBOARDING_FLOW } from '../copy/onboardingFlow.js';
-import { PLANS_PAGE } from '../copy/plansPage.js';
 import { PUBLIC_PROFILE_PAGE } from '../copy/publicProfilePage.js';
 import { RESET_PASSWORD_PAGE } from '../copy/resetPasswordPage.js';
 import { SAVE_PAGE } from '../copy/savePage.js';
 import { SETTINGS_VIEW } from '../copy/settingsView.js';
 import { TRAKT_CALLBACK_PAGE } from '../copy/traktCallbackPage.js';
-import { WATCHLIST_VIEW } from '../copy/watchlistView.js';
 
 // Every copy module in src/copy/, in one place — this file is the entire
 // point of the catalog: if a module isn't listed here, it isn't browsable.
@@ -32,13 +30,11 @@ const MODULES = {
   importView: IMPORT_VIEW,
   mediaPanel: MEDIA_PANEL,
   onboardingFlow: ONBOARDING_FLOW,
-  plansPage: PLANS_PAGE,
   publicProfilePage: PUBLIC_PROFILE_PAGE,
   resetPasswordPage: RESET_PASSWORD_PAGE,
   savePage: SAVE_PAGE,
   settingsView: SETTINGS_VIEW,
   traktCallbackPage: TRAKT_CALLBACK_PAGE,
-  watchlistView: WATCHLIST_VIEW,
 };
 
 // Recursively walks a copy module (plain strings, nested objects, and arrays)

@@ -1,5 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { HISTORY_CONFLICT_TARGET, dedupeHistoryRows } from '../_shared/historyConflict.ts'
+import { serviceKey } from '../_shared/serviceKey.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -394,14 +396,19 @@ async function upsertTraktData(
       watched_at: item.watched_at || new Date().toISOString().slice(0, 10),
     }))
 
-  if (historyRows.length > 0) {
+  // Trakt returns one entry per play, so a rewatch on the same day (or an
+  // episode-level history) yields several rows for one title and date; collapse
+  // those before the upsert sees them.
+  const uniqueHistoryRows = dedupeHistoryRows(historyRows)
+
+  if (uniqueHistoryRows.length > 0) {
     const { error } = await supabaseAdmin
       .from('history')
-      .upsert(historyRows, { onConflict: 'user_id,tmdb_id' })
+      .upsert(uniqueHistoryRows, { onConflict: HISTORY_CONFLICT_TARGET })
     if (error) throw error
   }
 
-  return { watchlistCount: listRows.length, watchedCount: historyRows.length }
+  return { watchlistCount: listRows.length, watchedCount: uniqueHistoryRows.length }
 }
 
 // ── Outbox processing ─────────────────────────────────────────────────────────
@@ -629,7 +636,7 @@ serve(async (req) => {
 
   const supabaseAdmin = createClient(
     Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+    serviceKey(),
   )
 
   try {

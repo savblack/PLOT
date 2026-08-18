@@ -1,11 +1,12 @@
+import { USERNAME_RE } from '@plot/core/profileFields.js';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { logoUrl } from '../utils/images.js';
-import { tmdb, setTmdbRegion } from '../api/tmdb.js';
-import { supabase } from '../api/supabase.js';
-import { edgeFunctionUrl, callAuthenticatedFunction } from '../api/functions.js';
+import { tmdb, setTmdbRegion } from '@plot/core/tmdb.js';
+import { supabase } from '@plot/core/supabase.js';
+import { edgeFunctionUrl, callAuthenticatedFunction } from '@plot/core/functions.js';
 import { useMediaSync } from '../hooks/useMediaSync.js';
 import { useTraktSync } from '../hooks/useTraktSync.js';
 import { usePremium } from '../hooks/usePremium.js';
@@ -14,6 +15,11 @@ import { track, EVENTS } from '../lib/analytics.js';
 import { useCalendar } from '../hooks/useCalendar.js';
 import { useShare } from '../hooks/useShare.js';
 import { deleteAccountAndSignOut } from '../utils/deleteAccount.js';
+import { clearWatchHistory } from '@plot/core/userMedia.js';
+import { updateProfile } from '@plot/core/profile.js';
+import {
+  AVATAR_MAX_MB, validateAvatarFile, isDuplicateUsernameError,
+} from '@plot/core/profileFields.js';
 import { fetchUserDataExport, downloadDataExport, downloadCsvExport } from '../utils/exportData.js';
 import { buildFeedbackAttachmentPath } from '../utils/feedback.js';
 import { downloadICS } from '../utils/ics.js';
@@ -23,13 +29,13 @@ import { getAuthCallbackUrl } from '../utils/redirects.js';
 import { COMMON } from '../copy/common.js';
 import { SETTINGS_VIEW } from '../copy/settingsView.js';
 import { IANA_TIMEZONES } from '../utils/timezones.js';
-import { SHOW_MEDIA_SYNC_INTEGRATIONS, SHOW_WATCHLIST_AVAILABILITY_ALERTS } from '../launchFeatures.js';
+import { REGIONS, DEFAULT_REGION, regionName } from '@plot/core/regions.js';
+import { SHOW_MEDIA_SYNC_INTEGRATIONS, SHOW_WATCHLIST_AVAILABILITY_ALERTS, SHOW_PRICING_PAGE } from '../launchFeatures.js';
 import SheetHeader from './SheetHeader.jsx';
 import ConfirmModal from './ConfirmModal.jsx';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import Spinner from './Spinner.jsx';
 
-const USERNAME_RE = /^[a-z0-9](?:[a-z0-9-]{1,28}[a-z0-9])$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // Integration row glyphs — stroke-based to match the other settings-row icons.
@@ -46,20 +52,9 @@ const TRAKT_ICON = (
   </svg>
 );
 
-const REGIONS = [
-  { code: 'US', name: 'United States' }, { code: 'AU', name: 'Australia' },
-  { code: 'GB', name: 'United Kingdom' }, { code: 'CA', name: 'Canada' },
-  { code: 'NZ', name: 'New Zealand' },   { code: 'FR', name: 'France' },
-  { code: 'DE', name: 'Germany' },       { code: 'JP', name: 'Japan' },
-  { code: 'IN', name: 'India' },         { code: 'BR', name: 'Brazil' },
-  { code: 'MX', name: 'Mexico' },        { code: 'IT', name: 'Italy' },
-  { code: 'ES', name: 'Spain' },         { code: 'NL', name: 'Netherlands' },
-  { code: 'SE', name: 'Sweden' },        { code: 'SG', name: 'Singapore' },
-];
-
 /* ── Region picker modal ── */
 function RegionPicker({ current, onSave, onClose }) {
-  const [chosen, setChosen] = useState(current || 'US');
+  const [chosen, setChosen] = useState(current || DEFAULT_REGION);
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
@@ -284,7 +279,10 @@ function TimezonePicker({ current, onSave, onClose }) {
   })();
 
   const filtered = query.trim()
-    ? allTzs.filter(tz => tz.toLowerCase().includes(query.toLowerCase()))
+    ? allTzs.filter(tz => {
+        const q = query.toLowerCase();
+        return tz.toLowerCase().includes(q) || fmtTz(tz).toLowerCase().includes(q);
+      })
     : allTzs;
 
   const handleSave = async () => {
@@ -323,7 +321,7 @@ function TimezonePicker({ current, onSave, onClose }) {
               className="search-input-clear"
               style={{ right: '1.75rem' }}
               onClick={() => setQuery('')}
-              aria-label="Clear search"
+              aria-label={COMMON.clearSearch}
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
@@ -464,7 +462,7 @@ function ProviderPicker({ title, hint, region, selected, onSave, onClose, limit 
                   type="button"
                   className="search-input-clear"
                   onClick={() => setSearch('')}
-                  aria-label="Clear search"
+                  aria-label={COMMON.clearSearch}
                 >
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
@@ -497,7 +495,7 @@ function ProviderPicker({ title, hint, region, selected, onSave, onClose, limit 
 
 /* ── Genre picker modal ── */
 function GenrePicker({ selected, onSave, onClose }) {
-  const allGenres = useGenres();
+  const { genres: allGenres, loading, error, retry } = useGenres();
   const [chosen, setChosen] = useState(
     allGenres.filter(g => selected.includes(g.name)).map(g => g.id)
   );
@@ -522,8 +520,20 @@ function GenrePicker({ selected, onSave, onClose }) {
         <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--surface)' }}>
           <SheetHeader title="Genres" onClose={onClose} />
         </div>
-        {allGenres.length === 0 ? (
+        {/* Keyed off `loading`, not `allGenres.length` — an empty list used to
+            be indistinguishable from "still fetching", so a failed load left
+            this sheet spinning forever with no way to recover. */}
+        {loading ? (
           <div className="loading-state"><PlotLoader size="sm" /></div>
+        ) : error ? (
+          <div style={{ padding: '2rem 1rem', textAlign: 'center' }}>
+            <p style={{ margin: '0 0 1rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+              {SETTINGS_VIEW.genres.loadError}
+            </p>
+            <button type="button" className="btn btn-secondary" onClick={retry}>
+              {SETTINGS_VIEW.genres.tryAgain}
+            </button>
+          </div>
         ) : (
           <div style={{ padding: '1rem' }}>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
@@ -562,7 +572,8 @@ function GenrePicker({ selected, onSave, onClose }) {
 }
 
 /* ── Profile photo ── */
-const AVATAR_MAX_MB = 5;
+// AVATAR_MAX_MB comes from @plot/core/profileFields.js so the public profile
+// page's picker enforces the same cap this one does.
 const AVATAR_VIEW = 288;   // crop viewport size (css px)
 const AVATAR_OUT = 512;    // exported avatar size (px)
 
@@ -717,8 +728,13 @@ function AvatarSetting({ user, profile, refreshProfile, onError }) {
     e.target.value = '';
     if (!file) return;
     onError(null);
-    if (!file.type.startsWith('image/')) { onError(SETTINGS_VIEW.avatar.chooseImageFile); return; }
-    if (file.size > AVATAR_MAX_MB * 1024 * 1024) { onError(SETTINGS_VIEW.avatar.tooLarge(AVATAR_MAX_MB)); return; }
+    const check = validateAvatarFile(file);
+    if (!check.ok) {
+      onError(check.reason === 'too-large'
+        ? SETTINGS_VIEW.avatar.tooLarge(check.maxMb)
+        : SETTINGS_VIEW.avatar.chooseImageFile);
+      return;
+    }
     setCropSrc(URL.createObjectURL(file));
   };
 
@@ -737,7 +753,7 @@ function AvatarSetting({ user, profile, refreshProfile, onError }) {
     const { data } = supabase.storage.from('avatars').getPublicUrl(path);
     // Cache-bust so a replaced photo at the same path refreshes immediately.
     const publicUrl = `${data.publicUrl}?v=${Date.now()}`;
-    const { error: dbErr } = await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', user.id);
+    const { error: dbErr } = await updateProfile({ userId: user.id, patch: { avatar_url: publicUrl } });
     setBusy(false);
     closeCrop();
     if (dbErr) { onError(dbErr.message || SETTINGS_VIEW.avatar.saveFailed); return; }
@@ -753,7 +769,7 @@ function AvatarSetting({ user, profile, refreshProfile, onError }) {
     if (files?.length) {
       await supabase.storage.from('avatars').remove(files.map((f) => `${user.id}/${f.name}`));
     }
-    const { error } = await supabase.from('profiles').update({ avatar_url: null }).eq('id', user.id);
+    const { error } = await updateProfile({ userId: user.id, patch: { avatar_url: null } });
     setBusy(false);
     if (error) { onError(error.message || SETTINGS_VIEW.avatar.removeFailed); return; }
     refreshProfile();
@@ -1083,6 +1099,7 @@ export default function SettingsView() {
   const [showGuideChannels,   setShowGuideChannels]   = useState(false);
   const [savingProviders,     setSavingProviders]     = useState(false);
   const [savingAvailabilityAlerts, setSavingAvailabilityAlerts] = useState(false);
+  const [savingMarketingEmails, setSavingMarketingEmails] = useState(false);
   const [testingAvailabilityAlert, setTestingAvailabilityAlert] = useState(false);
   const [testAlertNotice,     setTestAlertNotice]     = useState(null); // null|'sent'|'error'
   const [savingGuideChannels, setSavingGuideChannels] = useState(false);
@@ -1144,7 +1161,7 @@ export default function SettingsView() {
   useEffect(() => {
     if (billingReturn === 'premium' && profile?.is_premium && !premiumEventFired.current) {
       premiumEventFired.current = true;
-      track(EVENTS.PREMIUM_ACTIVATED, {});
+      track(EVENTS.PREMIUM_CONVERTED, {});
     }
   }, [billingReturn, profile?.is_premium]);
 
@@ -1157,7 +1174,6 @@ export default function SettingsView() {
 
   const username      = profile?.username || '';
   const isPublic      = !!profile?.is_public;
-  const logRewatches  = profile?.log_rewatches ?? true;
   const usernameValue = usernameDraft ?? username;
   const usernameDirty = usernameValue.trim().toLowerCase() !== username.toLowerCase();
   const profileUrl    = username ? `${window.location.origin}/u/${username}` : null;
@@ -1209,9 +1225,10 @@ export default function SettingsView() {
 
   const providers      = providerDraft ?? profile?.streaming_providers ?? [];
   const availabilityAlertsEnabled = !!profile?.watchlist_availability_alerts;
+  const marketingEmailsEnabled = !!profile?.marketing_emails;
   const guideChannels  = guideChannelDraft ?? profile?.guide_channels ?? [];
   const genres         = genreDraft ?? profile?.genres ?? [];
-  const region         = profile?.region || 'US';
+  const region         = profile?.region || DEFAULT_REGION;
   const timezone  = profile?.timezone || '';
   const includeKidsContent = profile?.include_kids_content ?? true;
 
@@ -1220,10 +1237,7 @@ export default function SettingsView() {
     setProviderDraft(newProviders);
     setSavingProviders(true);
 
-    const { error } = await supabase
-      .from('profiles')
-      .update({ streaming_providers: newProviders })
-      .eq('id', user.id);
+    const { error } = await updateProfile({ userId: user.id, patch: { streaming_providers: newProviders } });
 
     setSavingProviders(false);
 
@@ -1241,10 +1255,7 @@ export default function SettingsView() {
     setGuideChannelDraft(newChannels);
     setSavingGuideChannels(true);
 
-    const { error } = await supabase
-      .from('profiles')
-      .update({ guide_channels: newChannels })
-      .eq('id', user.id);
+    const { error } = await updateProfile({ userId: user.id, patch: { guide_channels: newChannels } });
 
     setSavingGuideChannels(false);
 
@@ -1262,10 +1273,7 @@ export default function SettingsView() {
     setGenreDraft(newGenres);
     setSavingGenres(true);
 
-    const { error } = await supabase
-      .from('profiles')
-      .update({ genres: newGenres })
-      .eq('id', user.id);
+    const { error } = await updateProfile({ userId: user.id, patch: { genres: newGenres } });
 
     setSavingGenres(false);
 
@@ -1280,7 +1288,7 @@ export default function SettingsView() {
 
   const handleToggleKidsContent = async () => {
     setActionError(null);
-    const { error } = await supabase.from('profiles').update({ include_kids_content: !includeKidsContent }).eq('id', user.id);
+    const { error } = await updateProfile({ userId: user.id, patch: { include_kids_content: !includeKidsContent } });
     if (error) { setActionError(error.message); return; }
     refreshProfile();
   };
@@ -1294,14 +1302,30 @@ export default function SettingsView() {
     }
     setActionError(null);
     setSavingAvailabilityAlerts(true);
-    const { error } = await supabase.from('profiles')
-      .update({ watchlist_availability_alerts: !availabilityAlertsEnabled })
-      .eq('id', user.id);
+    const { error } = await updateProfile({ userId: user.id, patch: { watchlist_availability_alerts: !availabilityAlertsEnabled } });
     setSavingAvailabilityAlerts(false);
     if (error) {
       setActionError(error.message || SETTINGS_VIEW.errors.failedToUpdateAvailabilityAlerts);
       return;
     }
+    refreshProfile();
+  };
+
+  // Marketing consent, so it only ever moves on a deliberate action here (or in
+  // the digest prompt). A database trigger mirrors the flag onto the sending
+  // list, which is also what an unsubscribe link writes back to.
+  const toggleMarketingEmails = async () => {
+    if (savingMarketingEmails) return;
+    const next = !marketingEmailsEnabled;
+    setActionError(null);
+    setSavingMarketingEmails(true);
+    const { error } = await updateProfile({ userId: user.id, patch: { marketing_emails: next } });
+    setSavingMarketingEmails(false);
+    if (error) {
+      setActionError(error.message || SETTINGS_VIEW.errors.failedToUpdateMarketingEmails);
+      return;
+    }
+    track(next ? EVENTS.MARKETING_EMAILS_OPTED_IN : EVENTS.MARKETING_EMAILS_OPTED_OUT, { source: 'settings' });
     refreshProfile();
   };
 
@@ -1327,10 +1351,7 @@ export default function SettingsView() {
 
   const saveRegion = async (code) => {
     setActionError(null);
-    const { error } = await supabase
-      .from('profiles')
-      .update({ region: code })
-      .eq('id', user.id);
+    const { error } = await updateProfile({ userId: user.id, patch: { region: code } });
 
     if (error) {
       setActionError(error.message || SETTINGS_VIEW.region.failedToSaveRegion);
@@ -1344,10 +1365,7 @@ export default function SettingsView() {
   };
 
   const saveTimezone = async (tz) => {
-    await supabase
-      .from('profiles')
-      .update({ timezone: tz })
-      .eq('id', user.id);
+    await updateProfile({ userId: user.id, patch: { timezone: tz } });
     setUserTimezone(tz);
     refreshProfile();
     setShowTimezone(false);
@@ -1364,12 +1382,13 @@ export default function SettingsView() {
       onConfirm: async () => {
         setActionError(null);
         setClearingHistory(true);
-        const { error } = await supabase.from('history').delete().eq('user_id', user.id);
+        const { error } = await clearWatchHistory({ userId: user.id });
         setClearingHistory(false);
         if (error) {
           setActionError(error.message || SETTINGS_VIEW.errors.failedToClearWatchHistory);
           return false;
         }
+        track(EVENTS.HISTORY_CLEARED, {});
         return true;
       },
     });
@@ -1469,7 +1488,7 @@ export default function SettingsView() {
   const handleGenerateCalToken = async () => {
     setGeneratingCalToken(true);
     const token = crypto.randomUUID();
-    const { error } = await supabase.from('profiles').update({ calendar_token: token }).eq('id', user.id);
+    const { error } = await updateProfile({ userId: user.id, patch: { calendar_token: token } });
     if (error) {
       console.error('[calendar] failed to save token:', error.message);
       setGeneratingCalToken(false);
@@ -1488,7 +1507,7 @@ export default function SettingsView() {
       confirmLabel: SETTINGS_VIEW.confirm.revoke,
       danger: true,
       onConfirm: async () => {
-        await supabase.from('profiles').update({ calendar_token: null }).eq('id', user.id);
+        await updateProfile({ userId: user.id, patch: { calendar_token: null } });
         setLocalCalToken(null);
         refreshProfile();
       },
@@ -1530,8 +1549,8 @@ export default function SettingsView() {
     const { data: free, error: chkErr } = await supabase.rpc('username_available', { p_username: candidate });
     if (chkErr) { setUsernameStatus('error'); return; }
     if (!free) { setUsernameStatus('taken'); return; }
-    const { error } = await supabase.from('profiles').update({ username: candidate }).eq('id', user.id);
-    if (error) { setUsernameStatus(error.code === '23505' ? 'taken' : 'error'); return; }
+    const { error } = await updateProfile({ userId: user.id, patch: { username: candidate } });
+    if (error) { setUsernameStatus(isDuplicateUsernameError(error) ? 'taken' : 'error'); return; }
     setUsernameDraft(null);
     setUsernameStatus('saved');
     setTimeout(() => setUsernameStatus(null), 2000);
@@ -1553,7 +1572,7 @@ export default function SettingsView() {
     if (next.length > 50) { setNameError('Keep it under 50 characters.'); return; }
     setSavingName(true);
     setNameError(null);
-    const { error } = await supabase.from('profiles').update({ display_name: next }).eq('id', user.id);
+    const { error } = await updateProfile({ userId: user.id, patch: { display_name: next } });
     setSavingName(false);
     if (error) { setNameError(error.message || SETTINGS_VIEW.errors.couldNotUpdateName); return; }
     setNameDraft(null);
@@ -1610,16 +1629,9 @@ export default function SettingsView() {
 
   const handleTogglePublic = async () => {
     if (!user) return;
-    const { error } = await supabase.from('profiles').update({ is_public: !isPublic }).eq('id', user.id);
+    const { error } = await updateProfile({ userId: user.id, patch: { is_public: !isPublic } });
     if (error) { setActionError(error.message); return; }
     track(EVENTS.PROFILE_VISIBILITY_CHANGED, { is_public: !isPublic });
-    refreshProfile();
-  };
-
-  const handleToggleLogRewatches = async () => {
-    if (!user) return;
-    const { error } = await supabase.from('profiles').update({ log_rewatches: !logRewatches }).eq('id', user.id);
-    if (error) { setActionError(error.message); return; }
     refreshProfile();
   };
 
@@ -1806,7 +1818,7 @@ export default function SettingsView() {
             <span className="settings-row-label">Region</span>
           </div>
           <div className="settings-row-value">
-            <span>{REGIONS.find(r => r.code === region)?.name ?? region}</span>
+            <span>{regionName(region)}</span>
             <Chevron />
           </div>
         </div>
@@ -1892,7 +1904,7 @@ export default function SettingsView() {
 
         {/* Visibility */}
         <div className="settings-row" style={{ cursor: 'default' }}>
-          <div className="settings-row-left">
+          <div className="settings-row-left" style={{ flex: 1, minWidth: 0 }}>
             <div className="settings-row-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>
@@ -1910,7 +1922,7 @@ export default function SettingsView() {
           </div>
           <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
             <SettingsTextAction onClick={handleTogglePublic} tone={isPublic ? 'danger' : 'default'}>
-              {isPublic ? SETTINGS_VIEW.makePrivate : SETTINGS_VIEW.makePublic}
+              {isPublic ? COMMON.makePrivate : COMMON.makePublic}
             </SettingsTextAction>
           </div>
         </div>
@@ -2095,30 +2107,6 @@ export default function SettingsView() {
           </div>
         </div>
 
-        {/* Rewatches */}
-        <div className="settings-row" style={{ cursor: 'default' }}>
-          <div className="settings-row-left">
-            <div className="settings-row-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>
-              </svg>
-            </div>
-            <div>
-              <div className="settings-row-label">{SETTINGS_VIEW.rewatches.label}</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                {logRewatches
-                  ? SETTINGS_VIEW.rewatches.onHint
-                  : SETTINGS_VIEW.rewatches.offHint}
-              </div>
-            </div>
-          </div>
-          <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
-            <SettingsTextAction onClick={handleToggleLogRewatches}>
-              {logRewatches ? COMMON.turnOff : COMMON.turnOn}
-            </SettingsTextAction>
-          </div>
-        </div>
-
         {/* Kids content */}
         <div className="settings-row" style={{ cursor: 'default' }}>
           <div className="settings-row-left">
@@ -2168,12 +2156,36 @@ export default function SettingsView() {
             </div>
           </div>
         )}
+
+        <div className="settings-row" style={{ cursor: 'default' }}>
+          <div className="settings-row-left">
+            <div className="settings-row-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 6 10-6"/></svg>
+            </div>
+            <div>
+              <div className="settings-row-label">{SETTINGS_VIEW.marketingEmails.label}</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.12rem' }}>
+                {marketingEmailsEnabled
+                  ? SETTINGS_VIEW.marketingEmails.onHint
+                  : SETTINGS_VIEW.marketingEmails.offHint}
+              </div>
+            </div>
+          </div>
+          <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
+            <SettingsTextAction onClick={toggleMarketingEmails} disabled={savingMarketingEmails}>
+              {savingMarketingEmails ? COMMON.saving : marketingEmailsEnabled ? COMMON.turnOff : COMMON.turnOn}
+            </SettingsTextAction>
+          </div>
+        </div>
       </div>
 
-      {/* PLOT Premium — only shown to existing subscribers; checkout is offline for now */}
-      {premium.isPremium && (
-        <div className="settings-group">
-          <div className="settings-group-title">{SETTINGS_VIEW.premium.groupTitle}</div>
+      {/* PLOT Premium — the free-user upsell branch is hidden while pricing
+          isn't public (SHOW_PRICING_PAGE); existing subscribers still see
+          their management row regardless. */}
+      {(premium.isPremium || SHOW_PRICING_PAGE) && (
+      <div className="settings-group">
+        <div className="settings-group-title">{SETTINGS_VIEW.premium.groupTitle}</div>
+        {premium.isPremium ? (
           <div className="settings-row" style={{ cursor: 'default' }}>
             <div className="settings-row-left">
               <div className="settings-row-icon" style={{ color: 'var(--accent)' }}>
@@ -2190,17 +2202,35 @@ export default function SettingsView() {
               {premium.busy ? SETTINGS_VIEW.premium.opening : SETTINGS_VIEW.premium.manageSubscription}
             </SettingsTextAction>
           </div>
-          {billingReturn && (
-            <div style={{ padding: '0.5rem 1rem', fontSize: '0.78rem', color: 'var(--accent)', background: 'var(--accent-dim)', borderRadius: 8, margin: '0.25rem 1rem' }}>
-              {billingReturn === 'tip' ? SETTINGS_VIEW.premium.thanksForTip : SETTINGS_VIEW.premium.activeThankYou}
+        ) : (
+          <div className="settings-row" style={{ cursor: 'default' }}>
+            <div className="settings-row-left">
+              <div className="settings-row-icon" style={{ color: 'var(--accent)' }}>
+                <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+              </div>
+              <div>
+                <div className="settings-row-label">{SETTINGS_VIEW.premium.upsellLabel}</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                  {SETTINGS_VIEW.premium.upsellBlurb}
+                </div>
+              </div>
             </div>
-          )}
-          {premium.error && (
-            <div style={{ padding: '0.5rem 1rem', fontSize: '0.78rem', color: 'var(--danger)', background: 'var(--danger-dim)', border: '1px solid var(--danger-border)', borderRadius: 8, margin: '0.25rem 1rem' }}>
-              {premium.error}
-            </div>
-          )}
-        </div>
+            <SettingsTextAction onClick={() => { track(EVENTS.PREMIUM_GATE_HIT, { feature: 'settings_upsell' }); navigate('/pricing'); }}>
+              {SETTINGS_VIEW.premium.upgradeButton}
+            </SettingsTextAction>
+          </div>
+        )}
+        {billingReturn && (
+          <div style={{ padding: '0.5rem 1rem', fontSize: '0.78rem', color: 'var(--accent)', background: 'var(--accent-dim)', borderRadius: 8, margin: '0.25rem 1rem' }}>
+            {billingReturn === 'tip' ? SETTINGS_VIEW.premium.thanksForTip : SETTINGS_VIEW.premium.activeThankYou}
+          </div>
+        )}
+        {premium.error && (
+          <div style={{ padding: '0.5rem 1rem', fontSize: '0.78rem', color: 'var(--danger)', background: 'var(--danger-dim)', border: '1px solid var(--danger-border)', borderRadius: 8, margin: '0.25rem 1rem' }}>
+            {premium.error}
+          </div>
+        )}
+      </div>
       )}
 
       {/* Plex */}
@@ -2368,7 +2398,9 @@ export default function SettingsView() {
       <div className="settings-group">
         <div className="settings-group-title">{SETTINGS_VIEW.calendarFeed.groupTitle}</div>
 
-        {/* Subscribe */}
+        {/* Subscribe — hidden for free users while pricing is dark (SHOW_PRICING_PAGE);
+            an existing subscriber still sees and uses their own feed regardless. */}
+        {(premium.isPremium || SHOW_PRICING_PAGE) && (
         <div className="settings-row" style={{ cursor: 'default' }}>
           <div className="settings-row-left">
             <div className="settings-row-icon">
@@ -2434,6 +2466,7 @@ export default function SettingsView() {
             )}
           </div>
         </div>
+        )}
 
         {/* Export */}
         <div className="settings-row" style={{ cursor: 'default' }}>
@@ -2544,6 +2577,32 @@ export default function SettingsView() {
         </div>
       </div>
 
+      {/* Credits — TMDB's API terms ask for the notice on an About/Credits
+          surface, not only in the legal pages. See copy/settingsView.js. */}
+      <div className="settings-group">
+        <div className="settings-group-title">{SETTINGS_VIEW.credits.groupTitle}</div>
+        <div className="settings-credits">
+          <p className="settings-credits-intro">{SETTINGS_VIEW.credits.intro}</p>
+          {/* TMDB also asks for their approved logo alongside this notice. Drop
+              the official SVG at apps/web/public/tmdb.svg and swap this span for
+              an <img src="/tmdb.svg" class="settings-credit-logo">; the style is
+              already defined. Not shipped yet because the asset is theirs to
+              provide, and a wrong or redrawn mark is worse than none. */}
+          <div className="settings-credit">
+            <span className="settings-credit-name">{SETTINGS_VIEW.credits.tmdbName}</span>
+            <p className="settings-credit-notice">{SETTINGS_VIEW.credits.tmdbNotice}</p>
+          </div>
+          <div className="settings-credit">
+            <span className="settings-credit-name">{SETTINGS_VIEW.credits.tvmazeName}</span>
+            <p className="settings-credit-notice">{SETTINGS_VIEW.credits.tvmazeNotice}</p>
+          </div>
+          <div className="settings-credit">
+            <span className="settings-credit-name">{SETTINGS_VIEW.credits.omdbName}</span>
+            <p className="settings-credit-notice">{SETTINGS_VIEW.credits.omdbNotice}</p>
+          </div>
+        </div>
+      </div>
+
       {/* Danger zone */}
       <div className="settings-group">
         <div className="settings-group-title">{SETTINGS_VIEW.dangerZone.groupTitle}</div>
@@ -2619,7 +2678,7 @@ export default function SettingsView() {
 
       {showGuideChannels && (
         <ProviderPicker
-          title="My Channels"
+          title={SETTINGS_VIEW.integrations.myChannelsLabel}
           hint="Select the free-to-air and broadcast channels to include in your Guide. For example, ABC iview, SBS On Demand, 9Now, 7Plus, 10 Play."
           region={region}
           selected={guideChannels}

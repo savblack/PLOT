@@ -2,12 +2,12 @@ import { existsSync, readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { isCliAvailable, runCli } from '../lib/cli-runner.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const MARKETING_ROOT = join(HERE, '..');
 const REPO_ROOT = join(MARKETING_ROOT, '..');
 const DEFAULT_ENV_FILE = join(REPO_ROOT, '.env');
-const LEARNING_SUMMARY_DIR = '/Users/savannahblack/Documents/Obsidian/Projects/PLOT/Marketing Automation/Learning Summaries';
 const MANUAL_OUTPUT_ROOT = join(MARKETING_ROOT, 'plot-posts');
 
 const parseArgs = (argv) => {
@@ -62,7 +62,7 @@ const fileEnv = loadEnvFile(DEFAULT_ENV_FILE);
 const BASE_ENV = { ...process.env, ...fileEnv };
 
 const getEnv = (...names) => names.map((name) => BASE_ENV[name]).find(Boolean) || null;
-const hasCommand = (command) => spawnSync('which', [command], { stdio: 'ignore' }).status === 0;
+const hasCommand = isCliAvailable;
 
 const run = (label, command, args = [], { cwd = REPO_ROOT, env = BASE_ENV, shell = false } = {}) => {
   console.log(`\n== ${label} ==`);
@@ -98,29 +98,11 @@ const codexPrompt = [
   'Do not run pull, do not run save, and do not dispatch anything.',
 ].join(' ');
 
-const runCodexCopyWriter = (dangerous) => {
-  if (!hasCommand('codex')) {
-    throw new Error('Codex CLI is not installed. Set --copy-command=... or install `codex`.');
-  }
-  const args = ['exec'];
-  if (dangerous) args.push('--dangerously-bypass-approvals-and-sandbox');
-  args.push(codexPrompt);
-  run('Write copy with Codex', 'codex', args);
-};
+const runCodexCopyWriter = (dangerous) =>
+  runCli('Write copy with Codex', 'codex', codexPrompt, { dangerous }, { cwd: REPO_ROOT, env: BASE_ENV });
 
-const runClaudeCopyWriter = () => {
-  if (!hasCommand('claude')) {
-    throw new Error('Claude Code CLI is not installed. Set --copy-command=... or install `claude`.');
-  }
-  run('Write copy with Claude Code', 'claude', [
-    '-p',
-    codexPrompt,
-    '--permission-mode',
-    'bypassPermissions',
-    '--allowedTools',
-    'Bash,Read,Write,WebSearch,WebFetch',
-  ]);
-};
+const runClaudeCopyWriter = () =>
+  runCli('Write copy with Claude Code', 'claude', codexPrompt, {}, { cwd: REPO_ROOT, env: BASE_ENV });
 
 const runCustomCopyWriter = (command) => {
   if (!command) throw new Error('No copy command provided.');
@@ -167,42 +149,6 @@ const runWeekly = (args) => {
   }
 
   run('Render posts onto the review desk', process.execPath, ['marketing/generate/generate.mjs']);
-};
-
-const runLearningPrepare = () => {
-  requireEnv([
-    ['SUPABASE_URL', 'VITE_SUPABASE_URL'],
-    ['SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_SERVICE_KEY'],
-  ]);
-
-  run('Collect fresh metrics', process.execPath, ['marketing/metrics/collect.mjs']);
-  run('Prepare Sunday learning artifact', process.execPath, ['marketing/learning/prepare.mjs']);
-};
-
-const runLearningApply = (args) => {
-  requireEnv([
-    ['SUPABASE_URL', 'VITE_SUPABASE_URL'],
-    ['SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_SERVICE_KEY'],
-  ]);
-  if (!hasCommand('codex')) {
-    throw new Error('Codex CLI is not installed. The Sunday learning writer depends on `codex`.');
-  }
-
-  const childArgs = ['marketing/learning/apply.mjs'];
-  const waitSeconds = Number(args.get('--wait-seconds', '2700')) || 2700;
-  childArgs.push(`--wait-seconds=${Math.max(60, waitSeconds)}`);
-  if (args.has('--allow-non-main')) childArgs.push('--allow-non-main');
-
-  run('Apply Sunday learning locally', process.execPath, childArgs);
-};
-
-const runLearningAssert = () => {
-  requireEnv([
-    ['SUPABASE_URL', 'VITE_SUPABASE_URL'],
-    ['SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_SERVICE_KEY'],
-  ]);
-
-  run('Check Sunday learning state', process.execPath, ['marketing/learning/assert-ready.mjs']);
 };
 
 const runPublish = (args) => {
@@ -254,7 +200,6 @@ const printDoctor = () => {
     ['Claude runner', hasCommand('claude') ? 'available fallback' : 'not found'],
     ['Repo node_modules', existsSync(join(REPO_ROOT, 'node_modules')) ? 'present' : 'missing'],
     ['Manual fallback output', MANUAL_OUTPUT_ROOT],
-    ['Sunday learning summaries', LEARNING_SUMMARY_DIR],
   ];
 
   console.log('PLOT marketing automation');
@@ -265,9 +210,6 @@ const printDoctor = () => {
   console.log('  npm run publish -- --dry-run');
   console.log('  npm run newsletter -- --dry-run');
   console.log('  npm run snapshot');
-  console.log('  npm run learn:prepare');
-  console.log('  npm run learn:apply');
-  console.log('  npm run learn:assert');
 };
 
 const main = () => {
@@ -290,17 +232,8 @@ const main = () => {
     case 'snapshot':
       runSnapshot();
       return;
-    case 'learn:prepare':
-      runLearningPrepare();
-      return;
-    case 'learn:apply':
-      runLearningApply(args);
-      return;
-    case 'learn:assert':
-      runLearningAssert();
-      return;
     default:
-      throw new Error(`Unknown command "${command}". Use doctor, weekly, publish, newsletter, snapshot, learn:prepare, learn:apply, or learn:assert.`);
+      throw new Error(`Unknown command "${command}". Use doctor, weekly, publish, newsletter, or snapshot.`);
   }
 };
 

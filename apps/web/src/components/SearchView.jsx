@@ -2,17 +2,17 @@ import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { posterUrl, profileUrl } from '../utils/images.js';
-import { tmdb } from '../api/tmdb.js';
-import { supabase } from '../api/supabase.js';
+import { tmdb } from '@plot/core/tmdb.js';
+import { supabase } from '@plot/core/supabase.js';
 import { useHistory } from '../hooks/useHistory.js';
 import { localDateStr } from '../utils/date.js';
 import { favoriteWords } from '../utils/spelling.js';
-import { getButtonLikeProps } from '../utils/interactive.js';
 import Spinner from './Spinner.jsx';
 import UserList from './UserList.jsx';
 import { classifySearchResults } from '../utils/search.js';
 import { track, EVENTS } from '../lib/analytics.js';
 import { MEDIA } from '../copy/media.js';
+import { COMMON } from '../copy/common.js';
 
 function BookmarkIcon({ filled }) {
   return (
@@ -52,36 +52,35 @@ function ResultRow({ item, openPanel, watchlist, favorites, history, region }) {
   const openDetails = () => openPanel(id, type);
 
   return (
-    <div
-      className="list-row search-result-row interactive-surface"
-      onClick={openDetails}
-      {...getButtonLikeProps({ onPress: openDetails, label: `View details for ${title}` })}
-    >
-      {/* Poster */}
-      <div className="list-row-poster">
-        {img
-          ? <img src={img} alt={title} />
-          : <div style={{ width: '100%', height: '100%', background: 'var(--surface-raised)' }} />
-        }
-      </div>
-
-      {/* Info */}
-      <div className="list-row-info">
-        <div className="list-row-title">{title}</div>
-        <div className="list-row-meta">
-          <span style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-            {type === 'tv' ? MEDIA.series : MEDIA.movie}
-          </span>
+    <div className="list-row search-result-row">
+      <button type="button" className="list-row-hit interactive-surface" onClick={openDetails} aria-label={`View details for ${title}`}>
+        {/* Poster */}
+        <div className="list-row-poster">
+          {img
+            ? <img src={img} alt={title} />
+            : <div style={{ width: '100%', height: '100%', background: 'var(--surface-raised)' }} />
+          }
         </div>
-      </div>
+
+        {/* Info */}
+        <div className="list-row-info">
+          <div className="list-row-title">{title}</div>
+          <div className="list-row-meta">
+            <span style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              {type === 'tv' ? MEDIA.series : MEDIA.movie}
+            </span>
+          </div>
+        </div>
+
+        {(watched || comingSoon) && (
+          <div className="list-row-end search-row-status">
+            {watched && <span className="chip chip-episode">{MEDIA.watched}</span>}
+            {comingSoon && <span className="chip chip-soon">{MEDIA.comingSoon}</span>}
+          </div>
+        )}
+      </button>
 
       {/* Actions */}
-      {(watched || comingSoon) && (
-        <div className="list-row-end search-row-status">
-          {watched && <span className="chip chip-episode">{MEDIA.watched}</span>}
-          {comingSoon && <span className="chip chip-soon">{MEDIA.comingSoon}</span>}
-        </div>
-      )}
       <div className="list-row-end search-row-actions">
         <button
           type="button"
@@ -203,7 +202,7 @@ export default function SearchView() {
               type="button"
               className="search-input-clear"
               onClick={() => { setQuery(''); runSearch('', mode); }}
-              aria-label="Clear search"
+              aria-label={COMMON.clearSearch}
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>

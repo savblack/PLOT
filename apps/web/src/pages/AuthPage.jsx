@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { supabase } from '../api/supabase';
+import { supabase } from '@plot/core/supabase.js';
 import './AuthPage.css';
 import { track, identifyUser, EVENTS } from '../lib/analytics.js';
 import { getAuthCallbackUrl } from '../utils/redirects.js';
@@ -11,6 +11,7 @@ import Turnstile from '../components/Turnstile.jsx';
 import { getPremiumCheckoutIntent, rememberPremiumCheckoutIntent } from '../utils/premiumCheckoutIntent.js';
 import { COMMON } from '../copy/common.js';
 import { AUTH_PAGE } from '../copy/authPage.js';
+import { authErrorReason } from '@plot/core/authErrors.js';
 
 const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY;
 
@@ -27,14 +28,9 @@ function friendlyError(msg) {
 
 // Short, stable slugs for signup_submit_failed — group failures in PostHog
 // without leaking the raw (occasionally wordy) Supabase error message.
-function errorReason(msg) {
-  if (!msg) return 'unknown';
-  if (msg.includes('User already registered'))      return 'already_registered';
-  if (msg.includes('Password should be at least'))  return 'weak_password';
-  if (msg.includes('Unable to validate email'))      return 'invalid_email';
-  if (msg.includes('rate limit') || msg.includes('too many')) return 'rate_limited';
-  return 'unknown';
-}
+// Stable analytics slugs live in core so web and mobile group failures the
+// same way — see @plot/core/authErrors.js.
+const errorReason = authErrorReason;
 
 // Friendly copy for the signup-bypass Edge Function's structured error
 // reasons (distinct from friendlyError/errorReason above, which parse raw
@@ -83,6 +79,10 @@ export default function AuthPage({ initialMode = 'signup' }) {
   // clock the bypass path checks submission timing against, since a raw
   // client-supplied timestamp could just be claimed, not proven.
   const formTokenRef = useRef(null);
+  // Latched for the lifetime of this page, never reset on success: once an OAuth
+  // handoff is under way the browser is leaving, and a second /authorize would do
+  // real damage (see beginOAuth).
+  const oauthStartingRef = useRef(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -172,8 +172,12 @@ export default function AuthPage({ initialMode = 'signup' }) {
         password,
         options: { captchaToken },
       });
-      if (error) { setError(friendlyError(error.message)); setLoading(false); resetCaptcha(); }
-      else {
+      if (error) {
+        // Sign-in failures are their own funnel — deliberately not folded into
+        // signup_submit_failed, which would inflate every signup-attempt metric.
+        track(EVENTS.LOGIN_SUBMIT_FAILED, { reason: errorReason(error.message) });
+        setError(friendlyError(error.message)); setLoading(false); resetCaptcha();
+      } else {
         identifyUser(data.user.id, { email: data.user.email });
         track(EVENTS.USER_LOGGED_IN);
         const plan = getPremiumCheckoutIntent();
@@ -271,16 +275,45 @@ export default function AuthPage({ initialMode = 'signup' }) {
   // (the page redirects away), so we stash the method in sessionStorage and let
   // AuthCallbackPage report it once the session comes back (see reportAuth there).
   const beginOAuth = async (provider) => {
+    // Re-entry guard. The button's `disabled={loading}` was doing nothing here,
+    // because this was the one auth path that never set `loading` — and even with
+    // it set, setLoading is async, so a fast double-tap can clear the check twice
+    // before React re-renders. A ref is the only thing that latches synchronously.
+    //
+    // This matters more than a duplicate request: under PKCE every
+    // signInWithOAuth call overwrites the code_verifier in localStorage while
+    // leaving its own /authorize behind, so if the browser ends up following an
+    // earlier redirect than the last verifier written, the code exchange fails
+    // against a verifier that no longer matches. The user lands on /auth/callback
+    // with a confirmed account, no session, and no way forward. That is the
+    // 2026-08-07 signup, and auth.flow_state still shows bursts of up to eight
+    // /authorize calls inside four seconds from a single tap-happy device.
+    if (oauthStartingRef.current) return;
+    oauthStartingRef.current = true;
+    setLoading(true);
     setError(null);
     try { sessionStorage.setItem('plot_auth_method', provider); } catch { /* ignore */ }
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider,
-      options: { redirectTo: getAuthCallbackUrl() },
-    });
-    // A returned error means we never navigated away — surface it and clear the marker.
-    if (error) {
-      setError(friendlyError(error.message));
+
+    // Either failure path means we never navigated away, so undo everything the
+    // handoff set up — including the guard, or they could never retry.
+    const abandon = (err) => {
+      setError(friendlyError(err?.message));
+      setLoading(false);
+      oauthStartingRef.current = false;
       try { sessionStorage.removeItem('plot_auth_method'); } catch { /* ignore */ }
+    };
+
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: { redirectTo: getAuthCallbackUrl() },
+      });
+      // No error means the redirect is under way and this page is on its way out.
+      if (error) abandon(error);
+    } catch (e) {
+      // A throw (offline, client misconfigured) would otherwise leave the guard
+      // latched and every auth button dead until a manual reload.
+      abandon(e);
     }
   };
 
@@ -409,12 +442,12 @@ export default function AuthPage({ initialMode = 'signup' }) {
                 <>
                   <div className="auth-social">
                     {SHOW_GOOGLE_LOGIN && (
-                      <button type="button" className="auth-social-btn" onClick={() => beginOAuth('google')} disabled={loading}>
+                      <button type="button" className="auth-social-btn" onClick={() => beginOAuth('google')} disabled={loading} aria-busy={loading}>
                         <GoogleIcon /> Continue with Google
                       </button>
                     )}
                     {SHOW_APPLE_LOGIN && (
-                      <button type="button" className="auth-social-btn" onClick={() => beginOAuth('apple')} disabled={loading}>
+                      <button type="button" className="auth-social-btn" onClick={() => beginOAuth('apple')} disabled={loading} aria-busy={loading}>
                         <AppleIcon /> Continue with Apple
                       </button>
                     )}
@@ -536,7 +569,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
         </div>
 
         <p className="auth-panel-footer">
-          {AUTH_PAGE.termsAgreement} <Link to="/terms">{AUTH_PAGE.terms}</Link> {AUTH_PAGE.and} <Link to="/privacy">{AUTH_PAGE.privacyPolicy}</Link>.
+          {AUTH_PAGE.termsAgreement} <Link to="/terms">{AUTH_PAGE.terms}</Link> {AUTH_PAGE.and} <Link to="/privacy">{COMMON.privacyPolicy}</Link>.
         </p>
       </div>
     </div>

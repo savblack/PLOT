@@ -19,6 +19,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 // Shared site footer markup — generated from website/_partials/footer.html.
 // Run `npm run footer` to regenerate after editing the partial.
 import { FOOTER_HTML } from './footer.generated.ts';
+import { serviceKey } from '../_shared/serviceKey.ts';
 
 const SITE = 'https://theplot.tv';
 const APP = 'https://app.theplot.tv';
@@ -282,8 +283,8 @@ ${head}
   .feature { display: grid; grid-template-columns: 7fr 5fr; gap: 44px; align-items: center; padding: 48px 0; text-decoration: none; color: inherit; }
   .feature + .group { border-top: none; }
   .f-media img { width: 100%; aspect-ratio: 16/10; object-fit: cover; display: block; border: 1px solid var(--hair); border-radius: 14px; }
-  .f-media .ph { width: 100%; aspect-ratio: 16/10; background: var(--ink); display: flex; align-items: flex-end; padding: 26px; border-radius: 14px; }
-  .f-media .ph span { font-family: var(--serif); font-size: 1.8rem; color: #f0efe8; line-height: 1.05; }
+  .f-media .ph { width: 100%; aspect-ratio: 16/10; background: var(--paper); border: 1px solid var(--hair); display: flex; align-items: flex-end; padding: 26px; border-radius: 14px; }
+  .f-media .ph span { font-family: var(--serif); font-size: 1.8rem; color: var(--ink); line-height: 1.05; }
   .feature h2 { font-family: var(--serif); font-size: clamp(1.9rem, 3.6vw, 2.6rem); font-weight: 400; line-height: 1.04; letter-spacing: -0.015em; margin: 12px 0 14px; }
   .feature:hover h2 { color: var(--pink); }
   .feature .dek { color: var(--mut); font-weight: 300; font-size: 1rem; }
@@ -304,7 +305,7 @@ ${head}
   .row-dek { display: block; color: var(--mut); font-weight: 300; font-size: 0.92rem; line-height: 1.35; margin-top: 8px; }
   .row img { width: 240px; aspect-ratio: 3/2; object-fit: cover; flex-shrink: 0; border: 1px solid var(--hair); border-radius: 12px; filter: grayscale(1) contrast(1.04); transition: filter 0.45s var(--ease); }
   .row:hover img { filter: grayscale(0) contrast(1); }
-  .row .ph { width: 240px; aspect-ratio: 3/2; flex-shrink: 0; background: var(--ink); border-radius: 12px; }
+  .row .ph { width: 240px; aspect-ratio: 3/2; flex-shrink: 0; background: var(--paper); border: 1px solid var(--hair); border-radius: 12px; }
   .kick { font-size: 0.62rem; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; }
   .row .kick { display: block; }
 
@@ -348,14 +349,14 @@ ${head}
   .mcard { display: block; text-decoration: none; color: inherit; }
   .mcard img { width: 100%; aspect-ratio: 3/2; object-fit: cover; display: block; border: 1px solid var(--hair); border-radius: 12px; filter: grayscale(1) contrast(1.04); transition: filter 0.45s var(--ease); }
   .mcard:hover img { filter: none; }
-  .mcard .ph { display: block; width: 100%; aspect-ratio: 3/2; background: var(--ink); border-radius: 12px; }
+  .mcard .ph { display: block; width: 100%; aspect-ratio: 3/2; background: var(--paper); border: 1px solid var(--hair); border-radius: 12px; }
   .mcard .kick { display: block; margin: 13px 0 5px; }
   .mcard .mc-t { display: block; font-family: var(--serif); font-size: 1.18rem; line-height: 1.14; letter-spacing: -0.01em; transition: color 0.25s var(--ease); }
   .mcard:hover .mc-t { color: var(--pink); }
 
   footer {
-    background: #0c0c0c; color: #f0efe8; position: relative; z-index: 3;
-    margin-top: 90px; padding: 2.6rem 3rem;
+    background: #fff; color: var(--ink); border-top: 1px solid var(--hair);
+    position: relative; z-index: 3; margin-top: 90px; padding: 2.6rem 3rem;
   }
   .footer-inner {
     max-width: 1100px; margin: 0 auto; display: flex; align-items: center;
@@ -363,23 +364,23 @@ ${head}
   }
   .footer-logo {
     text-decoration: none; font-family: var(--serif); font-weight: 400; letter-spacing: -0.05em;
-    font-size: 1.8rem; line-height: 1; color: #f0efe8; user-select: none;
+    font-size: 1.8rem; line-height: 1; color: var(--ink); user-select: none;
   }
   .footer-nav { display: flex; gap: 1.3rem; flex-wrap: wrap; }
   .footer-nav a {
-    font-size: 0.82rem; color: rgba(240,239,232,0.82); text-decoration: none;
+    font-size: 0.82rem; color: var(--mut); text-decoration: none;
     transition: color 0.2s; white-space: nowrap;
   }
-  .footer-nav a:hover { color: #fff; }
+  .footer-nav a:hover { color: var(--ink); }
   .footer-bottom {
     width: 100%; padding-top: 1.2rem; margin-top: 0.4rem;
-    border-top: 1px solid rgba(255,255,255,0.08);
+    border-top: 1px solid var(--hair);
     display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
   }
-  .footer-copy { font-size: 0.75rem; color: rgba(240,239,232,0.7); }
+  .footer-copy { font-size: 0.75rem; color: var(--mut); }
   .footer-social { display: flex; gap: 1rem; align-items: center; }
-  .footer-social a { color: rgba(240,239,232,0.7); display: inline-flex; transition: color 0.2s; }
-  .footer-social a:hover { color: #fff; }
+  .footer-social a { color: var(--mut); display: inline-flex; transition: color 0.2s; }
+  .footer-social a:hover { color: var(--ink); }
   .footer-social svg { width: 19px; height: 19px; display: block; }
 
   @media (max-width: 760px) {
@@ -412,6 +413,7 @@ ${GTM_NOSCRIPT}
   <a href="${SITE}" class="nav-logo" aria-label="PLOT">PLOT</a>
   <ul class="nav-links" id="navLinks">
     <li><a href="${FEED_PATH}"${nav === 'whats-on' ? ' class="current"' : ''}>What's On</a></li>
+    <li><a href="/newsletter"${nav === 'newsletter' ? ' class="current"' : ''}>Newsletter</a></li>
     <li><a href="${APP}/login">Log in</a></li>
     <li><a href="${APP}/signup" class="nav-cta">Sign up</a></li>
   </ul>
@@ -551,7 +553,7 @@ const CHART_CSS = `
   ol.chart li:first-child .ch-row { border-top: none; }
   .ch-rank { font-family: var(--serif); font-size: 2.1rem; line-height: 1; color: var(--faint); text-align: center; font-variant-numeric: tabular-nums; }
   .ch-rank.top { color: var(--pink); }
-  .ch-poster { width: 60px; aspect-ratio: 2/3; object-fit: cover; border-radius: 8px; background: var(--ink); display: block; }
+  .ch-poster { width: 60px; aspect-ratio: 2/3; object-fit: cover; border-radius: 8px; background: var(--paper); display: block; }
   .ch-title { font-family: var(--serif); font-size: 1.5rem; line-height: 1.1; letter-spacing: -0.01em; }
   .ch-kind { display: block; color: var(--faint); font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase; margin-top: 5px; }
   .ch-move { font-size: 0.64rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; white-space: nowrap; }
@@ -584,10 +586,10 @@ const renderChart = async (supabase: ReturnType<typeof createClient>) => {
   const pageUrl = `${SITE}${FEED_PATH}/chart`;
 
   const head = `<style>${CHART_CSS}</style>
-<meta name="description" content="The twenty film and TV titles the world is watching this week, ranked. Updated weekly by PLOT.">
+<meta name="description" content="The twenty film and TV titles the world is watching this week, ranked by PLOT.">
 <link rel="canonical" href="${pageUrl}">
 <meta property="og:title" content="The chart · PLOT">
-<meta property="og:description" content="The twenty titles the world is watching this week, ranked. Updated weekly.">
+<meta property="og:description" content="The twenty titles the world is watching this week, ranked.">
 <meta property="og:url" content="${pageUrl}">
 <meta property="og:image" content="${OG_FALLBACK}">
 <meta property="og:image:width" content="1200">
@@ -646,6 +648,290 @@ const renderChart = async (supabase: ReturnType<typeof createClient>) => {
   `, 200, 'chart');
 };
 
+// ── Newsletter archive (theplot.tv/newsletter) ────────────────────
+// Every issue that has been sent, as a public page. The point is conversion:
+// asking someone to subscribe to a newsletter they can't read is a worse offer
+// than letting them read one first. It doubles as crawlable title coverage.
+//
+// Issues come from marketing_newsletter_issues, written by
+// marketing/newsletter/send-digest.mjs. week_start is unique, so it is the slug.
+// The table is service-role only and stays that way — this function reads it
+// with the service-role client, so recipient_count never reaches a browser.
+
+// The index needs everything but the issue body; only the issue page selects it.
+type NewsletterIssueSummary = {
+  week_start: string;
+  issue_date: string;
+  subject: string;
+  snapshot: {
+    featured?: { title?: string } | null;
+    chart?: { title?: string }[] | null;
+    streaming?: { title?: string }[] | null;
+  } | null;
+};
+
+type NewsletterIssue = NewsletterIssueSummary & { html: string };
+
+// Nothing below states a send frequency: the digest goes out by hand, so a
+// stated cadence would be a promise nothing keeps. The archive shows real dates,
+// which lets a reader judge for themselves.
+const NEWSLETTER_PATH = '/newsletter';
+const NEWSLETTER_SEO_TITLE = 'The PLOT Newsletter: The Week in Film & TV, By Email';
+const NEWSLETTER_BLURB = 'The chart, what to watch this weekend, and what just landed on streaming, by email. Read the latest issues below.';
+
+const issueUrl = (weekStart: string) => `${SITE}${NEWSLETTER_PATH}/${weekStart}`;
+
+// A dateline for an issue. week_start is already a plain YYYY-MM-DD.
+const fmtIssueDate = (isoDate: string) =>
+  new Date(`${isoDate}T00:00:00Z`).toLocaleDateString('en-US', {
+    month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC',
+  });
+
+// What was in the issue, from the snapshot the sender stored alongside it.
+const issuePreview = (issue: NewsletterIssueSummary) => {
+  const titles = [
+    issue.snapshot?.featured?.title,
+    ...(issue.snapshot?.chart || []).map((c) => c?.title),
+    ...(issue.snapshot?.streaming || []).map((s) => s?.title),
+  ].filter((t): t is string => !!t);
+  const unique = [...new Set(titles)];
+  if (!unique.length) return '';
+  const shown = unique.slice(0, 3).join(', ');
+  const rest = unique.length - Math.min(unique.length, 3);
+  return rest > 0 ? `${shown} and ${rest} more` : shown;
+};
+
+// The signup form, used on both the index and each issue page. Posts to
+// theplot.tv/api/newsletter (the same proxy the homepage form uses), including
+// the honeypot field that endpoint expects.
+const subscribeForm = (placement: string) => `
+<aside class="nlsub r4">
+  <div class="nlsub-copy">
+    <span class="nlsub-title">Get the next one</span>
+    <span class="nlsub-sub">Straight to your inbox. Unsubscribe any time.</span>
+  </div>
+  <form class="nlsub-form" id="nlForm" data-placement="${esc(placement)}">
+    <input type="email" name="email" placeholder="your@email.com" required autocomplete="email" aria-label="Email address">
+    <input type="text" name="website" class="nlsub-hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+    <button type="submit">Subscribe</button>
+  </form>
+  <div class="nlsub-msg" id="nlMsg" role="status"></div>
+</aside>
+<script>
+  (function () {
+    var form = document.getElementById('nlForm');
+    var msg = document.getElementById('nlMsg');
+    if (!form || !msg) return;
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var button = form.querySelector('button');
+      button.disabled = true;
+      msg.textContent = '';
+      fetch('/api/newsletter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: form.elements.email.value,
+          website: form.elements.website.value,
+          list: 'newsletter',
+        }),
+      }).then(function (r) {
+        if (!r.ok) throw new Error('bad status');
+        msg.textContent = "You're in. The next issue lands in your inbox.";
+        form.reset();
+        if (window.posthog) posthog.capture('newsletter_subscribed', { placement: form.dataset.placement });
+      }).catch(function () {
+        msg.textContent = 'Something went wrong — try again in a minute.';
+      }).finally(function () {
+        button.disabled = false;
+      });
+    });
+  })();
+</script>`;
+
+const NEWSLETTER_CSS = `
+  .nlsub { border-top: 1px solid var(--hair); margin-top: 44px; padding: 30px 0 0; }
+  .nlsub-copy { display: flex; flex-direction: column; gap: 4px; }
+  .nlsub-title { font-family: var(--serif); font-size: 1.5rem; line-height: 1.1; }
+  .nlsub-sub { color: var(--mut); font-weight: 300; font-size: 0.92rem; }
+  .nlsub-form { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
+  .nlsub-form input[type=email] {
+    flex: 1 1 240px; min-width: 0; padding: 12px 16px; border: 1px solid var(--hair);
+    border-radius: 9999px; font: inherit; font-size: 0.92rem; color: var(--ink); background: #fff;
+  }
+  .nlsub-form input[type=email]:focus { outline: none; border-color: var(--ink); }
+  .nlsub-form button {
+    padding: 12px 28px; border: 1px solid var(--ink); border-radius: 9999px; background: transparent;
+    color: var(--ink); font: inherit; font-size: 0.92rem; cursor: pointer; transition: color 0.2s, background 0.2s;
+  }
+  .nlsub-form button:hover { background: var(--ink); color: #fff; }
+  .nlsub-form button:disabled { opacity: 0.5; cursor: default; }
+  .nlsub-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+  .nlsub-msg { margin-top: 10px; color: var(--mut); font-size: 0.86rem; min-height: 1.2em; }
+  .nl-empty { margin-top: 48px; color: var(--mut); font-weight: 300; }
+`;
+
+const renderNewsletterIndex = async (supabase: ReturnType<typeof createClient>) => {
+  const { data } = await supabase
+    .from('marketing_newsletter_issues')
+    .select('week_start, issue_date, subject, snapshot')
+    .order('week_start', { ascending: false })
+    .limit(52);
+
+  const issues = ((data || []) as NewsletterIssueSummary[]);
+
+  const rows = issues.map((issue) => {
+    const preview = issuePreview(issue);
+    return `<a class="row" href="${NEWSLETTER_PATH}/${esc(issue.week_start)}">
+      <div>
+        <span class="kick sc" style="color:var(--faint)">${esc(fmtIssueDate(issue.week_start))}</span>
+        <span class="row-t">${esc(issue.subject)}</span>
+        ${preview ? `<span class="row-dek">${esc(preview)}</span>` : ''}
+      </div>
+    </a>`;
+  }).join('');
+
+  const head = `<style>${NEWSLETTER_CSS}</style>
+<meta name="description" content="${esc(NEWSLETTER_BLURB)}">
+<link rel="canonical" href="${SITE}${NEWSLETTER_PATH}">
+<meta property="og:title" content="${esc(NEWSLETTER_SEO_TITLE)}">
+<meta property="og:description" content="${esc(NEWSLETTER_BLURB)}">
+<meta property="og:url" content="${SITE}${NEWSLETTER_PATH}">
+<meta property="og:image" content="${OG_FALLBACK}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="${OG_FALLBACK}">`;
+
+  return page(NEWSLETTER_SEO_TITLE, head, `
+    <div class="head r2">
+      <div class="head-row">
+        <h1 class="feed-title">The <em>newsletter</em></h1>
+      </div>
+      <p class="chart-intro">${esc(NEWSLETTER_BLURB)}</p>
+    </div>
+    ${rows ? `<div class="r3">${rows}</div>` : '<p class="nl-empty">The first issue lands soon.</p>'}
+    ${subscribeForm('newsletter_index')}
+  `, 200, 'newsletter');
+};
+
+// The stored HTML is the email itself: a complete document built for inboxes.
+// Serving it as-is is the most faithful archive there is, so it is served
+// almost as-is — only the webfont swapped for the self-hosted one (the site CSP
+// allows no third-party font host) and a way back plus a signup appended.
+const renderNewsletterIssue = async (supabase: ReturnType<typeof createClient>, weekStart: string) => {
+  const { data } = await supabase
+    .from('marketing_newsletter_issues')
+    .select('week_start, issue_date, subject, html, snapshot')
+    .eq('week_start', weekStart)
+    .maybeSingle();
+
+  const issue = data as NewsletterIssue | null;
+  if (!issue) return await renderNewsletterIndex(supabase);
+
+  const preview = issuePreview(issue);
+  const description = preview
+    ? `${issue.subject}: ${preview}.`
+    : NEWSLETTER_BLURB;
+
+  const injectedHead = `<style>
+  @font-face { font-family: 'Instrument Serif'; src: url('${SITE}/fonts/InstrumentSerif-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; font-display: swap; }
+  @font-face { font-family: 'DM Sans'; src: url('${SITE}/fonts/DMSans-Variable.ttf') format('truetype-variations'); font-weight: 100 900; font-style: normal; font-display: swap; }
+  .nlback { max-width: 600px; margin: 0 auto; padding: 22px 12px 0; font-family: 'DM Sans', system-ui, sans-serif; font-size: 0.8rem; }
+  .nlback a { color: #6b6b70; text-decoration: none; letter-spacing: 0.12em; text-transform: uppercase; font-size: 0.68rem; }
+  .nlback a:hover { color: #0c0c0c; }
+  .nlarchive { max-width: 600px; margin: 0 auto; padding: 8px 12px 60px; font-family: 'DM Sans', system-ui, sans-serif; }
+  .nlarchive h2 { font-family: 'Instrument Serif', Georgia, serif; font-size: 1.5rem; font-weight: 400; margin: 0 0 4px; }
+  .nlarchive p { color: #6b6b70; font-size: 0.92rem; margin: 0 0 16px; }
+  .nlarchive form { display: flex; gap: 10px; flex-wrap: wrap; }
+  .nlarchive input[type=email] { flex: 1 1 220px; min-width: 0; padding: 12px 16px; border: 1px solid rgba(12,12,12,0.14); border-radius: 9999px; font: inherit; font-size: 0.92rem; background: #fff; }
+  .nlarchive input[type=email]:focus { outline: none; border-color: #0c0c0c; }
+  .nlarchive button { padding: 12px 26px; border: 1px solid #0c0c0c; border-radius: 9999px; background: transparent; font: inherit; font-size: 0.92rem; cursor: pointer; }
+  .nlarchive button:hover { background: #0c0c0c; color: #fff; }
+  .nlarchive .hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+  .nlarchive .msg { margin-top: 10px; color: #6b6b70; font-size: 0.86rem; min-height: 1.2em; }
+</style>
+<link rel="canonical" href="${issueUrl(issue.week_start)}">
+<meta name="description" content="${esc(description)}">
+<meta property="og:title" content="${esc(issue.subject)}">
+<meta property="og:description" content="${esc(description)}">
+<meta property="og:url" content="${issueUrl(issue.week_start)}">
+<meta property="og:image" content="${OG_FALLBACK}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="${OG_FALLBACK}">`;
+
+  const backBar = `<div class="nlback"><a href="${NEWSLETTER_PATH}">&larr; All issues</a></div>`;
+
+  const signup = `<div class="nlarchive">
+  <h2>Get the next one</h2>
+  <p>Straight to your inbox. Unsubscribe any time.</p>
+  <form id="nlForm">
+    <input type="email" name="email" placeholder="your@email.com" required autocomplete="email" aria-label="Email address">
+    <input type="text" name="website" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+    <button type="submit">Subscribe</button>
+  </form>
+  <div class="msg" id="nlMsg" role="status"></div>
+</div>
+<script>
+  (function () {
+    var form = document.getElementById('nlForm');
+    var msg = document.getElementById('nlMsg');
+    if (!form || !msg) return;
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var button = form.querySelector('button');
+      button.disabled = true;
+      msg.textContent = '';
+      fetch('/api/newsletter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: form.elements.email.value,
+          website: form.elements.website.value,
+          list: 'newsletter',
+        }),
+      }).then(function (r) {
+        if (!r.ok) throw new Error('bad status');
+        msg.textContent = "You're in. The next issue lands in your inbox.";
+        form.reset();
+      }).catch(function () {
+        msg.textContent = 'Something went wrong — try again in a minute.';
+      }).finally(function () {
+        button.disabled = false;
+      });
+    });
+  })();
+</script>`;
+
+  let html = issue.html
+    // The email loads Instrument Serif from Google Fonts; the site serves its
+    // own copy and its CSP allows no other font host.
+    .replace(/<link[^>]*fonts\.googleapis\.com[^>]*>/gi, '')
+    .replace(/<title>[\s\S]*?<\/title>/i, () => `<title>${esc(issue.subject)}</title>`);
+
+  // Function replacements throughout: the injected markup is arbitrary text and
+  // a bare `$&` or `$'` in it would otherwise be read as a backreference.
+  html = html.includes('</head>')
+    ? html.replace('</head>', () => `${injectedHead}\n</head>`)
+    : `${injectedHead}${html}`;
+
+  html = html.replace(/<body([^>]*)>/i, (_match, attrs) => `<body${attrs}>${backBar}`);
+
+  html = html.includes('</body>')
+    ? html.replace('</body>', () => `${signup}\n</body>`)
+    : `${html}${signup}`;
+
+  return new Response(html, {
+    status: 200,
+    headers: {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
+    },
+  });
+};
+
 Deno.serve(async (req) => {
   if (req.method !== 'GET' && req.method !== 'HEAD') {
     return new Response('Method not allowed', { status: 405 });
@@ -653,7 +939,7 @@ Deno.serve(async (req) => {
 
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    serviceKey(),
   );
 
   // Path after the function name: '' for index, '<slug>' for an entry.
@@ -676,8 +962,18 @@ Deno.serve(async (req) => {
   // sitemap-articles.xml). Mirrors the title-page sitemap mode.
   if (url.searchParams.get('sitemap') === '1') {
     const { data: posts } = await baseQuery().order('scheduled_for', { ascending: false }).limit(5000);
-    const urls = (posts || [])
-      .map((p) => `<url><loc>${esc(`${SITE}${FEED_PATH}/${p.slug}`)}</loc><changefreq>weekly</changefreq></url>`)
+    const { data: issues } = await supabase
+      .from('marketing_newsletter_issues')
+      .select('week_start')
+      .order('week_start', { ascending: false })
+      .limit(500);
+    const urls = [
+      ...(posts || []).map((p) => `${SITE}${FEED_PATH}/${p.slug}`),
+      // Archived newsletter issues are articles too, and the whole point of
+      // publishing them is being findable.
+      ...(issues || []).map((i) => `${SITE}${NEWSLETTER_PATH}/${i.week_start}`),
+    ]
+      .map((loc) => `<url><loc>${esc(loc)}</loc><changefreq>weekly</changefreq></url>`)
       .join('\n');
     return new Response(
       `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>`,
@@ -687,6 +983,15 @@ Deno.serve(async (req) => {
 
   // Reserved keyword: the persistent trending-chart page.
   if (slug === 'chart') return await renderChart(supabase);
+
+  // Reserved keyword: the newsletter archive, index and per-issue.
+  if (slug === 'newsletter') return await renderNewsletterIndex(supabase);
+  if (slug?.startsWith('newsletter/')) {
+    const weekStart = slug.slice('newsletter/'.length);
+    // week_start is a date column; anything else is a bad URL, not a lookup.
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(weekStart)) return await renderNewsletterIndex(supabase);
+    return await renderNewsletterIssue(supabase, weekStart);
+  }
 
   if (!slug) {
     const type = TYPE_META[url.searchParams.get('type') || ''] ? url.searchParams.get('type') : null;
@@ -825,7 +1130,7 @@ Deno.serve(async (req) => {
         <h2 style="font-family:var(--serif);font-size:1.7rem;font-weight:400;margin:0 0 18px">Titles in this guide</h2>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:18px">${refs.map((r) => {
           const poster = r.poster_path ? `https://image.tmdb.org/t/p/w185${esc(r.poster_path)}` : null;
-          return `<a href="${esc(titleHref(r.media_type, r.tmdb_id, r.title))}" style="text-decoration:none;color:inherit">${poster ? `<img src="${poster}" alt="${esc(r.title)}" loading="lazy" style="width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:10px;border:1px solid var(--hair);display:block">` : '<span style="display:block;width:100%;aspect-ratio:2/3;border-radius:10px;background:var(--ink)"></span>'}<span style="display:block;font-size:0.82rem;margin-top:8px;line-height:1.3">${esc(r.title)}</span></a>`;
+          return `<a href="${esc(titleHref(r.media_type, r.tmdb_id, r.title))}" style="text-decoration:none;color:inherit">${poster ? `<img src="${poster}" alt="${esc(r.title)}" loading="lazy" style="width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:10px;border:1px solid var(--hair);display:block">` : '<span style="display:block;width:100%;aspect-ratio:2/3;border-radius:10px;background:var(--paper);border:1px solid var(--hair)"></span>'}<span style="display:block;font-size:0.82rem;margin-top:8px;line-height:1.3">${esc(r.title)}</span></a>`;
         }).join('')}</div>
       </section>`
     : '';

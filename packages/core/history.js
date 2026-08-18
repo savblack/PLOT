@@ -13,13 +13,35 @@ export function monthKey(year, month) {
 }
 
 /**
+ * Pulls the year and zero-based month straight out of a "YYYY-MM-DD"
+ * calendar-date string, without ever constructing a `Date` from it.
+ *
+ * `watched_at` is a plain calendar date with no time-of-day or timezone
+ * meaning. `new Date('2026-01-01')` parses date-only strings as UTC midnight
+ * (the ECMA-262 Date-only ISO 8601 rule), but `Date#getFullYear`/`getMonth`
+ * read that back in local time — for any timezone behind UTC (most of the
+ * Americas) that rolls the instant back into the previous day, which can
+ * shift the bucket to the wrong month or even the wrong year. A `Date`
+ * object has no way to represent "just a calendar date" without an implied
+ * timezone, so parsing the digits out of the string sidesteps the ambiguity
+ * entirely.
+ *
+ * @param {string | null | undefined} dateStr "YYYY-MM-DD"
+ * @returns {{ year: number, month: number } | null} month is zero-based
+ */
+function calendarDateParts(dateStr) {
+  const match = typeof dateStr === 'string' ? /^(\d{4})-(\d{2})-(\d{2})/.exec(dateStr) : null;
+  if (!match) return null;
+  return { year: Number(match[1]), month: Number(match[2]) - 1 };
+}
+
+/**
  * @param {{ watched_at?: string | null } | null | undefined} entry
  * @returns {string | null}
  */
 export function entryMonthKey(entry) {
-  if (!entry?.watched_at) return null;
-  const d = new Date(entry.watched_at);
-  return monthKey(d.getFullYear(), d.getMonth());
+  const parts = calendarDateParts(entry?.watched_at);
+  return parts ? monthKey(parts.year, parts.month) : null;
 }
 
 /**
@@ -33,18 +55,6 @@ export function monthLabel(year, month, format = 'long') {
     month: format,
     year: 'numeric',
   });
-}
-
-/**
- * @template {{ watched_at?: string | null }} T
- * @param {T[]} entries
- * @param {number} year
- * @param {number} month Zero-based.
- * @returns {T[]}
- */
-export function entriesForMonth(entries, year, month) {
-  const selectedMonth = monthKey(year, month);
-  return entries.filter(entry => entryMonthKey(entry) === selectedMonth);
 }
 
 /**
@@ -65,8 +75,8 @@ export function groupEntriesByMonth(entries) {
     if (key == null) continue;
     let group = byKey.get(key);
     if (!group) {
-      const watched = new Date(entry.watched_at);
-      group = { year: watched.getFullYear(), month: watched.getMonth(), key, entries: [] };
+      const { year, month } = calendarDateParts(entry.watched_at);
+      group = { year, month, key, entries: [] };
       byKey.set(key, group);
       groups.push(group);
     }

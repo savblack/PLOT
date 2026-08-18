@@ -45,6 +45,9 @@ npm-workspaces monorepo. `npm ci` at root installs everything. `legacy-peer-deps
 - `apps/website/` — static marketing site (theplot.tv) → Cloudflare Pages. Plain
   HTML/CSS/JS, no build step, **not an npm workspace.** SSR routes are Pages Functions
   in `apps/website/functions/` (admin-host routing via `functions/_middleware.js`).
+  Serve it with `npm run dev:website`, never a plain static server — the pages render
+  either way, but `functions/` routes 404 and the homepage's TMDB surfaces go silently
+  empty. See `apps/website/README.md`.
 - `supabase/` — `functions/` (Deno edge functions), `migrations/`, `config.toml`.
 - `marketing/` — automation runbooks (see Marketing). `scripts/` — repo tooling.
 
@@ -53,19 +56,20 @@ npm-workspaces monorepo. `npm ci` at root installs everything. `legacy-peer-deps
 Run from repo root unless noted. Use **npm** (workspaces), never yarn/pnpm.
 
 - `npm run dev` — web dev server (Vite, port 5177)
+- `npm run dev:website` — marketing site + its Pages Functions (wrangler, port 5202)
 - `npm run check` — **lint + build; run this before every PR** (after `npm ci`)
 - `npm run lint` / `npm run build`
 - `npm run test:unit` — `node --test` unit tests (`apps/web/tests/unit/`)
 - `npm run test:smoke` — Playwright smoke (`vite build` + chromium; run
   `npx playwright install chromium` once on a fresh machine)
-- `npm run typecheck -w @plot/mobile` — **required when touching mobile** (ESLint ignores it)
+- `npm run typecheck -w @plot/mobile` — **required when touching mobile**; `npm run lint` covers it too
 - Deploy: web app and marketing site both auto-deploy via Cloudflare Pages on merge to `main`;
   Supabase functions via `supabase functions deploy <name>`; Worker via
   `cd apps/web/workers/tmdb-proxy && npx wrangler deploy`.
 
 ## Tech stack
 
-React 19 + react-router 7 + Vite 8 (web) · Expo 56 / RN 0.86 + TypeScript 6 (mobile) ·
+React 19 + react-router 7 + Vite 8 (web) · Expo 56 / RN 0.85 + TypeScript 6 (mobile) ·
 plain JS ESM + JSDoc (core) · Supabase (Postgres + Deno edge functions) ·
 Cloudflare Pages (web app + marketing site) hosting · Cloudflare Workers (TMDB proxy, OG) ·
 PostHog (analytics) · Stripe (billing) · Resend (email).
@@ -87,6 +91,13 @@ CI on Node 22.
   `@typedef`/`@param` blocks accurate when you change a core signature.
 - When logic is shared, put it in `@plot/core` and re-export from the web hook
   (e.g. `apps/web/src/hooks/useWatchlist.js` is just `export * from '@plot/core/useWatchlist.js'`).
+  This applies to `hooks/`, `utils/` and `copy/`, which have their own reasons to keep a
+  stable local path (hooks are imported by name across the app; `src/copy/` is what the
+  Storybook Content pages read). It does **not** extend to inventing new shim directories:
+  `src/api/` and `src/domain/` were exactly that and are gone. They held nine files, 27
+  lines, zero behaviour, and 14 files imported both a shim *and* `@plot/core` directly for
+  the same symbol — two paths to one module, picked at random. Import `@plot/core/…`
+  directly unless a shim already exists.
 
 ## Region-aware spelling (US/UK)
 
@@ -132,8 +143,8 @@ When you add or change a feature in `apps/web`:
 - **Copy strings live in the shared catalog**, not inline in JSX, so both apps read the same
   wording. See `apps/web/src/copy/`.
 
-Nothing in CI enforces this — `mobile-typecheck` only runs `tsc --noEmit`, and it can't tell
-that a feature is missing. It's a review-time responsibility.
+Nothing in CI enforces this — lint and `tsc --noEmit` can't tell that a feature is missing.
+It's a review-time responsibility.
 
 ## Architecture — seams that matter
 
@@ -149,12 +160,77 @@ that a feature is missing. It's a review-time responsibility.
 
 ## CI sync-guards — regenerate, don't hand-patch one side
 
-Four checks fail the build if two sources drift. Fix by regenerating both, not editing one:
+These checks fail the build if two sources drift. Fix by regenerating both, not editing one:
 
 - `tokens:check` — `apps/web/src/styles/tokens.css` must match `@plot/core/tokens.js`
   (canonical colors/radii; also feeds mobile).
 - `footer:check` · `tokens:marketing` · `emails:check` — shared footer / website+email
   tokens / auth email templates.
+- `migrations:check` — no migration may recreate a function with a different
+  `ON CONFLICT` target without acknowledging it. See below.
+- `copy:check` — no app file may hardcode a string that `packages/core/copy` owns.
+- `core:check` — every `@plot/core/…` import must resolve to a file in this checkout.
+
+**Why `core:check` exists when `tsc` already does this:** `tsc` is only reliable
+from the repo root. Git worktrees live at `<repo>/.claude/worktrees/<name>`, i.e.
+*inside* the main checkout, so a failed module lookup walks up the ancestor
+`node_modules` chain and lands on the **parent** checkout's `@plot/core`. You
+then typecheck against a tree you are not editing: a core module you deleted
+still resolves, and a core export you just added does not — both pass silently.
+A `tsconfig` `paths` mapping does **not** fix it (a mapping is a first attempt;
+when it misses, resolution falls back to the same walk). If you need to trust a
+local typecheck of `@plot/*`, run it from the main checkout or put the worktree
+outside the repo. This blind spot is how #446 deleted `core/onboarding.js` with
+a live importer still on `main`.
+
+## Copy lives in `packages/core/copy` — never retype a shared string
+
+Every user-facing string that both apps show comes from `packages/core/copy`, and both
+apps import it. `apps/web/src/copy/*` are re-export shims so web's existing import paths
+still resolve; the strings themselves live in core.
+
+`npm run copy:check` fails the build if an app file contains a literal the catalog already
+owns. This exists because a hardcoded string that happens to match today is invisible drift:
+it diverges the moment either side is reworded, which is exactly what the catalog was built
+to prevent. The catalog being *shared* is necessary but not sufficient — it has to be *read*.
+
+- Adding copy? Put it in the surface's module (`settingsView.js`, `mediaPanel.js`, …).
+- Used on three or more surfaces? It belongs in `common.js`, or `media.js` for anything
+  about a title (watch status, list actions). Those two are the designated cross-surface
+  modules and may be imported from anywhere.
+- **Never define the same string in two catalog modules.** That reintroduces the drift one
+  level up. `onboardingFlow.startWatchingArrow` ("begin using PLOT") and
+  `media.startWatching` (the watch toggle) are deliberately different concepts that happen
+  to share words — that's the one shape worth duplicating, and it's commented as such.
+- Genuinely per-platform wording (mobile's compact labels, say) stays in the app file, but
+  say why in a comment so the next person doesn't "fix" it into the catalog.
+- `scripts/adopt-shared-copy.mjs` is a codemod that does the mechanical replacement when a
+  new batch of copy moves into core. Run it with `--dry-run` first.
+
+## Migrations: `create or replace function` replaces the WHOLE body
+
+Recreating a function you didn't author means inheriting everything the previous version
+fixed, and Postgres accepts a stale body silently. This has already caused a two-week
+production outage: `20260718120000` widened `feed_posts`' unique key to include
+`source_type` and updated the trigger's `ON CONFLICT` to match; `20260725000001` then
+recreated the same function from the pre-widening body, pointing the upsert at a
+constraint that no longer existed. Every write to `history` raised 42P10 and, because it
+is an AFTER trigger in the same transaction, the user-facing write failed. Marking a title
+watched was broken from 2026-07-25 to 2026-08-03 and nothing detected it.
+
+So:
+
+- **Before recreating an existing function, diff against what's live** — not against the
+  migration you remember. `select pg_get_functiondef(oid) from pg_proc where proname = '…'`.
+- `npm run migrations:check` fails the build if a redefinition changes the `ON CONFLICT`
+  target. If the change is deliberate, add `-- redefines: <fn> (…why…)` to the migration.
+- `npm run db:write-paths` checks the live database: every trigger function's upsert key
+  must resolve against a real constraint, and every table it references must exist. Runs
+  daily via `.github/workflows/db-write-paths.yml` and on any PR touching migrations.
+  Read-only; it deliberately does not write-and-rollback, because `http_request` triggers
+  on `profiles`/`feedback` are not reliably transactional.
+- **A migration merged to `main` applies to PRODUCTION automatically** via the Supabase
+  GitHub integration. There is no staging gate — write it as if it runs immediately.
 
 **Supabase `config.toml` pins `verify_jwt` per function.** Public functions set
 `verify_jwt = false`; forgetting it on redeploy makes the gateway reject requests before the
@@ -165,13 +241,17 @@ file, not the `--no-verify-jwt` flag.
 
 - Add/adjust unit tests for domain logic in `packages/core` and `apps/web/tests/unit/`.
 - Run `npm run check` and any test suite touching your change before calling it done.
-- Mobile has no test runner — `tsc --noEmit` is the safety net; run it for mobile changes.
+- Mobile has no test runner — `tsc --noEmit` plus ESLint are the safety net; run both for
+  mobile changes.
+- Mobile lint is ratcheted: `no-explicit-any` (~127) and `react-hooks/refs` (~34) are `warn`,
+  not `error`, because of a pre-existing backlog. Don't add new ones, and don't "fix" a
+  warning count by widening the rule — burn them down instead. Everything else is an error
+  and must stay at zero.
 - No coverage thresholds; use judgment. Cover the logic that would silently break.
 
 ## Git & PRs
 
-- Branch off `main`; don't commit to `main` directly (except the marketing learning loop,
-  which is designed to). Commit/push only when asked.
+- Branch off `main`; don't commit to `main` directly. Commit/push only when asked.
 - Keep changes scoped to the ticket — no unrelated refactors or file churn.
 - Conventional-commit style prefixes (`feat(...)`, `fix(...)`, `refactor(...)`) as in history.
 
@@ -206,6 +286,19 @@ than shipping a guess.
 
 - Reviewing/approving/publishing the week's posts & newsletter → follow `marketing/REVIEW.md`.
 - Writing post copy → follow `marketing/copy/AGENT.md`.
+- Tempted to build a richer admin UI than `admin-review`? Read
+  `docs/ops/operator-desk-shelved.md` first — that's already been tried once.
 
 Model-agnostic runbooks: run from repo root on `main` with `.env` present, never a paid API
 for copy, and **confirm before anything posts publicly.**
+
+## Agent skills
+
+### Issue tracker
+
+Issues live in this repo's GitHub Issues, via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Domain docs
+
+Single-context: one `CONTEXT.md` plus `docs/adr/` at the repo root, shared by every
+workspace. See `docs/agents/domain.md`.

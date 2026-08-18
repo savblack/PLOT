@@ -1,9 +1,11 @@
 # Migration recovery runbook
 
-All 60+ migrations under `supabase/migrations/` are forward-only — there are no
+Every migration under `supabase/migrations/` is forward-only — there are no
 `down` scripts, which is normal for the Supabase CLI but means a bad migration
-has no automatic undo. This is the plan for when one ships broken, written for
-a solo operator who won't have this memorized under pressure.
+has no automatic undo. It also applies to PRODUCTION the moment it merges to
+`main`, via the Supabase GitHub integration, with no staging gate in between.
+This is the plan for when one ships broken, written for a solo operator who
+won't have this memorized under pressure.
 
 See `docs/ops/db-restore.md` for recovering lost/corrupted **data**. This doc
 is for recovering from a bad **schema change** — a migration that breaks the
@@ -18,7 +20,18 @@ git log --oneline -- supabase/migrations | head -5   # what shipped recently
 npx supabase migration list                          # applied vs. pending, local vs. remote
 ```
 
-If the app broke right after a deploy that included a new migration file, that's your suspect.
+If the app broke right after a merge that included a new migration file, that's
+your suspect.
+
+There is a second, quieter failure to rule out here: the migration may never
+have applied at all. The Supabase integration runs *after* the push and out of
+band, so when it fails the merge still goes green and nothing in the repo
+notices — production just stops tracking `main`. That has happened for four and
+a half days across 29 merges without anyone spotting it.
+`.github/workflows/supabase-deploy-guard.yml` exists to raise the alarm — it
+opens (or comments on) a labelled GitHub issue when the integration's own check
+did not succeed. Check that issue and the guard's most recent run before
+assuming the schema on production is the schema in `main`.
 
 ## 2. Stop the bleeding
 
@@ -36,7 +49,7 @@ If the app broke right after a deploy that included a new migration file, that's
 
 Never run ad hoc `ALTER`/`DROP` directly against `$SUPABASE_DB_URL` to patch
 things. Always write a new migration file that undoes or corrects the bad
-one, then apply it the normal way. This keeps `supabase/migrations/` as the
+one, then apply it the normal way (§4). This keeps `supabase/migrations/` as the
 single source of truth — if you patch prod by hand, local dev and any future
 rebuild of the DB silently diverge from what's actually running.
 
@@ -52,12 +65,24 @@ Common forward-fixes:
 
 ## 4. Apply and verify
 
-```sh
-npx supabase db push          # applies pending migrations to the linked remote project
-```
+**Merge the fixing migration to `main` — that is what applies it.** The Supabase
+GitHub integration picks it up from there. Do not reach for `npx supabase db
+push`: this repository's default Supabase configuration is linked to Production
+(see the staging section of `README.md`), so an unqualified push fires straight
+at the live database, outside the migration history everything else trusts.
 
-Then re-run whatever surfaced the break (reload the app, hit the affected
-endpoint) before considering it resolved.
+Then, in order:
+
+1. Watch the deploy guard's run on that merge, or re-run it by hand
+   (`gh workflow run supabase-deploy-guard.yml`). A green merge is not evidence
+   the migration applied — see §1.
+2. Confirm the schema is actually what you intended, against the live database
+   rather than the file you just wrote:
+   ```sh
+   npx supabase migration list   # the fix should now show as applied remotely
+   ```
+3. Re-run whatever surfaced the break (reload the app, hit the affected
+   endpoint) before considering it resolved.
 
 ## 5. Afterward
 
@@ -69,12 +94,15 @@ endpoint) before considering it resolved.
 
 ## Prevention, cheaply
 
-You don't need a full staging environment for this. Before a schema change
-you're unsure about, apply it to a scratch local DB first:
+Merging is applying, so there is no dry run on the way to production. A PLOT
+Staging project does exist, but `npm run supabase:staging` deliberately does not
+wrap database commands, so it is not the rehearsal surface either. The cheap
+rehearsal is local: before a schema change you're unsure about, apply it to a
+scratch local DB first.
 
 ```sh
 npx supabase db reset          # rebuilds local DB from all migrations, local only
 ```
 
 If it fails or behaves unexpectedly locally, it would have on prod too — catch
-it before `db push`.
+it before the migration reaches `main`.

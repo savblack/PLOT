@@ -5,6 +5,7 @@ import { configure } from '@plot/core/config.js';
 import router from './router.jsx';
 import './index.css';
 import { captureAttribution } from './utils/attribution.js';
+import { redactSensitiveUrl } from './utils/redactUrl.js';
 import { track, markActivated, EVENTS, _setPostHogClient } from './lib/analytics.js';
 
 // Inject web env into the shared core before anything renders or fetches.
@@ -17,6 +18,19 @@ configure({
   criticScoreUrl: `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/critic-score`,
   traktClientId: import.meta.env.VITE_TRAKT_CLIENT_ID,
   isDev: import.meta.env.DEV,
+  // PKCE instead of Supabase's default implicit flow. Implicit returns the
+  // session in the URL fragment (`#access_token=…&refresh_token=…`), which puts
+  // a long-lived refresh token into the address bar, browser history, and every
+  // analytics tool watching the page. PKCE returns a single-use `?code=` bound
+  // to a verifier held in this browser's localStorage, so the URL carries
+  // nothing reusable. utils/authCallback.js already handles the `code` branch.
+  //
+  // Safe only because the email templates now link to /auth/callback with
+  // `?token_hash=…&type=…` rather than {{ .ConfirmationURL }}: token_hash goes
+  // through verifyOtp, which needs no verifier, so opening a magic link or a
+  // password reset on a different device than the one that requested it still
+  // works. Reverting the templates without reverting this breaks that.
+  supabaseClientOptions: { auth: { flowType: 'pkce' } },
   affiliate: {
     amazonTags: {
       AU: import.meta.env.VITE_AMZ_TAG_AU,
@@ -45,6 +59,33 @@ configure({
     track(following ? EVENTS.USER_FOLLOWED : EVENTS.USER_UNFOLLOWED, { target_user_id }),
   onCustomListChange: ({ list_id, action }) =>
     track(action === 'created' ? EVENTS.CUSTOM_LIST_CREATED : EVENTS.CUSTOM_LIST_DELETED, { list_id }),
+  onCustomListItemChange: ({ list_id, tmdb_id, media_type, action }) =>
+    track(action === 'added' ? EVENTS.LIST_ITEM_ADDED : EVENTS.LIST_ITEM_REMOVED,
+      { list_id, tmdb_id, media_type }),
+  onCustomListVisibility: ({ list_id, is_public }) =>
+    track(EVENTS.LIST_VISIBILITY_CHANGED, { list_id, is_public }),
+  onFavourite: ({ tmdb_id, media_type, favourited }) =>
+    track(favourited ? EVENTS.FAVOURITE_ADDED : EVENTS.FAVOURITE_REMOVED, { tmdb_id, media_type }),
+  onFollowRequestDecision: ({ target_user_id, approved }) =>
+    track(approved ? EVENTS.FOLLOW_REQUEST_APPROVED : EVENTS.FOLLOW_REQUEST_DECLINED, { target_user_id }),
+  onHistoryRemove: ({ tmdb_id, media_type }) =>
+    track(EVENTS.HISTORY_ENTRY_REMOVED, { tmdb_id, media_type }),
+  // One seam, four names: core reports where in a series the user moved, and
+  // the action decides which event that is. Keeps the episode grind separate
+  // from the bulk "mark the season watched" action in the funnels.
+  onWatchProgress: ({ tmdb_id, action, season, episode }) => {
+    const name = {
+      started:   EVENTS.WATCHING_STARTED,
+      stopped:   EVENTS.WATCHING_STOPPED,
+      episode:   EVENTS.EPISODE_WATCHED,
+      season:    EVENTS.SEASON_WATCHED,
+      completed: EVENTS.SERIES_COMPLETED,
+    }[action];
+    // started/stopped carry no season or episode; drop the keys rather than
+    // sending nulls, so the PostHog property only exists where it means something.
+    if (name) track(name, { tmdb_id, ...(season != null ? { season } : {}), ...(episode != null ? { episode } : {}) });
+  },
+  onProfileUpdate: ({ fields }) => track(EVENTS.PROFILE_UPDATED, { fields }),
 });
 
 // Opt this browser out of analytics: visit either theplot.tv or app.theplot.tv
@@ -90,7 +131,48 @@ if (posthogToken) {
       // Auto-report unhandled errors + promise rejections to PostHog Error Tracking,
       // not just the ones our ErrorBoundaries catch. Turn on Error Tracking in the
       // PostHog project for these to show up.
-      capture_exceptions: true,
+      //
+      // Off in dev: there is one PostHog project, so a localhost HMR error or a
+      // half-written component lands in the same Error Tracking inbox as real
+      // production failures, and the inbox is what triage reads.
+      capture_exceptions: !import.meta.env.DEV,
+      // Never send the URL fragment to PostHog. /auth/callback receives Supabase's
+      // implicit-flow session as `#access_token=…&refresh_token=…`, and $current_url
+      // is window.location.href verbatim, so the fragment was landing in captured
+      // events and session recordings. The access token expires in an hour; the
+      // refresh token alongside it does not, and can be exchanged for new sessions
+      // indefinitely using only the public anon key.
+      //
+      // posthog-js turns this on by default only from `defaults: '2026-06-25'`
+      // onward, and we pin '2026-01-30' above, so it has to be set explicitly.
+      // Bumping `defaults` instead would silently change unrelated behaviour.
+      disable_capture_url_hashes: true,
+      // disable_capture_url_hashes only drops the *fragment*. Since the move to
+      // PKCE the callback carries its credential in the query instead —
+      // `?code=…` for OAuth, `?token_hash=…` for email links — so those still
+      // reach $current_url untouched. Both are single-use and short-lived, which
+      // is why this is defence in depth rather than the fix, but there's no
+      // reason to ship credentials to analytics at all. Scrub the URL-ish
+      // properties on every event before it leaves the browser.
+      before_send: (event) => {
+        const props = event?.properties;
+        if (props) {
+          for (const key of ['$current_url', '$referrer', '$session_entry_url', '$pathname']) {
+            if (typeof props[key] === 'string') props[key] = redactSensitiveUrl(props[key]);
+          }
+        }
+        return event;
+      },
+      session_recording: {
+        // Applies to captured network requests, not the replay's page URL
+        // (posthog-recorder.js runs it over request/response headers). Inert
+        // unless network capture is enabled — kept so that turning it on later
+        // can't start recording the Supabase auth calls with their tokens.
+        maskCapturedNetworkRequestFn: (request) => {
+          if (request?.name) request.name = redactSensitiveUrl(request.name);
+          return request;
+        },
+      },
     });
     if (Object.keys(attribution).length > 0) {
       posthog.register(attribution);

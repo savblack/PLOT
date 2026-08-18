@@ -1,6 +1,5 @@
 // Weekly performance report email to the marketing admin.
 import { getSupabase } from '../lib/supabase.mjs';
-import { getToken } from '../lib/tokens.mjs';
 import { publicUrl } from '../lib/storage.mjs';
 import { sendEmail, ADMIN_EMAIL } from '../lib/email.mjs';
 
@@ -8,30 +7,11 @@ const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<':
 const pct = (n) => (n == null ? '—' : `${(Number(n) * 100).toFixed(1)}%`);
 const num = (n) => (n == null ? '—' : Math.round(Number(n)).toLocaleString('en-AU'));
 
-const followerCount = async (supabase, platform) => {
-  try {
-    const token = await getToken(supabase, platform);
-    if (platform === 'instagram') {
-      const res = await fetch(`https://graph.instagram.com/v23.0/${token.account_id}?fields=followers_count&access_token=${token.access_token}`);
-      const data = await res.json();
-      return data?.followers_count ?? null;
-    }
-    const url = new URL(`https://graph.threads.net/v1.0/${token.account_id}/threads_insights`);
-    url.searchParams.set('metric', 'followers_count');
-    url.searchParams.set('access_token', token.access_token);
-    const res = await fetch(url);
-    const data = await res.json();
-    return data?.data?.[0]?.total_value?.value ?? data?.data?.[0]?.values?.[0]?.value ?? null;
-  } catch {
-    return null;
-  }
-};
-
 const main = async () => {
   const supabase = getSupabase();
   const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
 
-  const [{ data: stats }, { data: weekPosts }, { data: troubled }, igFollowers, thFollowers] = await Promise.all([
+  const [{ data: stats }, { data: weekPosts }, { data: troubled }] = await Promise.all([
     supabase.from('marketing_template_stats').select('*'),
     supabase.from('marketing_posts')
       .select('*, marketing_post_publications(id, platform, permalink, status, marketing_metrics(views, likes, replies, reposts, saves, metric_date))')
@@ -41,8 +21,6 @@ const main = async () => {
       .select('post_type, topic_key, status, error')
       .in('status', ['failed', 'vetoed'])
       .gte('scheduled_for', weekAgo),
-    followerCount(supabase, 'instagram'),
-    followerCount(supabase, 'threads'),
   ]);
 
   const { count: subCount } = await supabase
@@ -97,8 +75,6 @@ const main = async () => {
 
     <h2 style="font-size:1rem;margin:24px 0 8px;">Audience</h2>
     <p style="margin:0;font-size:0.9rem;line-height:1.7;">
-      Instagram followers: <b>${num(igFollowers)}</b><br>
-      Threads followers: <b>${num(thFollowers)}</b><br>
       Newsletter subscribers: <b>${num(subCount)}</b> (+${num(newSubs)} this week)
     </p>
 

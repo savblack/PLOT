@@ -1,7 +1,6 @@
 name: Marketing — weekly batch
 
-# Runs after the Sunday learning loop so the updated voice/spec rules feed the
-# next week. On scheduled Sundays the learning guard must already be applied.
+# Generates the coming week from the voice/spec rules as they stand in the repo.
 on:
   schedule:
     - cron: '30 0 * * 0' # 10:30am Sydney Sunday (AEST)
@@ -27,18 +26,15 @@ jobs:
 
       - run: npm ci
 
+      # Pinned, not @latest: 31f4d72 is what an unpinned CLI install costs you
+      # here — a flag this workflow relied on was removed upstream and broke
+      # every run until someone noticed. Bump this version deliberately, in
+      # its own PR, not automatically.
       - name: Install Claude Code CLI
-        run: npm install -g @anthropic-ai/claude-code
+        run: npm install -g @anthropic-ai/claude-code@2.1.226
 
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
-
-      - name: Confirm Sunday learning is applied
-        if: github.event_name == 'schedule'
-        run: node marketing/learning/assert-ready.mjs
-        env:
-          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Generate the week with Claude Code
         run: |
@@ -63,5 +59,5 @@ jobs:
           ADMIN_EMAIL: ${{ secrets.MARKETING_ADMIN_EMAIL }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           WORKFLOW_NAME: weekly batch
-          FAILURE_NOTE: 'Weekly generation did not complete. If Sunday learning was pending, apply it locally before rerunning.'
+          FAILURE_NOTE: 'Weekly generation did not complete. Nothing is queued for the coming week until this is rerun.'
         run: bash .github/scripts/marketing-alert.sh

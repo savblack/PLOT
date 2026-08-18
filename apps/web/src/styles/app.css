@@ -636,15 +636,21 @@ svg { stroke-width: 1.5; }
 }
 
 .list-row.interactive-surface:focus-visible,
-.settings-row.interactive-surface:focus-visible,
-.discover-chart-row.interactive-surface:focus-visible {
+.settings-row.interactive-surface:focus-visible {
   background: var(--surface-raised);
 }
 
-.media-card.interactive-surface:focus-visible,
-.discover-hero.interactive-surface:focus-visible,
 .provider-select-card.interactive-surface:focus-visible {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 32%, transparent);
+}
+
+/* Discover/Search cards below have their real "view details" control nested
+   one level in (a sibling of the always-visible Favorite/Save buttons rather
+   than a wrapper around them), so their focus indicator keys off :focus-within
+   on the row/card instead of :focus-visible + .interactive-surface on it. */
+.list-row.search-result-row:focus-within,
+.discover-chart-row:focus-within {
+  background: var(--surface-raised);
 }
 
 /* ═══════════════════════════════════════
@@ -652,14 +658,35 @@ svg { stroke-width: 1.5; }
 ═══════════════════════════════════════ */
 
 .media-card {
+  position: relative;
   flex-shrink: 0;
   width: 120px;
-  cursor: pointer;
   transition: transform 0.2s var(--ease);
-  -webkit-tap-highlight-color: transparent;
 }
 .media-card:hover  { transform: scale(0.97); }
 .media-card:active { transform: scale(0.93); }
+
+/* The actual "view details" control — a real button so Fav/Save (real
+   buttons anchored to .media-card, not nested inside this one) never end up
+   nested inside another interactive element. */
+.media-card-hit {
+  display: block;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.media-card-hit:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 32%, transparent);
+  border-radius: var(--radius-md);
+}
 
 .media-card-img {
   position: relative;
@@ -965,8 +992,8 @@ svg { stroke-width: 1.5; }
   z-index: 900;
   background: var(--surface);
   /* overflow-x intentionally omitted — putting it here would clip absolutely-positioned
-     dropdowns (MultiSelect menus) inside .sub-tabs-filters. Scrolling is handled by
-     the inner .sub-tabs-scroll wrapper instead. */
+     dropdowns (filter menus, e.g. GroupedFilterMenu) inside .sub-tabs-filters. Scrolling
+     is handled by the inner .sub-tabs-scroll wrapper instead. */
 }
 
 /* Scrollable area that wraps only the tab buttons (not filters/dropdowns) */
@@ -1369,21 +1396,21 @@ svg { stroke-width: 1.5; }
 }
 
 /* Onboarding footer CTA — outlined pill, hugs its label. Matches the
-   website's .btn-outline exactly: light weight, fills solid on hover. */
+   website's .btn-outline exactly: medium weight, fills solid on hover. */
 .onboarding-cta {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: clamp(0.75rem, 1.3vh, 0.95rem) 1.5rem;
-  min-height: 48px;
+  padding: clamp(0.7rem, 1.2vh, 0.85rem) 1.25rem;
+  min-height: 44px;
   border-radius: var(--radius-pill);
   border: 1px solid var(--text-primary);
   background: transparent;
   color: var(--text-primary);
   font-family: var(--font-sans);
-  font-size: 0.95rem;
-  font-weight: 300;
+  font-size: 0.9rem;
+  font-weight: 500;
   cursor: pointer;
   white-space: nowrap;
   transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease;
@@ -1391,6 +1418,10 @@ svg { stroke-width: 1.5; }
 }
 .onboarding-cta:hover:not(:disabled) { background: var(--text-primary); color: var(--bg); transform: translateY(-1px); }
 .onboarding-cta:disabled { border-color: var(--text-muted); color: var(--text-muted); cursor: not-allowed; }
+
+/* Onboarding text inputs (name field, step 2 search) — browser default
+   placeholder color isn't a token, so it can drift from the app's palette. */
+.onboarding-input::placeholder { color: var(--text-muted); }
 
 /* Onboarding header back button — icon-only chevron, top-left. */
 .onboarding-back {
@@ -2012,42 +2043,21 @@ svg { stroke-width: 1.5; }
 }
 .history-list-row {
   align-items: center;
-  flex-wrap: wrap;
-}
-.history-list-row .collapse-body {
-  flex: 0 0 100%;
 }
 .history-row-rating {
   color: #f59e0b;
   font-weight: 600;
 }
-.history-row-toggle {
-  flex: 0 0 auto;
-  margin-left: auto;
-  width: 44px;
-  height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: none;
-  border: 0;
-  padding: 0;
-  color: inherit;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-.history-row-toggle:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: -2px;
-}
-.history-row-quote {
-  margin: 0 1rem 0.7rem 0;
-  padding-top: 0.85rem;
+/* Permanent "you wrote a review" signal — never toggled, so a row's height
+   never changes based on whether it has one. */
+.history-row-note-indicator {
+  display: inline-flex;
+  flex-shrink: 0;
   color: var(--text-secondary);
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 0.92rem;
-  line-height: 1.3;
+}
+.history-row-note-indicator svg {
+  width: 13px;
+  height: 13px;
 }
 
 .half-star-rating {
@@ -2498,6 +2508,51 @@ a.provider-chip--link:hover {
   flex-wrap: wrap;
   margin-bottom: 0.75rem;
 }
+
+/* Season-level bulk action, sat above the episode list */
+.season-bulk {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.55rem 0.85rem;
+  margin-bottom: 0.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+.season-bulk-info {
+  display: flex;
+  align-items: baseline;
+  gap: 0.55rem;
+  min-width: 0;
+}
+.season-bulk-title {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+.season-bulk-count {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.season-bulk-btn {
+  flex-shrink: 0;
+  padding: 0.32rem 0.7rem;
+  border-radius: var(--radius-badge);
+  border: 1px solid var(--border-strong);
+  background: transparent;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+.season-bulk-btn:hover:not(:disabled) { background: var(--surface-raised); }
+.season-bulk-btn:disabled { cursor: default; color: var(--text-muted); }
 .season-chip {
   padding: 0.3rem 0.65rem;
   border-radius: var(--radius-pill);
@@ -2720,10 +2775,44 @@ a.provider-chip--link:hover {
   color: var(--text-secondary);
   padding: 0 1rem 0.5rem;
 }
+/* Credits: a read-only group, so it deliberately has none of the .settings-row
+   affordances (no hover, no pointer, no chevron). */
+.settings-credits {
+  padding: 0.25rem 1rem 0.85rem;
+}
+.settings-credits-intro {
+  margin: 0 0 0.9rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+.settings-credit {
+  padding: 0.7rem 0;
+  border-top: 1px solid var(--border);
+}
+.settings-credit-logo {
+  display: block;
+  height: 35px;
+  width: auto;
+  margin-bottom: 0.4rem;
+}
+.settings-credit-name {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+.settings-credit-notice {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
 .settings-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 0.75rem;
   padding: 0.85rem 1rem;
   border-bottom: 1px solid var(--border);
   cursor: pointer;
@@ -4053,7 +4142,7 @@ a.provider-chip--link:hover {
 /* Hero card */
 .discover-hero {
   position: relative;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 3 / 2;
   margin: 2rem 1rem 0;
   border-radius: var(--radius-md);
   overflow: hidden;
@@ -4081,6 +4170,7 @@ a.provider-chip--link:hover {
 .discover-hero-overlay {
   position: absolute;
   inset: 0;
+  text-align: left;
   background:
     linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.58) 30%, rgba(0,0,0,0.14) 62%, transparent 100%),
     linear-gradient(to bottom, rgba(0,0,0,0.30) 0%, transparent 30%);
@@ -4122,6 +4212,34 @@ a.provider-chip--link:hover {
   font-weight: 500;
 }
 
+/* The actual "view details" control for hero/binge cards — sits between the
+   backdrop/overlay and the corner buttons so it catches everything except
+   the two circular buttons (which stay pointer-events:auto and paint after
+   it). Kept as a real button so Fav/Save (siblings, not children of this)
+   never end up nested inside another interactive element. inset box-shadow
+   because the card clips overflow, so an outward one would be invisible. */
+.discover-hero-hit,
+.discover-binge-card-hit {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  display: block;
+  /* The overlay copy lives inside this button, so the UA's text-align:center
+     would centre the title/meta. Featured card copy is always left-aligned. */
+  text-align: left;
+}
+.discover-hero-hit:focus-visible,
+.discover-binge-card-hit:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--accent) 32%, transparent);
+}
+
 .discover-hero-corner-btns {
   position: absolute;
   inset: 0;
@@ -4155,8 +4273,14 @@ a.provider-chip--link:hover {
   background: rgba(0,0,0,0.65);
   transform: scale(1.08);
 }
-.discover-hero-corner-btn.active {
-  background: var(--accent);
+/* Active = the icon itself fills white. No circle, no accent fill: the filled
+   glyph is the whole signal. */
+.discover-hero-corner-btn.active,
+.discover-hero-corner-btn.active:hover {
+  background: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  color: #fff;
 }
 
 /* Rank badge overlaid on poster */
@@ -4260,6 +4384,31 @@ a.provider-chip--link:hover {
 .discover-chart-meta {
   font-size: 0.63rem;
   color: var(--text-muted);
+}
+
+/* Shared "view details" hit area for list-row-style cards (discover chart
+   rows, search result rows) whose real Bookmark/Heart buttons must stay
+   siblings of this rather than nested inside it. Reproduces the row's own
+   gap internally so pulling poster+info+rank into one flex child doesn't
+   change the visual spacing. */
+.list-row-hit {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.list-row-hit:focus-visible {
+  outline: none;
 }
 
 .discover-chart-right {
@@ -4637,6 +4786,24 @@ a.provider-chip--link:hover {
     height: 34px !important;
   }
 
+  /* Hover-only reveal doesn't exist on touch — these three surfaces show
+     their favourite/save/bookmark buttons the way desktop shows them on
+     hover, permanently. Pairs with hiding the elements they'd otherwise
+     sit on top of (the status chip below). */
+  .discover-hero-corner-btns,
+  .discover-chart-row .discover-chart-right.search-row-actions,
+  .search-result-row .search-row-actions {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .search-result-row .search-row-actions {
+    transform: translate(0, -50%);
+  }
+  .search-result-row .search-row-status {
+    opacity: 0;
+    pointer-events: none;
+  }
+
   .icon-btn,
   .tab-btn,
   .sub-tab-btn,
@@ -4744,6 +4911,20 @@ a.provider-chip--link:hover {
   .discover-chart-row .card-save-btn {
     width: 34px !important;
     height: 34px !important;
+  }
+
+  .discover-hero-corner-btns,
+  .discover-chart-row .discover-chart-right.search-row-actions,
+  .search-result-row .search-row-actions {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .search-result-row .search-row-actions {
+    transform: translate(0, -50%);
+  }
+  .search-result-row .search-row-status {
+    opacity: 0;
+    pointer-events: none;
   }
 
   .app-header {

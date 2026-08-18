@@ -13,6 +13,7 @@ dist-ssr
 storybook-static
 test-results/
 playwright-report/
+.playwright/
 *.local
 supabase/.temp/
 .claude/

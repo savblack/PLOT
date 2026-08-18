@@ -16,6 +16,7 @@
  */
 import Stripe from 'npm:stripe@22.3.2';
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { serviceKey } from '../_shared/serviceKey.ts';
 
 // Wildcard CORS was needless here — unlike newsletter-subscribe (called by
 // arbitrary email clients and marketing embeds), this is only ever called
@@ -81,7 +82,7 @@ Deno.serve(async (req) => {
 
   const admin = createClient(
     Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    serviceKey(),
   );
   const { data: billing } = await admin
     .from('billing_customers')

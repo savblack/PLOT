@@ -1,5 +1,5 @@
-# Config for the app.theplot.tv Cloudflare Pages project (see
-# docs/cloudflare-pages-migration.md). Pages has been dashboard-configured
+# Config for the app.theplot.tv Cloudflare Pages project.
+# Pages has been dashboard-configured
 # (git-connected build) up to now; this file adds ONLY the Ratelimit binding
 # the Pages Functions in functions/*.js need (functions/_lib/rateLimit.js).
 #

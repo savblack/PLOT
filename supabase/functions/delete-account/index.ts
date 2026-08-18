@@ -1,5 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { runAccountCleanup } from './cleanup.js'
+import { deleteBrevoContact } from '../_shared/brevo.ts'
+import { serviceKey } from '../_shared/serviceKey.ts'
 
 function attachmentPathsFrom(value: unknown) {
   if (!Array.isArray(value)) return []
@@ -53,7 +55,7 @@ Deno.serve(async (req) => {
   // Use the service role client for storage cleanup and auth deletion.
   const supabaseAdmin = createClient(
     Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    serviceKey()
   )
 
   const { data: feedbackRows, error: feedbackError } = await supabaseClient
@@ -83,6 +85,17 @@ Deno.serve(async (req) => {
 
   const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId)
   if (deleteError) return jsonError(deleteError.message)
+
+  // Best-effort — the account is already gone either way, this just keeps a
+  // deleted user's PII from lingering in the Brevo contact list.
+  const brevoKey = Deno.env.get('BREVO_API_KEY')
+  if (brevoKey && user.email) {
+    try {
+      await deleteBrevoContact({ apiKey: brevoKey, email: user.email })
+    } catch (error) {
+      console.error('Failed to delete Brevo contact:', error instanceof Error ? error.message : error)
+    }
+  }
 
   return new Response(JSON.stringify({ success: true }), {
     headers: { 'Content-Type': 'application/json' },

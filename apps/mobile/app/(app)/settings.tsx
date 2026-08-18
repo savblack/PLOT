@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, Image, TextInput,
   Modal, Alert, ActivityIndicator, StyleSheet, Switch, Platform, Share, Linking,
@@ -10,14 +10,24 @@ import { useRouter } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { tmdb, setTmdbRegion } from '../../lib/tmdb';
 import { IANA_TIMEZONES } from '@plot/core/timezones.js';
+import { REGIONS, DEFAULT_REGION, regionName } from '@plot/core/regions.js';
+import { setUserTimezone } from '@plot/core/date.js';
 import { useAppData } from '../../contexts/AppDataContext';
 import { useFollowRequests } from '../../hooks/useFollowRequests';
 import { useTraktSync } from '../../hooks/useTraktSync';
 import { useMediaSync } from '../../hooks/useMediaSync';
 import ScreenHeaderBar from '../../components/ScreenHeaderBar';
+import ConfirmPhraseModal from '../../components/ConfirmPhraseModal';
+import { track, resetAnalytics, EVENTS } from '../../lib/analytics';
+import { deleteAccountAndSignOut } from '@plot/core/deleteAccount.js';
+import { clearWatchHistory } from '@plot/core/userMedia.js';
+import { updateProfile } from '@plot/core/profile.js';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
 import { edgeFunctionUrl } from '@plot/core/functions.js';
+import { SHOW_MEDIA_SYNC_INTEGRATIONS } from '../../lib/launchFeatures';
+import { SETTINGS_VIEW } from '@plot/core/copy/settingsView.js';
+import { COMMON } from '@plot/core/copy/common.js';
 
 // UUID token for the private calendar feed. Uses native crypto when the RN
 // runtime provides it, else an RFC4122-shaped Math.random fallback (RN has no
@@ -34,21 +44,10 @@ function generateCalendarToken(): string {
 import { useTheme } from '../../contexts/ThemeContext';
 import ImportHistoryModal from '../../components/ImportHistoryModal';
 
-const REGIONS = [
-  { code: 'US', name: 'United States' }, { code: 'AU', name: 'Australia' },
-  { code: 'GB', name: 'United Kingdom' }, { code: 'CA', name: 'Canada' },
-  { code: 'NZ', name: 'New Zealand' },   { code: 'FR', name: 'France' },
-  { code: 'DE', name: 'Germany' },       { code: 'JP', name: 'Japan' },
-  { code: 'IN', name: 'India' },         { code: 'BR', name: 'Brazil' },
-  { code: 'MX', name: 'Mexico' },        { code: 'IT', name: 'Italy' },
-  { code: 'ES', name: 'Spain' },         { code: 'NL', name: 'Netherlands' },
-  { code: 'SE', name: 'Sweden' },        { code: 'SG', name: 'Singapore' },
-];
-
 const FEEDBACK_TYPES = [
   { id: 'bug',     label: 'Bug report' },
-  { id: 'feature', label: 'Feature request' },
-  { id: 'general', label: 'General feedback' },
+  { id: 'feature', label: SETTINGS_VIEW.feedback.featureRequestLabel },
+  { id: 'general', label: SETTINGS_VIEW.feedback.generalFeedbackLabel },
 ];
 
 function fmtTz(tz: string) {
@@ -142,7 +141,7 @@ function RegionModal({ current, onSave, onClose }: { current: string; onSave: (c
             disabled={saving || chosen === current}
             activeOpacity={0.8}
           >
-            <Text style={styles.saveBtnText}>{saving ? 'Saving…' : 'Save Region'}</Text>
+            <Text style={styles.saveBtnText}>{saving ? COMMON.saving : SETTINGS_VIEW.region.saveRegion}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -180,7 +179,7 @@ function TimezoneModal({ current, onSave, onClose }: { current: string; onSave: 
               autoCorrect={false}
             />
             {query.length > 0 && (
-              <TouchableOpacity onPress={() => setQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Clear search" accessibilityRole="button">
+              <TouchableOpacity onPress={() => setQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel={COMMON.clearSearch} accessibilityRole="button">
                 <Text style={styles.modalSearchClear}>✕</Text>
               </TouchableOpacity>
             )}
@@ -283,7 +282,7 @@ function ProviderModal({
               onChangeText={setSearch}
             />
             {search.length > 0 && (
-              <TouchableOpacity onPress={() => setSearch('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Clear search" accessibilityRole="button">
+              <TouchableOpacity onPress={() => setSearch('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel={COMMON.clearSearch} accessibilityRole="button">
                 <Text style={styles.modalSearchClear}>✕</Text>
               </TouchableOpacity>
             )}
@@ -331,7 +330,7 @@ function NameModal({ current, onSave, onClose }: { current: string; onSave: (nam
 
   const handleSave = async () => {
     const next = value.trim();
-    if (!next) { setError('Enter a name.'); return; }
+    if (!next) { setError(SETTINGS_VIEW.errors.enterAName); return; }
     if (next.length > 50) { setError('Keep it under 50 characters.'); return; }
     setSaving(true);
     setError(null);
@@ -339,7 +338,7 @@ function NameModal({ current, onSave, onClose }: { current: string; onSave: (nam
       await onSave(next);
       onClose();
     } catch (e: any) {
-      setError(e?.message || 'Could not update name. Try again.');
+      setError(e?.message || SETTINGS_VIEW.errors.couldNotUpdateName);
     } finally {
       setSaving(false);
     }
@@ -388,17 +387,34 @@ function GenreModal({ selected, onSave, onClose }: { selected: string[]; onSave:
   const [all,     setAll]     = useState<{ id: number; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [chosen,  setChosen]  = useState<number[]>([]);
+  const [loadError, setLoadError] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
+  // Snapshot the profile's genre names once, at open. The parent passes
+  // `profile?.genres || []`, so for anyone with no genres saved that prop is a
+  // fresh array on every render; depending on it re-ran this fetch in a loop
+  // against the rate-limited proxy, because each setAll triggered a re-render
+  // that minted another array. The modal owns the selection after mount anyway.
+  const [initialSelected] = useState(selected);
+
+  // An empty list means the load failed rather than "no genres" — fetchFromTMDB
+  // collapses proxy errors to null, and TMDB always has genres.
   useEffect(() => {
     let cancelled = false;
     tmdb.getGenres().then((list: { id: number; name: string }[]) => {
       if (cancelled) return;
       setAll(list || []);
-      setChosen((list || []).filter(g => selected.includes(g.name)).map(g => g.id));
+      setChosen((list || []).filter(g => initialSelected.includes(g.name)).map(g => g.id));
+      setLoadError(!list?.length);
       setLoading(false);
-    }).catch(() => { if (!cancelled) setLoading(false); });
+    }).catch(() => {
+      if (cancelled) return;
+      setLoadError(true);
+      setLoading(false);
+    });
     return () => { cancelled = true; };
-  }, [selected]);
+    // initialSelected is a mount-time snapshot, so it never changes identity.
+  }, [attempt, initialSelected]);
 
   const toggle = (id: number) => {
     const next = chosen.includes(id) ? chosen.filter(i => i !== id) : [...chosen, id];
@@ -415,6 +431,17 @@ function GenreModal({ selected, onSave, onClose }: { selected: string[]; onSave:
         </View>
         {loading ? (
           <ActivityIndicator color={colors.accent} style={{ marginTop: spacing.xl }} />
+        ) : loadError ? (
+          <View style={styles.genreErrorWrap}>
+            <Text style={styles.genreErrorText}>{SETTINGS_VIEW.genres.loadError}</Text>
+            <TouchableOpacity
+              style={styles.genreRetryBtn}
+              onPress={() => { setLoading(true); setLoadError(false); setAttempt(n => n + 1); }}
+              accessibilityRole="button"
+            >
+              <Text style={styles.genreRetryText}>{SETTINGS_VIEW.genres.tryAgain}</Text>
+            </TouchableOpacity>
+          </View>
         ) : (
           <ScrollView contentContainerStyle={styles.regionGrid}>
             {all.map(g => {
@@ -453,6 +480,7 @@ function FeedbackModal({ userId, userEmail, initialType, onClose }: { userId: st
       type, message: message.trim().slice(0, 4000),
     });
     setStatus(error ? 'error' : 'done');
+    if (!error) track(EVENTS.FEEDBACK_SUBMITTED, { type, has_attachments: false });
   };
 
   return (
@@ -508,7 +536,7 @@ function FeedbackModal({ userId, userEmail, initialType, onClose }: { userId: st
             />
             {status === 'error' && (
               <Text style={{ color: colors.danger, fontFamily: fontFamily.sans, fontSize: fontSize.sm }}>
-                Something went wrong — please try again.
+                {SETTINGS_VIEW.username.error}
               </Text>
             )}
             <TouchableOpacity
@@ -542,38 +570,33 @@ export default function SettingsScreen() {
   const [showTimezone,   setShowTimezone]   = useState(false);
   const [feedbackType,   setFeedbackType]   = useState<string | null>(null);
   const [showImport,     setShowImport]     = useState(false);
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const [clearingHist,   setClearingHist]   = useState(false);
   const [clearingList,   setClearingList]   = useState(false);
 
   const providers     = profile?.streaming_providers || [];
   const guideChannels = profile?.guide_channels || [];
   const genres        = profile?.genres || [];
-  const region        = profile?.region || 'US';
+  const region        = profile?.region || DEFAULT_REGION;
   const timezone      = profile?.timezone || '';
-  const regionName    = REGIONS.find(r => r.code === region)?.name ?? region;
+  const regionLabel   = regionName(region);
 
   const displayName = profile?.display_name || '';
   const username    = profile?.username || '';
   const isPublic    = !!profile?.is_public;
-  const logRewatches = profile?.log_rewatches ?? true;
   const includeKidsContent = profile?.include_kids_content ?? true;
   const { count: requestCount } = useFollowRequests(userId);
 
   const toggleVisibility = async () => {
     if (!userId) return;
-    await supabase.from('profiles').update({ is_public: !isPublic }).eq('id', userId);
-    refreshProfile();
-  };
-
-  const toggleLogRewatches = async () => {
-    if (!userId) return;
-    await supabase.from('profiles').update({ log_rewatches: !logRewatches }).eq('id', userId);
+    await updateProfile({ userId, patch: { is_public: !isPublic } });
+    track(EVENTS.PROFILE_VISIBILITY_CHANGED, { is_public: !isPublic });
     refreshProfile();
   };
 
   const toggleKidsContent = async () => {
     if (!userId) return;
-    await supabase.from('profiles').update({ include_kids_content: !includeKidsContent }).eq('id', userId);
+    await updateProfile({ userId, patch: { include_kids_content: !includeKidsContent } });
     refreshProfile();
   };
 
@@ -588,9 +611,9 @@ export default function SettingsScreen() {
     if (!userId || generatingCalToken) return;
     setGeneratingCalToken(true);
     const token = generateCalendarToken();
-    const { error } = await supabase.from('profiles').update({ calendar_token: token }).eq('id', userId);
+    const { error } = await updateProfile({ userId, patch: { calendar_token: token } });
     if (error) { Alert.alert('Something went wrong', 'Could not create your calendar link. Please try again.'); }
-    else { setLocalCalToken(token); refreshProfile(); }
+    else { track(EVENTS.CALENDAR_FEED_GENERATED, {}); setLocalCalToken(token); refreshProfile(); }
     setGeneratingCalToken(false);
   };
 
@@ -598,6 +621,7 @@ export default function SettingsScreen() {
     if (!calFeedUrl) return;
     try {
       await Share.share({ message: `Subscribe to my PLOT calendar:\n${calFeedUrl}`, url: calFeedUrl });
+      track(EVENTS.LIST_SHARED, { kind: 'calendar_feed' });
     } catch { /* user dismissed the share sheet */ }
   };
 
@@ -607,12 +631,12 @@ export default function SettingsScreen() {
 
   const handleRevokeCalToken = () => {
     Alert.alert(
-      'Revoke calendar link?',
-      'Your calendar app will stop receiving updates. You can generate a new link any time.',
+      SETTINGS_VIEW.confirm.revokeCalendarLinkTitle,
+      SETTINGS_VIEW.confirm.revokeCalendarLinkMessage,
       [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Revoke', style: 'destructive', onPress: async () => {
-          await supabase.from('profiles').update({ calendar_token: null }).eq('id', userId!);
+          await updateProfile({ userId: userId!, patch: { calendar_token: null } });
           setLocalCalToken(null);
           refreshProfile();
         }},
@@ -623,7 +647,7 @@ export default function SettingsScreen() {
   const openCalendarMenu = () => {
     Alert.alert(
       'Your calendar feed',
-      'Live feed of your releases and watchlist — keep this link private.',
+      SETTINGS_VIEW.calendarFeed.liveFeedPrivate,
       [
         { text: 'Add to Apple Calendar', onPress: handleAddToCalendar },
         { text: 'Share / copy link', onPress: handleShareCalUrl },
@@ -652,35 +676,38 @@ export default function SettingsScreen() {
   };
 
   const saveProviders = async (newProviders: any[]) => {
-    await supabase.from('profiles').update({ streaming_providers: newProviders }).eq('id', userId!);
+    await updateProfile({ userId: userId!, patch: { streaming_providers: newProviders } });
     refreshProfile();
   };
 
   const saveChannels = async (newChannels: any[]) => {
-    await supabase.from('profiles').update({ guide_channels: newChannels }).eq('id', userId!);
+    await updateProfile({ userId: userId!, patch: { guide_channels: newChannels } });
     refreshProfile();
   };
 
   const saveGenres = async (newGenres: string[]) => {
-    await supabase.from('profiles').update({ genres: newGenres }).eq('id', userId!);
+    await updateProfile({ userId: userId!, patch: { genres: newGenres } });
     refreshProfile();
   };
 
   const saveName = async (name: string) => {
-    const { error } = await supabase.from('profiles').update({ display_name: name }).eq('id', userId!);
+    const { error } = await updateProfile({ userId: userId!, patch: { display_name: name } });
     if (error) throw error;
     refreshProfile();
   };
 
   const saveRegion = async (code: string) => {
-    await supabase.from('profiles').update({ region: code }).eq('id', userId!);
+    await updateProfile({ userId: userId!, patch: { region: code } });
     setTmdbRegion(code);
     refreshProfile();
     setShowRegion(false);
   };
 
   const saveTimezone = async (tz: string) => {
-    await supabase.from('profiles').update({ timezone: tz }).eq('id', userId!);
+    await updateProfile({ userId: userId!, patch: { timezone: tz } });
+    // Apply immediately rather than waiting on the refreshProfile round-trip,
+    // so dates re-render in the new timezone as soon as the modal closes.
+    setUserTimezone(tz);
     refreshProfile();
     setShowTimezone(false);
   };
@@ -688,17 +715,28 @@ export default function SettingsScreen() {
   const handleSignOut = () => {
     Alert.alert('Sign out?', 'Sign out of your PLOT account?', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Sign out', style: 'destructive', onPress: async () => { await supabase.auth.signOut(); } },
+      { text: 'Sign out', style: 'destructive', onPress: async () => {
+        // Capture before the reset, or the event lands on the fresh anonymous
+        // profile instead of the person who actually signed out.
+        track(EVENTS.USER_SIGNED_OUT, {});
+        await supabase.auth.signOut();
+        resetAnalytics();
+      } },
     ]);
   };
 
   const handleClearHistory = () => {
-    Alert.alert('Clear watch history?', 'This will permanently delete all your watched entries. This cannot be undone.', [
+    Alert.alert(SETTINGS_VIEW.confirm.clearWatchHistoryTitle, SETTINGS_VIEW.confirm.clearWatchHistoryMessage, [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Clear history', style: 'destructive', onPress: async () => {
+      { text: SETTINGS_VIEW.confirm.clearHistory, style: 'destructive', onPress: async () => {
         setClearingHist(true);
-        await supabase.from('history').delete().eq('user_id', userId!);
+        // Shared helper: signals the change so a mounted useHistory reloads.
+        // This used to be a bare delete whose error was discarded, so a failed
+        // clear looked exactly like a successful one.
+        const { error } = await clearWatchHistory({ userId: userId! });
         setClearingHist(false);
+        if (error) Alert.alert('Could not clear', SETTINGS_VIEW.errors.failedToClearWatchHistory);
+        else track(EVENTS.HISTORY_CLEARED, {});
       }},
     ]);
   };
@@ -714,6 +752,7 @@ export default function SettingsScreen() {
           await supabase.from('list_items').delete().eq('list_id', myList.id);
         }
         setClearingList(false);
+        track(EVENTS.WATCHLIST_CLEARED, { saved: true, watching: false, customListCount: 0 });
       }},
       { text: 'Clear Saved + Watching', style: 'destructive', onPress: async () => {
         setClearingList(true);
@@ -724,33 +763,31 @@ export default function SettingsScreen() {
           supabase.from('watching_progress').delete().eq('user_id', userId!),
         ]);
         setClearingList(false);
+        track(EVENTS.WATCHLIST_CLEARED, { saved: true, watching: true, customListCount: 0 });
       }},
     ]);
   };
 
-  const handleDeleteAccount = () => {
-    Alert.alert(
-      'Delete account?',
-      'This will permanently delete your account and all your data. This cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete account', style: 'destructive', onPress: async () => {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (!session) return;
-          const url = `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/delete-account`;
-          try {
-            const response = await fetch(url, { method: 'POST', headers: { Authorization: `Bearer ${session.access_token}` } });
-            if (!response.ok) {
-              Alert.alert('Delete failed', 'We could not delete your account. Please try again.');
-              return;
-            }
-            await supabase.auth.signOut();
-          } catch {
-            Alert.alert('Delete failed', 'We could not delete your account. Please try again.');
-          }
-        }},
-      ]
-    );
+  /* Deletion goes through the shared core helper, which sends the
+     `confirmationPhrase` body the edge function requires. Mobile previously
+     POSTed with no body and so always hit the function's 400, meaning account
+     deletion never worked here. An Alert button cannot satisfy that contract,
+     hence the typed-phrase sheet. */
+  const handleDeleteAccount = () => setShowDeleteAccount(true);
+
+  const confirmDeleteAccount = async (typedPhrase: string) => {
+    const result = await deleteAccountAndSignOut({
+      supabase,
+      fetchImpl: fetch,
+      deleteAccountUrl: edgeFunctionUrl('delete-account'),
+      confirmationPhrase: typedPhrase,
+      onDeleted: async () => {
+        track(EVENTS.ACCOUNT_DELETED, {});
+        router.replace('/');
+      },
+    });
+    if (result.ok) setShowDeleteAccount(false);
+    return result;
   };
 
   const HEADER_H = insets.top + 56;
@@ -767,7 +804,7 @@ export default function SettingsScreen() {
         <SettingsGroup title="Account">
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><Circle cx={12} cy={7} r={4}/></Svg>}
-            label={displayName || 'Add your name'}
+            label={displayName || SETTINGS_VIEW.addYourName}
             onPress={() => setShowName(true)}
           />
           <SettingsRow
@@ -797,13 +834,13 @@ export default function SettingsScreen() {
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Circle cx={12} cy={12} r={10}/><Line x1={2} y1={12} x2={22} y2={12}/><Path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></Svg>}
             label="Region"
-            value={regionName}
+            value={regionLabel}
             onPress={() => setShowRegion(true)}
           />
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Circle cx={12} cy={12} r={10}/><Polyline points="12,6 12,12 16,14"/></Svg>}
             label="Timezone"
-            value={timezone ? fmtTz(timezone) : 'Not set'}
+            value={timezone ? fmtTz(timezone) : SETTINGS_VIEW.integrations.notConnected}
             onPress={() => setShowTimezone(true)}
           />
           <SettingsRow
@@ -837,24 +874,19 @@ export default function SettingsScreen() {
         {/* Viewing */}
         <SettingsGroup title="Viewing">
           <SettingsRow
-            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><Path d="M3 3v5h5"/></Svg>}
-            label="Log rewatches"
-            trailing={<Switch value={logRewatches} onValueChange={toggleLogRewatches} trackColor={{ true: colors.accent }} />}
-          />
-          <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Circle cx={12} cy={12} r={10}/><Circle cx={8.5} cy={10} r={1}/><Circle cx={15.5} cy={10} r={1}/><Path d="M8 15s1.5 2 4 2 4-2 4-2"/></Svg>}
-            label="Kids content"
+            label={SETTINGS_VIEW.kidsContent.label}
             trailing={<Switch value={includeKidsContent} onValueChange={toggleKidsContent} trackColor={{ true: colors.accent }} />}
           />
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Rect x={2} y={3} width={20} height={14} rx={2}/><Path d="M8 21h8M12 17v4"/></Svg>}
-            label="Streaming Platforms"
+            label={SETTINGS_VIEW.integrations.streamingPlatformsLabel}
             value={providers.length > 0 ? `${providers.length} selected` : 'None'}
             onPress={() => setShowProviders(true)}
           />
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Polygon points="23,7 16,12 23,17 23,7"/><Rect x={1} y={5} width={15} height={14} rx={2}/></Svg>}
-            label="My Channels"
+            label={SETTINGS_VIEW.integrations.myChannelsLabel}
             value={guideChannels.length > 0 ? `${guideChannels.length} selected` : 'None'}
             onPress={() => setShowChannels(true)}
           />
@@ -870,7 +902,7 @@ export default function SettingsScreen() {
         <SettingsGroup title="Calendar">
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Rect x={3} y={4} width={18} height={18} rx={2} ry={2}/><Line x1={16} y1={2} x2={16} y2={6}/><Line x1={8} y1={2} x2={8} y2={6}/><Line x1={3} y1={10} x2={21} y2={10}/></Svg>}
-            label="Subscribe to Calendar"
+            label={SETTINGS_VIEW.calendarFeed.subscribeLabel}
             value={calendarToken ? 'On' : undefined}
             onPress={calendarToken ? openCalendarMenu : handleGenerateCalToken}
             trailing={calendarToken
@@ -884,16 +916,18 @@ export default function SettingsScreen() {
         {/* PLOT Premium — status only; purchases and subscription management
             stay on the web app (Apple IAP rules: no external purchase links). */}
         {profile?.is_premium && (
-          <SettingsGroup title="PLOT Premium">
+          <SettingsGroup title={SETTINGS_VIEW.premium.groupTitle}>
             <SettingsRow
               icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill={colors.accent} stroke="none"><Path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></Svg>}
-              label="You have PLOT Premium"
+              label={SETTINGS_VIEW.premium.youHavePremium}
               value="Thank you"
             />
           </SettingsGroup>
         )}
 
-        {/* Integrations */}
+        {/* Integrations — held for post-launch, same as web. Import Watch
+            History (under Support) stays available; it needs no credentials. */}
+        {SHOW_MEDIA_SYNC_INTEGRATIONS && (
         <SettingsGroup title="Integrations">
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><Path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></Svg>}
@@ -906,47 +940,68 @@ export default function SettingsScreen() {
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><Path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></Svg>}
             label="Trakt"
-            value={trakt.isConnected ? syncedLabel(trakt.integration?.last_sync_at) : 'Sync Netflix, Prime, Disney+ & more'}
+            value={trakt.isConnected ? syncedLabel(trakt.integration?.last_sync_at) : SETTINGS_VIEW.integrations.connectTraktToSync}
             onPress={trakt.isConnected ? () => openIntegrationMenu('Trakt', trakt) : () => trakt.connect()}
             trailing={trakt.isConnected ? undefined
               : <Text style={{ color: colors.accent, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm }}>Connect</Text>}
           />
         </SettingsGroup>
+        )}
 
         {/* Support */}
         <SettingsGroup title="Support">
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/><Polyline points="16,17 21,12 16,7"/><Line x1={21} y1={12} x2={9} y2={12}/></Svg>}
-            label="Import Watch History"
+            label={SETTINGS_VIEW.integrations.importWatchHistory}
             onPress={() => setShowImport(true)}
           />
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M12 9v4"/><Path d="M12 17h.01"/><Path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L14.71 3.86a2 2 0 0 0-3.42 0z"/></Svg>}
-            label="Report a Bug"
+            label={SETTINGS_VIEW.feedback.reportABug}
             onPress={() => setFeedbackType('bug')}
           />
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></Svg>}
-            label="Leave Feedback"
+            label={SETTINGS_VIEW.feedback.leaveFeedback}
             onPress={() => setFeedbackType('feature')}
           />
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><Polyline points="14,2 14,8 20,8"/></Svg>}
-            label="Terms of Service"
+            label={COMMON.termsOfService}
             onPress={() => Linking.openURL('https://theplot.tv/terms.html')}
           />
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></Svg>}
-            label="Privacy Policy"
+            label={COMMON.privacyPolicy}
             onPress={() => Linking.openURL('https://theplot.tv/privacy.html')}
           />
+        </SettingsGroup>
+
+        {/* Credits — TMDB's API terms ask for the notice on an About/Credits
+            surface, not only in the legal pages. Read-only, so these are plain
+            rows rather than SettingsRow (no icon, no chevron, not pressable).
+            TMDB also asks for their approved logo here; see the web equivalent. */}
+        <SettingsGroup title={SETTINGS_VIEW.credits.groupTitle}>
+          <View style={styles.credits}>
+            <Text style={styles.creditsIntro}>{SETTINGS_VIEW.credits.intro}</Text>
+            {[
+              { name: SETTINGS_VIEW.credits.tmdbName,   notice: SETTINGS_VIEW.credits.tmdbNotice },
+              { name: SETTINGS_VIEW.credits.tvmazeName, notice: SETTINGS_VIEW.credits.tvmazeNotice },
+              { name: SETTINGS_VIEW.credits.omdbName,   notice: SETTINGS_VIEW.credits.omdbNotice },
+            ].map((c) => (
+              <View key={c.name} style={styles.credit}>
+                <Text style={styles.creditName}>{c.name}</Text>
+                <Text style={styles.creditNotice}>{c.notice}</Text>
+              </View>
+            ))}
+          </View>
         </SettingsGroup>
 
         {/* Danger zone */}
         <SettingsGroup title="Danger Zone">
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.danger} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><Path d="M3 3v5h5"/><Path d="M12 7v5l4 2"/></Svg>}
-            label={clearingHist ? 'Clearing…' : 'Clear Watch History'}
+            label={clearingHist ? 'Clearing…' : SETTINGS_VIEW.dangerZone.clearWatchHistoryLabel}
             onPress={clearingHist ? undefined : handleClearHistory}
             danger
           />
@@ -958,7 +1013,7 @@ export default function SettingsScreen() {
           />
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.danger} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Polyline points="3,6 5,6 21,6"/><Path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><Path d="M10 11v6M14 11v6"/><Path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></Svg>}
-            label="Delete Account"
+            label={SETTINGS_VIEW.dangerZone.deleteAccountLabel}
             onPress={handleDeleteAccount}
             danger
           />
@@ -1013,6 +1068,16 @@ export default function SettingsScreen() {
       {showImport && userId && (
         <ImportHistoryModal userId={userId} onClose={() => setShowImport(false)} />
       )}
+      {showDeleteAccount && (
+        <ConfirmPhraseModal
+          title={SETTINGS_VIEW.confirm.deleteAccountTitle}
+          message={SETTINGS_VIEW.confirm.deleteAccountMessage}
+          phrase={SETTINGS_VIEW.confirm.deleteAccountPhrase}
+          confirmLabel={SETTINGS_VIEW.confirm.deleteAccount}
+          onConfirm={confirmDeleteAccount}
+          onClose={() => setShowDeleteAccount(false)}
+        />
+      )}
 
     </View>
   );
@@ -1038,6 +1103,22 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     overflow: 'hidden',
+  },
+
+  credits: { paddingHorizontal: spacing.lg, paddingTop: 12, paddingBottom: 4 },
+  creditsIntro: {
+    fontFamily: fontFamily.sans, fontSize: 13, color: colors.textSecondary,
+    marginBottom: 12,
+  },
+  credit: {
+    paddingVertical: 10,
+    borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border,
+  },
+  creditName: {
+    fontFamily: fontFamily.sansBold, fontSize: 13, color: colors.textPrimary, marginBottom: 3,
+  },
+  creditNotice: {
+    fontFamily: fontFamily.sans, fontSize: 12, lineHeight: 17, color: colors.textMuted,
   },
 
   row: {
@@ -1101,6 +1182,17 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   modalFooter: { paddingHorizontal: spacing.xl, paddingTop: spacing.md },
 
   regionGrid: { flexDirection: 'row', flexWrap: 'wrap', padding: spacing.xl, gap: spacing.sm },
+  genreErrorWrap: { alignItems: 'center', justifyContent: 'center', padding: spacing.xl, gap: spacing.md },
+  genreErrorText: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary, textAlign: 'center' },
+  genreRetryBtn: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceRaised,
+  },
+  genreRetryText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textPrimary },
   regionCard: {
     width: '47%', padding: spacing.md,
     borderRadius: radii.md, borderWidth: 1.5, borderColor: colors.border,

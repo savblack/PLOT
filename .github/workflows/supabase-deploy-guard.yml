@@ -1,0 +1,198 @@
+name: Supabase deploy guard
+
+# The Supabase GitHub integration applies migrations and redeploys
+# `supabase/functions/*` to PRODUCTION on every push to main. It runs out of
+# band, so when it fails the merge is still green and nothing in this repo
+# notices — production silently stops tracking main until somebody thinks to
+# look. Last occurrence: 29 consecutive merges were dropped between db08a72
+# (2026-08-09 00:40Z) and 8a3f716 (2026-08-13 12:32Z) — about four and a half
+# days — every one reporting `Remote migration versions not found in local
+# migrations directory`, and every one merging green. Found by accident.
+#
+# This job reads the integration's own check result and raises an alarm when it
+# did not succeed. It is deliberately an alarm and NOT a merge gate: the
+# integration only runs *after* the push, and on pull requests its check is
+# `skipped` ("creating a new preview branch per PR is disabled"), so there is no
+# pre-merge signal to block on. The daily schedule is the safety net for a run
+# that timed out here without reaching a verdict.
+
+on:
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: '40 5 * * *' # Daily re-check of main's head, in case a push-time run never settled.
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  # `checks: read` is what makes the check-runs query work at all. Without it
+  # GITHUB_TOKEN gets `Resource not accessible by integration (HTTP 403)` and
+  # this job fails on every push — which is how it first shipped.
+  checks: read
+  issues: write
+
+concurrency:
+  group: supabase-deploy-guard-${{ github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  guard:
+    name: Confirm the Supabase integration deployed
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Read the integration's verdict for this commit
+        id: verdict
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          # The integration posts several check runs per commit under the
+          # `supabase` app: the real branch-action result plus `skipped` ones
+          # for pushes to non-main refs. `filter=all` is required — the default
+          # returns only the latest run per name and hides the real verdict.
+          # Break as soon as a verdict exists, NOT when nothing is pending: the
+          # integration leaves placeholder runs ("Waiting for branch action run
+          # to complete") in a non-completed state indefinitely, so waiting for
+          # pending to reach zero would always burn the full timeout.
+          runs='[]'
+          for _ in $(seq 1 20); do
+            # Do not let a transient API error read as a deploy failure — that
+            # would claim production is behind when we simply could not look.
+            if ! runs=$(gh api \
+              "repos/$GITHUB_REPOSITORY/commits/$SHA/check-runs?filter=all&per_page=100" \
+              --jq '[.check_runs[] | select(.app.slug == "supabase")]' 2>/tmp/gh-err); then
+              echo "::error title=Could not read the Supabase verdict::$(tr -d '\n' < /tmp/gh-err)"
+              {
+                echo "## Could not read the Supabase verdict"
+                echo ""
+                echo "The check-runs query failed, so this says nothing about whether"
+                echo "production received \`${SHA:0:7}\`. Verify by hand."
+                echo ""
+                echo "> $(tr -d '\n' < /tmp/gh-err)"
+              } >> "$GITHUB_STEP_SUMMARY"
+              exit 1
+            fi
+
+            if [ "$(jq '[.[] | select(.conclusion == "success" or .conclusion == "failure")] | length' <<< "$runs")" -gt 0 ]; then
+              break
+            fi
+            sleep 15
+          done
+
+          total=$(jq 'length' <<< "$runs")
+          pending=$(jq '[.[] | select(.status != "completed")] | length' <<< "$runs")
+          succeeded=$(jq '[.[] | select(.conclusion == "success")] | length' <<< "$runs")
+          failed=$(jq '[.[] | select(.conclusion == "failure")] | length' <<< "$runs")
+          # The summary arrives fenced and multi-line; flatten it so it is safe
+          # in a ::error annotation and reads cleanly when quoted.
+          reason=$(jq -r '[.[] | select(.conclusion == "failure") | .output.summary // ""][0] // ""' <<< "$runs" \
+            | tr -d '`' | tr '\n' ' ' | sed -e 's/  */ /g' -e 's/^ //' -e 's/ $//')
+
+          {
+            echo "total=$total"
+            echo "pending=$pending"
+            echo "succeeded=$succeeded"
+            echo "failed=$failed"
+          } >> "$GITHUB_OUTPUT"
+          {
+            echo 'reason<<REASON_EOF'
+            echo "$reason"
+            echo 'REASON_EOF'
+          } >> "$GITHUB_OUTPUT"
+
+          if [ "$succeeded" -gt 0 ]; then
+            echo "## Supabase deployed" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "The integration reported \`success\` for \`${SHA:0:7}\`." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          if [ "$failed" -gt 0 ]; then
+            # Explicit flag for the issue step. Do not gate that step on
+            # `failed != '0'`: if this step dies early the output is empty, and
+            # GitHub's loose comparison treats '' and '0' as equal, so the gate
+            # would depend on coercion rather than on a real verdict.
+            echo "alarm=true" >> "$GITHUB_OUTPUT"
+            echo "::error title=Supabase did not deploy::${reason:-The integration reported failure with no summary.}"
+            {
+              echo "## Production did not receive this commit"
+              echo ""
+              echo "The Supabase integration reported \`failure\` for \`${SHA:0:7}\`:"
+              echo ""
+              echo "> ${reason:-(no summary)}"
+              echo ""
+              echo "Migrations and edge functions on production are now behind main, and"
+              echo "they will stay behind for every later merge until this is cleared."
+              echo ""
+              echo "Diagnose the history with \`supabase migration list\`; any row with"
+              echo "\`local\` or \`remote\` blank is the drift."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+          # No success and no failure: either every run was skipped, or the
+          # branch action never settled inside the wait. Neither proves a bad
+          # deploy, so warn rather than cry wolf — the daily run re-checks.
+          echo "::warning title=Supabase verdict unclear::runs=$total pending=$pending — no success and no failure for ${SHA:0:7}."
+          {
+            echo "## Supabase verdict unclear"
+            echo ""
+            echo "Found \`$total\` check run(s) for \`${SHA:0:7}\`, \`$pending\` still running,"
+            echo "with no \`success\` and no \`failure\`. Not treated as a deploy failure."
+            echo "Confirm by hand if this commit changed \`supabase/\`:"
+            echo ""
+            echo '```'
+            echo "gh api \"repos/$GITHUB_REPOSITORY/commits/$SHA/check-runs?filter=all\" \\"
+            echo "  --jq '.check_runs[] | select(.app.slug == \"supabase\")'"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Raise an issue so a red integration cannot go unnoticed
+        if: failure() && steps.verdict.outputs.alarm == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.sha }}
+          REASON: ${{ steps.verdict.outputs.reason }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+
+          label='supabase-deploy-failed'
+          gh label create "$label" \
+            --color 'b60205' \
+            --description 'The Supabase integration failed to deploy a merge to main' \
+            2>/dev/null || true
+
+          body=$(
+            printf '%s\n' \
+              "The Supabase integration reported \`failure\` for [\`${SHA:0:7}\`]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/commit/$SHA)." \
+              '' \
+              "> ${REASON:-(no summary)}" \
+              '' \
+              'Production is behind main, and every later merge stays behind until this clears.' \
+              '' \
+              '```' \
+              'npx supabase migration list --db-url "postgresql://postgres:<url-encoded prod password>@db.mkegtssedjyqldysvzga.supabase.co:5432/postgres"' \
+              '```' \
+              '' \
+              'Any row with `local` or `remote` blank is the drift. A remote-only version' \
+              '(applied, no file on main) is cleared with `supabase migration repair` or by' \
+              'landing the file; a local-only version is just normal pending state.' \
+              '' \
+              "Raised by [Supabase deploy guard]($RUN_URL)."
+          )
+
+          existing=$(gh issue list --state open --label "$label" --limit 1 --json number --jq '.[0].number // ""')
+
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "$body"
+          else
+            gh issue create \
+              --title 'Supabase integration failed to deploy a merge to main' \
+              --label "$label" \
+              --body "$body"
+          fi

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { resolveAuthCallback } from '../../src/utils/authCallback.js';
+import { resolveAuthCallback, credentialKind } from '../../src/utils/authCallback.js';
 
 // Minimal fake Supabase auth client. Each factory records what was called so we
 // can assert both the decision AND that we never take a shortcut past session
@@ -132,11 +132,62 @@ test('provider error in hash surfaces as an error, never proceeds', async () => 
   assert.equal(calls.exchangeCodeForSession.length, 0);
 });
 
-test('exchange failure surfaces the error, does not navigate to /onboarding', async () => {
+test('exchange failure with no session anywhere surfaces the exchange error', async () => {
   const { supabase } = fakeSupabase({ exchange: { data: { session: null }, error: { message: 'bad code' } } });
 
-  const result = await resolveAuthCallback(supabase, { search: '?code=x', hash: '' });
+  const result = await resolveAuthCallback(supabase, { search: '?code=x', hash: '' }, immediateTimers);
 
   assert.equal(result.path, null);
+  // The specific diagnosis, not the generic 'no-session'.
   assert.equal(result.error, 'bad code');
+});
+
+test('exchange failure but a session exists: proceeds (detectSessionInUrl won the race)', async () => {
+  // supabase-js has detectSessionInUrl on by default, so on client init it finds
+  // `?code=` and exchanges it itself. The code is single-use, so our explicit
+  // exchange then fails on a login that actually succeeded. Falling through to
+  // the session check is what stops that showing the user an error screen.
+  const session = { user: { id: 'u1' } };
+  const { supabase, calls } = fakeSupabase({
+    exchange: { data: { session: null }, error: { message: 'invalid request: both auth code and code verifier should be non-empty' } },
+    getSession: { data: { session }, error: null },
+  });
+
+  const result = await resolveAuthCallback(supabase, { search: '?code=x', hash: '' }, immediateTimers);
+
+  assert.equal(result.path, '/onboarding');
+  assert.equal(result.session, session);
+  assert.equal(result.error, null);
+  assert.deepEqual(calls.exchangeCodeForSession, ['x']);
+});
+
+test('exchange failure on a recovery link still routes to /reset-password', async () => {
+  const session = { user: { id: 'u1' } };
+  const { supabase } = fakeSupabase({
+    exchange: { data: { session: null }, error: { message: 'invalid code' } },
+    getSession: { data: { session }, error: null },
+  });
+
+  const result = await resolveAuthCallback(supabase, { search: '?code=x&type=recovery', hash: '' }, immediateTimers);
+
+  assert.equal(result.path, '/reset-password');
+  assert.equal(result.error, null);
+});
+
+test('credentialKind names the kind of credential in the URL, never the value', () => {
+  // This is what makes a failed sign-in legible after the fact without putting a
+  // code or token into analytics.
+  assert.equal(credentialKind('?code=abc123', ''), 'code');
+  assert.equal(credentialKind('?token_hash=xyz&type=magiclink', ''), 'token_hash');
+  assert.equal(credentialKind('', '#access_token=abc&refresh_token=def'), 'hash');
+  assert.equal(credentialKind('', ''), 'none');
+});
+
+test('credentialKind prefers the query credential when a URL somehow carries both', () => {
+  assert.equal(credentialKind('?code=abc', '#access_token=def'), 'code');
+});
+
+test('credentialKind treats an empty credential value as absent, and tolerates missing args', () => {
+  assert.equal(credentialKind('?code=', ''), 'none');
+  assert.equal(credentialKind(undefined, undefined), 'none');
 });

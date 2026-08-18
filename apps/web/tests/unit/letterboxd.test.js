@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { parseLetterboxd } from '../../src/domain/importParsing.js';
+import { parseLetterboxd } from '@plot/core/importParsing.js';
 
 test('parses diary.csv: title, year, watched date, doubled rating', () => {
   const csv = [

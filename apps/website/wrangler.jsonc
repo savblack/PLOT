@@ -1,0 +1,20 @@
+{
+  // Local-development config for `wrangler pages dev` in this directory. It
+  // exists for ONE reason: to pin the compatibility date. Without a pin,
+  // `wrangler pages dev` defaults to *today's* date, which a slightly older
+  // workerd binary refuses to start on ("This Worker requires compatibility
+  // date "…", but the newest date supported by this server binary is "…"").
+  // `npm run dev:website` used to carry the pin as a CLI flag; keeping it here
+  // means the bare `wrangler pages dev .` works too. Pinning a past date is
+  // always safe — the runtime keeps supporting old dates.
+  //
+  // DO NOT add `pages_build_output_dir`. That single key is what promotes a
+  // Wrangler file from local-dev-only to the source of truth for the whole
+  // Pages project, at which point the plot-site dashboard configuration
+  // (build settings, and env vars such as SHOW_PRICING_PAGE — see
+  // functions/_middleware.js) is ignored on deploy. A repo-root wrangler.toml
+  // with that key already broke this project's builds once, on 2026-07-28 —
+  // see the comment at the top of apps/web/wrangler.toml.
+  // https://developers.cloudflare.com/pages/functions/wrangler-configuration/
+  "compatibility_date": "2025-06-01"
+}

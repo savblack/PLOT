@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { supabase } from '../api/supabase';
-import { callAuthenticatedFunction, edgeFunctionUrl } from '../api/functions.js';
+import { supabase } from '@plot/core/supabase.js';
+import { callAuthenticatedFunction, edgeFunctionUrl } from '@plot/core/functions.js';
 import { consumeTraktState, getTraktCallbackUrl } from '../utils/redirects.js';
 import PlotLogo from '../components/PlotLogo.jsx';
 import { TRAKT_CALLBACK_PAGE } from '../copy/traktCallbackPage.js';
+import { track, EVENTS } from '../lib/analytics.js';
 
 export default function TraktCallbackPage() {
   const navigate = useNavigate();
@@ -49,6 +50,8 @@ export default function TraktCallbackPage() {
         return;
       }
 
+      // The exchange succeeded, so the integration genuinely exists now.
+      track(EVENTS.TRAKT_CONNECTED, {});
       navigate('/settings', { replace: true });
     };
 

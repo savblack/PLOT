@@ -1,0 +1,149 @@
+{
+  "entries": [
+    {
+      "slug": "oppenheimer",
+      "tmdb_id": 872585,
+      "media_type": "movie",
+      "poster_path": "/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg",
+      "title": "Oppenheimer",
+      "date_label": "Oct 2023",
+      "note": "\"Three hours. Felt like one.\""
+    },
+    {
+      "slug": "the-bear",
+      "tmdb_id": 136315,
+      "media_type": "tv",
+      "poster_path": "/eKfVzzEazSIjJMrw9ADa2x8ksLz.jpg",
+      "title": "The Bear",
+      "date_label": "Nov 2023",
+      "note": "\"Stressful. Perfect. Both.\""
+    },
+    {
+      "slug": "saltburn",
+      "tmdb_id": 930564,
+      "media_type": "movie",
+      "poster_path": "/zGTfMwG112BC66mpaveVxoWPOaB.jpg",
+      "title": "Saltburn",
+      "date_label": "Dec 2023",
+      "note": "\"Unhinged in all the right ways.\""
+    },
+    {
+      "slug": "past-lives",
+      "tmdb_id": 666277,
+      "media_type": "movie",
+      "poster_path": "/k3waqVXSnvCZWfJYNtdamTgTtTA.jpg",
+      "title": "Past Lives",
+      "date_label": "Feb 2024",
+      "note": "\"Quietly devastating.\""
+    },
+    {
+      "slug": "presumed-innocent",
+      "tmdb_id": 156933,
+      "media_type": "tv",
+      "poster_path": "/7MXg0BxuSRWz2yKc03M40du2mrc.jpg",
+      "title": "Presumed Innocent",
+      "date_label": "Jun 2024",
+      "note": "\"Did not trust a single character. I was right.\""
+    },
+    {
+      "slug": "the-substance",
+      "tmdb_id": 933260,
+      "media_type": "movie",
+      "poster_path": "/uYJvxMWMb9W4zIY3cbM50sj3dpC.jpg",
+      "title": "The Substance",
+      "date_label": "Sep 2024",
+      "note": "\"Nothing prepares you.\""
+    },
+    {
+      "slug": "babygirl",
+      "tmdb_id": 1097549,
+      "media_type": "movie",
+      "poster_path": "/ilwO6elz3mLV9CToT7C8pjVeKX0.jpg",
+      "title": "Babygirl",
+      "date_label": "Dec 2024",
+      "note": "\"Nicole Kidman.\""
+    },
+    {
+      "slug": "severance",
+      "tmdb_id": 95396,
+      "media_type": "tv",
+      "poster_path": "/pPHpeI2X1qEd1CS1SeyrdhZ4qnT.jpg",
+      "title": "Severance S2",
+      "date_label": "Jan 2025",
+      "note": "\"Worth the wait.\""
+    },
+    {
+      "slug": "adolescence",
+      "tmdb_id": 249042,
+      "media_type": "tv",
+      "poster_path": "/20i4nShZZg1g1VFHSB8xpaYM4r7.jpg",
+      "title": "Adolescence",
+      "date_label": "Mar 2025",
+      "note": "\"Four episodes. Changed everything.\""
+    },
+    {
+      "slug": "sinners",
+      "tmdb_id": 1233413,
+      "media_type": "movie",
+      "poster_path": "/fWPgbnt2LSqkQ6cdQc0SZN9CpLm.jpg",
+      "title": "Sinners",
+      "date_label": "Apr 2025",
+      "note": "\"Ryan Coogler does it again.\""
+    },
+    {
+      "slug": "top-gun-maverick",
+      "tmdb_id": 361743,
+      "media_type": "movie",
+      "poster_path": "/n0YuM4f5lvGAP6MAW2kBIzugXnc.jpg",
+      "title": "Top Gun: Maverick",
+      "date_label": "May 2025",
+      "note": "\"Still the best sequel ever made.\""
+    },
+    {
+      "slug": "a-knight-of-the-seven-kingdoms",
+      "tmdb_id": 224372,
+      "media_type": "tv",
+      "poster_path": "/k8yARbD9iYn2nRX2HvsopfKDN2r.jpg",
+      "title": "A Knight of the Seven Kingdoms",
+      "date_label": "Jan 2026",
+      "note": "\"Back in Westeros.\""
+    },
+    {
+      "slug": "project-hail-mary",
+      "tmdb_id": 687163,
+      "media_type": "movie",
+      "poster_path": "/yihdXomYb5kTeSivtFndMy5iDmf.jpg",
+      "title": "Project Hail Mary",
+      "date_label": "Mar 2026",
+      "note": "\"Gosling in space.\""
+    },
+    {
+      "slug": "the-devil-wears-prada-2",
+      "tmdb_id": 1314481,
+      "media_type": "movie",
+      "poster_path": "/xTI42pmsP5EDnvsNJPEDubwWBQO.jpg",
+      "title": "The Devil Wears Prada 2",
+      "date_label": "May 2026",
+      "note": "\"That's all.\""
+    },
+    {
+      "slug": "the-odyssey",
+      "tmdb_id": 1368337,
+      "media_type": "movie",
+      "poster_path": "/5rhTDKUhPYvpdQIijFIs5VoWsON.jpg",
+      "title": "The Odyssey",
+      "date_label": "Jul 2026",
+      "note": "\"Nolan does Homer.\""
+    }
+  ],
+  "trending": {
+    "hero": {
+      "slug": "spider-man-brand-new-day",
+      "tmdb_id": 969681,
+      "media_type": "movie",
+      "poster_path": "/iPOn6DinuVyLY17YM9mKuPofV08.jpg",
+      "title": "Spider-Man: Brand New Day",
+      "year": "2026"
+    }
+  }
+}

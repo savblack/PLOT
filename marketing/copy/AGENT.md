@@ -1,7 +1,10 @@
 # Marketing copy worker
 
 This is the production copy contract for PLOT marketing. The production runner
-is **Codex**. Other runners are fallback/debug only.
+is the **Claude Code CLI** (`marketing-weekly-batch.yml` runs
+`--copy-runner=claude`). Codex is the local/manual default and still fully
+supported; other runners are fallback/debug only. This contract is
+model-agnostic — nothing here depends on which CLI is executing it.
 
 ## Job
 
@@ -53,10 +56,11 @@ is **Codex**. Other runners are fallback/debug only.
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `TMDB_API_KEY`
 - `OMDB_API_KEY`
-- Codex CLI authenticated on the Mac or runner that executes this job
+- Claude Code CLI authenticated on the runner (production) or Codex CLI
+  authenticated on the Mac (local/manual)
 
-## Sunday learning updates
+## Updating these rules
 
-The Sunday learning loop may update this file automatically. Those updates are
-limited to concrete, evidence-backed rule changes from shipped copy and weekly
-performance review.
+This file is maintained by hand. An automated Sunday learning loop used to
+rewrite it from the previous week's shipped copy; that loop has been removed, so
+a rule here only changes when a person changes it.

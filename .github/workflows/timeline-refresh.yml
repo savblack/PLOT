@@ -1,0 +1,104 @@
+name: Timeline refresh — weekly PR
+
+# Keeps the marketing site's timeline and app-mockup hero on current titles.
+# Opens a PR rather than committing: a newly appended title lands with an empty
+# note, and the notes are title-specific jokes a human writes in review.
+#
+# ci.yml will not run on the PR this opens. GitHub deliberately does not trigger
+# workflows from events made with GITHUB_TOKEN, so the checks list looks emptier
+# than on a human PR: that is expected, not a broken pipeline. The Cloudflare
+# Pages preview still builds, because that is a GitHub App on push webhooks
+# rather than an Actions workflow, so the page can still be eyeballed before
+# merging. Swap in a PAT if the repo's own checks are ever wanted here.
+
+on:
+  schedule:
+    - cron: '0 9 * * 1' # 09:00 UTC Monday, after the weekend's trending settles
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: timeline-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - name: Refresh timeline and trending hero
+        id: refresh
+        run: |
+          node scripts/refresh-timeline.mjs | tee refresh.log
+          {
+            echo 'summary<<EOF'
+            cat refresh.log
+            echo EOF
+          } >> "$GITHUB_OUTPUT"
+        env:
+          TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
+
+      - name: Open a PR if anything changed
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SUMMARY: ${{ steps.refresh.outputs.summary }}
+        run: |
+          rm -f refresh.log
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "Nothing changed this week."
+            exit 0
+          fi
+
+          BRANCH="timeline-refresh/$(date -u +%Y-%m-%d)"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add apps/website/data/timeline.json apps/website/images apps/website/index.html
+          git commit -m "content(website): refresh timeline posters and trending hero"
+          git push -u origin "$BRANCH"
+
+          # Entries with no note yet are the only thing needing a human.
+          node -e '
+            const d = require("./apps/website/data/timeline.json");
+            const need = d.entries.filter(e => !e.note);
+            process.stdout.write(need.length
+              ? need.map(e => `- **${e.title}** (${e.date_label})`).join("\n")
+              : "None: every entry already has a note.");
+          ' > notes.md
+
+          {
+            echo 'Automated weekly refresh from `scripts/refresh-timeline.mjs`.'
+            echo
+            echo '## Notes needed before merging'
+            echo
+            cat notes.md
+            echo
+            echo
+            echo 'The timeline notes are title-specific, so new entries land empty and get written here in review. A card with no note renders without one, so merging as-is is safe but loses the voice.'
+            echo
+            echo '## What the run did'
+            echo
+            echo '```'
+            printf '%s\n' "$SUMMARY"
+            echo '```'
+            echo
+            echo 'Check the Cloudflare Pages preview on this PR to see the timeline and the app-mockup hero before merging.'
+          } > pr-body.md
+
+          # Assigned, not just opened: a bot PR that mentions nobody is silent
+          # unless the repo is watched on "All activity", and this PR is only
+          # useful if it is seen (a new entry needs its note written here).
+          gh pr create \
+            --title "content(website): refresh timeline posters and trending hero" \
+            --body-file pr-body.md \
+            --assignee "${{ github.repository_owner }}"
+          rm -f notes.md pr-body.md

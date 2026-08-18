@@ -17,12 +17,19 @@ import Svg, { Path, Polyline } from 'react-native-svg';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../../lib/supabase';
-import { tmdb, setTmdbRegion, getTmdbRegion, prioritiseEnglishSpeakingTitles } from '../../lib/tmdb';
+import { tmdb, setTmdbRegion, prioritiseEnglishSpeakingTitles } from '../../lib/tmdb';
+import { SHOW_FOR_YOU_RAIL } from '../../lib/launchFeatures';
+import { DISCOVER_TABS } from '@plot/core/navigation.js';
+import { useNewReleases } from '@plot/core/useNewReleases.js';
+import { useForYou } from '@plot/core/useForYou.js';
+import { usePlatformCharts } from '@plot/core/usePlatformCharts.js';
+import GuideView from '../../components/GuideView';
 import { excludeKidsContent } from '@plot/core/tmdb.js';
 import { posterUrl, backdropUrl, Palette, fontFamily, fontSize, spacing, radii, iconButtonSize } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import { favoriteWords } from '../../lib/spelling';
+import { MEDIA } from '@plot/core/copy/media.js';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -33,6 +40,20 @@ const SCREEN_W = Dimensions.get('window').width;
 const CARD_W   = (SCREEN_W - spacing.xl * 2 - spacing.md * 2) / 3;
 const BINGE_W  = SCREEN_W * 0.62;
 const BINGE_H  = BINGE_W * 0.56;
+
+// ── Sub-tab (underline style) ─────────────────────────────────────────
+// Mirrors My Lists' sub-tabs so both headers read the same. Kept local for now;
+// worth extracting to components/ once My Lists is touched again.
+function SubTab({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  return (
+    <TouchableOpacity style={styles.subTab} onPress={onPress} activeOpacity={0.7}>
+      <Text style={[styles.subTabText, active && styles.subTabTextActive]}>{label}</Text>
+      <View style={[styles.subTabUnderline, active && styles.subTabUnderlineActive]} />
+    </TouchableOpacity>
+  );
+}
 
 // ── Types ────────────────────────────────────────────────────────────
 interface MediaItem {
@@ -47,6 +68,8 @@ interface MediaItem {
   first_air_date?: string;
   original_language?: string;
   origin_country?: string[];
+  /** True published chart position, present only on platform_charts rows. */
+  _rank?: number;
 }
 
 interface StreamingProvider {
@@ -55,16 +78,30 @@ interface StreamingProvider {
   logo_path?: string | null;
 }
 
-interface PlatformData extends StreamingProvider {
+/** Shape returned by core's usePlatformCharts. `id` is the platform key
+ *  ('netflix'), not a TMDB watch-provider id. */
+interface PlatformData {
+  id: string;
+  name: string;
+  logo_path?: string | null;
   movies: MediaItem[];
   tv: MediaItem[];
 }
 
 // ── Bookmark SVG ─────────────────────────────────────────────────────
-function BookmarkIcon({ size = 14, color = '#fff', filled = false }: { size?: number; color?: string; filled?: boolean }) {
+function BookmarkIcon({ size = 14, color = '#fff', filled = false, strokeWidth = 2 }: { size?: number; color?: string; filled?: boolean; strokeWidth?: number }) {
   return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? color : 'none'} stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? color : 'none'} stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
       <Path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+    </Svg>
+  );
+}
+
+// ── Heart SVG — same outline/fill treatment as the web card heart ─────
+function HeartIcon({ size = 15, color = '#fff', filled = false, strokeWidth = 2.5 }: { size?: number; color?: string; filled?: boolean; strokeWidth?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? color : 'none'} stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
     </Svg>
   );
 }
@@ -84,8 +121,6 @@ function PosterCard({ item, onPress, saved, onSave, isFav, onFavorite }: {
   const fw       = favoriteWords(profile?.region);
   const title    = item.title || item.name || '';
   const img      = posterUrl(item.poster_path, 'w185');
-  const type     = item.media_type === 'tv' ? 'TV' : 'Movie';
-  const chipColor = item.media_type === 'tv' ? colors.chipEpisode : colors.chipStreaming;
 
   return (
     <TouchableOpacity style={[styles.card, { width: CARD_W }]} onPress={onPress} activeOpacity={0.8}>
@@ -94,30 +129,25 @@ function PosterCard({ item, onPress, saved, onSave, isFav, onFavorite }: {
           ? <Image source={{ uri: img }} style={StyleSheet.absoluteFill} resizeMode="cover" />
           : <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.surfaceSunken }]} />
         }
-        <View style={[styles.chip, { backgroundColor: chipColor }]}>
-          <Text style={styles.chipText}>{type}</Text>
-        </View>
-        {/* Heart — favourite (bottom left) */}
+        {/* Heart — favourite (top left, in the former type-chip slot) */}
         <TouchableOpacity
-          style={[styles.saveBtn, styles.saveBtnLeft]}
+          style={[styles.cardActionBtn, styles.cardActionBtnLeft]}
           onPress={onFavorite}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           accessibilityLabel={isFav ? `Remove ${fw.nounLower}` : `Add ${fw.nounLower}`}
           accessibilityRole="button"
         >
-          <Text style={{ color: isFav ? colors.accent : '#fff', fontSize: 13 }}>
-            {isFav ? '♥' : '♡'}
-          </Text>
+          <HeartIcon color={isFav ? colors.accent : '#fff'} filled={isFav} />
         </TouchableOpacity>
-        {/* Bookmark — watchlist (bottom right) */}
+        {/* Bookmark — watchlist (top right) */}
         <TouchableOpacity
-          style={styles.saveBtn}
+          style={styles.cardActionBtn}
           onPress={onSave}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityLabel={saved ? 'Remove from watchlist' : 'Add to watchlist'}
+          accessibilityLabel={saved ? MEDIA.removeFromWatchlist : MEDIA.saveToWatchlist}
           accessibilityRole="button"
         >
-          <BookmarkIcon color={saved ? colors.accent : '#fff'} filled={saved} />
+          <BookmarkIcon size={15} strokeWidth={2.5} filled={saved} />
         </TouchableOpacity>
       </View>
       <Text style={styles.cardTitle} numberOfLines={2}>{title}</Text>
@@ -183,7 +213,7 @@ function ChartRow({ item, rank, saved, onSave, onPress }: {
         style={[styles.chartSaveBtn, saved && styles.chartSaveBtnSaved]}
         onPress={onSave}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        accessibilityLabel={saved ? 'Remove from watchlist' : 'Add to watchlist'}
+        accessibilityLabel={saved ? MEDIA.removeFromWatchlist : MEDIA.saveToWatchlist}
         accessibilityRole="button"
       >
         <BookmarkIcon size={13} color={saved ? colors.accent : colors.textMuted} filled={saved} />
@@ -214,7 +244,7 @@ function HeroCard({ item, onPress, saved, onSave }: {
         style={styles.heroSaveCircle}
         onPress={onSave}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        accessibilityLabel={saved ? 'Remove from watchlist' : 'Add to watchlist'}
+        accessibilityLabel={saved ? MEDIA.removeFromWatchlist : MEDIA.saveToWatchlist}
         accessibilityRole="button"
       >
         <BookmarkIcon size={16} color={saved ? colors.accent : '#fff'} filled={saved} />
@@ -302,7 +332,7 @@ function PlatformSection({ platform, saved, onSave, isFav, onFavorite }: {
                 renderItem={({ item, index }) => (
                   <PosterCardRanked
                     item={{ ...item, media_type: 'movie' }}
-                    rank={index + 1}
+                    rank={item._rank ?? index + 1}
                     saved={saved.has(item.id ?? 0)}
                     onSave={() => onSave({ ...item, media_type: 'movie' })}
                     isFav={isFav(item.id ?? 0)}
@@ -325,7 +355,7 @@ function PlatformSection({ platform, saved, onSave, isFav, onFavorite }: {
                 renderItem={({ item, index }) => (
                   <PosterCardRanked
                     item={{ ...item, media_type: 'tv' }}
-                    rank={index + 1}
+                    rank={item._rank ?? index + 1}
                     saved={saved.has(item.id ?? 0)}
                     onSave={() => onSave({ ...item, media_type: 'tv' })}
                     isFav={isFav(item.id ?? 0)}
@@ -359,8 +389,6 @@ function PosterCardRanked({ item, rank, saved, onSave, isFav, onFavorite }: {
   const fw        = favoriteWords(profile?.region);
   const title     = item.title || item.name || '';
   const img       = posterUrl(item.poster_path, 'w185');
-  const type      = item.media_type === 'tv' ? 'TV' : 'Movie';
-  const chipColor = item.media_type === 'tv' ? colors.chipEpisode : colors.chipStreaming;
 
   return (
     <TouchableOpacity style={[styles.card, { width: CARD_W }]} activeOpacity={0.8}>
@@ -369,36 +397,99 @@ function PosterCardRanked({ item, rank, saved, onSave, isFav, onFavorite }: {
           ? <Image source={{ uri: img }} style={StyleSheet.absoluteFill} resizeMode="cover" />
           : <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.surfaceSunken }]} />
         }
-        <View style={[styles.chip, { backgroundColor: chipColor }]}>
-          <Text style={styles.chipText}>{type}</Text>
-        </View>
-        {/* Rank number — top right, no circle */}
+        {/* Rank number — bottom left, no circle (matches web) */}
         <Text style={styles.rankBadgeText}>{rank}</Text>
-        {/* Heart — favourite (bottom left) */}
+        {/* Heart — favourite (top left, in the former type-chip slot) */}
         <TouchableOpacity
-          style={[styles.saveBtn, styles.saveBtnLeft]}
+          style={[styles.cardActionBtn, styles.cardActionBtnLeft]}
           onPress={onFavorite}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           accessibilityLabel={isFav ? `Remove ${fw.nounLower}` : `Add ${fw.nounLower}`}
           accessibilityRole="button"
         >
-          <Text style={{ color: isFav ? colors.accent : '#fff', fontSize: 13 }}>
-            {isFav ? '♥' : '♡'}
-          </Text>
+          <HeartIcon color={isFav ? colors.accent : '#fff'} filled={isFav} />
         </TouchableOpacity>
-        {/* Bookmark — watchlist (bottom right) */}
+        {/* Bookmark — watchlist (top right) */}
         <TouchableOpacity
-          style={styles.saveBtn}
+          style={styles.cardActionBtn}
           onPress={onSave}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityLabel={saved ? 'Remove from watchlist' : 'Add to watchlist'}
+          accessibilityLabel={saved ? MEDIA.removeFromWatchlist : MEDIA.saveToWatchlist}
           accessibilityRole="button"
         >
-          <BookmarkIcon size={13} color={saved ? colors.accent : '#fff'} filled={saved} />
+          <BookmarkIcon size={15} strokeWidth={2.5} filled={saved} />
         </TouchableOpacity>
       </View>
       <Text style={styles.cardTitle} numberOfLines={2}>{title}</Text>
     </TouchableOpacity>
+  );
+}
+
+// ── New Releases tab content ──────────────────────────────────────────
+// Mounted only while the tab is active. useNewReleases fires ~21 TMDB
+// requests (Recently Released plus a movie and a TV call per genre rail),
+// so calling it from HomeScreen would spend that budget on every app open
+// and trip the proxy's rate limit for people who never open the tab.
+function NewReleasesContent({ hideKids, savedIds, onSave, isFav, onFavorite, openPanel }: {
+  hideKids: boolean;
+  savedIds: Set<number>;
+  onSave: (item: MediaItem) => void;
+  isFav: (id: number) => boolean;
+  onFavorite: (item: MediaItem) => void;
+  openPanel: (id: number, type: 'movie' | 'tv') => void;
+}) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { data, loading } = useNewReleases({ hideKids });
+
+  if (loading) return <PlotLoader backgroundColor={colors.bg} color={colors.textPrimary} />;
+
+  const rails: Array<{ key: string; kicker: string; title: string; items: MediaItem[] }> = [
+    ...(data.recent.length ? [{ key: 'recent', kicker: 'Last 30 days', title: 'Recently Released', items: data.recent }] : []),
+    ...data.genreRails
+      .filter((rail: { items: MediaItem[] }) => rail.items.length > 0)
+      // GENRE_RAILS labels are already "New in Horror" — the kicker carries
+      // the section name, so the title drops the prefix web repeats.
+      .map((rail: { key: string; label: string; items: MediaItem[] }) => ({
+        key: rail.key, kicker: 'New releases', title: rail.label, items: rail.items,
+      })),
+  ];
+
+  if (!rails.length) {
+    return (
+      <View style={styles.section}>
+        <Text style={styles.emptyTitle}>Nothing new</Text>
+        <Text style={styles.emptyBody}>Nothing has landed in the last 30 days. Check back soon.</Text>
+      </View>
+    );
+  }
+
+  return (
+    <>
+      {rails.map(rail => (
+        <View key={rail.key} style={styles.section}>
+          <SectionHeader kicker={rail.kicker} title={rail.title} />
+          <FlatList
+            horizontal
+            data={rail.items}
+            keyExtractor={item => `${item.media_type}-${item.id}`}
+            renderItem={({ item }) => (
+              <PosterCard
+                item={item}
+                onPress={() => item.id && openPanel(item.id, (item.media_type === 'tv' ? 'tv' : 'movie'))}
+                saved={savedIds.has(item.id ?? 0)}
+                onSave={() => onSave(item)}
+                isFav={isFav(item.id ?? 0)}
+                onFavorite={() => onFavorite(item)}
+              />
+            )}
+            showsHorizontalScrollIndicator={false}
+            nestedScrollEnabled
+            contentContainerStyle={{ paddingHorizontal: spacing.xl, gap: spacing.md }}
+          />
+        </View>
+      ))}
+    </>
   );
 }
 
@@ -409,24 +500,37 @@ export default function HomeScreen() {
   const { colors, resolved } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
-  const [userId,       setUserId]       = useState<string | null>(null);
-  const [listId,       setListId]       = useState<string | null>(null);
-  const [watchlist,    setWatchlist]    = useState<MediaItem[]>([]);
   const [trending,     setTrending]     = useState<MediaItem[]>([]);
   const [weekly,       setWeekly]       = useState<MediaItem[]>([]);
   const [bingedShows,  setBingedShows]  = useState<MediaItem[]>([]);
-  const [platforms,    setPlatforms]    = useState<PlatformData[]>([]);
-  const [forYou,       setForYou]       = useState<MediaItem[]>([]);
+  // For You: item-item collaborative filtering over the user's own
+  // watchlist/favourites/history, computed nightly in Postgres. The flag gates
+  // the RPC and the TMDB hydration inside the hook, not just the render, so
+  // flipping it off pulls the rail without touching the get_for_you pipeline.
+  const { items: forYou, error: forYouError } = useForYou(20, SHOW_FOR_YOU_RAIL);
+
+  // Official published charts from platform_charts — a fixed platform list,
+  // identical for everyone, rather than TMDB popularity filtered to whatever
+  // the user happens to subscribe to.
+  const platforms = usePlatformCharts();
+  const [tab,          setTab]          = useState('discover');
   const [loading,      setLoading]      = useState(true);
   const [error,        setError]        = useState(false);
   const [retryKey,     setRetryKey]     = useState(0);
-  const [forYouError,  setForYouError]  = useState(false);
-  const [platformsError, setPlatformsError] = useState(false);
+  // Lifted out of the bootstrap effect because the New Releases tab needs it
+  // too, and core's hooks take it as an argument rather than reading context.
+  const [hideKids,     setHideKids]     = useState(false);
 
-  const savedIds = new Set(watchlist.map(i => i.tmdb_id ?? i.id ?? 0));
-
-  // Favourites are a separate function from the watchlist bookmark.
-  const { favorites } = useAppData();
+  /* Home reads the same watchlist every other surface does. It used to keep
+     its own copy — its own list_items query, its own insert — so saving here
+     wrote a thinner row (no provider_ids, genre_ids, release_date or
+     streaming_date), skipped the Trakt outbox and the WATCHLIST_SAVED /
+     ACTIVATED analytics, and left the shared store stale until app restart:
+     save on Home, open the title's panel, and it still offered "Add to
+     Watchlist". */
+  const { favorites, watchlist } = useAppData();
+  const watchlistItems: MediaItem[] = watchlist.items;
+  const savedIds = new Set<number>(watchlistItems.map((i: MediaItem) => i.tmdb_id ?? i.id ?? 0));
   const toggleFav = useCallback((item: MediaItem) => {
     const id = item.id ?? item.tmdb_id ?? 0;
     if (!id) return;
@@ -440,12 +544,11 @@ export default function HomeScreen() {
     const init = async () => {
       setError(false);
       setLoading(true);
-      let profile: { region?: string; streaming_providers?: StreamingProvider[]; include_kids_content?: boolean } | null = null;
+      let profile: { region?: string; streaming_providers?: StreamingProvider[]; include_kids_content?: boolean } | null;
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session?.user || cancelled) return;
         const uid = session.user.id;
-        setUserId(uid);
 
         const { data: profileData } = await supabase
           .from('profiles')
@@ -455,12 +558,14 @@ export default function HomeScreen() {
         profile = profileData;
         if (profile?.region) setTmdbRegion(profile.region);
         const hideKids = !(profile?.include_kids_content ?? true);
+        setHideKids(hideKids);
 
-        const [trendingDay, trendingWeek, trendingTV, listData] = await Promise.all([
+        // The watchlist is no longer fetched here — useWatchlist (via
+        // useAppData) owns loading it, for every surface at once.
+        const [trendingDay, trendingWeek, trendingTV] = await Promise.all([
           tmdb.getTrending('all', 'day'),
           tmdb.getTrending('all', 'week'),
           tmdb.getTrending('tv',  'day'),
-          supabase.from('lists').select('id').eq('user_id', uid).eq('name', 'My List').maybeSingle(),
         ]);
 
         if (cancelled) return;
@@ -468,16 +573,6 @@ export default function HomeScreen() {
         if (trendingDay?.results)  setTrending(excludeKidsContent(prioritiseEnglishSpeakingTitles(trendingDay.results), hideKids).slice(0, 20));
         if (trendingWeek?.results) setWeekly(excludeKidsContent(trendingWeek.results, hideKids).slice(0, 20));
         if (trendingTV?.results)   setBingedShows(excludeKidsContent(prioritiseEnglishSpeakingTitles(trendingTV.results), hideKids).slice(0, 10).map((s: MediaItem) => ({ ...s, media_type: 'tv' })));
-
-        const lid = listData.data?.id;
-        if (lid) {
-          setListId(lid);
-          const { data: items } = await supabase
-            .from('list_items')
-            .select('tmdb_id, media_type, title, poster_path')
-            .eq('list_id', lid);
-          if (!cancelled && items) setWatchlist(items);
-        }
       } catch (e) {
         if (cancelled) return;
         console.warn('[home] bootstrap failed', e);
@@ -488,58 +583,6 @@ export default function HomeScreen() {
 
       setLoading(false);
 
-      // For You: item-item collaborative filtering over the user's own
-      // watchlist/favourites/history, computed nightly in Postgres (see
-      // supabase/migrations/20260726020000_for_you_recommendations.sql).
-      // Non-blocking — hydrate rows with TMDB after the rest of the screen loads.
-      setForYouError(false);
-      (async () => {
-        try {
-          const { data: rows, error: rpcError } = await supabase.rpc('get_for_you', { p_limit: 20 });
-          if (cancelled) return;
-          if (rpcError) { setForYouError(true); return; }
-          if (!rows?.length) return;
-          const hydrated = await Promise.all(
-            rows.map(async (row: { tmdb_id: number; media_type: 'movie' | 'tv' }) => {
-              const details = await tmdb.getBasicDetails(row.media_type, row.tmdb_id).catch(() => null);
-              if (!details?.id) return null;
-              return { ...details, media_type: row.media_type } as MediaItem;
-            })
-          );
-          if (!cancelled) setForYou(hydrated.filter((item): item is MediaItem => item !== null));
-        } catch (e) {
-          console.warn('[home] for-you load failed', e);
-          if (!cancelled) setForYouError(true);
-        }
-      })();
-
-      // Load platform content in background (non-blocking)
-      const providers: StreamingProvider[] = profile?.streaming_providers ?? [];
-      if (providers.length > 0 && !cancelled) {
-        setPlatformsError(false);
-        try {
-          const region = getTmdbRegion();
-          const results = await Promise.all(
-            providers.map(async (p) => {
-              const [moviesRes, tvRes] = await Promise.all([
-                tmdb.discoverByProviders('movie', [p.id], region),
-                tmdb.discoverByProviders('tv',    [p.id], region),
-              ]);
-              return {
-                ...p,
-                movies: prioritiseEnglishSpeakingTitles(moviesRes?.results ?? []).slice(0, 10),
-                tv:     prioritiseEnglishSpeakingTitles(tvRes?.results ?? []).slice(0, 10),
-              } as PlatformData;
-            })
-          );
-          if (!cancelled) {
-            setPlatforms(results.filter(p => p.movies.length > 0 || p.tv.length > 0));
-          }
-        } catch (e) {
-          console.warn('[home] platform load failed', e);
-          if (!cancelled) setPlatformsError(true);
-        }
-      }
     };
 
     init();
@@ -547,56 +590,49 @@ export default function HomeScreen() {
   }, [retryKey]);
 
   // ── Watchlist toggle ─────────────────────────────────────────────
-  const handleSave = useCallback(async (item: MediaItem) => {
-    if (!userId) return;
-    const tmdbId = item.id ?? 0;
-    if (!tmdbId) return;
-    const isSaved = savedIds.has(tmdbId);
-
-    // Accounts onboarded before My List was guaranteed at signup may still
-    // be missing it — create it lazily so Save works immediately instead
-    // of silently no-oping.
-    let currentListId = listId;
-    if (!currentListId) {
-      const { data: created } = await supabase.from('lists')
-        .upsert({ user_id: userId, name: 'My List', is_public: false }, { onConflict: 'user_id,name' })
-        .select('id').single();
-      currentListId = created?.id ?? null;
-      if (!currentListId) return;
-      setListId(currentListId);
-    }
-
-    if (isSaved) {
-      await supabase
-        .from('list_items')
-        .delete()
-        .eq('list_id', currentListId)
-        .eq('tmdb_id', tmdbId)
-        .eq('user_id', userId);
-      setWatchlist(prev => prev.filter(i => (i.tmdb_id ?? i.id) !== tmdbId));
-    } else {
-      const row = {
-        list_id:    currentListId,
-        user_id:    userId,
-        tmdb_id:    tmdbId,
-        media_type: item.media_type ?? 'movie',
-        title:      item.title || item.name || '',
-        poster_path: item.poster_path ?? null,
-      };
-      const { data } = await supabase.from('list_items').insert(row).select().single();
-      if (data) setWatchlist(prev => [data, ...prev]);
-    }
-  }, [listId, userId, savedIds]);
+  // core's toggle owns the lazy My List creation, the enriched row, the Trakt
+  // outbox and the analytics seam. See the note on `watchlist` above.
+  const handleSave = useCallback(
+    (item: MediaItem) => watchlist.toggle({ ...item, id: item.id ?? item.tmdb_id }),
+    [watchlist],
+  );
 
   if (loading) return <PlotLoader backgroundColor={colors.bg} color={colors.textPrimary} />;
   if (error) return <ErrorState onRetry={() => setRetryKey(k => k + 1)} />;
 
-  const HEADER_H = insets.top + 56;
+  // Sub-tabs nested under Home, ids and order from the shared nav list.
+  // Upcoming is still absent: web builds it from guide_channels inside
+  // GuideView rather than from one of the hoisted hooks, so it needs its own
+  // extraction first, and an empty tab is worse than an absent one.
+  const MOBILE_READY = new Set(['discover', 'new', 'guide']);
+  const subTabs = DISCOVER_TABS.filter((t: { id: string }) => MOBILE_READY.has(t.id));
+
+  const HEADER_H = insets.top + 100;
   const hero     = trending[0];
   const hotRail  = trending.slice(1, 10);
 
   return (
     <View style={styles.screen}>
+      {tab === 'guide' ? (
+        <View style={{ flex: 1, paddingTop: HEADER_H }}>
+          <GuideView />
+        </View>
+      ) : tab === 'new' ? (
+        <ScrollView
+          style={styles.screen}
+          contentContainerStyle={{ paddingTop: HEADER_H + 20, paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }}
+          showsVerticalScrollIndicator={false}
+        >
+          <NewReleasesContent
+            hideKids={hideKids}
+            savedIds={savedIds}
+            onSave={handleSave}
+            isFav={(id) => favorites.isFavorite(id)}
+            onFavorite={toggleFav}
+            openPanel={openPanel}
+          />
+        </ScrollView>
+      ) : (
       <ScrollView
         style={styles.screen}
         contentContainerStyle={{ paddingTop: HEADER_H + 20, paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }}
@@ -710,16 +746,13 @@ export default function HomeScreen() {
         {/* ── Releases: recent + upcoming, below the chart ── */}
         <HomeReleases rails={['recent', 'comingSoon']} />
 
-        {/* ── Top 10 On Your Platforms ── */}
-        {platformsError && platforms.length === 0 && (
-          <View style={styles.section}>
-            <SectionHeader kicker="Your Streaming Services" title="Top 10 On Your Platforms" />
-            <Text style={styles.emptyBody}>Couldn't load your platforms right now.</Text>
-          </View>
-        )}
+        {/* ── Top 10 by Platform ──
+            The platforms' real published charts, not TMDB popularity within
+            the user's own subscriptions: a fixed set, the same for everyone,
+            so it needs the attribution line web carries. */}
         {platforms.length > 0 && (
           <View style={styles.section}>
-            <SectionHeader kicker="Your Streaming Services" title="Top 10 On Your Platforms" />
+            <SectionHeader kicker="Official charts" title="Top 10 by Platform" />
             {platforms.map(platform => (
               <PlatformSection
                 key={platform.id}
@@ -730,16 +763,19 @@ export default function HomeScreen() {
                 onFavorite={toggleFav}
               />
             ))}
+            <Text style={styles.platAttribution}>
+              Official Top 10 · Netflix and the Streaming Availability API.
+            </Text>
           </View>
         )}
 
         {/* ── Watchlist rail ── */}
-        {watchlist.length > 0 && (
+        {watchlistItems.length > 0 && (
           <View style={styles.section}>
             <SectionHeader kicker="Your list" title="Saved to watch" />
             <FlatList
               horizontal
-              data={watchlist}
+              data={watchlistItems}
               keyExtractor={item => String(item.tmdb_id ?? item.id)}
               renderItem={({ item }) => (
                 <PosterCard
@@ -758,7 +794,7 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {watchlist.length === 0 && !loading && (
+        {watchlistItems.length === 0 && !loading && (
           <View style={styles.emptyWatchlist}>
             <Text style={styles.emptyTitle}>Your list is empty</Text>
             <Text style={styles.emptyBody}>Tap the bookmark on any title above to save it here.</Text>
@@ -766,6 +802,7 @@ export default function HomeScreen() {
         )}
 
       </ScrollView>
+      )}
 
       {/* ── Fixed blurred header ── */}
       <BlurView
@@ -780,6 +817,16 @@ export default function HomeScreen() {
             </Text>
           }
         />
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.subTabsRow}
+          style={styles.subTabsScroll}
+        >
+          {subTabs.map((t: { id: string; label: string }) => (
+            <SubTab key={t.id} label={t.label} active={tab === t.id} onPress={() => setTab(t.id)} />
+          ))}
+        </ScrollView>
       </BlurView>
 
     </View>
@@ -791,6 +838,14 @@ const HERO_H = SCREEN_W * 0.5;
 
 const makeStyles = (colors: Palette) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
+  subTabsScroll: { maxHeight: 44 },
+  subTabsRow: { paddingHorizontal: spacing.xl, gap: spacing.lg, alignItems: 'flex-end' },
+  subTab: { alignItems: 'center', paddingBottom: spacing.xs },
+  subTabText: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted },
+  subTabTextActive: { fontFamily: fontFamily.sansMedium, color: colors.textPrimary },
+  subTabUnderline: { height: 2, width: '100%', marginTop: spacing.xs, backgroundColor: 'transparent' },
+  subTabUnderlineActive: { backgroundColor: colors.accent },
+
   fixedHeader: {
     position: 'absolute',
     top: 0,
@@ -889,33 +944,25 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     backgroundColor: colors.surfaceSunken,
     marginBottom: spacing.sm,
   },
-  chip: {
+  // Naked corner icons over the poster — same treatment as the web card
+  // buttons (no pill, no circle; a drop shadow keeps them legible on light
+  // artwork).
+  cardActionBtn: {
     position: 'absolute',
-    top: 6,
-    left: 6,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: radii.badge,
-  },
-  chipText: {
-    fontFamily: fontFamily.sansBold,
-    fontSize: 9,
-    color: '#fff',
-  },
-  saveBtn: {
-    position: 'absolute',
-    bottom: 6,
-    right: 6,
-    width: iconButtonSize.md,
-    height: iconButtonSize.md,
-    borderRadius: iconButtonSize.md / 2,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    top: 3,
+    right: 3,
+    width: iconButtonSize.lg,
+    height: iconButtonSize.lg,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.65,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 1 },
   },
-  saveBtnLeft: {
+  cardActionBtnLeft: {
     right: undefined,
-    left: 6,
+    left: 3,
   },
   cardTitle: {
     fontFamily: fontFamily.sans,
@@ -1011,8 +1058,8 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   // ── Rank number on poster card ──
   rankBadgeText: {
     position: 'absolute',
-    top: 10,
-    right: 12,
+    bottom: 4,
+    left: 10,
     fontFamily: fontFamily.serif,
     fontSize: 28,
     color: '#fff',
@@ -1078,6 +1125,14 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     color: colors.textMuted,
     paddingHorizontal: spacing.xl,
     marginBottom: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  platAttribution: {
+    fontFamily: fontFamily.sans,
+    fontSize: 11,
+    lineHeight: 15,
+    color: colors.textMuted,
+    paddingHorizontal: spacing.xl,
     marginTop: spacing.sm,
   },
 

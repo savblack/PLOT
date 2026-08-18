@@ -17,14 +17,37 @@ export async function moveSavedShowToWatching({
   return { ok: true };
 }
 
+/* The transition a title makes when it becomes "watched".
+ *
+ * Callers pass the title's current state, not the decisions taken from it.
+ * They used to pass the decisions, and every caller re-derived the same
+ * predicates from the same three facts — so they drifted: useFavorites
+ * omitted the media-type guard web applies, and mobile's search row skipped
+ * this module entirely and cleared nothing at all.
+ *
+ * The rule: finishing something takes it off every other list. Watching state
+ * clears (TV only — movie and TV tmdb ids can collide, so "currently
+ * watching" is only meaningful for TV), and the watchlist entry goes.
+ */
+export function resolveWatchedTransition({ mediaType, isWatching, inList }) {
+  return {
+    shouldClearWatching:   mediaType === 'tv' && !!isWatching,
+    shouldRemoveFromSaved: !!inList,
+  };
+}
+
 export async function markMediaAsWatched({
   logWatched,
   clearWatching,
   removeFromSaved,
   rollbackHistory,
-  shouldClearWatching,
-  shouldRemoveFromSaved,
+  mediaType,
+  isWatching,
+  inList,
 }) {
+  const { shouldClearWatching, shouldRemoveFromSaved } =
+    resolveWatchedTransition({ mediaType, isWatching, inList });
+
   const logged = await logWatched();
   if (!logged) {
     return { ok: false, error: 'Could not update watch status. Please try again.' };

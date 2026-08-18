@@ -110,6 +110,27 @@ const sleep = (ms) => new Promise(res => setTimeout(res, ms));
  *   ok=false + retryable=false → terminal (e.g. 404 not found, bad id, misconfig).
  */
 let warnedMisconfiguredProxy = false;
+let warnedProxyAuth = false;
+
+/**
+ * The Supabase project a JWT-format anon key belongs to, from its `ref` claim.
+ * Payload only — no verification, and nothing secret: the claims of an anon key
+ * are public by design. Returns null for a non-JWT key or an unreadable one.
+ */
+function projectRefFromAnonKey(key) {
+  try {
+    const payload = String(key).split('.')[1];
+    if (!payload) return null;
+    const padded = payload.replace(/-/g, '+').replace(/_/g, '/')
+      .padEnd(payload.length + ((4 - (payload.length % 4)) % 4), '=');
+    // atob is present in all three runtimes core targets — browsers, Hermes,
+    // and Node 16+ — so there is no need for a Buffer fallback (which would
+    // not exist in the browser anyway).
+    return JSON.parse(atob(padded)).ref ?? null;
+  } catch {
+    return null;
+  }
+}
 
 const fetchFromTMDBResolved = async (endpoint, params = {}, { retryDelays = RETRY_DELAYS } = {}) => {
   const { tmdbProxyUrl: PROXY_URL, supabaseAnonKey: SUPABASE_ANON_KEY } = getConfig();
@@ -154,6 +175,24 @@ const fetchFromTMDBResolved = async (endpoint, params = {}, { retryDelays = RETR
         if (retryable && attempt < retryDelays.length) {
           await sleep(retryDelays[attempt]);
           continue;
+        }
+        // A 401 here is always configuration, never data, and Supabase's own
+        // error code for it (`UNAUTHORIZED_LEGACY_JWT`, "Invalid JWT") reads
+        // like an expired key — which sends you hunting for a key to rotate.
+        // The real cause is that the anon key and the proxy's upstream belong
+        // to DIFFERENT Supabase projects, which is exactly what happens when
+        // local dev is repointed at Staging while tmdbProxyUrl still points at
+        // the production Worker. Name the project so it is obvious which.
+        if (response.status === 401 && !warnedProxyAuth) {
+          warnedProxyAuth = true;
+          const ref = projectRefFromAnonKey(SUPABASE_ANON_KEY);
+          console.error(
+            `TMDB Proxy Unauthorized: the proxy at ${PROXY_URL} rejected this app's Supabase ` +
+            `anon key${ref ? ` (project "${ref}")` : ''}. The key is almost certainly valid but ` +
+            'for a different project than the one the proxy forwards to — check that ' +
+            'tmdbProxyUrl matches the same Supabase project as supabaseUrl. ' +
+            'See apps/web/workers/tmdb-proxy/wrangler.toml for the staging Worker.'
+          );
         }
         console.error(`TMDB Proxy Error: ${response.status} ${endpoint}`);
         return { ok: false, data: null, status: response.status, retryable };
@@ -269,13 +308,20 @@ export const tmdb = {
     const today = localDateStr();
     const sixMonths = new Date(); sixMonths.setMonth(sixMonths.getMonth() + 6);
     const end = dateToLocalStr(sixMonths);
+    // Anniversary re-releases and 4K restorations are recorded as future release
+    // dates against decades-old films, so a plain release-date window drags
+    // titles like The Prestige into "upcoming". Bounding the *primary* release
+    // date keeps them out while still allowing a film that opened elsewhere
+    // recently and reaches this region later.
+    const twelveMonthsAgo = new Date(); twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
+    const earliestPrimary = dateToLocalStr(twelveMonthsAgo);
     const providerParams = providerIds.length
       ? { watch_region: userRegion, with_watch_providers: providerIds.join('|'), with_watch_monetization_types: monetizationTypes }
       : {};
     // `region` makes TMDB filter/sort by the release date for that market
     // (theatrical dates vary by country) instead of always the primary
     // (usually US) release date.
-    const baseParams = { 'release_date.gte': today, 'release_date.lte': end, sort_by: 'popularity.desc', region: userRegion, ...providerParams };
+    const baseParams = { 'release_date.gte': today, 'release_date.lte': end, 'primary_release_date.gte': earliestPrimary, sort_by: 'popularity.desc', region: userRegion, ...providerParams };
     const [theatricalPages, streamingPages] = await Promise.all([
       Promise.all([1, 2, 3, 4, 5].map(page =>
         fetchFromTMDB('/discover/movie', { ...baseParams, 'with_release_type': '2|3', page })
@@ -587,15 +633,6 @@ export const tmdb = {
   },
 
   getTopRated: (type) => fetchFromTMDB(`/${type}/top_rated`),
-
-  discoverByGenres: (type, genreIds) => {
-    if (!genreIds?.length) return Promise.resolve(null);
-    return fetchFromTMDB(`/discover/${type}`, {
-      with_genres: genreIds.join('|'),
-      sort_by: 'popularity.desc',
-      'vote_count.gte': 100,
-    });
-  },
 
   /* ── Combined genre list (movie + TV, deduplicated) ── */
   getGenres: async () => {

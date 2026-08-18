@@ -12,7 +12,6 @@
 // for anyone who hasn't picked one.
 let userTimezone = null;
 export const setUserTimezone = (tz) => { userTimezone = tz || null; };
-export const getUserTimezone = () => userTimezone;
 
 function partsInTimezone(date, timezone) {
   try {

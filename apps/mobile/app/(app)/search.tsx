@@ -16,6 +16,9 @@ import { useAppData } from '../../contexts/AppDataContext';
 import { favoriteWords } from '../../lib/spelling';
 import { UserRow, SocialUser } from '../../components/UserList';
 import { classifySearchResults } from '@plot/core/search.js';
+import { markMediaAsWatched } from '@plot/core/mediaStatus.js';
+import { track, EVENTS } from '../../lib/analytics';
+import { MEDIA } from '@plot/core/copy/media.js';
 
 type Mode = 'titles' | 'people';
 
@@ -33,6 +36,12 @@ type MediaHooks = {
   watchlist: any;
   favorites: any;
   history:   any;
+  // Only the two members the watched toggle needs, typed rather than `any`
+  // so this doesn't add to the no-explicit-any backlog.
+  watching:  {
+    isWatching:   (tmdbId: number) => boolean;
+    stopWatching: (tmdbId: number) => Promise<unknown>;
+  };
 };
 
 function BookmarkIcon({ size = 15, color = '#fff', filled = false }: { size?: number; color?: string; filled?: boolean }) {
@@ -69,8 +78,8 @@ export default function SearchScreen() {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { userId, watchlist, favorites, history } = useAppData();
-  const hooks: MediaHooks = { watchlist, favorites, history };
+  const { userId, watchlist, favorites, history, watching } = useAppData();
+  const hooks: MediaHooks = { watchlist, favorites, history, watching };
   const [mode,    setMode]    = useState<Mode>('titles');
   const [query,   setQuery]   = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -97,6 +106,9 @@ export default function SearchScreen() {
       const { filtered, emptyMode: nextEmptyMode } = classifySearchResults(data?.results ?? []);
       setResults(filtered.slice(0, 20) as SearchResult[]);
       setEmptyMode(nextEmptyMode);
+      // Query text is deliberately not captured — only that a search ran and
+      // whether it found anything, which is what the funnel needs.
+      track(EVENTS.SEARCH_PERFORMED, { mode: 'titles', result_count: filtered.length });
     }
     setLoading(false);
   };
@@ -219,7 +231,7 @@ function SearchRow({ item, hooks, signedIn }: { item: SearchResult; hooks: Media
   const { open: openPanel } = useMediaPanel();
   const { profile } = useAppData();
   const fw = favoriteWords(profile?.region);
-  const { watchlist, favorites, history } = hooks;
+  const { watchlist, favorites, history, watching } = hooks;
 
   const title = item.title || item.name || '';
   const year  = (item.release_date || item.first_air_date || '').slice(0, 4);
@@ -230,7 +242,7 @@ function SearchRow({ item, hooks, signedIn }: { item: SearchResult; hooks: Media
 
   const inList  = watchlist.isInList(item.id);
   const isFav   = favorites.isFavorite(item.id);
-  const watched = history.isWatched(item.id);
+  const watched = history.isWatched(item.id, mediaType);
   const comingSoon = !!releaseDate && releaseDate > todayStr();
 
   // Shape passed to the shared hooks — same as web ResultRow.
@@ -277,7 +289,7 @@ function SearchRow({ item, hooks, signedIn }: { item: SearchResult; hooks: Media
             style={[styles.actionBtn, inList && styles.actionBtnActive]}
             onPress={() => watchlist.toggle(payload)}
             hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-            accessibilityLabel={inList ? 'Remove from watchlist' : 'Add to watchlist'}
+            accessibilityLabel={inList ? MEDIA.removeFromWatchlist : MEDIA.saveToWatchlist}
           >
             <BookmarkIcon size={15} color={inList ? colors.accent : colors.textMuted} filled={inList} />
           </TouchableOpacity>
@@ -291,9 +303,22 @@ function SearchRow({ item, hooks, signedIn }: { item: SearchResult; hooks: Media
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.actionBtn, watched && styles.actionBtnActive]}
-            onPress={() => watched ? history.removeEntry(item.id) : history.logWatched(payload, { logRewatches: profile?.log_rewatches ?? true })}
+            onPress={() => watched
+              ? history.removeEntry(item.id, mediaType)
+              /* Straight to logWatched left the title in Saved and in
+                 Watching. Marking watched here makes the same transition it
+                 does anywhere else. */
+              : markMediaAsWatched({
+                  logWatched:      () => history.logWatched(payload),
+                  clearWatching:   () => watching.stopWatching(item.id),
+                  removeFromSaved: () => watchlist.removeFromList(item.id),
+                  rollbackHistory: () => history.removeEntry(item.id, mediaType),
+                  mediaType,
+                  isWatching: watching.isWatching(item.id),
+                  inList,
+                })}
             hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-            accessibilityLabel={watched ? 'Mark unwatched' : 'Mark watched'}
+            accessibilityLabel={watched ? MEDIA.markUnwatched : MEDIA.markWatched}
           >
             <CheckIcon size={15} color={watched ? colors.chipStreaming : colors.textMuted} />
           </TouchableOpacity>

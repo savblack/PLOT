@@ -2,10 +2,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from './supabase.js';
 import { tmdb, getTmdbRegion } from './tmdb.js';
 import { providerIdsForRegion, tmdbIdFromItem } from './media.js';
-import { deleteListItem, saveListItem } from './userMedia.js';
+import { deleteListItem, saveListItem, getOrCreateMyListId } from './userMedia.js';
 import { getConfig } from './config.js';
-
-const LIST_NAME = 'My List';
 
 /** Fire-and-forget: enqueue a watchlist change to the Trakt outbox. */
 function enqueueTraktAction(userId, integrationId, action, payload) {
@@ -63,52 +61,26 @@ export function useWatchlist(userId) {
     setLoading(true);
 
     try {
-      // ── 1. Find existing "My List"
-      const { data: existing, error: selErr } = await supabase
-        .from('lists')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('name', LIST_NAME)
-        .maybeSingle();
+      // ── 1. Resolve "My List", creating it if missing.
+      // The read/create/23505-recovery sequence lives in getOrCreateMyListId —
+      // this hook used to carry its own copy of it, so the same race had two
+      // implementations that could drift. See its tests for the race itself.
+      const resolvedListId = await getOrCreateMyListId({ userId });
 
-      if (selErr) {
-        console.error('[useWatchlist] SELECT lists failed:', selErr);
-        setListError(selErr.message);
-        return;
-      }
-
-      let listData = existing;
-
-      // ── 2. Create it if missing
-      if (!listData) {
-        const { data: created, error: insErr } = await supabase
-          .from('lists')
-          .insert({ user_id: userId, name: LIST_NAME, is_public: false })
-          .select('id')
-          .single();
-
-        if (insErr) {
-          console.error('[useWatchlist] INSERT lists failed:', insErr);
-          setListError(insErr.message);
-          return;
-        }
-        listData = created;
-      }
-
-      if (!listData?.id) {
-        const msg = 'Could not get or create list (no id returned)';
+      if (!resolvedListId) {
+        const msg = 'Could not get or create list';
         console.error('[useWatchlist]', msg);
         setListError(msg);
         return;
       }
 
-      setListId(listData.id);
+      setListId(resolvedListId);
 
-      // ── 3. Load items
+      // ── 2. Load items
       const { data: listItems, error: itemsErr } = await supabase
         .from('list_items')
         .select('*')
-        .eq('list_id', listData.id)
+        .eq('list_id', resolvedListId)
         .order('created_at', { ascending: false });
 
       if (itemsErr) {

@@ -1,6 +1,10 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { isSafePlexConnectionUrl } from '../_shared/plexConnectionPolicy.js'
+import { HISTORY_CONFLICT_TARGET, dedupeHistoryRows } from '../_shared/historyConflict.ts'
+import { selectTmdbMatch, tmdbIdFromGuids, yearFrom } from '../_shared/tmdbMatch.js'
+import { parsePlexItems, parsePlexResources } from '../_shared/plexXml.js'
+import { serviceKey } from '../_shared/serviceKey.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -149,62 +153,10 @@ function cleanMediaType(value: unknown) {
   return null
 }
 
-function xmlAttrs(tag: string) {
-  const attrs: Record<string, string> = {}
-  const attrPattern = /([A-Za-z_:][\w:.-]*)="([^"]*)"/g
-  let match
-  while ((match = attrPattern.exec(tag))) {
-    attrs[match[1]] = match[2]
-      .replaceAll('&quot;', '"')
-      .replaceAll('&amp;', '&')
-      .replaceAll('&lt;', '<')
-      .replaceAll('&gt;', '>')
-  }
-  return attrs
-}
-
-function parsePlexItems(xml: string) {
-  const tags = xml.match(/<(Video|Directory)\s+[^>]*>/g) || []
-  return tags.map(xmlAttrs).filter(item => item.title || item.grandparentTitle)
-}
-
-function parsePlexResources(xml: string) {
-  const resources: Array<Record<string, unknown>> = []
-  const resourcePattern = /<Device\s+([^>]*?)>([\s\S]*?)<\/Device>/g
-  let resourceMatch
-  while ((resourceMatch = resourcePattern.exec(xml))) {
-    const attrs = xmlAttrs(`<Device ${resourceMatch[1]}>`)
-    const connections = (resourceMatch[2].match(/<Connection\s+[^>]*>/g) || []).map(xmlAttrs)
-    resources.push({ ...attrs, connections })
-  }
-  return resources
-}
-
-function yearFrom(value: unknown) {
-  const match = String(value || '').match(/\d{4}/)
-  return match ? Number(match[0]) : null
-}
-
 function mediaTypeFromPlex(type?: string) {
   if (type === 'movie') return 'movie'
   if (type === 'show' || type === 'episode' || type === 'season') return 'tv'
   return null
-}
-
-function selectTmdbMatch(results: Array<Record<string, unknown>>, entry: Record<string, unknown>) {
-  const mediaType = cleanMediaType(entry.media_type ?? entry.type)
-  const wantedYear = yearFrom(entry.year ?? entry.release_date ?? entry.first_air_date)
-  const candidates = results.filter(result => {
-    if (mediaType && result.media_type !== mediaType) return false
-    return result.media_type === 'movie' || result.media_type === 'tv'
-  })
-
-  if (wantedYear) {
-    const exactYear = candidates.find(result => yearFrom(result.release_date ?? result.first_air_date) === wantedYear)
-    if (exactYear) return exactYear
-  }
-
-  return candidates[0] || null
 }
 
 async function searchTmdb(entry: Record<string, unknown>) {
@@ -221,11 +173,34 @@ async function searchTmdb(entry: Record<string, unknown>) {
   return selectTmdbMatch(data.results || [], entry)
 }
 
-async function normalizePlexItem(source: string, raw: Record<string, string>) {
+// Straight lookup for an entry whose TMDB id Plex already told us. Costs the
+// same single request as the search it replaces, and cannot resolve to the
+// wrong title.
+async function fetchTmdbById(tmdbId: number, mediaType: string) {
+  const key = Deno.env.get('TMDB_API_KEY')
+  if (!key) return null
+  const url = new URL(`https://api.themoviedb.org/3/${mediaType}/${tmdbId}`)
+  url.searchParams.set('api_key', key)
+  url.searchParams.set('language', 'en-US')
+  const res = await fetch(url)
+  if (!res.ok) return null
+  const data = await res.json()
+  return { ...data, media_type: mediaType }
+}
+
+async function normalizePlexItem(source: string, raw: Record<string, string> & { guids?: string[] }) {
   const mediaType = mediaTypeFromPlex(raw.type)
   const title = raw.type === 'episode' ? raw.grandparentTitle : raw.title
   const year = yearFrom(raw.year || raw.originallyAvailableAt)
-  const tmdbMatch = await searchTmdb({ title, media_type: mediaType, year })
+
+  // Prefer the id Plex carries over anything inferred from the name. Falls back
+  // to a strict search match, which returns nothing rather than guessing when
+  // the title is ambiguous — those come back 'needs_review' and are not written
+  // to the watchlist or history.
+  const guidTmdbId = tmdbIdFromGuids(raw.guids)
+  const tmdbMatch = guidTmdbId && mediaType
+    ? await fetchTmdbById(guidTmdbId, mediaType)
+    : await searchTmdb({ title, media_type: mediaType, year })
 
   return {
     source,
@@ -349,14 +324,18 @@ async function upsertSnapshot(
       watched_at: cleanDate(item.watched_at) || new Date().toISOString().slice(0, 10),
     }))
 
-  if (historyRows.length > 0) {
+  // Plex reports a title once per play, so one sync can carry the same title
+  // and date several times over; collapse those before the upsert sees them.
+  const uniqueHistoryRows = dedupeHistoryRows(historyRows)
+
+  if (uniqueHistoryRows.length > 0) {
     const { error } = await supabaseAdmin
       .from('history')
-      .upsert(historyRows, { onConflict: 'user_id,tmdb_id' })
+      .upsert(uniqueHistoryRows, { onConflict: HISTORY_CONFLICT_TARGET })
     if (error) throw error
   }
 
-  return { watchlistCount: rows.length, watchedCount: historyRows.length }
+  return { watchlistCount: rows.length, watchedCount: uniqueHistoryRows.length }
 }
 
 async function fetchPlexWatchlist(token: string) {
@@ -665,7 +644,7 @@ serve(async (req) => {
 
   const supabaseAdmin = createClient(
     Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+    serviceKey(),
   )
 
   try {

@@ -87,8 +87,37 @@ jobs:
       - name: Check auth email templates are in sync
         run: npm run emails:check
 
+      # Catches a migration recreating a function with a different ON CONFLICT
+      # target, which is how every write to `history` broke for two weeks in
+      # July 2026. Static — reads supabase/migrations only, no credentials.
+      - name: Check migrations don't silently change an upsert key
+        run: npm run migrations:check
+
+      # The shared copy catalog only prevents web↔mobile drift if both apps read
+      # from it. A literal that matches today diverges the first time either side
+      # is reworded, so hardcoding a string the catalog owns fails the build.
+      - name: Check no app hardcodes shared copy
+        run: npm run copy:check
+
+      # An app importing a @plot/core module that no longer exists. tsc catches
+      # this in CI but NOT from a git worktree: worktrees live inside the main
+      # checkout, so a failed lookup walks up into the parent's node_modules and
+      # resolves against a different tree. That blind spot is how #446 deleted
+      # core/onboarding.js with a live importer and shipped an unbuildable main.
+      - name: Check every @plot/core import resolves
+        run: npm run core:check
+
       - name: Unit tests
         run: npm run test:unit
+
+      - name: Website unit tests
+        run: npm run test:website
+
+      # marketing/ isn't an npm workspace, so this suite otherwise never runs
+      # anywhere — it caught nothing when the Codex/Claude CLI shell-outs broke
+      # twice in production (d1caa11, 31f4d72) because it wasn't wired in yet.
+      - name: Marketing unit tests
+        run: npm run test:marketing
 
       - name: Build
         run: npm run build
@@ -149,6 +178,10 @@ jobs:
       # workspace package (packages/core). There is no copy to drift, so the old
       # mirror drift-guard is gone. This job just type-checks the Expo app, which
       # also proves it still resolves @plot/core.
+      #
+      # Mobile linting is NOT here — `eslint .` in the `check` job covers
+      # apps/mobile now that it is no longer in globalIgnores, so mobile gets
+      # linted on every PR rather than only when mobile files change.
       - name: Check out repository
         uses: actions/checkout@v7
 

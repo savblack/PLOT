@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
-import { supabase } from '../api/supabase.js';
-import { callAuthenticatedFunction } from '../api/functions.js';
+import { supabase } from '@plot/core/supabase.js';
+import { callAuthenticatedFunction } from '@plot/core/functions.js';
 import { friendlyPremiumError } from '@plot/core/premium.js';
 import { buildTraktAuthorizeUrl, createTraktState, redirectToExternal } from '../utils/redirects.js';
 import { getConfig } from '@plot/core/config.js';
@@ -36,7 +36,9 @@ export function useTraktSync(userId) {
       setError('Trakt client ID is not configured');
       return;
     }
-    track(EVENTS.TRAKT_CONNECTED, {});
+    // Only the intent — trakt_connected fires from TraktCallbackPage once the
+    // token exchange has actually landed.
+    track(EVENTS.TRAKT_CONNECT_STARTED, {});
     redirectToExternal(buildTraktAuthorizeUrl(clientId, createTraktState()));
   }, []);
 
@@ -64,6 +66,7 @@ export function useTraktSync(userId) {
     try {
       await callTraktSync('disconnect');
       setIntegration(prev => prev ? { ...prev, status: 'disabled' } : null);
+      track(EVENTS.INTEGRATION_DISCONNECTED, { provider: 'trakt' });
     } catch (e) {
       setError(friendlyPremiumError(e.message));
     }

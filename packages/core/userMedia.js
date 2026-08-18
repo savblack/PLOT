@@ -1,7 +1,8 @@
 import { supabase } from './supabase.js';
-import { baseMediaRow } from './media.js';
+import { baseMediaRow, mediaIdentityRow, genreIdsFromItem } from './media.js';
 import { localDateStr } from './date.js';
 import { normalizeRating } from './ratings.js';
+import { emit, HISTORY_CHANGED_EVENT } from './events.js';
 
 export async function saveListItem({ listId, userId, item, providerIds = [], streamingDate = null }) {
   const mediaRow = baseMediaRow(item);
@@ -11,7 +12,7 @@ export async function saveListItem({ listId, userId, item, providerIds = [], str
     list_id: listId,
     user_id: userId,
     ...mediaRow,
-    genre_ids: Array.isArray(item?.genre_ids) ? item.genre_ids : [],
+    genre_ids: genreIdsFromItem(item),
     provider_ids: providerIds,
     streaming_date: streamingDate,
   };
@@ -19,6 +20,21 @@ export async function saveListItem({ listId, userId, item, providerIds = [], str
   const { data, error } = await supabase
     .from('list_items')
     .insert(row)
+    .select()
+    .single();
+
+  return { data, error, row };
+}
+
+// Shared by useFavorites' toggleFavorite (the "add" branch) and onboarding's
+// bulk favourite-save, so both paths write the identical row shape.
+export async function saveFavorite({ userId, item }) {
+  const row = mediaIdentityRow(item);
+  if (!userId || !row) return { data: null, error: null, row: null };
+
+  const { data, error } = await supabase
+    .from('user_favourites')
+    .upsert({ user_id: userId, ...row }, { onConflict: 'user_id,tmdb_id' })
     .select()
     .single();
 
@@ -38,9 +54,86 @@ export async function deleteListItem({ listId, tmdbId, userId }) {
   return userId ? query.eq('user_id', userId) : query;
 }
 
+/* The default watchlist every account gets. useWatchlist's bootstrap resolves
+   it as part of loading items; this is the standalone path for callers that
+   need the id without the hook — currently the home screen's lazy create, for
+   accounts onboarded before My List was guaranteed at signup.
+
+   Reads before inserting rather than upserting: an upsert has to supply
+   is_public, so losing the race would quietly reset a list the user had made
+   public. lists carries a unique (user_id, name), so a genuine race surfaces
+   as 23505 and is recovered by re-reading the winner. */
+const DEFAULT_LIST_NAME = 'My List';
+
+export async function getOrCreateMyListId({ userId, logger = console }) {
+  if (!userId) return null;
+
+  const readList = async () => {
+    const { data, error } = await supabase
+      .from('lists')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('name', DEFAULT_LIST_NAME)
+      .maybeSingle();
+    return { listId: data?.id ?? null, error };
+  };
+
+  const existing = await readList();
+  if (existing.error) {
+    logger.warn('[userMedia] read My List failed:', existing.error);
+    return null;
+  }
+  if (existing.listId) return existing.listId;
+
+  const { data, error } = await supabase
+    .from('lists')
+    .insert({ user_id: userId, name: DEFAULT_LIST_NAME, is_public: false })
+    .select('id')
+    .single();
+
+  if (!error && data?.id) return data.id;
+
+  if (error?.code === '23505') {
+    const retry = await readList();
+    if (retry.error) {
+      logger.warn('[userMedia] retry read My List failed:', retry.error);
+      return null;
+    }
+    return retry.listId;
+  }
+
+  logger.warn('[userMedia] create My List failed:', error);
+  return null;
+}
+
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
-export async function logWatchedItem({ userId, item, rating, note, dnf, watchedAt = localDateStr(), logRewatches = true }) {
+/* The unique constraint every history upsert targets. Named once so the app
+   cannot drift from the database: it must stay in step with
+   history_user_id_tmdb_id_media_type_key (migration 20260806000001).
+   Naming a constraint that no longer exists does not fail loudly — PostgREST
+   returns 42P10 and the write simply never happens, which is how the import
+   spent two weeks silently writing nothing. media_type is part of the key
+   because TMDB numbers movies and TV separately: movie 262 and tv 262 are
+   unrelated titles. watched_at is not: history holds one row per title, so a
+   second watch updates that row rather than adding another. */
+export const HISTORY_CONFLICT_TARGET = 'user_id,tmdb_id,media_type';
+
+/** Targeted existence check — does NOT load the full history list. */
+export async function findHistoryEntry({ userId, tmdbId, mediaType }) {
+  if (!userId || !tmdbId) return null;
+  const { data } = await supabase
+    .from('history')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('tmdb_id', Number(tmdbId))
+    .eq('media_type', mediaType)
+    .limit(1)
+    .maybeSingle();
+  return data || null;
+}
+
+export async function logWatchedItem({ userId, item, rating, note, dnf, watchedAt = localDateStr() }) {
   const mediaRow = baseMediaRow(item);
   if (!userId || !mediaRow) return { data: null, error: null, row: null };
 
@@ -52,33 +145,51 @@ export async function logWatchedItem({ userId, item, rating, note, dnf, watchedA
   const row = {
     user_id: userId,
     ...mediaRow,
+    // Mirrors saveListItem. user_title_signals (the materialized view behind
+    // get_for_you's content-similarity tier) unions list_items and history and
+    // reads genre_ids from both — so leaving this off made every watched title
+    // contribute zero genre signal. Column is nullable here, unlike
+    // list_items', so default to [] rather than null to match that view's
+    // coalesce and keep the two arms shaped the same.
+    genre_ids: genreIdsFromItem(item),
     watched_at: safeWatchedAt,
     rating: normalizedRating || null,
     note: note ?? null,
     dnf: dnf ?? false,
   };
 
-  // logRewatches: a rewatch on a new date becomes its own history row (upsert
-  // on user_id,tmdb_id,media_type,watched_at — the same date still overwrites,
-  // so duplicate taps/re-imports don't create duplicate rows; media_type is
-  // required in the key because movie and TV TMDB ids are separate numbering
-  // sequences that can collide, e.g. movie 262 vs tv 262 are unrelated titles).
-  // With the preference off, collapse back to the old single-row-per-title
-  // behavior — there's no more DB-level unique(user_id,tmdb_id,media_type) to
-  // upsert against (it was relaxed so rewatches can coexist), so do it
-  // explicitly: clear any existing rows for this title first, then insert the
-  // one true row.
-  if (!logRewatches) {
-    await supabase.from('history').delete().eq('user_id', userId).eq('tmdb_id', row.tmdb_id).eq('media_type', row.media_type);
-    const { data, error } = await supabase.from('history').insert(row).select().single();
-    return { data, error, row };
-  }
-
+  // One row per title: watching something again updates the row already there,
+  // moving its date, so duplicate taps and re-imports don't pile up either.
   const { data, error } = await supabase
     .from('history')
-    .upsert(row, { onConflict: 'user_id,tmdb_id,media_type,watched_at' })
+    .upsert(row, { onConflict: HISTORY_CONFLICT_TARGET })
     .select()
     .single();
 
+  // Signalling belongs to the write, not to whoever called it. Every caller
+  // used to emit this itself and one of them (markEpisodeWatched) simply
+  // didn't, so ticking an episode left every mounted useHistory stale.
+  if (data && !error) emit(HISTORY_CHANGED_EVENT);
+
   return { data, error, row };
+}
+
+/**
+ * Delete a user's entire watch history.
+ *
+ * Both settings screens ran this as a bare `.delete()` and neither signalled
+ * it, so after clearing your history a mounted useHistory kept serving the
+ * rows that no longer existed — My Lists still listed them and isWatched()
+ * still returned true. Mobile also discarded the error entirely.
+ *
+ * @param {{ userId: string }} args
+ * @returns {Promise<{ error: any }>}
+ */
+export async function clearWatchHistory({ userId }) {
+  if (!userId) return { error: null };
+
+  const { error } = await supabase.from('history').delete().eq('user_id', userId);
+  if (!error) emit(HISTORY_CHANGED_EVENT);
+
+  return { error };
 }

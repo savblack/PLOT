@@ -27,9 +27,12 @@ export const Outline = () => {
   return a;
 };
 
-export const OutlineOnDark = () => {
+// The button the editorial sections use. Those sections are white now, so this
+// renders on --dark's current value (white) with a hairline to show its bounds.
+export const OutlineOnEditorial = () => {
   const wrap = document.createElement('div');
   wrap.style.background = 'var(--dark)';
+  wrap.style.border = '1px solid var(--glass-border)';
   wrap.style.padding = '2rem';
   wrap.style.borderRadius = 'var(--r-md)';
   const a = document.createElement('a');

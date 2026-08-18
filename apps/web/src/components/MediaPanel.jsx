@@ -2,8 +2,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useApp } from '../hooks/useApp.js';
 import { countdownChip, formatDate } from '../utils/countdown.js';
 import { backdropUrl, logoUrl, profileUrl } from '../utils/images.js';
-import { tmdb, getTmdbRegion } from '../api/tmdb.js';
-import { findDuplicateCustomList } from '../domain/customLists.js';
+import { tmdb, getTmdbRegion } from '@plot/core/tmdb.js';
+import { findDuplicateCustomList } from '@plot/core/customLists.js';
 import { useHistory } from '../hooks/useHistory.js';
 import { localDateStr } from '../utils/date.js';
 import { getEpisodeGuideState } from '../utils/episodeProgress.js';
@@ -12,13 +12,18 @@ import { resolveMediaPanelEscapeAction } from '../utils/mediaPanel.js';
 import { ratingFromPointer, ratingToStars, starFillPercent, STAR_COUNT } from '../utils/ratings.js';
 import { pickBestTvmazeShowMatch } from '../utils/tvmaze.js';
 import { favoriteWords } from '../utils/spelling.js';
-import { handleActivationKeyDown } from '../utils/interactive.js';
 import { useShareTitle } from '../hooks/useShareTitle.js';
 import { track, EVENTS } from '../lib/analytics.js';
 import CreditsGrid from './TalentCredits.jsx';
 import { dedupedActingCredits, shortBiography } from '../utils/talentCredits.js';
 import { canCreateCustomList, FREE_CUSTOM_LIST_CAP } from '@plot/core/premium.js';
 import { buildWatchLink } from '@plot/core/watchLinks.js';
+import {
+  getLastSeasonNumber,
+  getSeasonToggleProgress,
+  getSeasonWatchState,
+  isSeriesComplete,
+} from '@plot/core/watchingProgress.js';
 import { fetchVerifiedAvailability, formatOfferPrice, offersFromTmdb } from '@plot/core/availability.js';
 import { fetchCriticScore, pickAudienceQuote, getConsensusLine } from '@plot/core/reviews.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
@@ -28,6 +33,7 @@ import Spinner from './Spinner.jsx';
 import { COMMON } from '../copy/common.js';
 import { MEDIA } from '../copy/media.js';
 import { MEDIA_PANEL } from '../copy/mediaPanel.js';
+import { SHOW_PRICING_PAGE } from '../launchFeatures.js';
 
 /* ── Close icon ── */
 function CloseIcon() {
@@ -153,7 +159,7 @@ function CheckCircleIcon({ filled }) {
 }
 
 /* ── Season selector + episode list ── */
-function EpisodeGuide({ tvId, currentProgress, details, timezone }) {
+function EpisodeGuide({ tvId, currentProgress, details, timezone, onSeriesFinished }) {
   const { watching } = useApp();
   const seasons     = (details?.seasons || []).filter(s => s.season_number > 0);
   const [selSeason, setSelSeason] = useState(currentProgress?.current_season || 1);
@@ -162,6 +168,7 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone }) {
   const [epError,   setEpError]   = useState(false);
   const [checkingEp, setCheckingEp] = useState(null); // ep number being toggled
   const [episodeActionError, setEpisodeActionError] = useState('');
+  const [seasonPending, setSeasonPending] = useState(false);
   const checkingEpRef = useRef(false); // sync guard to prevent double-tap race
 
   // Track whether user manually changed season (to suppress auto-follow)
@@ -233,6 +240,25 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone }) {
   const currentSeason = currentProgress?.current_season || 0;
   const currentEp     = currentProgress?.current_episode || 0;
 
+  /* ── Finish the series when progress rolls past its final season ──
+     Watching the last episode of an ended show's last season is the show
+     finishing, so it should stop being "currently watching" and land in your
+     history. Without this the pointer parks on a season that will never air
+     and the show sits in the watching list forever. Shows still in production
+     are left alone: passing their latest season means up to date, not done. */
+  const lastSeason = getLastSeasonNumber(details);
+
+  const finishSeriesIfComplete = useCallback(async (nextSeason) => {
+    if (!isSeriesComplete({ lastSeason, nextSeason, status: details?.status })) return;
+    // Finishing a show is the end of the engagement arc worth naming, and it's
+    // only knowable here — core sees pointer moves, not the last season.
+    track(EVENTS.SERIES_COMPLETED, { tmdb_id: tvId, seasons: lastSeason });
+    const result = await onSeriesFinished?.();
+    if (result && !result.ok) {
+      setEpisodeActionError(result.error || MEDIA_PANEL.couldNotUpdateWatchStatus);
+    }
+  }, [details?.status, lastSeason, onSeriesFinished, tvId]);
+
   /* ── Toggle an episode's watched state ── */
   const handleCheckEp = useCallback(async (ep, watched) => {
     if (!currentProgress || checkingEpRef.current) return;
@@ -246,6 +272,10 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone }) {
         const result = await watching.markEpisodeWatched(tvId);
         if (!result?.ok) {
           setEpisodeActionError(result?.error || 'Could not update this episode right now. Please try again.');
+        } else {
+          // markEpisodeWatched handles season rollover internally, so the row
+          // it returns is the only reliable read of where the pointer landed.
+          await finishSeriesIfComplete(result.data?.current_season);
         }
       } else if (ep.episode_number < episodes.length) {
         await watching.setProgress(tvId, selSeason, ep.episode_number + 1);
@@ -254,6 +284,7 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone }) {
         const nextSeason = selSeason + 1;
         await watching.setProgress(tvId, nextSeason, 1);
         userChangedSeason.current = false; // allow auto-follow to next season
+        await finishSeriesIfComplete(nextSeason);
       }
     } else {
       // Unmark: pull progress back to this episode
@@ -262,7 +293,42 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone }) {
 
     checkingEpRef.current = false;
     setCheckingEp(null);
-  }, [currentEp, currentProgress, currentSeason, watching, tvId, selSeason, episodes.length]);
+  }, [currentEp, currentProgress, currentSeason, watching, tvId, selSeason, episodes.length, finishSeriesIfComplete]);
+
+  /* ── Mark / unmark the whole selected season ── */
+  const seasonState = getSeasonWatchState({
+    currentEpisode: currentEp,
+    currentSeason,
+    episodeCount: episodes.length,
+    selectedSeason: selSeason,
+  });
+
+  const handleToggleSeason = useCallback(async () => {
+    if (!currentProgress || seasonPending || checkingEpRef.current) return;
+    const target = getSeasonToggleProgress({
+      isComplete: seasonState.isComplete,
+      selectedSeason: selSeason,
+    });
+    if (!target.ok) {
+      setEpisodeActionError(target.error);
+      return;
+    }
+
+    setSeasonPending(true);
+    setEpisodeActionError('');
+    // Marking rolls progress into the NEXT season, which would trip the
+    // auto-follow effect and swap the list out from under the button that was
+    // just pressed. Pin the selection so the season you acted on stays on
+    // screen and visibly flips to fully watched.
+    userChangedSeason.current = true;
+    const result = await watching.setProgress(tvId, target.nextSeason, target.nextEpisode, { reason: 'season' });
+    if (!result?.ok) {
+      setEpisodeActionError(MEDIA_PANEL.couldNotUpdateSeason);
+    } else if (!seasonState.isComplete) {
+      await finishSeriesIfComplete(target.nextSeason);
+    }
+    setSeasonPending(false);
+  }, [currentProgress, seasonPending, seasonState.isComplete, selSeason, watching, tvId, finishSeriesIfComplete]);
 
   const isTracking = !!currentProgress;
 
@@ -282,6 +348,28 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone }) {
               S{s.season_number}
             </button>
           ))}
+        </div>
+      )}
+
+      {isTracking && episodes.length > 0 && (
+        <div className="season-bulk">
+          <div className="season-bulk-info">
+            <span className="season-bulk-title">{MEDIA_PANEL.seasonLabel(selSeason)}</span>
+            <span className="season-bulk-count">
+              {MEDIA_PANEL.seasonWatchedCount(seasonState.watchedCount, seasonState.episodeCount)}
+            </span>
+          </div>
+          <button
+            className="season-bulk-btn"
+            onClick={handleToggleSeason}
+            disabled={seasonPending}
+          >
+            {seasonPending
+              ? MEDIA_PANEL.updating
+              : seasonState.isComplete
+                ? MEDIA_PANEL.unmarkSeasonWatched
+                : MEDIA_PANEL.markSeasonWatched}
+          </button>
         </div>
       )}
 
@@ -326,10 +414,6 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone }) {
                 key={ep.episode_number}
                 className={`ep-row${watched ? ' watched' : ''}${isCurrent ? ' ep-current' : ''}`}
                 onClick={isTracking && !isChecking ? () => handleCheckEp(ep, watched) : undefined}
-                onKeyDown={isTracking && !isChecking ? (e) => handleActivationKeyDown(e, () => handleCheckEp(ep, watched)) : undefined}
-                role={isTracking && !isChecking ? 'button' : undefined}
-                tabIndex={isTracking && !isChecking ? 0 : undefined}
-                aria-label={isTracking && !isChecking ? (watched ? MEDIA_PANEL.markUnwatched : MEDIA_PANEL.markWatched) : undefined}
               >
                 <span className="ep-num">E{String(ep.episode_number).padStart(2,'0')}</span>
                 <div className="ep-info">
@@ -359,7 +443,7 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone }) {
                     <button
                       className={`ep-check-btn${isActive ? ' checked' : ''}`}
                       onClick={(e) => { e.stopPropagation(); handleCheckEp(ep, watched); }}
-                      aria-label={watched ? MEDIA_PANEL.markUnwatched : MEDIA_PANEL.markWatched}
+                      aria-label={watched ? MEDIA.markUnwatched : MEDIA.markWatched}
                       title={watched ? MEDIA_PANEL.unmarkAsWatched : MEDIA_PANEL.markAsWatched}
                     >
                       <CheckCircleIcon filled={watched} />
@@ -516,7 +600,9 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
     }
     if (!canCreateCustomList(lists.length, profile)) {
       track(EVENTS.PREMIUM_GATE_HIT, { feature: 'custom_lists' });
-      setCreateError(`Free accounts can have ${FREE_CUSTOM_LIST_CAP} lists. PLOT Premium gets unlimited. Upgrade from Settings to unlock.`);
+      setCreateError(SHOW_PRICING_PAGE
+        ? `Free accounts can have ${FREE_CUSTOM_LIST_CAP} lists. PLOT Premium gets unlimited. Upgrade from Settings to unlock.`
+        : `You've reached the ${FREE_CUSTOM_LIST_CAP}-list limit.`);
       return;
     }
 
@@ -525,7 +611,7 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
     try {
       const newList = await createList(creatingName);
       if (!newList) {
-        setCreateError(MEDIA_PANEL.couldNotCreateList);
+        setCreateError(MEDIA.couldNotCreateList);
         return;
       }
 
@@ -923,7 +1009,10 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
   const savedRating = watchedEntry?.rating || 0;
   const savedReview = watchedEntry?.note || '';
   const savedDnf = !!watchedEntry?.dnf;
-  const savedWatchedAt = watchedEntry?.watched_at || defaultWatchedAt;
+  // watched_at is timestamptz, so Postgres hands back "2026-06-10T00:00:00+00:00".
+  // <input type="date"> only accepts yyyy-mm-dd and renders blank for anything
+  // else, so it has to be sliced before it reaches the field.
+  const savedWatchedAt = watchedEntry?.watched_at ? watchedEntry.watched_at.slice(0, 10) : defaultWatchedAt;
   const hasReviewDraft = localRating > 0 || !!localReview.trim() || localDnf || (!!watchedEntry && localWatchedAt !== savedWatchedAt);
   const reviewDirty = !!watchedEntry && (
     localRating !== savedRating ||
@@ -998,7 +1087,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
       setLocalRating(watchedEntry.rating || 0);
       setLocalReview(watchedEntry.note   || '');
       setLocalDnf(watchedEntry.dnf       || false);
-      setLocalWatchedAt(watchedEntry.watched_at || defaultWatchedAt);
+      setLocalWatchedAt(watchedEntry.watched_at ? watchedEntry.watched_at.slice(0, 10) : defaultWatchedAt);
     }
   }, [watchedEntry?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -1116,19 +1205,30 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
     const result = await markMediaAsWatched({
       logWatched: () => history.logWatched(
         { ...details, id: itemId, media_type: itemType, dnf },
-        { logRewatches: profile?.log_rewatches ?? true, watchedAt: defaultWatchedAt },
+        { watchedAt: defaultWatchedAt },
       ),
       clearWatching: () => watching.stopWatching(itemId),
       removeFromSaved: () => watchlist.removeFromList(itemId),
       rollbackHistory: () => history.removeEntry(itemId, itemType),
-      shouldClearWatching: !isMovie && isWatching,
-      shouldRemoveFromSaved: inList && !isWatching,
+      mediaType: itemType,
+      isWatching,
+      inList,
     });
     // Surface the real Supabase error (e.g. constraint/network failure) instead
     // of the generic fallback message, so a recurrence is actually diagnosable.
     const realError = !result.ok && history.getLastError();
     return realError ? { ok: false, error: realError } : result;
-  }, [defaultWatchedAt, details, history, inList, isMovie, isWatching, itemId, itemType, profile?.log_rewatches, watched, watchedEntry?.dnf, watchlist, watching]);
+  }, [defaultWatchedAt, details, history, inList, isWatching, itemId, itemType, watched, watchedEntry?.dnf, watchlist, watching]);
+
+  /* Watching the final episode of a finished series completes it. Reuses the
+     same transition as the Watched status action, so a show finished by
+     ticking episodes ends up in exactly the state as one marked watched by
+     hand. Already-watched shows are a no-op rather than a toggle-off, since
+     this fires from episode ticks, not from a button the user aimed at it. */
+  const handleSeriesFinished = useCallback(async () => {
+    if (watched) return { ok: true };
+    return handleWatchedStatus(false);
+  }, [handleWatchedStatus, watched]);
 
   const handleClearStatus = useCallback(async () => {
     if (isWatching) {
@@ -1347,10 +1447,17 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
 
                 return (<>
 
-              {/* Primary: Save (full width) */}
+              {/* Status row: watchlist and watch state are the two answers to
+                  "where is this for me", so they share a line rather than being
+                  separated by the secondary actions. Matches mobile. */}
+              {/* Grid rather than flex: a <button> flex item won't shrink to an
+                  even share the way a <div> does, so the two halves come out
+                  lopsided. 1fr 1fr splits them exactly. */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
               <button
                 onClick={() => watchlist.toggle({ ...details, id: itemId, media_type: itemType })}
                 style={{
+                  minWidth: 0,
                   padding: '0.6rem 0.5rem', borderRadius: '0.75rem', cursor: 'pointer',
                   fontSize: '0.9rem', fontWeight: 600, transition: 'all 0.18s', boxSizing: 'border-box',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
@@ -1363,10 +1470,8 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                 {inList ? MEDIA_PANEL.inWatchlist : MEDIA_PANEL.addToWatchlist}
               </button>
 
-              {/* Secondary tray */}
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
                 {/* Watch status (with dropdown) */}
-                <div style={{ flex: 1, minWidth: 0, position: 'relative' }} onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) setShowStatusDropdown(false); }}>
+                <div style={{ minWidth: 0, position: 'relative' }} onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) setShowStatusDropdown(false); }}>
                   <button
                     onClick={() => setShowStatusDropdown(v => !v)}
                     disabled={!!statusActionPending}
@@ -1411,6 +1516,10 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                   )}
                 </div>
 
+              </div>
+
+              {/* Secondary tray */}
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
                 {/* Favourite */}
                 <button
                   onClick={() => favorites.toggleFavorite({ ...details, id: itemId, media_type: itemType })}
@@ -1569,7 +1678,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                       } else {
                         await history.logWatched(
                           { ...details, id: itemId, media_type: itemType },
-                          { rating: localRating || null, note: localReview.trim() || null, dnf: localDnf, watchedAt: localWatchedAt || defaultWatchedAt, logRewatches: profile?.log_rewatches ?? true }
+                          { rating: localRating || null, note: localReview.trim() || null, dnf: localDnf, watchedAt: localWatchedAt || defaultWatchedAt }
                         );
                       }
                       setReviewSaving(false);
@@ -1591,7 +1700,13 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
             {!isMovie && details && (
               <>
                 <div className="panel-section-title">Episodes</div>
-                <EpisodeGuide tvId={itemId} currentProgress={progress} details={details} timezone={timezone} />
+                <EpisodeGuide
+                  tvId={itemId}
+                  currentProgress={progress}
+                  details={details}
+                  timezone={timezone}
+                  onSeriesFinished={handleSeriesFinished}
+                />
               </>
             )}
 

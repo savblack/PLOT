@@ -150,7 +150,7 @@ export const WHATS_ON_CTA = {
   sub: 'Your daily briefing on everything worth watching.',
   browseLink: "Browse What's On →",
   newsletterCta: 'Subscribe',
-  newsletterHint: 'Or get it in your inbox, weekly.',
-  newsletterSuccess: "You're in — first digest this Sunday.",
+  newsletterHint: 'Or get it in your inbox.',
+  newsletterSuccess: "You're in. We'll email you the next issue.",
   appNotifySuccess: "You're on the list — we'll email you the moment the app lands.",
 };

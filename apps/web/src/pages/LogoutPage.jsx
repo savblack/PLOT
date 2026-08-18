@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { supabase } from '../api/supabase';
+import { supabase } from '@plot/core/supabase.js';
 import { HERO_POSTERS } from '../constants/heroPosters.js';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
+import { track, resetAnalytics, EVENTS } from '../lib/analytics.js';
 import './AuthPage.css';
 
 // The marketing site doubles as the logged-out home.
@@ -19,10 +20,16 @@ export default function LogoutPage() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      // Capture before the reset, or the event lands on the fresh anonymous
+      // profile instead of the person who actually signed out.
+      track(EVENTS.USER_SIGNED_OUT, {});
       const { error } = await supabase.auth.signOut();
       // A global revoke can fail offline — clear the local session at least so
       // the device is signed out regardless.
       if (error) await supabase.auth.signOut({ scope: 'local' });
+      // Drop the identity so the next person on this browser isn't attributed
+      // to the one who just left.
+      resetAnalytics();
       if (!cancelled) setWorking(false);
     })();
     return () => { cancelled = true; };

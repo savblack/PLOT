@@ -9,7 +9,10 @@ import {
   View, Text, ScrollView, TouchableOpacity, Image, StyleSheet,
   ActivityIndicator, Dimensions, Modal,
 } from 'react-native';
+import { Linking } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import EditProfileModal from '../../../components/EditProfileModal';
+import { SOCIAL_LINKS } from '@plot/core/profileFields.js';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { supabase } from '../../../lib/supabase';
@@ -19,10 +22,11 @@ import { useAppData } from '../../../contexts/AppDataContext';
 import { usePublicProfile } from '../../../hooks/usePublicProfile';
 import { favoriteWords } from '../../../lib/spelling';
 import { useFollows } from '../../../hooks/useFollows';
-import { Avatar, PremiumBadge } from '../../../components/Avatar';
+import { Avatar, ProfileBadges } from '../../../components/Avatar';
 import { UserList, SocialUser } from '../../../components/UserList';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../../lib/tokens';
 import { TAB_BAR_CLEARANCE } from '../../../lib/tabBar';
+import { PUBLIC_PROFILE_PAGE } from '@plot/core/copy/publicProfilePage.js';
 
 const SCREEN_W = Dimensions.get('window').width;
 const GRID_GAP = spacing.sm;
@@ -38,13 +42,22 @@ interface PosterItem {
   rank?: number;
 }
 
-export default function ProfileScreen() {
+/**
+ * `usernameOverride` lets the profile tab reuse this screen for the signed-in
+ * user without going through the dynamic route. That matters for layout, not
+ * just convenience: a Tabs.Screen pointed at the nested `u/[username]` route
+ * renders its icon ~16pt above the other tabs, which the static `profile`
+ * route does not.
+ */
+export default function ProfileScreen({ usernameOverride }: { usernameOverride?: string } = {}) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { open: openPanel } = useMediaPanel();
-  const { username = '' } = useLocalSearchParams<{ username: string }>();
+  const [editing, setEditing] = useState(false);
+  const params = useLocalSearchParams<{ username: string }>();
+  const username = usernameOverride ?? params.username ?? '';
   const { userId: viewerId, profile: viewerProfile } = useAppData();
 
   const { loading, profile, locked, watchCount, avgRating, recent, topMovies, topTv, favourites } =
@@ -64,32 +77,6 @@ export default function ProfileScreen() {
     if (it.tmdb_id) openPanel(it.tmdb_id, it.media_type === 'tv' ? 'tv' : 'movie');
   };
 
-  const PosterGrid = ({ items, ranked = false }: { items: PosterItem[]; ranked?: boolean }) => {
-    if (!items?.length) return null;
-    return (
-      <View style={styles.grid}>
-        {items.map((it, i) => {
-          const img = posterUrl(it.poster_path, 'w185');
-          return (
-            <TouchableOpacity
-              key={`${it.tmdb_id}-${it.rank ?? i}`}
-              style={styles.poster}
-              activeOpacity={0.8}
-              onPress={() => openMedia(it)}
-            >
-              {img
-                ? <Image source={{ uri: img }} style={StyleSheet.absoluteFill} resizeMode="cover" />
-                : <View style={styles.posterFallback}><Text style={styles.posterFallbackText} numberOfLines={3}>{it.title}</Text></View>}
-              {ranked && it.rank != null && (
-                <View style={styles.rankBadge}><Text style={styles.rankText}>{it.rank}</Text></View>
-              )}
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-    );
-  };
-
   const noPublicContent = !locked && watchCount === 0 && recent.length === 0
     && topMovies.length === 0 && topTv.length === 0 && favourites.length === 0;
 
@@ -105,7 +92,7 @@ export default function ProfileScreen() {
         {found && isOwn && (
           <>
             <View style={{ flex: 1 }} />
-            <TouchableOpacity onPress={() => router.push('/(app)/settings' as any)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ paddingRight: spacing.md }}>
+            <TouchableOpacity onPress={() => setEditing(true)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ paddingRight: spacing.md }}>
               <Text style={styles.editTop}>Edit</Text>
             </TouchableOpacity>
           </>
@@ -132,11 +119,35 @@ export default function ProfileScreen() {
               <View style={styles.headerText}>
                 <View style={styles.nameLine}>
                   <Text style={styles.name} numberOfLines={2}>{name}</Text>
-                  {profile!.is_premium && <PremiumBadge size={18} />}
+                  <ProfileBadges
+                    isPremium={profile!.is_premium}
+                    isSupporter={profile!.is_supporter}
+                    size={18}
+                    colors={colors}
+                  />
                 </View>
                 <Text style={styles.handle}>@{profile!.username}</Text>
               </View>
             </View>
+
+            {!!profile!.bio && <Text style={styles.bio}>{profile!.bio}</Text>}
+
+            {/* Fixed set of external links, rendered from the shared definition
+                so a link added on web can't go missing here. */}
+            {!!profile!.links && Object.keys(profile!.links).length > 0 && (
+              <View style={styles.linksRow}>
+                {SOCIAL_LINKS.filter((l: any) => profile!.links?.[l.key]).map((l: any) => (
+                  <TouchableOpacity
+                    key={l.key}
+                    onPress={() => Linking.openURL(l.url(profile!.links?.[l.key]))}
+                    accessibilityRole="link"
+                    accessibilityLabel={l.label}
+                  >
+                    <Text style={styles.linkChip}>{l.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
 
             {/* Actions (follow) — own-profile edit lives in the top bar */}
             {!isOwn && canFollow && (
@@ -151,7 +162,7 @@ export default function ProfileScreen() {
                   </TouchableOpacity>
                 ) : (
                   <TouchableOpacity style={styles.btnPrimary} onPress={follow} disabled={busy}>
-                    <Text style={styles.btnPrimaryText}>{isPrivate ? 'Request to follow' : 'Follow'}</Text>
+                    <Text style={styles.btnPrimaryText}>{isPrivate ? PUBLIC_PROFILE_PAGE.requestToFollow : 'Follow'}</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -178,16 +189,16 @@ export default function ProfileScreen() {
             )}
 
             {!locked && recent.length > 0 && (
-              <Section title="Recently watched" colors={colors}><PosterGrid items={recent} /></Section>
+              <Section title="Recently watched" colors={colors}><PosterGrid items={recent} styles={styles} onPress={openMedia} /></Section>
             )}
             {topMovies.length > 0 && (
-              <Section title="Top 10 films" colors={colors}><PosterGrid items={topMovies} ranked /></Section>
+              <Section title="Top 10 films" colors={colors}><PosterGrid items={topMovies} ranked styles={styles} onPress={openMedia} /></Section>
             )}
             {topTv.length > 0 && (
-              <Section title="Top 10 TV" colors={colors}><PosterGrid items={topTv} ranked /></Section>
+              <Section title="Top 10 TV" colors={colors}><PosterGrid items={topTv} ranked styles={styles} onPress={openMedia} /></Section>
             )}
             {favourites.length > 0 && (
-              <Section title={fw.plural} colors={colors}><PosterGrid items={favourites} /></Section>
+              <Section title={fw.plural} colors={colors}><PosterGrid items={favourites} styles={styles} onPress={openMedia} /></Section>
             )}
 
             {noPublicContent && (
@@ -208,6 +219,23 @@ export default function ProfileScreen() {
           />
         )}
       </Modal>
+
+      {editing && isOwn && profile && (
+        <EditProfileModal
+          userId={viewerId!}
+          current={profile}
+          onClose={() => setEditing(false)}
+          onSaved={(patch) => {
+            setEditing(false);
+            // A username change moves the canonical route, so re-enter it —
+            // otherwise a refresh or a back-navigation lands on the old handle
+            // and 404s.
+            if (patch.username && patch.username !== profile.username) {
+              router.replace(`/(app)/u/${patch.username}` as any);
+            }
+          }}
+        />
+      )}
     </View>
   );
 }
@@ -217,6 +245,40 @@ function Stat({ num, label, colors }: { num: string; label: string; colors: Pale
     <View style={{ alignItems: 'center' }}>
       <Text style={{ fontFamily: fontFamily.serif, fontSize: fontSize.xxl, color: colors.textPrimary, lineHeight: fontSize.xxl + 2 }}>{num}</Text>
       <Text style={{ fontFamily: fontFamily.sans, fontSize: 11, letterSpacing: 0.6, textTransform: 'uppercase', color: colors.textMuted, marginTop: 3 }}>{label}</Text>
+    </View>
+  );
+}
+
+// Module scope, not defined inside ProfileScreen: a component declared during
+// render gets a new identity every render, so React unmounts and remounts the
+// whole grid each time — losing scroll position and re-fetching every poster.
+function PosterGrid({ items, ranked = false, styles, onPress }: {
+  items: PosterItem[];
+  ranked?: boolean;
+  styles: ReturnType<typeof makeStyles>;
+  onPress: (it: PosterItem) => void;
+}) {
+  if (!items?.length) return null;
+  return (
+    <View style={styles.grid}>
+      {items.map((it, i) => {
+        const img = posterUrl(it.poster_path, 'w185');
+        return (
+          <TouchableOpacity
+            key={`${it.tmdb_id}-${it.rank ?? i}`}
+            style={styles.poster}
+            activeOpacity={0.8}
+            onPress={() => onPress(it)}
+          >
+            {img
+              ? <Image source={{ uri: img }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+              : <View style={styles.posterFallback}><Text style={styles.posterFallbackText} numberOfLines={3}>{it.title}</Text></View>}
+            {ranked && it.rank != null && (
+              <View style={styles.rankBadge}><Text style={styles.rankText}>{it.rank}</Text></View>
+            )}
+          </TouchableOpacity>
+        );
+      })}
     </View>
   );
 }
@@ -258,7 +320,7 @@ function FollowListModal({
         <ScrollView showsVerticalScrollIndicator={false}>
           {users === null
             ? <ActivityIndicator color={colors.accent} style={{ paddingVertical: spacing.xl }} />
-            : <UserList users={users} viewerId={viewerId} onNavigate={onClose} empty={kind === 'followers' ? 'No followers yet.' : 'Not following anyone yet.'} />}
+            : <UserList users={users} viewerId={viewerId} onNavigate={onClose} empty={kind === 'followers' ? PUBLIC_PROFILE_PAGE.noFollowersYet : PUBLIC_PROFILE_PAGE.notFollowingAnyoneYet} />}
         </ScrollView>
       </View>
     </View>
@@ -283,6 +345,19 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   btnPrimaryText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.bg },
   btnSecondary: { minHeight: 44, justifyContent: 'center', paddingHorizontal: spacing.xl, borderRadius: radii.pill, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.textPrimary },
   btnSecondaryText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textPrimary },
+  bio: {
+    fontFamily: fontFamily.sans, fontSize: fontSize.sm, lineHeight: 21,
+    color: colors.textSecondary, paddingHorizontal: spacing.xl, marginTop: spacing.lg,
+  },
+  linksRow: {
+    flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm,
+    paddingHorizontal: spacing.xl, marginTop: spacing.md,
+  },
+  linkChip: {
+    fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted,
+    borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border,
+    borderRadius: radii.pill, paddingHorizontal: spacing.md, paddingVertical: 4,
+  },
   editTop: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted },
   stats: { flexDirection: 'row', justifyContent: 'center', gap: spacing.xxl, marginTop: spacing.xl, flexWrap: 'wrap' },
   lockCard: { marginTop: spacing.xl, padding: spacing.lg, borderRadius: radii.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surfaceRaised },

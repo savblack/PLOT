@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { colors, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
+import { captureException } from '../lib/analytics';
 
 interface Props { children: React.ReactNode }
 interface State { hasError: boolean; message: string }
@@ -15,6 +16,7 @@ export default class ErrorBoundary extends React.Component<Props, State> {
 
   componentDidCatch(error: unknown, info: React.ErrorInfo) {
     console.error('[ErrorBoundary]', error, info.componentStack);
+    captureException(error, { extra: info.componentStack ?? null });
   }
 
   reset = () => this.setState({ hasError: false, message: '' });

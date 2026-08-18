@@ -39,8 +39,7 @@
   <title>About — PLOT</title>
   <meta name="description" content="PLOT is a film and TV journal built for anyone who loves movies and TV. A note from the solo builder behind it." />
   <link rel="canonical" href="https://theplot.tv/about.html" />
-  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
-  <meta name="theme-color" content="#0c0c0c" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#ffffff" />
 
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
@@ -130,6 +129,26 @@
       text-align: left;
     }
     .lead { font-size: 1.12rem; color: #1a1a1a; line-height: 1.6; }
+    .credits-title {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      margin: 3rem 0 0.75rem;
+      padding-top: 2rem;
+      border-top: 1px solid var(--border);
+    }
+    .credits-intro { font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.75rem; }
+    .credits-list { list-style: none; padding: 0; margin: 0; }
+    .credits-list li {
+      font-size: 0.85rem;
+      line-height: 1.5;
+      color: var(--text-secondary);
+      padding: 0.6rem 0;
+      border-top: 1px solid var(--border);
+    }
+    .credits-list strong { color: #1a1a1a; font-weight: 600; }
     p strong { color: var(--text); font-weight: 600; }
 
     a { color: var(--text); }
@@ -137,8 +156,9 @@
 
     /* ── Footer ─────────────────────────────────────────────── */
     footer {
-      background: #0c0c0c;
-      color: #f0efe8;
+      background: var(--dark);
+      color: var(--text-dark);
+      border-top: 1px solid var(--glass-border);
       padding: 2.6rem 3rem;
       margin-top: -1px;
       position: relative;
@@ -160,23 +180,23 @@
       letter-spacing: -0.05em;
       font-size: 1.8rem;
       line-height: 1;
-      color: #f0efe8;
+      color: var(--text-dark);
       user-select: none;
     }
     .footer-nav { display: flex; gap: 1.3rem; flex-wrap: wrap; }
     .footer-nav a {
       font-size: 0.82rem;
-      color: rgba(240,239,232,0.82);
+      color: var(--text-secondary);
       text-decoration: none;
       transition: color 0.2s;
       white-space: nowrap;
     }
-    .footer-nav a:hover { color: #fff; }
+    .footer-nav a:hover { color: var(--text); }
     .footer-bottom {
       width: 100%;
       padding-top: 1.2rem;
       margin-top: 0.4rem;
-      border-top: 1px solid rgba(255,255,255,0.08);
+      border-top: 1px solid var(--glass-border);
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -185,15 +205,15 @@
     }
     .footer-copy {
       font-size: 0.75rem;
-      color: rgba(240,239,232,0.7);
+      color: var(--text-secondary);
     }
     .footer-social { display: flex; gap: 1rem; align-items: center; }
     .footer-social a {
-      color: rgba(240,239,232,0.7);
+      color: var(--text-secondary);
       display: inline-flex;
       transition: color 0.2s;
     }
-    .footer-social a:hover { color: #fff; }
+    .footer-social a:hover { color: var(--text); }
     .footer-social svg { width: 19px; height: 19px; display: block; }
 
     @media (max-width: 600px) {
@@ -247,9 +267,22 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
     <p>I value each and every person who takes the time to sign up and use PLOT. Any feedback, good or bad, and any feature request or bug you spot is incredibly helpful to me. It's the core driver behind every improvement I make in the app. You can share your thoughts anytime via the settings.</p>
 
-    <p>To show my appreciation for the early users who bear with me through all the bugs, my promise is this: <strong>PLOT stays free, forever.</strong> One day PLOT will need to make money to cover what it costs to build and run. That day won't matter for early users. <strong>You were here first, and you stay free.</strong></p>
+    <p>PLOT is still early, so if you're using it now, you're an early user too, bugs and all. When something breaks or feels off, tell me. That feedback is what's shaped almost everything here and it's what'll keep shaping it. <strong>I don't take that kind of patience lightly, and it's already more than enough.</strong></p>
+
+    <p>If you ever want to do more than that, PLOT is on <a href="https://ko-fi.com/J7P123TYGK" target="_blank" rel="noopener" data-cta="about-kofi">Ko-fi</a>. It helps cover what it actually costs to run, and it buys me more time to keep building.</p>
 
     <p>Thank you for reading this. Thank you for considering PLOT. And if you're already a user, thank you for backing a solo builder trying to make a life out of building beautiful things.</p>
+
+    <!-- Credits. TMDB's API terms require their notice verbatim and ask for it on
+         an About or Credits surface rather than only in the legal pages. Keep in
+         sync with copy/about.js and with the app's Settings credits group. -->
+    <h2 class="credits-title">Credits</h2>
+    <p class="credits-intro">PLOT is built on data from these sources.</p>
+    <ul class="credits-list">
+      <li><strong>TMDB:</strong> This product uses the TMDB API but is not endorsed or certified by TMDB.</li>
+      <li><strong>TVmaze:</strong> Episode air dates and the TV guide use the TVmaze API.</li>
+      <li><strong>OMDb:</strong> Critic scores are retrieved through the OMDb API.</li>
+    </ul>
   </main>
 
   <!-- footer:start (generated from _partials/footer.html — edit there, then run `npm run footer`) -->
@@ -259,6 +292,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <div class="footer-nav">
         <a href="/" data-cta="footer">Home</a>
         <a href="/whats-on" data-cta="footer">What's On</a>
+        <a href="/newsletter" data-cta="footer">Newsletter</a>
         <a href="https://app.theplot.tv/login" data-cta="footer">Log in</a>
         <a href="https://app.theplot.tv/signup" data-cta="footer">Sign up</a>
         <a href="/privacy.html" data-cta="footer">Privacy</a>

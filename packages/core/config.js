@@ -24,6 +24,12 @@
  *   options. Web leaves this undefined (default localStorage session); mobile
  *   injects `{ auth: { storage: AsyncStorage, … } }` so Supabase persists the
  *   session via AsyncStorage. This is the storage seam.
+ * @property {any} [supabaseClient] Optional pre-built client, used *instead of*
+ *   calling createClient. Neither app sets this: it is the seam that lets tests
+ *   drive core's data functions and hooks against an in-memory adapter
+ *   (tests/support/inMemorySupabase.js) rather than a live Postgres. Before it
+ *   existed, every module that touched the client was unreachable from a test,
+ *   which is why ~1,400 lines of hook logic had no coverage.
  * @property {{amazonTags?: Record<string, string>, appleToken?: string}} [affiliate]
  *   Affiliate parameters for outbound watch links (core/watchLinks.js).
  *   amazonTags is keyed by region code (AU, US, GB, …). Absent values degrade
@@ -45,6 +51,25 @@
  *   Analytics seam — fired on follow (following:true) / unfollow (following:false).
  * @property {(payload: { list_id: string, action: 'created' | 'deleted' }) => void} [onCustomListChange]
  *   Analytics seam — fired when a custom list is created or deleted.
+ * @property {(payload: { list_id: string, tmdb_id: number, media_type: string, action: 'added' | 'removed' }) => void} [onCustomListItemChange]
+ *   Analytics seam — fired when a title is added to or removed from a custom list.
+ * @property {(payload: { list_id: string, is_public: boolean }) => void} [onCustomListVisibility]
+ *   Analytics seam — fired when a custom list is made public or private.
+ * @property {(payload: { tmdb_id: number, media_type: string, favourited: boolean }) => void} [onFavourite]
+ *   Analytics seam — fired on favourite (favourited:true) / unfavourite (false).
+ * @property {(payload: { target_user_id: string, approved: boolean }) => void} [onFollowRequestDecision]
+ *   Analytics seam — fired when an incoming follow request is approved or declined.
+ * @property {(payload: { tmdb_id: number, media_type: string }) => void} [onHistoryRemove]
+ *   Analytics seam — fired when a logged watch is removed from history. The
+ *   undo half of onWatched; without it, watched counts only ever go up.
+ * @property {(payload: { tmdb_id: number, action: 'started' | 'stopped' | 'episode' | 'season' | 'completed', season?: number, episode?: number }) => void} [onWatchProgress]
+ *   Analytics seam — fired as a user moves through a series: started/stopped
+ *   tracking it, ticked off an episode, or bulk-marked a season or the whole
+ *   run (the #545 actions). Series only; movies go through onWatched.
+ * @property {(payload: { fields: string[] }) => void} [onProfileUpdate]
+ *   Analytics seam — fired when a profile is edited. Carries the *names* of the
+ *   changed fields only, never the values: bios, links and display names are
+ *   user content and must not reach analytics.
  */
 
 /** @type {PlotCoreConfig} */
@@ -57,6 +82,7 @@ const defaults = {
   traktClientId: '',
   isDev: false,
   supabaseClientOptions: undefined,
+  supabaseClient: undefined,
   affiliate: undefined,
   onWatchlistSave: undefined,
   onWatchlistRemove: undefined,
@@ -64,6 +90,13 @@ const defaults = {
   onRating: undefined,
   onFollow: undefined,
   onCustomListChange: undefined,
+  onCustomListItemChange: undefined,
+  onCustomListVisibility: undefined,
+  onFavourite: undefined,
+  onFollowRequestDecision: undefined,
+  onHistoryRemove: undefined,
+  onWatchProgress: undefined,
+  onProfileUpdate: undefined,
 };
 
 let config = { ...defaults };

@@ -45,6 +45,26 @@ function waitForSession(supabase, waitMs, { setTimeoutFn = setTimeout, clearTime
 }
 
 /**
+ * Which *kind* of credential a callback URL carried — deliberately never its
+ * value. This is the diagnostic that makes a failed sign-in readable after the
+ * fact ("did the redirect even arrive with a code?"), and it has to stay a
+ * category: keeping Supabase tokens out of PostHog is the whole reason the app
+ * moved to PKCE, and a raw `code` or `token_hash` is precisely what must not
+ * become an event property.
+ *
+ * @param {string} [search]  window.location.search
+ * @param {string} [hash]    window.location.hash
+ * @returns {'code'|'token_hash'|'hash'|'none'}
+ */
+export function credentialKind(search, hash) {
+  const query = new URLSearchParams(search || '');
+  if (query.get('code')) return 'code';
+  if (query.get('token_hash')) return 'token_hash';
+  if (parseHash(hash).access_token) return 'hash';
+  return 'none';
+}
+
+/**
  * @param {object} supabase  Supabase client (auth.exchangeCodeForSession,
  *   verifyOtp, getSession, onAuthStateChange).
  * @param {{ search?: string, hash?: string }} location  window.location parts.
@@ -67,10 +87,22 @@ export async function resolveAuthCallback(supabase, location = {}, opts = {}) {
   const type = search.get('type') || hashParams.type || null;
 
   // 1. PKCE / OAuth code exchange — deterministic and awaited.
+  //
+  // We are racing supabase-js here. detectSessionInUrl defaults to true, so on
+  // client init it spots `?code=` itself and exchanges it (GoTrueClient
+  // _initialize → _getSessionFromURL). The code is single-use, so whichever of
+  // the two calls arrives second gets an error on a perfectly good login.
+  // Treat an exchange failure as inconclusive rather than fatal and fall
+  // through to the session checks below — if the client's own exchange won, the
+  // session is already in storage and steps 3/4 will find it. Only report the
+  // exchange error if we come out the other side with no session at all.
+  let exchangeError = null;
   if (code) {
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-    if (error) return { path: null, session: null, error: error.message };
-    return { path: type === 'recovery' ? '/reset-password' : '/onboarding', session: data?.session ?? null, error: null };
+    if (!error) {
+      return { path: type === 'recovery' ? '/reset-password' : '/onboarding', session: data?.session ?? null, error: null };
+    }
+    exchangeError = error.message;
   }
 
   // 2. Email OTP link carrying token_hash in the query — verifyOtp (awaited).
@@ -89,7 +121,9 @@ export async function resolveAuthCallback(supabase, location = {}, opts = {}) {
   if (!session) session = await waitForSession(supabase, waitMs, opts);
 
   // Never navigate onward without a session — that's the regression we're killing.
-  if (!session) return { path: null, session: null, error: 'no-session' };
+  // A failed code exchange with nothing to show for it is the more specific
+  // diagnosis, so prefer it over the generic no-session message.
+  if (!session) return { path: null, session: null, error: exchangeError || 'no-session' };
 
   return { path: type === 'recovery' ? '/reset-password' : '/onboarding', session, error: null };
 }

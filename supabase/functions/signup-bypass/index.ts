@@ -24,9 +24,8 @@
  *      supabase/migrations/20260728000000_auth_fail_attempts.sql), NOT an
  *      in-memory Map: an earlier in-memory per-isolate limiter was proven
  *      ineffective (400 concurrent requests all returned 200, since Supabase
- *      spreads bursts across isolates with independent counters — see
- *      docs/launch/public-launch-readiness.md). This is a real rejection
- *      (429), not a faked success — it's capacity control, not bot
+ *      spreads bursts across isolates with independent counters). This is a
+ *      real rejection (429), not a faked success — it's capacity control, not bot
  *      detection.
  *
  * On success, creates the account via the Admin API (bypasses Supabase
@@ -38,6 +37,7 @@
  * see supabase/config.toml).
  */
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { serviceKey } from '../_shared/serviceKey.ts';
 
 function allowedOrigin(origin: string | null) {
   if (!origin) return 'https://app.theplot.tv';
@@ -89,7 +89,7 @@ const clientIp = (req: Request): string => req.headers.get('cf-connecting-ip') |
 // doesn't exist yet, with no session to act on behalf of) — unlike functions
 // that split anon (user-context) vs service-role (admin) clients, there is
 // no anon/user-context case here at all.
-const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const SERVICE_ROLE_KEY = serviceKey();
 const supabaseAdmin = createClient(Deno.env.get('SUPABASE_URL')!, SERVICE_ROLE_KEY);
 
 // --- Signed form-timing token ------------------------------------------

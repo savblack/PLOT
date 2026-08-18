@@ -1,20 +1,4 @@
-export const PUBLIC_PROFILE_PAGE = {
-  followersTitle: 'Followers',
-  followingTitle: 'Following',
-  noFollowersYet: 'No followers yet.',
-  notFollowingAnyoneYet: 'Not following anyone yet.',
-  usernameTaken: 'That username is taken.',
-  saveFailed: 'Couldn’t save. Please try again.',
-  saving: 'Saving…',
-  saveDisplayName: 'Save display name',
-  editDisplayName: 'Edit display name',
-  saveUsername: 'Save username',
-  editUsername: 'Edit username',
-  requestToFollow: 'Request to follow',
-  follow: 'Follow',
-  editProfile: 'Edit profile',
-  namePlaceholder: 'Your name',
-  bioPlaceholder: 'A little about you',
-  verified: 'Verified',
-  shareProfile: 'Share profile',
-};
+// Shared with the mobile app, so the strings live in @plot/core/copy.
+// Re-exported here so src/copy/ stays the one place the web app — and the
+// Storybook Content page — looks for copy.
+export { PUBLIC_PROFILE_PAGE } from '@plot/core/copy/publicProfilePage.js';

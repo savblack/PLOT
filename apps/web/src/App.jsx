@@ -8,8 +8,8 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 // ./utils and ./hooks so code outside the shell can use them without pulling
 // in this chunk.
 import './styles/app.css';
-import { supabase } from './api/supabase.js';
-import { setTmdbRegion } from './api/tmdb.js';
+import { supabase } from '@plot/core/supabase.js';
+import { setTmdbRegion } from '@plot/core/tmdb.js';
 import { setUserTimezone } from './utils/date.js';
 import AppShell from './components/AppShell.jsx';
 import MediaPanel from './components/MediaPanel.jsx';
@@ -27,14 +27,11 @@ import { pathForView, viewFromPath } from './navigation.js';
 import { readStorage, writeStorage } from './utils/storage.js';
 import { readCachedSession, writeCachedSession, clearCachedSession } from './utils/sessionCache.js';
 import { track, EVENTS, setPersonProps } from './lib/analytics.js';
-import { posterUrl, backdropUrl, logoUrl, profileUrl } from './utils/images.js';
+import { personPropsFromProfile } from '@plot/core/analyticsEvents.js';
+import { updateProfile } from '@plot/core/profile.js';
 import { AppContext, useApp } from './hooks/useApp.js';
-import { countdownChip, formatDate } from './utils/countdown.js';
-import { TodayLabel } from './components/TodayLabel.jsx';
 
-export { posterUrl, backdropUrl, logoUrl, profileUrl };
-export { AppContext, useApp };
-export { countdownChip, formatDate, TodayLabel };
+export { useApp };
 
 /* ── Timezone mismatch banner ─────────── */
 const TZ_DISMISS_KEY = 'plot_tz_dismissed';
@@ -136,14 +133,15 @@ export default function App() {
   const loadProfile = useCallback(async (userId) => {
     const { data } = await supabase
       .from('profiles')
-      .select('id, region, timezone, onboarding_complete, guide_channels, streaming_providers, genres, include_kids_content, watchlist_availability_alerts, calendar_token, username, display_name, is_public, is_premium, avatar_url, log_rewatches, bio, links')
+      .select('id, region, timezone, onboarding_complete, guide_channels, streaming_providers, genres, include_kids_content, watchlist_availability_alerts, marketing_emails, digest_prompt_dismissed_at, calendar_token, username, display_name, is_public, is_premium, is_supporter, last_kofi_tip_at, avatar_url, bio, links')
       .eq('id', userId)
       .maybeSingle();
     setProfile(data);
     if (data?.region) setTmdbRegion(data.region);
     setUserTimezone(data?.timezone || null);
-    // Keep is_premium on the PostHog person so any event can be segmented by it.
-    if (data) setPersonProps({ is_premium: !!data.is_premium });
+    // Keep all badges on the PostHog person so any event can be segmented by
+    // them — paying and tipping are different behaviours worth telling apart.
+    if (data) setPersonProps(personPropsFromProfile(data));
     setLoading(false);
     if (data) writeCachedSession(userId, data);
     else clearCachedSession();
@@ -187,7 +185,7 @@ export default function App() {
 
   const handleTzUpdate = useCallback(async () => {
     if (!tzBanner || !user) return;
-    await supabase.from('profiles').update({ timezone: tzBanner.deviceTz }).eq('id', user.id);
+    await updateProfile({ userId: user.id, patch: { timezone: tzBanner.deviceTz } });
     loadProfile(user.id);
   }, [tzBanner, user, loadProfile]);
 
@@ -222,7 +220,7 @@ export default function App() {
   const watching     = useWatching(user?.id);
   const reminders    = useReminders(user?.id);
   const topLists     = useTopLists(user?.id);
-  const favorites    = useFavorites(user?.id);
+  const favorites    = useFavorites(user?.id, { watching, watchlist });
   const customLists  = useCustomLists(user?.id);
 
   /* ── Pending "save to watchlist" deep link (newsletter / chart page) ── */

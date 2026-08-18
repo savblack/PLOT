@@ -10,6 +10,10 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as Linking from 'expo-linking';
 import { supabase } from '../lib/supabase';
 import { setTmdbRegion } from '../lib/tmdb';
+import { setUserTimezone } from '@plot/core/date.js';
+import { personPropsFromProfile } from '@plot/core/analyticsEvents.js';
+import { initAnalytics, identifyUser, resetAnalytics, setPersonProps } from '../lib/analytics';
+import { hydrateSectionOpenState } from '../lib/sectionOpenState';
 import { consumeTraktState, exchangeTraktCode } from '../hooks/useTraktSync';
 import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
 import { AppDataProvider } from '../contexts/AppDataContext';
@@ -95,20 +99,37 @@ function RootInner() {
   const loadProfile = async (userId: string) => {
     const { data } = await supabase
       .from('profiles')
-      .select('region, onboarding_complete')
+      .select('region, timezone, onboarding_complete, is_premium, is_supporter, last_kofi_tip_at')
       .eq('id', userId)
       .maybeSingle();
     if (data?.region) setTmdbRegion(data.region);
+    // Set alongside the region at boot, before any screen renders a date —
+    // AppDataProvider applies it again on its own profile load.
+    setUserTimezone(data?.timezone || null);
     setOnboardingComplete(data?.onboarding_complete ?? false);
+    // Keep all badges on the PostHog person so any event can be segmented by
+    // them — paying and tipping are different behaviours worth telling apart.
+    if (data) setPersonProps(personPropsFromProfile(data));
   };
 
   useEffect(() => {
+    // Before the first session check, so nothing captured during boot is lost —
+    // calls made before the SDK is ready queue inside lib/analytics.
+    initAnalytics();
+
+    // Read every persisted section open/closed state into memory before any
+    // list screen mounts. CollapsibleSection seeds from that cache
+    // synchronously; without this a collapsed section flashes open first.
+    hydrateSectionOpenState();
+
     // Initial session check
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session?.user) {
+        identifyUser(session.user.id);
         loadProfile(session.user.id);
       } else {
+        resetAnalytics();
         setOnboardingComplete(null);
       }
       setAuthReady(true);
@@ -118,8 +139,10 @@ function RootInner() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       if (session?.user) {
+        identifyUser(session.user.id);
         loadProfile(session.user.id);
       } else {
+        resetAnalytics();
         setOnboardingComplete(null);
       }
     });

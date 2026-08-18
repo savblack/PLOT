@@ -39,8 +39,7 @@
   <title>Terms of Service — PLOT</title>
   <meta name="description" content="Terms of Service for PLOT, your film and TV journal." />
   <link rel="canonical" href="https://theplot.tv/terms.html" />
-  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
-  <meta name="theme-color" content="#0c0c0c" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#ffffff" />
 
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
@@ -154,8 +153,9 @@
 
     /* ── Footer ───────────────────────── */
     footer {
-      background: #0c0c0c;
-      color: #f0efe8;
+      background: var(--dark);
+      color: var(--text-dark);
+      border-top: 1px solid var(--glass-border);
       padding: 2.6rem 3rem;
       margin-top: -1px;
       position: relative;
@@ -177,23 +177,23 @@
       letter-spacing: -0.05em;
       font-size: 1.8rem;
       line-height: 1;
-      color: #f0efe8;
+      color: var(--text-dark);
       user-select: none;
     }
     .footer-nav { display: flex; gap: 1.3rem; flex-wrap: wrap; }
     .footer-nav a {
       font-size: 0.82rem;
-      color: rgba(240,239,232,0.82);
+      color: var(--text-secondary);
       text-decoration: none;
       transition: color 0.2s;
       white-space: nowrap;
     }
-    .footer-nav a:hover { color: #fff; }
+    .footer-nav a:hover { color: var(--text); }
     .footer-bottom {
       width: 100%;
       padding-top: 1.2rem;
       margin-top: 0.4rem;
-      border-top: 1px solid rgba(255,255,255,0.08);
+      border-top: 1px solid var(--glass-border);
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -202,15 +202,15 @@
     }
     .footer-copy {
       font-size: 0.75rem;
-      color: rgba(240,239,232,0.7);
+      color: var(--text-secondary);
     }
     .footer-social { display: flex; gap: 1rem; align-items: center; }
     .footer-social a {
-      color: rgba(240,239,232,0.7);
+      color: var(--text-secondary);
       display: inline-flex;
       transition: color 0.2s;
     }
-    .footer-social a:hover { color: #fff; }
+    .footer-social a:hover { color: var(--text); }
     .footer-social svg { width: 19px; height: 19px; display: block; }
 
     @media (max-width: 700px) {
@@ -316,6 +316,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <div class="footer-nav">
         <a href="/" data-cta="footer">Home</a>
         <a href="/whats-on" data-cta="footer">What's On</a>
+        <a href="/newsletter" data-cta="footer">Newsletter</a>
         <a href="https://app.theplot.tv/login" data-cta="footer">Log in</a>
         <a href="https://app.theplot.tv/signup" data-cta="footer">Sign up</a>
         <a href="/privacy.html" data-cta="footer">Privacy</a>

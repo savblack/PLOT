@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
-import { supabase } from '../api/supabase.js';
+import { supabase } from '@plot/core/supabase.js';
 import { usePublicProfile } from '../hooks/usePublicProfile.js';
 import { useFollows } from '../hooks/useFollows.js';
 import { useDragScroll } from '../hooks/useDragScroll.js';
@@ -11,10 +11,15 @@ import { useCustomLists } from '@plot/core/useCustomLists.js';
 import { favoriteWords } from '../utils/spelling.js';
 import { getButtonLikeProps } from '../utils/interactive.js';
 import UserList from '../components/UserList.jsx';
+import ProfileBadges from '../components/ProfileBadges.jsx';
 import SheetHeader from '../components/SheetHeader.jsx';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import { COMMON } from '../copy/common.js';
 import { MEDIA } from '../copy/media.js';
+import {
+  SOCIAL_LINKS, USERNAME_RE, validateAvatarFile, isDuplicateUsernameError,
+} from '@plot/core/profileFields.js';
+import { updateProfile } from '@plot/core/profile.js';
 import { PUBLIC_PROFILE_PAGE } from '../copy/publicProfilePage.js';
 import { EVENTS } from '../lib/analytics.js';
 
@@ -89,14 +94,17 @@ function WebsiteIcon() {
   );
 }
 
-const SOCIAL_LINKS = [
-  { key: 'instagram',  label: 'Instagram',  icon: InstagramIcon,  placeholder: 'username',      url: (v) => `https://instagram.com/${v}` },
-  { key: 'x',          label: 'X',          icon: XIcon,          placeholder: 'username',      url: (v) => `https://x.com/${v}` },
-  { key: 'tiktok',     label: 'TikTok',     icon: TikTokIcon,     placeholder: 'username',      url: (v) => `https://tiktok.com/@${v}` },
-  { key: 'youtube',    label: 'YouTube',    icon: YouTubeIcon,    placeholder: 'channel',        url: (v) => `https://youtube.com/@${v}` },
-  { key: 'letterboxd', label: 'Letterboxd', icon: LetterboxdIcon, placeholder: 'username',      url: (v) => `https://letterboxd.com/${v}` },
-  { key: 'website',    label: 'Website',    icon: WebsiteIcon,    placeholder: 'yoursite.com',  url: (v) => (/^https?:\/\//i.test(v) ? v : `https://${v}`) },
-];
+// Icons stay here — they're JSX, so they can't live in core alongside the
+// data. Keyed by the shared definition's ids so a link added to
+// @plot/core/profileFields.js shows up here the moment it has an icon.
+const SOCIAL_ICONS = {
+  instagram:  InstagramIcon,
+  x:          XIcon,
+  tiktok:     TikTokIcon,
+  youtube:    YouTubeIcon,
+  letterboxd: LetterboxdIcon,
+  website:    WebsiteIcon,
+};
 
 // Content rails a user can show/hide. profile_sections null = show all.
 const SECTIONS = [
@@ -364,7 +372,7 @@ function EditProfileModal({ userId, current, onClose, onSaved, favWord }) {
 
   const cleanUname = uname.trim().toLowerCase();
   const unameChanged = cleanUname !== current.username.toLowerCase();
-  const validUname = /^[a-z0-9_]{3,30}$/.test(cleanUname);
+  const validUname = USERNAME_RE.test(cleanUname);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- debounced availability check
@@ -385,6 +393,16 @@ function EditProfileModal({ userId, current, onClose, onSaved, favWord }) {
     e.target.value = '';
     if (!file) return;
     setError('');
+    // This picker used to accept anything the file input handed it, while
+    // Settings capped size and checked the type — same bucket, same path, two
+    // rules. A 20MB HEIC was rejected there and uploaded here.
+    const check = validateAvatarFile(file);
+    if (!check.ok) {
+      setError(check.reason === 'too-large'
+        ? PUBLIC_PROFILE_PAGE.avatarTooLarge(check.maxMb)
+        : PUBLIC_PROFILE_PAGE.avatarNotAnImage);
+      return;
+    }
     setPendingFile(file);
     setAvatar(URL.createObjectURL(file));
   };
@@ -412,13 +430,13 @@ function EditProfileModal({ userId, current, onClose, onSaved, favWord }) {
       }
     }
     if (unameChanged) patch.username = cleanUname;
-    const { error: e } = await supabase.from('profiles').update(patch).eq('id', userId);
-    if (e) { setSaving(false); setError(/duplicate/i.test(e.message) ? PUBLIC_PROFILE_PAGE.usernameTaken : PUBLIC_PROFILE_PAGE.saveFailed); return; }
+    const { error: e } = await updateProfile({ userId, patch });
+    if (e) { setSaving(false); setError(isDuplicateUsernameError(e) ? PUBLIC_PROFILE_PAGE.usernameTaken : PUBLIC_PROFILE_PAGE.saveFailed); return; }
 
     // Section visibility — separate best-effort update so the core save still
     // works before the profile_sections migration lands.
     const sections = SECTIONS.map((s) => s.key).filter((k) => enabled.includes(k));
-    await supabase.from('profiles').update({ profile_sections: sections }).eq('id', userId);
+    await updateProfile({ userId, patch: { profile_sections: sections } });
     setSaving(false);
     onSaved({ display_name: displayName.trim(), username: unameChanged ? cleanUname : current.username, is_public: current.is_public, avatar_url: patch.avatar_url, profile_sections: sections, bio: patch.bio, links: patch.links });
   };
@@ -521,13 +539,13 @@ function EditProfileModal({ userId, current, onClose, onSaved, favWord }) {
             {unameStatus === 'checking' && <div className="pp-hint">Checking…</div>}
             {unameStatus === 'ok'       && <div className="pp-hint" style={{ color: 'var(--chip-today, #16a34a)' }}>Available</div>}
             {unameStatus === 'taken'    && <div className="pp-hint" style={{ color: 'var(--accent)' }}>That username is taken.</div>}
-            {unameStatus === 'invalid'  && <div className="pp-hint" style={{ color: 'var(--accent)' }}>3–30 characters: letters, numbers, underscores.</div>}
+            {unameStatus === 'invalid'  && <div className="pp-hint" style={{ color: 'var(--accent)' }}>{PUBLIC_PROFILE_PAGE.usernameRule}</div>}
           </div>
 
           {/* Fixed set of social/external links */}
           <div>
             <label className="pp-field-label">Links</label>
-            {SOCIAL_LINKS.map(({ key, label, icon: Icon, placeholder }) => (
+            {SOCIAL_LINKS.map(({ key, label, placeholder }) => { const Icon = SOCIAL_ICONS[key]; return (
               <div key={key} className="pp-social-input-row">
                 <span className="pp-social-input-icon" aria-hidden="true"><Icon /></span>
                 <input
@@ -539,7 +557,7 @@ function EditProfileModal({ userId, current, onClose, onSaved, favWord }) {
                   autoCorrect="off"
                 />
               </div>
-            ))}
+            ); })}
           </div>
 
           {/* Which sections show on the profile */}
@@ -655,12 +673,11 @@ export default function PublicProfilePage() {
                   <div className="pp-header-info">
                     <h1 className="pp-name">
                       {name}
-                      {p.is_premium && (
-                        <svg className="pp-verified" viewBox="0 0 22 22" aria-label={PUBLIC_PROFILE_PAGE.verified}>
-                          <path fill="#1d9bf0" d="M20.396 11c-.018-.646-.215-1.275-.57-1.816-.354-.54-.852-.972-1.438-1.246.223-.607.27-1.264.14-1.897-.131-.634-.437-1.218-.882-1.687-.47-.445-1.053-.75-1.687-.882-.633-.13-1.29-.083-1.897.14-.273-.587-.704-1.086-1.245-1.44S11.647 1.62 11 1.604c-.646.017-1.273.213-1.813.568s-.969.854-1.24 1.44c-.608-.223-1.267-.272-1.902-.14-.635.13-1.22.436-1.69.882-.445.47-.749 1.055-.878 1.688-.13.633-.08 1.29.144 1.896-.587.274-1.087.705-1.443 1.245-.356.54-.555 1.17-.574 1.817.02.647.218 1.276.574 1.817.356.54.856.972 1.443 1.245-.224.606-.274 1.263-.144 1.896.13.634.433 1.218.877 1.688.47.443 1.054.747 1.689.878.635.132 1.294.084 1.902-.14.27.586.7 1.084 1.24 1.439.54.354 1.16.561 1.797.577.647-.016 1.275-.213 1.815-.567s.972-.854 1.243-1.44c.604.239 1.268.296 1.902.196.633-.1 1.226-.45 1.687-.882.461-.432.879-.974 1.087-1.588.207-.614.196-1.27-.032-1.876.587-.274 1.087-.705 1.443-1.245.356-.54.555-1.17.574-1.817z"/>
-                          <path d="M7.3 11.2l2.6 2.6 4.8-5.4" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                      )}
+                      <ProfileBadges
+                        isPremium={p.is_premium}
+                        isSupporter={p.is_supporter}
+                        className="pp-verified"
+                      />
                     </h1>
                     <p className="pp-handle">@{p.username}</p>
                     <div className="pp-stats">
@@ -680,7 +697,7 @@ export default function PublicProfilePage() {
                 <div className="pp-footer-row">
                   {p.links && Object.keys(p.links).length > 0 && (
                     <div className="pp-social-row">
-                      {SOCIAL_LINKS.filter(({ key }) => p.links[key]).map(({ key, label, icon: Icon, url }) => (
+                      {SOCIAL_LINKS.filter(({ key }) => p.links[key]).map(({ key, label, url }) => { const Icon = SOCIAL_ICONS[key]; return (
                         <a
                           key={key}
                           className="pp-social-btn"
@@ -692,7 +709,7 @@ export default function PublicProfilePage() {
                         >
                           <Icon />
                         </a>
-                      ))}
+                      ); })}
                     </div>
                   )}
 

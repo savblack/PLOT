@@ -1,17 +1,21 @@
-// Weekly subscriber digest (Thursday). A designed HTML email:
+// The subscriber digest. A designed HTML email:
 //   • a rich featured title (#1 on the chart) with ratings, cast, blurb, quote,
 //     and where to watch
 //   • the rest of the chart (ranks 2–5)
 //   • weekend watch — highly-rated recent streaming releases
 //   • new on streaming — titles that hit a platform in the last week
 // Titles are de-duped across sections; every row carries a poster + a platform.
+//
+// Each issue covers a week of film and TV, but this script has no cron: it sends
+// only when someone runs `npm run newsletter`. That is why no opt-in surface
+// claims a frequency — see packages/core/copy/settingsView.js's marketingEmails
+// entry. Add a schedule before promising one.
 import { getSupabase, supabaseUrl } from '../lib/supabase.mjs';
 import { sendBatch, FROM_MARKETING } from '../lib/email.mjs';
 import { recentSnapshots, withMovement } from '../lib/trending.mjs';
 import { tmdb } from '../lib/tmdb.mjs';
 import { getRatings } from '../lib/omdb.mjs';
-import { addDays } from '../lib/dates.mjs';
-import { tzDateParts } from '../learning/window.mjs';
+import { addDays, datePartsInTz } from '../lib/dates.mjs';
 import { colors } from '@plot/core/tokens.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -336,7 +340,7 @@ const main = async () => {
   const data = { dateLabel, featured, kicker: "This week's No.1", chart, weekend, streaming };
   const issueHtml = buildHtml(data, `${SITE}/?unsubscribe_preview`);
   const subject = 'This week in film & TV — PLOT';
-  const localIssueDate = tzDateParts(now);
+  const localIssueDate = datePartsInTz(now);
   const weekStart = addDays(localIssueDate.date, -ISSUE_WEEK_OFFSET[localIssueDate.weekday]);
 
   if (DRY_RUN) {
@@ -344,10 +348,11 @@ const main = async () => {
     return;
   }
 
-  const { data: subscribers } = await supabase
-    .from('marketing_subscribers')
-    .select('email, unsubscribe_token')
-    .eq('status', 'active');
+  // Not a plain select on marketing_subscribers: app opt-ins are linked to an
+  // account whose address can change in Settings, and the RPC resolves the
+  // current one from auth.users rather than trusting the stored copy.
+  const { data: subscribers, error: subscribersError } = await supabase.rpc('marketing_recipient_list');
+  if (subscribersError) throw new Error(`marketing_recipient_list failed: ${subscribersError.message}`);
 
   if (!subscribers?.length) {
     console.log('No active subscribers — skipping newsletter.');

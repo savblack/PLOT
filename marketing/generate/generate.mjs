@@ -167,44 +167,76 @@ const notifyReview = async (count, sheetUrl) => {
   }
 };
 
+// Durable run history (marketing_batch_runs). Defensively wrapped: this is
+// incidental telemetry about generate.mjs, not its actual job, so a tracking
+// failure must never fail the real render run.
+const startBatchRun = async (supabase) => {
+  try {
+    const { data } = await supabase.from('marketing_batch_runs').insert({ run_type: 'generate' }).select('id').single();
+    return data?.id ?? null;
+  } catch (err) {
+    console.error('Failed to start batch run record:', err.message);
+    return null;
+  }
+};
+
+const finishBatchRun = async (supabase, runId, patch) => {
+  if (!runId) return;
+  try {
+    await supabase.from('marketing_batch_runs').update({ finished_at: new Date().toISOString(), ...patch }).eq('id', runId);
+  } catch (err) {
+    console.error('Failed to finish batch run record:', err.message);
+  }
+};
+
 const main = async () => {
   const supabase = getSupabase();
+  const runId = await startBatchRun(supabase);
 
-  // Render every post whose copy is ready (the copy worker has run), across the
-  // whole upcoming week, onto the review desk (status needs_review).
-  const horizon = new Date(Date.now() + 8 * 86400000).toISOString();
-  const { data: pending, error } = await supabase
-    .from('marketing_posts')
-    .select('*')
-    .in('status', ['copy_ready', 'generated'])
-    .lte('scheduled_for', horizon)
-    .order('scheduled_for');
-  if (error) throw new Error(error.message);
+  try {
+    // Render every post whose copy is ready (the copy worker has run), across the
+    // whole upcoming week, onto the review desk (status needs_review).
+    const horizon = new Date(Date.now() + 8 * 86400000).toISOString();
+    const { data: pending, error } = await supabase
+      .from('marketing_posts')
+      .select('*')
+      .in('status', ['copy_ready', 'generated'])
+      .lte('scheduled_for', horizon)
+      .order('scheduled_for');
+    if (error) throw new Error(error.message);
 
-  let count = 0;
-  for (const post of pending || []) {
-    try {
-      if (post.status === 'generated' && post.copy && post.media) {
+    let count = 0;
+    for (const post of pending || []) {
+      try {
+        if (post.status === 'generated' && post.copy && post.media) {
+          await supabase.from('marketing_posts')
+            .update({ status: 'needs_review', updated_at: new Date().toISOString() })
+            .eq('id', post.id);
+          await applyAnnounceState(supabase, post);
+        } else {
+          await generatePost(supabase, post);
+        }
+        count++;
+      } catch (err) {
+        console.error(`Generation failed for ${post.topic_key}:`, err.message);
         await supabase.from('marketing_posts')
-          .update({ status: 'needs_review', updated_at: new Date().toISOString() })
+          .update({ status: 'failed', error: String(err.message).slice(0, 500) })
           .eq('id', post.id);
-        await applyAnnounceState(supabase, post);
-      } else {
-        await generatePost(supabase, post);
       }
-      count++;
-    } catch (err) {
-      console.error(`Generation failed for ${post.topic_key}:`, err.message);
-      await supabase.from('marketing_posts')
-        .update({ status: 'failed', error: String(err.message).slice(0, 500) })
-        .eq('id', post.id);
     }
-  }
 
-  await closeBrowser();
-  const sheetUrl = count ? await hostReviewSheet(supabase) : null;
-  await notifyReview(count, sheetUrl);
-  console.log(`Rendered ${count} post(s) -> needs_review; notified ${ADMIN_EMAIL}.${sheetUrl ? ' Sheet hosted.' : ''}`);
+    await closeBrowser();
+    const sheetUrl = count ? await hostReviewSheet(supabase) : null;
+    await notifyReview(count, sheetUrl);
+    console.log(`Rendered ${count} post(s) -> needs_review; notified ${ADMIN_EMAIL}.${sheetUrl ? ' Sheet hosted.' : ''}`);
+    await finishBatchRun(supabase, runId, {
+      status: 'succeeded',
+      counts: { pending: (pending || []).length, rendered: count, failed: (pending || []).length - count },
+    });
+  } catch (err) {
+    await finishBatchRun(supabase, runId, { status: 'failed', error: String(err.message || err).slice(0, 500) });
+    throw err;
+  }
 };
 
 main().catch(async (err) => { console.error(err); await closeBrowser(); process.exit(1); });

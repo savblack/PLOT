@@ -39,10 +39,13 @@
   <title>PLOT – Your Film &amp; TV Companion</title>
   <meta name="description" content="PLOT is your personal film and TV companion: for everything you've watched and everything you want to watch, all in one beautiful home." />
   <link rel="canonical" href="https://theplot.tv/" />
-  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
-  <meta name="theme-color" content="#0c0c0c" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#ffffff" />
 
   <!-- Favicon / app icon -->
+  <!-- Every poster on this page is served from TMDB's image CDN rather than
+       stored in the repo, so the connection is worth opening early. -->
+  <link rel="preconnect" href="https://image.tmdb.org" crossorigin />
+  <link rel="dns-prefetch" href="https://image.tmdb.org" />
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <link rel="apple-touch-icon" href="apple-touch-icon.png" />
   <link rel="manifest" href="site.webmanifest" />
@@ -225,14 +228,16 @@
       color: #fff;
       transform: translateY(-1px);
     }
+    /* Kept as its own class for the sections that used to sit on black — on the
+       light site it resolves to the same ink outline as .btn-outline. */
     .btn-outline-white {
       background: transparent;
-      color: #fff;
-      border: 1px solid #fff;
+      color: var(--text);
+      border: 1px solid var(--text);
     }
     .btn-outline-white:hover {
-      background: #fff;
-      color: #0e0e0e;
+      background: var(--text);
+      color: #fff;
       transform: translateY(-1px);
     }
     .btn-large {
@@ -611,9 +616,11 @@
     /* What's On — closing CTA over a poster wall */
     #whats-on-cta {
       position: relative;
-      background: var(--dark);
+      /* Fallback if the poster wall never loads — the same ground as the
+         section above it, so there's no visible seam */
+      background: var(--bg);
       color: var(--text-dark);
-      padding: 8rem 2rem;
+      padding: 11rem 2rem 9rem;
       overflow: hidden;
       isolation: isolate;
       z-index: 3;
@@ -621,21 +628,36 @@
 
     .woc-wall {
       position: absolute;
-      inset: -6% -2% 0;
-      z-index: -2;
+      inset: 0;
+      z-index: -1;
       display: grid;
       grid-template-columns: repeat(9, 1fr);
+      /* Rows keep their natural 2:3 height and stack from the top; the mask
+         below, not the section's clip edge, decides where they stop. */
+      grid-auto-rows: min-content;
+      align-content: start;
       gap: 12px;
-      opacity: 0.5;
-      transform: rotate(-4deg) scale(1.18);
-      transform-origin: center;
+      /* A true background weight. The wall used to sit at 0.3 under a radial
+         white wash that did the legibility work; without that wash 0.3 leaves
+         the headline hard to read, so the field itself has to be quieter. */
+      opacity: 0.15;
+      /* Fade the field out top and bottom instead of letting `overflow: hidden`
+         chop through poster art, which read as an unfinished layout. */
+      -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 20%, #000 78%, transparent 100%);
+      mask-image: linear-gradient(to bottom, transparent 0, #000 20%, #000 78%, transparent 100%);
+      /* The rows overflow this box, and a mask repeats by default — without
+         this a second copy of the fade would tile below, making the posters
+         reappear. The section's `overflow: hidden` happens to clip exactly at
+         the mask box today, so this only bites if the padding ever changes. */
+      -webkit-mask-repeat: no-repeat;
+      mask-repeat: no-repeat;
     }
 
     .woc-tile {
       aspect-ratio: 2 / 3;
       border-radius: 8px;
       overflow: hidden;
-      background: #1c1c1f;
+      background: #e5e3db;
     }
 
     .woc-tile img {
@@ -649,16 +671,7 @@
 
     .woc-tile img.loaded { opacity: 1; }
 
-    .woc-scrim {
-      position: absolute;
-      inset: 0;
-      z-index: -1;
-      background:
-        linear-gradient(to bottom, transparent 62%, var(--dark) 99%),
-        radial-gradient(ellipse 72% 78% at 50% 50%, rgba(12,12,12,0.46) 0%, rgba(12,12,12,0.82) 52%, rgba(12,12,12,0.96) 100%);
-    }
-
-    .woc-inner { max-width: 720px; margin: 0 auto; text-align: center; }
+    .woc-inner { max-width: 720px; margin: 0 auto; text-align: center; position: relative; }
 
     .woc-headline {
       font-family: var(--serif);
@@ -674,7 +687,7 @@
     .woc-sub {
       font-size: 1.05rem;
       font-weight: 300;
-      color: rgba(240,239,232,0.72);
+      color: var(--text-secondary);
       max-width: 44ch;
       margin: 0 auto 1.6rem;
       line-height: 1.5;
@@ -684,16 +697,21 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 2.4rem;
+      gap: 0.95rem;
     }
-    .woc-actions .demo-link { margin-top: 0; }
 
     .woc-sub-wrap { display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-start; }
+    /* The closer centres its capture; the app-soon section keeps the
+       left-aligned default because it sits in a left-aligned copy column. */
+    #whats-on-cta .woc-sub-wrap { align-items: center; gap: 0.95rem; }
 
     .woc-form {
       display: flex;
       align-items: center;
-      border: 1px solid rgba(255,255,255,0.22);
+      /* Full-strength ink, matching the outlined button that sits inside this
+         pill on the app-soon capture, so the two strokes read as one component
+         rather than a dark button floating in a grey ring. */
+      border: 1px solid var(--text);
       border-radius: var(--r-pill);
       padding: 6px;
       height: 56px;
@@ -710,17 +728,17 @@
       font-family: var(--sans);
       font-size: 0.88rem;
       padding: 0 6px 0 16px;
-      color: #fff;
+      color: var(--text);
     }
-    .woc-form input[type="email"]::placeholder { color: rgba(240,239,232,0.45); }
+    .woc-form input[type="email"]::placeholder { color: var(--text-secondary); }
 
     .woc-form button {
       height: 40px;
       padding: 0 18px;
-      border: 1px solid rgba(255,255,255,0.6);
+      border: 1px solid var(--text);
       border-radius: var(--r-pill);
       background: transparent;
-      color: #fff;
+      color: var(--text);
       font-family: var(--sans);
       font-size: 0.82rem;
       font-weight: 600;
@@ -728,21 +746,36 @@
       white-space: nowrap;
       transition: all 0.25s var(--ease);
     }
-    .woc-form button:hover:not(:disabled) { background: #fff; color: #0e0e0e; }
+    .woc-form button:hover:not(:disabled) { background: var(--text); color: #fff; }
     .woc-form button:disabled { opacity: 0.6; cursor: default; }
 
-    .woc-hint { font-size: 0.76rem; font-weight: 300; color: rgba(240,239,232,0.5); align-self: stretch; text-align: center; }
-    .woc-msg { font-size: 0.78rem; color: rgba(240,239,232,0.6); min-height: 1.1em; padding-left: 0.5rem; }
+    /* Subscribe is the closer's one primary action, so it takes the site's
+       existing solid CTA ink. The app-soon capture stays outlined: two solid
+       buttons on one page would leave neither of them reading as primary. */
+    #whats-on-cta .woc-form button { background: var(--ink); border-color: var(--ink); color: #fff; }
+    #whats-on-cta .woc-form button:hover:not(:disabled) { background: var(--ink-hover); border-color: var(--ink-hover); }
+
+    /* One quiet line carries both secondary routes (browse, and the archive)
+       below the form, replacing the orphaned link that used to sit above it. */
+    .woc-hint { font-size: 0.8rem; font-weight: 300; color: var(--text-secondary); align-self: stretch; text-align: center; }
+    .woc-hint a { color: var(--text); text-decoration: none; border-bottom: 1px solid rgba(26,26,26,0.24); padding-bottom: 1px; transition: color 0.2s, border-color 0.2s; }
+    .woc-hint a:hover { color: var(--text); border-color: var(--text); }
+    .woc-hint .sep { margin: 0 0.55rem; color: rgba(26,26,26,0.28); }
+    .woc-msg { font-size: 0.78rem; color: var(--text-secondary); min-height: 1.1em; padding-left: 0.5rem; }
+    #whats-on-cta .woc-msg { padding-left: 0; text-align: center; }
 
     /* Honeypot: invisible to humans, tempting to bots */
     .woc-form .fn-website { position: absolute; left: -9999px; opacity: 0; pointer-events: none; }
 
-    /* Footer — lean nav rail, continuous with the dark section above */
+    /* Footer — lean nav rail. No hairline above it: the closing section now
+       fades its poster wall out to the same white ground the footer sits on, so
+       a rule there just draws a seam across an otherwise continuous surface.
+       (The old `margin-top: -1px` went with that border, pulling the footer up
+       to overlap the section edge so the two never doubled up.) */
     footer {
       background: var(--dark);
       color: var(--text-dark);
       padding: 2.6rem 3rem calc(2.6rem + var(--ticker-height) + env(safe-area-inset-bottom, 0px));
-      margin-top: -1px;
       position: relative;
       z-index: 3;
     }
@@ -772,18 +805,18 @@
 
     .footer-nav a {
       font-size: 0.82rem;
-      color: rgba(240,239,232,0.82);
+      color: var(--text-secondary);
       text-decoration: none;
       transition: color 0.2s;
       white-space: nowrap;
     }
-    .footer-nav a:hover { color: #fff; }
+    .footer-nav a:hover { color: var(--text); }
 
     .footer-bottom {
       width: 100%;
       padding-top: 1.2rem;
       margin-top: 0.4rem;
-      border-top: 1px solid rgba(255,255,255,0.08);
+      border-top: 1px solid var(--glass-border);
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -793,22 +826,24 @@
 
     .footer-copy {
       font-size: 0.75rem;
-      color: rgba(240,239,232,0.7);
+      color: var(--text-secondary);
     }
 
     .footer-social { display: flex; gap: 1rem; align-items: center; }
 
     .footer-social a {
-      color: rgba(240,239,232,0.7);
+      color: var(--text-secondary);
       display: inline-flex;
       transition: color 0.2s;
     }
-    .footer-social a:hover { color: #fff; }
+    .footer-social a:hover { color: var(--text); }
     .footer-social svg { width: 19px; height: 19px; display: block; }
 
     @media (max-width: 820px) { .woc-wall { grid-template-columns: repeat(6, 1fr); } }
     @media (max-width: 600px) {
-      #whats-on-cta { padding-left: 1.5rem; padding-right: 1.5rem; }
+      /* The 11rem/9rem desktop breathing room just pushes the form off the
+         fold on a phone. */
+      #whats-on-cta { padding: 7rem 1.5rem 6rem; }
       footer { padding-left: 1.5rem; padding-right: 1.5rem; }
     }
 
@@ -940,7 +975,7 @@
        DEMO SECTIONS — Guide, My Lists, Calendar
     ═══════════════════════════════════════════════════════════ */
 
-    /* Shared dark section base */
+    /* Shared editorial section base (white ground, ink text) */
     .section-dark {
       background: var(--dark);
       color: var(--text-dark);
@@ -953,7 +988,7 @@
       font-weight: 600;
       letter-spacing: 0.18em;
       text-transform: uppercase;
-      color: rgba(240,239,232,0.4);
+      color: var(--text-secondary);
       margin-bottom: 1.4rem;
     }
 
@@ -980,7 +1015,7 @@
     .demo-body {
       font-size: 1rem;
       font-weight: 300;
-      color: rgba(240,239,232,0.5);
+      color: var(--text-secondary);
       line-height: 1.45;
       max-width: 380px;
     }
@@ -992,7 +1027,7 @@
       font-size: 0.82rem;
       color: var(--text-dark);
       text-decoration: none;
-      border-bottom: 1px solid rgba(240,239,232,0.25);
+      border-bottom: 1px solid rgba(26,26,26,0.25);
       padding-bottom: 2px;
       transition: border-color 0.2s;
     }
@@ -1003,9 +1038,28 @@
     }
     .demo-link.dark-link:hover { border-bottom-color: var(--text); }
 
+    /* Origin section — asymmetric text/text split, no sticky (unlike
+       .demo-split, which pairs copy with a scrolling phone mockup) */
+    .origin-split {
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 5rem;
+      align-items: start;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .origin-actions { display: flex; align-items: center; gap: 1.8rem; flex-wrap: wrap; margin-top: 2.2rem; }
+    .origin-actions .demo-link { margin-top: 0; }
+
     /* "Pulls from" platform-proof row — substantiates the "every platform"
-       claim. Logos in their own brand colours (most are already white; Netflix
-       + Prime carry the only colour), sized per-logo for even optical weight. */
+       claim. Logos keep their own brand colours and are sized per-logo for even
+       optical weight. Every mark is a WebP cropped tight to its artwork, so the
+       heights below are true ink heights rather than boxes with padding.
+       Two marks ship recoloured rather than as supplied: AMC+ drew its "+" and
+       one frame corner in white, which left both invisible here, and its cyan
+       was too pale to read at the row's opacity — it's flattened to one darker
+       teal. Disney+ is darkened the same way for weight parity with Paramount+
+       and HBO max, which flank it. */
     .demo-copy .btn { margin-top: 2.6rem; }
     /* Let the column keep its grid share; the marquee's wide track clips inside. */
     .demo-copy { min-width: 0; }
@@ -1023,17 +1077,25 @@
     }
     @keyframes marquee-scroll { to { transform: translateX(-50%); } }
     .marquee .pl { width: auto; display: block; opacity: 0.55; }
-    .pl-netflix     { height: 18px; }
+    /* No filter needed: every mark now ships dark enough to read on white, and
+       flattening would cost Peacock its colour dots and Disney+ its teal. */
+    .pl-netflix     { height: 13px; }   /* all-caps, so a shorter measure than the lowercase marks */
     .pl-prime       { height: 16px; }
     .pl-max         { height: 21px; }
-    .pl-disney      { height: 20px; }
+    .pl-disney      { height: 23px; }   /* the swoosh takes the top third, so the script needs the extra measure */
     .pl-paramount   { height: 21px; }
     .pl-amc         { height: 20px; }
     .pl-crunchyroll { height: 16px; }
-    .pl-hulu        { height: 15px; }
+    .pl-hulu        { height: 18px; }   /* ascenders eat the measure, so it runs taller than the row's other lowercase marks */
     .pl-peacock     { height: 15px; }
     .pl-stan        { height: 17px; }
     .pl-hayu        { height: 16px; }
+    /* Peacock opts out of the row's fade: its five colour dots are the point of
+       the mark, and mixing 45% white into them turns the amber one invisible.
+       Its wordmark is baked to the grey the fade used to produce, so it still
+       matches its neighbours. Needs the .marquee prefix to outrank the opacity
+       above; rebake the file if that opacity ever changes. */
+    .marquee .pl-peacock { opacity: 1; }
     @media (prefers-reduced-motion: reduce) { .marquee-track { animation: none; } }
 
     /* App UI shown as floating, deconstructed cards (replaces the phone frame).
@@ -1043,7 +1105,7 @@
     .app-float { position: absolute; top: 0; left: 0; width: 520px; height: 540px; transform: scale(var(--afs)); transform-origin: top left; }
     .af-card {
       position: absolute; border-radius: 16px; background-size: cover; background-position: center;
-      background-color: #141414; box-shadow: 0 30px 60px -28px rgba(0,0,0,0.75); overflow: hidden;
+      background-color: #e5e3db; box-shadow: 0 24px 48px -30px rgba(0,0,0,0.4); overflow: hidden;
     }
     .af-hero { width: 260px; height: 356px; left: 130px; top: 70px; z-index: 4; }
     .af-hero::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.82), transparent 50%); }
@@ -1053,9 +1115,9 @@
     .af-p1 { width: 150px; height: 216px; left: -14px; top: 150px; z-index: 3; transform: rotate(-6deg); }
     .af-p2 { width: 140px; height: 202px; right: 8px; top: 40px; z-index: 3; transform: rotate(7deg); }
     .af-p3 { width: 128px; height: 186px; right: 30px; top: 300px; z-index: 5; transform: rotate(-4deg); }
-    .af-chip { position: absolute; z-index: 6; background: #141414; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 10px 13px; box-shadow: 0 20px 40px -20px rgba(0,0,0,0.7); }
-    .af-chip .af-t { font-size: 0.72rem; font-weight: 600; color: #f0efe8; }
-    .af-chip .af-s { font-size: 0.5rem; letter-spacing: 0.09em; text-transform: uppercase; color: rgba(240,239,232,0.4); margin-bottom: 3px; }
+    .af-chip { position: absolute; z-index: 6; background: var(--surface); border: 1px solid rgba(0,0,0,0.1); border-radius: 12px; padding: 10px 13px; box-shadow: 0 16px 32px -22px rgba(0,0,0,0.35); }
+    .af-chip .af-t { font-size: 0.72rem; font-weight: 600; color: var(--text); }
+    .af-chip .af-s { font-size: 0.5rem; letter-spacing: 0.09em; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 3px; }
     .af-chip1 { left: -12px; top: 92px; }
     .af-chip2 { right: 40px; bottom: 8px; }
     .af-chip3 { right: 4px; top: 0; }
@@ -1074,6 +1136,15 @@
       height: 655px;
       flex-shrink: 0;
       overflow: hidden;
+      /* The bezel's glass cut-out is taller than .phone-frame below: the screen
+         runs up either side of the notch, where .phone-frame does not reach.
+         That strip used to fall through to a black section and read as screen;
+         on the white section it read as two white wedges beside the notch. So
+         back the whole wrap in screen black. The bezel (z-index 10) covers all
+         of it except the glass, and the radius keeps the fill inside the phone's
+         own outline (measured ~49px) rather than squaring off its corners. */
+      background: #0c0c0c;
+      border-radius: 50px;
     }
 
     .iphone-png-frame {
@@ -1189,6 +1260,9 @@
 
     /* Mobile app — coming soon (reuses the phone frame + Discover screen) */
     #app-soon { background: var(--dark); padding: 10rem 2rem; }
+
+    /* Origin — built by one person */
+    #origin { background: var(--bg); padding: 10rem 2rem; }
     .app-eyebrow {
       display: inline-block; font-size: 0.62rem; font-weight: 600;
       letter-spacing: 0.22em; text-transform: uppercase;
@@ -1274,7 +1348,7 @@
     .cal-sub {
       font-size: 1rem;
       font-weight: 300;
-      color: rgba(240,239,232,0.45);
+      color: var(--text-secondary);
       max-width: 440px;
       margin: 0 auto 5rem;
       line-height: 1.45;
@@ -1284,7 +1358,7 @@
       align-items: center;
       justify-content: center;
       padding: 16px 20px;
-      border-bottom: 1px solid rgba(255,255,255,0.06);
+      border-bottom: 1px solid rgba(0,0,0,0.08);
     }
     .cal-month {
       font-family: var(--serif);
@@ -1300,7 +1374,7 @@
       font-weight: 600;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: rgba(240,239,232,0.35);
+      color: var(--text-secondary);
     }
     /* My Lists — a coverflow that glides the focus through each collection.
        The neighbouring lists sit angled on either side of the centred "cover";
@@ -1338,8 +1412,9 @@
       .demo-split { grid-template-columns: 1fr; gap: 3.5rem; }
       .demo-copy { position: static; order: 1 !important; }
       .phone-wrap { order: 2 !important; }
+      .origin-split { grid-template-columns: 1fr; gap: 2.6rem; }
       /* Guide demo — tighten the stacked layout on mobile */
-      section#guide-demo, section#app-soon { padding-top: 5rem; padding-bottom: 5rem; }
+      section#guide-demo, section#app-soon, section#origin { padding-top: 5rem; padding-bottom: 5rem; }
       #guide-demo .demo-split { gap: 2.4rem; }
       #guide-demo .marquee-track { gap: 2.2rem; }
     }
@@ -1361,8 +1436,8 @@
 
     /* Guide panel */
     .guide-panel {
-      background: #141414;
-      border: 1px solid rgba(255,255,255,0.07);
+      background: var(--surface);
+      border: 1px solid rgba(0,0,0,0.1);
       border-radius: 20px;
       overflow: hidden;
       display: flex;
@@ -1373,7 +1448,7 @@
       align-items: center;
       justify-content: space-between;
       padding: 14px 18px;
-      border-bottom: 1px solid rgba(255,255,255,0.06);
+      border-bottom: 1px solid rgba(0,0,0,0.08);
       flex-shrink: 0;
     }
     .guide-hdr-title {
@@ -1381,11 +1456,11 @@
       font-weight: 600;
       letter-spacing: 0.1em;
       text-transform: uppercase;
-      color: rgba(240,239,232,0.45);
+      color: var(--text-secondary);
     }
     .guide-hdr-hint {
       font-size: 0.62rem;
-      color: rgba(240,239,232,0.22);
+      color: rgba(26,26,26,0.38);
     }
     .guide-list { flex: 1; overflow-y: hidden; }
     .guide-item {
@@ -1393,16 +1468,16 @@
       align-items: center;
       gap: 11px;
       padding: 10px 14px;
-      border-bottom: 1px solid rgba(255,255,255,0.04);
+      border-bottom: 1px solid rgba(0,0,0,0.06);
       transition: background 0.15s;
     }
-    .guide-item:hover { background: rgba(255,255,255,0.03); }
+    .guide-item:hover { background: rgba(0,0,0,0.03); }
     .guide-item:last-child { border-bottom: none; }
     .guide-poster {
       width: 38px;
       height: 54px;
       border-radius: 5px;
-      background: #222 center/cover no-repeat;
+      background: #e5e3db center/cover no-repeat;
       flex-shrink: 0;
     }
     .guide-info { flex: 1; min-width: 0; }
@@ -1417,15 +1492,15 @@
     }
     .guide-item-meta {
       font-size: 0.67rem;
-      color: rgba(240,239,232,0.35);
+      color: var(--text-secondary);
       margin-bottom: 4px;
     }
     .guide-add-btn {
       width: 30px; height: 30px;
       border-radius: 50%;
-      border: 1.5px solid rgba(255,255,255,0.14);
+      border: 1.5px solid rgba(0,0,0,0.18);
       background: transparent;
-      color: rgba(240,239,232,0.45);
+      color: var(--text-secondary);
       font-size: 1rem;
       cursor: pointer;
       display: flex;
@@ -1449,11 +1524,10 @@
 
     /* Interactive calendar mockup */
     .cal-mockup-int {
-      background: #141414;
-      border: 1px solid rgba(255,255,255,0.07);
+      background: var(--surface);
+      border: 1px solid rgba(0,0,0,0.1);
       border-radius: 20px;
       overflow: hidden;
-      box-shadow: 0 30px 80px rgba(0,0,0,0.5);
     }
     .cal-grid-int {
       display: grid;
@@ -1472,9 +1546,9 @@
       transition: background 0.15s;
       min-height: 46px;
     }
-    .cal-cell-int:hover:not(.dim) { background: rgba(255,255,255,0.06); }
+    .cal-cell-int:hover:not(.dim) { background: rgba(0,0,0,0.05); }
     .cal-cell-int.dim  { opacity: 0.28; pointer-events: none; }
-    .cal-cell-int.selected { background: rgba(255,255,255,0.09); }
+    .cal-cell-int.selected { background: rgba(0,0,0,0.07); }
     /* Interactive day cells render as <button> — reset native chrome and give a
        clear keyboard focus ring (SUS-79). */
     button.cal-cell-int {
@@ -1482,19 +1556,19 @@
       border: 0; background: none; font: inherit; color: inherit; width: 100%;
     }
     .cal-cell-int:focus-visible {
-      outline: 2px solid rgba(240,239,232,0.85);
+      outline: 2px solid rgba(26,26,26,0.85);
       outline-offset: -2px;
     }
     .cal-cell-int.today .cal-dn-int {
-      background: rgba(240,239,232,0.92);
-      color: #0c0c0c;
+      background: var(--text);
+      color: #fff;
       border-radius: 50%;
       width: 22px; height: 22px;
       display: flex; align-items: center; justify-content: center;
     }
     .cal-dn-int {
       font-size: 0.7rem;
-      color: rgba(240,239,232,0.6);
+      color: rgba(26,26,26,0.7);
       width: 22px; height: 22px;
       display: flex; align-items: center; justify-content: center;
     }
@@ -1503,13 +1577,13 @@
 
     /* Day events panel */
     .cal-day-panel {
-      border-top: 1px solid rgba(255,255,255,0.06);
+      border-top: 1px solid rgba(0,0,0,0.08);
       padding: 12px 14px;
       min-height: 64px;
     }
     .cal-day-empty {
       font-size: 0.7rem;
-      color: rgba(240,239,232,0.2);
+      color: rgba(26,26,26,0.4);
       text-align: center;
       padding: 8px 0;
     }
@@ -1518,17 +1592,17 @@
       align-items: center;
       gap: 10px;
       padding: 7px 0;
-      border-bottom: 1px solid rgba(255,255,255,0.04);
+      border-bottom: 1px solid rgba(0,0,0,0.06);
     }
     .cal-day-event:last-child { border-bottom: none; }
     .cal-day-poster {
       width: 28px; height: 40px;
       border-radius: 4px;
-      background: #222 center/cover no-repeat;
+      background: #e5e3db center/cover no-repeat;
       flex-shrink: 0;
     }
     .cal-day-title { font-size: 0.8rem; font-weight: 500; color: var(--text-dark); }
-    .cal-day-meta  { font-size: 0.63rem; color: rgba(240,239,232,0.32); margin-top: 2px; }
+    .cal-day-meta  { font-size: 0.63rem; color: var(--text-secondary); margin-top: 2px; }
 
     /* Toast */
     .cal-toast {
@@ -1536,8 +1610,8 @@
       bottom: 5rem;
       left: 50%;
       transform: translateX(-50%) translateY(16px);
-      background: #1d1d1d;
-      border: 1px solid rgba(255,255,255,0.1);
+      background: var(--surface);
+      border: 1px solid rgba(0,0,0,0.14);
       border-radius: var(--r-badge);
       padding: 9px 16px 9px 12px;
       font-size: 0.78rem;
@@ -1640,28 +1714,28 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           <div class="marquee-track">
             <!-- set 1 -->
             <img class="pl pl-netflix"     src="images/platforms/netflix.webp"            alt="" loading="lazy" decoding="async">
-            <img class="pl pl-prime"       src="images/platforms/amazon-prime-video.svg"  alt="" loading="lazy" decoding="async">
+            <img class="pl pl-prime"       src="images/platforms/amazon-prime-video.webp"  alt="" loading="lazy" decoding="async">
             <img class="pl pl-max"         src="images/platforms/hbo-max.webp"            alt="" loading="lazy" decoding="async">
             <img class="pl pl-disney"      src="images/platforms/disney-plus.webp"        alt="" loading="lazy" decoding="async">
-            <img class="pl pl-paramount"   src="images/platforms/paramount-plus.svg"      alt="" loading="lazy" decoding="async">
+            <img class="pl pl-paramount"   src="images/platforms/paramount-plus.webp"      alt="" loading="lazy" decoding="async">
             <img class="pl pl-amc"         src="images/platforms/amc-plus.webp"           alt="" loading="lazy" decoding="async">
-            <img class="pl pl-crunchyroll" src="images/platforms/crunchyroll.svg"         alt="" loading="lazy" decoding="async">
-            <img class="pl pl-hulu"        src="images/platforms/hulu.svg"                alt="" loading="lazy" decoding="async">
-            <img class="pl pl-peacock"     src="images/platforms/peacock.svg"             alt="" loading="lazy" decoding="async">
-            <img class="pl pl-stan"        src="images/platforms/stan.svg"                alt="" loading="lazy" decoding="async">
-            <img class="pl pl-hayu"        src="images/platforms/hayu.svg"                alt="" loading="lazy" decoding="async">
+            <img class="pl pl-crunchyroll" src="images/platforms/crunchyroll.webp"         alt="" loading="lazy" decoding="async">
+            <img class="pl pl-hulu"        src="images/platforms/hulu.webp"                alt="" loading="lazy" decoding="async">
+            <img class="pl pl-peacock"     src="images/platforms/peacock.webp"             alt="" loading="lazy" decoding="async">
+            <img class="pl pl-stan"        src="images/platforms/stan.webp"                alt="" loading="lazy" decoding="async">
+            <img class="pl pl-hayu"        src="images/platforms/hayu.webp"                alt="" loading="lazy" decoding="async">
             <!-- set 2 (duplicate for a seamless loop) -->
             <img class="pl pl-netflix"     src="images/platforms/netflix.webp"            alt="" loading="lazy" decoding="async">
-            <img class="pl pl-prime"       src="images/platforms/amazon-prime-video.svg"  alt="" loading="lazy" decoding="async">
+            <img class="pl pl-prime"       src="images/platforms/amazon-prime-video.webp"  alt="" loading="lazy" decoding="async">
             <img class="pl pl-max"         src="images/platforms/hbo-max.webp"            alt="" loading="lazy" decoding="async">
             <img class="pl pl-disney"      src="images/platforms/disney-plus.webp"        alt="" loading="lazy" decoding="async">
-            <img class="pl pl-paramount"   src="images/platforms/paramount-plus.svg"      alt="" loading="lazy" decoding="async">
+            <img class="pl pl-paramount"   src="images/platforms/paramount-plus.webp"      alt="" loading="lazy" decoding="async">
             <img class="pl pl-amc"         src="images/platforms/amc-plus.webp"           alt="" loading="lazy" decoding="async">
-            <img class="pl pl-crunchyroll" src="images/platforms/crunchyroll.svg"         alt="" loading="lazy" decoding="async">
-            <img class="pl pl-hulu"        src="images/platforms/hulu.svg"                alt="" loading="lazy" decoding="async">
-            <img class="pl pl-peacock"     src="images/platforms/peacock.svg"             alt="" loading="lazy" decoding="async">
-            <img class="pl pl-stan"        src="images/platforms/stan.svg"                alt="" loading="lazy" decoding="async">
-            <img class="pl pl-hayu"        src="images/platforms/hayu.svg"                alt="" loading="lazy" decoding="async">
+            <img class="pl pl-crunchyroll" src="images/platforms/crunchyroll.webp"         alt="" loading="lazy" decoding="async">
+            <img class="pl pl-hulu"        src="images/platforms/hulu.webp"                alt="" loading="lazy" decoding="async">
+            <img class="pl pl-peacock"     src="images/platforms/peacock.webp"             alt="" loading="lazy" decoding="async">
+            <img class="pl pl-stan"        src="images/platforms/stan.webp"                alt="" loading="lazy" decoding="async">
+            <img class="pl pl-hayu"        src="images/platforms/hayu.webp"                alt="" loading="lazy" decoding="async">
           </div>
         </div>
       </div>
@@ -1669,13 +1743,16 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <!-- App UI shown as floating, deconstructed cards (no device frame) -->
         <div class="af-scale">
           <div class="app-float">
-            <div class="af-card af-hero" style="background-image:url('images/timeline/the-odyssey.webp')">
+            <!-- hero-card:start -->
+
+            <div class="af-card af-hero" style="background-image:url('https://image.tmdb.org/t/p/w342/iPOn6DinuVyLY17YM9mKuPofV08.jpg')">
               <span class="af-badge">TRENDING #1</span>
-              <div class="af-cap">The Odyssey<small>2026 &middot; Film</small></div>
+              <div class="af-cap">Spider-Man: Brand New Day<small>2026 &middot; Film</small></div>
             </div>
-            <div class="af-card af-p1" style="background-image:url('images/hero/nosferatu.webp')"></div>
-            <div class="af-card af-p2" style="background-image:url('images/hero/sinners.webp')"></div>
-            <div class="af-card af-p3" style="background-image:url('images/timeline/severance.webp')"></div>
+            <!-- hero-card:end -->
+            <div class="af-card af-p1" style="background-image:url('https://image.tmdb.org/t/p/w500/A8UIMJTwSaflmWmUlfPOFdenSBT.jpg')"></div>
+            <div class="af-card af-p2" style="background-image:url('https://image.tmdb.org/t/p/w500/jOiEa1NMdGHktRE3lVwErq0nCNT.jpg')"></div>
+            <div class="af-card af-p3" style="background-image:url('https://image.tmdb.org/t/p/w342/pPHpeI2X1qEd1CS1SeyrdhZ4qnT.jpg')"></div>
             <div class="af-chip af-chip1"><div class="af-s">Trending today</div><div class="af-t">Hot right now</div></div>
             <div class="af-chip af-chip3"><div class="af-s">This week</div><div class="af-t">Top 10</div></div>
             <div class="af-chip af-chip2"><div class="af-s">Popular TV</div><div class="af-t">Most binged shows</div></div>
@@ -1697,6 +1774,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
       <div class="tl-scroll-outer" id="tlScrollOuter">
       <div class="tl-scroll-track" id="tlTrack">
+        <!-- timeline:start -->
 
         <div class="tl-year">
           <span class="tl-year-label">2023</span>
@@ -1704,21 +1782,21 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         </div>
 
         <div class="tl-card">
-          <div class="tl-poster" data-bg='images/timeline/oppenheimer.webp'></div>
+          <div class="tl-poster" data-bg='https://image.tmdb.org/t/p/w342/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg'></div>
           <div class="tl-date">Oct 2023</div>
           <div class="tl-title">Oppenheimer</div>
           <div class="tl-note">"Three hours. Felt like one."</div>
         </div>
 
         <div class="tl-card">
-          <div class="tl-poster" data-bg='images/timeline/the-bear.webp'></div>
+          <div class="tl-poster" data-bg='https://image.tmdb.org/t/p/w342/eKfVzzEazSIjJMrw9ADa2x8ksLz.jpg'></div>
           <div class="tl-date">Nov 2023</div>
           <div class="tl-title">The Bear</div>
           <div class="tl-note">"Stressful. Perfect. Both."</div>
         </div>
 
         <div class="tl-card">
-          <div class="tl-poster" data-bg='images/timeline/saltburn.webp'></div>
+          <div class="tl-poster" data-bg='https://image.tmdb.org/t/p/w342/zGTfMwG112BC66mpaveVxoWPOaB.jpg'></div>
           <div class="tl-date">Dec 2023</div>
           <div class="tl-title">Saltburn</div>
           <div class="tl-note">"Unhinged in all the right ways."</div>
@@ -1730,28 +1808,28 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         </div>
 
         <div class="tl-card">
-          <div class="tl-poster" data-bg='images/timeline/past-lives.webp'></div>
+          <div class="tl-poster" data-bg='https://image.tmdb.org/t/p/w342/k3waqVXSnvCZWfJYNtdamTgTtTA.jpg'></div>
           <div class="tl-date">Feb 2024</div>
           <div class="tl-title">Past Lives</div>
           <div class="tl-note">"Quietly devastating."</div>
         </div>
 
         <div class="tl-card">
-          <div class="tl-poster" data-bg='images/timeline/presumed-innocent.webp'></div>
+          <div class="tl-poster" data-bg='https://image.tmdb.org/t/p/w342/7MXg0BxuSRWz2yKc03M40du2mrc.jpg'></div>
           <div class="tl-date">Jun 2024</div>
           <div class="tl-title">Presumed Innocent</div>
           <div class="tl-note">"Did not trust a single character. I was right."</div>
         </div>
 
         <div class="tl-card">
-          <div class="tl-poster" data-bg='images/timeline/the-substance.webp'></div>
+          <div class="tl-poster" data-bg='https://image.tmdb.org/t/p/w342/uYJvxMWMb9W4zIY3cbM50sj3dpC.jpg'></div>
           <div class="tl-date">Sep 2024</div>
           <div class="tl-title">The Substance</div>
           <div class="tl-note">"Nothing prepares you."</div>
         </div>
 
         <div class="tl-card">
-          <div class="tl-poster" data-bg='images/timeline/babygirl.webp'></div>
+          <div class="tl-poster" data-bg='https://image.tmdb.org/t/p/w342/ilwO6elz3mLV9CToT7C8pjVeKX0.jpg'></div>
           <div class="tl-date">Dec 2024</div>
           <div class="tl-title">Babygirl</div>
           <div class="tl-note">"Nicole Kidman."</div>
@@ -1763,28 +1841,28 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         </div>
 
         <div class="tl-card">
-          <div class="tl-poster" data-bg='images/timeline/severance.webp'></div>
+          <div class="tl-poster" data-bg='https://image.tmdb.org/t/p/w342/pPHpeI2X1qEd1CS1SeyrdhZ4qnT.jpg'></div>
           <div class="tl-date">Jan 2025</div>
           <div class="tl-title">Severance S2</div>
           <div class="tl-note">"Worth the wait."</div>
         </div>
 
         <div class="tl-card">
-          <div class="tl-poster" data-bg='images/timeline/adolescence.webp'></div>
+          <div class="tl-poster" data-bg='https://image.tmdb.org/t/p/w342/20i4nShZZg1g1VFHSB8xpaYM4r7.jpg'></div>
           <div class="tl-date">Mar 2025</div>
           <div class="tl-title">Adolescence</div>
           <div class="tl-note">"Four episodes. Changed everything."</div>
         </div>
 
         <div class="tl-card">
-          <div class="tl-poster" data-bg='images/timeline/sinners.webp'></div>
+          <div class="tl-poster" data-bg='https://image.tmdb.org/t/p/w342/fWPgbnt2LSqkQ6cdQc0SZN9CpLm.jpg'></div>
           <div class="tl-date">Apr 2025</div>
           <div class="tl-title">Sinners</div>
           <div class="tl-note">"Ryan Coogler does it again."</div>
         </div>
 
         <div class="tl-card">
-          <div class="tl-poster" data-bg='images/timeline/top-gun-maverick.webp'></div>
+          <div class="tl-poster" data-bg='https://image.tmdb.org/t/p/w342/n0YuM4f5lvGAP6MAW2kBIzugXnc.jpg'></div>
           <div class="tl-date">May 2025</div>
           <div class="tl-title">Top Gun: Maverick</div>
           <div class="tl-note">"Still the best sequel ever made."</div>
@@ -1796,32 +1874,33 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         </div>
 
         <div class="tl-card">
-          <div class="tl-poster" data-bg='images/timeline/a-knight-of-the-seven-kingdoms.webp'></div>
+          <div class="tl-poster" data-bg='https://image.tmdb.org/t/p/w342/k8yARbD9iYn2nRX2HvsopfKDN2r.jpg'></div>
           <div class="tl-date">Jan 2026</div>
           <div class="tl-title">A Knight of the Seven Kingdoms</div>
           <div class="tl-note">"Back in Westeros."</div>
         </div>
 
         <div class="tl-card">
-          <div class="tl-poster" data-bg='images/timeline/project-hail-mary.webp'></div>
+          <div class="tl-poster" data-bg='https://image.tmdb.org/t/p/w342/yihdXomYb5kTeSivtFndMy5iDmf.jpg'></div>
           <div class="tl-date">Mar 2026</div>
           <div class="tl-title">Project Hail Mary</div>
           <div class="tl-note">"Gosling in space."</div>
         </div>
 
         <div class="tl-card">
-          <div class="tl-poster" data-bg='images/timeline/the-devil-wears-prada-2.webp'></div>
+          <div class="tl-poster" data-bg='https://image.tmdb.org/t/p/w342/xTI42pmsP5EDnvsNJPEDubwWBQO.jpg'></div>
           <div class="tl-date">May 2026</div>
           <div class="tl-title">The Devil Wears Prada 2</div>
           <div class="tl-note">"That's all."</div>
         </div>
 
         <div class="tl-card">
-          <div class="tl-poster" data-bg='images/timeline/the-odyssey.webp'></div>
+          <div class="tl-poster" data-bg='https://image.tmdb.org/t/p/w342/5rhTDKUhPYvpdQIijFIs5VoWsON.jpg'></div>
           <div class="tl-date">Jul 2026</div>
           <div class="tl-title">The Odyssey</div>
           <div class="tl-note">"Nolan does Homer."</div>
         </div>
+        <!-- timeline:end -->
 
       </div>
       </div>
@@ -1923,7 +2002,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                   <span class="disc-tab">Guide</span>
                 </div>
                 <div class="disc-scroll">
-                  <div class="disc-hero" data-bg="images/timeline/the-odyssey.webp">
+                  <div class="disc-hero" data-bg="https://image.tmdb.org/t/p/w342/5rhTDKUhPYvpdQIijFIs5VoWsON.jpg">
                     <div class="disc-hero-grad"></div>
                     <span class="disc-trend">TRENDING #1</span>
                     <div class="disc-hero-title">The Odyssey</div>
@@ -1931,17 +2010,17 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                   </div>
                   <div class="disc-sec"><div class="disc-sec-sub">Trending today</div><div class="disc-sec-t">Hot right now</div></div>
                   <div class="disc-row">
-                    <div class="disc-card"><div class="disc-poster" data-bg="images/hero/sinners.webp"><span class="disc-tag">Movie</span><svg class="disc-bk" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg></div><div class="disc-card-t">Sinners</div></div>
-                    <div class="disc-card"><div class="disc-poster" data-bg="images/hero/nosferatu.webp"><span class="disc-tag">Movie</span><svg class="disc-bk" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg></div><div class="disc-card-t">Nosferatu</div></div>
-                    <div class="disc-card"><div class="disc-poster" data-bg="images/hero/longlegs.webp"><span class="disc-tag">Movie</span><svg class="disc-bk" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg></div><div class="disc-card-t">Longlegs</div></div>
-                    <div class="disc-card"><div class="disc-poster" data-bg="images/hero/the-substance.webp"><span class="disc-tag">Movie</span><svg class="disc-bk" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg></div><div class="disc-card-t">The Substance</div></div>
+                    <div class="disc-card"><div class="disc-poster" data-bg="https://image.tmdb.org/t/p/w500/jOiEa1NMdGHktRE3lVwErq0nCNT.jpg"><span class="disc-tag">Movie</span><svg class="disc-bk" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg></div><div class="disc-card-t">Sinners</div></div>
+                    <div class="disc-card"><div class="disc-poster" data-bg="https://image.tmdb.org/t/p/w500/A8UIMJTwSaflmWmUlfPOFdenSBT.jpg"><span class="disc-tag">Movie</span><svg class="disc-bk" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg></div><div class="disc-card-t">Nosferatu</div></div>
+                    <div class="disc-card"><div class="disc-poster" data-bg="https://image.tmdb.org/t/p/w500/5aj8vVGFwGVbQQs26ywhg4Zxk2L.jpg"><span class="disc-tag">Movie</span><svg class="disc-bk" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg></div><div class="disc-card-t">Longlegs</div></div>
+                    <div class="disc-card"><div class="disc-poster" data-bg="https://image.tmdb.org/t/p/w500/lqoMzCcZYEFK729d6qzt349fB4o.jpg"><span class="disc-tag">Movie</span><svg class="disc-bk" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg></div><div class="disc-card-t">The Substance</div></div>
                   </div>
                   <div class="disc-sec"><div class="disc-sec-sub">Popular TV</div><div class="disc-sec-t">Most binged shows</div></div>
                   <div class="disc-row">
-                    <div class="disc-card"><div class="disc-poster" data-bg="images/timeline/severance.webp"><span class="disc-tag disc-tag-tv">TV</span><svg class="disc-bk" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg></div><div class="disc-card-t">Severance</div></div>
-                    <div class="disc-card"><div class="disc-poster" data-bg="images/timeline/the-bear.webp"><span class="disc-tag disc-tag-tv">TV</span><svg class="disc-bk" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg></div><div class="disc-card-t">The Bear</div></div>
-                    <div class="disc-card"><div class="disc-poster" data-bg="images/timeline/adolescence.webp"><span class="disc-tag disc-tag-tv">TV</span><svg class="disc-bk" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg></div><div class="disc-card-t">Adolescence</div></div>
-                    <div class="disc-card"><div class="disc-poster" data-bg="images/timeline/presumed-innocent.webp"><span class="disc-tag disc-tag-tv">TV</span><svg class="disc-bk" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg></div><div class="disc-card-t">Presumed Innocent</div></div>
+                    <div class="disc-card"><div class="disc-poster" data-bg="https://image.tmdb.org/t/p/w342/pPHpeI2X1qEd1CS1SeyrdhZ4qnT.jpg"><span class="disc-tag disc-tag-tv">TV</span><svg class="disc-bk" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg></div><div class="disc-card-t">Severance</div></div>
+                    <div class="disc-card"><div class="disc-poster" data-bg="https://image.tmdb.org/t/p/w342/eKfVzzEazSIjJMrw9ADa2x8ksLz.jpg"><span class="disc-tag disc-tag-tv">TV</span><svg class="disc-bk" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg></div><div class="disc-card-t">The Bear</div></div>
+                    <div class="disc-card"><div class="disc-poster" data-bg="https://image.tmdb.org/t/p/w342/20i4nShZZg1g1VFHSB8xpaYM4r7.jpg"><span class="disc-tag disc-tag-tv">TV</span><svg class="disc-bk" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg></div><div class="disc-card-t">Adolescence</div></div>
+                    <div class="disc-card"><div class="disc-poster" data-bg="https://image.tmdb.org/t/p/w342/7MXg0BxuSRWz2yKc03M40du2mrc.jpg"><span class="disc-tag disc-tag-tv">TV</span><svg class="disc-bk" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg></div><div class="disc-card-t">Presumed Innocent</div></div>
                   </div>
                 </div>
                 <div class="disc-nav">
@@ -1954,6 +2033,20 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             </div>
           </div>
           <div class="app-phone-badge">Coming soon</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Origin — built by one person ─────────────────────────── -->
+  <section id="origin">
+    <div class="origin-split">
+      <h2 class="demo-headline reveal" style="color:var(--text)">Built by a<br><em style="font-style:italic">solo</em> developer.</h2>
+      <div class="reveal">
+        <p class="demo-body" style="color:var(--text-secondary)">PLOT is built by one person around a full time job. No team, no investors, nothing to answer to except the people using it. So the roadmap gets written with you. Tell me what would make PLOT better for the way you watch and it shapes what I build or fix next. Support along the way is what lets me keep building a product you love.</p>
+        <div class="origin-actions">
+          <a href="https://ko-fi.com/J7P123TYGK" class="btn btn-outline btn-large" target="_blank" rel="noopener" data-cta="origin-kofi">Support PLOT on Ko-fi</a>
+          <a href="/about.html" class="demo-link dark-link" data-cta="origin-about">Read the story &rarr;</a>
         </div>
       </div>
     </div>
@@ -1972,19 +2065,17 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   <!-- ── What's On — closing CTA ──────────────────────────────── -->
   <section id="whats-on-cta">
     <div class="woc-wall" id="wocWall" aria-hidden="true"></div>
-    <div class="woc-scrim"></div>
     <div class="woc-inner">
       <h2 class="woc-headline">What's on, <em>daily.</em></h2>
       <p class="woc-sub">Your daily briefing on everything worth watching.</p>
       <div class="woc-actions">
-        <a href="/whats-on" class="demo-link">Browse What's On &rarr;</a>
         <div class="woc-sub-wrap">
           <form class="woc-form" id="newsletterForm">
             <input type="email" name="email" placeholder="your@email.com" required autocomplete="email" aria-label="Email address">
             <input type="text" name="website" class="fn-website" tabindex="-1" autocomplete="off" aria-hidden="true">
             <button type="submit">Subscribe</button>
           </form>
-          <span class="woc-hint">Or get it in your inbox, weekly.</span>
+          <span class="woc-hint">Or <a href="/whats-on" data-cta="whats-on-closer">browse What's On &rarr;</a><span class="sep">&middot;</span><a href="/newsletter" data-cta="newsletter-archive">read the latest issue &rarr;</a></span>
           <div class="woc-msg" id="newsletterMsg" role="status"></div>
         </div>
       </div>
@@ -1999,6 +2090,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <div class="footer-nav">
         <a href="/" data-cta="footer">Home</a>
         <a href="/whats-on" data-cta="footer">What's On</a>
+        <a href="/newsletter" data-cta="footer">Newsletter</a>
         <a href="https://app.theplot.tv/login" data-cta="footer">Log in</a>
         <a href="https://app.theplot.tv/signup" data-cta="footer">Sign up</a>
         <a href="/privacy.html" data-cta="footer">Privacy</a>
@@ -2060,7 +2152,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           });
         });
       }
-      wire(document.getElementById('newsletterForm'), document.getElementById('newsletterMsg'), "You're in — first digest this Sunday.", 'newsletter');
+      wire(document.getElementById('newsletterForm'), document.getElementById('newsletterMsg'), "You're in. We'll email you the next issue.", 'newsletter');
       wire(document.getElementById('appNotifyForm'), document.getElementById('appNotifyMsg'), "You're on the list — we'll email you the moment the app lands.", 'mobile-app');
     })();
     // Cache by full query string so identical calls across the page (e.g.
@@ -2070,9 +2162,41 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     function tmdbProxy(path, params) {
       var qs = '?path=' + encodeURIComponent(path) + (params ? '&' + params : '');
       if (!tmdbCache[qs]) {
-        tmdbCache[qs] = fetch(TMDB_PROXY + qs).then(function(r) { return r.json(); });
+        tmdbCache[qs] = fetch(TMDB_PROXY + qs).then(function(r) {
+          // A rejected proxy call still answers with a JSON body (e.g. 403
+          // {"error":"TMDB path not allowed"}), so resolving regardless of status
+          // handed callers an object with no .results — they rendered an empty
+          // strip and logged nothing. Reject instead, so a caller's catch can
+          // fall back and the reason shows up in the console.
+          if (!r.ok) {
+            return r.json().catch(function() { return {}; }).then(function(body) {
+              var reason = (body && body.error) || ('HTTP ' + r.status);
+              console.warn('[tmdb] ' + path + ' failed: ' + reason);
+              throw new Error('tmdb ' + path + ': ' + reason);
+            });
+          }
+          return r.json();
+        });
       }
       return tmdbCache[qs];
+    }
+
+    // TMDB's lists overlap heavily — this week's number one is usually also in
+    // cinemas, and often the top movie of the week as well. Any surface that
+    // draws on more than one of them therefore has to filter out what it has
+    // already shown, or the same title lands twice in one section. `seen` is a
+    // plain object the caller keeps across calls so several strips in the same
+    // section can share one running record of what's been used.
+    function titleKey(item) {
+      return String((item && (item.title || item.name)) || '').trim().toLowerCase();
+    }
+    function unseen(items, seen) {
+      return (items || []).filter(function (item) {
+        var key = titleKey(item);
+        if (!key || seen[key]) return false;
+        seen[key] = 1;
+        return true;
+      });
     }
 
     // The side posters (desktop) and hero filmstrip (mobile) want the same three
@@ -2080,11 +2204,14 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     let trendingSetsPromise = null;
     function fetchTrendingSets() {
       if (!trendingSetsPromise) {
+        // Absorb each set separately: six strips share these promises, so one
+        // unavailable endpoint should empty only the strips that read it rather
+        // than every poster on the page. Callers already guard with `|| []`.
         trendingSetsPromise = Promise.all([
           tmdbProxy('trending/movie/week'),
           tmdbProxy('movie/now_playing'),
           tmdbProxy('trending/tv/week'),
-        ]);
+        ].map(function(p) { return p.catch(function() { return {}; }); }));
       }
       return trendingSetsPromise;
     }
@@ -2097,11 +2224,20 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       var p1 = stage.querySelector('.af-p1');   // Hot right now  (trending movie)
       var p2 = stage.querySelector('.af-p2');   // Top 10         (top trending movie)
       var p3 = stage.querySelector('.af-p3');   // Most binged    (popular TV)
+      // The hero card is committed markup that refresh-timeline.mjs rewrites each
+      // week from trending/all/week, so the live trending list nearly always opens
+      // with the exact title the hero is already showing. Read the title off the
+      // card itself rather than naming it here: a hardcoded exclusion goes stale
+      // the first week the hero changes, and then the collage shows it twice.
+      var heroCap = stage.querySelector('.af-hero .af-cap');
+      var heroTitle = heroCap && heroCap.firstChild ? heroCap.firstChild.textContent : '';
       fetchTrendingSets().then(function (sets) {
         var IMG = 'https://image.tmdb.org/t/p/w500';
-        // Exclude the feature title so the surrounding cards stay distinct from the hero.
-        var movies = ((sets[0] && sets[0].results) || []).filter(function (r) { return r.poster_path && (r.title || '') !== 'The Odyssey'; });
-        var tv     = ((sets[2] && sets[2].results) || []).filter(function (r) { return r.poster_path; });
+        var seen = {};
+        if (heroTitle.trim()) seen[heroTitle.trim().toLowerCase()] = 1;
+        function withPoster(list) { return (list || []).filter(function (r) { return r.poster_path; }); }
+        var movies = unseen(withPoster(sets[0] && sets[0].results), seen);
+        var tv     = unseen(withPoster(sets[2] && sets[2].results), seen);
         function set(el, item) { if (el && item) el.style.backgroundImage = "url('" + IMG + item.poster_path + "')"; }
         set(p1, movies[0]);   // Hot right now
         set(p2, movies[1]);   // Top 10
@@ -2117,17 +2253,21 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       var COUNT = 27;
       fetchTrendingSets().then(function (sets) {
         var seen = {}, urls = [];
+        // By title, not by poster path: the sets overlap, and two entries for the
+        // same title (a re-release, a series and its special) carry different art.
         sets.forEach(function (s) {
-          ((s && s.results) || []).forEach(function (r) {
-            if (r.poster_path && !seen[r.poster_path]) { seen[r.poster_path] = 1; urls.push(IMG + r.poster_path); }
-          });
+          unseen(((s && s.results) || []).filter(function (r) { return r.poster_path; }), seen)
+            .forEach(function (r) { urls.push(IMG + r.poster_path); });
         });
         if (!urls.length) return;
         for (var i = urls.length - 1; i > 0; i--) {
           var j = Math.floor(Math.random() * (i + 1));
           var t = urls[i]; urls[i] = urls[j]; urls[j] = t;
         }
-        for (var k = 0; k < COUNT; k++) {
+        // A short list makes a shorter wall rather than a repeating one: every
+        // tile here is on screen together, so a wrapped poster reads as a bug.
+        var tiles = Math.min(COUNT, urls.length);
+        for (var k = 0; k < tiles; k++) {
           var tile = document.createElement('div');
           tile.className = 'woc-tile';
           var img = new Image();
@@ -2135,7 +2275,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           img.decoding = 'async';
           img.alt = '';
           img.onload = (function (im) { return function () { im.classList.add('loaded'); }; })(img);
-          img.src = urls[k % urls.length];
+          img.src = urls[k];
           tile.appendChild(img);
           wall.appendChild(tile);
         }
@@ -2272,13 +2412,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       const all = [
         ...(trending.results || []), ...(nowPlaying.results || []), ...(tv.results || [])
       ].filter(r => r.poster_path);
-      // Shuffle and dedupe
-      const seen = new Set();
-      const unique = all.filter(r => {
-        if (seen.has(r.poster_path)) return false;
-        seen.add(r.poster_path);
-        return true;
-      });
+      // Dedupe by title, then shuffle: these three sets overlap, and the strip
+      // shows several posters at once, so a repeat is plainly visible.
+      const unique = unseen(all, {});
       for (let i = unique.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [unique[i], unique[j]] = [unique[j], unique[i]];
@@ -2406,9 +2542,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         const seen = {};
         const paths = [];
         sets.forEach(function(set) {
-          ((set && set.results) || []).forEach(function(r) {
-            if (r.poster_path && !seen[r.poster_path]) { seen[r.poster_path] = 1; paths.push(r.poster_path); }
-          });
+          unseen(((set && set.results) || []).filter(function(r) { return r.poster_path; }), seen)
+            .forEach(function(r) { paths.push(r.poster_path); });
         });
         if (!paths.length) return;
         // Hero teaser posters — varied sizes + slight vertical scatter.
@@ -2478,10 +2613,14 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         var trending = (sets[0] && sets[0].results) || [];
         var nowPlaying = (sets[1] && sets[1].results) || [];
         var tv = (sets[2] && sets[2].results) || [];
-        var movies = nowPlaying.filter(function(r){ return r.poster_path; });
-        var shows = tv.filter(function(r){ return r.poster_path; });
+        // The hero is claimed first so the rows below it can't repeat it: the
+        // week's top trending title is usually sitting in now_playing too.
+        var seen = {};
         // Hero — top trending title, using its landscape backdrop.
         var top = trending.filter(function(r){ return r.backdrop_path || r.poster_path; })[0];
+        if (top) seen[titleKey(top)] = 1;
+        var movies = unseen(nowPlaying.filter(function(r){ return r.poster_path; }), seen);
+        var shows = unseen(tv.filter(function(r){ return r.poster_path; }), seen);
         if (top) {
           hero.style.backgroundImage = "url('" + (top.backdrop_path ? BACK + top.backdrop_path : POSTER + top.poster_path) + "')";
           var date = top.release_date || top.first_air_date || '';
@@ -2491,7 +2630,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         }
         function fill(row, list, isTv) {
           [].slice.call(row.querySelectorAll('.disc-card')).forEach(function(card, i) {
-            var item = list[i % list.length];
+            // No wrapping back to the start of a short list: a card with nothing
+            // left to show keeps the title it shipped with rather than repeating
+            // one already in the row.
+            var item = list[i];
             if (!item) return;
             card.querySelector('.disc-poster').style.backgroundImage = "url('" + POSTER + item.poster_path + "')";
             var tag = card.querySelector('.disc-tag');
@@ -2560,11 +2702,19 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           tmdbProxy('tv/top_rated'),
         ]);
 
+        // One running record across all four groups, so a film that is both
+        // trending and in cinemas is listed once, under the first label that
+        // claims it. Deduping before the slice keeps every group full length.
+        const seen = {};
+        const group = (label, res, count) => ({
+          label,
+          items: unseen((res && res.results) || [], seen).slice(0, count).map(r => r.title || r.name),
+        });
         populate([
-          { label: 'Trending Now', items: (trending.results  || []).slice(0, 12).map(r => r.title || r.name).filter(Boolean) },
-          { label: 'In Cinemas',   items: (nowPlaying.results || []).slice(0, 10).map(r => r.title).filter(Boolean) },
-          { label: 'Coming Soon',  items: (upcoming.results  || []).slice(0, 10).map(r => r.title).filter(Boolean) },
-          { label: 'Top Rated TV', items: (topTv.results     || []).slice(0, 10).map(r => r.name).filter(Boolean) },
+          group('Trending Now', trending,   12),
+          group('In Cinemas',   nowPlaying, 10),
+          group('Coming Soon',  upcoming,   10),
+          group('Top Rated TV', topTv,      10),
         ]);
       } catch (err) {
         populate([
@@ -2587,16 +2737,32 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       // Each list carries several on-theme posters. The coverflow shows one
       // cover per list on the first pass, then loops back with the next poster
       // for that same list — fresh artwork, same category.
+      //
+      // `imgs` are the stills the section ships with: they paint immediately and
+      // remain the fallback. `q` then pulls live artwork per list, because each
+      // heading needs its own query — the shared trending sets would put the
+      // same three films under all three headings, and a horror release is not
+      // a date-night pick. The counts stay hardcoded: they describe an imagined
+      // user's list, not anything TMDB knows.
+      //
+      // TMDB exposes no awards data, so "Award winners" uses acclaim (a high
+      // rating earned over a large vote count) as the closest honest proxy.
       const cats = [
-        { nm: 'Award winners', ct: '20 films', imgs: ['images/timeline/oppenheimer.webp', 'images/hero/anatomy-of-a-fall.webp', 'images/hero/aftersun.webp'] },
-        { nm: 'Date night',    ct: '12 films', imgs: ['images/hero/past-lives.webp', 'images/hero/anyone-but-you.webp', 'images/hero/people-we-meet-on-vacation.webp'] },
-        { nm: 'Spooky season', ct: '13 films', imgs: ['images/hero/nosferatu.webp', 'images/hero/longlegs.webp', 'images/hero/heretic.webp'] },
+        { nm: 'Award winners', ct: '20 films',
+          q: 'sort_by=vote_average.desc&vote_count.gte=2500',
+          imgs: ['https://image.tmdb.org/t/p/w342/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg', 'https://image.tmdb.org/t/p/w500/kQs6keheMwCxJxrzV83VUwFtHkB.jpg', 'https://image.tmdb.org/t/p/w500/yx3hS1sZIljZgZNTyt0ATmcs0PC.jpg'] },
+        { nm: 'Date night',    ct: '12 films',
+          q: 'with_genres=10749&sort_by=popularity.desc&vote_count.gte=200',   // 10749 = Romance
+          imgs: ['https://image.tmdb.org/t/p/w500/wLATJOQ9yQfaVxpCHGeLYWVKS6K.jpg', 'https://image.tmdb.org/t/p/w500/yRt7MGBElkLQOYRvLTT1b3B1rcp.jpg', 'https://image.tmdb.org/t/p/w500/xzZaU0MN6L9oc1pl0RUXSB7hWwD.jpg'] },
+        { nm: 'Spooky season', ct: '13 films',
+          q: 'with_genres=27&sort_by=popularity.desc&vote_count.gte=200',      // 27 = Horror
+          imgs: ['https://image.tmdb.org/t/p/w500/A8UIMJTwSaflmWmUlfPOFdenSBT.jpg', 'https://image.tmdb.org/t/p/w500/5aj8vVGFwGVbQQs26ywhg4Zxk2L.jpg', 'https://image.tmdb.org/t/p/w500/fr96XzlzsONrQrGfdLMiwtQjott.jpg'] },
       ];
       // Flatten round-by-round: list A #1, B #1, C #1, then A #2, B #2, C #2, …
       const rounds = Math.max(...cats.map(c => c.imgs.length));
       const covers = [];
       for (let r = 0; r < rounds; r++) {
-        cats.forEach(c => covers.push({ nm: c.nm, ct: c.ct, cat: cats.indexOf(c), img: c.imgs[r % c.imgs.length] }));
+        cats.forEach((c, ci) => covers.push({ nm: c.nm, ct: c.ct, cat: ci, img: c.imgs[r % c.imgs.length] }));
       }
       const nm = document.getElementById('cfNm'), ct = document.getElementById('cfCt');
       const dots = [...document.getElementById('cfDots').children];
@@ -2629,6 +2795,38 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         wrapper.style.transition = '';                        // … then restore its glide
       }
 
+      // Swap the shipped stills for live artwork, one query per list. A list is
+      // replaced only once all of its posters have decoded: .cf-card paints via
+      // background-image, which shows nothing while a new URL loads, so applying
+      // them eagerly would blink the ring. Each list resolves independently, so
+      // one failing query leaves only its own covers on the stills.
+      const POSTER = 'https://image.tmdb.org/t/p/w500';
+      const preload = (url) => new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = resolve;
+        img.onerror = reject;
+        img.src = url;
+      });
+
+      function loadLiveCovers() {
+        cats.forEach((c, ci) => {
+          tmdbProxy('discover/movie', c.q + '&include_adult=false')
+            .then((res) => {
+              const urls = (((res && res.results) || [])
+                .filter((m) => !!m.poster_path)
+                .slice(0, rounds)
+                .map((m) => POSTER + m.poster_path));
+              if (urls.length < rounds) throw new Error('too few posters for ' + c.nm);
+              return Promise.all(urls.map(preload)).then(() => urls);
+            })
+            .then((urls) => {
+              urls.forEach((url, r) => { covers[r * cats.length + ci].img = url; });
+              paint();
+            })
+            .catch(() => {});     // this list keeps the artwork it shipped with
+        });
+      }
+
       const INTERVAL = 2800, LEAD = 700;                      // ~2.8s dwell on each list
       let timer = null, lead = null;
       const start = () => {
@@ -2646,6 +2844,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         cf.innerHTML = '';
         ring = STATES.map(s => { const d = document.createElement('div'); d.className = 'cf-card ' + s; cf.appendChild(d); return d; });
         paint();
+        // Deliberately here rather than on page load: this section sits well
+        // below the fold, so its three queries wait until it is about to be seen,
+        // same as its posters and its timer.
+        loadLiveCovers();
         if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
         start();
         cf.parentElement.addEventListener('mouseenter', stop);  // pause to study
@@ -2668,11 +2870,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     (function() {
       // Fallback: shown while TMDB loads (or on error)
       var FALLBACK = [
-        { id: 'f1',         title: 'F1: The Movie',     type: 'cinema',    day: 26, img: 'images/hero/f1-the-movie.webp' },
-        { id: 'sinners',    title: 'Sinners',           type: 'streaming', day: 4,  img: 'images/hero/sinners.webp' },
-        { id: 'hailmary',   title: 'Project Hail Mary', type: 'episode',   day: 6,  img: 'images/hero/project-hail-mary.webp' },
-        { id: 'nosferatu',  title: 'Nosferatu',         type: 'streaming', day: 12, img: 'images/hero/nosferatu.webp' },
-        { id: 'substance',  title: 'The Substance',     type: 'streaming', day: 19, img: 'images/hero/the-substance.webp' },
+        { id: 'f1',         title: 'F1: The Movie',     type: 'cinema',    day: 26, img: 'https://image.tmdb.org/t/p/w500/9PXZIUsSDh4alB80jheWX4fhZmy.jpg' },
+        { id: 'sinners',    title: 'Sinners',           type: 'streaming', day: 4,  img: 'https://image.tmdb.org/t/p/w500/jOiEa1NMdGHktRE3lVwErq0nCNT.jpg' },
+        { id: 'hailmary',   title: 'Project Hail Mary', type: 'episode',   day: 6,  img: 'https://image.tmdb.org/t/p/w500/vOhW7Lbt4kZAqe0vJhVC4Ced9x2.jpg' },
+        { id: 'nosferatu',  title: 'Nosferatu',         type: 'streaming', day: 12, img: 'https://image.tmdb.org/t/p/w500/A8UIMJTwSaflmWmUlfPOFdenSBT.jpg' },
+        { id: 'substance',  title: 'The Substance',     type: 'streaming', day: 19, img: 'https://image.tmdb.org/t/p/w500/lqoMzCcZYEFK729d6qzt349fB4o.jpg' },
       ];
 
       var TYPE = {

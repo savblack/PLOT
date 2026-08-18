@@ -2,10 +2,12 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from './supabase.js';
 import { logWatchedItem } from './userMedia.js';
 import { normalizeRating } from './ratings.js';
-import { on, emit } from './events.js';
+import { on, emit, HISTORY_CHANGED_EVENT } from './events.js';
 import { getConfig } from './config.js';
 
-const HISTORY_CHANGED_EVENT = 'plot:history-changed';
+// Moved to events.js, alongside the bus. Re-exported so existing import sites
+// keep resolving.
+export { HISTORY_CHANGED_EVENT };
 
 function notifyHistoryChanged() {
   emit(HISTORY_CHANGED_EVENT);
@@ -18,7 +20,7 @@ function notifyHistoryChanged() {
  *   entries: any[];
  *   loading: boolean;
  *   loadError: boolean;
- *   logWatched: (item: any, opts?: { rating?: number; note?: string; dnf?: boolean; watchedAt?: string; logRewatches?: boolean }) => Promise<any>;
+ *   logWatched: (item: any, opts?: { rating?: number; note?: string; dnf?: boolean; watchedAt?: string }) => Promise<any>;
  *   updateEntry: (tmdbId: number, updates: any, mediaType?: string) => Promise<any>;
  *   removeEntry: (tmdbId: number, mediaType?: string) => Promise<boolean>;
  *   isWatched: (tmdbId: number, mediaType?: string) => boolean;
@@ -73,12 +75,11 @@ export function useHistory(userId) {
   useEffect(() => on(HISTORY_CHANGED_EVENT, load), [load]);
 
   /* ── Log a watched item ──
-     logRewatches (default true): a rewatch on a new date becomes its own
-     history row instead of overwriting the previous watch (see SUS-66 /
-     profiles.log_rewatches). */
-  const logWatched = useCallback(async (item, { rating, note, dnf, watchedAt, logRewatches = true } = {}) => {
+     One row per title: logging a title watched again updates the entry already
+     there and moves its date. */
+  const logWatched = useCallback(async (item, { rating, note, dnf, watchedAt } = {}) => {
     if (!userId) { lastErrorRef.current = 'You need to be signed in to log a watch.'; return null; }
-    const { data, error, row } = await logWatchedItem({ userId, item, rating, note, dnf, watchedAt, logRewatches });
+    const { data, error, row } = await logWatchedItem({ userId, item, rating, note, dnf, watchedAt });
     if (error) {
       console.error('Failed to log watched item', error);
       lastErrorRef.current = error.message || 'Unknown error saving watch status.';
@@ -88,16 +89,15 @@ export function useHistory(userId) {
 
     if (data) {
       setEntries(prev => {
-        // Same-title-same-date always replaces in place. A same-title
-        // different-date row is a preserved rewatch (kept) unless rewatches
-        // are off, in which case the DB write already collapsed to one row
-        // per title and every stale local entry for it must go too.
-        const withoutStale = prev.filter(e => logRewatches
-          ? !(e.tmdb_id === row.tmdb_id && e.media_type === row.media_type && e.watched_at === row.watched_at)
-          : !(e.tmdb_id === row.tmdb_id && e.media_type === row.media_type));
+        // The write replaced this title's only row, so drop any local entry
+        // for it whatever its date — matching on watched_at as well would leave
+        // the pre-update copy behind whenever the date moved.
+        const withoutStale = prev.filter(e =>
+          !(e.tmdb_id === row.tmdb_id && e.media_type === row.media_type));
         return [data, ...withoutStale].sort((a, b) => (a.watched_at < b.watched_at ? 1 : -1));
       });
-      notifyHistoryChanged();
+      // logWatchedItem already signalled the write; updateEntry and removeEntry
+      // below still do it themselves because they write the table directly.
       // Analytics seams (platform-injected; see config.js). Fired from the single
       // core spot so every surface that logs a watch is covered.
       getConfig().onWatched?.({ tmdb_id: row.tmdb_id, media_type: row.media_type });
@@ -109,11 +109,8 @@ export function useHistory(userId) {
   }, [userId]);
 
   /* ── Update rating / note ──
-     A title can now have multiple history rows (rewatches), so this targets
-     the most recent entry for tmdbId — i.e. the one representing "current"
-     status in every existing caller (MediaPanel's status panel, SearchView) —
-     by row id, not a blind tmdb_id match that could hit several rows. mediaType
-     is required to disambiguate: movie and TV TMDB ids are separate numbering
+     Targets the row by id rather than by a blind tmdb_id match. mediaType is
+     required to disambiguate: movie and TV TMDB ids are separate numbering
      sequences that can collide (e.g. movie 262 vs tv 262 are unrelated), so a
      tmdb_id-only match can silently grab the wrong title's row. */
   const updateEntry = useCallback(async (tmdbId, updates, mediaType) => {
@@ -141,9 +138,7 @@ export function useHistory(userId) {
   }, [entries]);
 
   /* ── Remove entry ──
-     Same row-id targeting (and same mediaType disambiguation) as updateEntry —
-     removes only the most recent watch of this title, leaving earlier
-     rewatches intact. */
+     Same row-id targeting (and same mediaType disambiguation) as updateEntry. */
   const removeEntry = useCallback(async (tmdbId, mediaType) => {
     const target = entries.find(e => e.tmdb_id === Number(tmdbId) && (!mediaType || e.media_type === mediaType));
     if (!target) return false;
@@ -155,6 +150,8 @@ export function useHistory(userId) {
     if (error) return false; // keep local state intact so the entry doesn't ghost-reappear
     setEntries(prev => prev.filter(e => e.id !== target.id));
     notifyHistoryChanged();
+    // The undo half of onWatched — without it, watched counts only ratchet up.
+    getConfig().onHistoryRemove?.({ tmdb_id: Number(tmdbId), media_type: target.media_type });
     return true;
   }, [entries]);
 

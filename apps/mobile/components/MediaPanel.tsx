@@ -2,10 +2,15 @@
  * MediaPanel — slide-up detail sheet, mobile port of web MediaPanel.jsx.
  * Sections: backdrop → title/meta → actions → watching/watched → where to watch → episodes (TV)
  */
-import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import { STAR_COUNT, ratingToStars, starsToRating } from '@plot/core/ratings.js';
+import { localDateStr } from '@plot/core/date.js';
+import { markMediaAsWatched, moveSavedShowToWatching } from '@plot/core/mediaStatus.js';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import {
   View, Text, Image, ScrollView, TouchableOpacity, Modal,
   StyleSheet, Dimensions, ActivityIndicator, TextInput, Animated, Share, Linking, Alert,
+  Platform,
 } from 'react-native';
 import Svg, { Path, Line, Polyline, Circle, Polygon, Rect } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,11 +21,21 @@ import { useAppData } from '../contexts/AppDataContext';
 import { favoriteWords } from '../lib/spelling';
 import { findDuplicateCustomList } from '@plot/core/customLists.js';
 import { buildWatchLink } from '@plot/core/watchLinks.js';
+import {
+  getLastSeasonNumber,
+  getSeasonToggleProgress,
+  getSeasonWatchState,
+  isSeriesComplete,
+} from '@plot/core/watchingProgress.js';
+import { MEDIA_PANEL } from '@plot/core/copy/mediaPanel.js';
+import { COMMON } from '@plot/core/copy/common.js';
+import { track, EVENTS } from '../lib/analytics';
 import { fetchVerifiedAvailability, offersFromTmdb } from '@plot/core/availability.js';
 import { fetchCriticScore, pickAudienceQuote, getConsensusLine } from '@plot/core/reviews.js';
 import { canCreateCustomList, FREE_CUSTOM_LIST_CAP } from '@plot/core/premium.js';
-import { localDateStr } from '@plot/core/date.js';
+import { SHOW_PRICING_PAGE } from '../lib/launchFeatures';
 import { TrailerPlayer } from './TrailerPlayer';
+import { MEDIA } from '@plot/core/copy/media.js';
 
 // Shared link points at the web /save route (works for anyone, app or not) —
 // mirrors web buildTitleShareUrl.
@@ -133,22 +148,27 @@ function IconShare() {
 }
 
 // ── Star rating ───────────────────────────────────────────────────────
-const STAR_COUNT = 5;
+// `rating`/`onChange` stay on the shared 1-10 scale (packages/core/ratings.js)
+// — the same contract localRating/watchedEntry.rating use everywhere else in
+// this file. This picker is whole-star-only (no half-star touch target), so
+// it converts at its own boundary: ratingToStars for what to display,
+// starsToRating for what a tap writes back.
 function StarRow({ rating, onChange }: { rating: number; onChange: (r: number) => void }) {
+  const displayStars = ratingToStars(rating);
   return (
     <View style={{ flexDirection: 'row', gap: 4 }}>
       {Array.from({ length: STAR_COUNT }, (_, i) => i + 1).map(n => (
         <TouchableOpacity
           key={n}
-          onPress={() => onChange(rating === n ? 0 : n)}
+          onPress={() => onChange(starsToRating(displayStars === n ? 0 : n))}
           hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
-          accessibilityLabel={rating === n ? 'Clear rating' : `Rate ${n} star${n > 1 ? 's' : ''}`}
+          accessibilityLabel={displayStars === n ? 'Clear rating' : `Rate ${n} star${n > 1 ? 's' : ''}`}
           accessibilityRole="button"
         >
           <Svg width={24} height={24} viewBox="0 0 24 24">
             <Polygon
               points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
-              fill={n <= rating ? '#F59E0B' : 'none'}
+              fill={n <= displayStars ? '#F59E0B' : 'none'}
               stroke="#F59E0B"
               strokeWidth={1.5}
               strokeLinejoin="round"
@@ -161,7 +181,7 @@ function StarRow({ rating, onChange }: { rating: number; onChange: (r: number) =
 }
 
 // ── Episode guide ─────────────────────────────────────────────────────
-function EpisodeGuide({ tvId, progress, details, watching }: { tvId: number; progress: any; details: any; watching: any }) {
+function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished }: { tvId: number; progress: any; details: any; watching: any; onSeriesFinished?: () => Promise<{ ok: boolean; error?: string }> }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const seasons = (details?.seasons || []).filter((s: any) => s.season_number > 0);
@@ -169,6 +189,8 @@ function EpisodeGuide({ tvId, progress, details, watching }: { tvId: number; pro
   const [episodes,  setEpisodes]  = useState<any[]>([]);
   const [loading,   setLoading]   = useState(false);
   const [toggling,  setToggling]  = useState<number | null>(null);
+  const [actionError, setActionError] = useState('');
+  const [seasonPending, setSeasonPending] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -183,20 +205,83 @@ function EpisodeGuide({ tvId, progress, details, watching }: { tvId: number; pro
   const isWatched = (ep: any) => selSeason < curSeason || (selSeason === curSeason && ep.episode_number < curEp);
   const isCurrent = (ep: any) => selSeason === curSeason && ep.episode_number === curEp;
 
+  /* ── Finish the series when progress rolls past its final season ──
+     Mirrors web's MediaPanel: an ended show whose last episode you just
+     ticked stops being "currently watching" and lands in your history,
+     instead of parking the pointer on a season that will never air. Shows
+     still in production are left alone. */
+  const lastSeason = getLastSeasonNumber(details);
+
+  const finishSeriesIfComplete = async (nextSeason: number | undefined) => {
+    if (!isSeriesComplete({ lastSeason, nextSeason, status: details?.status })) return;
+    // Finishing a show is the end of the engagement arc worth naming, and it's
+    // only knowable here — core sees pointer moves, not the last season.
+    track(EVENTS.SERIES_COMPLETED, { tmdb_id: tvId, seasons: lastSeason });
+    const result = await onSeriesFinished?.();
+    if (result && !result.ok) setActionError(result.error || MEDIA_PANEL.couldNotUpdateWatchStatus);
+  };
+
   const handleToggle = async (ep: any) => {
     if (!progress || toggling !== null) return;
     setToggling(ep.episode_number);
+    setActionError('');
     const watched = isWatched(ep);
     if (!watched) {
-      if (ep.episode_number < episodes.length) {
+      /* Ticking the episode you're actually up to goes through
+         markEpisodeWatched, which logs a history row for the completed episode
+         and handles season rollover when the season's episode count isn't
+         known from `episodes`. Advancing progress directly (the branches
+         below) writes no history, so ticking episodes on mobile used to leave
+         no trace in your watch history at all. Mirrors web's MediaPanel. */
+      if (selSeason === curSeason && ep.episode_number === curEp) {
+        const result = await watching.markEpisodeWatched(tvId);
+        if (!result?.ok) {
+          setActionError(result?.error || MEDIA_PANEL.couldNotUpdateWatchStatus);
+        } else {
+          // markEpisodeWatched rolls the season over internally, so the row it
+          // returns is the only reliable read of where the pointer landed.
+          await finishSeriesIfComplete(result.data?.current_season);
+        }
+      } else if (ep.episode_number < episodes.length) {
         await watching.setProgress(tvId, selSeason, ep.episode_number + 1);
       } else {
         await watching.setProgress(tvId, selSeason + 1, 1);
+        await finishSeriesIfComplete(selSeason + 1);
       }
     } else {
       await watching.setProgress(tvId, selSeason, ep.episode_number);
     }
     setToggling(null);
+  };
+
+  /* ── Mark / unmark the whole selected season ── */
+  const seasonState = getSeasonWatchState({
+    currentEpisode: curEp,
+    currentSeason: curSeason,
+    episodeCount: episodes.length,
+    selectedSeason: selSeason,
+  });
+
+  const handleToggleSeason = async () => {
+    if (!progress || seasonPending || toggling !== null) return;
+    const target = getSeasonToggleProgress({
+      isComplete: seasonState.isComplete,
+      selectedSeason: selSeason,
+    });
+    if (!target.ok) {
+      setActionError(target.error!);
+      return;
+    }
+
+    setSeasonPending(true);
+    setActionError('');
+    const result = await watching.setProgress(tvId, target.nextSeason, target.nextEpisode, { reason: 'season' });
+    if (!result?.ok) {
+      setActionError(MEDIA_PANEL.couldNotUpdateSeason);
+    } else if (!seasonState.isComplete) {
+      await finishSeriesIfComplete(target.nextSeason);
+    }
+    setSeasonPending(false);
   };
 
   return (
@@ -219,6 +304,39 @@ function EpisodeGuide({ tvId, progress, details, watching }: { tvId: number; pro
           ))}
         </ScrollView>
       )}
+
+      {progress && episodes.length > 0 && (
+        <View style={styles.seasonBulk}>
+          <View style={styles.seasonBulkInfo}>
+            <Text style={styles.seasonBulkTitle}>{MEDIA_PANEL.seasonLabel(selSeason)}</Text>
+            <Text style={styles.seasonBulkCount}>
+              {MEDIA_PANEL.seasonWatchedCount(seasonState.watchedCount, seasonState.episodeCount)}
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={styles.seasonBulkBtn}
+            onPress={handleToggleSeason}
+            disabled={seasonPending}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: seasonPending }}
+            accessibilityLabel={
+              seasonState.isComplete
+                ? `${MEDIA_PANEL.unmarkSeasonWatched} ${selSeason}`
+                : `${MEDIA_PANEL.markSeasonWatched} ${selSeason}`
+            }
+          >
+            <Text style={[styles.seasonBulkBtnText, seasonPending && styles.seasonBulkBtnTextPending]}>
+              {seasonPending
+                ? MEDIA_PANEL.updating
+                : seasonState.isComplete
+                  ? MEDIA_PANEL.unmarkSeasonWatched
+                  : MEDIA_PANEL.markSeasonWatched}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {actionError ? <Text style={styles.epActionError}>{actionError}</Text> : null}
 
       {loading ? (
         <ActivityIndicator color={colors.accent} style={{ marginVertical: spacing.lg }} />
@@ -331,12 +449,14 @@ function AddToListSheet({ item, customLists, topLists, onClose }: {
     if (!trimmed) return;
     if (findDuplicateCustomList(lists, trimmed)) { setError('A list with that name already exists.'); return; }
     if (!canCreateCustomList(lists.length, profile)) {
-      setError(`Free accounts can have ${FREE_CUSTOM_LIST_CAP} lists. PLOT Premium gets unlimited.`);
+      setError(SHOW_PRICING_PAGE
+        ? `Free accounts can have ${FREE_CUSTOM_LIST_CAP} lists. PLOT Premium gets unlimited.`
+        : `You've reached the ${FREE_CUSTOM_LIST_CAP}-list limit.`);
       return;
     }
     setBusy(true);
     const newList = await createList(trimmed);
-    if (!newList) { setBusy(false); setError('Could not create the list. Please try again.'); return; }
+    if (!newList) { setBusy(false); setError(MEDIA.couldNotCreateList); return; }
     await addItem(newList.id, item);   // create + immediately add this title, like web
     setBusy(false); setCreating(false); setName(''); setError('');
   };
@@ -353,7 +473,7 @@ function AddToListSheet({ item, customLists, topLists, onClose }: {
             <TouchableOpacity style={styles.lsRow} onPress={() => setTopOpen(o => !o)} activeOpacity={0.7}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.lsName}>Top 10 {topListType === 'tv' ? 'TV Shows' : 'Movies'}</Text>
-                <Text style={styles.lsCount}>{currentRank ? `Currently #${currentRank}` : 'Not ranked'}</Text>
+                <Text style={styles.lsCount}>{currentRank ? MEDIA_PANEL.currentlyRanked(currentRank) : MEDIA_PANEL.notRanked}</Text>
               </View>
               <View style={[styles.lsCheck, currentRank && styles.lsCheckOn]}>
                 {currentRank ? <Text style={styles.lsTopCheckNum}>{currentRank}</Text> : null}
@@ -488,11 +608,34 @@ interface MediaPanelProps {
   onClose: () => void;
 }
 
+/**
+ * "YYYY-MM-DD" from a Date, read in local time. The picker returns the calendar
+ * day the user tapped, so formatting via toISOString would shift it a day for
+ * anyone behind UTC. Core's localDateStr can't be used here: it takes a day
+ * offset from today, not a Date.
+ */
+function ymd(date: Date): string {
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${date.getFullYear()}-${m}-${d}`;
+}
+
+/**
+ * "12 Mar 2026" from a date string, without going through UTC. Tolerates a full
+ * ISO timestamp as well as a bare YYYY-MM-DD, because `history.watched_at`
+ * comes back from Postgres as the former.
+ */
+function formatWatchedOn(value: string): string {
+  const [y, m, d] = String(value).slice(0, 10).split('-').map(Number);
+  if (!y || !m || !d) return value;
+  return new Date(y, m - 1, d).toLocaleDateString('en', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
 export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProps) {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { userId, profile, watchlist, watching, favorites, history, customLists, topLists } = useAppData();
+  const { profile, watchlist, watching, favorites, history, customLists, topLists } = useAppData();
   const fw = favoriteWords(profile?.region);
 
   const [showListSheet, setShowListSheet] = useState(false);
@@ -507,6 +650,8 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
 
   const [localRating, setLocalRating] = useState(0);
   const [localReview, setLocalReview] = useState('');
+  const [localWatchedAt, setLocalWatchedAt] = useState('');
+  const [pickingDate, setPickingDate] = useState(false);
   const [localDnf,    setLocalDnf]    = useState(false);
   const [savingReview, setSavingReview] = useState(false);
 
@@ -516,16 +661,50 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
   const inList     = watchlist.isInList(itemId);
   const isWatching = !isMovie && watching.isWatching(itemId);
   const progress   = watching.getProgress(itemId);
-  const watched    = history.isWatched(itemId);
+  const watched    = history.isWatched(itemId, itemType);
   const isFav      = favorites.isFavorite(itemId);
   const isInAnyList = customLists.lists.some((l: any) => customLists.isInList(l.id, itemId));
-  const watchedEntry = history.entries?.find((e: any) => e.tmdb_id === Number(itemId));
+  const watchedEntry = history.entries?.find((e: any) => e.tmdb_id === Number(itemId) && e.media_type === itemType);
+  // Default to the day the title was SAVED, not today — if it sat on the
+  // watchlist for a month before being marked watched, "today" is the one date
+  // it almost certainly wasn't. Web makes the same call. Falls back to today
+  // when it was never saved first.
+  const watchlistEntry   = watchlist.items?.find((i: any) => Number(i.tmdb_id) === Number(itemId));
+  const defaultWatchedAt = watchlistEntry?.created_at ? String(watchlistEntry.created_at).slice(0, 10) : localDateStr();
+
+  // Marking something watched retires it from the watchlist: it's no longer
+  // something you want to watch. core's markMediaAsWatched sequences that and
+  // rolls the history entry back if a later step fails, so a half-applied
+  // state can't be left behind. Shared by the Watched button and by the
+  // episode guide, which calls it when the final episode of an ended series
+  // is ticked.
+  const markWatchedNow = async () => markMediaAsWatched({
+    logWatched: () => history.logWatched(
+      { ...details, id: itemId, media_type: itemType },
+      { watchedAt: defaultWatchedAt },
+    ),
+    clearWatching:   () => watching.stopWatching(itemId),
+    removeFromSaved: () => watchlist.removeFromList(itemId),
+    rollbackHistory: () => history.removeEntry(itemId, itemType),
+    mediaType: itemType,
+    isWatching,
+    inList,
+  });
+
+  // Already-watched shows are a no-op rather than a toggle-off: this fires
+  // from episode ticks, not from a button the user aimed at it.
+  const handleSeriesFinished = async () => {
+    if (watched) return { ok: true };
+    const result = await markWatchedNow();
+    return result.ok ? result : { ok: false, error: history.getLastError() || result.error };
+  };
 
   const handleShare = async () => {
     try {
       const t = details?.title || details?.name || '';
       const url = buildShareUrl(itemId, itemType);
       await Share.share({ message: t ? `${t}. ${url}` : url, url });
+      track(EVENTS.TITLE_SHARED, { tmdb_id: itemId, media_type: itemType });
     } catch { /* user dismissed the share sheet */ }
   };
 
@@ -535,6 +714,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
       setLocalRating(watchedEntry.rating || 0);
       setLocalReview(watchedEntry.note   || '');
       setLocalDnf(watchedEntry.dnf       || false);
+      setLocalWatchedAt(String(watchedEntry.watched_at || defaultWatchedAt).slice(0, 10));
     }
   }, [watchedEntry?.id]);
 
@@ -562,6 +742,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
       if (cancelled) return;
       if (!det) { setError(true); } else {
         setDetails(det);
+        track(EVENTS.TITLE_VIEWED, { tmdb_id: itemId, media_type: itemType });
         const regionData = prov?.results?.[region] || {};
         const fallbackOffers = offersFromTmdb(regionData).map((offer) => ({
           provider_id: offer.providerId,
@@ -613,6 +794,10 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
       justwatchLink: whereToWatch.justwatchLink,
     });
     if (link?.url) {
+      track(EVENTS.WATCH_LINK_CLICKED, {
+        tmdb_id: itemId, media_type: itemType,
+        provider: p.provider_name ?? null, link_kind: link.kind ?? null,
+      });
       Linking.openURL(link.url).catch((e) => {
         console.warn('[MediaPanel] failed to open watch link', e);
         Alert.alert("Couldn't open link", 'Please try again in a moment.');
@@ -635,7 +820,13 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
   const trailerKey = trailer?.key || null;
 
   const hasSavedReview = !!(watchedEntry?.rating || watchedEntry?.note?.trim() || watchedEntry?.dnf);
-  const reviewDirty    = !!watchedEntry && (localRating !== (watchedEntry.rating || 0) || localReview.trim() !== (watchedEntry.note || '').trim() || localDnf !== !!watchedEntry.dnf);
+  const savedWatchedAt = String(watchedEntry?.watched_at || defaultWatchedAt).slice(0, 10);
+  const reviewDirty    = !!watchedEntry && (
+    localRating !== (watchedEntry.rating || 0) ||
+    localReview.trim() !== (watchedEntry.note || '').trim() ||
+    localDnf !== !!watchedEntry.dnf ||
+    localWatchedAt !== savedWatchedAt
+  );
 
   return (
     <>
@@ -738,18 +929,44 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
 
                 {/* ── Action buttons ── */}
                 <View style={styles.actionsCol}>
-                  {/* Save */}
-                  {!isWatching && (
-                    <TouchableOpacity
-                      style={[styles.btnPrimary, inList && styles.btnSaved]}
-                      onPress={() => watchlist.toggle({ ...details, id: itemId, media_type: itemType })}
-                    >
-                      {inList && <IconCheck color="#4ade80" />}
-                      <Text style={[styles.btnPrimaryText, inList && { color: '#4ade80' }]}>
-                        {inList ? 'Saved' : 'Save'}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
+                  {/* Status row: watchlist and watch state are the two answers to
+                      "where is this for me", so they sit side by side rather than
+                      stacked either side of the secondary actions. */}
+                  <View style={styles.actionsRow}>
+                    {!isWatching && (
+                      <TouchableOpacity
+                        style={[styles.btnPrimary, styles.btnHalf, inList && styles.btnSaved]}
+                        onPress={() => watchlist.toggle({ ...details, id: itemId, media_type: itemType })}
+                      >
+                        {inList && <IconCheck color="#4ade80" />}
+                        <Text style={[styles.btnPrimaryText, inList && { color: '#4ade80' }]}>
+                          {inList ? MEDIA_PANEL.inWatchlist : MEDIA_PANEL.addToWatchlist}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                    {watched ? (
+                      <TouchableOpacity
+                        style={[styles.btnPrimary, styles.btnHalf, styles.btnSaved]}
+                        onPress={() => history.removeEntry(itemId, itemType)}
+                      >
+                        <IconCheck color="#4ade80" />
+                        <Text style={[styles.btnPrimaryText, { color: '#4ade80' }]}>Watched</Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <TouchableOpacity
+                        style={styles.btnSecondary}
+                        onPress={async () => {
+                          const result = await markWatchedNow();
+                          if (!result.ok) {
+                            Alert.alert('Could not update', history.getLastError() || result.error);
+                          }
+                        }}
+                      >
+                        <IconCheck />
+                        <Text style={styles.btnSecondaryText}>{isMovie ? MEDIA.markWatched : MEDIA.markAllWatched}</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
 
                   {/* Secondary row */}
                   <View style={styles.actionsRow}>
@@ -768,7 +985,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                     >
                       <IconList active={isInAnyList} />
                       <Text style={[styles.btnSecondaryText, isInAnyList && { color: colors.accent }]}>
-                        {isInAnyList ? 'On list' : 'List'}
+                        {isInAnyList ? MEDIA_PANEL.onList : MEDIA_PANEL.list}
                       </Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.btnSecondary} onPress={handleShare}>
@@ -778,47 +995,78 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                   </View>
                 </View>
 
-                {/* ── Watching / watched ── */}
-                {!watched ? (
-                  <View style={styles.actionsRow}>
-                    {!isMovie && (
+                {/* TV only: start/stop watching sits on its own line, since it
+                    is a third state rather than a peer of the two above. */}
+                {!watched && !isMovie && (
+                  <TouchableOpacity
+                    style={[styles.btnSecondary, styles.btnStandalone, isWatching && styles.btnWatching]}
+                    onPress={async () => {
+                      if (isWatching) {
+                        await watching.stopWatching(itemId);
+                      } else {
+                        /* Two writes with no rollback left a show in both
+                           Watching and Saved permanently if the second failed.
+                           core sequences them and undoes the first. */
+                        const result = await moveSavedShowToWatching({
+                          startWatching:   () => watching.startWatching({ ...details, id: itemId, media_type: 'tv' }),
+                          removeFromSaved: () => inList ? watchlist.removeFromList(itemId) : Promise.resolve(true),
+                          rollbackWatching: () => watching.stopWatching(itemId),
+                        });
+                        if (!result.ok) Alert.alert('Could not update', result.error);
+                      }
+                    }}
+                  >
+                    {isWatching ? <IconStop /> : <IconPlay />}
+                    <Text style={[styles.btnSecondaryText, isWatching && { color: '#818cf8' }]}>
+                      {isWatching ? MEDIA.stopWatching : MEDIA.startWatching}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+
+                {watched && (
+                  <View style={{ marginBottom: spacing.lg }}>
+                    {/* Date watched — mirrors web's "Watched on" row. Capped at
+                        today: a future watch date would sort into a month group
+                        that hasn't happened. */}
+                    <View style={styles.watchedOnRow}>
+                      <Text style={styles.watchedOnLabel}>Watched on</Text>
                       <TouchableOpacity
-                        style={[styles.btnSecondary, isWatching && styles.btnWatching]}
-                        onPress={async () => {
-                          if (isWatching) {
-                            await watching.stopWatching(itemId);
-                          } else {
-                            await watching.startWatching({ ...details, id: itemId, media_type: 'tv' });
-                            if (inList) await watchlist.toggle({ ...details, id: itemId, media_type: itemType });
-                          }
-                        }}
+                        style={styles.watchedOnBtn}
+                        onPress={() => setPickingDate(true)}
+                        accessibilityRole="button"
+                        accessibilityLabel="Date watched"
                       >
-                        {isWatching ? <IconStop /> : <IconPlay />}
-                        <Text style={[styles.btnSecondaryText, isWatching && { color: '#818cf8' }]}>
-                          {isWatching ? 'Stop watching' : 'Start watching'}
+                        <Text style={styles.watchedOnValue}>
+                          {formatWatchedOn(localWatchedAt || defaultWatchedAt)}
                         </Text>
                       </TouchableOpacity>
+                    </View>
+                    {pickingDate && (
+                      // The inline picker sizes itself to its content, so it needs
+                      // centring rather than stretching — left-aligned it sat off to
+                      // one side of the sheet with dead space beside it.
+                      <View style={styles.datePickerWrap}>
+                        <DateTimePicker
+                          value={new Date(`${localWatchedAt || defaultWatchedAt}T12:00:00`)}
+                          mode="date"
+                          maximumDate={new Date()}
+                          display={Platform.OS === 'ios' ? 'inline' : 'default'}
+                          style={styles.datePicker}
+                          onChange={(event, date) => {
+                            // Android fires once and dismisses itself; iOS keeps the
+                            // inline picker open until it's closed explicitly.
+                            if (Platform.OS !== 'ios') setPickingDate(false);
+                            if (event.type === 'dismissed' || !date) return;
+                            setLocalWatchedAt(ymd(date));
+                          }}
+                        />
+                        {Platform.OS === 'ios' && (
+                          <TouchableOpacity style={styles.watchedOnDone} onPress={() => setPickingDate(false)}>
+                            <Text style={styles.watchedOnDoneText}>{COMMON.done}</Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
                     )}
-                    <TouchableOpacity
-                      style={styles.btnSecondary}
-                      onPress={async () => {
-                        await history.logWatched({ ...details, id: itemId, media_type: itemType }, { logRewatches: profile?.log_rewatches ?? true });
-                        if (!isMovie && isWatching) await watching.stopWatching(itemId);
-                      }}
-                    >
-                      <IconCheck />
-                      <Text style={styles.btnSecondaryText}>{isMovie ? 'Mark watched' : 'Mark all watched'}</Text>
-                    </TouchableOpacity>
-                  </View>
-                ) : (
-                  <View style={{ marginBottom: spacing.lg }}>
-                    <TouchableOpacity
-                      style={[styles.btnPrimary, styles.btnSaved]}
-                      onPress={() => history.removeEntry(itemId)}
-                    >
-                      <IconCheck color="#4ade80" />
-                      <Text style={[styles.btnPrimaryText, { color: '#4ade80' }]}>Watched</Text>
-                    </TouchableOpacity>
 
                     {/* Review section */}
                     <Text style={styles.sectionTitle}>Your Review</Text>
@@ -829,7 +1077,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                         onPress={() => setLocalDnf(d => !d)}
                       >
                         {localDnf && <IconCheck color="#fb923c" />}
-                        <Text style={[styles.dnfText, localDnf && { color: '#fb923c' }]}>Didn't finish</Text>
+                        <Text style={[styles.dnfText, localDnf && { color: '#fb923c' }]}>{MEDIA_PANEL.didntFinish}</Text>
                       </TouchableOpacity>
                     </View>
                     <TextInput
@@ -842,17 +1090,18 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                       numberOfLines={3}
                       maxLength={280}
                     />
-                    {(hasSavedReview || localRating > 0 || localReview.trim() || localDnf) && (
+                    {/* Also when only the date moved — see web. */}
+                    {(hasSavedReview || localRating > 0 || localReview.trim() || localDnf || localWatchedAt !== savedWatchedAt) && (
                       <TouchableOpacity
                         style={[styles.btnPrimary, { marginTop: spacing.sm }]}
                         disabled={savingReview}
                         onPress={async () => {
                           setSavingReview(true);
-                          await history.updateEntry(itemId, { rating: localRating || null, note: localReview.trim() || null, dnf: localDnf });
+                          await history.updateEntry(itemId, { rating: localRating || null, note: localReview.trim() || null, dnf: localDnf, watched_at: localWatchedAt || defaultWatchedAt }, itemType);
                           setSavingReview(false);
                         }}
                       >
-                        <Text style={styles.btnPrimaryText}>{savingReview ? 'Saving…' : reviewDirty ? 'Save changes' : hasSavedReview ? 'Edit review' : 'Save review'}</Text>
+                        <Text style={styles.btnPrimaryText}>{savingReview ? COMMON.saving : reviewDirty ? MEDIA_PANEL.saveChanges : hasSavedReview ? MEDIA_PANEL.editReview : MEDIA_PANEL.saveReview}</Text>
                       </TouchableOpacity>
                     )}
                   </View>
@@ -907,7 +1156,13 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                 {!isMovie && details && (
                   <>
                     <Text style={styles.sectionTitle}>Episodes</Text>
-                    <EpisodeGuide tvId={itemId} progress={progress} details={details} watching={watching} />
+                    <EpisodeGuide
+                      tvId={itemId}
+                      progress={progress}
+                      details={details}
+                      watching={watching}
+                      onSeriesFinished={handleSeriesFinished}
+                    />
                   </>
                 )}
               </>
@@ -979,6 +1234,11 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   // below spaces itself (sectionTitle marginTop).
   actionsCol: { gap: spacing.sm, marginBottom: spacing.sm },
   actionsRow: { flexDirection: 'row', gap: spacing.sm },
+  // btnSecondary is flex:1 for row use; btnPrimary is not, so it needs this to
+  // share a row evenly. btnStandalone undoes the flex when one sits alone in a
+  // column, where flex:1 would stretch it to the container's height.
+  btnHalf: { flex: 1 },
+  btnStandalone: { flex: 0, marginBottom: spacing.sm },
 
   btnPrimary: {
     backgroundColor: colors.accent, borderRadius: radii.md,
@@ -1002,6 +1262,33 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   dnfChip: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: spacing.md, paddingVertical: 5, borderRadius: radii.pill, borderWidth: 1.5, borderColor: colors.border },
   dnfChipActive: { borderColor: 'rgba(251,146,60,0.5)', backgroundColor: 'rgba(251,146,60,0.12)' },
   dnfText: { fontFamily: fontFamily.sansBold, fontSize: 11, color: colors.textMuted },
+  watchedOnRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    // The Watched button above is a filled block, so the row needs real
+    // separation from it — butted up against the button they read as one
+    // control. Larger above than below, since the review block follows.
+    marginTop: spacing.lg,
+    marginBottom: spacing.md,
+  },
+  watchedOnLabel: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted },
+  // Same pill as the Didn't finish chip beside it: pill radius, 1.5 border,
+  // small bold uppercase-ish label. They sit in the same block, so matching
+  // them stops the review area reading as two different control languages.
+  watchedOnBtn: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: 5,
+    borderRadius: radii.pill,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+  },
+  watchedOnValue: { fontFamily: fontFamily.sansBold, fontSize: 11, color: colors.textMuted },
+  datePickerWrap: { alignItems: 'center', marginBottom: spacing.md },
+  // The inline picker reports no intrinsic width to flexbox, so it needs one
+  // to centre against; 320 is the widest the iOS calendar grid draws.
+  datePicker: { width: 320, alignSelf: 'center' },
+  watchedOnDone: { alignSelf: 'center', paddingVertical: spacing.sm, paddingHorizontal: spacing.lg },
+  watchedOnDoneText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.accent },
+
   reviewInput: {
     borderWidth: 1, borderColor: colors.border, borderRadius: radii.md,
     padding: spacing.md, fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textPrimary,
@@ -1022,8 +1309,9 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   trailerPlayBtn: { width: 56, height: 56, borderRadius: 28, backgroundColor: 'rgba(0,0,0,0.55)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.85)', alignItems: 'center', justifyContent: 'center' },
   trailerLabel: { position: 'absolute', bottom: spacing.md, fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, letterSpacing: 0.5, textTransform: 'uppercase', color: '#fff' },
 
-  epRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingLeft: spacing.sm, paddingRight: spacing.md, borderLeftWidth: 3, borderLeftColor: 'transparent', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border, gap: spacing.md },
-  epRowCurrent: { backgroundColor: colors.accentDim, borderLeftColor: colors.accent },
+  epRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingLeft: spacing.sm, paddingRight: spacing.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border, gap: spacing.md },
+  epRowCurrent: { backgroundColor: colors.accentDim },
+  epActionError: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.danger, marginBottom: spacing.sm },
   epCode:        { fontFamily: fontFamily.sansBold, fontSize: 10, color: colors.chipEpisode, letterSpacing: 0.4 },
   epCodeCurrent: { color: colors.accent },
   epAirDate:   { fontFamily: fontFamily.sans, fontSize: 10, color: colors.textMuted },
@@ -1037,6 +1325,34 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   seasonBtnActive: { borderColor: colors.accent, backgroundColor: colors.accentDim },
   seasonBtnText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.xs, color: colors.textMuted },
   seasonBtnTextActive: { color: colors.accent },
+
+  seasonBulk: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.sm,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+  },
+  seasonBulkInfo: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm, flexShrink: 1 },
+  seasonBulkTitle: { fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, color: colors.textPrimary },
+  seasonBulkCount: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted },
+  seasonBulkBtn: {
+    minHeight: 44, // keeps the bulk action a comfortable touch target
+    justifyContent: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: spacing.md,
+    borderRadius: radii.badge,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+  },
+  seasonBulkBtnText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.xs, color: colors.textPrimary },
+  seasonBulkBtnTextPending: { color: colors.textMuted },
 
   errorText: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, textAlign: 'center', marginBottom: spacing.md },
   retryBtn:  { paddingHorizontal: spacing.xl, paddingVertical: spacing.sm, borderRadius: radii.md, borderWidth: 1, borderColor: colors.border },

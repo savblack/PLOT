@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import './DesignSystemPage.css';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
+import ProfileBadges from '../components/ProfileBadges.jsx';
 
 const colorTokens = [
   ['--bg', 'App background', 'The quiet canvas behind every primary view.'],
@@ -279,6 +280,26 @@ export default function DesignSystemPage() {
           <span className="chip chip-tomorrow">Tomorrow</span>
           <span className="chip chip-soon">Soon</span>
           <span className="chip chip-muted">Saved</span>
+        </div>
+
+        <h3 className="ds-subsection-title">Profile badges</h3>
+        <p className="ds-section-note" style={{ marginTop: '0.25rem' }}>
+          Two separate things, so two separate colors. Blue is a paid PLOT
+          Premium subscription; pink is a Ko-fi supporter, which grants nothing
+          and is purely a thank-you. They're independent, so a name can carry
+          both. The glyphs differ as well as the colors, so the pair still reads
+          for anyone who can't tell blue from pink.
+        </p>
+        <div className="ds-chip-row">
+          <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+            Premium<ProfileBadges isPremium />
+          </span>
+          <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+            Supporter<ProfileBadges isSupporter />
+          </span>
+          <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+            Both<ProfileBadges isPremium isSupporter />
+          </span>
         </div>
       </Section>
 
@@ -617,6 +638,17 @@ export default function DesignSystemPage() {
                 <button className="nav-drawer-item active"><span className="nav-drawer-label">Home</span></button>
                 <button className="nav-drawer-item"><span className="nav-drawer-label">Settings</span></button>
               </div>
+            </div>
+          </div>
+
+          <div className="ds-card-example">
+            <span className="ds-example-label">Season bulk action</span>
+            <div className="season-bulk">
+              <div className="season-bulk-info">
+                <span className="season-bulk-title">Season 2</span>
+                <span className="season-bulk-count">4 of 10 watched</span>
+              </div>
+              <button className="season-bulk-btn">Mark season watched</button>
             </div>
           </div>
 

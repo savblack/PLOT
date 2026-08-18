@@ -3,7 +3,6 @@
 // VITE_TMDB_PROXY_URL); the Worker forwards to UPSTREAM, preserving the auth
 // headers and the browser Origin so the Edge Function's CORS allowlist still
 // applies. CORS response headers come from the Edge Function and pass through.
-import * as Sentry from '@sentry/cloudflare';
 
 function forwardHeaders(headers) {
   const h = new Headers(headers);
@@ -51,7 +50,4 @@ const handler = {
   },
 };
 
-export default Sentry.withSentry(
-  (env) => ({ dsn: env.SENTRY_DSN }),
-  handler,
-);
+export default handler;

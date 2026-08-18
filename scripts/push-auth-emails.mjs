@@ -120,7 +120,22 @@ const layout = ({ preheader, eyebrow, heading, intro, content, note, safety }) =
 </html>`;
 
 // ── The six auth emails. {{ .X }} placeholders are Supabase Go-template vars. ──
-const URL = '{{ .ConfirmationURL }}';
+
+// Auth links carry the one-time token as `token_hash` and point straight at the
+// app's callback, instead of {{ .ConfirmationURL }} which round-trips through
+// Supabase's /auth/v1/verify and lands back as `?code=`. Under PKCE (see
+// apps/web/src/main.jsx) a code can only be exchanged by the browser holding the
+// verifier, so a magic link or password reset opened on a different device than
+// the one that requested it would fail — the common case, not an edge case.
+// token_hash goes through verifyOtp, which needs no verifier and works under
+// both flows. utils/authCallback.js handles it.
+//
+// {{ .RedirectTo }} is the per-request emailRedirectTo the app passes, so local
+// and preview origins keep receiving their own links; {{ .SiteURL }} is the
+// fallback for dashboard-initiated sends that carry no redirect.
+const authUrl = (type) =>
+  '{{ if .RedirectTo }}{{ .RedirectTo }}{{ else }}{{ .SiteURL }}/auth/callback{{ end }}'
+  + `?token_hash={{ .TokenHash }}&amp;type=${type}`;
 
 const emails = {
   confirmation: {
@@ -131,7 +146,7 @@ const emails = {
       eyebrow: 'New account',
       heading: 'Welcome to PLOT',
       intro: "Confirm your email to start logging, rating, and lining up what to watch next.",
-      content: button(URL, 'Confirm email') + fallbackLink(URL),
+      content: button(authUrl('signup'), 'Confirm email') + fallbackLink(authUrl('signup')),
       note: 'This is the email most new PLOT members see first, so we kept it simple: one step in, then straight to your watch journal.',
       safety: "Didn't sign up for PLOT? You can safely ignore this email.",
     }),
@@ -144,7 +159,7 @@ const emails = {
       eyebrow: 'Account security',
       heading: 'Reset your password',
       intro: 'We received a request to reset your PLOT password. If that was you, set a new one below.',
-      content: button(URL, 'Set a new password') + fallbackLink(URL),
+      content: button(authUrl('recovery'), 'Set a new password') + fallbackLink(authUrl('recovery')),
       note: 'For security, only use the latest reset email you requested.',
       safety: "Didn't request this? You can safely ignore this email, your password won't change.",
     }),
@@ -157,7 +172,7 @@ const emails = {
       eyebrow: 'Sign in',
       heading: 'Sign in to PLOT',
       intro: "Here's your one-time sign-in link. It only works once and expires in an hour.",
-      content: button(URL, 'Sign in') + fallbackLink(URL),
+      content: button(authUrl('magiclink'), 'Sign in') + fallbackLink(authUrl('magiclink')),
       note: 'If you requested multiple sign-in links, use the newest one.',
       safety: "Didn't try to sign in? You can safely ignore this email.",
     }),
@@ -170,7 +185,7 @@ const emails = {
       eyebrow: 'Account change',
       heading: 'Confirm your new email',
       intro: 'Follow the link below to update the email on your PLOT account from {{ .Email }} to {{ .NewEmail }}.',
-      content: button(URL, 'Confirm change') + fallbackLink(URL),
+      content: button(authUrl('email_change'), 'Confirm change') + fallbackLink(authUrl('email_change')),
       note: 'Nothing changes until you confirm this new address.',
       safety: "Didn't request this change? You can safely ignore this email.",
     }),
@@ -183,7 +198,7 @@ const emails = {
       eyebrow: 'Invite',
       heading: "You're invited",
       intro: "You’ve been invited to join PLOT, where you’ll always know what to watch next.",
-      content: button(URL, 'Accept invite') + fallbackLink(URL),
+      content: button(authUrl('invite'), 'Accept invite') + fallbackLink(authUrl('invite')),
       note: 'Open the invite, set up your account, and start building your watch history.',
       safety: "Not expecting this invite? You can safely ignore this email.",
     }),

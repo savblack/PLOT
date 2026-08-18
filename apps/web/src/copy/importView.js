@@ -1,10 +1,4 @@
-export const IMPORT_VIEW = {
-  noneAlreadyInHistory: 'None already in your history',
-  notMatched: 'Not matched',
-  alreadyInHistory: 'Already in history',
-  newBadge: 'New',
-  haveBadge: 'Have',
-  importing: 'Importing…',
-  nothingNew: 'Nothing new',
-  importArrow: 'Import →',
-};
+// Shared with the mobile app, so the strings live in @plot/core/copy.
+// Re-exported here so src/copy/ stays the one place the web app — and the
+// Storybook Content page — looks for copy.
+export { IMPORT_VIEW } from '@plot/core/copy/importView.js';

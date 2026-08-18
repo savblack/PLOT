@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { supabase } from '../api/supabase.js';
-import { tmdb } from '../api/tmdb.js';
+import { supabase } from '@plot/core/supabase.js';
+import { tmdb } from '@plot/core/tmdb.js';
 import { writePendingSave } from '../utils/pendingSave.js';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import { SAVE_PAGE } from '../copy/savePage.js';

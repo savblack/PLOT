@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { supabase } from '../api/supabase';
+import { supabase } from '@plot/core/supabase.js';
 import './AuthPage.css';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import { COMMON } from '../copy/common.js';
@@ -66,7 +66,7 @@ export default function ResetPasswordPage() {
                     <input
                       id="rp-password"
                       type={showPassword ? 'text' : 'password'}
-                      placeholder="At least 6 characters"
+                      placeholder={AUTH_PAGE.passwordPlaceholder.signup}
                       value={password}
                       onChange={e => setPassword(e.target.value)}
                       required

@@ -5,8 +5,8 @@ import { useApp } from '../hooks/useApp.js';
 import { countdownChip } from '../utils/countdown.js';
 import { TodayLabel } from './TodayLabel.jsx';
 import { posterUrl } from '../utils/images.js';
-import { tmdb } from '../api/tmdb.js';
-import { findDuplicateCustomList } from '../domain/customLists.js';
+import { tmdb } from '@plot/core/tmdb.js';
+import { findDuplicateCustomList } from '@plot/core/customLists.js';
 import { useHistory } from '../hooks/useHistory.js';
 import { localDateStr } from '../utils/date.js';
 import { favoriteWords } from '../utils/spelling.js';
@@ -17,13 +17,16 @@ import CollapsibleSection from './CollapsibleSection.jsx';
 import GroupedFilterMenu from './GroupedFilterMenu.jsx';
 import SectionToggleIcon from './SectionToggleIcon.jsx';
 import KebabMenu from './KebabMenu.jsx';
+import ConfirmModal from './ConfirmModal.jsx';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import SheetHeader from './SheetHeader.jsx';
 import { getButtonLikeProps } from '../utils/interactive.js';
 import { useShare } from '../hooks/useShare.js';
 import { EVENTS, track } from '../lib/analytics.js';
 import { canCreateCustomList, FREE_CUSTOM_LIST_CAP } from '@plot/core/premium.js';
+import { SHOW_PRICING_PAGE } from '../launchFeatures.js';
 import { getStoredSectionOpen, storeSectionOpen } from '../utils/sectionOpenState.js';
+import { MEDIA } from '../copy/media.js';
 
 const ALL_LIST_SECTION_IDS = ['watching', 'want', 'top10', 'favorites', 'lists'];
 
@@ -95,7 +98,10 @@ function AddToRankModal({ listType, rank, onAdd, onClose }) {
   }, [query, tab, mediaFilter]);
 
   const handleSelect = (item) => {
-    onAdd(item);
+    // `entries` are raw `history` rows: `.id` is the row's own primary key,
+    // not a TMDB id (that's `.tmdb_id`). Normalize before handing off so
+    // `onAdd` always sees a TMDB-result-shaped item, same as the search tab.
+    onAdd(tab === 'history' ? { ...item, id: item.tmdb_id } : item);
     onClose();
   };
 
@@ -238,7 +244,13 @@ function AddToFavoritesModal({ title = 'Add to Favorites', onAdd, onClose }) {
     return () => clearTimeout(timer);
   }, [query, tab]);
 
-  const handleSelect = (item) => { onAdd(item); onClose(); };
+  const handleSelect = (item) => {
+    // `entries` are raw `history` rows: `.id` is the row's own primary key,
+    // not a TMDB id (that's `.tmdb_id`). Normalize before handing off so
+    // `onAdd` always sees a TMDB-result-shaped item, same as the search tab.
+    onAdd(tab === 'history' ? { ...item, id: item.tmdb_id } : item);
+    onClose();
+  };
 
   return createPortal(
     <div style={{
@@ -604,7 +616,7 @@ function PosterGrid({ items, openPanel, editMode, selectedIds, onToggleSelect })
                 cursor: 'pointer',
               }}
               onClick={openDetails}
-              {...getButtonLikeProps({ onPress: openDetails, label: editMode ? `${isSelected ? 'Deselect' : 'Select'} ${title}` : `View details for ${title}` })}
+              {...(!editMode ? getButtonLikeProps({ onPress: openDetails, label: `View details for ${title}` }) : {})}
             >
               {img
                 ? <img src={img} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -650,7 +662,12 @@ function FavoritesSection({ favorites: favsHook, filterItems, open, onOpenChange
   const deleteSelected = () => {
     selected.forEach(tmdbId => {
       const item = favorites.find(f => f.tmdb_id === tmdbId);
-      if (item) toggleFavorite(item);
+      // toggleFavorite resolves the id via tmdbIdFromItem, which reads `id`
+      // before `tmdb_id` — right for a TMDB result, wrong for a row out of
+      // user_favourites whose `id` is the row's uuid. Number(uuid) is NaN, so
+      // passing the row unchanged resolved to null and the delete silently did
+      // nothing. Hand it the tmdb id explicitly.
+      if (item) toggleFavorite({ ...item, id: item.tmdb_id });
     });
     exitEditMode();
   };
@@ -762,7 +779,7 @@ function CreateListModal({ lists, onConfirm, onClose }) {
     try {
       const created = await onConfirm(name);
       if (!created) {
-        setError('Could not create the list. Please try again.');
+        setError(MEDIA.couldNotCreateList);
       }
     } finally {
       setIsSubmitting(false);
@@ -838,6 +855,7 @@ function CustomListsSection({ customLists: clHook, filterItems, open, onOpenChan
   const [showAddToList, setShowAddToList] = useState(null);
   const [editListId,   setEditListId]   = useState(null);
   const [selectedByList, setSelectedByList] = useState({});
+  const [confirmDeleteList, setConfirmDeleteList] = useState(null);
 
   const toggleList = (id) => setOpenItems(prev => ({ ...prev, [id]: !(prev[id] ?? true) }));
   const isOpen = (id) => openItems[id] ?? true;
@@ -912,14 +930,20 @@ function CustomListsSection({ customLists: clHook, filterItems, open, onOpenChan
           color: 'var(--text-secondary)', background: 'var(--surface)',
           border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
         }}>
-          You&rsquo;ve got {FREE_CUSTOM_LIST_CAP} lists. PLOT Premium gets unlimited.{' '}
-          <button
-            type="button"
-            onClick={() => navigateTo?.('settings')}
-            style={{ background: 'none', border: 'none', padding: 0, color: 'var(--accent)', fontWeight: 600, cursor: 'pointer', fontSize: 'inherit' }}
-          >
-            Get Premium
-          </button>
+          {SHOW_PRICING_PAGE ? (
+            <>
+              You&rsquo;ve got {FREE_CUSTOM_LIST_CAP} lists. PLOT Premium gets unlimited.{' '}
+              <button
+                type="button"
+                onClick={() => navigateTo?.('settings')}
+                style={{ background: 'none', border: 'none', padding: 0, color: 'var(--accent)', fontWeight: 600, cursor: 'pointer', fontSize: 'inherit' }}
+              >
+                Get Premium
+              </button>
+            </>
+          ) : (
+            <>You&rsquo;ve reached the {FREE_CUSTOM_LIST_CAP}-list limit.</>
+          )}
         </div>
       )}
 
@@ -1053,7 +1077,7 @@ function CustomListsSection({ customLists: clHook, filterItems, open, onOpenChan
                       }}
                       aria-label={list.is_public ? `Make ${list.name} private` : `Make ${list.name} public`}
                     >
-                      {list.is_public ? 'Make private' : 'Make public'}
+                      {list.is_public ? COMMON.makePrivate : 'Make public'}
                     </button>
                     {list.is_public && (
                       <button
@@ -1066,9 +1090,9 @@ function CustomListsSection({ customLists: clHook, filterItems, open, onOpenChan
                     )}
                     <button
                       style={{ display: 'block', width: '100%', padding: '0.6rem 0.8rem', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', fontSize: '0.8rem', color: '#ef4444' }}
-                      onClick={async () => {
-                        const deleted = await deleteList(list.id);
-                        if (deleted) setMenuOpen(null);
+                      onClick={() => {
+                        setConfirmDeleteList(list);
+                        setMenuOpen(null);
                       }}
                       aria-label={`Delete ${list.name}`}
                     >
@@ -1147,6 +1171,20 @@ function CustomListsSection({ customLists: clHook, filterItems, open, onOpenChan
           title="Add to List"
           onAdd={(item) => addItem(showAddToList, item)}
           onClose={() => setShowAddToList(null)}
+        />
+      )}
+      {confirmDeleteList && (
+        <ConfirmModal
+          title={`Delete "${confirmDeleteList.name}"?`}
+          message={
+            (confirmDeleteList.items || []).length > 0
+              ? `This list has ${confirmDeleteList.items.length} title${confirmDeleteList.items.length === 1 ? '' : 's'}. This can't be undone.`
+              : "This can't be undone."
+          }
+          confirmLabel="Delete list"
+          danger
+          onConfirm={() => deleteList(confirmDeleteList.id)}
+          onClose={() => setConfirmDeleteList(null)}
         />
       )}
     </CollapsibleSection>
@@ -1254,7 +1292,7 @@ function WatchingSection({ watching, open, onOpenChange }) {
             key={item.tmdb_id}
             className="list-row interactive-surface"
             onClick={openDetails}
-            {...getButtonLikeProps({ onPress: openDetails, label: editMode ? `${isSelected ? 'Deselect' : 'Select'} ${item.title}` : `View details for ${item.title}` })}
+            {...(!editMode ? getButtonLikeProps({ onPress: openDetails, label: `View details for ${item.title}` }) : {})}
           >
             <div className="list-row-poster">
               {img && <img src={img} alt={item.title} />}
@@ -1380,7 +1418,7 @@ function WantToWatchSection({ watchlist, watching, open, onOpenChange }) {
             key={item.id}
             className="list-row interactive-surface"
             onClick={openDetails}
-            {...getButtonLikeProps({ onPress: openDetails, label: editMode ? `${isSelected ? 'Deselect' : 'Select'} ${title}` : `View details for ${title}` })}
+            {...(!editMode ? getButtonLikeProps({ onPress: openDetails, label: `View details for ${title}` }) : {})}
           >
             <div className="list-row-poster">
               {img && <img src={img} alt={title} />}
@@ -1416,9 +1454,13 @@ function WantToWatchSection({ watchlist, watching, open, onOpenChange }) {
   );
 }
 
-/* ── History row ── */
+/* ── History row ──
+   No expand/collapse here on purpose: every row must stay the same height
+   whether or not it carries a review, so a written review is signalled by a
+   permanent icon in the meta line instead of a toggle that changes layout.
+   Reading the review itself happens in the media panel (tap the row), which
+   already shows it — this indicator's only job is "you wrote something here". */
 function HistoryRow({ entry, openPanel }) {
-  const [expanded, setExpanded] = useState(false);
   const img   = posterUrl(entry.poster_path, 'w92');
   const title = entry.title || 'Unknown';
   const date  = entry.watched_at
@@ -1432,7 +1474,7 @@ function HistoryRow({ entry, openPanel }) {
     <div
       className="list-row history-list-row interactive-surface"
       onClick={openDetails}
-      {...getButtonLikeProps({ onPress: openDetails, label: `View details for ${title}` })}
+      {...getButtonLikeProps({ onPress: openDetails, label: hasNote ? `View details for ${title} (reviewed)` : `View details for ${title}` })}
     >
       <div className="list-row-poster">
         {img && <img src={img} alt={title} />}
@@ -1442,28 +1484,15 @@ function HistoryRow({ entry, openPanel }) {
         <div className="list-row-meta">
           {date && <span>{date}</span>}
           {ratingLabel && <span className="history-row-rating">{ratingLabel}</span>}
+          {hasNote && (
+            <span className="history-row-note-indicator" title="You wrote a review" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 4h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8l-4 4V6a2 2 0 0 1 2-2z" />
+              </svg>
+            </span>
+          )}
         </div>
       </div>
-      {hasNote && (
-        <button
-          type="button"
-          className="history-row-toggle"
-          aria-expanded={expanded}
-          aria-label={expanded ? `Hide review for ${title}` : `Show review for ${title}`}
-          onClick={(e) => { e.stopPropagation(); setExpanded(v => !v); }}
-        >
-          <svg className={`collapse-chevron${expanded ? ' open' : ''}`} viewBox="0 0 24 24" aria-hidden="true">
-            <polyline points="6 9 12 15 18 9" />
-          </svg>
-        </button>
-      )}
-      {hasNote && (
-        <div className={`collapse-body${expanded ? '' : ' collapsed'}`}>
-          <div className="collapse-body-inner">
-            <div className="history-row-quote">{entry.note}</div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -1644,7 +1673,7 @@ export default function MyListsView() {
     relevantSectionIds.forEach(id => storeSectionOpen(id, next));
   };
   const sectionsToggleLabel = (isAll || isHistory)
-    ? (sectionsOpenForView ? 'Collapse all sections' : 'Expand all sections')
+    ? (sectionsOpenForView ? MEDIA.collapseAllSections : MEDIA.expandAllSections)
     : (sectionsOpenForView ? 'Collapse section' : 'Expand section');
 
   return (

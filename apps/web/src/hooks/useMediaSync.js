@@ -1,7 +1,8 @@
 import { useState, useCallback } from 'react';
-import { supabase } from '../api/supabase.js';
-import { callAuthenticatedFunction } from '../api/functions.js';
+import { supabase } from '@plot/core/supabase.js';
+import { callAuthenticatedFunction } from '@plot/core/functions.js';
 import { friendlyPremiumError } from '@plot/core/premium.js';
+import { track, EVENTS } from '../lib/analytics.js';
 
 async function callSync(action, body = {}) {
   const { data: { session } } = await supabase.auth.getSession();
@@ -50,6 +51,9 @@ export function useMediaSync(userId) {
         if (result?.status === 'active') {
           clearInterval(interval);
           setPolling(false);
+          // The poll turning active is the moment the link actually exists —
+          // opening the Plex auth window proves nothing on its own.
+          track(EVENTS.PLEX_CONNECTED, {});
           await loadIntegration();
         }
       } catch {
@@ -67,6 +71,7 @@ export function useMediaSync(userId) {
     setError(null);
     try {
       await callSync('sync');
+      track(EVENTS.PLEX_SYNCED, {});
       await loadIntegration();
     } catch (e) {
       setError(friendlyPremiumError(e.message));
@@ -84,6 +89,7 @@ export function useMediaSync(userId) {
       .eq('user_id', userId)
       .eq('provider', 'plex');
     setIntegration(prev => prev ? { ...prev, status: 'disabled' } : null);
+    track(EVENTS.INTEGRATION_DISCONNECTED, { provider: 'plex' });
   }, [userId]);
 
   const isConnected = integration?.status === 'active';

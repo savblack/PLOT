@@ -7,9 +7,9 @@
  *
  * Required secrets: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, TMDB_API_KEY,
  * RESEND_API_KEY, AVAILABILITY_ALERTS_CRON_SECRET.
- * Optional: SENTRY_DSN (reports run failures to Sentry; safe to omit).
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { serviceKey } from '../_shared/serviceKey.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -48,32 +48,6 @@ type Profile = { id: string; region?: string; streaming_providers?: Provider[]; 
 type WatchlistItem = { user_id: string; tmdb_id: number; media_type: 'movie' | 'tv'; title: string }
 type Match = WatchlistItem & { providerId: number; providerName: string; region: string }
 
-// Minimal Sentry capture over plain fetch — the official SDKs assume Node/
-// browser globals that don't reliably exist in this Deno edge runtime, and a
-// cron job only needs "tell me when it broke," not full tracing.
-async function captureSentryError(error: unknown, extra?: Record<string, unknown>) {
-  const dsn = Deno.env.get('SENTRY_DSN')
-  if (!dsn) return
-  const match = dsn.match(/^https:\/\/([^@]+)@([^/]+)\/(.+)$/)
-  if (!match) return
-  const [, publicKey, host, projectId] = match
-  try {
-    await fetch(`https://${host}/api/${projectId}/store/`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Sentry-Auth': `Sentry sentry_version=7, sentry_key=${publicKey}, sentry_client=plot-edge-function/1.0`,
-      },
-      body: JSON.stringify({
-        message: error instanceof Error ? error.message : String(error),
-        level: 'error',
-        extra,
-        tags: { runtime: 'supabase-edge-function', function: 'watchlist-availability-alerts' },
-      }),
-    })
-  } catch { /* telemetry is best-effort; never let it fail the job */ }
-}
-
 function escapeHtml(value: string) {
   return value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;')
 }
@@ -84,6 +58,13 @@ async function providersForTitle(item: WatchlistItem, region: string, tmdbKey: s
   const body = await response.json()
   return body?.results?.[region]?.flatrate ?? []
 }
+
+// This alert is transactional — someone asked to be told when their saved
+// titles land — so the only marketing here is one link to the public archive,
+// where subscribing is the reader's move to make. Nothing is opted into by
+// receiving this.
+const ALERT_FOOTER = `<p style="font-size:12px;color:#666;line-height:1.6">You can change these alerts in PLOT Settings.<br>`
+  + `Like knowing what's worth watching? <a href="https://theplot.tv/newsletter?utm_source=app&utm_medium=email&utm_campaign=availability_alert" style="color:#666">Read the latest digest</a>.</p>`
 
 async function sendEmail(resendKey: string, email: string, matches: Match[]) {
   const rows = matches.map(match => {
@@ -97,7 +78,7 @@ async function sendEmail(resendKey: string, email: string, matches: Match[]) {
       from: FROM_EMAIL,
       to: [email],
       subject: `${matches.length === 1 ? 'A title on your PLOT watchlist is ready' : `${matches.length} watchlist titles are ready`}`,
-      html: `<div style="font-family:Arial,sans-serif;max-width:560px;color:#171717"><h2 style="margin:0 0 12px">Ready to watch</h2><p style="line-height:1.5">A title on your PLOT watchlist is now included with one of your selected streaming platforms or channels.</p><ul style="padding-left:20px;line-height:1.5">${rows}</ul><p style="font-size:12px;color:#666">You can change these alerts in PLOT Settings.</p></div>`,
+      html: `<div style="font-family:Arial,sans-serif;max-width:560px;color:#171717"><h2 style="margin:0 0 12px">Ready to watch</h2><p style="line-height:1.5">A title on your PLOT watchlist is now included with one of your selected streaming platforms or channels.</p><ul style="padding-left:20px;line-height:1.5">${rows}</ul>${ALERT_FOOTER}</div>`,
     }),
   })
   if (!response.ok) throw new Error(`Resend request failed (${response.status}): ${await response.text()}`)
@@ -176,7 +157,7 @@ Deno.serve(async (req) => {
   if (cronHeader && !isCron) return new Response('Forbidden', { status: 403 })
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
-  const serviceRole = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+  const serviceRole = serviceKey()
   const tmdbKey = Deno.env.get('TMDB_API_KEY')
   const resendKey = Deno.env.get('RESEND_API_KEY')
   if (!supabaseUrl || !serviceRole || !tmdbKey || !resendKey) return Response.json({ ok: false, error: 'Availability alerts are not configured.' }, { status: 500, headers: corsHeaders })
@@ -189,7 +170,7 @@ Deno.serve(async (req) => {
     .from('profiles')
     .select('id, region, streaming_providers, guide_channels')
     .eq('watchlist_availability_alerts', true)
-  if (profileError) { await captureSentryError(profileError); return Response.json({ ok: false, error: profileError.message }, { status: 500 }) }
+  if (profileError) { console.error('Could not read alert-enabled profiles:', profileError.message); return Response.json({ ok: false, error: profileError.message }, { status: 500 }) }
 
   // Alerts match against whichever of "My Platforms" and "My Channels" the
   // user has selected — the two feed the same TMDB provider-id shape, so
@@ -216,7 +197,7 @@ Deno.serve(async (req) => {
       .eq('user_id', profile.id)
       .eq('lists.name', 'My List')
       .limit(MAX_ITEMS_PER_PROFILE)
-    if (itemError) { console.error(`Could not read watchlist for ${profile.id}: ${itemError.message}`); await captureSentryError(itemError, { profileId: profile.id }); failures++; continue }
+    if (itemError) { console.error(`Could not read watchlist for ${profile.id}: ${itemError.message}`); failures++; continue }
 
     const allItems = (items ?? []) as WatchlistItem[]
     const budget = Math.max(0, MAX_TMDB_CALLS_PER_RUN - tmdbCalls)
@@ -249,7 +230,7 @@ Deno.serve(async (req) => {
       .select('tmdb_id, media_type, region, provider_id')
       .eq('user_id', profile.id)
       .in('tmdb_id', matchedIds)
-    if (alertsError) { console.error(`Could not read alert history for ${profile.id}: ${alertsError.message}`); await captureSentryError(alertsError, { profileId: profile.id }); failures++; continue }
+    if (alertsError) { console.error(`Could not read alert history for ${profile.id}: ${alertsError.message}`); failures++; continue }
     const alertKey = (m: { tmdb_id: number; media_type: string; region: string; provider_id?: number; providerId?: number }) =>
       `${m.tmdb_id}:${m.media_type}:${m.region}:${m.provider_id ?? m.providerId}`
     const seen = new Set((existingAlerts ?? []).map(alertKey))
@@ -279,7 +260,7 @@ Deno.serve(async (req) => {
     console.error(`Availability alerts hit run caps: ${itemsSkippedForCap} items and ${profilesSkippedForCap} profiles skipped`)
   }
   if (!ok) {
-    await captureSentryError(new Error(`watchlist-availability-alerts failure rate ${(failureRate * 100).toFixed(0)}%`), {
+    console.error(`watchlist-availability-alerts failure rate ${(failureRate * 100).toFixed(0)}%`, {
       profiles: enabledProfiles.length, failures, sent, discovered,
     })
   }

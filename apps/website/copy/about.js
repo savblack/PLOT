@@ -22,7 +22,21 @@ export const ABOUT_PAGE = {
     "PLOT remembers all of it. It builds you your own film and TV calendar, so there's always something to look forward to. Share it with your family so they know not to call you during the Summer House reunion. And when you don't know what to watch, search your PLOT to see what's hot across platforms in one place. No loading screens. No logging in. That's the old way. PLOT is the way forward.",
     "PLOT is built by one person. A solo builder. Someone who wanted a better way to track what I love. Building PLOT is both exciting and scary, and I've got a lot more I want to do: AI-powered recommendations, a fully personalised feed, PLOT profiles to share what you're watching with friends, and eventually PLOT watch parties to watch together in real time. I'm building as fast as I can and as best as I can around a full-time job.",
     "I value each and every person who takes the time to sign up and use PLOT. Any feedback, good or bad, and any feature request or bug you spot is incredibly helpful to me. It's the core driver behind every improvement I make in the app. You can share your thoughts anytime via the settings.",
-    'To show my appreciation for the early users who bear with me through all the bugs, my promise is this: <strong>PLOT stays free, forever.</strong> One day PLOT will need to make money to cover what it costs to build and run. That day won\'t matter for early users. <strong>You were here first, and you stay free.</strong>',
+    "PLOT is still early, so if you're using it now, you're an early user too, bugs and all. When something breaks or feels off, tell me. That feedback is what's shaped almost everything here and it's what'll keep shaping it. <strong>I don't take that kind of patience lightly, and it's already more than enough.</strong>",
+    'If you ever want to do more than that, PLOT is on <a href="https://ko-fi.com/J7P123TYGK" target="_blank" rel="noopener">Ko-fi</a>. It helps cover what it actually costs to run, and it buys me more time to keep building.',
     "Thank you for reading this. Thank you for considering PLOT. And if you're already a user, thank you for backing a solo builder trying to make a life out of building beautiful things.",
   ],
+
+  // Data-source attribution. TMDB's API terms require their notice verbatim and
+  // ask for it on an About or Credits surface, not only in the legal pages.
+  // Mirrors the Credits group in packages/core/copy/settingsView.js.
+  credits: {
+    title: 'Credits',
+    intro: 'PLOT is built on data from these sources.',
+    items: [
+      { name: 'TMDB', notice: 'This product uses the TMDB API but is not endorsed or certified by TMDB.' },
+      { name: 'TVmaze', notice: 'Episode air dates and the TV guide use the TVmaze API.' },
+      { name: 'OMDb', notice: 'Critic scores are retrieved through the OMDb API.' },
+    ],
+  },
 };

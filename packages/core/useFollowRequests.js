@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from './supabase.js';
+import { getConfig } from './config.js';
 
 /**
  * Incoming follow requests for the signed-in user (owner of a private profile).
@@ -23,13 +24,21 @@ export function useFollowRequests(userId) {
   const approve = useCallback(async (followerId) => {
     const { error } = await supabase.from('follows')
       .update({ status: 'accepted' }).eq('follower_id', followerId).eq('following_id', userId);
-    if (!error) setRequests(r => r.filter(x => x.follower_id !== followerId));
+    if (!error) {
+      setRequests(r => r.filter(x => x.follower_id !== followerId));
+      // Analytics seam (see config.js) — both outcomes are tracked so a stalled
+      // approval queue is visible, not just the follows that got through.
+      getConfig().onFollowRequestDecision?.({ target_user_id: followerId, approved: true });
+    }
   }, [userId]);
 
   const decline = useCallback(async (followerId) => {
     const { error } = await supabase.from('follows')
       .delete().eq('follower_id', followerId).eq('following_id', userId);
-    if (!error) setRequests(r => r.filter(x => x.follower_id !== followerId));
+    if (!error) {
+      setRequests(r => r.filter(x => x.follower_id !== followerId));
+      getConfig().onFollowRequestDecision?.({ target_user_id: followerId, approved: false });
+    }
   }, [userId]);
 
   return { requests, count: requests.length, loading, approve, decline, refresh };

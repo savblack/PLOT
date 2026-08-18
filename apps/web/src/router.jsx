@@ -4,7 +4,7 @@ import ErrorBoundary from './components/ErrorBoundary.jsx';
 import RouteErrorBoundary from './components/RouteErrorBoundary.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import LoadingSpinner from './components/LoadingSpinner.jsx';
-import { SHOW_MEDIA_SYNC_INTEGRATIONS } from './launchFeatures.js';
+import { SHOW_MEDIA_SYNC_INTEGRATIONS, SHOW_PRICING_PAGE } from './launchFeatures.js';
 import { isPreviewDeployment } from './utils/previewDeployment.js';
 
 // The auth entry/exit points must never fail, so they're bundled eagerly (not
@@ -43,6 +43,7 @@ const RootRoute         = lazy(() => import('./pages/RootRoute.jsx'));
 const DesignSystemPage  = lazy(() => import('./pages/DesignSystemPage.jsx'));
 const SavePage          = lazy(() => import('./pages/SavePage.jsx'));
 const TalentPage        = lazy(() => import('./pages/TalentPage.jsx'));
+const PlansPage         = lazy(() => import('./pages/PlansPage.jsx'));
 
 const wrap = (el) => <Suspense fallback={<LoadingSpinner />}>{el}</Suspense>;
 const isPreview = isPreviewDeployment();
@@ -61,8 +62,8 @@ const router = createBrowserRouter([
   // Static
   { path: '/terms',          element: wrap(<TermsPage />) },
   { path: '/privacy',        element: wrap(<PrivacyPage />) },
-  { path: '/pricing',        element: <Navigate to="/app" replace /> },
-  { path: '/plans',          element: <Navigate to="/app" replace /> },
+  { path: '/pricing',        element: SHOW_PRICING_PAGE ? wrap(<PlansPage />) : <Navigate to="/app" replace /> },
+  { path: '/plans',          element: SHOW_PRICING_PAGE ? wrap(<PlansPage />) : <Navigate to="/app" replace /> },
 
   // Design system — standalone, no auth, dev builds only
   ...(import.meta.env.DEV ? [{ path: '/design-system', element: wrap(<DesignSystemPage />) }] : []),

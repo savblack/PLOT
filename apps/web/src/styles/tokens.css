@@ -49,6 +49,8 @@
   --chip-cinema: #D95C66;
   --chip-streaming: #68AFA8;
   --chip-episode: #6D68D9;
+  --badge-premium: #1A8CD8;
+  --badge-supporter: #E05578;
   --radius-md: 16px;
   --radius-lg: 24px;
   --radius-badge: 10px;
@@ -107,6 +109,8 @@
   --chip-cinema: #E16A73;
   --chip-streaming: #78BDB7;
   --chip-episode: #7A75E0;
+  --badge-premium: #1D9BF0;
+  --badge-supporter: #F06A88;
   /* @tokens:end */
 
   --glass-bg:       rgba(25,25,25,0.85);
