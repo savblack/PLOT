@@ -43,6 +43,15 @@ export const EVENTS = Object.freeze({
   ONBOARDING_STARTED: 'onboarding_started',
   ONBOARDING_STEP_COMPLETED: 'onboarding_step_completed',
   ONBOARDING_COMPLETED: 'onboarding_completed',
+  // RETIRED 2026-08-18, no longer emitted by either app. It fired once per
+  // browser/install behind a `plot_activated` storage key, which answered a
+  // question about the person with state scoped to one device: it re-fired on a
+  // new device, never fired for anyone who predated it, and survived sign out.
+  // Activation is now the PostHog cohort "Activated (committed action)", built
+  // on the "Committed action (Tier 2)" action. The key stays so that any call
+  // site missed in the removal is a loud reference rather than a silent
+  // `undefined` event name. Historical `activated` events keep the old meaning
+  // and are not comparable to the cohort.
   ACTIVATED: 'activated',
   TITLE_SHARED: 'title_shared',
   LIST_SHARED: 'list_shared',

@@ -22,7 +22,12 @@ test('every event name maps to a unique value', () => {
 
 test('spot-checks a few specific event name mappings', () => {
   assert.equal(EVENTS.SIGNUP_FORM_VIEWED, 'signup_form_viewed');
+  // Retired: no longer emitted by either app (activation is a PostHog cohort
+  // now), but the key must stay so a missed call site is a loud reference
+  // rather than a silent `undefined` event name.
   assert.equal(EVENTS.ACTIVATED, 'activated');
+  assert.equal(EVENTS.EPISODE_UNWATCHED, 'episode_unwatched');
+  assert.equal(EVENTS.SEASON_UNWATCHED, 'season_unwatched');
   assert.equal(EVENTS.TRAKT_SYNCED, 'trakt_synced');
   assert.equal(EVENTS.SIGNUP_SUBMIT_FAILED, 'signup_submit_failed');
   assert.equal(EVENTS.LOGIN_SUBMIT_FAILED, 'login_submit_failed');

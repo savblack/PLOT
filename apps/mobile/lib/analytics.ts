@@ -1,7 +1,7 @@
 /**
  * Single entry point for product analytics on mobile — the counterpart to
  * apps/web/src/lib/analytics.js, with the same call surface (track /
- * identifyUser / setPersonProps / markActivated) so instrumentation reads the
+ * identifyUser / setPersonProps) so instrumentation reads the
  * same on both platforms.
  *
  * Event *names* are shared via @plot/core/analyticsEvents.js; only the
@@ -31,7 +31,6 @@
  */
 import PostHog from 'posthog-react-native';
 import { EVENTS } from '@plot/core/analyticsEvents.js';
-import { readStorage, writeStorage } from './storage';
 
 export { EVENTS };
 
@@ -118,20 +117,11 @@ export function captureException(error: unknown, props?: AnalyticsProps) {
   withPostHog(ph => ph.captureException(error, props));
 }
 
-/**
- * "Activated" = the user reached the activation bar for the first time,
- * whichever comes first: completing onboarding, or saving their first title.
- * Fires exactly once per install.
- *
- * Async because mobile storage is AsyncStorage-backed (web reads localStorage
- * synchronously). Call sites fire-and-forget — nothing should await analytics.
+/*
+ * Activation is no longer computed here. See the matching note in
+ * apps/web/src/lib/analytics.js: the old `plot_activated` guard answered a
+ * question about the person using state scoped to one install, so it re-fired
+ * on a new device, never fired for anyone who predated it, and survived sign
+ * out. It is now the PostHog cohort "Activated (committed action)", built on
+ * the "Committed action (Tier 2)" action — person-scoped and retroactive.
  */
-const ACTIVATED_KEY = 'plot_activated';
-
-export async function markActivated(reason: string, props?: AnalyticsProps) {
-  try {
-    if (await readStorage(ACTIVATED_KEY)) return;
-    await writeStorage(ACTIVATED_KEY, '1');
-    track(EVENTS.ACTIVATED, { reason, ...props });
-  } catch { /* analytics must never break UX */ }
-}

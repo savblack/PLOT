@@ -7,7 +7,7 @@ import './index.css';
 import { captureAttribution } from './utils/attribution.js';
 import { analyticsAllowed } from './utils/analyticsHost.js';
 import { redactSensitiveUrl } from './utils/redactUrl.js';
-import { track, markActivated, EVENTS, _setPostHogClient } from './lib/analytics.js';
+import { track, EVENTS, _setPostHogClient } from './lib/analytics.js';
 
 // Inject web env into the shared core before anything renders or fetches.
 // Core modules read these via getConfig() — never import.meta.env directly.
@@ -43,10 +43,8 @@ configure({
   // Analytics seam: core fires this once per genuinely new watchlist add (any
   // surface). Previously only the /save deep link emitted watchlist_saved; now
   // every in-app save does too, and a first save counts as activation.
-  onWatchlistSave: ({ tmdb_id, media_type, source }) => {
-    track(EVENTS.WATCHLIST_SAVED, { tmdb_id, media_type, source, already_saved: false });
-    markActivated('first_save', { source });
-  },
+  onWatchlistSave: ({ tmdb_id, media_type, source }) =>
+    track(EVENTS.WATCHLIST_SAVED, { tmdb_id, media_type, source, already_saved: false }),
   // Engagement seams — core fires these from the single canonical spot for each
   // action (any surface), so we never double-count or miss a surface. See
   // packages/core/config.js for the payload contracts.
