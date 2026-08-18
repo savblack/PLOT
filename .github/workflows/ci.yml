@@ -19,15 +19,25 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  secret-scan:
-    name: Secret scan (PR diff)
+  check:
+    name: Lint and build
     runs-on: ubuntu-latest
+
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
         with:
+          # Full history, because the secret scan below diffs against the PR base
+          # (or the previous push), which a shallow clone can't reach. Costs a few
+          # seconds: .git is ~146 MB over ~1,000 commits.
           fetch-depth: 0
 
+      # Folded in from what used to be a standalone `secret-scan` job. Actions
+      # bills every job rounded UP to a whole minute and this scan's median
+      # runtime is 8s, so owning a job cost a full billed minute per run
+      # (~750 min/month) for 8 seconds of work. It stays the FIRST step so a leak
+      # still fails within seconds, before the install and build rather than
+      # after them — the fail-fast property the separate job was giving us.
       - name: Scan changed lines for secret-shaped strings
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
@@ -39,14 +49,6 @@ jobs:
             # whole tree by diffing against git's canonical empty-tree hash.
             ./scripts/scan-secrets.sh 4b825dc642cb6eb9a060e54bf8d69288fbee4904 "${{ github.sha }}"
           fi
-
-  check:
-    name: Lint and build
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v7
 
       - name: Set up Node
         uses: actions/setup-node@v7
