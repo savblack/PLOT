@@ -82,6 +82,9 @@ const slug = (title) => title.toLowerCase()
 // is already present, undated, or too obscure to read as a recognisable title.
 async function findCandidates(entries) {
   const known = new Set(entries.map(e => e.tmdb_id));
+  // By slug as well as id: a film and the series it spawned are two TMDB ids
+  // under one name, and the timeline should never print that name twice.
+  const knownSlugs = new Set(entries.map(e => e.slug));
   const newest = entries.map(sortKey).sort().at(-1) ?? '0000-00';
   const data = await fetchTMDB('/trending/all/week');
 
@@ -91,6 +94,7 @@ async function findCandidates(entries) {
       item.poster_path &&
       releaseDate(item) &&
       !known.has(item.id) &&
+      !knownSlugs.has(slug(displayTitle(item))) &&
       (item.vote_count ?? 0) >= MIN_VOTES &&
       (item.vote_average ?? 0) >= MIN_SCORE &&
       // Only ever extends forward, but same-month is fair game: the newest entry
