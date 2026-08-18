@@ -4,6 +4,7 @@ import { isSafePlexConnectionUrl } from '../_shared/plexConnectionPolicy.js'
 import { HISTORY_CONFLICT_TARGET, dedupeHistoryRows } from '../_shared/historyConflict.ts'
 import { selectTmdbMatch, tmdbIdFromGuids, yearFrom } from '../_shared/tmdbMatch.js'
 import { parsePlexItems, parsePlexResources } from '../_shared/plexXml.js'
+import { serviceKey } from '../_shared/serviceKey.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -643,7 +644,7 @@ serve(async (req) => {
 
   const supabaseAdmin = createClient(
     Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+    serviceKey(),
   )
 
   try {

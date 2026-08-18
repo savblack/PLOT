@@ -1,6 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { runAccountCleanup } from './cleanup.js'
 import { deleteBrevoContact } from '../_shared/brevo.ts'
+import { serviceKey } from '../_shared/serviceKey.ts'
 
 function attachmentPathsFrom(value: unknown) {
   if (!Array.isArray(value)) return []
@@ -54,7 +55,7 @@ Deno.serve(async (req) => {
   // Use the service role client for storage cleanup and auth deletion.
   const supabaseAdmin = createClient(
     Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    serviceKey()
   )
 
   const { data: feedbackRows, error: feedbackError } = await supabaseClient

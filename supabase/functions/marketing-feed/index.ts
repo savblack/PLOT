@@ -19,6 +19,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 // Shared site footer markup — generated from website/_partials/footer.html.
 // Run `npm run footer` to regenerate after editing the partial.
 import { FOOTER_HTML } from './footer.generated.ts';
+import { serviceKey } from '../_shared/serviceKey.ts';
 
 const SITE = 'https://theplot.tv';
 const APP = 'https://app.theplot.tv';
@@ -938,7 +939,7 @@ Deno.serve(async (req) => {
 
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    serviceKey(),
   );
 
   // Path after the function name: '' for index, '<slug>' for an entry.
