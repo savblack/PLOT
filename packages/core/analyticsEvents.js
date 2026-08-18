@@ -43,6 +43,15 @@ export const EVENTS = Object.freeze({
   ONBOARDING_STARTED: 'onboarding_started',
   ONBOARDING_STEP_COMPLETED: 'onboarding_step_completed',
   ONBOARDING_COMPLETED: 'onboarding_completed',
+  // RETIRED 2026-08-18, no longer emitted by either app. It fired once per
+  // browser/install behind a `plot_activated` storage key, which answered a
+  // question about the person with state scoped to one device: it re-fired on a
+  // new device, never fired for anyone who predated it, and survived sign out.
+  // Activation is now the PostHog cohort "Activated (committed action)", built
+  // on the "Committed action (Tier 2)" action. The key stays so that any call
+  // site missed in the removal is a loud reference rather than a silent
+  // `undefined` event name. Historical `activated` events keep the old meaning
+  // and are not comparable to the cohort.
   ACTIVATED: 'activated',
   TITLE_SHARED: 'title_shared',
   LIST_SHARED: 'list_shared',
@@ -81,6 +90,12 @@ export const EVENTS = Object.freeze({
   WATCHING_STOPPED: 'watching_stopped',
   // Undo signals. A user unlogging a watch or clearing history is a real
   // action, and without it the watched counts only ever ratchet upwards.
+  // episode_unwatched / season_unwatched matter more than they look: progress
+  // is one pointer, so un-ticking is the same write as ticking, and until the
+  // direction check landed in useWatching.setProgress these fired as
+  // episode_watched / season_watched. Undo was counting as engagement.
+  EPISODE_UNWATCHED: 'episode_unwatched',
+  SEASON_UNWATCHED: 'season_unwatched',
   HISTORY_ENTRY_REMOVED: 'history_entry_removed',
   WATCHLIST_REMOVED: 'watchlist_removed',
   CUSTOM_LIST_CREATED: 'custom_list_created',

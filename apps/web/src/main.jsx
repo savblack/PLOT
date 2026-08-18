@@ -5,8 +5,9 @@ import { configure } from '@plot/core/config.js';
 import router from './router.jsx';
 import './index.css';
 import { captureAttribution } from './utils/attribution.js';
+import { analyticsAllowed } from './utils/analyticsHost.js';
 import { redactSensitiveUrl } from './utils/redactUrl.js';
-import { track, markActivated, EVENTS, _setPostHogClient } from './lib/analytics.js';
+import { track, EVENTS, _setPostHogClient } from './lib/analytics.js';
 
 // Inject web env into the shared core before anything renders or fetches.
 // Core modules read these via getConfig() — never import.meta.env directly.
@@ -42,10 +43,8 @@ configure({
   // Analytics seam: core fires this once per genuinely new watchlist add (any
   // surface). Previously only the /save deep link emitted watchlist_saved; now
   // every in-app save does too, and a first save counts as activation.
-  onWatchlistSave: ({ tmdb_id, media_type, source }) => {
-    track(EVENTS.WATCHLIST_SAVED, { tmdb_id, media_type, source, already_saved: false });
-    markActivated('first_save', { source });
-  },
+  onWatchlistSave: ({ tmdb_id, media_type, source }) =>
+    track(EVENTS.WATCHLIST_SAVED, { tmdb_id, media_type, source, already_saved: false }),
   // Engagement seams — core fires these from the single canonical spot for each
   // action (any surface), so we never double-count or miss a surface. See
   // packages/core/config.js for the payload contracts.
@@ -80,6 +79,8 @@ configure({
       episode:   EVENTS.EPISODE_WATCHED,
       season:    EVENTS.SEASON_WATCHED,
       completed: EVENTS.SERIES_COMPLETED,
+      episode_undone: EVENTS.EPISODE_UNWATCHED,
+      season_undone:  EVENTS.SEASON_UNWATCHED,
     }[action];
     // started/stopped carry no season or episode; drop the keys rather than
     // sending nulls, so the PostHog property only exists where it means something.
@@ -95,7 +96,11 @@ if (new URLSearchParams(window.location.search).get('dnt') === '1') {
 }
 const isDnt = /(?:^|; )plot_dnt=1/.test(document.cookie);
 
-const posthogToken = !isDnt && import.meta.env.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN;
+// analyticsAllowed() keeps localhost, preview builds and CI out of the one
+// production project. Gating the TOKEN (rather than filtering in before_send)
+// means posthog-js is never even imported off-production: no cookie, no
+// session, no replay started before the first event gets judged.
+const posthogToken = !isDnt && analyticsAllowed() && import.meta.env.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN;
 
 // Read the acquisition attribution the marketing site forwarded onto this link
 // (utm_*, click ids, referrer, src) and attach it to every event + the person,
@@ -175,7 +180,18 @@ if (posthogToken) {
       },
     });
     if (Object.keys(attribution).length > 0) {
-      posthog.register(attribution);
+      // Register under first_* names, not the raw utm_* ones. Super properties
+      // are merged over PostHog's own per-event URL properties, so registering
+      // a raw `utm_source` stamps this person's FIRST-touch source onto every
+      // event, overwriting the campaign the event actually happened under. The
+      // two answer different questions and both are worth keeping.
+      const firstTouch = Object.fromEntries(
+        Object.entries(attribution).map(([k, v]) => [`first_${k}`, v]),
+      );
+      posthog.register(firstTouch);
+      // Person properties stay unprefixed: $set_once means first write wins, so
+      // these are already first-touch by construction and are what the
+      // acquisition cohorts break down on.
       posthog.setPersonProperties(undefined, attribution);
     }
     _setPostHogClient(posthog);

@@ -16,7 +16,7 @@ import Svg, { Line } from 'react-native-svg';
 import { ONBOARDING_FLOW } from '@plot/core/copy/onboardingFlow.js';
 import { supabase } from '../../lib/supabase';
 import { tmdb, setTmdbRegion } from '../../lib/tmdb';
-import { track, markActivated, EVENTS } from '../../lib/analytics';
+import { track, EVENTS } from '../../lib/analytics';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
@@ -175,13 +175,18 @@ export default function Seed() {
         await watchlist.addToList(item, { source: 'onboarding' });
       }
 
+      // Step 2 reports here because this screen has no goNext: it is the final
+      // step, so it goes straight to finish(). Without this the funnel showed a
+      // false 100% drop-off after step 1. Emitted after the profile write has
+      // landed (the early return above), so a failed save is not a completed step.
+      track(EVENTS.ONBOARDING_STEP_COMPLETED, {
+        step: 2, step_name: 'seed', skipped: skipSeeds,
+      });
       track(EVENTS.ONBOARDING_COMPLETED, {
         region: region.current,
         seed_titles_added: seeds.length,
         skipped: skipSeeds,
       });
-      // Completing onboarding is an activation signal (first-of wins).
-      markActivated('onboarding', { seed_titles_added: seeds.length });
     }
     setSaving(false);
     router.replace('/(app)');

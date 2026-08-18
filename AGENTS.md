@@ -163,6 +163,11 @@ It's a review-time responsibility.
   (`VITE_TMDB_PROXY_URL`), *not* the edge function directly.
 - **PostHog** uses a cross-subdomain cookie so theplot.tv ↔ app.theplot.tv is one funnel;
   keep `apps/web/src/lib/analytics.js` and `website/js/config.js` in agreement.
+  Analytics only runs on the three production hosts — the allowlist in
+  `apps/web/src/utils/analyticsHost.js` is duplicated in four surfaces that
+  can't import it, so change all five together. Activation and the engagement
+  tiers are PostHog cohorts, not events. See `docs/analytics/README.md` before
+  adding an event or reading a number off a dashboard.
 
 ## CI sync-guards — regenerate, don't hand-patch one side
 

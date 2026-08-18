@@ -1,4 +1,3 @@
-import { readStorage, writeStorage } from '../utils/storage.js';
 import { EVENTS } from '@plot/core/analyticsEvents.js';
 
 /**
@@ -69,19 +68,22 @@ export function captureException(error, props) {
   withPostHog(ph => ph.captureException(error, props));
 }
 
-/**
- * "Activated" = the user reached the activation bar for the first time, whichever
- * comes first: completing onboarding, or saving their first title. Fires exactly
- * once per browser (guarded by localStorage).
+/*
+ * Activation is no longer computed here.
  *
- * Every genuinely-new watchlist add now emits `watchlist_saved` and marks
- * first_save activation via the core `onWatchlistSave` seam (wired in main.jsx) —
- * in-app taps and the /save deep link alike — so the "first save" arm is reliable.
+ * markActivated() used to fire EVENTS.ACTIVATED once per browser, guarded by a
+ * `plot_activated` localStorage key. That guard was scoped to the browser but
+ * the question is about the person, so it was wrong three ways at once: it
+ * re-fired for the same user on a new device, it never fired for anyone who
+ * existed before it shipped, and because sign-out never cleared it, a second
+ * user on a shared browser could never activate. In practice it just mirrored
+ * onboarding_completed.
+ *
+ * "First ever" is a question about a person's whole history, which a single
+ * browser cannot answer. It is now defined in PostHog as the cohort "Activated
+ * (committed action)": performed the "Committed action (Tier 2)" action at
+ * least once. Person-scoped, retroactive, and correct across devices.
+ *
+ * Nothing replaces this function. The committed-action events it was derived
+ * from already fire from the core seams in main.jsx.
  */
-const ACTIVATED_KEY = 'plot_activated';
-
-export function markActivated(reason, props) {
-  if (readStorage(ACTIVATED_KEY)) return;
-  writeStorage(ACTIVATED_KEY, '1');
-  track(EVENTS.ACTIVATED, { reason, ...props });
-}

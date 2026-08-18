@@ -4,7 +4,7 @@
 import 'react-native-url-polyfill/auto';
 import { configure } from '@plot/core/config.js';
 import { secureSessionStorage } from './secureStorage';
-import { initAnalytics, track, markActivated, EVENTS } from './analytics';
+import { initAnalytics, track, EVENTS } from './analytics';
 
 initAnalytics();
 
@@ -19,10 +19,8 @@ configure({
   // action, whatever surface triggered it, so mobile gets the same engagement
   // events as web without instrumenting every screen. Same wiring as the web
   // app's src/main.jsx — see packages/core/config.js for the payloads.
-  onWatchlistSave: ({ tmdb_id, media_type, source }) => {
-    track(EVENTS.WATCHLIST_SAVED, { tmdb_id, media_type, source, already_saved: false });
-    markActivated('first_save', { source });
-  },
+  onWatchlistSave: ({ tmdb_id, media_type, source }) =>
+    track(EVENTS.WATCHLIST_SAVED, { tmdb_id, media_type, source, already_saved: false }),
   onWatchlistRemove: ({ tmdb_id, media_type, source }) =>
     track(EVENTS.WATCHLIST_REMOVED, { tmdb_id, media_type, source }),
   onWatched: ({ tmdb_id, media_type }) =>
@@ -54,6 +52,8 @@ configure({
       episode:   EVENTS.EPISODE_WATCHED,
       season:    EVENTS.SEASON_WATCHED,
       completed: EVENTS.SERIES_COMPLETED,
+      episode_undone: EVENTS.EPISODE_UNWATCHED,
+      season_undone:  EVENTS.SEASON_UNWATCHED,
     }[action];
     // started/stopped carry no season or episode; drop the keys rather than
     // sending nulls, so the PostHog property only exists where it means something.

@@ -12,7 +12,7 @@ import { posterUrl } from '../utils/images.js';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import Spinner from '../components/Spinner.jsx';
 import { getButtonLikeProps } from '../utils/interactive.js';
-import { track, markActivated, EVENTS } from '../lib/analytics.js';
+import { track, EVENTS } from '../lib/analytics.js';
 import { COMMON } from '../copy/common.js';
 import { ONBOARDING_FLOW } from '../copy/onboardingFlow.js';
 import { detectRegion, detectTimezone, guessRegionFromTimezone } from '@plot/core/regions.js';
@@ -120,8 +120,16 @@ export default function OnboardingFlow() {
     }
   }, [user]);
 
+  // Both exits report the step they finished. Only goNext used to, and goNext is
+  // only wired for non-final steps — the last step calls finish() directly — so
+  // the final step never emitted and every onboarding funnel showed a false
+  // 100% drop-off at the last step.
+  const completeStep = (n, { skipped = false } = {}) => {
+    track(EVENTS.ONBOARDING_STEP_COMPLETED, { step: n, step_name: STEP_NAMES[n], skipped });
+  };
+
   const goNext = ({ skipped = false } = {}) => {
-    track(EVENTS.ONBOARDING_STEP_COMPLETED, { step, step_name: STEP_NAMES[step], skipped });
+    completeStep(step, { skipped });
     setStep((s) => s + 1);
   };
 
@@ -209,13 +217,14 @@ export default function OnboardingFlow() {
       await watchlist.addToList(item, { source: 'onboarding' });
     }
 
+    // After the profile write has actually landed (the early return above), so a
+    // failed write is not reported as a completed step.
+    completeStep(TOTAL, { skipped: skipSeeds });
     track(EVENTS.ONBOARDING_COMPLETED, {
       region,
       seed_titles_added: seeds.length,
       skipped: skipSeeds,
     });
-    // Completing onboarding is an activation signal (first-of wins).
-    markActivated('onboarding', { seed_titles_added: seeds.length });
 
     const plan = SHOW_PRICING_PAGE ? takePremiumCheckoutIntent() : null;
     if (plan) {

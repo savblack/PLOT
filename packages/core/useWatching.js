@@ -4,7 +4,7 @@ import { tmdb } from './tmdb.js';
 import { localDateStr } from './date.js';
 import { baseMediaRow, tmdbIdFromItem } from './media.js';
 import { logWatchedItem } from './userMedia.js';
-import { getNextEpisodeProgress } from './watchingProgress.js';
+import { getNextEpisodeProgress, isRewind } from './watchingProgress.js';
 import { getConfig } from './config.js';
 
 /**
@@ -156,7 +156,15 @@ export function useWatching(userId) {
   // `reason` names the action for analytics: the same pointer write backs both
   // a single episode tick and the season-level bulk action, and the two are not
   // the same engagement signal. Defaults to the common case.
+  //
+  // Direction is worked out here rather than trusted from the caller. Progress
+  // is a single pointer, so "un-tick this episode" and "un-mark this season"
+  // are also just pointer writes — they arrive with the same `reason` as the
+  // forward action, from the same call sites. Reporting those as watched let
+  // undo count as engagement, which quietly inflated every activation and
+  // retention number built on it. A backwards move now reports its own event.
   const setProgress = useCallback(async (tmdbId, season, episode, { reason = 'episode' } = {}) => {
+    const rewinding = isRewind(items.find(i => i.tmdb_id === Number(tmdbId)), season, episode);
     const { data, error } = await supabase
       .from('watching_progress')
       .update({ current_season: season, current_episode: episode, updated_at: new Date().toISOString() })
@@ -166,7 +174,10 @@ export function useWatching(userId) {
       .single();
     if (data) {
       setItems(prev => prev.map(i => i.tmdb_id === Number(tmdbId) ? data : i));
-      getConfig().onWatchProgress?.({ tmdb_id: Number(tmdbId), action: reason, season, episode });
+      const action = rewinding
+        ? (reason === 'season' ? 'season_undone' : 'episode_undone')
+        : reason;
+      getConfig().onWatchProgress?.({ tmdb_id: Number(tmdbId), action, season, episode });
     }
     // Callers that only nudge the pointer ignore this; the season-level bulk
     // action needs to know whether the write actually landed.
@@ -174,7 +185,7 @@ export function useWatching(userId) {
       return { ok: false, code: 'save-failed', error: error?.message || null };
     }
     return { ok: true, data };
-  }, [userId]);
+  }, [userId, items]);
 
   /* ── Stop watching ── */
   const stopWatching = useCallback(async (tmdbId) => {
