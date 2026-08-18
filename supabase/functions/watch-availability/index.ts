@@ -58,6 +58,17 @@ async function providers(locale: string, token: string) {
   return mapped;
 }
 
+// The fields this reads off a JustWatch offer. Declared rather than inferred:
+// the response is parsed as unknown, so the callbacks below otherwise had no
+// parameter type at all.
+type JustWatchOffer = {
+  provider_id?: number | string
+  monetization_type?: string
+  retail_price?: number
+  currency?: string
+  urls?: { standard_web?: string }
+}
+
 Deno.serve(async (req) => {
   const origin = req.headers.get('Origin');
   if (req.method === 'OPTIONS') return new Response(null, { headers: cors(origin) });
@@ -88,9 +99,9 @@ Deno.serve(async (req) => {
       return json({ error: 'Title verification failed' }, origin, 502);
     }
     const titleUrl = safeUrl(title?.full_path ? `https://www.justwatch.com${title.full_path}` : null);
-    const offers = (Array.isArray(title?.offers) ? title.offers : [])
-      .filter((offer) => OFFER_TYPES.has(offer?.monetization_type))
-      .map((offer) => {
+    const offers = (Array.isArray(title?.offers) ? title.offers as JustWatchOffer[] : [])
+      .filter((offer: JustWatchOffer) => !!offer?.monetization_type && OFFER_TYPES.has(offer.monetization_type))
+      .map((offer: JustWatchOffer) => {
         const provider = providerMap.get(Number(offer.provider_id));
         return {
           providerId: Number(offer.provider_id),

@@ -3,7 +3,12 @@
 // load-bearing: if its pattern stops matching, every sync quietly returns
 // nothing at all rather than failing.
 
-/** Attribute map of a single tag, with XML entities decoded. */
+/**
+ * Attribute map of a single tag, with XML entities decoded.
+ *
+ * @param {string} tag
+ * @returns {Record<string, string>}
+ */
 export function xmlAttrs(tag) {
   const attrs = {}
   const attrPattern = /([A-Za-z_:][\w:.-]*)="([^"]*)"/g
@@ -46,7 +51,16 @@ export function parsePlexItems(xml) {
   return items.filter(item => item.title || item.grandparentTitle)
 }
 
-/** Plex.tv server resources, each with its connection list. */
+/**
+ * Plex.tv server resources, each with its connection list.
+ *
+ * The return type is spelled out because this lands in a jsonb column
+ * (media_integrations.plex_servers) — an inferred shape is not assignable to the
+ * generated Json type.
+ *
+ * @param {string} xml
+ * @returns {Record<string, string | Record<string, string>[]>[]}
+ */
 export function parsePlexResources(xml) {
   const resources = []
   const resourcePattern = /<Device\s+([^>]*?)>([\s\S]*?)<\/Device>/g

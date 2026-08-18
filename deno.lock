@@ -1,0 +1,191 @@
+{
+  "version": "5",
+  "specifiers": {
+    "jsr:@supabase/supabase-js@2": "2.112.3",
+    "npm:@supabase/auth-js@2.112.3": "2.112.3",
+    "npm:@supabase/functions-js@2.112.3": "2.112.3",
+    "npm:@supabase/postgrest-js@2.112.3": "2.112.3",
+    "npm:@supabase/realtime-js@2.112.3": "2.112.3",
+    "npm:@supabase/storage-js@2.112.3": "2.112.3",
+    "npm:@supabase/supabase-js@2": "2.112.3",
+    "npm:stripe@22.3.2": "22.3.2"
+  },
+  "jsr": {
+    "@supabase/supabase-js@2.112.3": {
+      "integrity": "114dd7d327daa11fb5b876bc447c47a8c1b9bf3f0d0ed05b308a60639b134b7b",
+      "dependencies": [
+        "npm:@supabase/auth-js",
+        "npm:@supabase/functions-js",
+        "npm:@supabase/postgrest-js",
+        "npm:@supabase/realtime-js",
+        "npm:@supabase/storage-js"
+      ]
+    }
+  },
+  "npm": {
+    "@supabase/auth-js@2.112.3": {
+      "integrity": "sha512-NA0rsgAlWZPvbhw8aUdmgfpHVgUAcd8zK5ov43l++o1bLIPXZhRiAlRobhwF5AatQuovpqxsMH50F4oyyV4XZw==",
+      "dependencies": [
+        "tslib"
+      ]
+    },
+    "@supabase/functions-js@2.112.3": {
+      "integrity": "sha512-gfv481mTOVWtZIJgXupxZpni2V2UWPf6jeF/jOK7HdMHdH+mt6sU0sHHwf0POsPip8ltlulu9OUHgwVzl5ddRw==",
+      "dependencies": [
+        "tslib"
+      ]
+    },
+    "@supabase/phoenix@0.4.5": {
+      "integrity": "sha512-aAn9H9ovVyeApKy11OWOrrOGq8DV68yWeH4ud2lN9fzn4aO8Zb5GLL9m1pUg9nLqIcT+ZDfAcsZe0E/nqdv2lw=="
+    },
+    "@supabase/postgrest-js@2.112.3": {
+      "integrity": "sha512-+Mf6uCpzr00bqxwX8hTK2X2L9eAL/1vuOjdEjx6upz9ulb0RmQT16XeU/JkMUlVHw/B46ZnPa2busY4Kd9YCzw==",
+      "dependencies": [
+        "tslib"
+      ]
+    },
+    "@supabase/realtime-js@2.112.3": {
+      "integrity": "sha512-E6wljXWs7DUOloyIB69i3YFInWE6IyCvgTAbQ0KYxOHv26FdA1KzEXTuzxrYEdf70t406Z9BRwUlGyclGF2FXA==",
+      "dependencies": [
+        "@supabase/phoenix",
+        "tslib"
+      ]
+    },
+    "@supabase/storage-js@2.112.3": {
+      "integrity": "sha512-oSK61tzlUvg+BWPqpKQCu9qqonsO26btaoAR9D6Gest2aj7xUqToj9rKyaoYOJczkhg9BjqA1REbYy9tPI4bDA==",
+      "dependencies": [
+        "iceberg-js",
+        "tslib"
+      ]
+    },
+    "@supabase/supabase-js@2.112.3": {
+      "integrity": "sha512-Jv1bxVQmEJNkjvPEhFaKjPzsh+Ozyew6lWGD+SoYcsclDEP1z7yEvKvfUQfzy0DkxRIQnZNxmmWtAzw5XLTQoA==",
+      "dependencies": [
+        "@supabase/auth-js",
+        "@supabase/functions-js",
+        "@supabase/postgrest-js",
+        "@supabase/realtime-js",
+        "@supabase/storage-js"
+      ]
+    },
+    "iceberg-js@0.8.1": {
+      "integrity": "sha512-1dhVQZXhcHje7798IVM+xoo/1ZdVfzOMIc8/rgVSijRK38EDqOJoGula9N/8ZI5RD8QTxNQtK/Gozpr+qUqRRA=="
+    },
+    "stripe@22.3.2": {
+      "integrity": "sha512-O13QOvgEIQvDlTy6Ubb5kB980wpbhmoZNsgCXKILjCMZS67f+bW+6w99k3gnSi/N1lkryoj1WYdpGT5Wc5edjg=="
+    },
+    "tslib@2.8.1": {
+      "integrity": "sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w=="
+    }
+  },
+  "redirects": {
+    "https://esm.sh/@supabase/supabase-js@2": "https://esm.sh/@supabase/supabase-js@2.112.3"
+  },
+  "remote": {
+    "https://deno.land/std@0.168.0/async/abortable.ts": "80b2ac399f142cc528f95a037a7d0e653296352d95c681e284533765961de409",
+    "https://deno.land/std@0.168.0/async/deadline.ts": "2c2deb53c7c28ca1dda7a3ad81e70508b1ebc25db52559de6b8636c9278fd41f",
+    "https://deno.land/std@0.168.0/async/debounce.ts": "60301ffb37e730cd2d6f9dadfd0ecb2a38857681bd7aaf6b0a106b06e5210a98",
+    "https://deno.land/std@0.168.0/async/deferred.ts": "77d3f84255c3627f1cc88699d8472b664d7635990d5358c4351623e098e917d6",
+    "https://deno.land/std@0.168.0/async/delay.ts": "5a9bfba8de38840308a7a33786a0155a7f6c1f7a859558ddcec5fe06e16daf57",
+    "https://deno.land/std@0.168.0/async/mod.ts": "7809ad4bb223e40f5fdc043e5c7ca04e0e25eed35c32c3c32e28697c553fa6d9",
+    "https://deno.land/std@0.168.0/async/mux_async_iterator.ts": "770a0ff26c59f8bbbda6b703a2235f04e379f73238e8d66a087edc68c2a2c35f",
+    "https://deno.land/std@0.168.0/async/pool.ts": "6854d8cd675a74c73391c82005cbbe4cc58183bddcd1fbbd7c2bcda42b61cf69",
+    "https://deno.land/std@0.168.0/async/retry.ts": "e8e5173623915bbc0ddc537698fa418cf875456c347eda1ed453528645b42e67",
+    "https://deno.land/std@0.168.0/async/tee.ts": "3a47cc4e9a940904fd4341f0224907e199121c80b831faa5ec2b054c6d2eff5e",
+    "https://deno.land/std@0.168.0/http/server.ts": "e99c1bee8a3f6571ee4cdeb2966efad465b8f6fe62bec1bdb59c1f007cc4d155",
+    "https://esm.sh/@supabase/supabase-js@2.112.3": "f6b9130984301066587e8917dfab3b3d60be47dc966bd3d04c733bc9423c1cf9"
+  },
+  "workspace": {
+    "packageJson": {
+      "dependencies": [
+        "npm:@eslint/js@^10.0.1",
+        "npm:@plot/core@*",
+        "npm:@supabase/supabase-js@^2.110.7",
+        "npm:eslint-plugin-react-hooks@^7.0.1",
+        "npm:eslint-plugin-react-refresh@~0.5.3",
+        "npm:eslint@^10.7.0",
+        "npm:globals@^17.7.0",
+        "npm:typescript-eslint@^8.65.0"
+      ]
+    },
+    "members": {
+      "apps/mobile": {
+        "packageJson": {
+          "dependencies": [
+            "npm:@plot/core@*",
+            "npm:@plot/ui@*",
+            "npm:@react-native-async-storage/async-storage@2.2.0",
+            "npm:@react-native-community/datetimepicker@9.1.0",
+            "npm:@storybook/addon-ondevice-actions@^10.5.4",
+            "npm:@storybook/addon-ondevice-backgrounds@^10.5.4",
+            "npm:@storybook/addon-ondevice-controls@^10.5.4",
+            "npm:@storybook/addon-ondevice-notes@^10.5.4",
+            "npm:@storybook/react-native@^10.5.4",
+            "npm:@storybook/react-vite@^10.5.5",
+            "npm:@supabase/supabase-js@^2.110.7",
+            "npm:@types/aes-js@^3.1.4",
+            "npm:@types/react@~19.2.2",
+            "npm:@vitejs/plugin-react@^6.0.5",
+            "npm:aes-js@^3.1.2",
+            "npm:expo-blur@~56.0.4",
+            "npm:expo-constants@~56.0.16",
+            "npm:expo-document-picker@~56.0.4",
+            "npm:expo-file-system@~56.0.7",
+            "npm:expo-font@~56.0.5",
+            "npm:expo-linear-gradient@~56.0.4",
+            "npm:expo-linking@~56.0.16",
+            "npm:expo-router@~56.2.17",
+            "npm:expo-secure-store@~56.0.4",
+            "npm:expo-status-bar@~56.0.4",
+            "npm:expo@~56.0.18",
+            "npm:posthog-react-native@^4.61.2",
+            "npm:react-dom@19.2.3",
+            "npm:react-native-get-random-values@1.11",
+            "npm:react-native-safe-area-context@5.8.0",
+            "npm:react-native-screens@4.26.2",
+            "npm:react-native-svg@15.15.4",
+            "npm:react-native-url-polyfill@3",
+            "npm:react-native-web@~0.21.2",
+            "npm:react-native-webview@13.16.1",
+            "npm:react-native@0.85.3",
+            "npm:react@19.2.3",
+            "npm:storybook@^10.5.5",
+            "npm:typescript@~6.0.3",
+            "npm:vite@^8.2.0"
+          ]
+        }
+      },
+      "apps/web": {
+        "packageJson": {
+          "dependencies": [
+            "npm:@cloudflare/vite-plugin@^1.45.1",
+            "npm:@playwright/test@^1.61.1",
+            "npm:@plot/core@*",
+            "npm:@plot/ui@*",
+            "npm:@posthog/react@^1.10.3",
+            "npm:@storybook/react-vite@^10.5.5",
+            "npm:@supabase/supabase-js@^2.110.7",
+            "npm:@types/react-dom@^19.2.3",
+            "npm:@types/react@^19.2.17",
+            "npm:@vitejs/plugin-react@^6.0.3",
+            "npm:posthog-js@^1.404.1",
+            "npm:react-dom@^19.2.8",
+            "npm:react-router-dom@^7.18.2",
+            "npm:react@^19.2.8",
+            "npm:storybook@^10.5.5",
+            "npm:vite@^8.1.5",
+            "npm:wrangler@^4.112.0"
+          ]
+        }
+      },
+      "apps/website": {
+        "packageJson": {
+          "dependencies": [
+            "npm:@storybook/html-vite@^10.5.5",
+            "npm:storybook@^10.5.5"
+          ]
+        }
+      }
+    }
+  }
+}

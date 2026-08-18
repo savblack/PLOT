@@ -18,6 +18,7 @@ jobs:
       pull-requests: read
     outputs:
       mobile: ${{ steps.filter.outputs.mobile }}
+      edge: ${{ steps.filter.outputs.edge }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
@@ -33,6 +34,10 @@ jobs:
               - 'packages/ui/**'
               - 'package.json'
               - 'package-lock.json'
+            edge:
+              - 'supabase/functions/**'
+              - 'scripts/check-edge-types.sh'
+              - '.github/workflows/ci.yml'
 
   secret-scan:
     name: Secret scan (PR diff)
@@ -167,6 +172,29 @@ jobs:
           VITE_TMDB_PROXY_URL: ${{ secrets.VITE_TMDB_PROXY_URL }}
           VITE_PUBLIC_POSTHOG_PROJECT_TOKEN: ${{ secrets.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN }}
           VITE_PUBLIC_POSTHOG_HOST: ${{ secrets.VITE_PUBLIC_POSTHOG_HOST }}
+
+  edge-typecheck:
+    name: Edge function typecheck (Deno)
+    needs: changes
+    if: needs.changes.outputs.edge == 'true'
+    runs-on: ubuntu-latest
+
+    # Edge functions are hand-deployed, so nothing else here would ever catch a
+    # type error in one: `npm run build` does not compile them and no test
+    # imports them. This is the only gate. It was worth adding because the errors
+    # it found were not cosmetic — several were nullable values headed for NOT
+    # NULL columns, which abort the whole statement at runtime (23502).
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Typecheck edge functions
+        run: npm run edge:check
 
   mobile-typecheck:
     name: Mobile typecheck (Expo)

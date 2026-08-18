@@ -68,7 +68,7 @@ export function tmdbIdFromGuid(guid) {
  * attribute). imdb:// and tvdb:// entries are ignored — mapping those would need
  * another lookup, and a wrong mapping is the thing being fixed.
  *
- * @param {(string | null | undefined)[]} guids
+ * @param {(string | null | undefined)[] | null | undefined} guids
  * @returns {number | null}
  */
 export function tmdbIdFromGuids(guids) {
