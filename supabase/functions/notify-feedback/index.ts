@@ -26,6 +26,7 @@ import type { Database } from '../_shared/database.types.ts'
 // the schema instead.
 type Db = SupabaseClient<Database>
 import { hasServiceRoleBearer } from '../_shared/internalWebhook.ts'
+import { serviceKey } from '../_shared/serviceKey.ts'
 
 const RESEND_API_URL = 'https://api.resend.com/emails'
 const TO_EMAIL = 'feedback@theplot.tv'
@@ -367,7 +368,7 @@ Deno.serve(async (req) => {
 
   const supabaseAdmin = createClient<Database>(
     Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    serviceKey()
   )
 
   if (!linearApiKey || !linearTeamRef || !linearProjectId) {

@@ -36,14 +36,9 @@
  * Deploy with --no-verify-jwt (no session exists yet when this is called —
  * see supabase/config.toml).
  */
-import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2'
-import type { Database } from '../_shared/database.types.ts'
-
-// Db is the *default* instantiation
-// (SupabaseClient<unknown, …, never, never>), so every row came back
-// `never` and the real client was not even assignable to it. Bind it to
-// the schema instead.
-type Db = SupabaseClient<Database>;
+import { createClient } from 'npm:@supabase/supabase-js@2';
+import type { Database } from '../_shared/database.types.ts';
+import { serviceKey } from '../_shared/serviceKey.ts';
 
 function allowedOrigin(origin: string | null) {
   if (!origin) return 'https://app.theplot.tv';
@@ -95,7 +90,7 @@ const clientIp = (req: Request): string => req.headers.get('cf-connecting-ip') |
 // doesn't exist yet, with no session to act on behalf of) — unlike functions
 // that split anon (user-context) vs service-role (admin) clients, there is
 // no anon/user-context case here at all.
-const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const SERVICE_ROLE_KEY = serviceKey();
 const supabaseAdmin = createClient<Database>(Deno.env.get('SUPABASE_URL')!, SERVICE_ROLE_KEY);
 
 // --- Signed form-timing token ------------------------------------------

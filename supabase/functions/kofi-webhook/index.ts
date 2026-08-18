@@ -28,6 +28,7 @@
  * Secrets: KOFI_VERIFICATION_TOKEN.
  */
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { serviceKey } from '../_shared/serviceKey.ts';
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -118,7 +119,7 @@ Deno.serve(async (req) => {
 
   const db = createClient(
     Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    serviceKey(),
   );
 
   // One RPC: the insert, the email -> user match and the badge flip are a

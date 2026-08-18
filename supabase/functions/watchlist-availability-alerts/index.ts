@@ -12,10 +12,10 @@ import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supa
 import type { Database, Json } from '../_shared/database.types.ts'
 
 // Db is the *default* instantiation
-// (SupabaseClient<unknown, …, never, never>), so every row came back
-// `never` and the real client was not even assignable to it. Bind it to
-// the schema instead.
+// (SupabaseClient<unknown, …, never, never>), so every row came back `never` and
+// the real client was not even assignable to it. Bind it to the schema instead.
 type Db = SupabaseClient<Database>
+import { serviceKey } from '../_shared/serviceKey.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -174,7 +174,7 @@ Deno.serve(async (req) => {
   if (cronHeader && !isCron) return new Response('Forbidden', { status: 403 })
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
-  const serviceRole = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+  const serviceRole = serviceKey()
   const tmdbKey = Deno.env.get('TMDB_API_KEY')
   const resendKey = Deno.env.get('RESEND_API_KEY')
   if (!supabaseUrl || !serviceRole || !tmdbKey || !resendKey) return Response.json({ ok: false, error: 'Availability alerts are not configured.' }, { status: 500, headers: corsHeaders })

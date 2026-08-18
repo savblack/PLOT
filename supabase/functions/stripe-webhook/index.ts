@@ -18,6 +18,7 @@
  */
 import Stripe from 'npm:stripe@22.3.2';
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { serviceKey } from '../_shared/serviceKey.ts';
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
   httpClient: Stripe.createFetchHttpClient(),
@@ -27,7 +28,7 @@ const cryptoProvider = Stripe.createSubtleCryptoProvider();
 const admin = () =>
   createClient(
     Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    serviceKey(),
   );
 
 const json = (body: unknown, status = 200) =>

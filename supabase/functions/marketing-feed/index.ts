@@ -26,6 +26,7 @@ type Db = SupabaseClient<Database>;
 // Shared site footer markup — generated from website/_partials/footer.html.
 // Run `npm run footer` to regenerate after editing the partial.
 import { FOOTER_HTML } from './footer.generated.ts';
+import { serviceKey } from '../_shared/serviceKey.ts';
 
 const SITE = 'https://theplot.tv';
 const APP = 'https://app.theplot.tv';
@@ -945,7 +946,7 @@ Deno.serve(async (req) => {
 
   const supabase = createClient<Database>(
     Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    serviceKey(),
   );
 
   // Path after the function name: '' for index, '<slug>' for an entry.
