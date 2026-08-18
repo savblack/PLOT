@@ -16,7 +16,7 @@ import { getNextEpisodeProgress } from './watchingProgress.js';
  *   startWatching: (item: any) => Promise<any>;
  *   markEpisodeWatched: (tmdbId: number) => Promise<any>;
  *   stopWatching: (tmdbId: number) => Promise<any>;
- *   setProgress: (tmdbId: number, season: number, episode: number) => Promise<any>;
+ *   setProgress: (tmdbId: number, season: number, episode: number) => Promise<{ ok: boolean; code?: string; error?: string|null; data?: any }>;
  *   fetchSeason: (tmdbId: number, seasonNum: number) => Promise<any>;
  *   isWatching: (tmdbId: number) => boolean;
  *   getProgress: (tmdbId: number) => any;
@@ -144,7 +144,7 @@ export function useWatching(userId) {
 
   /* ── Set progress manually (jump to episode) ── */
   const setProgress = useCallback(async (tmdbId, season, episode) => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('watching_progress')
       .update({ current_season: season, current_episode: episode, updated_at: new Date().toISOString() })
       .eq('user_id', userId)
@@ -152,6 +152,12 @@ export function useWatching(userId) {
       .select()
       .single();
     if (data) setItems(prev => prev.map(i => i.tmdb_id === Number(tmdbId) ? data : i));
+    // Callers that only nudge the pointer ignore this; the season-level bulk
+    // action needs to know whether the write actually landed.
+    if (error || !data) {
+      return { ok: false, code: 'save-failed', error: error?.message || null };
+    }
+    return { ok: true, data };
   }, [userId]);
 
   /* ── Stop watching ── */

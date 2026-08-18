@@ -23,7 +23,6 @@
  *                              unset skips only the opt-in half of the sync
  */
 import { hasServiceRoleBearer } from '../_shared/internalWebhook.ts'
-import { captureSentryError } from '../_shared/sentry.ts'
 import { upsertBrevoContact, removeContactFromList } from '../_shared/brevo.ts'
 import { adminClient } from '../_shared/supabaseAdmin.ts'
 
@@ -151,8 +150,7 @@ Deno.serve(async (req) => {
     })
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown profiles-changed error'
-    console.error('Failed to sync profile change to Brevo:', errorMessage)
-    await captureSentryError('profiles-changed', error, { userId })
+    console.error('Failed to sync profile change to Brevo:', errorMessage, { userId })
     return new Response(JSON.stringify({ ok: false, error: errorMessage }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },

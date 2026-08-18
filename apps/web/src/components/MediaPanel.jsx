@@ -18,6 +18,12 @@ import CreditsGrid from './TalentCredits.jsx';
 import { dedupedActingCredits, shortBiography } from '../utils/talentCredits.js';
 import { canCreateCustomList, FREE_CUSTOM_LIST_CAP } from '@plot/core/premium.js';
 import { buildWatchLink } from '@plot/core/watchLinks.js';
+import {
+  getLastSeasonNumber,
+  getSeasonToggleProgress,
+  getSeasonWatchState,
+  isSeriesComplete,
+} from '@plot/core/watchingProgress.js';
 import { fetchVerifiedAvailability, formatOfferPrice, offersFromTmdb } from '@plot/core/availability.js';
 import { fetchCriticScore, pickAudienceQuote, getConsensusLine } from '@plot/core/reviews.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
@@ -153,7 +159,7 @@ function CheckCircleIcon({ filled }) {
 }
 
 /* ── Season selector + episode list ── */
-function EpisodeGuide({ tvId, currentProgress, details, timezone }) {
+function EpisodeGuide({ tvId, currentProgress, details, timezone, onSeriesFinished }) {
   const { watching } = useApp();
   const seasons     = (details?.seasons || []).filter(s => s.season_number > 0);
   const [selSeason, setSelSeason] = useState(currentProgress?.current_season || 1);
@@ -162,6 +168,7 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone }) {
   const [epError,   setEpError]   = useState(false);
   const [checkingEp, setCheckingEp] = useState(null); // ep number being toggled
   const [episodeActionError, setEpisodeActionError] = useState('');
+  const [seasonPending, setSeasonPending] = useState(false);
   const checkingEpRef = useRef(false); // sync guard to prevent double-tap race
 
   // Track whether user manually changed season (to suppress auto-follow)
@@ -233,6 +240,22 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone }) {
   const currentSeason = currentProgress?.current_season || 0;
   const currentEp     = currentProgress?.current_episode || 0;
 
+  /* ── Finish the series when progress rolls past its final season ──
+     Watching the last episode of an ended show's last season is the show
+     finishing, so it should stop being "currently watching" and land in your
+     history. Without this the pointer parks on a season that will never air
+     and the show sits in the watching list forever. Shows still in production
+     are left alone: passing their latest season means up to date, not done. */
+  const lastSeason = getLastSeasonNumber(details);
+
+  const finishSeriesIfComplete = useCallback(async (nextSeason) => {
+    if (!isSeriesComplete({ lastSeason, nextSeason, status: details?.status })) return;
+    const result = await onSeriesFinished?.();
+    if (result && !result.ok) {
+      setEpisodeActionError(result.error || MEDIA_PANEL.couldNotUpdateWatchStatus);
+    }
+  }, [details?.status, lastSeason, onSeriesFinished]);
+
   /* ── Toggle an episode's watched state ── */
   const handleCheckEp = useCallback(async (ep, watched) => {
     if (!currentProgress || checkingEpRef.current) return;
@@ -246,6 +269,10 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone }) {
         const result = await watching.markEpisodeWatched(tvId);
         if (!result?.ok) {
           setEpisodeActionError(result?.error || 'Could not update this episode right now. Please try again.');
+        } else {
+          // markEpisodeWatched handles season rollover internally, so the row
+          // it returns is the only reliable read of where the pointer landed.
+          await finishSeriesIfComplete(result.data?.current_season);
         }
       } else if (ep.episode_number < episodes.length) {
         await watching.setProgress(tvId, selSeason, ep.episode_number + 1);
@@ -254,6 +281,7 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone }) {
         const nextSeason = selSeason + 1;
         await watching.setProgress(tvId, nextSeason, 1);
         userChangedSeason.current = false; // allow auto-follow to next season
+        await finishSeriesIfComplete(nextSeason);
       }
     } else {
       // Unmark: pull progress back to this episode
@@ -262,7 +290,42 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone }) {
 
     checkingEpRef.current = false;
     setCheckingEp(null);
-  }, [currentEp, currentProgress, currentSeason, watching, tvId, selSeason, episodes.length]);
+  }, [currentEp, currentProgress, currentSeason, watching, tvId, selSeason, episodes.length, finishSeriesIfComplete]);
+
+  /* ── Mark / unmark the whole selected season ── */
+  const seasonState = getSeasonWatchState({
+    currentEpisode: currentEp,
+    currentSeason,
+    episodeCount: episodes.length,
+    selectedSeason: selSeason,
+  });
+
+  const handleToggleSeason = useCallback(async () => {
+    if (!currentProgress || seasonPending || checkingEpRef.current) return;
+    const target = getSeasonToggleProgress({
+      isComplete: seasonState.isComplete,
+      selectedSeason: selSeason,
+    });
+    if (!target.ok) {
+      setEpisodeActionError(target.error);
+      return;
+    }
+
+    setSeasonPending(true);
+    setEpisodeActionError('');
+    // Marking rolls progress into the NEXT season, which would trip the
+    // auto-follow effect and swap the list out from under the button that was
+    // just pressed. Pin the selection so the season you acted on stays on
+    // screen and visibly flips to fully watched.
+    userChangedSeason.current = true;
+    const result = await watching.setProgress(tvId, target.nextSeason, target.nextEpisode);
+    if (!result?.ok) {
+      setEpisodeActionError(MEDIA_PANEL.couldNotUpdateSeason);
+    } else if (!seasonState.isComplete) {
+      await finishSeriesIfComplete(target.nextSeason);
+    }
+    setSeasonPending(false);
+  }, [currentProgress, seasonPending, seasonState.isComplete, selSeason, watching, tvId, finishSeriesIfComplete]);
 
   const isTracking = !!currentProgress;
 
@@ -282,6 +345,28 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone }) {
               S{s.season_number}
             </button>
           ))}
+        </div>
+      )}
+
+      {isTracking && episodes.length > 0 && (
+        <div className="season-bulk">
+          <div className="season-bulk-info">
+            <span className="season-bulk-title">{MEDIA_PANEL.seasonLabel(selSeason)}</span>
+            <span className="season-bulk-count">
+              {MEDIA_PANEL.seasonWatchedCount(seasonState.watchedCount, seasonState.episodeCount)}
+            </span>
+          </div>
+          <button
+            className="season-bulk-btn"
+            onClick={handleToggleSeason}
+            disabled={seasonPending}
+          >
+            {seasonPending
+              ? MEDIA_PANEL.updating
+              : seasonState.isComplete
+                ? MEDIA_PANEL.unmarkSeasonWatched
+                : MEDIA_PANEL.markSeasonWatched}
+          </button>
         </div>
       )}
 
@@ -1132,6 +1217,16 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
     return realError ? { ok: false, error: realError } : result;
   }, [defaultWatchedAt, details, history, inList, isWatching, itemId, itemType, watched, watchedEntry?.dnf, watchlist, watching]);
 
+  /* Watching the final episode of a finished series completes it. Reuses the
+     same transition as the Watched status action, so a show finished by
+     ticking episodes ends up in exactly the state as one marked watched by
+     hand. Already-watched shows are a no-op rather than a toggle-off, since
+     this fires from episode ticks, not from a button the user aimed at it. */
+  const handleSeriesFinished = useCallback(async () => {
+    if (watched) return { ok: true };
+    return handleWatchedStatus(false);
+  }, [handleWatchedStatus, watched]);
+
   const handleClearStatus = useCallback(async () => {
     if (isWatching) {
       const stopped = await watching.stopWatching(itemId);
@@ -1602,7 +1697,13 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
             {!isMovie && details && (
               <>
                 <div className="panel-section-title">Episodes</div>
-                <EpisodeGuide tvId={itemId} currentProgress={progress} details={details} timezone={timezone} />
+                <EpisodeGuide
+                  tvId={itemId}
+                  currentProgress={progress}
+                  details={details}
+                  timezone={timezone}
+                  onSeriesFinished={handleSeriesFinished}
+                />
               </>
             )}
 

@@ -429,7 +429,7 @@ social link URLs. Minimum viable:
 4. A confirmation to the reporter that the report was received. "Timely responses to
    concerns" is a response obligation, and an acknowledgement is the floor.
 5. A route for PLOT to actually see reports. An email or notification to the operator on
-   new report insert is sufficient at 20 users. A moderation queue can come later.
+   new report insert is sufficient at PLOT's current size. A moderation queue can come later.
 6. A documented internal turnaround. Target 24 hours, per section 5.
 
 ### Blocking, mapped to "the ability to block abusive users from the service"

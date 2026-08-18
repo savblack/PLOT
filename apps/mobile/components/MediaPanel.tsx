@@ -21,6 +21,12 @@ import { useAppData } from '../contexts/AppDataContext';
 import { favoriteWords } from '../lib/spelling';
 import { findDuplicateCustomList } from '@plot/core/customLists.js';
 import { buildWatchLink } from '@plot/core/watchLinks.js';
+import {
+  getLastSeasonNumber,
+  getSeasonToggleProgress,
+  getSeasonWatchState,
+  isSeriesComplete,
+} from '@plot/core/watchingProgress.js';
 import { MEDIA_PANEL } from '@plot/core/copy/mediaPanel.js';
 import { COMMON } from '@plot/core/copy/common.js';
 import { track, EVENTS } from '../lib/analytics';
@@ -175,7 +181,7 @@ function StarRow({ rating, onChange }: { rating: number; onChange: (r: number) =
 }
 
 // ── Episode guide ─────────────────────────────────────────────────────
-function EpisodeGuide({ tvId, progress, details, watching }: { tvId: number; progress: any; details: any; watching: any }) {
+function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished }: { tvId: number; progress: any; details: any; watching: any; onSeriesFinished?: () => Promise<{ ok: boolean; error?: string }> }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const seasons = (details?.seasons || []).filter((s: any) => s.season_number > 0);
@@ -184,6 +190,7 @@ function EpisodeGuide({ tvId, progress, details, watching }: { tvId: number; pro
   const [loading,   setLoading]   = useState(false);
   const [toggling,  setToggling]  = useState<number | null>(null);
   const [actionError, setActionError] = useState('');
+  const [seasonPending, setSeasonPending] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -197,6 +204,19 @@ function EpisodeGuide({ tvId, progress, details, watching }: { tvId: number; pro
   const curEp     = progress?.current_episode || 0;
   const isWatched = (ep: any) => selSeason < curSeason || (selSeason === curSeason && ep.episode_number < curEp);
   const isCurrent = (ep: any) => selSeason === curSeason && ep.episode_number === curEp;
+
+  /* ── Finish the series when progress rolls past its final season ──
+     Mirrors web's MediaPanel: an ended show whose last episode you just
+     ticked stops being "currently watching" and lands in your history,
+     instead of parking the pointer on a season that will never air. Shows
+     still in production are left alone. */
+  const lastSeason = getLastSeasonNumber(details);
+
+  const finishSeriesIfComplete = async (nextSeason: number | undefined) => {
+    if (!isSeriesComplete({ lastSeason, nextSeason, status: details?.status })) return;
+    const result = await onSeriesFinished?.();
+    if (result && !result.ok) setActionError(result.error || MEDIA_PANEL.couldNotUpdateWatchStatus);
+  };
 
   const handleToggle = async (ep: any) => {
     if (!progress || toggling !== null) return;
@@ -212,16 +232,53 @@ function EpisodeGuide({ tvId, progress, details, watching }: { tvId: number; pro
          no trace in your watch history at all. Mirrors web's MediaPanel. */
       if (selSeason === curSeason && ep.episode_number === curEp) {
         const result = await watching.markEpisodeWatched(tvId);
-        if (!result?.ok) setActionError(result?.error || MEDIA_PANEL.couldNotUpdateWatchStatus);
+        if (!result?.ok) {
+          setActionError(result?.error || MEDIA_PANEL.couldNotUpdateWatchStatus);
+        } else {
+          // markEpisodeWatched rolls the season over internally, so the row it
+          // returns is the only reliable read of where the pointer landed.
+          await finishSeriesIfComplete(result.data?.current_season);
+        }
       } else if (ep.episode_number < episodes.length) {
         await watching.setProgress(tvId, selSeason, ep.episode_number + 1);
       } else {
         await watching.setProgress(tvId, selSeason + 1, 1);
+        await finishSeriesIfComplete(selSeason + 1);
       }
     } else {
       await watching.setProgress(tvId, selSeason, ep.episode_number);
     }
     setToggling(null);
+  };
+
+  /* ── Mark / unmark the whole selected season ── */
+  const seasonState = getSeasonWatchState({
+    currentEpisode: curEp,
+    currentSeason: curSeason,
+    episodeCount: episodes.length,
+    selectedSeason: selSeason,
+  });
+
+  const handleToggleSeason = async () => {
+    if (!progress || seasonPending || toggling !== null) return;
+    const target = getSeasonToggleProgress({
+      isComplete: seasonState.isComplete,
+      selectedSeason: selSeason,
+    });
+    if (!target.ok) {
+      setActionError(target.error!);
+      return;
+    }
+
+    setSeasonPending(true);
+    setActionError('');
+    const result = await watching.setProgress(tvId, target.nextSeason, target.nextEpisode);
+    if (!result?.ok) {
+      setActionError(MEDIA_PANEL.couldNotUpdateSeason);
+    } else if (!seasonState.isComplete) {
+      await finishSeriesIfComplete(target.nextSeason);
+    }
+    setSeasonPending(false);
   };
 
   return (
@@ -243,6 +300,37 @@ function EpisodeGuide({ tvId, progress, details, watching }: { tvId: number; pro
             </TouchableOpacity>
           ))}
         </ScrollView>
+      )}
+
+      {progress && episodes.length > 0 && (
+        <View style={styles.seasonBulk}>
+          <View style={styles.seasonBulkInfo}>
+            <Text style={styles.seasonBulkTitle}>{MEDIA_PANEL.seasonLabel(selSeason)}</Text>
+            <Text style={styles.seasonBulkCount}>
+              {MEDIA_PANEL.seasonWatchedCount(seasonState.watchedCount, seasonState.episodeCount)}
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={styles.seasonBulkBtn}
+            onPress={handleToggleSeason}
+            disabled={seasonPending}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: seasonPending }}
+            accessibilityLabel={
+              seasonState.isComplete
+                ? `${MEDIA_PANEL.unmarkSeasonWatched} ${selSeason}`
+                : `${MEDIA_PANEL.markSeasonWatched} ${selSeason}`
+            }
+          >
+            <Text style={[styles.seasonBulkBtnText, seasonPending && styles.seasonBulkBtnTextPending]}>
+              {seasonPending
+                ? MEDIA_PANEL.updating
+                : seasonState.isComplete
+                  ? MEDIA_PANEL.unmarkSeasonWatched
+                  : MEDIA_PANEL.markSeasonWatched}
+            </Text>
+          </TouchableOpacity>
+        </View>
       )}
 
       {actionError ? <Text style={styles.epActionError}>{actionError}</Text> : null}
@@ -581,6 +669,33 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
   const watchlistEntry   = watchlist.items?.find((i: any) => Number(i.tmdb_id) === Number(itemId));
   const defaultWatchedAt = watchlistEntry?.created_at ? String(watchlistEntry.created_at).slice(0, 10) : localDateStr();
 
+  // Marking something watched retires it from the watchlist: it's no longer
+  // something you want to watch. core's markMediaAsWatched sequences that and
+  // rolls the history entry back if a later step fails, so a half-applied
+  // state can't be left behind. Shared by the Watched button and by the
+  // episode guide, which calls it when the final episode of an ended series
+  // is ticked.
+  const markWatchedNow = async () => markMediaAsWatched({
+    logWatched: () => history.logWatched(
+      { ...details, id: itemId, media_type: itemType },
+      { watchedAt: defaultWatchedAt },
+    ),
+    clearWatching:   () => watching.stopWatching(itemId),
+    removeFromSaved: () => watchlist.removeFromList(itemId),
+    rollbackHistory: () => history.removeEntry(itemId, itemType),
+    mediaType: itemType,
+    isWatching,
+    inList,
+  });
+
+  // Already-watched shows are a no-op rather than a toggle-off: this fires
+  // from episode ticks, not from a button the user aimed at it.
+  const handleSeriesFinished = async () => {
+    if (watched) return { ok: true };
+    const result = await markWatchedNow();
+    return result.ok ? result : { ok: false, error: history.getLastError() || result.error };
+  };
+
   const handleShare = async () => {
     try {
       const t = details?.title || details?.name || '';
@@ -837,23 +952,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                       <TouchableOpacity
                         style={styles.btnSecondary}
                         onPress={async () => {
-                          // Marking something watched retires it from the
-                          // watchlist: it's no longer something you want to watch.
-                          // core's markMediaAsWatched sequences that and rolls the
-                          // history entry back if a later step fails, so a half-
-                          // applied state can't be left behind.
-                          const result = await markMediaAsWatched({
-                            logWatched: () => history.logWatched(
-                              { ...details, id: itemId, media_type: itemType },
-                              { watchedAt: defaultWatchedAt },
-                            ),
-                            clearWatching:   () => watching.stopWatching(itemId),
-                            removeFromSaved: () => watchlist.removeFromList(itemId),
-                            rollbackHistory: () => history.removeEntry(itemId, itemType),
-                            mediaType: itemType,
-                            isWatching,
-                            inList,
-                          });
+                          const result = await markWatchedNow();
                           if (!result.ok) {
                             Alert.alert('Could not update', history.getLastError() || result.error);
                           }
@@ -1053,7 +1152,13 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                 {!isMovie && details && (
                   <>
                     <Text style={styles.sectionTitle}>Episodes</Text>
-                    <EpisodeGuide tvId={itemId} progress={progress} details={details} watching={watching} />
+                    <EpisodeGuide
+                      tvId={itemId}
+                      progress={progress}
+                      details={details}
+                      watching={watching}
+                      onSeriesFinished={handleSeriesFinished}
+                    />
                   </>
                 )}
               </>
@@ -1216,6 +1321,34 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   seasonBtnActive: { borderColor: colors.accent, backgroundColor: colors.accentDim },
   seasonBtnText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.xs, color: colors.textMuted },
   seasonBtnTextActive: { color: colors.accent },
+
+  seasonBulk: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.sm,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+  },
+  seasonBulkInfo: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm, flexShrink: 1 },
+  seasonBulkTitle: { fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, color: colors.textPrimary },
+  seasonBulkCount: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted },
+  seasonBulkBtn: {
+    minHeight: 44, // keeps the bulk action a comfortable touch target
+    justifyContent: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: spacing.md,
+    borderRadius: radii.badge,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+  },
+  seasonBulkBtnText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.xs, color: colors.textPrimary },
+  seasonBulkBtnTextPending: { color: colors.textMuted },
 
   errorText: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, textAlign: 'center', marginBottom: spacing.md },
   retryBtn:  { paddingHorizontal: spacing.xl, paddingVertical: spacing.sm, borderRadius: radii.md, borderWidth: 1, borderColor: colors.border },

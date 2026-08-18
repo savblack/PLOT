@@ -1,6 +1,7 @@
 # Cloudflare Worker that fronts the Supabase `tmdb-proxy` Edge Function and adds
 # real, distributed per-IP rate limiting (the in-isolate limiter in the Edge
-# Function was ineffective — see docs/launch/public-launch-readiness.md).
+# Function was ineffective: Supabase spreads a burst across isolates, each with
+# its own empty counter — 400 concurrent requests all returned 200).
 #
 # Deploy:  cd workers/tmdb-proxy && npx wrangler deploy
 #   Requires a Cloudflare API token with "Workers Scripts: Edit" (the DNS-scoped
@@ -14,8 +15,6 @@
 name = "tmdb-proxy"
 main = "src/index.js"
 compatibility_date = "2025-06-01"
-# Sentry's Cloudflare SDK needs AsyncLocalStorage.
-compatibility_flags = ["nodejs_compat"]
 workers_dev = true
 
 [vars]
@@ -23,8 +22,6 @@ workers_dev = true
 UPSTREAM = "https://mkegtssedjyqldysvzga.supabase.co/functions/v1/tmdb-proxy"
 # Set `UPSTREAM_SHARED_SECRET` as a Worker secret and set the identical
 # `TMDB_PROXY_SHARED_SECRET` in Supabase before deploying either side.
-# DSN is not a secret (Sentry's own docs embed it in client code) — safe as a var.
-SENTRY_DSN = "https://3bedccb283d603faea535c5bd3625b71@o4511806617092096.ingest.us.sentry.io/4511806906105857"
 
 # Distributed rate limit: 100 requests per 10s per client IP, enforced at
 # Cloudflare's edge (consistent across requests, unlike the per-isolate limiter).
@@ -61,7 +58,6 @@ workers_dev = true
 
 [env.staging.vars]
 UPSTREAM = "https://uzrhfivnhdcfieuaxzip.supabase.co/functions/v1/tmdb-proxy"
-SENTRY_DSN = "https://3bedccb283d603faea535c5bd3625b71@o4511806617092096.ingest.us.sentry.io/4511806906105857"
 
 # Same shape as production; a separate namespace so staging traffic can't eat
 # into real users' rate budget.
