@@ -153,6 +153,37 @@ jobs:
           VITE_PUBLIC_POSTHOG_PROJECT_TOKEN: ${{ secrets.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN }}
           VITE_PUBLIC_POSTHOG_HOST: ${{ secrets.VITE_PUBLIC_POSTHOG_HOST }}
 
+  edge-functions:
+    name: Edge functions (Deno)
+    runs-on: ubuntu-latest
+    steps:
+      # Unconditional, for the reason #558 gave for dropping the paths-filter
+      # gate: Actions bills every job rounded up to a whole minute, so a gate
+      # that takes ~7s to decide costs the minute it was meant to save. This
+      # whole job finishes in ~25s. Running it always is both cheaper than
+      # gating it and stricter — every PR gets checked, not the 58% that happen
+      # to touch supabase/functions/.
+      #
+      # Nothing checked supabase/functions/ before this job: `eslint .` doesn't
+      # cover Deno modules, and Supabase deploys a function without type-checking
+      # it, so the first verification of an edge function was a user hitting it.
+      # That is how 17 functions came to read an env var that was about to stop
+      # working, with nothing to flag it (see _shared/serviceKey.ts).
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      # Lints everything; type-checks everything except the functions listed in
+      # the script's BASELINE, which carry 130 pre-existing errors. The script
+      # also fails if a baselined function starts passing, so that list can only
+      # shrink.
+      - name: Lint and type-check edge functions
+        run: ./scripts/check-edge-functions.sh
+
   mobile-typecheck:
     name: Mobile typecheck (Expo)
     runs-on: ubuntu-latest
