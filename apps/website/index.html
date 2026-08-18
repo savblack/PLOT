@@ -2181,6 +2181,24 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       return tmdbCache[qs];
     }
 
+    // TMDB's lists overlap heavily — this week's number one is usually also in
+    // cinemas, and often the top movie of the week as well. Any surface that
+    // draws on more than one of them therefore has to filter out what it has
+    // already shown, or the same title lands twice in one section. `seen` is a
+    // plain object the caller keeps across calls so several strips in the same
+    // section can share one running record of what's been used.
+    function titleKey(item) {
+      return String((item && (item.title || item.name)) || '').trim().toLowerCase();
+    }
+    function unseen(items, seen) {
+      return (items || []).filter(function (item) {
+        var key = titleKey(item);
+        if (!key || seen[key]) return false;
+        seen[key] = 1;
+        return true;
+      });
+    }
+
     // The side posters (desktop) and hero filmstrip (mobile) want the same three
     // result sets — fetch them once and share the promise.
     let trendingSetsPromise = null;
@@ -2206,11 +2224,20 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       var p1 = stage.querySelector('.af-p1');   // Hot right now  (trending movie)
       var p2 = stage.querySelector('.af-p2');   // Top 10         (top trending movie)
       var p3 = stage.querySelector('.af-p3');   // Most binged    (popular TV)
+      // The hero card is committed markup that refresh-timeline.mjs rewrites each
+      // week from trending/all/week, so the live trending list nearly always opens
+      // with the exact title the hero is already showing. Read the title off the
+      // card itself rather than naming it here: a hardcoded exclusion goes stale
+      // the first week the hero changes, and then the collage shows it twice.
+      var heroCap = stage.querySelector('.af-hero .af-cap');
+      var heroTitle = heroCap && heroCap.firstChild ? heroCap.firstChild.textContent : '';
       fetchTrendingSets().then(function (sets) {
         var IMG = 'https://image.tmdb.org/t/p/w500';
-        // Exclude the feature title so the surrounding cards stay distinct from the hero.
-        var movies = ((sets[0] && sets[0].results) || []).filter(function (r) { return r.poster_path && (r.title || '') !== 'The Odyssey'; });
-        var tv     = ((sets[2] && sets[2].results) || []).filter(function (r) { return r.poster_path; });
+        var seen = {};
+        if (heroTitle.trim()) seen[heroTitle.trim().toLowerCase()] = 1;
+        function withPoster(list) { return (list || []).filter(function (r) { return r.poster_path; }); }
+        var movies = unseen(withPoster(sets[0] && sets[0].results), seen);
+        var tv     = unseen(withPoster(sets[2] && sets[2].results), seen);
         function set(el, item) { if (el && item) el.style.backgroundImage = "url('" + IMG + item.poster_path + "')"; }
         set(p1, movies[0]);   // Hot right now
         set(p2, movies[1]);   // Top 10
@@ -2226,17 +2253,21 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       var COUNT = 27;
       fetchTrendingSets().then(function (sets) {
         var seen = {}, urls = [];
+        // By title, not by poster path: the sets overlap, and two entries for the
+        // same title (a re-release, a series and its special) carry different art.
         sets.forEach(function (s) {
-          ((s && s.results) || []).forEach(function (r) {
-            if (r.poster_path && !seen[r.poster_path]) { seen[r.poster_path] = 1; urls.push(IMG + r.poster_path); }
-          });
+          unseen(((s && s.results) || []).filter(function (r) { return r.poster_path; }), seen)
+            .forEach(function (r) { urls.push(IMG + r.poster_path); });
         });
         if (!urls.length) return;
         for (var i = urls.length - 1; i > 0; i--) {
           var j = Math.floor(Math.random() * (i + 1));
           var t = urls[i]; urls[i] = urls[j]; urls[j] = t;
         }
-        for (var k = 0; k < COUNT; k++) {
+        // A short list makes a shorter wall rather than a repeating one: every
+        // tile here is on screen together, so a wrapped poster reads as a bug.
+        var tiles = Math.min(COUNT, urls.length);
+        for (var k = 0; k < tiles; k++) {
           var tile = document.createElement('div');
           tile.className = 'woc-tile';
           var img = new Image();
@@ -2244,7 +2275,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           img.decoding = 'async';
           img.alt = '';
           img.onload = (function (im) { return function () { im.classList.add('loaded'); }; })(img);
-          img.src = urls[k % urls.length];
+          img.src = urls[k];
           tile.appendChild(img);
           wall.appendChild(tile);
         }
@@ -2381,13 +2412,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       const all = [
         ...(trending.results || []), ...(nowPlaying.results || []), ...(tv.results || [])
       ].filter(r => r.poster_path);
-      // Shuffle and dedupe
-      const seen = new Set();
-      const unique = all.filter(r => {
-        if (seen.has(r.poster_path)) return false;
-        seen.add(r.poster_path);
-        return true;
-      });
+      // Dedupe by title, then shuffle: these three sets overlap, and the strip
+      // shows several posters at once, so a repeat is plainly visible.
+      const unique = unseen(all, {});
       for (let i = unique.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [unique[i], unique[j]] = [unique[j], unique[i]];
@@ -2515,9 +2542,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         const seen = {};
         const paths = [];
         sets.forEach(function(set) {
-          ((set && set.results) || []).forEach(function(r) {
-            if (r.poster_path && !seen[r.poster_path]) { seen[r.poster_path] = 1; paths.push(r.poster_path); }
-          });
+          unseen(((set && set.results) || []).filter(function(r) { return r.poster_path; }), seen)
+            .forEach(function(r) { paths.push(r.poster_path); });
         });
         if (!paths.length) return;
         // Hero teaser posters — varied sizes + slight vertical scatter.
@@ -2587,10 +2613,14 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         var trending = (sets[0] && sets[0].results) || [];
         var nowPlaying = (sets[1] && sets[1].results) || [];
         var tv = (sets[2] && sets[2].results) || [];
-        var movies = nowPlaying.filter(function(r){ return r.poster_path; });
-        var shows = tv.filter(function(r){ return r.poster_path; });
+        // The hero is claimed first so the rows below it can't repeat it: the
+        // week's top trending title is usually sitting in now_playing too.
+        var seen = {};
         // Hero — top trending title, using its landscape backdrop.
         var top = trending.filter(function(r){ return r.backdrop_path || r.poster_path; })[0];
+        if (top) seen[titleKey(top)] = 1;
+        var movies = unseen(nowPlaying.filter(function(r){ return r.poster_path; }), seen);
+        var shows = unseen(tv.filter(function(r){ return r.poster_path; }), seen);
         if (top) {
           hero.style.backgroundImage = "url('" + (top.backdrop_path ? BACK + top.backdrop_path : POSTER + top.poster_path) + "')";
           var date = top.release_date || top.first_air_date || '';
@@ -2600,7 +2630,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         }
         function fill(row, list, isTv) {
           [].slice.call(row.querySelectorAll('.disc-card')).forEach(function(card, i) {
-            var item = list[i % list.length];
+            // No wrapping back to the start of a short list: a card with nothing
+            // left to show keeps the title it shipped with rather than repeating
+            // one already in the row.
+            var item = list[i];
             if (!item) return;
             card.querySelector('.disc-poster').style.backgroundImage = "url('" + POSTER + item.poster_path + "')";
             var tag = card.querySelector('.disc-tag');
@@ -2669,11 +2702,19 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           tmdbProxy('tv/top_rated'),
         ]);
 
+        // One running record across all four groups, so a film that is both
+        // trending and in cinemas is listed once, under the first label that
+        // claims it. Deduping before the slice keeps every group full length.
+        const seen = {};
+        const group = (label, res, count) => ({
+          label,
+          items: unseen((res && res.results) || [], seen).slice(0, count).map(r => r.title || r.name),
+        });
         populate([
-          { label: 'Trending Now', items: (trending.results  || []).slice(0, 12).map(r => r.title || r.name).filter(Boolean) },
-          { label: 'In Cinemas',   items: (nowPlaying.results || []).slice(0, 10).map(r => r.title).filter(Boolean) },
-          { label: 'Coming Soon',  items: (upcoming.results  || []).slice(0, 10).map(r => r.title).filter(Boolean) },
-          { label: 'Top Rated TV', items: (topTv.results     || []).slice(0, 10).map(r => r.name).filter(Boolean) },
+          group('Trending Now', trending,   12),
+          group('In Cinemas',   nowPlaying, 10),
+          group('Coming Soon',  upcoming,   10),
+          group('Top Rated TV', topTv,      10),
         ]);
       } catch (err) {
         populate([

@@ -250,11 +250,14 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone, onSeriesFinish
 
   const finishSeriesIfComplete = useCallback(async (nextSeason) => {
     if (!isSeriesComplete({ lastSeason, nextSeason, status: details?.status })) return;
+    // Finishing a show is the end of the engagement arc worth naming, and it's
+    // only knowable here — core sees pointer moves, not the last season.
+    track(EVENTS.SERIES_COMPLETED, { tmdb_id: tvId, seasons: lastSeason });
     const result = await onSeriesFinished?.();
     if (result && !result.ok) {
       setEpisodeActionError(result.error || MEDIA_PANEL.couldNotUpdateWatchStatus);
     }
-  }, [details?.status, lastSeason, onSeriesFinished]);
+  }, [details?.status, lastSeason, onSeriesFinished, tvId]);
 
   /* ── Toggle an episode's watched state ── */
   const handleCheckEp = useCallback(async (ep, watched) => {
@@ -318,7 +321,7 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone, onSeriesFinish
     // just pressed. Pin the selection so the season you acted on stays on
     // screen and visibly flips to fully watched.
     userChangedSeason.current = true;
-    const result = await watching.setProgress(tvId, target.nextSeason, target.nextEpisode);
+    const result = await watching.setProgress(tvId, target.nextSeason, target.nextEpisode, { reason: 'season' });
     if (!result?.ok) {
       setEpisodeActionError(MEDIA_PANEL.couldNotUpdateSeason);
     } else if (!seasonState.isComplete) {

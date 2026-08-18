@@ -4,6 +4,7 @@ import { mediaIdentityRow, tmdbIdFromItem } from './media.js';
 import { findHistoryEntry, logWatchedItem, saveFavorite } from './userMedia.js';
 import { markMediaAsWatched } from './mediaStatus.js';
 import { emit, HISTORY_CHANGED_EVENT } from './events.js';
+import { getConfig } from './config.js';
 
 /**
  * Favourited titles for a user.
@@ -96,6 +97,14 @@ export function useFavorites(userId, { watching, watchlist } = {}) {
       if (error) {
         console.error('Failed to remove favourite', error);
         setFavorites(previous);
+      } else {
+        // Analytics seam (platform-injected; see config.js) — fired from the one
+        // canonical spot so every surface that toggles a favourite is covered.
+        getConfig().onFavourite?.({
+          tmdb_id: tmdbId,
+          media_type: previous.find(f => f.tmdb_id === tmdbId)?.media_type,
+          favourited: false,
+        });
       }
     } else {
       const row = mediaIdentityRow(item);
@@ -120,6 +129,7 @@ export function useFavorites(userId, { watching, watchlist } = {}) {
 
       if (data) {
         setFavorites(prev => [data, ...prev.filter(f => f.tmdb_id !== tmdbId)]);
+        getConfig().onFavourite?.({ tmdb_id: tmdbId, media_type: row.media_type, favourited: true });
         await defaultToWatched(item, tmdbId, row.media_type);
       }
     }

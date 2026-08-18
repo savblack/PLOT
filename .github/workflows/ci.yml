@@ -9,31 +9,16 @@ on:
 permissions:
   contents: read
 
+# Supersede a PR's in-flight run when its branch is pushed again. Agent sessions
+# push repeatedly, and until now every abandoned run still ran to completion and
+# still billed a full minute per job. Pushes to main are deliberately NOT
+# cancelled: each commit that lands keeps its own smoke run, so main is never
+# left unverified.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
-  changes:
-    name: Detect changed areas
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: read
-    outputs:
-      mobile: ${{ steps.filter.outputs.mobile }}
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v7
-
-      - name: Filter paths
-        id: filter
-        uses: dorny/paths-filter@v3
-        with:
-          filters: |
-            mobile:
-              - 'apps/mobile/**'
-              - 'packages/core/**'
-              - 'packages/ui/**'
-              - 'package.json'
-              - 'package-lock.json'
-
   secret-scan:
     name: Secret scan (PR diff)
     runs-on: ubuntu-latest
@@ -64,7 +49,7 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Set up Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -139,7 +124,7 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Set up Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -153,8 +138,10 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_TMDB_PROXY_URL: ${{ secrets.VITE_TMDB_PROXY_URL }}
-          VITE_PUBLIC_POSTHOG_PROJECT_TOKEN: ${{ secrets.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN }}
-          VITE_PUBLIC_POSTHOG_HOST: ${{ secrets.VITE_PUBLIC_POSTHOG_HOST }}
+          # No PostHog token: the smoke job drives a real browser through the
+          # app, and every click would land in the production project. The host
+          # allowlist in apps/web/src/utils/analyticsHost.js already blocks
+          # 127.0.0.1, so this is belt and braces.
 
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
@@ -165,15 +152,47 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_TMDB_PROXY_URL: ${{ secrets.VITE_TMDB_PROXY_URL }}
-          VITE_PUBLIC_POSTHOG_PROJECT_TOKEN: ${{ secrets.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN }}
-          VITE_PUBLIC_POSTHOG_HOST: ${{ secrets.VITE_PUBLIC_POSTHOG_HOST }}
+          # No PostHog token: the smoke job drives a real browser through the
+          # app, and every click would land in the production project. The host
+          # allowlist in apps/web/src/utils/analyticsHost.js already blocks
+          # 127.0.0.1, so this is belt and braces.
+
+  edge-typecheck:
+    name: Edge function typecheck (Deno)
+    runs-on: ubuntu-latest
+
+    # Edge functions are hand-deployed, so nothing else here would ever catch a
+    # type error in one: `npm run build` does not compile them and no test
+    # imports them. This is the only gate. It was worth adding because the errors
+    # it found were not cosmetic — several were nullable values headed for NOT
+    # NULL columns, which abort the whole statement at runtime (23502).
+    #
+    # Unconditional, for the reason #558 deleted the paths-filter gate: Actions
+    # bills every job rounded up to a whole minute, this one takes ~31s, so a gate
+    # to skip it would burn the minute it saves. Running always also means the
+    # functions are checked on 100% of PRs rather than the ones that touch them.
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Typecheck edge functions
+        run: npm run edge:check
 
   mobile-typecheck:
     name: Mobile typecheck (Expo)
-    needs: changes
-    if: needs.changes.outputs.mobile == 'true'
     runs-on: ubuntu-latest
     steps:
+      # Runs on every PR rather than behind a path-filter gate. Actions bills each
+      # job rounded UP to a whole minute, and this job's median is 41s (it has
+      # never exceeded 60s), so a separate "did mobile change?" job spent a billed
+      # minute of its own to skip a single billed minute here. Measured across
+      # August that gate cost ~700 min/month to save ~350. Running unconditionally
+      # is cheaper and simpler, and type-checks mobile on 100% of PRs, not 58%.
       # The web and mobile apps now share one source of truth: the @plot/core
       # workspace package (packages/core). There is no copy to drift, so the old
       # mirror drift-guard is gone. This job just type-checks the Expo app, which
@@ -186,7 +205,7 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Set up Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm

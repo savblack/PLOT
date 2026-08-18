@@ -11,6 +11,7 @@
  * trail, a cache invalidation — lands once instead of eighteen times.
  */
 import { supabase } from './supabase.js';
+import { getConfig } from './config.js';
 
 /**
  * Apply a partial update to a user's profile.
@@ -30,6 +31,14 @@ export async function updateProfile({ userId, patch }) {
     .eq('id', userId)
     .select()
     .maybeSingle();
+
+  // Analytics seam (see config.js). Every profile write in either app funnels
+  // through here, so this is the generic backstop that catches settings changes
+  // nobody instrumented by hand — it carries the changed *field names* only,
+  // never their values. The specific events (profile_visibility_changed,
+  // marketing_emails_opted_in, …) still fire alongside it at their own call
+  // sites; they're the ones funnels are built on, this one is coverage.
+  if (!error) getConfig().onProfileUpdate?.({ fields: Object.keys(patch) });
 
   return { data, error };
 }

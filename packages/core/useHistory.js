@@ -150,6 +150,8 @@ export function useHistory(userId) {
     if (error) return false; // keep local state intact so the entry doesn't ghost-reappear
     setEntries(prev => prev.filter(e => e.id !== target.id));
     notifyHistoryChanged();
+    // The undo half of onWatched — without it, watched counts only ratchet up.
+    getConfig().onHistoryRemove?.({ tmdb_id: Number(tmdbId), media_type: target.media_type });
     return true;
   }, [entries]);
 

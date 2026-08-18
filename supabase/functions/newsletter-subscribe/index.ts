@@ -24,6 +24,7 @@
  */
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { upsertBrevoContact, removeContactFromList } from '../_shared/brevo.ts';
+import { serviceKey } from '../_shared/serviceKey.ts';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -90,7 +91,7 @@ Deno.serve(async (req) => {
 
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    serviceKey(),
   );
 
   const url = new URL(req.url);

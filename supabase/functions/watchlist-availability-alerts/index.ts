@@ -8,7 +8,14 @@
  * Required secrets: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, TMDB_API_KEY,
  * RESEND_API_KEY, AVAILABILITY_ALERTS_CRON_SECRET.
  */
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import type { Database, Json } from '../_shared/database.types.ts'
+
+// Db is the *default* instantiation
+// (SupabaseClient<unknown, …, never, never>), so every row came back `never` and
+// the real client was not even assignable to it. Bind it to the schema instead.
+type Db = SupabaseClient<Database>
+import { serviceKey } from '../_shared/serviceKey.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -43,7 +50,18 @@ async function mapWithConcurrency<T, R>(items: T[], limit: number, fn: (item: T)
 }
 
 type Provider = { id?: number; name?: string }
-type Profile = { id: string; region?: string; streaming_providers?: Provider[]; guide_channels?: Provider[] }
+type Profile = { id: string; region?: string | null; streaming_providers?: Json | null; guide_channels?: Json | null }
+
+// Both provider columns are jsonb, so they arrive as Json rather than an array.
+// This is the one place that assumption is stated.
+function providerList(value: Json | null | undefined): Provider[] {
+  return Array.isArray(value) ? value as Provider[] : []
+}
+
+// list_items.media_type is a plain text column; Match wants the narrow union.
+function asMediaType(value: string | null | undefined): 'movie' | 'tv' {
+  return value === 'tv' ? 'tv' : 'movie'
+}
 type WatchlistItem = { user_id: string; tmdb_id: number; media_type: 'movie' | 'tv'; title: string }
 type Match = WatchlistItem & { providerId: number; providerName: string; region: string }
 
@@ -96,11 +114,11 @@ const DEMO_MATCH = { tmdb_id: 27205, media_type: 'movie' as const, title: 'Incep
  * does not touch the `watchlist_availability_alerts` dedup table — a test
  * send must never suppress the genuine alert for the same title later.
  */
-async function handleTestRequest(req: Request, admin: ReturnType<typeof createClient>, resendKey: string) {
+async function handleTestRequest(req: Request, admin: Db, resendKey: string) {
   const authHeader = req.headers.get('Authorization')
   if (!authHeader) return Response.json({ error: 'Unauthorized' }, { status: 401, headers: corsHeaders })
 
-  const supabaseUser = createClient(
+  const supabaseUser = createClient<Database>(
     Deno.env.get('SUPABASE_URL') ?? '',
     Deno.env.get('SUPABASE_ANON_KEY') ?? '',
     { global: { headers: { Authorization: authHeader } } },
@@ -113,7 +131,7 @@ async function handleTestRequest(req: Request, admin: ReturnType<typeof createCl
     .select('region, streaming_providers, guide_channels')
     .eq('id', user.id)
     .maybeSingle()
-  const selected = [...(profile?.streaming_providers ?? []), ...(profile?.guide_channels ?? [])]
+  const selected = [...providerList(profile?.streaming_providers), ...providerList(profile?.guide_channels)]
     .filter((provider: Provider) => provider?.name)
   const region = profile?.region || 'US'
 
@@ -129,7 +147,7 @@ async function handleTestRequest(req: Request, admin: ReturnType<typeof createCl
   const demoMatch: Match = {
     user_id: user.id,
     tmdb_id: item?.tmdb_id ?? DEMO_MATCH.tmdb_id,
-    media_type: item?.media_type ?? DEMO_MATCH.media_type,
+    media_type: item?.media_type ? asMediaType(item.media_type) : DEMO_MATCH.media_type,
     title: item?.title ?? DEMO_MATCH.title,
     providerId: Number(selected[0]?.id ?? DEMO_MATCH.providerId),
     providerName: selected[0]?.name || DEMO_MATCH.providerName,
@@ -156,12 +174,12 @@ Deno.serve(async (req) => {
   if (cronHeader && !isCron) return new Response('Forbidden', { status: 403 })
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
-  const serviceRole = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+  const serviceRole = serviceKey()
   const tmdbKey = Deno.env.get('TMDB_API_KEY')
   const resendKey = Deno.env.get('RESEND_API_KEY')
   if (!supabaseUrl || !serviceRole || !tmdbKey || !resendKey) return Response.json({ ok: false, error: 'Availability alerts are not configured.' }, { status: 500, headers: corsHeaders })
 
-  const admin = createClient(supabaseUrl, serviceRole)
+  const admin = createClient<Database>(supabaseUrl, serviceRole)
 
   if (!isCron) return handleTestRequest(req, admin, resendKey)
 
@@ -175,7 +193,7 @@ Deno.serve(async (req) => {
   // user has selected — the two feed the same TMDB provider-id shape, so
   // either (or both) is enough to be eligible.
   const selectedProvidersFor = (profile: Profile) =>
-    [...(profile.streaming_providers ?? []), ...(profile.guide_channels ?? [])].filter(provider => Number.isInteger(provider.id))
+    [...providerList(profile.streaming_providers), ...providerList(profile.guide_channels)].filter(provider => Number.isInteger(provider.id))
 
   const enabledProfiles = (profiles ?? []).filter((profile: Profile) => selectedProvidersFor(profile).length > 0) as Profile[]
   let sent = 0

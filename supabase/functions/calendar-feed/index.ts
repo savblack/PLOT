@@ -1,4 +1,5 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { serviceKey } from '../_shared/serviceKey.ts';
 
 const TMDB_BASE = 'https://api.themoviedb.org/3';
 
@@ -89,7 +90,7 @@ Deno.serve(async (req) => {
   }
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const serviceRoleKey = serviceKey();
   const tmdbKey = Deno.env.get('TMDB_API_KEY');
 
   const db = createClient(supabaseUrl, serviceRoleKey);

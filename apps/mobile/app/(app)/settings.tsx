@@ -18,7 +18,7 @@ import { useTraktSync } from '../../hooks/useTraktSync';
 import { useMediaSync } from '../../hooks/useMediaSync';
 import ScreenHeaderBar from '../../components/ScreenHeaderBar';
 import ConfirmPhraseModal from '../../components/ConfirmPhraseModal';
-import { track, EVENTS } from '../../lib/analytics';
+import { track, resetAnalytics, EVENTS } from '../../lib/analytics';
 import { deleteAccountAndSignOut } from '@plot/core/deleteAccount.js';
 import { clearWatchHistory } from '@plot/core/userMedia.js';
 import { updateProfile } from '@plot/core/profile.js';
@@ -480,6 +480,7 @@ function FeedbackModal({ userId, userEmail, initialType, onClose }: { userId: st
       type, message: message.trim().slice(0, 4000),
     });
     setStatus(error ? 'error' : 'done');
+    if (!error) track(EVENTS.FEEDBACK_SUBMITTED, { type, has_attachments: false });
   };
 
   return (
@@ -589,6 +590,7 @@ export default function SettingsScreen() {
   const toggleVisibility = async () => {
     if (!userId) return;
     await updateProfile({ userId, patch: { is_public: !isPublic } });
+    track(EVENTS.PROFILE_VISIBILITY_CHANGED, { is_public: !isPublic });
     refreshProfile();
   };
 
@@ -611,7 +613,7 @@ export default function SettingsScreen() {
     const token = generateCalendarToken();
     const { error } = await updateProfile({ userId, patch: { calendar_token: token } });
     if (error) { Alert.alert('Something went wrong', 'Could not create your calendar link. Please try again.'); }
-    else { setLocalCalToken(token); refreshProfile(); }
+    else { track(EVENTS.CALENDAR_FEED_GENERATED, {}); setLocalCalToken(token); refreshProfile(); }
     setGeneratingCalToken(false);
   };
 
@@ -619,6 +621,7 @@ export default function SettingsScreen() {
     if (!calFeedUrl) return;
     try {
       await Share.share({ message: `Subscribe to my PLOT calendar:\n${calFeedUrl}`, url: calFeedUrl });
+      track(EVENTS.LIST_SHARED, { kind: 'calendar_feed' });
     } catch { /* user dismissed the share sheet */ }
   };
 
@@ -712,7 +715,13 @@ export default function SettingsScreen() {
   const handleSignOut = () => {
     Alert.alert('Sign out?', 'Sign out of your PLOT account?', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Sign out', style: 'destructive', onPress: async () => { await supabase.auth.signOut(); } },
+      { text: 'Sign out', style: 'destructive', onPress: async () => {
+        // Capture before the reset, or the event lands on the fresh anonymous
+        // profile instead of the person who actually signed out.
+        track(EVENTS.USER_SIGNED_OUT, {});
+        await supabase.auth.signOut();
+        resetAnalytics();
+      } },
     ]);
   };
 
@@ -727,6 +736,7 @@ export default function SettingsScreen() {
         const { error } = await clearWatchHistory({ userId: userId! });
         setClearingHist(false);
         if (error) Alert.alert('Could not clear', SETTINGS_VIEW.errors.failedToClearWatchHistory);
+        else track(EVENTS.HISTORY_CLEARED, {});
       }},
     ]);
   };
@@ -742,6 +752,7 @@ export default function SettingsScreen() {
           await supabase.from('list_items').delete().eq('list_id', myList.id);
         }
         setClearingList(false);
+        track(EVENTS.WATCHLIST_CLEARED, { saved: true, watching: false, customListCount: 0 });
       }},
       { text: 'Clear Saved + Watching', style: 'destructive', onPress: async () => {
         setClearingList(true);
@@ -752,6 +763,7 @@ export default function SettingsScreen() {
           supabase.from('watching_progress').delete().eq('user_id', userId!),
         ]);
         setClearingList(false);
+        track(EVENTS.WATCHLIST_CLEARED, { saved: true, watching: true, customListCount: 0 });
       }},
     ]);
   };

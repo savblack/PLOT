@@ -37,6 +37,8 @@
     "migrations:check": "node scripts/check-migration-redefinitions.mjs",
     "copy:check": "node scripts/check-hardcoded-copy.mjs",
     "core:check": "node scripts/check-core-imports.mjs",
+    "edge:check": "./scripts/check-edge-types.sh",
+    "gen:db-types": "supabase gen types typescript --project-id mkegtssedjyqldysvzga --schema public > supabase/functions/_shared/database.types.ts",
     "db:write-paths": "node scripts/check-db-write-paths.mjs",
     "db:migration-test": "bash scripts/db-migration-test.sh",
     "db:restore-drill": "bash scripts/db-restore-drill.sh",

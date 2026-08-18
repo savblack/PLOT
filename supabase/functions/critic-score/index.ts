@@ -8,6 +8,7 @@
  * an error — the panel simply omits the critic score.
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { serviceKey } from '../_shared/serviceKey.ts'
 
 function allowedOrigin(origin: string | null) {
   if (!origin) return 'https://app.theplot.tv';
@@ -44,7 +45,7 @@ Deno.serve(async (req) => {
   if (!/^tt\d+$/.test(imdbId)) return json({ error: 'Invalid imdb_id' }, origin, 400);
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
-  const serviceRole = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+  const serviceRole = serviceKey();
   const admin = createClient(supabaseUrl, serviceRole);
 
   const { data: cached } = await admin

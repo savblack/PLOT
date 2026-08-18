@@ -45,6 +45,26 @@ function waitForSession(supabase, waitMs, { setTimeoutFn = setTimeout, clearTime
 }
 
 /**
+ * Which *kind* of credential a callback URL carried — deliberately never its
+ * value. This is the diagnostic that makes a failed sign-in readable after the
+ * fact ("did the redirect even arrive with a code?"), and it has to stay a
+ * category: keeping Supabase tokens out of PostHog is the whole reason the app
+ * moved to PKCE, and a raw `code` or `token_hash` is precisely what must not
+ * become an event property.
+ *
+ * @param {string} [search]  window.location.search
+ * @param {string} [hash]    window.location.hash
+ * @returns {'code'|'token_hash'|'hash'|'none'}
+ */
+export function credentialKind(search, hash) {
+  const query = new URLSearchParams(search || '');
+  if (query.get('code')) return 'code';
+  if (query.get('token_hash')) return 'token_hash';
+  if (parseHash(hash).access_token) return 'hash';
+  return 'none';
+}
+
+/**
  * @param {object} supabase  Supabase client (auth.exchangeCodeForSession,
  *   verifyOtp, getSession, onAuthStateChange).
  * @param {{ search?: string, hash?: string }} location  window.location parts.

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { resolveAuthCallback } from '../../src/utils/authCallback.js';
+import { resolveAuthCallback, credentialKind } from '../../src/utils/authCallback.js';
 
 // Minimal fake Supabase auth client. Each factory records what was called so we
 // can assert both the decision AND that we never take a shortcut past session
@@ -172,4 +172,22 @@ test('exchange failure on a recovery link still routes to /reset-password', asyn
 
   assert.equal(result.path, '/reset-password');
   assert.equal(result.error, null);
+});
+
+test('credentialKind names the kind of credential in the URL, never the value', () => {
+  // This is what makes a failed sign-in legible after the fact without putting a
+  // code or token into analytics.
+  assert.equal(credentialKind('?code=abc123', ''), 'code');
+  assert.equal(credentialKind('?token_hash=xyz&type=magiclink', ''), 'token_hash');
+  assert.equal(credentialKind('', '#access_token=abc&refresh_token=def'), 'hash');
+  assert.equal(credentialKind('', ''), 'none');
+});
+
+test('credentialKind prefers the query credential when a URL somehow carries both', () => {
+  assert.equal(credentialKind('?code=abc', '#access_token=def'), 'code');
+});
+
+test('credentialKind treats an empty credential value as absent, and tolerates missing args', () => {
+  assert.equal(credentialKind('?code=', ''), 'none');
+  assert.equal(credentialKind(undefined, undefined), 'none');
 });

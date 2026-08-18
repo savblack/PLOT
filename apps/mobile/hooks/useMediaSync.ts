@@ -13,6 +13,7 @@ import { Linking } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { callAuthenticatedFunction } from '@plot/core/functions.js';
 import { friendlyPremiumError } from '@plot/core/premium.js';
+import { track, EVENTS } from '../lib/analytics';
 import type { MediaIntegration } from './useTraktSync';
 
 async function callSync(action: string, body: Record<string, unknown> = {}) {
@@ -50,7 +51,13 @@ export function useMediaSync(userId: string | null | undefined) {
     pollTimer.current = setInterval(async () => {
       try {
         const result = await callSync('poll-auth', { integrationId });
-        if (result?.status === 'active') { stopPolling(); await loadIntegration(); }
+        if (result?.status === 'active') {
+          stopPolling();
+          // The poll turning active is the moment the link actually exists —
+          // opening the Plex auth page proves nothing on its own.
+          track(EVENTS.PLEX_CONNECTED, {});
+          await loadIntegration();
+        }
       } catch {
         stopPolling();
       }
@@ -76,6 +83,7 @@ export function useMediaSync(userId: string | null | undefined) {
     setSyncing(true); setError(null);
     try {
       await callSync('sync');
+      track(EVENTS.PLEX_SYNCED, {});
       await loadIntegration();
     } catch (e) {
       setError(friendlyPremiumError((e as Error).message));
@@ -89,6 +97,7 @@ export function useMediaSync(userId: string | null | undefined) {
     try {
       await supabase.from('media_integrations').update({ status: 'disabled' }).eq('user_id', userId).eq('provider', 'plex');
       setIntegration(prev => prev ? { ...prev, status: 'disabled' } : null);
+      track(EVENTS.INTEGRATION_DISCONNECTED, { provider: 'plex' });
     } catch (e) {
       setError(friendlyPremiumError((e as Error).message));
     }
