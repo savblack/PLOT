@@ -18,6 +18,7 @@ import { callAuthenticatedFunction } from '@plot/core/functions.js';
 import { getConfig } from '@plot/core/config.js';
 import { friendlyPremiumError } from '@plot/core/premium.js';
 import { readStorage, removeStorage, writeStorage } from '../lib/storage';
+import { track, EVENTS } from '../lib/analytics';
 
 // Custom-scheme redirect the Trakt OAuth app must allowlist. The app's scheme
 // is `plot` (app.json); the root layout's deep-link listener handles the code.
@@ -54,6 +55,8 @@ async function callTraktSync(action: string, body: Record<string, unknown> = {})
 /** Exchange a Trakt OAuth `code` for tokens (called by the deep-link handler). */
 export async function exchangeTraktCode(code: string): Promise<void> {
   await callTraktSync('exchange', { code, redirect_uri: TRAKT_REDIRECT_URI });
+  // Only reached when the exchange resolved — mirrors web's TraktCallbackPage.
+  track(EVENTS.TRAKT_CONNECTED, {});
 }
 
 export function useTraktSync(userId: string | null | undefined) {
@@ -83,6 +86,7 @@ export function useTraktSync(userId: string | null | undefined) {
       redirect_uri: TRAKT_REDIRECT_URI,
       state,
     });
+    track(EVENTS.TRAKT_CONNECT_STARTED, {});
     Linking.openURL(`https://trakt.tv/oauth/authorize?${params}`);
   }, []);
 
@@ -91,6 +95,7 @@ export function useTraktSync(userId: string | null | undefined) {
     try {
       const result = await callTraktSync('sync');
       await loadIntegration();
+      track(EVENTS.TRAKT_SYNCED, {});
       return result;
     } catch (e) {
       setError(friendlyPremiumError((e as Error).message));
@@ -106,6 +111,7 @@ export function useTraktSync(userId: string | null | undefined) {
     try {
       await callTraktSync('disconnect');
       setIntegration(prev => prev ? { ...prev, status: 'disabled' } : null);
+      track(EVENTS.INTEGRATION_DISCONNECTED, { provider: 'trakt' });
     } catch (e) {
       setError(friendlyPremiumError((e as Error).message));
     }

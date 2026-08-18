@@ -5,6 +5,7 @@ import { localDateStr } from './date.js';
 import { baseMediaRow, tmdbIdFromItem } from './media.js';
 import { logWatchedItem } from './userMedia.js';
 import { getNextEpisodeProgress } from './watchingProgress.js';
+import { getConfig } from './config.js';
 
 /**
  * Currently-watching shows + episode progress for a user.
@@ -16,7 +17,7 @@ import { getNextEpisodeProgress } from './watchingProgress.js';
  *   startWatching: (item: any) => Promise<any>;
  *   markEpisodeWatched: (tmdbId: number) => Promise<any>;
  *   stopWatching: (tmdbId: number) => Promise<any>;
- *   setProgress: (tmdbId: number, season: number, episode: number) => Promise<{ ok: boolean; code?: string; error?: string|null; data?: any }>;
+ *   setProgress: (tmdbId: number, season: number, episode: number, opts?: { reason?: 'episode' | 'season' }) => Promise<{ ok: boolean; code?: string; error?: string|null; data?: any }>;
  *   fetchSeason: (tmdbId: number, seasonNum: number) => Promise<any>;
  *   isWatching: (tmdbId: number) => boolean;
  *   getProgress: (tmdbId: number) => any;
@@ -85,6 +86,9 @@ export function useWatching(userId) {
 
     if (!error && data) {
       setItems(prev => [data, ...prev.filter(i => i.tmdb_id !== tmdb_id)]);
+      // Analytics seam (platform-injected; see config.js). Series progress is
+      // reported from these canonical spots so both apps get it for free.
+      getConfig().onWatchProgress?.({ tmdb_id, action: 'started' });
     }
     return data;
   }, [userId]);
@@ -128,6 +132,12 @@ export function useWatching(userId) {
     }
 
     setItems(prev => prev.map(i => i.tmdb_id === Number(tmdbId) ? data : i));
+    getConfig().onWatchProgress?.({
+      tmdb_id: Number(tmdbId),
+      action: 'episode',
+      season: progress.current_season,
+      episode: progress.current_episode,
+    });
 
     // Log completed episode to history via shared helper, which validates the
     // date and signals the change.
@@ -143,7 +153,10 @@ export function useWatching(userId) {
   }, [items, userId, fetchSeason]);
 
   /* ── Set progress manually (jump to episode) ── */
-  const setProgress = useCallback(async (tmdbId, season, episode) => {
+  // `reason` names the action for analytics: the same pointer write backs both
+  // a single episode tick and the season-level bulk action, and the two are not
+  // the same engagement signal. Defaults to the common case.
+  const setProgress = useCallback(async (tmdbId, season, episode, { reason = 'episode' } = {}) => {
     const { data, error } = await supabase
       .from('watching_progress')
       .update({ current_season: season, current_episode: episode, updated_at: new Date().toISOString() })
@@ -151,7 +164,10 @@ export function useWatching(userId) {
       .eq('tmdb_id', Number(tmdbId))
       .select()
       .single();
-    if (data) setItems(prev => prev.map(i => i.tmdb_id === Number(tmdbId) ? data : i));
+    if (data) {
+      setItems(prev => prev.map(i => i.tmdb_id === Number(tmdbId) ? data : i));
+      getConfig().onWatchProgress?.({ tmdb_id: Number(tmdbId), action: reason, season, episode });
+    }
     // Callers that only nudge the pointer ignore this; the season-level bulk
     // action needs to know whether the write actually landed.
     if (error || !data) {
@@ -169,6 +185,7 @@ export function useWatching(userId) {
       .eq('tmdb_id', Number(tmdbId));
     if (error) return false;
     setItems(prev => prev.filter(i => i.tmdb_id !== Number(tmdbId)));
+    getConfig().onWatchProgress?.({ tmdb_id: Number(tmdbId), action: 'stopped' });
     return true;
   }, [userId]);
 

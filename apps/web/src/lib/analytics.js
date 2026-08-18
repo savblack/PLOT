@@ -56,6 +56,15 @@ export function setPersonProps(props) {
   withPostHog(ph => ph.setPersonProperties(props));
 }
 
+/**
+ * Drop the current identity. Called on deliberate sign-out so the next person
+ * to use this browser starts as a new anonymous user instead of inheriting the
+ * previous one's person profile. Mirrors resetAnalytics in mobile's analytics.ts.
+ */
+export function resetAnalytics() {
+  withPostHog(ph => ph.reset());
+}
+
 export function captureException(error, props) {
   withPostHog(ph => ph.captureException(error, props));
 }

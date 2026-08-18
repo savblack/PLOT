@@ -246,10 +246,15 @@ export default function AuthScreen() {
       track(EVENTS.SIGNUP_SUBMIT_FAILED, { reason: authErrorReason(error.message) });
       Alert.alert(friendlyAuthError(error.message));
     }
-    else Alert.alert(AUTH_PAGE.almostThereTitle, `We sent a confirmation link to ${email.trim()}.`, [
-      { text: 'Resend', onPress: handleResend },
-      { text: 'OK', style: 'cancel' },
-    ]);
+    else {
+      // Web fires this on the same step (account created, confirmation pending);
+      // mobile never did, so signup funnels were web-only.
+      track(EVENTS.USER_SIGNED_UP, { method: 'password' });
+      Alert.alert(AUTH_PAGE.almostThereTitle, `We sent a confirmation link to ${email.trim()}.`, [
+        { text: 'Resend', onPress: handleResend },
+        { text: 'OK', style: 'cancel' },
+      ]);
+    }
   };
 
   const handleMagicLink = async () => {

@@ -214,6 +214,9 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished }: {
 
   const finishSeriesIfComplete = async (nextSeason: number | undefined) => {
     if (!isSeriesComplete({ lastSeason, nextSeason, status: details?.status })) return;
+    // Finishing a show is the end of the engagement arc worth naming, and it's
+    // only knowable here — core sees pointer moves, not the last season.
+    track(EVENTS.SERIES_COMPLETED, { tmdb_id: tvId, seasons: lastSeason });
     const result = await onSeriesFinished?.();
     if (result && !result.ok) setActionError(result.error || MEDIA_PANEL.couldNotUpdateWatchStatus);
   };
@@ -272,7 +275,7 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished }: {
 
     setSeasonPending(true);
     setActionError('');
-    const result = await watching.setProgress(tvId, target.nextSeason, target.nextEpisode);
+    const result = await watching.setProgress(tvId, target.nextSeason, target.nextEpisode, { reason: 'season' });
     if (!result?.ok) {
       setActionError(MEDIA_PANEL.couldNotUpdateSeason);
     } else if (!seasonState.isComplete) {
@@ -701,6 +704,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
       const t = details?.title || details?.name || '';
       const url = buildShareUrl(itemId, itemType);
       await Share.share({ message: t ? `${t}. ${url}` : url, url });
+      track(EVENTS.TITLE_SHARED, { tmdb_id: itemId, media_type: itemType });
     } catch { /* user dismissed the share sheet */ }
   };
 

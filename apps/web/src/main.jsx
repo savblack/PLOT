@@ -59,6 +59,33 @@ configure({
     track(following ? EVENTS.USER_FOLLOWED : EVENTS.USER_UNFOLLOWED, { target_user_id }),
   onCustomListChange: ({ list_id, action }) =>
     track(action === 'created' ? EVENTS.CUSTOM_LIST_CREATED : EVENTS.CUSTOM_LIST_DELETED, { list_id }),
+  onCustomListItemChange: ({ list_id, tmdb_id, media_type, action }) =>
+    track(action === 'added' ? EVENTS.LIST_ITEM_ADDED : EVENTS.LIST_ITEM_REMOVED,
+      { list_id, tmdb_id, media_type }),
+  onCustomListVisibility: ({ list_id, is_public }) =>
+    track(EVENTS.LIST_VISIBILITY_CHANGED, { list_id, is_public }),
+  onFavourite: ({ tmdb_id, media_type, favourited }) =>
+    track(favourited ? EVENTS.FAVOURITE_ADDED : EVENTS.FAVOURITE_REMOVED, { tmdb_id, media_type }),
+  onFollowRequestDecision: ({ target_user_id, approved }) =>
+    track(approved ? EVENTS.FOLLOW_REQUEST_APPROVED : EVENTS.FOLLOW_REQUEST_DECLINED, { target_user_id }),
+  onHistoryRemove: ({ tmdb_id, media_type }) =>
+    track(EVENTS.HISTORY_ENTRY_REMOVED, { tmdb_id, media_type }),
+  // One seam, four names: core reports where in a series the user moved, and
+  // the action decides which event that is. Keeps the episode grind separate
+  // from the bulk "mark the season watched" action in the funnels.
+  onWatchProgress: ({ tmdb_id, action, season, episode }) => {
+    const name = {
+      started:   EVENTS.WATCHING_STARTED,
+      stopped:   EVENTS.WATCHING_STOPPED,
+      episode:   EVENTS.EPISODE_WATCHED,
+      season:    EVENTS.SEASON_WATCHED,
+      completed: EVENTS.SERIES_COMPLETED,
+    }[action];
+    // started/stopped carry no season or episode; drop the keys rather than
+    // sending nulls, so the PostHog property only exists where it means something.
+    if (name) track(name, { tmdb_id, ...(season != null ? { season } : {}), ...(episode != null ? { episode } : {}) });
+  },
+  onProfileUpdate: ({ fields }) => track(EVENTS.PROFILE_UPDATED, { fields }),
 });
 
 // Opt this browser out of analytics: visit either theplot.tv or app.theplot.tv
