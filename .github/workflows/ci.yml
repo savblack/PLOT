@@ -138,8 +138,10 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_TMDB_PROXY_URL: ${{ secrets.VITE_TMDB_PROXY_URL }}
-          VITE_PUBLIC_POSTHOG_PROJECT_TOKEN: ${{ secrets.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN }}
-          VITE_PUBLIC_POSTHOG_HOST: ${{ secrets.VITE_PUBLIC_POSTHOG_HOST }}
+          # No PostHog token: the smoke job drives a real browser through the
+          # app, and every click would land in the production project. The host
+          # allowlist in apps/web/src/utils/analyticsHost.js already blocks
+          # 127.0.0.1, so this is belt and braces.
 
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
@@ -150,8 +152,10 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_TMDB_PROXY_URL: ${{ secrets.VITE_TMDB_PROXY_URL }}
-          VITE_PUBLIC_POSTHOG_PROJECT_TOKEN: ${{ secrets.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN }}
-          VITE_PUBLIC_POSTHOG_HOST: ${{ secrets.VITE_PUBLIC_POSTHOG_HOST }}
+          # No PostHog token: the smoke job drives a real browser through the
+          # app, and every click would land in the production project. The host
+          # allowlist in apps/web/src/utils/analyticsHost.js already blocks
+          # 127.0.0.1, so this is belt and braces.
 
   edge-typecheck:
     name: Edge function typecheck (Deno)

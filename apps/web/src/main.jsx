@@ -5,6 +5,7 @@ import { configure } from '@plot/core/config.js';
 import router from './router.jsx';
 import './index.css';
 import { captureAttribution } from './utils/attribution.js';
+import { analyticsAllowed } from './utils/analyticsHost.js';
 import { redactSensitiveUrl } from './utils/redactUrl.js';
 import { track, markActivated, EVENTS, _setPostHogClient } from './lib/analytics.js';
 
@@ -97,7 +98,11 @@ if (new URLSearchParams(window.location.search).get('dnt') === '1') {
 }
 const isDnt = /(?:^|; )plot_dnt=1/.test(document.cookie);
 
-const posthogToken = !isDnt && import.meta.env.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN;
+// analyticsAllowed() keeps localhost, preview builds and CI out of the one
+// production project. Gating the TOKEN (rather than filtering in before_send)
+// means posthog-js is never even imported off-production: no cookie, no
+// session, no replay started before the first event gets judged.
+const posthogToken = !isDnt && analyticsAllowed() && import.meta.env.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN;
 
 // Read the acquisition attribution the marketing site forwarded onto this link
 // (utm_*, click ids, referrer, src) and attach it to every event + the person,
