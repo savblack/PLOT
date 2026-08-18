@@ -21,7 +21,19 @@
  * Visual design follows PLOT's real cross-platform tokens (packages/core/tokens.js)
  * rather than an ad hoc palette — see the :root / .deck token blocks below.
  */
-import { createClient } from 'npm:@supabase/supabase-js@2';
+import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
+import type { Database, Json } from '../_shared/database.types.ts';
+
+// Db is the *default* instantiation
+// (SupabaseClient<unknown, …, never, never>), so every row came back `never` and
+// the real client was not even assignable to it. Bind it to the schema instead.
+type Db = SupabaseClient<Database>;
+
+// A jsonb column arrives as Json, which includes strings and arrays; only the
+// object case is a copy record. Anything else is treated as absent.
+function jsonObject(value: Json | null | undefined): Record<string, Json | undefined> {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+}
 import { serviceKey } from '../_shared/serviceKey.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -214,15 +226,16 @@ const dispatchWorkflow = async (workflow: string): Promise<{ ok: boolean; reason
   }
 };
 
-const mergeCopyFromForm = async (supabase: ReturnType<typeof createClient>, postId: string, form: FormData) => {
-  const copyPatch: Record<string, unknown> = { x: String(form.get('x') || '') };
+const mergeCopyFromForm = async (supabase: Db, postId: string, form: FormData) => {
+  // Json, not unknown: this is merged into marketing_posts.copy, a jsonb column.
+  const copyPatch: Record<string, Json> = { x: String(form.get('x') || '') };
   if (form.has('instagram')) copyPatch.instagram = String(form.get('instagram') || '');
   if (form.has('threads')) copyPatch.threads = String(form.get('threads') || '');
   if (form.has('hashtags')) copyPatch.hashtags = String(form.get('hashtags') || '').split(',').map((s) => s.trim().replace(/^#/, '')).filter(Boolean);
   if (form.has('page_title')) copyPatch.page_title = String(form.get('page_title') || '');
   if (form.has('page_body')) copyPatch.page_body = String(form.get('page_body') || '').split(/\n\s*\n/).map((s) => s.trim()).filter(Boolean);
   const { data: cur } = await supabase.from('marketing_posts').select('copy').eq('id', postId).single();
-  const before = cur?.copy || {};
+  const before = jsonObject(cur?.copy);
   return { before, after: { ...before, ...copyPatch } };
 };
 
@@ -231,8 +244,8 @@ const mergeCopyFromForm = async (supabase: ReturnType<typeof createClient>, post
 // file entirely and writes its own rows directly (see marketing/REVIEW.md).
 // Wrapped so a logging failure can never block the real action it describes.
 const logEvent = async (
-  supabase: ReturnType<typeof createClient>,
-  entry: { postId?: string | null; action: string; before?: unknown; after?: unknown },
+  supabase: Db,
+  entry: { postId?: string | null; action: string; before?: Json; after?: Json },
 ) => {
   try {
     await supabase.from('marketing_review_events').insert({
@@ -919,7 +932,7 @@ Deno.serve(async (req) => {
   const submitted = form ? String(form.get('password') || '') : '';
   const isLoginAttempt = !!form && form.has('password');
   const ip = clientIp(req);
-  const supabase = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
+  const supabase = createClient<Database>(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
 
   // Throttle brute force before checking the password at all.
   if (isLoginAttempt && await loginBlocked(supabase, ip)) {
@@ -937,7 +950,9 @@ Deno.serve(async (req) => {
   }
 
   // On a fresh password sign-in, set the derived session cookie (never the raw secret).
-  const setCookie = passwordOk
+  // Record<string, string>, not an inferred literal: spreading a union of
+  // `{ 'set-cookie': string }` and `{}` produces a union that is not a HeadersInit.
+  const setCookie: Record<string, string> = passwordOk
     ? { 'set-cookie': `admin_token=${SESSION_TOKEN}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=2592000` } : {};
 
   // Readable week sheet: the weekly batch pre-builds week.html and stores it in
@@ -1031,7 +1046,7 @@ Deno.serve(async (req) => {
       await logEvent(supabase, { postId: id, action, after: { triggered: triggered.ok } });
     } else if (id) {
       const { before, after: merged } = await mergeCopyFromForm(supabase, id, form);
-      const patch: Record<string, unknown> = { copy: merged, updated_at: now() };
+      const patch: Database['public']['Tables']['marketing_posts']['Update'] = { copy: merged, updated_at: now() };
       if (action === 'approve') patch.status = 'approved';
       await supabase.from('marketing_posts').update(patch).eq('id', id);
       if (action === 'approve') await requeuePubs([id]);

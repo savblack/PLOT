@@ -1,5 +1,24 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import type { Database } from '../_shared/database.types.ts'
+
+// Db is the *default* instantiation
+// (SupabaseClient<unknown, …, never, never>), so every row came back
+// `never` and the real client was not even assignable to it. Bind it to
+// the schema instead.
+type Db = SupabaseClient<Database>
+// The media_integrations columns these helpers read. Every token column is
+// nullable in the schema, so they have to be treated as absent-able.
+type IntegrationRef = {
+  id: string
+  user_id: string
+  trakt_redirect_uri?: string | null
+  trakt_token_ciphertext?: string | null
+  trakt_token_iv?: string | null
+  trakt_token_expires_at?: string | null
+  trakt_refresh_ciphertext?: string | null
+  trakt_refresh_iv?: string | null
+}
 import { HISTORY_CONFLICT_TARGET, dedupeHistoryRows } from '../_shared/historyConflict.ts'
 import { serviceKey } from '../_shared/serviceKey.ts'
 
@@ -70,7 +89,7 @@ async function decryptToken(ciphertext?: string | null, iv?: string | null) {
 async function authUser(req: Request) {
   const authHeader = req.headers.get('Authorization')
   if (!authHeader) return { error: json({ error: 'Unauthorized' }, 401) }
-  const supabaseUser = createClient(
+  const supabaseUser = createClient<Database>(
     Deno.env.get('SUPABASE_URL') ?? '',
     Deno.env.get('SUPABASE_ANON_KEY') ?? '',
     { global: { headers: { Authorization: authHeader } } },
@@ -165,7 +184,7 @@ async function buildPosterMap(
 // ── Integration lookup ────────────────────────────────────────────────────────
 
 async function findTraktIntegration(
-  supabaseAdmin: ReturnType<typeof createClient>,
+  supabaseAdmin: Db,
   userId: string,
 ) {
   const { data, error } = await supabaseAdmin
@@ -182,7 +201,7 @@ async function findTraktIntegration(
 }
 
 async function ensureWatchlist(
-  supabaseAdmin: ReturnType<typeof createClient>,
+  supabaseAdmin: Db,
   userId: string,
 ): Promise<string> {
   const { data: existing } = await supabaseAdmin
@@ -302,8 +321,8 @@ async function fetchTraktHistory(accessToken: string): Promise<HistoryItem[]> {
 // ── Upsert to DB ──────────────────────────────────────────────────────────────
 
 async function upsertTraktData(
-  supabaseAdmin: ReturnType<typeof createClient>,
-  integration: Record<string, string>,
+  supabaseAdmin: Db,
+  integration: IntegrationRef,
   watchlistItems: TraktItem[],
   historyItems: HistoryItem[],
 ) {
@@ -365,17 +384,18 @@ async function upsertTraktData(
 
   // Upsert matched items into the user's PLOT watchlist
   const watchlistId = await ensureWatchlist(supabaseAdmin, userId)
-  const listRows = integrationRows
-    .filter(r => r.tmdb_id && r.media_type && r.sync_state === 'active')
-    .map(r => ({
-      list_id: watchlistId,
-      user_id: userId,
-      tmdb_id: r.tmdb_id,
-      media_type: r.media_type,
-      title: r.title,
-      poster_path: r.poster_path,
-      release_date: r.release_date,
-    }))
+  const listRows = integrationRows.flatMap(r =>
+    r.tmdb_id && r.media_type && r.sync_state === 'active'
+      ? [{
+        list_id: watchlistId,
+        user_id: userId,
+        tmdb_id: r.tmdb_id,
+        media_type: r.media_type,
+        title: r.title,
+        poster_path: r.poster_path,
+        release_date: r.release_date,
+      }]
+      : [])
 
   if (listRows.length > 0) {
     const { error } = await supabaseAdmin
@@ -385,16 +405,17 @@ async function upsertTraktData(
   }
 
   // Log history
-  const historyRows = historyItems
-    .filter(item => item.tmdb_id && item.media_type)
-    .map(item => ({
-      user_id: userId,
-      tmdb_id: item.tmdb_id,
-      media_type: item.media_type,
-      title: item.title,
-      poster_path: poster(item.media_type, item.tmdb_id),
-      watched_at: item.watched_at || new Date().toISOString().slice(0, 10),
-    }))
+  const historyRows = historyItems.flatMap(item =>
+    item.tmdb_id && item.media_type && item.title
+      ? [{
+        user_id: userId,
+        tmdb_id: item.tmdb_id,
+        media_type: item.media_type,
+        title: item.title,
+        poster_path: poster(item.media_type, item.tmdb_id),
+        watched_at: item.watched_at || new Date().toISOString().slice(0, 10),
+      }]
+      : [])
 
   // Trakt returns one entry per play, so a rewatch on the same day (or an
   // episode-level history) yields several rows for one title and date; collapse
@@ -414,8 +435,8 @@ async function upsertTraktData(
 // ── Outbox processing ─────────────────────────────────────────────────────────
 
 async function processOutbox(
-  supabaseAdmin: ReturnType<typeof createClient>,
-  integration: Record<string, string>,
+  supabaseAdmin: Db,
+  integration: IntegrationRef,
   accessToken: string,
 ) {
   const { data: actions, error } = await supabaseAdmin
@@ -471,7 +492,7 @@ async function processOutbox(
 
 async function handleExchange(
   body: Record<string, unknown>,
-  supabaseAdmin: ReturnType<typeof createClient>,
+  supabaseAdmin: Db,
   userId: string,
 ) {
   const code = body.code as string | undefined
@@ -540,7 +561,7 @@ async function handleExchange(
 }
 
 async function handleSync(
-  supabaseAdmin: ReturnType<typeof createClient>,
+  supabaseAdmin: Db,
   userId: string,
 ) {
   const integration = await findTraktIntegration(supabaseAdmin, userId)
@@ -612,7 +633,7 @@ async function handleSync(
 }
 
 async function handleDisconnect(
-  supabaseAdmin: ReturnType<typeof createClient>,
+  supabaseAdmin: Db,
   userId: string,
 ) {
   await supabaseAdmin
@@ -634,7 +655,7 @@ async function handleDisconnect(
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
-  const supabaseAdmin = createClient(
+  const supabaseAdmin = createClient<Database>(
     Deno.env.get('SUPABASE_URL') ?? '',
     serviceKey(),
   )

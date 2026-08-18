@@ -63,6 +63,12 @@ Run from repo root unless noted. Use **npm** (workspaces), never yarn/pnpm.
 - `npm run test:smoke` — Playwright smoke (`vite build` + chromium; run
   `npx playwright install chromium` once on a fresh machine)
 - `npm run typecheck -w @plot/mobile` — **required when touching mobile**; `npm run lint` covers it too
+- `npm run edge:check` — **required when touching `supabase/functions/`**; type-checks every
+  edge function with `deno check` against the generated DB types. Nothing else compiles them,
+  so this is the only gate. Needs `deno` on PATH. If it reports columns that do exist, the
+  types are stale: `npm run gen:db-types` regenerates
+  `supabase/functions/_shared/database.types.ts` from production's schema (read-only, needs
+  `SUPABASE_ACCESS_TOKEN`), and it should be committed with the migration that moved the schema.
 - Deploy: web app and marketing site both auto-deploy via Cloudflare Pages on merge to `main`;
   Supabase functions via `supabase functions deploy <name>`; Worker via
   `cd apps/web/workers/tmdb-proxy && npx wrangler deploy`.

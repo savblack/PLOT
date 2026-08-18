@@ -15,7 +15,14 @@
  * supabase/config.toml (verify_jwt = false), so a plain `supabase functions
  * deploy marketing-feed` keeps it public — no need to remember --no-verify-jwt.
  */
-import { createClient } from 'npm:@supabase/supabase-js@2';
+import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2'
+import type { Database } from '../_shared/database.types.ts'
+
+// Db is the *default* instantiation
+// (SupabaseClient<unknown, …, never, never>), so every row came back
+// `never` and the real client was not even assignable to it. Bind it to
+// the schema instead.
+type Db = SupabaseClient<Database>;
 // Shared site footer markup — generated from website/_partials/footer.html.
 // Run `npm run footer` to regenerate after editing the partial.
 import { FOOTER_HTML } from './footer.generated.ts';
@@ -574,7 +581,7 @@ const CHART_CSS = `
   }
 `;
 
-const renderChart = async (supabase: ReturnType<typeof createClient>) => {
+const renderChart = async (supabase: Db) => {
   const { data: snaps } = await supabase
     .from('marketing_trending_snapshots')
     .select('snapshot_date, items')
@@ -771,7 +778,7 @@ const NEWSLETTER_CSS = `
   .nl-empty { margin-top: 48px; color: var(--mut); font-weight: 300; }
 `;
 
-const renderNewsletterIndex = async (supabase: ReturnType<typeof createClient>) => {
+const renderNewsletterIndex = async (supabase: Db) => {
   const { data } = await supabase
     .from('marketing_newsletter_issues')
     .select('week_start, issue_date, subject, snapshot')
@@ -819,7 +826,7 @@ const renderNewsletterIndex = async (supabase: ReturnType<typeof createClient>) 
 // Serving it as-is is the most faithful archive there is, so it is served
 // almost as-is — only the webfont swapped for the self-hosted one (the site CSP
 // allows no third-party font host) and a way back plus a signup appended.
-const renderNewsletterIssue = async (supabase: ReturnType<typeof createClient>, weekStart: string) => {
+const renderNewsletterIssue = async (supabase: Db, weekStart: string) => {
   const { data } = await supabase
     .from('marketing_newsletter_issues')
     .select('week_start, issue_date, subject, html, snapshot')
@@ -937,7 +944,7 @@ Deno.serve(async (req) => {
     return new Response('Method not allowed', { status: 405 });
   }
 
-  const supabase = createClient(
+  const supabase = createClient<Database>(
     Deno.env.get('SUPABASE_URL')!,
     serviceKey(),
   );

@@ -37,6 +37,7 @@
  * see supabase/config.toml).
  */
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import type { Database } from '../_shared/database.types.ts';
 import { serviceKey } from '../_shared/serviceKey.ts';
 
 function allowedOrigin(origin: string | null) {
@@ -90,7 +91,7 @@ const clientIp = (req: Request): string => req.headers.get('cf-connecting-ip') |
 // that split anon (user-context) vs service-role (admin) clients, there is
 // no anon/user-context case here at all.
 const SERVICE_ROLE_KEY = serviceKey();
-const supabaseAdmin = createClient(Deno.env.get('SUPABASE_URL')!, SERVICE_ROLE_KEY);
+const supabaseAdmin = createClient<Database>(Deno.env.get('SUPABASE_URL')!, SERVICE_ROLE_KEY);
 
 // --- Signed form-timing token ------------------------------------------
 // HMAC-SHA256 over a base64url-encoded {iat} payload, keyed by the
@@ -116,7 +117,10 @@ function toBase64Url(bytes: Uint8Array): string {
   for (const b of bytes) bin += String.fromCharCode(b);
   return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
-function fromBase64Url(s: string): Uint8Array {
+// Uint8Array<ArrayBuffer>, not plain Uint8Array: since TS 5.7 the class is
+// generic over its backing buffer, and only an ArrayBuffer-backed view counts as
+// a BufferSource for crypto.subtle.
+function fromBase64Url(s: string): Uint8Array<ArrayBuffer> {
   const padded = s.replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(s.length / 4) * 4, '=');
   const bin = atob(padded);
   return Uint8Array.from(bin, (c) => c.charCodeAt(0));

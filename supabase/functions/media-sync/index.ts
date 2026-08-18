@@ -1,5 +1,10 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import type { Database, Json } from '../_shared/database.types.ts'
+
+type Db = SupabaseClient<Database>
+// What the sync helpers actually need off a media_integrations row.
+type IntegrationRef = { id: string; user_id: string }
 import { isSafePlexConnectionUrl } from '../_shared/plexConnectionPolicy.js'
 import { HISTORY_CONFLICT_TARGET, dedupeHistoryRows } from '../_shared/historyConflict.ts'
 import { selectTmdbMatch, tmdbIdFromGuids, yearFrom } from '../_shared/tmdbMatch.js'
@@ -88,7 +93,7 @@ async function authUser(req: Request) {
   const authHeader = req.headers.get('Authorization')
   if (!authHeader) return { error: json({ error: 'Unauthorized' }, 401) }
 
-  const supabaseUser = createClient(
+  const supabaseUser = createClient<Database>(
     Deno.env.get('SUPABASE_URL') ?? '',
     Deno.env.get('SUPABASE_ANON_KEY') ?? '',
     { global: { headers: { Authorization: authHeader } } },
@@ -106,7 +111,7 @@ async function authUser(req: Request) {
 const AUTH_FAIL_SCOPE = 'media-sync-companion-token'
 const AUTH_FAIL_WINDOW_MS = 5 * 60 * 1000
 const AUTH_FAIL_MAX = 20
-async function isAuthFailRateLimited(supabaseAdmin: ReturnType<typeof createClient>, ip: string): Promise<boolean> {
+async function isAuthFailRateLimited(supabaseAdmin: Db, ip: string): Promise<boolean> {
   const { data } = await supabaseAdmin
     .from('auth_fail_attempts')
     .select('fail_count, window_start')
@@ -117,11 +122,11 @@ async function isAuthFailRateLimited(supabaseAdmin: ReturnType<typeof createClie
   if (Date.now() - new Date(data.window_start).getTime() > AUTH_FAIL_WINDOW_MS) return false
   return data.fail_count >= AUTH_FAIL_MAX
 }
-async function recordAuthFailure(supabaseAdmin: ReturnType<typeof createClient>, ip: string) {
+async function recordAuthFailure(supabaseAdmin: Db, ip: string) {
   await supabaseAdmin.rpc('auth_note_fail', { p_scope: AUTH_FAIL_SCOPE, p_ip: ip, p_window_ms: AUTH_FAIL_WINDOW_MS })
 }
 
-async function authenticateCompanion(req: Request, supabaseAdmin: ReturnType<typeof createClient>) {
+async function authenticateCompanion(req: Request, supabaseAdmin: Db) {
   const token = req.headers.get('x-plot-device-token')
   if (!token) return { error: json({ error: 'Missing companion token' }, 401) }
 
@@ -216,6 +221,19 @@ async function normalizePlexItem(source: string, raw: Record<string, string> & {
   }
 }
 
+// jsonb columns take Json, and an unknown that merely passes a typeof check is
+// not that. Narrows to the object/array cases those columns actually hold and
+// falls back to {} for anything else.
+// An outbox payload column is Json, which includes strings and arrays. Only an
+// object is a payload; anything else is treated as absent rather than spread.
+function jsonObject(value: Json | null | undefined): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {}
+}
+
+function asJson(value: unknown): Json {
+  return value && typeof value === 'object' ? (value as Json) : {}
+}
+
 function cleanItem(item: Record<string, unknown>, userId: string, integrationId: string) {
   const mediaType = cleanMediaType(item.media_type ?? item.type)
   const tmdbId = Number.isInteger(item.tmdb_id) ? item.tmdb_id as number : null
@@ -236,14 +254,14 @@ function cleanItem(item: Record<string, unknown>, userId: string, integrationId:
     sync_state: item.sync_state === 'stale' || item.sync_state === 'ignored' || item.sync_state === 'pending' || item.sync_state === 'error'
       ? item.sync_state
       : 'active',
-    availability: typeof item.availability === 'object' && item.availability ? item.availability : {},
-    raw: typeof item.raw === 'object' && item.raw ? item.raw : {},
+    availability: asJson(item.availability),
+    raw: asJson(item.raw),
     last_seen_at: new Date().toISOString(),
     watched_at: item.watched_at ? String(item.watched_at) : null,
   }
 }
 
-async function ensureWatchlist(supabaseAdmin: ReturnType<typeof createClient>, userId: string) {
+async function ensureWatchlist(supabaseAdmin: Db, userId: string) {
   const { data: existing } = await supabaseAdmin
     .from('lists')
     .select('id')
@@ -264,8 +282,8 @@ async function ensureWatchlist(supabaseAdmin: ReturnType<typeof createClient>, u
 }
 
 async function upsertSnapshot(
-  supabaseAdmin: ReturnType<typeof createClient>,
-  integration: Record<string, string>,
+  supabaseAdmin: Db,
+  integration: IntegrationRef,
   watchlistItems: Array<Record<string, unknown>>,
   watchedItems: Array<Record<string, unknown>>,
 ) {
@@ -295,16 +313,17 @@ async function upsertSnapshot(
   }
 
   const watchlistId = await ensureWatchlist(supabaseAdmin, userId)
-  const matchedListItems = rows
-    .filter(row => row.tmdb_id && row.media_type && row.sync_state === 'active')
-    .map(row => ({
-      list_id: watchlistId,
-      user_id: userId,
-      tmdb_id: row.tmdb_id,
-      media_type: row.media_type,
-      title: row.title,
-      poster_path: row.poster_path,
-    }))
+  const matchedListItems = rows.flatMap(row =>
+    row.tmdb_id && row.media_type && row.sync_state === 'active'
+      ? [{
+        list_id: watchlistId,
+        user_id: userId,
+        tmdb_id: row.tmdb_id,
+        media_type: row.media_type,
+        title: row.title,
+        poster_path: row.poster_path,
+      }]
+      : [])
 
   if (matchedListItems.length > 0) {
     const { error } = await supabaseAdmin
@@ -313,16 +332,24 @@ async function upsertSnapshot(
     if (error) throw error
   }
 
-  const historyRows = watchedItems
-    .filter(item => Number.isInteger(item.tmdb_id) && cleanMediaType(item.media_type))
-    .map(item => ({
+  const historyRows = watchedItems.flatMap(item => {
+    const tmdbId = Number.isInteger(item.tmdb_id) ? item.tmdb_id as number : null
+    const mediaType = cleanMediaType(item.media_type)
+    // history.title is NOT NULL: a titleless entry would fail the insert with
+    // 23502 and take the rest of the batch down with it. It is also of no use to
+    // anyone, so drop it here.
+    const title = item.title ? String(item.title) : null
+    if (tmdbId === null || mediaType === null || title === null) return []
+
+    return [{
       user_id: userId,
-      tmdb_id: item.tmdb_id,
-      media_type: cleanMediaType(item.media_type),
-      title: item.title ? String(item.title) : null,
+      tmdb_id: tmdbId,
+      media_type: mediaType,
+      title,
       poster_path: item.poster_path ? String(item.poster_path) : null,
       watched_at: cleanDate(item.watched_at) || new Date().toISOString().slice(0, 10),
-    }))
+    }]
+  })
 
   // Plex reports a title once per play, so one sync can carry the same title
   // and date several times over; collapse those before the upsert sees them.
@@ -441,7 +468,7 @@ async function addPlexWatchlistItem(token: string, payload: Record<string, unkno
   if (!res.ok) throw new Error(`Plex watchlist add failed (${res.status})`)
 }
 
-async function processOutbox(supabaseAdmin: ReturnType<typeof createClient>, integration: Record<string, string>, token: string) {
+async function processOutbox(supabaseAdmin: Db, integration: IntegrationRef, token: string) {
   const { data: actions, error } = await supabaseAdmin
     .from('integration_outbox')
     .select('*')
@@ -455,7 +482,7 @@ async function processOutbox(supabaseAdmin: ReturnType<typeof createClient>, int
   for (const action of actions || []) {
     try {
       if (action.action !== 'plex_watchlist_add') throw new Error(`Unsupported action: ${action.action}`)
-      await addPlexWatchlistItem(token, action.payload || {})
+      await addPlexWatchlistItem(token, jsonObject(action.payload))
       await supabaseAdmin.from('integration_outbox').update({
         status: 'done',
         attempts: Number(action.attempts || 0) + 1,
@@ -473,7 +500,7 @@ async function processOutbox(supabaseAdmin: ReturnType<typeof createClient>, int
   return processed
 }
 
-async function findPlexIntegration(supabaseAdmin: ReturnType<typeof createClient>, userId: string) {
+async function findPlexIntegration(supabaseAdmin: Db, userId: string) {
   const { data, error } = await supabaseAdmin
     .from('media_integrations')
     .select('*')
@@ -487,7 +514,7 @@ async function findPlexIntegration(supabaseAdmin: ReturnType<typeof createClient
   return data
 }
 
-async function handleStartAuth(body: Record<string, unknown>, supabaseAdmin: ReturnType<typeof createClient>, userId: string) {
+async function handleStartAuth(body: Record<string, unknown>, supabaseAdmin: Db, userId: string) {
   const res = await fetch('https://plex.tv/api/v2/pins?strong=true', {
     method: 'POST',
     headers: plexHeaders(userId),
@@ -534,7 +561,7 @@ async function handleStartAuth(body: Record<string, unknown>, supabaseAdmin: Ret
   return json({ integration, authUrl, pinId: String(pin.id), expiresAt: pin.expiresAt })
 }
 
-async function handlePollAuth(supabaseAdmin: ReturnType<typeof createClient>, userId: string) {
+async function handlePollAuth(supabaseAdmin: Db, userId: string) {
   const integration = await findPlexIntegration(supabaseAdmin, userId)
   if (!integration?.auth_pin_id) return json({ status: integration?.status || 'missing' })
 
@@ -575,7 +602,7 @@ async function handlePollAuth(supabaseAdmin: ReturnType<typeof createClient>, us
   return json({ status: 'authorized', integration: data })
 }
 
-async function handleSync(supabaseAdmin: ReturnType<typeof createClient>, userId: string) {
+async function handleSync(supabaseAdmin: Db, userId: string) {
   const integration = await findPlexIntegration(supabaseAdmin, userId)
   if (!integration) return json({ error: 'Plex is not connected' }, 404)
   const token = await decryptToken(integration.plex_token_ciphertext, integration.plex_token_iv)
@@ -599,7 +626,7 @@ async function handleSync(supabaseAdmin: ReturnType<typeof createClient>, userId
         last_sync_at: new Date().toISOString(),
         last_error: historyStatus === 'unavailable' ? 'Plex Watchlist synced. Watched history is unavailable because no Plex server was reachable.' : null,
         plex_servers: resources,
-        selected_server: selectedServer,
+        selected_server: selectedServer ? asJson(selectedServer) : null,
       })
       .eq('id', integration.id)
       .select('id, provider, display_name, status, last_sync_at, last_error, created_at, plex_account, plex_servers, selected_server')
@@ -613,7 +640,7 @@ async function handleSync(supabaseAdmin: ReturnType<typeof createClient>, userId
   }
 }
 
-async function handleDisconnect(supabaseAdmin: ReturnType<typeof createClient>, userId: string) {
+async function handleDisconnect(supabaseAdmin: Db, userId: string) {
   const integration = await findPlexIntegration(supabaseAdmin, userId)
   if (!integration) return json({ ok: true })
   await supabaseAdmin.from('media_integrations').update({
@@ -627,7 +654,7 @@ async function handleDisconnect(supabaseAdmin: ReturnType<typeof createClient>, 
   return json({ ok: true })
 }
 
-async function handleLegacySnapshot(req: Request, supabaseAdmin: ReturnType<typeof createClient>, integration: Record<string, string>) {
+async function handleLegacySnapshot(req: Request, supabaseAdmin: Db, integration: IntegrationRef) {
   const body = await req.json()
   const watchlistItems = Array.isArray(body.watchlistItems) ? body.watchlistItems : []
   const watchedItems = Array.isArray(body.watchedItems) ? body.watchedItems : []
@@ -642,7 +669,7 @@ async function handleLegacySnapshot(req: Request, supabaseAdmin: ReturnType<type
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
-  const supabaseAdmin = createClient(
+  const supabaseAdmin = createClient<Database>(
     Deno.env.get('SUPABASE_URL') ?? '',
     serviceKey(),
   )

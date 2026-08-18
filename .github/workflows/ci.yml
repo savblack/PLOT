@@ -153,6 +153,32 @@ jobs:
           VITE_PUBLIC_POSTHOG_PROJECT_TOKEN: ${{ secrets.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN }}
           VITE_PUBLIC_POSTHOG_HOST: ${{ secrets.VITE_PUBLIC_POSTHOG_HOST }}
 
+  edge-typecheck:
+    name: Edge function typecheck (Deno)
+    runs-on: ubuntu-latest
+
+    # Edge functions are hand-deployed, so nothing else here would ever catch a
+    # type error in one: `npm run build` does not compile them and no test
+    # imports them. This is the only gate. It was worth adding because the errors
+    # it found were not cosmetic — several were nullable values headed for NOT
+    # NULL columns, which abort the whole statement at runtime (23502).
+    #
+    # Unconditional, for the reason #558 deleted the paths-filter gate: Actions
+    # bills every job rounded up to a whole minute, this one takes ~31s, so a gate
+    # to skip it would burn the minute it saves. Running always also means the
+    # functions are checked on 100% of PRs rather than the ones that touch them.
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Typecheck edge functions
+        run: npm run edge:check
+
   mobile-typecheck:
     name: Mobile typecheck (Expo)
     runs-on: ubuntu-latest

@@ -17,7 +17,14 @@
  *   RESEND_API_KEY              - optional email notification fallback
  */
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import type { Database } from '../_shared/database.types.ts'
+
+// Db is the *default* instantiation
+// (SupabaseClient<unknown, …, never, never>), so every row came back
+// `never` and the real client was not even assignable to it. Bind it to
+// the schema instead.
+type Db = SupabaseClient<Database>
 import { hasServiceRoleBearer } from '../_shared/internalWebhook.ts'
 import { serviceKey } from '../_shared/serviceKey.ts'
 
@@ -88,7 +95,11 @@ function formatSubmittedAt(value: unknown) {
   })
 }
 
-async function updateFeedbackSyncState(supabaseAdmin: ReturnType<typeof createClient>, feedbackId: string, updates: Record<string, unknown>) {
+async function updateFeedbackSyncState(
+  supabaseAdmin: Db,
+  feedbackId: string,
+  updates: Database['public']['Tables']['feedback']['Update'],
+) {
   const { error } = await supabaseAdmin
     .from('feedback')
     .update(updates)
@@ -99,7 +110,7 @@ async function updateFeedbackSyncState(supabaseAdmin: ReturnType<typeof createCl
   }
 }
 
-async function archiveAttachments(supabaseAdmin: ReturnType<typeof createClient>, feedbackId: string, attachments: unknown) {
+async function archiveAttachments(supabaseAdmin: Db, feedbackId: string, attachments: unknown) {
   const sourcePaths = attachmentPathsFrom(attachments)
   if (sourcePaths.length === 0) return []
 
@@ -355,7 +366,7 @@ Deno.serve(async (req) => {
   const linearProjectId = Deno.env.get('LINEAR_FEEDBACK_PROJECT_ID') || DEFAULT_LINEAR_FEEDBACK_PROJECT_ID
   const resendKey = Deno.env.get('RESEND_API_KEY')
 
-  const supabaseAdmin = createClient(
+  const supabaseAdmin = createClient<Database>(
     Deno.env.get('SUPABASE_URL') ?? '',
     serviceKey()
   )
