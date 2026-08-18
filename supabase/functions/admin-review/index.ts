@@ -388,13 +388,13 @@ h1 { font-size: 1.22rem; margin: 0; font-weight: 800; letter-spacing: -.01em; te
 @media (prefers-reduced-motion: reduce) { .live-dot { animation: none; } .post { animation: none !important; } }
 @media (max-width: 700px) { .live { display: none; } }
 
-button {
+button, .btn-on-deck {
   font: inherit; font-size: .84rem; font-weight: 650; border: 0; border-radius: 10px;
   padding: 9px 15px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
   transition: filter .12s, box-shadow .12s, transform .06s, background .12s, color .12s;
 }
-button:active { transform: translateY(1px); }
-button svg { width: 14px; height: 14px; flex-shrink: 0; }
+button:active, .btn-on-deck:active { transform: translateY(1px); }
+button svg, .btn-on-deck svg { width: 14px; height: 14px; flex-shrink: 0; }
 .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.2); }
 .btn-primary:hover { filter: brightness(1.12); }
 .btn-dark { background: var(--text); color: #fff; }
@@ -423,7 +423,7 @@ button[disabled] { opacity: .4; cursor: default; pointer-events: none; }
 .wday-count { font-size: .95rem; font-weight: 800; color: #fff; margin-top: 3px; font-variant-numeric: tabular-nums; }
 .wday-dots { display: flex; justify-content: center; gap: 3px; margin-top: 5px; min-height: 5px; }
 .wday-dots .d { width: 5px; height: 5px; border-radius: 50%; }
-.wday.empty { opacity: .35; cursor: default; }
+.wday.empty { opacity: .35; cursor: default; padding: 8px 6px 9px; }
 .wday.today { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
 
 /* KPI + progress ring row */
@@ -580,6 +580,7 @@ input[type=date] { width: auto; }
   background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
   box-shadow: var(--shadow-md); padding: 5px; z-index: 10; display: flex; flex-direction: column; gap: 1px;
 }
+.menu-panel[hidden] { display: none; }
 .menu-item {
   font: inherit; font-size: .83rem; font-weight: 600; text-align: left; background: transparent; border: 0;
   border-radius: 8px; padding: 8px 10px; cursor: pointer; display: flex; align-items: center; gap: 8px;
