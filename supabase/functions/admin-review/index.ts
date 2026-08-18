@@ -459,6 +459,10 @@ button[disabled] { opacity: .4; cursor: default; pointer-events: none; }
 .tab.on { background: var(--accent); color: #fff; }
 .tabbar .spacer { flex: 1; }
 
+.deck-toggle svg { transition: transform .15s; }
+.deck-toggle.collapsed svg { transform: rotate(180deg); }
+.deck-collapsible[hidden] { display: none; }
+
 /* ================= Content area ================= */
 .content { padding-top: 26px; }
 .flash { background: var(--good-dim); color: var(--good); padding: 12px 15px; border-radius: 12px; margin-bottom: 16px; font-size: .9rem; font-weight: 550; }
@@ -715,6 +719,23 @@ const SCRIPT = `
   // Jump back to the post you just acted on (the page reloads to the top on POST).
   var acted=document.getElementById('acted');
   if(acted){ var el=document.getElementById(acted.getAttribute('data-target')); if(el){ el.scrollIntoView({block:'center'}); el.classList.add('hi'); } }
+
+  // Collapse the week strip / stats / filters down to just the title bar.
+  // Every action reloads the page, so the choice is remembered in localStorage.
+  var deckToggle=document.getElementById('deckToggle'), deckBody=document.getElementById('deckBody');
+  if(deckToggle && deckBody){
+    var deckLabel=document.getElementById('deckToggleLabel');
+    var setDeckCollapsed=function(collapsed){
+      deckBody.hidden=collapsed;
+      deckToggle.classList.toggle('collapsed', collapsed);
+      deckToggle.setAttribute('aria-expanded', String(!collapsed));
+      if(deckLabel) deckLabel.textContent = collapsed ? 'Expand' : 'Collapse';
+      try { localStorage.setItem('deckCollapsed', collapsed ? '1' : '0'); } catch(e){}
+    };
+    deckToggle.addEventListener('click', function(){ setDeckCollapsed(!deckBody.hidden); });
+    var stored; try { stored=localStorage.getItem('deckCollapsed'); } catch(e){}
+    if(stored==='1') setDeckCollapsed(true);
+  }
 })();
 `;
 
@@ -1182,39 +1203,45 @@ Deno.serve(async (req) => {
           ${paused ? 'Resume' : 'Pause'}
         </button>
       </form>
+      <button type="button" class="btn-on-deck deck-toggle" id="deckToggle" aria-expanded="true" aria-controls="deckBody">
+        <svg viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span id="deckToggleLabel">Collapse</span>
+      </button>
     </div>
 
-    <div class="weekstrip">${weekStrip}</div>
+    <div id="deckBody" class="deck-collapsible">
+      <div class="weekstrip">${weekStrip}</div>
 
-    <div class="statsrow">
-      <div class="ring-card">
-        <svg width="52" height="52" viewBox="0 0 52 52">
-          <circle cx="26" cy="26" r="21" fill="none" stroke="var(--border-strong)" stroke-width="6"/>
-          <circle cx="26" cy="26" r="21" fill="none" stroke="var(--good)" stroke-width="6"
-            stroke-dasharray="${RING_C.toFixed(1)}" stroke-dashoffset="${(RING_C * (1 - decidedPct / 100)).toFixed(1)}"
-            stroke-linecap="round" transform="rotate(-90 26 26)"/>
-          <text x="26" y="30" text-anchor="middle" fill="#fff" font-size="13" font-weight="800" font-family="DM Sans, sans-serif">${decidedPct}%</text>
-        </svg>
-        <div class="ring-label">of active posts decided</div>
+      <div class="statsrow">
+        <div class="ring-card">
+          <svg width="52" height="52" viewBox="0 0 52 52">
+            <circle cx="26" cy="26" r="21" fill="none" stroke="var(--border-strong)" stroke-width="6"/>
+            <circle cx="26" cy="26" r="21" fill="none" stroke="var(--good)" stroke-width="6"
+              stroke-dasharray="${RING_C.toFixed(1)}" stroke-dashoffset="${(RING_C * (1 - decidedPct / 100)).toFixed(1)}"
+              stroke-linecap="round" transform="rotate(-90 26 26)"/>
+            <text x="26" y="30" text-anchor="middle" fill="#fff" font-size="13" font-weight="800" font-family="DM Sans, sans-serif">${decidedPct}%</text>
+          </svg>
+          <div class="ring-label">of active posts decided</div>
+        </div>
+        <div class="kpis">
+          <span class="kpi hero"><span class="kpi-num">${counts.review}</span><span class="kpi-label">Needs review</span></span>
+          <span class="kpi"><span class="kpi-num">${counts.approved}</span><span class="kpi-label">Approved</span></span>
+          <span class="kpi"><span class="kpi-num">${counts.rejected}</span><span class="kpi-label">Rejected</span></span>
+          <span class="kpi"><span class="kpi-num">${active.length}</span><span class="kpi-label">Total active</span></span>
+        </div>
       </div>
-      <div class="kpis">
-        <span class="kpi hero"><span class="kpi-num">${counts.review}</span><span class="kpi-label">Needs review</span></span>
-        <span class="kpi"><span class="kpi-num">${counts.approved}</span><span class="kpi-label">Approved</span></span>
-        <span class="kpi"><span class="kpi-num">${counts.rejected}</span><span class="kpi-label">Rejected</span></span>
-        <span class="kpi"><span class="kpi-num">${active.length}</span><span class="kpi-label">Total active</span></span>
-      </div>
-    </div>
 
-    <div class="tabbar">
-      <div class="segmented">
-        <button type="button" class="tab on" data-show="all">All ${active.length}</button>
-        <button type="button" class="tab" data-show="review">Needs review ${counts.review}</button>
-        <button type="button" class="tab" data-show="approved">Approved ${counts.approved}</button>
-        <button type="button" class="tab" data-show="rejected">Rejected ${counts.rejected}</button>
+      <div class="tabbar">
+        <div class="segmented">
+          <button type="button" class="tab on" data-show="all">All ${active.length}</button>
+          <button type="button" class="tab" data-show="review">Needs review ${counts.review}</button>
+          <button type="button" class="tab" data-show="approved">Approved ${counts.approved}</button>
+          <button type="button" class="tab" data-show="rejected">Rejected ${counts.rejected}</button>
+        </div>
+        <span class="spacer"></span>
       </div>
-      <span class="spacer"></span>
+      <div class="statsrow" style="margin-top:10px">${WORKFLOWS.map((w, i) => ghChip(w.label, workflowStatuses[i])).join('')}</div>
     </div>
-    <div class="statsrow" style="margin-top:10px">${WORKFLOWS.map((w, i) => ghChip(w.label, workflowStatuses[i])).join('')}</div>
   </div></div>`;
 
   const list = active.length ? dayBlocks
