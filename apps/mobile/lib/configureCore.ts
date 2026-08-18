@@ -54,6 +54,8 @@ configure({
       episode:   EVENTS.EPISODE_WATCHED,
       season:    EVENTS.SEASON_WATCHED,
       completed: EVENTS.SERIES_COMPLETED,
+      episode_undone: EVENTS.EPISODE_UNWATCHED,
+      season_undone:  EVENTS.SEASON_UNWATCHED,
     }[action];
     // started/stopped carry no season or episode; drop the keys rather than
     // sending nulls, so the PostHog property only exists where it means something.

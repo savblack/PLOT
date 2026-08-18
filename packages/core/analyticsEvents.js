@@ -81,6 +81,12 @@ export const EVENTS = Object.freeze({
   WATCHING_STOPPED: 'watching_stopped',
   // Undo signals. A user unlogging a watch or clearing history is a real
   // action, and without it the watched counts only ever ratchet upwards.
+  // episode_unwatched / season_unwatched matter more than they look: progress
+  // is one pointer, so un-ticking is the same write as ticking, and until the
+  // direction check landed in useWatching.setProgress these fired as
+  // episode_watched / season_watched. Undo was counting as engagement.
+  EPISODE_UNWATCHED: 'episode_unwatched',
+  SEASON_UNWATCHED: 'season_unwatched',
   HISTORY_ENTRY_REMOVED: 'history_entry_removed',
   WATCHLIST_REMOVED: 'watchlist_removed',
   CUSTOM_LIST_CREATED: 'custom_list_created',

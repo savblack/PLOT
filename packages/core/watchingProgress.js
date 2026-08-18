@@ -27,6 +27,25 @@ export function getSeasonWatchState({
 
 /* Where the pointer lands when the season-level control is used. Marking rolls
    past the season; unmarking rewinds to its first episode. */
+/* Is this pointer write a rewind?
+ *
+ * Progress is a single pointer, so un-ticking an episode and un-marking a
+ * season are the same kind of write as doing them: same call site, same
+ * arguments, same `reason`. Only the direction distinguishes them. Before this
+ * existed, a rewind reported episode_watched / season_watched, so undo counted
+ * as engagement and inflated every activation and retention number built on it.
+ *
+ * A missing `before` row is not a rewind: with nothing to compare against, the
+ * safe reading is forward, matching what every caller means by a first write.
+ */
+export function isRewind(before, season, episode) {
+  if (!before) return false;
+  const fromSeason  = Number(before.current_season) || 0;
+  const fromEpisode = Number(before.current_episode) || 0;
+  if (Number(season) !== fromSeason) return Number(season) < fromSeason;
+  return Number(episode) < fromEpisode;
+}
+
 export function getSeasonToggleProgress({ isComplete = false, selectedSeason = 0 } = {}) {
   if (!selectedSeason || selectedSeason < 1) {
     return {

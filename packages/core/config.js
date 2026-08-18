@@ -62,10 +62,12 @@
  * @property {(payload: { tmdb_id: number, media_type: string }) => void} [onHistoryRemove]
  *   Analytics seam — fired when a logged watch is removed from history. The
  *   undo half of onWatched; without it, watched counts only ever go up.
- * @property {(payload: { tmdb_id: number, action: 'started' | 'stopped' | 'episode' | 'season' | 'completed', season?: number, episode?: number }) => void} [onWatchProgress]
+ * @property {(payload: { tmdb_id: number, action: 'started' | 'stopped' | 'episode' | 'season' | 'completed' | 'episode_undone' | 'season_undone', season?: number, episode?: number }) => void} [onWatchProgress]
  *   Analytics seam — fired as a user moves through a series: started/stopped
  *   tracking it, ticked off an episode, or bulk-marked a season or the whole
- *   run (the #545 actions). Series only; movies go through onWatched.
+ *   run (the #545 actions), or moved the pointer BACKWARDS (the *_undone
+ *   actions, i.e. un-ticking an episode or un-marking a season). Series only;
+ *   movies go through onWatched.
  * @property {(payload: { fields: string[] }) => void} [onProfileUpdate]
  *   Analytics seam — fired when a profile is edited. Carries the *names* of the
  *   changed fields only, never the values: bios, links and display names are

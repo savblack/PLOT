@@ -7,6 +7,7 @@ import {
   getSeasonToggleProgress,
   getSeasonWatchState,
   isSeriesComplete,
+  isRewind,
 } from '../../watchingProgress.js';
 
 test('reports missing-progress when there is no progress object', () => {
@@ -179,4 +180,51 @@ test('never completes when the status or season count is unknown', () => {
   assert.equal(isSeriesComplete({ status: 'Ended', lastSeason: 0, nextSeason: 4 }), false);
   assert.equal(isSeriesComplete({ status: 'Ended', lastSeason: 3, nextSeason: 0 }), false);
   assert.equal(isSeriesComplete(), false);
+});
+
+/* isRewind — the guard that stops undo counting as engagement.
+   The real call sites pass the same `reason` in both directions (see
+   MediaPanel's episode un-tick and handleToggleSeason), so this is the only
+   thing separating "watched an episode" from "un-watched one". */
+
+test('moving forward within a season is not a rewind', () => {
+  const before = { current_season: 2, current_episode: 4 };
+  assert.equal(isRewind(before, 2, 5), false);
+});
+
+test('un-ticking an episode is a rewind', () => {
+  // MediaPanel's unmark branch pulls the pointer back to the episode itself.
+  const before = { current_season: 2, current_episode: 5 };
+  assert.equal(isRewind(before, 2, 4), true);
+});
+
+test('advancing into the next season is not a rewind, even at a lower episode', () => {
+  // Marking a season watched rolls to season+1 episode 1, so the episode
+  // number drops while the progress genuinely moves forward.
+  const before = { current_season: 2, current_episode: 9 };
+  assert.equal(isRewind(before, 3, 1), false);
+});
+
+test('un-marking a season is a rewind', () => {
+  // getSeasonToggleProgress returns the season's own episode 1 when complete.
+  const before = { current_season: 3, current_episode: 1 };
+  assert.equal(isRewind(before, 2, 1), true);
+});
+
+test('rewriting the same position is not a rewind', () => {
+  const before = { current_season: 1, current_episode: 1 };
+  assert.equal(isRewind(before, 1, 1), false);
+});
+
+test('a first write with no prior row counts as forward', () => {
+  assert.equal(isRewind(undefined, 1, 1), false);
+  assert.equal(isRewind(null, 4, 7), false);
+});
+
+test('string values from the database compare numerically', () => {
+  // Postgres can hand these back as strings; '10' < '9' lexically would
+  // misread a forward move as a rewind.
+  const before = { current_season: '1', current_episode: '9' };
+  assert.equal(isRewind(before, 1, 10), false);
+  assert.equal(isRewind(before, 1, 8), true);
 });
