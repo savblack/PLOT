@@ -57,6 +57,24 @@ for dir in supabase/functions/*/; do
 done
 
 echo ""
+
+# Unit tests for the _shared helpers, where there are any. Typechecking proves a
+# shape, not a decision, and the decisions in here are security ones:
+# hasServiceRoleBearer is the only gate in front of the internal webhook
+# handlers, and it type-checks perfectly whether it accepts the right bearers or
+# none of them. A wrong answer there is silent — the trigger warns instead of
+# raising, so the webhooks just stop.
+if ls supabase/functions/_shared/*.test.ts > /dev/null 2>&1; then
+  echo "Running _shared unit tests"
+  if deno test --node-modules-dir=none --quiet supabase/functions/_shared/; then
+    echo "  ✓ _shared tests pass"
+  else
+    echo "  ✗ _shared tests failed" >&2
+    failed=$((failed + 1))
+  fi
+  echo ""
+fi
+
 if [ "$failed" -eq 0 ]; then
   echo "✓ ${checked} edge function(s) typecheck clean"
   exit 0
