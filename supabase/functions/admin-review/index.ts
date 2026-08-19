@@ -1130,7 +1130,11 @@ Deno.serve(async (req) => {
   ];
   const workflowStatuses = await Promise.all(WORKFLOWS.map((w) => workflowStatus(w.id)));
 
-  const active = posts || [];
+  // Approved/rejected posts never move to a HISTORY status on their own, so without
+  // a cutoff they pile up in this view forever. Hide decided posts once they're
+  // old; anything still needing a human, or stuck mid-pipeline, stays visible
+  // regardless of age.
+  const active = (posts || []).filter((p) => !(['approved', 'vetoed'].includes(p.status) && p.scheduled_for < since));
   const counts = {
     review: active.filter((p) => p.status === 'needs_review').length,
     approved: active.filter((p) => p.status === 'approved').length,
