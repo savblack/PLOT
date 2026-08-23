@@ -508,6 +508,11 @@ button[disabled] { opacity: .4; cursor: default; pointer-events: none; }
 .guide-posters { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0; }
 .guide-posters img { width: 42px; height: 63px; object-fit: cover; background: var(--surface-sunken); border-radius: 6px; border: 1px solid var(--border); cursor: zoom-in; transition: transform .15s; }
 .guide-posters img:hover { transform: scale(1.08); }
+.guide-preview { display: flex; flex-direction: column; gap: 14px; margin-top: 8px; }
+.guide-p { margin: 0; font-size: .87rem; line-height: 1.5; color: var(--text-secondary); }
+.guide-pair { display: flex; gap: 12px; align-items: flex-start; }
+.guide-pair img, .guide-pair-noimg { width: 42px; height: 63px; object-fit: cover; flex-shrink: 0; background: var(--surface-sunken); border-radius: 6px; border: 1px solid var(--border); }
+.guide-pair img { cursor: zoom-in; }
 
 .post-body { flex: 1; min-width: 0; padding: 14px 16px 0; }
 .phead { display: flex; align-items: flex-start; gap: 10px; }
@@ -861,10 +866,31 @@ const postForm = (p: Row) => {
     : `<div class="post-media no-img">${typeIcon(p.post_type)}</div>`;
 
   // The same poster grid the live article renders at the end of the guide —
-  // preview it here so review reflects what actually publishes.
+  // preview it here so review reflects what actually publishes. Superseded
+  // below by the paired preview once a guide has inline_titles.
   const guidePosters = p.post_type === 'guide' && Array.isArray(p.tmdb_refs)
     ? p.tmdb_refs.filter((r: Row) => r.poster_path).map((r: Row) =>
         `<img class="lb" src="https://image.tmdb.org/t/p/w185${esc(r.poster_path)}" data-full="https://image.tmdb.org/t/p/w780${esc(r.poster_path)}" alt="${esc(r.title || '')}" title="${esc(r.title || '')}" loading="lazy">`).join('')
+    : '';
+
+  // True only when the copy contract's exact intro+per-title+close shape holds —
+  // same re-check as the live renderer, since a human can edit page_body here
+  // with no validation on save.
+  const refs = (p.tmdb_refs || []) as Row[];
+  const inlineTitles = p.post_type === 'guide' && c.inline_titles === true
+    && Array.isArray(c.page_body) && c.page_body.length === refs.length + 2;
+  const guidePreview = inlineTitles
+    ? `<details class="src"${p.status === 'needs_review' ? ' open' : ''}>
+        <summary><svg viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Preview (${refs.length} titles)</summary>
+        <div class="guide-preview">
+          <p class="guide-p">${esc(c.page_body[0])}</p>
+          ${refs.map((r, i) => `<div class="guide-pair">
+            ${r.poster_path ? `<img class="lb" src="https://image.tmdb.org/t/p/w185${esc(r.poster_path)}" data-full="https://image.tmdb.org/t/p/w780${esc(r.poster_path)}" alt="${esc(r.title || '')}" loading="lazy">` : '<span class="guide-pair-noimg"></span>'}
+            <p class="guide-p">${esc(c.page_body[i + 1])}</p>
+          </div>`).join('')}
+          <p class="guide-p">${esc(c.page_body[refs.length + 1])}</p>
+        </div>
+      </details>`
     : '';
 
   // Every remaining card image (beyond the one shown in post-top) is still
@@ -888,7 +914,7 @@ const postForm = (p: Row) => {
           ${badge(p.status)}
         </div>
         <div class="targets">${isVetoed ? '<span>Won’t publish</span>' : platformList.length ? `<svg viewBox="0 0 16 16" fill="none"><path d="M2 8h12M8 2v12" stroke="currentColor" stroke-width="1.4"/></svg>Publishes to ${plats}` : '<span>Web article only</span>'}${link ? ` <span class="spacer"></span><a href="${esc(link)}" target="_blank">${articleLinkLabel(p)}</a>` : ''}</div>
-        ${guidePosters ? `<div class="guide-posters">${guidePosters}</div>` : ''}
+        ${inlineTitles ? guidePreview : guidePosters ? `<div class="guide-posters">${guidePosters}</div>` : ''}
         ${preview && !showEdit ? `<div class="preview">${esc(preview)}</div>` : ''}
         ${showEdit ? `<details class="edit"${p.status === 'needs_review' ? ' open' : ''}>
           <summary><svg viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Edit copy</summary>

@@ -73,22 +73,29 @@ const post = (p) => {
   const tags = (c.hashtags || []).map((t) => '#' + t).join(' ');
   const pubs = (p.marketing_post_publications || []).filter((x) => x.status && x.status !== 'queued')
     .map((x) => `${PLAT[x.platform] || x.platform}: ${x.status}${x.permalink ? ` (<a href="${esc(x.permalink)}" target=_blank>link</a>)` : ''}`).join(' · ');
+  // Same re-check as admin-review/marketing-feed: only trust inline_titles
+  // once the paragraph count still actually matches tmdb_refs.
+  const refs = p.tmdb_refs || [];
+  const inlineTitles = p.post_type === 'guide' && c.inline_titles === true && Array.isArray(c.page_body) && c.page_body.length === refs.length + 2;
   // Guides never get branded cards (media is always []) — instead they get a
-  // plain hero still + the same poster grid the live article renders at the
-  // end, so review reflects what actually publishes.
+  // plain hero still, and either the paired body below (inline_titles) or the
+  // same end-of-article poster grid the live article renders otherwise.
   const guideImgs = p.post_type === 'guide'
     ? (c.hero_image ? `<a href="${esc(c.hero_image)}" target=_blank><img src="${esc(c.hero_image)}" loading=lazy></a>` : '')
-      + (p.tmdb_refs || []).filter((r) => r.poster_path).map((r) =>
-          `<a href="https://image.tmdb.org/t/p/w500${r.poster_path}" target=_blank><img src="https://image.tmdb.org/t/p/w185${r.poster_path}" loading=lazy title="${esc(r.title || '')}"></a>`).join('')
+      + (inlineTitles ? '' : refs.filter((r) => r.poster_path).map((r) =>
+          `<a href="https://image.tmdb.org/t/p/w500${r.poster_path}" target=_blank><img src="https://image.tmdb.org/t/p/w185${r.poster_path}" loading=lazy title="${esc(r.title || '')}"></a>`).join(''))
     : '';
   const cardImgs = (p.media || []).some((m) => m.portrait_path) ? (p.media || []).map(img).join('') : '';
   const imgs = (cardImgs || guideImgs) ? `<div class=imgs>${cardImgs}${guideImgs}</div>` : '';
+  const bodyHtml = inlineTitles
+    ? `<p>${esc(c.page_body[0])}</p>${refs.map((r, i) => `<div class=guide-pair>${r.poster_path ? `<img src="https://image.tmdb.org/t/p/w185${r.poster_path}" loading=lazy title="${esc(r.title || '')}">` : '<span class=guide-pair-noimg></span>'}<p>${esc(c.page_body[i + 1])}</p></div>`).join('')}<p>${esc(c.page_body[refs.length + 1])}</p>`
+    : esc(body);
   const sources = (c.sources?.length) ? `<div class=f><div class=l>Sources</div><div class="v src">${c.sources.map((s) => `<a href="${esc(s.url)}" target=_blank>${esc(s.title)}</a>`).join(' · ')}</div></div>` : '';
   return `<div class=post>
     <div class=ph><span class=kind>${esc(TL[p.post_type] || p.post_type)}</span><span class=meta>${esc(time(p.scheduled_for))}</span><span class=badge style="color:${b[1]};background:${b[2]}">${b[0]}</span></div>
     <div class=why>${esc(reason(p))} · → ${esc(platforms(p))}${c.cta_variant && c.cta_variant !== 'none' ? ` · CTA: ${esc(c.cta_variant)}` : ''}</div>
     ${imgs}
-    ${field('X', c.x)}${field('Instagram', c.instagram)}${tags ? field('Hashtags', tags) : ''}${field('Threads', c.threads)}${field('Article title', c.page_title)}${body ? `<div class=f><div class=l>Article body</div><div class="v art">${esc(body)}</div></div>` : ''}${sources}${pubs ? `<div class=f><div class=l>Publish status</div><div class=v>${pubs}</div></div>` : ''}
+    ${field('X', c.x)}${field('Instagram', c.instagram)}${tags ? field('Hashtags', tags) : ''}${field('Threads', c.threads)}${field('Article title', c.page_title)}${body ? `<div class=f><div class=l>Article body</div><div class="v art">${bodyHtml}</div></div>` : ''}${sources}${pubs ? `<div class=f><div class=l>Publish status</div><div class=v>${pubs}</div></div>` : ''}
   </div>`;
 };
 
@@ -126,6 +133,7 @@ h1{font-size:1.5rem;font-weight:400;margin:0 0 4px}h2{font-size:.85rem;text-tran
 .why{color:#76746c;font-size:.82rem;margin:0 0 12px}
 .badge{font-size:.7rem;font-weight:700;padding:3px 9px;border-radius:9999px}
 .imgs{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}.imgs img{height:170px;background:#f7f5f1;border-radius:8px;border:1px solid #e7e3dc;cursor:zoom-in}
+.guide-pair{display:flex;gap:10px;align-items:flex-start;margin:10px 0}.guide-pair img,.guide-pair-noimg{width:42px;height:63px;object-fit:cover;flex-shrink:0;background:#f7f5f1;border-radius:6px;border:1px solid #e7e3dc}.guide-pair p{margin:0}
 .f{margin:10px 0}.l{font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:#76746c;margin-bottom:3px}
 .v{font-size:.95rem;line-height:1.55;white-space:pre-wrap;background:#f7f5f1;border-radius:8px;padding:9px 11px}
 .art{background:#fff;border:1px solid #eee;font-size:.9rem}.src{background:#fff;border:1px solid #eee;font-size:.85rem;white-space:normal}
