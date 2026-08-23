@@ -22,21 +22,21 @@ const HORIZON_MONTHS = 6;
  */
 
 /**
- * Split raw TMDB upcoming results into "today" and day-by-day groups.
- * Pure and exported so the awkward rules below are unit-testable without a
- * renderer — the hook is only the fetching wrapper around it.
+ * Titles that are already out: a show first airing today, or a movie dated on
+ * or before today. Adds each id to `seen` so later passes skip it.
  *
- * @param {{ movies?: any[], tv?: any[], todayStr: string, horizonStr: string }} input
- * @returns {UpcomingData}
+ * Pure and exported so these rules are unit-testable without a renderer.
+ *
+ * @param {{ movies?: any[], tv?: any[], todayStr: string, seen?: Set<number> }} input
+ * @returns {any[]}
  */
-export function groupUpcoming({ movies = [], tv = [], todayStr, horizonStr }) {
+export function pickOutNow({ movies = [], tv = [], todayStr, seen = new Set() }) {
   const today = [];
-  const seenIds = new Set();
 
   for (const s of tv) {
     if (s.first_air_date === todayStr) {
       today.push({ ...s, media_type: 'tv', first_air_date: null });
-      seenIds.add(s.id);
+      seen.add(s.id);
     }
   }
   // A movie dated on or before today is already in cinemas. This handles AU
@@ -45,29 +45,58 @@ export function groupUpcoming({ movies = [], tv = [], todayStr, horizonStr }) {
   for (const m of movies) {
     if (m.release_date <= todayStr) {
       today.push({ ...m, media_type: 'movie', release_date: null });
-      seenIds.add(m.id);
+      seen.add(m.id);
     }
   }
 
+  return today;
+}
+
+/**
+ * Group everything after today, up to the horizon, by release date.
+ *
+ * `seen` is both read and written, so a caller that places some titles in
+ * another rail first (Home's "recently released") can pass its own set and
+ * keep those out of here. Split from pickOutNow for exactly that reason —
+ * Home dedupes in three phases, not two.
+ *
+ * @param {{ movies?: any[], tv?: any[], todayStr: string, horizonStr: string, seen?: Set<number> }} input
+ * @returns {{ upcomingGrouped: Record<string, any[]>, upcomingDates: string[] }}
+ */
+export function groupFuture({ movies = [], tv = [], todayStr, horizonStr, seen = new Set() }) {
   const upcomingGrouped = {};
+
   for (const movie of movies) {
-    if (seenIds.has(movie.id)) continue;
+    if (seen.has(movie.id)) continue;
     const d = movie.release_date;
     if (d && d > todayStr && d <= horizonStr) {
       (upcomingGrouped[d] ||= []).push({ ...movie, media_type: 'movie' });
-      seenIds.add(movie.id);
+      seen.add(movie.id);
     }
   }
   for (const show of tv) {
-    if (seenIds.has(show.id)) continue;
+    if (seen.has(show.id)) continue;
     const d = show.first_air_date;
     if (d && d > todayStr && d <= horizonStr) {
       (upcomingGrouped[d] ||= []).push({ ...show, media_type: 'tv', first_air_date: null });
-      seenIds.add(show.id);
+      seen.add(show.id);
     }
   }
 
-  return { today, upcomingGrouped, upcomingDates: Object.keys(upcomingGrouped).sort() };
+  return { upcomingGrouped, upcomingDates: Object.keys(upcomingGrouped).sort() };
+}
+
+/**
+ * The two halves composed, for callers with no third rail to interleave.
+ *
+ * @param {{ movies?: any[], tv?: any[], todayStr: string, horizonStr: string }} input
+ * @returns {UpcomingData}
+ */
+export function groupUpcoming({ movies = [], tv = [], todayStr, horizonStr }) {
+  const seen = new Set();
+  const today = pickOutNow({ movies, tv, todayStr, seen });
+  const { upcomingGrouped, upcomingDates } = groupFuture({ movies, tv, todayStr, horizonStr, seen });
+  return { today, upcomingGrouped, upcomingDates };
 }
 
 /**
