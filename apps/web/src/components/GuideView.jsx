@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useApp } from '../hooks/useApp.js';
 import { posterUrl, backdropUrl, logoUrl } from '../utils/images.js';
 import { favoriteWords } from '../utils/spelling.js';
-import { localDateStr, dateToLocalStr } from '../utils/date.js';
+import { useUpcoming } from '@plot/core/useUpcoming.js';
 import { useDragScroll } from '../hooks/useDragScroll.js';
 import { tmdb, getTmdbRegion, isEnglishOriginTitle, excludeKidsContent } from '@plot/core/tmdb.js';
 import { buildProviderLogoCacheKey, collectPendingProviderLogoRequests } from '../utils/providerLogos.js';
@@ -208,73 +208,13 @@ function DateGroup({ label, items, openPanel, providerLogos, watchlist, defaultO
 export function UpcomingContent({ typeFilters, genreFilters, providers, openPanel, watchlist, expandSignal }) {
   const { profile } = useApp();
   const hideKids = !(profile?.include_kids_content ?? true);
-  const [data,       setData]       = useState({ today: [], upcomingGrouped: {}, upcomingDates: [] });
-  const [loading,    setLoading]    = useState(true);
   const [loadedProviderLogos, setLoadedProviderLogos] = useState({});
 
+  // Loading + grouping live in @plot/core/useUpcoming.js so mobile can serve
+  // the same feed; filtering stays here because each app renders it.
   const providerIds = providers.map(p => p.id);
-  // "My Channels" (guide_channels) are free/ad-supported broadcast providers,
-  // not subscription streaming — TMDB's default 'flatrate' monetization
-  // filter would silently exclude them, so widen it here.
-  const monetizationTypes = 'free|ads';
+  const { data, loading } = useUpcoming({ providerIds });
 
-  useEffect(() => {
-    async function load() {
-      setLoading(true);
-      // Use local date string so UTC+ users (e.g. Australia) get the correct local "today"
-      const todayStr = localDateStr();
-
-      const [upcomingMovRes, upcomingTVRes] = await Promise.all([
-        tmdb.getUpcoming(providerIds, monetizationTypes),
-        tmdb.getUpcomingTV(providerIds, monetizationTypes),
-      ]);
-
-      const todayItems = [];
-      const seenIds = new Set();
-
-      for (const s of (upcomingTVRes?.results || [])) {
-        if (s.first_air_date === todayStr) {
-          todayItems.push({ ...s, media_type: 'tv', first_air_date: null });
-          seenIds.add(s.id);
-        }
-      }
-      // Movies with release_date <= todayStr are currently in cinemas (handles AU theatrical releases
-      // that TMDB stores with a US primary_release_date in the past but AU regional date = now)
-      for (const m of (upcomingMovRes?.results || [])) {
-        if (m.release_date <= todayStr) {
-          todayItems.push({ ...m, media_type: 'movie', release_date: null });
-          seenIds.add(m.id);
-        }
-      }
-
-      const upcomingGrouped = {};
-
-      const sixMonthsStr = (() => { const d = new Date(); d.setMonth(d.getMonth() + 6); return dateToLocalStr(d); })();
-      for (const movie of (upcomingMovRes?.results || [])) {
-        if (seenIds.has(movie.id)) continue;
-        const d = movie.release_date;
-        if (d && d > todayStr && d <= sixMonthsStr) {
-          if (!upcomingGrouped[d]) upcomingGrouped[d] = [];
-          upcomingGrouped[d].push({ ...movie, media_type: 'movie' });
-          seenIds.add(movie.id);
-        }
-      }
-      for (const show of (upcomingTVRes?.results || [])) {
-        if (seenIds.has(show.id)) continue;
-        const d = show.first_air_date;
-        if (d && d > todayStr && d <= sixMonthsStr) {
-          if (!upcomingGrouped[d]) upcomingGrouped[d] = [];
-          upcomingGrouped[d].push({ ...show, media_type: 'tv', first_air_date: null });
-          seenIds.add(show.id);
-        }
-      }
-      const upcomingDates = Object.keys(upcomingGrouped).sort();
-
-      setData({ today: todayItems, upcomingGrouped, upcomingDates });
-      setLoading(false);
-    }
-    load();
-  }, [providerIds.join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const items = flattenGuideItems(data);
