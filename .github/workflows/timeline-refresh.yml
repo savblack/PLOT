@@ -78,12 +78,12 @@ jobs:
           {
             echo 'Automated weekly refresh from `scripts/refresh-timeline.mjs`.'
             echo
-            echo '## Notes needed before merging'
+            echo '## Entries with no note'
             echo
             cat notes.md
             echo
             echo
-            echo 'The timeline notes are title-specific, so new entries land empty and get written here in review. A card with no note renders without one, so merging as-is is safe but loses the voice.'
+            echo 'This PR auto-merges once CI passes; it is not held for notes. A card with no note renders without one. Notes are title-specific, so if you want the voice back, add it to `apps/website/data/timeline.json` afterwards and the next refresh will keep it.'
             echo
             echo '## What the run did'
             echo
@@ -94,11 +94,21 @@ jobs:
             echo 'Check the Cloudflare Pages preview on this PR to see the timeline and the app-mockup hero before merging.'
           } > pr-body.md
 
-          # Assigned, not just opened: a bot PR that mentions nobody is silent
-          # unless the repo is watched on "All activity", and this PR is only
-          # useful if it is seen (a new entry needs its note written here).
-          gh pr create \
+          # Assigned so the run is visible in a filterable place, even though
+          # nothing blocks on a human: a bot PR that mentions nobody is silent
+          # unless the repo is watched on "All activity".
+          URL=$(gh pr create \
             --title "content(website): refresh timeline posters and trending hero" \
             --body-file pr-body.md \
-            --assignee "${{ github.repository_owner }}"
+            --assignee "${{ github.repository_owner }}")
+          echo "Opened $URL"
+
+          # Merge without waiting for a human. --auto queues the merge and lets
+          # GitHub run it the moment main's required checks go green, so a red
+          # refresh stays open instead of landing broken content. This needs
+          # both repo-level auto-merge and branch protection on main; without
+          # protection there are no required checks to wait on and the merge
+          # would fire immediately.
+          gh pr merge "$URL" --auto --squash --delete-branch
+          echo "Auto-merge armed; it lands when CI passes."
           rm -f notes.md pr-body.md
