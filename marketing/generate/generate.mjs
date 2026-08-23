@@ -12,7 +12,7 @@ import { renderCard, closeBrowser } from '../lib/render.mjs';
 import { uploadMedia } from '../lib/storage.mjs';
 import { sendEmail, ADMIN_EMAIL } from '../lib/email.mjs';
 import { POST_TYPES } from '../lib/post-types.mjs';
-import { feedHeroUrl } from '../lib/images.mjs';
+import { feedHeroUrl, guideHeroUrl } from '../lib/images.mjs';
 import { postSlug } from '../lib/feed.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -48,7 +48,7 @@ const generateConversation = async (supabase, post) => {
 // is never dispatched to social (publish.mjs only acts on posts with pubs).
 const generateGuide = async (supabase, post) => {
   if (!post.copy) throw new Error('Guide has no copy — the copy worker has not run for it yet');
-  const copy = { ...post.copy };
+  const copy = { ...post.copy, hero_image: guideHeroUrl(post.tmdb_refs) };
   const slug = postSlug(copy.page_title || 'guide', post.scheduled_for);
   const { error } = await supabase
     .from('marketing_posts')

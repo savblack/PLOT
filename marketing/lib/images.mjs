@@ -20,15 +20,22 @@ export const fetchImageDataUri = async (tmdbPath, size = POSTER_HERO) => {
   return `data:${type};base64,${buf.toString('base64')}`;
 };
 
+// Plain TMDB still, no PLOT branding — backdrop preferred, poster as a fallback.
+const stillUrl = (title) => {
+  if (!title?.backdrop_path && !title?.poster_path) return null;
+  if (title.backdrop_path) return `${IMG_BASE}/${BACKDROP}${title.backdrop_path}`;
+  return `${IMG_BASE}/${POSTER_HERO}${title.poster_path}`;
+};
+
 // Plain TMDB still for the What's On feed/article hero — no PLOT branding.
 // Trending charts return null so they keep their branded chart render; every
 // other post type leads with the title's backdrop (or poster as a fallback).
 // The branded card renders are still produced for the social channels.
 export const feedHeroUrl = (postType, payload) => {
   if (postType === 'trending') return null;
-  const title = payload?.title || payload?.titles?.[0];
-  if (!title) return null;
-  if (title.backdrop_path) return `${IMG_BASE}/${BACKDROP}${title.backdrop_path}`;
-  if (title.poster_path) return `${IMG_BASE}/${POSTER_HERO}${title.poster_path}`;
-  return null;
+  return stillUrl(payload?.title || payload?.titles?.[0]);
 };
+
+// Same still-image preference, for a guide's hero: its first tmdb_ref — the
+// anchor title for a "similar" guide, the top pick for a "best of" one.
+export const guideHeroUrl = (tmdbRefs) => stillUrl(tmdbRefs?.[0]);

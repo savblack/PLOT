@@ -505,6 +505,9 @@ button[disabled] { opacity: .4; cursor: default; pointer-events: none; }
 .post-media .type-icon svg { width: 13px; height: 13px; color: #fff; }
 .post-media.no-img { background: var(--surface-sunken); display: flex; align-items: center; justify-content: center; height: 100%; }
 .post-media.no-img svg { width: 26px; height: 26px; color: var(--text-muted); }
+.guide-posters { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0; }
+.guide-posters img { width: 42px; height: 63px; object-fit: cover; background: var(--surface-sunken); border-radius: 6px; border: 1px solid var(--border); cursor: zoom-in; transition: transform .15s; }
+.guide-posters img:hover { transform: scale(1.08); }
 
 .post-body { flex: 1; min-width: 0; padding: 14px 16px 0; }
 .phead { display: flex; align-items: flex-start; gap: 10px; }
@@ -841,12 +844,28 @@ const postForm = (p: Row) => {
   const plats = platformList.map((s) => `<span class="chip">${PLAT_LABEL[s] || s}</span>`).join('');
   const preview = c.x || c.instagram || c.threads || '';
 
+  // Guides never render branded cards (media is always []), but they do get a
+  // plain TMDB still as copy.hero_image once generated — show that instead of
+  // the generic type icon, same as every other post type's card image.
+  const heroUrl = p.post_type === 'guide' ? c.hero_image : null;
   const mediaHtml = firstMedia
     ? `<div class="post-media">
          <img class="lb" src="${esc(mediaUrl(firstMedia.portrait_path || firstMedia.landscape_path!))}" data-full="${esc(mediaUrl(firstMedia.portrait_path || firstMedia.landscape_path!))}" alt="${esc(c.alt_text || '')}" loading="lazy">
          <span class="type-icon">${typeIcon(p.post_type)}</span>
        </div>`
+    : heroUrl
+    ? `<div class="post-media">
+         <img class="lb" src="${esc(heroUrl)}" data-full="${esc(heroUrl)}" alt="${esc(c.page_title || '')}" loading="lazy">
+         <span class="type-icon">${typeIcon(p.post_type)}</span>
+       </div>`
     : `<div class="post-media no-img">${typeIcon(p.post_type)}</div>`;
+
+  // The same poster grid the live article renders at the end of the guide —
+  // preview it here so review reflects what actually publishes.
+  const guidePosters = p.post_type === 'guide' && Array.isArray(p.tmdb_refs)
+    ? p.tmdb_refs.filter((r: Row) => r.poster_path).map((r: Row) =>
+        `<img class="lb" src="https://image.tmdb.org/t/p/w185${esc(r.poster_path)}" data-full="https://image.tmdb.org/t/p/w780${esc(r.poster_path)}" alt="${esc(r.title || '')}" title="${esc(r.title || '')}" loading="lazy">`).join('')
+    : '';
 
   // Every remaining card image (beyond the one shown in post-top) is still
   // click-to-zoom via the same lightbox, just not shown inline in the header.
@@ -869,6 +888,7 @@ const postForm = (p: Row) => {
           ${badge(p.status)}
         </div>
         <div class="targets">${isVetoed ? '<span>Won’t publish</span>' : platformList.length ? `<svg viewBox="0 0 16 16" fill="none"><path d="M2 8h12M8 2v12" stroke="currentColor" stroke-width="1.4"/></svg>Publishes to ${plats}` : '<span>Web article only</span>'}${link ? ` <span class="spacer"></span><a href="${esc(link)}" target="_blank">${articleLinkLabel(p)}</a>` : ''}</div>
+        ${guidePosters ? `<div class="guide-posters">${guidePosters}</div>` : ''}
         ${preview && !showEdit ? `<div class="preview">${esc(preview)}</div>` : ''}
         ${showEdit ? `<details class="edit"${p.status === 'needs_review' ? ' open' : ''}>
           <summary><svg viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Edit copy</summary>
