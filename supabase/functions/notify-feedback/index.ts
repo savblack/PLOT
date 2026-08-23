@@ -14,9 +14,8 @@
  * feedback kept arriving in the table unread.
  *
  * PRIVACY: the issue body carries the reporter's own words and links to their
- * archived attachments, so the intake repo must be private. GH_FEEDBACK_REPO
- * exists so intake can be pointed somewhere else if the code repo is ever
- * opened up.
+ * archived attachments, so intake files into the private savblack/plot-feedback
+ * repo, NOT the public code repo. Anything else publishes user feedback.
  *
  * Backfill: POST {"backfill": true, "limit": 25} with the service-role bearer
  * to retry rows that have no GitHub issue and a recorded sync error, from
@@ -37,7 +36,8 @@
  *                         workflow dispatch.
  *
  * Optional secrets:
- *   GH_FEEDBACK_REPO    - owner/name, defaults to GH_REPO and then savblack/PLOT
+ *   GH_FEEDBACK_REPO    - owner/name, defaults to savblack/plot-feedback. Must
+ *                         be a private repo: see PRIVACY above.
  *   GH_FEEDBACK_LABELS  - comma-separated, replaces the derived labels entirely
  *                         (set it empty to file issues with no labels)
  *   RESEND_API_KEY      - unset disables the notification email entirely
@@ -58,9 +58,11 @@ const RESEND_API_URL = 'https://api.resend.com/emails'
 const TO_EMAIL = 'feedback@theplot.tv'
 const FROM_EMAIL = 'PLOT Feedback <feedback@theplot.tv>'
 const GITHUB_API_URL = 'https://api.github.com'
-// Same default and header set as admin-review, which is the other function that
-// talks to this API.
-const DEFAULT_GH_REPO = 'savblack/PLOT'
+// A private repo that exists only to hold intake. Deliberately NOT admin-review's
+// GH_REPO, which points at the public code repo: inheriting it would turn every
+// submission into a world-readable issue carrying the reporter's own words.
+const DEFAULT_FEEDBACK_REPO = 'savblack/plot-feedback'
+// Header set matches admin-review, the other function that talks to this API.
 const GH_USER_AGENT = 'plot-feedback-intake'
 const REPO_PATTERN = /^[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+$/
 const BASE_ISSUE_LABEL = 'feedback'
@@ -517,7 +519,7 @@ Deno.serve(async (req) => {
   }
 
   const ghToken = Deno.env.get('GH_FEEDBACK_TOKEN')
-  const ghRepo = Deno.env.get('GH_FEEDBACK_REPO') || Deno.env.get('GH_REPO') || DEFAULT_GH_REPO
+  const ghRepo = Deno.env.get('GH_FEEDBACK_REPO') || DEFAULT_FEEDBACK_REPO
   const resendKey = Deno.env.get('RESEND_API_KEY')
   const notConfiguredMessage = 'GitHub feedback mirroring is not configured.'
 
