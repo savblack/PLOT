@@ -192,6 +192,10 @@ export type Database = {
         Row: {
           attachments: string[] | null
           created_at: string
+          github_issue_number: number | null
+          github_issue_url: string | null
+          github_sync_error: string | null
+          github_synced_at: string | null
           id: string
           linear_issue_id: string | null
           linear_issue_url: string | null
@@ -205,6 +209,10 @@ export type Database = {
         Insert: {
           attachments?: string[] | null
           created_at?: string
+          github_issue_number?: number | null
+          github_issue_url?: string | null
+          github_sync_error?: string | null
+          github_synced_at?: string | null
           id?: string
           linear_issue_id?: string | null
           linear_issue_url?: string | null
@@ -218,6 +226,10 @@ export type Database = {
         Update: {
           attachments?: string[] | null
           created_at?: string
+          github_issue_number?: number | null
+          github_issue_url?: string | null
+          github_sync_error?: string | null
+          github_synced_at?: string | null
           id?: string
           linear_issue_id?: string | null
           linear_issue_url?: string | null
