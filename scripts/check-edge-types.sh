@@ -75,6 +75,25 @@ if ls supabase/functions/_shared/*.test.ts > /dev/null 2>&1; then
   echo ""
 fi
 
+# Lint, for the class of mistake a typecheck sails past. A typo'd import path is
+# a type error, but an unused binding, an empty catch or a `let` that is never
+# reassigned is not — and those are how a half-finished edit ships.
+#
+# Two rules are off, deliberately:
+#   no-import-prefix — npm:/jsr:/https: specifiers are how edge functions are
+#     written, not a mistake to correct.
+#   no-explicit-any  — pre-existing instances; excluded so the rest of the
+#     ruleset can be enforced now rather than after a cleanup.
+echo "Linting edge functions"
+if deno lint --rules-exclude=no-import-prefix,no-explicit-any supabase/functions > /tmp/edge-lint.out 2>&1; then
+  echo "  ✓ lint clean ($(grep -oE 'Checked [0-9]+ files' /tmp/edge-lint.out | tail -1))"
+else
+  echo "  ✗ lint failed" >&2
+  tail -25 /tmp/edge-lint.out >&2
+  failed=$((failed + 1))
+fi
+echo ""
+
 if [ "$failed" -eq 0 ]; then
   echo "✓ ${checked} edge function(s) typecheck clean"
   exit 0
