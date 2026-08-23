@@ -37,7 +37,7 @@ interface ReleaseItem {
 
 // ── date helpers (ported from the old releases screen) ───────────────
 
-function formatDayLabel(dateStr: string): string {
+export function formatDayLabel(dateStr: string): string {
   const d = new Date(dateStr + 'T00:00:00');
   if (dateStr === localDateStr())  return 'Today';
   if (dateStr === localDateStr(1)) return 'Tomorrow';
