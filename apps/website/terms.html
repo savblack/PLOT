@@ -10,11 +10,22 @@
         document.cookie = 'plot_dnt=1; domain=.theplot.tv; path=/; max-age=31536000';
       }
       window.PLOT_DNT = /(?:^|; )plot_dnt=1/.test(document.cookie);
+      // Two separate reasons not to send analytics, kept apart on purpose.
+      // PLOT_DNT is the visitor's own choice. PLOT_ANALYTICS_OFF adds the
+      // production-host allowlist: one GA property and one PostHog project
+      // serve every environment, so without this a `wrangler pages dev` on
+      // localhost or a *.pages.dev preview reports straight into the numbers
+      // you read. The ?dnt=1 cookie cannot cover that case — it is scoped to
+      // domain=.theplot.tv, which the browser rejects on those very hosts.
+      // Mirrors apps/web/src/utils/analyticsHost.js; keep the host lists in
+      // agreement.
+      window.PLOT_ANALYTICS_OFF = window.PLOT_DNT ||
+        ['theplot.tv','www.theplot.tv','app.theplot.tv'].indexOf(location.hostname) === -1;
     })();
   </script>
   <!-- Google tag (gtag.js) -->
   <script>
-    if (!window.PLOT_DNT) {
+    if (!window.PLOT_ANALYTICS_OFF) {
       window.dataLayer = window.dataLayer || [];
       window.gtag = function () { dataLayer.push(arguments); };
       var gtagScript = document.createElement('script');
@@ -27,7 +38,7 @@
   </script>
   <!-- Google Tag Manager -->
   <script>
-    if (!window.PLOT_DNT) {
+    if (!window.PLOT_ANALYTICS_OFF) {
       (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
       new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
       j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
