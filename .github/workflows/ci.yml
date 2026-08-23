@@ -5,6 +5,12 @@ on:
   push:
     branches:
       - main
+  # Lets a bot-opened PR get the repo's own checks. GitHub will not start a
+  # workflow from an event made with GITHUB_TOKEN, so a PR opened by
+  # timeline-refresh.yml never triggers `pull_request` — but workflow_dispatch
+  # is an explicit exception to that rule, so that job dispatches this workflow
+  # against its branch and the required contexts get reported on the PR head.
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -45,9 +51,14 @@ jobs:
           elif [ -n "${{ github.event.before }}" ] && [ "${{ github.event.before }}" != "0000000000000000000000000000000000000000" ]; then
             ./scripts/scan-secrets.sh "${{ github.event.before }}" "${{ github.sha }}"
           else
-            # First push of a new branch — nothing to diff against, scan the
-            # whole tree by diffing against git's canonical empty-tree hash.
-            ./scripts/scan-secrets.sh 4b825dc642cb6eb9a060e54bf8d69288fbee4904 "${{ github.sha }}"
+            # Manual or dispatched run on a branch. Diff against main: that is
+            # the only meaningful baseline, and it is what the eventual merge
+            # will introduce. Do NOT fall back to the empty-tree hash here —
+            # scanning every file trips on legitimate base64 (the embedded font
+            # in marketing/templates/base.css matches the AWS-key shape), so a
+            # whole-tree scan fails on a clean repo.
+            git fetch --no-tags --quiet origin main
+            ./scripts/scan-secrets.sh origin/main "${{ github.sha }}"
           fi
 
       - name: Set up Node
