@@ -272,12 +272,13 @@ function SectionHeader({ kicker, title }: { kicker: string; title: string }) {
 }
 
 // ── Collapsible platform section ──────────────────────────────────────
-function PlatformSection({ platform, saved, onSave, isFav, onFavorite }: {
+function PlatformSection({ platform, saved, onSave, isFav, onFavorite, onOpen }: {
   platform: PlatformData;
   saved: Set<number>;
   onSave: (item: MediaItem) => void;
   isFav: (id: number) => boolean;
   onFavorite: (item: MediaItem) => void;
+  onOpen: (item: MediaItem, type: 'movie' | 'tv') => void;
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -333,6 +334,7 @@ function PlatformSection({ platform, saved, onSave, isFav, onFavorite }: {
                   <PosterCardRanked
                     item={{ ...item, media_type: 'movie' }}
                     rank={item._rank ?? index + 1}
+                    onPress={() => onOpen(item, 'movie')}
                     saved={saved.has(item.id ?? 0)}
                     onSave={() => onSave({ ...item, media_type: 'movie' })}
                     isFav={isFav(item.id ?? 0)}
@@ -356,6 +358,7 @@ function PlatformSection({ platform, saved, onSave, isFav, onFavorite }: {
                   <PosterCardRanked
                     item={{ ...item, media_type: 'tv' }}
                     rank={item._rank ?? index + 1}
+                    onPress={() => onOpen(item, 'tv')}
                     saved={saved.has(item.id ?? 0)}
                     onSave={() => onSave({ ...item, media_type: 'tv' })}
                     isFav={isFav(item.id ?? 0)}
@@ -375,9 +378,10 @@ function PlatformSection({ platform, saved, onSave, isFav, onFavorite }: {
 }
 
 // ── Poster card with rank badge ───────────────────────────────────────
-function PosterCardRanked({ item, rank, saved, onSave, isFav, onFavorite }: {
+function PosterCardRanked({ item, rank, onPress, saved, onSave, isFav, onFavorite }: {
   item: MediaItem;
   rank: number;
+  onPress: () => void;
   saved: boolean;
   onSave: () => void;
   isFav: boolean;
@@ -391,7 +395,7 @@ function PosterCardRanked({ item, rank, saved, onSave, isFav, onFavorite }: {
   const img       = posterUrl(item.poster_path, 'w185');
 
   return (
-    <TouchableOpacity style={[styles.card, { width: CARD_W }]} activeOpacity={0.8}>
+    <TouchableOpacity style={[styles.card, { width: CARD_W }]} onPress={onPress} activeOpacity={0.8}>
       <View style={styles.cardImg}>
         {img
           ? <Image source={{ uri: img }} style={StyleSheet.absoluteFill} resizeMode="cover" />
@@ -761,6 +765,7 @@ export default function HomeScreen() {
                 onSave={handleSave}
                 isFav={(id) => favorites.isFavorite(id)}
                 onFavorite={toggleFav}
+                onOpen={(item, type) => item.id && openPanel(item.id, type)}
               />
             ))}
             <Text style={styles.platAttribution}>
