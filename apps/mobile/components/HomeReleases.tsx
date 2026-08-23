@@ -13,6 +13,7 @@ import { tmdb, getTmdbRegion } from '../lib/tmdb';
 import { supabase } from '../lib/supabase';
 import { buildProviderLogoCacheKey, collectPendingProviderLogoRequests } from '@plot/core/providerLogos.js';
 import { localDateStr } from '@plot/core/date.js';
+import { pickOutNow, groupFuture } from '@plot/core/useUpcoming.js';
 import { posterUrl, backdropUrl, logoUrl, Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -114,21 +115,15 @@ async function loadReleases(): Promise<ReleasesData> {
     tmdb.getRecentReleases(14, providerIds, monetizationTypes),
   ]);
 
-  const today: ReleaseItem[] = [];
+  // Shared with web via @plot/core — see groupFuture's note on why the two
+  // halves are separate: the recent rail below has to dedupe between them.
   const seenIds = new Set<number>();
-
-  for (const s of (upcomingTVRes?.results ?? [])) {
-    if (s.first_air_date === todayStr) {
-      today.push({ ...s, media_type: 'tv', first_air_date: null });
-      seenIds.add(s.id);
-    }
-  }
-  for (const m of (upcomingMovRes?.results ?? [])) {
-    if (m.release_date <= todayStr) {
-      today.push({ ...m, media_type: 'movie', release_date: null });
-      seenIds.add(m.id);
-    }
-  }
+  const today: ReleaseItem[] = pickOutNow({
+    movies: upcomingMovRes?.results ?? [],
+    tv: upcomingTVRes?.results ?? [],
+    todayStr,
+    seen: seenIds,
+  });
 
   // Recently released (last 14 days), newest day first
   const recentByDay: Record<string, ReleaseItem[]> = {};
@@ -151,27 +146,18 @@ async function loadReleases(): Promise<ReleasesData> {
     .flatMap(d => recentByDay[d]))
     .slice(0, 18);
 
-  // Coming soon (tomorrow → 6 months), soonest first, tagged with its day
-  const upcomingByDay: Record<string, ReleaseItem[]> = {};
-  for (const movie of (upcomingMovRes?.results ?? [])) {
-    if (seenIds.has(movie.id)) continue;
-    const d = movie.release_date;
-    if (d && d > todayStr && d <= sixMonthsStr) {
-      (upcomingByDay[d] ??= []).push({ ...movie, media_type: 'movie', _date: d });
-      seenIds.add(movie.id);
-    }
-  }
-  for (const show of (upcomingTVRes?.results ?? [])) {
-    if (seenIds.has(show.id)) continue;
-    const d = show.first_air_date;
-    if (d && d > todayStr && d <= sixMonthsStr) {
-      (upcomingByDay[d] ??= []).push({ ...show, media_type: 'tv', first_air_date: null, _date: d });
-      seenIds.add(show.id);
-    }
-  }
-  const comingSoon = imageLast(Object.keys(upcomingByDay)
-    .sort()
-    .flatMap(d => upcomingByDay[d]))
+  // Coming soon (tomorrow → 6 months), soonest first, tagged with its day.
+  // seenIds already carries today's AND the recent rail's ids, so nothing is
+  // listed twice — that ordering is pinned by homeReleasesParity.test.js.
+  const { upcomingGrouped, upcomingDates } = groupFuture({
+    movies: upcomingMovRes?.results ?? [],
+    tv: upcomingTVRes?.results ?? [],
+    todayStr,
+    horizonStr: sixMonthsStr,
+    seen: seenIds,
+  });
+  const comingSoon = imageLast(upcomingDates
+    .flatMap((d: string) => upcomingGrouped[d].map((i: ReleaseItem) => ({ ...i, _date: d }))))
     .slice(0, 24);
 
   return { today, comingSoon, recent };
