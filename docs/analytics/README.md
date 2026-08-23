@@ -64,6 +64,15 @@ Encoded here once so nobody rediscovers them.
   reported the same event. Undo now fires `episode_unwatched` /
   `season_unwatched`.
 - **`activated` is retired.** See above.
+- **Onboarding seed picks fire *before* `onboarding_completed`.** The seed step
+  calls `addToList()` in a loop and only then tracks completion
+  (`OnboardingFlow.jsx`), so those `watchlist_saved` events precede the
+  completion event. Any **ordered** funnel of
+  `onboarding_completed → committed action` therefore cannot see them: it
+  reported 4 people when 22 had in fact saved something. If the question is "did
+  they act after onboarding", use the **Self-directed committed action** action,
+  which excludes `source: 'onboarding'` outright. Do not fix it by reordering
+  steps.
 
 ## Bots
 
@@ -157,6 +166,7 @@ Objects created at the same time:
 | Dashboard | PLOT: the funnel | 2007437 |
 | Action | Committed action (Tier 2) | 333110 |
 | Action | Any in-app action (Tier 1) | 333111 |
+| Action | Self-directed committed action | 342069 |
 | Cohort | Real visitors | 494034 |
 | Cohort | Activated (committed action) | 494035 |
 | Cohort | Retained (returned and acted) | 494036 |
@@ -174,7 +184,7 @@ project-scoped.
 acquisition tiles are scoped to Real visitors.
 
 1. Acquisition: landing to signup
-2. Signup to first committed action
+2. Signup to using the product unprompted
 3. Retention on committed actions
 4. The three engagement tiers, weekly
 5. Friction: where sign-in and signup die
