@@ -90,7 +90,13 @@ const histLine = (p) => {
 };
 
 const sel = 'id,post_type,scheduled_for,status,slug,copy,media,payload,tmdb_refs,topic_key,marketing_post_publications(platform,status,permalink)';
-const rows = await api(`marketing_posts?status=in.(planned,needs_review,copy_ready,generated,approved,vetoed)&select=${sel}&order=scheduled_for`);
+const today = new Date().toISOString();
+// Approved/rejected posts never move to a HISTORY status on their own, so without
+// a cutoff they pile up here forever (mirrors admin-review/index.ts). Once a
+// decided post's slot has passed, hide it; anything still needing a human, or
+// stuck mid-pipeline, stays visible no matter how old.
+const rows = (await api(`marketing_posts?status=in.(planned,needs_review,copy_ready,generated,approved,vetoed)&select=${sel}&order=scheduled_for`))
+  .filter((p) => !(['approved', 'vetoed'].includes(p.status) && p.scheduled_for < today));
 const settings = await api('marketing_settings?select=publishing_paused&limit=1');
 const paused = !!settings?.[0]?.publishing_paused;
 const since = new Date(Date.now() - 14 * 86400000).toISOString();

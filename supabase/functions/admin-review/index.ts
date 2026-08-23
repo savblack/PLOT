@@ -1131,10 +1131,12 @@ Deno.serve(async (req) => {
   const workflowStatuses = await Promise.all(WORKFLOWS.map((w) => workflowStatus(w.id)));
 
   // Approved/rejected posts never move to a HISTORY status on their own, so without
-  // a cutoff they pile up in this view forever. Hide decided posts once they're
-  // old; anything still needing a human, or stuck mid-pipeline, stays visible
-  // regardless of age.
-  const active = (posts || []).filter((p) => !(['approved', 'vetoed'].includes(p.status) && p.scheduled_for < since));
+  // a cutoff they pile up in this view forever. Once a decided post's slot has
+  // actually passed, it's done — hide it. Anything still needing a human, or stuck
+  // mid-pipeline, stays visible no matter how old: a post nobody ever reviewed
+  // should never disappear just because its slot came and went.
+  const today = now();
+  const active = (posts || []).filter((p) => !(['approved', 'vetoed'].includes(p.status) && p.scheduled_for < today));
   const counts = {
     review: active.filter((p) => p.status === 'needs_review').length,
     approved: active.filter((p) => p.status === 'approved').length,
