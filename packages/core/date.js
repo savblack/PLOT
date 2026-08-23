@@ -57,3 +57,22 @@ export function dateToLocalStr(d) {
   if (parts) return `${parts.y}-${parts.m}-${parts.d}`;
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
+
+/**
+ * Short relative time for feed/notification timestamps: "just now", "5m ago",
+ * "3h ago", "2d ago", then an absolute date once it's a week old.
+ *
+ * @param {string} iso
+ * @param {number} [now] epoch ms, injectable so this is testable
+ * @returns {string}
+ */
+export function relativeTime(iso, now = Date.now()) {
+  const then = new Date(iso).getTime();
+  if (!Number.isFinite(then)) return '';
+  const s = Math.max(0, Math.floor((now - then) / 1000));
+  if (s < 60) return 'just now';
+  const m = Math.floor(s / 60); if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60); if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24); if (d < 7) return `${d}d ago`;
+  return new Date(iso).toLocaleDateString();
+}

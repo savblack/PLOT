@@ -3,25 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { useNotifications } from '../hooks/useNotifications.js';
 import { COMMON } from '../copy/common.js';
-
-function relativeTime(iso) {
-  const then = new Date(iso).getTime();
-  const s = Math.max(0, Math.floor((Date.now() - then) / 1000));
-  if (s < 60) return 'just now';
-  const m = Math.floor(s / 60); if (m < 60) return `${m}m ago`;
-  const h = Math.floor(m / 60); if (h < 24) return `${h}h ago`;
-  const d = Math.floor(h / 24); if (d < 7) return `${d}d ago`;
-  return new Date(iso).toLocaleDateString();
-}
-
-const COPY = {
-  follow_request:  'requested to follow you',
-  follow_accepted: 'accepted your follow request',
-  new_follower:    'started following you',
-  post_like:       'liked your post',
-  post_comment:    'commented on your post',
-  comment_like:    'liked your comment',
-};
+import { notificationPhrase, NOTIFICATIONS_EMPTY } from '@plot/core/copy/notifications.js';
+import { relativeTime } from '@plot/core/date.js';
 
 const avatarStyle = {
   width: 44, height: 44, borderRadius: '50%', flexShrink: 0, objectFit: 'cover',
@@ -51,7 +34,7 @@ export default function NotificationsView() {
         <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '3rem 1rem' }}>{COMMON.loading}</p>
       ) : list.length === 0 ? (
         <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '3rem 1rem', lineHeight: 1.6 }}>
-          No notifications yet.<br />Follows and requests will show up here.
+          {NOTIFICATIONS_EMPTY.title}<br />{NOTIFICATIONS_EMPTY.body}
         </p>
       ) : (
         list.map(n => (
@@ -73,7 +56,7 @@ export default function NotificationsView() {
               : <div style={avatarStyle}>{(n.actor_display_name || n.actor_username || '?').charAt(0).toUpperCase()}</div>}
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: '0.92rem', color: 'var(--text-primary)', lineHeight: 1.4 }}>
-                <strong>{n.actor_display_name || n.actor_username}</strong> {COPY[n.type] || 'interacted with you'}
+                <strong>{n.actor_display_name || n.actor_username}</strong> {notificationPhrase(n.type)}
                 {(n.type === 'post_like' || n.type === 'post_comment' || n.type === 'comment_like') && n.post_title &&
                   <span style={{ color: 'var(--text-muted)' }}> · {n.post_title}</span>}
                 {n.type === 'follow_request' && <span style={{ color: 'var(--accent)' }}> · review</span>}
