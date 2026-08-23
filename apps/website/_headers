@@ -18,5 +18,14 @@
 # init and token, the production-host allowlist, and the CTA tracking. Five
 # minutes keeps the CDN doing its job while leaving a token rotation or a
 # snippet kill switch able to land the same day.
+# ⚠️ Inert on theplot.tv. The zone has Browser Cache TTL = 14400, which
+# rewrites Cache-Control on everything Cloudflare caches and overrides what
+# the origin sends, so this rule only takes effect on plot-site.pages.dev.
+# HTML is unaffected because Cloudflare does not cache it by default, which
+# is why / still passes through at max-age=0. Lifting the override means
+# writing a full cache policy here first: 'Respect Existing Headers' drops
+# anything without a rule to max-age=0, and Pages' own default for fonts and
+# images is max-age=0 — so fonts (388K, stable-named, worth a year) would
+# regress. Not worth doing until repeat-visitor performance actually matters.
 /js/*
   Cache-Control: public, max-age=300, must-revalidate
