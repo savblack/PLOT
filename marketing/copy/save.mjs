@@ -9,12 +9,13 @@ import { getSupabase } from '../lib/supabase.mjs';
 import { validateCopy, validateConversation, validateGuide } from './schema.mjs';
 import { JOBS_DIR } from './paths.mjs';
 
-// post_id -> post_type, from the manifest pull.mjs wrote, so we validate each
-// answer against the right contract (conversation posts are text-only).
-const loadTypes = async () => {
+// post_id -> manifest entry (post_type, and for guides n_titles), from the
+// manifest pull.mjs wrote, so we validate each answer against the right
+// contract (conversation posts are text-only; guides need their title count).
+const loadManifest = async () => {
   try {
     const manifest = JSON.parse(await readFile(path.join(JOBS_DIR, 'manifest.json'), 'utf8'));
-    return new Map(manifest.map(m => [m.post_id, m.post_type]));
+    return new Map(manifest.map(m => [m.post_id, m]));
   } catch {
     return new Map();
   }
@@ -35,7 +36,7 @@ const main = async () => {
     return;
   }
 
-  const types = await loadTypes();
+  const manifest = await loadManifest();
   let saved = 0, rejected = 0;
   for (const file of entries) {
     const postId = file.replace(/\.copy\.json$/, '');
@@ -48,9 +49,10 @@ const main = async () => {
       continue;
     }
 
-    const postType = types.get(postId);
+    const entry = manifest.get(postId);
+    const postType = entry?.post_type;
     const validate = postType === 'question' ? validateConversation
-      : postType === 'guide' ? validateGuide
+      : postType === 'guide' ? (raw) => validateGuide(raw, entry?.n_titles)
       : validateCopy;
     const { valid, errors, copy } = validate(parsed);
     if (!valid) {

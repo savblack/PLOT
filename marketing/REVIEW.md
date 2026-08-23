@@ -93,7 +93,15 @@ URLs; Instagram 3–5 hashtags. Questions are generic and text-only (X + Threads
 tied to a title. You write the copy yourself (you are the copy worker too — do NOT call
 a paid API; see `marketing/copy/AGENT.md`).
 - **Edit copy**: read current `copy`, spread, merge changed fields, PATCH `marketing_posts`
-  (never drop other fields). `page_body` is an array of paragraphs.
+  (never drop other fields). `page_body` is an array of paragraphs. For a **guide** post
+  with `copy.inline_titles === true`, that array is a strict 1:1 shape the renderer
+  depends on — `page_body[0]` is the intro, `page_body[1..tmdb_refs.length]` is exactly
+  one paragraph per `tmdb_refs` entry in order (its image renders next to that
+  paragraph), and the last entry is the close. Editing text within a paragraph is fine;
+  splitting, merging, adding, or removing one breaks the alignment. The renderer
+  re-checks the length before trusting the flag, so a mismatch just falls back to the
+  old end-of-article poster grid rather than showing misaligned images — but the
+  per-title layout is lost for that post until regenerated.
 - **Regenerate**: rewrite the copy fresh per the contract and save (all fields).
 - **Reschedule**: PATCH `scheduled_for = "<YYYY-MM-DD>T12:00:00.000Z"` (noon UTC renders
   as that AEST day and is before the publish run).

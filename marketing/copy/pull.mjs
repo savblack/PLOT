@@ -54,6 +54,9 @@ const main = async () => {
     manifest.push({
       post_id: post.id,
       post_type: post.post_type,
+      // save.mjs needs this to validate a guide's page_body against the exact
+      // paragraph count (n_titles + 2) — the brief already numbers this same list.
+      ...(post.post_type === 'guide' ? { n_titles: (post.tmdb_refs || []).length } : {}),
       brief: `marketing/copy/jobs/${post.id}.brief.md`,
       output: `marketing/copy/jobs/${post.id}.copy.json`,
     });

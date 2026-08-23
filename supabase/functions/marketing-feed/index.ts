@@ -90,7 +90,7 @@ type TmdbRef = { media_type: string; tmdb_id: number; title: string; poster_path
 type WatchProvider = { provider_id: number; provider_name: string; logo_path?: string | null };
 type FeedPost = {
   slug: string;
-  copy: { page_title?: string; page_body?: string[]; hero_image?: string } | null;
+  copy: { page_title?: string; page_body?: string[]; hero_image?: string; inline_titles?: boolean } | null;
   media: { portrait_path?: string; landscape_path?: string }[] | null;
   post_type: string;
   scheduled_for: string;
@@ -1141,7 +1141,26 @@ Deno.serve(async (req) => {
   // The poster grid belongs to long-form, multi-title guides. Ordinary article
   // pages use their single, combined title/save/watch module below instead.
   const refs = Array.isArray(typed.tmdb_refs) ? typed.tmdb_refs : [];
-  const titlesSection = typed.post_type === 'guide' && refs.length
+  // The copy contract guarantees body[0] = intro, body[1..refs.length] = one
+  // paragraph per ref in order, body[refs.length+1] = close — but only trust
+  // that when the flag from validateGuide is set AND the length still matches,
+  // since admin-review lets a human freely edit page_body afterward (splitting
+  // or merging a paragraph would silently break the 1:1 alignment otherwise).
+  const inlineTitles = typed.post_type === 'guide' && typed.copy?.inline_titles === true && body.length === refs.length + 2;
+
+  const titleParagraph = (text: string, r: TmdbRef) => {
+    const poster = r.poster_path ? `https://image.tmdb.org/t/p/w185${esc(r.poster_path)}` : null;
+    return `<div style="display:flex;gap:16px;align-items:flex-start;margin:20px 0">
+        <a href="${esc(titleHref(r.media_type, r.tmdb_id, r.title))}" style="flex-shrink:0;width:84px">${poster ? `<img src="${poster}" alt="${esc(r.title)}" loading="lazy" style="width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:8px;border:1px solid var(--hair);display:block">` : '<span style="display:block;width:100%;aspect-ratio:2/3;border-radius:8px;background:var(--paper);border:1px solid var(--hair)"></span>'}</a>
+        <p style="margin:0;flex:1">${esc(text)}</p>
+      </div>`;
+  };
+  const postBodyHtml = inlineTitles
+    ? [`<p class="lede">${esc(body[0])}</p>`, ...refs.map((r, i) => titleParagraph(body[i + 1], r)), `<p>${esc(body[refs.length + 1])}</p>`].join('')
+    : body.map((p, i) => `<p${i === 0 ? ' class="lede"' : ''}>${esc(p)}</p>`).join('');
+
+  // Redundant once titles render inline next to their own paragraph above.
+  const titlesSection = typed.post_type === 'guide' && refs.length && !inlineTitles
     ? `<section style="margin:48px 0 0">
         <h2 style="font-family:var(--serif);font-size:1.7rem;font-weight:400;margin:0 0 18px">Titles in this guide</h2>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:18px">${refs.map((r) => {
@@ -1164,7 +1183,7 @@ Deno.serve(async (req) => {
       </header>
       ${hero ? `<figure class="hero"><img src="${esc(hero)}" alt=""></figure>` : ''}
       <div class="post-body">
-        ${body.map((p, i) => `<p${i === 0 ? ' class="lede"' : ''}>${esc(p)}</p>`).join('')}
+        ${postBodyHtml}
       </div>
       ${titlesSection}
       ${articleCta}
