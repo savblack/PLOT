@@ -22,6 +22,9 @@ import { SHOW_FOR_YOU_RAIL } from '../../lib/launchFeatures';
 import { DISCOVER_TABS } from '@plot/core/navigation.js';
 import { useNewReleases } from '@plot/core/useNewReleases.js';
 import { useForYou } from '@plot/core/useForYou.js';
+import { useGenres } from '@plot/core/useGenres.js';
+import { ALL_TYPES, filterByType, filterByGenre } from '@plot/core/mediaFilters.js';
+import GroupedFilterMenu from '../../components/GroupedFilterMenu';
 import { usePlatformCharts } from '@plot/core/usePlatformCharts.js';
 import GuideView from '../../components/GuideView';
 import { excludeKidsContent } from '@plot/core/tmdb.js';
@@ -68,6 +71,12 @@ interface MediaItem {
   first_air_date?: string;
   original_language?: string;
   origin_country?: string[];
+  /** Needed by the genre filter; keyword-sourced TV rails are tagged with the
+   *  equivalent movie genre id so they survive it (see GENRE_RAILS). */
+  genre_ids?: number[];
+  /** Client-side flag for "in cinemas, no digital offer yet" — the type
+   *  filter's `cinema` option keys off this, not off a TMDB media_type. */
+  _cinema?: boolean;
   /** True published chart position, present only on platform_charts rows. */
   _rank?: number;
 }
@@ -430,8 +439,10 @@ function PosterCardRanked({ item, rank, saved, onSave, isFav, onFavorite }: {
 // requests (Recently Released plus a movie and a TV call per genre rail),
 // so calling it from HomeScreen would spend that budget on every app open
 // and trip the proxy's rate limit for people who never open the tab.
-function NewReleasesContent({ hideKids, savedIds, onSave, isFav, onFavorite, openPanel }: {
+function NewReleasesContent({ hideKids, typeFilters, genreFilters, savedIds, onSave, isFav, onFavorite, openPanel }: {
   hideKids: boolean;
+  typeFilters: string[];
+  genreFilters: number[];
   savedIds: Set<number>;
   onSave: (item: MediaItem) => void;
   isFav: (id: number) => boolean;
@@ -444,9 +455,12 @@ function NewReleasesContent({ hideKids, savedIds, onSave, isFav, onFavorite, ope
 
   if (loading) return <PlotLoader backgroundColor={colors.bg} color={colors.textPrimary} />;
 
+  const applyFilters = (items: MediaItem[]) => filterByGenre(filterByType(items, typeFilters), genreFilters) ?? [];
+
   const rails: Array<{ key: string; kicker: string; title: string; items: MediaItem[] }> = [
-    ...(data.recent.length ? [{ key: 'recent', kicker: 'Last 30 days', title: 'Recently Released', items: data.recent }] : []),
+    ...(applyFilters(data.recent).length ? [{ key: 'recent', kicker: 'Last 30 days', title: 'Recently Released', items: applyFilters(data.recent) }] : []),
     ...data.genreRails
+      .map((rail: { key: string; label: string; items: MediaItem[] }) => ({ ...rail, items: applyFilters(rail.items) }))
       .filter((rail: { items: MediaItem[] }) => rail.items.length > 0)
       // GENRE_RAILS labels are already "New in Horror" — the kicker carries
       // the section name, so the title drops the prefix web repeats.
@@ -459,7 +473,11 @@ function NewReleasesContent({ hideKids, savedIds, onSave, isFav, onFavorite, ope
     return (
       <View style={styles.section}>
         <Text style={styles.emptyTitle}>Nothing new</Text>
-        <Text style={styles.emptyBody}>Nothing has landed in the last 30 days. Check back soon.</Text>
+        <Text style={styles.emptyBody}>
+          {typeFilters.length < ALL_TYPES.length || genreFilters.length
+            ? 'Nothing matches right now. Try widening your filters.'
+            : 'Nothing has landed in the last 30 days. Check back soon.'}
+        </Text>
       </View>
     );
   }
@@ -520,6 +538,13 @@ export default function HomeScreen() {
   // Lifted out of the bootstrap effect because the New Releases tab needs it
   // too, and core's hooks take it as an argument rather than reading context.
   const [hideKids,     setHideKids]     = useState(false);
+
+  // Discover/New Releases filters. Empty genre selection means "no filter";
+  // type defaults to everything selected. Both go through @plot/core's
+  // filterByType/filterByGenre so the semantics match web exactly.
+  const [typeFilters,  setTypeFilters]  = useState<string[]>(ALL_TYPES);
+  const [genreFilters, setGenreFilters] = useState<number[]>([]);
+  const { genres } = useGenres();
 
   /* Home reads the same watchlist every other surface does. It used to keep
      its own copy — its own list_items query, its own insert — so saving here
@@ -608,8 +633,11 @@ export default function HomeScreen() {
   const subTabs = DISCOVER_TABS.filter((t: { id: string }) => MOBILE_READY.has(t.id));
 
   const HEADER_H = insets.top + 100;
-  const hero     = trending[0];
-  const hotRail  = trending.slice(1, 10);
+  const applyFilters = (items: MediaItem[]) => filterByGenre(filterByType(items, typeFilters), genreFilters) ?? [];
+  // Web hides the hero whenever a genre filter is on rather than testing the
+  // single hero title against it — one card is not a rail.
+  const hero     = genreFilters.length === 0 ? trending[0] : undefined;
+  const hotRail  = applyFilters(trending.slice(1, 10));
 
   return (
     <View style={styles.screen}>
@@ -625,6 +653,8 @@ export default function HomeScreen() {
         >
           <NewReleasesContent
             hideKids={hideKids}
+            typeFilters={typeFilters}
+            genreFilters={genreFilters}
             savedIds={savedIds}
             onSave={handleSave}
             isFav={(id) => favorites.isFavorite(id)}
@@ -681,12 +711,12 @@ export default function HomeScreen() {
             <Text style={styles.emptyBody}>Couldn't load your recommendations right now.</Text>
           </View>
         )}
-        {forYou.length > 0 && (
+        {applyFilters(forYou).length > 0 && (
           <View style={styles.section}>
             <SectionHeader kicker="Picked for you" title="For You" />
             <FlatList
               horizontal
-              data={forYou}
+              data={applyFilters(forYou)}
               keyExtractor={item => `${item.media_type}-${item.id}`}
               renderItem={({ item }) => (
                 <PosterCard
@@ -709,10 +739,10 @@ export default function HomeScreen() {
         <HomeReleases rails={['today']} />
 
         {/* ── Top 20 This Week ── */}
-        {weekly.length > 0 && (
+        {applyFilters(weekly).length > 0 && (
           <View style={styles.section}>
             <SectionHeader kicker="Global ranking" title="Top 20 This Week" />
-            {weekly.map((item, i) => (
+            {applyFilters(weekly).map((item, i) => (
               <ChartRow
                 key={String(item.id)}
                 item={item}
@@ -726,12 +756,12 @@ export default function HomeScreen() {
         )}
 
         {/* ── Most Binged Shows ── */}
-        {bingedShows.length > 0 && (
+        {applyFilters(bingedShows).length > 0 && (
           <View style={styles.section}>
             <SectionHeader kicker="Popular TV" title="Most Binged Shows" />
             <FlatList
               horizontal
-              data={bingedShows}
+              data={applyFilters(bingedShows)}
               keyExtractor={item => String(item.id)}
               renderItem={({ item }) => (
                 <BingeCard item={item} onPress={() => item.id && openPanel(item.id, (item.media_type === 'tv' ? 'tv' : 'movie'))} />
@@ -817,16 +847,46 @@ export default function HomeScreen() {
             </Text>
           }
         />
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.subTabsRow}
-          style={styles.subTabsScroll}
-        >
-          {subTabs.map((t: { id: string; label: string }) => (
-            <SubTab key={t.id} label={t.label} active={tab === t.id} onPress={() => setTab(t.id)} />
-          ))}
-        </ScrollView>
+        <View style={styles.subTabsBar}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.subTabsRow}
+            style={styles.subTabsScroll}
+          >
+            {subTabs.map((t: { id: string; label: string }) => (
+              <SubTab key={t.id} label={t.label} active={tab === t.id} onPress={() => setTab(t.id)} />
+            ))}
+          </ScrollView>
+          {(tab === 'discover' || tab === 'new') && (
+            <View style={styles.subTabsFilter}>
+              <GroupedFilterMenu
+                accessibilityLabel={tab === 'new' ? 'Filter new releases' : 'Filter discover'}
+                groups={[
+                  {
+                    heading: MEDIA.typeHeading,
+                    options: [
+                      { id: 'tv',     label: MEDIA.tv     },
+                      { id: 'cinema', label: MEDIA.cinema },
+                      { id: 'movie',  label: MEDIA.movies },
+                    ],
+                    value: typeFilters,
+                    onChange: setTypeFilters,
+                    defaultValue: ALL_TYPES,
+                  },
+                  {
+                    heading: MEDIA.genreHeading,
+                    // The shared menu keys options by string; genre ids are
+                    // numbers everywhere else, so convert at the boundary.
+                    options: genres.map((g: { id: number; name: string }) => ({ id: String(g.id), label: g.name })),
+                    value: genreFilters.map(String),
+                    onChange: (next: string[]) => setGenreFilters(next.map(Number)),
+                  },
+                ]}
+              />
+            </View>
+          )}
+        </View>
       </BlurView>
 
     </View>
@@ -839,6 +899,8 @@ const HERO_H = SCREEN_W * 0.5;
 const makeStyles = (colors: Palette) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   subTabsScroll: { maxHeight: 44 },
+  subTabsBar: { flexDirection: 'row', alignItems: 'flex-end' },
+  subTabsFilter: { paddingRight: spacing.xl, paddingBottom: spacing.xs },
   subTabsRow: { paddingHorizontal: spacing.xl, gap: spacing.lg, alignItems: 'flex-end' },
   subTab: { alignItems: 'center', paddingBottom: spacing.xs },
   subTabText: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted },
