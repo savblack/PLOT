@@ -67,6 +67,31 @@ jobs:
           node-version: 22
           cache: npm
 
+      # Folded in from what used to be a standalone `edge-typecheck` job, for the
+      # same reason #563 folded the secret scan in: Actions bills every job
+      # rounded UP to a whole minute, and this one's real work is ~25s, so owning
+      # a job cost a full billed minute per run (~730 min/month). `check` totals
+      # ~60s, so it absorbs this and still lands inside one 2-minute bill.
+      #
+      # Deliberately placed BEFORE `npm ci`. check-edge-types.sh explains that
+      # Deno must not find a node_modules/ directory or it switches to node
+      # resolution and gives up on every npm: specifier — which silently skipped
+      # four functions until `--node-modules-dir=none` was added. The flag makes
+      # it robust either way, but running before the install keeps this step's
+      # environment identical to the standalone job it replaces.
+      - name: Set up Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      # Edge functions are hand-deployed: `npm run build` does not compile them
+      # and no test imports them, so this is the only gate on them. Unconditional
+      # on purpose — a paths gate would burn the minute it saves, and this way the
+      # functions are checked on 100% of PRs rather than only the ones that touch
+      # them.
+      - name: Typecheck edge functions
+        run: npm run edge:check
+
       - name: Install dependencies
         run: npm ci
 
@@ -169,32 +194,6 @@ jobs:
           # app, and every click would land in the production project. The host
           # allowlist in apps/web/src/utils/analyticsHost.js already blocks
           # 127.0.0.1, so this is belt and braces.
-
-  edge-typecheck:
-    name: Edge function typecheck (Deno)
-    runs-on: ubuntu-latest
-
-    # Edge functions are hand-deployed, so nothing else here would ever catch a
-    # type error in one: `npm run build` does not compile them and no test
-    # imports them. This is the only gate. It was worth adding because the errors
-    # it found were not cosmetic — several were nullable values headed for NOT
-    # NULL columns, which abort the whole statement at runtime (23502).
-    #
-    # Unconditional, for the reason #558 deleted the paths-filter gate: Actions
-    # bills every job rounded up to a whole minute, this one takes ~31s, so a gate
-    # to skip it would burn the minute it saves. Running always also means the
-    # functions are checked on 100% of PRs rather than the ones that touch them.
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v7
-
-      - name: Set up Deno
-        uses: denoland/setup-deno@v2
-        with:
-          deno-version: v2.x
-
-      - name: Typecheck edge functions
-        run: npm run edge:check
 
   mobile-typecheck:
     name: Mobile typecheck (Expo)
