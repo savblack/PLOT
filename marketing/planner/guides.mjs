@@ -37,7 +37,7 @@ const BEST_OF_COMBOS = [
   { genre: 'Comedy', platform: 'Hulu', media_type: 'tv' },
 ];
 
-const ref = (m) => ({ media_type: m.media_type, tmdb_id: m.id, title: m.title || m.name, poster_path: m.poster_path || null });
+const ref = (m) => ({ media_type: m.media_type, tmdb_id: m.id, title: m.title || m.name, poster_path: m.poster_path || null, backdrop_path: m.backdrop_path || null });
 
 // name -> id maps, fetched once per run.
 const cache = { genre: {}, provider: {} };
