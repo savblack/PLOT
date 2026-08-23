@@ -80,14 +80,19 @@ ${guidance}
 ${JSON.stringify(post.payload, null, 2)}
 \`\`\`
 
-## Titles to cover (in this order unless a better order is obvious)
+## Titles to cover, in this exact order — do not reorder, skip, add, or merge any
 ${titleList}
 
 ## How to write it
 - A finished editorial guide in PLOT's voice — never narrate your sources or research.
-- Intro paragraph that frames the list, then ONE short paragraph per title above
-  (name the title, make the case, name where it streams when you know it), then a
-  one-line close. ${refs.length ? `Aim for ~${Math.min(refs.length, 12) + 2} paragraphs.` : ''}
+- \`page_body\` MUST have exactly ${refs.length + 2} paragraphs, in this exact
+  shape: [1] an intro that frames the list, then [2..${refs.length + 1}] ONE
+  paragraph per title above, in the SAME order, one-to-one — never combine two
+  titles into one paragraph and never split one title across two — each naming
+  the title, making the case, and naming where it streams when you know it, then
+  [${refs.length + 2}] a one-line close. This exact count and order is required:
+  the site places each title's image next to its own paragraph using this
+  alignment, so a miscount or reorder breaks the page.
 - Do your own light web research for current reception/context, but only feature
   the titles listed above. Paraphrase always; never quote reviews or copy synopses.
 - No spoilers, no links (we add the title-page links), no hashtags, no dashes.

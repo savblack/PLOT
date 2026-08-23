@@ -48,7 +48,7 @@ export const POST_TYPE_BRIEFS = {
 // page_body (one short paragraph per pick) and a search-shaped page_title.
 export const GUIDE_FIELDS = [
   ['page_title', 'string', 'Article headline, search-shaped and plain (e.g. "The best sci-fi on Max right now" or "If you loved Severance, watch these next"). Sentence case, no clickbait, no dashes.'],
-  ['page_body', 'string[]', '6-16 short paragraphs: an intro that frames the list, then ONE short paragraph per title (name the title, say why it earns its spot, name where it streams when known), then a one-line close. PLOT\'s voice; paraphrase, never quote reviews or copy synopses; no spoilers, no links, no hashtags, no dashes.'],
+  ['page_body', 'string[]', 'EXACTLY one intro paragraph, then exactly ONE paragraph per title listed in the brief (same order, one-to-one — never combine two titles into one paragraph or split one title across two), then exactly one closing paragraph. Total length must equal the title count + 2. Each title paragraph names the title, says why it earns its spot, and names where it streams when known. PLOT\'s voice; paraphrase, never quote reviews or copy synopses; no spoilers, no links, no hashtags, no dashes.'],
   ['sources', 'array of {title, url}', 'Sources you actually consulted. Stored for review only, never shown. Use [] if none.'],
 ];
 
@@ -124,11 +124,17 @@ export const validateCopy = (raw) => {
 };
 
 // Guide posts are web-only long-form articles: no social copy, just a headline
-// and a multi-paragraph body (+ optional sources). page_body runs longer than a
-// normal entry (a listicle of 8-12 picks). Stored with empty social fields so
-// the render + visibility paths are unchanged; generate.mjs never queues a guide
-// to social.
-export const validateGuide = (raw) => {
+// and a multi-paragraph body (+ optional sources). Stored with empty social
+// fields so the render + visibility paths are unchanged; generate.mjs never
+// queues a guide to social.
+//
+// page_body's paragraph count must equal nTitles + 2 (intro + one per title +
+// close) — that exact 1:1 alignment with tmdb_refs is what lets the renderer
+// place each title's image next to its paragraph instead of only in an
+// end-of-article grid. nTitles comes from the manifest pull.mjs wrote (the
+// post's tmdb_refs.length at brief time); if it's ever unavailable, fall back
+// to the old loose 5-16 bound rather than rejecting everything.
+export const validateGuide = (raw, nTitles) => {
   const errors = [];
   const str = (v) => (typeof v === 'string' ? v.trim() : '');
   const page_title = str(raw?.page_title);
@@ -141,14 +147,26 @@ export const validateGuide = (raw) => {
     : [];
 
   if (!page_title) errors.push('page_title is empty');
-  if (page_body.length < 5) errors.push(`page_body needs at least 5 paragraphs (got ${page_body.length})`);
-  if (page_body.length > 16) errors.push(`page_body is too long (${page_body.length} paragraphs; max 16)`);
+  const expected = Number.isInteger(nTitles) && nTitles > 0 ? nTitles + 2 : null;
+  if (expected != null) {
+    if (page_body.length !== expected) {
+      errors.push(`page_body must have exactly ${expected} paragraphs — 1 intro + ${nTitles} titles + 1 close (got ${page_body.length})`);
+    }
+  } else {
+    if (page_body.length < 5) errors.push(`page_body needs at least 5 paragraphs (got ${page_body.length})`);
+    if (page_body.length > 16) errors.push(`page_body is too long (${page_body.length} paragraphs; max 16)`);
+  }
   if (page_body.some(p => hasUrl(p))) errors.push('page_body contains a URL (links are added at render from tmdb_refs)');
 
   return {
     valid: errors.length === 0,
     errors,
-    copy: { page_title, page_body, sources, cta_variant: 'none', x: '', instagram: '', threads: '', hashtags: [], alt_text: null },
+    copy: {
+      page_title, page_body, sources, cta_variant: 'none', x: '', instagram: '', threads: '', hashtags: [], alt_text: null,
+      // Only ever set when page_body's shape is verified 1:1 against tmdb_refs —
+      // the renderer trusts this flag instead of re-deriving it from length alone.
+      inline_titles: expected != null && page_body.length === expected,
+    },
   };
 };
 
