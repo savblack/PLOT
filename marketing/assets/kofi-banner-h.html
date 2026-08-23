@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  /* PLOT Ko-fi cover, 1200x300 — variant H: full-bleed crop. Instrument Serif
+     sets "PLOT" 1.675em wide and 0.735em tall at the cap, so at 460px the caps
+     measure 338px against a 300px frame: the letters run about 19px off the top
+     and bottom edges. A gentle, deliberate crop. Filling the full 1200px width
+     would take a 716px size, which crops so hard the letterforms stop reading
+     as PLOT at all.
+     Positioned absolutely rather than with flex centring, because a flex item
+     wider than its container gets clamped to the left instead of overflowing
+     evenly, which clipped the T on one side only. */
+  @font-face { font-family: 'Instrument Serif'; src: url('../../apps/web/public/fonts/InstrumentSerif-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 1200px; height: 300px; overflow: hidden; position: relative;
+    background: #FFFFFF; color: #0C0C0E;
+    font-family: 'Instrument Serif', Georgia, serif;
+  }
+  /* The wordmark spec: Instrument Serif 400 at -0.05em. CSS applies tracking
+     after the final T too, so with negative tracking the box lands 0.05em
+     narrower than the ink. A margin cannot fix that here: translateX(-50%)
+     centres the border box and ignores margins, so the correction is half the
+     trailing tracking (0.025em = 11.5px) taken off in the transform instead.
+     The 11px in the transform is the optical centring: in a line-height: 1
+     box the ink sits 0.023em above the box centre (caps 0.735em, baseline
+     0.84em), which is 11px at this size. */
+  .wordmark {
+    position: absolute; left: 50%; top: 50%;
+    transform: translate(-50%, -50%) translate(-11.5px, 11px);
+    font-weight: 400; font-size: 460px; line-height: 1;
+    letter-spacing: -0.05em;
+    white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+  <div class="wordmark">PLOT</div>
+</body>
+</html>

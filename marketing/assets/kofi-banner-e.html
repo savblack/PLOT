@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  /* PLOT Ko-fi cover, 1200x300 — variant E: wordmark with the brand line in
+     Instrument Serif italic beneath. Roman against italic is the contrast. */
+  @font-face { font-family: 'Instrument Serif'; src: url('../../apps/web/public/fonts/InstrumentSerif-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; }
+  @font-face { font-family: 'Instrument Serif'; src: url('../../apps/web/public/fonts/InstrumentSerif-Italic.ttf') format('truetype'); font-weight: 400; font-style: italic; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 1200px; height: 300px; overflow: hidden;
+    background: #FFFFFF; color: #0C0C0E;
+    font-family: 'Instrument Serif', Georgia, serif;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    /* Optical centring, measured not guessed: Instrument Serif caps are
+       0.735em with the baseline at 0.84em, and padding on a centred flex
+       container shifts content by only half its value. */
+    padding-bottom: 13px;
+  }
+  /* The wordmark spec: Instrument Serif 400 at -0.05em. CSS applies tracking
+     after the final T too, so with negative tracking the box lands 0.05em
+     narrower than the ink; the positive margin adds it back and the glyphs
+     sit optically centred. (Kickers track positive, so they compensate
+     negative.) */
+  .wordmark {
+    font-weight: 400; font-size: 124px; line-height: 1;
+    letter-spacing: -0.05em; margin-right: 0.05em;
+  }
+  .line {
+    margin-top: 14px;
+    font-style: italic; font-size: 34px; line-height: 1;
+    letter-spacing: -0.01em; color: rgba(12,12,14,0.62);
+  }
+</style>
+</head>
+<body>
+  <div class="wordmark">PLOT</div>
+  <div class="line">Every story needs a plot.</div>
+</body>
+</html>

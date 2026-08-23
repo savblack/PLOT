@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  /* PLOT Ko-fi cover, 1200x300 — variant A: the wordmark alone, ink on white.
+     Rendered by render-kofi-banner.mjs via page.goto(file://...), so the
+     relative font paths resolve (same files as apps/web/public/fonts). */
+  @font-face { font-family: 'DM Sans'; src: url('../../apps/web/public/fonts/DMSans-Variable.ttf') format('truetype-variations'); font-weight: 100 900; font-style: normal; }
+  @font-face { font-family: 'Instrument Serif'; src: url('../../apps/web/public/fonts/InstrumentSerif-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 1200px; height: 300px; overflow: hidden;
+    background: #FFFFFF; color: #0C0C0E;
+    font-family: 'DM Sans', system-ui, sans-serif;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    /* Optical centring, measured not guessed: Instrument Serif caps are
+       0.735em with the baseline at 0.84em, and padding on a centred flex
+       container shifts content by only half its value. */
+    padding-bottom: 9px;
+  }
+  /* The wordmark spec: Instrument Serif 400 at -0.05em. CSS applies tracking
+     after the final T too, so with negative tracking the box lands 0.05em
+     narrower than the ink; the positive margin adds it back and the glyphs
+     sit optically centred. (Kickers track positive, so they compensate
+     negative.) */
+  .wordmark {
+    font-family: 'Instrument Serif', Georgia, serif; font-weight: 400;
+    font-size: 132px; line-height: 1; letter-spacing: -0.05em;
+    margin-right: 0.05em;
+  }
+  .kicker {
+    margin-top: 26px;
+    font-size: 17px; font-weight: 500; letter-spacing: 0.30em;
+    text-transform: uppercase; color: rgba(12,12,14,0.45);
+    margin-right: -0.30em;
+  }
+</style>
+</head>
+<body>
+  <div class="wordmark">PLOT</div>
+  <div class="kicker">theplot.tv</div>
+</body>
+</html>
