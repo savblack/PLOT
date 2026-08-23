@@ -78,12 +78,30 @@ it. Never build an acquisition insight on a raw `$pageview` count.
 
 ## Dev and preview traffic
 
-Analytics runs only on `theplot.tv`, `www.theplot.tv` and `app.theplot.tv`. The
-allowlist lives in `apps/web/src/utils/analyticsHost.js` and is duplicated,
-deliberately, in four places that cannot import it: `apps/website/js/config.js`
-and the snippets injected by `supabase/functions/title-page`,
-`supabase/functions/marketing-feed` and `functions/list/[id].js`. Keep all five
-in agreement. Mobile has no hostname and gates on `__DEV__`.
+Analytics runs only on `theplot.tv`, `www.theplot.tv` and `app.theplot.tv`. This
+covers **both** PostHog and Google Analytics / GTM (`G-PYLHY9JMK1`,
+`GTM-PC72PHBN`), which had the same defect and were fixed separately.
+
+The allowlist lives in `apps/web/src/utils/analyticsHost.js` and is duplicated,
+deliberately, in places that cannot import it: `apps/website/js/config.js`, the
+`PLOT_ANALYTICS_OFF` bootstrap in the six `apps/website/*.html` pages, and the
+snippets injected by `supabase/functions/title-page`,
+`supabase/functions/marketing-feed` and `functions/list/[id].js`. Keep them in
+agreement. Mobile has no hostname and gates on `__DEV__`.
+
+Two flags on the marketing site, kept apart on purpose:
+
+- `window.PLOT_DNT` — the visitor opted out via `?dnt=1`. A privacy choice.
+- `window.PLOT_ANALYTICS_OFF` — `PLOT_DNT` **or** a non-production host. This is
+  what the GA and GTM guards read.
+
+Don't collapse them into one boolean. The `?dnt=1` cookie is scoped to
+`domain=.theplot.tv`, which the browser rejects on localhost and `*.pages.dev`,
+so it can never express the host case anyway.
+
+When adding a script tag for any analytics vendor, inject it from JavaScript
+inside the guard. A bare `<script src>` loads regardless of an enclosing `if` —
+that was the actual bug in the two server-rendered surfaces.
 
 To report from a dev server on purpose, set `VITE_PUBLIC_POSTHOG_FORCE=1` (or
 `EXPO_PUBLIC_POSTHOG_FORCE=1`). Never set either in CI or the Cloudflare build
@@ -114,6 +132,41 @@ its own `src` identity. Page identity belongs in `src`, never in `utm_source`.
 `$initial_utm_source` is empty for every person. The vanity links (`/ig`, `/x`,
 `/th`) cover the bio link; per-post social links are still untagged, and mobile
 has no acquisition attribution of any kind.
+
+## PostHog settings that are not in this repo
+
+These were changed through the API on 2026-08-18 and exist only in the PostHog
+project. Nothing in version control reflects them, so the previous values are
+recorded here to keep the change reversible.
+
+| Setting | Was | Now | Why |
+|---|---|---|---|
+| `autocapture_web_vitals_opt_in` | `true` | `false` | 2,054 events/30d across 1,076 people, almost entirely bots. Answers no question being asked. |
+| `recording_domains` | `null` (all) | `["https://app.theplot.tv"]` | Stops recording bot sessions on the marketing site. |
+| `session_recording_minimum_duration_milliseconds` | `null` | `5000` | Drops drive-by sessions never worth watching. |
+| `test_account_filters` | 3 email rules + cohort 362972 | those, plus `$host` not containing `localhost` / `127.0.0.1` / `pages.dev` / `preview.theplot.tv`, plus `$internal_or_test_user` is not true | Retroactive: the toggle is default-checked, so existing insights clean up without a deploy. |
+
+Unchanged and worth knowing: `session_recording_opt_in: true`,
+`autocapture_opt_out: false`, `heatmaps_opt_in: true`,
+`test_account_filters_default_checked: true`.
+
+Objects created at the same time:
+
+| Kind | Name | ID |
+|---|---|---|
+| Dashboard | PLOT: the funnel | 2007437 |
+| Action | Committed action (Tier 2) | 333110 |
+| Action | Any in-app action (Tier 1) | 333111 |
+| Cohort | Real visitors | 494034 |
+| Cohort | Activated (committed action) | 494035 |
+| Cohort | Retained (returned and acted) | 494036 |
+| Cohort | Internal / Test users (pre-existing) | 362972 |
+
+`POSTHOG_PERSONAL_API_KEY` in the root `.env` is scoped to project 471234 and
+can read and write all of the above via `https://us.posthog.com/api/projects/471234/`.
+Note the API host is `us.posthog.com`, not the `us.i.posthog.com` ingest host,
+and org-level endpoints such as `/api/projects/` return 403 because the key is
+project-scoped.
 
 ## The dashboard
 
