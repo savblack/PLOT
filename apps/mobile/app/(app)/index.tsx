@@ -5,7 +5,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import PlotLoader from '@plot/ui/PlotLoader';
 import ErrorState from '../../components/ErrorState';
-import HomeReleases from '../../components/HomeReleases';
+import HomeReleases, { formatDayLabel } from '../../components/HomeReleases';
 import ScreenHeaderBar from '../../components/ScreenHeaderBar';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 import { useMediaPanel } from '../../contexts/MediaPanelContext';
@@ -23,6 +23,7 @@ import { DISCOVER_TABS } from '@plot/core/navigation.js';
 import { useNewReleases } from '@plot/core/useNewReleases.js';
 import { useForYou } from '@plot/core/useForYou.js';
 import { useGenres } from '@plot/core/useGenres.js';
+import { useUpcoming } from '@plot/core/useUpcoming.js';
 import { ALL_TYPES, filterByType, filterByGenre } from '@plot/core/mediaFilters.js';
 import GroupedFilterMenu from '../../components/GroupedFilterMenu';
 import { usePlatformCharts } from '@plot/core/usePlatformCharts.js';
@@ -67,8 +68,11 @@ interface MediaItem {
   poster_path?: string | null;
   backdrop_path?: string | null;
   media_type?: string;
-  release_date?: string;
-  first_air_date?: string;
+  // Nullable because the Upcoming feed deliberately clears the date on a
+  // title that is already out, so the card reads "out now" instead of
+  // repeating today under a "Today" heading.
+  release_date?: string | null;
+  first_air_date?: string | null;
   original_language?: string;
   origin_country?: string[];
   /** Needed by the genre filter; keyword-sourced TV rails are tagged with the
@@ -515,6 +519,84 @@ function NewReleasesContent({ hideKids, typeFilters, genreFilters, savedIds, onS
   );
 }
 
+// ── Upcoming tab content ──────────────────────────────────────────────
+// Reads the same feed web's Upcoming tab does, via @plot/core/useUpcoming.
+// Mounted only while the tab is active so the two TMDB calls aren't spent on
+// every app open.
+function UpcomingContent({ providerIds, typeFilters, genreFilters, savedIds, onSave, isFav, onFavorite, openPanel }: {
+  providerIds: number[];
+  typeFilters: string[];
+  genreFilters: number[];
+  savedIds: Set<number>;
+  onSave: (item: MediaItem) => void;
+  isFav: (id: number) => boolean;
+  onFavorite: (item: MediaItem) => void;
+  openPanel: (id: number, type: 'movie' | 'tv') => void;
+}) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { data, loading } = useUpcoming({ providerIds });
+
+  if (loading) return <PlotLoader backgroundColor={colors.bg} color={colors.textPrimary} />;
+
+  const applyFilters = (items: MediaItem[]) => filterByGenre(filterByType(items, typeFilters), genreFilters) ?? [];
+
+  const today = applyFilters(data.today);
+  const groups = data.upcomingDates
+    .map((date: string) => ({ date, items: applyFilters(data.upcomingGrouped[date]) }))
+    .filter((g: { items: MediaItem[] }) => g.items.length > 0);
+
+  if (!today.length && !groups.length) {
+    const filtered = typeFilters.length < ALL_TYPES.length || genreFilters.length > 0;
+    return (
+      <View style={styles.section}>
+        <Text style={styles.emptyTitle}>{filtered ? 'Nothing matching this filter' : 'Unavailable right now'}</Text>
+        <Text style={styles.emptyBody}>
+          {filtered ? 'Try selecting a different type.' : 'New releases will appear here. Check back soon.'}
+        </Text>
+      </View>
+    );
+  }
+
+  const rail = (items: MediaItem[]) => (
+    <FlatList
+      horizontal
+      data={items}
+      keyExtractor={item => `${item.media_type}-${item.id}`}
+      renderItem={({ item }) => (
+        <PosterCard
+          item={item}
+          onPress={() => item.id && openPanel(item.id, (item.media_type === 'tv' ? 'tv' : 'movie'))}
+          saved={savedIds.has(item.id ?? 0)}
+          onSave={() => onSave(item)}
+          isFav={isFav(item.id ?? 0)}
+          onFavorite={() => onFavorite(item)}
+        />
+      )}
+      showsHorizontalScrollIndicator={false}
+      nestedScrollEnabled
+      contentContainerStyle={{ paddingHorizontal: spacing.xl, gap: spacing.md }}
+    />
+  );
+
+  return (
+    <>
+      {today.length > 0 && (
+        <View style={styles.section}>
+          <SectionHeader kicker="Out now" title={MEDIA.today} />
+          {rail(today)}
+        </View>
+      )}
+      {groups.map((g: { date: string; items: MediaItem[] }) => (
+        <View key={g.date} style={styles.section}>
+          <SectionHeader kicker="Coming up" title={formatDayLabel(g.date)} />
+          {rail(g.items)}
+        </View>
+      ))}
+    </>
+  );
+}
+
 // ── Main screen ───────────────────────────────────────────────────────
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
@@ -542,6 +624,10 @@ export default function HomeScreen() {
   // Lifted out of the bootstrap effect because the New Releases tab needs it
   // too, and core's hooks take it as an argument rather than reading context.
   const [hideKids,     setHideKids]     = useState(false);
+  // profile.guide_channels — free/ad-supported broadcast providers, the same
+  // input web's Upcoming tab uses. Entries are { id, name, logo_path } where
+  // id is the TMDB provider_id.
+  const [channelIds,   setChannelIds]   = useState<number[]>([]);
 
   // Discover/New Releases filters. Empty genre selection means "no filter";
   // type defaults to everything selected. Both go through @plot/core's
@@ -573,7 +659,7 @@ export default function HomeScreen() {
     const init = async () => {
       setError(false);
       setLoading(true);
-      let profile: { region?: string; streaming_providers?: StreamingProvider[]; include_kids_content?: boolean } | null;
+      let profile: { region?: string; streaming_providers?: StreamingProvider[]; include_kids_content?: boolean; guide_channels?: Array<{ id: number }> } | null;
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session?.user || cancelled) return;
@@ -581,13 +667,14 @@ export default function HomeScreen() {
 
         const { data: profileData } = await supabase
           .from('profiles')
-          .select('region, streaming_providers, include_kids_content')
+          .select('region, streaming_providers, include_kids_content, guide_channels')
           .eq('id', uid)
           .maybeSingle();
         profile = profileData;
         if (profile?.region) setTmdbRegion(profile.region);
         const hideKids = !(profile?.include_kids_content ?? true);
         setHideKids(hideKids);
+        setChannelIds((profile?.guide_channels ?? []).map((c: { id: number }) => c.id).filter(Boolean));
 
         // The watchlist is no longer fetched here — useWatchlist (via
         // useAppData) owns loading it, for every surface at once.
@@ -649,6 +736,23 @@ export default function HomeScreen() {
         <View style={{ flex: 1, paddingTop: HEADER_H }}>
           <GuideView />
         </View>
+      ) : tab === 'releases' ? (
+        <ScrollView
+          style={styles.screen}
+          contentContainerStyle={{ paddingTop: HEADER_H + 20, paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }}
+          showsVerticalScrollIndicator={false}
+        >
+          <UpcomingContent
+            providerIds={channelIds}
+            typeFilters={typeFilters}
+            genreFilters={genreFilters}
+            savedIds={savedIds}
+            onSave={handleSave}
+            isFav={(id) => favorites.isFavorite(id)}
+            onFavorite={toggleFav}
+            openPanel={openPanel}
+          />
+        </ScrollView>
       ) : tab === 'new' ? (
         <ScrollView
           style={styles.screen}
@@ -863,10 +967,10 @@ export default function HomeScreen() {
               <SubTab key={t.id} label={t.label} active={tab === t.id} onPress={() => setTab(t.id)} />
             ))}
           </ScrollView>
-          {(tab === 'discover' || tab === 'new') && (
+          {(tab === 'discover' || tab === 'new' || tab === 'releases') && (
             <View style={styles.subTabsFilter}>
               <GroupedFilterMenu
-                accessibilityLabel={tab === 'new' ? 'Filter new releases' : 'Filter discover'}
+                accessibilityLabel={tab === 'releases' ? 'Filter upcoming' : tab === 'new' ? 'Filter new releases' : 'Filter discover'}
                 groups={[
                   {
                     heading: MEDIA.typeHeading,
