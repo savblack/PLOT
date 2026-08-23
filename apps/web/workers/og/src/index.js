@@ -32,8 +32,9 @@ let TMDB_KEY = '';
 let FONT_BASE = '';
 
 const SUPABASE_URL = 'https://mkegtssedjyqldysvzga.supabase.co';
-// Public, publishable anon key (role: anon) — same key the client ships.
-const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1rZWd0c3NlZGp5cWxkeXN2emdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2MDgzMzUsImV4cCI6MjA4OTE4NDMzNX0.W-toEr3ftNeN0iTpRQ8Ord09sxBiwO2CQC6j2jszN6w';
+// Publishable key — the same one the client ships. Replaces the legacy anon
+// JWT, which stops working when legacy API keys are disabled.
+const ANON_KEY = 'sb_publishable_sbB7Jrs3Uz97Xm3qiuQgOQ_7dg6kKWk';
 
 // Brand dark accent — mirrors @plot/core tokens.colors.dark.accent. Inlined so
 // the Worker bundle stays self-contained (no workspace resolution at deploy).

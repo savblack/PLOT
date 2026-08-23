@@ -14,8 +14,9 @@ import { ogBase } from '../_lib/og-base.js';
 import { rateLimited, rateLimitResponse } from '../_lib/rateLimit.js';
 
 const SUPABASE_URL = 'https://mkegtssedjyqldysvzga.supabase.co';
-// Public, publishable anon key (role: anon) — same key the client ships.
-const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1rZWd0c3NlZGp5cWxkeXN2emdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2MDgzMzUsImV4cCI6MjA4OTE4NDMzNX0.W-toEr3ftNeN0iTpRQ8Ord09sxBiwO2CQC6j2jszN6w';
+// Publishable key — the same one the client ships. Replaces the legacy anon
+// JWT, which stops working when legacy API keys are disabled.
+const ANON_KEY = 'sb_publishable_sbB7Jrs3Uz97Xm3qiuQgOQ_7dg6kKWk';
 
 const SITE = 'https://theplot.tv';
 const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
