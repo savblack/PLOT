@@ -717,10 +717,8 @@ export default function HomeScreen() {
   if (error) return <ErrorState onRetry={() => setRetryKey(k => k + 1)} />;
 
   // Sub-tabs nested under Home, ids and order from the shared nav list.
-  // Upcoming is still absent: web builds it from guide_channels inside
-  // GuideView rather than from one of the hoisted hooks, so it needs its own
-  // extraction first, and an empty tab is worse than an absent one.
-  const MOBILE_READY = new Set(['discover', 'new', 'guide']);
+  // 'feed' stays out: the engagement layer was deleted in #532.
+  const MOBILE_READY = new Set(['discover', 'new', 'releases', 'guide']);
   const subTabs = DISCOVER_TABS.filter((t: { id: string }) => MOBILE_READY.has(t.id));
 
   const HEADER_H = insets.top + 100;
