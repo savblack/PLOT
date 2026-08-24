@@ -1,15 +1,6 @@
 {
   "entries": [
     {
-      "slug": "the-bear",
-      "tmdb_id": 136315,
-      "media_type": "tv",
-      "poster_path": "/eKfVzzEazSIjJMrw9ADa2x8ksLz.jpg",
-      "title": "The Bear",
-      "date_label": "Nov 2023",
-      "note": "\"Stressful. Perfect. Both.\""
-    },
-    {
       "slug": "saltburn",
       "tmdb_id": 930564,
       "media_type": "movie",
@@ -130,8 +121,17 @@
       "slug": "spider-man-brand-new-day",
       "tmdb_id": 969681,
       "media_type": "movie",
-      "poster_path": "/iPOn6DinuVyLY17YM9mKuPofV08.jpg",
+      "poster_path": "/ghF1JYv7P5BgWHYfq9dqhqqNfz8.jpg",
       "title": "Spider-Man: Brand New Day",
+      "date_label": "Jul 2026",
+      "note": ""
+    },
+    {
+      "slug": "evil-dead-burn",
+      "tmdb_id": 1212763,
+      "media_type": "movie",
+      "poster_path": "/uRxrNXQWkHoENm3nwVOZDYSCx2F.jpg",
+      "title": "Evil Dead Burn",
       "date_label": "Jul 2026",
       "note": ""
     }
