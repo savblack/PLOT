@@ -842,7 +842,10 @@ svg { stroke-width: 1.5; }
 .card-fav-btn:hover { transform: scale(1.1); }
 .media-card:hover .card-fav-btn,
 .media-card:focus-within .card-fav-btn { opacity: 1; }
-.card-fav-btn.faved { color: var(--accent); }
+/* Same rule as .card-save-btn.saved above: an active favourite shows itself
+   without needing hover. Its absence here meant hearting a poster card left no
+   visible trace until you pointed at it again. */
+.card-fav-btn.faved { color: var(--accent); opacity: 1; }
 .card-fav-btn.faved svg { fill: var(--accent); stroke: var(--accent); }
 
 /* Poster-card quick share — desktop hover only (mobile uses the panel's Share) */
@@ -4480,15 +4483,14 @@ a.provider-chip--link:hover {
   box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--accent) 32%, transparent);
 }
 
+/* The reveal is per button, not per container. Fading the whole tray in
+   whenever either state was active meant favouriting a title also dragged the
+   empty watchlist bookmark on screen beside it, so the card advertised an
+   action you hadn't taken. `.visible` now means only "the card is hovered". */
 .discover-hero-corner-btns {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.18s;
-}
-.discover-hero-corner-btns.visible {
-  opacity: 1;
 }
 
 /* Favourite and watchlist over artwork: the glyph carries itself on a drop
@@ -4513,7 +4515,13 @@ a.provider-chip--link:hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.15s;
+  opacity: 0;
+  transition: opacity 0.18s, transform 0.15s;
+}
+/* An active state stands on its own; the inactive twin waits for hover. */
+.discover-hero-corner-btn.active,
+.discover-hero-corner-btns.visible .discover-hero-corner-btn {
+  opacity: 1;
 }
 .discover-hero-corner-btn svg {
   filter: drop-shadow(0 1px 3px rgba(0,0,0,0.65));
@@ -5037,6 +5045,7 @@ a.provider-chip--link:hover {
      hover, permanently. Pairs with hiding the elements they'd otherwise
      sit on top of (the status chip below). */
   .discover-hero-corner-btns,
+  .discover-hero-corner-btn,
   .discover-chart-row .discover-chart-right.search-row-actions,
   .search-result-row .search-row-actions {
     opacity: 1;
@@ -5160,6 +5169,7 @@ a.provider-chip--link:hover {
   }
 
   .discover-hero-corner-btns,
+  .discover-hero-corner-btn,
   .discover-chart-row .discover-chart-right.search-row-actions,
   .search-result-row .search-row-actions {
     opacity: 1;
