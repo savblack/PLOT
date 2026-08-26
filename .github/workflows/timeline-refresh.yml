@@ -5,30 +5,44 @@ name: Timeline refresh — weekly PR
 # note, and the notes are title-specific jokes a human writes in review.
 #
 # GitHub will not start a workflow from an event made with GITHUB_TOKEN, so the
-# PR this opens does not trigger ci.yml on its own. That mattered once main
-# started requiring status checks: the PR would sit forever waiting for contexts
-# that never arrive. Rather than introduce a PAT, this job dispatches ci.yml
-# against its branch — workflow_dispatch is an explicit exception to the
-# GITHUB_TOKEN rule — so the required checks report on the PR head and the
-# auto-merge below can complete.
+# PR this opens does not trigger ci.yml on its own. Rather than introduce a PAT,
+# the refresh job dispatches ci.yml against its branch — workflow_dispatch is an
+# explicit exception to the GITHUB_TOKEN rule.
+#
+# The merge is a second job, triggered by that CI run completing, and it merges
+# only on `conclusion == 'success'`. This replaces `gh pr merge --auto`, which
+# needed branch protection to mean anything: protection requires GitHub Pro on a
+# private repo, and without it there are no required checks to wait on, so
+# --auto fired the merge immediately and a red refresh landed broken content.
+# Gating on the CI run directly restores "a red refresh stays open" without
+# depending on protection — the same approach dependabot-automerge.yml uses,
+# and for the same reason.
 
 on:
   schedule:
     - cron: '0 9 * * 1' # 09:00 UTC Monday, after the weekend's trending settles
   workflow_dispatch:
-
-permissions:
-  contents: write
-  pull-requests: write
-  actions: write # dispatch ci.yml against this job's branch (see header)
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
 
 concurrency:
-  group: timeline-refresh
+  # Keyed per branch so a merge check for one refresh never queues behind
+  # another, and so unrelated CI completions do not serialise against the
+  # weekly refresh itself.
+  group: timeline-refresh-${{ github.event.workflow_run.head_branch || github.ref }}
   cancel-in-progress: false
 
 jobs:
   refresh:
+    # Every CI completion in the repo triggers this workflow for the merge job
+    # below; the refresh itself must only run on its schedule or by hand.
+    if: github.event_name != 'workflow_run'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write # dispatch ci.yml against this job's branch (see header)
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -105,17 +119,51 @@ jobs:
             --assignee "${{ github.repository_owner }}")
           echo "Opened $URL"
 
-          # Merge without waiting for a human. --auto queues the merge and lets
-          # GitHub run it the moment main's required checks go green, so a red
-          # refresh stays open instead of landing broken content. This needs
-          # both repo-level auto-merge and branch protection on main; without
-          # protection there are no required checks to wait on and the merge
-          # would fire immediately.
-          # main requires status checks that a GITHUB_TOKEN-opened PR never
-          # triggers, so ask for them explicitly against this branch.
+          # A GITHUB_TOKEN-opened PR never triggers ci.yml on its own, so ask
+          # for it explicitly against this branch. That run completing is what
+          # triggers the merge job below — no --auto, so nothing can land
+          # before CI has actually reported.
           gh workflow run ci.yml --ref "$BRANCH"
-          echo "Dispatched CI against $BRANCH"
-
-          gh pr merge "$URL" --auto --squash --delete-branch
-          echo "Auto-merge armed; it lands when CI passes."
+          echo "Dispatched CI against $BRANCH; the automerge job lands it if CI passes."
           rm -f notes.md pr-body.md
+
+  # Merges the refresh PR once its dispatched CI run has actually passed.
+  # Deliberately narrow: only this workflow's own branches, only a bot-authored
+  # PR, only a successful run. Anything unexpected exits 0 and leaves the PR
+  # open for a human.
+  automerge:
+    if: >
+      github.event_name == 'workflow_run' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      startsWith(github.event.workflow_run.head_branch, 'timeline-refresh/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Merge the refresh PR now CI is green
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+        run: |
+          set -euo pipefail
+
+          PR_NUM=$(gh pr list --head "$HEAD_BRANCH" --state open \
+            --json number --jq '.[0].number // empty')
+          if [ -z "$PR_NUM" ]; then
+            echo "No open PR for branch '$HEAD_BRANCH'. Nothing to do."
+            exit 0
+          fi
+
+          # Defence in depth: the branch prefix is guessable, so confirm the PR
+          # was opened by the bot rather than by a person pushing a branch that
+          # happens to match.
+          AUTHOR=$(gh pr view "$PR_NUM" --json author --jq '.author.login')
+          if [ "$AUTHOR" != "github-actions[bot]" ] && [ "$AUTHOR" != "app/github-actions" ]; then
+            echo "PR #$PR_NUM author is '$AUTHOR', not the refresh bot. Leaving it open."
+            exit 0
+          fi
+
+          echo "CI passed for $HEAD_BRANCH -> merging PR #$PR_NUM"
+          gh pr merge "$PR_NUM" --squash --delete-branch
