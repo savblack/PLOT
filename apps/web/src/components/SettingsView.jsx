@@ -6,7 +6,7 @@ import { useApp } from '../hooks/useApp.js';
 import { logoUrl } from '../utils/images.js';
 import { tmdb, setTmdbRegion } from '@plot/core/tmdb.js';
 import { supabase } from '@plot/core/supabase.js';
-import { edgeFunctionUrl, callAuthenticatedFunction } from '@plot/core/functions.js';
+import { edgeFunctionUrl } from '@plot/core/functions.js';
 import { useMediaSync } from '../hooks/useMediaSync.js';
 import { useTraktSync } from '../hooks/useTraktSync.js';
 import { usePremium } from '../hooks/usePremium.js';
@@ -30,7 +30,7 @@ import { COMMON } from '../copy/common.js';
 import { SETTINGS_VIEW } from '../copy/settingsView.js';
 import { IANA_TIMEZONES } from '../utils/timezones.js';
 import { REGIONS, DEFAULT_REGION, regionName } from '@plot/core/regions.js';
-import { SHOW_MEDIA_SYNC_INTEGRATIONS, SHOW_WATCHLIST_AVAILABILITY_ALERTS, SHOW_PRICING_PAGE } from '../launchFeatures.js';
+import { SHOW_MEDIA_SYNC_INTEGRATIONS, SHOW_PRICING_PAGE } from '../launchFeatures.js';
 import SheetHeader from './SheetHeader.jsx';
 import ConfirmModal from './ConfirmModal.jsx';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
@@ -1098,10 +1098,7 @@ export default function SettingsView() {
   const [showProviders,       setShowProviders]       = useState(false);
   const [showGuideChannels,   setShowGuideChannels]   = useState(false);
   const [savingProviders,     setSavingProviders]     = useState(false);
-  const [savingAvailabilityAlerts, setSavingAvailabilityAlerts] = useState(false);
   const [savingMarketingEmails, setSavingMarketingEmails] = useState(false);
-  const [testingAvailabilityAlert, setTestingAvailabilityAlert] = useState(false);
-  const [testAlertNotice,     setTestAlertNotice]     = useState(null); // null|'sent'|'error'
   const [savingGuideChannels, setSavingGuideChannels] = useState(false);
   const [providerDraft,       setProviderDraft]       = useState(null);
   const [guideChannelDraft,   setGuideChannelDraft]   = useState(null);
@@ -1224,7 +1221,6 @@ export default function SettingsView() {
   useEffect(() => { trakt.loadIntegration(); }, [trakt.loadIntegration]);
 
   const providers      = providerDraft ?? profile?.streaming_providers ?? [];
-  const availabilityAlertsEnabled = !!profile?.watchlist_availability_alerts;
   const marketingEmailsEnabled = !!profile?.marketing_emails;
   const guideChannels  = guideChannelDraft ?? profile?.guide_channels ?? [];
   const genres         = genreDraft ?? profile?.genres ?? [];
@@ -1293,24 +1289,6 @@ export default function SettingsView() {
     refreshProfile();
   };
 
-  const toggleAvailabilityAlerts = async () => {
-    if (savingAvailabilityAlerts) return;
-    if (!availabilityAlertsEnabled && providers.length === 0 && guideChannels.length === 0) {
-      setActionError('Choose at least one streaming platform or channel before turning on availability alerts.');
-      setShowProviders(true);
-      return;
-    }
-    setActionError(null);
-    setSavingAvailabilityAlerts(true);
-    const { error } = await updateProfile({ userId: user.id, patch: { watchlist_availability_alerts: !availabilityAlertsEnabled } });
-    setSavingAvailabilityAlerts(false);
-    if (error) {
-      setActionError(error.message || SETTINGS_VIEW.errors.failedToUpdateAvailabilityAlerts);
-      return;
-    }
-    refreshProfile();
-  };
-
   // Marketing consent, so it only ever moves on a deliberate action here (or in
   // the digest prompt). A database trigger mirrors the flag onto the sending
   // list, which is also what an unsubscribe link writes back to.
@@ -1327,26 +1305,6 @@ export default function SettingsView() {
     }
     track(next ? EVENTS.MARKETING_EMAILS_OPTED_IN : EVENTS.MARKETING_EMAILS_OPTED_OUT, { source: 'settings' });
     refreshProfile();
-  };
-
-  // Manual, on-demand send — mirrors the request-function shape of Plex/Trakt
-  // sync (an authenticated Edge Function call with its own loading + error
-  // state) so someone can confirm the alert email actually arrives without
-  // waiting for a real match or the daily cron run.
-  const sendTestAvailabilityAlert = async () => {
-    if (testingAvailabilityAlert) return;
-    setActionError(null);
-    setTestAlertNotice(null);
-    setTestingAvailabilityAlert(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      await callAuthenticatedFunction('watchlist-availability-alerts', session, {});
-      setTestAlertNotice('sent');
-    } catch {
-      setTestAlertNotice('error');
-    } finally {
-      setTestingAvailabilityAlert(false);
-    }
   };
 
   const saveRegion = async (code) => {
@@ -2128,34 +2086,6 @@ export default function SettingsView() {
             </SettingsTextAction>
           </div>
         </div>
-
-        {SHOW_WATCHLIST_AVAILABILITY_ALERTS && (
-          <div className="settings-row" style={{ cursor: 'default' }}>
-            <div className="settings-row-left">
-              <div className="settings-row-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-              </div>
-              <div>
-                <div className="settings-row-label">{SETTINGS_VIEW.availabilityAlerts.label}</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.12rem' }}>
-                  {testAlertNotice === 'sent'
-                    ? SETTINGS_VIEW.availabilityAlerts.sentNotice
-                    : testAlertNotice === 'error'
-                    ? SETTINGS_VIEW.errors.couldNotSendTestEmail
-                    : SETTINGS_VIEW.availabilityAlerts.idleHint}
-                </div>
-              </div>
-            </div>
-            <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
-              <SettingsTextAction onClick={sendTestAvailabilityAlert} disabled={testingAvailabilityAlert}>
-                {testingAvailabilityAlert ? COMMON.sending : SETTINGS_VIEW.availabilityAlerts.sendTest}
-              </SettingsTextAction>
-              <SettingsTextAction onClick={toggleAvailabilityAlerts} disabled={savingAvailabilityAlerts}>
-                {savingAvailabilityAlerts ? COMMON.saving : availabilityAlertsEnabled ? COMMON.turnOff : COMMON.turnOn}
-              </SettingsTextAction>
-            </div>
-          </div>
-        )}
 
         <div className="settings-row" style={{ cursor: 'default' }}>
           <div className="settings-row-left">

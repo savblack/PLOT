@@ -49,7 +49,6 @@ export const SETTINGS_VIEW = {
     failedToSaveStreamingPlatforms: 'Failed to save your streaming platforms.',
     failedToSaveChannels: 'Failed to save your channels.',
     failedToSaveGenres: 'Failed to save your genres.',
-    failedToUpdateAvailabilityAlerts: 'Failed to update availability alerts.',
     failedToUpdateMarketingEmails: 'Failed to update your email preference.',
     failedToClearWatchHistory: 'Failed to clear watch history.',
     failedToClearLists: 'Failed to clear your lists.',
@@ -60,7 +59,6 @@ export const SETTINGS_VIEW = {
     enterAValidEmail: 'Enter a valid email address.',
     emailAlreadyInUse: 'That email is already in use.',
     couldNotUpdateEmail: 'Could not update email. Try again.',
-    couldNotSendTestEmail: 'Could not send a test email. Try again.',
   },
 
   confirm: {
@@ -138,13 +136,6 @@ export const SETTINGS_VIEW = {
     label: 'Kids content',
     onHint: 'Show movies and shows made for kids in Discover and recommendations.',
     offHint: 'Kids and family content is hidden from Discover and recommendations.',
-  },
-
-  availabilityAlerts: {
-    label: 'Watchlist availability alerts',
-    sentNotice: 'Sent. Check your inbox.',
-    idleHint: "Email me when a saved title arrives on a streaming platform or channel I've selected",
-    sendTest: 'Send test',
   },
 
   // Deliberately makes no promise about frequency — the digest is sent by hand,

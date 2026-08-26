@@ -133,7 +133,7 @@ export default function App() {
   const loadProfile = useCallback(async (userId) => {
     const { data } = await supabase
       .from('profiles')
-      .select('id, region, timezone, onboarding_complete, guide_channels, streaming_providers, genres, include_kids_content, watchlist_availability_alerts, marketing_emails, digest_prompt_dismissed_at, calendar_token, username, display_name, is_public, is_premium, is_supporter, last_kofi_tip_at, avatar_url, bio, links')
+      .select('id, region, timezone, onboarding_complete, guide_channels, streaming_providers, genres, include_kids_content, marketing_emails, digest_prompt_dismissed_at, calendar_token, username, display_name, is_public, is_premium, is_supporter, last_kofi_tip_at, avatar_url, bio, links')
       .eq('id', userId)
       .maybeSingle();
     setProfile(data);
