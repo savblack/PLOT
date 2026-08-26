@@ -1,5 +1,13 @@
 # Shipping iOS push notifications on PLOT mobile
 
+> **Superseded premise (2026-08-23).** `watchlist-availability-alerts` — the email job this
+> research treats as an existing pipeline to extend — has since been removed (function, cron
+> workflow and Settings row). The `profiles.watchlist_availability_alerts` column and the
+> `watchlist_availability_alerts` table were deliberately left in the database. Push is
+> therefore a *new* pipeline, not a second channel on a live one, and step 7 of the plan below
+> no longer has a function to extend. The analysis is kept as written; see #481 (notification
+> event taxonomy) before acting on it.
+
 Research for issue #483. Sources are Expo's official documentation, the `expo-notifications`
 changelog in the Expo monorepo, the npm registry, and Apple Developer documentation. Every
 claim below carries a link. Blog posts and Stack Overflow were deliberately not used.

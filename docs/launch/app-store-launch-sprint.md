@@ -195,11 +195,12 @@ tier is far more generous, but the lesson stands.
 5. **Email channel** via Resend.
 6. **Push via APNs**, scoped to availability alerts. Needs `expo-notifications`
    (not currently a dependency), token registration, permission UX, deep links.
-7. **Turn on watchlist availability alerts.** The cron in
-   `.github/workflows/watchlist-availability-alerts.yml` is commented out and has
-   never run. Dry-run via `workflow_dispatch` before enabling the schedule; it
-   shares a failure mode with `for-you-recompute`, which once failed silently 100%
-   of the time.
+7. **Rebuild watchlist availability alerts.** Removed on 2026-08-23 — the edge function,
+   its (never-run) cron workflow and the Settings row are gone, though the
+   `profiles.watchlist_availability_alerts` column and `watchlist_availability_alerts`
+   table remain in the database. Whatever replaces it needs a registered office address
+   and an unsubscribe link in the email before it can send to a real user, which the
+   removed version lacked. Decide the shape as part of #481 first.
 
 ## Sprint 4 — Payments: CUT from this cycle (2026-08-13)
 

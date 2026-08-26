@@ -41,12 +41,7 @@ verify_jwt = false
 [functions.calendar-feed]
 verify_jwt = false
 
-# Called only by the scheduled GitHub workflow, which supplies its own secret.
-[functions.watchlist-availability-alerts]
-verify_jwt = false
-
-# Same pattern as watchlist-availability-alerts above — called only by the
-# scheduled GitHub workflow (for-you-recompute.yml), which supplies its own
+# Called only by the scheduled GitHub workflow (for-you-recompute.yml), which supplies its own
 # x-cron-secret header instead of a Supabase JWT. Already deployed with
 # verify_jwt false; this entry just makes that the documented, pinned state
 # so a future `supabase functions deploy for-you-recompute` can't silently
