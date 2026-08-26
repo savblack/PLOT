@@ -1317,134 +1317,11 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
               <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>{genres}</div>
             )}
 
-            {/* ── Your review ──
-                Sits directly under the title rather than below the action tray,
-                where it used to be the last thing on the panel. Your verdict now
-                reads ahead of the overview and the critic scores: what this is,
-                what you thought, then what everyone else thought. The three
-                states (saved / editing / nothing written yet) live in
-                TitleReview. */}
-            {watched && (
-              <TitleReview
-                entry={watchedEntry}
-                rating={savedRating}
-                note={savedReview}
-                dnf={savedDnf}
-                watchedAt={savedWatchedAt}
-                onSave={saveReview}
-                onClear={clearReview}
-              />
-            )}
-
-            {/* Critic / audience scores */}
-            {(criticScore || Number.isFinite(audienceScore)) && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '0.25rem', fontSize: '0.9rem', fontWeight: 700 }}>
-                {criticScore && (
-                  <span style={{ color: 'var(--text-primary)' }}>{criticScore.criticScore}% Critics</span>
-                )}
-                {criticScore && Number.isFinite(audienceScore) && (
-                  <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>·</span>
-                )}
-                {Number.isFinite(audienceScore) && (
-                  <span style={{ color: 'var(--accent)' }}>{audienceScore}% Audience</span>
-                )}
-              </div>
-            )}
-            {consensusLine && (
-              <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>{consensusLine}</div>
-            )}
-
-            {/* Overview */}
-            {details?.overview && (
-              <p className="panel-overview">{details.overview}</p>
-            )}
-
-            {audienceQuote && (
-              <blockquote style={{ borderLeft: '2px solid var(--accent)', margin: '0 0 0.75rem', padding: '0.4rem 0 0.4rem 0.75rem' }}>
-                <p style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '1rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
-                  &ldquo;{audienceQuote.text}&rdquo;
-                </p>
-                <cite style={{ display: 'block', fontStyle: 'normal', fontSize: '0.68rem', fontWeight: 600, color: 'var(--text-muted)', marginTop: '0.25rem', letterSpacing: '0.02em' }}>
-                  {audienceQuote.author || 'A TMDB audience review'}
-                </cite>
-              </blockquote>
-            )}
-
-            {cast.length > 0 && (
-              <section className="panel-cast-section" aria-labelledby="panel-cast-title">
-                <div className="panel-section-title" id="panel-cast-title">Cast</div>
-                <div className="panel-cast-rail">
-                  {cast.map(person => {
-                    const image = profileUrl(person.profile_path);
-                    return (
-                      <button
-                        type="button"
-                        className="panel-cast-card"
-                        key={person.id}
-                        onClick={() => goToTalent(person.id)}
-                        aria-label={`View ${person.name}`}
-                      >
-                        {image
-                          ? <img src={image} alt="" loading="lazy" />
-                          : <span className="panel-cast-fallback" aria-hidden="true">{person.name?.charAt(0)}</span>
-                        }
-                        <span className="panel-cast-name">{person.name}</span>
-                        {(person.character || person.roles?.[0]?.character) && (
-                          <span className="panel-cast-role">{person.character || person.roles[0].character}</span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </section>
-            )}
-
-            {similar.length > 0 && (
-              <section className="panel-similar-section" aria-labelledby="panel-similar-title">
-                <div className="panel-section-title" id="panel-similar-title">{MEDIA_PANEL.moreLikeThis}</div>
-                <div className="panel-similar-rail">
-                  {similar.map(item => {
-                    const type = mediaType(item);
-                    const title = creditTitle(item);
-                    return (
-                      <button
-                        type="button"
-                        className="panel-similar-card"
-                        key={`${type}-${item.id}`}
-                        onClick={() => goToTitle(item.id, type, 'more_like_this')}
-                        aria-label={title}
-                      >
-                        <img src={posterUrl(item.poster_path, 'w185')} alt="" loading="lazy" />
-                        <span className="panel-similar-name">{title}</span>
-                        <span className="panel-similar-meta">{creditMeta(item, type)}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </section>
-            )}
-
-            {/* Trailer */}
-            {(() => {
-              const videos = details?.videos?.results || [];
-              const trailer = videos.find(v => v.site === 'YouTube' && v.type === 'Trailer')
-                || videos.find(v => v.site === 'YouTube' && v.type === 'Teaser')
-                || videos.find(v => v.site === 'YouTube');
-              if (!trailer) return null;
-              return (
-                <div style={{ marginBottom: '1rem', borderRadius: '0.75rem', overflow: 'hidden', aspectRatio: '16/9' }}>
-                  <iframe
-                    src={`https://www.youtube.com/embed/${trailer.key}?rel=0`}
-                    title={trailer.name || MEDIA_PANEL.trailerFallback}
-                    style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  />
-                </div>
-              );
-            })()}
-
-            {/* ── Action cluster: hero Save + secondary tray (Status · Favourite · List · Share) ── */}
+            {/* ── Action cluster: hero Save + secondary tray (Status · Favourite · List · Share) ──
+                Sits between the metadata and your review: the actions are what
+                you came to the panel to do, so they lead, and the review reads
+                as the record underneath them rather than being buried below the
+                overview, cast and trailer. ── */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
               {(() => {
                 // The two status-row buttons are peers, so they share one style:
@@ -1615,6 +1492,133 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                 {statusActionError}
               </div>
             )}
+
+            {/* ── Your review ──
+                Sits directly under the title rather than below the action tray,
+                where it used to be the last thing on the panel. Your verdict now
+                reads ahead of the overview and the critic scores: what this is,
+                what you thought, then what everyone else thought. The three
+                states (saved / editing / nothing written yet) live in
+                TitleReview. */}
+            {watched && (
+              <TitleReview
+                entry={watchedEntry}
+                rating={savedRating}
+                note={savedReview}
+                dnf={savedDnf}
+                watchedAt={savedWatchedAt}
+                onSave={saveReview}
+                onClear={clearReview}
+              />
+            )}
+
+            {/* Critic / audience scores */}
+            {(criticScore || Number.isFinite(audienceScore)) && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '0.25rem', fontSize: '0.9rem', fontWeight: 700 }}>
+                {criticScore && (
+                  <span style={{ color: 'var(--text-primary)' }}>{criticScore.criticScore}% Critics</span>
+                )}
+                {criticScore && Number.isFinite(audienceScore) && (
+                  <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>·</span>
+                )}
+                {Number.isFinite(audienceScore) && (
+                  <span style={{ color: 'var(--accent)' }}>{audienceScore}% Audience</span>
+                )}
+              </div>
+            )}
+            {consensusLine && (
+              <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>{consensusLine}</div>
+            )}
+
+            {/* Overview */}
+            {details?.overview && (
+              <p className="panel-overview">{details.overview}</p>
+            )}
+
+            {audienceQuote && (
+              <blockquote style={{ borderLeft: '2px solid var(--accent)', margin: '0 0 0.75rem', padding: '0.4rem 0 0.4rem 0.75rem' }}>
+                <p style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '1rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
+                  &ldquo;{audienceQuote.text}&rdquo;
+                </p>
+                <cite style={{ display: 'block', fontStyle: 'normal', fontSize: '0.68rem', fontWeight: 600, color: 'var(--text-muted)', marginTop: '0.25rem', letterSpacing: '0.02em' }}>
+                  {audienceQuote.author || 'A TMDB audience review'}
+                </cite>
+              </blockquote>
+            )}
+
+            {cast.length > 0 && (
+              <section className="panel-cast-section" aria-labelledby="panel-cast-title">
+                <div className="panel-section-title" id="panel-cast-title">Cast</div>
+                <div className="panel-cast-rail">
+                  {cast.map(person => {
+                    const image = profileUrl(person.profile_path);
+                    return (
+                      <button
+                        type="button"
+                        className="panel-cast-card"
+                        key={person.id}
+                        onClick={() => goToTalent(person.id)}
+                        aria-label={`View ${person.name}`}
+                      >
+                        {image
+                          ? <img src={image} alt="" loading="lazy" />
+                          : <span className="panel-cast-fallback" aria-hidden="true">{person.name?.charAt(0)}</span>
+                        }
+                        <span className="panel-cast-name">{person.name}</span>
+                        {(person.character || person.roles?.[0]?.character) && (
+                          <span className="panel-cast-role">{person.character || person.roles[0].character}</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+
+            {similar.length > 0 && (
+              <section className="panel-similar-section" aria-labelledby="panel-similar-title">
+                <div className="panel-section-title" id="panel-similar-title">{MEDIA_PANEL.moreLikeThis}</div>
+                <div className="panel-similar-rail">
+                  {similar.map(item => {
+                    const type = mediaType(item);
+                    const title = creditTitle(item);
+                    return (
+                      <button
+                        type="button"
+                        className="panel-similar-card"
+                        key={`${type}-${item.id}`}
+                        onClick={() => goToTitle(item.id, type, 'more_like_this')}
+                        aria-label={title}
+                      >
+                        <img src={posterUrl(item.poster_path, 'w185')} alt="" loading="lazy" />
+                        <span className="panel-similar-name">{title}</span>
+                        <span className="panel-similar-meta">{creditMeta(item, type)}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+
+            {/* Trailer */}
+            {(() => {
+              const videos = details?.videos?.results || [];
+              const trailer = videos.find(v => v.site === 'YouTube' && v.type === 'Trailer')
+                || videos.find(v => v.site === 'YouTube' && v.type === 'Teaser')
+                || videos.find(v => v.site === 'YouTube');
+              if (!trailer) return null;
+              return (
+                <div style={{ marginBottom: '1rem', borderRadius: '0.75rem', overflow: 'hidden', aspectRatio: '16/9' }}>
+                  <iframe
+                    src={`https://www.youtube.com/embed/${trailer.key}?rel=0`}
+                    title={trailer.name || MEDIA_PANEL.trailerFallback}
+                    style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
+              );
+            })()}
 
             {/* Episode guide for TV — ahead of Where to Watch so that section
                 lands at the bottom for both movies and TV. */}
