@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useApp } from '../hooks/useApp.js';
 import { countdownChip, formatDate } from '../utils/countdown.js';
-import { backdropUrl, logoUrl, profileUrl } from '../utils/images.js';
+import { backdropUrl, logoUrl, posterUrl, profileUrl } from '../utils/images.js';
 import { tmdb, getTmdbRegion } from '@plot/core/tmdb.js';
 import { findDuplicateCustomList } from '@plot/core/customLists.js';
+import { recommendationsFromDetails } from '@plot/core/media.js';
 import { useHistory } from '../hooks/useHistory.js';
 import { localDateStr } from '../utils/date.js';
 import { getEpisodeGuideState } from '../utils/episodeProgress.js';
@@ -15,7 +16,7 @@ import { favoriteWords } from '../utils/spelling.js';
 import { useShareTitle } from '../hooks/useShareTitle.js';
 import { track, EVENTS } from '../lib/analytics.js';
 import CreditsGrid from './TalentCredits.jsx';
-import { dedupedActingCredits, shortBiography } from '../utils/talentCredits.js';
+import { creditMeta, creditTitle, dedupedActingCredits, mediaType, shortBiography } from '../utils/talentCredits.js';
 import { canCreateCustomList, FREE_CUSTOM_LIST_CAP } from '@plot/core/premium.js';
 import { buildWatchLink } from '@plot/core/watchLinks.js';
 import {
@@ -919,7 +920,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
     setTalentId(personId);
   };
 
-  const goToTitleFromTalent = (id, type, source) => {
+  const goToTitle = (id, type, source) => {
     setNavStack(stack => [...stack, { itemId, itemType, talentId }]);
     skipNextResetRef.current = true;
     setTalentId(null);
@@ -1157,6 +1158,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
   const date    = details?.release_date || details?.first_air_date;
   const chip    = date ? countdownChip(date) : null;
   const cast = (details?.credits?.cast || details?.aggregate_credits?.cast || []).slice(0, 12);
+  const similar = recommendationsFromDetails(details);
 
   const audienceScore = Number.isFinite(details?.vote_average) ? Math.round(details.vote_average * 10) : null;
   const consensusLine = criticScore
@@ -1297,7 +1299,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
 
         {talentId ? (
           <div className="panel-body">
-            <TalentPanelView person={talentPerson} credits={talentCredits} error={talentError} onOpenTitle={goToTitleFromTalent} />
+            <TalentPanelView person={talentPerson} credits={talentCredits} error={talentError} onOpenTitle={goToTitle} />
           </div>
         ) : loading ? (
           <div className="panel-body">
@@ -1395,6 +1397,31 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                         {(person.character || person.roles?.[0]?.character) && (
                           <span className="panel-cast-role">{person.character || person.roles[0].character}</span>
                         )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+
+            {similar.length > 0 && (
+              <section className="panel-similar-section" aria-labelledby="panel-similar-title">
+                <div className="panel-section-title" id="panel-similar-title">{MEDIA_PANEL.moreLikeThis}</div>
+                <div className="panel-similar-rail">
+                  {similar.map(item => {
+                    const type = mediaType(item);
+                    const title = creditTitle(item);
+                    return (
+                      <button
+                        type="button"
+                        className="panel-similar-card"
+                        key={`${type}-${item.id}`}
+                        onClick={() => goToTitle(item.id, type, 'more_like_this')}
+                        aria-label={title}
+                      >
+                        <img src={posterUrl(item.poster_path, 'w185')} alt="" loading="lazy" />
+                        <span className="panel-similar-name">{title}</span>
+                        <span className="panel-similar-meta">{creditMeta(item, type)}</span>
                       </button>
                     );
                   })}

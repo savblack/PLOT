@@ -25,6 +25,8 @@ export const MEDIA_PANEL = {
   create: 'Create',
   couldNotUpdateWatchStatus: 'Could not update watch status. Please try again.',
   couldNotClearWatchStatus: 'Could not clear watch status. Please try again.',
+  // Section heading for the TMDB recommendations row on a title.
+  moreLikeThis: 'More like this',
   trailerFallback: 'Trailer',
   watching: 'Watching',
   didntFinish: "Didn't finish",

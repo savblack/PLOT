@@ -2350,16 +2350,16 @@ svg { stroke-width: 1.5; }
   margin-top: 1.25rem;
 }
 
-.panel-cast-section { margin: 1.25rem 0; }
-.panel-cast-rail {
+.panel-cast-section, .panel-similar-section { margin: 1.25rem 0; }
+.panel-cast-rail, .panel-similar-rail {
   display: flex;
   gap: 0.65rem;
   overflow-x: auto;
   padding-bottom: 0.25rem;
   scrollbar-width: none;
 }
-.panel-cast-rail::-webkit-scrollbar { display: none; }
-.panel-cast-card {
+.panel-cast-rail::-webkit-scrollbar, .panel-similar-rail::-webkit-scrollbar { display: none; }
+.panel-cast-card, .panel-similar-card {
   width: 76px;
   flex: 0 0 auto;
   padding: 0;
@@ -2369,7 +2369,7 @@ svg { stroke-width: 1.5; }
   cursor: pointer;
   text-align: left;
 }
-.panel-cast-card img, .panel-cast-fallback {
+.panel-cast-card img, .panel-cast-fallback, .panel-similar-card img {
   display: flex;
   width: 76px;
   aspect-ratio: 2 / 3;
@@ -2380,9 +2380,9 @@ svg { stroke-width: 1.5; }
   box-shadow: var(--shadow-xs);
   object-fit: cover;
 }
-.panel-cast-name, .panel-cast-role { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.panel-cast-name { margin-top: 0.4rem; font-size: 0.72rem; font-weight: 600; }
-.panel-cast-role { margin-top: 0.1rem; font-size: 0.65rem; color: var(--text-muted); }
+.panel-cast-name, .panel-cast-role, .panel-similar-name, .panel-similar-meta { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.panel-cast-name, .panel-similar-name { margin-top: 0.4rem; font-size: 0.72rem; font-weight: 600; }
+.panel-cast-role, .panel-similar-meta { margin-top: 0.1rem; font-size: 0.65rem; color: var(--text-muted); }
 
 .talent-result-row { width: 100%; border: 0; background: none; color: inherit; cursor: pointer; text-align: left; }
 .talent-result-row .list-row-poster span { display: flex; width: 100%; height: 100%; align-items: center; justify-content: center; background: var(--surface-raised); color: var(--text-muted); font-family: var(--font-serif); font-size: 1.4rem; }
