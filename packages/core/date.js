@@ -59,6 +59,26 @@ export function dateToLocalStr(d) {
 }
 
 /**
+ * "Mar 12, 2026" from a date string, without going through UTC. Tolerates a full
+ * ISO timestamp as well as a bare YYYY-MM-DD, because `history.watched_at`
+ * comes back from Postgres as the former. Returns the input unchanged if it
+ * cannot be parsed, so a bad row renders as itself rather than "Invalid Date".
+ *
+ * Fixed to the `en` locale, matching the media panel's own release-date line.
+ * Not region-aware: day-first ordering for UK profiles would be a change to
+ * every date in both apps, not just this one, so it is deliberately out of scope
+ * here rather than quietly different from its neighbours.
+ *
+ * @param {string} value
+ * @returns {string}
+ */
+export function formatWatchedOn(value) {
+  const [y, m, d] = String(value).slice(0, 10).split('-').map(Number);
+  if (!y || !m || !d) return String(value);
+  return new Date(y, m - 1, d).toLocaleDateString('en', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+/**
  * Short relative time for feed/notification timestamps: "just now", "5m ago",
  * "3h ago", "2d ago", then an absolute date once it's a week old.
  *

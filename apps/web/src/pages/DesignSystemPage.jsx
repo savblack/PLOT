@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import './DesignSystemPage.css';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import ProfileBadges from '../components/ProfileBadges.jsx';
+import TitleReview from '../components/TitleReview.jsx';
 
 const colorTokens = [
   ['--bg', 'App background', 'The quiet canvas behind every primary view.'],
@@ -849,21 +850,34 @@ export default function DesignSystemPage() {
             </div>
             <div className="ds-form-note">Full-width, icon-leading. Font size ≥16px prevents iOS auto-zoom on focus.</div>
           </div>
+          {/* The real component, not an imitation of it: this card is how the
+              media panel renders a title review, so the inventory cannot drift
+              from the app. Click the kebab to reach the editing state. */}
           <div className="ds-form-card">
-            <span className="ds-example-label">Review — stars + textarea</span>
-            <div className="ds-star-row">
-              {[1,2,3,4,5].map(i => (
-                <button key={i} className="review-star-btn" aria-label={`${i} star`}>
-                  <svg viewBox="0 0 24 24" width="22" height="22"
-                    fill={i <= 3 ? 'var(--accent)' : 'none'}
-                    stroke="var(--accent)" strokeWidth="1.5">
-                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                  </svg>
-                </button>
-              ))}
-            </div>
-            <textarea className="review-textarea review-textarea--active" rows={3} defaultValue="Gripping from start to finish." readOnly />
-            <div className="ds-form-note">Stars use --accent fill. Textarea gets an accent border on active state.</div>
+            <span className="ds-example-label">Title review — saved</span>
+            <TitleReview
+              entry={{ id: 'ds-saved' }}
+              rating={7}
+              note="Lost its way seasons 2, 3 and 4 but they really brought home with season 5. Bookended the show with what made it great in the first place."
+              dnf={false}
+              watchedAt="2026-08-21"
+              onSave={async () => true}
+              onClear={async () => true}
+            />
+            <div className="ds-form-note">Saved is prose, not a form: hairlines, serif review text, 44px numeral over 9px stars, house kebab for Edit and Remove.</div>
+          </div>
+          <div className="ds-form-card">
+            <span className="ds-example-label">Title review — watched, nothing written</span>
+            <TitleReview
+              entry={{ id: 'ds-empty' }}
+              rating={0}
+              note=""
+              dnf={false}
+              watchedAt="2026-08-21"
+              onSave={async () => true}
+              onClear={async () => true}
+            />
+            <div className="ds-form-note">An invitation. Tapping any star opens the editor with that rating already set; the pencil opens it unrated.</div>
           </div>
         </div>
       </Section>

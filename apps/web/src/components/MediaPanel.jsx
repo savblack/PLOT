@@ -10,7 +10,6 @@ import { localDateStr } from '../utils/date.js';
 import { getEpisodeGuideState } from '../utils/episodeProgress.js';
 import { markMediaAsWatched, moveSavedShowToWatching } from '../utils/mediaStatus.js';
 import { resolveMediaPanelEscapeAction } from '../utils/mediaPanel.js';
-import { ratingFromPointer, ratingToStars, starFillPercent, STAR_COUNT } from '../utils/ratings.js';
 import { pickBestTvmazeShowMatch } from '../utils/tvmaze.js';
 import { favoriteWords } from '../utils/spelling.js';
 import { useShareTitle } from '../hooks/useShareTitle.js';
@@ -31,6 +30,8 @@ import LoadingSpinner from './LoadingSpinner.jsx';
 import SheetHeader from './SheetHeader.jsx';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import Spinner from './Spinner.jsx';
+import TitleReview from './TitleReview.jsx';
+import KebabMenu from './KebabMenu.jsx';
 import { COMMON } from '../copy/common.js';
 import { MEDIA } from '../copy/media.js';
 import { MEDIA_PANEL } from '../copy/mediaPanel.js';
@@ -494,20 +495,6 @@ function StopSmallIcon() {
     <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
       <rect x="4" y="4" width="16" height="16" rx="2"/>
     </svg>
-  );
-}
-function StarIcon({ fillPercent = 0 }) {
-  return (
-    <span className="half-star-glyph half-star-glyph--svg" aria-hidden="true">
-      <svg className="half-star-svg half-star-empty" viewBox="0 0 24 24">
-        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-      </svg>
-      <span className="half-star-fill half-star-fill--svg" style={{ width: `${fillPercent}%` }}>
-        <svg className="half-star-svg" viewBox="0 0 24 24">
-          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-        </svg>
-      </span>
-    </span>
   );
 }
 
@@ -978,14 +965,8 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
 
   const [showListSheet,     setShowListSheet]     = useState(false);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
-  const [localRating,    setLocalRating]    = useState(0);
-  const [localReview,    setLocalReview]    = useState('');
-  const [localDnf,       setLocalDnf]       = useState(false);
-  const [localWatchedAt, setLocalWatchedAt] = useState('');
-  const [reviewSaving,   setReviewSaving]   = useState(false);
   const [statusActionPending, setStatusActionPending] = useState('');
   const [statusActionError, setStatusActionError] = useState('');
-  const reviewInputRef = useRef(null);
 
   const isMovie    = itemType === 'movie';
   const inList     = watchlist.isInList(itemId);
@@ -1002,30 +983,36 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
   // saved before being marked watched.
   const watchlistEntry   = watchlist.items?.find(i => i.tmdb_id === Number(itemId));
   const defaultWatchedAt = watchlistEntry?.created_at ? watchlistEntry.created_at.slice(0, 10) : localDateStr();
-  const hasSavedReview = !!(
-    watchedEntry?.rating ||
-    watchedEntry?.note?.trim() ||
-    watchedEntry?.dnf
-  );
-  const savedRating = watchedEntry?.rating || 0;
-  const savedReview = watchedEntry?.note || '';
-  const savedDnf = !!watchedEntry?.dnf;
+  const savedRating    = watchedEntry?.rating || 0;
+  const savedReview    = watchedEntry?.note || '';
+  const savedDnf       = !!watchedEntry?.dnf;
   // watched_at is timestamptz, so Postgres hands back "2026-06-10T00:00:00+00:00".
   // <input type="date"> only accepts yyyy-mm-dd and renders blank for anything
   // else, so it has to be sliced before it reaches the field.
   const savedWatchedAt = watchedEntry?.watched_at ? watchedEntry.watched_at.slice(0, 10) : defaultWatchedAt;
-  const hasReviewDraft = localRating > 0 || !!localReview.trim() || localDnf || (!!watchedEntry && localWatchedAt !== savedWatchedAt);
-  const reviewDirty = !!watchedEntry && (
-    localRating !== savedRating ||
-    localReview.trim() !== savedReview.trim() ||
-    localDnf !== savedDnf ||
-    localWatchedAt !== savedWatchedAt
-  );
-  const reviewStateClass = reviewDirty || (!hasSavedReview && hasReviewDraft)
-    ? ' review-textarea--active'
-    : hasSavedReview
-      ? ' review-textarea--saved'
-      : '';
+  const hasWatchedEntry = !!watchedEntry;
+
+  /* TitleReview owns the form and its draft state; the panel keeps only the two
+     write paths, because they are the part that has to go through `history`.
+     Both resolve to a truthy row on success, which is what the child checks. */
+  const saveReview = async ({ rating, note, dnf, watchedAt }) => {
+    const written = hasWatchedEntry
+      ? await history.updateEntry(itemId, {
+          rating, note, dnf,
+          watched_at: watchedAt || defaultWatchedAt,
+        }, itemType)
+      : await history.logWatched(
+          { ...details, id: itemId, media_type: itemType },
+          { rating, note, dnf, watchedAt: watchedAt || defaultWatchedAt },
+        );
+    return !!written;
+  };
+
+  /* Clears the rating and note but keeps the history row: you still watched it,
+     you just don't want the write-up any more. Deleting the row is the Watched
+     toggle's job, not this menu's. */
+  const clearReview = async () =>
+    !!await history.updateEntry(itemId, { rating: null, note: null }, itemType);
 
   useEffect(() => {
     const handleKeyDown = (event) => {
@@ -1080,17 +1067,6 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
     setDragY(0);
     if (delta > 120 || velocity > 0.5) onClose();
   }, [dragY, onClose]);
-
-  // Sync local review state when entry loads or changes
-  useEffect(() => {
-    if (watchedEntry) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrate draft state from the saved review entry
-      setLocalRating(watchedEntry.rating || 0);
-      setLocalReview(watchedEntry.note   || '');
-      setLocalDnf(watchedEntry.dnf       || false);
-      setLocalWatchedAt(watchedEntry.watched_at ? watchedEntry.watched_at.slice(0, 10) : defaultWatchedAt);
-    }
-  }, [watchedEntry?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadDetails = useCallback(async () => {
     if (!itemId) return;
@@ -1341,6 +1317,25 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
               <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>{genres}</div>
             )}
 
+            {/* ── Your review ──
+                Sits directly under the title rather than below the action tray,
+                where it used to be the last thing on the panel. Your verdict now
+                reads ahead of the overview and the critic scores: what this is,
+                what you thought, then what everyone else thought. The three
+                states (saved / editing / nothing written yet) live in
+                TitleReview. */}
+            {watched && (
+              <TitleReview
+                entry={watchedEntry}
+                rating={savedRating}
+                note={savedReview}
+                dnf={savedDnf}
+                watchedAt={savedWatchedAt}
+                onSave={saveReview}
+                onClear={clearReview}
+              />
+            )}
+
             {/* Critic / audience scores */}
             {(criticScore || Number.isFinite(audienceScore)) && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '0.25rem', fontSize: '0.9rem', fontWeight: 700 }}>
@@ -1452,12 +1447,27 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
             {/* ── Action cluster: hero Save + secondary tray (Status · Favourite · List · Share) ── */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
               {(() => {
-                // Compact icon-over-label button for the secondary tray.
+                // The two status-row buttons are peers, so they share one style:
+                // icon to the left of the label at the same type size. Matches
+                // mobile, where both halves have always been btnPrimary.
+                // minHeight rather than padding alone pins the height, so the
+                // tray below can reuse it at a smaller type size and still come
+                // out level.
+                const statusRowBtn = {
+                  minWidth: 0, width: '100%', minHeight: '2.2rem',
+                  padding: '0.35rem 0.5rem', borderRadius: '0.75rem', cursor: 'pointer',
+                  fontSize: '0.84rem', lineHeight: 1.2, transition: 'all 0.18s', boxSizing: 'border-box',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
+                };
+                // Secondary tray: the same geometry as the status row, so all
+                // five buttons are one height, with a smaller label to keep it
+                // subordinate. The icon-over-label stack this replaces made the
+                // tray half again as tall as the row above it. Mobile has always
+                // been a row here (btnSecondary sized to match btnPrimary); web
+                // was the outlier.
                 const trayBtn = {
-                  flex: 1, minWidth: 0, padding: '0.55rem 0.25rem', borderRadius: '0.75rem',
-                  cursor: 'pointer', fontSize: '0.68rem', fontWeight: 500, lineHeight: 1.2,
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                  gap: '0.3rem', textAlign: 'center', transition: 'all 0.18s', boxSizing: 'border-box',
+                  ...statusRowBtn, flex: 1, width: 'auto',
+                  fontSize: '0.76rem', fontWeight: 500,
                 };
 
                 const statusLabel = statusActionPending ? statusActionPending
@@ -1484,10 +1494,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
               <button
                 onClick={() => watchlist.toggle({ ...details, id: itemId, media_type: itemType })}
                 style={{
-                  minWidth: 0,
-                  padding: '0.6rem 0.5rem', borderRadius: '0.75rem', cursor: 'pointer',
-                  fontSize: '0.9rem', fontWeight: 600, transition: 'all 0.18s', boxSizing: 'border-box',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
+                  ...statusRowBtn, fontWeight: 600,
                   border: inList ? '1.5px solid rgba(74,222,128,0.2)' : '1.5px solid transparent',
                   background: inList ? '#0d2d1a' : 'var(--accent)',
                   color: inList ? '#4ade80' : '#fff',
@@ -1502,10 +1509,10 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                   <button
                     onClick={() => setShowStatusDropdown(v => !v)}
                     disabled={!!statusActionPending}
-                    style={{ ...trayBtn, width: '100%', ...statusColors, fontWeight: statusActive ? 600 : 500, opacity: statusActionPending ? 0.7 : 1 }}
+                    style={{ ...statusRowBtn, ...statusColors, fontWeight: statusActive ? 600 : 500, opacity: statusActionPending ? 0.7 : 1 }}
                   >
-                    <StatusIcon />
-                    <span style={{ maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis' }}>{statusLabel}</span>
+                    <StatusIcon size={15} />
+                    <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{statusLabel}</span>
                   </button>
                   {showStatusDropdown && (
                     <div style={{
@@ -1557,7 +1564,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                     color: isFav ? 'var(--accent)' : 'var(--text-secondary)',
                   }}
                 >
-                  <HeartIcon filled={isFav} size={18} />
+                  <HeartIcon filled={isFav} size={15} />
                   {isFav ? fw.pastTitle : fw.noun}
                 </button>
 
@@ -1571,7 +1578,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                     color: isInAnyList ? '#818cf8' : 'var(--text-secondary)',
                   }}
                 >
-                  <ListIcon />
+                  <ListIcon size={15} />
                   {isInAnyList ? MEDIA_PANEL.onList : MEDIA_PANEL.list}
                 </button>
 
@@ -1585,7 +1592,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                     color: shareCopied ? 'var(--accent)' : 'var(--text-secondary)',
                   }}
                 >
-                  <ShareIcon />
+                  <ShareIcon size={15} />
                   {shareCopied ? COMMON.copied : COMMON.share}
                 </button>
               </div>
@@ -1606,119 +1613,6 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                 lineHeight: 1.45,
               }}>
                 {statusActionError}
-              </div>
-            )}
-
-            {/* Review section (when watched) */}
-            {watched && (
-              <div style={{ marginBottom: '1rem' }}>
-                <div style={{ height: 1, marginBottom: '0.85rem' }} />
-
-                {/* Review section label */}
-                <div style={{
-                  fontSize: '0.58rem', fontWeight: 600, letterSpacing: '0.1em',
-                  textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.65rem',
-                }}>
-                  Your review
-                </div>
-
-                {/* Star rating */}
-                <div style={{ marginBottom: '0.65rem' }}>
-                  <div
-                    className="half-star-rating"
-                    aria-label={localRating ? `${ratingToStars(localRating)} out of 5 stars` : MEDIA_PANEL.noRating}
-                  >
-                    {Array.from({ length: STAR_COUNT }, (_, i) => i + 1).map(n => (
-                      <button
-                        key={n}
-                        className="review-star-btn"
-                        onClick={e => {
-                          const rating = ratingFromPointer(e, n);
-                          setLocalRating(r => r === rating ? 0 : rating);
-                        }}
-                        aria-label={`Rate ${n - 0.5} or ${n} stars`}
-                      >
-                        <StarIcon fillPercent={starFillPercent(localRating, n)} />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Date watched */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.65rem' }}>
-                  <span style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>Watched on</span>
-                  <input
-                    type="date"
-                    value={localWatchedAt}
-                    max={localDateStr()}
-                    onChange={e => setLocalWatchedAt(e.target.value || defaultWatchedAt)}
-                    style={{
-                      padding: '0.35rem 0.6rem', borderRadius: '0.5rem',
-                      border: '1px solid var(--border)', background: 'var(--surface)',
-                      color: 'var(--text-primary)', fontSize: '0.78rem', fontFamily: 'inherit',
-                    }}
-                    aria-label="Date watched"
-                  />
-                </div>
-
-                {/* Review text */}
-                <div style={{ position: 'relative', marginBottom: '0.65rem' }}>
-                  <textarea
-                    ref={reviewInputRef}
-                    className={`review-textarea${reviewStateClass}`}
-                    value={localReview}
-                    onChange={e => { if (e.target.value.length <= 280) setLocalReview(e.target.value); }}
-                    placeholder="Write a quick review…"
-                    rows={3}
-                  />
-                  <span style={{
-                    position: 'absolute', bottom: '0.55rem', right: '0.65rem',
-                    fontSize: '0.62rem', fontVariantNumeric: 'tabular-nums',
-                    color: (280 - localReview.length) <= 40
-                      ? (280 - localReview.length) <= 0 ? '#ef4444' : '#f59e0b'
-                      : 'var(--text-muted)',
-                  }}>
-                    {280 - localReview.length}
-                  </span>
-                </div>
-
-                {/* Save button — only when something to save */}
-                {(hasSavedReview || hasReviewDraft) && (
-                  <button
-                    className={`review-action-btn${reviewDirty || (!hasSavedReview && hasReviewDraft) ? ' review-action-btn--active' : hasSavedReview ? ' review-action-btn--saved' : ''}`}
-                    disabled={reviewSaving}
-                    aria-busy={reviewSaving}
-                    aria-label={reviewSaving ? MEDIA_PANEL.savingReview : hasSavedReview ? (reviewDirty ? MEDIA_PANEL.saveChanges : MEDIA_PANEL.editReview) : MEDIA_PANEL.saveReview}
-                    onClick={async () => {
-                      if (hasSavedReview && !reviewDirty) {
-                        reviewInputRef.current?.focus();
-                        return;
-                      }
-                      setReviewSaving(true);
-                      if (watchedEntry) {
-                        await history.updateEntry(itemId, {
-                          rating:     localRating || null,
-                          note:       localReview.trim() || null,
-                          dnf:        localDnf,
-                          watched_at: localWatchedAt || defaultWatchedAt,
-                        }, itemType);
-                      } else {
-                        await history.logWatched(
-                          { ...details, id: itemId, media_type: itemType },
-                          { rating: localRating || null, note: localReview.trim() || null, dnf: localDnf, watchedAt: localWatchedAt || defaultWatchedAt }
-                        );
-                      }
-                      setReviewSaving(false);
-                    }}
-                  >
-                    {reviewSaving
-                      ? <Spinner size="button" ariaHidden />
-                      : hasSavedReview
-                        ? reviewDirty ? MEDIA_PANEL.saveChanges : MEDIA_PANEL.editReview
-                        : MEDIA_PANEL.saveReview
-                    }
-                  </button>
-                )}
               </div>
             )}
 
