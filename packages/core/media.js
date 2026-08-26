@@ -69,3 +69,29 @@ export function mediaIdentityRow(item, options) {
   const { release_date: _release_date, ...identityRow } = row;
   return identityRow;
 }
+
+/**
+ * TMDB nests recommendations inside the details payload when the caller appends
+ * `recommendations` to the request, which is how `tmdb.getDetails` already
+ * fetches them — so the "more like this" row costs no extra round trip.
+ *
+ * The raw list needs normalising before either app renders it: it repeats titles
+ * that match on both the movie and tv endpoints, and it includes entries with no
+ * artwork, which read as broken holes in a poster row rather than as results.
+ *
+ * @param {any} details A movie|tv details payload.
+ * @param {{ limit?: number }} [options]
+ * @returns {any[]}
+ */
+export function recommendationsFromDetails(details, { limit = 12 } = {}) {
+  const seen = new Set();
+  return (details?.recommendations?.results || [])
+    .filter(item => tmdbIdFromItem(item) && posterPathFromItem(item))
+    .filter(item => {
+      const key = `${mediaTypeFromItem(item)}-${tmdbIdFromItem(item)}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .slice(0, limit);
+}
