@@ -230,6 +230,7 @@ const buildHtml = ({ dateLabel, featured, kicker, chart, weekend, streaming }, u
         <div style="font-family:${SANS};font-size:12px;line-height:1.6;color:${FAINT};">
           You're receiving this because you subscribed at theplot.tv.
           <a href="${unsubscribeUrl}" style="color:${FAINT};text-decoration:underline;">Unsubscribe</a><br>
+          SUSUMU HOUSE &middot; Level 1, 63-73 Ann Street, Surry Hills, NSW 2010<br>
           This product uses the TMDB API but is not endorsed or certified by TMDB.
         </div>
       </td></tr>
