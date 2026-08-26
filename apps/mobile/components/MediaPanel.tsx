@@ -5,6 +5,7 @@
 import { STAR_COUNT, ratingToStars, starsToRating } from '@plot/core/ratings.js';
 import { localDateStr } from '@plot/core/date.js';
 import { markMediaAsWatched, moveSavedShowToWatching } from '@plot/core/mediaStatus.js';
+import { formatWatchedOn } from '@plot/core/date.js';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useEffect, useState, useRef, useMemo } from 'react';
 import {
@@ -618,17 +619,6 @@ function ymd(date: Date): string {
   const m = String(date.getMonth() + 1).padStart(2, '0');
   const d = String(date.getDate()).padStart(2, '0');
   return `${date.getFullYear()}-${m}-${d}`;
-}
-
-/**
- * "12 Mar 2026" from a date string, without going through UTC. Tolerates a full
- * ISO timestamp as well as a bare YYYY-MM-DD, because `history.watched_at`
- * comes back from Postgres as the former.
- */
-function formatWatchedOn(value: string): string {
-  const [y, m, d] = String(value).slice(0, 10).split('-').map(Number);
-  if (!y || !m || !d) return value;
-  return new Date(y, m - 1, d).toLocaleDateString('en', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProps) {

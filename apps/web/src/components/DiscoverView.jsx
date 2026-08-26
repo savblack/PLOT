@@ -167,8 +167,10 @@ function BingeCard({ item, openPanel, watchlist }) {
         </span>
       </button>
 
-      {/* Corner action buttons — visible on hover or when active */}
-      <div className={`discover-hero-corner-btns${hovered || saved || fav ? ' visible' : ''}`}>
+      {/* Corner action buttons. Each shows itself when its own state is
+          active; the inactive one waits for hover, so an active favourite
+          doesn't display an empty bookmark next to it. */}
+      <div className={`discover-hero-corner-btns${hovered ? ' visible' : ''}`}>
         <button
           className={`discover-hero-corner-btn${fav ? ' active' : ''}`}
           style={{ position: 'absolute', top: 10, left: 10 }}
@@ -237,8 +239,10 @@ function HeroCard({ item, openPanel, watchlist, badge = 'Trending #1' }) {
         </div>
       </button>
 
-      {/* Corner action buttons — visible on hover or when active */}
-      <div className={`discover-hero-corner-btns${hovered || saved || fav ? ' visible' : ''}`}>
+      {/* Corner action buttons. Each shows itself when its own state is
+          active; the inactive one waits for hover, so an active favourite
+          doesn't display an empty bookmark next to it. */}
+      <div className={`discover-hero-corner-btns${hovered ? ' visible' : ''}`}>
         {/* Top-left: Favourite */}
         <button
           className={`discover-hero-corner-btn${fav ? ' active' : ''}`}

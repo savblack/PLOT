@@ -43,4 +43,19 @@ export const MEDIA_PANEL = {
   saveChanges: 'Save changes',
   editReview: 'Edit review',
   saveReview: 'Save review',
+  // A saved review is a record, not a form: the panel shows it as prose with an
+  // overflow menu, and only the edit state renders inputs. These strings cover
+  // all three states (saved / editing / nothing written yet) on both platforms.
+  yourReview: 'Your review',
+  yourRating: 'Your rating',
+  watchedOn: 'Watched on',
+  watchedOnDate: (date) => `Watched ${date}`,
+  outOfFive: (rating) => `${rating} out of 5`,
+  rateAndReview: 'Rate and review',
+  writeReview: 'Write a review',
+  editingYourReview: 'Editing your review',
+  reviewOptions: 'Review options',
+  removeReview: 'Remove review',
+  couldNotSaveReview: 'Could not save your review. Please try again.',
+  charactersLeft: (count) => `${count} left`,
 };

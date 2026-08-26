@@ -842,7 +842,10 @@ svg { stroke-width: 1.5; }
 .card-fav-btn:hover { transform: scale(1.1); }
 .media-card:hover .card-fav-btn,
 .media-card:focus-within .card-fav-btn { opacity: 1; }
-.card-fav-btn.faved { color: var(--accent); }
+/* Same rule as .card-save-btn.saved above: an active favourite shows itself
+   without needing hover. Its absence here meant hearting a poster card left no
+   visible trace until you pointed at it again. */
+.card-fav-btn.faved { color: var(--accent); opacity: 1; }
 .card-fav-btn.faved svg { fill: var(--accent); stroke: var(--accent); }
 
 /* Poster-card quick share — desktop hover only (mobile uses the panel's Share) */
@@ -2090,7 +2093,8 @@ svg { stroke-width: 1.5; }
   border-radius: 0.65rem;
   color: var(--text-primary);
   font-size: 0.84rem;
-  padding: 0.6rem 0.75rem;
+  /* Bottom gutter reserved for .review-edit-count. */
+  padding: 0.6rem 0.75rem 1.5rem;
   resize: none;
   outline: none;
   font-family: inherit;
@@ -2109,6 +2113,245 @@ svg { stroke-width: 1.5; }
 .review-textarea:focus {
   border-color: var(--accent);
 }
+/* Shared by all three review states: a save that failed keeps the words on
+   screen and says so, rather than silently doing nothing. */
+.review-error {
+  margin: -0.5rem 0 1rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--danger-border);
+  border-radius: 0.65rem;
+  background: var(--danger-dim);
+  color: var(--danger);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+.review-edit .review-error { margin: 0; }
+
+/* The date field, in the one place that still has one. */
+.review-date-input {
+  padding: 0.35rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--surface);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.78rem;
+}
+
+/* Write action on the empty state: a pencil, not a kebab. There is nothing to
+   overflow yet, and one clear action beats a menu holding a single item. */
+.review-empty-write {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+.review-empty-write:hover,
+.review-empty-write:focus-visible {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+/* ── Saved review: "the slip" ──────────────────────────────────────────────
+   A saved review is a record, so it renders as prose bracketed by two
+   hairlines rather than as a form on a card. Structure comes from the rules and
+   the surface, per the design system; nothing here is an input. The editable
+   version is .review-edit-* below, reached from the overflow menu. */
+.review-slip {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: start;
+  padding: 0.85rem 0;
+  margin-bottom: 1rem;
+  border-top: 1px solid var(--border-strong);
+  border-bottom: 1px solid var(--border-strong);
+}
+.review-slip-score {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.32rem;
+}
+/* 44px numeral renders ~51px wide against the 55px star row below it, so the
+   two read as one block. The denominator holds width the numeral would
+   otherwise need, and says "out of five" in words, which nine-pixel stars
+   cannot do reliably. */
+.review-slip-num {
+  font-family: var(--font-serif);
+  font-size: 2.75rem;
+  line-height: 0.86;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  display: flex;
+  align-items: baseline;
+  gap: 1px;
+}
+.review-slip-den {
+  font-size: 0.42em;
+  letter-spacing: 0;
+  color: var(--text-muted);
+}
+.review-slip-stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 2.5px;
+}
+/* StarIcon's glyph is hardcoded at 22px across three stacked layers, so the
+   compact row scales all of them together. The fill keeps its inline
+   percentage width and only takes the new height. */
+.review-slip-stars .half-star-glyph--svg,
+.review-slip-stars .half-star-svg {
+  width: 9px;
+  height: 9px;
+}
+.review-slip-stars .half-star-fill--svg {
+  height: 9px;
+}
+.review-slip-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+.review-slip-text {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 1.0625rem;
+  line-height: 1.4;
+  color: var(--text-primary);
+}
+.review-slip-date {
+  margin: 0;
+  font-size: 0.53rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+/* No rating, only a note: the score rail collapses so the prose starts at the
+   panel edge instead of sitting behind an empty column. */
+.review-slip--noscore {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+/* ── Watched, nothing written yet ──────────────────────────────────────────
+   An invitation, not an empty form. The stars are live: tapping one opens the
+   editor with that rating already set. */
+.review-empty {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.7rem 0;
+  margin-bottom: 1rem;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.review-empty-label {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+.review-empty-left {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+/* ── Editing ───────────────────────────────────────────────────────────────
+   The only state that spends the accent, and the only one with a boundary: a
+   form needs an edge to hold its fields, a record does not. Rating and date
+   come first (one tap each) so the cursor lands in the textarea last. */
+.review-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  padding: 0.85rem 0.9rem;
+  margin-bottom: 1rem;
+  background: var(--surface-raised);
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--border));
+  border-radius: var(--radius-md);
+}
+.review-edit-label {
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+/* One label treatment for every row, so "Your rating" and "Watched on" read as
+   the same kind of thing. Both controls sit hard right, giving the form a
+   single axis to scan down. */
+.review-edit-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+}
+.review-edit-row-label {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  /* The label is the fixed half of the row; let the control shrink instead, so
+     "Watched on" never wraps in a narrow panel. */
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+.review-edit-field {
+  position: relative;
+}
+/* The counter lives in the field's own bottom gutter, so it belongs to what it
+   is counting and can never overlap the last line of text. */
+.review-edit-count {
+  position: absolute;
+  right: 0.7rem;
+  bottom: 0.5rem;
+  font-size: 0.62rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+.review-edit-count--warn { color: #f59e0b; }
+.review-edit-count--over { color: var(--danger); }
+.review-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+/* Compact pills, never full width: the house rule the old full-width Save
+   button was the standing exception to. */
+.review-edit-btn {
+  padding: 0.42rem 1rem;
+  border-radius: var(--radius-pill);
+  border: 1.5px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+}
+.review-edit-btn--primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+  min-width: 74px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.review-edit-btn:disabled { cursor: default; opacity: 0.6; }
+
 .review-action-btn {
   width: 100%;
   padding: 0.62rem;
@@ -4240,47 +4483,51 @@ a.provider-chip--link:hover {
   box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--accent) 32%, transparent);
 }
 
+/* The reveal is per button, not per container. Fading the whole tray in
+   whenever either state was active meant favouriting a title also dragged the
+   empty watchlist bookmark on screen beside it, so the card advertised an
+   action you hadn't taken. `.visible` now means only "the card is hovered". */
 .discover-hero-corner-btns {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.18s;
-}
-.discover-hero-corner-btns.visible {
-  opacity: 1;
 }
 
+/* Favourite and watchlist over artwork: the glyph carries itself on a drop
+   shadow, with no disc behind it. Same treatment as .card-fav-btn and
+   .card-save-btn on poster cards, and the same shadow value, so every
+   overlay action icon in the app reads as one thing. The shadow is the
+   sanctioned legibility case (an icon over arbitrary image content, where a
+   hairline can't do the job), not decorative lift.
+
+   There is deliberately no .active rule: an active button is the filled glyph,
+   which the markup already does via fill="currentColor". The old .active block
+   existed only to strip the disc, and there is no longer a disc to strip. */
 .discover-hero-corner-btn {
   position: absolute;
   pointer-events: auto;
   width: 34px;
   height: 34px;
-  border-radius: 50%;
   border: none;
-  background: rgba(0,0,0,0.45);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  background: none;
   color: #fff;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.15s, transform 0.15s;
-  pointer-events: auto;
+  opacity: 0;
+  transition: opacity 0.18s, transform 0.15s;
+}
+/* An active state stands on its own; the inactive twin waits for hover. */
+.discover-hero-corner-btn.active,
+.discover-hero-corner-btns.visible .discover-hero-corner-btn {
+  opacity: 1;
+}
+.discover-hero-corner-btn svg {
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.65));
 }
 .discover-hero-corner-btn:hover {
-  background: rgba(0,0,0,0.65);
   transform: scale(1.08);
-}
-/* Active = the icon itself fills white. No circle, no accent fill: the filled
-   glyph is the whole signal. */
-.discover-hero-corner-btn.active,
-.discover-hero-corner-btn.active:hover {
-  background: none;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  color: #fff;
 }
 
 /* Rank badge overlaid on poster */
@@ -4562,10 +4809,17 @@ a.provider-chip--link:hover {
   z-index: 1;
 }
 
+/* Matches .discover-hero-title: an overlay title over artwork is an editorial
+   moment, so it takes the serif, and it sets #fff explicitly rather than
+   inheriting. Without the colour it picked up --text-primary, which is
+   near-black in light mode and unreadable against the image. */
 .discover-binge-card-title {
-  font-size: 1.18rem;
-  font-weight: 700;
-  line-height: 1.12;
+  font-family: var(--font-serif);
+  font-size: 1.32rem;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -4791,6 +5045,7 @@ a.provider-chip--link:hover {
      hover, permanently. Pairs with hiding the elements they'd otherwise
      sit on top of (the status chip below). */
   .discover-hero-corner-btns,
+  .discover-hero-corner-btn,
   .discover-chart-row .discover-chart-right.search-row-actions,
   .search-result-row .search-row-actions {
     opacity: 1;
@@ -4914,6 +5169,7 @@ a.provider-chip--link:hover {
   }
 
   .discover-hero-corner-btns,
+  .discover-hero-corner-btn,
   .discover-chart-row .discover-chart-right.search-row-actions,
   .search-result-row .search-row-actions {
     opacity: 1;
