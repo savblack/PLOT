@@ -66,7 +66,7 @@ export default function TermsPage() {
         <p>We may revise these Terms at any time by posting updated Terms to this page. Your continued use of the Service after any such changes constitutes your binding acceptance of the new Terms.</p>
 
         <h2>13. Contact &amp; Governing Law</h2>
-        <p>PLOT is a product of SUSUMU HOUSE. These Terms are governed by and construed in accordance with the laws of New South Wales, Australia, without regard to its conflict of law principles. You irrevocably submit to the exclusive jurisdiction of the courts of New South Wales, Australia for the resolution of any dispute arising out of or in connection with these Terms. For questions, contact us at contact@susumuhouse.com or via the app.</p>
+        <p>PLOT is a product of SUSUMU HOUSE, registered office Level 1, 63-73 Ann Street, Surry Hills, NSW 2010. These Terms are governed by and construed in accordance with the laws of New South Wales, Australia, without regard to its conflict of law principles. You irrevocably submit to the exclusive jurisdiction of the courts of New South Wales, Australia for the resolution of any dispute arising out of or in connection with these Terms. For questions, contact us at contact@susumuhouse.com or via the app.</p>
       </div>
     </div>
   );

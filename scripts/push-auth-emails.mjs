@@ -108,6 +108,7 @@ const layout = ({ preheader, eyebrow, heading, intro, content, note, safety }) =
               <p style="margin: 0; font-family: ${t.sans}; font-size: 12px; line-height: 1.6; color: ${t.textMuted};">
                 <a href="${SITE_URL}" target="_blank" style="color: ${t.textMuted}; text-decoration: underline;">PLOT</a>
                 &middot; Your film and TV companion.
+                <br>SUSUMU HOUSE &middot; Level 1, 63-73 Ann Street, Surry Hills, NSW 2010
               </p>
             </td>
           </tr>

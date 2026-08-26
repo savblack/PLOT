@@ -80,7 +80,7 @@ export default function PrivacyPage() {
         <p>We reserve the right to update this Privacy Policy at any time. Changes will be posted to this page with an updated "last updated" date. Your continued use of the Service after any changes constitutes your acceptance of the revised policy.</p>
 
         <h2>11. Contact</h2>
-        <p>PLOT is a product of SUSUMU HOUSE. This Privacy Policy is governed by the laws of New South Wales, Australia. Any disputes arising in connection with this policy are subject to the exclusive jurisdiction of the courts of New South Wales, Australia. For privacy-related inquiries, contact us at contact@susumuhouse.com or via the app.</p>
+        <p>PLOT is a product of SUSUMU HOUSE, registered office Level 1, 63-73 Ann Street, Surry Hills, NSW 2010. This Privacy Policy is governed by the laws of New South Wales, Australia. Any disputes arising in connection with this policy are subject to the exclusive jurisdiction of the courts of New South Wales, Australia. For privacy-related inquiries, contact us at contact@susumuhouse.com or via the app.</p>
       </div>
     </div>
   );
