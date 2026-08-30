@@ -9,7 +9,7 @@
     "build-storybook": "storybook build"
   },
   "devDependencies": {
-    "storybook": "^10.5.5",
-    "@storybook/html-vite": "^10.5.5"
+    "storybook": "^10.5.10",
+    "@storybook/html-vite": "^10.5.10"
   }
 }
