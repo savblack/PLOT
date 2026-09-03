@@ -329,6 +329,71 @@ ${head}
   .older { color: var(--mut); text-decoration: none; }
   .older:hover { color: var(--pink); }
 
+  /* front-page hero row: the lead story plus one secondary story beside it */
+  .hero-row { display: grid; grid-template-columns: 1.6fr 1fr; gap: 44px; align-items: stretch; padding: 40px 0 4px; }
+  .hero-row .feature { padding: 0; }
+  .sidecard { display: flex; flex-direction: column; text-decoration: none; color: inherit; }
+  .sidecard img, .sidecard .ph { width: 100%; aspect-ratio: 4/3; object-fit: cover; border: 1px solid var(--hair); border-radius: 12px; display: block; }
+  .side-text { display: flex; flex-direction: column; margin-top: 14px; }
+  .side-t { font-family: var(--serif); font-size: 1.25rem; line-height: 1.16; margin-top: 6px; transition: color 0.25s var(--ease); }
+  .sidecard:hover .side-t { color: var(--pink); }
+  .side-date { color: var(--faint); margin-top: 8px; }
+
+  /* named section header: dot + label + rule + optional "view all" */
+  .sec-head { display: flex; align-items: center; gap: 12px; margin: 46px 0 20px; }
+  .sec-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--pink); flex-shrink: 0; }
+  .sec-label { font-size: 0.76rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; white-space: nowrap; }
+  .sec-rule { height: 1px; background: var(--hair); flex: 1; }
+  .view-all { font-size: 0.74rem; color: var(--mut); text-decoration: none; white-space: nowrap; }
+  .view-all:hover { color: var(--pink); }
+
+  /* Now Streaming: a browsable poster shelf, not a headline list */
+  .shelf { display: flex; gap: 18px; overflow-x: auto; padding-bottom: 6px; }
+  .shelf-item { flex: 0 0 132px; text-decoration: none; color: inherit; }
+  .shelf-item img, .shelf-item .ph { width: 132px; aspect-ratio: 2/3; object-fit: cover; border: 1px solid var(--hair); border-radius: 10px; display: block; }
+  .shelf-item .kick { display: block; margin: 10px 0 3px; }
+  .shelf-t { font-family: var(--serif); font-size: 1.02rem; line-height: 1.16; transition: color 0.25s var(--ease); }
+  .shelf-item:hover .shelf-t { color: var(--pink); }
+
+  /* Trending: compact ranked chart, mirrors /whats-on/chart's own rank+poster+movement */
+  .trend-list { list-style: none; }
+  .trend-row { display: grid; grid-template-columns: 36px 48px 1fr auto; gap: 16px; align-items: center; padding: 13px 0; border-top: 1px solid var(--hair); text-decoration: none; color: inherit; }
+  .trend-list li:first-child .trend-row { border-top: none; }
+  .trend-rank { font-family: var(--serif); font-size: 1.5rem; color: var(--faint); text-align: center; }
+  .trend-rank.top { color: var(--pink); }
+  .trend-poster { width: 48px; aspect-ratio: 2/3; object-fit: cover; border-radius: 6px; display: block; background: var(--paper); }
+  .trend-t { font-family: var(--serif); font-size: 1.1rem; line-height: 1.15; transition: color 0.25s var(--ease); }
+  .trend-row:hover .trend-t { color: var(--pink); }
+  .ch-move { font-size: 0.64rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; white-space: nowrap; }
+  .mv-up { color: #0F6E56; } .mv-down { color: #B03A5E; } .mv-new { color: var(--pink); } .mv-same { color: var(--faint); }
+
+  /* Coming Soon: the release date is the point, so it's a badge on the card, not a dek */
+  .datecards { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 22px; }
+  .datecard { text-decoration: none; color: inherit; }
+  .dc-media { position: relative; }
+  .dc-media img, .dc-media .ph { width: 100%; aspect-ratio: 3/2; object-fit: cover; border: 1px solid var(--hair); border-radius: 12px; display: block; }
+  .date-badge { position: absolute; top: 10px; left: 10px; background: var(--ink); color: #fff; padding: 6px 10px; border-radius: 8px; font-size: 0.6rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; line-height: 1.25; text-align: center; }
+  .date-badge .dd { display: block; font-family: var(--serif); font-size: 1.1rem; font-weight: 400; letter-spacing: 0; }
+  .dc-t { display: block; font-family: var(--serif); font-size: 1.1rem; margin-top: 12px; line-height: 1.18; transition: color 0.25s var(--ease); }
+  .datecard:hover .dc-t { color: var(--pink); }
+
+  /* First Look: bigger, wider cards for trailer drops — the most visual content type */
+  .wide-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 22px; }
+  .wide-card { text-decoration: none; color: inherit; }
+  .wc-media { position: relative; }
+  .wc-media img, .wc-media .ph { width: 100%; aspect-ratio: 21/9; object-fit: cover; border: 1px solid var(--hair); border-radius: 12px; display: block; }
+  .play-pill { position: absolute; bottom: 10px; left: 10px; background: rgba(255,255,255,0.92); color: var(--ink); padding: 5px 11px; border-radius: 999px; font-size: 0.64rem; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; }
+  .wc-t { display: block; font-family: var(--serif); font-size: 1.28rem; margin-top: 12px; line-height: 1.16; transition: color 0.25s var(--ease); }
+  .wide-card:hover .wc-t { color: var(--pink); }
+
+  /* catch-all tail: dense text-only, no images */
+  .tail { margin-top: 44px; padding-top: 24px; border-top: 2px solid var(--ink); }
+  .tail-head { display: block; color: var(--mut); margin-bottom: 12px; }
+  .tail-list a { display: flex; justify-content: space-between; gap: 16px; padding: 11px 0; border-top: 1px solid var(--hair); text-decoration: none; color: inherit; font-size: 0.95rem; }
+  .tail-list a:first-child { border-top: none; }
+  .tail-list a:hover { color: var(--pink); }
+  .tail-list .meta { color: var(--faint); font-size: 0.76rem; white-space: nowrap; }
+
   /* entry page */
   .post { max-width: 660px; margin: 0 auto; padding-top: 64px; }
   .post-head .a-meta { display: flex; gap: 14px; align-items: center; margin-bottom: 20px; }
@@ -409,6 +474,9 @@ ${head}
     .endcta { flex-direction: column; align-items: flex-start; gap: 22px; }
     .article-cta { align-items:flex-start; flex-direction:column; gap:20px; }
     .feature { grid-template-columns: 1fr; gap: 22px; padding: 34px 0; }
+    .hero-row { grid-template-columns: 1fr; padding: 28px 0 4px; }
+    .datecards, .wide-grid { grid-template-columns: 1fr; }
+    .trend-row { grid-template-columns: 28px 40px 1fr auto; gap: 12px; }
     .group { grid-template-columns: 1fr; gap: 0; }
     .g-date { padding-top: 26px; display: flex; gap: 10px; align-items: baseline; }
     .g-num { margin-top: 0; }
@@ -572,8 +640,6 @@ const CHART_CSS = `
   .ch-poster { width: 60px; aspect-ratio: 2/3; object-fit: cover; border-radius: 8px; background: var(--paper); display: block; }
   .ch-title { font-family: var(--serif); font-size: 1.5rem; line-height: 1.1; letter-spacing: -0.01em; }
   .ch-kind { display: block; color: var(--faint); font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase; margin-top: 5px; }
-  .ch-move { font-size: 0.64rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; white-space: nowrap; }
-  .mv-up { color: #0F6E56; } .mv-down { color: #B03A5E; } .mv-new { color: var(--pink); } .mv-same { color: var(--faint); }
   .ch-actions { display: flex; align-items: center; justify-content: flex-end; gap: 16px; }
   .ch-save {
     display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.5rem 1.05rem; min-height: 38px;
@@ -590,15 +656,22 @@ const CHART_CSS = `
   }
 `;
 
-const renderChart = async (supabase: Db) => {
+// Shared by renderChart and the homepage's Trending section — both read the
+// same latest weekly snapshot; movement is computed against the prior week.
+const fetchTrendingSnapshots = async (supabase: Db) => {
   const { data: snaps } = await supabase
     .from('marketing_trending_snapshots')
     .select('snapshot_date, items')
     .order('snapshot_date', { ascending: false })
     .limit(2);
+  return {
+    latest: snaps?.[0] || null,
+    prior: (snaps?.[1]?.items as ChartItem[] | undefined) || null,
+  };
+};
 
-  const latest = snaps?.[0] || null;
-  const prior = snaps?.[1]?.items as ChartItem[] | undefined || null;
+const renderChart = async (supabase: Db) => {
+  const { latest, prior } = await fetchTrendingSnapshots(supabase);
   const pageUrl = `${SITE}${FEED_PATH}/chart`;
 
   const head = `<style>${CHART_CSS}</style>
@@ -663,6 +736,94 @@ const renderChart = async (supabase: Db) => {
     ${cta}
   `, 200, 'chart');
 };
+
+// ── Homepage sections (theplot.tv/whats-on, unfiltered first page only) ──
+// The front page groups the most recent visible posts into named sections
+// instead of one flat chronological list. Each section is shaped for what it
+// holds — a browsable shelf, a ranked chart, a date-forward card, a wide
+// trailer card — rather than repeating one row style under different labels.
+// A filtered (?type=) or paged (?page=) view is a reader who already picked a
+// category, so it keeps the plain dailyWire list further down in this file.
+const HOME_BATCH = 60;
+
+const fmtBadge = (iso: string) => ({
+  mon: new Date(iso).toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' }).toUpperCase(),
+  day: new Date(iso).getUTCDate(),
+});
+
+const sectionHead = (label: string, viewAllHref?: string) => `<div class="sec-head r3">
+    <span class="sec-dot"></span><span class="sec-label">${esc(label)}</span><span class="sec-rule"></span>
+    ${viewAllHref ? `<a class="view-all" href="${esc(viewAllHref)}">View all &rarr;</a>` : ''}
+  </div>`;
+
+// The secondary story beside the lead in the hero row — kicker + title only,
+// no dek, so it reads as clearly subordinate to the lead next to it.
+const secondaryCard = (p: FeedPost) => {
+  const img = postImage(p);
+  return `<a class="sidecard" href="${FEED_PATH}/${esc(p.slug)}">
+    ${img ? `<img src="${esc(img)}" alt="" loading="lazy">` : '<span class="ph"></span>'}
+    <div class="side-text">${kicker(p.post_type)}
+      <span class="side-t">${esc(postTitle(p))}</span>
+      <span class="side-date sc">${esc(fmtDate(p.scheduled_for))}</span>
+    </div>
+  </a>`;
+};
+
+const heroRow = (lead: FeedPost, secondary: FeedPost | null) => {
+  const hero = featuredHero(lead);
+  return secondary ? `<div class="hero-row">${hero}${secondaryCard(secondary)}</div>` : hero;
+};
+
+const streamingShelf = (posts: FeedPost[]) => `<div class="shelf r3">${posts.map((p) => {
+  const img = postImage(p);
+  return `<a class="shelf-item" href="${FEED_PATH}/${esc(p.slug)}">
+    ${img ? `<img src="${esc(img)}" alt="" loading="lazy">` : '<span class="ph"></span>'}
+    ${kicker(p.post_type)}
+    <span class="shelf-t">${esc(postTitle(p))}</span>
+  </a>`;
+}).join('')}</div>`;
+
+// A compact teaser of the same chart shown in full on /whats-on/chart —
+// reuses its rank/poster/movement pieces (chartMovement, moveChip, tmdbImg).
+const trendingTeaser = (items: ChartItem[], prior: ChartItem[] | null) => `<ol class="trend-list r3">${items.map((it) => {
+  const m = chartMovement(it, it.rank, prior);
+  const tUrl = titleHref(it.media_type, it.tmdb_id, it.title);
+  const img = it.poster_path
+    ? `<img class="trend-poster" src="${esc(tmdbImg(it.poster_path))}" alt="${esc(it.title)}" loading="lazy">`
+    : '<span class="trend-poster ph"></span>';
+  return `<li><a class="trend-row" href="${esc(tUrl)}">
+    <span class="trend-rank${it.rank <= 3 ? ' top' : ''}">${it.rank}</span>
+    ${img}
+    <span class="trend-t">${esc(it.title)}</span>
+    ${moveChip(m)}
+  </a></li>`;
+}).join('')}</ol>`;
+
+// The release date is the point of a countdown post, so it's a badge on the
+// card rather than buried in a dek. Uses scheduled_for (when PLOT posted the
+// update) — the only date FeedPost actually carries; not a claim about the
+// title's own release date, which this function has no source for.
+const comingSoonCards = (posts: FeedPost[]) => `<div class="datecards r3">${posts.map((p) => {
+  const img = postImage(p);
+  const { mon, day } = fmtBadge(p.scheduled_for);
+  return `<a class="datecard" href="${FEED_PATH}/${esc(p.slug)}">
+    <div class="dc-media">${img ? `<img src="${esc(img)}" alt="" loading="lazy">` : '<span class="ph"></span>'}<span class="date-badge">${esc(mon)}<span class="dd">${day}</span></span></div>
+    <span class="dc-t">${esc(postTitle(p))}</span>
+  </a>`;
+}).join('')}</div>`;
+
+const firstLookCards = (posts: FeedPost[]) => `<div class="wide-grid r3">${posts.map((p) => {
+  const img = postImage(p);
+  return `<a class="wide-card" href="${FEED_PATH}/${esc(p.slug)}">
+    <div class="wc-media">${img ? `<img src="${esc(img)}" alt="" loading="lazy">` : '<span class="ph"></span>'}<span class="play-pill">&#9654; Trailer</span></div>
+    <span class="wc-t">${esc(postTitle(p))}</span>
+  </a>`;
+}).join('')}</div>`;
+
+const tailList = (posts: FeedPost[]) => `<div class="tail r4">
+    <span class="tail-head sc">More updates</span>
+    <div class="tail-list">${posts.map((p) => `<a href="${FEED_PATH}/${esc(p.slug)}"><span>${esc(postTitle(p))}</span><span class="meta">${esc(fmtDate(p.scheduled_for))}</span></a>`).join('')}</div>
+  </div>`;
 
 // ── Newsletter archive (theplot.tv/newsletter) ────────────────────
 // Every issue that has been sent, as a public page. The point is conversion:
@@ -1012,38 +1173,12 @@ Deno.serve(async (req) => {
   if (!slug) {
     const type = TYPE_META[url.searchParams.get('type') || ''] ? url.searchParams.get('type') : null;
     const pageNum = Math.min(Math.max(parseInt(url.searchParams.get('page') || '1', 10) || 1, 1), 100);
-    const offset = (pageNum - 1) * PAGE_SIZE;
-
-    let query = baseQuery()
-      .order('scheduled_for', { ascending: false })
-      .range(offset, offset + PAGE_SIZE); // one extra row to detect another page
-    if (type) query = query.eq('post_type', type);
-    const { data } = await query;
-
-    const posts = ((data || []) as FeedPost[]);
-    const hasMore = posts.length > PAGE_SIZE;
-    const visible = posts.slice(0, PAGE_SIZE);
-
-    // Featured hero only on the unfiltered first page.
-    const featured = !type && pageNum === 1 ? visible[0] : null;
-    const wire = featured ? visible.slice(1) : visible;
 
     const dexLinks = FILTERS.map((f) => {
       const active = f.key === type;
       const href = f.key ? `${FEED_PATH}?type=${f.key}` : FEED_PATH;
       return `<a class="sc${active ? ' active' : ''}" href="${href}">${esc(f.label)}</a>`;
     }).join('');
-
-    const olderParams = new URLSearchParams();
-    if (type) olderParams.set('type', type);
-    olderParams.set('page', String(pageNum + 1));
-    const older = hasMore
-      ? `<div class="older-row r4"><a class="older sc" href="${FEED_PATH}?${olderParams.toString()}">Older updates &rarr;</a></div>`
-      : '';
-
-    const empty = visible.length === 0
-      ? `<p style="margin-top:48px;color:var(--mut);font-weight:300;">${type || pageNum > 1 ? 'No updates here yet.' : 'First update lands soon.'}</p>`
-      : '';
 
     const dateline = new Date().toLocaleDateString('en-US', {
       weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC',
@@ -1060,7 +1195,7 @@ Deno.serve(async (req) => {
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="${OG_FALLBACK}">`;
 
-    return page(FEED_SEO_TITLE, head, `
+    const titleRow = `
       <div class="head r2">
         <div class="head-row">
           <h1 class="feed-title">What's <em>on</em></h1>
@@ -1069,9 +1204,66 @@ Deno.serve(async (req) => {
       </div>
       <nav class="dex r2">
         <div class="dex-links">${dexLinks}</div>
-      </nav>
-      ${featured ? featuredHero(featured) : ''}
-      ${dailyWire(wire)}
+      </nav>`;
+
+    // Unfiltered first page: the sectioned front page. A ?type= filter or
+    // page 2+ is a reader who already picked a category — that stays the
+    // plain chronological list below, unchanged.
+    if (!type && pageNum === 1) {
+      const [{ data: batchData }, { latest: chartLatest, prior: chartPrior }] = await Promise.all([
+        baseQuery().order('scheduled_for', { ascending: false }).limit(HOME_BATCH),
+        fetchTrendingSnapshots(supabase),
+      ]);
+      const batch = (batchData || []) as FeedPost[];
+
+      if (!batch.length) {
+        return page(FEED_SEO_TITLE, head, `${titleRow}<p style="margin-top:48px;color:var(--mut);font-weight:300;">First update lands soon.</p>`);
+      }
+
+      const [lead, secondary, ...rest] = batch;
+      const streaming = rest.filter((p) => p.post_type === 'now_streaming').slice(0, 4);
+      const countdown = rest.filter((p) => p.post_type === 'countdown').slice(0, 2);
+      const trailer = rest.filter((p) => p.post_type === 'trailer').slice(0, 2);
+      const used = new Set([...streaming, ...countdown, ...trailer].map((p) => p.slug));
+      const tail = rest.filter((p) => !used.has(p.slug)).slice(0, 6);
+      const chartItems = ((chartLatest?.items as ChartItem[] | undefined) || []).slice(0, 3);
+
+      return page(FEED_SEO_TITLE, head, `
+        ${titleRow}
+        ${heroRow(lead, secondary || null)}
+        ${streaming.length ? `${sectionHead('Now streaming', `${FEED_PATH}?type=now_streaming`)}${streamingShelf(streaming)}` : ''}
+        ${chartItems.length ? `${sectionHead('Trending', `${FEED_PATH}/chart`)}${trendingTeaser(chartItems, chartPrior)}` : ''}
+        ${countdown.length ? `${sectionHead('Coming soon', `${FEED_PATH}?type=countdown`)}${comingSoonCards(countdown)}` : ''}
+        ${trailer.length ? `${sectionHead('First look', `${FEED_PATH}?type=trailer`)}${firstLookCards(trailer)}` : ''}
+        ${tail.length ? tailList(tail) : ''}
+      `);
+    }
+
+    const offset = (pageNum - 1) * PAGE_SIZE;
+    let query = baseQuery()
+      .order('scheduled_for', { ascending: false })
+      .range(offset, offset + PAGE_SIZE); // one extra row to detect another page
+    if (type) query = query.eq('post_type', type);
+    const { data } = await query;
+
+    const posts = ((data || []) as FeedPost[]);
+    const hasMore = posts.length > PAGE_SIZE;
+    const visible = posts.slice(0, PAGE_SIZE);
+
+    const olderParams = new URLSearchParams();
+    if (type) olderParams.set('type', type);
+    olderParams.set('page', String(pageNum + 1));
+    const older = hasMore
+      ? `<div class="older-row r4"><a class="older sc" href="${FEED_PATH}?${olderParams.toString()}">Older updates &rarr;</a></div>`
+      : '';
+
+    const empty = visible.length === 0
+      ? `<p style="margin-top:48px;color:var(--mut);font-weight:300;">No updates here yet.</p>`
+      : '';
+
+    return page(FEED_SEO_TITLE, head, `
+      ${titleRow}
+      ${dailyWire(visible)}
       ${empty}
       ${older}
     `);
