@@ -45,6 +45,35 @@ jobs:
           else
             node marketing/publish/publish.mjs
           fi
+      # Watchdog for the weekly batch, deliberately parked in this job rather
+      # than that one. When the 2026-08-30 batch was refused a runner over
+      # billing, its own "Alert on failure" step could not run either, and the
+      # empty week went unnoticed until someone looked at the site. This job
+      # kept running throughout. `always()` so a failed publish cannot mask an
+      # empty queue — those are different problems and both want reporting.
+      - name: Check the queue ahead
+        id: queue
+        if: always()
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node marketing/publish/queue-check.mjs --days=3
+
+      - name: Warn when nothing is queued
+        if: always() && steps.queue.outputs.empty == 'true'
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          ADMIN_EMAIL: ${{ secrets.MARKETING_ADMIN_EMAIL }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          WORKFLOW_NAME: publish
+          ALERT_SUBJECT: 'PLOT marketing: nothing is queued'
+          ALERT_BODY: >-
+            No marketing posts are scheduled for the next 3 days. Either the
+            weekly batch did not run, or everything it produced was rejected.
+            Nothing will publish and theplot.tv/whats-on will go stale until a
+            week is generated — rerun the weekly batch workflow.
+        run: bash .github/scripts/marketing-alert.sh
+
       - name: Alert on failure
         if: failure()
         env:
