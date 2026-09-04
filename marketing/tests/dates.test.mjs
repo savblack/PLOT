@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { addDaysStr } from '../lib/tmdb.mjs';
 import { mondayOfWeekInTz, formatWeekdayDayMonth } from '../lib/dates.mjs';
 
 test('mondayOfWeekInTz uses the Monday of the Australia week for Friday publish slots', () => {
@@ -29,4 +30,12 @@ test('formatWeekdayDayMonth keeps the year on an out-of-year date', () => {
     formatWeekdayDayMonth('2027-07-24', new Date('2026-09-01T00:00:00Z')),
     'Saturday 24 July 2027',
   );
+});
+
+test('addDaysStr measures the window from the given day, not from today', () => {
+  // Anchored "upcoming" windows must be N days wide from the anchor. Using a
+  // now-relative offset here silently shifts the window whenever the backfill
+  // runs on a different day than it is seeding.
+  assert.equal(addDaysStr('2026-08-29', 240), '2027-04-26');
+  assert.equal(addDaysStr('2026-08-29', 0), '2026-08-29');
 });
