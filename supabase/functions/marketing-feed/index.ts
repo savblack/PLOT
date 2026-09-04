@@ -296,14 +296,20 @@ ${head}
   .dex a:hover { color: var(--ink); }
   .dex a.active { color: var(--ink); border-bottom-color: var(--pink); }
 
-  .feature { display: grid; grid-template-columns: 7fr 5fr; gap: 44px; align-items: center; padding: 48px 0; text-decoration: none; color: inherit; }
+  /* Stacked (image full-width on top, text below) rather than side-by-side —
+     that way .feature's image always gets its column's FULL width, whether
+     that's the whole page (standalone) or the ~60% left of a secondary story
+     (paired in .hero-row). A side-by-side split only ever worked at the wider
+     of those two, and silently broke at the narrower one. */
+  .feature { display: flex; flex-direction: column; gap: 20px; padding: 48px 0; text-decoration: none; color: inherit; }
   .feature + .group { border-top: none; }
   .f-media img { width: 100%; aspect-ratio: 16/10; object-fit: cover; display: block; border: 1px solid var(--hair); border-radius: 14px; }
   .f-media .ph { width: 100%; aspect-ratio: 16/10; background: var(--paper); border: 1px solid var(--hair); display: flex; align-items: flex-end; padding: 26px; border-radius: 14px; }
   .f-media .ph span { font-family: var(--serif); font-size: 1.8rem; color: var(--ink); line-height: 1.05; }
   .feature h2 { font-family: var(--serif); font-size: clamp(1.9rem, 3.6vw, 2.6rem); font-weight: 400; line-height: 1.04; letter-spacing: -0.015em; margin: 12px 0 14px; }
   .feature:hover h2 { color: var(--pink); }
-  .feature .dek { color: var(--mut); font-weight: 300; font-size: 1rem; }
+  /* Clamped regardless of width — a hero dek is a teaser, not the full lede. */
+  .feature .dek { color: var(--mut); font-weight: 300; font-size: 1rem; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
   .feature .f-date { display: block; color: var(--faint); margin-top: 18px; }
   .feature .f-read { display: inline-block; color: var(--ink); margin-top: 22px; border-bottom: 1px solid var(--ink); padding-bottom: 3px; transition: color 0.25s var(--ease), border-color 0.25s var(--ease); }
   .feature:hover .f-read { color: var(--pink); border-color: var(--pink); }
@@ -329,20 +335,17 @@ ${head}
   .older { color: var(--mut); text-decoration: none; }
   .older:hover { color: var(--pink); }
 
-  /* front-page hero row: the lead story plus one secondary story beside it */
-  .hero-row { display: grid; grid-template-columns: 1.6fr 1fr; gap: 44px; align-items: stretch; padding: 40px 0 4px; }
-  /* Squeezed to ~60% width here (vs. full-width when standalone), .feature's own
-     text column narrows enough that a full dek can wrap tall and, since .feature
-     centers image against text, drag the image into empty vertical space. Top-align
-     and clamp the dek so the row height reflects a short lead, not a full paragraph. */
-  .hero-row .feature { padding: 0; align-items: start; }
-  .hero-row .feature .dek { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
-  .sidecard { display: flex; flex-direction: column; text-decoration: none; color: inherit; }
-  .sidecard img, .sidecard .ph { width: 100%; aspect-ratio: 4/3; object-fit: cover; border: 1px solid var(--hair); border-radius: 12px; display: block; }
-  .side-text { display: flex; flex-direction: column; margin-top: 14px; }
-  .side-t { font-family: var(--serif); font-size: 1.25rem; line-height: 1.16; margin-top: 6px; transition: color 0.25s var(--ease); }
-  .sidecard:hover .side-t { color: var(--pink); }
-  .side-date { color: var(--faint); margin-top: 8px; }
+  /* front-page hero row: one big lead image+story on the left, a compact
+     scan-list of mini entries on the right — not a second story competing
+     for attention, just thumbnail + headline, repeated. */
+  .hero-row { display: grid; grid-template-columns: 1.5fr 1fr; gap: 44px; align-items: start; padding: 40px 0 4px; }
+  .hero-row .feature { padding: 0; }
+  .rail { display: flex; flex-direction: column; }
+  .rail-row { display: flex; align-items: center; gap: 14px; padding: 12px 0; border-top: 1px solid var(--hair); text-decoration: none; color: inherit; }
+  .rail-row:first-child { border-top: none; padding-top: 0; }
+  .rail-thumb { width: 60px; height: 60px; object-fit: cover; border-radius: 8px; flex-shrink: 0; background: var(--paper); }
+  .rail-t { font-family: var(--serif); font-size: 0.98rem; line-height: 1.2; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; transition: color 0.25s var(--ease); }
+  .rail-row:hover .rail-t { color: var(--pink); }
 
   /* named section header: dot + label + rule + optional "view all" */
   .sec-head { display: flex; align-items: center; gap: 12px; margin: 46px 0 20px; }
@@ -480,7 +483,7 @@ ${head}
     .mcard .mc-t { font-size: 1.15rem; }
     .endcta { flex-direction: column; align-items: flex-start; gap: 22px; }
     .article-cta { align-items:flex-start; flex-direction:column; gap:20px; }
-    .feature { grid-template-columns: 1fr; gap: 22px; padding: 34px 0; }
+    .feature { padding: 34px 0; }
     .hero-row { grid-template-columns: 1fr; padding: 28px 0 4px; }
     .datecards, .wide-grid { grid-template-columns: 1fr; }
     .trend-row { grid-template-columns: 28px 40px 1fr auto; gap: 12px; }
@@ -752,6 +755,13 @@ const renderChart = async (supabase: Db) => {
 // A filtered (?type=) or paged (?page=) view is a reader who already picked a
 // category, so it keeps the plain dailyWire list further down in this file.
 const HOME_BATCH = 60;
+const HERO_RAIL_SIZE = 7;
+const STREAMING_SIZE = 4;
+const COUNTDOWN_SIZE = 2;
+const TRAILER_SIZE = 2;
+// Dedicated per-category queries fetch this many extra so a section can still
+// fill up even if every hero slot happens to land in that same category.
+const CATEGORY_BUFFER = HERO_RAIL_SIZE + 1;
 
 const fmtBadge = (iso: string) => ({
   mon: new Date(iso).toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' }).toUpperCase(),
@@ -763,22 +773,21 @@ const sectionHead = (label: string, viewAllHref?: string) => `<div class="sec-he
     ${viewAllHref ? `<a class="view-all" href="${esc(viewAllHref)}">View all &rarr;</a>` : ''}
   </div>`;
 
-// The secondary story beside the lead in the hero row — kicker + title only,
-// no dek, so it reads as clearly subordinate to the lead next to it.
-const secondaryCard = (p: FeedPost) => {
+// One compact entry in the rail beside the lead image — mini thumbnail + a
+// short headline, nothing else. Deliberately minimal: this is a scan list,
+// not a set of secondary stories competing with the lead for attention.
+const railRow = (p: FeedPost) => {
   const img = postImage(p);
-  return `<a class="sidecard" href="${FEED_PATH}/${esc(p.slug)}">
-    ${img ? `<img src="${esc(img)}" alt="" loading="lazy">` : '<span class="ph"></span>'}
-    <div class="side-text">${kicker(p.post_type)}
-      <span class="side-t">${esc(postTitle(p))}</span>
-      <span class="side-date sc">${esc(fmtDate(p.scheduled_for))}</span>
-    </div>
+  return `<a class="rail-row" href="${FEED_PATH}/${esc(p.slug)}">
+    ${img ? `<img class="rail-thumb" src="${esc(img)}" alt="" loading="lazy">` : '<span class="rail-thumb ph"></span>'}
+    <span class="rail-t">${esc(postTitle(p))}</span>
   </a>`;
 };
 
-const heroRow = (lead: FeedPost, secondary: FeedPost | null) => {
+const heroRow = (lead: FeedPost, rail: FeedPost[]) => {
   const hero = featuredHero(lead);
-  return secondary ? `<div class="hero-row">${hero}${secondaryCard(secondary)}</div>` : hero;
+  if (!rail.length) return hero;
+  return `<div class="hero-row">${hero}<div class="rail">${rail.map(railRow).join('')}</div></div>`;
 };
 
 const streamingShelf = (posts: FeedPost[]) => `<div class="shelf r3">${posts.map((p) => {
@@ -1217,8 +1226,17 @@ Deno.serve(async (req) => {
     // page 2+ is a reader who already picked a category — that stays the
     // plain chronological list below, unchanged.
     if (!type && pageNum === 1) {
-      const [{ data: batchData }, { latest: chartLatest, prior: chartPrior }] = await Promise.all([
+      const [
+        { data: batchData },
+        { data: streamingData },
+        { data: countdownData },
+        { data: trailerData },
+        { latest: chartLatest, prior: chartPrior },
+      ] = await Promise.all([
         baseQuery().order('scheduled_for', { ascending: false }).limit(HOME_BATCH),
+        baseQuery().eq('post_type', 'now_streaming').order('scheduled_for', { ascending: false }).limit(STREAMING_SIZE + CATEGORY_BUFFER),
+        baseQuery().eq('post_type', 'countdown').order('scheduled_for', { ascending: false }).limit(COUNTDOWN_SIZE + CATEGORY_BUFFER),
+        baseQuery().eq('post_type', 'trailer').order('scheduled_for', { ascending: false }).limit(TRAILER_SIZE + CATEGORY_BUFFER),
         fetchTrendingSnapshots(supabase),
       ]);
       const batch = (batchData || []) as FeedPost[];
@@ -1227,17 +1245,30 @@ Deno.serve(async (req) => {
         return page(FEED_SEO_TITLE, head, `${titleRow}<p style="margin-top:48px;color:var(--mut);font-weight:300;">First update lands soon.</p>`);
       }
 
-      const [lead, secondary, ...rest] = batch;
-      const streaming = rest.filter((p) => p.post_type === 'now_streaming').slice(0, 4);
-      const countdown = rest.filter((p) => p.post_type === 'countdown').slice(0, 2);
-      const trailer = rest.filter((p) => p.post_type === 'trailer').slice(0, 2);
-      const used = new Set([...streaming, ...countdown, ...trailer].map((p) => p.slug));
+      // The lead plus a scan-list rail come straight off the top of the same
+      // chronological batch. A hidden gem is an evergreen rewatch pick, not
+      // front-page news, so it's never the lead — skip to the next post that
+      // isn't one (it's still eligible for the rail below, just not the hero).
+      // The three category sections further down are each their own dedicated
+      // query (not derived from this batch) so a section can still fill up
+      // even on a day where its posts fell outside the batch's window — only
+      // excluded here so nothing doubles up with the hero.
+      const leadIdx = Math.max(batch.findIndex((p) => p.post_type !== 'hidden_gem'), 0);
+      const lead = batch[leadIdx];
+      const rest = [...batch.slice(0, leadIdx), ...batch.slice(leadIdx + 1)];
+      const rail = rest.slice(0, HERO_RAIL_SIZE);
+      const heroSlugs = new Set([lead.slug, ...rail.map((p) => p.slug)]);
+
+      const streaming = ((streamingData || []) as FeedPost[]).filter((p) => !heroSlugs.has(p.slug)).slice(0, STREAMING_SIZE);
+      const countdown = ((countdownData || []) as FeedPost[]).filter((p) => !heroSlugs.has(p.slug)).slice(0, COUNTDOWN_SIZE);
+      const trailer = ((trailerData || []) as FeedPost[]).filter((p) => !heroSlugs.has(p.slug)).slice(0, TRAILER_SIZE);
+      const used = new Set([...heroSlugs, ...streaming.map((p) => p.slug), ...countdown.map((p) => p.slug), ...trailer.map((p) => p.slug)]);
       const tail = rest.filter((p) => !used.has(p.slug)).slice(0, 6);
       const chartItems = ((chartLatest?.items as ChartItem[] | undefined) || []).slice(0, 3);
 
       return page(FEED_SEO_TITLE, head, `
         ${titleRow}
-        ${heroRow(lead, secondary || null)}
+        ${heroRow(lead, rail)}
         ${streaming.length ? `${sectionHead('Now streaming', `${FEED_PATH}?type=now_streaming`)}${streamingShelf(streaming)}` : ''}
         ${chartItems.length ? `${sectionHead('Trending', `${FEED_PATH}/chart`)}${trendingTeaser(chartItems, chartPrior)}` : ''}
         ${countdown.length ? `${sectionHead('Coming soon', `${FEED_PATH}?type=countdown`)}${comingSoonCards(countdown)}` : ''}
