@@ -1,7 +1,7 @@
-// /newsletter/<week-start> (one archived issue, e.g. /newsletter/2026-08-03)
-import { newsletter } from '../_lib/whats-on.js';
-
-export async function onRequest({ request, params }) {
-  const issue = Array.isArray(params.issue) ? params.issue[0] : params.issue;
-  return newsletter(request, issue);
+// /newsletter/<week-start> — retired along with the archive. Old issue links
+// (and anything already indexed) land on the signup instead of a 404. Same
+// origin-relative reasoning as ../newsletter.js.
+export function onRequest({ request }) {
+  const { origin } = new URL(request.url);
+  return Response.redirect(`${origin}/whats-on#newsletter`, 301);
 }
