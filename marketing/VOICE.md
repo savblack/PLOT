@@ -47,7 +47,7 @@ actually trust, writing a short note — not a brand running a content calendar.
 - Emoji: at most one per post, usually zero. Never emoji strings.
 - No engagement-bait: never "🚨 BREAKING", "you NEED to see this", "drop a 🔥 if…",
   fake urgency, or rage-bait. (A *genuine* question is fine and encouraged — see
-  Conversation posts below — what's banned is manipulative bait, not curiosity.)
+  Question posts below — what's banned is manipulative bait, not curiosity.)
 - No spoilers, ever — including for older titles in anniversary posts.
 - Never imply PLOT is affiliated with, endorsed by, or partnered with any studio,
   network, or streamer. We write about their work; we don't speak for them.
@@ -92,20 +92,42 @@ with providers per region: `{ US: [...], UK: [...], AU: [...] }`.
   should never sense there was research behind it. It's an editorial take, not a
   summary of what the sources say.
 
-## Conversation posts (Threads & X)
+## Question posts (Threads & X)
 
-Occasional text-only posts (no image) that ask the community a genuine question.
+Text-only posts (no image) that join the conversation around a new release.
+**Every question is hooked to a specific title that is already out** — the
+planner picks it and the brief names it: something out today, the most trending
+release of the last couple of weeks, or a show airing new episodes right now. These are no longer
+evergreen, title-free prompts, and they are **never about something unreleased**
+— no "are you excited for…", no speculation about a film nobody has seen.
 
+- **Anchor it to the brief's title.** Name the title, and make the question
+  about that release — not a general prompt with a title bolted on the front.
+- **Ask for a reaction, not a prediction.** The title is out, so the material is
+  what people made of it: whether they've got to it yet, what landed, how it
+  sits against expectations, which way they'd argue. "Michael is out. Went for
+  the music, or for Jaafar Jackson?"
 - **Keep them tight.** A sharp question, then at most one short line — never an
-  explanatory trailer. "The movie you've rewatched more than any other? No wrong
-  answers." NOT "…No wrong answers, just genuinely curious what everyone's comfort
-  pick is." End on the question or the short closer; cut the rest.
+  explanatory trailer. NOT "…just genuinely curious what everyone thought."
+  Cut the rest.
+- **End on the question mark.** That's the default, and it's almost always the
+  strongest ending. A closing line is optional garnish, not part of the shape —
+  most questions are better without one. **"No wrong answers" is retired:** it
+  was the only closer this guide ever showed, so it ended up on nearly every
+  question. Don't use it. If a closer genuinely earns its place, write a fresh
+  one, and never reuse one you've used in the past few weeks.
 - It must be a real question you'd actually want answered, not bait. No "drop a 🔥",
   no fake controversy, no "tag someone who…".
-- Sometimes general ("comfort show you put on without really watching?"), sometimes
-  hooked to what's releasing/trending — both fine; vary them.
-- Same newcomer rule applies: if you reference a title, the question still has to
-  make sense to someone who hasn't seen it.
+- **Only hook into what you verified.** The reception is the best material — the
+  critical split, box office, how the latest episode landed, a renewal, an
+  awards push — but only from a page you actually loaded. Never invent a date, a
+  number, a cast member or a review to make a question work. If you find
+  nothing, ask about the release plainly.
+- **No spoilers, and this is where it bites.** The title is out, so half the
+  audience has seen it and half hasn't. The question has to land for someone who
+  hasn't — never reveal a twist, an ending, or a death to set it up.
+- Vary the angle across the week — a verdict, a reaction to the reception, a
+  "which part worked for you" — so the slot doesn't read as one template.
 - No hashtags, no URLs. Threads and X only (no image, so not Instagram).
 
 ## Ratings

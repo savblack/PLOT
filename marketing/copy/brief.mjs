@@ -22,13 +22,64 @@ const sourceList = (research) => {
   return urls.map(s => `- ${s.title}: ${s.url}`).join('\n');
 };
 
-// Conversation posts get their own short brief: one tight question, no card,
-// no article. Text-only for Threads + X.
+// Question posts get their own short brief: one tight question, no card, no
+// article. Text-only for Threads + X.
+//
+// The planner anchors every question to a real title (payload.title +
+// tmdb_refs), so the brief names it and points the worker at the web for that
+// title's recent news. Rows planned before questions went topical carry
+// `{topic: {mode: 'generic'}}` and no title — they still get a valid brief via
+// the generic fallback below, so a part-planned week doesn't break.
+const QUESTION_HOOKS = {
+  out_today: () => 'It came out today.',
+  just_out: (when) => (when ? `It came out on ${when}.` : 'It came out recently.'),
+  airing: (when) => (when ? `Its latest episode aired on ${when}.` : "It's airing right now."),
+};
+const DEFAULT_HOOK = () => "It's out now.";
+
 export const buildConversationBrief = async (post) => {
-  const prompt = `One genuine, GENERIC question that sparks replies — the kind any film/TV lover
+  const topic = post.payload?.topic || {};
+  const subject = post.payload?.title || (Array.isArray(post.tmdb_refs) ? post.tmdb_refs[0] : null);
+  const name = subject?.title || null;
+  const mediaType = subject?.media_type || null;
+  const tmdbId = subject?.tmdb_id ?? subject?.id ?? null;
+
+  let prompt;
+  let sources = '';
+  if (name) {
+    const isTv = mediaType === 'tv';
+    const kind = isTv ? 'TV show' : 'film';
+    const angles = isTv
+      ? 'how the latest episode landed, reviews, a renewal or cancellation, where the season is heading, a casting or cast-exit story'
+      : 'reviews and the critical split, box office, audience reaction, an awards push, a sequel or franchise story';
+    const hookLine = (QUESTION_HOOKS[topic.hook] || DEFAULT_HOOK)(topic.when_label);
+    prompt = `One genuine question about **${name}** (${kind}). ${hookLine}
+
+It's out, so join the conversation that's already happening rather than
+speculating: whether people have got to it yet, what they made of it, how it
+sits against expectations or against the rest of ${isTv ? "the show" : "the genre"}.
+Name ${name} in the question so the hook is obvious.
+
+**Research it first.** Search the web for what's actually being said about
+${name}: ${angles}. Use only what you can verify from a page you actually
+loaded. If nothing turns up, ask about the release plainly — never invent a plot
+point, a date, a cast member, a number or a review.`;
+    if (tmdbId && mediaType) {
+      sources = `
+## Starting point
+- TMDB — ${name}: https://www.themoviedb.org/${mediaType}/${tmdbId}
+
+Search beyond this for anything recent. Don't cite TMDB scores or vote counts.
+`;
+    }
+  } else {
+    // Legacy generic row (planned before questions became topical).
+    prompt = `One genuine, GENERIC question that sparks replies — the kind any film/TV lover
 can answer (a comfort watch, a hot take, an underrated pick, a guilty pleasure).
 It must be evergreen: NEVER tied to a specific film/show, a new release, or
 whatever is trending right now. No title names at all.`;
+  }
+
   return `# Copy job: question (text-only, Threads + X)
 
 Post id: \`${post.id}\`
@@ -37,17 +88,23 @@ Write your answer to: \`marketing/copy/jobs/${post.id}.copy.json\`
 ## What to write
 ${prompt}
 
-Keep it TIGHT: a sharp question, then at most one short line. End on the question
-or a brief closer ("No wrong answers."); never an explanatory trailer like
-"…just genuinely curious what everyone thinks". No hashtags, no links, no emoji
-strings. Must fit 280 characters.
+Keep it TIGHT: a sharp question, then at most one short line. **End on the
+question mark** — that's the default and almost always the strongest ending.
+Never add an explanatory trailer like "…just genuinely curious what everyone
+thinks", and do NOT close with "No wrong answers" — it's retired for being used
+on nearly every question. A closing line is optional; if one genuinely earns its
+place, write a fresh one. No hashtags, no links, no emoji strings. Must fit 280
+characters.
 
+**No spoilers**, and the question has to land for someone who hasn't seen it —
+never assume the reader already watched.
+${sources}
 ## Output — a single JSON object
 - \`question\` (string): the post text, used verbatim on both Threads and X.
 
 Write ONLY the JSON object to the output file. No markdown fences, no commentary.
 
-## Voice guide (follow exactly — see the "Conversation posts" section)
+## Voice guide (follow exactly — see the "Question posts" section)
 ${await voice()}
 `;
 };

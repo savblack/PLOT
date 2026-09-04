@@ -171,7 +171,7 @@ const reason = (p: Row): string => {
       return title ? `T-${n} countdown to ${title}` : `Countdown (T-${n})`;
     }
     case 'trailer': return title ? `New trailer dropped: ${title}` : 'New trailer';
-    case 'question': return 'Generic audience question';
+    case 'question': return title ? `Audience question about: ${title}` : 'Audience question';
     case 'guide': return p.copy?.page_title ? `Long-form guide: ${p.copy.page_title}` : 'Long-form SEO guide';
     default: return p.post_type.replace(/_/g, ' ');
   }
