@@ -51,6 +51,14 @@ const dateStr = (offsetDays = 0) => {
   return d.toISOString().slice(0, 10);
 };
 
+// dateStr's offset is always relative to now; this one shifts a given day, so
+// an anchored window ("240 days from 2026-08-29") stays that many days wide.
+const addDaysStr = (dayStr, offsetDays = 0) => {
+  const d = new Date(`${dayStr}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + offsetDays);
+  return d.toISOString().slice(0, 10);
+};
+
 const flatResults = (pages) => pages.flatMap(p => p?.results ?? []);
 
 export const tmdb = {
@@ -62,10 +70,14 @@ export const tmdb = {
   },
 
   // Upcoming theatrical + streaming movies in the next `days`, by popularity.
-  getUpcomingMovies: async (days = 180) => {
+  // `from` anchors "upcoming" to a day other than today (YYYY-MM-DD) so a
+  // backdated post can be built from the slate as it stood then. Defaults to
+  // today, so live callers are unchanged.
+  getUpcomingMovies: async (days = 180, from = null) => {
+    const start = from || dateStr(0);
     const params = {
-      'release_date.gte': dateStr(0),
-      'release_date.lte': dateStr(days),
+      'release_date.gte': start,
+      'release_date.lte': addDaysStr(start, days),
       sort_by: 'popularity.desc',
     };
     const pages = await Promise.all([1, 2, 3].map(page =>
@@ -74,10 +86,11 @@ export const tmdb = {
   },
 
   // TV premiering in the next `days`.
-  getUpcomingTV: async (days = 180) => {
+  getUpcomingTV: async (days = 180, from = null) => {
+    const start = from || dateStr(0);
     const params = {
-      'first_air_date.gte': dateStr(0),
-      'first_air_date.lte': dateStr(days),
+      'first_air_date.gte': start,
+      'first_air_date.lte': addDaysStr(start, days),
       sort_by: 'popularity.desc',
     };
     const pages = await Promise.all([1, 2].map(page => fetchTMDB('/discover/tv', { ...params, page })));
@@ -215,4 +228,4 @@ export const tmdb = {
 };
 
 export const tmdbRegion = REGION;
-export { dateStr };
+export { dateStr, addDaysStr };
