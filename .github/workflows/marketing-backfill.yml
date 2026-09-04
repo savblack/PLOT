@@ -1,0 +1,90 @@
+name: Marketing — backfill gap
+
+# Fills a range of days the daily automation missed (a failed weekly batch, an
+# Actions billing block, an outage) by seeding backdated marketing_posts.
+#
+# Unlike the weekly batch, backfilled posts are written straight to
+# status 'published' — they appear on theplot.tv/whats-on immediately and never
+# pass the admin review desk. That is why `write` defaults to false: the normal
+# run is a dry run you read first.
+on:
+  workflow_dispatch:
+    inputs:
+      from:
+        description: 'First day to seed, inclusive (YYYY-MM-DD)'
+        required: true
+        type: string
+      to:
+        description: 'Last day to seed, inclusive (YYYY-MM-DD)'
+        required: true
+        type: string
+      write:
+        description: 'Write for real. Leave unchecked to dry-run (prints the posts, writes nothing).'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: marketing-backfill
+  cancel-in-progress: false
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Only trending days (Fridays) render a branded card; every other type
+      # leads with a plain TMDB still. Installing unconditionally keeps the
+      # workflow correct for any range rather than guessing at its weekdays.
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      # Dates go in as env, never interpolated into the shell — a
+      # workflow_dispatch input is attacker-controllable text, and `${{ }}` in a
+      # run block would paste it straight into bash.
+      - name: Check the range
+        env:
+          FROM: ${{ inputs.from }}
+          TO: ${{ inputs.to }}
+        run: |
+          for d in "$FROM" "$TO"; do
+            case "$d" in
+              [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]) ;;
+              *) echo "Not a YYYY-MM-DD date: $d"; exit 1 ;;
+            esac
+          done
+          if [ "$FROM" \> "$TO" ]; then
+            echo "from ($FROM) is after to ($TO)."
+            exit 1
+          fi
+
+      # --reset is deliberately unreachable from this workflow: it deletes every
+      # backfill:% post ever seeded, not just this range.
+      - name: Seed the gap
+        env:
+          FROM: ${{ inputs.from }}
+          TO: ${{ inputs.to }}
+          WRITE: ${{ inputs.write }}
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
+          OMDB_API_KEY: ${{ secrets.OMDB_API_KEY }}
+        run: |
+          if [ "$WRITE" = "true" ]; then
+            echo "Writing for real — these posts go live on /whats-on immediately."
+            node scripts/seed-marketing-backfill.mjs --from="$FROM" --to="$TO"
+          else
+            echo "Dry run. Re-run with 'Write for real' checked to publish."
+            node scripts/seed-marketing-backfill.mjs --from="$FROM" --to="$TO" --dry-run
+          fi
