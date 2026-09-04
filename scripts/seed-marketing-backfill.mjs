@@ -95,10 +95,17 @@ const COPY = {
     const when = p.when_label;
     const days = p.days_until;
     const unit = days === 1 ? 'day' : 'days';
+    // Imminence has to track the actual gap. These lines used to be
+    // unconditional, so a T-106 countdown claimed "the wait is nearly over" and
+    // titled itself "is almost here" — the copy contradicted its own day count.
+    const soon = days <= 14;
+    const titles = soon
+      ? [`${t} is almost here`, `The countdown to ${t} is on`, `${days} ${unit} until ${t}`]
+      : [`${days} ${unit} until ${t}`, `The countdown to ${t} is on`, `${t} has a date`];
     return {
-      page_title: pick([`${t} is almost here`, `The countdown to ${t} is on`, `${days} ${unit} until ${t}`], i),
+      page_title: pick(titles, i),
       page_body: [
-        `${t} arrives ${when}. The wait is nearly over.`,
+        `${t} arrives ${when}.${soon ? ' The wait is nearly over.' : ` That is ${days} ${unit} out.`}`,
         `If it has been sitting on your radar, now is a good moment to add it to your watchlist so the release does not slip past you.`,
       ],
       x: clampX(`${t} lands ${when}. ${days} ${unit} to go. Track it on PLOT, link in bio.`),
@@ -433,7 +440,7 @@ const makePayloadBuilder = (tmdb, fetchTMDB) => {
         payload: {
           days_until: gap,
           kind: item.media_type === 'tv' ? 'tv' : 'cinema',
-          when_label: formatWeekdayDayMonth(rel),
+          when_label: formatWeekdayDayMonth(rel, date),
           title: slimTitle(item),
         },
       };
@@ -471,7 +478,7 @@ const makePayloadBuilder = (tmdb, fetchTMDB) => {
           tmdb_refs: [{ media_type: it.media_type, id: it.id, title: it.title || it.name }],
           payload: {
             kind: it.media_type === 'tv' ? 'tv' : 'cinema',
-            when_label: rel ? formatWeekdayDayMonth(rel) : null,
+            when_label: rel ? formatWeekdayDayMonth(rel, date) : null,
             title: slimTitle(it),
           },
         };
@@ -518,7 +525,7 @@ const makePayloadBuilder = (tmdb, fetchTMDB) => {
         const dateStr = it.media_type === 'tv' ? it.first_air_date : it.release_date;
         return slimTitle(it, {
           release_kind: it.release_kind,
-          when_label: dateStr ? formatWeekdayDayMonth(dateStr) : null,
+          when_label: dateStr ? formatWeekdayDayMonth(dateStr, date) : null,
           where: null,
           popularity: it.popularity,
         });

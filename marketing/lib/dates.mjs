@@ -42,10 +42,15 @@ export const formatDayMonth = (dateStr) => {
   return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
 };
 
-// '2026-06-19' -> 'Friday 19 June'
-export const formatWeekdayDayMonth = (dateStr) => {
+// '2026-06-19' -> 'Friday 19 June'; a date outside `relativeTo`'s year keeps its
+// year -> 'Friday 24 July 2027'. Without that, a release far enough out reads as
+// a date that has already been and gone: a trailer post written in September
+// 2026 for a July 2027 film said "It arrives Friday 24 July", which a reader
+// dates to the previous July. Same-year dates are unchanged.
+export const formatWeekdayDayMonth = (dateStr, relativeTo = new Date()) => {
   const d = new Date(`${dateStr}T00:00:00Z`);
-  return `${WEEKDAYS[d.getUTCDay()]} ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
+  const base = `${WEEKDAYS[d.getUTCDay()]} ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
+  return d.getUTCFullYear() === relativeTo.getUTCFullYear() ? base : `${base} ${d.getUTCFullYear()}`;
 };
 
 // ('2026-06-15', '2026-06-21') -> '15 – 21 June' (or '28 June – 4 July')
