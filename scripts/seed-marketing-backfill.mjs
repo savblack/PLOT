@@ -465,20 +465,29 @@ const makePayloadBuilder = (tmdb, fetchTMDB) => {
 
     trailer: async ({ date }) => {
       const { upcoming } = await loadPools();
-      // Find a title that actually has an official trailer.
+      const day = isoDate(date);
+      const relOf = (it) => (it.media_type === 'tv' ? it.first_air_date : it.release_date) || null;
+      // Find a title that has an official trailer AND whose release is still
+      // ahead of the post date. The pool is "upcoming" as of the run, not as of
+      // the backdated day, so without the second half a backfilled post
+      // announced a film that had already opened: "The first official trailer
+      // for Pinocchio: Unstrung has arrived. It arrives Friday 24 July." on a
+      // post dated 1 September. A trailer drop is news about something coming.
+      // Cheap date check first — getTrailers is a network call per candidate.
       for (const it of upcoming) {
         if (isUsed(it)) continue;
+        const rel = relOf(it);
+        if (!rel || rel <= day) continue;
         const trailers = await tmdb.getTrailers(it.media_type, it.id).catch(() => []);
         if (!trailers.length) continue;
         markUsed(it);
-        const rel = (it.media_type === 'tv' ? it.first_air_date : it.release_date) || null;
         return {
           post_type: 'trailer',
           topic_key: `backfill:trailer:${isoDate(date)}`,
           tmdb_refs: [{ media_type: it.media_type, id: it.id, title: it.title || it.name }],
           payload: {
             kind: it.media_type === 'tv' ? 'tv' : 'cinema',
-            when_label: rel ? formatWeekdayDayMonth(rel, date) : null,
+            when_label: formatWeekdayDayMonth(rel, date),
             title: slimTitle(it),
           },
         };
