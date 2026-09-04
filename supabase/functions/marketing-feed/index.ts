@@ -331,7 +331,12 @@ ${head}
 
   /* front-page hero row: the lead story plus one secondary story beside it */
   .hero-row { display: grid; grid-template-columns: 1.6fr 1fr; gap: 44px; align-items: stretch; padding: 40px 0 4px; }
-  .hero-row .feature { padding: 0; }
+  /* Squeezed to ~60% width here (vs. full-width when standalone), .feature's own
+     text column narrows enough that a full dek can wrap tall and, since .feature
+     centers image against text, drag the image into empty vertical space. Top-align
+     and clamp the dek so the row height reflects a short lead, not a full paragraph. */
+  .hero-row .feature { padding: 0; align-items: start; }
+  .hero-row .feature .dek { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
   .sidecard { display: flex; flex-direction: column; text-decoration: none; color: inherit; }
   .sidecard img, .sidecard .ph { width: 100%; aspect-ratio: 4/3; object-fit: cover; border: 1px solid var(--hair); border-radius: 12px; display: block; }
   .side-text { display: flex; flex-direction: column; margin-top: 14px; }
