@@ -352,10 +352,12 @@ ${head}
   .view-all { font-size: 0.74rem; color: var(--mut); text-decoration: none; white-space: nowrap; }
   .view-all:hover { color: var(--pink); }
 
-  /* Now Streaming: a browsable poster shelf, not a headline list */
-  .shelf { display: flex; gap: 18px; overflow-x: auto; padding-bottom: 6px; }
-  .shelf-item { flex: 0 0 132px; text-decoration: none; color: inherit; }
-  .shelf-item img, .shelf-item .ph { width: 132px; aspect-ratio: 2/3; object-fit: cover; border: 1px solid var(--hair); border-radius: 10px; display: block; }
+  /* Now Streaming: a poster shelf, not a headline list. The section never
+     holds more than 4 posts (capped server-side), so this fills the row from
+     however many exist rather than scrolling to ones that were never there. */
+  .shelf { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 18px; }
+  .shelf-item { text-decoration: none; color: inherit; }
+  .shelf-item img, .shelf-item .ph { width: 100%; aspect-ratio: 2/3; object-fit: cover; border: 1px solid var(--hair); border-radius: 10px; display: block; }
   .shelf-item .kick { display: block; margin: 10px 0 3px; }
   .shelf-t { font-family: var(--serif); font-size: 1.02rem; line-height: 1.16; transition: color 0.25s var(--ease); }
   .shelf-item:hover .shelf-t { color: var(--pink); }
