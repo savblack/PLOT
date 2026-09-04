@@ -364,18 +364,27 @@ const movementLabel = (m, rank) => {
 };
 
 // ── Payload builders (mirror marketing/planner/triggers/* shapes) ────────────
-const makePayloadBuilder = (tmdb, fetchTMDB) => {
+// `anchorDay` is the earliest day being seeded (YYYY-MM-DD). Pools are built as
+// of that day rather than as of the run, so a backdated post is written from
+// the slate as it actually stood: on 29 August, a 31 August release was the
+// closest upcoming thing, but a pool anchored to today cannot see it at all —
+// while a film that opened on 24 July would wrongly still count as upcoming.
+// Per-day builders then narrow further against their own date.
+const makePayloadBuilder = (tmdb, fetchTMDB, anchorDay = null) => {
   // Shared pools, fetched once.
   let pools = null;
   const loadPools = async () => {
     if (pools) return pools;
     const today = isoDate(new Date());
-    const digitalSince = addDays(today, -150);
+    const anchor = anchorDay || today;
+    const digitalSince = addDays(anchor, -150);
     const [trending, upMovies, upTV, recentDigitalRaw] = await Promise.all([
       tmdb.getTrending('all', 'week'),
-      tmdb.getUpcomingMovies(240),
-      tmdb.getUpcomingTV(240),
-      // Real films that hit digital in the last ~5 months (for "now streaming").
+      tmdb.getUpcomingMovies(240, anchor),
+      tmdb.getUpcomingTV(240, anchor),
+      // Real films that hit digital in the ~5 months before the anchor. The
+      // upper bound stays "yesterday" so later days in the range can still use
+      // a title that went digital mid-range; each day filters to <= its own date.
       fetchTMDB('/discover/movie', {
         with_release_type: '4',
         'release_date.gte': digitalSince,
@@ -448,7 +457,10 @@ const makePayloadBuilder = (tmdb, fetchTMDB) => {
 
     now_streaming: async ({ date }) => {
       const { recentDigital } = await loadPools();
-      const item = takeFrom(recentDigital);
+      const day = isoDate(date);
+      // "Now streaming" has to have already landed on the post's own day — the
+      // pool runs up to yesterday, which for a backdated post is the future.
+      const item = takeFrom(recentDigital, (it) => it.release_date && it.release_date <= day);
       if (!item) return null;
       const providers = await tmdb.getWatchProviders('movie', item.id).catch(() => []);
       return {
@@ -613,7 +625,7 @@ const main = async () => {
     process.exit(1);
   }
   const schedule = FROM ? buildScheduleRange(FROM, TO) : buildSchedule(now);
-  const builder = makePayloadBuilder(tmdb, fetchTMDB);
+  const builder = makePayloadBuilder(tmdb, fetchTMDB, isoDate(schedule[0].date));
 
   console.log(`Building ${schedule.length} backdated posts (${isoDate(schedule[0].date)} → ${isoDate(schedule[schedule.length - 1].date)})…`);
 
