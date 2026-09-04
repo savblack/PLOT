@@ -7,13 +7,18 @@
 # it too, and "PLOT marketing: ... FAILED" would be actively misleading for a
 # failed database backup. Omitting it keeps the original subject verbatim, so
 # every existing caller is unaffected.
+#
+# ALERT_BODY follows the same precedent, for the same reason one step further:
+# not every alert is a failed run. The queue watchdog fires on a healthy run
+# that found nothing scheduled, where "The publish run failed." is simply false.
+# Omitting it keeps the original sentence verbatim.
 set -euo pipefail
 
 payload=$(jq -n \
   --arg from "PLOT <hello@theplot.tv>" \
   --arg to "$ADMIN_EMAIL" \
   --arg subject "${ALERT_SUBJECT:-PLOT marketing: ${WORKFLOW_NAME} workflow FAILED}" \
-  --arg html "<p>The ${WORKFLOW_NAME} run failed. ${FAILURE_NOTE:-}</p><p><a href=\"${RUN_URL}\">Open the workflow run</a></p>" \
+  --arg html "<p>${ALERT_BODY:-The ${WORKFLOW_NAME} run failed. ${FAILURE_NOTE:-}}</p><p><a href=\"${RUN_URL}\">Open the workflow run</a></p>" \
   '{from: $from, to: [$to], subject: $subject, html: $html}')
 
 curl -sS -X POST https://api.resend.com/emails \
