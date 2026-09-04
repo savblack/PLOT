@@ -59,7 +59,7 @@ const reason = (p) => {
     case 'now_streaming': return t ? `Hits streaming today: ${t}` : 'New on streaming today';
     case 'countdown': { const m = String(p.topic_key || '').match(/:t(\d+):/); const nn = m ? m[1] : (p.payload?.days ?? ''); return t ? `T-${nn} countdown to ${t}` : `Countdown (T-${nn})`; }
     case 'trailer': return t ? `New trailer dropped: ${t}` : 'New trailer';
-    case 'question': return 'Generic audience question';
+    case 'question': return t ? `Audience question about: ${t}` : 'Audience question';
     default: return p.post_type.replace(/_/g, ' ');
   }
 };

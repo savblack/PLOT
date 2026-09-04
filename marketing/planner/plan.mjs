@@ -33,13 +33,6 @@ const EVALUATORS = {
   hidden_gem: hiddenGem.evaluate,
 };
 
-const genericQuestion = (publishAt) => ({
-  post_type: 'question',
-  topic_key: `conversation:${isoDate(publishAt)}`,
-  tmdb_refs: [],
-  payload: { topic: { mode: 'generic' } },
-});
-
 // Keep marketing_tracked_titles fresh: top upcoming titles by popularity, with
 // region release dates. New rows get known_trailers seeded with the trailers
 // that already exist, so we never announce an old trailer as "just dropped".
@@ -147,13 +140,18 @@ const planSlot = async (supabase, publishAt, tracked) => {
   const releaseId = release?.tmdb_refs?.[0]?.id;
   const isMajorRelease = !isAnchor && release && majorBar !== Infinity && popOf(releaseId) >= majorBar;
 
+  // Titles the question must not claim. Questions are now title-anchored, so on
+  // the Sunday *lead* slot the question runs before the release spotlight — hold
+  // the release's title back so a question can't outrank the now_streaming post
+  // for it. Evaluated at call time: chosenIds grows as the day fills.
+  const reservedIds = () => new Set(releaseId ? [...chosenIds, releaseId] : chosenIds);
+
   if (isMajorRelease) {
-    candidates.push(release, { // lead + a related question
-      post_type: 'question',
-      topic_key: `conversation:${isoDate(publishAt)}`,
-      tmdb_refs: [],
-      payload: { topic: { mode: 'generic' } },
-    });
+    // Lead with the release, then a question about that same title — the one
+    // place a question deliberately shares the day's subject.
+    const related = await conversation.evaluate(ctx, { subject: release.tmdb_refs[0] });
+    candidates.push(release);
+    if (related) candidates.push(related);
     chosenIds.add(releaseId);
     await consider((c) => onThisDay.evaluate(c)); // one unrelated post
     if (candidates.length < 3) await consider((c) => onThisDay.evaluate(c, { minVotes: 500 }));
@@ -166,12 +164,12 @@ const planSlot = async (supabase, publishAt, tracked) => {
     // Non-anchor days follow the weekly cadence. Sunday questions lead; Tue/Thu
     // questions sit in the middle of the mix.
     if (!isAnchor || candidates.length === 0) {
-      if (questionSlot === 'lead') await consider(() => genericQuestion(publishAt));
+      if (questionSlot === 'lead') await consider(conversation.evaluate, { exclude: reservedIds() });
       if (featureType) await consider(EVALUATORS[featureType]);
       await consider((c) => onThisDay.evaluate(c));
       if (!candidates.length) await consider((c) => onThisDay.evaluate(c, { minVotes: 500 }));
       await consider(() => release);
-      if (questionSlot === 'mid') await consider(conversation.evaluate);
+      if (questionSlot === 'mid') await consider(conversation.evaluate, { exclude: reservedIds() });
       await consider(makeCountdown(1));
       await consider(trailerDrop.evaluate);
       await consider(makeCountdown(7));
