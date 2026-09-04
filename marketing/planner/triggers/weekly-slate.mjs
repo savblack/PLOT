@@ -19,25 +19,40 @@ export const evaluate = async (ctx) => {
   if (ctx.weekday !== 'Monday') return null;
 
   const from = isoDate(ctx.publishAt);
-  const to = addDays(from, 6);
-  const { theatrical, digital, tv } = await tmdb.getReleasesInWindow(from, to);
 
-  const seen = new Set();
-  // Only titles actually releasing in THIS week's window — the source query can
-  // over-return already-released titles, which would put a stale past date on an
-  // "Upcoming this week" card (e.g. a film that started streaming months ago).
-  const inWindow = (item) => {
-    const d = item.media_type === 'tv' ? item.first_air_date : item.release_date;
-    return d && d >= from && d <= to;
-  };
-  const pool = [...theatrical, ...digital, ...tv]
-    .filter(item => item.poster_path)
-    .filter(inWindow)
-    .filter(item => (seen.has(`${item.media_type}:${item.id}`) ? false : seen.add(`${item.media_type}:${item.id}`)))
-    .sort((a, b) => (b.popularity || 0) - (a.popularity || 0))
-    .slice(0, 6);
+  // This is the one post that reliably tells the site what is coming, so it
+  // should not quietly disappear in a quiet release week. It used to: a 7-day
+  // window yielding fewer than 3 titles returned null and let the fill ladder
+  // run instead. Widen the window before giving up — a 10-day view still reads
+  // as "what's next" — rather than lowering the 3-title bar, which is what
+  // keeps the slate from looking threadbare.
+  const SPANS = [6, 9];
+  let to = addDays(from, SPANS[0]);
+  let pool = [];
 
-  if (pool.length < 3) return null; // a slate of 1-2 titles looks thin; let the ladder run
+  for (const span of SPANS) {
+    to = addDays(from, span);
+    const { theatrical, digital, tv } = await tmdb.getReleasesInWindow(from, to);
+    const seen = new Set();
+    // Only titles actually releasing in this window — the source query can
+    // over-return already-released titles, which would put a stale past date on
+    // an "Upcoming this week" card (e.g. a film streaming for months).
+    const inWindow = (item) => {
+      const d = item.media_type === 'tv' ? item.first_air_date : item.release_date;
+      return d && d >= from && d <= to;
+    };
+    pool = [...theatrical, ...digital, ...tv]
+      .filter(item => item.poster_path)
+      .filter(inWindow)
+      .filter(item => (seen.has(`${item.media_type}:${item.id}`) ? false : seen.add(`${item.media_type}:${item.id}`)))
+      .sort((a, b) => (b.popularity || 0) - (a.popularity || 0))
+      .slice(0, 6);
+    if (pool.length >= 3) break;
+  }
+
+  // Ten days with fewer than three notable releases is a genuinely empty slate.
+  // Let the ladder run rather than pad it out.
+  if (pool.length < 3) return null;
 
   const titles = await Promise.all(pool.map(async (item) => {
     const dateStr = item.media_type === 'tv' ? item.first_air_date : item.release_date;
