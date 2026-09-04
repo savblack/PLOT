@@ -507,7 +507,7 @@ ${GTM_NOSCRIPT}
   <a href="${SITE}" class="nav-logo" aria-label="PLOT">PLOT</a>
   <ul class="nav-links" id="navLinks">
     <li><a href="${FEED_PATH}"${nav === 'whats-on' ? ' class="current"' : ''}>What's On</a></li>
-    <li><a href="/newsletter"${nav === 'newsletter' ? ' class="current"' : ''}>Newsletter</a></li>
+    <li><a href="${FEED_PATH}#newsletter">Newsletter</a></li>
     <li><a href="${APP}/login?src=whats_on_nav" data-cta="nav">Log in</a></li>
     <li><a href="${APP}/signup?src=whats_on_nav" data-cta="nav" class="nav-cta">Sign up</a></li>
   </ul>
@@ -841,64 +841,14 @@ const tailList = (posts: FeedPost[]) => `<div class="tail r4">
     <div class="tail-list">${posts.map((p) => `<a href="${FEED_PATH}/${esc(p.slug)}"><span>${esc(postTitle(p))}</span><span class="meta">${esc(fmtDate(p.scheduled_for))}</span></a>`).join('')}</div>
   </div>`;
 
-// ── Newsletter archive (theplot.tv/newsletter) ────────────────────
-// Every issue that has been sent, as a public page. The point is conversion:
-// asking someone to subscribe to a newsletter they can't read is a worse offer
-// than letting them read one first. It doubles as crawlable title coverage.
-//
-// Issues come from marketing_newsletter_issues, written by
-// marketing/newsletter/send-digest.mjs. week_start is unique, so it is the slug.
-// The table is service-role only and stays that way — this function reads it
-// with the service-role client, so recipient_count never reaches a browser.
-
-// The index needs everything but the issue body; only the issue page selects it.
-type NewsletterIssueSummary = {
-  week_start: string;
-  issue_date: string;
-  subject: string;
-  snapshot: {
-    featured?: { title?: string } | null;
-    chart?: { title?: string }[] | null;
-    streaming?: { title?: string }[] | null;
-  } | null;
-};
-
-type NewsletterIssue = NewsletterIssueSummary & { html: string };
-
-// Nothing below states a send frequency: the digest goes out by hand, so a
-// stated cadence would be a promise nothing keeps. The archive shows real dates,
-// which lets a reader judge for themselves.
-const NEWSLETTER_PATH = '/newsletter';
-const NEWSLETTER_SEO_TITLE = 'The PLOT Newsletter: The Week in Film & TV, By Email';
-const NEWSLETTER_BLURB = 'The chart, what to watch this weekend, and what just landed on streaming, by email. Read the latest issues below.';
-
-const issueUrl = (weekStart: string) => `${SITE}${NEWSLETTER_PATH}/${weekStart}`;
-
-// A dateline for an issue. week_start is already a plain YYYY-MM-DD.
-const fmtIssueDate = (isoDate: string) =>
-  new Date(`${isoDate}T00:00:00Z`).toLocaleDateString('en-US', {
-    month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC',
-  });
-
-// What was in the issue, from the snapshot the sender stored alongside it.
-const issuePreview = (issue: NewsletterIssueSummary) => {
-  const titles = [
-    issue.snapshot?.featured?.title,
-    ...(issue.snapshot?.chart || []).map((c) => c?.title),
-    ...(issue.snapshot?.streaming || []).map((s) => s?.title),
-  ].filter((t): t is string => !!t);
-  const unique = [...new Set(titles)];
-  if (!unique.length) return '';
-  const shown = unique.slice(0, 3).join(', ');
-  const rest = unique.length - Math.min(unique.length, 3);
-  return rest > 0 ? `${shown} and ${rest} more` : shown;
-};
-
-// The signup form, used on both the index and each issue page. Posts to
-// theplot.tv/api/newsletter (the same proxy the homepage form uses), including
-// the honeypot field that endpoint expects.
+// ── Newsletter signup ─────────────────────────────────────────────
+// There is no archive: the digest goes out by email and lives only there,
+// so this form is the whole of the newsletter on the site. It sits at the
+// foot of What's On under #newsletter, which the nav links straight to.
+// Posts to theplot.tv/api/newsletter (the same proxy the homepage form uses),
+// including the honeypot field that endpoint expects.
 const subscribeForm = (placement: string) => `
-<aside class="nlsub r4">
+<aside class="nlsub r4" id="newsletter">
   <div class="nlsub-copy">
     <span class="nlsub-title">Get the next one</span>
     <span class="nlsub-sub">Straight to your inbox. Unsubscribe any time.</span>
@@ -942,8 +892,10 @@ const subscribeForm = (placement: string) => `
   })();
 </script>`;
 
-const NEWSLETTER_CSS = `
-  .nlsub { border-top: 1px solid var(--hair); margin-top: 44px; padding: 30px 0 0; }
+const SUBSCRIBE_CSS = `
+  /* scroll-margin clears the fixed topnav: the nav and footer both link
+     straight to #newsletter, and without it the heading lands under it. */
+  .nlsub { border-top: 1px solid var(--hair); margin-top: 44px; padding: 30px 0 0; scroll-margin-top: 88px; }
   .nlsub-copy { display: flex; flex-direction: column; gap: 4px; }
   .nlsub-title { font-family: var(--serif); font-size: 1.5rem; line-height: 1.1; }
   .nlsub-sub { color: var(--mut); font-weight: 300; font-size: 0.92rem; }
@@ -961,169 +913,7 @@ const NEWSLETTER_CSS = `
   .nlsub-form button:disabled { opacity: 0.5; cursor: default; }
   .nlsub-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
   .nlsub-msg { margin-top: 10px; color: var(--mut); font-size: 0.86rem; min-height: 1.2em; }
-  .nl-empty { margin-top: 48px; color: var(--mut); font-weight: 300; }
 `;
-
-const renderNewsletterIndex = async (supabase: Db) => {
-  const { data } = await supabase
-    .from('marketing_newsletter_issues')
-    .select('week_start, issue_date, subject, snapshot')
-    .order('week_start', { ascending: false })
-    .limit(52);
-
-  const issues = ((data || []) as NewsletterIssueSummary[]);
-
-  const rows = issues.map((issue) => {
-    const preview = issuePreview(issue);
-    return `<a class="row" href="${NEWSLETTER_PATH}/${esc(issue.week_start)}">
-      <div>
-        <span class="kick sc" style="color:var(--faint)">${esc(fmtIssueDate(issue.week_start))}</span>
-        <span class="row-t">${esc(issue.subject)}</span>
-        ${preview ? `<span class="row-dek">${esc(preview)}</span>` : ''}
-      </div>
-    </a>`;
-  }).join('');
-
-  const head = `<style>${NEWSLETTER_CSS}</style>
-<meta name="description" content="${esc(NEWSLETTER_BLURB)}">
-<link rel="canonical" href="${SITE}${NEWSLETTER_PATH}">
-<meta property="og:title" content="${esc(NEWSLETTER_SEO_TITLE)}">
-<meta property="og:description" content="${esc(NEWSLETTER_BLURB)}">
-<meta property="og:url" content="${SITE}${NEWSLETTER_PATH}">
-<meta property="og:image" content="${OG_FALLBACK}">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="630">
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="${OG_FALLBACK}">`;
-
-  return page(NEWSLETTER_SEO_TITLE, head, `
-    <div class="head r2">
-      <div class="head-row">
-        <h1 class="feed-title">The <em>newsletter</em></h1>
-      </div>
-      <p class="chart-intro">${esc(NEWSLETTER_BLURB)}</p>
-    </div>
-    ${rows ? `<div class="r3">${rows}</div>` : '<p class="nl-empty">The first issue lands soon.</p>'}
-    ${subscribeForm('newsletter_index')}
-  `, 200, 'newsletter');
-};
-
-// The stored HTML is the email itself: a complete document built for inboxes.
-// Serving it as-is is the most faithful archive there is, so it is served
-// almost as-is — only the webfont swapped for the self-hosted one (the site CSP
-// allows no third-party font host) and a way back plus a signup appended.
-const renderNewsletterIssue = async (supabase: Db, weekStart: string) => {
-  const { data } = await supabase
-    .from('marketing_newsletter_issues')
-    .select('week_start, issue_date, subject, html, snapshot')
-    .eq('week_start', weekStart)
-    .maybeSingle();
-
-  const issue = data as NewsletterIssue | null;
-  if (!issue) return await renderNewsletterIndex(supabase);
-
-  const preview = issuePreview(issue);
-  const description = preview
-    ? `${issue.subject}: ${preview}.`
-    : NEWSLETTER_BLURB;
-
-  const injectedHead = `<style>
-  @font-face { font-family: 'Instrument Serif'; src: url('${SITE}/fonts/InstrumentSerif-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; font-display: swap; }
-  @font-face { font-family: 'DM Sans'; src: url('${SITE}/fonts/DMSans-Variable.ttf') format('truetype-variations'); font-weight: 100 900; font-style: normal; font-display: swap; }
-  .nlback { max-width: 600px; margin: 0 auto; padding: 22px 12px 0; font-family: 'DM Sans', system-ui, sans-serif; font-size: 0.8rem; }
-  .nlback a { color: #6b6b70; text-decoration: none; letter-spacing: 0.12em; text-transform: uppercase; font-size: 0.68rem; }
-  .nlback a:hover { color: #0c0c0c; }
-  .nlarchive { max-width: 600px; margin: 0 auto; padding: 8px 12px 60px; font-family: 'DM Sans', system-ui, sans-serif; }
-  .nlarchive h2 { font-family: 'Instrument Serif', Georgia, serif; font-size: 1.5rem; font-weight: 400; margin: 0 0 4px; }
-  .nlarchive p { color: #6b6b70; font-size: 0.92rem; margin: 0 0 16px; }
-  .nlarchive form { display: flex; gap: 10px; flex-wrap: wrap; }
-  .nlarchive input[type=email] { flex: 1 1 220px; min-width: 0; padding: 12px 16px; border: 1px solid rgba(12,12,12,0.14); border-radius: 9999px; font: inherit; font-size: 0.92rem; background: #fff; }
-  .nlarchive input[type=email]:focus { outline: none; border-color: #0c0c0c; }
-  .nlarchive button { padding: 12px 26px; border: 1px solid #0c0c0c; border-radius: 9999px; background: transparent; font: inherit; font-size: 0.92rem; cursor: pointer; }
-  .nlarchive button:hover { background: #0c0c0c; color: #fff; }
-  .nlarchive .hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
-  .nlarchive .msg { margin-top: 10px; color: #6b6b70; font-size: 0.86rem; min-height: 1.2em; }
-</style>
-<link rel="canonical" href="${issueUrl(issue.week_start)}">
-<meta name="description" content="${esc(description)}">
-<meta property="og:title" content="${esc(issue.subject)}">
-<meta property="og:description" content="${esc(description)}">
-<meta property="og:url" content="${issueUrl(issue.week_start)}">
-<meta property="og:image" content="${OG_FALLBACK}">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="630">
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="${OG_FALLBACK}">`;
-
-  const backBar = `<div class="nlback"><a href="${NEWSLETTER_PATH}">&larr; All issues</a></div>`;
-
-  const signup = `<div class="nlarchive">
-  <h2>Get the next one</h2>
-  <p>Straight to your inbox. Unsubscribe any time.</p>
-  <form id="nlForm">
-    <input type="email" name="email" placeholder="your@email.com" required autocomplete="email" aria-label="Email address">
-    <input type="text" name="website" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
-    <button type="submit">Subscribe</button>
-  </form>
-  <div class="msg" id="nlMsg" role="status"></div>
-</div>
-<script>
-  (function () {
-    var form = document.getElementById('nlForm');
-    var msg = document.getElementById('nlMsg');
-    if (!form || !msg) return;
-    form.addEventListener('submit', function (e) {
-      e.preventDefault();
-      var button = form.querySelector('button');
-      button.disabled = true;
-      msg.textContent = '';
-      fetch('/api/newsletter', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: form.elements.email.value,
-          website: form.elements.website.value,
-          list: 'newsletter',
-        }),
-      }).then(function (r) {
-        if (!r.ok) throw new Error('bad status');
-        msg.textContent = "You're in. The next issue lands in your inbox.";
-        form.reset();
-      }).catch(function () {
-        msg.textContent = 'Something went wrong — try again in a minute.';
-      }).finally(function () {
-        button.disabled = false;
-      });
-    });
-  })();
-</script>`;
-
-  let html = issue.html
-    // The email loads Instrument Serif from Google Fonts; the site serves its
-    // own copy and its CSP allows no other font host.
-    .replace(/<link[^>]*fonts\.googleapis\.com[^>]*>/gi, '')
-    .replace(/<title>[\s\S]*?<\/title>/i, () => `<title>${esc(issue.subject)}</title>`);
-
-  // Function replacements throughout: the injected markup is arbitrary text and
-  // a bare `$&` or `$'` in it would otherwise be read as a backreference.
-  html = html.includes('</head>')
-    ? html.replace('</head>', () => `${injectedHead}\n</head>`)
-    : `${injectedHead}${html}`;
-
-  html = html.replace(/<body([^>]*)>/i, (_match, attrs) => `<body${attrs}>${backBar}`);
-
-  html = html.includes('</body>')
-    ? html.replace('</body>', () => `${signup}\n</body>`)
-    : `${html}${signup}`;
-
-  return new Response(html, {
-    status: 200,
-    headers: {
-      'Content-Type': 'text/html; charset=utf-8',
-      'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
-    },
-  });
-};
 
 Deno.serve(async (req) => {
   if (req.method !== 'GET' && req.method !== 'HEAD') {
@@ -1155,17 +945,8 @@ Deno.serve(async (req) => {
   // sitemap-articles.xml). Mirrors the title-page sitemap mode.
   if (url.searchParams.get('sitemap') === '1') {
     const { data: posts } = await baseQuery().order('scheduled_for', { ascending: false }).limit(5000);
-    const { data: issues } = await supabase
-      .from('marketing_newsletter_issues')
-      .select('week_start')
-      .order('week_start', { ascending: false })
-      .limit(500);
-    const urls = [
-      ...(posts || []).map((p) => `${SITE}${FEED_PATH}/${p.slug}`),
-      // Archived newsletter issues are articles too, and the whole point of
-      // publishing them is being findable.
-      ...(issues || []).map((i) => `${SITE}${NEWSLETTER_PATH}/${i.week_start}`),
-    ]
+    const urls = (posts || [])
+      .map((p) => `${SITE}${FEED_PATH}/${p.slug}`)
       .map((loc) => `<url><loc>${esc(loc)}</loc><changefreq>weekly</changefreq></url>`)
       .join('\n');
     return new Response(
@@ -1177,13 +958,12 @@ Deno.serve(async (req) => {
   // Reserved keyword: the persistent trending-chart page.
   if (slug === 'chart') return await renderChart(supabase);
 
-  // Reserved keyword: the newsletter archive, index and per-issue.
-  if (slug === 'newsletter') return await renderNewsletterIndex(supabase);
-  if (slug?.startsWith('newsletter/')) {
-    const weekStart = slug.slice('newsletter/'.length);
-    // week_start is a date column; anything else is a bad URL, not a lookup.
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(weekStart)) return await renderNewsletterIndex(supabase);
-    return await renderNewsletterIssue(supabase, weekStart);
+  // Reserved keyword: the retired newsletter pages. There is no archive and no
+  // /newsletter page — the signup is a section of What's On. theplot.tv/
+  // newsletter[/*] is redirected at the Pages proxy (which doesn't forward a
+  // 3xx Location from here); this covers a direct hit on the function.
+  if (slug === 'newsletter' || slug?.startsWith('newsletter/')) {
+    return Response.redirect(`${SITE}${FEED_PATH}#newsletter`, 301);
   }
 
   if (!slug) {
@@ -1200,7 +980,8 @@ Deno.serve(async (req) => {
       weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC',
     });
 
-    const head = `<meta name="description" content="What’s On is PLOT’s guide to what’s coming, streaming and trending in film and TV, so you can spend less time searching and more time watching.">
+    const head = `<style>${SUBSCRIBE_CSS}</style>
+<meta name="description" content="What’s On is PLOT’s guide to what’s coming, streaming and trending in film and TV, so you can spend less time searching and more time watching.">
 <link rel="canonical" href="${SITE}${FEED_PATH}">
 <meta property="og:title" content="${FEED_SEO_TITLE}">
 <meta property="og:description" content="What’s On is PLOT’s guide to what’s coming, streaming and trending in film and TV, so you can spend less time searching and more time watching.">
@@ -1242,7 +1023,7 @@ Deno.serve(async (req) => {
       const batch = (batchData || []) as FeedPost[];
 
       if (!batch.length) {
-        return page(FEED_SEO_TITLE, head, `${titleRow}<p style="margin-top:48px;color:var(--mut);font-weight:300;">First update lands soon.</p>`);
+        return page(FEED_SEO_TITLE, head, `${titleRow}<p style="margin-top:48px;color:var(--mut);font-weight:300;">First update lands soon.</p>${subscribeForm('whats_on')}`);
       }
 
       // The lead plus a scan-list rail come straight off the top of the same
@@ -1274,6 +1055,7 @@ Deno.serve(async (req) => {
         ${countdown.length ? `${sectionHead('Coming soon', `${FEED_PATH}?type=countdown`)}${comingSoonCards(countdown)}` : ''}
         ${trailer.length ? `${sectionHead('First look', `${FEED_PATH}?type=trailer`)}${firstLookCards(trailer)}` : ''}
         ${tail.length ? tailList(tail) : ''}
+        ${subscribeForm('whats_on')}
       `);
     }
 
@@ -1304,6 +1086,7 @@ Deno.serve(async (req) => {
       ${dailyWire(visible)}
       ${empty}
       ${older}
+      ${subscribeForm('whats_on')}
     `);
   }
 

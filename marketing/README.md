@@ -65,19 +65,33 @@ Notes:
 - Friday: `trending`
 - Wednesday fixed feature: `watch_tonight`
 - Saturday fixed feature: `hidden_gem`
-- Tuesday / Thursday: generic question mid-slot
-- Sunday: generic question lead slot
+- Tuesday / Thursday: question mid-slot
+- Sunday: question lead slot
 
-Question posts are generic everywhere. They are not tied to a specific title.
+Question posts join the conversation around a **new release that is already
+out** — never something upcoming. The planner anchors each one to a real title:
+something out that day, otherwise the most trending title released in the last
+14 days (widening to 30 only to avoid an empty slot). A show airing new episodes
+counts, judged on its latest episode rather than its premiere. The copy worker
+then searches the web for that title's reception
+before writing the question, so the ask is for a reaction rather than a
+prediction.
+
+If nothing released qualifies, the slot is left empty rather than filled with
+speculation about an unreleased title. Questions are never about a title the
+same day already covers — the one exception is a major-release day, where the
+release post and the question are deliberately about the same title.
 
 ## Newsletter and metrics
 
-- Newsletter sends are logged as weekly issue snapshots.
-- Every logged issue is also published at `theplot.tv/newsletter/<week_start>`,
-  with an index at `theplot.tv/newsletter`. Rendered by the `marketing-feed`
-  edge function (reserved `newsletter` route), proxied by
-  `apps/website/functions/newsletter.js`. Nothing extra to run: sending an issue
-  publishes it.
+- Newsletter sends are logged as weekly issue snapshots in
+  `marketing_newsletter_issues`. That log is internal only — the table is
+  service-role and nothing serves it.
+- **There is no public archive.** The digest lives in the inbox it was sent to.
+  On the site the newsletter is just a signup form, at the foot of What's On
+  under `#newsletter`, which the nav and footer link to. `theplot.tv/newsletter`
+  and `/newsletter/<week_start>` 301 there (`apps/website/functions/newsletter.js`
+  and `newsletter/[issue].js`) so older links still land somewhere.
 - Recipients come from the `marketing_recipient_list()` RPC, not a plain select
   on `marketing_subscribers` — app opt-ins are linked to an account whose email
   can change, and the RPC resolves the current address from `auth.users`.
