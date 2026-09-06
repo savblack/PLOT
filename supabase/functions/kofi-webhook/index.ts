@@ -47,7 +47,7 @@ const POSTHOG_TOKEN = 'phc_uS3JEJC7s6T2WdsQToCZA3eRjLNakgc3EF3YPbza9Q6U';
 // donor's email/name/message can never end up in PostHog even by accident.
 async function captureSupportConversion(payload: Record<string, unknown>, userId: string | null, txn: string) {
   try {
-    await fetch('https://us.i.posthog.com/i/v0/e/', {
+    await fetch('https://a.theplot.tv/i/v0/e/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

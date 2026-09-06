@@ -41,7 +41,10 @@ type Json = string | number | boolean | null | Json[] | { [key: string]: Json };
 export type AnalyticsProps = Record<string, Json>;
 
 const token = process.env.EXPO_PUBLIC_POSTHOG_PROJECT_TOKEN;
-const host  = process.env.EXPO_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com';
+// Same reverse proxy as every web surface. A native app is immune to browser
+// extension blockers but not to DNS-level ones, and one host across all five
+// surfaces means the ingest endpoint moves in a single place.
+const host  = process.env.EXPO_PUBLIC_POSTHOG_HOST || 'https://a.theplot.tv';
 
 let client: PostHog | null = null;
 const pendingCalls: ((ph: PostHog) => void)[] = [];
