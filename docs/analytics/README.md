@@ -44,6 +44,32 @@ still exist with the old meaning and are **not** comparable to the cohort.
 Removing a key from the frozen object would turn any missed call site into a
 silent `undefined` event name.
 
+### The funnel that outlived it
+
+**Signup to activation funnel** (insight `10457477`) is
+`user_signed_up → onboarding_completed → Self-directed committed action`, seven-day
+window, test accounts filtered. Step 3 was the `activated` event until 2026-09-06,
+and nobody repointed it when the event was retired, because PostHog's setup wizard
+created the insight rather than a person.
+
+It therefore reported a false 8.33% for the week of 2026-08-17, and PostHog's
+self-driving inbox escalated that as a real activation collapse. Six of that week's
+twelve signups arrived after `activated` stopped firing on 2026-08-18 and could not
+convert at any rate but zero; of the five who did fire it, four fired it before
+`onboarding_completed`, so the ordering discarded them. One survivor out of twelve.
+The ordering defect predates the retirement — the 22.22% the same funnel showed for
+the week of 2026-08-10 was wrong too, when the true figure was eight of nine.
+
+That week was in fact the best on record: twelve signups, twelve onboarding
+completions, ten committed actions, no `auth_callback_failed`. The database agrees
+independently — nine people wrote their first ever `list_items` row that week, also
+the highest.
+
+Step 3 must stay **self-directed**. A plain committed action sitting behind
+`onboarding_completed` walks straight into the seed-pick trap below. And expect this
+funnel to read in the twenties rather than the eighties: "acted at all" and "acted
+unprompted" are different questions, and this one asks the second.
+
 ## Traps
 
 Encoded here once so nobody rediscovers them.
