@@ -48,8 +48,15 @@ This repo is an npm-workspaces monorepo. `npm ci` at the root installs every wor
 
 ## Staging
 
-`localhost:5177` and `https://preview.theplot.tv` use the separate PLOT Staging
-Supabase project. Their accounts and data never overlap with Production.
+`localhost:5177` uses the separate PLOT Staging Supabase project, as do the
+per-branch Cloudflare preview deployments (`https://<hash>.plot-5wr.pages.dev`,
+linked from every PR). Their accounts and data never overlap with Production.
+
+There is no longer a stable staging hostname. `preview.theplot.tv` was retired on
+2026-09-06: the long-lived `preview` branch behind it had been deleted weeks
+earlier, so it served a frozen August build, and per-branch previews already
+covered what it was for. It was also the only publicly reachable non-production
+deployment — the per-branch ones sit behind Cloudflare Access.
 
 Use the guarded command for any routine staging backend work. It always targets
 PLOT Staging and refuses a user-supplied project reference:
@@ -78,11 +85,8 @@ Create an ignored Playwright session for local testing with:
 npm run staging:session
 ```
 
-For the hosted preview instead:
-
-```sh
-npm run staging:session -- --origin https://preview.theplot.tv
-```
+`--origin` accepts local origins only. A per-branch preview is behind Cloudflare
+Access, which a Playwright session can't pass without an Access service token.
 
 The command refuses non-staging Supabase configuration and writes a token-bearing
 file under `.playwright/` with owner-only permissions. An agent can use that session
