@@ -38,3 +38,24 @@ secret** (the *Dependabot* sub-tab, not Actions).
 
 If CI adds a new build-time `VITE_*` secret in future, add it to the Dependabot
 scope too or Dependabot PRs will start failing again.
+
+## What does NOT go in the Dependabot scope
+
+`SUPABASE_DB_URL`, deliberately. Do not mirror it, even though its absence makes
+a check fail exactly the way the smoke tests did.
+
+The five secrets above are publishable anon keys — the browser ships them to
+every visitor, so a Dependabot run holding them costs nothing. `SUPABASE_DB_URL`
+is a full production database credential on the session pooler. A Dependabot run
+exists to install new third-party package versions, and `npm ci` executes those
+packages' install scripts; that is the last place that credential should be
+readable.
+
+The check it was failing, **DB write paths**, is skipped on Dependabot PRs
+instead (see the `if:` on the job in `.github/workflows/db-write-paths.yml`).
+Nothing is lost: the check reads trigger definitions and constraints out of the
+database, and a lockfile bump cannot change either. It still runs on the daily
+schedule and on every human PR.
+
+Apply the same test to any future secret: if it is public anyway, mirroring is
+fine; if it grants real access, skip the job instead.

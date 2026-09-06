@@ -17,8 +17,11 @@
 #
 # Required repo secrets (Settings → Secrets and variables → Actions):
 #   SUPABASE_DB_URL        Session-pooler connection string incl. password, e.g.
-#                          postgresql://postgres.<ref>:<pw>@aws-0-<region>.pooler.supabase.com:5432/postgres
-#                          (Dashboard → Project Settings → Database → Connection string → "Session pooler".
+#                          postgresql://postgres.<ref>:<pw>@aws-1-<region>.pooler.supabase.com:5432/postgres
+#                          (Dashboard → the "Connect" button in the project's top bar →
+#                           "Direct connection string" → Connection Method "Session pooler".
+#                           It moved out of Project Settings → Database. Copy the host verbatim:
+#                           the prefix is aws-0-/aws-1-/… per project, not a fixed value.
 #                           Use the pooler host — GitHub runners are IPv4 and can't reach the IPv6 direct host.)
 #   BACKUP_GPG_PASSPHRASE  Strong passphrase used to encrypt/decrypt dumps. Store it somewhere safe
 #                          OUTSIDE this repo (a password manager) — without it the backups are useless.

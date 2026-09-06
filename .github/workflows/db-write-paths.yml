@@ -54,6 +54,29 @@ jobs:
   check:
     name: Check trigger write paths
     runs-on: ubuntu-latest
+    # Skip on Dependabot's own PRs. GitHub withholds repository Actions secrets
+    # from Dependabot-triggered runs, so SUPABASE_DB_URL arrives empty and the
+    # job fails on every one of them — noise that trains you to ignore a red X
+    # on the check that exists to catch silent write failures.
+    #
+    # The obvious fix, mirroring the secret into the Dependabot scope the way
+    # docs/ops/ci-dependabot-secrets.md did for the VITE_* keys, is the wrong
+    # one here. Those are publishable anon keys; this is a full production
+    # database credential, and a Dependabot run's whole job is installing new
+    # third-party package versions — `npm ci` executes their install scripts.
+    # That is the last context that should hold this URL.
+    #
+    # Nothing is lost by skipping. This check reads trigger definitions and
+    # constraints out of the database; a lockfile bump cannot change either.
+    # It runs on the daily schedule and on every human PR regardless.
+    #
+    # Guarded on the event as well as the author so a scheduled run can never
+    # skip itself — `github.actor` on a `schedule` event is whoever last touched
+    # the workflow, which a merged Dependabot PR could become.
+    if: >-
+      github.event_name != 'pull_request' ||
+      (github.event.pull_request.user.login != 'dependabot[bot]' &&
+       github.event.pull_request.user.login != 'app/dependabot')
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
