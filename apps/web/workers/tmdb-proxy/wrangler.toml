@@ -8,6 +8,14 @@
 #   CLOUDFLARE_API_TOKEN in the repo .env is NOT sufficient). Set CLOUDFLARE_API_TOKEN
 #   and CLOUDFLARE_ACCOUNT_ID for the deploy, or run `npx wrangler login`.
 #
+# If the deploy errors about "a deploy configuration file at
+# ../../.wrangler/deploy/config.json", clear it and retry:
+#   rm -f apps/web/.wrangler/deploy/config.json
+# A local `vite build` in apps/web writes that redirect for the Pages app, and
+# wrangler finds it by walking up from this directory. It is gitignored and the
+# next build recreates it, so clearing it costs nothing. It cannot deploy the
+# wrong Worker — wrangler refuses on the base-path mismatch — it only blocks.
+#
 # After deploy, point the app at the Worker:
 #   Vercel env  VITE_TMDB_PROXY_URL = https://tmdb-proxy.<subdomain>.workers.dev
 #   then redeploy the app.
