@@ -302,7 +302,7 @@ export default function Seed() {
             ? <Text style={styles.empty}>No titles found.</Text>
             : !query.trim() && trendingFailed
             ? <Text style={styles.empty}>Couldn't load trending titles. Try searching instead.</Text>
-            : null
+            : undefined
         }
       />
     </OnboardingScaffold>

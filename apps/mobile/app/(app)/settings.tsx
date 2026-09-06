@@ -626,7 +626,11 @@ export default function SettingsScreen() {
   };
 
   const handleAddToCalendar = () => {
-    if (calWebcalUrl) Linking.openURL(calWebcalUrl).catch(() => calFeedUrl && Linking.openURL(calFeedUrl));
+    if (calWebcalUrl) {
+      Linking.openURL(calWebcalUrl).catch(() => {
+        if (calFeedUrl) void Linking.openURL(calFeedUrl);
+      });
+    }
   };
 
   const handleRevokeCalToken = () => {

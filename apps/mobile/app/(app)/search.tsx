@@ -191,7 +191,7 @@ export default function SearchScreen() {
             renderItem={({ item }) => <UserRow user={item} viewerId={userId} />}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingHorizontal: spacing.xl, paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }}
-            ListEmptyComponent={loading ? null : (
+            ListEmptyComponent={loading ? undefined : (
               <View style={styles.empty}><Text style={styles.emptyBody}>No people found. Try a different name.</Text></View>
             )}
           />
@@ -208,7 +208,7 @@ export default function SearchScreen() {
           renderItem={({ item }) => <SearchRow item={item} hooks={hooks} signedIn={!!userId} />}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }}
-          ListEmptyComponent={loading ? null : emptyMode === 'title-guidance' ? (
+          ListEmptyComponent={loading ? undefined : emptyMode === 'title-guidance' ? (
             <View style={styles.empty}>
               <Text style={styles.emptyTitle}>Try searching by title</Text>
               <Text style={styles.emptyBody}>Search works best with a movie or TV title rather than a director, cast member, or creator name.</Text>
