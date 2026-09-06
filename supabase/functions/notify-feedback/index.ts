@@ -2,7 +2,7 @@
  * notify-feedback
  *
  * Triggered by a Supabase Database Webhook on INSERT to public.feedback.
- * Emails feedback@theplot.tv so a human sees every submission, and mirrors the
+ * Emails sav.black@outlook.com so a human sees every submission, and mirrors the
  * feedback into GitHub issues using anonymized reporter metadata, preserving
  * archived attachment copies even if the originating user later deletes their
  * account.
@@ -55,7 +55,16 @@ import { hasServiceRoleBearer } from '../_shared/internalWebhook.ts'
 import { serviceKey } from '../_shared/serviceKey.ts'
 
 const RESEND_API_URL = 'https://api.resend.com/emails'
-const TO_EMAIL = 'feedback@theplot.tv'
+// The operator's own mailbox, deliberately direct rather than the branded
+// feedback@theplot.tv. That address is a Cloudflare Email Routing alias, so it
+// adds a forwarding hop that fails *silently* when the destination is
+// unverified — mail is accepted by Resend, then dropped, which is
+// indistinguishable from no feedback arriving at all. This is the only
+// notification path a human reads; it should not depend on a hop that cannot
+// report its own failure.
+//
+// FROM_EMAIL stays on theplot.tv: Resend will only send from a verified domain.
+const TO_EMAIL = 'sav.black@outlook.com'
 const FROM_EMAIL = 'PLOT Feedback <feedback@theplot.tv>'
 const GITHUB_API_URL = 'https://api.github.com'
 // A private repo that exists only to hold intake. Deliberately NOT admin-review's
