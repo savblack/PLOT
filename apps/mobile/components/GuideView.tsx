@@ -4,6 +4,7 @@
  * Layout: day tabs → channel rows each with a horizontal program rail.
  */
 import { useEffect, useState, useMemo, useRef } from 'react';
+import type { ComponentRef } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, Modal,
   StyleSheet, Dimensions, ActivityIndicator,
@@ -150,10 +151,13 @@ function DayGrid({ channels, nowMins, nowLeft, onProgramPress }: {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
-  const rulerRef   = useRef<ScrollView>(null);
-  const sidebarRef = useRef<ScrollView>(null);
-  const gridHRef   = useRef<ScrollView>(null);
-  const gridVRef   = useRef<ScrollView>(null);
+  // RN 0.87 types ScrollView as a function component, so `useRef<ScrollView>`
+  // now describes the component rather than the instance and loses scrollTo().
+  // ComponentRef reads the instance type off the component itself.
+  const rulerRef   = useRef<ComponentRef<typeof ScrollView>>(null);
+  const sidebarRef = useRef<ComponentRef<typeof ScrollView>>(null);
+  const gridHRef   = useRef<ComponentRef<typeof ScrollView>>(null);
+  const gridVRef   = useRef<ComponentRef<typeof ScrollView>>(null);
   // Grid + sidebar scroll behind the floating tab bar — pad past it (synced).
   const bottomPad = { paddingBottom: insets.bottom + TAB_BAR_CLEARANCE };
 
