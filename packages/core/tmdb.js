@@ -303,8 +303,15 @@ export const tmdb = {
   /* ── Recommendations ── */
   getRecommendations: (type, id) => fetchFromTMDB(`/${type}/${id}/recommendations`),
 
-  /* ── Upcoming movies (optionally filtered to specific providers) ── */
-  getUpcoming: async (providerIds = [], monetizationTypes = 'flatrate') => {
+  /* ── Upcoming movies ──
+     Deliberately NOT filtered by watch provider. TMDB's provider index is
+     present-tense: `with_watch_providers` matches titles streamable *now*, and
+     an unreleased title has no provider record yet. Combining it with a future
+     date window therefore returns zero for every provider — Netflix included,
+     not just the free-to-air channels — which silently emptied the whole
+     Upcoming feed for anyone who had picked channels in Settings. Availability
+     is resolved per title at render instead. ── */
+  getUpcoming: async () => {
     const today = localDateStr();
     const sixMonths = new Date(); sixMonths.setMonth(sixMonths.getMonth() + 6);
     const end = dateToLocalStr(sixMonths);
@@ -315,13 +322,10 @@ export const tmdb = {
     // recently and reaches this region later.
     const twelveMonthsAgo = new Date(); twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
     const earliestPrimary = dateToLocalStr(twelveMonthsAgo);
-    const providerParams = providerIds.length
-      ? { watch_region: userRegion, with_watch_providers: providerIds.join('|'), with_watch_monetization_types: monetizationTypes }
-      : {};
     // `region` makes TMDB filter/sort by the release date for that market
     // (theatrical dates vary by country) instead of always the primary
     // (usually US) release date.
-    const baseParams = { 'release_date.gte': today, 'release_date.lte': end, 'primary_release_date.gte': earliestPrimary, sort_by: 'popularity.desc', region: userRegion, ...providerParams };
+    const baseParams = { 'release_date.gte': today, 'release_date.lte': end, 'primary_release_date.gte': earliestPrimary, sort_by: 'popularity.desc', region: userRegion };
     const [theatricalPages, streamingPages] = await Promise.all([
       Promise.all([1, 2, 3, 4, 5].map(page =>
         fetchFromTMDB('/discover/movie', { ...baseParams, 'with_release_type': '2|3', page })
@@ -413,14 +417,13 @@ export const tmdb = {
     return { ...movie, media_type: 'movie', archive_year: archiveYear };
   },
 
-  /* ── Upcoming TV (optionally filtered to specific providers) ── */
-  getUpcomingTV: async (providerIds = [], monetizationTypes = 'flatrate') => {
+  /* ── Upcoming TV ── Unfiltered by provider for the same reason as
+     getUpcoming above: TMDB has no provider record for a show that has not
+     aired yet. ── */
+  getUpcomingTV: async () => {
     const today = localDateStr();
     const sixMonths = new Date(); sixMonths.setMonth(sixMonths.getMonth() + 6);
     const end = dateToLocalStr(sixMonths);
-    const providerParams = providerIds.length
-      ? { watch_region: userRegion, with_watch_providers: providerIds.join('|'), with_watch_monetization_types: monetizationTypes }
-      : {};
     const pages = await Promise.all(
       [1, 2, 3].map(page =>
         fetchFromTMDB('/discover/tv', {
@@ -428,7 +431,6 @@ export const tmdb = {
           'first_air_date.lte': end,
           sort_by: 'first_air_date.asc',
           page,
-          ...providerParams,
         })
       )
     );

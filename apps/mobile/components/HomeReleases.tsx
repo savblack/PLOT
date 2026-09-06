@@ -97,21 +97,25 @@ async function loadReleases(): Promise<ReleasesData> {
   const todayStr     = localDateStr();
   const sixMonthsStr = localDateStr(180);
 
-  // Apply "My Channels" (guide_channels) if the user has selected any —
+  // "My Channels" (guide_channels) scopes the *recently released* rail only —
   // these are free/ad-supported broadcast providers, not subscription
-  // streaming, so the monetization filter must be widened accordingly.
+  // streaming, so the monetization filter must be widened accordingly. The
+  // today / coming-soon rails stay global: TMDB only records watch providers
+  // for titles that are already available, so a provider filter over a future
+  // date window matches nothing and empties them. See getUpcoming in
+  // @plot/core/tmdb.js.
   const { data: { session } } = await supabase.auth.getSession();
   let providerIds: number[] = [];
   if (session?.user) {
     const { data: profile } = await supabase.from('profiles')
       .select('guide_channels').eq('id', session.user.id).maybeSingle();
-    providerIds = (profile?.guide_channels ?? []).map((c: { id: number }) => c.id);
+    providerIds = (profile?.guide_channels ?? []).map((c: { id: number }) => c.id).filter(Boolean);
   }
   const monetizationTypes = 'free|ads';
 
   const [upcomingMovRes, upcomingTVRes, recentRes] = await Promise.all([
-    tmdb.getUpcoming(providerIds, monetizationTypes),
-    tmdb.getUpcomingTV(providerIds, monetizationTypes),
+    tmdb.getUpcoming(),
+    tmdb.getUpcomingTV(),
     tmdb.getRecentReleases(14, providerIds, monetizationTypes),
   ]);
 

@@ -205,16 +205,14 @@ function DateGroup({ label, items, openPanel, providerLogos, watchlist, defaultO
 }
 
 /* ── Upcoming content (global, date-grouped) ── */
-export function UpcomingContent({ typeFilters, genreFilters, providers, openPanel, watchlist, expandSignal }) {
+export function UpcomingContent({ typeFilters, genreFilters, openPanel, watchlist, expandSignal }) {
   const { profile } = useApp();
   const hideKids = !(profile?.include_kids_content ?? true);
   const [loadedProviderLogos, setLoadedProviderLogos] = useState({});
 
   // Loading + grouping live in @plot/core/useUpcoming.js so mobile can serve
   // the same feed; filtering stays here because each app renders it.
-  const providerIds = providers.map(p => p.id);
-  const { data, loading } = useUpcoming({ providerIds });
-
+  const { data, loading } = useUpcoming();
 
   useEffect(() => {
     const items = flattenGuideItems(data);

@@ -741,8 +741,7 @@ export default function DiscoverView() {
 
   if (!app) return null;
 
-  const { openPanel, watchlist, profile } = app;
-  const guideChannels      = profile?.guide_channels      || [];
+  const { openPanel, watchlist } = app;
 
   return (
     <div className={tab === 'guide' ? 'guide-schedule-mode' : ''}>
@@ -877,7 +876,6 @@ export default function DiscoverView() {
         <UpcomingContent
           typeFilters={typeFilters}
           genreFilters={genreFilters}
-          providers={guideChannels}
           openPanel={openPanel}
           watchlist={watchlist}
           expandSignal={releasesExpandSignal}

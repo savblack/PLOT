@@ -180,3 +180,57 @@ test('getOnThisDay falls back to a random archival title when no anniversary tit
     globalThis.Date = originalDate;
   }
 });
+
+test('the upcoming feeds never carry a watch-provider filter', async () => {
+  // TMDB's provider index is present-tense: `with_watch_providers` only matches
+  // titles that are streamable today, so pairing it with a future date window
+  // returns zero for every provider — Netflix included. Scoping these two calls
+  // to the user's "My Channels" picks is what emptied the Upcoming tab on both
+  // apps and left it showing "Unavailable right now".
+  const originalFetch = globalThis.fetch;
+  const requests = [];
+  configure({ tmdbProxyUrl: 'https://proxy.test', supabaseAnonKey: 'anon' });
+  globalThis.fetch = async (url) => {
+    requests.push(new URL(url).searchParams);
+    return { ok: true, status: 200, json: async () => ({ results: [] }) };
+  };
+
+  try {
+    await Promise.all([tmdb.getUpcoming(), tmdb.getUpcomingTV()]);
+    assert.ok(requests.length > 0);
+    for (const params of requests) {
+      assert.equal(params.get('with_watch_providers'), null);
+      assert.equal(params.get('with_watch_monetization_types'), null);
+      assert.equal(params.get('watch_region'), null);
+    }
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('recent releases still accept a provider filter, which works on past dates', async () => {
+  // The counterpart to the test above: these titles are already out, so TMDB
+  // does have provider records for them and Home's "recently released" rail can
+  // stay scoped to My Channels.
+  const originalFetch = globalThis.fetch;
+  const requests = [];
+  configure({ tmdbProxyUrl: 'https://proxy.test', supabaseAnonKey: 'anon' });
+  globalThis.fetch = async (url) => {
+    requests.push(new URL(url).searchParams);
+    return { ok: true, status: 200, json: async () => ({ results: [] }) };
+  };
+
+  try {
+    setTmdbRegion('AU');
+    await tmdb.getRecentReleases(14, [135, 132], 'free|ads');
+    assert.equal(requests.length, 3);
+    for (const params of requests) {
+      assert.equal(params.get('with_watch_providers'), '135|132');
+      assert.equal(params.get('with_watch_monetization_types'), 'free|ads');
+      assert.equal(params.get('watch_region'), 'AU');
+    }
+  } finally {
+    globalThis.fetch = originalFetch;
+    setTmdbRegion('US');
+  }
+});
