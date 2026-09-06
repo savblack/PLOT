@@ -10,7 +10,6 @@
 //
 // Routing: file path functions/list/[id].js → /list/<id>.
 import { ogBase } from '../_lib/og-base.js';
-import { rateLimited, rateLimitResponse } from '../_lib/rateLimit.js';
 
 const SUPABASE_URL = 'https://mkegtssedjyqldysvzga.supabase.co';
 const ANON_KEY = 'sb_publishable_sbB7Jrs3Uz97Xm3qiuQgOQ_7dg6kKWk';
@@ -86,8 +85,6 @@ const htmlResponse = (html, status, cache) =>
   });
 
 export async function onRequest({ request, params, env }) {
-  if (await rateLimited(request, env)) return rateLimitResponse();
-
   const host = request.headers.get('host') || 'app.theplot.tv';
   const id = (Array.isArray(params?.id) ? params.id[0] : params?.id || '').trim();
 

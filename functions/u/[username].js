@@ -11,7 +11,6 @@
 //
 // Routing: file path functions/u/[username].js → /u/<username>.
 import { ogBase } from '../_lib/og-base.js';
-import { rateLimited, rateLimitResponse } from '../_lib/rateLimit.js';
 
 const SUPABASE_URL = 'https://mkegtssedjyqldysvzga.supabase.co';
 // Publishable key — the same one the client ships. Replaces the legacy anon
@@ -96,8 +95,6 @@ function seoSnapshot(p) {
 }
 
 export async function onRequest({ request, params, env }) {
-  if (await rateLimited(request, env)) return rateLimitResponse();
-
   const host = request.headers.get('host') || 'app.theplot.tv';
   const raw = Array.isArray(params?.username) ? params.username[0] : params?.username;
   const handle = (raw || '').replace(/^@/, '').trim().toLowerCase();
