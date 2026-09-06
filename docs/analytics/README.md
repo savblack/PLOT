@@ -260,6 +260,34 @@ A signup in the database with no PostHog `user_signed_up` is usually a sign-in
 that died at the OAuth callback. `auth_callback_failed` (added in #550) is the
 only signal for it; `auth.flow_state` holds the forensics.
 
+## The ingest host
+
+Everything ingests through `https://a.theplot.tv`, PostHog's managed reverse
+proxy (org settings → Managed reverse proxy), so events aren't dropped by ad
+blockers targeting PostHog's own domains. No surface points at
+`us.i.posthog.com` or `us-assets.i.posthog.com`, and neither is in any CSP
+allowlist. `ui_host` stays `https://us.posthog.com` so PostHog's own links
+(session replay URLs) point back at the real dashboard.
+
+Seven places send to it. Five hardcode the host — `apps/website/js/config.js`,
+`supabase/functions/title-page`, `supabase/functions/marketing-feed`,
+`functions/list/[id].js`, and the server-side capture in
+`supabase/functions/kofi-webhook`. The web and mobile apps instead read
+`VITE_PUBLIC_POSTHOG_HOST` / `EXPO_PUBLIC_POSTHOG_HOST`, each defaulting to the
+proxy; web's is set per-deployment in the Cloudflare Pages dashboard.
+That split has bitten once: the proxy landed in 88d52b7 (2026-07-28) and moved
+every hardcoded init, but the Pages variable kept its pre-proxy value, so the app
+went on reporting direct for weeks with nothing in the repo to show it.
+`main.jsx` now defaults to the proxy when the variable is unset or empty, which
+makes the repo the source of truth — but an explicitly stale variable still wins,
+so the dashboard value has to be right too.
+
+posthog-js needs no `asset_host`: it resolves `/static/*` against `api_host`
+whenever `asset_host` is null, so the recorder and surveys load from the proxy on
+their own. The four snippet surfaces build the same URL via
+`api_host.replace('.i.posthog.com', '-assets.i.posthog.com')`, which is a no-op
+for a non-PostHog host and therefore also lands on the proxy.
+
 ## Where things live
 
 - Event names: `packages/core/analyticsEvents.js` (frozen, snake_case)

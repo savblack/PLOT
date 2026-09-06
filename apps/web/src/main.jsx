@@ -116,7 +116,16 @@ const attribution = captureAttribution();
 if (posthogToken) {
   import('posthog-js').then(({ default: posthog }) => {
     posthog.init(posthogToken, {
-      api_host: import.meta.env.VITE_PUBLIC_POSTHOG_HOST,
+      // Default to the managed reverse proxy rather than to posthog-js's own
+      // us.i.posthog.com, which ad blockers target. The deployed value comes
+      // from the Cloudflare Pages dashboard, outside this repo, so without a
+      // default here an unset variable reports direct with nothing in the repo
+      // to show it. That is the shape of what happened when the proxy landed in
+      // 88d52b7 (2026-07-28): every hardcoded init moved, but the Pages variable
+      // kept its pre-proxy value, leaving the app the only surface still
+      // reporting direct until 2026-09-06. The four snippet surfaces hardcode
+      // this same host. Note a stale explicit value still beats this default.
+      api_host: import.meta.env.VITE_PUBLIC_POSTHOG_HOST || 'https://a.theplot.tv',
       // Required alongside a reverse-proxy api_host so PostHog's own links
       // (e.g. session replay URLs) still point back at the real dashboard.
       ui_host: 'https://us.posthog.com',
