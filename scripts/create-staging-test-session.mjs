@@ -6,10 +6,13 @@ import { createClient } from '@supabase/supabase-js';
 const STAGING_REF = 'uzrhfivnhdcfieuaxzip';
 const EMAIL_SERVICE = 'com.theplot.staging.test.email';
 const PASSWORD_SERVICE = 'com.theplot.staging.test.password';
+// preview.theplot.tv was retired on 2026-09-06. Per-branch Cloudflare
+// previews replaced it, and they sit behind Cloudflare Access, so a
+// Playwright session can't drive one without an Access service token.
+// Local origins only.
 const allowedOrigins = new Set([
   'http://localhost:5177',
   'http://127.0.0.1:5177',
-  'https://preview.theplot.tv',
 ]);
 
 function usage() {
@@ -21,7 +24,7 @@ Before running this, create two Password items in Keychain Access:
 
 Usage:
   npm run staging:session
-  npm run staging:session -- --origin https://preview.theplot.tv
+  npm run staging:session -- --origin http://127.0.0.1:5177
 
 The output is written under .playwright/, which is gitignored. Never share it.`);
 }

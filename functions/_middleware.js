@@ -1,6 +1,8 @@
 // Runs for every request to app.theplot.tv (Cloudflare Pages Functions
 // middleware). Two jobs:
-//  1. noindex preview.theplot.tv (unchanged from before).
+//  1. noindex any deployment that isn't app.theplot.tv — the per-branch
+//     *.pages.dev previews. They also sit behind Cloudflare Access, so this
+//     is defence in depth rather than the only guard.
 //  2. Set a per-request Content-Security-Policy with a fresh script-src nonce
 //     instead of 'unsafe-inline', and stamp that nonce onto the page's own
 //     inline <script> tags so they still run. Keep the allow-lists below in
@@ -48,7 +50,10 @@ class ScriptNoncer {
 export async function onRequest(context) {
   const response = await context.next();
   const { hostname } = new URL(context.request.url);
-  const isPreview = hostname === 'preview.theplot.tv';
+  // Was `hostname === 'preview.theplot.tv'` until that host was retired on
+  // 2026-09-06. Asking whether this IS production covers every current and
+  // future non-production host instead of naming them one at a time.
+  const isPreview = hostname !== 'app.theplot.tv';
   const contentType = response.headers.get('content-type') || '';
 
   if (!contentType.includes('text/html')) {
