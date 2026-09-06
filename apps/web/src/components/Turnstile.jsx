@@ -16,6 +16,15 @@ function loadScript() {
       s.src = SCRIPT_SRC;
       s.async = true;
       s.defer = true;
+      // Without this, anything thrown inside Cloudflare's script reaches
+      // window.onerror as the opaque "Script error." with no message and no
+      // stack — the browser's same-origin policy for script errors. PostHog
+      // then captures an Error Tracking issue nobody can act on, which is
+      // exactly what happened on 2026-08-31. challenges.cloudflare.com serves
+      // the script with `access-control-allow-origin: *` on both the 302 and
+      // the redirect target, so opting into CORS here costs nothing and makes
+      // any future Turnstile breakage legible on the signup path.
+      s.crossOrigin = 'anonymous';
       s.onload = () => resolve();
       s.onerror = () => { scriptPromise = null; reject(new Error('Turnstile failed to load')); };
       document.head.appendChild(s);
