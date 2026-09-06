@@ -28,7 +28,7 @@
     "react-native-screens": "4.27.0",
     "react-native-svg": "15.15.5",
     "react-native-url-polyfill": "^3.0.0",
-    "react-native-webview": "13.16.1"
+    "react-native-webview": "14.0.1"
   },
   "devDependencies": {
     "@storybook/addon-ondevice-actions": "^10.5.4",
