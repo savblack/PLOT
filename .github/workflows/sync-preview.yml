@@ -26,7 +26,27 @@ jobs:
 
       - name: Advance preview when it is safe
         run: |
-          git fetch origin main preview
+          git fetch origin main
+
+          # `preview` can be missing — it was deleted around 2026-09-03 and every
+          # push to main failed for a week with `fatal: couldn't find remote ref
+          # preview`, because a single `git fetch origin main preview` exits 128
+          # before any of the reconciliation logic below gets to run. A missing
+          # branch is the one case where creating it is unambiguously safe: there
+          # is nothing to overwrite. Warn rather than fail, so a deliberate
+          # deletion is still visible in the run instead of being undone silently.
+          if ! git ls-remote --exit-code --heads origin preview >/dev/null 2>&1; then
+            git push origin "origin/main:refs/heads/preview"
+            echo "::warning title=Preview was recreated::preview did not exist on origin and has been created at main. If it was deleted deliberately, delete this workflow too."
+            {
+              echo "## Preview was recreated"
+              echo
+              echo "\`preview\` did not exist on \`origin\`, so it was created at \`main\`. Nothing was overwritten."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          git fetch origin preview
 
           if ! git merge-base --is-ancestor origin/preview origin/main; then
             echo "::error title=Preview needs reconciliation::preview contains commits that are not on main, so this workflow will not overwrite it. Merge or rebase preview onto main, then run this workflow again."
