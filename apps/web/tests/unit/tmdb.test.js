@@ -234,3 +234,81 @@ test('recent releases still accept a provider filter, which works on past dates'
     setTmdbRegion('US');
   }
 });
+
+/**
+ * Stubs the four request shapes getChannelProviders makes. `catalogues` maps a
+ * provider id to its { free, flatrate } total_results, which is what step 4
+ * weighs against each other.
+ */
+function stubChannelProviders({ region, shows, providers, catalogues }) {
+  return async (url) => {
+    const params = new URL(url).searchParams;
+    const path = params.get('path');
+    const json = (data) => ({ ok: true, status: 200, json: async () => data });
+
+    if (path === 'watch/providers/tv') return json({ results: providers });
+    if (path.startsWith('tv/')) {
+      const id = Number(path.split('/')[1]);
+      return json({ results: { [region]: shows[id] } });
+    }
+    // discover/tv — either the step 1 popularity sample or a step 4 probe.
+    const providerId = params.get('with_watch_providers');
+    if (!providerId) return json({ results: Object.keys(shows).map(id => ({ id: Number(id) })) });
+    const catalogue = catalogues[providerId] ?? { free: 0, flatrate: 0 };
+    const monetization = params.get('with_watch_monetization_types');
+    return json({ total_results: monetization === 'flatrate' ? catalogue.flatrate : catalogue.free });
+  };
+}
+
+test('the channel picker drops subscription storefronts that offer a free title', async () => {
+  // TMDB files Silo under Apple TV's `free` bucket (a free first episode), which
+  // is how Apple TV and Amazon Prime Video reached a picker meant for broadcast
+  // channels. The catalogue weights are the real AU figures.
+  const originalFetch = globalThis.fetch;
+  configure({ tmdbProxyUrl: 'https://proxy.test', supabaseAnonKey: 'anon' });
+  globalThis.fetch = stubChannelProviders({
+    region: 'XA',
+    shows: {
+      1: { free: [{ provider_id: 350 }], ads: [] },          // Apple TV
+      2: { free: [{ provider_id: 135 }], ads: [] },          // ABC iview
+      3: { free: [], ads: [{ provider_id: 246 }] },          // 7plus
+    },
+    providers: [
+      { provider_id: 350, provider_name: 'Apple TV',  display_priority: 1 },
+      { provider_id: 135, provider_name: 'ABC iview', display_priority: 2 },
+      { provider_id: 246, provider_name: '7plus',     display_priority: 3 },
+    ],
+    catalogues: {
+      350: { free: 5,   flatrate: 220 },  // storefront: catalogue is overwhelmingly paid
+      135: { free: 611, flatrate: 265 },  // broadcaster: mostly free
+      246: { free: 526, flatrate: 238 },  // broadcaster
+    },
+  });
+
+  try {
+    const channels = await tmdb.getChannelProviders('XA');
+    assert.deepEqual(channels.map(p => p.provider_name), ['ABC iview', '7plus']);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('a candidate whose catalogue probes come back empty is kept, not dropped', async () => {
+  // Both counts zero means the probes failed or were rate-limited, not that the
+  // provider has nothing. Dropping on that would blank the whole picker.
+  const originalFetch = globalThis.fetch;
+  configure({ tmdbProxyUrl: 'https://proxy.test', supabaseAnonKey: 'anon' });
+  globalThis.fetch = stubChannelProviders({
+    region: 'XB',
+    shows: { 1: { free: [{ provider_id: 135 }], ads: [] } },
+    providers: [{ provider_id: 135, provider_name: 'ABC iview', display_priority: 1 }],
+    catalogues: {},
+  });
+
+  try {
+    const channels = await tmdb.getChannelProviders('XB');
+    assert.deepEqual(channels.map(p => p.provider_name), ['ABC iview']);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});

@@ -497,9 +497,44 @@ export const tmdb = {
 
     // Step 3: get the full provider list and keep only the free/ads ones
     const allProviders = await fetchFromTMDB('/watch/providers/tv', { watch_region: region });
-    return (allProviders?.results || [])
+    const candidates = (allProviders?.results || [])
       .filter(p => freeProviderIds.has(p.provider_id))
       .sort((a, b) => a.display_priority - b.display_priority);
+
+    // Step 4: drop the subscription storefronts that step 2 lets in. TMDB files
+    // a title under a provider's `free` or `ads` bucket for reasons that have
+    // nothing to do with that provider being a broadcast channel — a free pilot
+    // episode, a storefront promo — so Apple TV arrives here off the back of
+    // Silo and Ted Lasso, and Amazon Prime Video off The Rookie. Sampling
+    // titles can't tell the two apart; the provider's own catalogue can. Ask
+    // each candidate whether it is *predominantly* free/ad-supported in this
+    // region. A broadcaster's free catalogue outweighs its flatrate one (AU,
+    // ABC iview: 611 free/ads vs 265 flatrate); a subscription service's does
+    // not, and not narrowly (Apple TV: 5 vs 220; Prime Video: 1082 vs 3217).
+    // This is deliberately a measurement rather than a deny-list of provider
+    // ids: it needs no upkeep as providers and regions change, and it keeps
+    // genuine ad-supported tiers such as "Amazon Prime Video Free with Ads".
+    const catalogueSize = async (providerId, monetizationTypes) => {
+      const data = await fetchFromTMDB('/discover/tv', {
+        watch_region: region,
+        with_watch_providers: providerId,
+        with_watch_monetization_types: monetizationTypes,
+      });
+      return data?.total_results ?? 0;
+    };
+    const predominantlyFree = await Promise.all(candidates.map(async (p) => {
+      const [free, flatrate] = await Promise.all([
+        catalogueSize(p.provider_id, 'free|ads'),
+        catalogueSize(p.provider_id, 'flatrate'),
+      ]);
+      // Both zero means the two probes answered nothing (a failed or rate-
+      // limited request), not that the provider is empty. Keep the candidate
+      // rather than let a transient failure blank out the picker.
+      if (!free && !flatrate) return true;
+      return free > flatrate;
+    }));
+
+    return candidates.filter((_, i) => predominantlyFree[i]);
   },
 
   /* ── Discover by provider ──
