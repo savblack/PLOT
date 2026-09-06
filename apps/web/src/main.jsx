@@ -7,6 +7,7 @@ import './index.css';
 import { captureAttribution } from './utils/attribution.js';
 import { analyticsAllowed } from './utils/analyticsHost.js';
 import { redactSensitiveUrl } from './utils/redactUrl.js';
+import { isOpaqueBrowserException } from './utils/opaqueException.js';
 import { track, EVENTS, _setPostHogClient } from './lib/analytics.js';
 
 // Inject web env into the shared core before anything renders or fetches.
@@ -161,6 +162,14 @@ if (posthogToken) {
       // properties on every event before it leaves the browser.
       before_send: (event) => {
         const props = event?.properties;
+        // An exception the browser masked to "Script error." carries no
+        // message, filename or stack, so it can only ever be closed, never
+        // diagnosed. Drop it rather than let it open an Error Tracking issue.
+        // Turnstile.jsx sets crossOrigin so its own errors arrive intact; this
+        // is the backstop for the next third-party script.
+        if (event?.event === '$exception' && isOpaqueBrowserException(props?.$exception_list)) {
+          return null;
+        }
         if (props) {
           for (const key of ['$current_url', '$referrer', '$session_entry_url', '$pathname']) {
             if (typeof props[key] === 'string') props[key] = redactSensitiveUrl(props[key]);
