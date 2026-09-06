@@ -1,30 +1,31 @@
 # Config for the app.theplot.tv Cloudflare Pages project.
-# Pages has been dashboard-configured
-# (git-connected build) up to now; this file adds ONLY the Ratelimit binding
-# the Pages Functions in functions/*.js need (functions/_lib/rateLimit.js).
 #
-# Moved here from the repo root (2026-07-28): Cloudflare's "v2 root directory
-# strategy" build-config auto-detection started picking up a repo-root
-# wrangler.toml for the UNRELATED plot-site (theplot.tv) Pages project too,
-# whose scoped root directory is apps/website — this file's
-# pages_build_output_dir resolved outside that project's directory and broke
-# its builds ("build output directory is outside of the repository"). Living
-# under apps/web/ keeps it out of plot-site's discovery entirely.
+# READ THIS BEFORE ADDING ANYTHING HERE: Cloudflare Pages never reads this file.
+# The project's build root directory is the repo root, and Pages only looks for
+# a wrangler.toml there. Nothing below has any effect on a deployment.
 #
-# If Cloudflare Pages doesn't pick this file up for the plot-app project from
-# its new location (project root directory is the repo root, not apps/web/),
-# add the same binding manually instead:
-#   Pages project → Settings → Functions → Bindings → Add → Rate Limiting →
-#   Variable name "RL", same limit/period as below. Either path produces the
-# same env.RL binding the functions call.
+# It ended up here on 2026-07-28: at the repo root, Cloudflare's "v2 root
+# directory strategy" auto-detection picked it up for the UNRELATED plot-site
+# (theplot.tv) project, whose root directory is apps/website, and this file's
+# pages_build_output_dir resolved outside that project ("build output directory
+# is outside of the repository"), breaking its builds. Moving it under apps/web/
+# fixed plot-site — and silently stopped it applying to this project too.
+#
+# It carried a `[[ratelimits]]` RL binding until 2026-09-06 on the assumption
+# that one of those two locations would work. Neither did. The binding was never
+# bound: the project config has no bindings at all, and 100 requests in 6.3s
+# against a 60-per-10s limit drew zero 429s. `rateLimited()` opened with
+# `if (!env.RL) return false`, so it failed open in silence for the whole time,
+# and the helper has now been deleted rather than left claiming a protection it
+# never provided.
+#
+# Per-IP limiting for /u/*, /list/*, /save now lives in a zone-level WAF
+# rate-limiting rule, which needs no binding and is unaffected by build config.
+#
+# `name` below matches no Pages project (they are `plot` and `plot-site`). It is
+# left as-is deliberately: correcting it risks Pages one day picking this file
+# up and applying pages_build_output_dir relative to the repo root, which is the
+# exact failure described above.
 name = "plot-app"
 pages_build_output_dir = "dist"
 compatibility_date = "2025-06-01"
-
-# 60 requests per 10s per client IP on /u/*, /list/*, /save — generous enough
-# for real users (a profile page does a handful of sub-requests) but enough
-# to blunt scripted scraping/enumeration and TMDB-quota abuse.
-[[ratelimits]]
-name = "RL"
-namespace_id = "1003"
-simple = { limit = 60, period = 10 }

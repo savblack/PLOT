@@ -61,7 +61,14 @@ UPSTREAM = "https://uzrhfivnhdcfieuaxzip.supabase.co/functions/v1/tmdb-proxy"
 
 # Same shape as production; a separate namespace so staging traffic can't eat
 # into real users' rate budget.
+#
+# Was namespace_id "1002" until 2026-09-06, which is the OG Worker's namespace
+# (apps/web/workers/og/wrangler.toml, limit 30 per 60s). Namespaces are the
+# counter's identity, so the two shared one bucket under two different limits and
+# staging traffic drew down the OG Worker's budget — the opposite of what the
+# comment above promises. 1001 is this Worker's production namespace and 1003 was
+# claimed by a Pages binding that never bound, so staging takes 1004.
 [[env.staging.ratelimits]]
 name = "RL"
-namespace_id = "1002"
+namespace_id = "1004"
 simple = { limit = 100, period = 10 }
