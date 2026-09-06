@@ -26,7 +26,33 @@ jobs:
 
       - name: Advance preview when it is safe
         run: |
-          git fetch origin main preview
+          git fetch origin main
+
+          # `preview` can be missing — it was deleted between 2026-08-23 and
+          # 2026-08-26, and every push to main since failed with `fatal: couldn't
+          # find remote ref preview`, because a single `git fetch origin main
+          # preview` exits 128 before any of the reconciliation logic below runs.
+          #
+          # Do not recreate it. Cloudflare Pages now builds a preview deployment
+          # for every branch, which is what the long-lived branch was for, and it
+          # has been gone for weeks without anyone missing it. Recreating it here
+          # would also republish preview.theplot.tv, which is still a custom
+          # domain on the `plot` project. Skip instead, and say so: green when
+          # there is genuinely nothing to do, loud enough that the leftover domain
+          # doesn't stay forgotten.
+          if ! git ls-remote --exit-code --heads origin preview >/dev/null 2>&1; then
+            echo "::warning title=No preview branch::preview does not exist on origin, so there is nothing to advance. Per-branch Cloudflare previews cover this now. If that is permanent, delete this workflow and the preview.theplot.tv custom domain, which is still serving its last build."
+            {
+              echo "## Nothing to advance"
+              echo
+              echo "\`preview\` does not exist on \`origin\`. Per-branch Cloudflare previews cover what it was for."
+              echo
+              echo "If that is permanent, delete this workflow and the \`preview.theplot.tv\` custom domain — it is still attached to the \`plot\` project and serving its last build."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          git fetch origin preview
 
           if ! git merge-base --is-ancestor origin/preview origin/main; then
             echo "::error title=Preview needs reconciliation::preview contains commits that are not on main, so this workflow will not overwrite it. Merge or rebase preview onto main, then run this workflow again."

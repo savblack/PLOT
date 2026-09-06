@@ -85,6 +85,31 @@ They are excluded behaviourally instead. The **Real visitors** cohort is anyone
 who fired `$pageleave` or any in-app action. Every acquisition tile is scoped to
 it. Never build an acquisition insight on a raw `$pageview` count.
 
+Scoping a tile to a cohort only works where you control the query, and PostHog's
+own **Web analytics** product is not one of those places — it has no cohort
+scope. So the same population is *also* defined as the **Bots (landed, never
+engaged)** cohort (553124) and added to `test_account_filters` as a `not_in`
+rule, which Web analytics does respect. Same people, two mechanisms, because the
+two surfaces filter differently.
+
+Bots are the exact complement of Real visitors, widened so it can never swallow
+a person: a `$pageview` and then no Tier 1 action (it negates **action 333111**,
+not a list of event names, so it tracks the catalog on its own), no `$pageleave`,
+and none of `signup_cta_clicked` / `login_click` / `save_cta_clicked` /
+`signup_form_viewed` / `signup_form_started` / `signup_submit_clicked` /
+`user_signed_up` / `user_logged_in`.
+
+Those first three matter more than they look. They fire from the marketing and
+server-rendered surfaces on `theplot.tv` — the very host the crawlers hit — so
+without them a real click-through to the app would be filed as a bot. The first
+draft of this cohort had exactly that defect and caught two real people, both of
+whom had reached the signup form and gone no further. They are the population
+the signup-friction funnel exists to study, and filtering them out globally
+would have quietly emptied the tile that studies them.
+
+If you add an event that signals human intent from a surface Tier 1 does not
+cover, negate it here too.
+
 ## Dev and preview traffic
 
 Analytics runs only on `theplot.tv`, `www.theplot.tv` and `app.theplot.tv`. This
@@ -154,6 +179,7 @@ recorded here to keep the change reversible.
 | `recording_domains` | `null` (all) | `["https://app.theplot.tv"]` | Stops recording bot sessions on the marketing site. |
 | `session_recording_minimum_duration_milliseconds` | `null` | `5000` | Drops drive-by sessions never worth watching. |
 | `test_account_filters` | 3 email rules + cohort 362972 | those, plus `$host` not containing `localhost` / `127.0.0.1` / `pages.dev` / `preview.theplot.tv`, plus `$internal_or_test_user` is not true | Retroactive: the toggle is default-checked, so existing insights clean up without a deploy. |
+| `test_account_filters` (2026-09-06) | the nine rules above | those, plus cohort 553124 `not_in` | Web analytics showed a 1.2K-session crawler burst on 2026-08-13 as real traffic. Nothing in the nine rules touched it: the crawlers sit on the production host with no email and no cohort. Retroactive, same default-checked toggle. |
 
 Unchanged and worth knowing: `session_recording_opt_in: true`,
 `autocapture_opt_out: false`, `heatmaps_opt_in: true`,
@@ -171,6 +197,7 @@ Objects created at the same time:
 | Cohort | Activated (committed action) | 494035 |
 | Cohort | Retained (returned and acted) | 494036 |
 | Cohort | Internal / Test users (pre-existing) | 362972 |
+| Cohort | Bots (landed, never engaged) — added 2026-09-06 | 553124 |
 
 `POSTHOG_PERSONAL_API_KEY` in the root `.env` is scoped to project 471234 and
 can read and write all of the above via `https://us.posthog.com/api/projects/471234/`.

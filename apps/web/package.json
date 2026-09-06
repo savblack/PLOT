@@ -17,7 +17,7 @@
     "@plot/ui": "*",
     "@posthog/react": "^1.10.3",
     "@supabase/supabase-js": "^2.110.7",
-    "posthog-js": "^1.404.1",
+    "posthog-js": "^1.427.2",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-router-dom": "^7.18.2"
