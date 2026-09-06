@@ -23,7 +23,7 @@
     "posthog-react-native": "^4.67.0",
     "react": "19.2.3",
     "react-native": "0.87.1",
-    "react-native-get-random-values": "~1.11.0",
+    "react-native-get-random-values": "~2.0.0",
     "react-native-safe-area-context": "~5.9.1",
     "react-native-screens": "4.27.0",
     "react-native-svg": "15.15.5",
