@@ -83,9 +83,74 @@ export function initAnalytics() {
     client = ph;
     const queued = pendingCalls.splice(0, pendingCalls.length);
     queued.forEach(fn => { try { fn(ph); } catch { /* analytics must never break UX */ } });
+    installGlobalErrorHandlers();
   } catch {
     // A failed analytics init must not stop the app booting.
   }
+}
+
+/**
+ * Send uncaught errors and unhandled promise rejections to PostHog Error
+ * Tracking.
+ *
+ * Web gets this from posthog-js's `capture_exceptions`. posthog-react-native
+ * has no equivalent option — it ships captureException and an ErrorBoundary and
+ * nothing else — so until it does, the two platforms only report the same
+ * things if this is wired by hand.
+ *
+ * What was missing: components/ErrorBoundary.tsx catches errors thrown during
+ * React rendering. It cannot see a throw from an event handler, a `.then()`, a
+ * timer, or anything native, which is where most real crashes live. Those were
+ * reaching the user as a dead app and PostHog as silence.
+ *
+ * Called from initAnalytics(), so it inherits the same gate: never in dev,
+ * never without a token.
+ */
+function installGlobalErrorHandlers() {
+  const g = globalThis as unknown as {
+    ErrorUtils?: {
+      getGlobalHandler: () => (error: unknown, isFatal?: boolean) => void;
+      setGlobalHandler: (cb: (error: unknown, isFatal?: boolean) => void) => void;
+    };
+    HermesInternal?: {
+      enablePromiseRejectionTracker?: (options: {
+        allRejections: boolean;
+        onUnhandled: (id: number, rejection: unknown) => void;
+      }) => void;
+    };
+  };
+
+  // Uncaught JS errors. Chain rather than replace: RN's own handler is what
+  // shows the red box in dev and reports the fatal to the native crash
+  // handler, and swallowing it would trade one blind spot for another.
+  try {
+    const previous = g.ErrorUtils?.getGlobalHandler?.();
+    g.ErrorUtils?.setGlobalHandler?.((error, isFatal) => {
+      try {
+        captureException(error, { fatal: !!isFatal, source: 'global_handler' });
+        // A fatal is the app's last moment — the batch queue would die with it,
+        // so push it now. Fire and forget: awaiting here would delay the red
+        // box, and the process is going away regardless.
+        if (isFatal) client?.flush?.().catch(() => { /* nothing left to do */ });
+      } catch { /* analytics must never break the crash path */ }
+      previous?.(error, isFatal);
+    });
+  } catch { /* ErrorUtils is RN-internal; never let its absence break boot */ }
+
+  // Unhandled promise rejections. On Hermes, RN installs this tracker only
+  // under __DEV__ (Libraries/Core/polyfillPromise.js), and analytics only run
+  // when __DEV__ is false — so in every build this touches, nothing else has
+  // claimed it and there is no dev behaviour to clobber.
+  try {
+    g.HermesInternal?.enablePromiseRejectionTracker?.({
+      allRejections: true,
+      onUnhandled: (_id, rejection) => {
+        try {
+          captureException(rejection, { fatal: false, source: 'unhandled_rejection' });
+        } catch { /* analytics must never break UX */ }
+      },
+    });
+  } catch { /* not Hermes, or the API moved — no rejection tracking, no crash */ }
 }
 
 export function track(event: string, props?: AnalyticsProps) {

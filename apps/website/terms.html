@@ -30,6 +30,12 @@
       window.gtag = function () { dataLayer.push(arguments); };
       var gtagScript = document.createElement('script');
       gtagScript.async = true;
+      // Opt into CORS so anything Google's script throws reaches window.onerror
+      // with a message and a stack, instead of the browser's opaque
+      // "Script error.". googletagmanager.com reflects the Origin header and
+      // sends Vary: Origin, so this costs nothing. Same reasoning as
+      // Turnstile.jsx in the app.
+      gtagScript.crossOrigin = 'anonymous';
       gtagScript.src = 'https://www.googletagmanager.com/gtag/js?id=G-PYLHY9JMK1';
       document.head.appendChild(gtagScript);
       gtag('js', new Date());
@@ -41,7 +47,7 @@
     if (!window.PLOT_ANALYTICS_OFF) {
       (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
       new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-      j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+      j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.crossOrigin='anonymous';j.src=
       'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
       })(window,document,'script','dataLayer','GTM-PC72PHBN');
     }

@@ -193,6 +193,70 @@ its own `src` identity. Page identity belongs in `src`, never in `utm_source`.
 `/th`) cover the bio link; per-post social links are still untagged, and mobile
 has no acquisition attribution of any kind.
 
+## Error tracking
+
+Six surfaces report unhandled errors. What each one uses, and what it cannot
+see:
+
+| Surface | Automatic capture | Manual |
+|---|---|---|
+| Web app | posthog-js `capture_exceptions` (off under `import.meta.env.DEV`) | `ErrorBoundary`, `RouteErrorBoundary` |
+| Marketing site | snippet `capture_exceptions` | — |
+| title-page / marketing-feed / list pages | snippet `capture_exceptions` | — |
+| Mobile | `installGlobalErrorHandlers()` in `lib/analytics.ts` | `components/ErrorBoundary.tsx` |
+
+`kofi-webhook` is the seventh sender and is not in the table: it posts to
+PostHog's HTTP capture API from Deno, with no SDK and no browser, so it has no
+exception capture and a failed delivery shows up in the function's own logs.
+
+Until 2026-09-11 only the web app reported anything. The other four browser
+surfaces run the PostHog snippet and had `capture_pageview` and `autocapture`
+but not `capture_exceptions`, so a landing page that broke for real visitors
+produced no signal at all — and that page is the top of the funnel. Mobile had
+only the React error boundary, which sees render-time throws and nothing from
+an event handler, a `.then()`, a timer or native code.
+
+Mobile is hand-wired because posthog-react-native has no `capture_exceptions`
+equivalent — it ships `captureException` and an `ErrorBoundary` and nothing
+else. `installGlobalErrorHandlers()` chains `ErrorUtils.setGlobalHandler` (it
+calls the previous handler, so the red box and the native crash reporter still
+run) and installs `HermesInternal.enablePromiseRejectionTracker`. RN only
+enables that tracker itself under `__DEV__`, and mobile analytics only run when
+`__DEV__` is false, so the two never contend. A fatal flushes the queue before
+the process goes away. Delete both if the SDK ever grows the option.
+
+### "Script error." and why it is dropped
+
+When a third-party script throws and it was **not** loaded with CORS, the
+same-origin policy strips everything before `window.onerror` sees it: no
+message, no filename, no stack — just the string `Script error.`. posthog-js
+captures that faithfully, and the result is an Error Tracking issue that can
+only be closed, never diagnosed. Two arrived from Turnstile on 2026-08-31 and
+cost a triage report to establish that there was nothing to establish.
+
+The fix is at the source: every third-party script is now injected with
+`crossOrigin = 'anonymous'`, so errors arrive with a message and a stack.
+Turnstile got it in #624; the Google tags (`gtag/js` and `gtm.js`) on the
+marketing site and the two rendered surfaces got it at the same time as the
+capture rollout above. Both hosts support it — `challenges.cloudflare.com`
+sends `access-control-allow-origin: *` on the 302 and its target, and
+`googletagmanager.com` reflects the `Origin` header and sends `Vary: Origin`.
+**Any new third-party `<script>` must set it too.**
+
+The backstop is a `before_send` hook that drops an exception carrying no
+actionable detail. It is deliberately narrow: an entry qualifies only when it
+is **both** synthetic (the browser fabricated the `Error`, rather than the page
+throwing one) **and** has no stack frames. A synthetic exception with frames is
+real signal, and so may be a stackless one the page threw itself.
+
+The predicate exists in five places, because the four snippet surfaces cannot
+import: `apps/web/src/utils/opaqueException.js` is the real one, and each
+snippet carries a hand-written `dropOpaqueException`.
+`apps/web/tests/unit/opaqueExceptionParity.test.js` extracts all four copies,
+runs them, and holds them to the same answers as the app's — three of them are
+single-line, where a stray paren would otherwise ship a page whose analytics
+throws on load.
+
 ## PostHog settings that are not in this repo
 
 These were changed through the API on 2026-08-18 and exist only in the PostHog
@@ -295,6 +359,7 @@ for a non-PostHog host and therefore also lands on the proxy.
 - Seam wiring: `apps/web/src/main.jsx`, `apps/mobile/lib/configureCore.ts`
 - Transport: `apps/web/src/lib/analytics.js`, `apps/mobile/lib/analytics.ts`
 - Host allowlist: `apps/web/src/utils/analyticsHost.js` (+ four copies)
+- Opaque-error filter: `apps/web/src/utils/opaqueException.js` (+ four copies)
 
 Engagement events fire from core seams, at the single canonical mutation site
 per action, so there is exactly one emitter per action and no cross-surface
