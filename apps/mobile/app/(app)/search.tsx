@@ -212,13 +212,13 @@ export default function SearchScreen() {
           contentContainerStyle={{ paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }}
           ListEmptyComponent={loading ? undefined : emptyMode === 'title-guidance' ? (
             <View style={styles.empty}>
-              <Text style={styles.emptyTitle}>Try searching by title</Text>
-              <Text style={styles.emptyBody}>Search works best with a movie or TV title rather than a director, cast member, or creator name.</Text>
+              <Text style={styles.emptyTitle}>{MEDIA.searchByTitle}</Text>
+              <Text style={styles.emptyBody}>{MEDIA.searchByTitleBody}</Text>
             </View>
           ) : (
             <View style={styles.empty}>
-              <Text style={styles.emptyTitle}>No results</Text>
-              <Text style={styles.emptyBody}>Try a different title or spelling.</Text>
+              <Text style={styles.emptyTitle}>{MEDIA.searchNoResults}</Text>
+              <Text style={styles.emptyBody}>{MEDIA.searchNoResultsBody}</Text>
             </View>
           )}
         />

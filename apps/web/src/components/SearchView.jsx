@@ -260,14 +260,14 @@ export default function SearchView() {
         <>
           {emptyMode === 'generic' && (
             <div className="empty-state">
-              <div className="empty-title">No results</div>
-              <div className="empty-body">Try a different title or spelling.</div>
+              <div className="empty-title">{MEDIA.searchNoResults}</div>
+              <div className="empty-body">{MEDIA.searchNoResultsBody}</div>
             </div>
           )}
           {emptyMode === 'title-guidance' && (
             <div className="empty-state">
-              <div className="empty-title">Try searching by title</div>
-              <div className="empty-body">Search works best with a movie or TV title rather than a director, cast member, or creator name.</div>
+              <div className="empty-title">{MEDIA.searchByTitle}</div>
+              <div className="empty-body">{MEDIA.searchByTitleBody}</div>
             </div>
           )}
           {results.length === 0 && emptyMode === 'none' && (

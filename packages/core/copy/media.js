@@ -15,9 +15,18 @@ export const MEDIA = {
   series: 'Series',
   cinema: 'Cinema',
   unknown: 'Unknown',
-  // Both apps' title-search box. Shared so the two can't drift: they read
-  // identically today only because this is the one place it is written.
+  // Both apps' title-search box and its two empty states. Shared so the two
+  // can't drift: they read identically today only because this is the one
+  // place they are written.
   searchPlaceholder: 'Search movies & TV shows…',
+  // The miss state is where the query parsing is worth mentioning: someone has
+  // just searched and got nothing, so a nudge to be more specific is wanted
+  // rather than ignored. The placeholder is the wrong place for it, since it
+  // vanishes the moment anyone types and implies a syntax to learn.
+  searchNoResults: 'No results',
+  searchNoResultsBody: 'Try a different title or spelling. Adding a year or a type like movie or TV series can help.',
+  searchByTitle: 'Try searching by title',
+  searchByTitleBody: 'Search works best with a movie or TV title rather than a director, cast member, or creator name.',
   saveToWatchlist: 'Add to watchlist',
   removeFromWatchlist: 'Remove from watchlist',
   today: 'Today',
