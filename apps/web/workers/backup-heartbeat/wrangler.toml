@@ -61,7 +61,12 @@ MAX_AGE_HOURS = "26"
 MIN_BYTES = "200000"
 
 # Where the alarm goes. Plain var, not a secret, so it is visible and easy to
-# change — feedback@theplot.tv is the inbox already used elsewhere in the repo
-# and routes through Cloudflare Email Routing.
-ALERT_EMAIL = "feedback@theplot.tv"
+# change. Deliberately the operator's own mailbox and NOT the branded
+# feedback@theplot.tv this used to carry: that address is a Cloudflare Email
+# Routing alias, so it adds a forwarding hop that drops mail silently when the
+# destination is unverified. A watchdog whose only alarm can vanish without
+# trace is no watchdog — the same reason notify-feedback now mails direct.
+#
+# ALERT_FROM stays on theplot.tv: Resend will only send from a verified domain.
+ALERT_EMAIL = "sav.black@outlook.com"
 ALERT_FROM = "PLOT <hello@theplot.tv>"
