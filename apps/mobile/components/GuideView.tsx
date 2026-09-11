@@ -186,20 +186,32 @@ function DayGrid({ channels, nowMins, nowLeft, onProgramPress }: {
 
       {/* ── Right: ruler + grid ── */}
       <View style={{ flex: 1, overflow: 'hidden' }}>
-        {/* Ruler — driven by gridH horizontal scroll */}
-        <ScrollView
-          ref={rulerRef}
-          horizontal
-          scrollEnabled={false}
-          showsHorizontalScrollIndicator={false}
-          style={{ height: RULER_H, flexShrink: 0 }}
-        >
-          <View style={{ position: 'relative', width: TOTAL_W, height: RULER_H }}>
-            {MARKS.filter((_, i) => i % 2 === 0).map(mk => (
-              <Text key={mk.offset} style={[styles.rulerMark, { left: mk.offset }]}>{mk.label}</Text>
-            ))}
-          </View>
-        </ScrollView>
+        {/* Ruler — driven by gridH horizontal scroll.
+            The height MUST live on this plain wrapper View, not on the
+            ScrollView. Putting it on the ScrollView is not enough:
+            `flexShrink: 0` stops it shrinking but nothing pins flexGrow, so it
+            grew into the column's spare space and took 387pt of a 742pt column
+            instead of 32. That pushed the grid to y=387 while the sidebar — whose
+            corner spacer is a plain View, so it never competed for flex space —
+            stayed at y=32, leaving the two panes ~7 rows out of alignment with
+            every row still the correct height. Measured on device 2026-09-11;
+            the sidebar's own ScrollView height (710) is the number the grid
+            has to match. */}
+        <View style={{ height: RULER_H, flexGrow: 0, flexShrink: 0 }}>
+          <ScrollView
+            ref={rulerRef}
+            horizontal
+            scrollEnabled={false}
+            showsHorizontalScrollIndicator={false}
+            style={{ flex: 1 }}
+          >
+            <View style={{ position: 'relative', width: TOTAL_W, height: RULER_H }}>
+              {MARKS.filter((_, i) => i % 2 === 0).map(mk => (
+                <Text key={mk.offset} style={[styles.rulerMark, { left: mk.offset }]}>{mk.label}</Text>
+              ))}
+            </View>
+          </ScrollView>
+        </View>
 
         {/* Program grid — horizontal scroll drives ruler, vertical drives sidebar */}
         <ScrollView
