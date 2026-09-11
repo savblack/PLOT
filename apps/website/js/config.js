@@ -11,6 +11,28 @@ window.PLOT = window.PLOT || {};
    loading — that domain is itself commonly ad-blocked, which would defeat
    the point of the a.theplot.tv reverse proxy. */
 /* global posthog */
+/* An exception the browser masked to "Script error." carries no message, no
+   filename and no stack: it can only be closed, never diagnosed. Two of them
+   reached the app's inbox on 2026-08-31 and cost a triage report to establish
+   there was nothing to establish. Turning capture_exceptions on here without
+   this guard would invite the same thing from every third-party tag on the
+   marketing site. Mirrors isOpaqueBrowserException in
+   apps/web/src/utils/opaqueException.js — an entry only qualifies when it is
+   BOTH synthetic (the browser fabricated the Error) and has no stack frames,
+   so a real throw is never dropped. Keep the two in agreement. */
+function dropOpaqueException(event) {
+  if (!event || event.event !== '$exception') return event;
+  var list = event.properties && event.properties.$exception_list;
+  if (!Array.isArray(list) || list.length === 0) return event;
+  var opaque = list.every(function (entry) {
+    if (!entry || typeof entry !== 'object') return false;
+    if (!entry.mechanism || entry.mechanism.synthetic !== true) return false;
+    var frames = entry.stacktrace && entry.stacktrace.frames;
+    return !(frames && frames.length > 0);
+  });
+  return opaque ? null : event;
+}
+
 /* Host allowlist: one PostHog project serves everything, so without this a
    `wrangler pages dev` on localhost or a *.pages.dev preview reports straight
    into production. Mirrors apps/web/src/utils/analyticsHost.js — keep the two
@@ -25,6 +47,14 @@ posthog.init('phc_uS3JEJC7s6T2WdsQToCZA3eRjLNakgc3EF3YPbza9Q6U', {
   cross_subdomain_cookie: true,
   capture_pageview: true,
   autocapture: true,
+  /* Report unhandled errors and promise rejections to PostHog Error Tracking.
+     The app has had this since it shipped; the marketing site did not, so a
+     landing-page script that broke for real visitors produced no signal at all
+     — and this is the top of the funnel. The host allowlist above is the dev
+     gate, exactly as it is for pageviews, so localhost and *.pages.dev never
+     reach the inbox. */
+  capture_exceptions: true,
+  before_send: dropOpaqueException,
 });
 }
 
