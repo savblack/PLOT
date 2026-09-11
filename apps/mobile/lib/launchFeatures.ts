@@ -17,8 +17,9 @@ export const SHOW_MEDIA_SYNC_INTEGRATIONS = false;
 // configured, so users never hit one that errors.
 //   Google — set EXPO_PUBLIC_SHOW_GOOGLE_LOGIN=true once the Google Cloud OAuth
 //     client is created and the Google provider is enabled in Supabase.
-//   Apple  — off until the Apple Developer Program exists (needed for the Sign
-//     in with Apple service ID + key). Flip to true then. Note App Store review
+//   Apple  — the Apple Developer Program membership exists (Individual); what
+//     is missing is the Sign in with Apple service ID + key and the Supabase
+//     provider. Flip to true once they are set up. Note App Store review
 //     requires Sign in with Apple if any other social sign-in ships on iOS.
 // Magic-link sign-in needs no flag — it runs off the existing Supabase SMTP.
 export const SHOW_GOOGLE_LOGIN = process.env.EXPO_PUBLIC_SHOW_GOOGLE_LOGIN === 'true';

@@ -51,21 +51,37 @@ Also open, from the original plan's out-of-scope list: mobile Settings lacks
 avatar upload, username availability checking, invite-friends share and data
 export.
 
-## ⚠️ Blocker: the simulator cannot build
+## ⚠️ Blocker: the app has never been run
+
+Not on a simulator, not on a device, not once. `tsc --noEmit` and ESLint are
+the entire safety net, and 25 mobile commits landed on top of it in the 30 days
+to 2026-09-11, including the RN 0.86.2 → 0.87.1 and Expo 57.0.14 → 57.0.19
+upgrades in #622.
+
+There is **no Xcode on this machine** as of 2026-09-11:
 
 ```
-Xcode 26.6          → SDK iOS 26.5
-installed runtime   → iOS 27.0 only
+xcode-select -p  → /Library/Developer/CommandLineTools
+/Applications/Xcode.app → absent
+xcrun simctl     → "unable to find utility simctl"
 ```
 
-`expo run:ios` fails with `xcodebuild` exit 70, "Unable to find a destination
-matching the provided destination specifier". Falling back to
-`-destination 'generic/platform=iOS Simulator'` does **not** work around it —
-same error, no `.app`. There is no eligible simulator destination at all while
-SDK and runtime disagree.
+So there is no simulator to fail to build for. (An earlier revision of this
+doc described an Xcode 26.6 SDK/runtime mismatch; that machine state no longer
+applies, and diagnosing against it wastes an hour.)
 
-**Fix (needs a human):** Xcode ▸ Settings ▸ Components → install the iOS 26.5
-simulator runtime, or move to an Xcode whose SDK matches the 27.0 runtime.
+**Fix (needs a human):** install Xcode from the App Store, then
+`sudo xcode-select -s /Applications/Xcode.app/Contents/Developer`. Needs the
+machine password, so an agent cannot do it.
+
+**But Xcode is not the only path, and nothing is actually waiting.** PLOT is
+enrolled in the Apple Developer Program (Individual, confirmed 2026-09-11), and
+EAS builds on hosted macOS workers, so an `eas build --profile development`
+puts a signed build on a real iPhone without Xcode existing locally. That is
+the fastest route to a first run. See
+[docs/ops/mobile-builds.md](../ops/mobile-builds.md) for the profiles and
+[docs/qa/mobile-device-smoke.md](../qa/mobile-device-smoke.md) for what to
+drive once it runs.
 
 Until then every mobile change is static-only. Say so plainly rather than
 implying a change was seen working.
@@ -84,6 +100,13 @@ Lessons:
 - A feature-flag or allow-list set is exactly the kind of one-line gate that
   compiles perfectly while disabling the feature. After a rebase, re-read the
   gate, don't just re-run the build.
+- That specific gate is now guarded: `npm run mobile:tabs` fails the build if
+  any `DISCOVER_TABS` id is in neither `MOBILE_READY` nor `MOBILE_DEFERRED` in
+  `app/(app)/index.tsx`, so "missing" is no longer expressible. The rules and
+  the reconstruction of #587 are in
+  `apps/web/tests/unit/mobileTabChecks.test.js`. It is a static guard, not a
+  substitute for running the app: it cannot tell you a tab renders the *right*
+  content, only that it renders at all.
 - Where a screen cannot be run, prefer a **differential test** over
   inspection. `packages/core/tests/unit/homeReleasesParity.test.js` runs the
   pre-refactor algorithm beside the new composition and asserts `deepEqual`,
