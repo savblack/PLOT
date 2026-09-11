@@ -746,6 +746,10 @@ export type Database = {
           error: string | null
           generated_copy: Json | null
           id: string
+          linear_issue_id: string | null
+          linear_issue_url: string | null
+          linear_sync_error: string | null
+          linear_synced_at: string | null
           media: Json | null
           payload: Json
           post_type: string
@@ -766,6 +770,10 @@ export type Database = {
           error?: string | null
           generated_copy?: Json | null
           id?: string
+          linear_issue_id?: string | null
+          linear_issue_url?: string | null
+          linear_sync_error?: string | null
+          linear_synced_at?: string | null
           media?: Json | null
           payload?: Json
           post_type: string
@@ -786,6 +794,10 @@ export type Database = {
           error?: string | null
           generated_copy?: Json | null
           id?: string
+          linear_issue_id?: string | null
+          linear_issue_url?: string | null
+          linear_sync_error?: string | null
+          linear_synced_at?: string | null
           media?: Json | null
           payload?: Json
           post_type?: string

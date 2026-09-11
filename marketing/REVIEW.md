@@ -3,9 +3,18 @@
 The conversational control room for PLOT's weekly marketing, as a runbook **any**
 coding agent can follow (Claude Code, Codex, …). It mirrors the web desk at
 `admin.theplot.tv` (`supabase/functions/admin-review/index.ts`) — **that file is
-the source of truth for every action's exact effect**. You load the week from the
-database, show the human everything, and apply their edits/approvals via the
-Supabase REST API. Everything is $0 and uses the repo's existing contracts.
+the source of truth for every action's exact effect**.
+
+> There are now three surfaces onto the same rows: Linear (the primary one — one
+> issue per post in team PLO / project Content Automation, driven by slash
+> commands in comments; see `marketing/README.md`), the web desk, and this
+> runbook. They cannot conflict, because none of them holds state: the database
+> does. If the human asks for something you can do here, do it here — but say
+> when a change will also show up on their Linear board, because it will.
+
+You load the week from the database, show the human everything, and apply their
+edits/approvals via the Supabase REST API. Everything is $0 and uses the repo's
+existing contracts.
 
 > Model-agnostic, like the copy worker (`marketing/copy/AGENT.md`). Nothing here
 > depends on which agent you are.
@@ -34,6 +43,9 @@ Supabase REST API. Everything is $0 and uses the repo's existing contracts.
 - `marketing_post_publications`: one row per platform — `platform` (x/instagram/threads),
   `status` (queued→publishing→published/failed/skipped), `permalink`.
 - `marketing_settings`: `publishing_paused`. `marketing_subscribers`: newsletter list.
+- `marketing_posts.linear_issue_id` / `linear_issue_url`: the mirrored Linear issue,
+  if the post has one. Include `linear_issue_url` in your summaries so the human can
+  jump straight to it.
 - Post types: `upcoming`, `trending` (both Monday), `on_this_day` (Tue–Fri feature),
   `watch_tonight` (Sat), `hidden_gem` (Sun), plus event fill `now_streaming`,
   `countdown`, `trailer`, and a generic text-only `question`.
@@ -44,8 +56,10 @@ Supabase REST API. Everything is $0 and uses the repo's existing contracts.
   "Recent activity." **After every edit/approve/reject/publish action in §3–§5, POST
   one row here** — this runbook bypasses `admin-review/index.ts` entirely, so nothing
   else logs actions taken through you. Skipping it is a permanent blind spot in the
-  trail, not a cosmetic gap. `actor` is always `marketing_week_skill` (never a name —
-  auth here is one shared service key, same as the web desk's one shared password):
+  trail, not a cosmetic gap. `actor` is always `marketing_week_skill` — never a name.
+  (The web desk writes `web_desk` and the Linear webhook writes `linear`, so the
+  trail says which surface made each decision. Auth on all three is one shared
+  credential, so the surface is the only attribution there is.)
   ```bash
   node --env-file=.env -e '
     const u=process.env.SUPABASE_URL||process.env.VITE_SUPABASE_URL, k=process.env.SUPABASE_SERVICE_ROLE_KEY||process.env.SUPABASE_SERVICE_KEY;
@@ -88,7 +102,8 @@ Surface these with the fix (edit, regenerate, reschedule) rather than approving 
 ## 3. Edit (conversational) — write to the DB
 Follow the contracts: **`marketing/VOICE.md`** (voice + CTAs) and the article rules in
 **`marketing/copy/brief.mjs`** (a finished editorial article, NEVER narrate sources).
-Enforce **`marketing/copy/schema.mjs`**: X ≤280 chars, no URLs, no hashtags; Threads no
+Enforce **`marketing/copy/schema.mjs`** (re-exported from
+`supabase/functions/_shared/copySchema.js`): X ≤280 chars, no URLs, no hashtags; Threads no
 URLs; Instagram 3–5 hashtags. Questions are generic and text-only (X + Threads), never
 tied to a title. You write the copy yourself (you are the copy worker too — do NOT call
 a paid API; see `marketing/copy/AGENT.md`).

@@ -3,8 +3,13 @@
 This system now runs in one primary path:
 
 1. GitHub prepares the week.
-2. You review and approve in `admin.theplot.tv`.
-3. The publish job checks every 5 minutes and sends only approved posts.
+2. You review and approve in **Linear** — one issue per post, in team PLO,
+   project **Content Automation**.
+3. The daily publish job sends only approved posts.
+
+The admin desk at `admin.theplot.tv` still exists and still works. It reads the
+same rows, so a decision made in either place shows up in both. Linear is a
+second surface onto one database, not a second database.
 
 The voice and spec rules in `VOICE.md` and `copy/AGENT.md` are maintained by
 hand. They were previously rewritten each Sunday by an automated learning loop;
@@ -20,14 +25,20 @@ commands exist as fallback and debug tools, not the primary operating model.
 ```text
 Sunday morning
   -> marketing-weekly-batch.yml generates the next week
+  -> each post is mirrored to a Linear issue (In Review)
 
-Every day
-  -> marketing-publish.yml checks every 5 minutes and sends only approved posts
+Any time
+  -> you comment /approve, /copy, /reject ... on the issue
+  -> marketing-linear-sync applies it to marketing_posts
+
+Daily, 12pm Sydney
+  -> marketing-publish.yml sends only approved posts
 ```
 
 ## Operator surfaces
 
-- **Primary operator UI:** `https://admin.theplot.tv`
+- **Primary operator UI:** Linear — team PLO, project **Content Automation**
+- **Secondary operator UI (same data):** `https://admin.theplot.tv`
 - **Primary automation layer:** GitHub Actions
 - **Primary copy worker:** Claude Code CLI in CI; Codex is the local/manual default
 - **Fallback/debug only:** local commands from `marketing/`
@@ -53,11 +64,67 @@ Notes:
 
 ## Review and publish
 
-- Weekly generation renders posts onto the admin desk with status `needs_review`.
-- The admin desk is the source of truth for approve, reject, reschedule,
-  unapprove, retry failed, publish now, and pause-all actions.
-- The publish job checks every 5 minutes and sends only posts with status `approved`.
+- Weekly generation renders posts with status `needs_review` and mirrors each one
+  to a Linear issue opened in **In Review**.
+- **The database is the source of truth.** Linear and the admin desk are two ways
+  to write to it; the publisher reads only `marketing_posts` and the publication
+  rows, so neither surface can gate a send by being unavailable.
+- The publish job runs daily at 12pm Sydney and sends only posts with status
+  `approved`.
 - Leaving a post untouched in review means it does not publish.
+
+### Reviewing in Linear
+
+Comment on the issue. The first line is the command:
+
+| Comment | What it does |
+| --- | --- |
+| `/approve` | Clears it to publish (and re-queues its publication rows) |
+| `/reject` | It will not publish |
+| `/unapprove` | Back to needs_review |
+| `/reschedule 2026-09-18` | Moves the day (the article URL keeps its original date) |
+| `/publish-now` | Approves, brings it forward, kicks the publish run |
+| `/retry` | Re-queues platforms that failed |
+| `/regenerate` | Throws the copy away; the worker rewrites it |
+| `/pause` · `/resume` | The global publishing switch — **every** post, not just this one |
+| `/help` | The list, in the issue |
+
+To edit copy, comment `/copy` and then only the lines you want changed —
+anything you leave out stays as it is:
+
+```text
+/copy
+x: the new X text
+threads: the new Threads text
+hashtags: A24, folkhorror, mikeflanagan
+title: the new article headline
+body:
+First paragraph.
+
+Second paragraph.
+```
+
+Dragging an issue to **Approved** or **Canceled** on the board does the same as
+`/approve` and `/reject`. Dragging to **Done** deliberately does nothing:
+publishing is something the publisher reports, so the board can never claim a
+post went out when it did not.
+
+Unlike the web desk — which writes what you type, because its editor has a live
+character counter — a comment edit is validated against `copy/schema.mjs` before
+it is saved. A rejected edit changes nothing and the bot replies with why.
+
+### Setting it up
+
+1. Team PLO needs a workflow state named **Approved**. `In Review`, `Canceled`
+   and `Done` already exist.
+2. `LINEAR_API_KEY` in `.env` and as a GitHub Actions secret.
+3. Deploy the webhook: `supabase functions deploy marketing-linear-sync`.
+4. In Linear (Settings → API → Webhooks) point a webhook at
+   `<SUPABASE_URL>/functions/v1/marketing-linear-sync` subscribed to **Comments**
+   and **Issues**, and set the signing secret it shows you as the
+   `LINEAR_WEBHOOK_SECRET` Edge Function secret.
+5. Optional: `GH_DISPATCH_TOKEN` so `/publish-now` and `/regenerate` take effect
+   immediately instead of waiting for the next scheduled run.
 
 ## Cadence
 
@@ -136,7 +203,10 @@ Code CLI (Codex is the local/manual default):
   - `copy`
   - `generated_copy`
 
-The validation boundary remains in `marketing/copy/schema.mjs`.
+The validation boundary is `supabase/functions/_shared/copySchema.js`, re-exported
+as `marketing/copy/schema.mjs` for the Node pipeline. It lives in the functions
+tree because both runtimes now enforce it: `copy/save.mjs` on the worker's output,
+and `marketing-linear-sync` on copy edited from a Linear comment.
 
 ## Setup
 
