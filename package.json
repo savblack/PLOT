@@ -38,6 +38,7 @@
     "copy:check": "node scripts/check-hardcoded-copy.mjs",
     "core:check": "node scripts/check-core-imports.mjs",
     "mobile:tabs": "node scripts/check-mobile-tabs.mjs",
+    "mobile:deps": "node scripts/check-expo-sdk-deps.mjs",
     "edge:check": "./scripts/check-edge-types.sh",
     "gen:db-types": "supabase gen types typescript --project-id mkegtssedjyqldysvzga --schema public > supabase/functions/_shared/database.types.ts",
     "db:write-paths": "node scripts/check-db-write-paths.mjs",

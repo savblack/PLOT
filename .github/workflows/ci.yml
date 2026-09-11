@@ -236,5 +236,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # tsc proves the JS type-checks. It cannot prove the app BUILDS: the native
+      # build is Swift against Expo's and React Native's own headers, and nothing
+      # in this repo compiles it. On 2026-09-11 the first iOS build in five weeks
+      # failed because react-native sat one minor above what Expo SDK 57 is built
+      # against, after a Dependabot group PR moved it. Nine packages were off in
+      # total. This is the check that would have caught it the day it landed.
+      - name: Check native deps match the Expo SDK
+        run: npm run mobile:deps
+
       - name: TypeScript
         run: npm run typecheck --workspace @plot/mobile
