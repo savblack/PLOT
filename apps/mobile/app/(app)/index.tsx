@@ -523,8 +523,7 @@ function NewReleasesContent({ hideKids, typeFilters, genreFilters, savedIds, onS
 // Reads the same feed web's Upcoming tab does, via @plot/core/useUpcoming.
 // Mounted only while the tab is active so the two TMDB calls aren't spent on
 // every app open.
-function UpcomingContent({ providerIds, typeFilters, genreFilters, savedIds, onSave, isFav, onFavorite, openPanel }: {
-  providerIds: number[];
+function UpcomingContent({ typeFilters, genreFilters, savedIds, onSave, isFav, onFavorite, openPanel }: {
   typeFilters: string[];
   genreFilters: number[];
   savedIds: Set<number>;
@@ -535,7 +534,7 @@ function UpcomingContent({ providerIds, typeFilters, genreFilters, savedIds, onS
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { data, loading } = useUpcoming({ providerIds });
+  const { data, loading } = useUpcoming();
 
   if (loading) return <PlotLoader backgroundColor={colors.bg} color={colors.textPrimary} />;
 
@@ -624,10 +623,6 @@ export default function HomeScreen() {
   // Lifted out of the bootstrap effect because the New Releases tab needs it
   // too, and core's hooks take it as an argument rather than reading context.
   const [hideKids,     setHideKids]     = useState(false);
-  // profile.guide_channels — free/ad-supported broadcast providers, the same
-  // input web's Upcoming tab uses. Entries are { id, name, logo_path } where
-  // id is the TMDB provider_id.
-  const [channelIds,   setChannelIds]   = useState<number[]>([]);
 
   // Discover/New Releases filters. Empty genre selection means "no filter";
   // type defaults to everything selected. Both go through @plot/core's
@@ -659,7 +654,7 @@ export default function HomeScreen() {
     const init = async () => {
       setError(false);
       setLoading(true);
-      let profile: { region?: string; streaming_providers?: StreamingProvider[]; include_kids_content?: boolean; guide_channels?: Array<{ id: number }> } | null;
+      let profile: { region?: string; streaming_providers?: StreamingProvider[]; include_kids_content?: boolean } | null;
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session?.user || cancelled) return;
@@ -667,14 +662,13 @@ export default function HomeScreen() {
 
         const { data: profileData } = await supabase
           .from('profiles')
-          .select('region, streaming_providers, include_kids_content, guide_channels')
+          .select('region, streaming_providers, include_kids_content')
           .eq('id', uid)
           .maybeSingle();
         profile = profileData;
         if (profile?.region) setTmdbRegion(profile.region);
         const hideKids = !(profile?.include_kids_content ?? true);
         setHideKids(hideKids);
-        setChannelIds((profile?.guide_channels ?? []).map((c: { id: number }) => c.id).filter(Boolean));
 
         // The watchlist is no longer fetched here — useWatchlist (via
         // useAppData) owns loading it, for every surface at once.
@@ -741,7 +735,6 @@ export default function HomeScreen() {
           showsVerticalScrollIndicator={false}
         >
           <UpcomingContent
-            providerIds={channelIds}
             typeFilters={typeFilters}
             genreFilters={genreFilters}
             savedIds={savedIds}

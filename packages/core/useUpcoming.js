@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react';
 import { tmdb } from './tmdb.js';
 import { localDateStr, dateToLocalStr } from './date.js';
 
-// "My Channels" (profile.guide_channels) are free/ad-supported broadcast
-// providers, not subscription streaming — TMDB's default 'flatrate'
-// monetization filter would silently exclude them, so widen it here.
-const MONETIZATION_TYPES = 'free|ads';
+// This feed is global on purpose. It used to be scoped to "My Channels"
+// (profile.guide_channels), which emptied it: TMDB's watch-provider index only
+// describes what is streamable *today*, so pairing `with_watch_providers` with
+// a future date window matches nothing for any provider. See getUpcoming in
+// tmdb.js.
 
 // How far ahead the Upcoming feed looks. Beyond this TMDB's dates get
 // speculative and the day-by-day grouping turns into a long tail of
@@ -100,20 +101,17 @@ export function groupUpcoming({ movies = [], tv = [], todayStr, horizonStr }) {
 }
 
 /**
- * Upcoming releases for a set of watch providers, split into "today" and
- * day-by-day groups. Filtering (type/genre/kids) is deliberately left to the
- * caller — web and mobile apply it at render with the shared mediaFilters
- * helpers, so this stays a pure data hook.
+ * Upcoming releases, split into "today" and day-by-day groups. Filtering
+ * (type/genre/kids) is deliberately left to the caller — web and mobile apply
+ * it at render with the shared mediaFilters helpers, so this stays a pure data
+ * hook.
  *
- * @param {{ providerIds?: number[] }} [options]
  * @returns {{ data: UpcomingData, loading: boolean }}
  */
-export function useUpcoming({ providerIds = [] } = {}) {
+export function useUpcoming() {
   const [data, setData] = useState(
     /** @type {UpcomingData} */ ({ today: [], upcomingGrouped: {}, upcomingDates: [] }));
   const [loading, setLoading] = useState(true);
-
-  const providerKey = providerIds.join(',');
 
   useEffect(() => {
     let cancelled = false;
@@ -125,8 +123,8 @@ export function useUpcoming({ providerIds = [] } = {}) {
       const todayStr = localDateStr();
 
       const [upcomingMovRes, upcomingTVRes] = await Promise.all([
-        tmdb.getUpcoming(providerIds, MONETIZATION_TYPES),
-        tmdb.getUpcomingTV(providerIds, MONETIZATION_TYPES),
+        tmdb.getUpcoming(),
+        tmdb.getUpcomingTV(),
       ]);
       if (cancelled) return;
 
@@ -148,7 +146,7 @@ export function useUpcoming({ providerIds = [] } = {}) {
 
     load();
     return () => { cancelled = true; };
-  }, [providerKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   return { data, loading };
 }

@@ -46,7 +46,7 @@ export function useDiscover({ hideKids = false } = {}) {
           tmdb.getTrending('all', 'week'),
           tmdb.getTrending('tv', 'day'),
           tmdb.getOnThisDay().catch(() => null),
-          tmdb.getUpcoming([]).catch(() => null),
+          tmdb.getUpcoming().catch(() => null),
           tmdb.getNowPlaying().catch(() => null),
         ]);
 
