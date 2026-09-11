@@ -130,6 +130,15 @@ jobs:
       - name: Check every @plot/core import resolves
         run: npm run core:check
 
+      # Mobile's Discover sub-tabs must stay classified against the shared nav
+      # list. #587 shipped the Upcoming tab fully implemented and unreachable —
+      # only its allow-list entry was missing, which is well-typed, lint-clean
+      # and invisible to every other gate. Mobile has no test runner and cannot
+      # currently be run at all (docs/agents/web-mobile-parity.md), so this is
+      # the only thing standing between that mistake and main.
+      - name: Check mobile renders every Discover tab it should
+        run: npm run mobile:tabs
+
       - name: Unit tests
         run: npm run test:unit
 
