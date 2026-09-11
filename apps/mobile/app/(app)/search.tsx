@@ -101,7 +101,9 @@ export default function SearchScreen() {
       if (reqId !== reqRef.current) return;
       setUsers((data ?? []) as SocialUser[]);
     } else {
-      const data = await tmdb.search(q);
+      // searchTitles, not search: it reads "7 up tv series" / "dune movie"
+      // as intent rather than sending the whole phrase to TMDB verbatim.
+      const data = await tmdb.searchTitles(q);
       if (reqId !== reqRef.current) return;
       const { filtered, emptyMode: nextEmptyMode } = classifySearchResults(data?.results ?? []);
       setResults(filtered.slice(0, 20) as SearchResult[]);

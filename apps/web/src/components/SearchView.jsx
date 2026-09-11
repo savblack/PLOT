@@ -166,7 +166,9 @@ export default function SearchView() {
         setTalent(nextTalent);
         resultCount = nextTalent.length;
       } else {
-        const data = await tmdb.search(v);
+        // searchTitles, not search: it reads "7 up tv series" / "dune movie"
+        // as intent rather than sending the whole phrase to TMDB verbatim.
+        const data = await tmdb.searchTitles(v);
         const { filtered, emptyMode: nextEmptyMode } = classifySearchResults(data?.results || []);
         setResults(filtered);
         setEmptyMode(nextEmptyMode);

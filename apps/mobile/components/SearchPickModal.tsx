@@ -41,7 +41,7 @@ export default function SearchPickModal({
     if (tab !== 'search' || !query.trim()) { setResults([]); return; }
     setLoading(true);
     const t = setTimeout(async () => {
-      const data = await tmdb.search(query);
+      const data = await tmdb.searchTitles(query, { mediaType: mediaFilter });
       setResults(
         (data?.results || [])
           .filter((r: any) => r.media_type === 'movie' || r.media_type === 'tv')

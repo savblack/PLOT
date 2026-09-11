@@ -30,6 +30,8 @@ const PROXY_SECRET_HEADER = 'x-plot-tmdb-proxy-secret';
 const ALLOWED_PATHS = [
   /^search\/multi$/,
   /^search\/person$/,
+  // Type-scoped title search — see tmdb.searchTitles in @plot/core.
+  /^search\/(movie|tv)$/,
   /^trending\/(all|movie|tv)\/(day|week)$/,
   /^movie\/(now_playing|top_rated|upcoming)$/,
   /^tv\/(on_the_air|airing_today|top_rated)$/,
