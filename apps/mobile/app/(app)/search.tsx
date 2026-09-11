@@ -152,7 +152,7 @@ export default function SearchScreen() {
         </Svg>
         <TextInput
           style={styles.input}
-          placeholder={mode === 'people' ? 'Search by name or @username…' : 'Search movies & TV shows…'}
+          placeholder={mode === 'people' ? 'Search by name or @username…' : MEDIA.searchPlaceholder}
           placeholderTextColor={colors.textMuted}
           value={query}
           onChangeText={search}

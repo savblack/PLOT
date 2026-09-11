@@ -33,7 +33,7 @@ export const ONBOARDING_FLOW = {
     // Says where the picks go, because "what are you watching" read as a
     // question about history: already-watched, in progress, or want to watch.
     subtitle: "Pick anything you'd like to get to. We'll add it to your watchlist.",
-    searchPlaceholder: 'Search for a show or movie…',
+    searchPlaceholder: 'Search for a movie or TV show…',
     trendingThisWeek: 'Trending this week',
     add: 'Add',
     remove: 'Remove',
