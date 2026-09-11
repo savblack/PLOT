@@ -72,7 +72,16 @@ jobs:
 
           # --- Classify the bump deterministically ---
           # Grouped PRs come from the 'app-minor-patch' group, which by config
-          # only ever contains minor/patch updates -> always safe.
+          # only ever contains minor/patch updates.
+          #
+          # "minor/patch" is NOT the same as "safe", and this comment used to say
+          # it was. #622 auto-merged react-native 0.86.2 -> 0.87.1 as a minor,
+          # bundled with 29 other packages, and the iOS app could not be built
+          # for five days. What makes the group safe enough to self-merge is not
+          # the semver range: it is that CI actually gates the risk. The native
+          # packages that carried that risk are now excluded at source by the
+          # `ignore` list in dependabot.yml, and `npm run mobile:deps` fails the
+          # build if any of them drift back.
           #
           # Otherwise read every "from X to Y" pair we can find and hold if ANY
           # of them crosses a release line. Two title shapes used to fall through
