@@ -51,12 +51,26 @@ Also open, from the original plan's out-of-scope list: mobile Settings lacks
 avatar upload, username availability checking, invite-friends share and data
 export.
 
-## ⚠️ Blocker: the app has never been run
+## The app has now been run (2026-09-11)
 
-Not on a simulator, not on a device, not once. `tsc --noEmit` and ESLint are
-the entire safety net, and 25 mobile commits landed on top of it in the 30 days
-to 2026-09-11, including the RN 0.86.2 → 0.87.1 and Expo 57.0.14 → 57.0.19
-upgrades in #622.
+For the first time, on a physical iPhone via an EAS `development` build. Before
+that it had never executed at all, and `tsc --noEmit` plus ESLint were the
+entire safety net under 25 mobile commits in 30 days.
+
+The first run immediately justified itself, twice:
+
+1. **It could not be built.** react-native had been bumped to 0.87.1 while Expo
+   SDK 57 pins 0.86.3, so Expo's `ExpoReactNativeFactoryDelegate` no longer
+   compiled. Nine packages were off the SDK's versions. `npm run mobile:deps`
+   now guards this.
+2. **The EPG was visibly broken.** The guide's ruler ScrollView was growing into
+   the column's spare space, pushing the programme grid 355pt below the channel
+   sidebar — the two panes ~7 rows out of alignment. Fixed in `GuideView.tsx`.
+
+Neither was visible to a type check. Phases 0, 0a and 1 of
+[the smoke checklist](../qa/mobile-device-smoke.md) are done; **Phases 2 to 7
+are not**, so most of the app is still unverified at runtime. "It builds and the
+Guide is correct" is not "it works".
 
 There is **no Xcode on this machine** as of 2026-09-11:
 
@@ -83,8 +97,9 @@ the fastest route to a first run. See
 [docs/qa/mobile-device-smoke.md](../qa/mobile-device-smoke.md) for what to
 drive once it runs.
 
-Until then every mobile change is static-only. Say so plainly rather than
-implying a change was seen working.
+A mobile change is still static-only unless someone actually ran it. Say so
+plainly rather than implying a change was seen working — the device loop now
+exists, so "I could not check" is a choice rather than a constraint.
 
 ## ⚠️ What static checks do not catch
 

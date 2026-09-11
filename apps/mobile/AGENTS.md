@@ -10,11 +10,12 @@ v56 until 2026-09-11, one minor behind what is installed.)
 what is left, and the environment traps (worktree Metro resolution; simulator
 taps are in device points). Read it before starting mobile work.
 
-## This app has never been run
+## Running it on a device
 
-Not once, on anything. `tsc --noEmit` plus ESLint is the whole safety net, so a
-green check means "it compiles", never "it works" — say so plainly rather than
-implying a change was seen working.
+`tsc --noEmit` plus ESLint is the whole safety net here, so a green check means
+"it compiles", never "it works". The app's first ever run (2026-09-11) found a
+dependency set that could not build at all and a visibly broken EPG layout,
+neither of which any static check could see. Run it.
 
 - [docs/ops/mobile-builds.md](../../docs/ops/mobile-builds.md) — how to get it
   running, which paths need an Apple account and which do not.
