@@ -194,7 +194,7 @@ export default function SearchView() {
           <input
             className="search-input"
             type="text"
-            placeholder={mode === 'friends' ? 'Search friends by username or name…' : mode === 'talent' ? 'Search actors, directors and creators…' : 'Search TV shows, movies and cinema...'}
+            placeholder={mode === 'friends' ? 'Search friends by username or name…' : mode === 'talent' ? 'Search actors, directors and creators…' : MEDIA.searchPlaceholder}
             value={query}
             onChange={handleChange}
             autoFocus

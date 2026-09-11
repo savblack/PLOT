@@ -15,6 +15,9 @@ export const MEDIA = {
   series: 'Series',
   cinema: 'Cinema',
   unknown: 'Unknown',
+  // Both apps' title-search box. Shared so the two can't drift: they read
+  // identically today only because this is the one place it is written.
+  searchPlaceholder: 'Search movies & TV shows…',
   saveToWatchlist: 'Add to watchlist',
   removeFromWatchlist: 'Remove from watchlist',
   today: 'Today',
