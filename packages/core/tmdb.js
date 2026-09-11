@@ -1,5 +1,6 @@
 import { localDateStr, dateToLocalStr } from './date.js';
 import { getConfig } from './config.js';
+import { parseSearchQuery, rankSearchResults, hasStrongTitleMatch } from './search.js';
 
 let userRegion = 'US';
 export const setTmdbRegion = (region) => { userRegion = region; };
@@ -219,10 +220,97 @@ const fetchFromTMDB = async (endpoint, params = {}) => {
 // Exported so other proxy reads can opt into retryable/terminal disambiguation.
 export { fetchFromTMDBResolved };
 
+/**
+ * /search/movie and /search/tv omit media_type (the endpoint already implies
+ * it), but every consumer downstream branches on it. Put it back.
+ */
+const withMediaType = (results, mediaType) =>
+  (Array.isArray(results) ? results : [])
+    .map(result => (mediaType && !result?.media_type ? { ...result, media_type: mediaType } : result));
+
+const dedupeResults = (results) => {
+  const seen = new Set();
+  return results.filter(result => {
+    const key = `${result?.media_type ?? ''}:${result?.id ?? ''}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
 export const tmdb = {
   /* ── Search ── */
   search: (query) => fetchFromTMDB('/search/multi', { query }),
   searchPeople: (query) => fetchFromTMDB('/search/person', { query }),
+
+  /**
+   * Title search for anything a person types into a search box.
+   *
+   * TMDB matches the query literally, so "7 up tv series" and "dune movie"
+   * return nothing or junk. This reads the intent out of the query first
+   * (`parseSearchQuery`), sends only the title — to the type-specific endpoint
+   * when a type was implied — and re-ranks the response so the title someone
+   * actually typed outranks whatever is merely popular.
+   *
+   * Costs one request in the common case. A second only happens when the first
+   * came back with nothing that looks like the query, which is the signal that
+   * a stripped qualifier was part of the title all along ("The Truman Show").
+   *
+   * Import matching stays on `search` — its queries are already exact titles,
+   * and `matchTmdbResult` does its own scoring.
+   *
+   * @param {string} query Raw, as typed.
+   * @param {{ mediaType?: 'movie'|'tv'|null }} [options] An explicit UI filter,
+   *   which wins over anything implied by the query text.
+   * @returns {Promise<{ results: Record<string, any>[] }>}
+   */
+  searchTitles: async (query, options = {}) => {
+    const parsed = parseSearchQuery(query);
+    if (!parsed.rawQuery) return { results: [] };
+
+    const mediaType = options.mediaType || parsed.mediaType;
+    const intent = { ...parsed, mediaType };
+
+    let results;
+    if (mediaType) {
+      const yearParam = mediaType === 'tv' ? 'first_air_date_year' : 'primary_release_year';
+      const data = await fetchFromTMDB(`/search/${mediaType}`, {
+        query: parsed.title,
+        ...(parsed.year ? { [yearParam]: parsed.year } : {}),
+      });
+      results = withMediaType(data?.results, mediaType);
+
+      // A year that matches nothing is worse than no year at all — the user
+      // may simply be a year out. Rank still rewards the year they gave.
+      if (parsed.year && results.length === 0) {
+        const retry = await fetchFromTMDB(`/search/${mediaType}`, { query: parsed.title });
+        results = withMediaType(retry?.results, mediaType);
+      }
+    } else {
+      // /search/multi has no year filter, so the year only informs ranking.
+      const data = await fetchFromTMDB('/search/multi', { query: parsed.title });
+      results = Array.isArray(data?.results) ? data.results : [];
+    }
+
+    // Two ways the first search can come up short, each wanting a different
+    // second query. At most one of them runs.
+    const rewritten = parsed.title !== parsed.rawQuery;
+    const primaryWasRawMulti = !mediaType && !rewritten;
+    const fallbackQuery = results.length === 0
+      // Nothing at all — widen to /search/multi on our best guess at the title.
+      // Also the graceful path when the proxy has yet to allow /search/{movie,tv}.
+      ? (primaryWasRawMulti ? null : parsed.title)
+      // Hits, but none that look like what was typed: the qualifier we stripped
+      // was probably part of the title after all ("The Truman Show").
+      : (rewritten && !hasStrongTitleMatch(results, parsed.title) ? parsed.rawQuery : null);
+
+    if (fallbackQuery) {
+      const fallback = await fetchFromTMDB('/search/multi', { query: fallbackQuery });
+      results = dedupeResults([...results, ...(fallback?.results ?? [])]);
+    }
+
+    return { results: rankSearchResults(results, intent) };
+  },
   resolveTitle: async (query, mediaType) => {
     const data = await fetchFromTMDB('/search/multi', { query });
     const results = data?.results || [];

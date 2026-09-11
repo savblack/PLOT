@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  tmdb,
   setTmdbRegion,
   getTmdbRegion,
   excludeKidsContent,
@@ -124,4 +125,143 @@ test('fetchFromTMDBResolved returns a terminal, non-retryable error without fetc
   } finally {
     console.error = originalError;
   }
+});
+
+/* ── tmdb.searchTitles ──
+   Stubs globalThis.fetch at the proxy boundary: these assert which TMDB
+   endpoint the parsed intent picks, and how many requests that costs. */
+
+const withStubbedProxy = async (handler, run) => {
+  const originalFetch = globalThis.fetch;
+  const requests = [];
+  configure({ tmdbProxyUrl: 'https://proxy.test', supabaseAnonKey: 'anon' });
+  globalThis.fetch = async (url) => {
+    const request = new URL(url);
+    requests.push(request);
+    return { ok: true, status: 200, json: async () => handler(request) };
+  };
+  try {
+    return { result: await run(), requests };
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+};
+
+test('searchTitles sends a "tv series" query to /search/tv, title only', async () => {
+  const { result, requests } = await withStubbedProxy(
+    (request) => (request.searchParams.get('path') === 'search/tv'
+      // "7 Up" is filed on TMDB as "The Up Series", so nothing here matches the
+      // query strongly and the raw-query fallback fires — which returns nothing,
+      // because "7 up tv series" is not a title. The tv hit has to survive that.
+      ? { results: [{ id: 1, name: 'The Up Series', popularity: 5.7 }] }
+      : { results: [] }),
+    () => tmdb.searchTitles('7 up tv series'),
+  );
+
+  assert.deepEqual(requests.map(r => r.searchParams.get('path')), ['search/tv', 'search/multi']);
+  assert.equal(requests[0].searchParams.get('query'), '7 up');
+  assert.deepEqual(result.results.map(r => r.id), [1]);
+  // /search/tv omits media_type; every consumer downstream branches on it.
+  assert.deepEqual(result.results.map(r => r.media_type), ['tv']);
+});
+
+test('searchTitles sends a "movie" query to /search/movie with the parsed year', async () => {
+  const { requests } = await withStubbedProxy(
+    () => ({ results: [{ id: 1, title: 'Dune' }] }),
+    () => tmdb.searchTitles('dune movie 2021'),
+  );
+
+  assert.equal(requests[0].searchParams.get('path'), 'search/movie');
+  assert.equal(requests[0].searchParams.get('query'), 'dune');
+  assert.equal(requests[0].searchParams.get('primary_release_year'), '2021');
+});
+
+test('searchTitles uses /search/multi when the query implies no type', async () => {
+  const { requests } = await withStubbedProxy(
+    () => ({ results: [{ id: 1, media_type: 'tv', name: 'Severance' }] }),
+    () => tmdb.searchTitles('severance'),
+  );
+
+  assert.equal(requests.length, 1);
+  assert.equal(requests[0].searchParams.get('path'), 'search/multi');
+  assert.equal(requests[0].searchParams.get('query'), 'severance');
+});
+
+test('searchTitles lets an explicit media type override the query text', async () => {
+  const { requests } = await withStubbedProxy(
+    () => ({ results: [] }),
+    () => tmdb.searchTitles('the office tv show', { mediaType: 'movie' }),
+  );
+
+  assert.equal(requests[0].searchParams.get('path'), 'search/movie');
+});
+
+test('searchTitles drops a year filter that matched nothing', async () => {
+  const { requests } = await withStubbedProxy(
+    (request) => (request.searchParams.get('first_air_date_year')
+      ? { results: [] }
+      : { results: [{ id: 1, name: 'The Bear' }] }),
+    () => tmdb.searchTitles('the bear tv series 2019'),
+  );
+
+  assert.equal(requests.length, 2);
+  assert.equal(requests[1].searchParams.get('first_air_date_year'), null);
+  assert.equal(requests[1].searchParams.get('query'), 'the bear');
+});
+
+test('searchTitles retries the raw query when the stripped qualifier was the title', async () => {
+  const { result, requests } = await withStubbedProxy(
+    (request) => (request.searchParams.get('path') === 'search/tv'
+      ? { results: [{ id: 9, name: 'Glass House', popularity: 0.4 }] }
+      : { results: [{ id: 3, media_type: 'movie', title: 'The Truman Show', popularity: 0.3 }] }),
+    () => tmdb.searchTitles('the truman show'),
+  );
+
+  assert.deepEqual(requests.map(r => r.searchParams.get('path')), ['search/tv', 'search/multi']);
+  assert.equal(requests[1].searchParams.get('query'), 'the truman show');
+  // Both result sets are kept; ranking decides, and the exact match wins.
+  assert.deepEqual(result.results.map(r => r.id), [3, 9]);
+});
+
+test('searchTitles costs one request when the first search already answered it', async () => {
+  const { requests } = await withStubbedProxy(
+    () => ({ results: [{ id: 1, name: 'The Office', popularity: 156 }] }),
+    () => tmdb.searchTitles('the office tv show'),
+  );
+
+  assert.equal(requests.length, 1);
+});
+
+test('searchTitles makes no request for an empty query', async () => {
+  const { result, requests } = await withStubbedProxy(
+    () => ({ results: [] }),
+    () => tmdb.searchTitles('   '),
+  );
+
+  assert.equal(requests.length, 0);
+  assert.deepEqual(result.results, []);
+});
+
+test('searchTitles widens to /search/multi when a type-scoped search finds nothing', async () => {
+  // Also the degradation path if the tmdb-proxy allowlist has not yet shipped
+  // /search/{movie,tv}: a 403 reads as no results, and multi still answers.
+  const { result, requests } = await withStubbedProxy(
+    (request) => (request.searchParams.get('path') === 'search/multi'
+      ? { results: [{ id: 7, media_type: 'movie', title: 'Inception' }] }
+      : { results: [] }),
+    () => tmdb.searchTitles('inception', { mediaType: 'movie' }),
+  );
+
+  assert.deepEqual(requests.map(r => r.searchParams.get('path')), ['search/movie', 'search/multi']);
+  assert.equal(requests[1].searchParams.get('query'), 'inception');
+  assert.deepEqual(result.results.map(r => r.id), [7]);
+});
+
+test('searchTitles does not repeat an identical /search/multi query that found nothing', async () => {
+  const { requests } = await withStubbedProxy(
+    () => ({ results: [] }),
+    () => tmdb.searchTitles('zzzqqxnothing'),
+  );
+
+  assert.equal(requests.length, 1);
 });
