@@ -51,24 +51,55 @@ Also open, from the original plan's out-of-scope list: mobile Settings lacks
 avatar upload, username availability checking, invite-friends share and data
 export.
 
-## ⚠️ Blocker: the simulator cannot build
+## The app has now been run (2026-09-11)
+
+For the first time, on a physical iPhone via an EAS `development` build. Before
+that it had never executed at all, and `tsc --noEmit` plus ESLint were the
+entire safety net under 25 mobile commits in 30 days.
+
+The first run immediately justified itself, twice:
+
+1. **It could not be built.** react-native had been bumped to 0.87.1 while Expo
+   SDK 57 pins 0.86.3, so Expo's `ExpoReactNativeFactoryDelegate` no longer
+   compiled. Nine packages were off the SDK's versions. `npm run mobile:deps`
+   now guards this.
+2. **The EPG was visibly broken.** The guide's ruler ScrollView was growing into
+   the column's spare space, pushing the programme grid 355pt below the channel
+   sidebar — the two panes ~7 rows out of alignment. Fixed in `GuideView.tsx`.
+
+Neither was visible to a type check. Phases 0, 0a and 1 of
+[the smoke checklist](../qa/mobile-device-smoke.md) are done; **Phases 2 to 7
+are not**, so most of the app is still unverified at runtime. "It builds and the
+Guide is correct" is not "it works".
+
+There is **no Xcode on this machine** as of 2026-09-11:
 
 ```
-Xcode 26.6          → SDK iOS 26.5
-installed runtime   → iOS 27.0 only
+xcode-select -p  → /Library/Developer/CommandLineTools
+/Applications/Xcode.app → absent
+xcrun simctl     → "unable to find utility simctl"
 ```
 
-`expo run:ios` fails with `xcodebuild` exit 70, "Unable to find a destination
-matching the provided destination specifier". Falling back to
-`-destination 'generic/platform=iOS Simulator'` does **not** work around it —
-same error, no `.app`. There is no eligible simulator destination at all while
-SDK and runtime disagree.
+So there is no simulator to fail to build for. (An earlier revision of this
+doc described an Xcode 26.6 SDK/runtime mismatch; that machine state no longer
+applies, and diagnosing against it wastes an hour.)
 
-**Fix (needs a human):** Xcode ▸ Settings ▸ Components → install the iOS 26.5
-simulator runtime, or move to an Xcode whose SDK matches the 27.0 runtime.
+**Fix (needs a human):** install Xcode from the App Store, then
+`sudo xcode-select -s /Applications/Xcode.app/Contents/Developer`. Needs the
+machine password, so an agent cannot do it.
 
-Until then every mobile change is static-only. Say so plainly rather than
-implying a change was seen working.
+**But Xcode is not the only path, and nothing is actually waiting.** PLOT is
+enrolled in the Apple Developer Program (Individual, confirmed 2026-09-11), and
+EAS builds on hosted macOS workers, so an `eas build --profile development`
+puts a signed build on a real iPhone without Xcode existing locally. That is
+the fastest route to a first run. See
+[docs/ops/mobile-builds.md](../ops/mobile-builds.md) for the profiles and
+[docs/qa/mobile-device-smoke.md](../qa/mobile-device-smoke.md) for what to
+drive once it runs.
+
+A mobile change is still static-only unless someone actually ran it. Say so
+plainly rather than implying a change was seen working — the device loop now
+exists, so "I could not check" is a choice rather than a constraint.
 
 ## ⚠️ What static checks do not catch
 
@@ -84,6 +115,13 @@ Lessons:
 - A feature-flag or allow-list set is exactly the kind of one-line gate that
   compiles perfectly while disabling the feature. After a rebase, re-read the
   gate, don't just re-run the build.
+- That specific gate is now guarded: `npm run mobile:tabs` fails the build if
+  any `DISCOVER_TABS` id is in neither `MOBILE_READY` nor `MOBILE_DEFERRED` in
+  `app/(app)/index.tsx`, so "missing" is no longer expressible. The rules and
+  the reconstruction of #587 are in
+  `apps/web/tests/unit/mobileTabChecks.test.js`. It is a static guard, not a
+  substitute for running the app: it cannot tell you a tab renders the *right*
+  content, only that it renders at all.
 - Where a screen cannot be run, prefer a **differential test** over
   inspection. `packages/core/tests/unit/homeReleasesParity.test.js` runs the
   pre-refactor algorithm beside the new composition and asserts `deepEqual`,

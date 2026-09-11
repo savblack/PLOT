@@ -130,6 +130,15 @@ jobs:
       - name: Check every @plot/core import resolves
         run: npm run core:check
 
+      # Mobile's Discover sub-tabs must stay classified against the shared nav
+      # list. #587 shipped the Upcoming tab fully implemented and unreachable —
+      # only its allow-list entry was missing, which is well-typed, lint-clean
+      # and invisible to every other gate. Mobile has no test runner and cannot
+      # currently be run at all (docs/agents/web-mobile-parity.md), so this is
+      # the only thing standing between that mistake and main.
+      - name: Check mobile renders every Discover tab it should
+        run: npm run mobile:tabs
+
       - name: Unit tests
         run: npm run test:unit
 
@@ -226,6 +235,15 @@ jobs:
       # comes from the root .npmrc (react-native pins a different react patch).
       - name: Install dependencies
         run: npm ci
+
+      # tsc proves the JS type-checks. It cannot prove the app BUILDS: the native
+      # build is Swift against Expo's and React Native's own headers, and nothing
+      # in this repo compiles it. On 2026-09-11 the first iOS build in five weeks
+      # failed because react-native sat one minor above what Expo SDK 57 is built
+      # against, after a Dependabot group PR moved it. Nine packages were off in
+      # total. This is the check that would have caught it the day it landed.
+      - name: Check native deps match the Expo SDK
+        run: npm run mobile:deps
 
       - name: TypeScript
         run: npm run typecheck --workspace @plot/mobile

@@ -711,9 +711,21 @@ export default function HomeScreen() {
   if (error) return <ErrorState onRetry={() => setRetryKey(k => k + 1)} />;
 
   // Sub-tabs nested under Home, ids and order from the shared nav list.
-  // 'feed' stays out: the engagement layer was deleted in #532.
-  const MOBILE_READY = new Set(['discover', 'new', 'releases', 'guide']);
-  const subTabs = DISCOVER_TABS.filter((t: { id: string }) => MOBILE_READY.has(t.id));
+  // ('feed' is not here because it is no longer in DISCOVER_TABS at all: the
+  // engagement layer, tab included, was deleted in #532.)
+  //
+  // Every DISCOVER_TABS id must appear in exactly one of these two sets.
+  // `npm run mobile:tabs` fails the build otherwise, because a tab that is in
+  // neither set silently does not render and nothing else can see it: that is
+  // how #587 left Upcoming fully implemented and unreachable on main, with
+  // tsc, eslint and CI green. MOBILE_DEFERRED being empty is the normal state
+  // and means nothing is held back; it is not dead code, it is the difference
+  // between "deliberately hidden" and "accidentally missing".
+  const MOBILE_READY    = new Set(['discover', 'new', 'releases', 'guide']);
+  const MOBILE_DEFERRED = new Set<string>([]); // id, with a comment saying why
+  const subTabs = DISCOVER_TABS.filter(
+    (t: { id: string }) => MOBILE_READY.has(t.id) && !MOBILE_DEFERRED.has(t.id),
+  );
 
   const HEADER_H = insets.top + 100;
   const applyFilters = (items: MediaItem[]) => filterByGenre(filterByType(items, typeFilters), genreFilters) ?? [];

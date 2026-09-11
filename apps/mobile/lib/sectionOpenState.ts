@@ -26,8 +26,11 @@ export async function hydrateSectionOpenState(): Promise<void> {
   try {
     const keys = (await AsyncStorage.getAllKeys()).filter(k => k.startsWith(sectionStorageKey('')));
     if (keys.length) {
-      // v3 renamed multiGet -> getMany and returns a keyed object, not pairs.
-      for (const [key, value] of Object.entries(await AsyncStorage.getMany(keys))) {
+      // multiGet returns [key, value] pairs. async-storage 3.x renamed this to
+      // getMany and returns a keyed object instead (#557 moved us onto it), but
+      // 3.x is ahead of what Expo SDK 57 supports and the mismatch broke the
+      // native build outright, so we are back on 2.2.0 and back on multiGet.
+      for (const [key, value] of await AsyncStorage.multiGet(keys)) {
         cache.set(key.slice(sectionStorageKey('').length), parseSectionOpen(value, true));
       }
     }

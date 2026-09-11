@@ -8,6 +8,38 @@ updates:
       time: "09:00"
       timezone: Australia/Sydney
     open-pull-requests-limit: 5
+
+    # Expo owns these versions, not Dependabot. Expo SDK 57 pins an exact
+    # react-native (0.86.3) and exact or tilde ranges for the rest, and the
+    # native build only compiles against that set — apps/mobile's Swift is built
+    # against Expo's and React Native's headers, so a mismatch is a build
+    # failure, not a runtime warning.
+    #
+    # Dependabot walked react-native to 0.87.1 in #622 as a *minor* bump, inside
+    # the grouped PR, which auto-merged on green CI. Expo's
+    # ExpoReactNativeFactoryDelegate stopped compiling and the iOS app could not
+    # be built at all. It sat broken on main for five days because tsc and ESLint
+    # cannot see a Swift protocol mismatch and nothing else builds the app. Nine
+    # packages were off the SDK's versions by the time anyone looked.
+    #
+    # So these move only with `cd apps/mobile && npx expo install --fix`, run
+    # deliberately as part of an SDK upgrade. Every update-type is ignored, not
+    # just minor/major: several are pinned exactly, so even a patch bump leaves
+    # the SDK's range and `npm run mobile:deps` will fail the build.
+    #
+    # `react` and `react-dom` are deliberately NOT here. They are Expo-managed
+    # for mobile but apps/web depends on them too, and Dependabot ignores by
+    # dependency name across the whole config — blocking them would freeze web's
+    # React updates. mobile:deps catches them instead, which costs a manual fix
+    # on the rare PR that moves them rather than blocking web permanently.
+    ignore:
+      - dependency-name: "expo"
+      - dependency-name: "expo-*"
+      - dependency-name: "react-native"
+      - dependency-name: "react-native-*"
+      - dependency-name: "@react-native-async-storage/*"
+      - dependency-name: "@react-native-community/*"
+
     groups:
       # Minor + patch bundle into ONE PR -> one CI run -> one auto-merge.
       # Majors are deliberately left ungrouped so each arrives as its own PR
