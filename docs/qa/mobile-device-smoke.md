@@ -24,6 +24,23 @@ How to get it running at all: [docs/ops/mobile-builds.md](../ops/mobile-builds.m
 - Write down what you find as you go. The first run will produce a list, and
   the list is the point.
 
+## Phase 0a: the two things that stop it launching at all
+
+Neither is a bug, both look like one, and both cost a confused ten minutes the
+first time.
+
+- [ ] **Developer Mode.** iOS 16+ refuses to run an internally-distributed
+      build until it is on: tapping the icon gives "PLOT requires Developer Mode
+      to run". Settings ▸ Privacy & Security ▸ Developer Mode ▸ on, restart the
+      phone, then confirm at the prompt with your passcode. The menu item only
+      appears once a development-signed app is installed, so it will not be
+      there before the first install. One-time, per device.
+- [ ] **Metro is running**, if this is a `development` (dev-client) build:
+      `npx expo start --dev-client` in `apps/mobile`, phone on the same network.
+      Without it you get the dev-launcher screen with nothing to connect to,
+      which reads as a broken app but is not one. A `preview` build is
+      standalone and needs none of this.
+
 ## Phase 0: does it boot
 
 Everything else is void if these fail, and each has a distinctive symptom.
