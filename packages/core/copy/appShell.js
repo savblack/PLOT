@@ -11,5 +11,7 @@ export const APP_SHELL = {
   openSearch: 'Open search',
   search: 'Search',
   scrollToTop: 'Scroll to top',
+  scrollRailLeft: 'Scroll left',
+  scrollRailRight: 'Scroll right',
   profile: 'Profile',
 };

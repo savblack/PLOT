@@ -73,6 +73,14 @@
   --tab-bar-height: var(--tabbar-h);
   --panel-w:        560px;
   --content-max:    680px;
+  /* Portrait poster width, shared by the Discover/My Lists cards and the EPG
+     schedule cards — one 2/3 poster at three sizes rather than each surface
+     pinning its own. Ramps below. */
+  --poster-w:       120px;
+  /* Desktop nav rail. 0 below the sidebar breakpoint so anything offsetting
+     against it (the app header, main, fixed overlays) can do the arithmetic
+     unconditionally. */
+  --sidebar-w:      0px;
 
   /* Motion */
   --ease:           cubic-bezier(0.23, 1, 0.32, 1);
@@ -84,6 +92,30 @@
      content, where a hairline can't separate them). Never decorative lift, and
      never on text. See docs/design/shared-design-system.md. */
   --shadow-overlay: 0 2px 8px rgba(0,0,0,0.12);
+}
+
+/* ── Poster ramp ──────────────────────── */
+/* 900px preserves the bump the EPG cards already had at that width (they were
+   the only surface with one); 1024px is where the sidebar layout starts and
+   there is room for a larger card. Same reason the nav-rail override lives
+   here: app.css is injected first, so a :root block there loses the cascade. */
+@media (min-width: 900px) {
+  :root { --poster-w: 140px; }
+}
+@media (min-width: 1024px) {
+  :root { --poster-w: 150px; }
+}
+
+/* ── Desktop nav rail ─────────────────── */
+/* Raises --sidebar-w from its 0 default so every rule that offsets against the
+   sidebar (app header, app main, the fixed overlays in App.jsx) needs no
+   breakpoint of its own. The tab bar is gone at this width, so anything
+   anchored above it sits against the viewport edge instead. */
+@media (min-width: 1024px) {
+  :root {
+    --sidebar-w:      220px;
+    --tab-bar-height: 0px;
+  }
 }
 
 /* ── Dark mode ───────────────────────── */

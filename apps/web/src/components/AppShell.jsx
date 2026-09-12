@@ -1,80 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PRIMARY_NAV_ITEMS, VIEW_TITLES } from '../navigation.js';
+import { APP_NAV_ITEMS, PRIMARY_NAV_ITEMS, VIEW_TITLES } from '../navigation.js';
 import { useNotifications } from '../hooks/useNotifications.js';
 import { APP_SHELL } from '../copy/appShell.js';
+import AppSidebar from './AppSidebar.jsx';
+import {
+  IconMenu, IconClose, IconSearch, IconHome, IconCalendar, IconLists, IconBell, IconArrowUp,
+} from './navIcons.jsx';
 
 /* ── SVG Icons ───────────────────────── */
-function IconMenu() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-      <line x1="3" y1="6" x2="21" y2="6"/>
-      <line x1="3" y1="12" x2="21" y2="12"/>
-      <line x1="3" y1="18" x2="21" y2="18"/>
-    </svg>
-  );
-}
-
-function IconClose() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-      <line x1="18" y1="6" x2="6" y2="18"/>
-      <line x1="6" y1="6" x2="18" y2="18"/>
-    </svg>
-  );
-}
-
-function IconSearch() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="11" cy="11" r="7" />
-      <line x1="16.5" y1="16.5" x2="21" y2="21" />
-    </svg>
-  );
-}
-
-// Tab-bar icons — mirror apps/mobile/app/(app)/_layout.tsx's IconHome /
-// IconCalendar / IconLists so the web floating nav matches mobile.
-function IconHome() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-      <polyline points="9,22 9,12 15,12 15,22" />
-    </svg>
-  );
-}
-
-function IconCalendar() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-      <line x1="16" y1="2" x2="16" y2="6" />
-      <line x1="8" y1="2" x2="8" y2="6" />
-      <line x1="3" y1="10" x2="21" y2="10" />
-    </svg>
-  );
-}
-
-function IconLists() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-    </svg>
-  );
-}
+/* Shared with AppSidebar — see ./navIcons.jsx. */
 
 const TAB_ICONS = { home: IconHome, calendar: IconCalendar, 'my-lists': IconLists };
 
-function IconArrowUp() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="12" y1="19" x2="12" y2="5" />
-      <polyline points="6 11 12 5 18 11" />
-    </svg>
-  );
-}
-
-export default function AppShell({ currentView, navigateTo, children, profile, user }) {
+export default function AppShell({ currentView, navigateTo, children, profile, user, panelOpen }) {
   const navigate = useNavigate();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
@@ -136,8 +75,29 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
   const showHomeLogo = currentView === 'home' || (currentView || '').startsWith('u/');
   const isOwnProfile = !!profile?.username && currentView === `u/${profile.username}`;
 
+  // At sidebar widths the header carries nothing but the page title — the
+  // brand, search and notifications have all moved into the sidebar. Home's
+  // VIEW_TITLES entry is the brand ("PLOT"), which the sidebar already shows,
+  // so prefer the nav item's own label here and fall back to the shared titles.
+  const isProfileView = (currentView || '').startsWith('u/');
+  const desktopTitle = isProfileView
+    ? (isOwnProfile ? APP_SHELL.profile : `@${currentView.slice(2)}`)
+    : (APP_NAV_ITEMS.find(item => item.id === currentView)?.label ?? pageTitle);
+
   return (
-    <div className="app-shell">
+    <div className={`app-shell${panelOpen ? ' panel-docked' : ''}`}>
+      {/* ── Desktop sidebar ── */}
+      {/* Rendered at every width and revealed by CSS at >=1024px, so there is
+          no breakpoint state in JS to get out of step with the stylesheet. */}
+      <AppSidebar
+        currentView={currentView}
+        profile={profile}
+        user={user}
+        unread={unread}
+        onNavigate={navigateTo}
+        onNavigateProfile={(username) => navigate(`/u/${username}`)}
+      />
+
       {/* ── Header ── */}
       <header className="app-header">
         <div className="header-start">
@@ -166,6 +126,10 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
           <span className="app-page-title">{pageTitle}</span>
         )}
 
+        {/* Shown only at sidebar widths, where it replaces both the centred
+            logo and the centred page title above. */}
+        <span className="app-desktop-title">{desktopTitle}</span>
+
         <div className="header-end">
           {user && (
           <button
@@ -177,10 +141,9 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
             aria-current={currentView === 'notifications' ? 'page' : undefined}
             style={{ position: 'relative' }}
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: 'translateY(8%) scale(0.92)' }}>
-              <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/>
-              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-            </svg>
+            <span className="header-bell-icon">
+              <IconBell />
+            </span>
             {unread > 0 && (
               <span aria-hidden="true" style={{
                 position: 'absolute', top: 1, right: 1, minWidth: 16, height: 16, padding: '0 4px',

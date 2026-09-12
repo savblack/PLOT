@@ -4,7 +4,7 @@ import { useApp } from '../hooks/useApp.js';
 import { TodayLabel } from './TodayLabel.jsx';
 import { posterUrl, backdropUrl } from '../utils/images.js';
 import { favoriteWords } from '../utils/spelling.js';
-import { useDragScroll } from '../hooks/useDragScroll.js';
+import ScrollRail from './ScrollRail.jsx';
 import { useGenres } from '../hooks/useGenres.js';
 import { useDiscover } from '../hooks/useDiscover.js';
 import { useForYou } from '../hooks/useForYou.js';
@@ -21,23 +21,20 @@ import SectionToggleIcon from './SectionToggleIcon.jsx';
 import { SHOW_FOR_YOU_RAIL } from '../launchFeatures.js';
 
 /* ── Rail ── */
+/* Both rails are ScrollRail: it carries the drag behaviour these used to wire
+   up themselves, plus the chevron controls a pointer needs. */
 function Rail({ children }) {
-  const { ref, handlers } = useDragScroll();
   return (
-    <div className="rail-scroll" ref={ref} {...handlers}
-      style={{ paddingLeft: '1rem', paddingRight: '1rem', paddingTop: '2rem', paddingBottom: '2rem' }}>
+    <ScrollRail
+      style={{ paddingLeft: '1rem', paddingRight: '1rem', paddingTop: '2rem', paddingBottom: '2rem' }}
+    >
       {children}
-    </div>
+    </ScrollRail>
   );
 }
 
 function BingeRail({ children }) {
-  const { ref, handlers } = useDragScroll();
-  return (
-    <div className="discover-binge-rail" ref={ref} {...handlers}>
-      {children}
-    </div>
-  );
+  return <ScrollRail className="discover-binge-rail">{children}</ScrollRail>;
 }
 
 function DiscoverSectionHeader({ kicker, title, open, onToggle, className = '' }) {
