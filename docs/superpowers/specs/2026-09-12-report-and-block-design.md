@@ -1,7 +1,11 @@
 # Report and block: schema and surface plan
 
-Draft, 2026-09-12. Not implemented. Three decisions at the bottom need Savannah
-before any migration is written.
+Draft, 2026-09-12. Not implemented.
+
+**Decided 2026-09-12: a block hides identity, not just content.** A blocked user
+cannot see that the blocker exists. That is a stronger promise than the original
+draft assumed, and it costs considerably more — see "What hiding identity costs"
+below. One decision remains open at the bottom.
 
 ## Why this is first
 
@@ -195,9 +199,11 @@ during review.
 This touches RLS on live user data, and the map already names the RLS split as
 one of two changes with real blast radius: get it wrong and private shelves leak.
 
-- Purely additive: two new tables, two new functions, one trigger. The two
-  existing helpers are **not** redefined.
-- The risk is concentrated in repointing nine policies. Each is a drop-and-create.
+- Migration 1 is purely additive: two new tables, two new functions, one
+  trigger. The two existing helpers are **not** redefined. Its risk is
+  concentrated in repointing nine policies, each a drop-and-create.
+- Migration 2 redefines six `security definer` functions and is the dangerous
+  one. Diff every single one against its live definition before touching it.
 - `npm run db:migration-test` before merging, without exception — it is the only
   check that executes the SQL.
 - `npm run db:write-paths` green before merge.
@@ -208,23 +214,75 @@ one of two changes with real blast radius: get it wrong and private shelves leak
 - A migration merged to `main` applies to production immediately. There is no
   staging gate.
 
-## Decisions needed before implementation
+## What hiding identity costs
 
-1. **Does blocking hide identity, or only content?** Issue #500 deliberately
-   chose Fable's split — identity always findable, shelves gated by `is_public`.
-   Blocking pulls the other way. `public_profiles` is a `security definer` view,
-   so RLS does not apply to it and hiding identity needs separate handling.
-   Recommendation: block hides **content and interaction**, not the existence of
-   a username. It satisfies "block abusive users from the service" without
-   reversing a considered product decision. Flagging it because it is a product
-   call, not a technical one.
+Content and identity are served by completely different mechanisms, and only one
+of them has a choke point.
 
-2. **Can a blocked user still see that the blocker exists in search?** Follows
-   from decision 1. If identity stays visible, search results stay visible and
-   the row simply offers no way in.
+**Content** is RLS policies sharing one predicate. Additive, low risk: one new
+wrapper function, repoint nine policies, existing helpers untouched.
 
-3. **Where do reports actually land?** Email to the operator, or mirrored into
-   GitHub issues the way feedback already is
-   (`20260823120000_add_feedback_github_mirror_fields.sql`)? A moderation queue
-   is explicitly deferred, but Apple wants a real route and a documented 24-hour
-   turnaround. Reusing the feedback mirror is the cheapest compliant answer.
+**Identity is not served by the view at all.** `profiles` has exactly one select
+policy (`auth.uid() = id`), and `public_profiles` — despite being the documented
+public projection — is not queried by either app. Every identity read in the
+product goes through a `security definer` RPC that selects `public.profiles`
+**directly**, bypassing both RLS and the view:
+
+| Function | Serves |
+| --- | --- |
+| `get_profile_card` | the public profile page |
+| `search_users` | user search |
+| `suggested_users` | suggestion rails |
+| `list_followers` | follower list |
+| `list_following` | following list |
+| `list_follow_requests` | the requests screen |
+
+So hiding identity means adding a block clause to **six functions**, each a
+`create or replace` of a whole body someone else authored, against live user
+data, with no staging gate on merge. That is the single most dangerous change
+shape in this repository: it is exactly what broke every `history` write for two
+weeks in July, and `migrations:check` only catches a subset of it (a changed
+`ON CONFLICT` target).
+
+Adding the clause to `public_profiles` alone would do nothing, because nothing
+reads it.
+
+### Two carve-outs that must NOT get the clause
+
+- **`username_available`** must stay globally correct. If it respected blocks, a
+  blocked user would be told a taken username is free. Uniqueness is not a
+  visibility question. Same for `generate_username` and `set_username_on_insert`.
+- **The blocked list in settings** needs to render the identity of people you
+  have blocked, or you cannot unblock them. Because enforcement is symmetric,
+  the ordinary paths will return nothing for exactly those users. This needs its
+  own `list_blocked_users` RPC that deliberately bypasses the filter, scoped to
+  rows where `blocker_id = auth.uid()`.
+
+### Not-found, never "blocked"
+
+Every hidden surface must present as **not found**, indistinguishable from a
+private or nonexistent profile. A distinct "you have been blocked" state turns
+blocking into a notification, which is the thing the symmetric design and the
+unreadable `user_blocks` table are both there to prevent.
+
+## Recommended sequencing
+
+Two migrations, not one. Both halves are independently useful and they have very
+different risk profiles:
+
+1. **Content + reports.** Additive tables, new wrapper, repointed policies,
+   report flow and operator route. Nothing existing is redefined.
+2. **Identity.** The six function redefinitions, each diffed against its live
+   definition first (`select pg_get_functiondef(oid) from pg_proc where
+   proname = '…'`), never against the migration you remember.
+
+Shipping 1 first gets the compliance surface working and the UI in place while
+the riskier half is done deliberately rather than under launch pressure.
+
+## Decision still open
+
+**Where do reports actually land?** Email to the operator, or mirrored into
+GitHub issues the way feedback already is
+(`20260823120000_add_feedback_github_mirror_fields.sql`)? A moderation queue is
+explicitly deferred, but Apple wants a real route and a documented 24-hour
+turnaround. Reusing the feedback mirror is the cheapest compliant answer.
