@@ -49,6 +49,10 @@
   --chip-cinema: #D95C66;
   --chip-streaming: #68AFA8;
   --chip-episode: #6D68D9;
+  --status-watching: #5852C9;
+  --status-watching-dim: rgba(88,82,201,0.12);
+  --status-watched: #047857;
+  --status-watched-dim: rgba(4,120,87,0.12);
   --badge-premium: #1A8CD8;
   --badge-supporter: #E05578;
   --radius-md: 16px;
@@ -109,6 +113,10 @@
   --chip-cinema: #E16A73;
   --chip-streaming: #78BDB7;
   --chip-episode: #7A75E0;
+  --status-watching: #818cf8;
+  --status-watching-dim: rgba(99,102,241,0.12);
+  --status-watched: #4ade80;
+  --status-watched-dim: #0d2d1a;
   --badge-premium: #1D9BF0;
   --badge-supporter: #F06A88;
   /* @tokens:end */

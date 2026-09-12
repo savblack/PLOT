@@ -1354,9 +1354,9 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                   : MEDIA_PANEL.status;
                 const statusActive = isWatching || watched;
                 const statusColors = isWatching
-                  ? { background: 'rgba(99,102,241,0.12)', border: '1.5px solid rgba(99,102,241,0.45)', color: '#818cf8' }
+                  ? { background: 'var(--status-watching-dim)', border: '1.5px solid color-mix(in srgb, var(--status-watching) 45%, transparent)', color: 'var(--status-watching)' }
                   : watched
-                  ? { background: '#0d2d1a', border: '1.5px solid rgba(74,222,128,0.2)', color: '#4ade80' }
+                  ? { background: 'var(--status-watched-dim)', border: '1.5px solid color-mix(in srgb, var(--status-watched) 30%, transparent)', color: 'var(--status-watched)' }
                   : { background: 'transparent', border: '1.5px solid var(--border)', color: 'var(--text-secondary)' };
 
                 return (<>
@@ -1372,9 +1372,9 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                 onClick={() => watchlist.toggle({ ...details, id: itemId, media_type: itemType })}
                 style={{
                   ...statusRowBtn, fontWeight: 600,
-                  border: inList ? '1.5px solid rgba(74,222,128,0.2)' : '1.5px solid transparent',
-                  background: inList ? '#0d2d1a' : 'var(--accent)',
-                  color: inList ? '#4ade80' : '#fff',
+                  border: inList ? '1.5px solid color-mix(in srgb, var(--status-watched) 30%, transparent)' : '1.5px solid transparent',
+                  background: inList ? 'var(--status-watched-dim)' : 'var(--accent)',
+                  color: inList ? 'var(--status-watched)' : '#fff',
                 }}
               >
                 {inList ? <CheckIcon /> : <BookmarkIcon />}
@@ -1450,9 +1450,9 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                   onClick={() => setShowListSheet(true)}
                   style={{
                     ...trayBtn,
-                    border: isInAnyList ? '1.5px solid rgba(99,102,241,0.4)' : '1.5px solid var(--border)',
-                    background: isInAnyList ? 'rgba(99,102,241,0.1)' : 'transparent',
-                    color: isInAnyList ? '#818cf8' : 'var(--text-secondary)',
+                    border: isInAnyList ? '1.5px solid color-mix(in srgb, var(--status-watching) 40%, transparent)' : '1.5px solid var(--border)',
+                    background: isInAnyList ? 'var(--status-watching-dim)' : 'transparent',
+                    color: isInAnyList ? 'var(--status-watching)' : 'var(--text-secondary)',
                   }}
                 >
                   <ListIcon size={15} />
