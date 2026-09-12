@@ -40,7 +40,7 @@ import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
 import type { Database } from '../_shared/database.types.ts';
 import { serviceKey } from '../_shared/serviceKey.ts';
 import { hasServiceRoleBearer } from '../_shared/internalWebhook.ts';
-import { buildTitle, buildDescription } from '../_shared/linearIssue.js';
+import { buildTitle, buildDescription, dueDateFor } from '../_shared/linearIssue.js';
 
 type Db = SupabaseClient<Database>;
 // deno-lint-ignore no-explicit-any
@@ -174,7 +174,7 @@ const createMissing = async (supabase: Db, ctx: Context): Promise<number> => {
             description: buildDescription(post, SUPABASE_URL),
             teamId: ctx.teamId,
             stateId: ctx.stateId,
-            dueDate: String(post.scheduled_for).slice(0, 10),
+            dueDate: dueDateFor(post),
             ...(ctx.projectId ? { projectId: ctx.projectId } : {}),
           },
         },
@@ -220,7 +220,7 @@ const refreshChanged = async (supabase: Db): Promise<number> => {
           input: {
             title: buildTitle(post),
             description: buildDescription(post, SUPABASE_URL),
-            dueDate: String(post.scheduled_for).slice(0, 10),
+            dueDate: dueDateFor(post),
           },
         },
       );
