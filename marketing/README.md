@@ -115,8 +115,10 @@ it is saved. A rejected edit changes nothing and the bot replies with why.
 
 ### Setting it up
 
-1. Team PLO needs a workflow state named **Approved**. `In Review`, `Canceled`
-   and `Done` already exist.
+1. Team PLO needs workflow states named **In Review**, **Approved**, **Canceled**
+   and **Done**. All four exist (Approved was added 2026-09-12, type `started`,
+   sitting after In Review on the board). The mirror fails loudly and lists the
+   team's real states if one is missing or renamed, rather than guessing.
 2. `LINEAR_API_KEY` in `.env` and as a GitHub Actions secret.
 3. Deploy the webhook: `supabase functions deploy marketing-linear-sync`.
 4. In Linear (Settings → API → Webhooks) point a webhook at
