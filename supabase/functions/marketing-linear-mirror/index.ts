@@ -61,6 +61,12 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const LINEAR_API_KEY = Deno.env.get('LINEAR_API_KEY') ?? '';
 const TEAM_REF = Deno.env.get('LINEAR_MARKETING_TEAM_ID') ?? 'PLO';
 const PROJECT_REF = Deno.env.get('LINEAR_MARKETING_PROJECT_ID') ?? 'Content Automation';
+const GH_REPO = Deno.env.get('GH_REPO') ?? 'savblack/PLOT';
+const GH_TOKEN = Deno.env.get('GH_DISPATCH_TOKEN') ?? '';
+const RESEND_KEY = Deno.env.get('RESEND_API_KEY') ?? '';
+const ALERT_TO = Deno.env.get('MARKETING_ADMIN_EMAIL') ?? 'sav.black@outlook.com';
+const ALERT_FROM = 'PLOT Marketing <feedback@theplot.tv>';
+
 const REVIEW_STATE = Deno.env.get('LINEAR_REVIEW_STATE') ?? 'In Review';
 const APPROVED_STATE = Deno.env.get('LINEAR_APPROVED_STATE') ?? 'Approved';
 const REJECTED_STATE = Deno.env.get('LINEAR_REJECTED_STATE') ?? 'Canceled';
@@ -467,6 +473,100 @@ const reconcileStates = async (supabase: Db, ctx: Context, dryRun = false): Prom
   return { moved, reported };
 };
 
+// ── Dispatch token health ────────────────────────────────────────────────────
+//
+// GH_DISPATCH_TOKEN is what lets /generate, /publish-now and /regenerate take
+// effect now instead of on the next cron. It is a PAT, so it expires — and when
+// it did, nothing said so: every command fell back to "it'll go on the scheduled
+// run", which reads exactly like normal behaviour. It sat dead long enough that
+// the expiry was only found by firing /generate and reading a 401 out of an
+// error message that was itself wrong about the cause.
+//
+// So the token gets probed here, where it lives. Supabase holds it, not GitHub,
+// which is why this is not a workflow step: a workflow would need its own copy
+// of the credential, and duplicating a PAT to watch a PAT is worse than the
+// problem.
+//
+// Once a day, not every sweep — the first sweep after 06:00 UTC, matching when
+// the other daily checks run. One request a day, and no state to track when the
+// last one happened.
+const HEALTH_CHECK_HOUR = 6;
+
+const shouldProbeToken = (): boolean => {
+  const now = new Date();
+  return now.getUTCHours() === HEALTH_CHECK_HOUR && now.getUTCMinutes() < 5;
+};
+
+const alertOperator = async (subject: string, body: string): Promise<void> => {
+  if (!RESEND_KEY) return;
+  try {
+    await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${RESEND_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from: ALERT_FROM, to: [ALERT_TO], subject, html: body }),
+    });
+  } catch (err) {
+    console.error('Operator alert failed:', err);
+  }
+};
+
+/**
+ * Probe GH_DISPATCH_TOKEN and shout if it has stopped working.
+ *
+ * Reads a workflow rather than dispatching one: proving write access would mean
+ * actually starting a run, and a daily surprise batch is a worse cure than the
+ * disease. So this catches the failure that actually happened — an expired or
+ * revoked token answering 401 — and a permissions change that answers 403/404.
+ * It cannot prove the token still has Actions: write, and says so here rather
+ * than implying a guarantee it does not give.
+ *
+ * @returns a short status string for the run record, or null when not probed.
+ */
+const checkDispatchToken = async (): Promise<string | null> => {
+  if (!shouldProbeToken()) return null;
+  if (!GH_TOKEN) return 'absent';
+
+  try {
+    const res = await fetch(
+      `https://api.github.com/repos/${GH_REPO}/actions/workflows/marketing-weekly-batch.yml`,
+      {
+        headers: {
+          Authorization: `Bearer ${GH_TOKEN}`,
+          Accept: 'application/vnd.github+json',
+          'X-GitHub-Api-Version': '2022-11-28',
+          'User-Agent': 'plot-linear-mirror',
+        },
+      },
+    );
+    if (res.ok) return 'ok';
+
+    const status = res.status;
+    const reason = status === 401
+      ? 'the token has expired or been revoked'
+      : status === 403 || status === 404
+        ? 'the token can no longer see this repository\'s Actions — check its permissions and repository access'
+        : `GitHub answered ${status}`;
+    console.error(`GH_DISPATCH_TOKEN unhealthy: ${status} — ${reason}`);
+    await alertOperator(
+      'PLOT marketing: the GitHub dispatch token has stopped working',
+      `<div style="font-family:sans-serif;max-width:520px;color:#1a1a1a;">
+        <h1 style="font-size:1.2rem;">GH_DISPATCH_TOKEN is not working</h1>
+        <p style="font-size:.95rem;line-height:1.6;">GitHub answered <strong>${status}</strong> — ${reason}.</p>
+        <p style="font-size:.95rem;line-height:1.6;"><code>/generate</code>, <code>/publish-now</code> and <code>/regenerate</code>
+        still record their decision, but no longer take effect immediately: they fall back to the scheduled run.
+        Publishing itself is unaffected.</p>
+        <p style="font-size:.95rem;line-height:1.6;">Fix: create a fine-grained PAT for <code>${GH_REPO}</code> with
+        <strong>Actions: Read and write</strong>, then
+        <code>supabase secrets set GH_DISPATCH_TOKEN=&lt;token&gt;</code>.</p>
+      </div>`,
+    );
+    return `unhealthy (${status})`;
+  } catch (err) {
+    console.error('Dispatch token probe errored:', err);
+    return 'probe failed';
+  }
+};
+
 // ── Handler ──────────────────────────────────────────────────────────────────
 
 Deno.serve(async (req) => {
@@ -506,7 +606,12 @@ Deno.serve(async (req) => {
       .map(([, name]) => name);
     if (unresolved.length) console.warn(`Linear mirror: no workflow state named ${unresolved.join(', ')} — those moves are being skipped.`);
 
-    const counts = { created, refreshed, moved, reported, ...(unresolved.length ? { unresolved } : {}) };
+    const dispatchToken = dryRun ? null : await checkDispatchToken();
+    const counts = {
+      created, refreshed, moved, reported,
+      ...(unresolved.length ? { unresolved } : {}),
+      ...(dispatchToken ? { dispatch_token: dispatchToken } : {}),
+    };
     if (dryRun) {
       console.log(`Linear mirror DRY RUN: would create ${created}, refresh ${refreshed}, move ${moved}.`);
       return json({ ok: true, dry_run: true, would: counts });

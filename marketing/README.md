@@ -197,6 +197,25 @@ Optional overrides, all Edge Function secrets: `LINEAR_MARKETING_TEAM_ID` (PLO),
 that cannot be resolved is reported in the sweep's response as `unresolved`
 rather than failing it — those moves are skipped, not misfiled.
 
+Once a day (the first sweep after 06:00 UTC) the sweep also probes
+`GH_DISPATCH_TOKEN` — the PAT that lets `/generate`, `/publish-now` and
+`/regenerate` take effect immediately rather than on the next cron. It is a PAT,
+so it expires, and when it did nothing said so: every command fell back to "it'll
+go on the scheduled run", which reads exactly like normal behaviour. It sat dead
+long enough that the expiry was only found by firing `/generate` and reading a
+401 out of an error message that was itself wrong about the cause.
+
+A failed probe emails the operator and lands in the run record as
+`counts.dispatch_token`. The probe reads a workflow rather than dispatching one —
+proving write access would mean starting a real run, and a daily surprise batch
+is a worse cure than the disease — so it catches an expired or revoked token
+(401) and a permissions change (403/404), but cannot prove the token still has
+`Actions: write`.
+
+It lives here, in the sweep, rather than in a workflow step because Supabase
+holds the token, not GitHub. A workflow would need its own copy, and duplicating
+a PAT in order to watch a PAT is worse than the problem.
+
 To check the sweep is running, read `marketing_batch_runs` — every sweep lands
 there, so the newest `linear_mirror` row's timestamp is the answer. Older than
 about ten minutes means the schedule has stopped:
