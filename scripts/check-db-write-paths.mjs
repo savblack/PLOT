@@ -64,7 +64,13 @@ import {
 //   SUPABASE_DB_URL       → psql (the secret db-backup.yml already uses)
 // Read-only either way.
 const TOKEN = process.env.SUPABASE_ACCESS_TOKEN;
-const DB_URL = process.env.SUPABASE_DB_URL;
+// Trimmed and unquoted before use. A secret pasted with surrounding quotes or a
+// trailing newline is still "set", and psql then reads the whole thing as a
+// DATABASE NAME rather than a connection string — which fails against the local
+// socket with "is the server running locally?", a message that points nowhere
+// near the real cause. Cheap to defend against, and it cost a day to diagnose
+// once.
+const DB_URL = (process.env.SUPABASE_DB_URL ?? '').trim().replace(/^(['"])([\s\S]*)\1$/, '$2').trim() || undefined;
 const URL_ = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 
 if (!TOKEN && !DB_URL) {
@@ -119,6 +125,19 @@ async function query(sql) {
     }
     const redact = (t) => String(t ?? '').split(DB_URL).join('«redacted»');
     console.error(`psql failed: ${redact(err?.stderr || err?.message)}`);
+
+    // A local-socket failure means psql never saw a connection string: it took
+    // DB_URL as a database name. Describe the SHAPE of the secret so that is
+    // diagnosable without ever printing it — the value cannot be read back out
+    // of GitHub, so a failure that does not describe itself is a dead end.
+    if (/\.s\.PGSQL|server running locally/.test(String(err?.stderr ?? ''))) {
+      console.error('');
+      console.error('psql treated SUPABASE_DB_URL as a database name, not a connection string.');
+      console.error(`  length: ${DB_URL.length}`);
+      console.error(`  starts with "postgres": ${/^postgres(ql)?:\/\//i.test(DB_URL)}`);
+      console.error(`  contains "@": ${DB_URL.includes('@')}   contains "=": ${DB_URL.includes('=')}`);
+      console.error('Expected either postgresql://user:pw@host:port/db or host=… user=… password=…');
+    }
     process.exit(1);
   }
   return JSON.parse(out || '[]');
