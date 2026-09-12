@@ -9,6 +9,9 @@ export interface FollowsState {
   follow: () => Promise<void>;
   unfollow: () => Promise<void>;
   canFollow: boolean;
+  /** Re-read the relationship. Needed after a block, which severs follows
+   *  server-side via the user_blocks trigger without this hook knowing. */
+  refresh: () => Promise<void>;
 }
 
 export function useFollows(

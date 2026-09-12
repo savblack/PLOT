@@ -68,6 +68,10 @@ configure({
     track(favourited ? EVENTS.FAVOURITE_ADDED : EVENTS.FAVOURITE_REMOVED, { tmdb_id, media_type }),
   onFollowRequestDecision: ({ target_user_id, approved }) =>
     track(approved ? EVENTS.FOLLOW_REQUEST_APPROVED : EVENTS.FOLLOW_REQUEST_DECLINED, { target_user_id }),
+  onBlock: ({ blocked }) =>
+    track(blocked ? EVENTS.USER_BLOCKED : EVENTS.USER_UNBLOCKED, {}),
+  onReport: ({ reason, surface }) =>
+    track(EVENTS.USER_REPORTED, { reason, surface }),
   onHistoryRemove: ({ tmdb_id, media_type }) =>
     track(EVENTS.HISTORY_ENTRY_REMOVED, { tmdb_id, media_type }),
   // One seam, four names: core reports where in a series the user moved, and

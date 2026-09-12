@@ -22,6 +22,8 @@ import { useAppData } from '../../../contexts/AppDataContext';
 import { usePublicProfile } from '../../../hooks/usePublicProfile';
 import { favoriteWords } from '../../../lib/spelling';
 import { useFollows } from '../../../hooks/useFollows';
+import { useBlocks } from '@plot/core/useBlocks.js';
+import UserModerationMenu from '../../../components/UserModerationMenu';
 import { Avatar, ProfileBadges } from '../../../components/Avatar';
 import { UserList, SocialUser } from '../../../components/UserList';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../../lib/tokens';
@@ -62,8 +64,9 @@ export default function ProfileScreen({ usernameOverride }: { usernameOverride?:
 
   const { loading, profile, locked, watchCount, avgRating, recent, topMovies, topTv, favourites } =
     usePublicProfile(username, viewerId);
-  const { followers, following, status, follow, unfollow, busy, canFollow } =
+  const { followers, following, status, follow, unfollow, busy, canFollow, refresh } =
     useFollows(profile?.id, viewerId, profile?.follow_status ?? null);
+  const blocks = useBlocks(viewerId);
 
   const [followList, setFollowList] = useState<'followers' | 'following' | null>(null);
 
@@ -146,6 +149,22 @@ export default function ProfileScreen({ usernameOverride }: { usernameOverride?:
                     <Text style={styles.linkChip}>{l.label}</Text>
                   </TouchableOpacity>
                 ))}
+              </View>
+            )}
+
+            {/* Report / block. Its own row rather than inside the follow block:
+                the follow actions are gated on canFollow, and Guideline 1.2
+                wants these available to any signed-in viewer regardless. */}
+            {!isOwn && !!viewerId && !!profile?.id && (
+              <View style={styles.actions}>
+                <UserModerationMenu
+                  targetId={profile.id}
+                  targetName={profile.display_name || profile.username}
+                  surface="profile"
+                  viewerId={viewerId}
+                  blocks={blocks}
+                  onChanged={refresh}
+                />
               </View>
             )}
 

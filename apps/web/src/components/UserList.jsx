@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@plot/core/supabase.js';
 import ProfileBadges from './ProfileBadges.jsx';
+import UserModerationMenu from './UserModerationMenu.jsx';
+import { useBlocks } from '@plot/core/useBlocks.js';
 
 const rowStyle = {
   display: 'flex', alignItems: 'center', gap: '0.85rem',
@@ -62,7 +64,7 @@ export function FollowButton({ targetId, isPublic, status: initial = null, viewe
   );
 }
 
-export function UserRow({ user, viewerId, onNavigate }) {
+export function UserRow({ user, viewerId, onNavigate, surface = 'search_result', blocks }) {
   return (
     <div style={rowStyle}>
       <Link
@@ -82,17 +84,38 @@ export function UserRow({ user, viewerId, onNavigate }) {
         </div>
       </Link>
       <FollowButton targetId={user.id} isPublic={user.is_public} status={user.follow_status} viewerId={viewerId} />
+      {blocks && (
+        <UserModerationMenu
+          targetId={user.id}
+          targetName={user.display_name || user.username}
+          surface={surface}
+          viewerId={viewerId}
+          blocks={blocks}
+        />
+      )}
     </div>
   );
 }
 
-export default function UserList({ users, viewerId, onNavigate, empty = 'No one here yet.' }) {
+/**
+ * `surface` tells a report which screen it came from, so the operator can see
+ * where abuse is actually surfacing. It is one of the ids the reports table
+ * accepts; see REPORT_SURFACES.
+ *
+ * The block list is loaded ONCE here and handed to every row. Mounting
+ * useBlocks per row would fire one RPC per result.
+ */
+export default function UserList({ users, viewerId, onNavigate, empty = 'No one here yet.', surface = 'search_result' }) {
+  const blocks = useBlocks(viewerId);
+
   if (!users?.length) {
     return <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem', padding: '2rem 1rem' }}>{empty}</div>;
   }
   return (
     <div>
-      {users.map(u => <UserRow key={u.id} user={u} viewerId={viewerId} onNavigate={onNavigate} />)}
+      {users.map(u => (
+        <UserRow key={u.id} user={u} viewerId={viewerId} onNavigate={onNavigate} surface={surface} blocks={blocks} />
+      ))}
     </div>
   );
 }

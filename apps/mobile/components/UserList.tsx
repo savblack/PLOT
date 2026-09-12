@@ -5,6 +5,14 @@ import { supabase } from '../lib/supabase';
 import { useTheme } from '../contexts/ThemeContext';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import { Avatar, ProfileBadges } from './Avatar';
+import UserModerationMenu from './UserModerationMenu';
+import { useBlocks } from '@plot/core/useBlocks.js';
+
+type BlocksApi = {
+  isBlocked: (id: string) => boolean;
+  block: (id: string) => Promise<boolean>;
+  unblock: (id: string) => Promise<boolean>;
+};
 
 export interface SocialUser {
   id: string;
@@ -70,8 +78,11 @@ export function FollowButton({
 }
 
 export function UserRow({
-  user, viewerId, onNavigate,
-}: { user: SocialUser; viewerId?: string | null; onNavigate?: () => void }) {
+  user, viewerId, onNavigate, surface = 'search_result', blocks,
+}: {
+  user: SocialUser; viewerId?: string | null; onNavigate?: () => void;
+  surface?: string; blocks?: BlocksApi;
+}) {
   const { colors } = useTheme();
   const styles2 = makeStyles(colors);
   const router = useRouter();
@@ -100,14 +111,34 @@ export function UserRow({
         status={user.follow_status ?? null}
         viewerId={viewerId}
       />
+      {blocks ? (
+        <UserModerationMenu
+          targetId={user.id}
+          targetName={name}
+          surface={surface}
+          viewerId={viewerId}
+          blocks={blocks}
+        />
+      ) : null}
     </View>
   );
 }
 
+/**
+ * `surface` names the screen a report came from, so the operator can see where
+ * abuse actually surfaces. It must be one of REPORT_SURFACES.
+ *
+ * The block list is loaded ONCE here and shared with every row; a hook per row
+ * would fire one RPC per result.
+ */
 export function UserList({
-  users, viewerId, onNavigate, empty = 'No one here yet.',
-}: { users: SocialUser[]; viewerId?: string | null; onNavigate?: () => void; empty?: string }) {
+  users, viewerId, onNavigate, empty = 'No one here yet.', surface = 'search_result',
+}: {
+  users: SocialUser[]; viewerId?: string | null; onNavigate?: () => void;
+  empty?: string; surface?: string;
+}) {
   const { colors } = useTheme();
+  const blocks = useBlocks(viewerId);
   if (!users?.length) {
     return (
       <View style={{ paddingVertical: spacing.xl, alignItems: 'center' }}>
@@ -117,7 +148,9 @@ export function UserList({
   }
   return (
     <View>
-      {users.map(u => <UserRow key={u.id} user={u} viewerId={viewerId} onNavigate={onNavigate} />)}
+      {users.map(u => (
+        <UserRow key={u.id} user={u} viewerId={viewerId} onNavigate={onNavigate} surface={surface} blocks={blocks} />
+      ))}
     </View>
   );
 }

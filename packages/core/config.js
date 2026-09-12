@@ -59,6 +59,13 @@
  *   Analytics seam — fired on favourite (favourited:true) / unfavourite (false).
  * @property {(payload: { target_user_id: string, approved: boolean }) => void} [onFollowRequestDecision]
  *   Analytics seam — fired when an incoming follow request is approved or declined.
+ * @property {(payload: { blocked: boolean }) => void} [onBlock]
+ *   Analytics seam — fired on block (blocked:true) / unblock (blocked:false).
+ *   Deliberately carries no user id: PostHog is not where a moderation trail
+ *   belongs, and neither party consented to being counted there.
+ * @property {(payload: { reason: string, surface: string }) => void} [onReport]
+ *   Analytics seam — fired when a report is submitted. Reason and surface only,
+ *   for the same reason: enough to see which surfaces need attention, not who.
  * @property {(payload: { tmdb_id: number, media_type: string }) => void} [onHistoryRemove]
  *   Analytics seam — fired when a logged watch is removed from history. The
  *   undo half of onWatched; without it, watched counts only ever go up.

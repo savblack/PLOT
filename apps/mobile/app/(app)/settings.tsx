@@ -27,6 +27,8 @@ import { Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens'
 import { edgeFunctionUrl } from '@plot/core/functions.js';
 import { SHOW_MEDIA_SYNC_INTEGRATIONS } from '../../lib/launchFeatures';
 import { SETTINGS_VIEW } from '@plot/core/copy/settingsView.js';
+import { MODERATION } from '@plot/core/copy/moderation.js';
+import { useBlocks } from '@plot/core/useBlocks.js';
 import { COMMON } from '@plot/core/copy/common.js';
 
 // UUID token for the private calendar feed. Uses native crypto when the RN
@@ -103,6 +105,50 @@ function SettingsGroup({ title, children }: { title: string; children: React.Rea
       <Text style={styles.groupTitle}>{title}</Text>
       <View style={styles.groupCard}>{children}</View>
     </View>
+  );
+}
+
+// ── Blocked accounts ──────────────────────────────────────────────────
+/**
+ * Guideline 1.2 asks for a visible list of blocked accounts, not just the act of
+ * blocking: a block you cannot find again is a block you cannot undo.
+ *
+ * This renders identity for accounts every other path deliberately hides from
+ * the viewer, which is why useBlocks reads through the list_blocked_users RPC
+ * rather than selecting a table.
+ */
+function BlockedAccounts({ viewerId }: { viewerId?: string | null }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { blocked, loading, busy, unblock } = useBlocks(viewerId);
+
+  if (loading) return null;
+
+  return (
+    <SettingsGroup title={MODERATION.blockedTitle}>
+      {blocked.length === 0 ? (
+        <View style={styles.row}>
+          <Text style={styles.rowValue}>{MODERATION.blockedEmpty}</Text>
+        </View>
+      ) : (
+        blocked.map((account: { id: string; username: string; display_name: string | null }) => (
+          <View key={account.id} style={styles.row}>
+            <Text style={styles.rowLabel} numberOfLines={1}>
+              {account.display_name || account.username}
+              <Text style={styles.rowValue}>{`  @${account.username}`}</Text>
+            </Text>
+            <TouchableOpacity
+              onPress={() => { void unblock(account.id); }}
+              disabled={busy}
+              accessibilityRole="button"
+              accessibilityLabel={`${MODERATION.unblockAction} ${account.username}`}
+            >
+              <Text style={[styles.rowValue, { color: colors.accent }]}>{MODERATION.unblockAction}</Text>
+            </TouchableOpacity>
+          </View>
+        ))
+      )}
+    </SettingsGroup>
   );
 }
 
@@ -992,6 +1038,8 @@ export default function SettingsScreen() {
             surface, not only in the legal pages. Read-only, so these are plain
             rows rather than SettingsRow (no icon, no chevron, not pressable).
             TMDB also asks for their approved logo here; see the web equivalent. */}
+        <BlockedAccounts viewerId={userId} />
+
         <SettingsGroup title={SETTINGS_VIEW.credits.groupTitle}>
           <View style={styles.credits}>
             <Text style={styles.creditsIntro}>{SETTINGS_VIEW.credits.intro}</Text>

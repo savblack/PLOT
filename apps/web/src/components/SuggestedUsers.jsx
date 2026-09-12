@@ -28,7 +28,7 @@ export default function SuggestedUsers({ heading = 'People To Follow' }) {
         {heading}
       </h2>
       <div style={{ padding: '0 0.25rem' }}>
-        <UserList users={users} viewerId={user?.id} />
+        <UserList users={users} viewerId={user?.id} surface="suggested_user" />
       </div>
     </section>
   );

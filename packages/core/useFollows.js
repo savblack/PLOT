@@ -76,5 +76,11 @@ export function useFollows(targetId, viewerId, initialStatus = null) {
   return {
     followers, following, status, busy, follow, unfollow,
     canFollow: !!viewerId && viewerId !== targetId,
+    // Exposed so a caller can re-read after something else changed the
+    // relationship behind its back. Blocking is the case that needs it: the
+    // user_blocks insert trigger deletes follows in both directions
+    // server-side, so without a refresh the profile keeps rendering
+    // "Following" for an account the viewer has just blocked.
+    refresh,
   };
 }

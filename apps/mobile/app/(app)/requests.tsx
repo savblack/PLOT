@@ -13,6 +13,8 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import { useFollowRequests, FollowRequester } from '../../hooks/useFollowRequests';
 import { Avatar } from '../../components/Avatar';
+import UserModerationMenu from '../../components/UserModerationMenu';
+import { useBlocks } from '@plot/core/useBlocks.js';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 
@@ -23,6 +25,9 @@ export default function RequestsScreen() {
   const router = useRouter();
   const { userId } = useAppData();
   const { requests, loading, approve, decline } = useFollowRequests(userId);
+  // A follow request is a surface Guideline 1.2 names explicitly: it is how an
+  // unwanted account reaches someone who has never interacted with them.
+  const blocks = useBlocks(userId);
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
@@ -49,7 +54,7 @@ export default function RequestsScreen() {
           <Text style={styles.empty}>No pending requests.{'\n'}When someone asks to follow you, they'll show up here.</Text>
         ) : (
           requests.map((r: FollowRequester) => (
-            <RequestRow key={r.follower_id} req={r} onApprove={() => approve(r.follower_id)} onDecline={() => decline(r.follower_id)} colors={colors} styles={styles} />
+            <RequestRow key={r.follower_id} req={r} onApprove={() => approve(r.follower_id)} onDecline={() => decline(r.follower_id)} colors={colors} styles={styles} viewerId={userId} blocks={blocks} />
           ))
         )}
       </ScrollView>
@@ -58,8 +63,17 @@ export default function RequestsScreen() {
 }
 
 function RequestRow({
-  req, onApprove, onDecline, colors, styles,
-}: { req: FollowRequester; onApprove: () => void; onDecline: () => void; colors: Palette; styles: any }) {
+  req, onApprove, onDecline, colors, styles, viewerId, blocks,
+}: {
+  req: FollowRequester; onApprove: () => void; onDecline: () => void;
+  colors: Palette; styles: any;
+  viewerId?: string | null;
+  blocks: {
+    isBlocked: (id: string) => boolean;
+    block: (id: string) => Promise<boolean>;
+    unblock: (id: string) => Promise<boolean>;
+  };
+}) {
   const name = req.display_name || req.username;
   return (
     <View style={styles.row}>
@@ -75,6 +89,13 @@ function RequestRow({
         <TouchableOpacity style={styles.declineBtn} onPress={onDecline} activeOpacity={0.8}>
           <Text style={styles.declineText}>Decline</Text>
         </TouchableOpacity>
+        <UserModerationMenu
+          targetId={req.follower_id}
+          targetName={name}
+          surface="follow_request"
+          viewerId={viewerId}
+          blocks={blocks}
+        />
       </View>
     </View>
   );
