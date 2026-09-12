@@ -1,5 +1,5 @@
 import '../lib/configureCore'; // MUST be first: injects Expo env into shared core before any data call
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { Slot, useRouter, useSegments } from 'expo-router';
 import { useFonts } from 'expo-font';
@@ -17,6 +17,7 @@ import { hydrateSectionOpenState } from '../lib/sectionOpenState';
 import { consumeTraktState, exchangeTraktCode } from '../hooks/useTraktSync';
 import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
 import { AppDataProvider } from '../contexts/AppDataContext';
+import { OnboardingRefreshContext } from '../contexts/OnboardingContext';
 import { DrawerProvider, useDrawer } from '../contexts/DrawerContext';
 import { MediaPanelProvider, useMediaPanel } from '../contexts/MediaPanelContext';
 import DrawerMenu from '../components/DrawerMenu';
@@ -112,6 +113,12 @@ function RootInner() {
     if (data) setPersonProps(personPropsFromProfile(data));
   };
 
+  // Re-read the profile on demand. The seed screen awaits this after it writes
+  // onboarding_complete, so AuthGuard below never routes off the stale value.
+  const refreshOnboarding = useCallback(async () => {
+    if (session?.user) await loadProfile(session.user.id);
+  }, [session]);
+
   useEffect(() => {
     // Before the first session check, so nothing captured during boot is lost —
     // calls made before the SDK is ready queue inside lib/analytics.
@@ -180,7 +187,9 @@ function RootInner() {
             <ThemedStatusBar />
             <RootDrawerMenu />
             <RootMediaPanel />
-            <AuthGuard session={session} onboardingComplete={onboardingComplete} />
+            <OnboardingRefreshContext.Provider value={refreshOnboarding}>
+              <AuthGuard session={session} onboardingComplete={onboardingComplete} />
+            </OnboardingRefreshContext.Provider>
           </MediaPanelProvider>
         </DrawerProvider>
       </AppDataProvider>

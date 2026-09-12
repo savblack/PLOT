@@ -14,21 +14,11 @@ export const ONBOARDING_FLOW = {
   // without a live TMDB call, and nothing downstream read profiles.genres, so it
   // was cut from signup — genres are set in Settings instead.
   //
-  // Step 2 opens on an intro rather than dropping the user straight into a
-  // poster grid: picking titles reads as ambiguous ("have I watched these?")
-  // without a line first saying what the picks are for.
+  // Step 2 is ONE screen. Mobile used to open it on an intro that greeted the
+  // user and revealed the poster grid behind a CTA; web never had one, so it
+  // was drift, and it made a two-of-two flow present as three screens. The
+  // intro's copy is removed rather than left dormant — nothing rendered it.
   step2: {
-    intro: {
-      greeting: (name) => (name ? `Hi ${name}!` : 'Hi there!'),
-      lead: "Let's start on a good note.",
-      // Honest, not aspirational: list_items feeds user_title_signals, which
-      // is what get_for_you() scores. See the for_you_weighted_signals
-      // migration.
-      pitch: 'Tell us what you want to watch and your recommendations get better.',
-      cta: "Let's go",
-      ctaArrow: "Let's go →",
-      toApp: 'Take me to the app instead',
-    },
     title: 'What do you want to watch?',
     // Says where the picks go, because "what are you watching" read as a
     // question about history: already-watched, in progress, or want to watch.
