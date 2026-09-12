@@ -40,19 +40,42 @@ that exact pattern cost this project a two-week production outage in July.
 redefining it changes follow-request behaviour as a side effect, and the name
 would start lying about what it does.
 
-Instead, add a **new** wrapper and repoint the policies at it:
+Instead, add a **new** helper and AND it onto each existing predicate:
 
 ```sql
-create function public.can_view_profile_content(p_uid uuid)
+create function public.not_blocked(p_uid uuid)
 returns boolean language sql security definer stable set search_path = public as $$
-  select (public.is_profile_public(p_uid) or public.is_accepted_follower(p_uid))
-     and not public.is_blocked_between(p_uid, auth.uid())
+  select not exists (
+    select 1 from public.user_blocks
+    where (blocker_id = p_uid      and blocked_id = auth.uid())
+       or (blocker_id = auth.uid() and blocked_id = p_uid)
+  )
 $$;
 ```
 
-The two existing functions are never touched. Every future public surface gets
-blocking for free by using the wrapper. Dropping and recreating a *policy* is
-atomic and carries none of the function-redefinition risk.
+The two existing functions are never touched, and dropping and recreating a
+*policy* is atomic, carrying none of the function-redefinition risk.
+
+**Corrected during implementation.** This was first specced as a single
+`can_view_profile_content(p_uid)` wrapper bundling
+`is_profile_public or is_accepted_follower` with the block check, and the
+policies repointed at it. That is wrong, and quietly so. The predicates are not
+uniform: `list_items` and `watching_progress` gate on `is_profile_public`
+**alone**, while `history`, `user_favourites` and `user_top_lists` also allow
+accepted followers. Folding them all onto one wrapper would have **widened**
+those two, handing accepted followers the watchlist and watching progress of
+private profiles. A conjunct preserves every predicate exactly. Blocking is not
+the change to smuggle a visibility change through.
+
+`user_custom_lists` and `user_custom_list_items` use neither helper — they gate
+on `is_public` — so they take the conjunct against the list owner, reached
+through the parent list for the items table.
+
+Also corrected: `journal` no longer exists. It was renamed to `history` in
+`20260726010000_rename_journal_to_history.sql`, so the policy the first draft
+listed for it would have failed the migration outright. The production schema in
+`supabase/functions/_shared/database.types.ts` is the reliable source for what
+tables are actually there.
 
 Anonymous readers are unaffected: `auth.uid()` is null, the block lookup matches
 nothing, and the predicate reduces to today's behaviour.
