@@ -9,6 +9,7 @@ The public website explains PLOT and its plans. The web app at https://app.thepl
 - https://theplot.tv/about.html: what PLOT is and how it works
 - https://theplot.tv/privacy.html: privacy policy
 - https://theplot.tv/terms.html: terms of service
+- https://theplot.tv/community.html: community standards, reporting and blocking
 
 ## Agent guidance
 

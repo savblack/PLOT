@@ -569,7 +569,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
         </div>
 
         <p className="auth-panel-footer">
-          {AUTH_PAGE.termsAgreement} <Link to="/terms">{AUTH_PAGE.terms}</Link> {AUTH_PAGE.and} <Link to="/privacy">{COMMON.privacyPolicy}</Link>.
+          {AUTH_PAGE.termsAgreement} <Link to="/terms">{AUTH_PAGE.terms}</Link>, <Link to="/community">{COMMON.communityStandards}</Link> {AUTH_PAGE.and} <Link to="/privacy">{COMMON.privacyPolicy}</Link>.
         </p>
       </div>
     </div>

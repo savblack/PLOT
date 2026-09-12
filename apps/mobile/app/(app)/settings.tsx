@@ -979,6 +979,13 @@ export default function SettingsScreen() {
             label={COMMON.privacyPolicy}
             onPress={() => Linking.openURL('https://theplot.tv/privacy.html')}
           />
+          {/* Guideline 1.2 holds PLOT to its own community standards, so they
+              have to be reachable from inside the app, not only from the site. */}
+          <SettingsRow
+            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><Circle cx={9} cy={7} r={4}/><Path d="M23 21v-2a4 4 0 0 0-3-3.87"/></Svg>}
+            label={COMMON.communityStandards}
+            onPress={() => Linking.openURL('https://theplot.tv/community.html')}
+          />
         </SettingsGroup>
 
         {/* Credits — TMDB's API terms ask for the notice on an About/Credits

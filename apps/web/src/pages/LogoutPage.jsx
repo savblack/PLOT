@@ -84,7 +84,7 @@ export default function LogoutPage() {
         </div>
 
         <p className="auth-panel-footer">
-          By continuing you agree to our <Link to="/terms">Terms</Link> and <Link to="/privacy">Privacy Policy</Link>.
+          By continuing you agree to our <Link to="/terms">Terms</Link>, <Link to="/community">Community Standards</Link> and <Link to="/privacy">Privacy Policy</Link>.
         </p>
       </div>
     </div>

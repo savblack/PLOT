@@ -38,6 +38,7 @@ const OnboardingFlow    = lazy(() => import('./pages/OnboardingFlow.jsx'));
 const NotFoundPage      = lazy(() => import('./pages/NotFoundPage.jsx'));
 const TermsPage         = lazy(() => import('./pages/TermsPage.jsx'));
 const PrivacyPage       = lazy(() => import('./pages/PrivacyPage.jsx'));
+const CommunityPage     = lazy(() => import('./pages/CommunityPage.jsx'));
 const PublicProfilePage = lazy(() => import('./pages/PublicProfilePage.jsx'));
 const RootRoute         = lazy(() => import('./pages/RootRoute.jsx'));
 const DesignSystemPage  = lazy(() => import('./pages/DesignSystemPage.jsx'));
@@ -62,6 +63,7 @@ const router = createBrowserRouter([
   // Static
   { path: '/terms',          element: wrap(<TermsPage />) },
   { path: '/privacy',        element: wrap(<PrivacyPage />) },
+  { path: '/community',      element: wrap(<CommunityPage />) },
   { path: '/pricing',        element: SHOW_PRICING_PAGE ? wrap(<PlansPage />) : <Navigate to="/app" replace /> },
   { path: '/plans',          element: SHOW_PRICING_PAGE ? wrap(<PlansPage />) : <Navigate to="/app" replace /> },
 
