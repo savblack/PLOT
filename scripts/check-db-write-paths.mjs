@@ -101,17 +101,25 @@ async function query(sql) {
   // json_agg cell comes back parseable. Empty result → 'null'.
   const wrapped = `select coalesce(json_agg(t), '[]'::json) from (${sql.replace(/;\s*$/, '')}) t`;
   //
-  // DB_URL stays a psql ARGUMENT. Passing it through PG* environment variables
-  // instead would keep it out of `ps`, which is worth having, and three
-  // attempts at it broke this gate: the secret is not a shape any parser here
-  // recognised, and it cannot be read back to find out — GitHub masks it, by
-  // design. psql's own parser is authoritative and has always accepted it.
-  // Competing with it, guessing, with CI as the only feedback loop, is not a
-  // trade worth making for a local-machine hardening. Left as it was.
+  // Keep the credential out of argv when we can. Process arguments are
+  // world-readable (`ps`, /proc/*/cmdline), so a password passed this way is
+  // exposed to every other process on the machine for the life of the call —
+  // on every run, not just failures.
+  //
+  // connEnv understands the two conninfo shapes libpq documents. When it
+  // recognises the string, the parts go through the environment and argv holds
+  // only the query. When it does not, the string goes to psql exactly as it
+  // always has: psql's parser is authoritative, and a parser of mine that must
+  // be RIGHT about an unfamiliar input is a parser that can break this gate.
+  // Three attempts at a version without that fallback did break it.
+  const parsed = connEnv(DB_URL);
+  const pgEnv = parsed ? { ...process.env, ...parsed } : process.env;
+  const connArgs = parsed ? [] : [DB_URL];
+
   let out;
   try {
-    out = execFileSync('psql', ['-X', '-tAc', wrapped, DB_URL], {
-      encoding: 'utf8', maxBuffer: 32 * 1024 * 1024,
+    out = execFileSync('psql', ['-X', '-tAc', wrapped, ...connArgs], {
+      encoding: 'utf8', maxBuffer: 32 * 1024 * 1024, env: pgEnv,
     }).trim();
   } catch (err) {
     // THE bug this file was opened for. Running without psql on PATH threw an
@@ -123,7 +131,13 @@ async function query(sql) {
       console.error('and put it on PATH, e.g. PATH="/opt/homebrew/opt/postgresql@17/bin:$PATH"');
       process.exit(1);
     }
-    const redact = (t) => String(t ?? '').split(DB_URL).join('«redacted»');
+    const redact = (t) => {
+      let out = String(t ?? '');
+      for (const secret of [DB_URL, parsed?.PGPASSWORD]) {
+        if (secret) out = out.split(secret).join('«redacted»');
+      }
+      return out;
+    };
     console.error(`psql failed: ${redact(err?.stderr || err?.message)}`);
 
     // A local-socket failure means psql never saw a connection string: it took
@@ -141,6 +155,49 @@ async function query(sql) {
     process.exit(1);
   }
   return JSON.parse(out || '[]');
+}
+
+/**
+ * Split a libpq connection string into PG* environment variables, so the
+ * password never reaches argv.
+ *
+ * Handles the URI form (postgresql://user:pw@host:port/db) and the
+ * keyword/value form (host=… port=… user=… password=… dbname=…).
+ *
+ * Returns null when it does not recognise the shape. Null is NOT an error: the
+ * caller hands the string to psql instead, whose parser is authoritative. That
+ * fallback is why this can only ever improve things — it cannot break a gate
+ * that was working. Never throws, and never echoes the input, which is a
+ * credential.
+ */
+function connEnv(conn) {
+  const raw = String(conn ?? '').trim();
+
+  if (/^postgres(ql)?:\/\//i.test(raw)) {
+    let u;
+    try { u = new URL(raw); } catch { return null; }
+    if (!u.hostname) return null;
+    return {
+      PGHOST: u.hostname,
+      PGPORT: u.port || '5432',
+      PGUSER: decodeURIComponent(u.username),
+      PGPASSWORD: decodeURIComponent(u.password),
+      PGDATABASE: u.pathname.replace(/^\//, '') || 'postgres',
+    };
+  }
+
+  const kv = {};
+  for (const [, k, q, v] of raw.matchAll(/(\w+)\s*=\s*(?:'((?:[^'\\]|\\.)*)'|(\S+))/g)) {
+    kv[k.toLowerCase()] = (q ?? v ?? '').replace(/\\(.)/g, '$1');
+  }
+  if (!kv.host) return null;
+  return {
+    PGHOST: kv.host,
+    PGPORT: kv.port || '5432',
+    PGUSER: kv.user || 'postgres',
+    PGPASSWORD: kv.password || '',
+    PGDATABASE: kv.dbname || 'postgres',
+  };
 }
 
 const problems = [];
