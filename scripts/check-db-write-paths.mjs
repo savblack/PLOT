@@ -109,23 +109,37 @@ async function query(sql) {
   //
   // libpq reads PG* from the environment, so splitting the URI keeps the
   // password out of both.
-  // Accept BOTH shapes psql itself accepts. The URI form is what the dashboard
-  // hands you; the keyword/value form (host=… user=… password=…) is equally
-  // valid libpq conninfo and is what the SUPABASE_DB_URL secret actually holds
-  // in CI. Assuming a URI here broke the workflow on the first run after this
-  // was written, because psql had always taken either and never cared.
-  const pgEnv = { ...process.env, ...connEnv(DB_URL) };
+  // Keep the credential out of argv WHERE WE CAN, and never at the cost of
+  // working. connEnv understands the two documented conninfo shapes; if it does
+  // not recognise this one, psql's own parser is authoritative and gets the
+  // string directly, exactly as it did before any of this.
+  //
+  // The fallback is not hypothetical. Two CI runs were spent guessing at the
+  // format of a secret nobody can read back — masked in logs, by design. A
+  // parser that must be right about an opaque input is the wrong shape; this
+  // one only has to be right to *improve* things.
+  const parsed = connEnv(DB_URL);
+  const pgEnv = parsed ? { ...process.env, ...parsed } : process.env;
+  const connArgs = parsed ? [] : [DB_URL];
 
   let out;
   try {
-    out = execFileSync('psql', ['-X', '-tAc', wrapped], {
+    out = execFileSync('psql', ['-X', '-tAc', wrapped, ...connArgs], {
       encoding: 'utf8', maxBuffer: 32 * 1024 * 1024, env: pgEnv,
     }).trim();
   } catch (err) {
     // Belt and braces. Nothing here should contain the password any more, but
     // this is the path that leaked it once, so it gets scrubbed on the way out
     // rather than trusted.
-    const redact = (t) => String(t ?? '').split(pgEnv.PGPASSWORD).join('«redacted»');
+    const redact = (t) => {
+      let out = String(t ?? '');
+      // Scrub the whole connection string first: on the fallback path the
+      // password is not separated out, and the string itself is the secret.
+      for (const secret of [DB_URL, pgEnv.PGPASSWORD]) {
+        if (secret) out = out.split(secret).join('«redacted»');
+      }
+      return out;
+    };
     if (err?.code === 'ENOENT') {
       console.error('psql not found. Production is PG17: brew install postgresql@17');
       console.error('and put it on PATH, e.g. PATH="/opt/homebrew/opt/postgresql@17/bin:$PATH"');
@@ -141,15 +155,19 @@ async function query(sql) {
  * Split a libpq connection string into PG* environment variables.
  *
  * Handles the URI form (postgresql://user:pw@host:port/db) and the
- * keyword/value form (host=… port=… user=… password=… dbname=…). Returns an
- * object of PG* vars; throws with a message that does NOT contain the input,
- * since the input is a credential.
+ * keyword/value form (host=… port=… user=… password=… dbname=…).
+ *
+ * Returns PG* vars, or null when it does not recognise the shape. Null is not
+ * an error: the caller hands the string to psql instead, whose parser is the
+ * authoritative one. Never throws and never echoes the input, which is a
+ * credential.
  */
 function connEnv(conn) {
   const raw = String(conn).trim();
 
   if (/^postgres(ql)?:\/\//i.test(raw)) {
-    const u = new URL(raw);
+    let u;
+    try { u = new URL(raw); } catch { return null; }
     return {
       PGHOST: u.hostname,
       PGPORT: u.port || '5432',
@@ -164,9 +182,7 @@ function connEnv(conn) {
   for (const [, k, q, v] of raw.matchAll(/(\w+)\s*=\s*(?:'((?:[^'\\]|\\.)*)'|(\S+))/g)) {
     kv[k.toLowerCase()] = (q ?? v ?? '').replace(/\\(.)/g, '$1');
   }
-  if (!kv.host) {
-    throw new Error('SUPABASE_DB_URL is neither a postgres:// URI nor host=… conninfo');
-  }
+  if (!kv.host) return null;
   return {
     PGHOST: kv.host,
     PGPORT: kv.port || '5432',
