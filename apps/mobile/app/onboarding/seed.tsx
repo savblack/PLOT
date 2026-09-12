@@ -20,6 +20,7 @@ import { track, EVENTS } from '../../lib/analytics';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
+import { useOnboardingRefresh } from '../../contexts/OnboardingContext';
 import { detectRegion, detectTimezone, guessRegionFromTimezone } from '@plot/core/regions.js';
 import { updateProfile } from '@plot/core/profile.js';
 import OnboardingScaffold from '../../components/OnboardingScaffold';
@@ -58,10 +59,8 @@ export default function Seed() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { watchlist } = useAppData();
+  const refreshOnboarding = useOnboardingRefresh();
 
-  // The intro is the landing state; the poster grid is revealed by its CTA.
-  const [showPicker, setShowPicker] = useState(false);
-  const [firstName, setFirstName] = useState('');
   // Region is detected, not asked: the region step it used to come from is gone.
   const region = useRef(guessRegionFromTimezone());
   const [query,    setQuery]    = useState('');
@@ -73,25 +72,8 @@ export default function Seed() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [trendingFailed, setTrendingFailed] = useState(false);
 
-  // The greeting needs the name captured back on step 1; web still has it in
-  // component state, mobile has to read it back.
-  useEffect(() => {
-    let cancelled = false;
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (cancelled || !session?.user) return;
-      return supabase.from('profiles')
-        .select('first_name')
-        .eq('id', session.user.id)
-        .maybeSingle()
-        .then(({ data }) => {
-          if (!cancelled && data?.first_name) setFirstName(data.first_name);
-        });
-    });
-    return () => { cancelled = true; };
-  }, []);
-
-  // Refine the timezone guess with IP geolocation while the intro is up, so
-  // the completing write below has the better value. Also sets the TMDB region
+  // Refine the timezone guess with IP geolocation while the user picks titles,
+  // so the completing write below has the better value. Also sets the TMDB region
   // for this session, which the deleted region screen used to do.
   useEffect(() => {
     let cancelled = false;
@@ -189,38 +171,24 @@ export default function Seed() {
       });
     }
     setSaving(false);
+    // Await before navigating: the root layout caches onboarding_complete and
+    // only re-reads it on session changes, so without this AuthGuard still sees
+    // false and bounces straight back here. That loop was inescapable for every
+    // new account. See contexts/OnboardingContext.tsx.
+    await refreshOnboarding();
     router.replace('/(app)');
   };
 
-  const intro = ONBOARDING_FLOW.step2.intro;
-
-  // The intro reuses the scaffold's heading and body slots for the greeting and
-  // the lead, so the two states share one header, footer and progress bar.
-  if (!showPicker) {
-    return (
-      <OnboardingScaffold
-        step={2}
-        title={intro.greeting(firstName)}
-        subtitle={intro.lead}
-        onBack={() => router.back()}
-        ctaLabel={intro.ctaArrow}
-        onContinue={() => setShowPicker(true)}
-        saving={saving}
-        onSkip={() => finish(true)}
-        skipLabel={intro.toApp}
-        error={saveError}
-      >
-        <Text style={styles.pitch}>{intro.pitch}</Text>
-      </OnboardingScaffold>
-    );
-  }
-
+  // One screen, as web renders it. Mobile used to open step 2 on an intro that
+  // greeted the user and revealed the grid behind a CTA — web has never had it
+  // (see the note at apps/web/src/pages/OnboardingFlow.jsx), so it was drift,
+  // and it made a two-of-two flow feel like three screens.
   return (
     <OnboardingScaffold
       step={2}
       title={ONBOARDING_FLOW.step2.title}
       subtitle={ONBOARDING_FLOW.step2.subtitle}
-      onBack={() => setShowPicker(false)}
+      onBack={() => router.back()}
       ctaLabel={ONBOARDING_FLOW.startWatchingArrow}
       onContinue={() => finish(false)}
       saving={saving}
@@ -310,16 +278,6 @@ export default function Seed() {
 }
 
 const makeStyles = (colors: Palette) => StyleSheet.create({
-  // Sits under the scaffold's subtitle (the lead), so it reads as the third
-  // line of one centred block rather than as body copy for a picker.
-  pitch: {
-    fontFamily: fontFamily.sans,
-    fontSize: fontSize.md,
-    lineHeight: 22,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginBottom: spacing.xl,
-  },
   searchBar: {
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: colors.surface, borderRadius: radii.md,
