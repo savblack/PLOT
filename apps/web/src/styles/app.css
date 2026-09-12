@@ -23,7 +23,7 @@ svg { stroke-width: 1.5; }
 .app-header {
   position: fixed;
   top: 0;
-  left: 0;
+  left: var(--sidebar-w);
   right: 0;
   z-index: 200;
   height: calc(var(--header-h) + env(safe-area-inset-top, 0px));
@@ -145,7 +145,7 @@ svg { stroke-width: 1.5; }
 .app-main {
   position: fixed;
   top: calc(var(--header-h) + env(safe-area-inset-top, 0px));
-  left: 0;
+  left: var(--sidebar-w);
   right: 0;
   bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px));
   overflow-y: auto;
@@ -371,6 +371,208 @@ svg { stroke-width: 1.5; }
   font-size: 0.95rem;
   font-weight: 600;
   letter-spacing: -0.01em;
+}
+
+/* ── Reading column ───────────────────────────── */
+/* --content-max is the focused measure for settings, forms and long prose. It
+   has been defined in tokens.css and documented on the Design System page for
+   a while without being applied to anything; this is the rule that spends it.
+   No breakpoint needed — below 680px the cap is wider than the viewport, so
+   narrow layouts are untouched.
+
+   Most in-shell reading views already cap themselves (Import at 480,
+   Notifications and Requests at 560, the legal pages at 680). Settings was the
+   one running edge to edge. */
+.view-reading {
+  max-width: var(--content-max);
+  margin-inline: auto;
+}
+
+/* ═══════════════════════════════════════
+   DESKTOP SIDEBAR (>= 1024px)
+   Replaces the bottom tab bar and the nav drawer, whose contents duplicated
+   each other except for Settings. Built from APP_NAV_ITEMS so web and mobile
+   keep reading one nav list. The markup renders at every width and is revealed
+   here, so there is no JS breakpoint to fall out of step with this file.
+═══════════════════════════════════════ */
+
+.app-sidebar { display: none; }
+.app-desktop-title { display: none; }
+
+.header-bell-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.header-bell-icon svg {
+  transform: translateY(8%) scale(0.92);
+}
+
+/* --sidebar-w flips to its real width at this breakpoint in tokens.css, beside
+   the token itself: app.css is injected before tokens.css, so a :root block
+   here would lose the cascade to the 0 default no matter the media query. */
+@media (min-width: 1024px) {
+  .app-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 210;
+    width: var(--sidebar-w);
+    display: flex;
+    flex-direction: column;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  /* Main fills the height the tab bar used to occupy. */
+  .app-main {
+    bottom: 0;
+  }
+
+  /* One nav, not three: the tab bar, the drawer and its overlay all stand
+     down, and so do the header controls the sidebar now carries. */
+  .tab-bar,
+  .nav-drawer,
+  .nav-drawer-overlay,
+  .header-start,
+  .header-end,
+  .app-header-logo,
+  .app-page-title {
+    display: none;
+  }
+
+  /* What is left of the header is the page title, left-aligned. */
+  .app-header {
+    justify-content: flex-start;
+    padding-left: 1.5rem;
+  }
+  .app-desktop-title {
+    display: block;
+    font-family: var(--font-serif);
+    font-size: 1.55rem;
+    font-weight: 400;
+    letter-spacing: -0.05em;
+    color: var(--text-primary);
+    line-height: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    user-select: none;
+  }
+
+  .scroll-top-btn {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 1rem);
+  }
+}
+
+.app-sidebar-brand {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  height: var(--header-h);
+  padding: 0 1.25rem;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  cursor: pointer;
+}
+.app-sidebar-brand-text {
+  font-family: var(--font-serif);
+  font-size: 1.7rem;
+  font-weight: 400;
+  letter-spacing: -0.05em;
+  line-height: 1;
+  color: var(--text-primary);
+  user-select: none;
+}
+
+.app-sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  padding: 0.75rem 0;
+  overflow-y: auto;
+}
+
+.app-sidebar-foot {
+  margin-top: auto;
+  border-top: 1px solid var(--border);
+  padding: 0.75rem 0;
+}
+
+.app-sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  width: 100%;
+  min-height: 44px;
+  padding: 0.72rem 1.25rem;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  color: var(--text-secondary);
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.app-sidebar-item:hover {
+  color: var(--accent);
+}
+.app-sidebar-item.active {
+  color: var(--accent);
+}
+.app-sidebar-item svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  flex-shrink: 0;
+}
+
+.app-sidebar-label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-sidebar-badge {
+  margin-left: auto;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.app-sidebar-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--surface-raised);
+  border: 1.5px solid var(--text-muted);
+  flex-shrink: 0;
+}
+.app-sidebar-avatar-initial {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-serif);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+.app-sidebar-item.active .app-sidebar-avatar {
+  border-color: var(--accent);
 }
 
 /* Sign out — a terminal action, set apart from navigation items */
@@ -687,7 +889,7 @@ svg { stroke-width: 1.5; }
 .media-card {
   position: relative;
   flex-shrink: 0;
-  width: 120px;
+  width: var(--poster-w);
   transition: transform 0.2s var(--ease);
 }
 .media-card:hover  { transform: scale(0.97); }
@@ -2495,6 +2697,55 @@ svg { stroke-width: 1.5; }
   to   { transform: translateX(100%); }
 }
 
+/* ═══════════════════════════════════════
+   DOCKED DETAIL PANEL (>= 1280px)
+   Below this width .panel is a right drawer over a blurred scrim, so opening a
+   title hides whatever you were browsing. Wide enough, there is room for both:
+   the scrim goes, the content column gives up the panel's width, and the rail
+   you were scrolling stays where you left it. Same component, same width.
+
+   1280 rather than 1024 because the content column has to survive losing the
+   panel's 560px on top of the sidebar's 220px. At 1024 that leaves 244px,
+   which is not a view; at 1280 it leaves 500px (about three poster columns,
+   enough to keep your place), and it grows from there — 660px at 1440. Raise
+   this breakpoint if 500px turns out to be too tight in practice.
+═══════════════════════════════════════ */
+
+@media (min-width: 1280px) {
+  .panel-overlay {
+    display: none;
+  }
+
+  /* Beside the content now rather than over it, so a hairline does the
+     separating and the overlay shadow is no longer carrying legibility. */
+  .panel {
+    border-left: 1px solid var(--border);
+    box-shadow: none;
+  }
+
+  .app-shell.panel-docked .app-header,
+  .app-shell.panel-docked .app-main {
+    right: var(--panel-w);
+  }
+
+  /* Back-to-top would otherwise sit underneath the docked panel. */
+  .app-shell.panel-docked .scroll-top-btn {
+    right: calc(var(--panel-w) + 1rem);
+  }
+
+  /* Content and the arriving/leaving panel travel together. The global
+     prefers-reduced-motion rule already flattens this. */
+  .app-header,
+  .app-main {
+    transition: right 0.3s var(--ease);
+  }
+  /* Restated in full: the shorthand would otherwise drop the button's own
+     fade/slide-in, which is what makes it appear at all. */
+  .scroll-top-btn {
+    transition: opacity 0.18s ease, transform 0.18s ease, right 0.3s var(--ease);
+  }
+}
+
 .panel-header-img {
   width: 100%;
   aspect-ratio: 16/9;
@@ -3879,11 +4130,11 @@ a.provider-chip--link:hover {
 }
 .epg-rail { display: flex; gap: 0.8rem; padding: 0 1rem 0.25rem; }
 .epg-card {
-  flex: 0 0 auto; width: 118px; padding: 0; border: none; background: none;
+  flex: 0 0 auto; width: var(--poster-w); padding: 0; border: none; background: none;
   text-align: left; cursor: pointer; color: inherit; font: inherit;
 }
 .epg-card-poster {
-  position: relative; width: 118px; aspect-ratio: 2 / 3; border-radius: var(--radius-md);
+  position: relative; width: var(--poster-w); aspect-ratio: 2 / 3; border-radius: var(--radius-md);
   overflow: hidden; background: var(--surface-raised); margin-bottom: 0.5rem;
 }
 .epg-card-poster img { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -3905,9 +4156,6 @@ a.provider-chip--link:hover {
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .epg-card-time { font-weight: 700; color: var(--accent); }
-@media (min-width: 900px) {
-  .epg-card, .epg-card-poster { width: 140px; }
-}
 
 /* ── Channel filter bar ── */
 .epg-filter-bar {
@@ -5001,7 +5249,136 @@ a.provider-chip--link:hover {
 }
 
 .discover-plat-grid > .media-card {
-  flex: 0 0 120px;
+  flex: 0 0 var(--poster-w);
+}
+
+/* ── Rail chevron controls ───────────────────── */
+/* Off unless the wide-screen block above turns them on. */
+.rail-frame {
+  position: relative;
+}
+
+.rail-nav {
+  display: none;
+  position: absolute;
+  /* Centre on the poster rather than the card: the title and meta sit below
+     it, and a control floating over the text reads as an error. A 2/3 poster
+     is 1.5x its width tall, so half of that is 0.75x --poster-w. */
+  top: calc(var(--poster-w) * 0.75);
+  transform: translateY(-50%);
+  z-index: 2;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text-primary);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  /* Floats over poster artwork, which is the sanctioned use of the overlay
+     shadow — a hairline alone cannot separate it from an arbitrary image. */
+  box-shadow: var(--shadow-overlay);
+}
+.rail-nav svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+}
+.rail-nav--prev { left: 0.35rem; }
+.rail-nav--next { right: 0.35rem; }
+
+.rail-frame:hover .rail-nav,
+.rail-nav:focus-visible {
+  opacity: 1;
+}
+/* Invisible controls must not be clickable; focus still reveals them. */
+.rail-nav:not(:focus-visible) {
+  pointer-events: none;
+}
+.rail-frame:hover .rail-nav {
+  pointer-events: auto;
+}
+.rail-nav:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.rail-nav:hover {
+  background: var(--surface-raised);
+}
+
+/* The binge rail is landscape cards, not posters — centre on the frame. The
+   controls are siblings of the scroll container inside .rail-frame. */
+.discover-binge-rail ~ .rail-nav {
+  top: 50%;
+}
+
+/* ═══════════════════════════════════════
+   WIDE-SCREEN RAILS AND GRIDS (>= 1024px)
+   Placed after every rail rule above on purpose: these override
+   scrollbar-width / ::-webkit-scrollbar declarations of equal specificity, so
+   source order is what decides them.
+═══════════════════════════════════════ */
+
+@media (min-width: 1024px) {
+  /* A platform's titles are a set to browse, not a ranked stream. At this
+     width they fit as a grid, so the whole set is visible instead of four
+     cards with the rest parked off-screen to the right. */
+  .discover-plat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(var(--poster-w), 1fr));
+    overflow-x: visible;
+  }
+  /* Let the track size the card rather than the fixed poster width. */
+  .discover-plat-grid > .media-card {
+    flex: none;
+    width: auto;
+  }
+
+  /* Chevron controls. Hidden until the rail is hovered or a control takes
+     keyboard focus, so a resting page stays quiet. Only on pointer devices:
+     touch already has the swipe, and a floating button would just cover a
+     card. ScrollRail unmounts each one at its end of the travel. */
+  .rail-nav {
+    display: flex;
+  }
+
+  /* Rails that stay rails need a pointer affordance. Drag-to-scroll is a touch
+     gesture, and these hide their scrollbar, so with a mouse there is nothing
+     to say the row continues. Give the thumb back at hairline weight, always
+     present rather than on hover, so it costs no layout shift. */
+  .rail-scroll,
+  .discover-binge-rail,
+  .panel-cast-rail,
+  .panel-similar-rail {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
+  }
+  .rail-scroll::-webkit-scrollbar,
+  .discover-binge-rail::-webkit-scrollbar,
+  .panel-cast-rail::-webkit-scrollbar,
+  .panel-similar-rail::-webkit-scrollbar {
+    display: block;
+    height: 8px;
+  }
+  .rail-scroll::-webkit-scrollbar-track,
+  .discover-binge-rail::-webkit-scrollbar-track,
+  .panel-cast-rail::-webkit-scrollbar-track,
+  .panel-similar-rail::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .rail-scroll::-webkit-scrollbar-thumb,
+  .discover-binge-rail::-webkit-scrollbar-thumb,
+  .panel-cast-rail::-webkit-scrollbar-thumb,
+  .panel-similar-rail::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: var(--radius-pill);
+  }
 }
 
 /* ═══════════════════════════════════════

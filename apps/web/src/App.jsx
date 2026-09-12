@@ -42,8 +42,11 @@ function TimezoneBanner({ deviceTz, onUpdate, onDismiss }) {
     <div style={{
       position: 'fixed',
       bottom: 'calc(var(--tab-bar-height, 56px) + 0.75rem)',
-      left: '0.75rem',
+      // --sidebar-w is 0 below the desktop breakpoint, so this clears the nav
+      // rail when there is one and changes nothing when there isn't.
+      left: 'calc(var(--sidebar-w, 0px) + 0.75rem)',
       right: '0.75rem',
+      maxWidth: '460px',
       background: 'var(--surface-raised)',
       border: '1px solid var(--border)',
       borderRadius: 'var(--radius-lg)',
@@ -80,7 +83,9 @@ function SaveToast({ toast, onClose }) {
       style={{
         position: 'fixed',
         top: 'calc(env(safe-area-inset-top, 0px) + 0.75rem)',
-        left: '50%',
+        // Centred on the content area, not the viewport, so the desktop nav
+        // rail doesn't push it visibly off-centre.
+        left: 'calc(50% + var(--sidebar-w, 0px) / 2)',
         transform: 'translateX(-50%)',
         maxWidth: 'min(92vw, 420px)',
         background: 'var(--surface-raised)',
@@ -268,7 +273,15 @@ export default function App() {
 
   return (
     <AppContext.Provider value={ctx}>
-      <AppShell currentView={currentView} navigateTo={navigateTo} profile={profile} user={user}>
+      {/* panelOpen drops on the first frame of the close animation so the
+          content column and the outgoing panel travel together. */}
+      <AppShell
+        currentView={currentView}
+        navigateTo={navigateTo}
+        profile={profile}
+        user={user}
+        panelOpen={!!panelItem && !panelClosing}
+      >
         <Outlet />
       </AppShell>
 

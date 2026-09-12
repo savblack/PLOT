@@ -1619,7 +1619,7 @@ export default function SettingsView() {
   };
 
   return (
-    <div style={{ paddingBottom: '2rem' }}>
+    <div className="view-reading" style={{ paddingBottom: '2rem' }}>
       {actionError && (
         <div
           role="alert"
