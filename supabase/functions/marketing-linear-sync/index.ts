@@ -103,8 +103,18 @@ const reply = async (issueId: string, body: string): Promise<void> => {
   }
 };
 
-const dispatchWorkflow = async (workflow: string): Promise<boolean> => {
-  if (!GH_TOKEN) return false;
+/**
+ * Kick a workflow, and say why if it did not go.
+ *
+ * Returns the reason rather than a bare boolean because the bare boolean lied:
+ * every failure collapsed to `false`, and the reply then asserted the one cause
+ * it had not checked — "GH_DISPATCH_TOKEN is not set" — for a token that was
+ * present and simply being refused. An operator acting on that message would go
+ * and set a secret that was already there. admin-review's copy of this has
+ * always returned a reason; this one should never have dropped it.
+ */
+const dispatchWorkflow = async (workflow: string): Promise<{ ok: boolean; reason?: string }> => {
+  if (!GH_TOKEN) return { ok: false, reason: 'GH_DISPATCH_TOKEN is not set' };
   try {
     const res = await fetch(`https://api.github.com/repos/${GH_REPO}/actions/workflows/${workflow}/dispatches`, {
       method: 'POST',
@@ -116,9 +126,14 @@ const dispatchWorkflow = async (workflow: string): Promise<boolean> => {
       },
       body: JSON.stringify({ ref: 'main' }),
     });
-    return res.ok;
-  } catch {
-    return false;
+    if (res.ok) return { ok: true };
+    const body = await res.text().catch(() => '');
+    const detail = body.slice(0, 160).replace(/\s+/g, ' ').trim();
+    console.error(`Workflow dispatch failed for ${workflow}: ${res.status} ${body}`);
+    return { ok: false, reason: `GitHub refused the dispatch (${res.status}${detail ? `: ${detail}` : ''})` };
+  } catch (err) {
+    console.error(`Workflow dispatch errored for ${workflow}:`, err);
+    return { ok: false, reason: `the dispatch call errored (${String((err as Error).message).slice(0, 120)})` };
   }
 };
 
@@ -250,10 +265,10 @@ const runCommand = async (
         .update({ status: 'approved', scheduled_for: now(), updated_at: now() }).eq('id', id);
       await requeuePubs(supabase, id);
       const kicked = await dispatchWorkflow('marketing-publish.yml');
-      await logEvent(supabase, { postId: id, action: 'publish_now', after: { triggered: kicked } as Json });
-      return kicked
+      await logEvent(supabase, { postId: id, action: 'publish_now', after: { triggered: kicked.ok, reason: kicked.reason ?? null } as Json });
+      return kicked.ok
         ? 'Publishing now — sending to X / Instagram / Threads. It should be live in a few minutes.'
-        : 'Approved and brought forward. The instant trigger did not fire, so it goes out on the next scheduled publish run.';
+        : `Approved and brought forward. The instant trigger did not fire (${kicked.reason}), so it goes out on the next scheduled publish run.`;
     }
 
     case 'retry': {
@@ -268,10 +283,10 @@ const runCommand = async (
       await supabase.from('marketing_posts')
         .update({ status: 'planned', copy: null, updated_at: now() }).eq('id', id);
       const kicked = await dispatchWorkflow('marketing-weekly-batch.yml');
-      await logEvent(supabase, { postId: id, action: 'regenerate', after: { triggered: kicked } as Json });
-      return kicked
+      await logEvent(supabase, { postId: id, action: 'regenerate', after: { triggered: kicked.ok, reason: kicked.reason ?? null } as Json });
+      return kicked.ok
         ? 'Regenerating — the copy worker will rewrite this post. Give it a few minutes.'
-        : 'Marked for regeneration — it rebuilds on the next weekly batch.';
+        : `Marked for regeneration — it rebuilds on the next weekly batch (instant trigger did not fire: ${kicked.reason}).`;
     }
 
     default:
@@ -295,10 +310,10 @@ const runWeekCommand = async (
       // rather than racing it, and the pipeline only fills posts that still
       // need copy.
       const kicked = await dispatchWorkflow('marketing-weekly-batch.yml');
-      await logEvent(supabase, { action: 'generate', after: { triggered: kicked } as Json });
-      return kicked
+      await logEvent(supabase, { action: 'generate', after: { triggered: kicked.ok, reason: kicked.reason ?? null } as Json });
+      return kicked.ok
         ? 'Building the week now. Planning, copy and rendering take a few minutes; the cards appear here within five minutes of that finishing.'
-        : 'Could not start the run — GH_DISPATCH_TOKEN is not set, so the batch only runs on its Sunday schedule.';
+        : `Could not start the run — ${kicked.reason}. The batch still runs on its Sunday schedule.`;
     }
 
     case 'pause':
