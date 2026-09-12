@@ -89,7 +89,7 @@ function SaveToast({ toast, onClose }) {
         transform: 'translateX(-50%)',
         maxWidth: 'min(92vw, 420px)',
         background: 'var(--surface-raised)',
-        border: `1px solid ${isError ? 'rgba(248,113,113,0.4)' : 'rgba(74,222,128,0.35)'}`,
+        border: `1px solid ${isError ? 'var(--danger-border)' : 'var(--success-border)'}`,
         borderRadius: 'var(--radius-lg)',
         padding: '0.7rem 1rem',
         display: 'flex',
@@ -100,7 +100,7 @@ function SaveToast({ toast, onClose }) {
         cursor: 'pointer',
       }}
     >
-      <span aria-hidden="true" style={{ color: isError ? '#f87171' : '#4ade80', fontSize: '1rem', flexShrink: 0 }}>
+      <span aria-hidden="true" style={{ color: isError ? 'var(--danger)' : 'var(--success)', fontSize: '1rem', flexShrink: 0 }}>
         {isError ? '✕' : '✓'}
       </span>
       <span style={{ fontSize: '0.85rem', color: 'var(--text-primary)', lineHeight: 1.4 }}>
