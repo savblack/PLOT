@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildTitle, buildDescription } from '../../supabase/functions/_shared/linearIssue.js';
+import { buildTitle, buildDescription, dueDateFor } from '../../supabase/functions/_shared/linearIssue.js';
 
 const SUPA = 'https://example.supabase.co';
 
@@ -125,4 +125,27 @@ test('the command reference is always appended', () => {
 
 test('rendering is pure — same row, same markdown', () => {
   assert.equal(buildDescription(basePost, SUPA), buildDescription(basePost, SUPA));
+});
+
+test('the due date is the AEST day the post runs, not the UTC slice', () => {
+  // The planner schedules at 23:30 UTC, which is already the next morning in
+  // Sydney. Slicing the UTC string gave the day before the one the title names —
+  // on every post, until PLO-245 showed it.
+  const post = { ...basePost, scheduled_for: '2026-09-12T23:30:00+00:00' };
+  assert.equal(dueDateFor(post), '2026-09-13');
+  assert.equal(String(post.scheduled_for).slice(0, 10), '2026-09-12'); // the old, wrong value
+  assert.match(buildTitle(post), /^Sun, 13 Sept/);                     // and what it disagreed with
+});
+
+test('the due date agrees with the title for any scheduling convention', () => {
+  for (const iso of ['2026-09-12T23:30:00+00:00', '2026-09-12T12:00:00.000Z', '2026-09-12T00:30:00+00:00']) {
+    const post = { ...basePost, scheduled_for: iso };
+    const dayFromTitle = buildTitle(post).match(/^\w+, (\d+) (\w+)/);
+    assert.equal(Number(dueDateFor(post).slice(8, 10)), Number(dayFromTitle[1]), iso);
+  }
+});
+
+test('a post with no copy says so instead of rendering an empty shell', () => {
+  const d = buildDescription({ ...basePost, copy: null, media: [] }, SUPA);
+  assert.match(d, /\*No copy written yet\.\*/);
 });

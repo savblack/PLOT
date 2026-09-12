@@ -21,6 +21,18 @@ const mediaUrl = (supabaseUrl, path) =>
 const aestDate = (iso, opts) =>
   new Date(iso).toLocaleDateString('en-AU', { timeZone: 'Australia/Sydney', ...opts });
 
+/**
+ * The issue's due date, as the AEST calendar day the post actually runs on.
+ *
+ * NOT `scheduled_for.slice(0, 10)`. The planner schedules at 23:30 UTC, which is
+ * already the next morning in Sydney, so slicing the UTC string gives the day
+ * before the one the title and body both name — every post, not an edge case.
+ * en-CA is the terse way to get YYYY-MM-DD out of toLocaleDateString, the same
+ * trick the web desk uses for its day keys.
+ */
+export const dueDateFor = (post) =>
+  new Date(post.scheduled_for).toLocaleDateString('en-CA', { timeZone: 'Australia/Sydney' });
+
 const fence = (label, text) => (text ? `**${label}**\n\n\`\`\`\n${text}\n\`\`\`\n` : '');
 
 /** The issue title: enough to recognise the post in a list, nothing more. */
@@ -61,6 +73,12 @@ export const buildDescription = (post, supabaseUrl) => {
   }
 
   parts.push('---', '');
+  // A post can reach here with no copy at all — a row vetoed before the worker
+  // ran, say. Say so, rather than rendering an issue that looks like the copy
+  // went missing.
+  if (!copy.x && !copy.instagram && !copy.threads && !copy.page_title) {
+    parts.push('*No copy written yet.*', '');
+  }
   if (copy.x) parts.push(fence(`X · ${copy.x.length}/280`, copy.x));
   if (copy.instagram) parts.push(fence('Instagram', copy.instagram));
   if (copy.hashtags?.length) parts.push(`*${copy.hashtags.map((h) => `#${h}`).join(' ')}*`, '');
