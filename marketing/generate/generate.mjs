@@ -1,8 +1,14 @@
 // Render step (weekly batch): for each post whose copy is ready, render media
 // (Playwright), upload to storage, create publication rows, and move it to
-// status 'needs_review' — onto the admin review desk (admin.theplot.tv). Copy is
-// written upstream by the AI copy worker (see marketing/copy/), so this step is
-// API-key-free. Approved posts are sent to Buffer by the daily push.
+// status 'needs_review' — onto the review surfaces. Copy is written upstream by
+// the AI copy worker (see marketing/copy/), so this step is API-key-free.
+// Approved posts are sent to Buffer by the daily push.
+//
+// Posts reaching 'needs_review' are picked up within five minutes by the
+// marketing-linear-mirror Edge Function, which opens the Linear issue the week
+// is reviewed on. That is a scheduled sweep rather than anything this script
+// calls, so the Linear credential lives only in Supabase and a Linear outage
+// cannot fail a render run.
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -157,6 +163,7 @@ const notifyReview = async (count, sheetUrl) => {
     ${sheetUrl ? `<p style="margin:20px 0 6px;"><a href="${sheetUrl}" style="background:#E05578;color:#fff;text-decoration:none;padding:11px 24px;border-radius:9999px;font-weight:600;">📄 Read the full week</a></p>
     <p style="font-size:.83rem;line-height:1.5;color:#666;margin:0 0 18px;">Every post's copy + cards and the newsletter on one page (sign in with your admin password if asked).</p>` : ''}
     <p style="font-size:.95rem;line-height:1.6;margin:0;">To edit or approve:</p>
+    <p style="font-size:.95rem;line-height:1.6;margin:4px 0 0;">• In Linear: the <strong>Content Automation</strong> project, within five minutes. Comment <code>/approve</code>, or <code>/copy</code> with the lines you want changed.</p>
     <p style="font-size:.95rem;line-height:1.6;margin:4px 0 0;">• In Claude: run <code>/marketing-week</code> — preview and edit by chatting.</p>
     <p style="font-size:.95rem;line-height:1.6;margin:4px 0 0;">• On the web: <a href="${REVIEW_URL}">the review desk</a>.</p>
   </div>`;

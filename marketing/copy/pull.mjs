@@ -57,6 +57,12 @@ const main = async () => {
       // save.mjs needs this to validate a guide's page_body against the exact
       // paragraph count (n_titles + 2) — the brief already numbers this same list.
       ...(post.post_type === 'guide' ? { n_titles: (post.tmdb_refs || []).length } : {}),
+      // save.mjs needs these to reject a relative day the schedule contradicts
+      // ("this Friday" on a T-14 countdown). Only present when the post has a
+      // horizon at all — a watch_tonight has none, and legitimately says "tonight".
+      ...(typeof post.payload?.days_until === 'number'
+        ? { days_until: post.payload.days_until, when_label: post.payload.when_label ?? null }
+        : {}),
       brief: `marketing/copy/jobs/${post.id}.brief.md`,
       output: `marketing/copy/jobs/${post.id}.copy.json`,
     });

@@ -35,6 +35,10 @@ function jsonObject(value: Json | null | undefined): Record<string, Json | undef
   return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
 }
 import { serviceKey } from '../_shared/serviceKey.ts';
+// The "why", the platform fan-out and the article link are shared with the
+// Linear mirror (marketing/lib/linear.mjs) so both review surfaces describe a
+// post in the same words.
+import { reason, platformsFor, articleLink } from '../_shared/postSummary.js';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_KEY = serviceKey();
@@ -94,7 +98,6 @@ async function noteLoginFail(supabase: any, ip: string): Promise<void> {
 async function clearLoginFails(supabase: any, ip: string): Promise<void> {
   await supabase.from('auth_fail_attempts').delete().eq('scope', LOGIN_SCOPE).eq('ip', ip);
 }
-const SITE_URL = 'https://theplot.tv';
 
 // The week in progress (everything still decidable / editable), oldest first.
 // 'planned' is included so a post being regenerated stays visible as "Queued".
@@ -155,43 +158,7 @@ const TYPE_ICON: Record<string, string> = {
 const typeIcon = (postType: string) =>
   `<svg viewBox="0 0 24 24" fill="none">${TYPE_ICON[postType] || TYPE_ICON.upcoming}</svg>`;
 
-// Decode topic_key + payload + refs into a one-line human reason this post exists.
-const reason = (p: Row): string => {
-  const title = p.tmdb_refs?.[0]?.title || p.payload?.title || p.payload?.topic?.title || '';
-  switch (p.post_type) {
-    case 'upcoming': return 'Monday slate — the week’s most-anticipated titles';
-    case 'trending': return 'Friday chart — this week’s trending top 10';
-    case 'watch_tonight': return title ? `Trending & streamable now: ${title}` : 'What to watch tonight';
-    case 'hidden_gem': return title ? `Highly-rated, lesser-seen: ${title}` : 'Hidden gem of the week';
-    case 'on_this_day': return title ? `Anniversary: ${title}` : 'On this day in film/TV';
-    case 'now_streaming': return title ? `Hits streaming today: ${title}` : 'New on streaming today';
-    case 'countdown': {
-      const m = String(p.topic_key || '').match(/:t(\d+):/);
-      const n = m ? m[1] : (p.payload?.days ?? '');
-      return title ? `T-${n} countdown to ${title}` : `Countdown (T-${n})`;
-    }
-    case 'trailer': return title ? `New trailer dropped: ${title}` : 'New trailer';
-    case 'question': return title ? `Audience question about: ${title}` : 'Audience question';
-    case 'guide': return p.copy?.page_title ? `Long-form guide: ${p.copy.page_title}` : 'Long-form SEO guide';
-    default: return p.post_type.replace(/_/g, ' ');
-  }
-};
-
-const articleLink = (p: Row): string | null => {
-  if (p.post_type === 'trending') return `${SITE_URL}/whats-on/chart`;
-  return p.slug ? `${SITE_URL}/whats-on/${p.slug}` : null;
-};
 const articleLinkLabel = (p: Row): string => (p.post_type === 'trending' ? 'chart ↗' : 'article ↗');
-
-// Which platforms this post targets (from its publication rows, else the default
-// fan-out — conversations are text-only on X + Threads; guides are web-only
-// articles and never get publication rows at all).
-const platformsFor = (p: Row): string[] => {
-  const pubs = (p.marketing_post_publications || []) as Row[];
-  if (pubs.length) return [...new Set(pubs.map((x) => x.platform))];
-  if (p.post_type === 'guide') return [];
-  return p.post_type === 'question' ? ['x', 'threads'] : ['x', 'instagram', 'threads'];
-};
 
 const GH_REPO = Deno.env.get('GH_REPO') ?? 'savblack/PLOT';
 const GH_TOKEN = Deno.env.get('GH_DISPATCH_TOKEN') ?? '';
@@ -1094,7 +1061,7 @@ Deno.serve(async (req) => {
       const triggered = await dispatchWorkflow('marketing-publish.yml');
       flash = triggered.ok
         ? 'Saved edits and publishing now — sending approved copy to X / Instagram / Threads; it’ll show as published in a few minutes.'
-        : `Approved and queued — the 5-minute publish runner will pick it up automatically. Instant trigger did not fire${triggered.reason ? ` (${triggered.reason})` : ''}.`;
+        : `Approved and queued — the daily publish run will pick it up automatically. Instant trigger did not fire${triggered.reason ? ` (${triggered.reason})` : ''}.`;
       await logEvent(supabase, { postId: id, action, before: { copy: before }, after: { copy: merged, triggered: triggered.ok } });
     } else if (id && action === 'retry') {
       await supabase.from('marketing_post_publications')

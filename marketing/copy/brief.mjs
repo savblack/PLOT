@@ -183,6 +183,7 @@ Write your answer to: \`marketing/copy/jobs/${outFile}\`
 ${brief}
 
 ## Social facts (for x / instagram / threads: state ONLY what is here — never add dates, cast, or platforms not present)
+${post.payload?.days_until != null ? `\n**This is ${post.payload.days_until} day(s) away${post.payload.when_label ? ` — ${post.payload.when_label}` : ''}.** Name that date in full. Do NOT write a relative day ("this Friday", "next week", "tomorrow"): at this distance it points at the wrong day and the validator rejects it.\n` : ''}
 \`\`\`json
 ${JSON.stringify(post.payload, null, 2)}
 \`\`\`
