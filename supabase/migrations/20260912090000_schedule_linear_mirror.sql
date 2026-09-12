@@ -19,7 +19,11 @@
 -- The sweep is idempotent and cheap when there is nothing to do: three indexed
 -- reads and, on a quiet tick, no Linear calls at all.
 
-create extension if not exists pg_cron with schema extensions;
+-- No `with schema` on pg_cron: its control file pins schema = 'cron' and sets
+-- relocatable = false, so naming a schema aborts with "must be installed in
+-- schema cron". pg_net IS relocatable, and `extensions` is where the webhook
+-- migration already put it.
+create extension if not exists pg_cron;
 create extension if not exists pg_net with schema extensions;
 
 -- Same guard as the webhook migration: fail at deploy time rather than
