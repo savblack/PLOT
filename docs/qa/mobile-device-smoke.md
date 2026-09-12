@@ -183,6 +183,66 @@ user.
 - [ ] Scroll to the bottom of a long list: content clears the tab bar rather
       than sitting behind it (`TAB_BAR_CLEARANCE`).
 
+## Run log
+
+Append a line per real run. An unrecorded run is indistinguishable from no run,
+which is how the repo ended up asserting things about an app nobody had opened.
+
+### 2026-09-11/12 — the first ever run
+
+iPhone, EAS `development` build, Metro pointed at **Staging**
+(`uzrhfivnhdcfieuaxzip`). Passed: 0, 0a, 1, 3, 4, 5, 7.
+
+Two real bugs, neither visible to `tsc` or ESLint:
+
+- **The app could not be built.** react-native had drifted a minor above what
+  Expo SDK 57 supports; nine packages were off. Fixed and now guarded by
+  `npm run mobile:deps`.
+- **The EPG was misaligned by ~7 rows.** The Guide's ruler ScrollView had a
+  height but no pinned `flexGrow`, so it grew into the column's spare space and
+  pushed the programme grid 355pt below the channel sidebar. Found by measuring
+  with `onLayout`, not by reading the code — the stylesheet looks correct.
+
+**Still outstanding:**
+
+- **Phase 2 beyond session persistence.** Signing out, signing up fresh and
+  completing onboarding has never been done on mobile. Session persistence
+  across a force-quit is confirmed; the fresh-account path is not. This is the
+  path every launch user takes and it writes in a loop in `onboarding/seed.tsx`.
+- **Phase 6 deep links**, both warm and cold start.
+
+**Which project a build talks to** (fixed 2026-09-12; it used to be Production
+for all three):
+
+| EAS environment | Supabase project |
+| --- | --- |
+| `development` | Staging (`uzrhfivnhdcfieuaxzip`) |
+| `preview` | Staging (`uzrhfivnhdcfieuaxzip`) |
+| `production` | Production (`mkegtssedjyqldysvzga`) |
+
+This mattered because a standalone `preview` build, or a dev client falling back
+to its embedded bundle, would otherwise have been writing to the live database.
+It was masked during the first run only because the dev client takes its config
+from the local `apps/mobile/.env`, which is Staging.
+
+**The trap, if you ever change these again:** `EXPO_PUBLIC_SUPABASE_URL`,
+`..._ANON_KEY` and `..._TMDB_PROXY_URL` were each a *single* EAS variable linked
+to all three environments, so "update the development one" would have repointed
+**production** at Staging as well. They are now split — one variable scoped to
+`production`, a second scoped to `development, preview`. Check
+`eas env:list <env> --format long` and read the `Environments` line before
+editing any of them.
+
+Staging's key is a `sb_publishable_*` key (46 chars) while production still uses
+the legacy JWT `eyJhbG...` anon key (208 chars). Both are correct; the formats
+differ because the projects were created at different times.
+
+Still not repointed: `EXPO_PUBLIC_POSTHOG_PROJECT_TOKEN` and
+`EXPO_PUBLIC_TURNSTILE_SITE_KEY` carry production values in `development` and
+`preview`. Those are already per-environment variables, so they are safe to
+change; whether test builds should fire into the production PostHog project is a
+separate decision from database safety.
+
 ## When you are done
 
 Anything broken that is not already in `docs/agents/web-mobile-parity.md` gets
