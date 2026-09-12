@@ -778,7 +778,7 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
                       ))}
                   </div>
                   {Array.from({ length: 10 }, (_, i) => i + 1).filter(r => r !== rankConflict.rank && !topItems.find(t => t.rank === r)).length === 0 && (
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>No open spots — every other rank is taken.</div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>No open spots. Every other rank is taken.</div>
                   )}
                   <button onClick={() => setPickingMoveTo(false)} style={pillButtonStyle('muted')}>
                     Back

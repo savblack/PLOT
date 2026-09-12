@@ -24,8 +24,10 @@ export default function NotificationsView() {
 
   const go = (n) => {
     if (n.type === 'follow_request') navigate('/requests');
-    else if (n.type === 'post_like' || n.type === 'post_comment' || n.type === 'comment_like') navigate('/feed');
-    else navigate(`/u/${n.actor_username}`);
+    // The social feed was dropped in favour of profiles (#499), so post
+    // activity opens the actor rather than the dead /feed route. Same
+    // resolution as mobile's notifications screen.
+    else if (n.actor_username) navigate(`/u/${n.actor_username}`);
   };
 
   return (

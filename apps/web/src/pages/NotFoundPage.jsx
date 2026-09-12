@@ -11,7 +11,7 @@ export default function NotFoundPage() {
       primaryLabel="Go home"
       primaryAction={() => navigate('/')}
       ghostLabel="Search titles"
-      ghostAction={() => navigate('/app/home')}
+      ghostAction={() => navigate('/search')}
     />
   );
 }

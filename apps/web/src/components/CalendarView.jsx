@@ -123,7 +123,7 @@ function EventRowList({ events, openPanel }) {
               <span>{ev.label}</span>
             )}
             {item?.episode?.name && (
-              <span> — {item.episode.name}</span>
+              <span> · {item.episode.name}</span>
             )}
           </div>
         </div>
