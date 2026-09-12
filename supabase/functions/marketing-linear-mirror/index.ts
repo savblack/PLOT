@@ -492,7 +492,8 @@ const reconcileStates = async (supabase: Db, ctx: Context, dryRun = false): Prom
 // last one happened.
 const HEALTH_CHECK_HOUR = 6;
 
-const shouldProbeToken = (): boolean => {
+const shouldProbeToken = (force: boolean): boolean => {
+  if (force) return true;
   const now = new Date();
   return now.getUTCHours() === HEALTH_CHECK_HOUR && now.getUTCMinutes() < 5;
 };
@@ -522,8 +523,8 @@ const alertOperator = async (subject: string, body: string): Promise<void> => {
  *
  * @returns a short status string for the run record, or null when not probed.
  */
-const checkDispatchToken = async (): Promise<string | null> => {
-  if (!shouldProbeToken()) return null;
+const checkDispatchToken = async (force = false): Promise<string | null> => {
+  if (!shouldProbeToken(force)) return null;
   if (!GH_TOKEN) return 'absent';
 
   try {
@@ -583,9 +584,14 @@ Deno.serve(async (req) => {
   // A dry run reports what a real sweep would do and changes nothing — not
   // Linear, not the database, not even the run log.
   let dryRun = false;
+  // Probe the dispatch token now rather than waiting for the daily window —
+  // the answer is a read-only GitHub call, so it is safe to ask for on demand,
+  // and rotating the token is exactly when you want to confirm it took.
+  let forceTokenCheck = false;
   try {
     const body = await req.json();
     dryRun = body?.dry_run === true;
+    forceTokenCheck = body?.check_token === true;
   } catch { /* no body is the normal case: pg_cron posts {} */ }
 
   const supabase = createClient<Database>(SUPABASE_URL, serviceKey());
@@ -606,7 +612,7 @@ Deno.serve(async (req) => {
       .map(([, name]) => name);
     if (unresolved.length) console.warn(`Linear mirror: no workflow state named ${unresolved.join(', ')} — those moves are being skipped.`);
 
-    const dispatchToken = dryRun ? null : await checkDispatchToken();
+    const dispatchToken = dryRun && !forceTokenCheck ? null : await checkDispatchToken(forceTokenCheck);
     const counts = {
       created, refreshed, moved, reported,
       ...(unresolved.length ? { unresolved } : {}),
