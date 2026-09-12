@@ -28,6 +28,8 @@ import { getButtonLikeProps } from '../utils/interactive.js';
 import { getAuthCallbackUrl } from '../utils/redirects.js';
 import { COMMON } from '../copy/common.js';
 import { SETTINGS_VIEW } from '../copy/settingsView.js';
+import { MODERATION } from '../copy/moderation.js';
+import { useBlocks } from '@plot/core/useBlocks.js';
 import { IANA_TIMEZONES } from '../utils/timezones.js';
 import { REGIONS, DEFAULT_REGION, regionName } from '@plot/core/regions.js';
 import { SHOW_MEDIA_SYNC_INTEGRATIONS, SHOW_PRICING_PAGE } from '../launchFeatures.js';
@@ -855,6 +857,46 @@ const FEEDBACK_TYPES = [
 const FEEDBACK_MAX = 4000;
 const MAX_IMAGES   = 3;
 const MAX_IMAGE_MB = 5;
+
+/**
+ * Blocked accounts, with unblock. Guideline 1.2 asks for a visible list, not
+ * just the act of blocking: a block you cannot find again is a block you cannot
+ * undo.
+ *
+ * This renders identity for accounts the ordinary paths deliberately hide from
+ * the viewer, which is why useBlocks reads through the list_blocked_users RPC
+ * rather than selecting a table.
+ */
+function BlockedAccounts({ viewerId }) {
+  const { blocked, loading, busy, unblock } = useBlocks(viewerId);
+
+  return (
+    <div className="settings-group">
+      <div className="settings-group-title">{MODERATION.blockedTitle}</div>
+      {loading ? null : blocked.length === 0 ? (
+        <div className="settings-row" style={{ cursor: 'default' }}>
+          <div className="settings-row-left">
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{MODERATION.blockedEmpty}</div>
+          </div>
+        </div>
+      ) : (
+        blocked.map(account => (
+          <div key={account.id} className="settings-row" style={{ cursor: 'default' }}>
+            <div className="settings-row-left">
+              <div>
+                <div className="settings-row-label">{account.display_name || account.username}</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>@{account.username}</div>
+              </div>
+            </div>
+            <SettingsTextAction onClick={() => unblock(account.id)} disabled={busy}>
+              {MODERATION.unblockAction}
+            </SettingsTextAction>
+          </div>
+        ))
+      )}
+    </div>
+  );
+}
 
 function FeedbackPanel({ user, initialType, onClose }) {
   // "Report a Bug" (initialType 'bug') only offers the bug card; "Leave Feedback"
@@ -2011,6 +2053,8 @@ export default function SettingsView() {
       </div>
 
       {/* Viewing */}
+      <BlockedAccounts viewerId={user?.id} />
+
       <div className="settings-group">
         <div className="settings-group-title">Viewing</div>
 

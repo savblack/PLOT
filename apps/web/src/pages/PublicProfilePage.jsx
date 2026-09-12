@@ -5,6 +5,8 @@ import { useApp } from '../hooks/useApp.js';
 import { supabase } from '@plot/core/supabase.js';
 import { usePublicProfile } from '../hooks/usePublicProfile.js';
 import { useFollows } from '../hooks/useFollows.js';
+import { useBlocks } from '@plot/core/useBlocks.js';
+import UserModerationMenu from '../components/UserModerationMenu.jsx';
 import { useDragScroll } from '../hooks/useDragScroll.js';
 import { useShare } from '../hooks/useShare.js';
 import { useCustomLists } from '@plot/core/useCustomLists.js';
@@ -612,8 +614,9 @@ export default function PublicProfilePage() {
   const [followList, setFollowList] = useState(null);
   const [editing, setEditing] = useState(false);
   const [edits, setEdits] = useState({}); // local overlay: display_name, username, is_public, avatar_url
-  const { followers, following, status, follow, unfollow, busy, canFollow } =
+  const { followers, following, status, follow, unfollow, busy, canFollow, refresh } =
     useFollows(profile?.id, viewer?.id, profile?.follow_status ?? null);
+  const blocks = useBlocks(viewer?.id);
   const { share, copied } = useShare();
 
   const p = profile ? { ...profile, ...edits } : profile;
@@ -735,6 +738,18 @@ export default function PublicProfilePage() {
                         </button>
                       )
                     )}
+                    {/* Report / block. Guideline 1.2 wants both wherever another
+                        account's content is rendered, and the profile is the
+                        surface with the most of it. Renders nothing for your own
+                        profile or when signed out. */}
+                    <UserModerationMenu
+                      targetId={p.id}
+                      targetName={name}
+                      surface="profile"
+                      viewerId={viewer?.id}
+                      blocks={blocks}
+                      onChanged={refresh}
+                    />
                   </div>
                 </div>
               </div>

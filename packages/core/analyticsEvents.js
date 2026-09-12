@@ -111,6 +111,13 @@ export const EVENTS = Object.freeze({
   FAVOURITE_ADDED: 'favourite_added',
   FAVOURITE_REMOVED: 'favourite_removed',
   USER_FOLLOWED: 'user_followed',
+  // Moderation. Neither is a Tier 2 activation event: blocking and reporting are
+  // things a user does when something has gone wrong, not signs of a healthy
+  // library, and counting them as engagement would flatter exactly the weeks
+  // that went worst. See docs/analytics/README.md.
+  USER_BLOCKED: 'user_blocked',
+  USER_UNBLOCKED: 'user_unblocked',
+  USER_REPORTED: 'user_reported',
   USER_UNFOLLOWED: 'user_unfollowed',
   // Private profiles gate follows behind an approval. Both outcomes matter:
   // a pile of pending requests that never get approved is a broken loop.
