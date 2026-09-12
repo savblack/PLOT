@@ -96,7 +96,20 @@ Comment on the issue. The first line is the command:
 | `/retry` | Re-queues platforms that failed |
 | `/regenerate` | Throws the copy away; the worker rewrites it |
 | `/pause` · `/resume` | The global publishing switch — **every** post, not just this one |
+| `/generate` | Build the coming week now, instead of waiting for Sunday |
 | `/help` | The list, in the issue |
+
+`/pause`, `/resume`, `/generate` and `/help` act on the whole pipeline rather
+than on one post, so you can comment them on any card in the project — including
+a finished one. That matters most for `/generate`, which exists for the moment
+when there is nothing on the board to comment on.
+
+`/generate` dispatches `marketing-weekly-batch.yml`, the same run Sunday's cron
+fires: planning, copy and rendering take a few minutes, then the cards appear
+within five minutes of that finishing. Safely repeatable — the workflow's
+concurrency group queues a second run rather than racing it, and the pipeline
+only fills posts that still need copy. Needs `GH_DISPATCH_TOKEN`; without it the
+bot says so rather than failing quietly.
 
 To edit copy, comment `/copy` and then only the lines you want changed —
 anything you leave out stays as it is:

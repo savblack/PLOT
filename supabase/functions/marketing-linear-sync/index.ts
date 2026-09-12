@@ -33,7 +33,7 @@
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
 import type { Database, Json } from '../_shared/database.types.ts';
 import { serviceKey } from '../_shared/serviceKey.ts';
-import { parseCommand, BOT_MARKER, HELP_TEXT } from '../_shared/linearCommands.js';
+import { parseCommand, BOT_MARKER, HELP_TEXT, WEEK_SCOPED } from '../_shared/linearCommands.js';
 import { validateCopy, validateGuide, validateConversation } from '../_shared/copySchema.js';
 
 type Db = SupabaseClient<Database>;
@@ -274,6 +274,33 @@ const runCommand = async (
         : 'Marked for regeneration — it rebuilds on the next weekly batch.';
     }
 
+    default:
+      return HELP_TEXT;
+  }
+};
+
+/**
+ * Commands that act on the whole pipeline rather than one post. Deliberately
+ * takes no post: the card they are typed on is just somewhere to type, and
+ * /generate is for exactly the moment when the board is empty.
+ */
+const runWeekCommand = async (
+  supabase: Db,
+  intent: { command: string },
+): Promise<string> => {
+  switch (intent.command) {
+    case 'generate': {
+      // Kick the weekly batch off-schedule. Not destructive and safely
+      // repeatable: the workflow's own concurrency group queues a second run
+      // rather than racing it, and the pipeline only fills posts that still
+      // need copy.
+      const kicked = await dispatchWorkflow('marketing-weekly-batch.yml');
+      await logEvent(supabase, { action: 'generate', after: { triggered: kicked } as Json });
+      return kicked
+        ? 'Building the week now. Planning, copy and rendering take a few minutes; the cards appear here within five minutes of that finishing.'
+        : 'Could not start the run — GH_DISPATCH_TOKEN is not set, so the batch only runs on its Sunday schedule.';
+    }
+
     case 'pause':
     case 'resume': {
       const paused = intent.command === 'pause';
@@ -284,9 +311,6 @@ const runCommand = async (
         ? '**Publishing paused for every post**, not just this one. Nothing is sent until you comment `/resume`.'
         : 'Publishing resumed.';
     }
-
-    case 'help':
-      return HELP_TEXT;
 
     default:
       return HELP_TEXT;
@@ -340,6 +364,16 @@ Deno.serve(async (req) => {
     const issueId = payload.data?.issue?.id;
     const intent = parseCommand(payload.data?.body ?? '');
     if (!issueId || !intent) return json({ ok: true, ignored: true });
+
+    if (WEEK_SCOPED.has(intent.command)) {
+      try {
+        await reply(issueId, await runWeekCommand(supabase, intent));
+      } catch (err) {
+        console.error('Week command failed:', err);
+        await reply(issueId, `That failed on our side and nothing changed: ${String((err as Error).message).slice(0, 200)}`);
+      }
+      return json({ ok: true });
+    }
 
     const post = await findPost(supabase, issueId);
     if (!post) {
