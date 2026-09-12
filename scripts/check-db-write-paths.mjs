@@ -94,9 +94,49 @@ async function query(sql) {
   // -X ignores ~/.psqlrc; -tA gives untitled, unaligned output so the single
   // json_agg cell comes back parseable. Empty result → 'null'.
   const wrapped = `select coalesce(json_agg(t), '[]'::json) from (${sql.replace(/;\s*$/, '')}) t`;
-  const out = execFileSync('psql', ['-X', '-tAc', wrapped, DB_URL], {
-    encoding: 'utf8', maxBuffer: 32 * 1024 * 1024,
-  }).trim();
+
+  // The connection string goes through the ENVIRONMENT, never argv.
+  //
+  // It used to be passed as an argument. Two ways that leaks the production
+  // database password, and both happened:
+  //
+  //   1. argv is world-readable. Any process can read it out of `ps` for as
+  //      long as the call runs.
+  //   2. If psql is missing, Node throws an ENOENT whose error object carries
+  //      the full args array, and an uncaught throw prints it. On 2026-09-12
+  //      running this without postgresql@17 on PATH printed the live password
+  //      in plaintext, and it had to be rotated.
+  //
+  // libpq reads PG* from the environment, so splitting the URI keeps the
+  // password out of both.
+  const u = new URL(DB_URL);
+  const pgEnv = {
+    ...process.env,
+    PGHOST: u.hostname,
+    PGPORT: u.port || '5432',
+    PGUSER: decodeURIComponent(u.username),
+    PGPASSWORD: decodeURIComponent(u.password),
+    PGDATABASE: u.pathname.replace(/^\//, '') || 'postgres',
+  };
+
+  let out;
+  try {
+    out = execFileSync('psql', ['-X', '-tAc', wrapped], {
+      encoding: 'utf8', maxBuffer: 32 * 1024 * 1024, env: pgEnv,
+    }).trim();
+  } catch (err) {
+    // Belt and braces. Nothing here should contain the password any more, but
+    // this is the path that leaked it once, so it gets scrubbed on the way out
+    // rather than trusted.
+    const redact = (t) => String(t ?? '').split(pgEnv.PGPASSWORD).join('«redacted»');
+    if (err?.code === 'ENOENT') {
+      console.error('psql not found. Production is PG17: brew install postgresql@17');
+      console.error('and put it on PATH, e.g. PATH="/opt/homebrew/opt/postgresql@17/bin:$PATH"');
+      process.exit(1);
+    }
+    console.error(`psql failed: ${redact(err?.stderr || err?.message)}`);
+    process.exit(1);
+  }
   return JSON.parse(out || '[]');
 }
 
