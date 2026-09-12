@@ -12,7 +12,6 @@ import { publicUrl } from '../lib/storage.mjs';
 import { publishToBuffer } from './buffer.mjs';
 import { chartUrl } from '../lib/feed.mjs';
 import { submitIndexNow } from '../lib/indexnow.mjs';
-import { moveIssueToState, commentOnIssue } from '../lib/linear.mjs';
 
 // Every platform now publishes through Buffer.
 const SERVICE = { x: 'twitter', instagram: 'instagram', threads: 'threads' };
@@ -38,25 +37,6 @@ const publishingPaused = async (supabase) => {
     .limit(1)
     .maybeSingle();
   return !!data?.publishing_paused;
-};
-
-// Report the send back to the mirrored Linear issue, so the board shows what
-// actually went out rather than what was approved to go out. Only ever driven
-// from here: a human dragging a card to Done is ignored by the webhook,
-// precisely so "Done" cannot claim something published when it did not.
-// Best-effort — the post IS published by this point, and a Linear hiccup must
-// never turn a successful send into a failed run.
-const closeLinearIssue = async (post, status, outcomes) => {
-  if (!post.linear_issue_id) return;
-  const detail = outcomes.join(', ');
-  if (status === 'published') {
-    await commentOnIssue(post, `Published — ${detail}.`);
-    await moveIssueToState(post, 'Done');
-  } else if (status === 'partially_published') {
-    await commentOnIssue(post, `Partly published — ${detail}. Comment \`/retry\` to re-queue the failures.`);
-  } else {
-    await commentOnIssue(post, `Publishing failed — ${detail}. Comment \`/retry\` to try again.`);
-  }
 };
 
 const claim = async (supabase, pub) => {
@@ -246,7 +226,6 @@ const main = async () => {
       if (status === 'published' || status === 'partially_published') newlyPublic.push(post);
       statusCounts[status] = (statusCounts[status] || 0) + 1;
       console.log(`${post.topic_key}: ${status} (${outcomes.join(', ')})`);
-      if (!DRY_RUN) await closeLinearIssue(post, status, outcomes);
     }
     if (!DRY_RUN) await notifyIndexNow(newlyPublic);
     await finishBatchRun(supabase, runId, { status: 'succeeded', counts: { posts: posts.length, ...statusCounts } });

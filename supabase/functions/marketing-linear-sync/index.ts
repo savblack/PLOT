@@ -1,8 +1,8 @@
 /**
  * marketing-linear-sync — the write half of reviewing the marketing week in Linear.
  *
- * Receives Linear webhooks for the mirrored issues (created by
- * marketing/lib/linear.mjs) and applies them to marketing_posts:
+ * Receives Linear webhooks for the mirrored issues (opened and kept current by
+ * marketing-linear-mirror) and applies them to marketing_posts:
  *
  *   • a COMMENT starting with a slash command — edit the copy, approve, reject,
  *     reschedule, publish now, retry, regenerate, pause/resume. The bot replies
@@ -204,10 +204,10 @@ const runCommand = async (
       if (!res.ok) {
         return `I did not change anything — the edit fails the copy contract:\n\n${res.errors.map((e) => `- ${e}`).join('\n')}`;
       }
-      // The description is rebuilt from the row by the next mirror run, so the
-      // issue body still shows the old text until then. Say so rather than let
-      // it look like nothing happened.
-      return `Updated **${res.changed.join(', ')}**. The issue body still shows the previous version — it is rewritten on the next batch run; the database has your text now.`;
+      // marketing-linear-mirror rewrites the description from the row on its
+      // next sweep, so the body still shows the old text for a few minutes. Say
+      // so rather than let it look like nothing happened.
+      return `Updated **${res.changed.join(', ')}**. The database has your text now; the issue body above catches up within five minutes.`;
     }
 
     case 'approve': {

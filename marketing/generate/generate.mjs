@@ -4,11 +4,11 @@
 // the AI copy worker (see marketing/copy/), so this step is API-key-free.
 // Approved posts are sent to Buffer by the daily push.
 //
-// Each reviewable post is then mirrored into a Linear issue (team PLO, project
-// "Content Automation"), which is where the week is now reviewed, edited and
-// approved — see marketing/lib/linear.mjs. The admin desk at admin.theplot.tv
-// reads the same rows and still works; Linear is a second surface onto one
-// database, not a second database.
+// Posts reaching 'needs_review' are picked up within five minutes by the
+// marketing-linear-mirror Edge Function, which opens the Linear issue the week
+// is reviewed on. That is a scheduled sweep rather than anything this script
+// calls, so the Linear credential lives only in Supabase and a Linear outage
+// cannot fail a render run.
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -20,7 +20,6 @@ import { sendEmail, ADMIN_EMAIL } from '../lib/email.mjs';
 import { POST_TYPES } from '../lib/post-types.mjs';
 import { feedHeroUrl, guideHeroUrl } from '../lib/images.mjs';
 import { postSlug } from '../lib/feed.mjs';
-import { syncPostIssue, linearConfigured } from '../lib/linear.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const REVIEW_BUCKET = 'marketing-review';
@@ -154,37 +153,9 @@ const hostReviewSheet = async (supabase) => {
   }
 };
 
-// Mirror every post now awaiting review into Linear. Sequential on purpose:
-// a week is a handful of posts and Linear rate-limits per key. Failures are
-// recorded per row by syncPostIssue and never abort the batch — a week that
-// rendered but did not mirror is still reviewable on the desk.
-const mirrorWeekToLinear = async (supabase) => {
-  if (!linearConfigured()) {
-    console.log('LINEAR_API_KEY not set — skipping the Linear mirror.');
-    return 0;
-  }
-  const { data, error } = await supabase
-    .from('marketing_posts')
-    .select('*')
-    .eq('status', 'needs_review')
-    .order('scheduled_for');
-  if (error) {
-    console.error('Could not load posts to mirror:', error.message);
-    return 0;
-  }
-
-  let mirrored = 0;
-  for (const post of data || []) {
-    const result = await syncPostIssue(supabase, post);
-    if (result.ok) mirrored++;
-  }
-  console.log(`Mirrored ${mirrored}/${(data || []).length} post(s) to Linear.`);
-  return mirrored;
-};
-
 // Ping the admin that the week's posts are ready to review — replaces the old
 // per-post veto email. Review / edit / approve now happens on the admin desk.
-const notifyReview = async (count, sheetUrl, mirrored = 0) => {
+const notifyReview = async (count, sheetUrl) => {
   if (!count) return;
   const html = `<div style="font-family:sans-serif;max-width:520px;color:#1a1a1a;">
     <h1 style="font-size:1.25rem;">${count} post${count > 1 ? 's' : ''} ready to review</h1>
@@ -192,7 +163,7 @@ const notifyReview = async (count, sheetUrl, mirrored = 0) => {
     ${sheetUrl ? `<p style="margin:20px 0 6px;"><a href="${sheetUrl}" style="background:#E05578;color:#fff;text-decoration:none;padding:11px 24px;border-radius:9999px;font-weight:600;">📄 Read the full week</a></p>
     <p style="font-size:.83rem;line-height:1.5;color:#666;margin:0 0 18px;">Every post's copy + cards and the newsletter on one page (sign in with your admin password if asked).</p>` : ''}
     <p style="font-size:.95rem;line-height:1.6;margin:0;">To edit or approve:</p>
-    ${mirrored ? `<p style="font-size:.95rem;line-height:1.6;margin:4px 0 0;">• In Linear: ${mirrored} issue${mirrored > 1 ? 's' : ''} in <strong>Content Automation</strong>. Comment <code>/approve</code>, or <code>/copy</code> with the lines you want changed.</p>` : ''}
+    <p style="font-size:.95rem;line-height:1.6;margin:4px 0 0;">• In Linear: the <strong>Content Automation</strong> project, within five minutes. Comment <code>/approve</code>, or <code>/copy</code> with the lines you want changed.</p>
     <p style="font-size:.95rem;line-height:1.6;margin:4px 0 0;">• In Claude: run <code>/marketing-week</code> — preview and edit by chatting.</p>
     <p style="font-size:.95rem;line-height:1.6;margin:4px 0 0;">• On the web: <a href="${REVIEW_URL}">the review desk</a>.</p>
   </div>`;
@@ -262,18 +233,12 @@ const main = async () => {
     }
 
     await closeBrowser();
-
-    // Mirror the reviewable week into Linear. Read back rather than reusing the
-    // in-memory rows: generatePost wrote slug/media/copy, and the issue body
-    // must show what is actually stored.
-    const mirrored = count ? await mirrorWeekToLinear(supabase) : 0;
-
     const sheetUrl = count ? await hostReviewSheet(supabase) : null;
-    await notifyReview(count, sheetUrl, mirrored);
-    console.log(`Rendered ${count} post(s) -> needs_review; mirrored ${mirrored} to Linear; notified ${ADMIN_EMAIL}.${sheetUrl ? ' Sheet hosted.' : ''}`);
+    await notifyReview(count, sheetUrl);
+    console.log(`Rendered ${count} post(s) -> needs_review; notified ${ADMIN_EMAIL}.${sheetUrl ? ' Sheet hosted.' : ''}`);
     await finishBatchRun(supabase, runId, {
       status: 'succeeded',
-      counts: { pending: (pending || []).length, rendered: count, mirrored, failed: (pending || []).length - count },
+      counts: { pending: (pending || []).length, rendered: count, failed: (pending || []).length - count },
     });
   } catch (err) {
     await finishBatchRun(supabase, runId, { status: 'failed', error: String(err.message || err).slice(0, 500) });

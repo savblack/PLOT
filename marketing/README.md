@@ -25,7 +25,11 @@ commands exist as fallback and debug tools, not the primary operating model.
 ```text
 Sunday morning
   -> marketing-weekly-batch.yml generates the next week
-  -> each post is mirrored to a Linear issue (In Review)
+
+Every 5 minutes (pg_cron -> marketing-linear-mirror)
+  -> opens a Linear issue for anything awaiting review
+  -> re-renders issues whose post changed
+  -> moves published posts' issues to Done
 
 Any time
   -> you comment /approve, /copy, /reject ... on the issue
@@ -34,6 +38,10 @@ Any time
 Daily, 12pm Sydney
   -> marketing-publish.yml sends only approved posts
 ```
+
+Nothing in the GitHub workflows talks to Linear. Both halves are Edge Functions,
+so the Linear credential exists once, as a Supabase secret — and a Linear outage
+can never fail a render or a publish run.
 
 ## Operator surfaces
 
@@ -64,8 +72,8 @@ Notes:
 
 ## Review and publish
 
-- Weekly generation renders posts with status `needs_review` and mirrors each one
-  to a Linear issue opened in **In Review**.
+- Weekly generation renders posts with status `needs_review`. Within five minutes
+  the mirror sweep opens a Linear issue for each, in **In Review**.
 - **The database is the source of truth.** Linear and the admin desk are two ways
   to write to it; the publisher reads only `marketing_posts` and the publication
   rows, so neither surface can gate a send by being unavailable.
@@ -113,20 +121,48 @@ Unlike the web desk — which writes what you type, because its editor has a liv
 character counter — a comment edit is validated against `copy/schema.mjs` before
 it is saved. A rejected edit changes nothing and the bot replies with why.
 
+An accepted edit lands in the database immediately; the issue body catches up on
+the next mirror sweep, within five minutes.
+
 ### Setting it up
+
+No GitHub Actions secret is involved. Everything below is a Supabase secret.
 
 1. Team PLO needs workflow states named **In Review**, **Approved**, **Canceled**
    and **Done**. All four exist (Approved was added 2026-09-12, type `started`,
    sitting after In Review on the board). The mirror fails loudly and lists the
    team's real states if one is missing or renamed, rather than guessing.
-2. `LINEAR_API_KEY` in `.env` and as a GitHub Actions secret.
-3. Deploy the webhook: `supabase functions deploy marketing-linear-sync`.
-4. In Linear (Settings → API → Webhooks) point a webhook at
+2. Set `LINEAR_API_KEY` as an Edge Function secret.
+3. Deploy both halves:
+   ```sh
+   supabase functions deploy marketing-linear-mirror
+   supabase functions deploy marketing-linear-sync
+   ```
+4. Apply the migrations. `20260912090000_schedule_linear_mirror.sql` schedules the
+   sweep every 5 minutes; it reuses the Vault secrets the existing database
+   webhooks already depend on, and refuses to apply if they are missing.
+5. In Linear (Settings → API → Webhooks) point a webhook at
    `<SUPABASE_URL>/functions/v1/marketing-linear-sync` subscribed to **Comments**
    and **Issues**, and set the signing secret it shows you as the
    `LINEAR_WEBHOOK_SECRET` Edge Function secret.
-5. Optional: `GH_DISPATCH_TOKEN` so `/publish-now` and `/regenerate` take effect
+6. Optional: `GH_DISPATCH_TOKEN` so `/publish-now` and `/regenerate` take effect
    immediately instead of waiting for the next scheduled run.
+
+Optional overrides, all Edge Function secrets: `LINEAR_MARKETING_TEAM_ID` (PLO),
+`LINEAR_MARKETING_PROJECT_ID` (Content Automation), `LINEAR_REVIEW_STATE`
+(In Review), `LINEAR_DONE_STATE` (Done).
+
+To check the sweep is running:
+
+```sql
+select jobname, schedule, active from cron.job where jobname = 'marketing-linear-mirror';
+select status, return_message, start_time from cron.job_run_details
+  where jobid = (select jobid from cron.job where jobname = 'marketing-linear-mirror')
+  order by start_time desc limit 5;
+```
+
+A post that failed to mirror carries the reason in
+`marketing_posts.linear_sync_error`, and is retried on every subsequent tick.
 
 ## Cadence
 

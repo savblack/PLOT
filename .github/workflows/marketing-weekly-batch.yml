@@ -51,7 +51,6 @@ jobs:
           OMDB_API_KEY: ${{ secrets.OMDB_API_KEY }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           MARKETING_ADMIN_EMAIL: ${{ secrets.MARKETING_ADMIN_EMAIL }}
-          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
 
       - name: Alert on failure
         if: failure()
