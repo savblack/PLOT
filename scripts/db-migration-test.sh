@@ -37,7 +37,7 @@ PROD_URL="$(sandbox_prod_url)" || exit 1
 sandbox_up || exit 1
 sandbox_prereqs
 sandbox_stub_supabase_platform
-sandbox_restore_prod "$PROD_URL"
+sandbox_restore_prod "$PROD_URL" || exit 1
 
 # What production has already applied, straight from the restored history.
 applied="$(psql "$SANDBOX_URL" -At -c \

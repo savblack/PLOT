@@ -36,8 +36,26 @@ sandbox_require_pg17() {
 }
 
 sandbox_prod_url() {
+  # Prefer a full connection string when one is set. SUPABASE_DB_URL is the
+  # session-pooler string the nightly backup already uses (db-backup.yml), and
+  # on most networks it is the ONLY one that works: Supabase moved direct
+  # connections to IPv6-only, so db.<ref>.supabase.co has no A record and
+  # db.<ref>.supabase.co:5432 is unreachable from plenty of otherwise
+  # IPv6-capable machines. The pooler still answers on IPv4.
+  #
+  # Measured on 2026-09-12: general IPv6 egress worked fine from the author's
+  # Mac (HTTP 200 to ipv6.google.com) while TCP 5432 to the direct host did not
+  # connect at all, and the pooler did. Symptom if you hit it: pg_dump writes
+  # two lines to stderr, the sandbox restores nothing, and the run reports every
+  # migration as failing. See the guard in sandbox_restore_prod.
+  if [ -n "${SUPABASE_DB_URL:-}" ]; then
+    printf '%s' "$SUPABASE_DB_URL"
+    return 0
+  fi
+
   if [ -z "${PLOT_PRODUCTION_DB_PASSWORD:-}" ]; then
-    echo "PLOT_PRODUCTION_DB_PASSWORD is not set (it lives in the MAIN checkout's .env)" >&2
+    echo "Set SUPABASE_DB_URL (session-pooler string, preferred) or PLOT_PRODUCTION_DB_PASSWORD in the MAIN checkout's .env." >&2
+    echo "Both are on https://supabase.com/dashboard/project/${PROJECT_REF:-mkegtssedjyqldysvzga}/settings/database" >&2
     return 1
   fi
   local pw
@@ -152,4 +170,21 @@ sandbox_restore_prod() {
     -d "$prod_url" 2>"$SANDBOX_WORK/dump.err" \
   | pg_restore --no-owner --no-privileges -d "$SANDBOX_URL" 2>"$SANDBOX_WORK/restore.err"
   echo "restored from Production (dump stderr: $(wc -l < "$SANDBOX_WORK/dump.err") lines, restore stderr: $(wc -l < "$SANDBOX_WORK/restore.err") lines)"
+
+  # Abort if the dump brought nothing. Without this the run continues against an
+  # empty sandbox and every migration "fails" on a missing schema, which reads as
+  # "your migrations are broken" when the truth is "we never reached production".
+  # That false signal cost two debugging passes on 2026-09-12, and its danger is
+  # not the wasted time: it invites someone to "fix" migrations that are fine.
+  if ! psql "$SANDBOX_URL" -At -c "select 1 from pg_namespace where nspname = 'auth'" 2>/dev/null | grep -q 1; then
+    echo "" >&2
+    echo "✗ the restore produced no 'auth' schema, so production was never reached." >&2
+    echo "  Nothing below would be a real result. The dump said:" >&2
+    sed 's/^/    /' "$SANDBOX_WORK/dump.err" >&2
+    echo "" >&2
+    echo "  Most often this is the connection, not the credential: the direct host" >&2
+    echo "  is IPv6-only. Set SUPABASE_DB_URL to the session-pooler string, which" >&2
+    echo "  answers on IPv4." >&2
+    return 1
+  fi
 }
