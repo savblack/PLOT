@@ -26,7 +26,7 @@ import { SHOW_FOR_YOU_RAIL } from '../launchFeatures.js';
 function Rail({ children }) {
   return (
     <ScrollRail
-      style={{ paddingLeft: '1rem', paddingRight: '1rem', paddingTop: '2rem', paddingBottom: '2rem' }}
+      style={{ paddingLeft: 'var(--gut)', paddingRight: 'var(--gut)', paddingTop: '2rem', paddingBottom: '2rem' }}
     >
       {children}
     </ScrollRail>

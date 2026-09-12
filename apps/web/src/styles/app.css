@@ -167,6 +167,24 @@ svg { stroke-width: 1.5; }
   margin-inline: auto;
 }
 
+/* Desktop page title. Sits inside the content column rather than in a bar of
+   its own, so it shares --gut with every section header below it. The two used
+   to be measured from different origins — the header padded from the window,
+   the sections from the centred column — and so never lined up. Hidden below
+   the sidebar breakpoint, where the app header still carries the title. */
+.app-page-heading {
+  display: none;
+  font-family: var(--font-serif);
+  font-size: 2rem;
+  font-weight: 400;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: var(--text-primary);
+  margin: 0 0 1.5rem;
+  padding: 1.75rem var(--gut) 0;
+  user-select: none;
+}
+
 /* The sticky sub-tab bars are chrome, not content: they pin under the header
    and carry its fill and hairline, so stopping them at the column edge left a
    white strip floating under a full-width white header. Break them back out to
@@ -397,7 +415,6 @@ svg { stroke-width: 1.5; }
 ═══════════════════════════════════════ */
 
 .app-sidebar { display: none; }
-.app-desktop-title { display: none; }
 
 .header-bell-icon {
   display: flex;
@@ -426,40 +443,34 @@ svg { stroke-width: 1.5; }
     padding-top: env(safe-area-inset-top, 0px);
   }
 
-  /* Main fills the height the tab bar used to occupy. */
+  /* Main fills the window: the tab bar is gone, and so is the header. */
   .app-main {
+    top: 0;
     bottom: 0;
   }
 
-  /* One nav, not three: the tab bar, the drawer and its overlay all stand
-     down, and so do the header controls the sidebar now carries. */
+  /* One nav, not three — and no header either. Above this breakpoint the bar
+     had already hidden its logo, search, bell and centred title, leaving 56px
+     of chrome carrying a single word the sidebar's active row names anyway.
+     The title moves into the content column as .app-page-heading, where it can
+     share --gut with the section headers under it. Nothing else depended on the
+     bar: the sticky sub-tab bars pin to top: 0 of .app-main, which was always
+     the scroll container rather than the header. */
+  .app-header,
   .tab-bar,
   .nav-drawer,
-  .nav-drawer-overlay,
-  .header-start,
-  .header-end,
-  .app-header-logo,
-  .app-page-title {
+  .nav-drawer-overlay {
     display: none;
   }
 
-  /* What is left of the header is the page title, left-aligned. */
-  .app-header {
-    justify-content: flex-start;
-    padding-left: 1.5rem;
+  /* This hairline used to continue the header's in one line across the window.
+     With no header to meet, it stops in mid-air. */
+  .app-sidebar-brand {
+    border-bottom: none;
   }
-  .app-desktop-title {
+
+  .app-page-heading {
     display: block;
-    font-family: var(--font-serif);
-    font-size: 1.55rem;
-    font-weight: 400;
-    letter-spacing: -0.05em;
-    color: var(--text-primary);
-    line-height: 1;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    user-select: none;
   }
 
   .scroll-top-btn {
@@ -848,7 +859,7 @@ svg { stroke-width: 1.5; }
   gap: 0.7rem;
   overflow-x: auto;
   scrollbar-width: none;
-  padding: 2px 1rem 6px;
+  padding: 2px var(--gut) 6px;
   cursor: grab;
   user-select: none;
 }
@@ -924,7 +935,7 @@ svg { stroke-width: 1.5; }
   border-radius: var(--radius-md);
   overflow: hidden;
   background: var(--surface-raised);
-  margin-bottom: 0.45rem;
+  margin-bottom: 0.55rem;
 }
 .media-card-img img {
   width: 100%;
@@ -1112,12 +1123,17 @@ svg { stroke-width: 1.5; }
   .card-share-btn { display: none; }
 }
 
+/* The title used to carry margin-top: 1rem on top of the image's own
+   margin-bottom, so the gap under a poster was two stacked spacings totalling
+   1.45rem. One spacing now, on the image. min-height reserves both clamped
+   lines whether the title needs them or not, so a long title no longer drops
+   its meta row below every other card's in the same rail. */
 .media-card-title {
   font-size: 0.78rem;
   font-weight: 600;
   color: var(--text-primary);
   line-height: 1.3;
-  margin-top: 1rem;
+  min-height: 2.6em;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -3983,7 +3999,7 @@ a.provider-chip--link:hover {
   align-items: center;
   width: 100%;
   min-height: 46px;
-  padding: 0 1rem;
+  padding: 0 var(--gut);
   background: var(--bg);
   border-bottom: 1px solid var(--border);
   transition: background 0.15s ease;

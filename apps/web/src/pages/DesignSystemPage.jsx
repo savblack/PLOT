@@ -81,8 +81,9 @@ const motionTokens = [
 const layoutTokens = [
   ['--content-max', '680px', 'Focused reading width for legal, settings, and forms.'],
   ['--panel-w', '560px', 'Fixed width of the right-side media reading panel.'],
-  ['--header-h', '56px', 'Height of the fixed app header.'],
+  ['--header-h', '56px', 'Height of the fixed app header. Below 1024px only — at sidebar widths there is no header.'],
   ['--tabbar-h', '58px', 'Height of the fixed bottom tab bar.'],
+  ['--gut', '1rem', 'Content gutter. The desktop page title, section headers, and rails all pad by this so they share one left edge.'],
 ];
 
 const surfaceOwnership = [

@@ -75,10 +75,12 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
   const showHomeLogo = currentView === 'home' || (currentView || '').startsWith('u/');
   const isOwnProfile = !!profile?.username && currentView === `u/${profile.username}`;
 
-  // At sidebar widths the header carries nothing but the page title — the
-  // brand, search and notifications have all moved into the sidebar. Home's
-  // VIEW_TITLES entry is the brand ("PLOT"), which the sidebar already shows,
-  // so prefer the nav item's own label here and fall back to the shared titles.
+  // At sidebar widths there is no header at all — the brand, search and
+  // notifications live in the sidebar, and the title moves into the content
+  // column as .app-page-heading so it shares a left edge with the section
+  // headers below it. Home's VIEW_TITLES entry is the brand ("PLOT"), which the
+  // sidebar already shows, so prefer the nav item's own label here and fall
+  // back to the shared titles.
   const isProfileView = (currentView || '').startsWith('u/');
   const desktopTitle = isProfileView
     ? (isOwnProfile ? APP_SHELL.profile : `@${currentView.slice(2)}`)
@@ -126,9 +128,6 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
           <span className="app-page-title">{pageTitle}</span>
         )}
 
-        {/* Shown only at sidebar widths, where it replaces both the centred
-            logo and the centred page title above. */}
-        <span className="app-desktop-title">{desktopTitle}</span>
 
         <div className="header-end">
           {user && (
@@ -171,7 +170,12 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
         {/* The scroll container stays full-bleed so the header/tab-bar chrome
             and the scrollbar keep the viewport edges; the content itself rides
             in a centred column. */}
-        <div className="app-main-inner">{children}</div>
+        <div className="app-main-inner">
+          {/* Sidebar widths only — below them the header above carries the
+              title and this is display: none. */}
+          <h1 className="app-page-heading">{desktopTitle}</h1>
+          {children}
+        </div>
       </main>
 
       {/* ── Back to top ── */}

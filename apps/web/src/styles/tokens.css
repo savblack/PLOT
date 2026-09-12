@@ -77,6 +77,12 @@
   --tab-bar-height: var(--tabbar-h);
   --panel-w:        560px;
   --content-max:    680px;
+  /* Content gutter. The desktop page title, the collapsible section headers and
+     the rails all pad by this, so everything in the column hangs off one left
+     edge instead of the page title using the window and the sections using the
+     column. Held at 1rem: plenty of other content surfaces hardcode 1rem, and
+     raising it here alone would trade one misalignment for another. */
+  --gut:            1rem;
   /* Portrait poster width, shared by the Discover/My Lists cards and the EPG
      schedule cards — one 2/3 poster at three sizes rather than each surface
      pinning its own. Ramps below. */
