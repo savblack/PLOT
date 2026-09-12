@@ -198,3 +198,54 @@ export function projectPendingSchema(live, pendingMigrations) {
 
   return projected;
 }
+
+/**
+ * What psql will make of a connection string, without revealing it.
+ *
+ * WHY: on 2026-09-12 this gate failed on every branch with
+ * `connection to server on socket "/var/run/postgresql/.s.PGSQL.5432" failed`,
+ * which reads like a missing local server. It wasn't: SUPABASE_DB_URL was set
+ * but was not a connection string, and psql treats an unrecognised value as a
+ * bare database name and falls back to local defaults. The secret is masked in
+ * CI and cannot be read back to find out, so the failure was undiagnosable
+ * from the log alone.
+ *
+ * Accepts both forms psql accepts — a postgres:// URI and a libpq key=value
+ * conninfo string — so a working configuration in either shape still passes.
+ * Returns a verdict only; it never echoes any part of the value.
+ *
+ * @param {string | undefined} raw
+ * @returns {{ ok: boolean, reason?: string }}
+ */
+export function describeDbUrlShape(raw) {
+  const value = (raw ?? '').trim();
+  if (!value) return { ok: false, reason: 'is empty' };
+
+  if (/^postgres(ql)?:\/\//i.test(value)) {
+    let parsed;
+    try {
+      parsed = new URL(value);
+    } catch {
+      // `/`, `?` and `#` in a password break URI parsing; `@` and `%` do not,
+      // so those shapes reach libpq and fail later as an auth error instead.
+      return {
+        ok: false,
+        reason: 'starts with postgres:// but is not a valid URI: usually an unescaped '
+          + '/, ? or # in the password, which has to be percent-encoded',
+      };
+    }
+    if (!parsed.hostname) return { ok: false, reason: 'is a postgres:// URI with no host' };
+    return { ok: true };
+  }
+
+  // libpq conninfo, e.g. `host=… dbname=… password=…`. psql accepts this as
+  // the dbname argument, so it is a legitimate value for this secret.
+  if (/(^|\s)(host|hostaddr|dbname|service)=/.test(value)) return { ok: true };
+
+  return {
+    ok: false,
+    reason: 'is neither a postgres:// URI nor a libpq key=value conninfo string, so psql '
+      + 'reads it as a bare database name and connects to the local socket rather than to '
+      + 'Supabase (a rotated password pasted in on its own does this)',
+  };
+}

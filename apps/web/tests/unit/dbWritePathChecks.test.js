@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   colKey, extractConflictTargets, extractTableRefs, resolveConflictTargets,
   extractStringConstants, extractAppConflictTargets,
-  extractMigrationKeyChanges, projectPendingSchema,
+  extractMigrationKeyChanges, projectPendingSchema, describeDbUrlShape,
 } from '../../../../scripts/lib/dbWritePathChecks.mjs';
 
 // These are the real definitions either side of the two-week production outage
@@ -272,4 +272,60 @@ test('projecting does not mutate the live schema it was given', () => {
 test('a table created by a pending migration resolves too', () => {
   const projected = projectPendingSchema(LIVE(), [{ file: 'new.sql', sql: ADD_INDEX }]);
   assert.equal(projected.get('lists').find(c => c.key === 'name,user_id').pending, 'new.sql');
+});
+
+/* On 2026-09-12 this gate failed on every branch with a local-socket error,
+ * which reads like a missing Postgres rather than a malformed secret. The
+ * value was set but was not a connection string, and psql reads anything it
+ * does not recognise as a bare database name. The secret is masked in CI, so
+ * the log could not show what it got. These cover both directions: the shapes
+ * psql really accepts must pass, because rejecting a working configuration
+ * would break the gate this check exists to protect.
+ */
+
+test('a postgres:// URI is accepted in both spellings', () => {
+  for (const url of [
+    'postgresql://u:p@db.example.supabase.co:5432/postgres',
+    'postgres://u:p@db.example.supabase.co:5432/postgres',
+    '  postgresql://u:p@db.example.supabase.co:5432/postgres  ',
+  ]) {
+    assert.deepEqual(describeDbUrlShape(url), { ok: true }, url);
+  }
+});
+
+test('a libpq key=value conninfo string is accepted', () => {
+  // psql takes this as its dbname argument, so it is a legitimate secret value
+  // and must not be rejected.
+  assert.deepEqual(
+    describeDbUrlShape('host=db.example.supabase.co dbname=postgres password=p'),
+    { ok: true },
+  );
+});
+
+test('a bare password is rejected, naming the local-socket fallback', () => {
+  const verdict = describeDbUrlShape('somerotatedpassword');
+  assert.equal(verdict.ok, false);
+  assert.match(verdict.reason, /local socket/);
+});
+
+test('an unescaped path character in the password is called out', () => {
+  const verdict = describeDbUrlShape('postgresql://u:pa/ss@db.example.supabase.co:5432/postgres');
+  assert.equal(verdict.ok, false);
+  assert.match(verdict.reason, /percent-encoded/);
+});
+
+test('an empty or missing value is rejected', () => {
+  assert.equal(describeDbUrlShape('').ok, false);
+  assert.equal(describeDbUrlShape(undefined).ok, false);
+  assert.equal(describeDbUrlShape('   ').ok, false);
+});
+
+test('the verdict never echoes the value', () => {
+  // The whole point is that this runs where the secret is masked; a reason
+  // that quoted it would defeat that.
+  const secret = 'postgresql://u:pa/ss@db.example.supabase.co:5432/postgres';
+  const { reason } = describeDbUrlShape(secret);
+  for (const fragment of ['pa/ss', 'db.example.supabase.co', secret]) {
+    assert.ok(!reason.includes(fragment), `reason leaked ${fragment}`);
+  }
 });

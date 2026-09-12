@@ -56,7 +56,7 @@ import { join } from 'node:path';
 import {
   colKey, resolveConflictTargets, extractTableRefs,
   extractStringConstants, extractAppConflictTargets,
-  projectPendingSchema,
+  projectPendingSchema, describeDbUrlShape,
 } from './lib/dbWritePathChecks.mjs';
 
 // Two transports so this runs both locally and in CI without a new secret:
@@ -74,6 +74,19 @@ if (!TOKEN && !DB_URL) {
 if (TOKEN && !URL_) {
   console.error('SUPABASE_ACCESS_TOKEN is set but SUPABASE_URL / VITE_SUPABASE_URL is not.');
   process.exit(1);
+}
+
+// Say what is wrong with SUPABASE_DB_URL before psql does. psql reads an
+// unrecognised value as a bare database name and reports a local-socket
+// failure, which reads like a missing server rather than a malformed secret,
+// and the secret is masked in CI so the log cannot show what it got.
+if (!TOKEN) {
+  const shape = describeDbUrlShape(DB_URL);
+  if (!shape.ok) {
+    console.error(`SUPABASE_DB_URL ${shape.reason}.`);
+    console.error('Expected postgresql://USER:PASSWORD@HOST:PORT/DATABASE, with the password percent-encoded.');
+    process.exit(1);
+  }
 }
 
 const REF = TOKEN ? new URL(URL_).hostname.split('.')[0] : null;
