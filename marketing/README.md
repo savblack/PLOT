@@ -206,7 +206,16 @@ long enough that the expiry was only found by firing `/generate` and reading a
 401 out of an error message that was itself wrong about the cause.
 
 A failed probe emails the operator and lands in the run record as
-`counts.dispatch_token`. The probe reads a workflow rather than dispatching one —
+`counts.dispatch_token`. Ask for it on demand — after rotating the token, say —
+with `{"check_token": true}`, which combines with `dry_run`:
+
+```sh
+curl -sX POST "$SUPABASE_URL/functions/v1/marketing-linear-mirror" \
+  -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+  -H 'Content-Type: application/json' -d '{"dry_run": true, "check_token": true}'
+# {"ok":true,"dry_run":true,"would":{...,"dispatch_token":"ok"}}
+```
+ The probe reads a workflow rather than dispatching one —
 proving write access would mean starting a real run, and a daily surprise batch
 is a worse cure than the disease — so it catches an expired or revoked token
 (401) and a permissions change (403/404), but cannot prove the token still has
