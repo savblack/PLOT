@@ -15,6 +15,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import { favoriteWords } from '../../lib/spelling';
 import { UserRow, SocialUser } from '../../components/UserList';
+import { useBlocks } from '@plot/core/useBlocks.js';
 import { classifySearchResults } from '@plot/core/search.js';
 import { markMediaAsWatched } from '@plot/core/mediaStatus.js';
 import { track, EVENTS } from '../../lib/analytics';
@@ -84,6 +85,8 @@ export default function SearchScreen() {
   const [query,   setQuery]   = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [users,   setUsers]   = useState<SocialUser[]>([]);
+  // One block list for the whole result set, not one per row.
+  const blocks = useBlocks(userId);
   const [loading, setLoading] = useState(false);
   // 'none' | 'title-guidance' | 'generic' — see @plot/core/search.js.
   // 'title-guidance' means only people matched, so nudge toward a title.
@@ -190,7 +193,7 @@ export default function SearchScreen() {
           <FlatList
             data={loading ? [] : users}
             keyExtractor={u => u.id}
-            renderItem={({ item }) => <UserRow user={item} viewerId={userId} />}
+            renderItem={({ item }) => <UserRow user={item} viewerId={userId} surface="search_result" blocks={blocks} />}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingHorizontal: spacing.xl, paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }}
             ListEmptyComponent={loading ? undefined : (
