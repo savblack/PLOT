@@ -33,6 +33,16 @@ export const colors = {
     chipCinema: '#D95C66',
     chipStreaming: '#68AFA8',
     chipEpisode: '#6D68D9',
+    // Watch-state signals on the media panel's status and save buttons. Both
+    // were hardcoded Tailwind defaults tuned for the dark panel: in light mode
+    // the label sat at 2.6:1 against its own fill, and "watched" was a
+    // near-black block on white. Each pair clears 4.5:1 against its own dim
+    // fill in its own theme. The dark values are the ones already in use, so
+    // dark mode is unchanged and only light gains a real counterpart.
+    statusWatching: '#5852C9',
+    statusWatchingDim: 'rgba(88,82,201,0.12)',
+    statusWatched: '#047857',
+    statusWatchedDim: 'rgba(4,120,87,0.12)',
     // Profile badges. Two distinct things, so two distinct colours: blue =
     // paid Premium (entitlement), pink = Ko-fi supporter (recognition). Pink
     // tracks the accent ladder; blue is its own hue so the two never read as
@@ -63,6 +73,10 @@ export const colors = {
     chipCinema: '#E16A73',
     chipStreaming: '#78BDB7',
     chipEpisode: '#7A75E0',
+    statusWatching: '#818cf8',
+    statusWatchingDim: 'rgba(99,102,241,0.12)',
+    statusWatched: '#4ade80',
+    statusWatchedDim: '#0d2d1a',
     badgePremium: '#1D9BF0',
     badgeSupporter: '#F06A88',
   },

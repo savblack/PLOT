@@ -928,8 +928,8 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                         style={[styles.btnPrimary, styles.btnHalf, inList && styles.btnSaved]}
                         onPress={() => watchlist.toggle({ ...details, id: itemId, media_type: itemType })}
                       >
-                        {inList && <IconCheck color="#4ade80" />}
-                        <Text style={[styles.btnPrimaryText, inList && { color: '#4ade80' }]}>
+                        {inList && <IconCheck color={colors.statusWatched} />}
+                        <Text style={[styles.btnPrimaryText, inList && { color: colors.statusWatched }]}>
                           {inList ? MEDIA_PANEL.inWatchlist : MEDIA_PANEL.addToWatchlist}
                         </Text>
                       </TouchableOpacity>
@@ -939,8 +939,8 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                         style={[styles.btnPrimary, styles.btnHalf, styles.btnSaved]}
                         onPress={() => history.removeEntry(itemId, itemType)}
                       >
-                        <IconCheck color="#4ade80" />
-                        <Text style={[styles.btnPrimaryText, { color: '#4ade80' }]}>Watched</Text>
+                        <IconCheck color={colors.statusWatched} />
+                        <Text style={[styles.btnPrimaryText, { color: colors.statusWatched }]}>Watched</Text>
                       </TouchableOpacity>
                     ) : (
                       <TouchableOpacity
@@ -1007,7 +1007,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                     }}
                   >
                     {isWatching ? <IconStop /> : <IconPlay />}
-                    <Text style={[styles.btnSecondaryText, isWatching && { color: '#818cf8' }]}>
+                    <Text style={[styles.btnSecondaryText, isWatching && { color: colors.statusWatching }]}>
                       {isWatching ? MEDIA.stopWatching : MEDIA.startWatching}
                     </Text>
                   </TouchableOpacity>
@@ -1234,7 +1234,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     backgroundColor: colors.accent, borderRadius: radii.md,
     paddingVertical: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm,
   },
-  btnSaved:    { backgroundColor: '#0d2d1a', borderWidth: 1.5, borderColor: 'rgba(74,222,128,0.2)' },
+  btnSaved:    { backgroundColor: colors.statusWatchedDim, borderWidth: 1.5, borderColor: `${colors.statusWatched}33` },
   btnPrimaryText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: '#fff' },
 
   btnSecondary: {
@@ -1243,7 +1243,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     paddingVertical: 10.5, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm,
   },
   btnSecondaryActive: { borderColor: `${colors.accent}66`, backgroundColor: colors.accentDim },
-  btnWatching:        { borderColor: 'rgba(99,102,241,0.45)', backgroundColor: 'rgba(99,102,241,0.12)' },
+  btnWatching:        { borderColor: `${colors.statusWatching}73`, backgroundColor: colors.statusWatchingDim },
   btnSecondaryText:   { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textSecondary },
 
   sectionTitle: { fontFamily: fontFamily.sansBold, fontSize: 10, letterSpacing: 0.8, textTransform: 'uppercase', color: colors.textMuted, marginTop: spacing.lg, marginBottom: spacing.md },
