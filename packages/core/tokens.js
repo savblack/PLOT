@@ -43,6 +43,15 @@ export const colors = {
     statusWatchingDim: 'rgba(88,82,201,0.12)',
     statusWatched: '#047857',
     statusWatchedDim: 'rgba(4,120,87,0.12)',
+    // Outcome of an operation (the toast's tick, the import's "have" badge),
+    // which is a different thing from a title's watch state even though the
+    // two currently resolve to the same green — the same deliberate overlap
+    // as badgeSupporter and accent below. Keeping them separate means either
+    // can move without dragging the other with it. Was #4ade80 inline in both
+    // apps, which measured 1.66:1 in light mode.
+    success: '#047857',
+    successDim: 'rgba(4,120,87,0.08)',
+    successBorder: 'rgba(4,120,87,0.3)',
     // Profile badges. Two distinct things, so two distinct colours: blue =
     // paid Premium (entitlement), pink = Ko-fi supporter (recognition). Pink
     // tracks the accent ladder; blue is its own hue so the two never read as
@@ -77,6 +86,9 @@ export const colors = {
     statusWatchingDim: 'rgba(99,102,241,0.12)',
     statusWatched: '#4ade80',
     statusWatchedDim: '#0d2d1a',
+    success: '#4ade80',
+    successDim: 'rgba(74,222,128,0.08)',
+    successBorder: 'rgba(74,222,128,0.35)',
     badgePremium: '#1D9BF0',
     badgeSupporter: '#F06A88',
   },

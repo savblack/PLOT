@@ -512,8 +512,8 @@ export default function ImportView() {
                       fontSize: '0.58rem', fontWeight: 700, letterSpacing: '0.05em',
                       padding: '0.2rem 0.45rem', borderRadius: 99,
                       textTransform: 'uppercase', flexShrink: 0,
-                      background: 'rgba(74,222,128,0.08)', color: '#4ade80',
-                      border: '1px solid rgba(74,222,128,0.2)',
+                      background: 'var(--success-dim)', color: 'var(--success)',
+                      border: '1px solid var(--success-border)',
                     }}>{IMPORT_VIEW.haveBadge}</div>
                   )}
                 </div>

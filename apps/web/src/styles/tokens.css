@@ -53,6 +53,9 @@
   --status-watching-dim: rgba(88,82,201,0.12);
   --status-watched: #047857;
   --status-watched-dim: rgba(4,120,87,0.12);
+  --success: #047857;
+  --success-dim: rgba(4,120,87,0.08);
+  --success-border: rgba(4,120,87,0.3);
   --badge-premium: #1A8CD8;
   --badge-supporter: #E05578;
   --radius-md: 16px;
@@ -149,6 +152,9 @@
   --status-watching-dim: rgba(99,102,241,0.12);
   --status-watched: #4ade80;
   --status-watched-dim: #0d2d1a;
+  --success: #4ade80;
+  --success-dim: rgba(74,222,128,0.08);
+  --success-border: rgba(74,222,128,0.35);
   --badge-premium: #1D9BF0;
   --badge-supporter: #F06A88;
   /* @tokens:end */
