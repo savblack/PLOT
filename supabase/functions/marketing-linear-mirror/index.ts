@@ -92,6 +92,56 @@ const hasChangedSinceSync = (post: Row) =>
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
+// ── Run history ──────────────────────────────────────────────────────────────
+// Every sweep lands in marketing_batch_runs, the same table generate and publish
+// already use. The point is liveness: a sweep with nothing to do used to write
+// nothing anywhere, so "is the mirror running?" could only be answered by arming
+// a post and waiting for a tick. Now the newest linear_mirror row's timestamp is
+// the answer — older than ~10 minutes and the schedule has stopped.
+//
+// Defensively wrapped throughout: this is telemetry about the sweep, not the
+// sweep's job, and a logging failure must never cost a mirrored week.
+const HEARTBEAT_RETENTION_HOURS = 24;
+
+const startRun = async (supabase: Db): Promise<string | null> => {
+  try {
+    const { data } = await supabase.from('marketing_batch_runs')
+      .insert({ run_type: 'linear_mirror' }).select('id').single();
+    return data?.id ?? null;
+  } catch (err) {
+    console.error('Could not open a run record:', err);
+    return null;
+  }
+};
+
+const finishRun = async (supabase: Db, runId: string | null, patch: Record<string, unknown>) => {
+  if (!runId) return;
+  try {
+    await supabase.from('marketing_batch_runs')
+      .update({ finished_at: new Date().toISOString(), ...patch }).eq('id', runId);
+  } catch (err) {
+    console.error('Could not close the run record:', err);
+  }
+};
+
+/**
+ * Drop idle heartbeats older than a day, so 288 rows a day do not accumulate
+ * forever. Only 'idle' rows go: anything that created, refreshed or closed an
+ * issue, and anything that failed, is real history and stays.
+ *
+ * Pruning only runs when the sweep runs, which is what makes a dead schedule
+ * legible — nothing removes the last heartbeat, so its age is the outage.
+ */
+const pruneHeartbeats = async (supabase: Db) => {
+  try {
+    const cutoff = new Date(Date.now() - HEARTBEAT_RETENTION_HOURS * 3600000).toISOString();
+    await supabase.from('marketing_batch_runs').delete()
+      .eq('run_type', 'linear_mirror').eq('status', 'idle').lt('started_at', cutoff);
+  } catch (err) {
+    console.error('Heartbeat prune failed:', err);
+  }
+};
+
 // ── Linear ───────────────────────────────────────────────────────────────────
 
 // deno-lint-ignore no-explicit-any
@@ -368,10 +418,13 @@ Deno.serve(async (req) => {
 
   if (!LINEAR_API_KEY) {
     // Not an error: mirroring is optional, and the desk still works without it.
+    // Deliberately before startRun — an unconfigured install should not fill the
+    // run log with heartbeats for a sweep that is not happening.
     return json({ ok: true, skipped: 'LINEAR_API_KEY is not set' });
   }
 
   const supabase = createClient<Database>(SUPABASE_URL, serviceKey());
+  const runId = await startRun(supabase);
 
   try {
     const ctx = await loadContext();
@@ -388,14 +441,18 @@ Deno.serve(async (req) => {
       .map(([, name]) => name);
     if (unresolved.length) console.warn(`Linear mirror: no workflow state named ${unresolved.join(', ')} — those moves are being skipped.`);
 
-    if (created || refreshed || closed) {
-      console.log(`Linear mirror: created ${created}, refreshed ${refreshed}, closed ${closed}.`);
-    }
-    return json({ ok: true, created, refreshed, closed, ...(unresolved.length ? { unresolved } : {}) });
+    const counts = { created, refreshed, closed, ...(unresolved.length ? { unresolved } : {}) };
+    const didWork = created > 0 || refreshed > 0 || closed > 0;
+    if (didWork) console.log(`Linear mirror: created ${created}, refreshed ${refreshed}, closed ${closed}.`);
+    await finishRun(supabase, runId, { status: didWork ? 'succeeded' : 'idle', counts });
+    await pruneHeartbeats(supabase);
+
+    return json({ ok: true, ...counts });
   } catch (err) {
     // A configuration problem (missing state, renamed team) fails the whole
     // sweep rather than every post individually — one loud error beats N.
     console.error('Linear mirror failed:', err);
+    await finishRun(supabase, runId, { status: 'failed', error: String((err as Error).message).slice(0, 500) });
     return json({ error: String((err as Error).message) }, 500);
   }
 });

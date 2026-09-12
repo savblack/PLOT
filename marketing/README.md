@@ -169,13 +169,27 @@ Optional overrides, all Edge Function secrets: `LINEAR_MARKETING_TEAM_ID` (PLO),
 that cannot be resolved is reported in the sweep's response as `unresolved`
 rather than failing it — those moves are skipped, not misfiled.
 
-To check the sweep is running:
+To check the sweep is running, read `marketing_batch_runs` — every sweep lands
+there, so the newest `linear_mirror` row's timestamp is the answer. Older than
+about ten minutes means the schedule has stopped:
+
+```sql
+select started_at, status, counts, error
+from marketing_batch_runs
+where run_type = 'linear_mirror'
+order by started_at desc limit 10;
+```
+
+`idle` is a sweep that found nothing to do — most of them. Those are pruned after
+24 hours by the sweep itself; runs that created, refreshed or closed an issue, and
+runs that failed, are kept. Nothing prunes the *last* heartbeat, so a dead
+schedule shows up as a stale newest row rather than as an empty table.
+
+The cron job itself, if you need to look at it directly (requires the SQL editor —
+the `cron` schema is not reachable over PostgREST):
 
 ```sql
 select jobname, schedule, active from cron.job where jobname = 'marketing-linear-mirror';
-select status, return_message, start_time from cron.job_run_details
-  where jobid = (select jobid from cron.job where jobname = 'marketing-linear-mirror')
-  order by start_time desc limit 5;
 ```
 
 A post that failed to mirror carries the reason in
