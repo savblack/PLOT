@@ -9,7 +9,7 @@ import { MODERATION } from '../../copy/moderation.js';
 // If this file and the migration disagree, every submission fails with an
 // opaque 23514 and the reporter sees "we could not send that report".
 
-test('reason ids match the check constraint in 20260912110000_report_and_block', () => {
+test('reason ids match the check constraint in 20260912130000_report_and_block', () => {
   assert.deepEqual(
     [...REPORT_REASONS].sort(),
     ['harassment', 'hate', 'impersonation', 'other', 'sexual', 'spam'],
