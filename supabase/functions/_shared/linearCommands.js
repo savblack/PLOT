@@ -42,6 +42,7 @@ const FIELD_ALIASES = {
 // marketing_review_events (matching the web desk's vocabulary exactly).
 const SIMPLE_COMMANDS = {
   approve: 'approve',
+  generate: 'generate',
   reject: 'reject',
   unapprove: 'unapprove',
   regenerate: 'regenerate',
@@ -86,6 +87,17 @@ const parseHashtags = (value) =>
 // (mergeCopyFromForm in admin-review), so both editors produce the same array.
 const parseParagraphs = (value) =>
   value.split(/\n\s*\n/).map((p) => p.trim().replace(/\n+/g, ' ')).filter(Boolean);
+
+/**
+ * Commands that act on the whole week rather than on one post, so they do not
+ * need the issue they are typed on to be a mirrored post at all.
+ *
+ * Without this distinction every command had to resolve to a row first, which
+ * meant /pause — a global kill switch — only worked if you happened to be
+ * looking at a mirrored card, and /generate could not work at all: it exists
+ * precisely for when there is nothing on the board yet.
+ */
+export const WEEK_SCOPED = new Set(['pause', 'resume', 'generate', 'help']);
 
 /**
  * Parse one Linear comment body into an intent.
@@ -177,6 +189,9 @@ export const HELP_TEXT = [
   '`/publish-now` — approve and send within minutes. `/retry` — re-queue failed platforms.',
   '`/regenerate` — throw the copy away and have the worker rewrite it.',
   '`/pause` · `/resume` — the global publishing switch (affects every post).',
+  '`/generate` — build the coming week now, instead of waiting for Sunday.',
+  '',
+  'The last three act on the whole week, so you can comment them on any card here.',
   '',
   'To edit copy, comment `/copy` and then any of these lines — anything you leave out stays as it is:',
   '```',

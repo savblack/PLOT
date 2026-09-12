@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseCommand, BOT_MARKER } from '../../supabase/functions/_shared/linearCommands.js';
+import { parseCommand, BOT_MARKER, WEEK_SCOPED, HELP_TEXT } from '../../supabase/functions/_shared/linearCommands.js';
 
 test('ignores an ordinary comment', () => {
   assert.equal(parseCommand('looks good to me, ship it'), null);
@@ -103,4 +103,24 @@ test('an unknown command is reported rather than ignored', () => {
   const r = parseCommand('/yolo');
   assert.equal(r.command, 'unknown');
   assert.match(r.errors[0], /Unknown command/);
+});
+
+test('/generate parses as a week-scoped command', () => {
+  assert.deepEqual(parseCommand('/generate'), { command: 'generate' });
+});
+
+test('week-scoped commands are the ones that need no post', () => {
+  // These act on the whole pipeline, so the card they are typed on is just
+  // somewhere to type — /generate exists for when the board is empty.
+  for (const c of ['pause', 'resume', 'generate', 'help']) {
+    assert.ok(WEEK_SCOPED.has(c), `${c} should be week-scoped`);
+  }
+  // Anything that changes one post must resolve to a row first.
+  for (const c of ['approve', 'reject', 'unapprove', 'reschedule', 'publish_now', 'retry', 'regenerate', 'edit']) {
+    assert.ok(!WEEK_SCOPED.has(c), `${c} must not be week-scoped`);
+  }
+});
+
+test('the help text mentions generating the week', () => {
+  assert.match(HELP_TEXT, /`\/generate`/);
 });
