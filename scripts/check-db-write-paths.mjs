@@ -94,102 +94,34 @@ async function query(sql) {
   // -X ignores ~/.psqlrc; -tA gives untitled, unaligned output so the single
   // json_agg cell comes back parseable. Empty result → 'null'.
   const wrapped = `select coalesce(json_agg(t), '[]'::json) from (${sql.replace(/;\s*$/, '')}) t`;
-
-  // The connection string goes through the ENVIRONMENT, never argv.
   //
-  // It used to be passed as an argument. Two ways that leaks the production
-  // database password, and both happened:
-  //
-  //   1. argv is world-readable. Any process can read it out of `ps` for as
-  //      long as the call runs.
-  //   2. If psql is missing, Node throws an ENOENT whose error object carries
-  //      the full args array, and an uncaught throw prints it. On 2026-09-12
-  //      running this without postgresql@17 on PATH printed the live password
-  //      in plaintext, and it had to be rotated.
-  //
-  // libpq reads PG* from the environment, so splitting the URI keeps the
-  // password out of both.
-  // Keep the credential out of argv WHERE WE CAN, and never at the cost of
-  // working. connEnv understands the two documented conninfo shapes; if it does
-  // not recognise this one, psql's own parser is authoritative and gets the
-  // string directly, exactly as it did before any of this.
-  //
-  // The fallback is not hypothetical. Two CI runs were spent guessing at the
-  // format of a secret nobody can read back — masked in logs, by design. A
-  // parser that must be right about an opaque input is the wrong shape; this
-  // one only has to be right to *improve* things.
-  const parsed = connEnv(DB_URL);
-  const pgEnv = parsed ? { ...process.env, ...parsed } : process.env;
-  const connArgs = parsed ? [] : [DB_URL];
-
+  // DB_URL stays a psql ARGUMENT. Passing it through PG* environment variables
+  // instead would keep it out of `ps`, which is worth having, and three
+  // attempts at it broke this gate: the secret is not a shape any parser here
+  // recognised, and it cannot be read back to find out — GitHub masks it, by
+  // design. psql's own parser is authoritative and has always accepted it.
+  // Competing with it, guessing, with CI as the only feedback loop, is not a
+  // trade worth making for a local-machine hardening. Left as it was.
   let out;
   try {
-    out = execFileSync('psql', ['-X', '-tAc', wrapped, ...connArgs], {
-      encoding: 'utf8', maxBuffer: 32 * 1024 * 1024, env: pgEnv,
+    out = execFileSync('psql', ['-X', '-tAc', wrapped, DB_URL], {
+      encoding: 'utf8', maxBuffer: 32 * 1024 * 1024,
     }).trim();
   } catch (err) {
-    // Belt and braces. Nothing here should contain the password any more, but
-    // this is the path that leaked it once, so it gets scrubbed on the way out
-    // rather than trusted.
-    const redact = (t) => {
-      let out = String(t ?? '');
-      // Scrub the whole connection string first: on the fallback path the
-      // password is not separated out, and the string itself is the secret.
-      for (const secret of [DB_URL, pgEnv.PGPASSWORD]) {
-        if (secret) out = out.split(secret).join('«redacted»');
-      }
-      return out;
-    };
+    // THE bug this file was opened for. Running without psql on PATH threw an
+    // ENOENT whose error object carries the full args array — including
+    // DB_URL — and printing it put the live production database password on
+    // screen in plaintext on 2026-09-12. It had to be rotated.
     if (err?.code === 'ENOENT') {
       console.error('psql not found. Production is PG17: brew install postgresql@17');
       console.error('and put it on PATH, e.g. PATH="/opt/homebrew/opt/postgresql@17/bin:$PATH"');
       process.exit(1);
     }
+    const redact = (t) => String(t ?? '').split(DB_URL).join('«redacted»');
     console.error(`psql failed: ${redact(err?.stderr || err?.message)}`);
     process.exit(1);
   }
   return JSON.parse(out || '[]');
-}
-
-/**
- * Split a libpq connection string into PG* environment variables.
- *
- * Handles the URI form (postgresql://user:pw@host:port/db) and the
- * keyword/value form (host=… port=… user=… password=… dbname=…).
- *
- * Returns PG* vars, or null when it does not recognise the shape. Null is not
- * an error: the caller hands the string to psql instead, whose parser is the
- * authoritative one. Never throws and never echoes the input, which is a
- * credential.
- */
-function connEnv(conn) {
-  const raw = String(conn).trim();
-
-  if (/^postgres(ql)?:\/\//i.test(raw)) {
-    let u;
-    try { u = new URL(raw); } catch { return null; }
-    return {
-      PGHOST: u.hostname,
-      PGPORT: u.port || '5432',
-      PGUSER: decodeURIComponent(u.username),
-      PGPASSWORD: decodeURIComponent(u.password),
-      PGDATABASE: u.pathname.replace(/^\//, '') || 'postgres',
-    };
-  }
-
-  // keyword/value: host=db.x.supabase.co port=5432 user=postgres password='a b'
-  const kv = {};
-  for (const [, k, q, v] of raw.matchAll(/(\w+)\s*=\s*(?:'((?:[^'\\]|\\.)*)'|(\S+))/g)) {
-    kv[k.toLowerCase()] = (q ?? v ?? '').replace(/\\(.)/g, '$1');
-  }
-  if (!kv.host) return null;
-  return {
-    PGHOST: kv.host,
-    PGPORT: kv.port || '5432',
-    PGUSER: kv.user || 'postgres',
-    PGPASSWORD: kv.password || '',
-    PGDATABASE: kv.dbname || 'postgres',
-  };
 }
 
 const problems = [];
