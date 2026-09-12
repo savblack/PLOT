@@ -56,6 +56,19 @@ verify_jwt = false
 [functions.stripe-webhook]
 verify_jwt = false
 
+# Linear mirror sweep — called every 5 minutes by pg_cron via pg_net, which
+# supplies the Vault service-role bearer, so verify_jwt stays true and the
+# gateway rejects anything unsigned.
+#
+# Declared because the GitHub integration did not deploy this directory on
+# 78eb5f1 and still reported success: it shipped marketing-linear-sync, which
+# was declared here, and silently skipped marketing-linear-mirror, which was
+# not. Every other function in this tree is declared; critic-score is the lone
+# undeclared one and predates the integration. Treat a config.toml entry as
+# required for a NEW function, not as optional metadata.
+[functions.marketing-linear-mirror]
+verify_jwt = true
+
 # Linear webhook — reviewing the marketing week from Linear. Linear signs each
 # delivery with LINEAR_WEBHOOK_SECRET and sends no Supabase JWT, so the gateway
 # must let deliveries through; the HMAC check inside the function is the auth.
