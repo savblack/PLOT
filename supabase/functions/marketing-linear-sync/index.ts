@@ -167,7 +167,10 @@ const applyEdit = async (supabase: Db, post: Row, fields: Record<string, unknown
     ? validateGuide(merged, Array.isArray(post.tmdb_refs) ? post.tmdb_refs.length : null)
     : post.post_type === 'question'
       ? validateConversation({ question: merged.x ?? merged.threads })
-      : validateCopy(merged);
+      : validateCopy(merged, {
+        days_until: post.payload?.days_until,
+        when_label: post.payload?.when_label,
+      });
 
   if (!result.valid) return { ok: false as const, errors: result.errors };
 

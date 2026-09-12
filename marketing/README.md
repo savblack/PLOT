@@ -241,6 +241,11 @@ Code CLI (Codex is the local/manual default):
   - `copy`
   - `generated_copy`
 
+Copy that names a day the post's own schedule contradicts is rejected: a
+countdown 14 days out cannot say "this Friday". `validateCopy` takes the post's
+`days_until` / `when_label` and checks the claim against them, so the rule holds
+whether the copy came from the worker or from a `/copy` comment in Linear.
+
 The validation boundary is `supabase/functions/_shared/copySchema.js`, re-exported
 as `marketing/copy/schema.mjs` for the Node pipeline. It lives in the functions
 tree because both runtimes now enforce it: `copy/save.mjs` on the worker's output,

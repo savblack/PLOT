@@ -31,7 +31,11 @@ export const POST_TYPE_BRIEFS = {
     '(most popular first), so their captions can tease the 2-3 most exciting titles. X gets ONLY the ' +
     'top title\'s image — the X text must carry the rest: lead with the top title, then name the other ' +
     'titles compactly (e.g. "Also this week: A, B, and C"). Fit 280 characters; drop titles before truncating mid-name.',
-  countdown: 'A countdown post. The payload says how many days remain until the release. Lead with the anticipation; the big number is on the image.',
+  countdown:
+    'A countdown post. The payload says how many days remain until the release. Lead with the anticipation; ' +
+    'the big number is on the image. Name the release using the payload\'s `when_label` in full ' +
+    '("Friday 25 September"), NEVER a relative day. "This Friday" on a T-14 countdown points at the wrong ' +
+    'Friday, contradicts the article it links to, and is rejected by the validator.',
   now_streaming: 'This title is available to stream at home starting today. ALWAYS name the platform it\'s on — lead with the US provider from the payload\'s `streaming` object (US default), adding UK/AU only if they differ. Never guess a platform that isn\'t in the data.',
   trending:
     'The weekly top-10 trending chart. Comment on the most interesting movement (a new entry, a big climb, a stubborn #1). ' +
@@ -60,13 +64,65 @@ export const GUIDE_ARCHETYPE_BRIEFS = {
 
 const hasUrl = (s) => /https?:\/\/|www\.|\b[a-z0-9-]+\.(com|tv|net|org|io|co)\b/i.test(s);
 
+// Relative time references, and the furthest out each one can still be true.
+//
+// Added after a T-14 countdown published "Heart of the Beast lands in cinemas
+// this Friday" for a release thirteen days away. The planner had handed the
+// worker exactly the right data — `when_label: "Friday 25 September"`,
+// `days_until: 14` — and the worker compressed it into a relative day that
+// pointed at the wrong Friday and contradicted the article the post linked to.
+// Nothing mechanical caught it; it surfaced because someone happened to read
+// the post. The brief now forbids this, but a brief is guidance and this file
+// is the boundary: a weaker model must not be able to reintroduce it.
+//
+// Each rule fires only when the post itself carries `days_until`, so the posts
+// that legitimately say "tonight" or "today" — watch_tonight, now_streaming —
+// are unaffected: they are about now, and either carry no horizon or carry 0.
+// Note that an absolute date containing a weekday ("Friday 25 September") is
+// deliberately NOT matched; only `this`/`next` + a day are.
+const RELATIVE_TIME_RULES = [
+  { re: /\b(today|tonight)\b/i, maxDays: 0, label: '"today" / "tonight"' },
+  { re: /\btomorrow\b/i, maxDays: 1, label: '"tomorrow"' },
+  { re: /\b(this|next)\s+(mon|tues?|wed(nes)?|thurs?|fri|satur?|sun)(day)?\b/i, maxDays: 7, label: 'a relative weekday such as "this Friday"' },
+  { re: /\b(this|next)\s+(week|weekend)\b/i, maxDays: 7, label: '"this week" / "next week"' },
+];
+
+/**
+ * Reject a relative day reference the post's own schedule says cannot be right.
+ * No-op unless the caller supplies days_until — absent horizon, absent claim.
+ */
+const relativeTimeErrors = (copy, { days_until: daysUntil, when_label: whenLabel } = {}) => {
+  if (typeof daysUntil !== 'number' || !Number.isFinite(daysUntil)) return [];
+
+  const errors = [];
+  const fields = { x: copy.x, instagram: copy.instagram, threads: copy.threads, page_title: copy.page_title };
+  for (const [field, text] of Object.entries(fields)) {
+    if (!text) continue;
+    for (const rule of RELATIVE_TIME_RULES) {
+      const hit = rule.re.exec(text);
+      if (!hit || daysUntil <= rule.maxDays) continue;
+      errors.push(
+        `${field} says "${hit[0]}" but the release is ${daysUntil} days away` +
+        `${whenLabel ? ` (${whenLabel})` : ''} — ${rule.label} is wrong this far out; use the full date`,
+      );
+    }
+  }
+  return errors;
+};
+
 /**
  * Validate and normalize a worker's copy output.
  * Returns { valid, errors: string[], copy } — `copy` is the normalized object
  * (safe to persist) when valid. Hard failures reject the post; normalization
  * silently fixes mechanical issues (trailing whitespace, # prefixes, over-length X).
+ *
+ * @param {object} raw      the worker's output
+ * @param {object} [context] the post's own facts, for checks the copy alone
+ *   cannot settle: `days_until` and `when_label` from its payload. Optional —
+ *   omitting it skips those checks rather than failing, so every existing
+ *   caller keeps working.
  */
-export const validateCopy = (raw) => {
+export const validateCopy = (raw, context = {}) => {
   const errors = [];
   if (!raw || typeof raw !== 'object') {
     return { valid: false, errors: ['copy is not an object'], copy: null };
@@ -116,6 +172,8 @@ export const validateCopy = (raw) => {
   if (!CTA_VARIANTS.includes(copy.cta_variant)) {
     errors.push(`cta_variant must be one of ${CTA_VARIANTS.join(', ')} (got "${copy.cta_variant}")`);
   }
+
+  errors.push(...relativeTimeErrors(copy, context));
 
   // Normalization that can't fail: keep X within the hard limit.
   if (copy.x.length > 280) copy.x = `${copy.x.slice(0, 279)}…`;
