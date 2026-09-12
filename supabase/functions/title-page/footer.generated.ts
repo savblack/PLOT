@@ -12,6 +12,7 @@ export const FOOTER_HTML = `
         <a href="https://app.theplot.tv/signup" data-cta="footer">Sign up</a>
         <a href="/privacy.html" data-cta="footer">Privacy</a>
         <a href="/terms.html" data-cta="footer">Terms</a>
+        <a href="/community.html" data-cta="footer">Community</a>
       </div>
       <div class="footer-bottom">
         <div class="footer-copy">&copy; 2026 PLOT</div>

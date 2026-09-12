@@ -46,6 +46,7 @@ export const COMMON = {
   makePublic: 'Make public',
   makePrivate: 'Make private',
   privacyPolicy: 'Privacy Policy',
+  communityStandards: 'Community Standards',
   termsOfService: 'Terms of Service',
   loading: 'Loading…',
 };
