@@ -182,8 +182,20 @@ create table if not exists public.reports (
   reason      text not null check (reason in ('harassment','hate','sexual','impersonation','spam','other')),
   detail      text check (char_length(detail) <= 2000),
   status      text not null default 'open' check (status in ('open','actioned','dismissed')),
-  created_at  timestamptz not null default now()
+  created_at  timestamptz not null default now(),
+  -- Mirror state, same shape feedback uses. A stranded report has to be visible
+  -- as a stranded report: the feedback pipeline has been silently broken twice,
+  -- once by a revoked key and once by a credential that was never set, and both
+  -- were found late because nothing recorded the failure on the row.
+  linear_issue_id  text,
+  linear_issue_url text,
+  linear_synced_at timestamptz,
+  linear_sync_error text
 );
+
+-- Feeds the backfill: rows that were emailed but never mirrored.
+create index if not exists reports_unmirrored_idx on public.reports (created_at)
+  where linear_issue_id is null;
 
 create index if not exists reports_reported_id_idx on public.reports(reported_id);
 create index if not exists reports_status_idx on public.reports(status) where status = 'open';
