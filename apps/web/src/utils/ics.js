@@ -29,11 +29,11 @@ export function generateICS(events) {
   const lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//Plot//Plot Calendar//EN',
+    'PRODID:-//PLOT//PLOT Calendar//EN',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
-    'X-WR-CALNAME:Plot Calendar',
-    'X-WR-CALDESC:Your movies and TV calendar from Plot',
+    'X-WR-CALNAME:PLOT Calendar',
+    'X-WR-CALDESC:Your movies and TV calendar from PLOT',
   ];
 
   for (const ev of events) {

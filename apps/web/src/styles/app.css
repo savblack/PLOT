@@ -4407,7 +4407,7 @@ a.provider-chip--link:hover {
 }
 
 .discover-hero-backdrop-fallback {
-  background: linear-gradient(135deg, #2d1b2e 0%, #1a1a2e 55%, #16213e 100%);
+  background: var(--surface-sunken);
 }
 
 .discover-hero-overlay {
@@ -5360,6 +5360,9 @@ a.provider-chip--link:hover {
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
+    /* Without this an infinite animation (the auth poster wall) keeps
+       restarting every frame rather than coming to rest. */
+    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
 }
