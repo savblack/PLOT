@@ -51,7 +51,34 @@ const LINEAR_API_KEY = Deno.env.get('LINEAR_API_KEY') ?? '';
 const TEAM_REF = Deno.env.get('LINEAR_MARKETING_TEAM_ID') ?? 'PLO';
 const PROJECT_REF = Deno.env.get('LINEAR_MARKETING_PROJECT_ID') ?? 'Content Automation';
 const REVIEW_STATE = Deno.env.get('LINEAR_REVIEW_STATE') ?? 'In Review';
+const APPROVED_STATE = Deno.env.get('LINEAR_APPROVED_STATE') ?? 'Approved';
+const REJECTED_STATE = Deno.env.get('LINEAR_REJECTED_STATE') ?? 'Canceled';
 const DONE_STATE = Deno.env.get('LINEAR_DONE_STATE') ?? 'Done';
+
+// Which workflow state each status belongs in. The row is the source of truth,
+// so this is the direction the board is reconciled towards — a post approved on
+// the web desk drags its card to Approved on the next sweep, and one rejected
+// there drags it to Canceled, instead of the two surfaces quietly disagreeing.
+//
+// 'published' is absent: closePublished owns that move, because it also reports
+// where the post actually went.
+const STATE_FOR_STATUS: Record<string, 'review' | 'approved' | 'rejected'> = {
+  needs_review: 'review',
+  approved: 'approved',
+  vetoed: 'rejected',
+};
+
+// Statuses worth a card at all. A post is mirrored once it is decidable and
+// until it is resolved; 'vetoed' is reconciled but never opens a new issue,
+// since a rejected post needs no review.
+const MIRRORED = ['needs_review', 'approved'];
+
+// How far back a post can be scheduled and still get a NEW issue. Without this
+// the first sweep after widening would have opened issues for nine guides
+// approved in July and August that nobody is going to action — the board is a
+// review surface for the current cycle, not an archive. Existing issues are
+// reconciled regardless of age.
+const CREATE_WINDOW_DAYS = Number(Deno.env.get('LINEAR_CREATE_WINDOW_DAYS') ?? '14');
 
 // A post whose row moved on since its issue was last rendered.
 //
@@ -83,7 +110,11 @@ const graphql = async (query: string, variables: Record<string, unknown> = {}): 
 
 const isUuid = (s: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
 
-type Context = { teamId: string; stateId: string; doneStateId: string | null; projectId: string | null };
+type Context = {
+  teamId: string;
+  projectId: string | null;
+  states: { review: string; approved: string | null; rejected: string | null; done: string | null };
+};
 
 /**
  * Resolve team, project and the two states we set, by name or UUID, so the
@@ -113,7 +144,11 @@ const loadContext = async (): Promise<Context> => {
       `LINEAR_REVIEW_STATE to one of: ${(team.states.nodes as Row[]).map((s) => s.name).join(', ')}`,
     );
   }
-  // Missing Done is survivable: issues just stay where they are once published.
+  // Only the review state is required. The others are survivable: without them a
+  // card simply stays where it is rather than being filed wrongly, and the
+  // response says how many moves were skipped.
+  const approved = byName(APPROVED_STATE);
+  const rejected = byName(REJECTED_STATE);
   const done = byName(DONE_STATE);
 
   let projectId: string | null = null;
@@ -131,7 +166,16 @@ const loadContext = async (): Promise<Context> => {
     }
   }
 
-  return { teamId: team.id, stateId: state.id, doneStateId: done?.id ?? null, projectId };
+  return {
+    teamId: team.id,
+    projectId,
+    states: {
+      review: state.id,
+      approved: approved?.id ?? null,
+      rejected: rejected?.id ?? null,
+      done: done?.id ?? null,
+    },
+  };
 };
 
 // ── The three passes ─────────────────────────────────────────────────────────
@@ -151,13 +195,29 @@ const markFailed = (supabase: Db, id: string, error: string) =>
     .update({ linear_sync_error: error.slice(0, 500) })
     .eq('id', id);
 
-/** Posts awaiting review with no issue yet. */
+/** The workflow state a row's status belongs in, if we could resolve it. */
+const stateForPost = (ctx: Context, post: Row): string | null => {
+  const key = STATE_FOR_STATUS[post.status as string];
+  return key ? ctx.states[key] : null;
+};
+
+/**
+ * Open an issue for any mirrored post that has none.
+ *
+ * Covers approved posts as well as those awaiting review: a post approved on the
+ * web desk would otherwise never appear on the board, which is exactly the
+ * divergence having two surfaces is supposed to avoid. Each opens directly in
+ * the state its row is already in, so an approved post is never presented as
+ * still needing a decision.
+ */
 const createMissing = async (supabase: Db, ctx: Context): Promise<number> => {
+  const cutoff = new Date(Date.now() - CREATE_WINDOW_DAYS * 86400000).toISOString();
   const { data, error } = await supabase
     .from('marketing_posts')
     .select('*, marketing_post_publications(platform,status)')
-    .eq('status', 'needs_review')
+    .in('status', MIRRORED)
     .is('linear_issue_id', null)
+    .gte('scheduled_for', cutoff)
     .order('scheduled_for');
   if (error) throw new Error(error.message);
 
@@ -173,7 +233,7 @@ const createMissing = async (supabase: Db, ctx: Context): Promise<number> => {
             title: buildTitle(post),
             description: buildDescription(post, SUPABASE_URL),
             teamId: ctx.teamId,
-            stateId: ctx.stateId,
+            stateId: stateForPost(ctx, post) ?? ctx.states.review,
             dueDate: dueDateFor(post),
             ...(ctx.projectId ? { projectId: ctx.projectId } : {}),
           },
@@ -192,14 +252,23 @@ const createMissing = async (supabase: Db, ctx: Context): Promise<number> => {
 };
 
 /**
- * Re-render the body of any mirrored post that has changed since it was synced —
- * a copy edit from a comment, a reschedule, a regeneration.
+ * Re-render any mirrored post that has changed since it was synced — a copy edit
+ * from a comment, a reschedule, a regeneration, an approval — and put its card
+ * in the state its row says it is in.
  *
- * The issue's STATE is never touched here. By the time a refresh runs the
- * operator may have approved or rejected the post, and resetting it to In Review
- * would silently un-approve something they had already cleared.
+ * Reconciling TOWARDS THE ROW is the point: the database is the source of truth,
+ * so a post approved on the web desk drags its card to Approved here rather than
+ * leaving it sitting in In Review forever. (An earlier version refused to touch
+ * state at all, out of a worry about un-approving something. That worry was
+ * about blindly resetting every card to In Review on each sweep; following the
+ * row's actual status is the opposite of that.)
+ *
+ * The visible consequence if the webhook is down: a card dragged in Linear
+ * springs back on the next sweep, because the drag never reached the database.
+ * That is honest — the change genuinely did not take effect — and it surfaces a
+ * broken webhook rather than hiding it.
  */
-const refreshChanged = async (supabase: Db): Promise<number> => {
+const refreshChanged = async (supabase: Db, ctx: Context): Promise<number> => {
   const { data, error } = await supabase
     .from('marketing_posts')
     .select('*, marketing_post_publications(platform,status)')
@@ -221,6 +290,7 @@ const refreshChanged = async (supabase: Db): Promise<number> => {
             title: buildTitle(post),
             description: buildDescription(post, SUPABASE_URL),
             dueDate: dueDateFor(post),
+            ...(stateForPost(ctx, post) ? { stateId: stateForPost(ctx, post) } : {}),
           },
         },
       );
@@ -242,7 +312,7 @@ const refreshChanged = async (supabase: Db): Promise<number> => {
  * claim a post went out when it did not.
  */
 const closePublished = async (supabase: Db, ctx: Context): Promise<number> => {
-  if (!ctx.doneStateId) return 0;
+  if (!ctx.states.done) return 0;
 
   const { data, error } = await supabase
     .from('marketing_posts')
@@ -277,7 +347,7 @@ const closePublished = async (supabase: Db, ctx: Context): Promise<number> => {
           `mutation($id: String!, $stateId: String!) {
              issueUpdate(id: $id, input: { stateId: $stateId }) { success }
            }`,
-          { id: post.linear_issue_id, stateId: ctx.doneStateId },
+          { id: post.linear_issue_id, stateId: ctx.states.done },
         );
       }
       await markSynced(supabase, post.id);
@@ -306,12 +376,22 @@ Deno.serve(async (req) => {
   try {
     const ctx = await loadContext();
     const created = await createMissing(supabase, ctx);
-    const refreshed = await refreshChanged(supabase);
+    const refreshed = await refreshChanged(supabase, ctx);
     const closed = await closePublished(supabase, ctx);
+
+    // A state we could not resolve does not fail the sweep — cards just stay put
+    // rather than being filed wrongly — but it must not be invisible either, or
+    // a renamed state degrades into "the board stopped updating" with no reason
+    // attached.
+    const unresolved = Object.entries({ approved: APPROVED_STATE, rejected: REJECTED_STATE, done: DONE_STATE })
+      .filter(([key]) => !ctx.states[key as 'approved' | 'rejected' | 'done'])
+      .map(([, name]) => name);
+    if (unresolved.length) console.warn(`Linear mirror: no workflow state named ${unresolved.join(', ')} — those moves are being skipped.`);
+
     if (created || refreshed || closed) {
       console.log(`Linear mirror: created ${created}, refreshed ${refreshed}, closed ${closed}.`);
     }
-    return json({ ok: true, created, refreshed, closed });
+    return json({ ok: true, created, refreshed, closed, ...(unresolved.length ? { unresolved } : {}) });
   } catch (err) {
     // A configuration problem (missing state, renamed team) fails the whole
     // sweep rather than every post individually — one loud error beats N.
