@@ -109,15 +109,12 @@ async function query(sql) {
   //
   // libpq reads PG* from the environment, so splitting the URI keeps the
   // password out of both.
-  const u = new URL(DB_URL);
-  const pgEnv = {
-    ...process.env,
-    PGHOST: u.hostname,
-    PGPORT: u.port || '5432',
-    PGUSER: decodeURIComponent(u.username),
-    PGPASSWORD: decodeURIComponent(u.password),
-    PGDATABASE: u.pathname.replace(/^\//, '') || 'postgres',
-  };
+  // Accept BOTH shapes psql itself accepts. The URI form is what the dashboard
+  // hands you; the keyword/value form (host=… user=… password=…) is equally
+  // valid libpq conninfo and is what the SUPABASE_DB_URL secret actually holds
+  // in CI. Assuming a URI here broke the workflow on the first run after this
+  // was written, because psql had always taken either and never cared.
+  const pgEnv = { ...process.env, ...connEnv(DB_URL) };
 
   let out;
   try {
@@ -138,6 +135,45 @@ async function query(sql) {
     process.exit(1);
   }
   return JSON.parse(out || '[]');
+}
+
+/**
+ * Split a libpq connection string into PG* environment variables.
+ *
+ * Handles the URI form (postgresql://user:pw@host:port/db) and the
+ * keyword/value form (host=… port=… user=… password=… dbname=…). Returns an
+ * object of PG* vars; throws with a message that does NOT contain the input,
+ * since the input is a credential.
+ */
+function connEnv(conn) {
+  const raw = String(conn).trim();
+
+  if (/^postgres(ql)?:\/\//i.test(raw)) {
+    const u = new URL(raw);
+    return {
+      PGHOST: u.hostname,
+      PGPORT: u.port || '5432',
+      PGUSER: decodeURIComponent(u.username),
+      PGPASSWORD: decodeURIComponent(u.password),
+      PGDATABASE: u.pathname.replace(/^\//, '') || 'postgres',
+    };
+  }
+
+  // keyword/value: host=db.x.supabase.co port=5432 user=postgres password='a b'
+  const kv = {};
+  for (const [, k, q, v] of raw.matchAll(/(\w+)\s*=\s*(?:'((?:[^'\\]|\\.)*)'|(\S+))/g)) {
+    kv[k.toLowerCase()] = (q ?? v ?? '').replace(/\\(.)/g, '$1');
+  }
+  if (!kv.host) {
+    throw new Error('SUPABASE_DB_URL is neither a postgres:// URI nor host=… conninfo');
+  }
+  return {
+    PGHOST: kv.host,
+    PGPORT: kv.port || '5432',
+    PGUSER: kv.user || 'postgres',
+    PGPASSWORD: kv.password || '',
+    PGDATABASE: kv.dbname || 'postgres',
+  };
 }
 
 const problems = [];
