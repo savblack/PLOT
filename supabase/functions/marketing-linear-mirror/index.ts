@@ -32,6 +32,16 @@
  * Auth: called by pg_cron via pg_net with the Vault service-role bearer, same as
  * the existing database webhooks. Also runnable by hand with the same bearer.
  *
+ * DRY RUN: POST {"dry_run": true} to get back exactly what a real sweep would
+ * create, re-render and move, without touching Linear or the database. Use it
+ * before any change to which rows the sweep selects.
+ *
+ * That is not a nicety. Adding 'published' to the creation set once turned a
+ * sweep meant to move a handful of cards into one that opened 161 issues — and,
+ * through team PLO's GitHub sync, 170 issues in the repo. A dry run would have
+ * printed "would create 161" in one second. The blast radius of this function is
+ * the size of marketing_posts, so the cheap check comes first.
+ *
  * Secrets: LINEAR_API_KEY, and optionally LINEAR_MARKETING_TEAM_ID (default PLO),
  * LINEAR_MARKETING_PROJECT_ID (default "Content Automation"),
  * LINEAR_REVIEW_STATE (default "In Review"), LINEAR_DONE_STATE (default "Done").
@@ -41,6 +51,7 @@ import type { Database } from '../_shared/database.types.ts';
 import { serviceKey } from '../_shared/serviceKey.ts';
 import { hasServiceRoleBearer } from '../_shared/internalWebhook.ts';
 import { buildTitle, buildDescription, dueDateFor } from '../_shared/linearIssue.js';
+import { articleLink } from '../_shared/postSummary.js';
 
 type Db = SupabaseClient<Database>;
 // deno-lint-ignore no-explicit-any
@@ -68,17 +79,52 @@ const STATE_FOR_STATUS: Record<string, 'review' | 'approved' | 'rejected'> = {
   vetoed: 'rejected',
 };
 
+/** The state a post's card belongs in, given the row. `null` = leave it alone. */
+const targetState = (ctx: Context, post: Row): string | null => {
+  if (isComplete(post)) return ctx.states.done;
+  const key = STATE_FOR_STATUS[post.status as string];
+  return key ? ctx.states[key] : null;
+};
+
 // Statuses worth a card at all. A post is mirrored once it is decidable and
 // until it is resolved; 'vetoed' is reconciled but never opens a new issue,
 // since a rejected post needs no review.
-const MIRRORED = ['needs_review', 'approved'];
+// Eligible for a NEW card: posts that are still awaiting a decision or a send.
+// Emphatically NOT 'published' — there are 200+ historical published posts, and
+// including them opened 142 cards (and 142 synced GitHub issues) in one sweep
+// before it was caught. A post gets a card while it is live work; it keeps that
+// card once it completes.
+const CREATABLE = ['needs_review', 'approved'];
 
-// How far back a post can be scheduled and still get a NEW issue. Without this
-// the first sweep after widening would have opened issues for nine guides
-// approved in July and August that nobody is going to action — the board is a
-// review surface for the current cycle, not an archive. Existing issues are
-// reconciled regardless of age.
-const CREATE_WINDOW_DAYS = Number(Deno.env.get('LINEAR_CREATE_WINDOW_DAYS') ?? '14');
+// Eligible to have an EXISTING card re-filed. Wider, because a post that was
+// mirrored while pending must still be moved to Done after it publishes.
+const RECONCILED = ['needs_review', 'approved', 'published', 'partially_published', 'vetoed'];
+
+// Every post the board should show. There is deliberately no age window: the
+// board is meant to be the whole picture now, not a review queue for the current
+// cycle, and an older post simply arrives already in Done.
+//
+// (An earlier version bounded creation to 14 days, to avoid opening cards for
+// nine guides approved in July. With completed posts now landing in Done that
+// reasoning no longer holds — those nine are history the board should show as
+// history, not history it should hide.)
+
+/**
+ * A post is COMPLETE when it has done everything it is ever going to do.
+ *
+ * For a social post that means published. For a web-only post — a guide, which
+ * has no publication rows — nothing ever sets 'published': publish.mjs only
+ * touches posts with queued rows, so a guide stays 'approved' for good. Left
+ * alone they would sit in Approved on the board forever, claiming to be waiting
+ * for a send that is never coming, when in fact they went live on /whats-on the
+ * day they were scheduled.
+ */
+const isComplete = (post: Row): boolean => {
+  if (post.status === 'published') return true;
+  const pubs = (post.marketing_post_publications ?? []) as Row[];
+  const webOnly = pubs.length === 0;
+  return webOnly && post.status === 'approved' && new Date(post.scheduled_for) <= new Date();
+};
 
 // A post whose row moved on since its issue was last rendered.
 //
@@ -245,12 +291,6 @@ const markFailed = (supabase: Db, id: string, error: string) =>
     .update({ linear_sync_error: error.slice(0, 500) })
     .eq('id', id);
 
-/** The workflow state a row's status belongs in, if we could resolve it. */
-const stateForPost = (ctx: Context, post: Row): string | null => {
-  const key = STATE_FOR_STATUS[post.status as string];
-  return key ? ctx.states[key] : null;
-};
-
 /**
  * Open an issue for any mirrored post that has none.
  *
@@ -260,19 +300,20 @@ const stateForPost = (ctx: Context, post: Row): string | null => {
  * the state its row is already in, so an approved post is never presented as
  * still needing a decision.
  */
-const createMissing = async (supabase: Db, ctx: Context): Promise<number> => {
-  const cutoff = new Date(Date.now() - CREATE_WINDOW_DAYS * 86400000).toISOString();
+const createMissing = async (supabase: Db, ctx: Context, dryRun = false): Promise<number> => {
   const { data, error } = await supabase
     .from('marketing_posts')
     .select('*, marketing_post_publications(platform,status)')
-    .in('status', MIRRORED)
+    .in('status', CREATABLE)
     .is('linear_issue_id', null)
-    .gte('scheduled_for', cutoff)
     .order('scheduled_for');
   if (error) throw new Error(error.message);
 
+  const pending = (data ?? []) as Row[];
+  if (dryRun) return pending.length;
+
   let made = 0;
-  for (const post of (data ?? []) as Row[]) {
+  for (const post of pending) {
     try {
       const { issueCreate } = await graphql(
         `mutation($input: IssueCreateInput!) {
@@ -283,7 +324,7 @@ const createMissing = async (supabase: Db, ctx: Context): Promise<number> => {
             title: buildTitle(post),
             description: buildDescription(post, SUPABASE_URL),
             teamId: ctx.teamId,
-            stateId: stateForPost(ctx, post) ?? ctx.states.review,
+            stateId: targetState(ctx, post) ?? ctx.states.review,
             dueDate: dueDateFor(post),
             ...(ctx.projectId ? { projectId: ctx.projectId } : {}),
           },
@@ -306,29 +347,25 @@ const createMissing = async (supabase: Db, ctx: Context): Promise<number> => {
  * from a comment, a reschedule, a regeneration, an approval — and put its card
  * in the state its row says it is in.
  *
- * Reconciling TOWARDS THE ROW is the point: the database is the source of truth,
- * so a post approved on the web desk drags its card to Approved here rather than
- * leaving it sitting in In Review forever. (An earlier version refused to touch
- * state at all, out of a worry about un-approving something. That worry was
- * about blindly resetting every card to In Review on each sweep; following the
- * row's actual status is the opposite of that.)
- *
- * The visible consequence if the webhook is down: a card dragged in Linear
- * springs back on the next sweep, because the drag never reached the database.
- * That is honest — the change genuinely did not take effect — and it surfaces a
- * broken webhook rather than hiding it.
+ * Body only. State is reconciled separately and unconditionally, because a card
+ * can move without its row changing — someone drags it, or the GitHub issue sync
+ * closes the linked issue and Linear files the card as Done. Gating state on
+ * `updated_at` would let that drift sit there indefinitely.
  */
-const refreshChanged = async (supabase: Db, ctx: Context): Promise<number> => {
+const refreshChanged = async (supabase: Db, dryRun = false): Promise<number> => {
   const { data, error } = await supabase
     .from('marketing_posts')
     .select('*, marketing_post_publications(platform,status)')
     .not('linear_issue_id', 'is', null)
-    .in('status', ['needs_review', 'approved', 'vetoed', 'planned', 'copy_ready', 'generated'])
+    .in('status', [...RECONCILED, 'planned', 'copy_ready', 'generated'])
     .order('scheduled_for');
   if (error) throw new Error(error.message);
 
+  const changed = ((data ?? []) as Row[]).filter(hasChangedSinceSync);
+  if (dryRun) return changed.length;
+
   let refreshed = 0;
-  for (const post of ((data ?? []) as Row[]).filter(hasChangedSinceSync)) {
+  for (const post of changed) {
     try {
       await graphql(
         `mutation($id: String!, $input: IssueUpdateInput!) {
@@ -340,7 +377,6 @@ const refreshChanged = async (supabase: Db, ctx: Context): Promise<number> => {
             title: buildTitle(post),
             description: buildDescription(post, SUPABASE_URL),
             dueDate: dueDateFor(post),
-            ...(stateForPost(ctx, post) ? { stateId: stateForPost(ctx, post) } : {}),
           },
         },
       );
@@ -355,59 +391,80 @@ const refreshChanged = async (supabase: Db, ctx: Context): Promise<number> => {
 };
 
 /**
- * Move published posts' issues to Done, and say where they went.
+ * Put every mirrored card in the state its row says it belongs in, and say so on
+ * the issue the first time a post completes.
  *
- * Driven only from here, off what the publisher actually recorded. The webhook
- * deliberately ignores a human dragging a card to Done, so the board can never
- * claim a post went out when it did not.
+ * Unconditional, unlike the body refresh: a card can move without its row
+ * changing at all. Someone drags it; or — as happens here today — the GitHub
+ * issue sync on team PLO files the card as Done the moment somebody closes the
+ * linked GitHub issue, which is a change Linear makes and the database never
+ * hears about. Gating this on `updated_at` left that drift in place until the
+ * post happened to change for some unrelated reason, so the board could sit
+ * showing Done for a post that had not published. This is exactly the lie the
+ * webhook refuses to accept from a human dragging a card; it should not get in
+ * through a side door either.
+ *
+ * One query for all the current states, then an update only where they differ —
+ * so a settled board costs a single read per sweep and no writes.
  */
-const closePublished = async (supabase: Db, ctx: Context): Promise<number> => {
-  if (!ctx.states.done) return 0;
-
+const reconcileStates = async (supabase: Db, ctx: Context, dryRun = false): Promise<{ moved: number; reported: number }> => {
   const { data, error } = await supabase
     .from('marketing_posts')
     .select('*, marketing_post_publications(platform,status,permalink)')
     .not('linear_issue_id', 'is', null)
-    .in('status', ['published', 'partially_published']);
+    .in('status', RECONCILED);
   if (error) throw new Error(error.message);
 
-  let closed = 0;
-  for (const post of ((data ?? []) as Row[]).filter(hasChangedSinceSync)) {
+  const posts = (data ?? []) as Row[];
+  if (!posts.length) return { moved: 0, reported: 0 };
+
+  // Current state of every mirrored issue, in one request.
+  const current = new Map<string, string>();
+  const ids = posts.map((p) => p.linear_issue_id as string);
+  const page = await graphql(
+    `query($ids: [ID!]) { issues(filter: { id: { in: $ids } }, first: 250) { nodes { id state { id } } } }`,
+    { ids },
+  );
+  for (const node of page.issues.nodes as Row[]) current.set(node.id, node.state.id);
+
+  let moved = 0;
+  let reported = 0;
+  for (const post of posts) {
+    const want = targetState(ctx, post);
+    if (!want || current.get(post.linear_issue_id) === want) continue;
+    if (dryRun) { moved++; if (want === ctx.states.done && isComplete(post)) reported++; continue; }
     try {
-      const pubs = (post.marketing_post_publications ?? []) as Row[];
-      const sent = pubs.filter((p) => p.status === 'published');
-      const failed = pubs.filter((p) => p.status === 'failed');
-      const lines = sent.map((p) => `- ${p.platform}${p.permalink ? `: ${p.permalink}` : ''}`);
-      if (failed.length) lines.push(`- failed: ${failed.map((p) => p.platform).join(', ')} — comment \`/retry\` to re-queue`);
-
-      await graphql(
-        `mutation($issueId: String!, $body: String!) {
-           commentCreate(input: { issueId: $issueId, body: $body }) { success }
-         }`,
-        {
-          issueId: post.linear_issue_id,
-          body: `🤖 **PLOT** · ${post.status === 'published' ? 'Published' : 'Partly published'}.\n${lines.join('\n')}`,
-        },
-      );
-
-      // Only fully published posts leave the board. A partial stays put, because
-      // it still has something for the operator to do.
-      if (post.status === 'published') {
+      // Report the outcome the first time a post lands in Done, so the card says
+      // where it actually went rather than only that it is finished. Driven off
+      // what the publisher recorded, never off the card's position.
+      if (want === ctx.states.done && isComplete(post)) {
+        const pubs = (post.marketing_post_publications ?? []) as Row[];
+        const sent = pubs.filter((x) => x.status === 'published');
+        const failed = pubs.filter((x) => x.status === 'failed');
+        const lines = sent.map((x) => `- ${x.platform}${x.permalink ? `: ${x.permalink}` : ''}`);
+        if (failed.length) lines.push(`- failed: ${failed.map((x) => x.platform).join(', ')} — comment \`/retry\` to re-queue`);
+        if (!pubs.length) lines.push(`- live on the site: ${articleLink(post) ?? '/whats-on'}`);
         await graphql(
-          `mutation($id: String!, $stateId: String!) {
-             issueUpdate(id: $id, input: { stateId: $stateId }) { success }
+          `mutation($issueId: String!, $body: String!) {
+             commentCreate(input: { issueId: $issueId, body: $body }) { success }
            }`,
-          { id: post.linear_issue_id, stateId: ctx.states.done },
+          { issueId: post.linear_issue_id, body: `🤖 **PLOT** · Published.\n${lines.join('\n')}` },
         );
+        reported++;
       }
-      await markSynced(supabase, post.id);
-      closed++;
+      await graphql(
+        `mutation($id: String!, $stateId: String!) {
+           issueUpdate(id: $id, input: { stateId: $stateId }) { success }
+         }`,
+        { id: post.linear_issue_id, stateId: want },
+      );
+      moved++;
     } catch (err) {
-      console.error(`Mirror close failed for ${post.topic_key}:`, err);
+      console.error(`State reconcile failed for ${post.topic_key}:`, err);
       await markFailed(supabase, post.id, String((err as Error).message));
     }
   }
-  return closed;
+  return { moved, reported };
 };
 
 // ── Handler ──────────────────────────────────────────────────────────────────
@@ -423,14 +480,22 @@ Deno.serve(async (req) => {
     return json({ ok: true, skipped: 'LINEAR_API_KEY is not set' });
   }
 
+  // A dry run reports what a real sweep would do and changes nothing — not
+  // Linear, not the database, not even the run log.
+  let dryRun = false;
+  try {
+    const body = await req.json();
+    dryRun = body?.dry_run === true;
+  } catch { /* no body is the normal case: pg_cron posts {} */ }
+
   const supabase = createClient<Database>(SUPABASE_URL, serviceKey());
-  const runId = await startRun(supabase);
+  const runId = dryRun ? null : await startRun(supabase);
 
   try {
     const ctx = await loadContext();
-    const created = await createMissing(supabase, ctx);
-    const refreshed = await refreshChanged(supabase, ctx);
-    const closed = await closePublished(supabase, ctx);
+    const created = await createMissing(supabase, ctx, dryRun);
+    const refreshed = await refreshChanged(supabase, dryRun);
+    const { moved, reported } = await reconcileStates(supabase, ctx, dryRun);
 
     // A state we could not resolve does not fail the sweep — cards just stay put
     // rather than being filed wrongly — but it must not be invisible either, or
@@ -441,9 +506,14 @@ Deno.serve(async (req) => {
       .map(([, name]) => name);
     if (unresolved.length) console.warn(`Linear mirror: no workflow state named ${unresolved.join(', ')} — those moves are being skipped.`);
 
-    const counts = { created, refreshed, closed, ...(unresolved.length ? { unresolved } : {}) };
-    const didWork = created > 0 || refreshed > 0 || closed > 0;
-    if (didWork) console.log(`Linear mirror: created ${created}, refreshed ${refreshed}, closed ${closed}.`);
+    const counts = { created, refreshed, moved, reported, ...(unresolved.length ? { unresolved } : {}) };
+    if (dryRun) {
+      console.log(`Linear mirror DRY RUN: would create ${created}, refresh ${refreshed}, move ${moved}.`);
+      return json({ ok: true, dry_run: true, would: counts });
+    }
+
+    const didWork = created > 0 || refreshed > 0 || moved > 0;
+    if (didWork) console.log(`Linear mirror: created ${created}, refreshed ${refreshed}, moved ${moved}, reported ${reported}.`);
     await finishRun(supabase, runId, { status: didWork ? 'succeeded' : 'idle', counts });
     await pruneHeartbeats(supabase);
 

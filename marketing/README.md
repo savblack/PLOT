@@ -27,10 +27,10 @@ Sunday morning
   -> marketing-weekly-batch.yml generates the next week
 
 Every 5 minutes (pg_cron -> marketing-linear-mirror)
-  -> opens a Linear issue for anything needing review or already approved
-  -> re-renders issues whose post changed, and files each card in the
-     state its row says it is in
-  -> moves published posts' issues to Done
+  -> opens a Linear issue for anything needing review or waiting to publish
+  -> re-renders issues whose post changed
+  -> files every card in the state its row says it belongs in,
+     including Done once the post has gone out
 
 Any time
   -> you comment /approve, /copy, /reject ... on the issue
@@ -149,23 +149,38 @@ No GitHub Actions secret is involved. Everything below is a Supabase secret.
 6. Optional: `GH_DISPATCH_TOKEN` so `/publish-now` and `/regenerate` take effect
    immediately instead of waiting for the next scheduled run.
 
+**Before changing which rows the sweep selects, dry-run it.** It reports what a
+real sweep would do and touches nothing — not Linear, not the database, not the
+run log:
+
+```sh
+curl -sX POST "$SUPABASE_URL/functions/v1/marketing-linear-mirror" \
+  -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+  -H 'Content-Type: application/json' -d '{"dry_run": true}'
+# {"ok":true,"dry_run":true,"would":{"created":0,"refreshed":0,"moved":0,"reported":0}}
+```
+
+This exists because adding `published` to the creation set once turned a sweep
+meant to move a handful of cards into one that opened 161 Linear issues — and,
+through team PLO's GitHub sync, 170 issues in the repo. The blast radius of this
+function is the size of `marketing_posts`, so the cheap check comes first.
+
+A post is **complete** when it has done everything it is going to do: published
+for a social post, or — for a web-only guide, which has no publication rows and
+so never leaves `approved` — once its scheduled day has passed and it is live on
+the site. Complete posts sit in Done; without that rule a guide would claim to be
+waiting for a send that is never coming.
+
 The row is the source of truth in both directions: a post approved or rejected
 on the web desk drags its card to Approved or Canceled on the next sweep, rather
 than the two surfaces quietly disagreeing. If the webhook is down, a card dragged
 in Linear springs back — the drag never reached the database, and that is worth
 seeing rather than hiding.
 
-New issues are only opened for posts scheduled within the last
-`LINEAR_CREATE_WINDOW_DAYS` (default 14). The board is a review surface for the
-current cycle, not an archive — without it, widening to approved posts would have
-opened cards for nine guides approved in July and August. Existing issues are
-reconciled regardless of age. Raise the window if you want the back catalogue on
-the board.
-
 Optional overrides, all Edge Function secrets: `LINEAR_MARKETING_TEAM_ID` (PLO),
 `LINEAR_MARKETING_PROJECT_ID` (Content Automation), `LINEAR_REVIEW_STATE`
 (In Review), `LINEAR_APPROVED_STATE` (Approved), `LINEAR_REJECTED_STATE`
-(Canceled), `LINEAR_DONE_STATE` (Done), `LINEAR_CREATE_WINDOW_DAYS` (14). A state
+(Canceled), `LINEAR_DONE_STATE` (Done). A state
 that cannot be resolved is reported in the sweep's response as `unresolved`
 rather than failing it — those moves are skipped, not misfiled.
 
