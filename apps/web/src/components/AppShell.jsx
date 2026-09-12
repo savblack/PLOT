@@ -205,7 +205,10 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
 
       {/* ── Main content ── */}
       <main className="app-main animate-in" ref={mainRef}>
-        {children}
+        {/* The scroll container stays full-bleed so the header/tab-bar chrome
+            and the scrollbar keep the viewport edges; the content itself rides
+            in a centred column. */}
+        <div className="app-main-inner">{children}</div>
       </main>
 
       {/* ── Back to top ── */}

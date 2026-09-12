@@ -156,6 +156,33 @@ svg { stroke-width: 1.5; }
 }
 .app-main::-webkit-scrollbar { display: none; }
 
+/* Content column. Without this the app is a phone layout stretched to the
+   window: at 1440 a list row put its title at x=60 and its episode chip at
+   x=1395, with nothing in between. 1120px is the width the design-system page
+   already uses for its own container. No transform/filter/contain here — the
+   media panel and sheets are position: fixed and must keep resolving against
+   the viewport, not this element. */
+.app-main-inner {
+  max-width: 1120px;
+  margin-inline: auto;
+}
+
+/* The sticky sub-tab bars are chrome, not content: they pin under the header
+   and carry its fill and hairline, so stopping them at the column edge left a
+   white strip floating under a full-width white header. Break them back out to
+   the viewport and push their contents back into the column. Safe because
+   .app-main hides its scrollbar and clips overflow-x, so 50vw has no gutter to
+   account for. */
+.app-main-inner .sub-tabs-bar {
+  margin-inline: calc(50% - 50vw);
+  padding-inline: calc(50vw - 50%);
+}
+.app-main-inner .sub-tabs {
+  margin-inline: calc(50% - 50vw);
+  /* .sub-tabs carries its own 0.75rem inline padding; keep it. */
+  padding-inline: calc(50vw - 50% + 0.75rem);
+}
+
 /* ── Bottom Tab Bar ─────────────────────────────── */
 /* Flush, full-width bar — mirrors .app-header's construction (solid
    --surface fill, single hairline border, safe-area padding) at the
@@ -4425,7 +4452,10 @@ a.provider-chip--link:hover {
 
 .discover-hero-badge {
   display: inline-block;
-  font-size: 0.58rem;
+  /* One step up from the 0.58rem the other small labels use. Those all sit on
+     a flat surface; this is the only one overlaid on artwork, where the same
+     size reads as a smudge at 9px. */
+  font-size: 0.68rem;
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
