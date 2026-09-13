@@ -168,7 +168,7 @@ const styles = `
 
   .pp-stats { display: flex; gap: 1.3rem; margin: 0.65rem 0 0; flex-wrap: wrap; }
   .pp-stat { display: flex; align-items: center; gap: 0.4rem; background: none; border: none; padding: 0; cursor: default; font: inherit; }
-  .pp-stat-num { font-family: var(--font-serif); font-size: 1.4rem; font-weight: 500; color: var(--text-primary); line-height: 1; }
+  .pp-stat-num { font-family: var(--font-serif-tabular); font-size: 1.4rem; font-weight: 500; color: var(--text-primary); line-height: 1; }
   .pp-stat-label { font-size: 0.9rem; color: var(--text-muted); }
   .pp-stat-btn { cursor: pointer; }
   .pp-stat-btn:hover .pp-stat-num { opacity: 0.65; }
@@ -193,7 +193,7 @@ const styles = `
   .pp-poster img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .pp-poster-fallback { display: flex; align-items: center; justify-content: center; height: 100%; padding: 0.4rem; font-size: 0.66rem; line-height: 1.3; text-align: center; color: var(--text-muted); }
   .pp-poster-rank-scrim { position: absolute; left: 0; right: 0; bottom: 0; height: 44%; background: linear-gradient(to top, rgba(0,0,0,0.65), rgba(0,0,0,0)); pointer-events: none; }
-  .pp-poster-rank { position: absolute; left: 0.45rem; bottom: 0.35rem; min-width: 22px; height: 22px; padding: 0 0.3rem; border-radius: 999px; display: flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--accent) 22%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 60%, transparent); font-family: var(--font-sans); font-size: 0.72rem; font-weight: 700; letter-spacing: -0.01em; color: var(--accent); }
+  .pp-poster-rank { position: absolute; left: 0.45rem; bottom: 0.35rem; min-width: 22px; height: 22px; padding: 0 0.3rem; border-radius: 999px; display: flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--accent) 22%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 60%, transparent); font-family: var(--font-sans-tabular); font-size: 0.72rem; font-weight: 700; letter-spacing: -0.01em; color: var(--accent); }
   .pp-poster:hover .card-fav-btn, .pp-poster:focus-within .card-fav-btn,
   .pp-poster:hover .card-save-btn, .pp-poster:focus-within .card-save-btn { opacity: 1; }
   .pp-poster .card-save-btn.saved { opacity: 1; }

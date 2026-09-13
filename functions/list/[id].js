@@ -54,11 +54,11 @@ const shell = (title, head, body) =>
 <title>${esc(title)}</title>
 ${PH}
 ${head}
-<link rel="preload" href="/fonts/DMSans-Variable.ttf" as="font" type="font/ttf" crossorigin>
-<link rel="preload" href="/fonts/InstrumentSerif-Regular.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="preload" href="/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/InstrumentSerif-Regular.woff2" as="font" type="font/woff2" crossorigin>
 <style>
-@font-face{font-family:'DM Sans';src:url('/fonts/DMSans-Variable.ttf') format('truetype-variations');font-weight:100 900;font-style:normal;font-display:swap}
-@font-face{font-family:'Instrument Serif';src:url('/fonts/InstrumentSerif-Regular.ttf') format('truetype');font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:'DM Sans';src:url('/fonts/DMSans-Variable.woff2') format('woff2');font-weight:100 900;font-style:normal;font-display:swap}
+@font-face{font-family:'Instrument Serif';src:url('/fonts/InstrumentSerif-Regular.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap}
 *{margin:0;padding:0;box-sizing:border-box}
 :root{--bg:#F4F4F5;--surface:#FFFFFF;--surface-raised:#FAFAFA;--text-primary:#09090B;--text-secondary:#52525B;--text-muted:#A1A1AA;--border:rgba(0,0,0,.07)}
 @media (prefers-color-scheme:dark){:root{--bg:#0c0c0c;--surface:#191919;--surface-raised:#242424;--text-primary:#f0efe8;--text-secondary:#a8a69c;--text-muted:#6b6a63;--border:rgba(240,239,232,.08)}}
