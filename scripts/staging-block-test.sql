@@ -1,7 +1,22 @@
 -- Two-account (plus a bystander, plus an anonymous reader) proof that a block
--- hides identity. Run it with `npm run staging:block-test`, which is where the
--- connection details and the pass/fail summary live — see that script for why
--- this check exists and why it cannot be a CI gate.
+-- hides identity.
+--
+--   set -a; . .env; set +a
+--   npm run staging:block-test
+--
+-- WHY: db:migration-test proves the SQL parses. db:block-clause proves the
+-- clause is present in the latest definition of every identity function.
+-- Neither executes a policy or an RPC under a real auth.uid(), so neither can
+-- tell you whether blocking WORKS. This runs the whole thing as three different
+-- authenticated users plus an anonymous reader and asserts all four outcomes.
+--
+-- The bystander and the anonymous reader are not padding. They are the only
+-- thing here that catches the opposite failure — a clause that is too broad and
+-- hides people nobody blocked. Without them a migration that hid everyone from
+-- everyone would pass every other check in the repo.
+--
+-- It cannot be a CI gate: it needs Staging credentials and it mutates rows.
+-- Run it before merging anything that touches not_blocked or an identity RPC.
 --
 -- The three accounts are the Staging fixtures below. They are private by
 -- default; this makes them public inside the transaction and puts them back by
