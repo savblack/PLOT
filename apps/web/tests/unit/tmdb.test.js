@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
+import test, { beforeEach } from 'node:test';
 import { configure } from '../../../../packages/core/config.js';
-import { tmdb, setTmdbRegion, prioritiseEnglishSpeakingTitles } from '../../../../packages/core/tmdb.js';
+import { tmdb, setTmdbRegion, prioritiseEnglishSpeakingTitles, _resetTmdbCache } from '../../../../packages/core/tmdb.js';
+
+// The module now remembers successful reads, so each test starts from a clean
+// slate rather than being answered by the previous one's stub.
+beforeEach(() => _resetTmdbCache());
 
 test('English-speaking titles are favoured without excluding other titles', () => {
   const results = prioritiseEnglishSpeakingTitles([

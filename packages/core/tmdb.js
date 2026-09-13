@@ -133,7 +133,7 @@ function projectRefFromAnonKey(key) {
   }
 }
 
-const fetchFromTMDBResolved = async (endpoint, params = {}, { retryDelays = RETRY_DELAYS } = {}) => {
+const fetchFromTMDBNetwork = async (endpoint, params = {}, { retryDelays = RETRY_DELAYS } = {}) => {
   const { tmdbProxyUrl: PROXY_URL, supabaseAnonKey: SUPABASE_ANON_KEY } = getConfig();
   const queryParams = new URLSearchParams({
     path: endpoint.replace(/^\//, ''),
@@ -210,6 +210,78 @@ const fetchFromTMDBResolved = async (endpoint, params = {}, { retryDelays = RETR
     }
   }
   return { ok: false, data: null, status: null, retryable: true };
+};
+
+/* ── Coalescing + short-lived cache ────────────────────────────────────────
+   One /home load issues ~30 proxy requests inside about a second and a half.
+   The Worker allows 100 per 10s per IP (apps/web/workers/tmdb-proxy), so a
+   single page view spends a third of the budget and three in quick succession
+   exhaust it — and users behind one NAT egress share that bucket. Leaving
+   Home and coming back re-issued all thirty, because the view remounts.
+
+   Two layers, both keyed on the resolved URL (which already carries path,
+   language, region and params, so regions and pages never collide):
+
+     inFlight — concurrent callers asking for the same URL share one request.
+     cache    — successful responses are reused for TTL_MS.
+
+   Only successful responses are cached: a rate-limited or failed read must be
+   retryable immediately, not remembered. TMDB is catalogue data and the app's
+   own state lives in Supabase, so a few minutes of staleness changes nothing a
+   user can act on. Entries are capped and evicted least-recently-used so a
+   long session cannot grow this without bound.
+
+   No DOM APIs here — Map and Date.now() only, so mobile gets the same benefit. */
+const TMDB_CACHE_TTL_MS = 5 * 60 * 1000;
+const TMDB_CACHE_MAX = 200;
+const tmdbCache = new Map();
+const tmdbInFlight = new Map();
+
+const cacheKey = (endpoint, params) => `${endpoint}|${JSON.stringify(params)}|${userRegion}`;
+
+const cacheRead = (key) => {
+  const hit = tmdbCache.get(key);
+  if (!hit) return undefined;
+  if (Date.now() - hit.at > TMDB_CACHE_TTL_MS) {
+    tmdbCache.delete(key);
+    return undefined;
+  }
+  // Re-insert so the eviction order below is least-recently-USED, not inserted.
+  tmdbCache.delete(key);
+  tmdbCache.set(key, hit);
+  return hit.value;
+};
+
+const cacheWrite = (key, value) => {
+  tmdbCache.set(key, { at: Date.now(), value });
+  while (tmdbCache.size > TMDB_CACHE_MAX) {
+    tmdbCache.delete(tmdbCache.keys().next().value);
+  }
+};
+
+const fetchFromTMDBResolved = (endpoint, params = {}, options = {}) => {
+  const key = cacheKey(endpoint, params);
+  const cached = cacheRead(key);
+  if (cached) return Promise.resolve(cached);
+
+  const pending = tmdbInFlight.get(key);
+  if (pending) return pending;
+
+  const request = fetchFromTMDBNetwork(endpoint, params, options)
+    .then((result) => {
+      if (result?.ok) cacheWrite(key, result);
+      return result;
+    })
+    .finally(() => { tmdbInFlight.delete(key); });
+
+  tmdbInFlight.set(key, request);
+  return request;
+};
+
+/** Test hook: drop everything remembered. Not used by app code. */
+export const _resetTmdbCache = () => {
+  tmdbCache.clear();
+  tmdbInFlight.clear();
 };
 
 const fetchFromTMDB = async (endpoint, params = {}) => {
