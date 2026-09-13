@@ -7,7 +7,7 @@ import {
   clearPendingSave,
 } from '../../src/utils/pendingSave.js';
 import { drainPendingSave } from '../../src/utils/drainPendingSave.js';
-import { fetchFromTMDBResolved } from '@plot/core/tmdb.js';
+import { fetchFromTMDBResolved, _resetTmdbCache } from '@plot/core/tmdb.js';
 import { configure } from '@plot/core/config.js';
 
 function withFakeStorage(fn) {
@@ -212,6 +212,10 @@ function withFakeFetch(responses, fn) {
     };
   };
   configure({ tmdbProxyUrl: 'https://proxy.test', supabaseAnonKey: 'anon' });
+  // These tests are about the network layer, so the module's response cache
+  // must not answer for it — without this, one test's successful /movie/5
+  // silently satisfies the next test's 429 case.
+  _resetTmdbCache();
   return Promise.resolve(fn(() => i)).finally(() => { globalThis.fetch = realFetch; });
 }
 
@@ -259,5 +263,54 @@ test('fetchFromTMDBResolved: network error → retried, then retryable:true', as
     assert.equal(res.retryable, true);
     assert.equal(res.status, null);
     assert.equal(count(), 3, 'network error retried to exhaustion');
+  });
+});
+
+/* Coalescing + cache. One /home load issues ~30 proxy reads against a Worker
+ * that allows 100 per 10s per IP, and leaving Home and coming back re-issued
+ * all of them. These pin the two behaviours that stop that, and the two limits
+ * that keep them honest: failures are never remembered, and distinct params
+ * stay distinct. */
+
+test('concurrent reads of the same endpoint share one request', async () => {
+  await withFakeFetch([{ status: 200, body: { id: 7 } }], async (count) => {
+    const [a, b, c] = await Promise.all([
+      fetchFromTMDBResolved('/movie/7'),
+      fetchFromTMDBResolved('/movie/7'),
+      fetchFromTMDBResolved('/movie/7'),
+    ]);
+    assert.equal(count(), 1, 'three callers, one network read');
+    assert.deepEqual(a.data, { id: 7 });
+    assert.equal(a, b, 'callers share the resolved result');
+    assert.equal(b, c);
+  });
+});
+
+test('a repeat read inside the TTL is served without touching the network', async () => {
+  await withFakeFetch([{ status: 200, body: { id: 8 } }], async (count) => {
+    await fetchFromTMDBResolved('/movie/8');
+    const again = await fetchFromTMDBResolved('/movie/8');
+    assert.equal(count(), 1, 'the second read is cached');
+    assert.deepEqual(again.data, { id: 8 });
+  });
+});
+
+test('a failed read is not remembered, so the next attempt still goes out', async () => {
+  // A rate-limited or broken read must stay retryable; caching it would turn a
+  // momentary 429 into minutes of empty rails.
+  await withFakeFetch([{ status: 500 }], async (count) => {
+    const first = await fetchFromTMDBResolved('/movie/9', {}, { retryDelays: [] });
+    assert.equal(first.ok, false);
+    const before = count();
+    await fetchFromTMDBResolved('/movie/9', {}, { retryDelays: [] });
+    assert.ok(count() > before, 'the failure was not cached');
+  });
+});
+
+test('different params are different cache entries', async () => {
+  await withFakeFetch([{ status: 200, body: { page: 1 } }], async (count) => {
+    await fetchFromTMDBResolved('/trending/all/day', { page: 1 });
+    await fetchFromTMDBResolved('/trending/all/day', { page: 2 });
+    assert.equal(count(), 2, 'page 2 is not served page 1');
   });
 });
