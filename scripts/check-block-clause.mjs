@@ -59,16 +59,14 @@ const BLOCK_FILTERED = [
 ];
 
 // Must NOT carry it, each for a reason that has to survive review.
-//
-// `handle_new_user` is deliberately absent: running this check for the first
-// time revealed that production's signup trigger exists in no migration at all
-// — it was created through the Supabase dashboard and has never been in version
-// control, so a rebuild from migrations alone would create no profile rows. It
-// is exempt in spirit (it runs before any viewer exists), but listing it here
-// would be a lie: this check only sees what the migrations say, and they say
-// nothing about it. Adopting it into a migration is tracked separately; when
-// that happens it lands in this list and the rule below starts governing it.
 const BLOCK_EXEMPT = {
+  handle_new_user:
+    'The signup trigger. It writes the profiles row and never reads one back for '
+    + 'a viewer, and it runs before the account it creates could have blocked or '
+    + 'been blocked by anyone. Listing it here was impossible until 20260913110000: '
+    + 'the first run of this check found production\'s signup trigger existed in no '
+    + 'migration at all, created by hand through the Supabase dashboard, and this '
+    + 'check only sees what the migrations say.',
   username_available:
     'Uniqueness is not a visibility question. If this respected blocks, a blocked '
     + 'user would be told a taken username is free, and the insert would then fail '
