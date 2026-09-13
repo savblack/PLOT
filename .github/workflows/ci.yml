@@ -116,6 +116,14 @@ jobs:
       - name: Check migrations don't silently change an upsert key
         run: npm run migrations:check
 
+      # The same whole-body-replacement hazard, aimed at blocking. The seven
+      # RPCs that return another user's identity each carry a not_blocked
+      # clause; a later migration recreating one from a stale body would drop it
+      # and nothing would fail — blocking keeps working everywhere else and the
+      # blocked account simply reappears on that one surface. Static.
+      - name: Check identity functions still filter blocked users
+        run: npm run db:block-clause
+
       # The shared copy catalog only prevents web↔mobile drift if both apps read
       # from it. A literal that matches today diverges the first time either side
       # is reworded, so hardcoding a string the catalog owns fails the build.

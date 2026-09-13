@@ -225,8 +225,12 @@ one of two changes with real blast radius: get it wrong and private shelves leak
 - Migration 1 is purely additive: two new tables, two new functions, one
   trigger. The two existing helpers are **not** redefined. Its risk is
   concentrated in repointing nine policies, each a drop-and-create.
-- Migration 2 redefines six `security definer` functions and is the dangerous
-  one. Diff every single one against its live definition before touching it.
+- Migration 2 redefines seven `security definer` functions and is the dangerous
+  one. Diff every single one against its live definition before touching it —
+  `npm run db:function-diff` now does exactly that, restoring production and
+  printing a unified diff of every function body a pending migration changes.
+  For 20260913090000 it reported 0 lines removed across all seven, which is the
+  shape a redefinition has to have to be safe.
 - `npm run db:migration-test` before merging, without exception — it is the only
   check that executes the SQL.
 - `npm run db:write-paths` green before merge.
@@ -234,6 +238,11 @@ one of two changes with real blast radius: get it wrong and private shelves leak
   not exercised), so the block predicate must be verified on **Staging** with two
   real accounts: block, then confirm the blocked account gets zero rows from
   profile, history, favourites, top lists, watching, lists and follows.
+  **Done 2026-09-13**: `npm run staging:block-test` — 31 assertions across the
+  blocker, the blocked account, an unrelated third account and an anonymous
+  reader, all inside one transaction that ends in `rollback`. The last two
+  matter as much as the first two: they are the only thing that catches a clause
+  that is too broad and hides people nobody blocked.
 - A migration merged to `main` applies to production immediately. There is no
   staging gate.
 
@@ -259,6 +268,23 @@ product goes through a `security definer` RPC that selects `public.profiles`
 | `list_followers` | follower list |
 | `list_following` | following list |
 | `list_follow_requests` | the requests screen |
+| `list_notifications` | **added 2026-09-13** — see below |
+
+**This table was wrong when it was written.** It has six rows because six is
+what reading the app's call sites turned up. Asking Postgres instead —
+
+```sql
+select proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+ where n.nspname = 'public' and p.prosrc ilike '%profiles%';
+```
+
+— returns `list_notifications` as well, and it was the worst omission of the
+set: notifications are historical rows, so a blocked account kept its username
+and avatar sitting in your notification feed long after every other path had
+gone dark. The lesson is not "add a seventh row". It is that a list of
+identity surfaces derived by reading code is a list of the ones you thought of,
+which is why `npm run db:block-clause` now derives it from the migrations and
+fails the build on anything unclassified.
 
 So hiding identity means adding a block clause to **six functions**, each a
 `create or replace` of a whole body someone else authored, against live user

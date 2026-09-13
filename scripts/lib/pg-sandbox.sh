@@ -54,14 +54,24 @@ sandbox_prod_url() {
   fi
 
   if [ -z "${PLOT_PRODUCTION_DB_PASSWORD:-}" ]; then
-    echo "Set SUPABASE_DB_URL (session-pooler string, preferred) or PLOT_PRODUCTION_DB_PASSWORD in the MAIN checkout's .env." >&2
+    echo "Set PLOT_PRODUCTION_DB_PASSWORD (preferred) or a full SUPABASE_DB_URL in the MAIN checkout's .env." >&2
     echo "Both are on https://supabase.com/dashboard/project/${PROJECT_REF:-mkegtssedjyqldysvzga}/settings/database" >&2
     return 1
   fi
-  local pw
+  # Build the POOLER string, not the direct one. The comment above explains why
+  # the direct host is unreachable from plenty of machines; a fallback that
+  # builds an unusable URL is not a fallback, and until 2026-09-13 this is
+  # exactly what it did — every local run failed at the restore guard and the
+  # only way through was to hand-set SUPABASE_DB_URL.
+  #
+  # The region prefix is per-project and is not derivable from the ref; a wrong
+  # one fails fast and unmistakably with "(ENOTFOUND) tenant/user not found",
+  # so if this ever moves, sweep the regions rather than guessing.
+  local pw ref host
+  ref="${PROJECT_REF:-mkegtssedjyqldysvzga}"
+  host="${PLOT_PRODUCTION_POOLER_HOST:-aws-1-ap-south-1.pooler.supabase.com}"
   pw="$(python3 -c 'import os,urllib.parse;print(urllib.parse.quote(os.environ["PLOT_PRODUCTION_DB_PASSWORD"],safe=""))')"
-  printf 'postgresql://postgres:%s@db.%s.supabase.co:5432/postgres' \
-    "$pw" "${PROJECT_REF:-mkegtssedjyqldysvzga}"
+  printf 'postgresql://postgres.%s:%s@%s:5432/postgres' "$ref" "$pw" "$host"
 }
 
 sandbox_down() {

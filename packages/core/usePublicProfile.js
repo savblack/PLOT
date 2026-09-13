@@ -13,6 +13,11 @@ import { supabase } from './supabase.js';
  *
  * `profile: null` after loading means the handle didn't resolve (no such user,
  * or private and the viewer isn't logged in) → placeholder.
+ *
+ * `refresh` re-runs the whole load. Callers need it because `get_profile_card`
+ * stops returning the row once the viewer blocks its owner, so without it a
+ * profile you just blocked stays fully rendered until you navigate away — the
+ * one action in the product whose entire point is that the person disappears.
  */
 export function usePublicProfile(username, viewerId = null) {
   const [loading, setLoading]       = useState(true);
@@ -97,5 +102,5 @@ export function usePublicProfile(username, viewerId = null) {
   const locked = !!profile && !profile.is_public && profile.follow_status !== 'accepted'
     && !(viewerId && profile.id === viewerId);
 
-  return { loading, profile, locked, watchCount, avgRating, recent, topMovies, topTv, favourites, customLists, watching, wantToWatch };
+  return { loading, profile, locked, watchCount, avgRating, recent, topMovies, topTv, favourites, customLists, watching, wantToWatch, refresh: load };
 }
