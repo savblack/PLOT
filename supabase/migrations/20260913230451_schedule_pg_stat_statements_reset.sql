@@ -91,7 +91,21 @@ begin
   -- On Supabase the same guard shape as the webhook and mirror migrations, for
   -- the same reason: fail at deploy time rather than schedule a job that errors
   -- every Sunday into a log nobody reads.
-  if to_regprocedure('extensions.pg_stat_statements_reset()') is null then
+  -- Looked up by NAME, not by signature. `to_regprocedure('...reset()')` was
+  -- the obvious spelling and it is wrong: it matches an exact argument-type
+  -- list, and pg_stat_statements 1.11 declares
+  -- pg_stat_statements_reset(oid, oid, bigint, boolean) with all four
+  -- defaulted. There is no zero-argument overload, so that lookup returns null
+  -- on a perfectly healthy database and this guard aborted the deploy. Calling
+  -- it with no arguments still works — the defaults apply — which is why the
+  -- scheduled command below is unchanged.
+  if not exists (
+    select 1
+      from pg_proc p
+      join pg_namespace n on n.oid = p.pronamespace
+     where n.nspname = 'extensions'
+       and p.proname = 'pg_stat_statements_reset'
+  ) then
     raise exception
       'extensions.pg_stat_statements_reset() is missing — is pg_stat_statements still installed in the extensions schema?';
   end if;
