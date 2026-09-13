@@ -7,6 +7,8 @@ import {
   rankSearchResults,
   hasStrongTitleMatch,
   normalizeTitle,
+  describeSearchResult,
+  MIN_RATED_VOTES,
 } from '../../search.js';
 
 test('classifySearchResults keeps playable movie and tv results', () => {
@@ -209,4 +211,48 @@ test('hasStrongTitleMatch only counts an exact or starts-with match', () => {
   assert.equal(hasStrongTitleMatch([{ name: 'Glass House' }], 'the truman'), false);
   assert.equal(hasStrongTitleMatch([], 'the office'), false);
   assert.equal(hasStrongTitleMatch([{ name: 'The Office' }], ''), false);
+});
+
+test('describeSearchResult surfaces year, genres and rating from the search payload', () => {
+  const genres = [{ id: 18, name: 'Drama' }, { id: 80, name: 'Crime' }, { id: 53, name: 'Thriller' }];
+  const meta = describeSearchResult({
+    title: 'Heat',
+    original_title: 'Heat',
+    release_date: '1995-12-15',
+    genre_ids: [80, 18, 53],
+    vote_average: 7.912,
+    vote_count: 6000,
+  }, genres);
+
+  assert.deepEqual(meta, {
+    year: '1995',
+    genres: ['Crime', 'Drama'],
+    rating: '7.9',
+    originalTitle: null,
+  });
+});
+
+test('describeSearchResult hides a rating with too few votes and unknown genre ids', () => {
+  const meta = describeSearchResult({
+    name: 'Obscure Pilot',
+    first_air_date: '2024-01-01',
+    genre_ids: [999],
+    vote_average: 9.5,
+    vote_count: MIN_RATED_VOTES - 1,
+  }, [{ id: 18, name: 'Drama' }]);
+
+  assert.equal(meta.year, '2024');
+  assert.deepEqual(meta.genres, []);
+  assert.equal(meta.rating, null);
+});
+
+test('describeSearchResult shows the original title only when it really differs', () => {
+  const differs = describeSearchResult({ name: 'Squid Game', original_name: '오징어 게임' });
+  assert.equal(differs.originalTitle, '오징어 게임');
+
+  const accentOnly = describeSearchResult({ title: 'Amelie', original_title: 'Amélie' });
+  assert.equal(accentOnly.originalTitle, null);
+
+  const empty = describeSearchResult({});
+  assert.deepEqual(empty, { year: '', genres: [], rating: null, originalTitle: null });
 });

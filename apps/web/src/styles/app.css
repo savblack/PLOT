@@ -3194,6 +3194,21 @@ a.provider-chip--link:hover {
 .search-result-row {
   position: relative;
 }
+.search-result-original {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  font-style: italic;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.search-result-meta {
+  color: var(--text-secondary);
+}
+.search-result-rating {
+  color: var(--text-primary);
+  font-weight: 600;
+}
 .search-result-row .search-row-actions {
   position: absolute;
   right: 1rem;
