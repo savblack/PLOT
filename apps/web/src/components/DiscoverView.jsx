@@ -5,6 +5,8 @@ import { TodayLabel } from './TodayLabel.jsx';
 import { posterUrl, backdropUrl } from '../utils/images.js';
 import { favoriteWords } from '../utils/spelling.js';
 import ScrollRail from './ScrollRail.jsx';
+import RailArrows from './RailArrows.jsx';
+import { useRailScroll } from '../hooks/useRailScroll.js';
 import { useGenres } from '../hooks/useGenres.js';
 import { useDiscover } from '../hooks/useDiscover.js';
 import { useForYou } from '../hooks/useForYou.js';
@@ -23,36 +25,77 @@ import { SHOW_FOR_YOU_RAIL } from '../launchFeatures.js';
 /* ── Rail ── */
 /* Both rails are ScrollRail: it carries the drag behaviour these used to wire
    up themselves, plus the chevron controls a pointer needs. */
-function Rail({ children }) {
+function Rail({ rail, children }) {
   return (
     <ScrollRail
-      style={{ paddingLeft: 'var(--gut)', paddingRight: 'var(--gut)', paddingTop: '2rem', paddingBottom: '2rem' }}
+      rail={rail}
+      style={{ paddingLeft: 'var(--gut)', paddingRight: 'var(--gut)', paddingTop: '1.25rem', paddingBottom: '2rem' }}
     >
       {children}
     </ScrollRail>
   );
 }
 
-function BingeRail({ children }) {
-  return <ScrollRail className="discover-binge-rail">{children}</ScrollRail>;
+function BingeRail({ rail, children }) {
+  return <ScrollRail rail={rail} className="discover-binge-rail">{children}</ScrollRail>;
 }
 
-function DiscoverSectionHeader({ kicker, title, open, onToggle, className = '' }) {
+/* The section banner: a serif title, an optional subtitle, and a slot on the
+   right for the rail's scroll arrows.
+
+   The whole banner used to be one <button>. It is a <div> wrapping the toggle
+   now, because the arrows are buttons too and cannot nest inside another one.
+
+   `subtitle` is deliberately optional rather than the old always-present
+   kicker: a line under every shelf is noise by the third one. Pass it only
+   where the title does not already say it — "Your Next Watch" needs to explain
+   what it is based on, "Hot Right Now" does not need to be told it is
+   trending. */
+function DiscoverSectionHeader({ subtitle, title, open, onToggle, className = '', headerRight }) {
   return (
-    <button
-      className={`collapse-head discover-section-header${className ? ` ${className}` : ''}`}
-      onClick={onToggle}
-      aria-expanded={open}
-      type="button"
-    >
-      <svg className={`collapse-chevron${open ? ' open' : ''}`} viewBox="0 0 24 24" aria-hidden="true">
-        <polyline points="6 9 12 15 18 9" />
-      </svg>
-      <div style={{ flex: 1, textAlign: 'left' }}>
-        <div style={{ fontSize: '0.6rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--accent)', marginBottom: '0.15rem' }}>{kicker}</div>
-        <div style={{ fontFamily: 'var(--font-sans)', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.02em', lineHeight: 1.2, textTransform: 'uppercase', color: 'var(--text-primary)' }}>{title}</div>
-      </div>
-    </button>
+    <div className={`collapse-head discover-section-header${className ? ` ${className}` : ''}`}>
+      <button
+        className="collapse-head-toggle"
+        onClick={onToggle}
+        aria-expanded={open}
+        type="button"
+      >
+        <svg className={`collapse-chevron${open ? ' open' : ''}`} viewBox="0 0 24 24" aria-hidden="true">
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+        <span className="discover-section-heading">
+          <span className="discover-section-title">{title}</span>
+          {subtitle && <span className="discover-section-sub">{subtitle}</span>}
+        </span>
+      </button>
+      {headerRight && <div className="collapse-head-actions">{headerRight}</div>}
+    </div>
+  );
+}
+
+/* A collapsible section whose body is a rail. Owns the scroll state so the
+   header can carry the arrows while the rail itself holds the cards; when the
+   section is collapsed the rail unmounts, the hook measures nothing, and
+   RailArrows renders null. */
+function RailSection({
+  title, subtitle, open, onToggle, sectionClassName = 'discover-section',
+  headerClassName = '', binge = false, children,
+}) {
+  const rail = useRailScroll();
+  const RailBody = binge ? BingeRail : Rail;
+
+  return (
+    <section className={sectionClassName}>
+      <DiscoverSectionHeader
+        title={title}
+        subtitle={subtitle}
+        open={open}
+        onToggle={onToggle}
+        className={headerClassName}
+        headerRight={<RailArrows rail={rail} />}
+      />
+      {open && <RailBody rail={rail}>{children}</RailBody>}
+    </section>
   );
 }
 
@@ -473,7 +516,6 @@ function DiscoverContent({ openPanel, watchlist, openSections, setOpenSections, 
       {hero && genreFilters.length === 0 && (
         <section className="discover-section discover-featured-section">
           <DiscoverSectionHeader
-            kicker="Featured"
             title="PLOT's Picks"
             open={openSections.featured}
             onToggle={() => toggleSection('featured')}
@@ -495,64 +537,50 @@ function DiscoverContent({ openPanel, watchlist, openSections, setOpenSections, 
       )}
 
       {forYou.length > 0 && (
-        <section className="discover-section">
-          <DiscoverSectionHeader
-            kicker="Based on your taste"
-            title="Your Next Watch"
-            open={openSections.forYou}
-            onToggle={() => toggleSection('forYou')}
-          />
-          {openSections.forYou && (
-            <Rail>
-              {forYou.map(item => (
-                <RankedCard key={`${item.media_type}-${item.id}`} item={item} showRank={false} openPanel={openPanel} watchlist={watchlist} />
-              ))}
-            </Rail>
-          )}
-        </section>
+        <RailSection
+          title="Your Next Watch"
+          subtitle="Based on your taste"
+          open={openSections.forYou}
+          onToggle={() => toggleSection('forYou')}
+        >
+          {forYou.map(item => (
+            <RankedCard key={`${item.media_type}-${item.id}`} item={item} showRank={false} openPanel={openPanel} watchlist={watchlist} />
+          ))}
+        </RailSection>
       )}
 
       {hotRail.length > 0 && (
-        <section className="discover-section discover-binge-section">
-          <DiscoverSectionHeader
-            kicker="Trending today"
-            title="Hot Right Now"
-            open={openSections.hot}
-            onToggle={() => toggleSection('hot')}
-            className="discover-binge-header"
-          />
-          {openSections.hot && (
-            <BingeRail>
-              {hotRail.map(item => (
-                <BingeCard key={`${item.media_type}-${item.id}`} item={item} openPanel={openPanel} watchlist={watchlist} />
-              ))}
-            </BingeRail>
-          )}
-        </section>
+        <RailSection
+          title="Hot Right Now"
+          open={openSections.hot}
+          onToggle={() => toggleSection('hot')}
+          sectionClassName="discover-section discover-binge-section"
+          headerClassName="discover-binge-header"
+          binge
+        >
+          {hotRail.map(item => (
+            <BingeCard key={`${item.media_type}-${item.id}`} item={item} openPanel={openPanel} watchlist={watchlist} />
+          ))}
+        </RailSection>
       )}
 
       {bingedShows.length > 0 && (
-        <section className="discover-section">
-          <DiscoverSectionHeader
-            kicker="Popular TV"
-            title="Most Binged Shows"
-            open={openSections.binge}
-            onToggle={() => toggleSection('binge')}
-          />
-          {openSections.binge && (
-            <Rail>
-              {bingedShows.map(item => (
-                <RankedCard key={`${item.media_type}-${item.id}`} item={item} showRank={false} openPanel={openPanel} watchlist={watchlist} />
-              ))}
-            </Rail>
-          )}
-        </section>
+        <RailSection
+          title="Most Binged Shows"
+          subtitle="Popular TV"
+          open={openSections.binge}
+          onToggle={() => toggleSection('binge')}
+        >
+          {bingedShows.map(item => (
+            <RankedCard key={`${item.media_type}-${item.id}`} item={item} showRank={false} openPanel={openPanel} watchlist={watchlist} />
+          ))}
+        </RailSection>
       )}
 
       {weekly.length > 0 && (
         <section className="discover-section discover-section--list">
           <DiscoverSectionHeader
-            kicker="Global ranking"
+            subtitle="Global ranking"
             title="Top 20 This Week"
             open={openSections.weekly}
             onToggle={() => toggleSection('weekly')}
@@ -564,47 +592,40 @@ function DiscoverContent({ openPanel, watchlist, openSections, setOpenSections, 
       )}
 
       {cinemaMovies.length > 0 && (
-        <section className="discover-section discover-binge-section">
-          <DiscoverSectionHeader
-            kicker={MEDIA.inCinemas}
-            title="Now Showing"
-            open={openSections.cinemas}
-            onToggle={() => toggleSection('cinemas')}
-            className="discover-binge-header"
-          />
-          {openSections.cinemas && (
-            <BingeRail>
-              {cinemaMovies.map(item => (
-                <BingeCard key={`${item.media_type}-${item.id}`} item={item} openPanel={openPanel} watchlist={watchlist} />
-              ))}
-            </BingeRail>
-          )}
-        </section>
+        <RailSection
+          title="Now Showing"
+          subtitle={MEDIA.inCinemas}
+          open={openSections.cinemas}
+          onToggle={() => toggleSection('cinemas')}
+          sectionClassName="discover-section discover-binge-section"
+          headerClassName="discover-binge-header"
+          binge
+        >
+          {cinemaMovies.map(item => (
+            <BingeCard key={`${item.media_type}-${item.id}`} item={item} openPanel={openPanel} watchlist={watchlist} />
+          ))}
+        </RailSection>
       )}
 
       {anticipatedMovies.length > 0 && (
-        <section className="discover-section discover-binge-section">
-          <DiscoverSectionHeader
-            kicker={MEDIA.comingSoon}
-            title="Most Anticipated"
-            open={openSections.anticipated}
-            onToggle={() => toggleSection('anticipated')}
-            className="discover-binge-header"
-          />
-          {openSections.anticipated && (
-            <BingeRail>
-              {anticipatedMovies.map(item => (
-                <BingeCard key={`${item.media_type}-${item.id}`} item={item} openPanel={openPanel} watchlist={watchlist} />
-              ))}
-            </BingeRail>
-          )}
-        </section>
+        <RailSection
+          title="Most Anticipated"
+          open={openSections.anticipated}
+          onToggle={() => toggleSection('anticipated')}
+          sectionClassName="discover-section discover-binge-section"
+          headerClassName="discover-binge-header"
+          binge
+        >
+          {anticipatedMovies.map(item => (
+            <BingeCard key={`${item.media_type}-${item.id}`} item={item} openPanel={openPanel} watchlist={watchlist} />
+          ))}
+        </RailSection>
       )}
 
       {platformList.length > 0 && (
         <section className="discover-section discover-section--list">
           <DiscoverSectionHeader
-            kicker="Official charts"
+            subtitle="Official charts"
             title="Top 10 by Platform"
             open={openSections.platforms}
             onToggle={() => toggleSection('platforms')}
@@ -647,39 +668,30 @@ function NewReleasesContent({ openPanel, watchlist, typeFilters, genreFilters, o
   return (
     <div>
       {recent.length > 0 && (
-        <section className="discover-section">
-          <DiscoverSectionHeader
-            kicker="Last 30 days"
-            title="Recently Released"
-            open={openSections.recent}
-            onToggle={() => toggleSection('recent')}
-          />
-          {openSections.recent && (
-            <Rail>
-              {recent.map(item => (
-                <RankedCard key={`${item.media_type}-${item.id}`} item={item} showRank={false} openPanel={openPanel} watchlist={watchlist} />
-              ))}
-            </Rail>
-          )}
-        </section>
+        <RailSection
+          title="Recently Released"
+          subtitle="Last 30 days"
+          open={openSections.recent}
+          onToggle={() => toggleSection('recent')}
+        >
+          {recent.map(item => (
+            <RankedCard key={`${item.media_type}-${item.id}`} item={item} showRank={false} openPanel={openPanel} watchlist={watchlist} />
+          ))}
+        </RailSection>
       )}
 
       {genreRails.filter(rail => rail.items.length > 0).map(rail => (
-        <section className="discover-section" key={rail.key}>
-          <DiscoverSectionHeader
-            kicker="New releases"
-            title={rail.label}
-            open={openSections[rail.key]}
-            onToggle={() => toggleSection(rail.key)}
-          />
-          {openSections[rail.key] && (
-            <Rail>
-              {rail.items.map(item => (
-                <RankedCard key={`${item.media_type}-${item.id}`} item={item} showRank={false} openPanel={openPanel} watchlist={watchlist} />
-              ))}
-            </Rail>
-          )}
-        </section>
+        <RailSection
+          key={rail.key}
+          title={rail.label}
+          subtitle="New releases"
+          open={openSections[rail.key]}
+          onToggle={() => toggleSection(rail.key)}
+        >
+          {rail.items.map(item => (
+            <RankedCard key={`${item.media_type}-${item.id}`} item={item} showRank={false} openPanel={openPanel} watchlist={watchlist} />
+          ))}
+        </RailSection>
       ))}
     </div>
   );

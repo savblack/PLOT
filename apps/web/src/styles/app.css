@@ -4990,17 +4990,41 @@ a.provider-chip--link:hover {
 
 /* Section headers stack flush — the grey bands meet with no gap above or
    below, collapsed or expanded, so the list reads as one continuous accordion.
-   Unlike CollapsibleSection.jsx's <div class="collapse-head">, this is a
-   <button>, so the browser's default button border needs resetting too —
-   .collapse-head only ever overrides border-bottom. Left alone, the native
-   top border stacked with the previous header's border-bottom into a heavy
-   double line wherever two collapsed sections sat flush against each other. */
+
+   This was a <button> and needed the native button border reset on top of
+   .collapse-head's. It is a <div> wrapping the collapse toggle now, because
+   the rail's scroll arrows sit beside that toggle and a button cannot nest
+   inside a button — so it takes .collapse-head's border like
+   CollapsibleSection.jsx does, and the reset is gone with the element.
+
+   The taller padding is the serif title and its optional subtitle;
+   .collapse-head's 46px was sized for one line of 0.72rem uppercase. */
 .discover-section-header {
   margin-top: 0;
-  border: none;
-  border-bottom: 1px solid var(--border);
-  appearance: none;
-  -webkit-appearance: none;
+  padding: 0.7rem var(--gut);
+  min-height: 58px;
+}
+
+.discover-section-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+.discover-section-title {
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  color: var(--text-primary);
+}
+/* Optional by design — see DiscoverSectionHeader. Only shelves whose title
+   leaves a real question open carry one. */
+.discover-section-sub {
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: var(--text-secondary);
 }
 
 .section-expand-all-btn {
@@ -5309,6 +5333,40 @@ a.provider-chip--link:hover {
 .rail-nav--prev { left: 0.35rem; }
 .rail-nav--next { right: 0.35rem; }
 
+/* The same controls when they live in the section header instead of floating
+   over the posters. In their own space nothing is occluded, so they disable at
+   the ends rather than unmounting — a control that stays put is easier to aim
+   at than one that appears and vanishes as a rail reaches its end. Off below
+   the sidebar breakpoint for the same reason .rail-nav is: touch has the
+   swipe. */
+.rail-arrow {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+.rail-arrow svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+}
+.rail-arrow:hover:not(:disabled) { color: var(--text-primary); }
+.rail-arrow:disabled {
+  color: var(--text-muted);
+  opacity: 0.4;
+  cursor: default;
+}
+
 .rail-frame:hover .rail-nav,
 .rail-nav:focus-visible {
   opacity: 1;
@@ -5363,6 +5421,18 @@ a.provider-chip--link:hover {
   .rail-nav {
     display: flex;
   }
+
+  /* Parked in the header, so unlike .rail-nav they are always visible rather
+     than waiting on hover — the point of moving them was to say a rail
+     scrolls before you touch it. */
+  .rail-arrow {
+    display: flex;
+  }
+
+  /* There is room for the display size the shelf titles were designed at once
+     the column is wide. */
+  .discover-section-title { font-size: 1.5rem; }
+  .discover-section-sub   { font-size: 0.8rem; }
 
   /* Rails that stay rails need a pointer affordance. Drag-to-scroll is a touch
      gesture, and these hide their scrollbar, so with a mouse there is nothing
