@@ -134,7 +134,7 @@ const TYPE_LABELS: Record<string, string> = {
   watch_tonight: 'What to watch tonight',
   hidden_gem: 'Hidden gem',
   on_this_day: 'On this day',
-  now_streaming: 'Now at home',
+  now_streaming: 'New at home',
   countdown: 'Countdown',
   trailer: 'Trailer drop',
   question: 'Question',

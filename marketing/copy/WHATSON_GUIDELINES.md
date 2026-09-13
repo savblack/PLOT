@@ -152,8 +152,9 @@ leave it out.
 ### Now streaming (and now to rent or buy)
 
 The brief's `home_kind` says which this is. A subscription arrival is "now
-streaming on Netflix". A cinema release reaching the digital stores is "now
-available to rent or buy on Prime Video and Apple TV", and the article should
+streaming on Netflix" and is labelled Now streaming. A cinema release reaching
+the digital stores is labelled Now at home; the article says it is "now
+available to rent or buy on Prime Video and Apple TV", and it should
 say how long it ran in cinemas first; that arrival is the moment most readers
 can actually watch it, so treat it as the news, not as the end of a run.
 

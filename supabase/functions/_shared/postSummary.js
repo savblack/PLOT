@@ -23,7 +23,7 @@ export const reason = (p) => {
     case 'on_this_day': return title ? `Anniversary: ${title}` : 'On this day in film/TV';
     case 'now_streaming': {
       const rental = p.payload?.home_kind === 'rental';
-      if (rental) return title ? `Now to rent or buy: ${title}` : 'New to rent or buy today';
+      if (rental) return title ? `Now at home (rent or buy): ${title}` : 'New to rent or buy today';
       return title ? `Hits streaming today: ${title}` : 'New on streaming today';
     }
     case 'countdown': {

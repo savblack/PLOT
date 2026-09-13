@@ -66,7 +66,7 @@ const VISIBLE_STATUSES = ['approved', 'published', 'partially_published'];
 
 const TYPE_META: Record<string, { label: string; tone: string }> = {
   countdown: { label: 'Countdown', tone: '#B03A5E' },
-  now_streaming: { label: 'Now at home', tone: '#0F6E56' },
+  now_streaming: { label: 'Now streaming', tone: '#0F6E56' },
   trending: { label: 'Trending', tone: '#534AB7' },
   trailer: { label: 'Trailer drop', tone: '#8A5410' },
   upcoming: { label: 'Upcoming this week', tone: '#185FA5' },
@@ -81,7 +81,7 @@ const TYPE_META: Record<string, { label: string; tone: string }> = {
 const FILTERS: { key: string | null; label: string }[] = [
   { key: null, label: 'Latest' },
   { key: 'upcoming', label: 'This week' },
-  { key: 'now_streaming', label: 'Now at home' },
+  { key: 'now_streaming', label: 'New at home' },
   { key: 'countdown', label: 'Coming soon' },
   { key: 'trailer', label: 'First look' },
 ];
@@ -177,11 +177,11 @@ const titleCta = async (post: FeedPost, region: string) => {
   </aside>`;
 };
 
-// A home arrival is either a subscription premiere or a cinema release
-// reaching the digital stores; the planner records which in payload.home_kind,
-// and the label says it so a reader never mistakes a $20 rental for
-// "streaming". Older posts without the field keep the neutral type label.
-const HOME_KIND_LABEL: Record<string, string> = { streaming: 'Now streaming', rental: 'Now to rent or buy' };
+// A home arrival is either a subscription premiere ("Now streaming") or a
+// cinema release reaching the digital stores ("Now at home"); the planner
+// records which in payload.home_kind, so a reader never mistakes a $20 rental
+// for streaming. Older posts without the field keep the type label.
+const HOME_KIND_LABEL: Record<string, string> = { streaming: 'Now streaming', rental: 'Now at home' };
 
 const kicker = (p: Pick<FeedPost, 'post_type' | 'payload'>) => {
   const m = TYPE_META[p.post_type];
@@ -1072,7 +1072,7 @@ Deno.serve(async (req) => {
       return page(FEED_SEO_TITLE, head, `
         ${titleRow}
         ${heroRow(lead, rail)}
-        ${streaming.length ? `${sectionHead('Now at home', `${FEED_PATH}?type=now_streaming`)}${streamingShelf(streaming)}` : ''}
+        ${streaming.length ? `${sectionHead('New at home', `${FEED_PATH}?type=now_streaming`)}${streamingShelf(streaming)}` : ''}
         ${chartItems.length ? `${sectionHead('Trending', `${FEED_PATH}/chart`)}${trendingTeaser(chartItems, chartPrior)}` : ''}
         ${countdown.length ? `${sectionHead('Coming soon', `${FEED_PATH}?type=countdown`)}${comingSoonCards(countdown)}` : ''}
         ${trailer.length ? `${sectionHead('First look', `${FEED_PATH}?type=trailer`)}${firstLookCards(trailer)}` : ''}
