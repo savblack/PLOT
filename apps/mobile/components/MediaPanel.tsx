@@ -30,7 +30,7 @@ import {
 } from '@plot/core/watchingProgress.js';
 import { MEDIA_PANEL } from '@plot/core/copy/mediaPanel.js';
 import { COMMON } from '@plot/core/copy/common.js';
-import { track, EVENTS } from '../lib/analytics';
+import { track, EVENTS, captureException } from '../lib/analytics';
 import { fetchVerifiedAvailability, offersFromTmdb } from '@plot/core/availability.js';
 import { fetchCriticScore, pickAudienceQuote, getConsensusLine } from '@plot/core/reviews.js';
 import { canCreateCustomList, FREE_CUSTOM_LIST_CAP } from '@plot/core/premium.js';
@@ -686,7 +686,12 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
   const handleSeriesFinished = async () => {
     if (watched) return { ok: true };
     const result = await markWatchedNow();
-    return result.ok ? result : { ok: false, error: history.getLastError() || result.error };
+    // Report the driver's message rather than showing it; see the web panel.
+    if (!result.ok) {
+      const detail = history.getLastError();
+      if (detail) captureException(new Error(detail), { surface: 'media_panel', action: 'watched_status' });
+    }
+    return result;
   };
 
   const handleShare = async () => {
@@ -948,7 +953,9 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                         onPress={async () => {
                           const result = await markWatchedNow();
                           if (!result.ok) {
-                            Alert.alert('Could not update', history.getLastError() || result.error);
+                            const detail = history.getLastError();
+                            if (detail) captureException(new Error(detail), { surface: 'media_panel', action: 'watched_status' });
+                            Alert.alert('Could not update', result.error || MEDIA_PANEL.couldNotUpdateWatchStatus);
                           }
                         }}
                       >
