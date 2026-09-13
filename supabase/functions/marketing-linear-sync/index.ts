@@ -415,6 +415,28 @@ Deno.serve(async (req) => {
   // An issue dragged to another workflow state.
   if (payload.type === 'Issue' && payload.action === 'update') {
     const issueId = payload.data?.id;
+
+    // ONLY act when the state changed in THIS event.
+    //
+    // Every issue update fires this webhook, including the ones the mirror makes
+    // itself when it re-renders a description. Reading data.state on such an
+    // event does not report a decision anyone made — it reports where the card
+    // happens to be sitting — and acting on it lets the mirror's own writes
+    // reach back and overwrite the operator's.
+    //
+    // That is not hypothetical. PLO-421 was approved at 03:21:49, but its card
+    // was still in In Review (Linear moves the card when you comment, not when
+    // the row changes). The next sweep refreshed the description, this handler
+    // read "In Review" off that update, and unapproved a post the operator had
+    // just cleared — twice. It published anyway only because the revert landed
+    // after the send. Landing a minute earlier, it would have silently cancelled
+    // it, and the audit trail would have shown 'linear' doing the cancelling.
+    //
+    // updatedFrom carries only the fields that actually changed, so a state
+    // transition is the one thing it proves.
+    const stateChanged = Object.prototype.hasOwnProperty.call(payload.updatedFrom ?? {}, 'stateId');
+    if (!stateChanged) return json({ ok: true, ignored: 'no state change in this update' });
+
     const stateName = String(payload.data?.state?.name ?? '').toLowerCase();
     const command = STATE_ACTIONS[stateName];
     if (!issueId || !command) return json({ ok: true, ignored: true });
@@ -422,11 +444,15 @@ Deno.serve(async (req) => {
     const post = await findPost(supabase, issueId);
     if (!post) return json({ ok: true, ignored: true });
 
-    // Already there — a title or description edit also fires an Issue update,
-    // and re-running approve on an approved post would re-queue rows the
-    // publisher may be mid-send on.
+    // Second line of defence: never re-assert a status the row already holds.
     const target = command === 'approve' ? 'approved' : command === 'reject' ? 'vetoed' : 'needs_review';
     if (post.status === target) return json({ ok: true, ignored: true });
+
+    // And never walk a post backwards out of a terminal state. A card sitting in
+    // In Review while the row says published is stale, not a decision.
+    if (post.status === 'published' || post.status === 'partially_published') {
+      return json({ ok: true, ignored: 'post has already published' });
+    }
 
     await reply(issueId, await runCommand(supabase, post, { command }));
     return json({ ok: true });
