@@ -2,10 +2,13 @@ import { useState, useEffect } from 'react';
 import { supabase } from './supabase.js';
 import { tmdb } from './tmdb.js';
 
-// Reads the get_for_you() RPC (item-item collaborative filtering over the
-// user's own watchlist/favourites/history, computed nightly in Postgres —
-// see supabase/migrations/20260726020000_for_you_recommendations.sql) and
+// Reads the get_for_you() RPC (TMDB content similarity over the user's own
+// watchlist/favourites/history, falling back to genre overlap, computed
+// nightly in Postgres — see
+// supabase/migrations/20260913110000_for_you_retire_cross_user_tier.sql) and
 // hydrates each {tmdb_id, media_type} row with poster/title/date via TMDB.
+// It is NOT cross-user collaborative filtering: that tier existed but never
+// returned a row and was retired on 2026-09-13.
 // Returns [] for signed-out users or anyone TMDB can't resolve a row for.
 // `enabled` gates the whole rail behind SHOW_FOR_YOU_RAIL (launchFeatures.js)
 // — false skips the RPC + TMDB hydration entirely rather than just hiding it.
