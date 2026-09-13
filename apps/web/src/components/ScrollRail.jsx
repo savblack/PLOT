@@ -1,95 +1,26 @@
-import { useCallback, useEffect, useState } from 'react';
-import { useDragScroll } from '../hooks/useDragScroll.js';
-import { IconChevronLeft, IconChevronRight } from './navIcons.jsx';
-import { APP_SHELL } from '../copy/appShell.js';
+/* A horizontal rail: the scroll container, its drag handlers, and nothing else.
 
-/* A horizontal rail with pointer controls.
+   The scroll state lives in useRailScroll and is passed in, because the
+   controls are not here — they sit in the section header as <RailArrows>,
+   beside the collapse toggle. This used to render its own chevrons floating
+   over the first and last card; they were only ever a workaround for the
+   header being a single <button> that could not contain them. */
 
-   Drag-to-scroll is a touch gesture: with a mouse there is no scrollbar to
-   grab (the rails hide theirs) and no wheel mapping, so a rail that continues
-   past the edge looks like it simply ends. These chevrons are that missing
-   affordance. CSS shows them only where they make sense — a pointer device at
-   sidebar widths — but the scroll bookkeeping runs everywhere, which is
-   cheap and keeps the buttons honest if the media query ever moves.
-
-   The buttons hide at each end rather than disabling, so the control never
-   sits there looking broken, and the rail keeps its drag and native scroll. */
-
-/** @param {{className?: string, style?: object, children: React.ReactNode}} props */
-export default function ScrollRail({ className = 'rail-scroll', style, children }) {
-  const { ref, handlers } = useDragScroll();
-  const [{ scrollable, atStart, atEnd }, setEdges] = useState({
-    scrollable: false,
-    atStart: true,
-    atEnd: true,
-  });
-
-  const measure = useCallback(() => {
-    const el = ref.current;
-    if (!el) return;
-    // Sub-pixel widths mean scrollLeft rarely lands exactly on its bounds.
-    const max = el.scrollWidth - el.clientWidth;
-    setEdges({
-      scrollable: max > 1,
-      atStart: el.scrollLeft <= 1,
-      atEnd: el.scrollLeft >= max - 1,
-    });
-  }, [ref]);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return undefined;
-
-    measure();
-    el.addEventListener('scroll', measure, { passive: true });
-
-    // Cards arrive asynchronously (TMDB) and the poster width changes at the
-    // breakpoints, so width has to be watched rather than measured once.
-    const observer = new ResizeObserver(measure);
-    observer.observe(el);
-    for (const child of el.children) observer.observe(child);
-
-    return () => {
-      el.removeEventListener('scroll', measure);
-      observer.disconnect();
-    };
-  }, [measure, ref, children]);
-
-  const page = (direction) => {
-    const el = ref.current;
-    if (!el) return;
-    // Leave a card's worth of overlap so nothing is skipped between pages.
-    const amount = Math.max(el.clientWidth * 0.8, 200);
-    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    el.scrollBy({ left: direction * amount, behavior: reduced ? 'auto' : 'smooth' });
-  };
+/** @param {{
+ *    className?: string,
+ *    style?: object,
+ *    rail: ReturnType<import('../hooks/useRailScroll.js').useRailScroll>,
+ *    children: React.ReactNode,
+ *  }} props
+ */
+export default function ScrollRail({ className = 'rail-scroll', style, rail, children }) {
+  // Destructured rather than read as rail.ref inline: the lint rule against
+  // touching refs during render does not see through the property access.
+  const { ref, handlers } = rail;
 
   return (
-    <div className="rail-frame">
-      <div className={className} ref={ref} style={style} {...handlers}>
-        {children}
-      </div>
-
-      {scrollable && !atStart && (
-        <button
-          type="button"
-          className="rail-nav rail-nav--prev"
-          onClick={() => page(-1)}
-          aria-label={APP_SHELL.scrollRailLeft}
-        >
-          <IconChevronLeft />
-        </button>
-      )}
-      {scrollable && !atEnd && (
-        <button
-          type="button"
-          className="rail-nav rail-nav--next"
-          onClick={() => page(1)}
-          aria-label={APP_SHELL.scrollRailRight}
-        >
-          <IconChevronRight />
-        </button>
-      )}
+    <div className={className} ref={ref} style={style} {...handlers}>
+      {children}
     </div>
   );
 }
