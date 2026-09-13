@@ -609,7 +609,7 @@ export default function PublicProfilePage() {
   const { user: viewer, openPanel, watchlist, profile: viewerProfile } = useApp();
   const navigate = useNavigate();
 
-  const { loading, profile, locked, watchCount, recent, topMovies, topTv, favourites, customLists, watching, wantToWatch } =
+  const { loading, profile, locked, watchCount, recent, topMovies, topTv, favourites, customLists, watching, wantToWatch, refresh: refreshProfile } =
     usePublicProfile(username, viewer?.id);
   const [followList, setFollowList] = useState(null);
   const [editing, setEditing] = useState(false);
@@ -748,7 +748,11 @@ export default function PublicProfilePage() {
                       surface="profile"
                       viewerId={viewer?.id}
                       blocks={blocks}
-                      onChanged={refresh}
+                      // Both, and the profile one is not optional: blocking
+                      // makes get_profile_card stop returning this row, so
+                      // without it the person you just blocked stays on screen
+                      // until you navigate away. refresh() only reloads follows.
+                      onChanged={() => { refresh(); refreshProfile(); }}
                     />
                   </div>
                 </div>

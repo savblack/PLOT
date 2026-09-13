@@ -34,6 +34,7 @@ export interface PublicProfileState {
   topMovies: ProfilePoster[];
   topTv: ProfilePoster[];
   favourites: ProfilePoster[];
+  refresh: () => Promise<void>;
 }
 
 export function usePublicProfile(username: string, viewerId?: string | null): PublicProfileState {

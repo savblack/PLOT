@@ -62,7 +62,7 @@ export default function ProfileScreen({ usernameOverride }: { usernameOverride?:
   const username = usernameOverride ?? params.username ?? '';
   const { userId: viewerId, profile: viewerProfile } = useAppData();
 
-  const { loading, profile, locked, watchCount, avgRating, recent, topMovies, topTv, favourites } =
+  const { loading, profile, locked, watchCount, avgRating, recent, topMovies, topTv, favourites, refresh: refreshProfile } =
     usePublicProfile(username, viewerId);
   const { followers, following, status, follow, unfollow, busy, canFollow, refresh } =
     useFollows(profile?.id, viewerId, profile?.follow_status ?? null);
@@ -163,7 +163,11 @@ export default function ProfileScreen({ usernameOverride }: { usernameOverride?:
                   surface="profile"
                   viewerId={viewerId}
                   blocks={blocks}
-                  onChanged={refresh}
+                  // Both, and the profile one is not optional: blocking makes
+                  // get_profile_card stop returning this row, so without it the
+                  // person you just blocked stays on screen until you navigate
+                  // away. refresh() only reloads follows.
+                  onChanged={() => { void refresh(); void refreshProfile(); }}
                 />
               </View>
             )}
