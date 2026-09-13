@@ -3,10 +3,10 @@ import { APP_SHELL } from '../copy/appShell.js';
 
 /* The prev/next pair for a rail, parked in its section header.
 
-   Unlike the floating .rail-nav controls these sit in their own space, so they
-   disable at the ends rather than hiding: nothing is occluded either way, and a
-   control that stays put is easier to aim at than one that appears and
-   disappears as you reach the end of a rail.
+   They sit in their own space rather than over the artwork, so they disable at
+   the ends rather than hiding: nothing is occluded either way, and a control
+   that stays put is easier to aim at than one that appears and disappears as
+   you reach the end of a rail.
 
    Renders nothing when the rail fits, so a short shelf carries no chrome. */
 

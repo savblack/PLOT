@@ -5292,53 +5292,12 @@ a.provider-chip--link:hover {
   flex: 0 0 var(--poster-w);
 }
 
-/* ── Rail chevron controls ───────────────────── */
-/* Off unless the wide-screen block above turns them on. */
-.rail-frame {
-  position: relative;
-}
-
-.rail-nav {
-  display: none;
-  position: absolute;
-  /* Centre on the poster rather than the card: the title and meta sit below
-     it, and a control floating over the text reads as an error. A 2/3 poster
-     is 1.5x its width tall, so half of that is 0.75x --poster-w. */
-  top: calc(var(--poster-w) * 0.75);
-  transform: translateY(-50%);
-  z-index: 2;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  border: 1px solid var(--border-strong);
-  border-radius: 50%;
-  background: var(--surface);
-  color: var(--text-primary);
-  cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.15s ease;
-  /* Floats over poster artwork, which is the sanctioned use of the overlay
-     shadow — a hairline alone cannot separate it from an arbitrary image. */
-  box-shadow: var(--shadow-overlay);
-}
-.rail-nav svg {
-  width: 18px;
-  height: 18px;
-  stroke: currentColor;
-  fill: none;
-  stroke-width: 2;
-}
-.rail-nav--prev { left: 0.35rem; }
-.rail-nav--next { right: 0.35rem; }
-
-/* The same controls when they live in the section header instead of floating
+/* ── Rail scroll controls ───────────────────── */
+/* These live in the section header beside the collapse toggle, not floating
    over the posters. In their own space nothing is occluded, so they disable at
    the ends rather than unmounting — a control that stays put is easier to aim
    at than one that appears and vanishes as a rail reaches its end. Off below
-   the sidebar breakpoint for the same reason .rail-nav is: touch has the
-   swipe. */
+   the sidebar breakpoint: touch already has the swipe. */
 .rail-arrow {
   display: none;
   align-items: center;
@@ -5367,29 +5326,9 @@ a.provider-chip--link:hover {
   cursor: default;
 }
 
-.rail-frame:hover .rail-nav,
-.rail-nav:focus-visible {
-  opacity: 1;
-}
-/* Invisible controls must not be clickable; focus still reveals them. */
-.rail-nav:not(:focus-visible) {
-  pointer-events: none;
-}
-.rail-frame:hover .rail-nav {
-  pointer-events: auto;
-}
-.rail-nav:focus-visible {
+.rail-arrow:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
-}
-.rail-nav:hover {
-  background: var(--surface-raised);
-}
-
-/* The binge rail is landscape cards, not posters — centre on the frame. The
-   controls are siblings of the scroll container inside .rail-frame. */
-.discover-binge-rail ~ .rail-nav {
-  top: 50%;
 }
 
 /* ═══════════════════════════════════════
@@ -5414,17 +5353,9 @@ a.provider-chip--link:hover {
     width: auto;
   }
 
-  /* Chevron controls. Hidden until the rail is hovered or a control takes
-     keyboard focus, so a resting page stays quiet. Only on pointer devices:
-     touch already has the swipe, and a floating button would just cover a
-     card. ScrollRail unmounts each one at its end of the travel. */
-  .rail-nav {
-    display: flex;
-  }
-
-  /* Parked in the header, so unlike .rail-nav they are always visible rather
-     than waiting on hover — the point of moving them was to say a rail
-     scrolls before you touch it. */
+  /* Pointer devices only: touch has the swipe. Always visible rather than
+     revealed on hover — the point of parking them in the header was to say a
+     rail scrolls before you touch it. */
   .rail-arrow {
     display: flex;
   }

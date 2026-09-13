@@ -1,15 +1,17 @@
+import RailArrows from '../components/RailArrows.jsx';
 import ScrollRail from '../components/ScrollRail.jsx';
+import { useRailScroll } from '../hooks/useRailScroll.js';
 
-/* The rails live on Discover, behind auth, so the chevron controls can't be
-   exercised on any public route. These stories stand them up with placeholder
-   cards: hover the rail to reveal the controls, click to page through, and
-   watch each one disappear at its end of the travel. */
+/* The rails live on Discover, behind auth, so the controls can't be exercised
+   on any public route. These stories stand them up with placeholder cards:
+   page through with the arrows and watch each one disable at its end of the
+   travel. */
 
-// The controls are pointer-and-wide-screen only in app.css. A story frame is
+// The arrows are pointer-and-wide-screen only in app.css. A story frame is
 // narrower than the breakpoint, so force them visible here — everything else
-// (size, position, hover reveal, end-of-travel unmount) is the shipped CSS.
+// (size, colour, disabled state, end-of-travel behaviour) is the shipped CSS.
 const FORCE_CONTROLS = `
-  .sb-rail .rail-nav { display: flex; }
+  .sb-rail .rail-arrow { display: flex; }
 `;
 
 function Card({ n }) {
@@ -23,6 +25,26 @@ function Card({ n }) {
 }
 
 const cards = (count) => Array.from({ length: count }, (_, i) => <Card key={i} n={i + 1} />);
+
+/* Mirrors how Discover composes the two halves: one useRailScroll feeds the
+   arrows in the header and the scroll container below it. */
+function Shelf({ title, subtitle, className, children }) {
+  const rail = useRailScroll();
+  return (
+    <section>
+      <div className="collapse-head discover-section-header">
+        <span className="collapse-head-toggle">
+          <span className="discover-section-heading">
+            <span className="discover-section-title">{title}</span>
+            {subtitle && <span className="discover-section-sub">{subtitle}</span>}
+          </span>
+        </span>
+        <div className="collapse-head-actions"><RailArrows rail={rail} /></div>
+      </div>
+      <ScrollRail rail={rail} className={className}>{children}</ScrollRail>
+    </section>
+  );
+}
 
 export default {
   title: 'Components/ScrollRail',
@@ -38,23 +60,27 @@ export default {
   ],
 };
 
-// Enough cards to overflow: the right control shows, the left one does not
-// until you page away from the start.
+// Enough cards to overflow: both arrows render, the left one disabled until
+// you page away from the start.
 export const Default = {
-  render: () => <ScrollRail>{cards(14)}</ScrollRail>,
+  render: () => <Shelf title="Most Binged Shows" subtitle="Popular TV">{cards(14)}</Shelf>,
 };
 
-// Two cards fit inside the frame, so neither control should ever appear —
-// a rail that cannot scroll must not offer to.
+// Two cards fit inside the frame, so neither arrow should appear — a rail that
+// cannot scroll must not offer to.
 export const NotScrollable = {
-  render: () => <ScrollRail>{cards(2)}</ScrollRail>,
+  render: () => <Shelf title="Now Showing" subtitle="In cinemas">{cards(2)}</Shelf>,
 };
 
-// The landscape binge rail centres its controls on the frame rather than on a
-// poster's midpoint.
+// A title that answers its own question carries no subtitle.
+export const NoSubtitle = {
+  render: () => <Shelf title="Hot Right Now">{cards(14)}</Shelf>,
+};
+
+// The landscape binge rail: same controls, different card shape.
 export const BingeRail = {
   render: () => (
-    <ScrollRail className="discover-binge-rail">
+    <Shelf title="Most Anticipated" className="discover-binge-rail">
       {Array.from({ length: 8 }, (_, i) => (
         <div
           key={i}
@@ -62,6 +88,6 @@ export const BingeRail = {
           style={{ background: 'var(--surface-sunken)', borderRadius: 'var(--radius-md)' }}
         />
       ))}
-    </ScrollRail>
+    </Shelf>
   ),
 };

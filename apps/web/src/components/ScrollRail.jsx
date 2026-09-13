@@ -1,59 +1,26 @@
-import { useRailScroll } from '../hooks/useRailScroll.js';
-import { IconChevronLeft, IconChevronRight } from './navIcons.jsx';
-import { APP_SHELL } from '../copy/appShell.js';
+/* A horizontal rail: the scroll container, its drag handlers, and nothing else.
 
-/* A horizontal rail with pointer controls.
+   The scroll state lives in useRailScroll and is passed in, because the
+   controls are not here — they sit in the section header as <RailArrows>,
+   beside the collapse toggle. This used to render its own chevrons floating
+   over the first and last card; they were only ever a workaround for the
+   header being a single <button> that could not contain them. */
 
-   Drag-to-scroll is a touch gesture: with a mouse there is no scrollbar to
-   grab (the rails hide theirs) and no wheel mapping, so a rail that continues
-   past the edge looks like it simply ends. The chevrons are that missing
-   affordance. CSS shows them only where they make sense — a pointer device at
-   sidebar widths — but the scroll bookkeeping runs everywhere, which is
-   cheap and keeps the buttons honest if the media query ever moves.
-
-   The overlay buttons hide at each end rather than disabling, so the control
-   never sits there looking broken, and the rail keeps its drag and native
-   scroll.
-
-   Pass `rail` (a useRailScroll result) to drive the rail from controls that
-   live outside it — Discover parks a <RailArrows> pair in the section header
-   rather than floating chevrons over the first and last poster. When `rail` is
-   given this renders no overlay buttons of its own. */
-
-/** @param {{className?: string, style?: object, rail?: object, children: React.ReactNode}} props */
+/** @param {{
+ *    className?: string,
+ *    style?: object,
+ *    rail: ReturnType<import('../hooks/useRailScroll.js').useRailScroll>,
+ *    children: React.ReactNode,
+ *  }} props
+ */
 export default function ScrollRail({ className = 'rail-scroll', style, rail, children }) {
-  // Always called, never conditionally: when `rail` is supplied this instance's
-  // own ref is never attached to anything, so its effect bails on the first line.
-  const own = useRailScroll();
-  const { ref, handlers, scrollable, atStart, atEnd, page } = rail ?? own;
-  const ownsControls = !rail;
+  // Destructured rather than read as rail.ref inline: the lint rule against
+  // touching refs during render does not see through the property access.
+  const { ref, handlers } = rail;
 
   return (
-    <div className="rail-frame">
-      <div className={className} ref={ref} style={style} {...handlers}>
-        {children}
-      </div>
-
-      {ownsControls && scrollable && !atStart && (
-        <button
-          type="button"
-          className="rail-nav rail-nav--prev"
-          onClick={() => page(-1)}
-          aria-label={APP_SHELL.scrollRailLeft}
-        >
-          <IconChevronLeft />
-        </button>
-      )}
-      {ownsControls && scrollable && !atEnd && (
-        <button
-          type="button"
-          className="rail-nav rail-nav--next"
-          onClick={() => page(1)}
-          aria-label={APP_SHELL.scrollRailRight}
-        >
-          <IconChevronRight />
-        </button>
-      )}
+    <div className={className} ref={ref} style={style} {...handlers}>
+      {children}
     </div>
   );
 }
