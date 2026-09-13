@@ -1,15 +1,6 @@
 {
   "entries": [
     {
-      "slug": "the-bear",
-      "tmdb_id": 136315,
-      "media_type": "tv",
-      "poster_path": "/eKfVzzEazSIjJMrw9ADa2x8ksLz.jpg",
-      "title": "The Bear",
-      "date_label": "Nov 2023",
-      "note": "\"Stressful. Perfect. Both.\""
-    },
-    {
       "slug": "saltburn",
       "tmdb_id": 930564,
       "media_type": "movie",
@@ -40,7 +31,7 @@
       "slug": "the-substance",
       "tmdb_id": 933260,
       "media_type": "movie",
-      "poster_path": "/uYJvxMWMb9W4zIY3cbM50sj3dpC.jpg",
+      "poster_path": "/lqoMzCcZYEFK729d6qzt349fB4o.jpg",
       "title": "The Substance",
       "date_label": "Sep 2024",
       "note": "\"Nothing prepares you.\""
@@ -130,19 +121,28 @@
       "slug": "spider-man-brand-new-day",
       "tmdb_id": 969681,
       "media_type": "movie",
-      "poster_path": "/iPOn6DinuVyLY17YM9mKuPofV08.jpg",
+      "poster_path": "/bjiS5ipwxb9JFy3XRRN4OAilSeX.jpg",
       "title": "Spider-Man: Brand New Day",
       "date_label": "Jul 2026",
+      "note": ""
+    },
+    {
+      "slug": "mayday",
+      "tmdb_id": 1137844,
+      "media_type": "movie",
+      "poster_path": "/hVXjX1jLZ1ljFSNGXpjJfbTUOa7.jpg",
+      "title": "Mayday",
+      "date_label": "Sep 2026",
       "note": ""
     }
   ],
   "trending": {
     "hero": {
-      "slug": "lanterns",
-      "tmdb_id": 95350,
-      "media_type": "tv",
-      "poster_path": "/gpC7h43xPMEV3goYMQShfJbTtLq.jpg",
-      "title": "Lanterns",
+      "slug": "the-runner",
+      "tmdb_id": 1386315,
+      "media_type": "movie",
+      "poster_path": "/uxCaBoYXsDC4A0SqTm3SISj0OwK.jpg",
+      "title": "The Runner",
       "year": "2026"
     }
   }
