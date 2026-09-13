@@ -2798,6 +2798,12 @@ svg { stroke-width: 1.5; }
   justify-content: center;
   z-index: 2;
 }
+/* No backdrop to sit on: the fallback surface is light (or near-black in
+   dark mode), so a white ✕ vanishes against it and the panel looks stuck.
+   Fall back to the regular text colour there. */
+.panel-header-wrap--no-backdrop .panel-close-btn {
+  color: var(--text-primary);
+}
 .panel-close-btn svg {
   width: 16px;
   height: 16px;
