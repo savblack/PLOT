@@ -26,6 +26,7 @@
     "tokens:build": "node scripts/build-tokens.mjs --write",
     "tokens:check": "node scripts/build-tokens.mjs --check",
     "tokens:marketing": "node scripts/check-marketing-tokens.mjs",
+    "colors:check": "node scripts/check-color-literals.mjs",
     "storybook:website": "npm run storybook -w @plot/website-storybook",
     "storybook:web": "npm run storybook -w @plot/web",
     "storybook:mobile": "npm run storybook -w @plot/mobile",

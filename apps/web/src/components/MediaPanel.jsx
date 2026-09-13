@@ -1308,7 +1308,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                   Series{details?.number_of_seasons ? ` · ${details.number_of_seasons} season${details.number_of_seasons > 1 ? 's' : ''}` : ''}
                 </span>
               )}
-              {rating && <span style={{ fontSize: '0.8rem', color: '#F59E0B', fontWeight: 600 }}>{rating}</span>}
+              {rating && <span style={{ fontSize: '0.8rem', color: 'var(--rating)', fontWeight: 600 }}>{rating}</span>}
               {date && (
                 <span style={{ fontSize: '0.76rem', color: 'var(--text-muted)', fontWeight: 500 }}>
                   {new Date(date).toLocaleDateString('en', { month: 'short', day: 'numeric', year: 'numeric' })}

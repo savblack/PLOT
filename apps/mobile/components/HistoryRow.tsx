@@ -115,7 +115,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   rowRating: {
     fontFamily: fontFamily.sansBold,
     fontSize: fontSize.xs,
-    color: '#F59E0B',
+    color: colors.rating,
   },
   rowTitle: {
     fontFamily: fontFamily.sansMedium,

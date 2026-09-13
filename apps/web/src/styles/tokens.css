@@ -57,6 +57,7 @@
   --success: #047857;
   --success-dim: rgba(4,120,87,0.08);
   --success-border: rgba(4,120,87,0.3);
+  --rating: #B45309;
   --badge-premium: #1A8CD8;
   --badge-supporter: #E05578;
   --radius-md: 16px;
@@ -163,6 +164,7 @@
   --success: #4ade80;
   --success-dim: rgba(74,222,128,0.08);
   --success-border: rgba(74,222,128,0.35);
+  --rating: #F59E0B;
   --badge-premium: #1D9BF0;
   --badge-supporter: #F06A88;
   /* @tokens:end */

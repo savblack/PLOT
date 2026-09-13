@@ -155,6 +155,7 @@ function IconShare() {
 // it converts at its own boundary: ratingToStars for what to display,
 // starsToRating for what a tap writes back.
 function StarRow({ rating, onChange }: { rating: number; onChange: (r: number) => void }) {
+  const { colors } = useTheme();
   const displayStars = ratingToStars(rating);
   return (
     <View style={{ flexDirection: 'row', gap: 4 }}>
@@ -169,8 +170,8 @@ function StarRow({ rating, onChange }: { rating: number; onChange: (r: number) =
           <Svg width={24} height={24} viewBox="0 0 24 24">
             <Polygon
               points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
-              fill={n <= displayStars ? '#F59E0B' : 'none'}
-              stroke="#F59E0B"
+              fill={n <= displayStars ? colors.rating : 'none'}
+              stroke={colors.rating}
               strokeWidth={1.5}
               strokeLinejoin="round"
             />
@@ -1213,7 +1214,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   metaRow:  { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.sm, flexWrap: 'wrap' },
   metaYear: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textSecondary },
   metaType: { fontFamily: fontFamily.sansBold, fontSize: 11, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
-  metaRating: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: '#F59E0B' },
+  metaRating: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.rating },
   genres:   { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted, marginBottom: spacing.md },
   scoresRow: { fontSize: fontSize.md, marginBottom: 4 },
   scoreCritics: { fontFamily: fontFamily.sansBold, fontSize: fontSize.md, color: colors.textPrimary },
