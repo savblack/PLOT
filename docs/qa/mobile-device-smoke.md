@@ -162,13 +162,44 @@ user.
 `app.json` registers `applinks:app.theplot.tv` and the `plot` scheme, with
 `/save`, `/list` and `/u` path prefixes on Android.
 
-- [ ] With the app **already running**, open an `app.theplot.tv/save/...` link.
-      It opens in PLOT, on the right title.
-- [ ] With the app **fully killed**, open the same link. This is the case the
-      `expo-notifications` research flags as racing `AuthGuard`: the link
-      resolves before the session loads, the guard redirects to `(auth)` or
-      `(app)`, and the deep link is lost. Expect this one to fail.
-- [ ] `/u/<username>` and `/list/...` likewise.
+**Read the two notes below before you spend device time here.** They were
+written on 2026-09-13 from the source alone, by someone with no simulator and no
+device, so they are predictions and not results — which is exactly what the EPG
+bug was too, right up until somebody measured it. Treat them as where to look,
+not as what you will find.
+
+**Only one of the three declared paths has a route.** `apps/mobile/app/` has
+`(app)/u/[username].tsx` and nothing for `/save` or `/list`, and nothing else in
+the app parses an incoming URL (`_layout.tsx` handles only the Trakt code,
+`(auth)/callback.tsx` only the auth callback). Both are real routes on web —
+`/save` is `SavePage`, `/list` redirects to `/my-lists` — so the links exist and
+get sent. On Android the intent filter claims those two prefixes explicitly; on
+iOS `applinks:app.theplot.tv` claims the whole host, so **every** app.theplot.tv
+link opens the app, including paths mobile has never heard of. There is also no
+`app/+not-found.tsx`, so the landing place is expo-router's development
+"Unmatched Route" screen. If that is what you see, it is not a linking failure —
+the link arrived and there was nowhere to put it.
+
+**The AuthGuard race may already be closed.** Earlier drafts of this phase said
+to expect the cold-start case to fail, on the reasoning that the link resolves
+before the session loads and the guard redirects away from it. Reading
+`app/_layout.tsx` that looks wrong twice over: `RootInner` returns a loader until
+`authReady`, so `AuthGuard` and its `<Slot/>` do not mount until `getSession()`
+has resolved; and `AuthGuard`'s three branches each test an explicit value, so
+the `onboardingComplete === null` window between the session arriving and the
+profile loading matches none of them and redirects nowhere. Both halves of the
+race appear handled on purpose. Nobody has watched it happen.
+
+- [ ] With the app **already running**, open an `app.theplot.tv/u/<username>`
+      link. It opens in PLOT, on that profile.
+- [ ] With the app **fully killed**, open the same link. This is the cold-start
+      case above: it should land on the profile rather than the home tab. If it
+      lands on home, the guard is eating the link after all — say so here.
+- [ ] Signed **out**, open the same link. It should reach `(auth)`; note whether
+      signing in then returns you to the profile or drops you on home (there is
+      no "return to" memory in `AuthGuard`, so expect home).
+- [ ] `/save/...` and `/list/...`: confirm what actually happens, given neither
+      has a route. What is worth recording is which screen the user ends up on.
 - [ ] The Trakt callback returns into the app (`consumeTraktState` /
       `exchangeTraktCode` run at the root layout).
 
