@@ -13,7 +13,7 @@ import { resolveMediaPanelEscapeAction } from '../utils/mediaPanel.js';
 import { pickBestTvmazeShowMatch } from '../utils/tvmaze.js';
 import { favoriteWords } from '../utils/spelling.js';
 import { useShareTitle } from '../hooks/useShareTitle.js';
-import { track, EVENTS } from '../lib/analytics.js';
+import { track, EVENTS, captureException } from '../lib/analytics.js';
 import CreditsGrid from './TalentCredits.jsx';
 import { creditMeta, creditTitle, dedupedActingCredits, mediaType, shortBiography } from '../utils/talentCredits.js';
 import { canCreateCustomList, FREE_CUSTOM_LIST_CAP } from '@plot/core/premium.js';
@@ -1192,10 +1192,16 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
       isWatching,
       inList,
     });
-    // Surface the real Supabase error (e.g. constraint/network failure) instead
-    // of the generic fallback message, so a recurrence is actually diagnosable.
+    // The driver's message is diagnostic but not English — a network drop
+    // reached the banner as "TypeError: Failed to fetch". Report it instead of
+    // displaying it: PostHog gets the real cause on every occurrence, which is
+    // strictly better than the screenshot this used to depend on, and the user
+    // gets the sentence the catalog already has.
     const realError = !result.ok && history.getLastError();
-    return realError ? { ok: false, error: realError } : result;
+    if (realError) {
+      captureException(new Error(realError), { surface: 'media_panel', action: 'watched_status' });
+    }
+    return result;
   }, [defaultWatchedAt, details, history, inList, isWatching, itemId, itemType, watched, watchedEntry?.dnf, watchlist, watching]);
 
   /* Watching the final episode of a finished series completes it. Reuses the
