@@ -14,7 +14,8 @@ export default defineConfig({
     trace: 'on-first-retry',
   },
   webServer: {
-    // Vite preview ignores the Cloudflare SPA fallback in public/_redirects.
+    // Vite preview ignores the Cloudflare SPA fallback (see assets.
+    // not_found_handling in wrangler.toml), so deep links 404 under it.
     // Use Vite's SPA server after first checking the production build.
     command: `PLOT_SMOKE_TEST=1 npm run dev -- --host 127.0.0.1 --port ${smokePort} --strictPort`,
     url: smokeBaseUrl,
