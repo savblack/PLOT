@@ -14,7 +14,7 @@
 // fixed. This checks the one detail that actually broke: whether a later
 // definition changes the function's ON CONFLICT target(s).
 //
-// Redefining a function is normal (get_for_you is on its 4th version) so this
+// Redefining a function is normal (feed_post_from_history has several) so this
 // deliberately does NOT complain about redefinition itself — only about a
 // changed upsert key, which is where the silent breakage lives. Acknowledge an
 // intentional change with a comment anywhere in the migration:

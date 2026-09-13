@@ -18,10 +18,8 @@ import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../../lib/supabase';
 import { tmdb, setTmdbRegion, prioritiseEnglishSpeakingTitles } from '../../lib/tmdb';
-import { SHOW_FOR_YOU_RAIL } from '../../lib/launchFeatures';
 import { DISCOVER_TABS } from '@plot/core/navigation.js';
 import { useNewReleases } from '@plot/core/useNewReleases.js';
-import { useForYou } from '@plot/core/useForYou.js';
 import { useGenres } from '@plot/core/useGenres.js';
 import { useUpcoming } from '@plot/core/useUpcoming.js';
 import { ALL_TYPES, filterByType, filterByGenre } from '@plot/core/mediaFilters.js';
@@ -606,12 +604,6 @@ export default function HomeScreen() {
   const [trending,     setTrending]     = useState<MediaItem[]>([]);
   const [weekly,       setWeekly]       = useState<MediaItem[]>([]);
   const [bingedShows,  setBingedShows]  = useState<MediaItem[]>([]);
-  // For You: item-item collaborative filtering over the user's own
-  // watchlist/favourites/history, computed nightly in Postgres. The flag gates
-  // the RPC and the TMDB hydration inside the hook, not just the render, so
-  // flipping it off pulls the rail without touching the get_for_you pipeline.
-  const { items: forYou, error: forYouError } = useForYou(20, SHOW_FOR_YOU_RAIL);
-
   // Official published charts from platform_charts — a fixed platform list,
   // identical for everyone, rather than TMDB popularity filtered to whatever
   // the user happens to subscribe to.
@@ -798,37 +790,6 @@ export default function HomeScreen() {
               horizontal
               data={hotRail}
               keyExtractor={item => String(item.id)}
-              renderItem={({ item }) => (
-                <PosterCard
-                  item={item}
-                  onPress={() => item.id && openPanel(item.id, (item.media_type === 'tv' ? 'tv' : 'movie'))}
-                  saved={savedIds.has(item.id ?? 0)}
-                  onSave={() => handleSave(item)}
-                  isFav={favorites.isFavorite(item.id ?? 0)}
-                  onFavorite={() => toggleFav(item)}
-                />
-              )}
-              showsHorizontalScrollIndicator={false}
-              nestedScrollEnabled
-              contentContainerStyle={{ paddingHorizontal: spacing.xl, gap: spacing.md }}
-            />
-          </View>
-        )}
-
-        {/* ── For You ── */}
-        {forYouError && forYou.length === 0 && (
-          <View style={styles.section}>
-            <SectionHeader kicker="Picked for you" title="For You" />
-            <Text style={styles.emptyBody}>Couldn't load your recommendations right now.</Text>
-          </View>
-        )}
-        {applyFilters(forYou).length > 0 && (
-          <View style={styles.section}>
-            <SectionHeader kicker="Picked for you" title="For You" />
-            <FlatList
-              horizontal
-              data={applyFilters(forYou)}
-              keyExtractor={item => `${item.media_type}-${item.id}`}
               renderItem={({ item }) => (
                 <PosterCard
                   item={item}

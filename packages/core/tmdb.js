@@ -429,17 +429,6 @@ export const tmdb = {
   /* ── Reviews (audience-submitted, via TMDB) ── */
   getReviews: (mediaType, id) => fetchFromTMDB(`/${mediaType}/${id}/reviews`),
 
-  /**
-   * Lightweight title lookup — poster, name, dates — without the
-   * recommendations/credits/videos payload getDetails carries. For hydrating
-   * rails built from a bare list of {media_type, tmdb_id} (e.g. For You),
-   * where only card-level fields are rendered.
-   */
-  getBasicDetails: async (mediaType, id) => {
-    const path = mediaType === 'tv' ? `/tv/${id}` : `/movie/${id}`;
-    const movie = await fetchFromTMDB(path);
-    return mediaType === 'tv' ? movie : withRegionalMovieReleaseDate(movie);
-  },
 
   /* ── Talent ── */
   getPersonDetails: (id) => fetchFromTMDB(`/person/${id}`),

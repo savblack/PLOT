@@ -25,11 +25,6 @@ export const SHOW_MEDIA_SYNC_INTEGRATIONS = false;
 export const SHOW_GOOGLE_LOGIN = process.env.EXPO_PUBLIC_SHOW_GOOGLE_LOGIN === 'true';
 export const SHOW_APPLE_LOGIN = false;
 
-// "Your Next Watch" For You rail on Discover. On by default; flip to false to
-// pull it instantly (e.g. bad recommendations, RPC issues) without touching
-// the underlying get_for_you() pipeline.
-export const SHOW_FOR_YOU_RAIL = true;
-
 // Pricing/upgrade UI. Hidden while pricing isn't ready to be public. Mobile
 // has no upgrade nudge built yet — declared so the two flag sets stay
 // comparable. Mobile never gets a purchase button regardless of this flag
