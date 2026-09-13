@@ -88,7 +88,7 @@ Comment on the issue. The first line is the command:
 
 | Comment | What it does |
 | --- | --- |
-| `/approve` | Clears it to publish (and re-queues its publication rows) |
+| `/approve` | Clears it to publish — the card moves to **Scheduled** |
 | `/reject` | It will not publish |
 | `/unapprove` | Back to needs_review |
 | `/reschedule 2026-09-18` | Moves the day (the article URL keeps its original date) |
@@ -126,8 +126,12 @@ First paragraph.
 Second paragraph.
 ```
 
-Dragging an issue to **Approved** or **Canceled** on the board does the same as
-`/approve` and `/reject`. Dragging to **Done** deliberately does nothing:
+The board reads left to right as the post's life: **Review → Scheduled →
+Published**, with **Canceled** for anything rejected. Backlog and Triage are
+yours; the mirror never touches them.
+
+Dragging an issue to **Scheduled** or **Canceled** does the same as `/approve`
+and `/reject`. Dragging to **Published** deliberately does nothing:
 publishing is something the publisher reports, so the board can never claim a
 post went out when it did not.
 
@@ -142,10 +146,13 @@ the next mirror sweep, within five minutes.
 
 No GitHub Actions secret is involved. Everything below is a Supabase secret.
 
-1. Team PLO needs workflow states named **In Review**, **Approved**, **Canceled**
-   and **Done**. All four exist (Approved was added 2026-09-12, type `started`,
-   sitting after In Review on the board). The mirror fails loudly and lists the
-   team's real states if one is missing or renamed, rather than guessing.
+1. Team PLO needs workflow states named **Review**, **Scheduled**, **Canceled**
+   and **Published**. Each is resolved by name with its previous name accepted as
+   a fallback (`In Review`, `Approved`, `Done`), so renaming a column in Linear
+   is not a breaking change — there is no way to land a rename and a deploy at
+   the same instant, and the sweep throws when it cannot find the review state.
+   If one is missing outright the mirror fails loudly and lists the team's real
+   states rather than guessing.
 2. Set `LINEAR_API_KEY` as an Edge Function secret.
 3. Deploy both halves:
    ```sh
@@ -192,8 +199,9 @@ seeing rather than hiding.
 
 Optional overrides, all Edge Function secrets: `LINEAR_MARKETING_TEAM_ID` (PLO),
 `LINEAR_MARKETING_PROJECT_ID` (Content Automation), `LINEAR_REVIEW_STATE`
-(In Review), `LINEAR_APPROVED_STATE` (Approved), `LINEAR_REJECTED_STATE`
-(Canceled), `LINEAR_DONE_STATE` (Done). A state
+(Review), `LINEAR_SCHEDULED_STATE`
+(Scheduled), `LINEAR_REJECTED_STATE` (Canceled), `LINEAR_PUBLISHED_STATE`
+(Published). A state
 that cannot be resolved is reported in the sweep's response as `unresolved`
 rather than failing it — those moves are skipped, not misfiled.
 

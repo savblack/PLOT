@@ -50,11 +50,20 @@ const GH_TOKEN = Deno.env.get('GH_DISPATCH_TOKEN') ?? '';
 // 'Done' is deliberately absent: publishing is something the publisher reports,
 // not something a human asserts by moving a card. Moving one to Done records
 // nothing, so the board can never claim a post went out when it did not.
+// Dragging a card is the same decision as the matching comment. Previous column
+// names are kept alongside the current ones so a rename in Linear cannot quietly
+// stop the board from working — an unrecognised state is ignored in silence,
+// which is the worst way for this to fail.
+//
+// 'Published' is deliberately absent: publishing is something the publisher
+// reports, not something a human asserts by moving a card.
 const STATE_ACTIONS: Record<string, 'approve' | 'reject' | 'unapprove'> = {
-  approved: 'approve',
+  scheduled: 'approve',
+  approved: 'approve',        // previous name for Scheduled
   canceled: 'reject',
   cancelled: 'reject',
-  'in review': 'unapprove',
+  review: 'unapprove',
+  'in review': 'unapprove',   // previous name for Review
 };
 
 const now = () => new Date().toISOString();

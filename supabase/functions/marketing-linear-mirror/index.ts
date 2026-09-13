@@ -44,7 +44,8 @@
  *
  * Secrets: LINEAR_API_KEY, and optionally LINEAR_MARKETING_TEAM_ID (default PLO),
  * LINEAR_MARKETING_PROJECT_ID (default "Content Automation"),
- * LINEAR_REVIEW_STATE (default "In Review"), LINEAR_DONE_STATE (default "Done").
+ * LINEAR_REVIEW_STATE (default "Review"), LINEAR_SCHEDULED_STATE ("Scheduled"),
+ * LINEAR_REJECTED_STATE ("Canceled"), LINEAR_PUBLISHED_STATE ("Published").
  */
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
 import type { Database } from '../_shared/database.types.ts';
@@ -52,6 +53,7 @@ import { serviceKey } from '../_shared/serviceKey.ts';
 import { hasServiceRoleBearer } from '../_shared/internalWebhook.ts';
 import { buildTitle, buildDescription, dueDateFor } from '../_shared/linearIssue.js';
 import { articleLink } from '../_shared/postSummary.js';
+import { BOT_MARKER } from '../_shared/linearCommands.js';
 
 type Db = SupabaseClient<Database>;
 // deno-lint-ignore no-explicit-any
@@ -67,10 +69,25 @@ const RESEND_KEY = Deno.env.get('RESEND_API_KEY') ?? '';
 const ALERT_TO = Deno.env.get('MARKETING_ADMIN_EMAIL') ?? 'sav.black@outlook.com';
 const ALERT_FROM = 'PLOT Marketing <feedback@theplot.tv>';
 
-const REVIEW_STATE = Deno.env.get('LINEAR_REVIEW_STATE') ?? 'In Review';
-const APPROVED_STATE = Deno.env.get('LINEAR_APPROVED_STATE') ?? 'Approved';
+// The board's columns, in the order a post moves through them:
+//
+//   Review  →  Scheduled  →  Published        (Canceled if you reject it)
+//
+// Each is resolved by name, with the previous name kept as a fallback. Renaming
+// a column in Linear would otherwise break the sweep the instant it happened —
+// loadContext throws when it cannot find the review state — and there is no way
+// to land a rename and a deploy at the same millisecond. Accepting both names
+// makes the order not matter.
+const REVIEW_STATE = Deno.env.get('LINEAR_REVIEW_STATE') ?? 'Review';
+const SCHEDULED_STATE = Deno.env.get('LINEAR_SCHEDULED_STATE') ?? 'Scheduled';
 const REJECTED_STATE = Deno.env.get('LINEAR_REJECTED_STATE') ?? 'Canceled';
-const DONE_STATE = Deno.env.get('LINEAR_DONE_STATE') ?? 'Done';
+const PUBLISHED_STATE = Deno.env.get('LINEAR_PUBLISHED_STATE') ?? 'Published';
+
+const STATE_FALLBACKS: Record<string, string[]> = {
+  [REVIEW_STATE]: ['In Review'],
+  [SCHEDULED_STATE]: ['Approved'],
+  [PUBLISHED_STATE]: ['Done'],
+};
 
 // Which workflow state each status belongs in. The row is the source of truth,
 // so this is the direction the board is reconciled towards — a post approved on
@@ -79,15 +96,15 @@ const DONE_STATE = Deno.env.get('LINEAR_DONE_STATE') ?? 'Done';
 //
 // 'published' is absent: closePublished owns that move, because it also reports
 // where the post actually went.
-const STATE_FOR_STATUS: Record<string, 'review' | 'approved' | 'rejected'> = {
+const STATE_FOR_STATUS: Record<string, 'review' | 'scheduled' | 'rejected'> = {
   needs_review: 'review',
-  approved: 'approved',
+  approved: 'scheduled',
   vetoed: 'rejected',
 };
 
 /** The state a post's card belongs in, given the row. `null` = leave it alone. */
 const targetState = (ctx: Context, post: Row): string | null => {
-  if (isComplete(post)) return ctx.states.done;
+  if (isComplete(post)) return ctx.states.published;
   const key = STATE_FOR_STATUS[post.status as string];
   return key ? ctx.states[key] : null;
 };
@@ -130,6 +147,51 @@ const isComplete = (post: Row): boolean => {
   const pubs = (post.marketing_post_publications ?? []) as Row[];
   const webOnly = pubs.length === 0;
   return webOnly && post.status === 'approved' && new Date(post.scheduled_for) <= new Date();
+};
+
+/**
+ * A post whose publishing is over, one way or another.
+ *
+ * Wider than isComplete on purpose. A partially published post is NOT complete —
+ * something failed and wants /retry — but its run has happened, and the board
+ * needs to say so. Before this, a partial produced nothing at all: targetState
+ * has no entry for it, so reconcile skipped the row entirely and the card sat in
+ * Approved looking like a post still waiting its turn. Silence is the one thing
+ * the board must never say about a post that needs you.
+ */
+const hasFinishedPublishing = (post: Row): boolean =>
+  post.status === 'published' || post.status === 'partially_published' || isComplete(post);
+
+// Identifies our own outcome comment, so a post is reported once rather than on
+// every sweep. Reporting used to ride on the move into Done, which made it
+// exactly-once for free — and unreachable for a partial, which never moves. The
+// report is its own decision now, and this is what keeps it idempotent.
+//
+// A plain string test rather than a regex: BOT_MARKER contains an emoji, and
+// deno lint rejects the otherwise-valid regex literal that embeds one.
+const OUTCOME_HEADINGS = ['Published.', 'Partly published.', 'Live on the site.'];
+const isOutcomeReport = (body: string): boolean =>
+  body.startsWith(BOT_MARKER) && OUTCOME_HEADINGS.some((h) => body.includes(`· ${h}`));
+
+/** What actually happened, per platform, from what the publisher recorded. */
+const outcomeReport = (post: Row): string => {
+  const pubs = (post.marketing_post_publications ?? []) as Row[];
+  const sent = pubs.filter((x) => x.status === 'published');
+  const failed = pubs.filter((x) => x.status === 'failed');
+
+  if (!pubs.length) {
+    return `${BOT_MARKER} · Live on the site.\n- ${articleLink(post) ?? '/whats-on'}`;
+  }
+
+  const lines = sent.map((x) => `- ${x.platform}${x.permalink ? `: ${x.permalink}` : ''}`);
+  if (failed.length) {
+    lines.push(`- **failed: ${failed.map((x) => x.platform).join(', ')}** — comment \`/retry\` to re-queue them`);
+  }
+  const heading = failed.length ? 'Partly published' : 'Published';
+  const tail = failed.length
+    ? '\n\nLeft in Approved rather than moved to Done, because it is not finished.'
+    : '';
+  return `${BOT_MARKER} · ${heading}.\n${lines.join('\n')}${tail}`;
 };
 
 // A post whose row moved on since its issue was last rendered.
@@ -215,7 +277,7 @@ const isUuid = (s: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-
 type Context = {
   teamId: string;
   projectId: string | null;
-  states: { review: string; approved: string | null; rejected: string | null; done: string | null };
+  states: { review: string; scheduled: string | null; rejected: string | null; published: string | null };
 };
 
 /**
@@ -236,8 +298,15 @@ const loadContext = async (): Promise<Context> => {
     );
   if (!team) throw new Error(`No Linear team matched "${TEAM_REF}"`);
 
-  const byName = (name: string) =>
-    (team.states.nodes as Row[]).find((s) => s.name.toLowerCase() === name.toLowerCase());
+  // Try the configured name, then any previous name it was renamed from.
+  const byName = (name: string) => {
+    const candidates = [name, ...(STATE_FALLBACKS[name] ?? [])];
+    for (const candidate of candidates) {
+      const hit = (team.states.nodes as Row[]).find((s) => s.name.toLowerCase() === candidate.toLowerCase());
+      if (hit) return hit;
+    }
+    return undefined;
+  };
 
   const state = byName(REVIEW_STATE);
   if (!state) {
@@ -249,9 +318,9 @@ const loadContext = async (): Promise<Context> => {
   // Only the review state is required. The others are survivable: without them a
   // card simply stays where it is rather than being filed wrongly, and the
   // response says how many moves were skipped.
-  const approved = byName(APPROVED_STATE);
+  const scheduled = byName(SCHEDULED_STATE);
   const rejected = byName(REJECTED_STATE);
-  const done = byName(DONE_STATE);
+  const published = byName(PUBLISHED_STATE);
 
   let projectId: string | null = null;
   if (PROJECT_REF) {
@@ -273,9 +342,9 @@ const loadContext = async (): Promise<Context> => {
     projectId,
     states: {
       review: state.id,
-      approved: approved?.id ?? null,
+      scheduled: scheduled?.id ?? null,
       rejected: rejected?.id ?? null,
-      done: done?.id ?? null,
+      published: published?.id ?? null,
     },
   };
 };
@@ -424,47 +493,57 @@ const reconcileStates = async (supabase: Db, ctx: Context, dryRun = false): Prom
   const posts = (data ?? []) as Row[];
   if (!posts.length) return { moved: 0, reported: 0 };
 
-  // Current state of every mirrored issue, in one request.
+  // Current state of every mirrored issue, and whether its outcome has already
+  // been reported, in one request.
   const current = new Map<string, string>();
+  const reportedAlready = new Set<string>();
   const ids = posts.map((p) => p.linear_issue_id as string);
   const page = await graphql(
-    `query($ids: [ID!]) { issues(filter: { id: { in: $ids } }, first: 250) { nodes { id state { id } } } }`,
+    `query($ids: [ID!]) {
+       issues(filter: { id: { in: $ids } }, first: 250) {
+         nodes { id state { id } comments(first: 50) { nodes { body } } }
+       }
+     }`,
     { ids },
   );
-  for (const node of page.issues.nodes as Row[]) current.set(node.id, node.state.id);
+  for (const node of page.issues.nodes as Row[]) {
+    current.set(node.id, node.state.id);
+    const comments = (node.comments?.nodes ?? []) as Row[];
+    if (comments.some((c) => isOutcomeReport(String(c.body)))) reportedAlready.add(node.id);
+  }
 
   let moved = 0;
   let reported = 0;
   for (const post of posts) {
     const want = targetState(ctx, post);
-    if (!want || current.get(post.linear_issue_id) === want) continue;
-    if (dryRun) { moved++; if (want === ctx.states.done && isComplete(post)) reported++; continue; }
+    const needsReport = hasFinishedPublishing(post) && !reportedAlready.has(post.linear_issue_id);
+    const needsMove = want !== null && current.get(post.linear_issue_id) !== want;
+    if (!needsReport && !needsMove) continue;
+    if (dryRun) {
+      if (needsMove) moved++;
+      if (needsReport) reported++;
+      continue;
+    }
+
     try {
-      // Report the outcome the first time a post lands in Done, so the card says
-      // where it actually went rather than only that it is finished. Driven off
-      // what the publisher recorded, never off the card's position.
-      if (want === ctx.states.done && isComplete(post)) {
-        const pubs = (post.marketing_post_publications ?? []) as Row[];
-        const sent = pubs.filter((x) => x.status === 'published');
-        const failed = pubs.filter((x) => x.status === 'failed');
-        const lines = sent.map((x) => `- ${x.platform}${x.permalink ? `: ${x.permalink}` : ''}`);
-        if (failed.length) lines.push(`- failed: ${failed.map((x) => x.platform).join(', ')} — comment \`/retry\` to re-queue`);
-        if (!pubs.length) lines.push(`- live on the site: ${articleLink(post) ?? '/whats-on'}`);
+      if (needsReport) {
         await graphql(
           `mutation($issueId: String!, $body: String!) {
              commentCreate(input: { issueId: $issueId, body: $body }) { success }
            }`,
-          { issueId: post.linear_issue_id, body: `🤖 **PLOT** · Published.\n${lines.join('\n')}` },
+          { issueId: post.linear_issue_id, body: outcomeReport(post) },
         );
         reported++;
       }
-      await graphql(
-        `mutation($id: String!, $stateId: String!) {
-           issueUpdate(id: $id, input: { stateId: $stateId }) { success }
-         }`,
-        { id: post.linear_issue_id, stateId: want },
-      );
-      moved++;
+      if (needsMove) {
+        await graphql(
+          `mutation($id: String!, $stateId: String!) {
+             issueUpdate(id: $id, input: { stateId: $stateId }) { success }
+           }`,
+          { id: post.linear_issue_id, stateId: want as string },
+        );
+        moved++;
+      }
     } catch (err) {
       console.error(`State reconcile failed for ${post.topic_key}:`, err);
       await markFailed(supabase, post.id, String((err as Error).message));
@@ -607,8 +686,8 @@ Deno.serve(async (req) => {
     // rather than being filed wrongly — but it must not be invisible either, or
     // a renamed state degrades into "the board stopped updating" with no reason
     // attached.
-    const unresolved = Object.entries({ approved: APPROVED_STATE, rejected: REJECTED_STATE, done: DONE_STATE })
-      .filter(([key]) => !ctx.states[key as 'approved' | 'rejected' | 'done'])
+    const unresolved = Object.entries({ scheduled: SCHEDULED_STATE, rejected: REJECTED_STATE, published: PUBLISHED_STATE })
+      .filter(([key]) => !ctx.states[key as 'scheduled' | 'rejected' | 'published'])
       .map(([, name]) => name);
     if (unresolved.length) console.warn(`Linear mirror: no workflow state named ${unresolved.join(', ')} — those moves are being skipped.`);
 
