@@ -1260,7 +1260,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
             </button>
           </div>
         ) : (
-          <div className="panel-header-wrap">
+          <div className={`panel-header-wrap${details?.backdrop_path ? '' : ' panel-header-wrap--no-backdrop'}`}>
             <div
               onPointerDown={handleDragStart}
               onPointerMove={handleDragMove}
