@@ -7,6 +7,8 @@
 // weaker model can never corrupt the pipeline. Swapping the worker changes who
 // fills these fields, never what "valid copy" means.
 
+import { articleErrors } from './articleRules.js';
+
 export const CTA_VARIANTS = ['track_it', 'whats_on_tonight', 'journal_it', 'none'];
 
 // Field-by-field spec, rendered into every brief so the worker sees the exact
@@ -18,8 +20,8 @@ export const COPY_FIELDS = [
   ['hashtags', 'string[]', '3-5 niche hashtags for Instagram only, WITHOUT the # prefix, no spaces (e.g. "A24", "mikeflanagan").'],
   ['alt_text', 'string', 'One-sentence literal description of the image for accessibility.'],
   ['cta_variant', `enum: ${CTA_VARIANTS.join(' | ')}`, 'Which approved CTA this post uses (or "none").'],
-  ['page_title', 'string', 'Headline for the theplot.tv article. Plain, specific, sentence case, no clickbait, no dashes.'],
-  ['page_body', 'string[]', '4-8 short paragraphs forming a short-to-medium blog post for theplot.tv/whats-on. Same voice. Draw on the research pack in this brief AND your own web research; always paraphrase in PLOT\'s voice, never quote reviews or copy Wikipedia sentences. No spoilers, no links, no hashtags, no dashes of any kind.'],
+  ['page_title', 'string', 'Headline for the theplot.tv article. Plain, specific, sentence case, no clickbait, no em or en dashes (hyphens in compound words and names are fine).'],
+  ['page_body', 'string[]', '3-5 short paragraphs forming a short blog post for theplot.tv/whats-on. Same voice. Draw on the research pack in this brief AND your own web research; always paraphrase in PLOT\'s voice, never quote reviews or copy Wikipedia sentences, never wrap your own words in quotation marks. No spoilers, no links, no hashtags, no em or en dashes (hyphens in compounds and names stay). Ratings: at most one score, never in the closing paragraph. No "critics have…" reception narration, no "fun fact" asides.'],
   ['sources', 'array of {title, url}', 'The sources you actually used or consulted (the TMDB/Wikipedia/IMDb links in the brief, plus anything you browsed). Stored for our review only, never shown publicly. Use [] if you used none.'],
 ];
 
@@ -36,23 +38,23 @@ export const POST_TYPE_BRIEFS = {
     'the big number is on the image. Name the release using the payload\'s `when_label` in full ' +
     '("Friday 25 September"), NEVER a relative day. "This Friday" on a T-14 countdown points at the wrong ' +
     'Friday, contradicts the article it links to, and is rejected by the validator.',
-  now_streaming: 'This title is available to stream at home starting today. ALWAYS name the platform it\'s on — lead with the US provider from the payload\'s `streaming` object (US default), adding UK/AU only if they differ. Never guess a platform that isn\'t in the data.',
+  now_streaming: 'This title is available to watch at home starting today. ALWAYS say where: lead with the US subscription provider from the payload\'s `streaming` object if there is one; otherwise it is a digital rental or purchase, so say so and name the US stores from the payload\'s `digital` object ("to rent or buy on Prime Video and Apple TV"). Never call a rental "streaming" and never guess a store that isn\'t in the data. If the title had a cinema run (`from_label`), the hook is the home arrival, not the end of the run.',
   trending:
     'The weekly top-10 trending chart. Comment on the most interesting movement (a new entry, a big climb, a stubborn #1). ' +
     'X gets the full top-10 chart as its single image. ' +
     'Instagram and Threads get a carousel: chart 1-5, chart 6-10, then detail cards for the top 3.',
-  trailer: 'A new official trailer just dropped for this title. React to the trailer existing; never describe scenes you haven\'t been given.',
-  on_this_day: 'A release anniversary. The payload says how many years. Invite reflection or a rewatch; no spoilers.',
+  trailer: 'A new official trailer just dropped for this title, which is still unreleased (`when_label` is the release date). React to the trailer existing; never describe scenes you haven\'t been given, and never treat footage as proof the film works.',
+  on_this_day: 'A release anniversary. The payload says how many years, counted from the original theatrical release (for a US film, its US opening, not the premiere). Invite reflection or a rewatch; no spoilers, and make a title-specific critical point rather than a birthday calculation.',
   watch_tonight: 'A "what to watch tonight" pick — a title streaming right now. Make a quick, genuine case for tonight, and ALWAYS name the platform it\'s on (US default from the payload\'s `streaming` object).',
-  hidden_gem: 'A "hidden gem" — an older film (1980s onwards) worth resurfacing, streamable now. Briefly say why it holds up; ALWAYS name the platform it\'s on (US default). No spoilers.',
+  hidden_gem: 'A "hidden gem" — an older film (1980s onwards) that is well made but outside the obvious picks, streamable now. Say who it will reward and why it has been overlooked; ALWAYS name the platform it\'s on (US default). No spoilers.',
 };
 
 // ── Guides: web-only long-form SEO articles (post_type 'guide') ──
 // No social copy — only the article fields. The worker writes a longer
 // page_body (one short paragraph per pick) and a search-shaped page_title.
 export const GUIDE_FIELDS = [
-  ['page_title', 'string', 'Article headline, search-shaped and plain (e.g. "The best sci-fi on Max right now" or "If you loved Severance, watch these next"). Sentence case, no clickbait, no dashes.'],
-  ['page_body', 'string[]', 'EXACTLY one intro paragraph, then exactly ONE paragraph per title listed in the brief (same order, one-to-one — never combine two titles into one paragraph or split one title across two), then exactly one closing paragraph. Total length must equal the title count + 2. Each title paragraph names the title, says why it earns its spot, and names where it streams when known. PLOT\'s voice; paraphrase, never quote reviews or copy synopses; no spoilers, no links, no hashtags, no dashes.'],
+  ['page_title', 'string', 'Article headline, search-shaped and plain (e.g. "The best sci-fi on Max right now" or "If you loved Severance, watch these next"). Sentence case, no clickbait, no em or en dashes.'],
+  ['page_body', 'string[]', 'EXACTLY one intro paragraph, then exactly ONE paragraph per title listed in the brief (same order, one-to-one — never combine two titles into one paragraph or split one title across two), then exactly one closing paragraph. Total length must equal the title count + 2. Each title paragraph names the title, says why it earns its spot, and names where it streams when known. Only include a title that genuinely fits the guide\'s genre or premise. PLOT\'s voice; paraphrase, never quote reviews or copy synopses; no spoilers, no links, no hashtags, no em or en dashes.'],
   ['sources', 'array of {title, url}', 'Sources you actually consulted. Stored for review only, never shown. Use [] if none.'],
 ];
 
@@ -174,6 +176,7 @@ export const validateCopy = (raw, context = {}) => {
   }
 
   errors.push(...relativeTimeErrors(copy, context));
+  errors.push(...articleErrors(copy));
 
   // Normalization that can't fail: keep X within the hard limit.
   if (copy.x.length > 280) copy.x = `${copy.x.slice(0, 279)}…`;
@@ -215,6 +218,7 @@ export const validateGuide = (raw, nTitles) => {
     if (page_body.length > 16) errors.push(`page_body is too long (${page_body.length} paragraphs; max 16)`);
   }
   if (page_body.some(p => hasUrl(p))) errors.push('page_body contains a URL (links are added at render from tmdb_refs)');
+  errors.push(...articleErrors({ page_title, page_body }, { guide: true }));
 
   return {
     valid: errors.length === 0,

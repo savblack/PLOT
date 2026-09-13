@@ -35,6 +35,7 @@ import type { Database, Json } from '../_shared/database.types.ts';
 import { serviceKey } from '../_shared/serviceKey.ts';
 import { parseCommand, BOT_MARKER, HELP_TEXT, WEEK_SCOPED } from '../_shared/linearCommands.js';
 import { validateCopy, validateGuide, validateConversation } from '../_shared/copySchema.js';
+import { rescheduledSlug } from '../_shared/postSlug.js';
 
 type Db = SupabaseClient<Database>;
 // deno-lint-ignore no-explicit-any
@@ -252,12 +253,16 @@ const runCommand = async (
 
     case 'reschedule': {
       // Noon UTC renders as that calendar date in AEST and is before the publish
-      // run, so the post goes out on the day you named. The slug keeps its
-      // original date, same as the desk — the article URL does not move.
+      // run, so the post goes out on the day you named. The slug's date suffix
+      // moves with it while the post is unpublished (same as the desk); once it
+      // has published, social posts link to the URL and it stays put.
+      const slug = rescheduledSlug(post.slug, post.status, intent.date);
       await supabase.from('marketing_posts')
-        .update({ scheduled_for: `${intent.date}T12:00:00.000Z`, updated_at: now() }).eq('id', id);
-      await logEvent(supabase, { postId: id, action: 'reschedule', after: { scheduled_date: intent.date } as Json });
-      return `Rescheduled to ${intent.date}.`;
+        .update({ scheduled_for: `${intent.date}T12:00:00.000Z`, slug, updated_at: now() }).eq('id', id);
+      await logEvent(supabase, { postId: id, action: 'reschedule', after: { scheduled_date: intent.date, slug } as Json });
+      return slug !== post.slug
+        ? `Rescheduled to ${intent.date}. The article URL now ends in that date; re-read the copy for anything written for the old day.`
+        : `Rescheduled to ${intent.date}. Re-read the copy for anything written for the old day.`;
     }
 
     case 'publish_now': {

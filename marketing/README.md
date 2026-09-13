@@ -91,7 +91,7 @@ Comment on the issue. The first line is the command:
 | `/approve` | Clears it to publish (and re-queues its publication rows) |
 | `/reject` | It will not publish |
 | `/unapprove` | Back to needs_review |
-| `/reschedule 2026-09-18` | Moves the day (the article URL keeps its original date) |
+| `/reschedule 2026-09-18` | Moves the day. An unpublished post's article URL moves with it; a live URL stays. Re-read copy written for the old day |
 | `/publish-now` | Approves, brings it forward, kicks the publish run |
 | `/retry` | Re-queues platforms that failed |
 | `/regenerate` | Throws the copy away; the worker rewrites it |
