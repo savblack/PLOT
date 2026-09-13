@@ -17,6 +17,14 @@ name: Timeline refresh — weekly PR
 # Gating on the CI run directly restores "a red refresh stays open" without
 # depending on protection — the same approach dependabot-automerge.yml uses,
 # and for the same reason.
+#
+# The refresh also appears on the marketing board in Linear, opened by
+# marketing-linear-mirror and marked Urgent, so a week's content change is
+# visible somewhere a person actually looks rather than only in a PR list. That
+# card is a record, not a gate: this job still merges on green CI, and the card
+# lands in Published when it does. /approve on the card merges a refresh this
+# job left open — a red run since fixed, say — and is held to the same two
+# checks used below.
 
 on:
   schedule:
@@ -99,7 +107,9 @@ jobs:
             cat notes.md
             echo
             echo
-            echo 'This PR auto-merges once CI passes; it is not held for notes. A card with no note renders without one. Notes are title-specific, so if you want the voice back, add it to `apps/website/data/timeline.json` afterwards and the next refresh will keep it.'
+            echo 'This PR auto-merges once CI passes; it is not held for notes. It also appears on the marketing board in Linear within five minutes as an Urgent card, which is where to look if you want to read it before it lands or merge one that CI left open.'
+            echo
+            echo 'A card with no note renders without one. Notes are title-specific, so if you want the voice back, add it to `apps/website/data/timeline.json` afterwards and the next refresh will keep it.'
             echo
             echo '## What the run did'
             echo

@@ -142,6 +142,52 @@ it is saved. A rejected edit changes nothing and the bot replies with why.
 An accepted edit lands in the database immediately; the issue body catches up on
 the next mirror sweep, within five minutes.
 
+### The weekly website refresh
+
+`timeline-refresh.yml` opens a PR every Monday to refresh the marketing site's
+timeline and hero. It used to merge itself the moment CI went green, which meant
+the human it was opened *for* — a newly appended title lands with an empty note,
+and the notes are a person's job — never saw it.
+
+It still merges itself once CI is green — that has not changed. What is new is
+that it also appears on this board within five minutes as an **Urgent** card
+carrying the PR's own body, so a week's content change is visible somewhere you
+actually look rather than only in a PR list. The card lands in Published when the
+merge happens, or Canceled if the PR is closed.
+
+The card is a record, not a gate. `/approve` is there for a refresh the automerge
+left open — a run that went red and has since been fixed — and `/reject` closes
+one you do not want. Both re-read the PR at that moment rather than trusting the
+run from when the card was made, because a card can sit for a week while main
+moves underneath it.
+
+Both are held to the same two checks the automerge job uses: the branch must be a
+`timeline-refresh/` one and the PR must have been opened by the refresh bot. The
+PR a card points at comes from a Linear attachment, and attachments are editable
+by anyone who can edit the issue — without those checks, commenting `/approve` on
+a card you had re-pointed would merge an arbitrary pull request into main. A
+comment box is not an authorization boundary.
+
+The link between card and PR is a Linear attachment, so the PR shows on the card
+in the UI and the webhook finds it by URL — there is no table of ours pairing
+them. Two GitHub tokens, one per job, because the jobs need different powers and
+neither should carry the other's:
+
+| Secret | Permission | Used for |
+| --- | --- | --- |
+| `GH_DISPATCH_TOKEN_CONTENT` | Actions: Read and write | `/generate`, `/publish-now`, `/regenerate` |
+| `GH_DISPATCH_TOKEN_WEBSITE` | Pull requests: Read and write | the website-refresh card |
+
+Each is refused by GitHub if used for the other's work, which is the point: a
+token that can merge to main has no business also being the one a slash command
+hands to a workflow dispatcher. Both fall back to the single `GH_DISPATCH_TOKEN`
+they were split out of. The daily probe checks each against its own endpoint, so
+a token that answered 200 for the wrong one would read as over-granted rather
+than healthy.
+
+Without the WEBSITE token the card simply does not appear; the rest of the sweep
+is unaffected and the run record carries `counts.pr_mirror_error`.
+
 ### Setting it up
 
 No GitHub Actions secret is involved. Everything below is a Supabase secret.

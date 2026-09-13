@@ -51,7 +51,9 @@ import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
 import type { Database } from '../_shared/database.types.ts';
 import { serviceKey } from '../_shared/serviceKey.ts';
 import { hasServiceRoleBearer } from '../_shared/internalWebhook.ts';
-import { buildTitle, buildDescription, dueDateFor } from '../_shared/linearIssue.js';
+import {
+  buildTitle, buildDescription, dueDateFor, buildPrTitle, buildPrDescription, PR_BRANCH_PREFIX,
+} from '../_shared/linearIssue.js';
 import { articleLink } from '../_shared/postSummary.js';
 import { BOT_MARKER } from '../_shared/linearCommands.js';
 
@@ -64,7 +66,19 @@ const LINEAR_API_KEY = Deno.env.get('LINEAR_API_KEY') ?? '';
 const TEAM_REF = Deno.env.get('LINEAR_MARKETING_TEAM_ID') ?? 'PLO';
 const PROJECT_REF = Deno.env.get('LINEAR_MARKETING_PROJECT_ID') ?? 'Content Automation';
 const GH_REPO = Deno.env.get('GH_REPO') ?? 'savblack/PLOT';
-const GH_TOKEN = Deno.env.get('GH_DISPATCH_TOKEN') ?? '';
+
+// Two GitHub tokens, one per job, because the two jobs need different powers and
+// neither should carry the other's. CONTENT starts workflows (Actions: write);
+// WEBSITE reads and merges the weekly refresh PR (Pull requests: write). Each is
+// refused by GitHub if used for the other's work, which is the point — a token
+// that can merge to main has no business also being the one a slash command
+// hands to a workflow dispatcher.
+//
+// Both fall back to the single GH_DISPATCH_TOKEN they were split out of, so an
+// environment that has not been split yet keeps working.
+const LEGACY_GH_TOKEN = Deno.env.get('GH_DISPATCH_TOKEN') ?? '';
+const GH_CONTENT_TOKEN = Deno.env.get('GH_DISPATCH_TOKEN_CONTENT') || LEGACY_GH_TOKEN;
+const GH_WEBSITE_TOKEN = Deno.env.get('GH_DISPATCH_TOKEN_WEBSITE') || LEGACY_GH_TOKEN;
 const RESEND_KEY = Deno.env.get('RESEND_API_KEY') ?? '';
 const ALERT_TO = Deno.env.get('MARKETING_ADMIN_EMAIL') ?? 'sav.black@outlook.com';
 const ALERT_FROM = 'PLOT Marketing <feedback@theplot.tv>';
@@ -552,6 +566,136 @@ const reconcileStates = async (supabase: Db, ctx: Context, dryRun = false): Prom
   return { moved, reported };
 };
 
+// ── Pull-request cards ───────────────────────────────────────────────────────
+//
+// timeline-refresh.yml opens a PR every Monday rather than committing: a newly
+// appended title lands with an empty note, and the notes are title-specific
+// jokes a human writes. Until now that PR merged itself as soon as CI went
+// green, so the human it was opened for never actually saw it. It is a review
+// job, so it belongs on the review board.
+//
+// Marked Urgent (Linear priority 1, "P1") because it is the one card here with
+// a deadline that is not its own: the site is stale until it lands, and unlike a
+// social post it will not go out on its own if ignored.
+const PR_PRIORITY = 1; // Urgent
+
+const gh = async (path: string, init: RequestInit = {}, token = GH_WEBSITE_TOKEN) => {
+  const res = await fetch(`https://api.github.com/repos/${GH_REPO}${path}`, {
+    ...init,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28',
+      'User-Agent': 'plot-linear-mirror',
+      ...(init.headers ?? {}),
+    },
+  });
+  if (!res.ok) throw new Error(`GitHub ${path} -> ${res.status} ${(await res.text()).slice(0, 160)}`);
+  return res.json();
+};
+
+/** The Linear issue already linked to this PR, if any. */
+const issueForPr = async (url: string): Promise<Row | null> => {
+  const d = await graphql(
+    `query($url: String!) { attachmentsForURL(url: $url, first: 5) { nodes { issue { id state { id } } } } }`,
+    { url },
+  );
+  return (d.attachmentsForURL.nodes as Row[])[0]?.issue ?? null;
+};
+
+/**
+ * Open a card for every open refresh PR, and resolve the card once the PR is.
+ *
+ * The PR is the source of truth here, the way marketing_posts is for a post:
+ * merged lands the card in Published, closed lands it in Canceled, and the link
+ * between the two is a Linear attachment rather than a column of our own — so
+ * the PR is visible on the card in the UI and findable by URL from the webhook.
+ */
+const mirrorPullRequests = async (
+  ctx: Context,
+  dryRun: boolean,
+): Promise<{ opened: number; resolved: number; error?: string }> => {
+  if (!GH_WEBSITE_TOKEN) return { opened: 0, resolved: 0 };
+
+  let opened = 0;
+  let resolved = 0;
+  // Recently-touched PRs on the refresh branches: open ones need a card, and
+  // just-closed ones need their card resolved.
+  //
+  // Wrapped, and reported rather than thrown: this pass needs a GitHub
+  // permission the rest of the sweep does not, and the first deploy proved why —
+  // a 403 listing pull requests took down post mirroring entirely. A card for
+  // the website refresh is a convenience; mirroring the week is the job.
+  let prs: Row[];
+  try {
+    prs = await gh('/pulls?state=all&sort=updated&direction=desc&per_page=30') as Row[];
+  } catch (err) {
+    const error = String((err as Error).message).slice(0, 200);
+    console.error('PR mirror unavailable:', error);
+    return { opened: 0, resolved: 0, error };
+  }
+
+  for (const pr of prs.filter((x) => String(x.head?.ref ?? '').startsWith(PR_BRANCH_PREFIX))) {
+    try {
+      const existing = await issueForPr(pr.html_url);
+
+      if (pr.state === 'open') {
+        if (existing) continue;
+        if (dryRun) { opened++; continue; }
+        const { issueCreate } = await graphql(
+          `mutation($input: IssueCreateInput!) { issueCreate(input: $input) { issue { id } } }`,
+          {
+            input: {
+              title: buildPrTitle({ title: pr.title }),
+              description: buildPrDescription({
+                title: pr.title, url: pr.html_url, headRefName: pr.head.ref, body: pr.body,
+              }),
+              teamId: ctx.teamId,
+              stateId: ctx.states.review,
+              priority: PR_PRIORITY,
+              ...(ctx.projectId ? { projectId: ctx.projectId } : {}),
+            },
+          },
+        );
+        // The attachment IS the link — nothing of ours records this pairing.
+        await graphql(
+          `mutation($issueId: String!, $url: String!, $title: String!) {
+             attachmentCreate(input: { issueId: $issueId, url: $url, title: $title }) { success }
+           }`,
+          { issueId: issueCreate.issue.id, url: pr.html_url, title: `PR #${pr.number}` },
+        );
+        opened++;
+        continue;
+      }
+
+      // Closed: land the card wherever the PR ended up.
+      if (!existing) continue;
+      const want = pr.merged_at ? ctx.states.published : ctx.states.rejected;
+      if (!want || existing.state?.id === want) continue;
+      if (dryRun) { resolved++; continue; }
+      await graphql(
+        `mutation($issueId: String!, $body: String!) {
+           commentCreate(input: { issueId: $issueId, body: $body }) { success }
+         }`,
+        {
+          issueId: existing.id,
+          body: pr.merged_at
+            ? `${BOT_MARKER} · Merged. The site rebuilds from main.`
+            : `${BOT_MARKER} · Closed without merging. The next weekly run opens a fresh one.`,
+        },
+      );
+      await graphql(
+        `mutation($id: String!, $stateId: String!) { issueUpdate(id: $id, input: { stateId: $stateId }) { success } }`,
+        { id: existing.id, stateId: want },
+      );
+      resolved++;
+    } catch (err) {
+      console.error(`PR mirror failed for #${pr.number}:`, err);
+    }
+  }
+  return { opened, resolved };
+};
+
 // ── Dispatch token health ────────────────────────────────────────────────────
 //
 // GH_DISPATCH_TOKEN is what lets /generate, /publish-now and /regenerate take
@@ -602,45 +746,58 @@ const alertOperator = async (subject: string, body: string): Promise<void> => {
  *
  * @returns a short status string for the run record, or null when not probed.
  */
+const probeOne = async (token: string, path: string): Promise<number> => {
+  const res = await fetch(`https://api.github.com/repos/${GH_REPO}${path}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28',
+      'User-Agent': 'plot-linear-mirror',
+    },
+  });
+  return res.status;
+};
+
 const checkDispatchToken = async (force = false): Promise<string | null> => {
   if (!shouldProbeToken(force)) return null;
-  if (!GH_TOKEN) return 'absent';
+  if (!GH_CONTENT_TOKEN && !GH_WEBSITE_TOKEN) return 'absent';
 
   try {
-    const res = await fetch(
-      `https://api.github.com/repos/${GH_REPO}/actions/workflows/marketing-weekly-batch.yml`,
-      {
-        headers: {
-          Authorization: `Bearer ${GH_TOKEN}`,
-          Accept: 'application/vnd.github+json',
-          'X-GitHub-Api-Version': '2022-11-28',
-          'User-Agent': 'plot-linear-mirror',
-        },
-      },
-    );
-    if (res.ok) return 'ok';
+    // Each token against the job it exists for. A token that answers 200 for
+    // someone else's endpoint would be over-granted, not healthy.
+    const results: Record<string, number> = {};
+    if (GH_CONTENT_TOKEN) {
+      results.content = await probeOne(GH_CONTENT_TOKEN, '/actions/workflows/marketing-weekly-batch.yml');
+    }
+    if (GH_WEBSITE_TOKEN) {
+      results.website = await probeOne(GH_WEBSITE_TOKEN, '/pulls?per_page=1');
+    }
+    const bad = Object.entries(results).filter(([, code]) => code !== 200);
+    if (!bad.length) return 'ok';
 
-    const status = res.status;
+    const status = bad[0][1];
+    const which = bad.map(([name, code]) => `${name} (${code})`).join(', ');
     const reason = status === 401
       ? 'the token has expired or been revoked'
       : status === 403 || status === 404
         ? 'the token can no longer see this repository\'s Actions — check its permissions and repository access'
         : `GitHub answered ${status}`;
-    console.error(`GH_DISPATCH_TOKEN unhealthy: ${status} — ${reason}`);
+    console.error(`GitHub token unhealthy: ${which} — ${reason}`);
     await alertOperator(
-      'PLOT marketing: the GitHub dispatch token has stopped working',
+      'PLOT marketing: a GitHub token has stopped working',
       `<div style="font-family:sans-serif;max-width:520px;color:#1a1a1a;">
-        <h1 style="font-size:1.2rem;">GH_DISPATCH_TOKEN is not working</h1>
-        <p style="font-size:.95rem;line-height:1.6;">GitHub answered <strong>${status}</strong> — ${reason}.</p>
+        <h1 style="font-size:1.2rem;">A GitHub token is not working</h1>
+        <p style="font-size:.95rem;line-height:1.6;">Unhealthy: <strong>${which}</strong> — ${reason}.</p>
         <p style="font-size:.95rem;line-height:1.6;"><code>/generate</code>, <code>/publish-now</code> and <code>/regenerate</code>
         still record their decision, but no longer take effect immediately: they fall back to the scheduled run.
         Publishing itself is unaffected.</p>
-        <p style="font-size:.95rem;line-height:1.6;">Fix: create a fine-grained PAT for <code>${GH_REPO}</code> with
-        <strong>Actions: Read and write</strong>, then
-        <code>supabase secrets set GH_DISPATCH_TOKEN=&lt;token&gt;</code>.</p>
+        <p style="font-size:.95rem;line-height:1.6;">Fix: a fine-grained PAT for <code>${GH_REPO}</code> —
+        <code>GH_DISPATCH_TOKEN_CONTENT</code> needs <strong>Actions: Read and write</strong>,
+        <code>GH_DISPATCH_TOKEN_WEBSITE</code> needs <strong>Pull requests: Read and write</strong> —
+        then <code>supabase secrets set &lt;name&gt;=&lt;token&gt;</code>.</p>
       </div>`,
     );
-    return `unhealthy (${status})`;
+    return `unhealthy: ${which}`;
   } catch (err) {
     console.error('Dispatch token probe errored:', err);
     return 'probe failed';
@@ -681,6 +838,7 @@ Deno.serve(async (req) => {
     const created = await createMissing(supabase, ctx, dryRun);
     const refreshed = await refreshChanged(supabase, dryRun);
     const { moved, reported } = await reconcileStates(supabase, ctx, dryRun);
+    const prs = await mirrorPullRequests(ctx, dryRun);
 
     // A state we could not resolve does not fail the sweep — cards just stay put
     // rather than being filed wrongly — but it must not be invisible either, or
@@ -694,6 +852,8 @@ Deno.serve(async (req) => {
     const dispatchToken = dryRun && !forceTokenCheck ? null : await checkDispatchToken(forceTokenCheck);
     const counts = {
       created, refreshed, moved, reported,
+      ...(prs.opened || prs.resolved ? { pr_cards: prs.opened, pr_resolved: prs.resolved } : {}),
+      ...(prs.error ? { pr_mirror_error: prs.error } : {}),
       ...(unresolved.length ? { unresolved } : {}),
       ...(dispatchToken ? { dispatch_token: dispatchToken } : {}),
     };
@@ -702,7 +862,7 @@ Deno.serve(async (req) => {
       return json({ ok: true, dry_run: true, would: counts });
     }
 
-    const didWork = created > 0 || refreshed > 0 || moved > 0;
+    const didWork = created > 0 || refreshed > 0 || moved > 0 || prs.opened > 0 || prs.resolved > 0;
     if (didWork) console.log(`Linear mirror: created ${created}, refreshed ${refreshed}, moved ${moved}, reported ${reported}.`);
     await finishRun(supabase, runId, { status: didWork ? 'succeeded' : 'idle', counts });
     await pruneHeartbeats(supabase);
