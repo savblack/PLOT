@@ -118,6 +118,7 @@ body::before {
 .meta-caps .kind { font-weight: 700; color: var(--accent); }
 .meta-caps .kind.cinema    { color: var(--chip-cinema); }
 .meta-caps .kind.streaming { color: var(--chip-streaming); }
+.meta-caps .kind.rental    { color: var(--chip-streaming); }
 .meta-caps .kind.tv        { color: var(--chip-episode); }
 
 .display {

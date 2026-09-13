@@ -30,8 +30,25 @@ export const evaluate = async (ctx) => {
   return null;
 };
 
+const REGIONS = ['US', 'UK', 'AU'];
+const has = (lists, r) => (lists?.[r]?.length || 0) > 0;
+
 export const hasHomeProvider = (home) =>
-  ['US', 'UK', 'AU'].some(r => (home.streaming?.[r]?.length || 0) + (home.digital?.[r]?.length || 0) > 0);
+  REGIONS.some(r => has(home.streaming, r) || has(home.digital, r));
+
+// How the title is arriving at home, US first: on a subscription service
+// ('streaming') or as a digital rental/purchase ('rental'). A cinema release
+// usually reaches the stores weeks before any service, and that is the moment
+// most people can actually watch it, so it gets its own word everywhere the
+// post is labelled (card kicker, feed kicker, copy brief) rather than being
+// called "streaming".
+export const homeKind = (home) => {
+  for (const r of REGIONS) {
+    if (has(home.streaming, r)) return 'streaming';
+    if (has(home.digital, r)) return 'rental';
+  }
+  return null;
+};
 
 const candidate = (pick, details, home) => {
   return {
@@ -40,8 +57,9 @@ const candidate = (pick, details, home) => {
     tmdb_refs: [{ media_type: 'movie', id: pick.tmdb_id, title: pick.title }],
     announce: { tracked_id: pick.id, key: 'now_streaming' },
     payload: {
+      home_kind: homeKind(home), // 'streaming' | 'rental' — drives every label on the post
       streaming: home.streaming, // subscription: { US:[…], UK:[…], AU:[…] } — name it in the copy (US default)
-      digital: home.digital,     // rent/buy stores per region, for a PVOD arrival ("to rent on Prime Video")
+      digital: home.digital,     // rent/buy stores per region, for a rental arrival ("to rent on Prime Video")
       from_label: pick.release_date ? `In cinemas since ${formatDayMonth(pick.release_date)}` : null,
       title: {
         tmdb_id: pick.tmdb_id,

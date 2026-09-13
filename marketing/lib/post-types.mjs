@@ -74,8 +74,9 @@ export const POST_TYPES = {
   now_streaming: {
     template: 'now-streaming',
     cards: async (payload) => [{
-      // providers/from_label stay in the payload for copy; never on the image
-      data: { title: await hydrateTitle(payload.title) },
+      // providers/from_label stay in the payload for copy; never on the image.
+      // home_kind picks the kicker: "Now streaming" vs "Now to rent or buy".
+      data: { home_kind: payload.home_kind || null, title: await hydrateTitle(payload.title) },
     }],
   },
 

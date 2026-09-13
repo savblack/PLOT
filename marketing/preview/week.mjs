@@ -35,7 +35,7 @@ try {
   });
 } catch { nlOk = false; }
 
-const TL = { upcoming: 'Upcoming this week', trending: 'Trending top 10', watch_tonight: 'What to watch tonight', hidden_gem: 'Hidden gem', on_this_day: 'On this day', now_streaming: 'Now streaming', countdown: 'Countdown', trailer: 'Trailer drop', question: 'Question' };
+const TL = { upcoming: 'Upcoming this week', trending: 'Trending top 10', watch_tonight: 'What to watch tonight', hidden_gem: 'Hidden gem', on_this_day: 'On this day', now_streaming: 'Now at home', countdown: 'Countdown', trailer: 'Trailer drop', question: 'Question' };
 const PLAT = { x: 'X', instagram: 'Instagram', threads: 'Threads' };
 const BADGE = { planned: ['Queued', '#6b6b70', '#f1efe8'], needs_review: ['Needs review', '#9a6a00', '#fff2dd'], copy_ready: ['Rendering', '#6b6b70', '#f1efe8'], generated: ['Rendering', '#6b6b70', '#f1efe8'], approved: ['Approved', '#0F6E56', '#eaf5ef'], vetoed: ['Rejected', '#c23d63', '#fbeaef'], published: ['Published', '#0F6E56', '#eaf5ef'], partially_published: ['Partly published', '#9a6a00', '#fff2dd'], failed: ['Failed', '#c23d63', '#fbeaef'] };
 const day = (iso) => new Date(iso).toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'short', timeZone: 'Australia/Sydney' });
@@ -56,7 +56,9 @@ const reason = (p) => {
     case 'watch_tonight': return t ? `Trending & streamable now: ${t}` : 'What to watch tonight';
     case 'hidden_gem': return t ? `Highly-rated, lesser-seen: ${t}` : 'Hidden gem of the week';
     case 'on_this_day': return t ? `Anniversary: ${t}` : 'On this day in film/TV';
-    case 'now_streaming': return t ? `Hits streaming today: ${t}` : 'New on streaming today';
+    case 'now_streaming': return p.payload?.home_kind === 'rental'
+      ? (t ? `Now to rent or buy: ${t}` : 'New to rent or buy today')
+      : (t ? `Hits streaming today: ${t}` : 'New on streaming today');
     case 'countdown': { const m = String(p.topic_key || '').match(/:t(\d+):/); const nn = m ? m[1] : (p.payload?.days ?? ''); return t ? `T-${nn} countdown to ${t}` : `Countdown (T-${nn})`; }
     case 'trailer': return t ? `New trailer dropped: ${t}` : 'New trailer';
     case 'question': return t ? `Audience question about: ${t}` : 'Audience question';

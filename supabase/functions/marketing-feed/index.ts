@@ -66,7 +66,7 @@ const VISIBLE_STATUSES = ['approved', 'published', 'partially_published'];
 
 const TYPE_META: Record<string, { label: string; tone: string }> = {
   countdown: { label: 'Countdown', tone: '#B03A5E' },
-  now_streaming: { label: 'Now streaming', tone: '#0F6E56' },
+  now_streaming: { label: 'Now at home', tone: '#0F6E56' },
   trending: { label: 'Trending', tone: '#534AB7' },
   trailer: { label: 'Trailer drop', tone: '#8A5410' },
   upcoming: { label: 'Upcoming this week', tone: '#185FA5' },
@@ -81,7 +81,7 @@ const TYPE_META: Record<string, { label: string; tone: string }> = {
 const FILTERS: { key: string | null; label: string }[] = [
   { key: null, label: 'Latest' },
   { key: 'upcoming', label: 'This week' },
-  { key: 'now_streaming', label: 'Now streaming' },
+  { key: 'now_streaming', label: 'Now at home' },
   { key: 'countdown', label: 'Coming soon' },
   { key: 'trailer', label: 'First look' },
 ];
@@ -96,6 +96,7 @@ type FeedPost = {
   scheduled_for: string;
   status: string;
   tmdb_refs?: TmdbRef[] | null;
+  payload?: { home_kind?: string | null } | null;
 };
 
 const postTitle = (p: FeedPost) => p.copy?.page_title || TYPE_META[p.post_type]?.label || p.post_type;
@@ -176,10 +177,17 @@ const titleCta = async (post: FeedPost, region: string) => {
   </aside>`;
 };
 
-const kicker = (type: string) => {
-  const m = TYPE_META[type];
+// A home arrival is either a subscription premiere or a cinema release
+// reaching the digital stores; the planner records which in payload.home_kind,
+// and the label says it so a reader never mistakes a $20 rental for
+// "streaming". Older posts without the field keep the neutral type label.
+const HOME_KIND_LABEL: Record<string, string> = { streaming: 'Now streaming', rental: 'Now to rent or buy' };
+
+const kicker = (p: Pick<FeedPost, 'post_type' | 'payload'>) => {
+  const m = TYPE_META[p.post_type];
   if (!m) return '';
-  return `<span class="kick" style="color:${m.tone};">${esc(m.label)}</span>`;
+  const label = (p.post_type === 'now_streaming' && HOME_KIND_LABEL[p.payload?.home_kind ?? '']) || m.label;
+  return `<span class="kick" style="color:${m.tone};">${esc(label)}</span>`;
 };
 
 // PostHog snippet for the server-rendered /whats-on pages. Same project token
@@ -570,7 +578,7 @@ const entryRow = (p: FeedPost) => {
   const img = postImage(p);
   const dek = postBody(p)[0];
   return `<a class="row" href="${FEED_PATH}/${esc(p.slug)}">
-    <span class="row-main">${kicker(p.post_type)}
+    <span class="row-main">${kicker(p)}
     <span class="row-t">${esc(postTitle(p))}</span>
     ${dek ? `<span class="row-dek">${esc(dek)}</span>` : ''}</span>
     ${img ? `<img src="${esc(img)}" alt="" loading="lazy">` : '<span class="ph"></span>'}
@@ -581,7 +589,7 @@ const moreCard = (p: FeedPost) => {
   const img = postImage(p);
   return `<a class="mcard" href="${FEED_PATH}/${esc(p.slug)}">
     ${img ? `<img src="${esc(img)}" alt="" loading="lazy">` : '<span class="ph"></span>'}
-    ${kicker(p.post_type)}
+    ${kicker(p)}
     <span class="mc-t">${esc(postTitle(p))}</span>
   </a>`;
 };
@@ -594,7 +602,7 @@ const featuredHero = (p: FeedPost) => {
       ? `<img src="${esc(img)}" alt="">`
       : `<div class="ph"><span>${esc(postTitle(p))}</span></div>`}</div>
     <div class="f-text">
-      ${kicker(p.post_type)}
+      ${kicker(p)}
       <h2>${esc(postTitle(p))}</h2>
       ${dek ? `<p class="dek">${esc(dek)}</p>` : ''}
       <span class="f-date sc">${esc(fmtDate(p.scheduled_for))}</span>
@@ -808,7 +816,7 @@ const streamingShelf = (posts: FeedPost[]) => `<div class="shelf r3">${posts.map
   const img = postImage(p);
   return `<a class="shelf-item" href="${FEED_PATH}/${esc(p.slug)}">
     ${img ? `<img src="${esc(img)}" alt="" loading="lazy">` : '<span class="ph"></span>'}
-    ${kicker(p.post_type)}
+    ${kicker(p)}
     <span class="shelf-t">${esc(postTitle(p))}</span>
   </a>`;
 }).join('')}</div>`;
@@ -947,7 +955,7 @@ Deno.serve(async (req) => {
 
   const baseQuery = () => supabase
     .from('marketing_posts')
-    .select('slug, copy, media, post_type, scheduled_for, status, tmdb_refs')
+    .select('slug, copy, media, post_type, scheduled_for, status, tmdb_refs, payload')
     .not('slug', 'is', null)
     // The trending chart lives on its own page (/whats-on/chart), not as a
     // dated article — keep it out of every feed surface.
@@ -1064,7 +1072,7 @@ Deno.serve(async (req) => {
       return page(FEED_SEO_TITLE, head, `
         ${titleRow}
         ${heroRow(lead, rail)}
-        ${streaming.length ? `${sectionHead('Now streaming', `${FEED_PATH}?type=now_streaming`)}${streamingShelf(streaming)}` : ''}
+        ${streaming.length ? `${sectionHead('Now at home', `${FEED_PATH}?type=now_streaming`)}${streamingShelf(streaming)}` : ''}
         ${chartItems.length ? `${sectionHead('Trending', `${FEED_PATH}/chart`)}${trendingTeaser(chartItems, chartPrior)}` : ''}
         ${countdown.length ? `${sectionHead('Coming soon', `${FEED_PATH}?type=countdown`)}${comingSoonCards(countdown)}` : ''}
         ${trailer.length ? `${sectionHead('First look', `${FEED_PATH}?type=trailer`)}${firstLookCards(trailer)}` : ''}
@@ -1197,7 +1205,7 @@ Deno.serve(async (req) => {
       </section>`
     : '';
 
-  const k = kicker(typed.post_type);
+  const k = kicker(typed);
   const region = (url.searchParams.get('r') || 'US').toUpperCase().slice(0, 2) || 'US';
   const articleCta = typed.post_type !== 'guide' && refs.length === 1
     ? await titleCta(typed, region)

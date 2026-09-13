@@ -26,8 +26,12 @@ if (art) card.append(img('backdrop', art));
 card.append(el('div', 'scrim'));
 
 const content = el('div', 'content');
+// home_kind 'rental' = a cinema release reaching the digital stores; anything
+// else (incl. older payloads without the field) is a subscription arrival.
 const kicker = el('div', 'meta-caps');
-kicker.append(el('span', 'kind streaming', 'Now streaming'));
+kicker.append(d.home_kind === 'rental'
+  ? el('span', 'kind rental', 'Now to rent or buy')
+  : el('span', 'kind streaming', 'Now streaming'));
 content.append(kicker);
 content.append(el('h1', 'display', t.title));
 card.append(content);

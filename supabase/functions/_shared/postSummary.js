@@ -21,7 +21,11 @@ export const reason = (p) => {
     case 'watch_tonight': return title ? `Trending & streamable now: ${title}` : 'What to watch tonight';
     case 'hidden_gem': return title ? `Highly-rated, lesser-seen: ${title}` : 'Hidden gem of the week';
     case 'on_this_day': return title ? `Anniversary: ${title}` : 'On this day in film/TV';
-    case 'now_streaming': return title ? `Hits streaming today: ${title}` : 'New on streaming today';
+    case 'now_streaming': {
+      const rental = p.payload?.home_kind === 'rental';
+      if (rental) return title ? `Now to rent or buy: ${title}` : 'New to rent or buy today';
+      return title ? `Hits streaming today: ${title}` : 'New on streaming today';
+    }
     case 'countdown': {
       const m = String(p.topic_key || '').match(/:t(\d+):/);
       const n = m ? m[1] : (p.payload?.days ?? '');

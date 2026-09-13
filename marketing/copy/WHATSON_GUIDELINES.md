@@ -149,9 +149,16 @@ leave it out.
    genre twist or emotional register.
 4. A verified viewing note or a concise reason to save it.
 
-### Now streaming
+### Now streaming (and now to rent or buy)
 
-1. What has arrived and where it can be watched.
+The brief's `home_kind` says which this is. A subscription arrival is "now
+streaming on Netflix". A cinema release reaching the digital stores is "now
+available to rent or buy on Prime Video and Apple TV", and the article should
+say how long it ran in cinemas first; that arrival is the moment most readers
+can actually watch it, so treat it as the news, not as the end of a run.
+
+1. What has arrived and where it can be watched, in the right words for
+   `home_kind`.
 2. The concrete premise and key creative team.
 3. The best reason to choose it now, grounded in reporting or criticism.
 4. Who it is for: a clear mood, genre or audience fit—not an empty call to
