@@ -10,7 +10,7 @@
 // rather than description edits — the description is ours to overwrite, and an
 // operator's words typed into it would be lost the next time the post changed.
 
-import { reason, platformsFor, articleLink } from './postSummary.js';
+import { reason, platformsFor, articleLink, evidenceFor } from './postSummary.js';
 import { HELP_TEXT } from './linearCommands.js';
 
 const MEDIA_BUCKET = 'marketing';
@@ -54,8 +54,12 @@ export const buildDescription = (post, supabaseUrl) => {
   const link = articleLink(post);
   const media = post.media || [];
 
+  // The claim, then the numbers behind it. A pick that does not fit its own
+  // description should be arguable from the card alone.
+  const evidence = evidenceFor(post);
   const parts = [
     `**${aestDate(post.scheduled_for, { weekday: 'long', day: 'numeric', month: 'long' })}** · ${reason(post)}`,
+    ...(evidence.length ? ['', `*${evidence.join(' · ')}*`] : []),
     '',
     platforms.length ? `Publishes to **${platforms.join(', ')}**.` : 'Web article only — never sent to social.',
     link ? `[Read the article ↗](${link})` : '',

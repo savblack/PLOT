@@ -4,8 +4,9 @@
 //   not new = released >= MIN_AGE_YEARS ago
 //   not ancient = released in/after YEAR_FLOOR (modern back-catalogue, 1980s
 //                 onwards — no 1950s/60s super-classics)
-//   gem     = vote_average >= 7.2 and >= MIN_VOTES votes (well-established and
-//             recognizable, not obscure arthouse)
+//   gem     = vote_average >= 7.2, and vote_count BETWEEN MIN_VOTES and
+//             MAX_VOTES — well-established enough to be worth a look, not so
+//             famous that calling it "hidden" is absurd.
 // We discover per region (US/UK/AU) and prefer the broadest availability:
 // a title on streaming in all three beats one in two beats US-only.
 import { tmdb } from '../../lib/tmdb.mjs';
@@ -16,6 +17,20 @@ import { coverageTier, bestTier } from './_regions.mjs';
 const MIN_AGE_YEARS = 15;
 const YEAR_FLOOR = '1980-01-01';
 const MIN_VOTES = '5000'; // floor keeps picks well-established, not obscure
+
+// And a ceiling, because "hidden gem" is a band and this only had one side of
+// it. The floor kept out the obscure; nothing kept out the famous, and since the
+// query sorts by vote_average.desc it actively preferred the most celebrated
+// films in the pool. That is how Star Wars went out as a hidden gem, and how
+// Inglourious Basterds was queued to follow it.
+//
+// 12,000 is where the real picks stop and the household names start. Every pick
+// anyone was happy with sits under 9k — The Nice Guys 8.9k, Grave of the
+// Fireflies 6.8k, The Iron Giant 6.4k, The Florida Project 3.2k. The two
+// complaints sit above 22k: Star Wars 22.8k, Inglourious Basterds 24.7k. Nothing
+// lives in the gap, so the line has room on both sides rather than being tuned
+// to the last example.
+const MAX_VOTES = '12000';
 const REGIONS = [['US', 'US'], ['UK', 'GB'], ['AU', 'AU']]; // label, TMDB code
 
 export const evaluate = async (ctx) => {
@@ -30,6 +45,7 @@ export const evaluate = async (ctx) => {
     'primary_release_date.lte': isoDate(cutoff),
     'vote_average.gte': '7.2',
     'vote_count.gte': MIN_VOTES,
+    'vote_count.lte': MAX_VOTES,
     sort_by: 'vote_average.desc',
   };
 
@@ -63,6 +79,11 @@ export const evaluate = async (ctx) => {
     payload: {
       streaming, // { US:[…], UK:[…], AU:[…] } — name the platform (US default)
       year: pick.release_date ? Number(pick.release_date.slice(0, 4)) : null,
+      // The numbers behind the "highly-rated, lesser-seen" claim, carried so the
+      // review card can show its working. A pick that does not look like a
+      // hidden gem should be arguable from the card without knowing the film.
+      rating: typeof pick.vote_average === 'number' ? Math.round(pick.vote_average * 10) / 10 : null,
+      votes: typeof pick.vote_count === 'number' ? pick.vote_count : null,
       title: {
         tmdb_id: pick.id,
         media_type: 'movie',

@@ -46,6 +46,37 @@ export const platformsFor = (p) => {
   return p.post_type === 'question' ? ['x', 'threads'] : ['x', 'instagram', 'threads'];
 };
 
+/**
+ * The facts behind the claim `reason()` makes, for the review card to show.
+ *
+ * reason() asserts things — "highly-rated, lesser-seen", "trending & streamable
+ * now" — and an assertion with no evidence cannot be argued with. A hidden gem
+ * went out that was Star Wars, and the card had said only "Highly-rated,
+ * lesser-seen: Star Wars", which is unfalsifiable unless you already know the
+ * film. Shown as "7.2 · 22,843 votes · 1977" it takes a second and no expertise.
+ *
+ * Deliberately only what the planner actually recorded. A missing field is
+ * omitted rather than guessed at, because a number invented here would be worse
+ * than no number at all — it would look like evidence.
+ */
+export const evidenceFor = (p) => {
+  const bits = [];
+  const payload = p.payload || {};
+
+  if (typeof payload.rating === 'number') bits.push(`${payload.rating.toFixed(1)} rating`);
+  if (typeof payload.votes === 'number') bits.push(`${payload.votes.toLocaleString('en-AU')} votes`);
+  if (payload.year) bits.push(String(payload.year));
+  if (typeof payload.days_until === 'number') bits.push(`${payload.days_until} days away`);
+
+  // Where it can actually be watched, US first — the same default the copy uses.
+  const streaming = payload.streaming || {};
+  const providers = streaming.US || streaming.UK || streaming.AU || [];
+  const names = providers.map((x) => x?.provider_name || x?.name || x).filter((x) => typeof x === 'string');
+  if (names.length) bits.push(names.slice(0, 3).join(', '));
+
+  return bits;
+};
+
 /** The public article this post points at, if it has one. */
 export const articleLink = (p) => {
   if (p.post_type === 'trending') return `${SITE_URL}/whats-on/chart`;
