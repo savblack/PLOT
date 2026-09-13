@@ -1,6 +1,15 @@
 /**
  * Nightly recompute of the "For You" recommendation tables:
  *  1. Cross-user title_similarity (pure Postgres — recompute_title_similarity()).
+ *     Computed but NOT currently served: get_for_you() stopped reading this
+ *     table on 2026-09-13 because the user base produces no co-signalled
+ *     pairs at all (see 20260913110000_for_you_retire_cross_user_tier.sql).
+ *     Still run every night regardless — the `refresh materialized view
+ *     user_title_signals` inside it is load-bearing for the content tier and
+ *     the genre fallback, and the table ceasing to be empty is the cue that
+ *     restoring the cross-user tier is finally worth it. Its pair self-join is
+ *     capped at each user's 200 strongest signals so an unread table cannot
+ *     also become an unbounded one.
  *  2. TMDB content_similarity — fetches TMDB's own /recommendations for any
  *     title with a real user signal that isn't cached yet. This is what
  *     gives early/light users (before there's enough cross-user overlap on

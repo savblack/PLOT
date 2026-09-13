@@ -81,7 +81,7 @@ const TYPE_META: Record<string, { label: string; tone: string }> = {
 const FILTERS: { key: string | null; label: string }[] = [
   { key: null, label: 'Latest' },
   { key: 'upcoming', label: 'This week' },
-  { key: 'now_streaming', label: 'Now streaming' },
+  { key: 'now_streaming', label: 'New at home' },
   { key: 'countdown', label: 'Coming soon' },
   { key: 'trailer', label: 'First look' },
 ];
@@ -96,6 +96,7 @@ type FeedPost = {
   scheduled_for: string;
   status: string;
   tmdb_refs?: TmdbRef[] | null;
+  payload?: { home_kind?: string | null } | null;
 };
 
 const postTitle = (p: FeedPost) => p.copy?.page_title || TYPE_META[p.post_type]?.label || p.post_type;
@@ -176,10 +177,17 @@ const titleCta = async (post: FeedPost, region: string) => {
   </aside>`;
 };
 
-const kicker = (type: string) => {
-  const m = TYPE_META[type];
+// A home arrival is either a subscription premiere ("Now streaming") or a
+// cinema release reaching the digital stores ("Now at home"); the planner
+// records which in payload.home_kind, so a reader never mistakes a $20 rental
+// for streaming. Older posts without the field keep the type label.
+const HOME_KIND_LABEL: Record<string, string> = { streaming: 'Now streaming', rental: 'Now at home' };
+
+const kicker = (p: Pick<FeedPost, 'post_type' | 'payload'>) => {
+  const m = TYPE_META[p.post_type];
   if (!m) return '';
-  return `<span class="kick" style="color:${m.tone};">${esc(m.label)}</span>`;
+  const label = (p.post_type === 'now_streaming' && HOME_KIND_LABEL[p.payload?.home_kind ?? '']) || m.label;
+  return `<span class="kick" style="color:${m.tone};">${esc(label)}</span>`;
 };
 
 // PostHog snippet for the server-rendered /whats-on pages. Same project token
@@ -236,19 +244,24 @@ const page = (title: string, head: string, body: string, status = 200, nav = 'wh
 ${POSTHOG}
 ${GA_GTM}
 ${head}
-<link rel="preload" href="${SITE}/fonts/DMSans-Variable.ttf" as="font" type="font/ttf" crossorigin>
-<link rel="preload" href="${SITE}/fonts/InstrumentSerif-Regular.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="preload" href="${SITE}/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="${SITE}/fonts/InstrumentSerif-Regular.woff2" as="font" type="font/woff2" crossorigin>
 <style>
   /* Self-hosted from apps/website/fonts — this function is proxied under
      theplot.tv, so an absolute path resolves against that origin regardless
      of where the HTML itself is generated. */
-  @font-face { font-family: 'DM Sans'; src: url('${SITE}/fonts/DMSans-Variable.ttf') format('truetype-variations'); font-weight: 100 900; font-style: normal; font-display: swap; }
-  @font-face { font-family: 'Instrument Serif'; src: url('${SITE}/fonts/InstrumentSerif-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; font-display: swap; }
-  @font-face { font-family: 'Instrument Serif'; src: url('${SITE}/fonts/InstrumentSerif-Italic.ttf') format('truetype'); font-weight: 400; font-style: italic; font-display: swap; }
+  @font-face { font-family: 'DM Sans'; src: url('${SITE}/fonts/DMSans-Variable.woff2') format('woff2'); font-weight: 100 900; font-style: normal; font-display: swap; }
+  @font-face { font-family: 'Instrument Serif'; src: url('${SITE}/fonts/InstrumentSerif-Regular.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: swap; }
+  @font-face { font-family: 'Instrument Serif'; src: url('${SITE}/fonts/InstrumentSerif-Italic.woff2') format('woff2'); font-weight: 400; font-style: italic; font-display: swap; }
+  /* Digits respaced to a common width (scripts/build-tabular-digits.py). Instrument Serif
+     has no tnum feature and draws digits proportionally, so a rank column would otherwise
+     sit ragged; unicode-range keeps this face to the digits alone. */
+  @font-face { font-family: 'Instrument Serif Tabular'; src: url('${SITE}/fonts/InstrumentSerif-TabularDigits.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: swap; unicode-range: U+0030-0039; }
   :root {
     --ink: #0c0c0c; --paper: #F4F4F5; --pink: #E05578;
     --mut: #6b6b70; --faint: #a1a1a6; --hair: rgba(12,12,12,0.14);
     --serif: 'Instrument Serif', Georgia, serif;
+    --serif-tabular: 'Instrument Serif Tabular', var(--serif);
     --ease: cubic-bezier(0.23, 1, 0.32, 1);
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -383,7 +396,7 @@ ${head}
   .trend-list { list-style: none; }
   .trend-row { display: grid; grid-template-columns: 36px 48px 1fr auto; gap: 16px; align-items: center; padding: 13px 0; border-top: 1px solid var(--hair); text-decoration: none; color: inherit; }
   .trend-list li:first-child .trend-row { border-top: none; }
-  .trend-rank { font-family: var(--serif); font-size: 1.5rem; color: var(--faint); text-align: center; }
+  .trend-rank { font-family: var(--serif-tabular); font-size: 1.5rem; color: var(--faint); text-align: center; }
   .trend-rank.top { color: var(--pink); }
   .trend-poster { width: 48px; aspect-ratio: 2/3; object-fit: cover; border-radius: 6px; display: block; background: var(--paper); }
   .trend-t { font-family: var(--serif); font-size: 1.1rem; line-height: 1.15; transition: color 0.25s var(--ease); }
@@ -570,7 +583,7 @@ const entryRow = (p: FeedPost) => {
   const img = postImage(p);
   const dek = postBody(p)[0];
   return `<a class="row" href="${FEED_PATH}/${esc(p.slug)}">
-    <span class="row-main">${kicker(p.post_type)}
+    <span class="row-main">${kicker(p)}
     <span class="row-t">${esc(postTitle(p))}</span>
     ${dek ? `<span class="row-dek">${esc(dek)}</span>` : ''}</span>
     ${img ? `<img src="${esc(img)}" alt="" loading="lazy">` : '<span class="ph"></span>'}
@@ -581,7 +594,7 @@ const moreCard = (p: FeedPost) => {
   const img = postImage(p);
   return `<a class="mcard" href="${FEED_PATH}/${esc(p.slug)}">
     ${img ? `<img src="${esc(img)}" alt="" loading="lazy">` : '<span class="ph"></span>'}
-    ${kicker(p.post_type)}
+    ${kicker(p)}
     <span class="mc-t">${esc(postTitle(p))}</span>
   </a>`;
 };
@@ -594,7 +607,7 @@ const featuredHero = (p: FeedPost) => {
       ? `<img src="${esc(img)}" alt="">`
       : `<div class="ph"><span>${esc(postTitle(p))}</span></div>`}</div>
     <div class="f-text">
-      ${kicker(p.post_type)}
+      ${kicker(p)}
       <h2>${esc(postTitle(p))}</h2>
       ${dek ? `<p class="dek">${esc(dek)}</p>` : ''}
       <span class="f-date sc">${esc(fmtDate(p.scheduled_for))}</span>
@@ -659,7 +672,7 @@ const CHART_CSS = `
   ol.chart { list-style: none; margin: 38px 0 0; }
   .ch-row { display: grid; grid-template-columns: 52px 60px 1fr auto; gap: 22px; align-items: center; padding: 18px 0; border-top: 1px solid var(--hair); }
   ol.chart li:first-child .ch-row { border-top: none; }
-  .ch-rank { font-family: var(--serif); font-size: 2.1rem; line-height: 1; color: var(--faint); text-align: center; font-variant-numeric: tabular-nums; }
+  .ch-rank { font-family: var(--serif-tabular); font-size: 2.1rem; line-height: 1; color: var(--faint); text-align: center; }
   .ch-rank.top { color: var(--pink); }
   .ch-poster { width: 60px; aspect-ratio: 2/3; object-fit: cover; border-radius: 8px; background: var(--paper); display: block; }
   .ch-title { font-family: var(--serif); font-size: 1.5rem; line-height: 1.1; letter-spacing: -0.01em; }
@@ -808,7 +821,7 @@ const streamingShelf = (posts: FeedPost[]) => `<div class="shelf r3">${posts.map
   const img = postImage(p);
   return `<a class="shelf-item" href="${FEED_PATH}/${esc(p.slug)}">
     ${img ? `<img src="${esc(img)}" alt="" loading="lazy">` : '<span class="ph"></span>'}
-    ${kicker(p.post_type)}
+    ${kicker(p)}
     <span class="shelf-t">${esc(postTitle(p))}</span>
   </a>`;
 }).join('')}</div>`;
@@ -947,7 +960,7 @@ Deno.serve(async (req) => {
 
   const baseQuery = () => supabase
     .from('marketing_posts')
-    .select('slug, copy, media, post_type, scheduled_for, status, tmdb_refs')
+    .select('slug, copy, media, post_type, scheduled_for, status, tmdb_refs, payload')
     .not('slug', 'is', null)
     // The trending chart lives on its own page (/whats-on/chart), not as a
     // dated article — keep it out of every feed surface.
@@ -1064,7 +1077,7 @@ Deno.serve(async (req) => {
       return page(FEED_SEO_TITLE, head, `
         ${titleRow}
         ${heroRow(lead, rail)}
-        ${streaming.length ? `${sectionHead('Now streaming', `${FEED_PATH}?type=now_streaming`)}${streamingShelf(streaming)}` : ''}
+        ${streaming.length ? `${sectionHead('New at home', `${FEED_PATH}?type=now_streaming`)}${streamingShelf(streaming)}` : ''}
         ${chartItems.length ? `${sectionHead('Trending', `${FEED_PATH}/chart`)}${trendingTeaser(chartItems, chartPrior)}` : ''}
         ${countdown.length ? `${sectionHead('Coming soon', `${FEED_PATH}?type=countdown`)}${comingSoonCards(countdown)}` : ''}
         ${trailer.length ? `${sectionHead('First look', `${FEED_PATH}?type=trailer`)}${firstLookCards(trailer)}` : ''}
@@ -1197,7 +1210,7 @@ Deno.serve(async (req) => {
       </section>`
     : '';
 
-  const k = kicker(typed.post_type);
+  const k = kicker(typed);
   const region = (url.searchParams.get('r') || 'US').toUpperCase().slice(0, 2) || 'US';
   const articleCta = typed.post_type !== 'guide' && refs.length === 1
     ? await titleCta(typed, region)

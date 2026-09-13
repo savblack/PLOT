@@ -264,3 +264,40 @@ export function classifySearchResults(rawResults = []) {
 
   return { filtered, emptyMode: 'generic' };
 }
+
+export const MIN_RATED_VOTES = 50;
+
+/**
+ * The facts that tell one "Dune" from another without opening the panel:
+ * year, genres, an audience score, and the original title when it differs.
+ * All of it is already on the TMDB search payload — nothing here
+ * costs a request. Genres come as ids on search results, so callers pass the
+ * genre list they already hold (see useGenres).
+ *
+ * The score is suppressed below MIN_RATED_VOTES: a 9.5 from six votes says
+ * nothing, and showing it would rank an obscure short above the film the
+ * user meant.
+ *
+ * @param {any} item
+ * @param {Array<{id:number,name:string}>} [genres]
+ * @returns {{ year: string, genres: string[], rating: string|null, originalTitle: string|null }}
+ */
+export function describeSearchResult(item, genres = []) {
+  const year = String(item?.release_date || item?.first_air_date || '').slice(0, 4);
+
+  const byId = new Map((genres || []).map(g => [g.id, g.name]));
+  const ids = Array.isArray(item?.genre_ids) ? item.genre_ids : [];
+  const genreNames = ids.map(id => byId.get(id)).filter(Boolean).slice(0, 2);
+
+  const votes = Number(item?.vote_count) || 0;
+  const score = Number(item?.vote_average);
+  const rating = votes >= MIN_RATED_VOTES && Number.isFinite(score) && score > 0
+    ? score.toFixed(1)
+    : null;
+
+  const title = item?.title || item?.name || '';
+  const original = item?.original_title || item?.original_name || '';
+  const originalTitle = original && normalizeTitle(original) !== normalizeTitle(title) ? original : null;
+
+  return { year, genres: genreNames, rating, originalTitle };
+}

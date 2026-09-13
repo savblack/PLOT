@@ -1,115 +1,18 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
-import { posterUrl, profileUrl } from '../utils/images.js';
+import { profileUrl } from '../utils/images.js';
 import { tmdb } from '@plot/core/tmdb.js';
 import { supabase } from '@plot/core/supabase.js';
 import { useHistory } from '../hooks/useHistory.js';
-import { localDateStr } from '../utils/date.js';
-import { favoriteWords } from '../utils/spelling.js';
 import Spinner from './Spinner.jsx';
 import UserList from './UserList.jsx';
 import { classifySearchResults } from '../utils/search.js';
+import SearchResultRow from './SearchResultRow.jsx';
+import { useGenres } from '../hooks/useGenres.js';
 import { track, EVENTS } from '../lib/analytics.js';
 import { MEDIA } from '../copy/media.js';
 import { COMMON } from '../copy/common.js';
-
-function BookmarkIcon({ filled }) {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        d="M6 4.5A2.5 2.5 0 0 1 8.5 2h7A2.5 2.5 0 0 1 18 4.5v16l-6-3.75L6 20.5v-16Z"
-        fill={filled ? 'currentColor' : 'none'}
-      />
-    </svg>
-  );
-}
-
-function HeartIcon({ filled }) {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78Z"
-        fill={filled ? 'currentColor' : 'none'}
-      />
-    </svg>
-  );
-}
-
-/* ── Result Row ── */
-function ResultRow({ item, openPanel, watchlist, favorites, history, region }) {
-  const fw    = favoriteWords(region);
-  const id    = item.id;
-  const type  = item.media_type || 'movie';
-  const title = item.title || item.name || MEDIA.unknown;
-  const img   = posterUrl(item.poster_path, 'w92');
-  const releaseDate = item.release_date || item.first_air_date || '';
-  const comingSoon = releaseDate > localDateStr();
-  const inList     = watchlist.isInList(id);
-  const isFav      = favorites.isFavorite(id);
-  const watched    = history.isWatched(id, type);
-
-  const openDetails = () => openPanel(id, type);
-
-  return (
-    <div className="list-row search-result-row">
-      <button type="button" className="list-row-hit interactive-surface" onClick={openDetails} aria-label={`View details for ${title}`}>
-        {/* Poster */}
-        <div className="list-row-poster">
-          {img
-            ? <img src={img} alt={title} />
-            : <div style={{ width: '100%', height: '100%', background: 'var(--surface-raised)' }} />
-          }
-        </div>
-
-        {/* Info */}
-        <div className="list-row-info">
-          <div className="list-row-title">{title}</div>
-          <div className="list-row-meta">
-            <span style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-              {type === 'tv' ? MEDIA.series : MEDIA.movie}
-            </span>
-          </div>
-        </div>
-
-        {(watched || comingSoon) && (
-          <div className="list-row-end search-row-status">
-            {watched && <span className="chip chip-episode">{MEDIA.watched}</span>}
-            {comingSoon && <span className="chip chip-soon">{MEDIA.comingSoon}</span>}
-          </div>
-        )}
-      </button>
-
-      {/* Actions */}
-      <div className="list-row-end search-row-actions">
-        <button
-          type="button"
-          className={`search-action-btn${inList ? ' active' : ''}`}
-          onClick={e => {
-            e.stopPropagation();
-            watchlist.toggle({ ...item, id, media_type: type });
-          }}
-          data-tip={inList ? MEDIA.removeFromWatchlist : MEDIA.saveToWatchlist}
-          aria-label={inList ? `Remove ${title} from list` : `Add ${title} to list`}
-        >
-          <BookmarkIcon filled={inList} />
-        </button>
-        <button
-          type="button"
-          className={`search-action-btn search-action-btn--heart${isFav ? ' active' : ''}`}
-          onClick={async e => {
-            e.stopPropagation();
-            await favorites.toggleFavorite({ ...item, id, tmdb_id: id, media_type: type });
-          }}
-          data-tip={isFav ? `Remove ${fw.nounLower}` : fw.noun}
-          aria-label={isFav ? `Remove ${title} from ${fw.pluralLower}` : `Add ${title} to ${fw.pluralLower}`}
-        >
-          <HeartIcon filled={isFav} />
-        </button>
-      </div>
-    </div>
-  );
-}
 
 function TalentResultRow({ person, onOpen }) {
   const image = profileUrl(person.profile_path, 'w185');
@@ -140,6 +43,7 @@ export default function SearchView() {
   const { openPanel, watchlist, favorites, user, profile } = useApp();
   const navigate = useNavigate();
   const history = useHistory(user?.id);
+  const { genres } = useGenres();
   const [mode,    setMode]    = useState('titles'); // 'titles' | 'talent' | 'friends'
   const [query,   setQuery]   = useState('');
   const [results, setResults] = useState([]);
@@ -281,7 +185,7 @@ export default function SearchView() {
           {results.length > 0 && (
             <div>
               {results.map(item => (
-                <ResultRow
+                <SearchResultRow
                   key={`${item.media_type}-${item.id}`}
                   item={item}
                   openPanel={openPanel}
@@ -289,6 +193,7 @@ export default function SearchView() {
                   favorites={favorites}
                   history={history}
                   region={profile?.region}
+                  genres={genres}
                 />
               ))}
             </div>
