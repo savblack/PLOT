@@ -4,6 +4,11 @@
 # The project's build root directory is the repo root, and Pages only looks for
 # a wrangler.toml there. Nothing below has any effect on a deployment.
 #
+# It is NOT dead, though: @cloudflare/vite-plugin reads it during `vite dev`.
+# With `name` and `compatibility_date` set and no `main`, the plugin treats it
+# as an assets-only Worker and serves the local app through Cloudflare's asset
+# handler. So this file shapes local development only, never production.
+#
 # It ended up here on 2026-07-28: at the repo root, Cloudflare's "v2 root
 # directory strategy" auto-detection picked it up for the UNRELATED plot-site
 # (theplot.tv) project, whose root directory is apps/website, and this file's
@@ -29,3 +34,18 @@
 name = "plot-app"
 pages_build_output_dir = "dist"
 compatibility_date = "2025-06-01"
+
+# Serve index.html for any path that isn't a built asset, so client-side routes
+# survive a hard load / refresh under `vite dev`. Without this the asset handler
+# 404s them and the app renders a blank page — you only ever noticed on routes
+# with no in-app link to reach them by, i.e. /design-system.
+#
+# public/_redirects used to carry `/*  /index.html  200` for the same purpose
+# and was deleted on 2026-09-13 as a no-op. The asset router rejects that rule
+# outright ("Infinite loop detected in this rule and has been ignored"), because
+# html_handling rewrites /index.html back to / and re-matches /*. Deployed Pages
+# agrees: app.theplot.tv/index.html 308s to /, and `wrangler pages dev` serves
+# the SPA fallback for every unmatched route with the file absent. Production's
+# fallback is Pages' own not-found handling; this key is the local equivalent.
+[assets]
+not_found_handling = "single-page-application"
