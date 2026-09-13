@@ -236,19 +236,24 @@ const page = (title: string, head: string, body: string, status = 200, nav = 'wh
 ${POSTHOG}
 ${GA_GTM}
 ${head}
-<link rel="preload" href="${SITE}/fonts/DMSans-Variable.ttf" as="font" type="font/ttf" crossorigin>
-<link rel="preload" href="${SITE}/fonts/InstrumentSerif-Regular.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="preload" href="${SITE}/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="${SITE}/fonts/InstrumentSerif-Regular.woff2" as="font" type="font/woff2" crossorigin>
 <style>
   /* Self-hosted from apps/website/fonts — this function is proxied under
      theplot.tv, so an absolute path resolves against that origin regardless
      of where the HTML itself is generated. */
-  @font-face { font-family: 'DM Sans'; src: url('${SITE}/fonts/DMSans-Variable.ttf') format('truetype-variations'); font-weight: 100 900; font-style: normal; font-display: swap; }
-  @font-face { font-family: 'Instrument Serif'; src: url('${SITE}/fonts/InstrumentSerif-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; font-display: swap; }
-  @font-face { font-family: 'Instrument Serif'; src: url('${SITE}/fonts/InstrumentSerif-Italic.ttf') format('truetype'); font-weight: 400; font-style: italic; font-display: swap; }
+  @font-face { font-family: 'DM Sans'; src: url('${SITE}/fonts/DMSans-Variable.woff2') format('woff2'); font-weight: 100 900; font-style: normal; font-display: swap; }
+  @font-face { font-family: 'Instrument Serif'; src: url('${SITE}/fonts/InstrumentSerif-Regular.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: swap; }
+  @font-face { font-family: 'Instrument Serif'; src: url('${SITE}/fonts/InstrumentSerif-Italic.woff2') format('woff2'); font-weight: 400; font-style: italic; font-display: swap; }
+  /* Digits respaced to a common width (scripts/build-tabular-digits.py). Instrument Serif
+     has no tnum feature and draws digits proportionally, so a rank column would otherwise
+     sit ragged; unicode-range keeps this face to the digits alone. */
+  @font-face { font-family: 'Instrument Serif Tabular'; src: url('${SITE}/fonts/InstrumentSerif-TabularDigits.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: swap; unicode-range: U+0030-0039; }
   :root {
     --ink: #0c0c0c; --paper: #F4F4F5; --pink: #E05578;
     --mut: #6b6b70; --faint: #a1a1a6; --hair: rgba(12,12,12,0.14);
     --serif: 'Instrument Serif', Georgia, serif;
+    --serif-tabular: 'Instrument Serif Tabular', var(--serif);
     --ease: cubic-bezier(0.23, 1, 0.32, 1);
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -383,7 +388,7 @@ ${head}
   .trend-list { list-style: none; }
   .trend-row { display: grid; grid-template-columns: 36px 48px 1fr auto; gap: 16px; align-items: center; padding: 13px 0; border-top: 1px solid var(--hair); text-decoration: none; color: inherit; }
   .trend-list li:first-child .trend-row { border-top: none; }
-  .trend-rank { font-family: var(--serif); font-size: 1.5rem; color: var(--faint); text-align: center; }
+  .trend-rank { font-family: var(--serif-tabular); font-size: 1.5rem; color: var(--faint); text-align: center; }
   .trend-rank.top { color: var(--pink); }
   .trend-poster { width: 48px; aspect-ratio: 2/3; object-fit: cover; border-radius: 6px; display: block; background: var(--paper); }
   .trend-t { font-family: var(--serif); font-size: 1.1rem; line-height: 1.15; transition: color 0.25s var(--ease); }
@@ -659,7 +664,7 @@ const CHART_CSS = `
   ol.chart { list-style: none; margin: 38px 0 0; }
   .ch-row { display: grid; grid-template-columns: 52px 60px 1fr auto; gap: 22px; align-items: center; padding: 18px 0; border-top: 1px solid var(--hair); }
   ol.chart li:first-child .ch-row { border-top: none; }
-  .ch-rank { font-family: var(--serif); font-size: 2.1rem; line-height: 1; color: var(--faint); text-align: center; font-variant-numeric: tabular-nums; }
+  .ch-rank { font-family: var(--serif-tabular); font-size: 2.1rem; line-height: 1; color: var(--faint); text-align: center; }
   .ch-rank.top { color: var(--pink); }
   .ch-poster { width: 60px; aspect-ratio: 2/3; object-fit: cover; border-radius: 8px; background: var(--paper); display: block; }
   .ch-title { font-family: var(--serif); font-size: 1.5rem; line-height: 1.1; letter-spacing: -0.01em; }
