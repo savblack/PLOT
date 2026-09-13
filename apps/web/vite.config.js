@@ -6,8 +6,10 @@ import { cloudflare } from "@cloudflare/vite-plugin";
 
 // https://vite.dev/config/
 export default defineConfig({
-  // Smoke tests need Vite's SPA fallback for client-side routes. Cloudflare's
-  // local asset handler deliberately returns 404 for those routes instead.
+  // Smoke tests bypass the Cloudflare plugin entirely and use Vite's own SPA
+  // fallback. Everything else runs through Cloudflare's local asset handler,
+  // whose SPA fallback comes from `assets.not_found_handling` in
+  // apps/web/wrangler.toml — see the note there.
   plugins: [react(), ...(process.env.PLOT_SMOKE_TEST ? [] : [cloudflare()])],
   // Local configuration is shared at the repository root. Without this Vite
   // only reads apps/web/.env, leaving the local app unable to initialise
