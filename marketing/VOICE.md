@@ -62,7 +62,9 @@ spelling-light, "this week") unless a post is clearly about another region.
 
 **Always say where to watch a streaming title.** On any "now streaming", "what to
 watch tonight" or "hidden gem" post — across social, the whats-on article, and the
-newsletter — name the platform it's on. The payload provides a `streaming` object
+newsletter — name the platform it's on. A digital rental or purchase is not
+"streaming": if the payload's `streaming` lists are empty and `digital` names
+stores, say "to rent or buy on Prime Video and Apple TV", never "now streaming". The payload provides a `streaming` object
 with providers per region: `{ US: [...], UK: [...], AU: [...] }`.
 - Lead with the **US** platform ("now on Netflix").
 - If UK/AU differ meaningfully, you may add them briefly ("on Netflix, or Prime
@@ -85,7 +87,8 @@ with providers per region: `{ US: [...], UK: [...], AU: [...] }`.
   theplot.tv/whats-on. Plain specific headline; a short-to-medium blog post of
   4–8 short paragraphs in the same voice; draw on the research pack and your own
   web research, always paraphrased (never quote reviews or copy synopsis text);
-  no links, hashtags, or dashes. Write it as a **finished article in PLOT's own
+  no links, hashtags, or em/en dashes (ordinary hyphens in compound words and
+  names are fine and must stay). Write it as a **finished article in PLOT's own
   voice** — state facts directly and confidently; never narrate your sources or
   the research. Don't write "the research pack", "pre-fetched ratings", "in wider
   reporting", "recent coverage", "sources say", or "according to" — the reader
@@ -138,7 +141,10 @@ evergreen, title-free prompts, and they are **never about something unreleased**
 - **Never cite TMDB scores or vote counts**, and never describe how many people
   voted. TMDB figures in the research pack are an internal signal only.
 - Only include ratings when they add something, and skip any that come back null.
-  A standout score is worth a line; a middling one usually isn't the story.
+  A standout score is worth a line; a middling one usually isn't the story. In
+  the article, that means **at most one score**, woven into a point, and **never
+  a ratings paragraph as the closer**. A pre-release IMDb average is not
+  evidence of reception. Never cite audience scores.
 
 ## CTAs
 

@@ -60,10 +60,16 @@ export const evaluate = async (ctx) => {
     // release kind as its own colored label. `where` stays in the payload for
     // the post copy; it is never rendered on the image.
     const whenLabel = dateStr ? formatWeekdayDayMonth(dateStr) : null;
+    // A type-4 "digital" date with no subscription provider is a rental
+    // release (the usual cinema-to-home step); label it as one, with its stores.
     let where = null;
     if (item.release_kind !== 'cinema') {
-      const providers = await tmdb.getWatchProviders(item.media_type, item.id).catch(() => []);
-      if (providers.length) where = providers.slice(0, 2).map(p => p.provider_name).join(', ');
+      const home = await tmdb.getHomeRegions(item.media_type, item.id).catch(() => null);
+      if (home?.streaming?.US?.length) where = home.streaming.US.slice(0, 2).join(', ');
+      else if (item.release_kind === 'streaming' && home?.digital?.US?.length) {
+        item.release_kind = 'rental';
+        where = home.digital.US.slice(0, 2).join(', ');
+      }
     }
     return slimTitle(item, whenLabel, where);
   }));

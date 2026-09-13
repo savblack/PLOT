@@ -26,6 +26,8 @@ import * as conversation from './triggers/conversation.mjs';
 import { anchorPostForDay, fixedFeatureForDay, isAnchorDay, questionSlotForDay } from './cadence.mjs';
 
 const TRACK_LIMIT = 25;
+// How long after a cinema opening we keep watching a title for its home release.
+const HOME_WATCH_DAYS = 150;
 const EVALUATORS = {
   upcoming: weeklySlate.evaluate,
   trending: trendingChart.evaluate,
@@ -75,6 +77,26 @@ const maintainTrackedTitles = async (supabase) => {
       .from('marketing_tracked_titles')
       .upsert(row, { onConflict: 'media_type,tmdb_id' });
     if (error) console.warn(`Tracked-title upsert failed for ${row.title}: ${error.message}`);
+  }
+
+  // Titles that have already opened drop out of TMDB's "upcoming" set, so
+  // their rows stopped being refreshed the week they released: exactly when a
+  // digital date first appears. Keep refreshing recent releases that have not
+  // had their home-arrival post yet, or cinema-to-rental never fires for them.
+  const today = isoDate(new Date());
+  const floor = isoDate(new Date(Date.now() - HOME_WATCH_DAYS * 86400000));
+  const topKeys = new Set(top.map(item => `${item.media_type}:${item.id}`));
+  const recent = (existing || []).filter(t =>
+    t.media_type === 'movie' && !topKeys.has(`movie:${t.tmdb_id}`) &&
+    t.release_date && t.release_date <= today && t.release_date >= floor &&
+    !t.announced?.now_streaming);
+  for (const t of recent) {
+    const { theatrical, digital } = await tmdb.getReleaseDates(t.tmdb_id).catch(() => ({}));
+    if (!theatrical && !digital) continue;
+    const { error } = await supabase.from('marketing_tracked_titles')
+      .update({ release_date: theatrical || t.release_date, digital_date: digital || t.digital_date || null, updated_at: new Date().toISOString() })
+      .eq('id', t.id);
+    if (error) console.warn(`Home-date refresh failed for ${t.title}: ${error.message}`);
   }
 
   const { data: tracked } = await supabase.from('marketing_tracked_titles').select('*');

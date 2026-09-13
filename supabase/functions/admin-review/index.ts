@@ -35,6 +35,7 @@ function jsonObject(value: Json | null | undefined): Record<string, Json | undef
   return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
 }
 import { serviceKey } from '../_shared/serviceKey.ts';
+import { rescheduledSlug } from '../_shared/postSlug.js';
 // The "why", the platform fan-out and the article link are shared with the
 // Linear mirror (marketing/lib/linear.mjs) so both review surfaces describe a
 // post in the same words.
@@ -133,7 +134,7 @@ const TYPE_LABELS: Record<string, string> = {
   watch_tonight: 'What to watch tonight',
   hidden_gem: 'Hidden gem',
   on_this_day: 'On this day',
-  now_streaming: 'Now streaming',
+  now_streaming: 'New at home',
   countdown: 'Countdown',
   trailer: 'Trailer drop',
   question: 'Question',
@@ -1046,10 +1047,14 @@ Deno.serve(async (req) => {
       if (/^\d{4}-\d{2}-\d{2}$/.test(d)) {
         // Noon UTC renders as the same calendar date in AEST and is comfortably
         // before the 23:30 UTC publish run, so the post goes out on day `d`.
+        // The slug's date suffix follows while the post is still unpublished;
+        // a live URL never moves.
+        const { data: cur } = await supabase.from('marketing_posts').select('slug, status').eq('id', id).single();
+        const slug = rescheduledSlug(cur?.slug ?? null, cur?.status ?? '', d);
         await supabase.from('marketing_posts')
-          .update({ scheduled_for: `${d}T12:00:00.000Z`, updated_at: now() }).eq('id', id);
+          .update({ scheduled_for: `${d}T12:00:00.000Z`, slug, updated_at: now() }).eq('id', id);
         flash = `Rescheduled to ${d}.`;
-        await logEvent(supabase, { postId: id, action, after: { scheduled_date: d } });
+        await logEvent(supabase, { postId: id, action, after: { scheduled_date: d, slug } });
       } else flash = 'Reschedule needs a valid date.';
     } else if (id && action === 'publish_now') {
       // Approve + bring the schedule forward so the publisher will pick it up,

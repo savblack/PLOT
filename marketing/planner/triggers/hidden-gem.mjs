@@ -4,8 +4,11 @@
 //   not new = released >= MIN_AGE_YEARS ago
 //   not ancient = released in/after YEAR_FLOOR (modern back-catalogue, 1980s
 //                 onwards — no 1950s/60s super-classics)
-//   gem     = vote_average >= 7.2 and >= MIN_VOTES votes (well-established and
-//             recognizable, not obscure arthouse)
+//   gem     = vote_average >= 7.2 and between MIN_VOTES and MAX_VOTES votes:
+//             well-established enough to be findable, but not a canonical
+//             title. With no ceiling and a vote_average sort the pool was the
+//             IMDb top 250 (Shawshank, Empire, The Usual Suspects, Mononoke all
+//             ran as "hidden gems"), which the copy then had to argue around.
 // We discover per region (US/UK/AU) and prefer the broadest availability:
 // a title on streaming in all three beats one in two beats US-only.
 import { tmdb } from '../../lib/tmdb.mjs';
@@ -15,7 +18,8 @@ import { coverageTier, bestTier } from './_regions.mjs';
 
 const MIN_AGE_YEARS = 15;
 const YEAR_FLOOR = '1980-01-01';
-const MIN_VOTES = '5000'; // floor keeps picks well-established, not obscure
+const MIN_VOTES = '1500';  // floor keeps picks well-established, not obscure
+const MAX_VOTES = '12000'; // ceiling keeps out the canon everyone has already seen
 const REGIONS = [['US', 'US'], ['UK', 'GB'], ['AU', 'AU']]; // label, TMDB code
 
 export const evaluate = async (ctx) => {
@@ -30,6 +34,7 @@ export const evaluate = async (ctx) => {
     'primary_release_date.lte': isoDate(cutoff),
     'vote_average.gte': '7.2',
     'vote_count.gte': MIN_VOTES,
+    'vote_count.lte': MAX_VOTES,
     sort_by: 'vote_average.desc',
   };
 

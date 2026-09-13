@@ -1,11 +1,19 @@
 // A new official trailer appeared on a tracked upcoming title.
 import { tmdb } from '../../lib/tmdb.mjs';
-import { formatWeekdayDayMonth } from '../../lib/dates.mjs';
+import { isoDate, formatWeekdayDayMonth } from '../../lib/dates.mjs';
+
+// A trailer post is only news for a title nobody can watch yet. Tracked rows
+// linger after their release (the tracker never prunes), and TMDB keeps adding
+// videos to released films, so the old "has a release_date" filter let a
+// month-old release ship as "the trailer just dropped" three times in one
+// summer (The Odyssey, Pinocchio: Unstrung, The End of Oak Street).
+export const awaitingRelease = (t, today) => Boolean(t.release_date) && t.release_date >= today;
 
 export const evaluate = async (ctx) => {
+  const today = isoDate(ctx.publishAt);
   // Highest-popularity first; stop at the first title with a genuinely new trailer.
   const candidates = [...ctx.tracked]
-    .filter(t => t.release_date) // only titles still awaiting release
+    .filter(t => awaitingRelease(t, today))
     .sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
 
   for (const t of candidates) {

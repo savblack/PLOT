@@ -210,6 +210,21 @@ export const tmdb = {
     return { US: names('US'), UK: names('GB'), AU: names('AU') };
   },
 
+  // Subscription AND rent/buy availability across the audience regions, from
+  // one /watch/providers call. The now_streaming trigger uses it both to gate
+  // the post (no provider anywhere = not actually watchable at home yet) and
+  // to let the copy name the stores when a title arrives as a digital rental.
+  getHomeRegions: async (mediaType, id) => {
+    const data = await fetchTMDB(`/${mediaType}/${id}/watch/providers`);
+    const names = (code, kinds) => {
+      const r = data?.results?.[code] || {};
+      const seen = new Set();
+      return kinds.flatMap(k => r[k] || []).map(p => p.provider_name).filter(n => !seen.has(n) && seen.add(n)).slice(0, 3);
+    };
+    const pick = (kinds) => ({ US: names('US', kinds), UK: names('GB', kinds), AU: names('AU', kinds) });
+    return { streaming: pick(['flatrate']), digital: pick(['rent', 'buy']) };
+  },
+
   // Films released exactly `years` ago today, by vote count.
   getAnniversaries: async (years, minVotes = 2000, baseDate) => {
     // baseDate = the day the post will PUBLISH (not when the planner runs); the
