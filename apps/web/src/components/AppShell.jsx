@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { APP_NAV_ITEMS, PRIMARY_NAV_ITEMS, VIEW_TITLES } from '../navigation.js';
+import { APP_NAV_ITEMS, PRIMARY_NAV_ITEMS, titleForView } from '../navigation.js';
 import { useNotifications } from '../hooks/useNotifications.js';
 import { APP_SHELL } from '../copy/appShell.js';
 import AppSidebar from './AppSidebar.jsx';
@@ -71,7 +71,7 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
     closeDrawer();
   };
 
-  const pageTitle = VIEW_TITLES[currentView] ?? 'PLOT';
+  const pageTitle = titleForView(currentView);
   const showHomeLogo = currentView === 'home' || (currentView || '').startsWith('u/');
   const isOwnProfile = !!profile?.username && currentView === `u/${profile.username}`;
 
