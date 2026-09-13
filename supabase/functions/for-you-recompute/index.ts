@@ -9,7 +9,9 @@
  *     the genre fallback, and the table ceasing to be empty is the cue that
  *     restoring the cross-user tier is finally worth it. Its pair self-join is
  *     capped at each user's 200 strongest signals so an unread table cannot
- *     also become an unbounded one.
+ *     also become an unbounded one. Its row count is reported as
+ *     `cross_user_pairs` on every run: see the comment at the count below for
+ *     why that number is the whole point of still computing the table.
  *  2. TMDB content_similarity — fetches TMDB's own /recommendations for any
  *     title with a real user signal that isn't cached yet. This is what
  *     gives early/light users (before there's enough cross-user overlap on
@@ -58,6 +60,29 @@ Deno.serve(async (req) => {
   const { error: similarityError } = await admin.rpc('recompute_title_similarity')
   if (similarityError) { console.error('recompute_title_similarity failed:', similarityError.message); return Response.json({ ok: false, error: similarityError.message }, { status: 500 }) }
 
+  // title_similarity contains exactly the pairs that cleared the co_count >= 2
+  // gate, so its row count IS the readiness signal for restoring tier 1 of
+  // get_for_you(). It has been 0 for the table's entire existence, which is why
+  // the tier was retired on 2026-09-13. Reporting it every night is what stops
+  // "restore it when the user base supports it" from being a comment nobody
+  // re-reads: the day this is non-zero, cross-user overlap exists and the
+  // branch goes back into get_for_you() ahead of the content tier.
+  //
+  // A failure here does NOT fail the run. The recompute already succeeded, and
+  // losing one observability number is not worth failing a cron step over and
+  // training someone to ignore a red job.
+  const { count: crossUserPairs, error: countError } = await admin
+    .from('title_similarity')
+    .select('*', { count: 'exact', head: true })
+  if (countError) console.error('title_similarity count failed (run continues):', countError.message)
+  if ((crossUserPairs ?? 0) > 0) {
+    console.log(
+      `CROSS-USER OVERLAP EXISTS: title_similarity has ${crossUserPairs} pair(s) past the co_count >= 2 gate. ` +
+      'Tier 1 of get_for_you() is now worth restoring — see ' +
+      'supabase/migrations/20260913110000_for_you_retire_cross_user_tier.sql.'
+    )
+  }
+
   const { data: gaps, error: gapsError } = await admin.rpc('for_you_content_similarity_gaps', { p_limit: CONTENT_SIMILARITY_BATCH_SIZE })
   if (gapsError) { console.error('for_you_content_similarity_gaps failed:', gapsError.message); return Response.json({ ok: false, error: gapsError.message }, { status: 500 }) }
 
@@ -97,5 +122,5 @@ Deno.serve(async (req) => {
   const total = cached + failed
   const ok = total === 0 || failed / total <= 0.5
   if (!ok) console.error(`for-you-recompute failure rate ${((failed / total) * 100).toFixed(0)}%`, { cached, failed, total })
-  return Response.json({ ok, content_similarity_cached: cached, content_similarity_failed: failed }, { status: ok ? 200 : 500 })
+  return Response.json({ ok, cross_user_pairs: crossUserPairs ?? null, content_similarity_cached: cached, content_similarity_failed: failed }, { status: ok ? 200 : 500 })
 })

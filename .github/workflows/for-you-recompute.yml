@@ -14,8 +14,26 @@ jobs:
     steps:
       - name: Recompute title similarity
         run: |
-          curl --fail --silent --show-error --request POST "$SUPABASE_URL/functions/v1/for-you-recompute" \
-            --header "x-cron-secret: $FOR_YOU_CRON_SECRET"
+          # --fail still aborts the step on a non-200, so a failed run stays a
+          # red job. On success the body carries cross_user_pairs, which is the
+          # cue to restore tier 1 of get_for_you() (retired 2026-09-13 because
+          # it was always 0). Echoing it into the step summary puts that number
+          # on the run page instead of buried in the log body, so noticing it
+          # does not depend on anyone thinking to go look.
+          response="$(curl --fail --silent --show-error --request POST "$SUPABASE_URL/functions/v1/for-you-recompute" \
+            --header "x-cron-secret: $FOR_YOU_CRON_SECRET")"
+          echo "$response"
+          {
+            echo '### For You recompute'
+            echo ''
+            echo '```json'
+            echo "$response"
+            echo '```'
+            echo ''
+            echo 'A non-zero `cross_user_pairs` means cross-user overlap finally exists'
+            echo 'and tier 1 of `get_for_you()` is worth restoring. See'
+            echo '`supabase/migrations/20260913110000_for_you_retire_cross_user_tier.sql`.'
+          } >> "$GITHUB_STEP_SUMMARY"
         env:
           # There is no repo secret literally named SUPABASE_URL (only
           # VITE_SUPABASE_URL and SUPABASE_DB_URL exist) — referencing it
