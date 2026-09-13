@@ -19,7 +19,8 @@ import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import { COMMON } from '../copy/common.js';
 import { MEDIA } from '../copy/media.js';
 import {
-  SOCIAL_LINKS, USERNAME_RE, validateAvatarFile, isDuplicateUsernameError,
+  SOCIAL_LINKS, PROFILE_SECTIONS, ALL_SECTION_KEYS, isSectionEnabled,
+  USERNAME_RE, validateAvatarFile, isDuplicateUsernameError,
 } from '@plot/core/profileFields.js';
 import { updateProfile } from '@plot/core/profile.js';
 import { PUBLIC_PROFILE_PAGE } from '../copy/publicProfilePage.js';
@@ -107,16 +108,6 @@ const SOCIAL_ICONS = {
   letterboxd: LetterboxdIcon,
   website:    WebsiteIcon,
 };
-
-// Content rails a user can show/hide. profile_sections null = show all.
-const SECTIONS = [
-  { key: 'recent',    label: 'Recently Watched' },
-  { key: 'watching',  label: 'Watching' },
-  { key: 'want',      label: 'Want to Watch' },
-  { key: 'topMovies', label: 'Top 10 Films' },
-  { key: 'topTv',     label: 'Top 10 TV' },
-  { key: 'favourites', label: 'Favorites' },
-];
 
 const styles = `
   .pp-view { max-width: 600px; margin: 0 auto; padding: 0.25rem 0 3rem; -webkit-font-smoothing: antialiased; }
@@ -346,7 +337,7 @@ function EditProfileModal({ userId, current, onClose, onSaved, favWord }) {
   const [uname, setUname] = useState(current.username);
   const [avatar, setAvatar] = useState(current.avatar_url); // preview (object URL until Save)
   const [pendingFile, setPendingFile] = useState(null);     // picked photo, not yet uploaded
-  const [enabled, setEnabled] = useState(current.profile_sections ?? SECTIONS.map((s) => s.key));
+  const [enabled, setEnabled] = useState(current.profile_sections ?? ALL_SECTION_KEYS);
   const [unameStatus, setUnameStatus] = useState(''); // '' | checking | ok | taken | invalid
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -437,7 +428,7 @@ function EditProfileModal({ userId, current, onClose, onSaved, favWord }) {
 
     // Section visibility — separate best-effort update so the core save still
     // works before the profile_sections migration lands.
-    const sections = SECTIONS.map((s) => s.key).filter((k) => enabled.includes(k));
+    const sections = ALL_SECTION_KEYS.filter((k) => enabled.includes(k));
     await updateProfile({ userId, patch: { profile_sections: sections } });
     setSaving(false);
     onSaved({ display_name: displayName.trim(), username: unameChanged ? cleanUname : current.username, is_public: current.is_public, avatar_url: patch.avatar_url, profile_sections: sections, bio: patch.bio, links: patch.links });
@@ -566,7 +557,7 @@ function EditProfileModal({ userId, current, onClose, onSaved, favWord }) {
           <div>
             <label className="pp-field-label">Sections shown</label>
             <p className="pp-toggle-help" style={{ marginBottom: '0.5rem' }}>Choose which rails appear on your profile.</p>
-            {SECTIONS.map((s) => (
+            {PROFILE_SECTIONS.map((s) => (
               <label key={s.key} className="pp-section-toggle">
                 <span>{s.key === 'favourites' ? favWord : s.label}</span>
                 <input
@@ -626,7 +617,7 @@ export default function PublicProfilePage() {
   const isPrivate = !!p && !p.is_public;
   const name = p ? (p.display_name || p.username) : '';
   const sectionPref = p?.profile_sections; // null/undefined = show all
-  const showSection = (key) => !sectionPref || sectionPref.includes(key);
+  const showSection = (key) => isSectionEnabled(sectionPref, key);
 
   // Route through the shared share primitive so profile shares are analytics-
   // tracked (profile_shared) and get the "Copied!" fallback state, like every
