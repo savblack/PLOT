@@ -73,9 +73,35 @@ begin
   -- On Supabase the same guard shape as the webhook and mirror migrations, for
   -- the same reason: fail at deploy time rather than schedule a job that errors
   -- every Sunday into a log nobody reads.
-  if to_regprocedure('extensions.pg_stat_statements_reset()') is null then
+  --
+  -- Look the function up by NAME, not by exact signature. to_regprocedure()
+  -- matches an argument list exactly, and pg_stat_statements 1.11 declares
+  --   pg_stat_statements_reset(oid, oid, bigint, boolean)
+  -- with a default for all four arguments. So `extensions.pg_stat_statements_reset()`
+  -- is perfectly callable (the defaults fill in), while
+  -- to_regprocedure('extensions.pg_stat_statements_reset()') searches for a
+  -- zero-argument overload that has never existed and returns NULL.
+  --
+  -- That is not hypothetical: this guard fired on a completely healthy
+  -- production database. The extension was installed in `extensions` and the
+  -- function was right there, and the migration still aborted. It then sat
+  -- pending from 2026-09-13, turned every subsequent Supabase deploy red,
+  -- held later migrations out of production, and — the real cost — meant the
+  -- weekly reset this migration exists to schedule was never scheduled at all,
+  -- so the temp-file spill documented above just carried on.
+  --
+  -- A name lookup is also what this guard actually wants to assert: that the
+  -- extension is present in `extensions`. Checking pg_proc directly keeps that
+  -- true across extension versions, which is exactly what moved underneath it.
+  if not exists (
+    select 1
+    from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'extensions'
+      and p.proname = 'pg_stat_statements_reset'
+  ) then
     raise exception
-      'extensions.pg_stat_statements_reset() is missing — is pg_stat_statements still installed in the extensions schema?';
+      'extensions.pg_stat_statements_reset is missing — is pg_stat_statements still installed in the extensions schema?';
   end if;
 
   perform cron.unschedule('pg-stat-statements-reset')
