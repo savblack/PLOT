@@ -314,6 +314,25 @@ private or nonexistent profile. A distinct "you have been blocked" state turns
 blocking into a notification, which is the thing the symmetric design and the
 unreadable `user_blocks` table are both there to prevent.
 
+**Watched on 2026-09-13, on web, against Staging.** Signed in as one Staging
+account, on another account's profile with the card on screen: name, handle,
+counts, follow button. Block, confirm, and the card is replaced in place by "This
+profile isn't public. @<handle> either doesn't exist or hasn't made their profile
+public yet." — no navigation, no blank frame, no stale card left behind. A
+reload of the same URL lands straight on the same state. Unblocking from Settings
+> Blocked accounts brings the profile back; Staging ended on 0 blocks, 0 reports,
+0 public profiles and 0 follows, exactly as it started.
+
+Worth saying which part of that was ever in doubt. The copy is shared with the
+nonexistent-handle path and has been covered by a Playwright smoke check since
+that path existed. What had never been seen is the **transition**: before
+20260913090000 the screen did not update at all, because `onChanged` refreshed
+follows and not the profile, so the person you had just blocked stayed on screen
+until you navigated away. That is the frame above.
+
+**Mobile is still unwatched.** `apps/mobile/app/(app)/u/[username].tsx` carries
+the same `found = !loading && !!profile` shape and the same paired refresh, but
+"the same shape" is the argument, not the evidence.
 ## Recommended sequencing
 
 Two migrations, not one. Both halves are independently useful and they have very
