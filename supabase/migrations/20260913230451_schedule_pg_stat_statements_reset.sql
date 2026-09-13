@@ -12,6 +12,13 @@
 -- out without a verdict and raised no alarm. Stamp migrations against what
 -- PRODUCTION has applied, not against your branch.
 --
+-- The re-issue then collided: 20260913110000 was taken by
+-- 20260913110000_for_you_retire_cross_user_tier.sql, written in a parallel
+-- session and merged first, and two migrations sharing a version stops the
+-- pipeline outright (npm run migrations:check). Hence the odd-looking exact
+-- timestamp rather than a round hour: round hours are what collide when more
+-- than one branch is in flight.
+--
 -- WHAT WAS ACTUALLY HAPPENING: Supabase warned on 2026-09-13 that PLOT
 -- Production was depleting its Disk IO Budget. Nothing in this repo was
 -- responsible. Measured against production:
