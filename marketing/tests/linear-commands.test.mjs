@@ -124,3 +124,18 @@ test('week-scoped commands are the ones that need no post', () => {
 test('the help text mentions generating the week', () => {
   assert.match(HELP_TEXT, /`\/generate`/);
 });
+
+test('the help text names exactly the week-scoped commands', () => {
+  // It used to say "the last three", which pointed at /regenerate once
+  // /generate was added — telling you a post-scoped command worked on any card.
+  // Counting into a list goes stale; this keeps the claim tied to the set.
+  const sentence = HELP_TEXT.split('\n').find((l) => l.includes('act on the whole week'));
+  assert.ok(sentence, 'the help text should say which commands are week-scoped');
+  for (const c of WEEK_SCOPED) {
+    assert.ok(sentence.includes(`/${c}`), `${c} is week-scoped but the help text omits it`);
+  }
+  // And nothing post-scoped is claimed as week-scoped.
+  for (const c of ['approve', 'reject', 'unapprove', 'reschedule', 'publish-now', 'retry', 'regenerate']) {
+    assert.ok(!sentence.includes(`/${c}`), `${c} is post-scoped but the help text claims otherwise`);
+  }
+});

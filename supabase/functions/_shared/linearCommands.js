@@ -191,7 +191,12 @@ export const HELP_TEXT = [
   '`/pause` · `/resume` — the global publishing switch (affects every post).',
   '`/generate` — build the coming week now, instead of waiting for Sunday.',
   '',
-  'The last three act on the whole week, so you can comment them on any card here.',
+  // Named, not counted. This line used to say "the last three", which was true
+  // until /generate was added above it and quietly made it point at /regenerate
+  // — a post-scoped command it then told you to run on any card. A positional
+  // reference into a list is wrong the moment the list changes; the test below
+  // asserts these names against WEEK_SCOPED so the two cannot drift apart.
+  '`/pause`, `/resume`, `/generate` and `/help` act on the whole week, so you can comment them on any card here.',
   '',
   'To edit copy, comment `/copy` and then any of these lines — anything you leave out stays as it is:',
   '```',
