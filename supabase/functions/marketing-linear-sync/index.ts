@@ -27,8 +27,10 @@
  * Secrets:
  *   LINEAR_API_KEY         - to post replies (same key the mirror uses)
  *   LINEAR_WEBHOOK_SECRET  - signing secret shown when you create the webhook
- *   GH_DISPATCH_TOKEN      - optional; lets /publish-now and /regenerate kick
- *                            their workflow instead of waiting for its cron
+ *   GH_DISPATCH_TOKEN_CONTENT - optional; lets /generate, /publish-now and
+ *                            /regenerate kick their workflow (Actions: write)
+ *   GH_DISPATCH_TOKEN_WEBSITE - optional; lets a website-refresh card be merged
+ *                            or closed (Pull requests: write)
  */
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
 import type { Database, Json } from '../_shared/database.types.ts';
@@ -45,7 +47,17 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const WEBHOOK_SECRET = Deno.env.get('LINEAR_WEBHOOK_SECRET') ?? '';
 const LINEAR_API_KEY = Deno.env.get('LINEAR_API_KEY') ?? '';
 const GH_REPO = Deno.env.get('GH_REPO') ?? 'savblack/PLOT';
-const GH_TOKEN = Deno.env.get('GH_DISPATCH_TOKEN') ?? '';
+
+// Two tokens, one per job. CONTENT starts workflows for /generate, /publish-now
+// and /regenerate (Actions: write). WEBSITE reads and merges the weekly refresh
+// PR (Pull requests: write). Neither can do the other's work, which is the
+// point: a comment box that can reach a token that merges to main should be able
+// to reach as little else as possible.
+//
+// Both fall back to the single GH_DISPATCH_TOKEN they were split out of.
+const LEGACY_GH_TOKEN = Deno.env.get('GH_DISPATCH_TOKEN') ?? '';
+const GH_CONTENT_TOKEN = Deno.env.get('GH_DISPATCH_TOKEN_CONTENT') || LEGACY_GH_TOKEN;
+const GH_WEBSITE_TOKEN = Deno.env.get('GH_DISPATCH_TOKEN_WEBSITE') || LEGACY_GH_TOKEN;
 
 // Which workflow states mean what, when an issue is dragged on the board.
 // 'Done' is deliberately absent: publishing is something the publisher reports,
@@ -124,12 +136,12 @@ const reply = async (issueId: string, body: string): Promise<void> => {
  * always returned a reason; this one should never have dropped it.
  */
 const dispatchWorkflow = async (workflow: string): Promise<{ ok: boolean; reason?: string }> => {
-  if (!GH_TOKEN) return { ok: false, reason: 'GH_DISPATCH_TOKEN is not set' };
+  if (!GH_CONTENT_TOKEN) return { ok: false, reason: 'GH_DISPATCH_TOKEN_CONTENT is not set' };
   try {
     const res = await fetch(`https://api.github.com/repos/${GH_REPO}/actions/workflows/${workflow}/dispatches`, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${GH_TOKEN}`,
+        Authorization: `Bearer ${GH_CONTENT_TOKEN}`,
         Accept: 'application/vnd.github+json',
         'X-GitHub-Api-Version': '2022-11-28',
         'User-Agent': 'plot-linear-sync',
@@ -353,7 +365,7 @@ const ghApi = async (path: string, init: RequestInit = {}) => {
   const res = await fetch(`https://api.github.com/repos/${GH_REPO}${path}`, {
     ...init,
     headers: {
-      Authorization: `Bearer ${GH_TOKEN}`,
+      Authorization: `Bearer ${GH_WEBSITE_TOKEN}`,
       Accept: 'application/vnd.github+json',
       'X-GitHub-Api-Version': '2022-11-28',
       'User-Agent': 'plot-linear-sync',
@@ -396,7 +408,7 @@ const prForIssue = async (issueId: string): Promise<number | null> => {
  * underneath it. A refresh that has gone red stays open either way.
  */
 const runPrCommand = async (prNumber: number, command: string): Promise<string> => {
-  if (!GH_TOKEN) return 'I cannot reach GitHub — GH_DISPATCH_TOKEN is not set.';
+  if (!GH_WEBSITE_TOKEN) return 'I cannot reach GitHub — GH_DISPATCH_TOKEN_WEBSITE is not set.';
 
   if (command !== 'approve' && command !== 'reject') {
     return `This card is pull request [#${prNumber}](https://github.com/${GH_REPO}/pull/${prNumber}), not a marketing post — \`/approve\` merges it, \`/reject\` closes it.`;

@@ -170,9 +170,23 @@ comment box is not an authorization boundary.
 
 The link between card and PR is a Linear attachment, so the PR shows on the card
 in the UI and the webhook finds it by URL — there is no table of ours pairing
-them. `GH_DISPATCH_TOKEN` needs **Pull requests: Read and write** for the card to
-appear at all; without it the rest of the sweep is unaffected and the run record
-carries `counts.pr_mirror_error`.
+them. Two GitHub tokens, one per job, because the jobs need different powers and
+neither should carry the other's:
+
+| Secret | Permission | Used for |
+| --- | --- | --- |
+| `GH_DISPATCH_TOKEN_CONTENT` | Actions: Read and write | `/generate`, `/publish-now`, `/regenerate` |
+| `GH_DISPATCH_TOKEN_WEBSITE` | Pull requests: Read and write | the website-refresh card |
+
+Each is refused by GitHub if used for the other's work, which is the point: a
+token that can merge to main has no business also being the one a slash command
+hands to a workflow dispatcher. Both fall back to the single `GH_DISPATCH_TOKEN`
+they were split out of. The daily probe checks each against its own endpoint, so
+a token that answered 200 for the wrong one would read as over-granted rather
+than healthy.
+
+Without the WEBSITE token the card simply does not appear; the rest of the sweep
+is unaffected and the run record carries `counts.pr_mirror_error`.
 
 ### Setting it up
 

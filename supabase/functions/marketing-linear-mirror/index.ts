@@ -66,7 +66,19 @@ const LINEAR_API_KEY = Deno.env.get('LINEAR_API_KEY') ?? '';
 const TEAM_REF = Deno.env.get('LINEAR_MARKETING_TEAM_ID') ?? 'PLO';
 const PROJECT_REF = Deno.env.get('LINEAR_MARKETING_PROJECT_ID') ?? 'Content Automation';
 const GH_REPO = Deno.env.get('GH_REPO') ?? 'savblack/PLOT';
-const GH_TOKEN = Deno.env.get('GH_DISPATCH_TOKEN') ?? '';
+
+// Two GitHub tokens, one per job, because the two jobs need different powers and
+// neither should carry the other's. CONTENT starts workflows (Actions: write);
+// WEBSITE reads and merges the weekly refresh PR (Pull requests: write). Each is
+// refused by GitHub if used for the other's work, which is the point — a token
+// that can merge to main has no business also being the one a slash command
+// hands to a workflow dispatcher.
+//
+// Both fall back to the single GH_DISPATCH_TOKEN they were split out of, so an
+// environment that has not been split yet keeps working.
+const LEGACY_GH_TOKEN = Deno.env.get('GH_DISPATCH_TOKEN') ?? '';
+const GH_CONTENT_TOKEN = Deno.env.get('GH_DISPATCH_TOKEN_CONTENT') || LEGACY_GH_TOKEN;
+const GH_WEBSITE_TOKEN = Deno.env.get('GH_DISPATCH_TOKEN_WEBSITE') || LEGACY_GH_TOKEN;
 const RESEND_KEY = Deno.env.get('RESEND_API_KEY') ?? '';
 const ALERT_TO = Deno.env.get('MARKETING_ADMIN_EMAIL') ?? 'sav.black@outlook.com';
 const ALERT_FROM = 'PLOT Marketing <feedback@theplot.tv>';
@@ -567,11 +579,11 @@ const reconcileStates = async (supabase: Db, ctx: Context, dryRun = false): Prom
 // social post it will not go out on its own if ignored.
 const PR_PRIORITY = 1; // Urgent
 
-const gh = async (path: string, init: RequestInit = {}) => {
+const gh = async (path: string, init: RequestInit = {}, token = GH_WEBSITE_TOKEN) => {
   const res = await fetch(`https://api.github.com/repos/${GH_REPO}${path}`, {
     ...init,
     headers: {
-      Authorization: `Bearer ${GH_TOKEN}`,
+      Authorization: `Bearer ${token}`,
       Accept: 'application/vnd.github+json',
       'X-GitHub-Api-Version': '2022-11-28',
       'User-Agent': 'plot-linear-mirror',
@@ -603,7 +615,7 @@ const mirrorPullRequests = async (
   ctx: Context,
   dryRun: boolean,
 ): Promise<{ opened: number; resolved: number; error?: string }> => {
-  if (!GH_TOKEN) return { opened: 0, resolved: 0 };
+  if (!GH_WEBSITE_TOKEN) return { opened: 0, resolved: 0 };
 
   let opened = 0;
   let resolved = 0;
@@ -734,45 +746,58 @@ const alertOperator = async (subject: string, body: string): Promise<void> => {
  *
  * @returns a short status string for the run record, or null when not probed.
  */
+const probeOne = async (token: string, path: string): Promise<number> => {
+  const res = await fetch(`https://api.github.com/repos/${GH_REPO}${path}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28',
+      'User-Agent': 'plot-linear-mirror',
+    },
+  });
+  return res.status;
+};
+
 const checkDispatchToken = async (force = false): Promise<string | null> => {
   if (!shouldProbeToken(force)) return null;
-  if (!GH_TOKEN) return 'absent';
+  if (!GH_CONTENT_TOKEN && !GH_WEBSITE_TOKEN) return 'absent';
 
   try {
-    const res = await fetch(
-      `https://api.github.com/repos/${GH_REPO}/actions/workflows/marketing-weekly-batch.yml`,
-      {
-        headers: {
-          Authorization: `Bearer ${GH_TOKEN}`,
-          Accept: 'application/vnd.github+json',
-          'X-GitHub-Api-Version': '2022-11-28',
-          'User-Agent': 'plot-linear-mirror',
-        },
-      },
-    );
-    if (res.ok) return 'ok';
+    // Each token against the job it exists for. A token that answers 200 for
+    // someone else's endpoint would be over-granted, not healthy.
+    const results: Record<string, number> = {};
+    if (GH_CONTENT_TOKEN) {
+      results.content = await probeOne(GH_CONTENT_TOKEN, '/actions/workflows/marketing-weekly-batch.yml');
+    }
+    if (GH_WEBSITE_TOKEN) {
+      results.website = await probeOne(GH_WEBSITE_TOKEN, '/pulls?per_page=1');
+    }
+    const bad = Object.entries(results).filter(([, code]) => code !== 200);
+    if (!bad.length) return 'ok';
 
-    const status = res.status;
+    const status = bad[0][1];
+    const which = bad.map(([name, code]) => `${name} (${code})`).join(', ');
     const reason = status === 401
       ? 'the token has expired or been revoked'
       : status === 403 || status === 404
         ? 'the token can no longer see this repository\'s Actions — check its permissions and repository access'
         : `GitHub answered ${status}`;
-    console.error(`GH_DISPATCH_TOKEN unhealthy: ${status} — ${reason}`);
+    console.error(`GitHub token unhealthy: ${which} — ${reason}`);
     await alertOperator(
-      'PLOT marketing: the GitHub dispatch token has stopped working',
+      'PLOT marketing: a GitHub token has stopped working',
       `<div style="font-family:sans-serif;max-width:520px;color:#1a1a1a;">
-        <h1 style="font-size:1.2rem;">GH_DISPATCH_TOKEN is not working</h1>
-        <p style="font-size:.95rem;line-height:1.6;">GitHub answered <strong>${status}</strong> — ${reason}.</p>
+        <h1 style="font-size:1.2rem;">A GitHub token is not working</h1>
+        <p style="font-size:.95rem;line-height:1.6;">Unhealthy: <strong>${which}</strong> — ${reason}.</p>
         <p style="font-size:.95rem;line-height:1.6;"><code>/generate</code>, <code>/publish-now</code> and <code>/regenerate</code>
         still record their decision, but no longer take effect immediately: they fall back to the scheduled run.
         Publishing itself is unaffected.</p>
-        <p style="font-size:.95rem;line-height:1.6;">Fix: create a fine-grained PAT for <code>${GH_REPO}</code> with
-        <strong>Actions: Read and write</strong>, then
-        <code>supabase secrets set GH_DISPATCH_TOKEN=&lt;token&gt;</code>.</p>
+        <p style="font-size:.95rem;line-height:1.6;">Fix: a fine-grained PAT for <code>${GH_REPO}</code> —
+        <code>GH_DISPATCH_TOKEN_CONTENT</code> needs <strong>Actions: Read and write</strong>,
+        <code>GH_DISPATCH_TOKEN_WEBSITE</code> needs <strong>Pull requests: Read and write</strong> —
+        then <code>supabase secrets set &lt;name&gt;=&lt;token&gt;</code>.</p>
       </div>`,
     );
-    return `unhealthy (${status})`;
+    return `unhealthy: ${which}`;
   } catch (err) {
     console.error('Dispatch token probe errored:', err);
     return 'probe failed';
