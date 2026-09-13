@@ -1,6 +1,17 @@
 -- Weekly pg_stat_statements reset — the only thing consuming this project's
 -- Disk IO Budget.
 --
+-- RE-ISSUED FROM 20260913040000 (#872), which merged but was never applied.
+-- That version was stamped 04:00 from the clock and from the newest migration
+-- on its own branch, but the branch predated 20260913090000 and
+-- 20260913100000, both of which production had already applied. The Supabase
+-- integration applies in version order and skips anything sorting before the
+-- last applied version, so the file merged green and did nothing. The deploy
+-- guard did not catch it either: the integration's check sits at
+-- "Waiting for branch action run to complete" indefinitely, so the guard timed
+-- out without a verdict and raised no alarm. Stamp migrations against what
+-- PRODUCTION has applied, not against your branch.
+--
 -- WHAT WAS ACTUALLY HAPPENING: Supabase warned on 2026-09-13 that PLOT
 -- Production was depleting its Disk IO Budget. Nothing in this repo was
 -- responsible. Measured against production:
