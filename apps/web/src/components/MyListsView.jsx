@@ -326,7 +326,9 @@ function TopTenSection({ listType, title, topLists }) {
   const slots = Array.from({ length: 10 }, (_, i) => i + 1);
 
   const rankColor = (rank) => {
-    if (rank === 1) return 'var(--accent)';
+    // The numeral is text, so the accent's text-safe sibling. #1 is the only
+    // rank that gets it; the rest are already text tokens.
+    if (rank === 1) return 'var(--accent-text)';
     if (rank <= 3)  return 'var(--text-secondary)';
     return 'var(--text-muted)';
   };

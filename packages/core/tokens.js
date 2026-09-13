@@ -16,11 +16,21 @@ export const colors = {
     surfaceSunken: '#EBEBEC',
     textPrimary: '#09090B',
     textSecondary: '#52525B',
-    textMuted: '#A1A1AA',
+    // Was #A1A1AA, which measured 2.33:1 on --bg against the 4.5:1 the
+    // accessibility contract asks for. Muted carries empty states, hints,
+    // timestamps, counts and the TMDB credit, none of which are the inactive
+    // controls WCAG exempts, so it has to clear the bar like any other text.
+    textMuted: '#6E6E78',
     border: 'rgba(0,0,0,0.07)',
     borderStrong: 'rgba(0,0,0,0.14)',
     accent: '#E05578',
     accentDim: 'rgba(224,85,120,0.12)',
+    // The accent reads at 3.33:1 on --bg: fine for the icons, borders and
+    // large type it mostly marks, short of the bar wherever it colours small
+    // text (the active sidebar label). accentText is the darker sibling for
+    // those, so --accent itself keeps its brand value everywhere else. Dark
+    // needs no adjustment (5.26 at worst), so it is the accent unchanged.
+    accentText: '#C43C5F',
     danger: '#B9384A',
     dangerDim: 'rgba(185,56,74,0.1)',
     dangerBorder: 'rgba(185,56,74,0.22)',
@@ -69,11 +79,12 @@ export const colors = {
     surfaceSunken: '#111111',
     textPrimary: '#f0efe8',
     textSecondary: '#a8a69c',
-    textMuted: '#6b6a63',
+    textMuted: '#919085',
     border: 'rgba(240,239,232,0.08)',
     borderStrong: 'rgba(240,239,232,0.16)',
     accent: '#F06A88',
     accentDim: 'rgba(240,106,136,0.15)',
+    accentText: '#F06A88',
     danger: '#F18997',
     dangerDim: 'rgba(241,137,151,0.16)',
     dangerBorder: 'rgba(241,137,151,0.26)',
