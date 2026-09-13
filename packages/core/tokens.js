@@ -66,6 +66,11 @@ export const colors = {
     // paid Premium (entitlement), pink = Ko-fi supporter (recognition). Pink
     // tracks the accent ladder; blue is its own hue so the two never read as
     // shades of one badge.
+    // The star rating, shared by both apps. Was #F59E0B hardcoded in five
+    // places; that amber reads 2.06:1 on white, which fails even the 3:1 bar
+    // for the icon, let alone 4.5:1 for the score beside it. Dark keeps the
+    // original, which was already comfortable at 7.23.
+    rating: '#B45309',
     badgePremium: '#1A8CD8',
     badgeSupporter: '#E05578',
   },
@@ -100,6 +105,7 @@ export const colors = {
     success: '#4ade80',
     successDim: 'rgba(74,222,128,0.08)',
     successBorder: 'rgba(74,222,128,0.35)',
+    rating: '#F59E0B',
     badgePremium: '#1D9BF0',
     badgeSupporter: '#F06A88',
   },
