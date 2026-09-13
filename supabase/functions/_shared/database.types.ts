@@ -95,33 +95,6 @@ export type Database = {
         }
         Relationships: []
       }
-      content_similarity: {
-        Row: {
-          computed_at: string
-          media_type_a: string
-          media_type_b: string
-          score: number
-          tmdb_id_a: number
-          tmdb_id_b: number
-        }
-        Insert: {
-          computed_at?: string
-          media_type_a: string
-          media_type_b: string
-          score: number
-          tmdb_id_a: number
-          tmdb_id_b: number
-        }
-        Update: {
-          computed_at?: string
-          media_type_a?: string
-          media_type_b?: string
-          score?: number
-          tmdb_id_a?: number
-          tmdb_id_b?: number
-        }
-        Relationships: []
-      }
       critic_scores: {
         Row: {
           critic_score: number | null
@@ -1631,33 +1604,6 @@ export type Database = {
         }
         Relationships: []
       }
-      title_similarity: {
-        Row: {
-          media_type_a: string
-          media_type_b: string
-          score: number
-          tmdb_id_a: number
-          tmdb_id_b: number
-          updated_at: string
-        }
-        Insert: {
-          media_type_a: string
-          media_type_b: string
-          score: number
-          tmdb_id_a: number
-          tmdb_id_b: number
-          updated_at?: string
-        }
-        Update: {
-          media_type_a?: string
-          media_type_b?: string
-          score?: number
-          tmdb_id_a?: number
-          tmdb_id_b?: number
-          updated_at?: string
-        }
-        Relationships: []
-      }
       user_custom_list_items: {
         Row: {
           added_at: string | null
@@ -1906,16 +1852,6 @@ export type Database = {
         }
         Relationships: []
       }
-      user_title_signals: {
-        Row: {
-          genre_ids: number[] | null
-          media_type: string | null
-          tmdb_id: number | null
-          user_id: string | null
-          weight: number | null
-        }
-        Relationships: []
-      }
     }
     Functions: {
       auth_note_fail: {
@@ -1923,23 +1859,7 @@ export type Database = {
         Returns: number
       }
       can_create_custom_list: { Args: never; Returns: boolean }
-      for_you_content_similarity_gaps: {
-        Args: { p_limit?: number }
-        Returns: {
-          media_type: string
-          tmdb_id: number
-        }[]
-      }
       generate_username: { Args: { p_seed: string }; Returns: string }
-      get_for_you: {
-        Args: { p_limit?: number }
-        Returns: {
-          media_type: string
-          reason: string
-          relevance: number
-          tmdb_id: number
-        }[]
-      }
       get_profile_card: {
         Args: { p_username: string }
         Returns: {
@@ -2018,7 +1938,6 @@ export type Database = {
           unsubscribe_token: string
         }[]
       }
-      recompute_title_similarity: { Args: never; Returns: undefined }
       record_kofi_tip: { Args: { p_payload: Json }; Returns: Json }
       search_users: {
         Args: { p_query: string }

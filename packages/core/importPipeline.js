@@ -95,8 +95,8 @@ export async function resolveImportEntries(entries, { search, onProgress } = /**
           tmdbTitle:  match.title || match.name,
           posterPath: match.poster_path ?? null,
           // Kept so the written row can carry genre_ids. Without it every
-          // imported title contributes zero genre signal to user_title_signals,
-          // the view behind get_for_you — see userMedia.logWatchedItem.
+          // imported title matches no genre filter — see
+          // userMedia.logWatchedItem.
           genreIds:   genreIdsFromItem(match),
         };
       } catch {

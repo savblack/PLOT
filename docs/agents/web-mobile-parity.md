@@ -22,7 +22,7 @@ Lists) and copy.
 | Shared copy catalog (`packages/core/copy/`) | done |
 | My Lists section system, multi-select, Top 10 folded in | done |
 | Date-watched editing in the media panel | done |
-| Discover hooks in core (`useDiscover`, `useNewReleases`, `usePlatformCharts`, `useForYou`, `useGenres`, `useUpcoming`) | done |
+| Discover hooks in core (`useDiscover`, `useNewReleases`, `usePlatformCharts`, `useGenres`, `useUpcoming`) | done |
 | Mobile Discover sub-tabs: Discover · New Releases · Upcoming · Guide | done |
 | Official platform Top 10 charts on mobile | done |
 | Type + Genre filters on Discover / New Releases / Upcoming | done |
@@ -144,9 +144,9 @@ Lessons:
   in the top-left — on Discover that is the hero card, so it looks exactly like
   a frozen app. The status-bar clock keeps ticking regardless; it is drawn by
   the simulator, not the app, and proves nothing.
-- **Staging has no chart or recommendation data**, by design. Every nightly job
-  targets Production. So "Top 10 by Platform" and the For You rail render empty
-  in local dev on both platforms — environmental, not a bug.
+- **Staging has no chart data**, by design. Every nightly job targets
+  Production. So "Top 10 by Platform" renders empty in local dev on both
+  platforms — environmental, not a bug.
 - **`pod install` after an Expo/RN bump** fails with "could not find compatible
   versions for pod ExpoFileSystem … differs from the version stored in
   Pods/Local Podspecs". `rm -rf ios/Pods ios/Podfile.lock && pod install`

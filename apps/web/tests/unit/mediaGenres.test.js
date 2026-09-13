@@ -8,7 +8,7 @@ import { genreIdsFromItem } from '@plot/core/media.js';
 //   movie|tv details         → genres: [{ id: 18, name: 'Drama' }]
 // Reading genre_ids directly meant anything saved from the media panel (which
 // holds a details payload) silently stored an empty array, so it matched no
-// genre filter and fed no genre signal into get_for_you. These lock both in.
+// genre filter. These lock the shape of both payloads in.
 
 test('list-shaped payloads use genre_ids directly', () => {
   assert.deepEqual(genreIdsFromItem({ genre_ids: [878, 28, 12] }), [878, 28, 12]);

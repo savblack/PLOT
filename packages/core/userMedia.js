@@ -145,12 +145,10 @@ export async function logWatchedItem({ userId, item, rating, note, dnf, watchedA
   const row = {
     user_id: userId,
     ...mediaRow,
-    // Mirrors saveListItem. user_title_signals (the materialized view behind
-    // get_for_you's content-similarity tier) unions list_items and history and
-    // reads genre_ids from both — so leaving this off made every watched title
-    // contribute zero genre signal. Column is nullable here, unlike
-    // list_items', so default to [] rather than null to match that view's
-    // coalesce and keep the two arms shaped the same.
+    // Mirrors saveListItem. Discover's genre filter reads genre_ids off both
+    // list_items and history, so leaving this off made every watched title
+    // match no genre. Column is nullable here, unlike list_items', so default
+    // to [] rather than null to keep the two arms shaped the same.
     genre_ids: genreIdsFromItem(item),
     watched_at: safeWatchedAt,
     rating: normalizedRating || null,

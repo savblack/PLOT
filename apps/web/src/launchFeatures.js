@@ -16,11 +16,6 @@ export const SHOW_MEDIA_SYNC_INTEGRATIONS = false;
 export const SHOW_GOOGLE_LOGIN = import.meta.env.VITE_SHOW_GOOGLE_LOGIN === 'true';
 export const SHOW_APPLE_LOGIN = false;
 
-// "Your Next Watch" For You rail on Discover. On by default; flip to false to
-// pull it instantly (e.g. bad recommendations, RPC issues) without touching
-// the underlying get_for_you() pipeline.
-export const SHOW_FOR_YOU_RAIL = true;
-
 // Pricing/plans page (/pricing, /plans) and the free-user "Upgrade" row in
 // Settings. Hidden while pricing isn't ready to be public; existing
 // subscribers can still manage their subscription regardless of this flag,
