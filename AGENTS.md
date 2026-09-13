@@ -250,6 +250,32 @@ So:
   deliberately broken migrations (a bad column reference and a bad cast) in testing.
   Limits: Vault and pg_net are stubbed, and RLS policies are created but not exercised, so
   a policy's *correctness* still needs the Staging project.
+- **`npm run db:function-diff` before merging any `create or replace function`.**
+  A redefinition is a whole-body replacement: you do not amend a function, you retype it,
+  and starting from the migration you remember rather than the body that is live silently
+  reverts everything added since. `migrations:check` catches only the one detail that broke
+  in July (a changed `ON CONFLICT` target). This catches the general case by restoring
+  production, applying pending migrations, and printing a unified diff of every function
+  body that changed. **A redefinition that only ADDS lines is the safe shape** — the tool
+  counts removed lines for exactly that reason. Not a CI gate: it needs production
+  credentials and its output is a diff for a human to read.
+- **`npm run staging:block-test` / `npm run staging:premium-flag-test`** execute policies
+  and RPCs under a real `auth.uid()` on the Staging project, which no static check and not
+  `db:migration-test` can do. Both wrap themselves in one transaction ending in `rollback`,
+  so Staging is unchanged whether they pass or die partway — a teardown block at the bottom
+  of a script does not run when the script dies above it, which is how a previous run left a
+  profile public and a block row behind. New Staging proofs are a `.sql` file plus an entry
+  in `package.json`; `scripts/staging-sql.sh` is the shared connection wrapper.
+  The block test asserts from four viewpoints — blocker, blocked, an unrelated bystander,
+  and an anonymous reader. The last two are not padding: they are the only thing that
+  catches a visibility clause that is too *broad*.
+- **`npm run db:block-clause` (CI)** requires every function reading `profiles` to be in
+  exactly one of `BLOCK_FILTERED` or `BLOCK_EXEMPT` in `scripts/check-block-clause.mjs`.
+  Blocking hides identity through seven security definer RPCs, because `profiles` has one
+  select policy (`auth.uid() = id`) and every identity read bypasses RLS. A later migration
+  recreating one of them from a stale body would drop the `not_blocked` clause and *nothing
+  would fail* — blocking keeps working everywhere else, the blocked account simply reappears
+  on one surface. Adding an identity RPC without classifying it fails the build.
 - **`npm run db:restore-drill`** proves the nightly backup still restores. `pg_restore`
   exits 0 even when tables fail, so run this after any migration adding an extension type,
   and compare the table count against production. See `docs/ops/db-restore.md`.
