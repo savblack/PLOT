@@ -100,3 +100,50 @@ export const buildDescription = (post, supabaseUrl) => {
 
   return parts.join('\n');
 };
+
+// ── Pull-request cards ───────────────────────────────────────────────────────
+// The weekly timeline refresh (timeline-refresh.yml) opens a PR rather than
+// committing, because a newly appended title lands with an empty note and the
+// notes are title-specific jokes a human writes. That PR is a review job like
+// any other, so it gets a card on the same board.
+
+/** Issue title for a mirrored pull request. */
+export const buildPrTitle = (pr) => `Website · ${pr.title}`;
+
+/**
+ * Issue body for a mirrored pull request.
+ *
+ * The PR's own body already explains the run and lists the entries needing a
+ * note, so it is reproduced rather than summarised — the point of the card is to
+ * let the decision happen without leaving Linear.
+ */
+export const buildPrDescription = (pr) => {
+  const parts = [
+    `**[${pr.title}](${pr.url})** · \`${pr.headRefName}\``,
+    '',
+    pr.body?.trim() || '_The pull request has no description._',
+    '',
+    '---',
+    '',
+    '<details><summary>How to review this from here</summary>',
+    '',
+    '`/approve` — merge the pull request (squash) once its checks are green.',
+    '`/reject` — close it without merging. The next weekly run opens a fresh one.',
+    '',
+    'Checks are verified at the moment you approve, not when this card was made,',
+    'so a refresh that went red stays open however long the card has been sitting.',
+    '',
+    '</details>',
+  ];
+  return parts.join('\n');
+};
+
+/** The PR number a mirrored card points at, from its Linear attachments. */
+export const prNumberFromAttachments = (attachments, repo) => {
+  const pattern = new RegExp(`^https://github\\.com/${repo}/pull/(\\d+)`, 'i');
+  for (const a of attachments ?? []) {
+    const hit = pattern.exec(String(a?.url ?? ''));
+    if (hit) return Number(hit[1]);
+  }
+  return null;
+};

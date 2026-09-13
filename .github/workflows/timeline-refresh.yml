@@ -9,35 +9,30 @@ name: Timeline refresh — weekly PR
 # the refresh job dispatches ci.yml against its branch — workflow_dispatch is an
 # explicit exception to the GITHUB_TOKEN rule.
 #
-# The merge is a second job, triggered by that CI run completing, and it merges
-# only on `conclusion == 'success'`. This replaces `gh pr merge --auto`, which
-# needed branch protection to mean anything: protection requires GitHub Pro on a
-# private repo, and without it there are no required checks to wait on, so
-# --auto fired the merge immediately and a red refresh landed broken content.
-# Gating on the CI run directly restores "a red refresh stays open" without
-# depending on protection — the same approach dependabot-automerge.yml uses,
-# and for the same reason.
+# THE MERGE IS NO LONGER AUTOMATIC. It used to be a second job here, gated on
+# that CI run succeeding. That gate was right about CI and wrong about the human:
+# this PR exists *because* a newly appended title lands with an empty note and
+# the notes are a person's job, and a PR that merges itself the moment CI goes
+# green is one nobody ever reads. The assignee was decoration.
+#
+# The refresh is now a card on the marketing board in Linear, opened by
+# marketing-linear-mirror and marked Urgent, where `/approve` merges it and
+# `/reject` closes it. The CI gate did not go away, it moved: the webhook checks
+# the PR's mergeable_state at the moment you approve, so a refresh that has since
+# gone red still stays open. Checking then rather than now is the stronger
+# version — a card can sit for a week, and main moves underneath it.
 
 on:
   schedule:
     - cron: '0 9 * * 1' # 09:00 UTC Monday, after the weekend's trending settles
   workflow_dispatch:
-  workflow_run:
-    workflows: ["CI"]
-    types: [completed]
 
 concurrency:
-  # Keyed per branch so a merge check for one refresh never queues behind
-  # another, and so unrelated CI completions do not serialise against the
-  # weekly refresh itself.
-  group: timeline-refresh-${{ github.event.workflow_run.head_branch || github.ref }}
+  group: timeline-refresh-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
   refresh:
-    # Every CI completion in the repo triggers this workflow for the merge job
-    # below; the refresh itself must only run on its schedule or by hand.
-    if: github.event_name != 'workflow_run'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -99,7 +94,9 @@ jobs:
             cat notes.md
             echo
             echo
-            echo 'This PR auto-merges once CI passes; it is not held for notes. A card with no note renders without one. Notes are title-specific, so if you want the voice back, add it to `apps/website/data/timeline.json` afterwards and the next refresh will keep it.'
+            echo 'Review this on the marketing board in Linear — it appears there as an Urgent card within five minutes, where `/approve` merges it and `/reject` closes it. Checks are re-verified at the moment you approve, so a refresh that has gone red stays open.'
+            echo
+            echo 'A card with no note renders without one, so nothing is blocked on the list above. Notes are title-specific, so if you want the voice back, add it to `apps/website/data/timeline.json` and the next refresh will keep it.'
             echo
             echo '## What the run did'
             echo
@@ -119,51 +116,9 @@ jobs:
             --assignee "${{ github.repository_owner }}")
           echo "Opened $URL"
 
-          # A GITHUB_TOKEN-opened PR never triggers ci.yml on its own, so ask
-          # for it explicitly against this branch. That run completing is what
-          # triggers the merge job below — no --auto, so nothing can land
-          # before CI has actually reported.
+          # A GITHUB_TOKEN-opened PR never triggers ci.yml on its own, so ask for
+          # it explicitly. Nothing merges on that run completing any more — the
+          # result is what the Linear card's /approve checks before merging.
           gh workflow run ci.yml --ref "$BRANCH"
-          echo "Dispatched CI against $BRANCH; the automerge job lands it if CI passes."
+          echo "Dispatched CI against $BRANCH; approve the Linear card to merge."
           rm -f notes.md pr-body.md
-
-  # Merges the refresh PR once its dispatched CI run has actually passed.
-  # Deliberately narrow: only this workflow's own branches, only a bot-authored
-  # PR, only a successful run. Anything unexpected exits 0 and leaves the PR
-  # open for a human.
-  automerge:
-    if: >
-      github.event_name == 'workflow_run' &&
-      github.event.workflow_run.conclusion == 'success' &&
-      startsWith(github.event.workflow_run.head_branch, 'timeline-refresh/')
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-    steps:
-      - name: Merge the refresh PR now CI is green
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_REPO: ${{ github.repository }}
-          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
-        run: |
-          set -euo pipefail
-
-          PR_NUM=$(gh pr list --head "$HEAD_BRANCH" --state open \
-            --json number --jq '.[0].number // empty')
-          if [ -z "$PR_NUM" ]; then
-            echo "No open PR for branch '$HEAD_BRANCH'. Nothing to do."
-            exit 0
-          fi
-
-          # Defence in depth: the branch prefix is guessable, so confirm the PR
-          # was opened by the bot rather than by a person pushing a branch that
-          # happens to match.
-          AUTHOR=$(gh pr view "$PR_NUM" --json author --jq '.author.login')
-          if [ "$AUTHOR" != "github-actions[bot]" ] && [ "$AUTHOR" != "app/github-actions" ]; then
-            echo "PR #$PR_NUM author is '$AUTHOR', not the refresh bot. Leaving it open."
-            exit 0
-          fi
-
-          echo "CI passed for $HEAD_BRANCH -> merging PR #$PR_NUM"
-          gh pr merge "$PR_NUM" --squash --delete-branch

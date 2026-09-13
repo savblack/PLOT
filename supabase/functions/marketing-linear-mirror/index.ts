@@ -51,7 +51,9 @@ import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
 import type { Database } from '../_shared/database.types.ts';
 import { serviceKey } from '../_shared/serviceKey.ts';
 import { hasServiceRoleBearer } from '../_shared/internalWebhook.ts';
-import { buildTitle, buildDescription, dueDateFor } from '../_shared/linearIssue.js';
+import {
+  buildTitle, buildDescription, dueDateFor, buildPrTitle, buildPrDescription,
+} from '../_shared/linearIssue.js';
 import { articleLink } from '../_shared/postSummary.js';
 import { BOT_MARKER } from '../_shared/linearCommands.js';
 
@@ -552,6 +554,137 @@ const reconcileStates = async (supabase: Db, ctx: Context, dryRun = false): Prom
   return { moved, reported };
 };
 
+// ── Pull-request cards ───────────────────────────────────────────────────────
+//
+// timeline-refresh.yml opens a PR every Monday rather than committing: a newly
+// appended title lands with an empty note, and the notes are title-specific
+// jokes a human writes. Until now that PR merged itself as soon as CI went
+// green, so the human it was opened for never actually saw it. It is a review
+// job, so it belongs on the review board.
+//
+// Marked Urgent (Linear priority 1, "P1") because it is the one card here with
+// a deadline that is not its own: the site is stale until it lands, and unlike a
+// social post it will not go out on its own if ignored.
+const PR_BRANCH_PREFIX = 'timeline-refresh/';
+const PR_PRIORITY = 1; // Urgent
+
+const gh = async (path: string, init: RequestInit = {}) => {
+  const res = await fetch(`https://api.github.com/repos/${GH_REPO}${path}`, {
+    ...init,
+    headers: {
+      Authorization: `Bearer ${GH_TOKEN}`,
+      Accept: 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28',
+      'User-Agent': 'plot-linear-mirror',
+      ...(init.headers ?? {}),
+    },
+  });
+  if (!res.ok) throw new Error(`GitHub ${path} -> ${res.status} ${(await res.text()).slice(0, 160)}`);
+  return res.json();
+};
+
+/** The Linear issue already linked to this PR, if any. */
+const issueForPr = async (url: string): Promise<Row | null> => {
+  const d = await graphql(
+    `query($url: String!) { attachmentsForURL(url: $url, first: 5) { nodes { issue { id state { id } } } } }`,
+    { url },
+  );
+  return (d.attachmentsForURL.nodes as Row[])[0]?.issue ?? null;
+};
+
+/**
+ * Open a card for every open refresh PR, and resolve the card once the PR is.
+ *
+ * The PR is the source of truth here, the way marketing_posts is for a post:
+ * merged lands the card in Published, closed lands it in Canceled, and the link
+ * between the two is a Linear attachment rather than a column of our own — so
+ * the PR is visible on the card in the UI and findable by URL from the webhook.
+ */
+const mirrorPullRequests = async (
+  ctx: Context,
+  dryRun: boolean,
+): Promise<{ opened: number; resolved: number; error?: string }> => {
+  if (!GH_TOKEN) return { opened: 0, resolved: 0 };
+
+  let opened = 0;
+  let resolved = 0;
+  // Recently-touched PRs on the refresh branches: open ones need a card, and
+  // just-closed ones need their card resolved.
+  //
+  // Wrapped, and reported rather than thrown: this pass needs a GitHub
+  // permission the rest of the sweep does not, and the first deploy proved why —
+  // a 403 listing pull requests took down post mirroring entirely. A card for
+  // the website refresh is a convenience; mirroring the week is the job.
+  let prs: Row[];
+  try {
+    prs = await gh('/pulls?state=all&sort=updated&direction=desc&per_page=30') as Row[];
+  } catch (err) {
+    const error = String((err as Error).message).slice(0, 200);
+    console.error('PR mirror unavailable:', error);
+    return { opened: 0, resolved: 0, error };
+  }
+
+  for (const pr of prs.filter((x) => String(x.head?.ref ?? '').startsWith(PR_BRANCH_PREFIX))) {
+    try {
+      const existing = await issueForPr(pr.html_url);
+
+      if (pr.state === 'open') {
+        if (existing) continue;
+        if (dryRun) { opened++; continue; }
+        const { issueCreate } = await graphql(
+          `mutation($input: IssueCreateInput!) { issueCreate(input: $input) { issue { id } } }`,
+          {
+            input: {
+              title: buildPrTitle({ title: pr.title }),
+              description: buildPrDescription({
+                title: pr.title, url: pr.html_url, headRefName: pr.head.ref, body: pr.body,
+              }),
+              teamId: ctx.teamId,
+              stateId: ctx.states.review,
+              priority: PR_PRIORITY,
+              ...(ctx.projectId ? { projectId: ctx.projectId } : {}),
+            },
+          },
+        );
+        // The attachment IS the link — nothing of ours records this pairing.
+        await graphql(
+          `mutation($issueId: String!, $url: String!, $title: String!) {
+             attachmentCreate(input: { issueId: $issueId, url: $url, title: $title }) { success }
+           }`,
+          { issueId: issueCreate.issue.id, url: pr.html_url, title: `PR #${pr.number}` },
+        );
+        opened++;
+        continue;
+      }
+
+      // Closed: land the card wherever the PR ended up.
+      if (!existing) continue;
+      const want = pr.merged_at ? ctx.states.published : ctx.states.rejected;
+      if (!want || existing.state?.id === want) continue;
+      if (dryRun) { resolved++; continue; }
+      await graphql(
+        `mutation($issueId: String!, $body: String!) {
+           commentCreate(input: { issueId: $issueId, body: $body }) { success }
+         }`,
+        {
+          issueId: existing.id,
+          body: pr.merged_at
+            ? `${BOT_MARKER} · Merged. The site rebuilds from main.`
+            : `${BOT_MARKER} · Closed without merging. The next weekly run opens a fresh one.`,
+        },
+      );
+      await graphql(
+        `mutation($id: String!, $stateId: String!) { issueUpdate(id: $id, input: { stateId: $stateId }) { success } }`,
+        { id: existing.id, stateId: want },
+      );
+      resolved++;
+    } catch (err) {
+      console.error(`PR mirror failed for #${pr.number}:`, err);
+    }
+  }
+  return { opened, resolved };
+};
+
 // ── Dispatch token health ────────────────────────────────────────────────────
 //
 // GH_DISPATCH_TOKEN is what lets /generate, /publish-now and /regenerate take
@@ -681,6 +814,7 @@ Deno.serve(async (req) => {
     const created = await createMissing(supabase, ctx, dryRun);
     const refreshed = await refreshChanged(supabase, dryRun);
     const { moved, reported } = await reconcileStates(supabase, ctx, dryRun);
+    const prs = await mirrorPullRequests(ctx, dryRun);
 
     // A state we could not resolve does not fail the sweep — cards just stay put
     // rather than being filed wrongly — but it must not be invisible either, or
@@ -694,6 +828,8 @@ Deno.serve(async (req) => {
     const dispatchToken = dryRun && !forceTokenCheck ? null : await checkDispatchToken(forceTokenCheck);
     const counts = {
       created, refreshed, moved, reported,
+      ...(prs.opened || prs.resolved ? { pr_cards: prs.opened, pr_resolved: prs.resolved } : {}),
+      ...(prs.error ? { pr_mirror_error: prs.error } : {}),
       ...(unresolved.length ? { unresolved } : {}),
       ...(dispatchToken ? { dispatch_token: dispatchToken } : {}),
     };
@@ -702,7 +838,7 @@ Deno.serve(async (req) => {
       return json({ ok: true, dry_run: true, would: counts });
     }
 
-    const didWork = created > 0 || refreshed > 0 || moved > 0;
+    const didWork = created > 0 || refreshed > 0 || moved > 0 || prs.opened > 0 || prs.resolved > 0;
     if (didWork) console.log(`Linear mirror: created ${created}, refreshed ${refreshed}, moved ${moved}, reported ${reported}.`);
     await finishRun(supabase, runId, { status: didWork ? 'succeeded' : 'idle', counts });
     await pruneHeartbeats(supabase);

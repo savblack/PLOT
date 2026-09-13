@@ -142,6 +142,26 @@ it is saved. A rejected edit changes nothing and the bot replies with why.
 An accepted edit lands in the database immediately; the issue body catches up on
 the next mirror sweep, within five minutes.
 
+### The weekly website refresh
+
+`timeline-refresh.yml` opens a PR every Monday to refresh the marketing site's
+timeline and hero. It used to merge itself the moment CI went green, which meant
+the human it was opened *for* — a newly appended title lands with an empty note,
+and the notes are a person's job — never saw it.
+
+It now appears on this board as an **Urgent** card within five minutes, carrying
+the PR's own body. `/approve` merges it (squash), `/reject` closes it.
+
+The CI gate did not go away, it moved: checks are re-read at the moment you
+approve, not trusted from when the card was made. A card can sit for a week and
+main moves underneath it, so a refresh that has since gone red still stays open.
+
+The link between card and PR is a Linear attachment, so the PR shows on the card
+in the UI and the webhook finds it by URL — there is no table of ours pairing
+them. `GH_DISPATCH_TOKEN` needs **Pull requests: Read and write** for this;
+without it the rest of the sweep is unaffected and the run record carries
+`counts.pr_mirror_error`.
+
 ### Setting it up
 
 No GitHub Actions secret is involved. Everything below is a Supabase secret.
