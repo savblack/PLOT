@@ -380,9 +380,9 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone, onSeriesFinish
           marginBottom: '0.85rem',
           padding: '0.7rem 0.85rem',
           borderRadius: '0.85rem',
-          border: '1px solid rgba(248,113,113,0.22)',
-          background: 'rgba(127,29,29,0.22)',
-          color: '#fecaca',
+          border: '1px solid var(--danger-border)',
+          background: 'var(--danger-dim)',
+          color: 'var(--danger)',
           fontSize: '0.78rem',
           lineHeight: 1.45,
         }}>
@@ -861,7 +861,7 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
                 </button>
               </div>
               {createError && (
-                <div style={{ padding: '0 1rem 0.75rem', color: '#ef4444', fontSize: '0.75rem' }}>
+                <div style={{ padding: '0 1rem 0.75rem', color: 'var(--danger)', fontSize: '0.75rem' }}>
                   {createError}
                 </div>
               )}
@@ -1483,9 +1483,9 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                 marginBottom: '1rem',
                 padding: '0.7rem 0.85rem',
                 borderRadius: '0.85rem',
-                border: '1px solid rgba(248,113,113,0.22)',
-                background: 'rgba(127,29,29,0.22)',
-                color: '#fecaca',
+                border: '1px solid var(--danger-border)',
+                background: 'var(--danger-dim)',
+                color: 'var(--danger)',
                 fontSize: '0.8rem',
                 lineHeight: 1.45,
               }}>
