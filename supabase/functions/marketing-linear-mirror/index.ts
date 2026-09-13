@@ -52,7 +52,7 @@ import type { Database } from '../_shared/database.types.ts';
 import { serviceKey } from '../_shared/serviceKey.ts';
 import { hasServiceRoleBearer } from '../_shared/internalWebhook.ts';
 import {
-  buildTitle, buildDescription, dueDateFor, buildPrTitle, buildPrDescription,
+  buildTitle, buildDescription, dueDateFor, buildPrTitle, buildPrDescription, PR_BRANCH_PREFIX,
 } from '../_shared/linearIssue.js';
 import { articleLink } from '../_shared/postSummary.js';
 import { BOT_MARKER } from '../_shared/linearCommands.js';
@@ -565,7 +565,6 @@ const reconcileStates = async (supabase: Db, ctx: Context, dryRun = false): Prom
 // Marked Urgent (Linear priority 1, "P1") because it is the one card here with
 // a deadline that is not its own: the site is stale until it lands, and unlike a
 // social post it will not go out on its own if ignored.
-const PR_BRANCH_PREFIX = 'timeline-refresh/';
 const PR_PRIORITY = 1; // Urgent
 
 const gh = async (path: string, init: RequestInit = {}) => {

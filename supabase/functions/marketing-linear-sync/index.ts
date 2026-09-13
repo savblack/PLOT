@@ -34,7 +34,7 @@ import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
 import type { Database, Json } from '../_shared/database.types.ts';
 import { serviceKey } from '../_shared/serviceKey.ts';
 import { parseCommand, BOT_MARKER, HELP_TEXT, WEEK_SCOPED } from '../_shared/linearCommands.js';
-import { prNumberFromAttachments } from '../_shared/linearIssue.js';
+import { prNumberFromAttachments, prScopeRefusal } from '../_shared/linearIssue.js';
 import { validateCopy, validateGuide, validateConversation } from '../_shared/copySchema.js';
 
 type Db = SupabaseClient<Database>;
@@ -386,14 +386,34 @@ const prForIssue = async (issueId: string): Promise<number | null> => {
 /**
  * Approve or reject a pull-request card.
  *
+ * The card is a record, not a gate: timeline-refresh.yml still merges itself on
+ * green CI, and the card lands in Published when it does. This is for the
+ * refresh that job left open — a run that went red and has since been fixed —
+ * and for closing one you do not want.
+ *
  * Checks are verified HERE, at the moment of approval, rather than trusted from
- * when the card was made. timeline-refresh.yml used to merge itself the instant
- * CI went green, which is why the human it was opened for never saw it; moving
- * the decision to this board only helps if the check moves with it, or a card
- * approved a week later would land a refresh that has since gone red.
+ * when the card was made, because a card can sit for a week while main moves
+ * underneath it. A refresh that has gone red stays open either way.
  */
 const runPrCommand = async (prNumber: number, command: string): Promise<string> => {
   if (!GH_TOKEN) return 'I cannot reach GitHub — GH_DISPATCH_TOKEN is not set.';
+
+  if (command !== 'approve' && command !== 'reject') {
+    return `This card is pull request [#${prNumber}](https://github.com/${GH_REPO}/pull/${prNumber}), not a marketing post — \`/approve\` merges it, \`/reject\` closes it.`;
+  }
+
+  const { ok, status, body } = await ghApi(`/pulls/${prNumber}`);
+  if (!ok) return `Could not read #${prNumber} (GitHub answered ${status}).`;
+  const pr = body as Row;
+
+  // Scope check BEFORE anything is done to it. The PR number comes from a Linear
+  // attachment, which anyone who can edit the issue can change — so this is what
+  // stops a re-pointed card from merging an arbitrary pull request into main.
+  const refusal = prScopeRefusal(pr);
+  if (refusal) {
+    console.warn(`Refusing ${command} on #${prNumber}: ${refusal}`);
+    return `I will not touch [#${prNumber}](https://github.com/${GH_REPO}/pull/${prNumber}) — ${refusal}. This board only acts on the weekly website refresh.`;
+  }
 
   if (command === 'reject') {
     const res = await ghApi(`/pulls/${prNumber}`, { method: 'PATCH', body: JSON.stringify({ state: 'closed' }) });
@@ -402,13 +422,6 @@ const runPrCommand = async (prNumber: number, command: string): Promise<string> 
       : `Could not close #${prNumber} (GitHub answered ${res.status}).`;
   }
 
-  if (command !== 'approve') {
-    return `This card is pull request [#${prNumber}](https://github.com/${GH_REPO}/pull/${prNumber}), not a marketing post — \`/approve\` merges it, \`/reject\` closes it.`;
-  }
-
-  const { ok, status, body } = await ghApi(`/pulls/${prNumber}`);
-  if (!ok) return `Could not read #${prNumber} (GitHub answered ${status}).`;
-  const pr = body as Row;
   if (pr.merged) return `#${prNumber} is already merged.`;
   if (pr.state !== 'open') return `#${prNumber} is closed, so there is nothing to merge.`;
 

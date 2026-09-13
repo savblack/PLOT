@@ -107,6 +107,35 @@ export const buildDescription = (post, supabaseUrl) => {
 // notes are title-specific jokes a human writes. That PR is a review job like
 // any other, so it gets a card on the same board.
 
+// Branch prefix and author of the PRs this board may act on.
+//
+// BOTH are checked before a merge, not just the prefix. The automerge job this
+// replaced said why: "the branch prefix is guessable, so confirm the PR was
+// opened by the bot rather than by a person pushing a branch that happens to
+// match." That reasoning is stronger here than it was there. The PR a card
+// points at comes from a Linear attachment, and attachments are editable by
+// anyone who can edit the issue — so without these checks, commenting /approve
+// on a card you had re-pointed would merge an arbitrary pull request into main.
+// A comment box is not an authorization boundary.
+export const PR_BRANCH_PREFIX = 'timeline-refresh/';
+const PR_AUTHORS = ['github-actions[bot]', 'app/github-actions'];
+
+/**
+ * Is this a pull request the board is allowed to merge or close?
+ * @returns null when allowed, otherwise the reason to refuse.
+ */
+export const prScopeRefusal = (pr) => {
+  const branch = String(pr?.head?.ref ?? '');
+  if (!branch.startsWith(PR_BRANCH_PREFIX)) {
+    return `its branch is \`${branch || '(unknown)'}\`, not a \`${PR_BRANCH_PREFIX}\` refresh`;
+  }
+  const author = String(pr?.user?.login ?? '');
+  if (!PR_AUTHORS.includes(author)) {
+    return `it was opened by \`${author || '(unknown)'}\`, not the refresh bot`;
+  }
+  return null;
+};
+
 /** Issue title for a mirrored pull request. */
 export const buildPrTitle = (pr) => `Website · ${pr.title}`;
 
