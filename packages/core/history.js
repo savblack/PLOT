@@ -86,19 +86,6 @@ export function groupEntriesByMonth(entries) {
 }
 
 /**
- * @param {{ year: number, month: number, isCurrentMonth?: boolean }} params
- * @returns {{ title: string, body: string }}
- */
-export function historyMonthEmptyCopy({ year, month, isCurrentMonth }) {
-  const title = `Nothing in ${monthLabel(year, month)}`;
-  const body = isCurrentMonth
-    ? 'Try another month or mark a title as watched to start filling your history.'
-    : 'Try another month, or tap Today to jump back to your latest activity.';
-
-  return { title, body };
-}
-
-/**
  * The star label shown on a history row: "4 ★" / "3.5 ★".
  *
  * @param {number | null | undefined} value 10-point stored rating.
