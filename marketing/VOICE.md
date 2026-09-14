@@ -64,7 +64,11 @@ spelling-light, "this week") unless a post is clearly about another region.
 watch tonight" or "hidden gem" post — across social, the whats-on article, and the
 newsletter — name the platform it's on. A digital rental or purchase is not
 "streaming": if the payload's `streaming` lists are empty and `digital` names
-stores, say "to rent or buy on Prime Video and Apple TV", never "now streaming". The payload provides a `streaming` object
+platforms, say "to rent or buy on Prime Video and Apple TV", never "now
+streaming". People rent through the apps they already use, so never call those
+platforms "stores", "digital stores" or "storefronts".
+
+The payload provides a `streaming` object
 with providers per region: `{ US: [...], UK: [...], AU: [...] }`.
 - Lead with the **US** platform ("now on Netflix").
 - If UK/AU differ meaningfully, you may add them briefly ("on Netflix, or Prime

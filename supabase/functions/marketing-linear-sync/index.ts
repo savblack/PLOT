@@ -208,6 +208,8 @@ const applyEdit = async (supabase: Db, post: Row, fields: Record<string, unknown
       : validateCopy(merged, {
         days_until: post.payload?.days_until,
         when_label: post.payload?.when_label,
+        post_type: post.post_type,
+        home_kind: post.payload?.home_kind,
       });
 
   if (!result.valid) return { ok: false as const, errors: result.errors };

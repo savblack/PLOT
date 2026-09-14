@@ -7,7 +7,7 @@
 // weaker model can never corrupt the pipeline. Swapping the worker changes who
 // fills these fields, never what "valid copy" means.
 
-import { articleErrors } from './articleRules.js';
+import { articleErrors, socialErrors } from './articleRules.js';
 
 export const CTA_VARIANTS = ['track_it', 'whats_on_tonight', 'journal_it', 'none'];
 
@@ -38,7 +38,7 @@ export const POST_TYPE_BRIEFS = {
     'the big number is on the image. Name the release using the payload\'s `when_label` in full ' +
     '("Friday 25 September"), NEVER a relative day. "This Friday" on a T-14 countdown points at the wrong ' +
     'Friday, contradicts the article it links to, and is rejected by the validator.',
-  now_streaming: 'This title is available to watch at home starting today. The payload\'s `home_kind` says how: "streaming" means lead with the US subscription provider from the `streaming` object; "rental" means it has reached the digital stores after its cinema run, so say it is available to rent or buy and name the US stores from the `digital` object ("to rent or buy on Prime Video and Apple TV"). Never call a rental "streaming" and never guess a store that isn\'t in the data. If the title had a cinema run (`from_label`), the hook is the home arrival, not the end of the run.',
+  now_streaming: 'This title is available to watch at home starting today. The payload\'s `home_kind` says how: "streaming" means lead with the US subscription provider from the `streaming` object; "rental" means it can now be rented or bought at home after its cinema run, so say that and name the US platforms from the `digital` object ("to rent or buy on Prime Video and Apple TV"). Never call a rental "streaming", and never guess a platform that isn\'t in the data. People rent on the apps they already use, so never write "stores", "digital stores" or "storefronts"; name the platforms, or just say "on digital". If the title had a cinema run (`from_label`), the hook is the home arrival, not the end of the run.',
   trending:
     'The weekly top-10 trending chart. Comment on the most interesting movement (a new entry, a big climb, a stubborn #1). ' +
     'X gets the full top-10 chart as its single image. ' +
@@ -112,6 +112,32 @@ const relativeTimeErrors = (copy, { days_until: daysUntil, when_label: whenLabel
   return errors;
 };
 
+// Post types whose whole point is that the reader can watch the thing now. The
+// voice guide calls naming the platform mandatory for these, and it still
+// shipped without one: two cinema-to-home posts went out saying only that the
+// film had "made the move to home viewing". A brief could not hold the line, so
+// the contract does.
+const PLATFORM_REQUIRED = new Set(['now_streaming', 'watch_tonight', 'hidden_gem']);
+
+// A named service, a named platform, or the plain words for a paid digital
+// release. "Plus" spelled out counts: PLOT writes both Disney+ and Disney Plus.
+const NAMES_A_PLATFORM = new RegExp(
+  '\\b(?:Netflix|HBO Max|Max|Disney\\s?(?:\\+|Plus)|Hulu|Peacock|Paramount\\s?(?:\\+|Plus)|Prime Video|Apple TV|Fandango|Shudder|Starz|Google Play|YouTube|Criterion|Mubi|Vudu|BritBox|AMC\\s?(?:\\+|Plus)|Tubi|Plex|Sky|Stan|Binge|Kanopy|Netflix)\\b'
+  + '|\\b(?:rent or buy|to rent|rental|premium video|video on demand|digital(?:ly)? (?:release|purchase|rental))\\b',
+  'i',
+);
+
+/**
+ * These posts must say where to watch. Returns [] for every other post type,
+ * and for a call that does not say which type it is.
+ */
+const platformErrors = (copy, postType) => {
+  if (!postType || !PLATFORM_REQUIRED.has(postType)) return [];
+  const body = (copy.page_body || []).join(' ');
+  if (!body || NAMES_A_PLATFORM.test(body)) return [];
+  return [`page_body never says where to watch; a ${postType} post must name the platform, or say it is available to rent or buy`];
+};
+
 /**
  * Validate and normalize a worker's copy output.
  * Returns { valid, errors: string[], copy } — `copy` is the normalized object
@@ -120,9 +146,9 @@ const relativeTimeErrors = (copy, { days_until: daysUntil, when_label: whenLabel
  *
  * @param {object} raw      the worker's output
  * @param {object} [context] the post's own facts, for checks the copy alone
- *   cannot settle: `days_until` and `when_label` from its payload. Optional —
- *   omitting it skips those checks rather than failing, so every existing
- *   caller keeps working.
+ *   cannot settle: `days_until`, `when_label` and `post_type` from the post.
+ *   Optional: omitting a field skips its check rather than failing, so every
+ *   existing caller keeps working.
  */
 export const validateCopy = (raw, context = {}) => {
   const errors = [];
@@ -177,6 +203,8 @@ export const validateCopy = (raw, context = {}) => {
 
   errors.push(...relativeTimeErrors(copy, context));
   errors.push(...articleErrors(copy));
+  errors.push(...platformErrors(copy, context.post_type));
+  errors.push(...socialErrors(copy, { home_kind: context.home_kind }));
 
   // Normalization that can't fail: keep X within the hard limit.
   if (copy.x.length > 280) copy.x = `${copy.x.slice(0, 279)}…`;

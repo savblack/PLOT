@@ -4,7 +4,7 @@ This is the production copy contract for PLOT marketing. The production runner
 is the **Claude Code CLI** (`marketing-weekly-batch.yml` runs
 `--copy-runner=claude`). Codex is the local/manual default and still fully
 supported; other runners are fallback/debug only. This contract is
-model-agnostic — nothing here depends on which CLI is executing it.
+model-agnostic; nothing here depends on which CLI is executing it.
 
 ## Job
 
@@ -48,6 +48,27 @@ model-agnostic — nothing here depends on which CLI is executing it.
 - `threads`: no URLs, no hashtags
 - `hashtags`: 3 to 5 items, no `#` prefix
 - `cta_variant`: one of `track_it`, `whats_on_tonight`, `journal_it`, `none`
+
+`page_title` and `page_body` are additionally checked by
+`supabase/functions/_shared/articleRules.js`, which rejects em and en dashes,
+quoted passages and quoted titles, reception narration ("critics have…",
+"according to", "reportedly"), exposed research ("could not verify"), banned
+filler and trivia asides, audience scores, UK spelling, a TMDB mention, more
+than two rating citations, a ratings sentence as the closer, and a Title Case
+post-type label at the front of the headline. A `now_streaming`, `watch_tonight`
+or `hidden_gem` post is additionally rejected if the body never says where to
+watch.
+
+The social captions (`x`, `instagram`, `threads`) are checked too, for em and
+en dashes, UK spelling, narrated research, audience scores, and calling a
+rental "streaming" when the post's `home_kind` says it is rent or buy, and for
+calling a rental platform a "store" or "storefront". People rent in the app they
+already have: name the platforms, or say "on digital".
+
+Three things it cannot check, which are yours to get right: **no spoilers**,
+**no more than three names in a sentence**, and **every time-bound claim true
+on the publish date**. A person's name and a film title are the same shape to a
+regex, and only you know what the reader will already have seen.
 
 ## Environment
 
