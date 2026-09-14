@@ -177,3 +177,26 @@ test('the help marks placeholders as placeholders', () => {
   assert.match(HELP_TEXT, /<new X text>/);
   assert.match(HELP_TEXT, /placeholders, not syntax/);
 });
+
+test('the bot never treats its own reply as an attempt', () => {
+  // Every near-miss reply quotes HELP_TEXT, and HELP_TEXT lists `/approve` and
+  // `/copy` at line starts — so the reply looked like an attempt, which produced
+  // a reply, which looked like an attempt. 248 comments in 50 seconds.
+  const selfReply = `${BOT_MARKER} · That looked like a command, but I could not read it.\n\n${HELP_TEXT}`;
+  assert.equal(looksLikeAttempt(selfReply), false);
+  assert.equal(parseCommand(selfReply), null);
+
+  // Every reply the bot makes, not just that one.
+  for (const body of [
+    `${BOT_MARKER} · Approved — it goes out on Thursday's publish run.`,
+    `${BOT_MARKER} · Updated **x, threads**.`,
+    `${BOT_MARKER} · ${HELP_TEXT}`,
+  ]) {
+    assert.equal(looksLikeAttempt(body), false, body.slice(0, 40));
+  }
+});
+
+test('a real attempt is still recognised after the loop guard', () => {
+  assert.equal(looksLikeAttempt('ok then\n/approve'), true);
+  assert.equal(looksLikeAttempt('```\n/copy\nx: hi\n```'), true);
+});

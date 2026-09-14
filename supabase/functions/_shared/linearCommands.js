@@ -218,9 +218,21 @@ export const parseCommand = (body) => {
  * not match, so talking about the commands stays possible.
  */
 export const looksLikeAttempt = (body) => {
+  const text = unwrapCodeFence(String(body ?? ''));
+
+  // OUR OWN REPLIES ARE NOT ATTEMPTS. parseCommand has always returned null for
+  // them, which was the whole loop guard — and this function bypassed it. Every
+  // near-miss reply quotes HELP_TEXT, HELP_TEXT lists `/approve` and `/copy` at
+  // line starts, so the reply looked like an attempt, which produced a reply,
+  // which looked like an attempt. It replied to itself until it was stopped.
+  //
+  // The check belongs here rather than at the call site so the next caller
+  // cannot forget it: the two functions must agree about what is ours.
+  if (text.trimStart().startsWith(BOT_MARKER)) return false;
+
   const known = [...Object.keys(SIMPLE_COMMANDS), ...EDIT_COMMANDS, 'reschedule'].join('|');
   const pattern = new RegExp(`^\\s*/(${known})\\b`, 'im');
-  return pattern.test(unwrapCodeFence(String(body ?? '')));
+  return pattern.test(text);
 };
 
 // The help text the bot replies with, kept next to the parser so the two can
