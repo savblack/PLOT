@@ -112,6 +112,32 @@ const relativeTimeErrors = (copy, { days_until: daysUntil, when_label: whenLabel
   return errors;
 };
 
+// Post types whose whole point is that the reader can watch the thing now. The
+// voice guide calls naming the platform mandatory for these, and it still
+// shipped without one: two cinema-to-home posts went out saying only that the
+// film had "made the move to home viewing". A brief could not hold the line, so
+// the contract does.
+const PLATFORM_REQUIRED = new Set(['now_streaming', 'watch_tonight', 'hidden_gem']);
+
+// A named service, a named store, or the plain words for a paid digital
+// release. "Plus" spelled out counts: PLOT writes both Disney+ and Disney Plus.
+const NAMES_A_PLATFORM = new RegExp(
+  '\\b(?:Netflix|HBO Max|Max|Disney\\s?(?:\\+|Plus)|Hulu|Peacock|Paramount\\s?(?:\\+|Plus)|Prime Video|Apple TV|Fandango|Shudder|Starz|Google Play|YouTube|Criterion|Mubi|Vudu|BritBox|AMC\\s?(?:\\+|Plus)|Tubi|Plex|Sky|Stan|Binge|Kanopy|Netflix)\\b'
+  + '|\\b(?:rent or buy|to rent|rental|premium video|video on demand|digital(?:ly)? (?:release|purchase|rental))\\b',
+  'i',
+);
+
+/**
+ * These posts must say where to watch. Returns [] for every other post type,
+ * and for a call that does not say which type it is.
+ */
+const platformErrors = (copy, postType) => {
+  if (!postType || !PLATFORM_REQUIRED.has(postType)) return [];
+  const body = (copy.page_body || []).join(' ');
+  if (!body || NAMES_A_PLATFORM.test(body)) return [];
+  return [`page_body never says where to watch; a ${postType} post must name the platform, or say it is available to rent or buy`];
+};
+
 /**
  * Validate and normalize a worker's copy output.
  * Returns { valid, errors: string[], copy } — `copy` is the normalized object
@@ -120,9 +146,9 @@ const relativeTimeErrors = (copy, { days_until: daysUntil, when_label: whenLabel
  *
  * @param {object} raw      the worker's output
  * @param {object} [context] the post's own facts, for checks the copy alone
- *   cannot settle: `days_until` and `when_label` from its payload. Optional —
- *   omitting it skips those checks rather than failing, so every existing
- *   caller keeps working.
+ *   cannot settle: `days_until`, `when_label` and `post_type` from the post.
+ *   Optional: omitting a field skips its check rather than failing, so every
+ *   existing caller keeps working.
  */
 export const validateCopy = (raw, context = {}) => {
   const errors = [];
@@ -177,6 +203,7 @@ export const validateCopy = (raw, context = {}) => {
 
   errors.push(...relativeTimeErrors(copy, context));
   errors.push(...articleErrors(copy));
+  errors.push(...platformErrors(copy, context.post_type));
 
   // Normalization that can't fail: keep X within the hard limit.
   if (copy.x.length > 280) copy.x = `${copy.x.slice(0, 279)}…`;

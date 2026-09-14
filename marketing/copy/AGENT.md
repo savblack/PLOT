@@ -55,7 +55,9 @@ quoted passages and quoted titles, reception narration ("critics have…",
 "according to", "reportedly"), exposed research ("could not verify"), banned
 filler and trivia asides, audience scores, UK spelling, a TMDB mention, more
 than two rating citations, a ratings sentence as the closer, and a Title Case
-post-type label at the front of the headline.
+post-type label at the front of the headline. A `now_streaming`, `watch_tonight`
+or `hidden_gem` post is additionally rejected if the body never says where to
+watch.
 
 Three things it cannot check, which are yours to get right: **no spoilers**,
 **no more than three names in a sentence**, and **every time-bound claim true

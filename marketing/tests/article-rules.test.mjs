@@ -128,6 +128,28 @@ test('validateCopy carries the article rules', () => {
   assert.ok(r.errors.some((e) => /closes on a ratings sentence/.test(e)));
 });
 
+test('a watchable post must say where to watch', () => {
+  const base = {
+    x: 'Something happens.', instagram: 'A caption.', threads: 'A thought.',
+    hashtags: ['a24', 'folkhorror', 'mikeflanagan'], alt_text: 'A poster.', cta_variant: 'none',
+    page_title: 'A headline',
+  };
+  const noPlatform = { ...base, page_body: ['It has made the move to home viewing.', 'Two.', 'Three.'] };
+  const withService = { ...base, page_body: ['It is now streaming on Netflix.', 'Two.', 'Three.'] };
+  const withStore = { ...base, page_body: ['It is available to rent or buy from today.', 'Two.', 'Three.'] };
+  const spelledOut = { ...base, page_body: ['It is on Disney Plus from today.', 'Two.', 'Three.'] };
+
+  const err = (copy, post_type) => validateCopy(copy, { post_type }).errors.filter(e => /where to watch/.test(e));
+  assert.equal(err(noPlatform, 'now_streaming').length, 1);
+  assert.equal(err(noPlatform, 'watch_tonight').length, 1);
+  assert.equal(err(noPlatform, 'hidden_gem').length, 1);
+  // Other post types are about something else, and a caller that does not say
+  // which type it is keeps working unchanged.
+  assert.deepEqual(err(noPlatform, 'on_this_day'), []);
+  assert.deepEqual(err(noPlatform, undefined), []);
+  for (const c of [withService, withStore, spelledOut]) assert.deepEqual(err(c, 'now_streaming'), []);
+});
+
 test('an unpublished reschedule moves the slug date; a live one does not', () => {
   assert.equal(rescheduledSlug('minions-monsters-is-now-available-2026-08-11', 'approved', '2026-08-23'), 'minions-monsters-is-now-available-2026-08-23');
   assert.equal(rescheduledSlug('minions-monsters-is-now-available-2026-08-11', 'needs_review', '2026-08-23'), 'minions-monsters-is-now-available-2026-08-23');
