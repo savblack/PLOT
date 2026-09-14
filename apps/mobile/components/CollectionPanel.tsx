@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tmdb } from '../lib/tmdb';
 import { orderedCollectionParts } from '@plot/core/collections.js';
 import { MEDIA_PANEL } from '@plot/core/copy/mediaPanel.js';
-import { backdropUrl, posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
+import { backdropUrl, posterUrl, palettes, Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import { useTheme } from '../contexts/ThemeContext';
 import CollectionFilms, { CollectionProgressBar, useCollectionProgress } from './CollectionFilms';
 
@@ -62,7 +62,8 @@ export default function CollectionPanel({ collectionId, onClose }: { collectionI
               : <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.surfaceSunken }]} />}
             <View style={styles.backdropGradient} />
             <TouchableOpacity style={styles.closeBtn} onPress={close} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Close" accessibilityRole="button">
-              <Svg width={16} height={16} viewBox="0 0 24 24" stroke="#0c0c0c" strokeWidth={2.5} fill="none">
+              {/* Fixed ink: sits on the light close pill over the backdrop in both themes. */}
+              <Svg width={16} height={16} viewBox="0 0 24 24" stroke={palettes.light.textPrimary} strokeWidth={2.5} fill="none">
                 <Line x1={18} y1={6} x2={6} y2={18} /><Line x1={6} y1={6} x2={18} y2={18} />
               </Svg>
             </TouchableOpacity>
