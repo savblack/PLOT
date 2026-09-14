@@ -74,3 +74,27 @@ export function collectionPartYear(part) {
   const date = releaseDateFromItem(part);
   return date ? String(date).slice(0, 4) : '';
 }
+
+/**
+ * Franchise hits worth showing above title results. TMDB's collection search
+ * is name-only and returns everything containing the words, so the list is
+ * capped and adult sets dropped; a set with no poster still renders (rows
+ * have a fallback) but sorts after those that do.
+ * @param {any} data A `/search/collection` payload.
+ * @param {{ limit?: number }} [options]
+ * @returns {{ id: number, name: string, poster_path: string|null, backdrop_path: string|null, overview: string }[]}
+ */
+export function collectionSearchHits(data, { limit = 3 } = {}) {
+  const results = Array.isArray(data?.results) ? data.results : [];
+  return results
+    .filter(hit => tmdbIdFromItem(hit) && hit?.name && !hit.adult)
+    .sort((a, b) => (b.poster_path ? 1 : 0) - (a.poster_path ? 1 : 0))
+    .slice(0, limit)
+    .map(hit => ({
+      id: tmdbIdFromItem(hit),
+      name: hit.name,
+      poster_path: hit.poster_path || null,
+      backdrop_path: hit.backdrop_path || null,
+      overview: hit.overview || '',
+    }));
+}

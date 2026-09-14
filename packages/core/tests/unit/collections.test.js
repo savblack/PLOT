@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import {
   collectionPartYear,
+  collectionSearchHits,
   collectionProgress,
   collectionStubFromDetails,
   orderedCollectionParts,
@@ -62,4 +63,18 @@ test('collectionProgress with no lookups is all-unwatched and never divides by z
 test('collectionPartYear', () => {
   assert.equal(collectionPartYear({ release_date: '2003-12-17' }), '2003');
   assert.equal(collectionPartYear({}), '');
+});
+
+test('collectionSearchHits caps, drops adult and id-less hits, and puts postered sets first', () => {
+  const hits = collectionSearchHits({ results: [
+    { id: 1, name: 'No poster', poster_path: null },
+    { id: 2, name: 'Adult', poster_path: '/a.jpg', adult: true },
+    { name: 'No id', poster_path: '/n.jpg' },
+    { id: 3, name: 'Postered', poster_path: '/p.jpg', overview: 'x' },
+    { id: 4, name: 'Fourth', poster_path: '/q.jpg' },
+    { id: 5, name: 'Fifth', poster_path: '/r.jpg' },
+  ] }, { limit: 3 });
+  assert.deepEqual(hits.map(h => h.id), [3, 4, 5]);
+  assert.equal(hits[0].overview, 'x');
+  assert.deepEqual(collectionSearchHits(null), []);
 });

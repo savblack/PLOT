@@ -36,6 +36,12 @@ export const MEDIA_PANEL = {
   collectionSaved: 'Saved to My Lists',
   couldNotSaveCollection: 'Could not save this collection. Please try again.',
   viewing: 'Viewing',
+  // Search: the group of franchise hits above the title results, and the
+  // meta line under each.
+  collectionsHeading: 'Collections',
+  collectionResultMeta: 'Collection',
+  collectionFilmCount: (total) => `${total} film${total === 1 ? '' : 's'}`,
+  couldNotLoadCollection: "Couldn't load this collection. Check your connection and try again.",
   trailerFallback: 'Trailer',
   watching: 'Watching',
   didntFinish: "Didn't finish",
