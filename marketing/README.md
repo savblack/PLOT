@@ -210,6 +210,14 @@ not shown read-only, not there. Those posts are in Buffer and reviewed in Buffer
 a card that reproduced them could not change them, and showing them only invited
 the belief that it could.
 
+**Social-only posts get no card.** `question` posts have no website article —
+they never get a slug and never appear on theplot.tv, they exist purely as
+conversation starters on social. Since the board stopped showing social copy,
+their card said "No article written yet." and nothing else: an approval prompt
+for a page that does not exist, three a week. The sweep now opens cards only for
+posts with a slug, which is exactly the set that has an article (across 226 posts
+the split is clean — `question` on one side, every other type on the other).
+
 Comment on the issue. The first line is the command:
 
 | Comment | What it does |
