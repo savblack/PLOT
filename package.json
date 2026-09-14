@@ -51,6 +51,7 @@
     "staging:session": "node scripts/create-staging-test-session.mjs",
     "staging:block-test": "bash scripts/staging-sql.sh scripts/staging-block-test.sql",
     "staging:premium-flag-test": "bash scripts/staging-sql.sh scripts/staging-premium-flag-test.sql",
+    "staging:pgss-guard-test": "bash scripts/staging-sql.sh scripts/staging-pgss-guard-test.sql",
     "mkt:plan": "node marketing/planner/plan.mjs",
     "mkt:guides": "node marketing/planner/guides.mjs",
     "mkt:copy:pull": "node marketing/copy/pull.mjs",
