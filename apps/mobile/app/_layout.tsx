@@ -22,6 +22,7 @@ import { DrawerProvider, useDrawer } from '../contexts/DrawerContext';
 import { MediaPanelProvider, useMediaPanel } from '../contexts/MediaPanelContext';
 import DrawerMenu from '../components/DrawerMenu';
 import MediaPanel from '../components/MediaPanel';
+import CollectionPanel from '../components/CollectionPanel';
 import type { Session } from '@supabase/supabase-js';
 
 function AuthGuard({ session, onboardingComplete }: {
@@ -58,6 +59,7 @@ function RootDrawerMenu() {
 function RootMediaPanel() {
   const { state, close } = useMediaPanel();
   if (!state.itemId || !state.itemType) return null;
+  if (state.itemType === 'collection') return <CollectionPanel collectionId={state.itemId} onClose={close} />;
   return <MediaPanel itemId={state.itemId} itemType={state.itemType} onClose={close} />;
 }
 

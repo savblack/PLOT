@@ -17,6 +17,8 @@ import { favoriteWords } from '../../lib/spelling';
 import { UserRow, SocialUser } from '../../components/UserList';
 import { useBlocks } from '@plot/core/useBlocks.js';
 import { classifySearchResults } from '@plot/core/search.js';
+import { collectionSearchHits } from '@plot/core/collections.js';
+import { MEDIA_PANEL } from '@plot/core/copy/mediaPanel.js';
 import { markMediaAsWatched } from '@plot/core/mediaStatus.js';
 import { track, EVENTS } from '../../lib/analytics';
 import { MEDIA } from '@plot/core/copy/media.js';
@@ -32,6 +34,8 @@ interface SearchResult {
   release_date?: string;
   first_air_date?: string;
 }
+
+type CollectionHit = { id: number; name: string; poster_path: string | null };
 
 type MediaHooks = {
   watchlist: any;
@@ -84,6 +88,7 @@ export default function SearchScreen() {
   const [mode,    setMode]    = useState<Mode>('titles');
   const [query,   setQuery]   = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
+  const [collections, setCollections] = useState<CollectionHit[]>([]);
   const [users,   setUsers]   = useState<SocialUser[]>([]);
   // One block list for the whole result set, not one per row.
   const blocks = useBlocks(userId);
@@ -96,7 +101,7 @@ export default function SearchScreen() {
   const reqRef = useRef(0);
 
   const runSearch = async (q: string, searchMode: Mode) => {
-    if (q.length < 2) { setResults([]); setUsers([]); setLoading(false); return; }
+    if (q.length < 2) { setResults([]); setUsers([]); setCollections([]); setLoading(false); return; }
     const reqId = ++reqRef.current; // guard against out-of-order responses
     setLoading(true);
     if (searchMode === 'people') {
@@ -106,14 +111,18 @@ export default function SearchScreen() {
     } else {
       // searchTitles, not search: it reads "7 up tv series" / "dune movie"
       // as intent rather than sending the whole phrase to TMDB verbatim.
-      const data = await tmdb.searchTitles(q);
+      // Franchise hits ride alongside, as on web: TMDB's collection search
+      // is a separate endpoint.
+      const [data, collectionData] = await Promise.all([tmdb.searchTitles(q), tmdb.searchCollections(q)]);
       if (reqId !== reqRef.current) return;
       const { filtered, emptyMode: nextEmptyMode } = classifySearchResults(data?.results ?? []);
+      const hits = collectionSearchHits(collectionData);
       setResults(filtered.slice(0, 20) as SearchResult[]);
-      setEmptyMode(nextEmptyMode);
+      setCollections(hits);
+      setEmptyMode(hits.length && nextEmptyMode === 'generic' ? 'none' : nextEmptyMode);
       // Query text is deliberately not captured — only that a search ran and
       // whether it found anything, which is what the funnel needs.
-      track(EVENTS.SEARCH_PERFORMED, { mode: 'titles', result_count: filtered.length });
+      track(EVENTS.SEARCH_PERFORMED, { mode: 'titles', result_count: filtered.length + hits.length });
     }
     setLoading(false);
   };
@@ -122,7 +131,7 @@ export default function SearchScreen() {
   const search = (q: string) => {
     setQuery(q);
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (q.length < 2) { reqRef.current++; setResults([]); setUsers([]); setLoading(false); return; }
+    if (q.length < 2) { reqRef.current++; setResults([]); setUsers([]); setCollections([]); setLoading(false); return; }
     debounceRef.current = setTimeout(() => runSearch(q, mode), 350);
   };
 
@@ -211,9 +220,16 @@ export default function SearchScreen() {
           data={results}
           keyExtractor={item => String(item.id)}
           renderItem={({ item }) => <SearchRow item={item} hooks={hooks} signedIn={!!userId} />}
+          ListHeaderComponent={collections.length > 0 ? (
+            <View>
+              <Text style={styles.groupLabel}>{MEDIA_PANEL.collectionsHeading}</Text>
+              {collections.map(c => <CollectionRow key={c.id} collection={c} />)}
+              {results.length > 0 && <Text style={styles.groupLabel}>Titles</Text>}
+            </View>
+          ) : null}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }}
-          ListEmptyComponent={loading ? undefined : emptyMode === 'title-guidance' ? (
+          ListEmptyComponent={loading || collections.length > 0 ? undefined : emptyMode === 'title-guidance' ? (
             <View style={styles.empty}>
               <Text style={styles.emptyTitle}>{MEDIA.searchByTitle}</Text>
               <Text style={styles.emptyBody}>{MEDIA.searchByTitleBody}</Text>
@@ -227,6 +243,26 @@ export default function SearchScreen() {
         />
       )}
     </View>
+  );
+}
+
+function CollectionRow({ collection }: { collection: CollectionHit }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { open: openPanel } = useMediaPanel();
+  const img = posterUrl(collection.poster_path, 'w92');
+  return (
+    <TouchableOpacity style={styles.row} activeOpacity={0.7} onPress={() => openPanel(collection.id, 'collection')} accessibilityRole="button">
+      <View style={styles.rowPoster}>
+        {img
+          ? <Image source={{ uri: img }} style={styles.rowImg} resizeMode="cover" />
+          : <View style={[styles.rowImg, { backgroundColor: colors.surfaceSunken }]} />}
+      </View>
+      <View style={styles.rowInfo}>
+        <Text style={styles.rowTitle} numberOfLines={2}>{collection.name}</Text>
+        <Text style={styles.rowMeta}>{MEDIA_PANEL.collectionResultMeta}</Text>
+      </View>
+    </TouchableOpacity>
   );
 }
 
@@ -394,6 +430,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   rowPoster: { marginRight: spacing.md },
   rowImg: { width: 44, height: 66, borderRadius: radii.sm },
   rowInfo: { flex: 1 },
+  groupLabel: { fontFamily: fontFamily.sansBold, fontSize: 10, letterSpacing: 0.8, textTransform: 'uppercase', color: colors.textMuted, paddingHorizontal: spacing.xl, paddingTop: spacing.lg, paddingBottom: spacing.sm },
   rowTitle: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.md, color: colors.textPrimary, marginBottom: 4 },
   rowMeta:  { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted },
   chipRow:  { flexDirection: 'row', gap: 4, marginTop: 6 },

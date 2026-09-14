@@ -412,6 +412,8 @@ export const tmdb = {
    * @param {number|string} id
    */
   getCollection: (id) => fetchFromTMDB(`/collection/${id}`),
+  /** Collection (franchise) name search. @param {string} query */
+  searchCollections: (query) => fetchFromTMDB('/search/collection', { query }),
 
   /**
    * Resolve a movie/TV detail record, surfacing transient vs. terminal failure
