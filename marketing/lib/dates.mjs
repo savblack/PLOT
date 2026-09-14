@@ -53,14 +53,19 @@ export const formatWeekdayDayMonth = (dateStr, relativeTo = new Date()) => {
   return d.getUTCFullYear() === relativeTo.getUTCFullYear() ? base : `${base} ${d.getUTCFullYear()}`;
 };
 
-// ('2026-06-15', '2026-06-21') -> '15 – 21 June' (or '28 June – 4 July')
+// ('2026-06-15', '2026-06-21') -> '15 to 21 June' (or '28 June to 4 July')
+//
+// "to", not an en dash. This label is copied verbatim into the week's social
+// posts and printed on the slate card, and PLOT's copy rule bans en and em
+// dashes in anything a reader sees. Four published weekly posts carried
+// "1 – 7 June" because the dash came from here rather than from the writer.
 export const formatWeekRange = (fromStr, toStr) => {
   const from = new Date(`${fromStr}T00:00:00Z`);
   const to = new Date(`${toStr}T00:00:00Z`);
   if (from.getUTCMonth() === to.getUTCMonth()) {
-    return `${from.getUTCDate()} – ${to.getUTCDate()} ${MONTHS[to.getUTCMonth()]}`;
+    return `${from.getUTCDate()} to ${to.getUTCDate()} ${MONTHS[to.getUTCMonth()]}`;
   }
-  return `${from.getUTCDate()} ${MONTHS[from.getUTCMonth()]} – ${to.getUTCDate()} ${MONTHS[to.getUTCMonth()]}`;
+  return `${from.getUTCDate()} ${MONTHS[from.getUTCMonth()]} to ${to.getUTCDate()} ${MONTHS[to.getUTCMonth()]}`;
 };
 
 export const addDays = (dateStr, days) => {

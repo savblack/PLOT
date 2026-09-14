@@ -7,7 +7,7 @@
 // weaker model can never corrupt the pipeline. Swapping the worker changes who
 // fills these fields, never what "valid copy" means.
 
-import { articleErrors } from './articleRules.js';
+import { articleErrors, socialErrors } from './articleRules.js';
 
 export const CTA_VARIANTS = ['track_it', 'whats_on_tonight', 'journal_it', 'none'];
 
@@ -204,6 +204,7 @@ export const validateCopy = (raw, context = {}) => {
   errors.push(...relativeTimeErrors(copy, context));
   errors.push(...articleErrors(copy));
   errors.push(...platformErrors(copy, context.post_type));
+  errors.push(...socialErrors(copy, { home_kind: context.home_kind }));
 
   // Normalization that can't fail: keep X within the hard limit.
   if (copy.x.length > 280) copy.x = `${copy.x.slice(0, 279)}…`;

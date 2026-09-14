@@ -189,3 +189,43 @@ export const articleErrors = ({ page_title = '', page_body = [] } = {}, { guide 
 
   return errors;
 };
+
+const SOCIAL_FIELDS = ['x', 'instagram', 'threads'];
+
+// A rental is not "streaming". Two published posts said "X is now streaming"
+// in their social copy for a film that had only reached the rent-or-buy
+// stores, which is the one thing the voice guide is unambiguous about.
+const CLAIMS_STREAMING = /\b(?:now streaming|streaming now|is streaming|are streaming|start(?:s|ed)? streaming|streaming on|hits? streaming|hit streaming|landed on streaming)\b/i;
+
+/**
+ * The same house rules, applied to the social captions. Shorter copy, so only
+ * the checks that are about wording rather than article structure.
+ *
+ * @param {{x?: string, instagram?: string, threads?: string}} copy
+ * @param {{home_kind?: string|null}} [opts]  'rental' forbids calling it streaming.
+ */
+export const socialErrors = (copy = {}, { home_kind } = {}) => {
+  const errors = [];
+  for (const field of SOCIAL_FIELDS) {
+    const text = typeof copy[field] === 'string' ? copy[field] : '';
+    if (!text) continue;
+    if (DASH_RE.test(text)) {
+      errors.push(`${field} contains an em or en dash; use a comma, colon or full stop`);
+    }
+    for (const re of NARRATED_RESEARCH.slice(0, 6)) {
+      const hit = re.exec(text);
+      if (hit) { errors.push(`${field} narrates research ("${hit[0]}"); state it as PLOT's own`); break; }
+    }
+    const audience = AUDIENCE_SCORE.exec(text);
+    if (audience) errors.push(`${field} cites an audience score ("${audience[0]}")`);
+    for (const [re, better] of UK_SPELLINGS) {
+      const hit = re.exec(text);
+      if (hit) { errors.push(`${field} uses UK spelling ("${hit[0]}"); PLOT defaults to US spelling (${better})`); break; }
+    }
+    if (home_kind === 'rental') {
+      const hit = CLAIMS_STREAMING.exec(text);
+      if (hit) errors.push(`${field} says "${hit[0]}" for a rental release; it is available to rent or buy, not streaming`);
+    }
+  }
+  return errors;
+};

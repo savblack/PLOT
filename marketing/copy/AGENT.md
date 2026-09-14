@@ -59,6 +59,10 @@ post-type label at the front of the headline. A `now_streaming`, `watch_tonight`
 or `hidden_gem` post is additionally rejected if the body never says where to
 watch.
 
+The social captions (`x`, `instagram`, `threads`) are checked too, for em and
+en dashes, UK spelling, narrated research, audience scores, and calling a
+rental "streaming" when the post's `home_kind` says it is rent or buy.
+
 Three things it cannot check, which are yours to get right: **no spoilers**,
 **no more than three names in a sentence**, and **every time-bound claim true
 on the publish date**. A person's name and a film title are the same shape to a

@@ -63,6 +63,8 @@ const main = async () => {
       ...(typeof post.payload?.days_until === 'number'
         ? { days_until: post.payload.days_until, when_label: post.payload.when_label ?? null }
         : {}),
+      // Lets save.mjs reject social copy that calls a rental "streaming".
+      ...(post.payload?.home_kind ? { home_kind: post.payload.home_kind } : {}),
       brief: `marketing/copy/jobs/${post.id}.brief.md`,
       output: `marketing/copy/jobs/${post.id}.copy.json`,
     });

@@ -53,7 +53,7 @@ const main = async () => {
     const postType = entry?.post_type;
     const validate = postType === 'question' ? validateConversation
       : postType === 'guide' ? (raw) => validateGuide(raw, entry?.n_titles)
-      : (raw) => validateCopy(raw, { days_until: entry?.days_until, when_label: entry?.when_label, post_type: postType });
+      : (raw) => validateCopy(raw, { days_until: entry?.days_until, when_label: entry?.when_label, post_type: postType, home_kind: entry?.home_kind });
     const { valid, errors, copy } = validate(parsed);
     if (!valid) {
       console.error(`✗ ${postId}: rejected —\n    ${errors.join('\n    ')}`);

@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { articleErrors } from '../../supabase/functions/_shared/articleRules.js';
+import { articleErrors, socialErrors } from '../../supabase/functions/_shared/articleRules.js';
+import { formatWeekRange } from '../lib/dates.mjs';
 import { validateCopy, validateGuide } from '../copy/schema.mjs';
 import { rescheduledSlug } from '../../supabase/functions/_shared/postSlug.js';
 
@@ -148,6 +149,27 @@ test('a watchable post must say where to watch', () => {
   assert.deepEqual(err(noPlatform, 'on_this_day'), []);
   assert.deepEqual(err(noPlatform, undefined), []);
   for (const c of [withService, withStore, spelledOut]) assert.deepEqual(err(c, 'now_streaming'), []);
+});
+
+test('the social captions carry the same house rules', () => {
+  assert.match(socialErrors({ x: 'It lands 1 \u2013 7 June.' })[0], /em or en dash/);
+  assert.match(socialErrors({ threads: 'It arrives in theatres Friday.' })[0], /UK spelling/);
+  assert.match(socialErrors({ instagram: 'Reportedly the best of the year.' })[0], /narrates research/);
+  assert.deepEqual(socialErrors({ x: 'It lands 1 to 7 June.', threads: 'In theaters Friday.' }), []);
+});
+
+test('a rental is never called streaming in a caption', () => {
+  const copy = { x: 'Michael is now streaming.', threads: 'It just hit streaming.' };
+  assert.equal(socialErrors(copy, { home_kind: 'rental' }).length, 2);
+  assert.deepEqual(socialErrors(copy, { home_kind: 'streaming' }), []);
+  assert.deepEqual(socialErrors(copy), []);
+  assert.deepEqual(socialErrors({ x: 'Michael is out to rent or buy.' }, { home_kind: 'rental' }), []);
+});
+
+test('formatWeekRange never emits a dash', () => {
+  assert.equal(formatWeekRange('2026-06-15', '2026-06-21'), '15 to 21 June');
+  assert.equal(formatWeekRange('2026-06-28', '2026-07-04'), '28 June to 4 July');
+  assert.deepEqual(socialErrors({ x: `All landing ${formatWeekRange('2026-06-01', '2026-06-07')}.` }), []);
 });
 
 test('an unpublished reschedule moves the slug date; a live one does not', () => {
