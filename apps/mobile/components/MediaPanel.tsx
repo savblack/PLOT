@@ -21,6 +21,8 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useAppData } from '../contexts/AppDataContext';
 import { favoriteWords } from '../lib/spelling';
 import { findDuplicateCustomList } from '@plot/core/customLists.js';
+import { mediaTypeFromItem, recommendationsFromDetails, releaseDateFromItem, titleFromItem } from '@plot/core/media.js';
+import { useMediaPanel } from '../contexts/MediaPanelContext';
 import { buildWatchLink } from '@plot/core/watchLinks.js';
 import {
   getLastSeasonNumber,
@@ -628,6 +630,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { profile, watchlist, watching, favorites, history, customLists, topLists } = useAppData();
+  const { open: openTitle } = useMediaPanel();
   const fw = favoriteWords(profile?.region);
 
   const [showListSheet, setShowListSheet] = useState(false);
@@ -655,6 +658,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
   const progress   = watching.getProgress(itemId);
   const watched    = history.isWatched(itemId, itemType);
   const isFav      = favorites.isFavorite(itemId);
+  const similar    = recommendationsFromDetails(details);
   const isInAnyList = customLists.lists.some((l: any) => customLists.isInList(l.id, itemId));
   const watchedEntry = history.entries?.find((e: any) => e.tmdb_id === Number(itemId) && e.media_type === itemType);
   // Default to the day the title was SAVED, not today — if it sat on the
@@ -1106,6 +1110,20 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                   </View>
                 )}
 
+                {/* Episode guide */}
+                {!isMovie && details && (
+                  <>
+                    <Text style={styles.sectionTitle}>Episodes</Text>
+                    <EpisodeGuide
+                      tvId={itemId}
+                      progress={progress}
+                      details={details}
+                      watching={watching}
+                      onSeriesFinished={handleSeriesFinished}
+                    />
+                  </>
+                )}
+
                 {/* Where to watch */}
                 {(whereToWatch.streaming.length > 0 || whereToWatch.rentBuy.length > 0 || whereToWatch.inCinemas) && (
                   <>
@@ -1151,21 +1169,28 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                   </>
                 )}
 
-                {/* Episode guide */}
-                {!isMovie && details && (
+                {/* Recommendations and the franchise card close the panel, matching
+                    web: everything above is about this title, these are where to
+                    go next. */}
+                {similar.length > 0 && (
                   <>
-                    <Text style={styles.sectionTitle}>Episodes</Text>
-                    <EpisodeGuide
-                      tvId={itemId}
-                      progress={progress}
-                      details={details}
-                      watching={watching}
-                      onSeriesFinished={handleSeriesFinished}
-                    />
+                    <Text style={styles.sectionTitle}>{MEDIA_PANEL.moreLikeThis}</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm + 2, paddingBottom: spacing.xs }}>
+                      {similar.map((item: any) => {
+                        const type = mediaTypeFromItem(item);
+                        const year = releaseDateFromItem(item)?.slice(0, 4) || '';
+                        return (
+                          <TouchableOpacity key={`${type}-${item.id}`} style={styles.similarCard} activeOpacity={0.7} onPress={() => openTitle(item.id, type)} accessibilityRole="button" accessibilityLabel={titleFromItem(item)}>
+                            <Image source={{ uri: posterUrl(item.poster_path, 'w185') ?? '' }} style={styles.similarPoster} />
+                            <Text style={styles.similarName} numberOfLines={1}>{titleFromItem(item)}</Text>
+                            <Text style={styles.similarMeta} numberOfLines={1}>{[year, type === 'tv' ? 'TV' : 'Movie'].filter(Boolean).join(' · ')}</Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </ScrollView>
                   </>
                 )}
 
-                {/* Franchise card closes the panel, matching web's order. */}
                 {isMovie && details && <CollectionCard details={details} itemId={itemId} />}
               </>
             )}
@@ -1257,6 +1282,11 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   btnSecondaryActive: { borderColor: `${colors.accent}66`, backgroundColor: colors.accentDim },
   btnWatching:        { borderColor: `${colors.statusWatching}73`, backgroundColor: colors.statusWatchingDim },
   btnSecondaryText:   { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textSecondary },
+
+  similarCard: { width: 76 },
+  similarPoster: { width: 76, aspectRatio: 2 / 3, borderRadius: radii.md, backgroundColor: colors.surfaceRaised },
+  similarName: { fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, color: colors.textPrimary, marginTop: 6 },
+  similarMeta: { fontFamily: fontFamily.sans, fontSize: 10, color: colors.textMuted, marginTop: 1 },
 
   sectionTitle: { fontFamily: fontFamily.sansBold, fontSize: 10, letterSpacing: 0.8, textTransform: 'uppercase', color: colors.textMuted, marginTop: spacing.lg, marginBottom: spacing.md },
 
