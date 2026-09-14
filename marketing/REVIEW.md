@@ -140,13 +140,23 @@ a paid API; see `marketing/copy/AGENT.md`).
   `approve_all` (no `post_id`; put the affected ids in `after`), `reject`, or `unapprove`.
 
 ## 5. Publish
-Approved posts publish on their scheduled day via the daily GitHub run — nothing more
-needed. **To send now** (CONFIRM first — it posts live to real socials):
-`gh workflow run marketing-publish.yml --repo savblack/PLOT`.
-Single post now: set it `approved`, `scheduled_for=now()`, re-queue its rows, then dispatch.
-- **Retry a failed platform**: its failed publication rows `→ queued` and the post `→ approved`,
-  then dispatch (or let the daily run pick it up).
+**Nothing here sends.** Social posts are pushed into Buffer when the week is
+rendered, dated noon Sydney on their own day, and Buffer sends them. Approval
+governs the **website article** only: an approved post appears on `/whats-on`
+once its `scheduled_for` has passed.
+- **To change or drop a social post**: do it in Buffer, on the post. Nothing
+  needs to be told — the daily reconcile run reads the change back.
+- **Article live now**: set it `approved` and `scheduled_for=now()`. No dispatch
+  needed; `/whats-on` reads the row directly.
+- **Retry a platform that never reached Buffer**: its `failed` publication rows
+  `→ queued`, then `gh workflow run marketing-publish.yml --repo savblack/PLOT`
+  with `retry_failed=true` (or wait for the daily run). Not available from
+  Linear — that board reviews articles only. Do **not** re-queue `canceled`
+  rows: those are posts you deleted in Buffer, and re-queueing pushes back the
+  very thing you removed.
 - **Pause / Resume all**: PATCH `marketing_settings` (id=1) `publishing_paused = true/false`.
+  This stops posts **entering** Buffer's queue; anything already scheduled there
+  is unaffected and must be removed in Buffer.
 Buffer gotcha (handled in `marketing/publish/buffer.mjs`): Instagram needs
 `metadata.instagram = { type: post, shouldShareToFeed: true }`; X copy must have no URL.
 After a run, verify each post's `marketing_post_publications.status`/`permalink`.

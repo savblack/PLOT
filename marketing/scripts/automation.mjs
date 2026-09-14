@@ -149,19 +149,40 @@ const runWeekly = (args) => {
   }
 
   run('Render posts onto the review desk', process.execPath, ['marketing/generate/generate.mjs']);
+
+  // Straight into Buffer, dated. Not gated on the Linear review: that review is
+  // about the website article now, and holding the social queue behind it would
+  // leave nothing to look at in Buffer until after someone had already decided.
+  runSchedule(args);
 };
 
-const runPublish = (args) => {
+// Push the rendered week into Buffer, dated. Social review happens there from
+// here on, so this is the last step of generation rather than a separate daily
+// job — the posts have to be in the queue before you can look at them.
+const runSchedule = (args) => {
   requireEnv([
     ['SUPABASE_URL', 'VITE_SUPABASE_URL'],
     ['SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_SERVICE_KEY'],
     ['BUFFER_API_KEY'],
   ]);
 
-  const childArgs = ['marketing/publish/publish.mjs'];
+  const childArgs = ['marketing/publish/schedule.mjs'];
   if (args.has('--retry-failed')) childArgs.push('--retry-failed');
 
-  run('Publish approved posts', process.execPath, childArgs, {
+  run('Schedule posts in Buffer', process.execPath, childArgs, {
+    env: { ...BASE_ENV, ...(args.has('--dry-run') ? { DRY_RUN: '1' } : {}) },
+  });
+};
+
+// Read back what Buffer did with them. Nothing here writes to Buffer.
+const runReconcile = (args) => {
+  requireEnv([
+    ['SUPABASE_URL', 'VITE_SUPABASE_URL'],
+    ['SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_SERVICE_KEY'],
+    ['BUFFER_API_KEY'],
+  ]);
+
+  run('Reconcile the Buffer queue', process.execPath, ['marketing/publish/reconcile.mjs'], {
     env: { ...BASE_ENV, ...(args.has('--dry-run') ? { DRY_RUN: '1' } : {}) },
   });
 };
@@ -207,7 +228,8 @@ const printDoctor = () => {
   console.log('\nCommands:');
   console.log('  npm run weekly');
   console.log('  npm run weekly -- --dangerous-codex');
-  console.log('  npm run publish -- --dry-run');
+  console.log('  npm run schedule -- --dry-run');
+  console.log('  npm run reconcile -- --dry-run');
   console.log('  npm run newsletter -- --dry-run');
   console.log('  npm run snapshot');
 };
@@ -223,8 +245,11 @@ const main = () => {
     case 'weekly':
       runWeekly(args);
       return;
-    case 'publish':
-      runPublish(args);
+    case 'schedule':
+      runSchedule(args);
+      return;
+    case 'reconcile':
+      runReconcile(args);
       return;
     case 'newsletter':
       runNewsletter(args);
@@ -233,7 +258,7 @@ const main = () => {
       runSnapshot();
       return;
     default:
-      throw new Error(`Unknown command "${command}". Use doctor, weekly, publish, newsletter, or snapshot.`);
+      throw new Error(`Unknown command "${command}". Use doctor, weekly, schedule, reconcile, newsletter, or snapshot.`);
   }
 };
 

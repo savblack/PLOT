@@ -9,7 +9,8 @@
  *   • per-post actions: edit, Approve / Reject / Unapprove, Reschedule, Publish
  *     now, Regenerate, Retry; plus top-level Approve-the-week and a global Pause.
  *
- * Publish gate is approval-based: only status 'approved' posts are sent to Buffer
+ * Approval gates the WEBSITE ARTICLE. Social posts are scheduled in Buffer when
+ * the week is rendered and send from there regardless — see marketing/README.md
  * (by the daily push), on their scheduled day. Silence = never published.
  *
  * Server-rendered HTML, form POSTs back to itself. A tiny inline script adds the
@@ -1036,12 +1037,12 @@ Deno.serve(async (req) => {
         .eq('status', 'needs_review').select('id');
       const ids = (data || []).map((d) => d.id);
       if (ids.length) await requeuePubs(ids);
-      flash = `Approved the week — ${data?.length || 0} post(s) cleared to publish.`;
+      flash = `Approved the week — ${data?.length || 0} article(s) cleared to go live. The social posts are scheduled in Buffer either way.`;
       await logEvent(supabase, { action, after: { post_ids: ids } });
     } else if (id && action === 'reject') {
       await supabase.from('marketing_posts').update({ status: 'vetoed', updated_at: now() }).eq('id', id);
       await supabase.from('marketing_post_publications').update({ status: 'skipped' }).eq('post_id', id).eq('status', 'queued');
-      flash = 'Rejected — it will not publish.';
+      flash = 'Rejected — the article will not go live. Social posts already scheduled in Buffer must be deleted there.';
       await logEvent(supabase, { postId: id, action });
     } else if (id && action === 'unapprove') {
       await supabase.from('marketing_posts').update({ status: 'needs_review', updated_at: now() }).eq('id', id);
@@ -1062,22 +1063,20 @@ Deno.serve(async (req) => {
         await logEvent(supabase, { postId: id, action, after: { scheduled_date: d, slug } });
       } else flash = 'Reschedule needs a valid date.';
     } else if (id && action === 'publish_now') {
-      // Approve + bring the schedule forward so the publisher will pick it up,
-      // then kick the publish run so it sends within minutes (if a token is set).
+      // The ARTICLE, now. /whats-on shows approved posts whose day has arrived,
+      // so approving and moving the date forward is the whole of publishing it —
+      // there is no send to trigger, which is why this no longer dispatches.
+      // The social posts keep their own time in Buffer's queue.
       const { before, after: merged } = await mergeCopyFromForm(supabase, id, form);
       await supabase.from('marketing_posts')
         .update({ copy: merged, status: 'approved', scheduled_for: now(), updated_at: now() }).eq('id', id);
       await requeuePubs([id]);
-      const triggered = await dispatchWorkflow('marketing-publish.yml');
-      flash = triggered.ok
-        ? 'Saved edits and publishing now — sending approved copy to X / Instagram / Threads; it’ll show as published in a few minutes.'
-        : `Approved and queued — the daily publish run will pick it up automatically. Instant trigger did not fire${triggered.reason ? ` (${triggered.reason})` : ''}.`;
-      await logEvent(supabase, { postId: id, action, before: { copy: before }, after: { copy: merged, triggered: triggered.ok } });
+      flash = 'Saved edits — the article is live on theplot.tv now. The social posts keep their scheduled time in Buffer.';
+      await logEvent(supabase, { postId: id, action, before: { copy: before }, after: { copy: merged } });
     } else if (id && action === 'retry') {
       await supabase.from('marketing_post_publications')
         .update({ status: 'queued', error: null }).eq('post_id', id).eq('status', 'failed');
-      await supabase.from('marketing_posts').update({ status: 'approved', updated_at: now() }).eq('id', id);
-      flash = 'Failed platforms re-queued — they retry on the next publish run.';
+      flash = 'Re-queued — they go into Buffer on the next scheduling run.';
       await logEvent(supabase, { postId: id, action });
     } else if (id && action === 'regenerate') {
       // Send it back to the start of the pipeline so the copy worker rewrites it
