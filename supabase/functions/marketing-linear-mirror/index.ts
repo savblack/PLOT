@@ -368,13 +368,29 @@ const markFailed = (supabase: Db, id: string, error: string) =>
     .eq('id', id);
 
 /**
- * Open an issue for any mirrored post that has none.
+ * Open an issue for any mirrored post that has none — and only for posts this
+ * board can actually review.
  *
  * Covers approved posts as well as those awaiting review: a post approved on the
  * web desk would otherwise never appear on the board, which is exactly the
  * divergence having two surfaces is supposed to avoid. Each opens directly in
  * the state its row is already in, so an approved post is never presented as
  * still needing a decision.
+ *
+ * `slug IS NOT NULL` is the article test, and it is structural rather than a
+ * guess about content. Every post type that goes on theplot.tv gets a slug when
+ * it is rendered; `question` posts are the only ones that never do, because they
+ * are social-only — they live entirely in Buffer and have no page. Across 226
+ * posts the split is exact, with no other type on either side of it.
+ *
+ * Before this, they got a card like everything else, and since the board stopped
+ * showing social copy that card read "No article written yet." and nothing more:
+ * an approval prompt for a page that does not exist. Three a week, forever, on a
+ * board whose whole remaining job is articles.
+ *
+ * Deliberately only the CREATION path. A slugless post that somehow already has
+ * an issue keeps it and goes on being reconciled, because stranding a card that
+ * exists is worse than never opening one.
  */
 const createMissing = async (supabase: Db, ctx: Context, dryRun = false): Promise<number> => {
   const { data, error } = await supabase
@@ -382,6 +398,7 @@ const createMissing = async (supabase: Db, ctx: Context, dryRun = false): Promis
     .select('*')
     .in('status', CREATABLE)
     .is('linear_issue_id', null)
+    .not('slug', 'is', null)
     .order('scheduled_for');
   if (error) throw new Error(error.message);
 
