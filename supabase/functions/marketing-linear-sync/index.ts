@@ -35,7 +35,7 @@
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
 import type { Database, Json } from '../_shared/database.types.ts';
 import { serviceKey } from '../_shared/serviceKey.ts';
-import { parseCommand, BOT_MARKER, HELP_TEXT, WEEK_SCOPED } from '../_shared/linearCommands.js';
+import { parseCommand, BOT_MARKER, HELP_TEXT, WEEK_SCOPED, looksLikeAttempt } from '../_shared/linearCommands.js';
 import { prNumberFromAttachments, prScopeRefusal } from '../_shared/linearIssue.js';
 import { validateCopy, validateGuide, validateConversation } from '../_shared/copySchema.js';
 import { rescheduledSlug } from '../_shared/postSlug.js';
@@ -506,8 +506,23 @@ Deno.serve(async (req) => {
   // A comment carrying a slash command.
   if (payload.type === 'Comment' && payload.action === 'create') {
     const issueId = payload.data?.issue?.id;
-    const intent = parseCommand(payload.data?.body ?? '');
-    if (!issueId || !intent) return json({ ok: true, ignored: true });
+    const body = payload.data?.body ?? '';
+    const intent = parseCommand(body);
+    if (!issueId) return json({ ok: true, ignored: true });
+
+    if (!intent) {
+      // Say so when it looked like an attempt. A near miss that answers with
+      // silence is indistinguishable from one that worked, which is how a /copy
+      // was lost and the post approved on top of the text it was meant to change.
+      if (looksLikeAttempt(body)) {
+        await reply(
+          issueId,
+          'That looked like a command, but I could not read it — the command has to be the **first line** of the comment.\n\n' + HELP_TEXT,
+        );
+        return json({ ok: true, rejected: 'unparsed attempt' });
+      }
+      return json({ ok: true, ignored: true });
+    }
 
     if (WEEK_SCOPED.has(intent.command)) {
       try {
