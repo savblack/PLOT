@@ -61,7 +61,9 @@ watch.
 
 The social captions (`x`, `instagram`, `threads`) are checked too, for em and
 en dashes, UK spelling, narrated research, audience scores, and calling a
-rental "streaming" when the post's `home_kind` says it is rent or buy.
+rental "streaming" when the post's `home_kind` says it is rent or buy, and for
+calling a rental platform a "store" or "storefront". People rent in the app they
+already have: name the platforms, or say "on digital".
 
 Three things it cannot check, which are yours to get right: **no spoilers**,
 **no more than three names in a sentence**, and **every time-bound claim true

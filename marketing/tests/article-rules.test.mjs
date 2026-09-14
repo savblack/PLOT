@@ -151,6 +151,24 @@ test('a watchable post must say where to watch', () => {
   for (const c of [withService, withStore, spelledOut]) assert.deepEqual(err(c, 'now_streaming'), []);
 });
 
+test('a rental is never called a store, but a real shop is left alone', () => {
+  for (const t of [
+    'It reaches digital stores on Tuesday.',
+    'Rent it through major digital storefronts.',
+    'It is in stores from Friday.',
+  ]) {
+    const e = articleErrors(body(t));
+    assert.equal(e.length, 1, t);
+    assert.match(e[0], /calls a rental a store/);
+  }
+  // A shop inside the film is not the jargon.
+  assert.deepEqual(articleErrors(body('Its Texas is full of boarded up storefronts.')), []);
+  assert.deepEqual(articleErrors(body('She meets her on smoke breaks behind the store.')), []);
+  // And the phrasing PLOT should use instead.
+  assert.deepEqual(articleErrors(body('It arrives on digital, to rent or buy on Prime Video and Apple TV.')), []);
+  assert.match(socialErrors({ x: 'Out now on digital stores.' })[0], /calls a rental a store/);
+});
+
 test('the social captions carry the same house rules', () => {
   assert.match(socialErrors({ x: 'It lands 1 \u2013 7 June.' })[0], /em or en dash/);
   assert.match(socialErrors({ threads: 'It arrives in theatres Friday.' })[0], /UK spelling/);

@@ -83,6 +83,13 @@ const UK_SPELLINGS = [
   [/\brealis(?:e|ed|ing)\b/i, 'realize'],
 ];
 
+// Nobody rents a film in a shop. "Digital stores" and "storefronts" are trade
+// jargon for the apps a reader already has, and six published articles used
+// them. A bare "storefront" or "the store" is left alone: a film's plot can
+// legitimately contain one (boarded up storefronts in Hell or High Water, the
+// shop in Smoking Behind the Supermarket with You).
+const STORE_JARGON = /\bdigital\s+stores?\b|\bdigital\s+storefronts?\b|\bin stores\b|\bstorefronts?\s+like\b/i;
+
 // Trivia framing and the content-free closers the guidelines ban by name.
 const FILLER = [
   /\bfun fact\b/i,
@@ -160,6 +167,8 @@ export const articleErrors = ({ page_title = '', page_body = [] } = {}, { guide 
         break;
       }
     }
+    const store = STORE_JARGON.exec(text);
+    if (store) errors.push(`${field} calls a rental a store ("${store[0]}"); name the platforms, or say "on digital"`);
     if (TMDB_RE.test(text)) errors.push(`${field} names TMDB; reference data never appears on the page`);
   }
 
@@ -222,6 +231,8 @@ export const socialErrors = (copy = {}, { home_kind } = {}) => {
       const hit = re.exec(text);
       if (hit) { errors.push(`${field} uses UK spelling ("${hit[0]}"); PLOT defaults to US spelling (${better})`); break; }
     }
+    const store = STORE_JARGON.exec(text);
+    if (store) errors.push(`${field} calls a rental a store ("${store[0]}"); name the platforms, or say "on digital"`);
     if (home_kind === 'rental') {
       const hit = CLAIMS_STREAMING.exec(text);
       if (hit) errors.push(`${field} says "${hit[0]}" for a rental release; it is available to rent or buy, not streaming`);

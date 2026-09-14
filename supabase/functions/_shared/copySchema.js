@@ -38,7 +38,7 @@ export const POST_TYPE_BRIEFS = {
     'the big number is on the image. Name the release using the payload\'s `when_label` in full ' +
     '("Friday 25 September"), NEVER a relative day. "This Friday" on a T-14 countdown points at the wrong ' +
     'Friday, contradicts the article it links to, and is rejected by the validator.',
-  now_streaming: 'This title is available to watch at home starting today. The payload\'s `home_kind` says how: "streaming" means lead with the US subscription provider from the `streaming` object; "rental" means it has reached the digital stores after its cinema run, so say it is available to rent or buy and name the US stores from the `digital` object ("to rent or buy on Prime Video and Apple TV"). Never call a rental "streaming" and never guess a store that isn\'t in the data. If the title had a cinema run (`from_label`), the hook is the home arrival, not the end of the run.',
+  now_streaming: 'This title is available to watch at home starting today. The payload\'s `home_kind` says how: "streaming" means lead with the US subscription provider from the `streaming` object; "rental" means it can now be rented or bought at home after its cinema run, so say that and name the US platforms from the `digital` object ("to rent or buy on Prime Video and Apple TV"). Never call a rental "streaming", and never guess a platform that isn\'t in the data. People rent on the apps they already use, so never write "stores", "digital stores" or "storefronts"; name the platforms, or just say "on digital". If the title had a cinema run (`from_label`), the hook is the home arrival, not the end of the run.',
   trending:
     'The weekly top-10 trending chart. Comment on the most interesting movement (a new entry, a big climb, a stubborn #1). ' +
     'X gets the full top-10 chart as its single image. ' +
@@ -119,7 +119,7 @@ const relativeTimeErrors = (copy, { days_until: daysUntil, when_label: whenLabel
 // the contract does.
 const PLATFORM_REQUIRED = new Set(['now_streaming', 'watch_tonight', 'hidden_gem']);
 
-// A named service, a named store, or the plain words for a paid digital
+// A named service, a named platform, or the plain words for a paid digital
 // release. "Plus" spelled out counts: PLOT writes both Disney+ and Disney Plus.
 const NAMES_A_PLATFORM = new RegExp(
   '\\b(?:Netflix|HBO Max|Max|Disney\\s?(?:\\+|Plus)|Hulu|Peacock|Paramount\\s?(?:\\+|Plus)|Prime Video|Apple TV|Fandango|Shudder|Starz|Google Play|YouTube|Criterion|Mubi|Vudu|BritBox|AMC\\s?(?:\\+|Plus)|Tubi|Plex|Sky|Stan|Binge|Kanopy|Netflix)\\b'
