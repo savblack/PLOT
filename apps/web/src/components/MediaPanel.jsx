@@ -15,6 +15,7 @@ import { favoriteWords } from '../utils/spelling.js';
 import { useShareTitle } from '../hooks/useShareTitle.js';
 import { track, EVENTS, captureException } from '../lib/analytics.js';
 import CreditsGrid from './TalentCredits.jsx';
+import CollectionCard from './CollectionCard.jsx';
 import { creditMeta, creditTitle, dedupedActingCredits, mediaType, shortBiography } from '../utils/talentCredits.js';
 import { canCreateCustomList, FREE_CUSTOM_LIST_CAP } from '@plot/core/premium.js';
 import { buildWatchLink } from '@plot/core/watchLinks.js';
@@ -1604,6 +1605,10 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                   })}
                 </div>
               </section>
+            )}
+
+            {isMovie && details && (
+              <CollectionCard details={details} itemId={itemId} history={history} onOpenTitle={goToTitle} />
             )}
 
             {/* Trailer */}

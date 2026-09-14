@@ -100,6 +100,7 @@ export const EVENTS = Object.freeze({
   WATCHLIST_REMOVED: 'watchlist_removed',
   CUSTOM_LIST_CREATED: 'custom_list_created',
   CUSTOM_LIST_DELETED: 'custom_list_deleted',
+  COLLECTION_SAVED_AS_LIST: 'collection_saved_as_list',
   // Putting a title *in* a list is a separate action from making the list, and
   // it's the one that actually indicates the feature is being used.
   LIST_ITEM_ADDED: 'list_item_added',

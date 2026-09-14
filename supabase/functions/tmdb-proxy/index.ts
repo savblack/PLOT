@@ -40,6 +40,8 @@ const ALLOWED_PATHS = [
   /^(movie|tv)\/\d+\/recommendations$/,
   /^(movie|tv)\/\d+\/watch\/providers$/,
   /^(movie|tv)\/\d+\/reviews$/,
+  // Franchise sets ("Part of a collection" on the movie panel).
+  /^collection\/\d+$/,
   /^person\/\d+$/,
   /^person\/\d+\/combined_credits$/,
   /^watch\/providers\/(movie|tv)$/,

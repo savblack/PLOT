@@ -36,6 +36,7 @@ import { fetchCriticScore, pickAudienceQuote, getConsensusLine } from '@plot/cor
 import { canCreateCustomList, FREE_CUSTOM_LIST_CAP } from '@plot/core/premium.js';
 import { SHOW_PRICING_PAGE } from '../lib/launchFeatures';
 import { TrailerPlayer } from './TrailerPlayer';
+import CollectionCard from './CollectionCard';
 import { MEDIA } from '@plot/core/copy/media.js';
 
 // Shared link points at the web /save route (works for anyone, app or not) —
@@ -1104,6 +1105,8 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                     )}
                   </View>
                 )}
+
+                {isMovie && details && <CollectionCard details={details} itemId={itemId} />}
 
                 {/* Where to watch */}
                 {(whereToWatch.streaming.length > 0 || whereToWatch.rentBuy.length > 0 || whereToWatch.inCinemas) && (
