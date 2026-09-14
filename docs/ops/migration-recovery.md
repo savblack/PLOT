@@ -26,12 +26,24 @@ your suspect.
 There is a second, quieter failure to rule out here: the migration may never
 have applied at all. The Supabase integration runs *after* the push and out of
 band, so when it fails the merge still goes green and nothing in the repo
-notices — production just stops tracking `main`. That has happened for four and
-a half days across 29 merges without anyone spotting it.
+notices — production just stops tracking `main`. That has happened twice: for
+four and a half days across 29 merges, and again for about a day across four
+merges (#872 to #881).
+
 `.github/workflows/supabase-deploy-guard.yml` exists to raise the alarm — it
-opens (or comments on) a labelled GitHub issue when the integration's own check
-did not succeed. Check that issue and the guard's most recent run before
-assuming the schema on production is the schema in `main`.
+opens (or comments on) a labelled GitHub issue. It asks production directly
+whether the commit's migrations are in `supabase_migrations.schema_migrations`,
+so it alarms on a missing migration whatever the integration's check runs say,
+and it alarms when it cannot establish that production received the commit at
+all. (The second incident got through the earlier version of the guard, which
+only read check runs: the integration never posted a verdict, and "no verdict"
+was treated as a pass.)
+
+Edge functions leave no trace in the database, so a failed `supabase/functions/*`
+redeploy is still only visible through the integration's own verdict.
+
+Check that issue and the guard's most recent run before assuming the schema on
+production is the schema in `main`.
 
 ## 2. Stop the bleeding
 
@@ -75,7 +87,8 @@ Then, in order:
 
 1. Watch the deploy guard's run on that merge, or re-run it by hand
    (`gh workflow run supabase-deploy-guard.yml`). A green merge is not evidence
-   the migration applied — see §1.
+   the migration applied — see §1. A green *guard* is, since it reads
+   `schema_migrations` on production.
 2. Confirm the schema is actually what you intended, against the live database
    rather than the file you just wrote:
    ```sh
