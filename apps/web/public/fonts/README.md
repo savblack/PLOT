@@ -5,6 +5,12 @@ both SIL Open Font License — see `OFL.txt`. This directory is the source of tr
 `apps/website/fonts/` holds byte-identical copies because the marketing site deploys
 separately, and `apps/mobile/assets/fonts/` holds the static TTFs Expo bundles.
 
+`apps/website/fonts/` carries **only the `.woff2` files**. Everything served from
+`theplot.tv/fonts/` is fetched by a browser — the site's own pages and the `title-page`
+/ `marketing-feed` edge functions — and the non-browser consumers listed below all read
+from this directory instead. Copying the TTFs back there would ship ~380 KB nothing
+requests.
+
 ## Why both .woff2 and .ttf
 
 They are not duplicates — different consumers need different formats.
