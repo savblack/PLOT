@@ -406,6 +406,14 @@ export const tmdb = {
     fetchFromTMDB(`/tv/${id}`, { append_to_response: 'watch/providers,recommendations,videos,aggregate_credits,external_ids' }),
 
   /**
+   * A TMDB collection (franchise set): `{ id, name, poster_path, parts[] }`.
+   * Movie details carry the stub as `belongs_to_collection`; this fetches the
+   * full membership. TV has no equivalent endpoint.
+   * @param {number|string} id
+   */
+  getCollection: (id) => fetchFromTMDB(`/collection/${id}`),
+
+  /**
    * Resolve a movie/TV detail record, surfacing transient vs. terminal failure
    * so callers (e.g. the /save deep-link processor) can retry on a rate-limit
    * burst instead of hard-failing on the very first 429.
