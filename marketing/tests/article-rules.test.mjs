@@ -22,11 +22,16 @@ test('rejects em and en dashes but not hyphens', () => {
   assert.match(articleErrors({ page_title: 'Hope — a return', page_body: ['Fine.'] })[0], /^page_title/);
 });
 
-test('rejects a quoted passage, allows a quoted title', () => {
+test('rejects a quoted passage, and names a quoted title as a style slip', () => {
   assert.equal(articleErrors(body('Her previous film, "Set It Up", was a hit.')).length, 0);
   const e = articleErrors(body('One critic called it "a close remake of a film so many people already love that it has little reason to exist."'));
   assert.equal(e.length, 1);
   assert.match(e[0], /quotes a passage/);
+
+  // A long title in quotes is a style slip, not a smuggled review quote.
+  const t = articleErrors(body('"Blades of the Guardians: Wind Rises in the Desert" opens in April.'));
+  assert.equal(t.length, 1);
+  assert.match(t[0], /puts a title in quotation marks/);
 });
 
 test('rejects narrated research and reception', () => {
@@ -59,7 +64,15 @@ test('caps ratings and refuses a ratings closer', () => {
 
   const closer = articleErrors(body('Premise.', 'Point.', 'It sits at 85% on Rotten Tomatoes, numbers that back up its reputation.'));
   assert.equal(closer.length, 1);
-  assert.match(closer[0], /ends on a ratings sentence/);
+  assert.match(closer[0], /closes on a ratings sentence/);
+
+  // The check reads the closing SENTENCE, not the whole closing paragraph, so a
+  // score cited on the way to a final critical sentence is fine.
+  assert.deepEqual(articleErrors(body(
+    'Premise.',
+    'Point.',
+    'Its 35% on Rotten Tomatoes says how divided reviewers were. The chemistry, not that verdict, is why people still return to it.',
+  )), []);
 });
 
 test('guides skip the single-title ratings rules but keep the prose rules', () => {
@@ -80,7 +93,7 @@ test('validateCopy carries the article rules', () => {
   const r = validateCopy(copy);
   assert.equal(r.valid, false);
   assert.ok(r.errors.some((e) => /narrates/.test(e)));
-  assert.ok(r.errors.some((e) => /ends on a ratings sentence/.test(e)));
+  assert.ok(r.errors.some((e) => /closes on a ratings sentence/.test(e)));
 });
 
 test('an unpublished reschedule moves the slug date; a live one does not', () => {

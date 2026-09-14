@@ -24,6 +24,17 @@ const DASH_RE = /[–—]/;
 // two-word coinage. Reviews and interviews are paraphrased, never quoted.
 const QUOTED_PASSAGE_RE = /["“]([^"”]{40,})["”]/;
 
+// House style writes film and show titles bare, but a writer quoting one is
+// making a style slip, not passing off a review as PLOT's own words, and the
+// two need different advice. A title carries no sentence punctuation and is
+// capitalised like a title ("Blades of the Guardians: Wind Rises in the
+// Desert"); a lifted sentence has commas or a full stop, or reads as prose.
+const looksLikeTitle = (span) => {
+  if (/[,.;!?]/.test(span)) return false;
+  const major = span.split(/\s+/).filter(w => w.length >= 4);
+  return major.length > 0 && major.every(w => /^[A-Z0-9]/.test(w));
+};
+
 // The reader must never sense a research pack or a review roundup behind the
 // article. These are the phrasings the catalogue actually shipped.
 const NARRATED_RESEARCH = [
@@ -86,7 +97,9 @@ export const articleErrors = ({ page_title = '', page_body = [] } = {}, { guide 
       errors.push(`${field} contains an em or en dash; use a comma, colon or full stop (hyphens in compound words are fine)`);
     }
     const quoted = QUOTED_PASSAGE_RE.exec(text);
-    if (quoted) {
+    if (quoted && looksLikeTitle(quoted[1])) {
+      errors.push(`${field} puts a title in quotation marks ("${quoted[1].slice(0, 40)}…"); house style writes titles bare`);
+    } else if (quoted) {
       errors.push(`${field} quotes a passage ("${quoted[1].slice(0, 40)}…"); paraphrase in PLOT's voice instead of quoting`);
     }
     for (const re of NARRATED_RESEARCH) {
@@ -111,10 +124,16 @@ export const articleErrors = ({ page_title = '', page_body = [] } = {}, { guide 
     if (mentions > MAX_RATING_MENTIONS) {
       errors.push(`page_body cites a rating ${mentions} times; one standout score is enough (max ${MAX_RATING_MENTIONS})`);
     }
+    // The rule is about what the article LEAVES the reader with, so it looks at
+    // the closing sentence, not the whole closing paragraph. A score cited
+    // mid-paragraph on the way to a critical point is exactly the use the
+    // guidelines want; only a score as the last word is the template.
     const last = page_body[page_body.length - 1];
-    if (page_body.length > 1 && RATING_RE.test(last)) {
-      RATING_RE.lastIndex = 0;
-      errors.push('page_body ends on a ratings sentence; close on the critical point, not the scores');
+    const sentences = last.split(/(?<=[.!?])\s+/).filter(Boolean);
+    const closing = sentences[sentences.length - 1] || '';
+    RATING_RE.lastIndex = 0;
+    if (page_body.length > 1 && RATING_RE.test(closing)) {
+      errors.push('page_body closes on a ratings sentence; end on the critical point, not the scores');
     }
     RATING_RE.lastIndex = 0;
   }
