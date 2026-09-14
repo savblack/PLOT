@@ -7,7 +7,7 @@
 // step, and it never fired: a failure handler inside the job it guards cannot
 // report the job never starting.
 //
-// So the check lives here instead, in the daily publish job, which kept running
+// So the check lives here instead, in the daily reconcile job, which kept running
 // throughout that outage. Different workflow, different schedule, different
 // failure mode — which is the entire point. A watchdog sharing a single point of
 // failure with the thing it watches is not a watchdog.
@@ -61,11 +61,12 @@ const main = async () => {
   if (empty) {
     console.log('\nNothing is queued. Either the weekly batch did not run, or its posts were all rejected.');
   }
-  // needs_review with zero approved means the desk is holding everything: the
-  // publish job will send nothing, which looks identical to an empty queue from
-  // the outside. Worth saying out loud, but not worth an alert on its own.
+  // Approval now governs the WEBSITE ARTICLE only — the social posts are already
+  // scheduled in Buffer and go out whether or not a card was ever touched. So
+  // this is no longer "nothing will publish"; it is "/whats-on will stay empty
+  // while the socials run", which is a different and much odder failure to be in.
   if (!empty && !byStatus.approved) {
-    console.log('\nNothing is approved — every queued post is still waiting on review, so nothing will publish.');
+    console.log('\nNothing is approved — the social posts will still go out from Buffer, but no article will appear on /whats-on.');
   }
 
   if (process.env.GITHUB_OUTPUT) {

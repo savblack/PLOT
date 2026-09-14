@@ -5,7 +5,7 @@
  * marketing-linear-mirror) and applies them to marketing_posts:
  *
  *   • a COMMENT starting with a slash command — edit the copy, approve, reject,
- *     reschedule, publish now, retry, regenerate, pause/resume. The bot replies
+ *     reschedule, publish now, regenerate, pause/resume. The bot replies
  *     on the issue saying what it did, or why it refused.
  *   • an ISSUE STATE CHANGE — dragging the issue on the board is the same
  *     decision as commenting /approve or /reject.
@@ -181,11 +181,6 @@ const logEvent = async (
 
 // Re-arm a post's publication rows so the publisher will actually send them.
 // Rejecting sets rows to 'skipped'; approving must reset them to 'queued'.
-const requeuePubs = (supabase: Db, id: string) =>
-  supabase.from('marketing_post_publications')
-    .update({ status: 'queued', error: null })
-    .eq('post_id', id).in('status', ['skipped', 'failed']);
-
 // ── Copy edits ───────────────────────────────────────────────────────────────
 
 /**
@@ -254,19 +249,24 @@ const runCommand = async (
     }
 
     case 'approve': {
+      // The article, and nothing else. This used to re-queue the publication
+      // rows as well; with the posts already scheduled in Buffer that would push
+      // a second copy of each on the next scheduling run — duplicate tweets as a
+      // side effect of approving a piece of writing.
       await supabase.from('marketing_posts').update({ status: 'approved', updated_at: now() }).eq('id', id);
-      await requeuePubs(supabase, id);
       await logEvent(supabase, { postId: id, action: 'approve' });
       const day = new Date(post.scheduled_for).toLocaleDateString('en-AU', { weekday: 'long', timeZone: 'Australia/Sydney' });
-      return `Approved — it goes out on ${day}'s publish run.`;
+      return `Approved — the article goes live on theplot.tv on ${day}. (The social posts are scheduled in Buffer either way.)`;
     }
 
     case 'reject': {
+      // The article, and nothing else. The publication rows are not touched at
+      // all — not even the queued ones. Whether those posts go out is Buffer's
+      // question, and a board that answered it here would be deciding something
+      // it does not show you.
       await supabase.from('marketing_posts').update({ status: 'vetoed', updated_at: now() }).eq('id', id);
-      await supabase.from('marketing_post_publications')
-        .update({ status: 'skipped' }).eq('post_id', id).eq('status', 'queued');
       await logEvent(supabase, { postId: id, action: 'reject' });
-      return 'Rejected — it will not publish.';
+      return 'Rejected — the article will not go live.';
     }
 
     case 'unapprove': {
@@ -290,22 +290,15 @@ const runCommand = async (
     }
 
     case 'publish_now': {
+      // The article, and only the article. /whats-on shows approved posts whose
+      // day has arrived (VISIBLE_STATUSES in marketing-feed), so approving and
+      // moving the date to now IS publishing it — there is no run to kick, which
+      // is why this no longer dispatches a workflow. The social posts keep their
+      // own time in Buffer; bringing those forward is a drag in Buffer's calendar.
       await supabase.from('marketing_posts')
         .update({ status: 'approved', scheduled_for: now(), updated_at: now() }).eq('id', id);
-      await requeuePubs(supabase, id);
-      const kicked = await dispatchWorkflow('marketing-publish.yml');
-      await logEvent(supabase, { postId: id, action: 'publish_now', after: { triggered: kicked.ok, reason: kicked.reason ?? null } as Json });
-      return kicked.ok
-        ? 'Publishing now — sending to X / Instagram / Threads. It should be live in a few minutes.'
-        : `Approved and brought forward. The instant trigger did not fire (${kicked.reason}), so it goes out on the next scheduled publish run.`;
-    }
-
-    case 'retry': {
-      await supabase.from('marketing_post_publications')
-        .update({ status: 'queued', error: null }).eq('post_id', id).eq('status', 'failed');
-      await supabase.from('marketing_posts').update({ status: 'approved', updated_at: now() }).eq('id', id);
-      await logEvent(supabase, { postId: id, action: 'retry' });
-      return 'Failed platforms re-queued — they retry on the next publish run.';
+      await logEvent(supabase, { postId: id, action: 'publish_now' });
+      return 'The article is live on theplot.tv now. The social posts keep their scheduled time in Buffer — move them there if you want them sooner.';
     }
 
     case 'regenerate': {

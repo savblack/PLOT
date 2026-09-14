@@ -126,8 +126,9 @@ taxonomy pays for part of the sharing work, but not all of it.
    fired from both the splash and the website.
 7. **Website**: all 7 signup/login CTAs become waitlist CTAs. The site itself,
    `/movie`, `/whats-on`, articles and sitemaps all stay live.
-8. **The publishing machine keeps running.** `marketing-publish.yml` posts daily and
-   `marketing-weekly-batch.yml` runs Sundays. The copy convention in
+8. **The publishing machine keeps running.** `marketing-weekly-batch.yml` runs
+   Sundays and pushes the week into Buffer, which sends it; `marketing-publish.yml`
+   reads back daily what Buffer did. The copy convention in
    `marketing/copy/AGENT.md` must be retargeted from "start your PLOT" to the
    waitlist, or nine weeks of daily posts drive traffic into a wall.
 9. **Ops**: disable signups in the Supabase Auth dashboard (the anon key is public,
