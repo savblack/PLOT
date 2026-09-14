@@ -37,20 +37,6 @@ svg { stroke-width: 1.5; }
   padding-right: 1rem;
 }
 
-.app-logo {
-  font-family: var(--font-serif);
-  font-size: 1.55rem;
-  font-weight: 500;
-  letter-spacing: -0.05em;
-  color: var(--text-primary);
-  text-transform: uppercase;
-  cursor: pointer;
-  white-space: nowrap;
-  flex-shrink: 0;
-  user-select: none;
-  line-height: 1;
-}
-
 .app-page-title {
   position: absolute;
   left: 50%;
