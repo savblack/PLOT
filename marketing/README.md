@@ -305,6 +305,26 @@ select jobname, schedule, active from cron.job where jobname = 'marketing-linear
 A post that failed to mirror carries the reason in
 `marketing_posts.linear_sync_error`, and is retried on every subsequent tick.
 
+## Hidden gems have a ceiling, not just a floor
+
+`planner/triggers/hidden-gem.mjs` filters on `vote_count` between `MIN_VOTES` and
+`MAX_VOTES`. The floor keeps out the obscure; **the ceiling is what keeps out the
+famous**, and for a while it did not exist. Since the query sorts by
+`vote_average.desc`, the pool was topped by Shawshank, The Dark Knight, Pulp
+Fiction and Forrest Gump — random selection within the tier was the only thing
+stopping a household name going out as a "hidden gem" every week. It did not stop
+Star Wars, and Inglourious Basterds was queued behind it.
+
+12,000 is where the real picks stop and the household names start: every pick
+anyone was happy with sits under 9k, and both complaints were above 22k. Nothing
+lives in the gap, so the line has room on both sides rather than being tuned to
+the last example. Moving it is one constant.
+
+Review cards show the numbers behind the claim — `8.2 rating · 24,733 votes ·
+2009 · Netflix` under "Highly-rated, lesser-seen: …" — because an assertion with
+no evidence cannot be argued with. That is the part that generalises: it catches
+the next category of bad pick too, the one there is no rule for yet.
+
 ## Cadence
 
 - Monday: `upcoming`
