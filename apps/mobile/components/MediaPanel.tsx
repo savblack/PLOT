@@ -1106,8 +1106,6 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                   </View>
                 )}
 
-                {isMovie && details && <CollectionCard details={details} itemId={itemId} />}
-
                 {/* Where to watch */}
                 {(whereToWatch.streaming.length > 0 || whereToWatch.rentBuy.length > 0 || whereToWatch.inCinemas) && (
                   <>
@@ -1166,6 +1164,9 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                     />
                   </>
                 )}
+
+                {/* Franchise card closes the panel, matching web's order. */}
+                {isMovie && details && <CollectionCard details={details} itemId={itemId} />}
               </>
             )}
           </View>

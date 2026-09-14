@@ -1582,35 +1582,6 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
               </section>
             )}
 
-            {similar.length > 0 && (
-              <section className="panel-similar-section" aria-labelledby="panel-similar-title">
-                <div className="panel-section-title" id="panel-similar-title">{MEDIA_PANEL.moreLikeThis}</div>
-                <div className="panel-similar-rail">
-                  {similar.map(item => {
-                    const type = mediaType(item);
-                    const title = creditTitle(item);
-                    return (
-                      <button
-                        type="button"
-                        className="panel-similar-card"
-                        key={`${type}-${item.id}`}
-                        onClick={() => goToTitle(item.id, type, 'more_like_this')}
-                        aria-label={title}
-                      >
-                        <img src={posterUrl(item.poster_path, 'w185')} alt="" loading="lazy" />
-                        <span className="panel-similar-name">{title}</span>
-                        <span className="panel-similar-meta">{creditMeta(item, type)}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </section>
-            )}
-
-            {isMovie && details && (
-              <CollectionCard details={details} itemId={itemId} history={history} onOpenTitle={goToTitle} />
-            )}
-
             {/* Trailer */}
             {(() => {
               const videos = details?.videos?.results || [];
@@ -1700,6 +1671,37 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                   ) && ' Links open the verified title offer.'}
                 </p>
               </>
+            )}
+
+            {/* Recommendations and the franchise card close the panel: everything
+                above is about this title, these are where to go next. */}
+            {similar.length > 0 && (
+              <section className="panel-similar-section" aria-labelledby="panel-similar-title">
+                <div className="panel-section-title" id="panel-similar-title">{MEDIA_PANEL.moreLikeThis}</div>
+                <div className="panel-similar-rail">
+                  {similar.map(item => {
+                    const type = mediaType(item);
+                    const title = creditTitle(item);
+                    return (
+                      <button
+                        type="button"
+                        className="panel-similar-card"
+                        key={`${type}-${item.id}`}
+                        onClick={() => goToTitle(item.id, type, 'more_like_this')}
+                        aria-label={title}
+                      >
+                        <img src={posterUrl(item.poster_path, 'w185')} alt="" loading="lazy" />
+                        <span className="panel-similar-name">{title}</span>
+                        <span className="panel-similar-meta">{creditMeta(item, type)}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+
+            {isMovie && details && (
+              <CollectionCard details={details} itemId={itemId} history={history} onOpenTitle={goToTitle} />
             )}
           </div>
         )}
