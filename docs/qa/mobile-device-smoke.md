@@ -182,15 +182,15 @@ link opens the app, including paths mobile has never heard of. There is also no
 "Unmatched Route" screen. If that is what you see, it is not a linking failure —
 the link arrived and there was nowhere to put it.
 
-**The AuthGuard race may already be closed.** Earlier drafts of this phase said
-to expect the cold-start case to fail, on the reasoning that the link resolves
-before the session loads and the guard redirects away from it. Reading
-`app/_layout.tsx` that looks wrong twice over: `RootInner` returns a loader until
-`authReady`, so `AuthGuard` and its `<Slot/>` do not mount until `getSession()`
-has resolved; and `AuthGuard`'s three branches each test an explicit value, so
-the `onboardingComplete === null` window between the session arriving and the
-profile loading matches none of them and redirects nowhere. Both halves of the
-race appear handled on purpose. Nobody has watched it happen.
+**The AuthGuard race is closed — settled on a Release build, 2026-09-14.**
+Earlier drafts of this phase said to expect the cold-start case to fail, on the
+reasoning that the link resolves before the session loads and the guard
+redirects away from it. That was wrong on both counts: `RootInner` returns a
+loader until `authReady`, so `AuthGuard` and its `<Slot/>` do not mount until
+`getSession()` has resolved; and `AuthGuard`'s three branches each test an
+explicit value, so the `onboardingComplete === null` window matches none of them
+and redirects nowhere. Watched: killed process, fresh pid, straight onto the
+deep-linked profile. Do not re-derive this from the old warning.
 
 - [ ] With the app **already running**, open an `app.theplot.tv/u/<username>`
       link. It opens in PLOT, on that profile.
@@ -301,18 +301,41 @@ untouched this run.
       "This profile isn't public / @test-1 either doesn't exist or hasn't made
       their profile public yet." No navigation, no blank frame, no stale card.
       Identical to web. Staging was returned to 0 blocks, 0 reports, 0 follows.
-- [ ] **Cold start could not be tested, and a development build never can.**
-      Killing the app and opening the link hands the cold launch to the **Expo
-      Dev Launcher**, which shows its own server picker before any PLOT code
-      runs. The prediction recorded in Phase 6 — that `authReady` already closes
-      the `AuthGuard` race — is therefore still unproven either way. It needs a
-      Release build with an embedded bundle
-      (`npx expo run:ios --configuration Release`). Worth noting that after
-      reconnecting through the launcher the deep link was still honoured and the
-      profile opened, so nothing discards it.
+- [ ] **Cold start cannot be tested in a development build.** Killing the app
+      and opening the link hands the cold launch to the **Expo Dev Launcher**,
+      which shows its own server picker before any PLOT code runs. Retested the
+      same day against a Release build — see below.
 
-**Still outstanding after this run:** Phase 2 fresh signup, and cold-start deep
-links against a Release build.
+### 2026-09-14 — same day, Release build
+
+`npx expo run:ios --configuration Release`, same simulator and Staging account.
+`main.jsbundle` is embedded and the dev launcher is excluded, so this is what a
+shipped build does. The session survived the reinstall.
+
+- [x] **Cold start passes, and the `AuthGuard` prediction holds.** Proven by pid
+      rather than by eye: the running app (pid 27035) was `kill -9`'d and
+      confirmed gone, `plot://u/test-1` launched a **fresh process** (pid 27690),
+      and it landed directly on test-1's profile, still signed in. No bounce to
+      `(auth)`, no redirect to home. `authReady` gates the guard's mount and
+      `onboardingComplete === null` matches none of its three branches, exactly
+      as reading the source suggested. **The original Phase 6 note telling you to
+      expect this to fail was wrong.**
+- [x] **`/save` and `/list` show the developer error screen to real users.**
+      `plot://save/12345` and `plot://list/abc123` both render expo-router's
+      "Unmatched Route — Page could not be found" screen **in Release**, black,
+      with `Go back · Sitemap` developer links and the raw URL. This screen is
+      **not** dev-only, which is the assumption worth killing: a shipped PLOT
+      build hands a user who taps `app.theplot.tv/save/...` a black screen
+      offering them a route sitemap.
+
+**Method note, learned the hard way.** `timeout` does not exist on this shell,
+so a command written as `timeout 60 xcrun simctl openurl ...` prints whatever
+you echo after it and never runs the simctl call — it looks exactly like "the
+deep link did nothing". `xcrun simctl terminate` also silently left the process
+alive more than once. **Verify a cold start by pid** (`pgrep -f "PLOT.app/PLOT"`
+before and after), never by screenshot alone.
+
+**Still outstanding after this run:** Phase 2 fresh signup.
 
 **Which project a build talks to** (fixed 2026-09-12; it used to be Production
 for all three):
