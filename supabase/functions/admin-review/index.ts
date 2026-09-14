@@ -162,14 +162,19 @@ const typeIcon = (postType: string) =>
 const articleLinkLabel = (p: Row): string => (p.post_type === 'trending' ? 'chart ↗' : 'article ↗');
 
 const GH_REPO = Deno.env.get('GH_REPO') ?? 'savblack/PLOT';
-const GH_TOKEN = Deno.env.get('GH_DISPATCH_TOKEN') ?? '';
+// The desk dispatches workflows, which is the CONTENT token's job. It read the
+// single GH_DISPATCH_TOKEN the pair was split out of, so retiring that secret
+// would have broken Publish now and Regenerate here — silently, since a missing
+// token reports "not set" and falls back to the scheduled run, which reads like
+// ordinary behaviour. The fallback stays so nothing breaks mid-migration.
+const GH_TOKEN = Deno.env.get('GH_DISPATCH_TOKEN_CONTENT') || Deno.env.get('GH_DISPATCH_TOKEN') || '';
 
 // Optional: dispatch a GitHub Actions workflow so an action takes effect now
 // instead of waiting for its cron — Regenerate kicks the weekly batch, Publish
-// now kicks the publish run. Needs a GH_DISPATCH_TOKEN secret (a PAT with
+// now kicks the publish run. Needs GH_DISPATCH_TOKEN_CONTENT (a PAT with
 // Actions: write). Without it, the action just waits for the scheduled run.
 const dispatchWorkflow = async (workflow: string): Promise<{ ok: boolean; reason?: string }> => {
-  if (!GH_TOKEN) return { ok: false, reason: 'GH_DISPATCH_TOKEN is not set' };
+  if (!GH_TOKEN) return { ok: false, reason: 'GH_DISPATCH_TOKEN_CONTENT is not set' };
   try {
     const res = await fetch(
       `https://api.github.com/repos/${GH_REPO}/actions/workflows/${workflow}/dispatches`,
@@ -766,7 +771,7 @@ const pubChips = (pubs: Row[]) => {
 const confirm = (msg: string) => ` onclick="return confirm('${msg.replace(/'/g, '')}')"`;
 
 const ghChip = (label: string, status: { conclusion: string; url: string } | null) => {
-  if (!status) return `<span class="sys" title="No GH_DISPATCH_TOKEN, or no runs yet"><span class="dot" style="background:var(--text-muted)"></span>${esc(label)}: —</span>`;
+  if (!status) return `<span class="sys" title="No GH_DISPATCH_TOKEN_CONTENT, or no runs yet"><span class="dot" style="background:var(--text-muted)"></span>${esc(label)}: —</span>`;
   const dot = status.conclusion === 'success' ? 'var(--good)' : status.conclusion === 'running' ? 'var(--warn)' : 'var(--danger)';
   return `<a class="sys" href="${esc(status.url)}" target="_blank" title="${esc(label)} — click for the run"><span class="dot" style="background:${dot}"></span>${esc(label)}: ${esc(status.conclusion)}</a>`;
 };

@@ -108,7 +108,7 @@ when there is nothing on the board to comment on.
 fires: planning, copy and rendering take a few minutes, then the cards appear
 within five minutes of that finishing. Safely repeatable — the workflow's
 concurrency group queues a second run rather than racing it, and the pipeline
-only fills posts that still need copy. Needs `GH_DISPATCH_TOKEN`; without it the
+only fills posts that still need copy. Needs `GH_DISPATCH_TOKEN_CONTENT`; without it the
 bot says so rather than failing quietly.
 
 To edit copy, comment `/copy` and then only the lines you want changed —
@@ -212,7 +212,7 @@ No GitHub Actions secret is involved. Everything below is a Supabase secret.
    `<SUPABASE_URL>/functions/v1/marketing-linear-sync` subscribed to **Comments**
    and **Issues**, and set the signing secret it shows you as the
    `LINEAR_WEBHOOK_SECRET` Edge Function secret.
-6. Optional: `GH_DISPATCH_TOKEN` so `/publish-now` and `/regenerate` take effect
+6. Optional: `GH_DISPATCH_TOKEN_CONTENT` so `/publish-now` and `/regenerate` take effect
    immediately instead of waiting for the next scheduled run.
 
 **Before changing which rows the sweep selects, dry-run it.** It reports what a
@@ -252,7 +252,7 @@ that cannot be resolved is reported in the sweep's response as `unresolved`
 rather than failing it — those moves are skipped, not misfiled.
 
 Once a day (the first sweep after 06:00 UTC) the sweep also probes
-`GH_DISPATCH_TOKEN` — the PAT that lets `/generate`, `/publish-now` and
+`GH_DISPATCH_TOKEN_CONTENT` and `GH_DISPATCH_TOKEN_WEBSITE` — the PATs that let `/generate`, `/publish-now` and
 `/regenerate` take effect immediately rather than on the next cron. It is a PAT,
 so it expires, and when it did nothing said so: every command fell back to "it'll
 go on the scheduled run", which reads exactly like normal behaviour. It sat dead
