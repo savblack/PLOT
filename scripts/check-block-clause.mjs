@@ -63,7 +63,7 @@ const BLOCK_EXEMPT = {
   handle_new_user:
     'The signup trigger. It writes the profiles row and never reads one back for '
     + 'a viewer, and it runs before the account it creates could have blocked or '
-    + 'been blocked by anyone. Listing it here was impossible until 20260913110000: '
+    + 'been blocked by anyone. Listing it here was impossible until 20260914090000: '
     + 'the first run of this check found production\'s signup trigger existed in no '
     + 'migration at all, created by hand through the Supabase dashboard, and this '
     + 'check only sees what the migrations say.',
