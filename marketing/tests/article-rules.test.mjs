@@ -75,6 +75,38 @@ test('caps ratings and refuses a ratings closer', () => {
   )), []);
 });
 
+test('rejects research seams the reader should never see', () => {
+  for (const t of [
+    'PLOT could not verify a second season order.',
+    'We were unable to confirm the release date.',
+    'Nothing in our records ties the two together.',
+  ]) {
+    const e = articleErrors(body(t));
+    assert.equal(e.length, 1, t);
+    assert.match(e[0], /research seams/);
+  }
+});
+
+test('rejects an audience score, which is not in the brief', () => {
+  assert.match(articleErrors(body('It holds a 97% audience score.'))[0], /audience score/);
+  assert.deepEqual(articleErrors(body('It holds a 97% on Rotten Tomatoes.')), []);
+});
+
+test('rejects UK spelling in a US-default article', () => {
+  assert.match(articleErrors(body('It arrives in theatres on Friday.'))[0], /UK spelling/);
+  assert.match(articleErrors(body('The colour palette is muted.'))[0], /UK spelling/);
+  assert.deepEqual(articleErrors(body('It arrives in theaters on Friday, in color.')), []);
+  // "cinemas" is the ordinary word for the place, not a US/UK spelling split.
+  assert.deepEqual(articleErrors(body('It arrives in cinemas on Friday.')), []);
+});
+
+test('rejects a Title Case post-type label on the front of a headline', () => {
+  const e = articleErrors({ page_title: 'On This Day: Die Hard turns 38', page_body: ['One.', 'Two.', 'Three.'] });
+  assert.equal(e.length, 1);
+  assert.match(e[0], /post type in Title Case/);
+  assert.deepEqual(articleErrors({ page_title: 'Die Hard turns 38', page_body: ['One.', 'Two.', 'Three.'] }), []);
+});
+
 test('guides skip the single-title ratings rules but keep the prose rules', () => {
   const paras = ['Intro.', 'Title one holds 90% on Rotten Tomatoes.', 'Title two holds 80% on Rotten Tomatoes.', 'Title three has an 8 on IMDb.', 'Close.'];
   assert.deepEqual(articleErrors({ page_title: 'Guide', page_body: paras }, { guide: true }), []);

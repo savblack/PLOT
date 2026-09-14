@@ -55,6 +55,34 @@ const NARRATED_RESEARCH = [
   /\bcritical (?:reception|consensus) (?:proved|was|has been|is)\b/i,
 ];
 
+// The reader must never be shown the seams of the pipeline. Two published
+// articles told them outright that PLOT had failed to check something.
+const EXPOSED_RESEARCH = [
+  /\b(?:could not|couldn't|cannot|can't|unable to|failed to)\s+(?:verify|confirm|find|resolve)\b/i,
+  /\b(?:our|database|internal)\s+records\b/i,
+  /\bno reliable (?:source|information|data)\b/i,
+];
+
+// Only the brief's pre-fetched block (IMDb, Rotten Tomatoes, Metacritic) may be
+// cited. An audience score is neither reliable nor ours to quote.
+const AUDIENCE_SCORE = /\baudience (?:score|rating)\b|\bpopcornmeter\b|\bverified hot\b/i;
+
+// The post type is a label the site renders; repeating it in Title Case at the
+// front of the headline is both duplication and a house-style break. "On This
+// Day: Die Hard turns 38" shipped exactly this way.
+const TITLE_CASE_LABEL = /^(?:On This Day|First Look|Trailer Drop|Watch Tonight|Hidden Gem|Now Streaming|Now At Home|Coming Soon|The Week Ahead|New This Week)\b/;
+
+// PLOT defaults to US framing and US spelling. These are the forms that reach
+// an article; words spelled the same either side of the Atlantic need no entry.
+const UK_SPELLINGS = [
+  [/\btheatres?\b/i, 'theater/theaters'],
+  [/\bcentres?\b/i, 'center/centers'],
+  [/\bcolours?\b/i, 'color/colors'],
+  [/\bfavourites?\b/i, 'favorite/favorites'],
+  [/\borganis(?:e|ed|ing|ation)\b/i, 'organize/organization'],
+  [/\brealis(?:e|ed|ing)\b/i, 'realize'],
+];
+
 // Trivia framing and the content-free closers the guidelines ban by name.
 const FILLER = [
   /\bfun fact\b/i,
@@ -116,7 +144,28 @@ export const articleErrors = ({ page_title = '', page_body = [] } = {}, { guide 
         break;
       }
     }
+    for (const re of EXPOSED_RESEARCH) {
+      const hit = re.exec(text);
+      if (hit) {
+        errors.push(`${field} shows the reader the research seams ("${hit[0]}"); cut the claim or write a shorter article`);
+        break;
+      }
+    }
+    const audience = AUDIENCE_SCORE.exec(text);
+    if (audience) errors.push(`${field} cites an audience score ("${audience[0]}"); only the brief's IMDb, Rotten Tomatoes and Metacritic figures may be used`);
+    for (const [re, better] of UK_SPELLINGS) {
+      const hit = re.exec(text);
+      if (hit) {
+        errors.push(`${field} uses UK spelling ("${hit[0]}"); PLOT defaults to US spelling (${better})`);
+        break;
+      }
+    }
     if (TMDB_RE.test(text)) errors.push(`${field} names TMDB; reference data never appears on the page`);
+  }
+
+  const label = TITLE_CASE_LABEL.exec(page_title);
+  if (label) {
+    errors.push(`page_title opens with the post type in Title Case ("${label[0]}"); the site renders that label itself, and headlines are sentence case`);
   }
 
   if (!guide && page_body.length) {

@@ -11,6 +11,19 @@ Every title-led article has **three or four short, developed paragraphs** (five
 at most). Each paragraph must add a new piece of information or a clear
 critical point. If a sentence could describe almost any film or series, cut it.
 
+The article is written for, and judged against, **its own publish date**. A
+post that was accurate the day it went out stays as it is; it is never
+rewritten later because a countdown has passed or a title has changed platform.
+The demanding half is the same rule read forwards: every time-bound claim has
+to be true on that date, and nothing may be borrowed from after it. A countdown
+cannot cite reviews, episode counts or box office that do not exist yet.
+
+Three rules are yours alone, because no check can see them: **no spoilers**,
+**no more than three names in a sentence**, and **every time-bound claim true
+on the publish day**. A person’s name and a film title are the same shape to a
+regex. Everything else in this file is enforced by
+`supabase/functions/_shared/articleRules.js` and will fail the post outright.
+
 Before writing, check the post type against the calendar. A trailer drop or a
 countdown is only true for a title that has not yet released on the publish
 day; a "now streaming" post is only true when the brief names a provider or a
@@ -48,7 +61,7 @@ into an article by themselves.
 
 ## Source hierarchy
 
-### 1. Primary sources — use first for facts
+### 1. Primary sources, use first for facts
 
 - Studio, distributor, streamer, network and production-company pressrooms.
 - Official trailers, release announcements and press kits.
@@ -59,7 +72,7 @@ Use these for dates, release plans, platform availability, cast, crew, official
 synopsis, trailer details and confirmed production facts. Do not upgrade a
 rumour or a trade report into a confirmed fact when a primary source is silent.
 
-### 2. Industry reporting — use for what has changed and why it matters
+### 2. Industry reporting, use for what has changed and why it matters
 
 - Variety and Variety Australia.
 - Deadline.
@@ -72,7 +85,7 @@ festival debut, a release-date change, a trailer announcement or an interview
 that explains a filmmaker’s intent. Prefer the original report over articles
 that merely repeat it.
 
-### 3. Criticism and interviews — use for the editorial paragraph
+### 3. Criticism and interviews, use for the editorial paragraph
 
 - BFI and *Sight and Sound*.
 - RogerEbert.com, Vulture, The New Yorker, the Guardian and the New York Times,
@@ -83,7 +96,7 @@ Use criticism to sharpen PLOT’s own point of view, not to borrow someone else�
 language. Never quote a review unless a short quotation is essential and
 licensed for use; normally, paraphrase the idea instead.
 
-### 4. Archives and institutions — use for “On this day” and classics
+### 4. Archives and institutions, use for “On this day” and classics
 
 - BFI, Academy Museum, AFI, TCM and Criterion.
 - National Film Registry and official studio archives.
@@ -92,7 +105,7 @@ licensed for use; normally, paraphrase the idea instead.
 Use these for release history, restoration context, craft, influence and why a
 film has endured. Do not reduce an anniversary post to a birthday calculation.
 
-### 5. Reference data — useful, never the article’s whole argument
+### 5. Reference data, useful, never the article’s whole argument
 
 - TMDB for title IDs, basic credits, poster paths and initial metadata.
 - OMDb’s pre-fetched IMDb, Rotten Tomatoes and Metacritic fields when present.
@@ -119,14 +132,35 @@ leave it out.
 - Separate confirmed facts from interpretation. A date, credit, deal, platform
   or quote needs a source; PLOT’s view of why a title works is clearly written
   as criticism, not disguised fact.
-- Cross-check time-sensitive facts—release dates, streaming platforms, casting
-  and trailers—with a primary source where possible.
+- Cross-check time-sensitive facts against a primary source where possible:
+  release dates, streaming platforms, casting and trailers.
 - Never copy an official synopsis, Wikipedia, a review or another article.
   Paraphrase and add a point of view.
 - No spoilers. For older titles, discuss structure, mood, performance or craft
   without revealing a turn, ending or surprise.
-- Do not make claims about reception without a source. Only include ratings from
-  the brief’s pre-fetched ratings block.
+- Do not make claims about reception without a source, and never summarise
+  reception (“critics kept coming back to”, “reviews landed mixed”, “critics
+  have praised”). Write PLOT’s own observation instead.
+- Only include ratings from the brief’s pre-fetched ratings block: at most one
+  score per article, woven into a point, never as the closing paragraph, never
+  a pre-release IMDb average, never an audience score.
+- Never wrap your own paraphrase in quotation marks. A quoted span reads as a
+  review quote, and the guidelines already forbid those. Titles are written
+  bare, not in quotation marks.
+- Name at most two or three people in any paragraph, and never more than three
+  in a single sentence. A cast list is not a paragraph.
+- Em and en dashes are banned. Hyphens in compound words and in names are
+  correct English and stay (“co-writer”, “low-budget”, “Young-White”).
+- US spelling throughout: theaters, center, color, favorite, organize.
+  “Cinemas” is the ordinary word for the place and is fine.
+- The headline never opens with the post type. The site renders that label
+  itself, so “On This Day: Die Hard turns 38” says it twice and breaks
+  sentence case.
+- Never show the reader the seams. If a fact could not be checked, cut it; an
+  article never says PLOT could not verify something.
+- Sister articles about the same title (a trailer, then a countdown, then a
+  home-release post) must agree on credits and facts. Read the earlier article
+  before writing the later one.
 - If reliable information is thin, write a shorter, more honest article rather
   than inventing context.
 
@@ -162,7 +196,7 @@ can actually watch it, so treat it as the news, not as the end of a run.
    `home_kind`.
 2. The concrete premise and key creative team.
 3. The best reason to choose it now, grounded in reporting or criticism.
-4. Who it is for: a clear mood, genre or audience fit—not an empty call to
+4. Who it is for: a clear mood, genre or audience fit, not an empty call to
    action.
 
 ### Upcoming this week
@@ -195,7 +229,7 @@ can actually watch it, so treat it as the news, not as the end of a run.
 1. The original release and the occasion for revisiting it.
 2. Its initial context: filmmaker, stars, genre, moment in a career or place in
    a movement.
-3. A fresh critical point about why it still lands—specific to the title.
+3. A fresh critical point about why it still lands, specific to the title.
 4. Its influence, restoration history, later reputation or the best reason for
    a first watch now.
 
