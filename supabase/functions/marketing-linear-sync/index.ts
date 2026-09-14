@@ -515,9 +515,19 @@ Deno.serve(async (req) => {
       // silence is indistinguishable from one that worked, which is how a /copy
       // was lost and the post approved on top of the text it was meant to change.
       if (looksLikeAttempt(body)) {
+        // Echo the line it actually read. A near miss that only says "I could
+        // not read it" leaves you re-typing the same thing; showing the first
+        // line turns an argument about what you typed into a fact. It is also
+        // the only window into what Linear delivers — the webhook body has
+        // already proved to differ from what the API returns for the same
+        // comment, and a fenced /help that parses locally still failed here.
+        const firstLine = String(body).split(/\r?\n/).find((l) => l.trim()) ?? '';
+        console.error('Unparsed command attempt. Raw body:', JSON.stringify(String(body).slice(0, 300)));
         await reply(
           issueId,
-          'That looked like a command, but I could not read it — the command has to be the **first line** of the comment.\n\n' + HELP_TEXT,
+          'That looked like a command, but I could not read it — the command has to be the **first line** of the comment.\n\n' +
+          `I read your first line as \`${firstLine.slice(0, 80).replace(/`/g, '\u02cb')}\`.\n\n` +
+          HELP_TEXT,
         );
         return json({ ok: true, rejected: 'unparsed attempt' });
       }
