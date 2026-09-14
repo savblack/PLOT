@@ -67,6 +67,29 @@ const unwrap = (line) =>
     .replace(/^\s*`+|`+\s*$/g, '')     // inline code fences
     .trimEnd();
 
+/**
+ * Strip a code fence wrapping the whole comment.
+ *
+ * The help text shows the /copy example inside a fenced block, because that is
+ * how you render a multi-line template legibly. Copy-paste it — the obvious
+ * thing to do — and the fence comes with it, so the first line is ``` rather
+ * than /copy, and the comment parsed as not-a-command: ignored in silence, no
+ * reply, no edit. The bot's own help was teaching an input the bot rejected.
+ *
+ * So a fence around the whole thing is stripped rather than treated as content.
+ * A fence INSIDE the comment is left alone, since that is legitimately part of
+ * the text someone might be pasting.
+ */
+const unwrapCodeFence = (text) => {
+  const trimmed = text.trim();
+  if (!trimmed.startsWith('```')) return text;
+  const lines = trimmed.split(/\r?\n/);
+  if (lines.length < 2) return text;
+  const last = lines[lines.length - 1].trim();
+  if (last !== '```') return text;
+  return lines.slice(1, -1).join('\n');
+};
+
 const isFieldLine = (line) => {
   const m = /^\s*([A-Za-z_][A-Za-z0-9_]*)\s*:\s*(.*)$/.exec(unwrap(line));
   if (!m) return null;
@@ -111,7 +134,7 @@ export const WEEK_SCOPED = new Set(['pause', 'resume', 'generate', 'help']);
  * }} null when the comment is not addressed to us at all.
  */
 export const parseCommand = (body) => {
-  const text = String(body ?? '');
+  const text = unwrapCodeFence(String(body ?? ''));
   if (text.trimStart().startsWith(BOT_MARKER)) return null; // our own reply
 
   const lines = text.split(/\r?\n/);
@@ -181,6 +204,25 @@ export const parseCommand = (body) => {
   return { command: 'edit', fields, ...(errors.length ? { errors } : {}) };
 };
 
+/**
+ * Does this comment look like someone TRYING to run a command that did not parse?
+ *
+ * parseCommand returns null for anything not addressed to us, and silence is
+ * right for ordinary conversation. It is wrong for a near miss: a /copy that
+ * arrived fenced produced no reply at all, so the edit looked applied, the post
+ * was approved on top of it, and it went to Scheduled carrying the old text.
+ * Silence and success were indistinguishable at exactly the moment they differed.
+ *
+ * Narrow on purpose — a known command word on a line of its own, which is what a
+ * misplaced attempt looks like. Mentioning `/approve` mid-sentence in prose does
+ * not match, so talking about the commands stays possible.
+ */
+export const looksLikeAttempt = (body) => {
+  const known = [...Object.keys(SIMPLE_COMMANDS), ...EDIT_COMMANDS, 'reschedule'].join('|');
+  const pattern = new RegExp(`^\\s*/(${known})\\b`, 'im');
+  return pattern.test(unwrapCodeFence(String(body ?? '')));
+};
+
 // The help text the bot replies with, kept next to the parser so the two can
 // never disagree about what is actually accepted.
 export const HELP_TEXT = [
@@ -198,16 +240,20 @@ export const HELP_TEXT = [
   // asserts these names against WEEK_SCOPED so the two cannot drift apart.
   '`/pause`, `/resume`, `/generate` and `/help` act on the whole week, so you can comment them on any card here.',
   '',
-  'To edit copy, comment `/copy` and then any of these lines — anything you leave out stays as it is:',
+  'To edit copy, comment `/copy` and then only the lines you want to change.',
+  'Delete the rest — anything you leave out keeps its current text.',
   '```',
   '/copy',
-  'x: the new X text',
-  'threads: the new Threads text',
-  'hashtags: A24, folkhorror, mikeflanagan',
-  'title: the new article headline',
+  'x: <new X text>',
+  'threads: <new Threads text>',
+  'hashtags: <tag, tag, tag>',
+  'title: <new article headline>',
   'body:',
-  'First paragraph.',
+  '<first paragraph>',
   '',
-  'Second paragraph.',
+  '<second paragraph>',
   '```',
+  '',
+  'Angle brackets are placeholders, not syntax. Pasting a line unedited writes',
+  'the placeholder, so delete what you are not changing.',
 ].join('\n');

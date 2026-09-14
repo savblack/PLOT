@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseCommand, BOT_MARKER, WEEK_SCOPED, HELP_TEXT } from '../../supabase/functions/_shared/linearCommands.js';
+import { parseCommand, BOT_MARKER, WEEK_SCOPED, HELP_TEXT, looksLikeAttempt } from '../../supabase/functions/_shared/linearCommands.js';
 
 test('ignores an ordinary comment', () => {
   assert.equal(parseCommand('looks good to me, ship it'), null);
@@ -138,4 +138,42 @@ test('the help text names exactly the week-scoped commands', () => {
   for (const c of ['approve', 'reject', 'unapprove', 'reschedule', 'publish-now', 'retry', 'regenerate']) {
     assert.ok(!sentence.includes(`/${c}`), `${c} is post-scoped but the help text claims otherwise`);
   }
+});
+
+test('a /copy wrapped in a code fence still parses', () => {
+  // The help renders its example inside a fence; copy-pasting it brought the
+  // fence along, the first line became ``` instead of /copy, and the whole
+  // comment was ignored in silence. PLO-429 was approved on top of an edit that
+  // had never applied.
+  const fenced = '```\n/copy\nx: the new text\nthreads: also new\n```';
+  assert.deepEqual(parseCommand(fenced), { command: 'edit', fields: { x: 'the new text', threads: 'also new' } });
+});
+
+test('a fence with a language tag is unwrapped too', () => {
+  assert.deepEqual(parseCommand('```text\n/approve\n```'), { command: 'approve' });
+});
+
+test('a fence inside the comment is content, not a wrapper', () => {
+  const r = parseCommand('/copy\nx: mentions ```code``` inline');
+  assert.equal(r.fields.x, 'mentions ```code``` inline');
+});
+
+test('an unterminated fence is left alone rather than half-stripped', () => {
+  assert.equal(parseCommand('```\nnot really a command'), null);
+});
+
+test('a near miss is recognised so it can be answered', () => {
+  assert.equal(looksLikeAttempt('sure, go ahead\n/approve'), true);
+  assert.equal(looksLikeAttempt('```\n/copy\nx: hi\n```'), true);
+  // Talking about the commands must stay possible.
+  assert.equal(looksLikeAttempt('you can use /approve to clear it'), false);
+  assert.equal(looksLikeAttempt('looks good to me'), false);
+  assert.equal(looksLikeAttempt(''), false);
+});
+
+test('the help marks placeholders as placeholders', () => {
+  // The previous wording ("x: the new X text") reads as content, and one paste
+  // put "the new article headline" into a real post's title field.
+  assert.match(HELP_TEXT, /<new X text>/);
+  assert.match(HELP_TEXT, /placeholders, not syntax/);
 });
