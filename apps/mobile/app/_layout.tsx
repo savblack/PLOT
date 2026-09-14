@@ -94,6 +94,10 @@ function RootInner() {
     'DMSans-Regular':          require('../assets/fonts/DMSans-Regular.ttf'),
     'DMSans-Medium':           require('../assets/fonts/DMSans-Medium.ttf'),
     'DMSans-SemiBold':         require('../assets/fonts/DMSans-SemiBold.ttf'),
+    // Tabular-digit cuts — see lib/tokens.ts and apps/web/public/fonts/README.md.
+    'InstrumentSerif-Tabular': require('../assets/fonts/InstrumentSerif-Tabular.ttf'),
+    'DMSans-TabularRegular':   require('../assets/fonts/DMSans-TabularRegular.ttf'),
+    'DMSans-TabularSemiBold':  require('../assets/fonts/DMSans-TabularSemiBold.ttf'),
   });
 
   // Load profile to check onboarding status

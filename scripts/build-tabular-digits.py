@@ -29,14 +29,27 @@ from fontTools.varLib import instancer
 REPO = pathlib.Path(__file__).resolve().parent.parent
 WEB_FONTS = REPO / "apps" / "web" / "public" / "fonts"
 SITE_FONTS = REPO / "apps" / "website" / "fonts"
+MOBILE_FONTS = REPO / "apps" / "mobile" / "assets" / "fonts"
 
 DIGITS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"]
 DIGIT_UNICODES = "U+0030-0039"
 
+# Web: digits-only WOFF2, attached with `unicode-range: U+0030-0039` so the face
+# supplies digits and the real font still draws every letter.
 # (source file, output stem, family name written into the face)
-TARGETS = [
+WEB_TARGETS = [
     ("DMSans-Variable.ttf", "DMSans-TabularDigits", "DM Sans Tabular"),
     ("InstrumentSerif-Regular.ttf", "InstrumentSerif-TabularDigits", "Instrument Serif Tabular"),
+]
+
+# Mobile: React Native has no `unicode-range`, and a Text gets exactly one family —
+# a digits-only face would leave every other character to the platform's fallback.
+# So these keep full coverage and only the digits are respaced. Built from the static
+# TTFs Expo already bundles, which carry no `gvar`/`HVAR`, so it is a plain metrics edit.
+MOBILE_TARGETS = [
+    ("InstrumentSerif-Regular.ttf", "InstrumentSerif-Tabular", "Instrument Serif Tabular"),
+    ("DMSans-Regular.ttf", "DMSans-TabularRegular", "DM Sans Tabular"),
+    ("DMSans-SemiBold.ttf", "DMSans-TabularSemiBold", "DM Sans Tabular SemiBold"),
 ]
 
 
@@ -51,6 +64,28 @@ def subset_to_digits(path):
     opts.recalc_bounds = True
     subsetter = subset.Subsetter(options=opts)
     subsetter.populate(unicodes=range(0x30, 0x3A))
+    subsetter.subset(font)
+    return font
+
+
+def drop_kerning(font, source_cmap):
+    """Strip the `kern` feature while keeping every glyph.
+
+    Uniform advances are not enough on their own: DM Sans kerns digit pairs, so
+    '1234567890' comes out narrower than '0000000000' and a column drifts again. The web
+    faces dodge this because subsetting to digits discards GPOS wholesale; these full
+    cuts have to drop it deliberately. Tabular figures are conventionally unkerned, and
+    these families exist only for numeric UI, so losing kern costs nothing here.
+    `mark`/`mkmk` are kept so accented characters still position correctly.
+    """
+    opts = subset.Options()
+    opts.layout_features = [f for f in opts.layout_features if f != "kern"]
+    opts.name_IDs = "*"
+    opts.name_legacy = True
+    opts.notdef_outline = True
+    opts.recalc_bounds = True
+    subsetter = subset.Subsetter(options=opts)
+    subsetter.populate(unicodes=list(source_cmap))
     subsetter.subset(font)
     return font
 
@@ -115,8 +150,12 @@ def rename(font, family):
             record.string = text
 
 
-def verify(path, source_path):
-    """Assert the ten digits share an advance at every corner of the designspace."""
+def verify(path, source_path, digits_only=True):
+    """Assert the ten digits share an advance at every corner of the designspace.
+
+    `digits_only` also asserts the coverage contract: the web faces must carry the ten
+    digits and nothing else, the mobile ones must keep every glyph the source had.
+    """
     font = TTFont(path)
     axes = {a.axisTag: (a.minValue, a.maxValue) for a in font["fvar"].axes} if "fvar" in font else {}
     instances = [{}]
@@ -140,39 +179,60 @@ def verify(path, source_path):
 
     src_cmap = TTFont(source_path).getBestCmap()
     out_cmap = font.getBestCmap()
-    missing = [d for d in range(0x30, 0x3A) if d not in out_cmap]
-    extra = [c for c in out_cmap if not (0x30 <= c <= 0x39)]
+    if digits_only:
+        missing = [hex(d) for d in range(0x30, 0x3A) if d not in out_cmap]
+        extra = [hex(c) for c in out_cmap if not (0x30 <= c <= 0x39)]
+    else:
+        # Full coverage: nothing the source could draw may have been lost.
+        missing = [hex(c) for c in src_cmap if c not in out_cmap]
+        extra = []
     return failures, missing, extra, instances
 
 
-def main():
-    for src_name, out_stem, family in TARGETS:
-        src = WEB_FONTS / src_name
+def build(src, out, family, digits_only):
+    """Respace the digits of `src` into `out`, then prove the result."""
+    if digits_only:
         font = subset_to_digits(src)
-        advance = uniform_advances(font)
-        rename(font, family)
+    else:
+        font = TTFont(src)
+        font = drop_kerning(font, TTFont(src).getBestCmap())
+    advance = uniform_advances(font)
+    rename(font, family)
+    # Keep the source's head.modified instead of stamping "now", so rebuilding an
+    # unchanged font is byte-identical and doesn't churn five binaries in the diff.
+    font.recalcTimestamp = False
+    font["head"].modified = TTFont(src)["head"].modified
+    font.flavor = "woff2" if out.suffix == ".woff2" else None
+    font.save(out)
 
+    failures, missing, extra, instances = verify(out, src, digits_only=digits_only)
+    ok = not (failures or missing or extra)
+    print(
+        f"{out.name:<32} {out.stat().st_size:>7} bytes  advance={advance:<5} "
+        f"instances={len(instances):<3} [{'OK' if ok else 'FAILED'}]"
+    )
+    if missing:
+        print(f"  glyphs lost: {missing[:12]}{' …' if len(missing) > 12 else ''}")
+    if extra:
+        print(f"  unexpected codepoints kept: {extra[:12]}")
+    for inst, widths in failures:
+        print(f"  ragged at {inst}: {widths}")
+    return ok
+
+
+def main():
+    print("web — digits only, attached by unicode-range")
+    for src_name, out_stem, family in WEB_TARGETS:
         out = WEB_FONTS / f"{out_stem}.woff2"
-        font.flavor = "woff2"
-        font.save(out)
-
-        failures, missing, extra, instances = verify(out, src)
-        status = "OK" if not (failures or missing or extra) else "FAILED"
-        print(
-            f"{out.name:<34} {out.stat().st_size:>6} bytes  "
-            f"advance={advance}  instances checked={len(instances)}  [{status}]"
-        )
-        if missing:
-            print(f"  missing digit codepoints: {missing}")
-        if extra:
-            print(f"  unexpected codepoints retained: {[hex(c) for c in extra]}")
-        for inst, widths in failures:
-            print(f"  ragged at {inst}: {widths}")
-        if failures or missing or extra:
+        if not build(WEB_FONTS / src_name, out, family, digits_only=True):
             return 1
-
         (SITE_FONTS / out.name).write_bytes(out.read_bytes())
-        print(f"{'':<34} copied to apps/website/fonts/")
+        print(f"{'':<32} copied to apps/website/fonts/")
+
+    print("\nmobile — full coverage, one family per Text")
+    for src_name, out_stem, family in MOBILE_TARGETS:
+        if not build(MOBILE_FONTS / src_name, MOBILE_FONTS / f"{out_stem}.ttf", family, digits_only=False):
+            return 1
     return 0
 
 

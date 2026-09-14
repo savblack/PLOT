@@ -1485,6 +1485,7 @@ svg { stroke-width: 1.5; }
 }
 .ep-num {
   font-size: 0.72rem;
+  font-family: var(--font-sans-tabular);
   font-weight: 600;
   color: var(--text-muted);
   letter-spacing: 0.04em;
@@ -3012,6 +3013,7 @@ a.provider-chip--link:hover {
 .ep-check-btn.checked:hover:not(:disabled) { color: color-mix(in srgb, var(--accent) 70%, transparent); }
 .ep-num {
   font-size: 0.72rem;
+  font-family: var(--font-sans-tabular);
   font-weight: 600;
   color: var(--text-muted);
   white-space: nowrap;
@@ -3623,6 +3625,7 @@ a.provider-chip--link:hover {
 .feedback-count {
   flex-shrink: 0;
   font-size: 0.73rem;
+  font-family: var(--font-sans-tabular);
   font-weight: 700;
   color: var(--text-muted);
 }
