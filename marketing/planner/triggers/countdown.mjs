@@ -18,13 +18,18 @@ export const makeEvaluator = (days) => async (ctx) => {
   const isStreamingRelease = pick.media_type === 'tv' ||
     (pick.digital_date && (!pick.release_date || pick.digital_date <= pick.release_date));
 
+  // A digital-first date is a subscription premiere or a rental release; TMDB
+  // only tells us which once the providers are listed, so name what it has.
   let where = null;
+  let homeKind = 'streaming';
   if (isStreamingRelease) {
-    const providers = await tmdb.getWatchProviders(pick.media_type, pick.tmdb_id).catch(() => []);
-    if (providers.length) where = providers.slice(0, 2).map(p => p.provider_name).join(' · ');
+    const home = await tmdb.getHomeRegions(pick.media_type, pick.tmdb_id).catch(() => null);
+    const names = home?.streaming?.US?.length ? home.streaming.US : (home?.digital?.US || []);
+    if (!home?.streaming?.US?.length && home?.digital?.US?.length) homeKind = 'rental';
+    if (names.length) where = names.slice(0, 2).join(' · ');
   }
 
-  const kind = pick.media_type === 'tv' ? 'tv' : (isStreamingRelease ? 'streaming' : 'cinema');
+  const kind = pick.media_type === 'tv' ? 'tv' : (isStreamingRelease ? homeKind : 'cinema');
   return {
     post_type: 'countdown',
     topic_key: `countdown:${key}:${pick.media_type}:${pick.tmdb_id}`,

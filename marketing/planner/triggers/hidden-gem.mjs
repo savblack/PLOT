@@ -4,9 +4,11 @@
 //   not new = released >= MIN_AGE_YEARS ago
 //   not ancient = released in/after YEAR_FLOOR (modern back-catalogue, 1980s
 //                 onwards — no 1950s/60s super-classics)
-//   gem     = vote_average >= 7.2, and vote_count BETWEEN MIN_VOTES and
-//             MAX_VOTES — well-established enough to be worth a look, not so
-//             famous that calling it "hidden" is absurd.
+//   gem     = vote_average >= 7.2 and between MIN_VOTES and MAX_VOTES votes:
+//             well-established enough to be findable, but not a canonical
+//             title. With no ceiling and a vote_average sort the pool was the
+//             IMDb top 250 (Shawshank, Empire, The Usual Suspects, Mononoke all
+//             ran as "hidden gems"), which the copy then had to argue around.
 // We discover per region (US/UK/AU) and prefer the broadest availability:
 // a title on streaming in all three beats one in two beats US-only.
 import { tmdb } from '../../lib/tmdb.mjs';
@@ -16,21 +18,8 @@ import { coverageTier, bestTier } from './_regions.mjs';
 
 const MIN_AGE_YEARS = 15;
 const YEAR_FLOOR = '1980-01-01';
-const MIN_VOTES = '5000'; // floor keeps picks well-established, not obscure
-
-// And a ceiling, because "hidden gem" is a band and this only had one side of
-// it. The floor kept out the obscure; nothing kept out the famous, and since the
-// query sorts by vote_average.desc it actively preferred the most celebrated
-// films in the pool. That is how Star Wars went out as a hidden gem, and how
-// Inglourious Basterds was queued to follow it.
-//
-// 12,000 is where the real picks stop and the household names start. Every pick
-// anyone was happy with sits under 9k — The Nice Guys 8.9k, Grave of the
-// Fireflies 6.8k, The Iron Giant 6.4k, The Florida Project 3.2k. The two
-// complaints sit above 22k: Star Wars 22.8k, Inglourious Basterds 24.7k. Nothing
-// lives in the gap, so the line has room on both sides rather than being tuned
-// to the last example.
-const MAX_VOTES = '12000';
+const MIN_VOTES = '1500';  // floor keeps picks well-established, not obscure
+const MAX_VOTES = '12000'; // ceiling keeps out the canon everyone has already seen
 const REGIONS = [['US', 'US'], ['UK', 'GB'], ['AU', 'AU']]; // label, TMDB code
 
 export const evaluate = async (ctx) => {
@@ -80,8 +69,9 @@ export const evaluate = async (ctx) => {
       streaming, // { US:[…], UK:[…], AU:[…] } — name the platform (US default)
       year: pick.release_date ? Number(pick.release_date.slice(0, 4)) : null,
       // The numbers behind the "highly-rated, lesser-seen" claim, carried so the
-      // review card can show its working. A pick that does not look like a
-      // hidden gem should be arguable from the card without knowing the film.
+      // review card can show its working. MIN_VOTES and MAX_VOTES decide what is
+      // eligible; these let a human see where inside that band a pick actually
+      // sits, and argue with it without knowing the film.
       rating: typeof pick.vote_average === 'number' ? Math.round(pick.vote_average * 10) / 10 : null,
       votes: typeof pick.vote_count === 'number' ? pick.vote_count : null,
       title: {

@@ -40,7 +40,7 @@ svg { stroke-width: 1.5; }
 .app-logo {
   font-family: var(--font-serif);
   font-size: 1.55rem;
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: -0.05em;
   color: var(--text-primary);
   text-transform: uppercase;
@@ -2107,9 +2107,9 @@ svg { stroke-width: 1.5; }
   padding: 0.25rem 0.25rem 0.4rem;
 }
 .cal-agenda-day-num {
-  font-family: var(--font-serif);
+  font-family: var(--font-serif-tabular);
   font-size: 1.55rem;
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1;
   color: var(--text-primary);
   letter-spacing: -0.04em;
@@ -2563,7 +2563,7 @@ svg { stroke-width: 1.5; }
   right: 0.7rem;
   bottom: 0.5rem;
   font-size: 0.62rem;
-  font-variant-numeric: tabular-nums;
+  font-family: var(--font-sans-tabular);
   color: var(--text-muted);
   pointer-events: none;
 }
@@ -3193,6 +3193,21 @@ a.provider-chip--link:hover {
 }
 .search-result-row {
   position: relative;
+}
+.search-result-original {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  font-style: italic;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.search-result-meta {
+  color: var(--text-secondary);
+}
+.search-result-rating {
+  color: var(--text-primary);
+  font-weight: 600;
 }
 .search-result-row .search-row-actions {
   position: absolute;
@@ -4063,7 +4078,7 @@ a.provider-chip--link:hover {
   font-size: 0.7rem;
   font-weight: 600;
   color: var(--text-muted);
-  font-variant-numeric: tabular-nums;
+  font-family: var(--font-sans-tabular);
 }
 
 /* Animated collapse — grid-rows 1fr → 0fr, body clipped while closed */
@@ -4179,7 +4194,7 @@ a.provider-chip--link:hover {
   font-size: 0.72rem; color: var(--text-muted); margin-top: 0.15rem;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.epg-card-time { font-weight: 700; color: var(--accent); }
+.epg-card-time { font-family: var(--font-sans-tabular); font-weight: 700; color: var(--accent); }
 
 /* ── Channel filter bar ── */
 .epg-filter-bar {
@@ -4274,7 +4289,7 @@ a.provider-chip--link:hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--font-serif);
+  font-family: var(--font-serif-tabular);
   font-size: 2.2rem;
   font-weight: 400;
   color: var(--text-primary);
@@ -4743,7 +4758,7 @@ a.provider-chip--link:hover {
 .discover-hero-title {
   font-family: var(--font-serif);
   font-size: 1.9rem;
-  font-weight: 600;
+  font-weight: 500;
   color: #fff;
   letter-spacing: -0.03em;
   line-height: 1.05;
@@ -4834,9 +4849,9 @@ a.provider-chip--link:hover {
 
 /* Rank badge overlaid on poster */
 .discover-rank-badge {
-  font-family: var(--font-serif);
+  font-family: var(--font-serif-tabular);
   font-size: 2rem;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--accent);
   position: absolute;
   bottom: 9px;
@@ -4882,10 +4897,9 @@ a.provider-chip--link:hover {
 }
 
 .discover-chart-rank {
-  font-family: var(--font-serif);
+  font-family: var(--font-serif-tabular);
   font-size: 1.55rem;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
+  font-weight: 500;
   color: var(--accent);
   width: 2rem;
   text-align: center;
@@ -5142,7 +5156,7 @@ a.provider-chip--link:hover {
 .discover-binge-card-title {
   font-family: var(--font-serif);
   font-size: 1.32rem;
-  font-weight: 600;
+  font-weight: 500;
   color: #fff;
   letter-spacing: -0.02em;
   line-height: 1.1;

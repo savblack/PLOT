@@ -202,7 +202,7 @@ ${hasResearch
 ${sourceList(research)}
 
 ## How to write the article (page_body)
-Write a short-to-medium blog post (4-8 short paragraphs) for theplot.tv/whats-on.
+Write a short blog post (3-5 developed paragraphs) for theplot.tv/whats-on.
 - Write a FINISHED editorial article in PLOT's own voice — NEVER narrate your
   sources or research. Banned phrasings (do not write these or anything like
   them): "the research pack", "pre-fetched ratings", "the ratings block", "in
@@ -220,11 +220,25 @@ Write a short-to-medium blog post (4-8 short paragraphs) for theplot.tv/whats-on
   Weave it into the writing; never label it a "fun fact" or a trivia aside.
 - Ratings: cite ONLY the pre-fetched \`ratings\` block above (IMDb, Rotten
   Tomatoes, Metacritic) — it is reliable, so do not scrape or web-search for
-  scores. If a rating is null, omit it; only include ratings when they add value.
-  Never cite TMDB scores or vote counts (tmdb.vote_average / vote_count are an
+  scores. Use at most ONE score, only when it is a standout, and never as the
+  closing paragraph or as a stand-in for a critical point. A middling score is
+  not the story; a pre-release IMDb average is not evidence of anything. Never
+  cite TMDB scores or vote counts (tmdb.vote_average / vote_count are an
   internal signal only), and never describe how many people voted.
-- Always paraphrase in PLOT's voice. Never quote reviews verbatim, never copy
-  Wikipedia sentences, never reproduce a synopsis word-for-word. No spoilers.
+- Always paraphrase in PLOT's voice. Never quote reviews or interviews
+  verbatim, never wrap your own paraphrase in quotation marks (it reads as an
+  uncredited quote), never copy Wikipedia sentences, never reproduce a
+  synopsis word-for-word. Do not summarise reception ("critics kept coming
+  back to", "reviews landed mixed"); say what PLOT thinks. No spoilers: no
+  endings, twists, structural reveals or character fates, even for classics.
+- Name at most two or three people per paragraph and never list a cast.
+- Every date claim must be true on the publish day (\`scheduled_for\`): a title
+  is only "arriving" if it has not yet released, only "now streaming" if the
+  payload names a provider, and a festival "premiere" has to have happened.
+- Em and en dashes are banned in the article; ordinary hyphens in compound
+  words and names (co-writer, low-budget, Young-White) are correct and stay.
+- Close on the critical point or a concrete viewing note, never on a
+  content-free line ("looks like one of the more rewarding releases").
 - Put every source you actually used or browsed into the \`sources\` array
   (the links above plus anything you found). It is stored for our review only,
   not shown on the page.

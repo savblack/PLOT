@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   extractDiscoverTabIds, extractSetLiteral, extractRenderedTabs, checkMobileTabs,
 } from '../../../../scripts/lib/mobileTabChecks.mjs';
+import { titleForView } from '../../../../packages/core/navigation.js';
 
 // A guard nobody has watched fail is not a guard. #587 left the Upcoming tab
 // fully implemented and unreachable on main with tsc, eslint and CI green, so
@@ -141,4 +142,25 @@ test('a tab claimed by both sets is flagged', () => {
   });
   assert.equal(result.ok, false);
   assert.deepEqual(result.failures, [{ code: 'overlap', ids: ['guide'] }]);
+});
+
+/* /person/:id and /import had no VIEW_TITLES entry, so both fell through to the
+ * brand and rendered a second "PLOT" wordmark in the content column, beside the
+ * one the sidebar already shows. Found by opening the two routes nothing in the
+ * audit had visited. */
+
+test('every app route resolves a page title that is not the bare brand', () => {
+  for (const view of ['home', 'calendar', 'my-lists', 'search', 'settings',
+                      'requests', 'notifications', 'import', 'guide']) {
+    assert.ok(titleForView(view), `${view} has no title`);
+  }
+  assert.equal(titleForView('import'), 'Import');
+  assert.equal(titleForView('person/4110'), 'Talent', 'dynamic routes resolve by first segment');
+  assert.equal(titleForView('person/99'), 'Talent');
+});
+
+test('an unknown view still falls back to the brand rather than undefined', () => {
+  assert.equal(titleForView('nothing-like-this'), 'PLOT');
+  assert.equal(titleForView(''), 'PLOT');
+  assert.equal(titleForView(undefined), 'PLOT');
 });

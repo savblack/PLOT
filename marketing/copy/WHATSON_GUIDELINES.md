@@ -7,9 +7,17 @@ stretched into paragraphs.
 
 ## The standard
 
-Every title-led article has **three or four short, developed paragraphs**. Each
-paragraph must add a new piece of information or a clear critical point. If a
-sentence could describe almost any film or series, cut it.
+Every title-led article has **three or four short, developed paragraphs** (five
+at most). Each paragraph must add a new piece of information or a clear
+critical point. If a sentence could describe almost any film or series, cut it.
+
+Before writing, check the post type against the calendar. A trailer drop or a
+countdown is only true for a title that has not yet released on the publish
+day; a "now streaming" post is only true when the brief names a provider or a
+store; an anniversary is counted from the original theatrical release (for a US film, the US opening, not the premiere); a hidden gem is
+a good film outside the canon, never a title everyone has already seen. If the
+brief's type cannot be made true, say so in the output rather than writing
+around it.
 
 Use a minimum of two relevant sources per article whenever they are available:
 
@@ -141,9 +149,17 @@ leave it out.
    genre twist or emotional register.
 4. A verified viewing note or a concise reason to save it.
 
-### Now streaming
+### Now streaming (and now to rent or buy)
 
-1. What has arrived and where it can be watched.
+The brief's `home_kind` says which this is. A subscription arrival is "now
+streaming on Netflix" and is labelled Now streaming. A cinema release reaching
+the digital stores is labelled Now at home; the article says it is "now
+available to rent or buy on Prime Video and Apple TV", and it should
+say how long it ran in cinemas first; that arrival is the moment most readers
+can actually watch it, so treat it as the news, not as the end of a run.
+
+1. What has arrived and where it can be watched, in the right words for
+   `home_kind`.
 2. The concrete premise and key creative team.
 3. The best reason to choose it now, grounded in reporting or criticism.
 4. Who it is for: a clear mood, genre or audience fit—not an empty call to
@@ -216,6 +232,11 @@ Do not write phrases such as:
 - “a proper watch, not background noise”
 - “a clear point of view” without explaining what that view is
 - “worth adding to your list” without first giving a concrete reason
+- closing lines that state nothing: “looks like one of the more rewarding
+  releases”, “there is something here whichever mood wins out”, “if that is
+  what tonight calls for”, “whatever else it is”
+- “an interesting detail”, “interestingly”, “fun fact”, “did you know”
+- “according to”, “reportedly”, “reports suggest”, “sources say”
 
 The reader should finish each article knowing more about the title than when
 they started, and with a sharper sense of whether it is for them.
