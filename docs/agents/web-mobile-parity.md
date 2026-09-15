@@ -72,23 +72,15 @@ Neither was visible to a type check. Phases 0, 0a and 1 of
 are not**, so most of the app is still unverified at runtime. "It builds and the
 Guide is correct" is not "it works".
 
-There is **no Xcode on this machine** as of 2026-09-11:
+**There is a working simulator on this machine as of 2026-09-14** — Xcode 26.6
+and an iPhone 17 Pro on iOS 26.5, with the app built and driven on it. Earlier
+revisions of this file said there was no Xcode at all; that is out of date.
+Getting the simulator usable needed two fixes that no error message names, both
+written up in [docs/ops/mobile-builds.md](../ops/mobile-builds.md) — read that
+before debugging a simulator that lists no devices, or a `pod install` that dies
+talking about Unicode.
 
-```
-xcode-select -p  → /Library/Developer/CommandLineTools
-/Applications/Xcode.app → absent
-xcrun simctl     → "unable to find utility simctl"
-```
-
-So there is no simulator to fail to build for. (An earlier revision of this
-doc described an Xcode 26.6 SDK/runtime mismatch; that machine state no longer
-applies, and diagnosing against it wastes an hour.)
-
-**Fix (needs a human):** install Xcode from the App Store, then
-`sudo xcode-select -s /Applications/Xcode.app/Contents/Developer`. Needs the
-machine password, so an agent cannot do it.
-
-**But Xcode is not the only path, and nothing is actually waiting.** PLOT is
+**Xcode is still not the only path.** PLOT is
 enrolled in the Apple Developer Program (Individual, confirmed 2026-09-11), and
 EAS builds on hosted macOS workers, so an `eas build --profile development`
 puts a signed build on a real iPhone without Xcode existing locally. That is

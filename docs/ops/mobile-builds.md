@@ -58,26 +58,64 @@ app is published than after. **This is a decision, not a bug** — publishing as
 an individual is perfectly legitimate, and plenty of good apps do. It just
 should be a choice, and the legal copy should agree with whatever is chosen.
 
-### The remaining local gap
+### Running locally on a simulator
 
-There is **no Xcode on this machine** as of 2026-09-11:
+**Working as of 2026-09-14.** Xcode 26.6, iOS 26.5 simulator runtime, and the
+app has been built and driven on an iPhone 17 Pro simulator — see the run log in
+[docs/qa/mobile-device-smoke.md](../qa/mobile-device-smoke.md). Before that date
+this machine had no Xcode at all, and older revisions of this file and of
+`docs/agents/web-mobile-parity.md` say so; ignore them.
+
+Getting there cost two hours, almost none of it spent on PLOT. Both traps are
+worth knowing because neither error names its own cause.
+
+**1. The simulator can have zero device types.** Xcode installs, runtimes
+download and report `Ready`, and `xcrun simctl list devicetypes` still returns
+nothing — so there is no iPhone to create and no obvious reason why. The profiles
+in `/Library/Developer/CoreSimulator/Profiles/DeviceTypes` can be left over from
+an earlier Xcode and carry no screen geometry, which CoreSimulator rejects. The
+only place that says so is `~/Library/Logs/CoreSimulator/CoreSimulator.log`:
 
 ```
-xcode-select -p  → /Library/Developer/CommandLineTools
-/Applications/Xcode.app → absent
-xcrun simctl     → "unable to find utility simctl"
+Error ... Code=402 "Missing keys to define the main screen:
+  .../iPhone 17 Pro Max.simdevicetype/Contents/Resources/profile.plist"
 ```
 
-So there is no simulator to run anything on locally. This no longer blocks much,
-because EAS builds on hosted macOS workers and a signed build can go straight to
-a real iPhone, but a local simulator is still the fastest edit-run loop.
+`xcodebuild -runFirstLaunch` does not fix it, and neither does reinstalling
+`XcodeSystemResources.pkg` — the installer rewrites the receipt and the
+CoreSimulator framework but skips that tree. **The fix needs no admin rights,**
+because CoreSimulator also reads the per-user profiles directory:
 
-**Fix (needs a human):** install Xcode from the App Store, then
-`sudo xcode-select -s /Applications/Xcode.app/Contents/Developer`. Needs the
-machine password, so an agent cannot do it.
+```sh
+pkgutil --expand-full /Applications/Xcode.app/Contents/Resources/Packages/XcodeSystemResources.pkg /tmp/xsr
+mkdir -p ~/Library/Developer/CoreSimulator/Profiles/DeviceTypes
+ditto /tmp/xsr/Payload/Library/Developer/CoreSimulator/Profiles/DeviceTypes \
+      ~/Library/Developer/CoreSimulator/Profiles/DeviceTypes
+```
 
-(An earlier revision of `docs/agents/web-mobile-parity.md` described an Xcode
-26.6 SDK/runtime mismatch. That machine state no longer applies.)
+**2. CocoaPods needs a UTF-8 locale.** An agent shell starts with `LANG` unset
+and `LC_CTYPE=C`, so Ruby reads the working directory as ASCII-8BIT and
+`pod install` aborts in `Pod::Config#installation_root`:
+
+```
+Unicode Normalization not appropriate for ASCII-8BIT (Encoding::CompatibilityError)
+```
+
+It names Unicode and never mentions the locale, so it reads like a corrupt path.
+Export both before any local iOS build:
+
+```sh
+export LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8
+cd apps/mobile && npx expo run:ios --device "<simulator name>"
+```
+
+**What a development build cannot test.** The Expo Dev Launcher owns the cold
+launch, so killing the app and opening a deep link shows its server picker
+rather than exercising PLOT's startup. Cold-start behaviour needs
+`npx expo run:ios --configuration Release`.
+
+Installing Xcode itself still needs a human: the App Store wants an Apple
+Account password and `xcode-select -s` wants the machine password.
 
 ## Where a build stops today (measured 2026-09-11)
 
