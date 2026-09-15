@@ -1,8 +1,13 @@
-name: Streaming Top 10 — daily sync (Prime / Max / Apple / Disney)
+name: Streaming Top 10 — weekly sync (Prime / Max / Apple / Disney)
 
 on:
   schedule:
-    - cron: '30 12 * * *' # 12:30 UTC daily — regions auto-detected from active users, stays under free quota
+    # Wednesday 12:30 UTC, just after the Netflix sync. WEEKLY on purpose: the
+    # Movie of the Night free tier is 500 requests/month and each run costs
+    # 4 services × active regions. Daily crossed the cap at the 5th region
+    # (4 × 7 × 30 = 840) and every platform went dark for the rest of the
+    # month. Weekly is 4 × regions × ~4.3 — room for ~29 regions.
+    - cron: '30 12 * * 3'
   workflow_dispatch:
 
 permissions:

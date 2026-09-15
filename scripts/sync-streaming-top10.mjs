@@ -11,10 +11,16 @@
 // Free tier is 500 requests/month. We make ONE call per (service × region) — omitting
 // show_type returns both movies and series — so cost = services(4) × regions per run.
 // Regions are auto-detected from the actual `profiles.region` distribution (see
-// detectActiveRegions below) so we never spend quota on markets with zero users —
-// at 4 services × ~2 active regions, even a daily cadence stays well under the free
-// cap. Set CHART_REGIONS="us,gb,au" to override detection with a fixed list (e.g.
-// to pre-seed a market before real users show up there).
+// detectActiveRegions below) so we never spend quota on markets with zero users.
+// The cron is WEEKLY (see .github/workflows/streaming-top10.yml): 4 × regions × ~4.3
+// runs/month leaves room for ~29 regions. A daily cadence blew the cap once the
+// fifth user region appeared (4 × 7 × 30 = 840) and the charts went dark for the
+// rest of the month. Set CHART_REGIONS="us,gb,au" to override detection with a
+// fixed list (e.g. to pre-seed a market before real users show up there).
+//
+// Failure modes are deliberately loud: an empty platform (quota exhausted, API
+// down) keeps its previous rows instead of being wiped, and the run exits
+// non-zero so the workflow goes red rather than logging "Done".
 //
 // Usage (needs deps):
 //   RAPIDAPI_KEY=… TMDB_API_KEY=… SUPABASE_SERVICE_ROLE_KEY=… node scripts/sync-streaming-top10.mjs
@@ -95,7 +101,11 @@ async function fetchTop(service, country) {
   // halving the requests we spend against the free tier.
   const res = await fetch(url, { headers: { 'X-RapidAPI-Key': API_KEY, 'X-RapidAPI-Host': API_HOST } });
   if (!res.ok) {
-    console.warn(`  top ${service}/${country} -> HTTP ${res.status}`);
+    // Log the body: a 429 alone hides the difference between a per-second
+    // rate limit and "you have exceeded the MONTHLY quota", which is the one
+    // that matters here.
+    const body = (await res.text().catch(() => '')).replace(/\s+/g, ' ').slice(0, 300);
+    console.warn(`  top ${service}/${country} -> HTTP ${res.status}${body ? `: ${body}` : ''}`);
     return [];
   }
   const data = await res.json();
@@ -115,8 +125,9 @@ async function tmdbDetails(mediaType, id) {
 }
 
 async function main() {
-  const runWeek = new Date().toISOString().slice(0, 10); // these charts are daily; stamp the run date
+  const runWeek = new Date().toISOString().slice(0, 10); // stamp the run date (the cron is weekly)
   const raw = [];
+  const emptyPlatforms = [];
 
   // Created early (even for --dry-run, when a key is available) so region
   // detection and the final upsert share one client.
@@ -155,7 +166,9 @@ async function main() {
         });
       }
     }
-    console.log(`Fetched ${platform}: ${raw.filter(r => r.platform === platform).length} rows so far.`);
+    const fetched = raw.filter(r => r.platform === platform).length;
+    console.log(`Fetched ${platform}: ${fetched} rows.`);
+    if (fetched === 0) emptyPlatforms.push(platform);
   }
 
   // Resolve poster_path + canonical title once per distinct TMDB title.
@@ -191,6 +204,7 @@ async function main() {
       .sort((a, b) => a.rank - b.rank);
     console.log('\n--dry-run: US Max TV Top 10 preview:');
     for (const r of sample) console.log(`  ${r.rank}. ${r.tmdb_title} (tmdb ${r.tmdb_id})`);
+    if (emptyPlatforms.length) throw new Error(`No rows fetched for ${emptyPlatforms.join(', ')}.`);
     return;
   }
 
@@ -202,8 +216,11 @@ async function main() {
     if (error) throw error;
   }
 
-  // Drop superseded rows for the platforms we own here (leave Netflix alone).
-  for (const { platform } of SERVICES) {
+  // Drop superseded rows ONLY for platforms that returned new ones (and leave
+  // Netflix alone). A platform that fetched nothing keeps its previous chart:
+  // a week of staleness beats a blackout.
+  const refreshed = SERVICES.map(s => s.platform).filter(p => !emptyPlatforms.includes(p));
+  for (const platform of refreshed) {
     const { error } = await supabase
       .from('platform_charts')
       .delete()
@@ -212,7 +229,14 @@ async function main() {
     if (error) throw error;
   }
 
-  console.log(`Done. Upserted ${runWeek} for ${SERVICES.map(s => s.platform).join(', ')}.`);
+  if (refreshed.length) console.log(`Upserted ${runWeek} for ${refreshed.join(', ')}.`);
+  if (emptyPlatforms.length) {
+    throw new Error(
+      `No rows fetched for ${emptyPlatforms.join(', ')} — previous rows kept. `
+      + 'Check the HTTP responses above (a monthly-quota 429 is the usual cause).'
+    );
+  }
+  console.log('Done.');
 }
 
 main().catch(err => {
