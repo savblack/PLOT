@@ -11,22 +11,43 @@
 // Free tier is 500 requests/month. We make ONE call per (service × region) — omitting
 // show_type returns both movies and series — so cost = services(4) × regions per run.
 // Regions are auto-detected from the actual `profiles.region` distribution (see
-// detectActiveRegions below) so we never spend quota on markets with zero users —
-// at 4 services × ~2 active regions, even a daily cadence stays well under the free
-// cap. Set CHART_REGIONS="us,gb,au" to override detection with a fixed list (e.g.
-// to pre-seed a market before real users show up there).
+// detectActiveRegions below) so we never spend quota on markets with zero users.
+// Prime, Apple and Disney (`core`) are fetched for every region with a user;
+// other platforms only for regions with >= CHART_MIN_USERS (default 3) users,
+// so one signup from a new market adds 3 requests per run, not 4. The cron is
+// WEEKLY (see .github/workflows/streaming-top10.yml): 4 × regions × ~4.3
+// runs/month leaves room for ~29 regions. A daily cadence blew the cap once the
+// fifth user region appeared (4 × 7 × 30 = 840) and the charts went dark for the
+// rest of the month. Set CHART_REGIONS="us,gb,au" to override detection with a
+// fixed list (e.g. to pre-seed a market before real users show up there).
+//
+// Failure modes are deliberately loud: an empty platform (quota exhausted, API
+// down) keeps its previous rows instead of being wiped, and the run exits
+// non-zero so the workflow goes red rather than logging "Done".
 //
 // Usage (needs deps):
-//   RAPIDAPI_KEY=… TMDB_API_KEY=… SUPABASE_SERVICE_ROLE_KEY=… node scripts/sync-streaming-top10.mjs
-//   RAPIDAPI_KEY=… TMDB_API_KEY=…                            node scripts/sync-streaming-top10.mjs --dry-run
+//   MOVIEOFTHENIGHT_API_KEY=… TMDB_API_KEY=… SUPABASE_SERVICE_ROLE_KEY=… node scripts/sync-streaming-top10.mjs
+//   MOVIEOFTHENIGHT_API_KEY=… TMDB_API_KEY=…                            node scripts/sync-streaming-top10.mjs --dry-run
+// (RAPIDAPI_KEY still works as a fallback; the direct key has double the free quota.)
 
 import { createClient } from '@supabase/supabase-js';
 
 const args = new Set(process.argv.slice(2));
 const DRY_RUN = args.has('--dry-run');
 
-const API_HOST = 'streaming-availability.p.rapidapi.com';
-const API_KEY = process.env.RAPIDAPI_KEY || process.env.STREAMING_AVAILABILITY_API_KEY;
+// Two doors into the same API, with SEPARATE quotas. A key from
+// developers.movieofthenight.com gets 1,000 free requests/month; the RapidAPI
+// BASIC plan gets 500. We try them in order and fall through to the next on a
+// quota response (429, or 403 "not subscribed"), so together they are 1,500.
+// No other provider publishes these official charts for free, so this chain is
+// the whole fallback story.
+const DIRECT_KEY = process.env.MOVIEOFTHENIGHT_API_KEY;
+const RAPID_KEY = process.env.RAPIDAPI_KEY || process.env.STREAMING_AVAILABILITY_API_KEY;
+const APIS = [
+  DIRECT_KEY && { base: 'https://api.movieofthenight.com/v4', headers: { 'X-API-Key': DIRECT_KEY }, label: 'direct', exhausted: false },
+  RAPID_KEY && { base: 'https://streaming-availability.p.rapidapi.com', headers: { 'X-RapidAPI-Key': RAPID_KEY, 'X-RapidAPI-Host': 'streaming-availability.p.rapidapi.com' }, label: 'RapidAPI', exhausted: false },
+].filter(Boolean);
+const API_KEY = APIS.length > 0;
 const TMDB_KEY = process.env.TMDB_API_KEY;
 
 const DEFAULT_SUPABASE_URL = 'https://mkegtssedjyqldysvzga.supabase.co';
@@ -39,15 +60,27 @@ const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABAS
 const FALLBACK_REGIONS = 'us,gb,au,ca,de,fr,es,it,br,mx,in,jp';
 
 // Our canonical platform key → Streaming Availability service id (Max = "hbo").
+// `core: true` platforms are fetched for every region that has any user at all
+// (alongside Netflix, which is free). The rest are only fetched for regions with
+// at least MIN_USERS users — see detectActiveRegions.
 const SERVICES = [
-  { platform: 'prime',  service: 'prime'  },
-  { platform: 'max',    service: 'hbo'    },
-  { platform: 'apple',  service: 'apple'  },
-  { platform: 'disney', service: 'disney' },
+  { platform: 'prime',  service: 'prime',  core: true },
+  { platform: 'apple',  service: 'apple',  core: true },
+  { platform: 'disney', service: 'disney', core: true },
+  { platform: 'max',    service: 'hbo',    core: false },
 ];
 
-// Reads the distinct set of regions real users are actually in, straight from
-// `profiles.region`, so we never burn API quota on markets with nobody in them.
+// Non-core platforms need at least this many users in a region before we spend
+// quota on it there. Each (platform × region) costs one request per run, and a
+// single stray signup from a new market used to add a permanent 4/run to the
+// bill (in Sep 2026 four of seven active regions had exactly one user). Core
+// platforms ignore this and are fetched wherever anyone is. Override with
+// CHART_MIN_USERS=1 to fetch every platform for every market.
+const MIN_USERS = Math.max(1, Number(process.env.CHART_MIN_USERS) || 3);
+
+// Reads the regions real users are actually in, straight from `profiles.region`.
+// Returns { all, established }: every region with a user, and the subset with
+// at least MIN_USERS users. Null when there is nothing to detect from.
 async function detectActiveRegions(supabase) {
   if (!supabase) return null;
   const { data, error } = await supabase.from('profiles').select('region').not('region', 'is', null);
@@ -55,12 +88,21 @@ async function detectActiveRegions(supabase) {
     console.warn(`Could not auto-detect regions from profiles (${error.message}); using fallback list.`);
     return null;
   }
-  const regions = [...new Set(data.map(r => r.region).filter(Boolean).map(r => r.toLowerCase()))];
-  return regions.length ? regions : null;
+  const counts = new Map();
+  for (const { region } of data) {
+    if (!region) continue;
+    const key = region.toLowerCase();
+    counts.set(key, (counts.get(key) || 0) + 1);
+  }
+  const all = [...counts.keys()].sort();
+  const established = [...counts].filter(([, n]) => n >= MIN_USERS).map(([r]) => r).sort();
+  const small = [...counts].filter(([, n]) => n < MIN_USERS).map(([r, n]) => `${r}(${n})`).sort();
+  if (small.length) console.log(`Regions under ${MIN_USERS} users get core platforms only: ${small.join(', ')}`);
+  return all.length ? { all, established } : null;
 }
 
 if (!API_KEY) {
-  console.error('RAPIDAPI_KEY is required.');
+  console.error('MOVIEOFTHENIGHT_API_KEY or RAPIDAPI_KEY is required.');
   process.exit(1);
 }
 if (!TMDB_KEY) {
@@ -80,6 +122,7 @@ console.log(
   + (SUPABASE_URL === DEFAULT_SUPABASE_URL ? ' (production, from default)' : '')
   + (DRY_RUN ? ' — dry run, no writes' : '')
 );
+console.log(`Streaming Availability API keys, in fallback order: ${APIS.map(a => a.label).join(' → ')}.`);
 
 // "movie/12345" | "tv/678" → { media_type, id }
 function parseTmdbId(tmdbId) {
@@ -87,21 +130,36 @@ function parseTmdbId(tmdbId) {
   return m ? { media_type: m[1], id: Number(m[2]) } : null;
 }
 
+// Quota-style failures: move on to the next key for this and later calls. Any
+// other error (400, 500, network) is reported and the call gives up, since a
+// second key would hit the same problem.
+const isQuotaStatus = (status) => status === 429 || status === 403;
+
 async function fetchTop(service, country) {
-  const url = new URL(`https://${API_HOST}/shows/top`);
-  url.searchParams.set('country', country);
-  url.searchParams.set('service', service);
-  // show_type omitted on purpose: one call returns both movies and series,
-  // halving the requests we spend against the free tier.
-  const res = await fetch(url, { headers: { 'X-RapidAPI-Key': API_KEY, 'X-RapidAPI-Host': API_HOST } });
-  if (!res.ok) {
-    console.warn(`  top ${service}/${country} -> HTTP ${res.status}`);
-    return [];
+  for (const api of APIS) {
+    if (api.exhausted) continue;
+    const url = new URL(`${api.base}/shows/top`);
+    url.searchParams.set('country', country);
+    url.searchParams.set('service', service);
+    // show_type omitted on purpose: one call returns both movies and series,
+    // halving the requests we spend against the free tier.
+    const res = await fetch(url, { headers: api.headers });
+    if (res.ok) {
+      const data = await res.json();
+      // The endpoint returns shows already in rank order; accept a bare array
+      // or a wrapped shape defensively.
+      return Array.isArray(data) ? data : (data.shows || data.results || []);
+    }
+    // Log the body: a 429 alone hides the difference between a per-second
+    // rate limit and "you have exceeded the MONTHLY quota", which is the one
+    // that matters here.
+    const body = (await res.text().catch(() => '')).replace(/\s+/g, ' ').slice(0, 300);
+    console.warn(`  top ${service}/${country} via ${api.label} -> HTTP ${res.status}${body ? `: ${body}` : ''}`);
+    if (!isQuotaStatus(res.status)) return [];
+    api.exhausted = true;
+    console.warn(`  ${api.label} key looks out of quota; falling back to the next key for the rest of the run.`);
   }
-  const data = await res.json();
-  // The endpoint returns shows already in rank order; accept a bare array or a
-  // wrapped shape defensively.
-  return Array.isArray(data) ? data : (data.shows || data.results || []);
+  return [];
 }
 
 async function tmdbDetails(mediaType, id) {
@@ -115,27 +173,34 @@ async function tmdbDetails(mediaType, id) {
 }
 
 async function main() {
-  const runWeek = new Date().toISOString().slice(0, 10); // these charts are daily; stamp the run date
+  const runWeek = new Date().toISOString().slice(0, 10); // stamp the run date (the cron is weekly)
   const raw = [];
+  const emptyPlatforms = [];
 
   // Created early (even for --dry-run, when a key is available) so region
   // detection and the final upsert share one client.
   const supabase = SERVICE_KEY ? createClient(SUPABASE_URL, SERVICE_KEY) : null;
 
-  let REGIONS;
+  // REGIONS: every region we fetch core platforms for. ESTABLISHED: the subset
+  // (>= MIN_USERS users) that also gets the non-core platforms. An explicit
+  // CHART_REGIONS override, and the fallback list, apply to every platform.
+  let REGIONS, ESTABLISHED;
   if (process.env.CHART_REGIONS) {
-    REGIONS = process.env.CHART_REGIONS.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+    REGIONS = ESTABLISHED = process.env.CHART_REGIONS.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
     console.log(`Using CHART_REGIONS override: ${REGIONS.join(', ')}`);
   } else {
     const detected = await detectActiveRegions(supabase);
-    REGIONS = detected || FALLBACK_REGIONS.split(',');
+    REGIONS = detected?.all || FALLBACK_REGIONS.split(',');
+    ESTABLISHED = detected?.established || REGIONS;
     console.log(detected
       ? `Auto-detected active regions from profiles: ${REGIONS.join(', ')}`
       : `No regions detected; using fallback list: ${REGIONS.join(', ')}`);
   }
 
-  for (const { platform, service } of SERVICES) {
-    for (const region of REGIONS) {
+  for (const { platform, service, core } of SERVICES) {
+    const regions = core ? REGIONS : ESTABLISHED;
+    if (!regions.length) { console.log(`Fetched ${platform}: skipped, no region qualifies.`); continue; }
+    for (const region of regions) {
       // One combined, rank-ordered list per region; split it back into a clean
       // per-type Top 10 using each show's tmdbId media type.
       const shows = await fetchTop(service, region);
@@ -155,7 +220,9 @@ async function main() {
         });
       }
     }
-    console.log(`Fetched ${platform}: ${raw.filter(r => r.platform === platform).length} rows so far.`);
+    const fetched = raw.filter(r => r.platform === platform).length;
+    console.log(`Fetched ${platform}: ${fetched} rows.`);
+    if (fetched === 0) emptyPlatforms.push(platform);
   }
 
   // Resolve poster_path + canonical title once per distinct TMDB title.
@@ -191,6 +258,7 @@ async function main() {
       .sort((a, b) => a.rank - b.rank);
     console.log('\n--dry-run: US Max TV Top 10 preview:');
     for (const r of sample) console.log(`  ${r.rank}. ${r.tmdb_title} (tmdb ${r.tmdb_id})`);
+    if (emptyPlatforms.length) throw new Error(`No rows fetched for ${emptyPlatforms.join(', ')}.`);
     return;
   }
 
@@ -202,8 +270,11 @@ async function main() {
     if (error) throw error;
   }
 
-  // Drop superseded rows for the platforms we own here (leave Netflix alone).
-  for (const { platform } of SERVICES) {
+  // Drop superseded rows ONLY for platforms that returned new ones (and leave
+  // Netflix alone). A platform that fetched nothing keeps its previous chart:
+  // a week of staleness beats a blackout.
+  const refreshed = SERVICES.map(s => s.platform).filter(p => !emptyPlatforms.includes(p));
+  for (const platform of refreshed) {
     const { error } = await supabase
       .from('platform_charts')
       .delete()
@@ -212,7 +283,14 @@ async function main() {
     if (error) throw error;
   }
 
-  console.log(`Done. Upserted ${runWeek} for ${SERVICES.map(s => s.platform).join(', ')}.`);
+  if (refreshed.length) console.log(`Upserted ${runWeek} for ${refreshed.join(', ')}.`);
+  if (emptyPlatforms.length) {
+    throw new Error(
+      `No rows fetched for ${emptyPlatforms.join(', ')} — previous rows kept. `
+      + 'Check the HTTP responses above (a monthly-quota 429 is the usual cause).'
+    );
+  }
+  console.log('Done.');
 }
 
 main().catch(err => {

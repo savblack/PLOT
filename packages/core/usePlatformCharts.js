@@ -25,13 +25,46 @@ export const OFFICIAL_PLATFORMS = [
 // platform that currently has synced chart data. Platforms with no rows are
 // omitted entirely, so the section only ever shows charts we actually have.
 // Only TMDB-matched rows are included (so cards stay clickable); each keeps its
-// true chart rank.
+// true chart rank. A show that charts more than once (Netflix lists each season
+// as its own entry, so "The Gentlemen" S1 and S2 are two rows that resolve to
+// one TMDB id) is shown once, at its best rank — see groupChartRows.
 /**
  * @typedef {{ id: number, title: string, poster_path: string | null,
  *             media_type: 'movie' | 'tv', _rank: number }} PlatformChartItem
  * @typedef {{ key: string, id: string, name: string, logo_path: string | null,
  *             official: true, movies: PlatformChartItem[], tv: PlatformChartItem[] }} PlatformChart
  */
+/**
+ * Group matched chart rows (already sorted by rank ascending) into per-platform
+ * movie/tv lists. Pure, so it can be unit-tested without Supabase.
+ *
+ * Repeat appearances of one TMDB title within a platform + media type are
+ * collapsed to the first (best-ranked) row. Ranks are the chart's own, so a
+ * list may skip numbers — e.g. when rank 8 was an unmatched title or a repeat.
+ *
+ * @param {Array<{ platform: string, media_type: 'movie'|'tv', rank: number,
+ *   tmdb_id: number, tmdb_title: string, poster_path: string | null }>} rows
+ * @returns {Record<string, { movies: PlatformChartItem[], tv: PlatformChartItem[] }>}
+ */
+export function groupChartRows(rows) {
+  const byPlatform = {};
+  const seen = new Set();
+  for (const r of rows) {
+    const key = `${r.platform}\u001f${r.media_type}\u001f${r.tmdb_id}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const p = (byPlatform[r.platform] ||= { movies: [], tv: [] });
+    (r.media_type === 'movie' ? p.movies : p.tv).push({
+      id: r.tmdb_id,
+      title: r.tmdb_title,
+      poster_path: r.poster_path,
+      media_type: r.media_type,
+      _rank: r.rank,
+    });
+  }
+  return byPlatform;
+}
+
 export function usePlatformCharts() {
   const [platforms, setPlatforms] = useState(/** @type {PlatformChart[]} */ ([]));
 
@@ -49,19 +82,7 @@ export function usePlatformCharts() {
 
       if (cancelled || error || !rows?.length) return;
 
-      const toItem = (r) => ({
-        id: r.tmdb_id,
-        title: r.tmdb_title,
-        poster_path: r.poster_path,
-        media_type: r.media_type,
-        _rank: r.rank,
-      });
-
-      const byPlatform = {};
-      for (const r of rows) {
-        const p = (byPlatform[r.platform] ||= { movies: [], tv: [] });
-        (r.media_type === 'movie' ? p.movies : p.tv).push(toItem(r));
-      }
+      const byPlatform = groupChartRows(rows);
 
       // Resolve each platform's logo from TMDB's watch-provider list (matched by
       // name) so we never hard-code a logo path. Failure is non-fatal — the

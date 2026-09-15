@@ -1,8 +1,13 @@
-name: Streaming Top 10 — daily sync (Prime / Max / Apple / Disney)
+name: Streaming Top 10 — weekly sync (Prime / Max / Apple / Disney)
 
 on:
   schedule:
-    - cron: '30 12 * * *' # 12:30 UTC daily — regions auto-detected from active users, stays under free quota
+    # Wednesday 12:30 UTC, just after the Netflix sync. WEEKLY on purpose: the
+    # Movie of the Night free tier is 500 requests/month and each run costs
+    # 4 services × active regions. Daily crossed the cap at the 5th region
+    # (4 × 7 × 30 = 840) and every platform went dark for the rest of the
+    # month. Weekly is 4 × regions × ~4.3 — room for ~29 regions.
+    - cron: '30 12 * * 3'
   workflow_dispatch:
 
 permissions:
@@ -30,5 +35,7 @@ jobs:
           SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
-          RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
+          MOVIEOFTHENIGHT_API_KEY: ${{ secrets.MOVIEOFTHENIGHT_API_KEY }} # direct key, 1,000 free req/month; preferred
+          RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }} # fallback, 500 free req/month
           CHART_REGIONS: ${{ vars.CHART_REGIONS }}
+          CHART_MIN_USERS: ${{ vars.CHART_MIN_USERS }} # optional; script defaults to 3
