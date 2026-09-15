@@ -32,14 +32,12 @@ function Shelf({ title, subtitle, className, children }) {
   const rail = useRailScroll();
   return (
     <section>
-      <div className="collapse-head discover-section-header">
-        <span className="collapse-head-toggle">
-          <span className="discover-section-heading">
-            <span className="discover-section-title">{title}</span>
-            {subtitle && <span className="discover-section-sub">{subtitle}</span>}
-          </span>
-        </span>
-        <div className="collapse-head-actions"><RailArrows rail={rail} /></div>
+      <div className="discover-section-header">
+        <div className="discover-section-heading">
+          <h2 className="discover-section-title">{title}</h2>
+          {subtitle && <span className="discover-section-sub">{subtitle}</span>}
+        </div>
+        <div className="discover-section-actions"><RailArrows rail={rail} /></div>
       </div>
       <ScrollRail rail={rail} className={className}>{children}</ScrollRail>
     </section>

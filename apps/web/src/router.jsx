@@ -22,6 +22,8 @@ import App from './App.jsx';
 
 // Layout + views
 const DiscoverView = lazy(() => import('./components/DiscoverView.jsx'));
+const NewReleasesView = lazy(() => import('./components/NewReleasesView.jsx'));
+const GuideView   = lazy(() => import('./components/GuideView.jsx'));
 const CalendarView= lazy(() => import('./components/CalendarView.jsx'));
 const MyListsView   = lazy(() => import('./components/MyListsView.jsx'));
 const SearchView  = lazy(() => import('./components/SearchView.jsx'));
@@ -102,6 +104,8 @@ const router = createBrowserRouter([
       { path: 'app',      element: <Navigate to="/home" replace /> },
       { path: 'u/:username', element: wrap(<PublicProfilePage />) },
       { path: 'home',     element: wrap(<DiscoverView />) },
+      { path: 'new-releases', element: wrap(<NewReleasesView />) },
+      { path: 'guide',    element: wrap(<GuideView />) },
       { path: 'calendar', element: wrap(<CalendarView />) },
       { path: 'watching', element: <Navigate to="/my-lists" replace /> },
       { path: 'list',     element: <Navigate to="/my-lists" replace /> },

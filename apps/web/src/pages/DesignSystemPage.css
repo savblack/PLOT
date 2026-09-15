@@ -355,8 +355,6 @@
 .ds-fake-epg-days,
 .ds-fake-progress,
 .ds-fake-calendar-nav,
-.ds-fake-platform-header,
-.ds-mini-header-stack,
 .ds-epg-row {
   border: 1px solid var(--border);
   border-radius: 0;
@@ -410,21 +408,6 @@
 .ds-fake-calendar-nav {
   margin: 0;
   padding: 0.75rem 1rem;
-}
-
-.ds-fake-platform-header {
-  width: 100%;
-}
-
-.ds-mini-header-stack {
-  display: grid;
-  align-content: center;
-  gap: 0.65rem;
-  padding: 0.75rem;
-}
-
-.ds-mini-header-stack .discover-plat-type-label {
-  margin: 0;
 }
 
 .ds-epg-demo {
@@ -600,11 +583,6 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: var(--surface);
-}
-
-.ds-chart-row-sample .card-save-btn {
-  position: static;
-  opacity: 1;
 }
 
 .ds-calendar-sample {

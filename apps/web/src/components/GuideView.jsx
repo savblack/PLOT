@@ -8,6 +8,7 @@ import { tmdb, getTmdbRegion, isEnglishOriginTitle, excludeKidsContent } from '@
 import { buildProviderLogoCacheKey, collectPendingProviderLogoRequests } from '../utils/providerLogos.js';
 import { ALL_TYPES, filterByType, filterByGenre } from '../utils/mediaFilters.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
+import EpgView from './EpgView.jsx';
 import CollapsibleSection from './CollapsibleSection.jsx';
 import { MEDIA } from '../copy/media.js';
 
@@ -286,6 +287,18 @@ export function UpcomingContent({ typeFilters, genreFilters, openPanel, watchlis
           expandSignal={expandSignal}
         />
       ))}
+    </div>
+  );
+}
+
+/* ── Guide route ──
+   The schedule grid was a sub-tab of Home. It is a destination of its own now:
+   a programme guide is a different mode from a discovery feed, and it needs
+   the full column height that the wrapper class gives it. */
+export default function GuideView() {
+  return (
+    <div className="guide-schedule-mode">
+      <EpgView />
     </div>
   );
 }
