@@ -12,7 +12,9 @@
 // show_type returns both movies and series — so cost = services(4) × regions per run.
 // Regions are auto-detected from the actual `profiles.region` distribution (see
 // detectActiveRegions below) so we never spend quota on markets with zero users.
-// The cron is WEEKLY (see .github/workflows/streaming-top10.yml): 4 × regions × ~4.3
+// Regions with fewer than CHART_MIN_USERS (default 3) users are skipped, so one
+// signup from a new market doesn't add 4 requests to every run. The cron is
+// WEEKLY (see .github/workflows/streaming-top10.yml): 4 × regions × ~4.3
 // runs/month leaves room for ~29 regions. A daily cadence blew the cap once the
 // fifth user region appeared (4 × 7 × 30 = 840) and the charts went dark for the
 // rest of the month. Set CHART_REGIONS="us,gb,au" to override detection with a
@@ -52,8 +54,17 @@ const SERVICES = [
   { platform: 'disney', service: 'disney' },
 ];
 
-// Reads the distinct set of regions real users are actually in, straight from
-// `profiles.region`, so we never burn API quota on markets with nobody in them.
+// A region needs at least this many users before we spend quota on it. Each
+// region costs 4 requests per run, and a single stray signup from a new market
+// used to add a permanent 4/run to the bill (in Sep 2026 four of seven active
+// regions had exactly one user). Those users still get the Netflix chart, which
+// is free and covers every country. Override with CHART_MIN_USERS=1 to serve
+// every market that has anyone in it.
+const MIN_USERS = Math.max(1, Number(process.env.CHART_MIN_USERS) || 3);
+
+// Reads the regions real users are actually in, straight from `profiles.region`,
+// keeping only those with at least MIN_USERS users, so we never burn API quota
+// on markets with (almost) nobody in them.
 async function detectActiveRegions(supabase) {
   if (!supabase) return null;
   const { data, error } = await supabase.from('profiles').select('region').not('region', 'is', null);
@@ -61,8 +72,16 @@ async function detectActiveRegions(supabase) {
     console.warn(`Could not auto-detect regions from profiles (${error.message}); using fallback list.`);
     return null;
   }
-  const regions = [...new Set(data.map(r => r.region).filter(Boolean).map(r => r.toLowerCase()))];
-  return regions.length ? regions : null;
+  const counts = new Map();
+  for (const { region } of data) {
+    if (!region) continue;
+    const key = region.toLowerCase();
+    counts.set(key, (counts.get(key) || 0) + 1);
+  }
+  const kept = [...counts].filter(([, n]) => n >= MIN_USERS).map(([r]) => r).sort();
+  const skipped = [...counts].filter(([, n]) => n < MIN_USERS).map(([r, n]) => `${r}(${n})`).sort();
+  if (skipped.length) console.log(`Skipping regions under ${MIN_USERS} users: ${skipped.join(', ')}`);
+  return kept.length ? kept : null;
 }
 
 if (!API_KEY) {

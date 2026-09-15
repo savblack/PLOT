@@ -37,3 +37,4 @@ jobs:
           TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
           RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
           CHART_REGIONS: ${{ vars.CHART_REGIONS }}
+          CHART_MIN_USERS: ${{ vars.CHART_MIN_USERS }} # optional; script defaults to 3
