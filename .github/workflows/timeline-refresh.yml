@@ -53,11 +53,13 @@ jobs:
       actions: write # dispatch ci.yml against this job's branch (see header)
     steps:
       - uses: actions/checkout@v7
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v7
         with:
           node-version: 22
-          cache: npm
-      - run: npm ci
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
 
       - name: Refresh timeline and trending hero
         id: refresh

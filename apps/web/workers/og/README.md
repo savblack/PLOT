@@ -26,7 +26,7 @@ instantly.
 
 ```sh
 cd apps/web/workers/og
-npm install
+pnpm install
 npx wrangler secret put TMDB_API_KEY   # paste the same value as the Vercel env
 npx wrangler deploy
 ```

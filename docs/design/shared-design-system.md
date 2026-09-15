@@ -24,12 +24,12 @@ rendered page is the visual contract; this file is the prose for what code can't
 - **Token values (canonical):** [`packages/core/tokens.js`](../../packages/core/tokens.js)
   — colors (light + dark), radii, and spacing. Cross-platform, CI-enforced.
 - **Web CSS variables:** [`apps/web/src/styles/tokens.css`](../../apps/web/src/styles/tokens.css)
-  — the color + radii block is **generated** from `tokens.js` (`npm run tokens:build`;
-  `npm run tokens:check` fails the build on drift). Web-only tokens (typography, layout,
+  — the color + radii block is **generated** from `tokens.js` (`pnpm run tokens:build`;
+  `pnpm run tokens:check` fails the build on drift). Web-only tokens (typography, layout,
   motion, glass, shadow) are hand-authored in the same file, outside the generated block.
 - **Mobile tokens:** [`apps/mobile/lib/tokens.ts`](../../apps/mobile/lib/tokens.ts) — derives from `tokens.js`.
 - **Marketing tokens:** [`marketing/templates/base.css`](../../marketing/templates/base.css)
-  — checked against `tokens.js` by `npm run tokens:marketing`.
+  — checked against `tokens.js` by `pnpm run tokens:marketing`.
 - **Living reference page:** [`apps/web/src/pages/DesignSystemPage.jsx`](../../apps/web/src/pages/DesignSystemPage.jsx)
   — the rendered inventory. Served at **`http://localhost:5177/design-system`** in dev
   builds only; it is intentionally not shipped to production.
@@ -168,10 +168,10 @@ When changing the system:
 
 1. Edit the canonical source (`packages/core/tokens.js` for shared token values, or the
    owning platform file for platform-specific presentation).
-2. Regenerate managed CSS with `npm run tokens:build`; never hand-edit the generated block.
+2. Regenerate managed CSS with `pnpm run tokens:build`; never hand-edit the generated block.
 3. Update the living reference page and this document when a role, rule, or usage boundary
    changes.
-4. Run `npm run tokens:check`, `npm run tokens:marketing`, and `npm run check` (plus the
+4. Run `pnpm run tokens:check`, `pnpm run tokens:marketing`, and `pnpm run check` (plus the
    relevant unit/type checks for the affected platform).
 5. Review light/dark themes, keyboard focus, reduced motion, and representative image
    surfaces before merging.

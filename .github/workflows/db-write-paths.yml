@@ -63,7 +63,7 @@ jobs:
     # docs/ops/ci-dependabot-secrets.md did for the VITE_* keys, is the wrong
     # one here. Those are publishable anon keys; this is a full production
     # database credential, and a Dependabot run's whole job is installing new
-    # third-party package versions — `npm ci` executes their install scripts.
+    # third-party package versions — `pnpm install --frozen-lockfile` executes their install scripts.
     # That is the last context that should hold this URL.
     #
     # Nothing is lost by skipping. This check reads trigger definitions and
@@ -80,6 +80,9 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
 
       - name: Set up Node
         uses: actions/setup-node@v7
@@ -105,4 +108,4 @@ jobs:
             echo "SUPABASE_DB_URL is not set — cannot check. Add it in Settings → Secrets → Actions." >&2
             exit 1
           fi
-          npm run db:write-paths
+          pnpm run db:write-paths

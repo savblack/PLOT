@@ -47,7 +47,7 @@ a check fail exactly the way the smoke tests did.
 The five secrets above are publishable anon keys — the browser ships them to
 every visitor, so a Dependabot run holding them costs nothing. `SUPABASE_DB_URL`
 is a full production database credential on the session pooler. A Dependabot run
-exists to install new third-party package versions, and `npm ci` executes those
+exists to install new third-party package versions, and `pnpm install --frozen-lockfile` executes those
 packages' install scripts; that is the last place that credential should be
 readable.
 

@@ -37,12 +37,14 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v7
         with:
           node-version: 22
-          cache: npm
+          cache: pnpm
 
-      - run: npm ci
+      - run: pnpm install --frozen-lockfile
 
       # Only trending days (Fridays) render a branded card; every other type
       # leads with a plain TMDB still. Installing unconditionally keeps the

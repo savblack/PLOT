@@ -12,7 +12,7 @@ PLOT is a private React/Vite app for discovering and logging movies and TV shows
 
 ## Monorepo layout
 
-This repo is an npm-workspaces monorepo. `npm ci` at the root installs every workspace. The root `package.json` is the workspace root and the orchestrator CI calls (`lint`, `build`, `test:*`, `tokens:*`, `mkt:*`); `build`/`dev`/`preview`/`test:*` delegate into `@plot/web`.
+This repo is a pnpm-workspaces monorepo. `pnpm install --frozen-lockfile` at the root installs every workspace. The root `package.json` is the workspace root and the orchestrator CI calls (`lint`, `build`, `test:*`, `tokens:*`, `mkt:*`); `build`/`dev`/`preview`/`test:*` delegate into `@plot/web`.
 
 - **`apps/web/`** (`@plot/web`) — the Vite/React app (`src/`, `index.html`), deployed to Cloudflare Pages (build output `apps/web/dist`; SSR routes are Pages Functions in the repo-root `functions/`).
 - **`apps/website/`** — the static marketing site (theplot.tv), its own Cloudflare Pages project (Root Directory `apps/website`); SSR routes are Pages Functions in `apps/website/functions/`. No build step.
@@ -25,7 +25,7 @@ This repo is an npm-workspaces monorepo. `npm ci` at the root installs every wor
 1. Install dependencies:
 
    ```sh
-   npm ci
+   pnpm install --frozen-lockfile
    ```
 
 2. Create a local env file:
@@ -43,7 +43,7 @@ This repo is an npm-workspaces monorepo. `npm ci` at the root installs every wor
 4. Start the app:
 
    ```sh
-   npm run dev
+   pnpm run dev
    ```
 
 ## Staging
@@ -62,8 +62,8 @@ Use the guarded command for any routine staging backend work. It always targets
 PLOT Staging and refuses a user-supplied project reference:
 
 ```sh
-npm run supabase:staging -- functions deploy tmdb-proxy
-npm run supabase:staging -- secrets list
+pnpm run supabase:staging -- functions deploy tmdb-proxy
+pnpm run supabase:staging -- secrets list
 ```
 
 The wrapper covers Supabase Functions, Secrets, and project configuration. Database
@@ -82,7 +82,7 @@ account's email and password respectively.
 Create an ignored Playwright session for local testing with:
 
 ```sh
-npm run staging:session
+pnpm run staging:session
 ```
 
 `--origin` accepts local origins only. A per-branch preview is behind Cloudflare
@@ -94,13 +94,13 @@ for browser tests, but must never print, commit, upload, or share the file.
 
 ## Scripts
 
-- `npm run dev` starts Vite locally.
-- `npm run build` creates a production build.
-- `npm run lint` runs ESLint.
-- `npm run check` runs lint and build together.
-- `npm run test:smoke` builds the app and runs Playwright route smoke tests.
+- `pnpm run dev` starts Vite locally.
+- `pnpm run build` creates a production build.
+- `pnpm run lint` runs ESLint.
+- `pnpm run check` runs lint and build together.
+- `pnpm run test:smoke` builds the app and runs Playwright route smoke tests.
   Run `npx playwright install chromium` once first on a fresh machine if the Chromium test browser is not installed yet.
-- `npm run preview` serves the production build locally.
+- `pnpm run preview` serves the production build locally.
 
 ## Supabase Functions
 

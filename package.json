@@ -3,22 +3,15 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "workspaces": [
-    "packages/core",
-    "packages/ui",
-    "apps/web",
-    "apps/mobile",
-    "apps/website"
-  ],
   "scripts": {
-    "dev": "npm run dev -w @plot/web",
+    "dev": "pnpm --filter @plot/web run dev",
     "dev:website": "cd apps/website && wrangler pages dev . --port 5202",
-    "build": "npm run build -w @plot/web",
-    "preview": "npm run preview -w @plot/web",
+    "build": "pnpm --filter @plot/web run build",
+    "preview": "pnpm --filter @plot/web run preview",
     "lint": "eslint .",
-    "check": "npm run lint && npm run build",
-    "test:unit": "npm run test:unit -w @plot/web && npm run test:unit -w @plot/core",
-    "test:smoke": "npm run test:smoke -w @plot/web",
+    "check": "pnpm run lint && pnpm run build",
+    "test:unit": "pnpm --filter @plot/web run test:unit && pnpm --filter @plot/core run test:unit",
+    "test:smoke": "pnpm --filter @plot/web run test:smoke",
     "test:website": "node --test apps/website/functions/_lib/*.test.js",
     "test:marketing": "node --test marketing/tests/*.test.mjs",
     "footer": "node scripts/build-footer.mjs",
@@ -27,10 +20,10 @@
     "tokens:check": "node scripts/build-tokens.mjs --check",
     "tokens:marketing": "node scripts/check-marketing-tokens.mjs",
     "colors:check": "node scripts/check-color-literals.mjs",
-    "storybook:website": "npm run storybook -w @plot/website-storybook",
-    "storybook:web": "npm run storybook -w @plot/web",
-    "storybook:mobile": "npm run storybook -w @plot/mobile",
-    "storybook:mobile:web": "npm run storybook:web -w @plot/mobile",
+    "storybook:website": "pnpm --filter @plot/website-storybook run storybook",
+    "storybook:web": "pnpm --filter @plot/web run storybook",
+    "storybook:mobile": "pnpm --filter @plot/mobile run storybook",
+    "storybook:mobile:web": "pnpm --filter @plot/mobile run storybook:web",
     "storybook:web:deploy": "bash scripts/deploy-storybook.sh apps/web plot-storybook-web-app",
     "storybook:website:deploy": "bash scripts/deploy-storybook.sh apps/website plot-storybook-website",
     "storybook:mobile:deploy": "bash scripts/deploy-storybook.sh apps/mobile plot-storybook-mobile",
@@ -79,5 +72,6 @@
     "eslint-plugin-react-refresh": "^0.5.6",
     "globals": "^17.12.0",
     "typescript-eslint": "^8.70.0"
-  }
+  },
+  "packageManager": "pnpm@10.6.3"
 }

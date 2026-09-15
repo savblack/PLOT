@@ -24,9 +24,9 @@ That folder contains:
 ## Commands
 
 ```sh
-npm run mkt:manual -- [YYYY-MM-DD]
-npm run mkt:manual:media -- [YYYY-MM-DD]
-npm run mkt:manual:publish -- [YYYY-MM-DD] [--dry-run]
+pnpm run mkt:manual -- [YYYY-MM-DD]
+pnpm run mkt:manual:media -- [YYYY-MM-DD]
+pnpm run mkt:manual:publish -- [YYYY-MM-DD] [--dry-run]
 ```
 
 ## Flow

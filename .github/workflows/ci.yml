@@ -61,11 +61,14 @@ jobs:
             ./scripts/scan-secrets.sh origin/main "${{ github.sha }}"
           fi
 
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Set up Node
         uses: actions/setup-node@v7
         with:
           node-version: 22
-          cache: npm
+          cache: pnpm
 
       # Folded in from what used to be a standalone `edge-typecheck` job, for the
       # same reason #563 folded the secret scan in: Actions bills every job
@@ -73,8 +76,8 @@ jobs:
       # a job cost a full billed minute per run (~730 min/month). `check` totals
       # ~60s, so it absorbs this and still lands inside one 2-minute bill.
       #
-      # Deliberately placed BEFORE `npm ci`. check-edge-types.sh explains that
-      # Deno must not find a node_modules/ directory or it switches to node
+      # Deliberately placed BEFORE the install. check-edge-types.sh explains
+      # that Deno must not find a node_modules/ directory or it switches to node
       # resolution and gives up on every npm: specifier — which silently skipped
       # four functions until `--node-modules-dir=none` was added. The flag makes
       # it robust either way, but running before the install keeps this step's
@@ -84,40 +87,40 @@ jobs:
         with:
           deno-version: v2.x
 
-      # Edge functions are hand-deployed: `npm run build` does not compile them
+      # Edge functions are hand-deployed: `pnpm run build` does not compile them
       # and no test imports them, so this is the only gate on them. Unconditional
       # on purpose — a paths gate would burn the minute it saves, and this way the
       # functions are checked on 100% of PRs rather than only the ones that touch
       # them.
       - name: Typecheck edge functions
-        run: npm run edge:check
+        run: pnpm run edge:check
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Lint
-        run: npm run lint
+        run: pnpm run lint
 
       - name: Check shared footer is in sync
-        run: npm run footer:check
+        run: pnpm run footer:check
 
       - name: Check design tokens are in sync (web ↔ core ↔ mobile)
-        run: npm run tokens:check
+        run: pnpm run tokens:check
 
       - name: Check no new raw colour literals in app code
-        run: npm run colors:check
+        run: pnpm run colors:check
 
       - name: Check marketing tokens are in sync (website + email + collateral)
-        run: npm run tokens:marketing
+        run: pnpm run tokens:marketing
 
       - name: Check auth email templates are in sync
-        run: npm run emails:check
+        run: pnpm run emails:check
 
       # Catches a migration recreating a function with a different ON CONFLICT
       # target, which is how every write to `history` broke for two weeks in
       # July 2026. Static — reads supabase/migrations only, no credentials.
       - name: Check migrations don't silently change an upsert key
-        run: npm run migrations:check
+        run: pnpm run migrations:check
 
       # The same whole-body-replacement hazard, aimed at blocking. The seven
       # RPCs that return another user's identity each carry a not_blocked
@@ -125,13 +128,13 @@ jobs:
       # and nothing would fail — blocking keeps working everywhere else and the
       # blocked account simply reappears on that one surface. Static.
       - name: Check identity functions still filter blocked users
-        run: npm run db:block-clause
+        run: pnpm run db:block-clause
 
       # The shared copy catalog only prevents web↔mobile drift if both apps read
       # from it. A literal that matches today diverges the first time either side
       # is reworded, so hardcoding a string the catalog owns fails the build.
       - name: Check no app hardcodes shared copy
-        run: npm run copy:check
+        run: pnpm run copy:check
 
       # An app importing a @plot/core module that no longer exists. tsc catches
       # this in CI but NOT from a git worktree: worktrees live inside the main
@@ -139,7 +142,7 @@ jobs:
       # resolves against a different tree. That blind spot is how #446 deleted
       # core/onboarding.js with a live importer and shipped an unbuildable main.
       - name: Check every @plot/core import resolves
-        run: npm run core:check
+        run: pnpm run core:check
 
       # Mobile's Discover sub-tabs must stay classified against the shared nav
       # list. #587 shipped the Upcoming tab fully implemented and unreachable —
@@ -148,22 +151,22 @@ jobs:
       # currently be run at all (docs/agents/web-mobile-parity.md), so this is
       # the only thing standing between that mistake and main.
       - name: Check mobile renders every Discover tab it should
-        run: npm run mobile:tabs
+        run: pnpm run mobile:tabs
 
       - name: Unit tests
-        run: npm run test:unit
+        run: pnpm run test:unit
 
       - name: Website unit tests
-        run: npm run test:website
+        run: pnpm run test:website
 
-      # marketing/ isn't an npm workspace, so this suite otherwise never runs
+      # marketing/ isn't a pnpm workspace, so this suite otherwise never runs
       # anywhere — it caught nothing when the Codex/Claude CLI shell-outs broke
       # twice in production (d1caa11, 31f4d72) because it wasn't wired in yet.
       - name: Marketing unit tests
-        run: npm run test:marketing
+        run: pnpm run test:marketing
 
       - name: Build
-        run: npm run build
+        run: pnpm run build
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
@@ -217,23 +220,26 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v7
 
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Set up Node
         uses: actions/setup-node@v7
         with:
           node-version: 22
-          cache: npm
+          cache: pnpm
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Build
-        run: npm run build
+        run: pnpm run build
 
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
 
       - name: Smoke tests
-        run: npm run test:smoke -w @plot/web
+        run: pnpm --filter @plot/web run test:smoke
 
   mobile-typecheck:
     name: Mobile typecheck (Expo)
@@ -256,16 +262,21 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v7
 
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Set up Node
         uses: actions/setup-node@v7
         with:
           node-version: 22
-          cache: npm
+          cache: pnpm
 
-      # Installs the whole workspace (web + mobile + @plot/core). legacy-peer-deps
-      # comes from the root .npmrc (react-native pins a different react patch).
+      # Installs the whole workspace (web + mobile + @plot/core). The mixed react
+      # versions (react-native pins a different patch) are tolerated via
+      # strict-peer-dependencies=false in the root .npmrc — pnpm's equivalent of
+      # the legacy-peer-deps flag npm needed here.
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       # tsc proves the JS type-checks. It cannot prove the app BUILDS: the native
       # build is Swift against Expo's and React Native's own headers, and nothing
@@ -274,7 +285,7 @@ jobs:
       # against, after a Dependabot group PR moved it. Nine packages were off in
       # total. This is the check that would have caught it the day it landed.
       - name: Check native deps match the Expo SDK
-        run: npm run mobile:deps
+        run: pnpm run mobile:deps
 
       - name: TypeScript
-        run: npm run typecheck --workspace @plot/mobile
+        run: pnpm --filter @plot/mobile run typecheck

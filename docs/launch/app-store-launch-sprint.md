@@ -168,7 +168,7 @@ First delete the engagement layer (#499): the feed UI, `useFeed`, `usePostEngage
 the `feed` Discover tab, `SHOW_SOCIAL_FEED`, and the `post_likes` / `post_comments`
 tables with their notification triggers. Both tables are empty, so this destroys no
 data, but it is still a drop against production with no staging gate: snapshot first
-and run `npm run db:write-paths` green before merge.
+and run `pnpm run db:write-paths` green before merge.
 
 Then reporting and user blocking, scoped to what remains: profile fields, avatars,
 usernames, and the profile social links flagged by the Guideline 1.2 research.
@@ -307,7 +307,7 @@ update without the launch feeling unfinished.
   `current_period_end = now() + 30 days` grants entitlement and lapses on its own.
 - **The `watching_progress.media_type` migration** merges straight to production with
   no staging gate. Write it purely additive, capture a backup snapshot first, and
-  require `npm run db:write-paths` green before merge.
+  require `pnpm run db:write-paths` green before merge.
 - **`create or replace function`** replaces the whole body and Postgres accepts a
   stale one silently. This cost two weeks of failed `history` writes in July. Diff
   against the live definition, never against the migration you remember.

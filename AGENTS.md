@@ -31,8 +31,11 @@ follow it without being re-told. Tickets say only *what* to build.
 
 ## Repository layout
 
-npm-workspaces monorepo. `npm ci` at root installs everything. `legacy-peer-deps=true` in
-`.npmrc` is **mandatory** (web and mobile pin different React patch versions).
+pnpm-workspaces monorepo (members in `pnpm-workspace.yaml`). `pnpm install` at root installs
+everything. Two settings in `.npmrc` are **mandatory**: `node-linker=hoisted` (Metro and
+`scripts/check-expo-sdk-deps.mjs` both assume a flat, hoisted `node_modules`) and
+`strict-peer-dependencies=false` (web and mobile pin different React patch versions).
+See `docs/ops/package-manager.md`.
 
 - `packages/core/` (`@plot/core`) — platform-agnostic JS + JSDoc shared by web & mobile:
   data hooks (`useWatchlist.js`, `useHistory.js`, …), API access (`supabase.js`, `tmdb.js`),
@@ -43,9 +46,9 @@ npm-workspaces monorepo. `npm ci` at root installs everything. `legacy-peer-deps
 - `apps/mobile/` (`@plot/mobile`) — Expo / React Native, TypeScript, expo-router.
   Platform seams in `lib/`. **See `apps/mobile/AGENTS.md` before writing mobile code.**
 - `apps/website/` — static marketing site (theplot.tv) → Cloudflare Pages. Plain
-  HTML/CSS/JS, no build step, **not an npm workspace.** SSR routes are Pages Functions
+  HTML/CSS/JS, no build step, **not a pnpm workspace.** SSR routes are Pages Functions
   in `apps/website/functions/` (admin-host routing via `functions/_middleware.js`).
-  Serve it with `npm run dev:website`, never a plain static server — the pages render
+  Serve it with `pnpm run dev:website`, never a plain static server — the pages render
   either way, but `functions/` routes 404 and the homepage's TMDB surfaces go silently
   empty. See `apps/website/README.md`.
 - `supabase/` — `functions/` (Deno edge functions), `migrations/`, `config.toml`.
@@ -55,18 +58,18 @@ npm-workspaces monorepo. `npm ci` at root installs everything. `legacy-peer-deps
 
 Run from repo root unless noted. Use **npm** (workspaces), never yarn/pnpm.
 
-- `npm run dev` — web dev server (Vite, port 5177)
-- `npm run dev:website` — marketing site + its Pages Functions (wrangler, port 5202)
-- `npm run check` — **lint + build; run this before every PR** (after `npm ci`)
-- `npm run lint` / `npm run build`
-- `npm run test:unit` — `node --test` unit tests (`apps/web/tests/unit/`)
-- `npm run test:smoke` — Playwright smoke (`vite build` + chromium; run
+- `pnpm run dev` — web dev server (Vite, port 5177)
+- `pnpm run dev:website` — marketing site + its Pages Functions (wrangler, port 5202)
+- `pnpm run check` — **lint + build; run this before every PR** (after `pnpm install --frozen-lockfile`)
+- `pnpm run lint` / `pnpm run build`
+- `pnpm run test:unit` — `node --test` unit tests (`apps/web/tests/unit/`)
+- `pnpm run test:smoke` — Playwright smoke (`vite build` + chromium; run
   `npx playwright install chromium` once on a fresh machine)
-- `npm run typecheck -w @plot/mobile` — **required when touching mobile**; `npm run lint` covers it too
-- `npm run edge:check` — **required when touching `supabase/functions/`**; type-checks every
+- `pnpm --filter @plot/mobile` run typecheck — **required when touching mobile**; `pnpm run lint` covers it too
+- `pnpm run edge:check` — **required when touching `supabase/functions/`**; type-checks every
   edge function with `deno check` against the generated DB types. Nothing else compiles them,
   so this is the only gate. Needs `deno` on PATH. If it reports columns that do exist, the
-  types are stale: `npm run gen:db-types` regenerates
+  types are stale: `pnpm run gen:db-types` regenerates
   `supabase/functions/_shared/database.types.ts` from production's schema (read-only, needs
   `SUPABASE_ACCESS_TOKEN`), and it should be committed with the migration that moved the schema.
 - Deploy: web app and marketing site both auto-deploy via Cloudflare Pages on merge to `main`;
@@ -200,7 +203,7 @@ Every user-facing string that both apps show comes from `packages/core/copy`, an
 apps import it. `apps/web/src/copy/*` are re-export shims so web's existing import paths
 still resolve; the strings themselves live in core.
 
-`npm run copy:check` fails the build if an app file contains a literal the catalog already
+`pnpm run copy:check` fails the build if an app file contains a literal the catalog already
 owns. This exists because a hardcoded string that happens to match today is invisible drift:
 it diverges the moment either side is reworded, which is exactly what the catalog was built
 to prevent. The catalog being *shared* is necessary but not sufficient — it has to be *read*.
@@ -233,16 +236,16 @@ So:
 
 - **Before recreating an existing function, diff against what's live** — not against the
   migration you remember. `select pg_get_functiondef(oid) from pg_proc where proname = '…'`.
-- `npm run migrations:check` fails the build if a redefinition changes the `ON CONFLICT`
+- `pnpm run migrations:check` fails the build if a redefinition changes the `ON CONFLICT`
   target. If the change is deliberate, add `-- redefines: <fn> (…why…)` to the migration.
-- `npm run db:write-paths` checks the live database: every trigger function's upsert key
+- `pnpm run db:write-paths` checks the live database: every trigger function's upsert key
   must resolve against a real constraint, and every table it references must exist. Runs
   daily via `.github/workflows/db-write-paths.yml` and on any PR touching migrations.
   Read-only; it deliberately does not write-and-rollback, because `http_request` triggers
   on `profiles`/`feedback` are not reliably transactional.
 - **A migration merged to `main` applies to PRODUCTION automatically** via the Supabase
   GitHub integration. There is no staging gate — write it as if it runs immediately.
-- **`npm run db:migration-test` before merging anything under `supabase/migrations/`.**
+- **`pnpm run db:migration-test` before merging anything under `supabase/migrations/`.**
   Both checks above are static — neither executes any SQL — so without this the first run
   of a migration is on real user data. This restores a copy of production into a throwaway
   local Postgres 17 cluster, applies whatever is pending, and exits non-zero if any of it
@@ -250,7 +253,7 @@ So:
   deliberately broken migrations (a bad column reference and a bad cast) in testing.
   Limits: Vault and pg_net are stubbed, and RLS policies are created but not exercised, so
   a policy's *correctness* still needs the Staging project.
-- **`npm run db:function-diff` before merging any `create or replace function`.**
+- **`pnpm run db:function-diff` before merging any `create or replace function`.**
   A redefinition is a whole-body replacement: you do not amend a function, you retype it,
   and starting from the migration you remember rather than the body that is live silently
   reverts everything added since. `migrations:check` catches only the one detail that broke
@@ -259,7 +262,7 @@ So:
   body that changed. **A redefinition that only ADDS lines is the safe shape** — the tool
   counts removed lines for exactly that reason. Not a CI gate: it needs production
   credentials and its output is a diff for a human to read.
-- **`npm run staging:block-test` / `npm run staging:premium-flag-test`** execute policies
+- **`pnpm run staging:block-test` / `pnpm run staging:premium-flag-test`** execute policies
   and RPCs under a real `auth.uid()` on the Staging project, which no static check and not
   `db:migration-test` can do. Both wrap themselves in one transaction ending in `rollback`,
   so Staging is unchanged whether they pass or die partway — a teardown block at the bottom
@@ -269,14 +272,14 @@ So:
   The block test asserts from four viewpoints — blocker, blocked, an unrelated bystander,
   and an anonymous reader. The last two are not padding: they are the only thing that
   catches a visibility clause that is too *broad*.
-- **`npm run db:block-clause` (CI)** requires every function reading `profiles` to be in
+- **`pnpm run db:block-clause` (CI)** requires every function reading `profiles` to be in
   exactly one of `BLOCK_FILTERED` or `BLOCK_EXEMPT` in `scripts/check-block-clause.mjs`.
   Blocking hides identity through seven security definer RPCs, because `profiles` has one
   select policy (`auth.uid() = id`) and every identity read bypasses RLS. A later migration
   recreating one of them from a stale body would drop the `not_blocked` clause and *nothing
   would fail* — blocking keeps working everywhere else, the blocked account simply reappears
   on one surface. Adding an identity RPC without classifying it fails the build.
-- **`npm run db:restore-drill`** proves the nightly backup still restores. `pg_restore`
+- **`pnpm run db:restore-drill`** proves the nightly backup still restores. `pg_restore`
   exits 0 even when tables fail, so run this after any migration adding an extension type,
   and compare the table count against production. See `docs/ops/db-restore.md`.
 
@@ -288,7 +291,7 @@ file, not the `--no-verify-jwt` flag.
 ## Testing expectations
 
 - Add/adjust unit tests for domain logic in `packages/core` and `apps/web/tests/unit/`.
-- Run `npm run check` and any test suite touching your change before calling it done.
+- Run `pnpm run check` and any test suite touching your change before calling it done.
 - Mobile has no test runner — `tsc --noEmit` plus ESLint are the safety net; run both for
   mobile changes.
 - Mobile lint is ratcheted: `no-explicit-any` (~127) and `react-hooks/refs` (~34) are `warn`,
@@ -318,7 +321,7 @@ When you finish, report in this shape:
    you skipped a step, say so plainly. Never claim "done" on unverified work.
 3. **Follow-ups** — anything deferred or newly noticed, or "none."
 
-Quality bar: it builds, `npm run check` passes, no new lint errors, no console noise, no
+Quality bar: it builds, `pnpm run check` passes, no new lint errors, no console noise, no
 secrets added, no unrelated diffs. Design intent holds — flat monochrome (black/white/grey),
 structure from hairlines and surface tokens, compact buttons never full-width. The `#E05578`
 accent is reserved for approved interaction and hierarchy cues: Save, favourite, delete,

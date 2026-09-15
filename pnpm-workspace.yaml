@@ -1,0 +1,26 @@
+# Workspace members. This replaces the "workspaces" field in package.json, which
+# pnpm does not read. Keep the two in sync if you ever migrate back.
+#
+# marketing/ is deliberately absent, exactly as it was under npm: it has a
+# package.json for its scripts but declares no dependencies, so making it a
+# workspace member would only add an empty node_modules to install.
+packages:
+  - packages/core
+  - packages/ui
+  - apps/web
+  - apps/mobile
+  - apps/website
+
+# pnpm 10 refuses to run dependency install/postinstall scripts unless they are
+# named here. These two genuinely need theirs — both fetch a platform binary at
+# install time, and silently skipping it breaks the build rather than the install:
+#   esbuild  - the bundler binary behind vite
+#   workerd  - the Cloudflare runtime behind wrangler / @cloudflare/vite-plugin
+onlyBuiltDependencies:
+  - esbuild
+  - workerd
+
+# core-js's postinstall only prints a funding message. Listing it here keeps it
+# blocked without re-warning on every install.
+ignoredBuiltDependencies:
+  - core-js
