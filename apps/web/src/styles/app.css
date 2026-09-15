@@ -877,7 +877,7 @@ svg { stroke-width: 1.5; }
    than a wrapper around them), so their focus indicator keys off :focus-within
    on the row/card instead of :focus-visible + .interactive-surface on it. */
 .list-row.search-result-row:focus-within,
-.discover-chart-row:focus-within {
+.discover-chart-card:focus-within {
   background: var(--surface-raised);
 }
 
@@ -1010,10 +1010,6 @@ svg { stroke-width: 1.5; }
   filter: drop-shadow(0 1px 3px rgba(0,0,0,0.65));
 }
 .media-card:hover .card-save-btn { opacity: 1; }
-.discover-chart-row:hover .card-save-btn,
-.discover-chart-row .card-save-btn:focus-visible {
-  opacity: 1;
-}
 .card-save-btn.saved {
   background: transparent;
   box-shadow: none;
@@ -1024,21 +1020,6 @@ svg { stroke-width: 1.5; }
 .card-save-btn.saved svg {
   fill: white;
   stroke: white;
-}
-
-/* Chart list rows only: grey by default, pink + filled when saved */
-.discover-chart-row .card-save-btn {
-  color: var(--text-muted);
-}
-.discover-chart-row .card-save-btn svg {
-  filter: none;
-}
-.discover-chart-row .card-save-btn.saved {
-  color: var(--accent);
-}
-.discover-chart-row .card-save-btn.saved svg {
-  fill: var(--accent);
-  stroke: var(--accent);
 }
 
 /* Poster-card favourite (heart) — sits in the former type-chip slot (top-left) */
@@ -4671,6 +4652,11 @@ a.provider-chip--link:hover {
   margin: 2rem auto;
   padding: 0 1rem;
 }
+/* Under the "PLOT's Picks" header the row's own top margin is the header's
+   spacing twice over. */
+.discover-featured-section .discover-hero-row {
+  margin-top: 0.25rem;
+}
 .discover-hero-row.has-two {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -4855,89 +4841,6 @@ a.provider-chip--link:hover {
 .discover-rank-badge.rank-rest { color: var(--text-muted); }
 
 /* Chart row */
-.discover-chart-row {
-  display: flex;
-  align-items: center;
-  gap: 0.85rem;
-  padding: 0.5rem 1rem;
-  border-bottom: 1px solid var(--border);
-  cursor: pointer;
-  transition: background 0.12s;
-}
-.discover-chart-row:hover {
-  background: var(--surface-raised);
-}
-.discover-chart-row .discover-chart-right.search-row-actions {
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.15s ease;
-}
-.discover-chart-row:hover .discover-chart-right.search-row-actions,
-.discover-chart-row:focus-within .discover-chart-right.search-row-actions {
-  opacity: 1;
-  pointer-events: auto;
-}
-/* This row hugs the right edge of a narrow card, so even the first
-   action button sits close enough to the edge that a left-anchored
-   tooltip can spill past the viewport. Anchor both to the right. */
-.discover-chart-right.search-row-actions .search-action-btn:first-child::after {
-  right: 0;
-  left: auto;
-}
-
-.discover-chart-rank {
-  font-family: var(--font-serif-tabular);
-  font-size: 1.55rem;
-  font-weight: 500;
-  color: var(--accent);
-  width: 2rem;
-  text-align: center;
-  flex-shrink: 0;
-  line-height: 1;
-}
-.discover-chart-rank.top3 {
-  font-size: 1.95rem;
-}
-.discover-chart-rank.dim {
-  color: var(--text-muted);
-  font-size: 1.2rem;
-}
-
-.discover-chart-poster {
-  width: 40px;
-  aspect-ratio: 2/3;
-  border-radius: 6px;
-  overflow: hidden;
-  flex-shrink: 0;
-  background: var(--surface-sunken);
-}
-.discover-chart-poster img {
-  transition: transform 0.25s var(--ease);
-}
-.discover-chart-row:hover .discover-chart-poster img {
-  transform: scale(1.08);
-}
-
-.discover-chart-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.discover-chart-title {
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin-bottom: 0.15rem;
-}
-
-.discover-chart-meta {
-  font-size: 0.63rem;
-  color: var(--text-muted);
-}
-
 /* Shared "view details" hit area for list-row-style cards (discover chart
    rows, search result rows) whose real Bookmark/Heart buttons must stay
    siblings of this rather than nested inside it. Reproduces the row's own
@@ -4963,15 +4866,6 @@ a.provider-chip--link:hover {
   outline: none;
 }
 
-.discover-chart-right {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-}
-
-/* Poster card hover-lift — scoped to Discover so shared media-card
-   usage elsewhere keeps its existing press behaviour */
 .discover-section .media-card:hover {
   transform: translateY(-4px);
 }
@@ -4999,21 +4893,106 @@ a.provider-chip--link:hover {
   padding: 0;
 }
 
-/* Section headers stack flush — the grey bands meet with no gap above or
-   below, collapsed or expanded, so the list reads as one continuous accordion.
-
-   This was a <button> and needed the native button border reset on top of
-   .collapse-head's. It is a <div> wrapping the collapse toggle now, because
-   the rail's scroll arrows sit beside that toggle and a button cannot nest
-   inside a button — so it takes .collapse-head's border like
-   CollapsibleSection.jsx does, and the reset is gone with the element.
-
-   The taller padding is the serif title and its optional subtitle;
-   .collapse-head's 46px was sized for one line of 0.72rem uppercase. */
+/* Section header: serif title, optional subtitle, and the rail's arrows or a
+   "See all" on the right. Nothing collapses, so there is no chevron and no
+   band — the sections are separated by space, and a hairline above each one
+   after the first. */
+.discover-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 2.25rem;
+  padding-bottom: 3rem;
+}
+.discover-sections > .discover-section + .discover-section {
+  border-top: 1px solid var(--border);
+  padding-top: 1.75rem;
+}
 .discover-section-header {
-  margin-top: 0;
-  padding: 0.7rem var(--gut);
-  min-height: 58px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0 var(--gut) 0.75rem;
+}
+.discover-section-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+  padding-bottom: 0.1rem;
+}
+.discover-see-all {
+  background: none;
+  border: none;
+  padding: 0.25rem 0;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+.discover-see-all:hover { color: var(--text-primary); }
+.discover-see-all:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+
+/* The filter menu's row. Below sidebar widths it is a plain row under the
+   header; at sidebar widths it is pulled up onto the page heading's line so
+   Home does not spend a row on one control. */
+.discover-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem var(--gut) 0.25rem;
+}
+.discover-toolbar-date {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+@media (min-width: 1024px) {
+  /* .app-page-heading: 1.75rem top padding, 2rem line, 1.5rem bottom margin.
+     Pull the row up over that bottom margin so the date lands directly under
+     the heading and the pill centres on the heading + date block. */
+  .discover-toolbar {
+    margin-top: calc(-1 * (2rem + 1.5rem));
+    min-height: 3.5rem;
+    padding: 0 var(--gut);
+    margin-bottom: 1.5rem;
+    align-items: center;
+  }
+  .discover-toolbar-date {
+    align-self: flex-end;
+    padding-bottom: 0.15rem;
+  }
+}
+
+/* Labelled variant of the filter trigger: an outlined pill, icon + summary. */
+.guide-filter-btn--labelled {
+  width: auto;
+  height: 38px;
+  gap: 0.45rem;
+  padding: 0 0.9rem 0 0.7rem;
+  border-color: var(--border-strong);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+.guide-filter-btn--labelled svg {
+  width: 17px;
+  height: 17px;
+}
+.guide-filter-btn--labelled:hover,
+.guide-filter-btn--labelled.open {
+  border-color: var(--text-primary);
+  color: var(--text-primary);
+}
+.guide-filter-btn--labelled.active {
+  border-color: var(--accent);
+  color: var(--accent-text);
 }
 
 .discover-section-heading {
@@ -5023,6 +5002,7 @@ a.provider-chip--link:hover {
   min-width: 0;
 }
 .discover-section-title {
+  margin: 0;
   font-family: var(--font-serif);
   font-size: 1.25rem;
   font-weight: 400;
@@ -5164,143 +5144,258 @@ a.provider-chip--link:hover {
 }
 
 /* Platform collapsible section */
-.discover-plat-section {
-  border-bottom: 1px solid var(--border);
+/* ── Top 20 rail ──────────────────────────────
+   Two rows deep, scrolling sideways, so each card is a fixed width and the
+   title has room. grid-auto-flow: column fills down then across, which is
+   what puts #1 above #2 and #3 beside #1. */
+.discover-chart-rail {
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-rows: repeat(2, minmax(0, auto));
+  grid-auto-columns: min(264px, 78vw);
+  column-gap: 2rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  padding: 0.25rem var(--gut) 1rem;
+  cursor: grab;
+  user-select: none;
+  -webkit-overflow-scrolling: touch;
 }
+.discover-chart-rail::-webkit-scrollbar { display: none; }
+.discover-chart-rail:active { cursor: grabbing; }
 
-/* Nested one level under "Top 10 by Platform", styled like a custom-list row
-   nested under "My Lists" — plain row, border-bottom, right-pointing chevron
-   that rotates down when open — rather than its own card-like surface. */
-.discover-plat-header {
-  width: 100%;
+.discover-chart-card {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.65rem 1rem;
-  background: none;
-  border: none;
-  border-bottom: 1px solid var(--border);
-  cursor: pointer;
-  text-align: left;
-  -webkit-tap-highlight-color: transparent;
-  transition: background 0.12s;
+  gap: 0.85rem;
+  padding: 0.5rem 0;
+  min-height: 84px;
 }
-.discover-plat-header:hover {
-  background: var(--surface-raised);
+.discover-chart-card .list-row-hit { gap: 0.85rem; }
+.discover-chart-rank {
+  font-family: var(--font-serif-tabular);
+  font-size: 1.75rem;
+  font-weight: 400;
+  color: var(--accent);
+  width: 2rem;
+  text-align: center;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.discover-chart-rank.rank-top3 { color: var(--text-secondary); }
+.discover-chart-rank.rank-rest { color: var(--text-muted); font-size: 1.5rem; }
+
+.discover-chart-poster {
+  width: 52px;
+  aspect-ratio: 2/3;
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: var(--surface-sunken);
+}
+.discover-chart-poster img,
+.discover-chart-poster-placeholder {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.discover-chart-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.discover-chart-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--text-primary);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.discover-chart-meta {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+/* Bookmark / heart sit over the card's right edge and appear on hover, the
+   same reveal as a search result row. */
+.discover-chart-card .discover-chart-actions {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding-left: 1.5rem;
+  background: linear-gradient(to right, transparent, var(--bg) 35%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+.discover-chart-card:hover .discover-chart-actions,
+.discover-chart-card:focus-within .discover-chart-actions {
+  opacity: 1;
+  pointer-events: auto;
+}
+.discover-chart-card .discover-chart-actions .search-action-btn:first-child::after {
+  right: 0;
+  left: auto;
 }
 
-.discover-plat-header-left {
+/* ── Top 10 by Platform ───────────────────────
+   One row per official platform: the logo is the row label, the chart is a
+   rail beside it. Stacked rather than nested accordions, so every platform
+   is visible at once and the section has the same shape every week. */
+.discover-plat-list {
+  display: flex;
+  flex-direction: column;
+  padding: 0 var(--gut);
+}
+.discover-plat-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.25rem 0;
+  border-top: 1px solid var(--border);
+}
+.discover-plat-label {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.discover-plat-ident {
   display: flex;
   align-items: center;
   gap: 0.65rem;
 }
-
 .discover-plat-logo {
-  width: 30px;
-  height: 30px;
-  border-radius: var(--radius-md);
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
   object-fit: contain;
   flex-shrink: 0;
   background: var(--surface-sunken);
 }
-
 .discover-plat-logo-fallback {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.6rem;
+  font-size: 0.85rem;
   font-weight: 600;
   color: var(--text-muted);
-  background: var(--surface-sunken);
 }
-
 .discover-plat-name {
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: 1rem;
+  font-weight: 600;
   color: var(--text-primary);
 }
+.discover-plat-note {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.discover-plat-switch {
+  display: flex;
+  gap: 0.75rem;
+}
+.discover-plat-switch-btn {
+  background: none;
+  border: none;
+  border-bottom: 1.5px solid transparent;
+  padding: 0.15rem 0;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+.discover-plat-switch-btn:hover { color: var(--text-secondary); }
+.discover-plat-switch-btn.active {
+  color: var(--text-primary);
+  border-bottom-color: var(--accent);
+}
+.discover-plat-switch-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
 
-.discover-plat-official {
-  font-size: 0.6rem;
-  font-weight: 600;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  color: var(--accent);
-  background: var(--accent-dim);
-  padding: 0.15rem 0.45rem;
-  border-radius: var(--radius-pill);
-  white-space: nowrap;
+.discover-plat-rail-wrap {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  min-width: 0;
+}
+.discover-plat-rail {
+  display: flex;
+  gap: 0.75rem;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  padding: 2px 0 6px;
+  cursor: grab;
+  user-select: none;
+  -webkit-overflow-scrolling: touch;
+}
+.discover-plat-rail::-webkit-scrollbar { display: none; }
+.discover-plat-rail:active { cursor: grabbing; }
+.discover-plat-rail > .media-card { flex: 0 0 var(--poster-w); }
+.discover-plat-arrows {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding-top: 0.25rem;
+}
+.discover-plat-arrows:empty { display: none; }
+
+/* A platform with no rows this week keeps its slot, but only the label's
+   worth of height — a row of ghost posters is dead space four times over. */
+.discover-plat-row--empty {
+  padding: 1rem 0;
 }
 
-/* Fine-print source note — only shown once a platform panel is expanded */
+/* Fine-print source note under the section */
 .discover-plat-attribution {
-  margin: 1rem 0 0;
-  font-size: 0.58rem;
+  margin: 0.75rem var(--gut) 0;
+  font-size: 0.7rem;
   line-height: 1.4;
-  letter-spacing: 0.02em;
   color: var(--text-muted);
-  opacity: 0.75;
 }
 .discover-plat-attribution a {
   color: inherit;
   text-decoration: underline;
 }
 
-.discover-plat-chevron {
-  width: 14px;
-  height: 14px;
-  flex-shrink: 0;
-  stroke: var(--text-muted);
-  fill: none;
-  stroke-width: 2;
-  transform: rotate(0deg);
-  transition: transform 0.15s ease;
-}
-.discover-plat-chevron.open {
-  transform: rotate(90deg);
-}
-
-.discover-plat-body {
-  padding: 0.75rem;
-  background: var(--surface-raised);
-  border-top: 1px solid var(--border);
-}
-
-.discover-plat-type-label {
-  display: flex;
-  align-items: center;
-  min-height: 34px;
-  padding: 0 0.8rem;
-  background: var(--surface);
-  border-left: 3px solid var(--accent);
-  font-size: 0.66rem;
-  font-weight: 600;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  color: var(--text-primary);
-  margin: 1rem 0 0.85rem;
-}
-
-.discover-plat-type-label:first-child {
-  margin-top: 0.35rem;
-}
-
-.discover-plat-grid {
-  display: flex;
-  gap: 0.65rem;
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
-  scrollbar-width: none;
-  padding-bottom: 0.15rem;
-  -webkit-overflow-scrolling: touch;
-}
-
-.discover-plat-grid::-webkit-scrollbar {
-  display: none;
-}
-
-.discover-plat-grid > .media-card {
-  flex: 0 0 var(--poster-w);
+@media (min-width: 1024px) {
+  /* Room for the label to sit beside the rail rather than above it. */
+  .discover-plat-row {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 2rem;
+  }
+  .discover-plat-label {
+    flex: 0 0 168px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.6rem;
+    padding-top: 0.25rem;
+  }
+  .discover-plat-rail-wrap {
+    flex: 1;
+    min-width: 0;
+  }
+  .discover-plat-row--empty .discover-plat-label {
+    flex-direction: row;
+    align-items: center;
+    gap: 1rem;
+    padding-top: 0;
+  }
 }
 
 /* ── Rail scroll controls ───────────────────── */
@@ -5350,20 +5445,6 @@ a.provider-chip--link:hover {
 ═══════════════════════════════════════ */
 
 @media (min-width: 1024px) {
-  /* A platform's titles are a set to browse, not a ranked stream. At this
-     width they fit as a grid, so the whole set is visible instead of four
-     cards with the rest parked off-screen to the right. */
-  .discover-plat-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(var(--poster-w), 1fr));
-    overflow-x: visible;
-  }
-  /* Let the track size the card rather than the fixed poster width. */
-  .discover-plat-grid > .media-card {
-    flex: none;
-    width: auto;
-  }
-
   /* Pointer devices only: touch has the swipe. Always visible rather than
      revealed on hover — the point of parking them in the header was to say a
      rail scrolls before you touch it. */
@@ -5382,6 +5463,8 @@ a.provider-chip--link:hover {
      present rather than on hover, so it costs no layout shift. */
   .rail-scroll,
   .discover-binge-rail,
+  .discover-chart-rail,
+  .discover-plat-rail,
   .panel-cast-rail,
   .panel-similar-rail {
     scrollbar-width: thin;
@@ -5389,6 +5472,8 @@ a.provider-chip--link:hover {
   }
   .rail-scroll::-webkit-scrollbar,
   .discover-binge-rail::-webkit-scrollbar,
+  .discover-chart-rail::-webkit-scrollbar,
+  .discover-plat-rail::-webkit-scrollbar,
   .panel-cast-rail::-webkit-scrollbar,
   .panel-similar-rail::-webkit-scrollbar {
     display: block;
@@ -5396,12 +5481,16 @@ a.provider-chip--link:hover {
   }
   .rail-scroll::-webkit-scrollbar-track,
   .discover-binge-rail::-webkit-scrollbar-track,
+  .discover-chart-rail::-webkit-scrollbar-track,
+  .discover-plat-rail::-webkit-scrollbar-track,
   .panel-cast-rail::-webkit-scrollbar-track,
   .panel-similar-rail::-webkit-scrollbar-track {
     background: transparent;
   }
   .rail-scroll::-webkit-scrollbar-thumb,
   .discover-binge-rail::-webkit-scrollbar-thumb,
+  .discover-chart-rail::-webkit-scrollbar-thumb,
+  .discover-plat-rail::-webkit-scrollbar-thumb,
   .panel-cast-rail::-webkit-scrollbar-thumb,
   .panel-similar-rail::-webkit-scrollbar-thumb {
     background: var(--border-strong);
@@ -5441,8 +5530,7 @@ a.provider-chip--link:hover {
 
   .platform-badge,
   .card-save-btn,
-  .card-fav-btn,
-  .discover-chart-row .card-save-btn {
+  .card-fav-btn {
     opacity: 1;
   }
 
@@ -5470,18 +5558,13 @@ a.provider-chip--link:hover {
     height: 15px;
   }
 
-  .discover-chart-row .card-save-btn {
-    width: 34px !important;
-    height: 34px !important;
-  }
-
   /* Hover-only reveal doesn't exist on touch — these three surfaces show
      their favourite/save/bookmark buttons the way desktop shows them on
      hover, permanently. Pairs with hiding the elements they'd otherwise
      sit on top of (the status chip below). */
   .discover-hero-corner-btns,
   .discover-hero-corner-btn,
-  .discover-chart-row .discover-chart-right.search-row-actions,
+  .discover-chart-card .discover-chart-actions,
   .search-result-row .search-row-actions {
     opacity: 1;
     pointer-events: auto;
@@ -5569,8 +5652,7 @@ a.provider-chip--link:hover {
 @media (max-width: 520px) {
   .platform-badge,
   .card-save-btn,
-  .card-fav-btn,
-  .discover-chart-row .card-save-btn {
+  .card-fav-btn {
     opacity: 1;
   }
 
@@ -5598,14 +5680,9 @@ a.provider-chip--link:hover {
     height: 15px;
   }
 
-  .discover-chart-row .card-save-btn {
-    width: 34px !important;
-    height: 34px !important;
-  }
-
   .discover-hero-corner-btns,
   .discover-hero-corner-btn,
-  .discover-chart-row .discover-chart-right.search-row-actions,
+  .discover-chart-card .discover-chart-actions,
   .search-result-row .search-row-actions {
     opacity: 1;
     pointer-events: auto;
@@ -5746,20 +5823,6 @@ a.provider-chip--link:hover {
   .rail-scroll {
     padding-left: 0.85rem;
     padding-right: 0.85rem;
-  }
-
-  .discover-chart-row {
-    gap: 0.65rem;
-    padding: 0.65rem 0.85rem;
-  }
-
-  .discover-chart-rank {
-    width: 1.55rem;
-    font-size: 1.35rem;
-  }
-
-  .discover-chart-rank.dim {
-    font-size: 1.08rem;
   }
 
   .feedback-type-grid {

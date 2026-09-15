@@ -1,7 +1,7 @@
 import { ALL_TYPES } from '@plot/core/mediaFilters.js';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
-import { TodayLabel } from './TodayLabel.jsx';
 import { posterUrl, backdropUrl } from '../utils/images.js';
 import { favoriteWords } from '../utils/spelling.js';
 import ScrollRail from './ScrollRail.jsx';
@@ -11,14 +11,19 @@ import { useGenres } from '../hooks/useGenres.js';
 import { useDiscover } from '../hooks/useDiscover.js';
 import { useNewReleases } from '../hooks/useNewReleases.js';
 import { usePlatformCharts } from '../hooks/usePlatformCharts.js';
-import { UpcomingContent } from './GuideView.jsx';
+import { OFFICIAL_PLATFORMS } from '@plot/core/usePlatformCharts.js';
+import { tmdb, getTmdbRegion } from '@plot/core/tmdb.js';
 import { filterByType, filterByGenre } from '../utils/mediaFilters.js';
-import EpgView from './EpgView.jsx';
 import { MEDIA } from '../copy/media.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
-import { track, EVENTS } from '../lib/analytics.js';
 import GroupedFilterMenu from './GroupedFilterMenu.jsx';
-import SectionToggleIcon from './SectionToggleIcon.jsx';
+
+/* Home is one scroll. It used to be four sub-tabs (Discover, New Releases,
+   Upcoming, Guide) under a sticky toolbar, with every section collapsible and
+   an expand/collapse-all control. Guide is a schedule, not a feed, so it is a
+   sidebar destination now; Upcoming is a list of dates, so it lives in
+   Calendar; New Releases is a rail here with its own page behind "See all".
+   Nothing collapses — a section worth skipping is worth moving down. */
 
 /* ── Rail ── */
 /* Both rails are ScrollRail: it carries the drag behaviour these used to wire
@@ -27,7 +32,7 @@ function Rail({ rail, children }) {
   return (
     <ScrollRail
       rail={rail}
-      style={{ paddingLeft: 'var(--gut)', paddingRight: 'var(--gut)', paddingTop: '1.25rem', paddingBottom: '2rem' }}
+      style={{ paddingLeft: 'var(--gut)', paddingRight: 'var(--gut)', paddingTop: '0.25rem', paddingBottom: '1rem' }}
     >
       {children}
     </ScrollRail>
@@ -39,46 +44,28 @@ function BingeRail({ rail, children }) {
 }
 
 /* The section banner: a serif title, an optional subtitle, and a slot on the
-   right for the rail's scroll arrows.
+   right for the rail's scroll arrows or a "See all" link.
 
-   The whole banner used to be one <button>. It is a <div> wrapping the toggle
-   now, because the arrows are buttons too and cannot nest inside another one.
-
-   `subtitle` is deliberately optional rather than the old always-present
-   kicker: a line under every shelf is noise by the third one. Pass it only
-   where the title does not already say it — "Top 10 by Platform" needs to say
-   whose ranking it is, "Hot Right Now" does not need to be told it is
-   trending. */
-function DiscoverSectionHeader({ subtitle, title, open, onToggle, className = '', headerRight }) {
+   `subtitle` is deliberately optional rather than an always-present kicker: a
+   line under every shelf is noise by the third one. Pass it only where the
+   title does not already say it — "Top 10 by Platform" needs to say whose
+   ranking it is; "Hot Right Now" says where "hot" comes from (TMDB's
+   trending-today list), because the title alone does not. */
+export function DiscoverSectionHeader({ subtitle, title, headerRight }) {
   return (
-    <div className={`collapse-head discover-section-header${className ? ` ${className}` : ''}`}>
-      <button
-        className="collapse-head-toggle"
-        onClick={onToggle}
-        aria-expanded={open}
-        type="button"
-      >
-        <svg className={`collapse-chevron${open ? ' open' : ''}`} viewBox="0 0 24 24" aria-hidden="true">
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
-        <span className="discover-section-heading">
-          <span className="discover-section-title">{title}</span>
-          {subtitle && <span className="discover-section-sub">{subtitle}</span>}
-        </span>
-      </button>
-      {headerRight && <div className="collapse-head-actions">{headerRight}</div>}
+    <div className="discover-section-header">
+      <div className="discover-section-heading">
+        <h2 className="discover-section-title">{title}</h2>
+        {subtitle && <span className="discover-section-sub">{subtitle}</span>}
+      </div>
+      {headerRight && <div className="discover-section-actions">{headerRight}</div>}
     </div>
   );
 }
 
-/* A collapsible section whose body is a rail. Owns the scroll state so the
-   header can carry the arrows while the rail itself holds the cards; when the
-   section is collapsed the rail unmounts, the hook measures nothing, and
-   RailArrows renders null. */
-function RailSection({
-  title, subtitle, open, onToggle, sectionClassName = 'discover-section',
-  headerClassName = '', binge = false, children,
-}) {
+/* A section whose body is a rail. Owns the scroll state so the header can
+   carry the arrows while the rail itself holds the cards. */
+export function RailSection({ title, subtitle, sectionClassName = 'discover-section', binge = false, headerRight, children }) {
   const rail = useRailScroll();
   const RailBody = binge ? BingeRail : Rail;
 
@@ -87,13 +74,65 @@ function RailSection({
       <DiscoverSectionHeader
         title={title}
         subtitle={subtitle}
-        open={open}
-        onToggle={onToggle}
-        className={headerClassName}
-        headerRight={<RailArrows rail={rail} />}
+        headerRight={<>{headerRight}<RailArrows rail={rail} /></>}
       />
-      {open && <RailBody rail={rail}>{children}</RailBody>}
+      <RailBody rail={rail}>{children}</RailBody>
     </section>
+  );
+}
+
+const TYPE_OPTIONS = [
+  { id: 'tv',     label: MEDIA.tv     },
+  { id: 'cinema', label: MEDIA.cinema },
+  { id: 'movie',  label: MEDIA.movies },
+];
+
+/* What the filter pill says: "All types · All genres" until something is
+   narrowed, then the chosen names (or a count once that gets long). */
+function filterSummary(typeFilters, genreFilters, genres) {
+  const allTypes = ALL_TYPES.every(t => typeFilters.includes(t));
+  const types = allTypes
+    ? MEDIA.allTypes
+    : TYPE_OPTIONS.filter(o => typeFilters.includes(o.id)).map(o => o.label).join(', ');
+  const picked = genres.filter(g => genreFilters.includes(g.id)).map(g => g.name);
+  const genreText = picked.length === 0 ? MEDIA.allGenres : picked.length <= 2 ? picked.join(', ') : `${picked.length} genres`;
+  return `${types} · ${genreText}`;
+}
+
+/* Today, spelt out in the viewer's own locale ("Tuesday 15 September"). */
+function todayLabel() {
+  return new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
+}
+
+/* The date and the type + genre filter, in one row. At sidebar widths the row
+   is pulled up onto the page heading: the date sits under "Home" and the
+   filter pill on the right, so Home does not spend a row on one control.
+   Below them it is a plain row under the header. */
+export function DiscoverToolbar({ ariaLabel, typeFilters, setTypeFilters, genreFilters, setGenreFilters }) {
+  const { genres } = useGenres();
+  return (
+    <div className="discover-toolbar">
+      <span className="discover-toolbar-date">{todayLabel()}</span>
+      <GroupedFilterMenu
+        ariaLabel={ariaLabel}
+        label={filterSummary(typeFilters, genreFilters, genres)}
+        groups={[
+          {
+            heading: MEDIA.typeHeading,
+            options: TYPE_OPTIONS,
+            value: typeFilters,
+            onChange: setTypeFilters,
+            defaultValue: ALL_TYPES,
+          },
+          {
+            heading: MEDIA.genreHeading,
+            options: genres.map(g => ({ id: g.id, label: g.name })),
+            value: genreFilters,
+            onChange: setGenreFilters,
+          },
+        ]}
+      />
+    </div>
   );
 }
 
@@ -151,7 +190,7 @@ function rankBadgeClass(rank) {
    Fav/Save stay real, always-visible buttons anchored to .media-card
    (position:relative) rather than nested inside the "view details" button,
    so no control ends up nested inside another one. */
-function RankedCard({ item, rank, showRank = true, openPanel, watchlist }) {
+export function RankedCard({ item, rank, showRank = true, showMeta = true, openPanel, watchlist }) {
   const title = item.title || item.name;
   const img   = posterUrl(item.poster_path, 'w185');
   const type  = item.media_type || 'movie';
@@ -167,7 +206,7 @@ function RankedCard({ item, rank, showRank = true, openPanel, watchlist }) {
           {showRank && <span className={`discover-rank-badge${rankBadgeClass(rank)}`}>{rank}</span>}
         </div>
         <div className="media-card-title">{title}</div>
-        <div className="media-card-meta">{cardMeta(item)}</div>
+        {showMeta && <div className="media-card-meta">{cardMeta(item)}</div>}
       </button>
       <FavBtn item={item} />
       <SaveBtn item={item} watchlist={watchlist} />
@@ -310,7 +349,7 @@ function HeroCard({ item, openPanel, watchlist, badge = 'Trending #1' }) {
   );
 }
 
-/* ── Chart row action icons — same set/behavior as SearchView's result row ── */
+/* ── Chart card action icons — same set/behavior as SearchView's result row ── */
 function BookmarkIcon({ filled }) {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -331,11 +370,15 @@ function HeartIcon({ filled }) {
     </svg>
   );
 }
-/* ── Chart row ── */
-function ChartRow({ item, rank, openPanel, watchlist, favorites, region }) {
+
+/* ── Chart card ──
+   One cell of the Top 20 rail: rank, poster, title, meta. The rail lays these
+   out two rows deep and scrolls sideways, so each card is a fixed width and
+   the title gets the room the old full-width list row never gave it. */
+function ChartCard({ item, rank, openPanel, watchlist, favorites, region }) {
   const fw    = favoriteWords(region);
   const title = item.title || item.name;
-  const img   = posterUrl(item.poster_path, 'w92');
+  const img   = posterUrl(item.poster_path, 'w154');
   const type  = item.media_type || 'movie';
   const id    = item.id;
   const year  = (item.release_date || item.first_air_date || '').slice(0, 4);
@@ -344,21 +387,21 @@ function ChartRow({ item, rank, openPanel, watchlist, favorites, region }) {
   const openDetails = () => openPanel(id, type);
 
   return (
-    <div className="discover-chart-row">
+    <div className="discover-chart-card">
       <button type="button" className="list-row-hit interactive-surface" onClick={openDetails} aria-label={`View details for ${title}`}>
-        <span className={`discover-chart-rank${rank <= 10 ? ' glow' : ' dim'}${rank <= 3 ? ' top3' : ''}`}>{rank}</span>
+        <span className={`discover-chart-rank${rankBadgeClass(rank)}`}>{rank}</span>
         <div className="discover-chart-poster">
           {img
-            ? <img src={img} alt={title} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            : <div style={{ width: '100%', height: '100%', background: 'var(--surface-sunken)' }} />
+            ? <img src={img} alt="" loading="lazy" />
+            : <div className="discover-chart-poster-placeholder" />
           }
         </div>
         <div className="discover-chart-info">
           <div className="discover-chart-title">{title}</div>
-          <div className="discover-chart-meta">{year}{year ? ' · ' : ''}{type === 'tv' ? 'TV' : 'Movie'}</div>
+          <div className="discover-chart-meta">{year}{year ? ' · ' : ''}{type === 'tv' ? MEDIA.tv : MEDIA.movie}</div>
         </div>
       </button>
-      <div className="discover-chart-right search-row-actions">
+      <div className="discover-chart-actions search-row-actions">
         <button
           type="button"
           className={`search-action-btn${inList ? ' active' : ''}`}
@@ -382,104 +425,140 @@ function ChartRow({ item, rank, openPanel, watchlist, favorites, region }) {
   );
 }
 
-/* ── Platform section (collapsible) ── */
-function PlatformSection({ platform, openPanel, watchlist, typeFilters, genreFilters }) {
+/* ── Top 20 ── a two-row rail. */
+function WeeklyChart({ items, openPanel, watchlist }) {
+  const { favorites, profile } = useApp();
+  const rail = useRailScroll();
+  return (
+    <section className="discover-section">
+      <DiscoverSectionHeader
+        title="Top 20 This Week"
+        subtitle="Global ranking"
+        headerRight={<RailArrows rail={rail} />}
+      />
+      <ScrollRail rail={rail} className="discover-chart-rail">
+        {items.map((item, i) => (
+          <ChartCard key={`${item.media_type}-${item.id}`} item={item} rank={i + 1} openPanel={openPanel} watchlist={watchlist} favorites={favorites} region={profile?.region} />
+        ))}
+      </ScrollRail>
+    </section>
+  );
+}
+
+/* ── One platform's official chart ──
+   The logo is the row label; a Movies / TV switch sits under it when both
+   lists apply. A platform with no synced rows still gets a row — a compact
+   one that says the chart is unavailable rather than disappearing, so the
+   section's shape does not change from week to week with the sync's fortunes. */
+/* The hook only resolves a logo for platforms that have rows; every row here
+   shows its logo, so look them all up once from TMDB's provider list. */
+function usePlatformLogos() {
+  const [logos, setLogos] = useState({});
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await tmdb.getWatchProvidersForRegion('tv', getTmdbRegion());
+        const providers = res?.results || [];
+        const found = {};
+        for (const def of OFFICIAL_PLATFORMS) {
+          const p = providers.find(p => def.match.test(p.provider_name || ''));
+          if (p?.logo_path) found[def.key] = p.logo_path;
+        }
+        if (!cancelled) setLogos(found);
+      } catch { /* logos are optional; the initial stands in */ }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+  return logos;
+}
+
+function PlatformRow({ def, chart, logoPath, openPanel, watchlist, typeFilters, genreFilters }) {
   const showMovies = typeFilters.includes('movie') || typeFilters.includes('cinema');
   const showTv     = typeFilters.includes('tv');
-  platform = {
-    ...platform,
-    movies: showMovies ? filterByGenre(platform.movies, genreFilters) : [],
-    tv:     showTv     ? filterByGenre(platform.tv, genreFilters)     : [],
-  };
-  const [open, setOpen] = useState(false);
-  const totalItems = platform.movies.length + platform.tv.length;
-  if (!totalItems) return null;
+  const movies = chart && showMovies ? filterByGenre(chart.movies, genreFilters) : [];
+  const tv     = chart && showTv     ? filterByGenre(chart.tv, genreFilters)     : [];
+  const [type, setType] = useState('movie');
+  const rail = useRailScroll();
+
+  const lists = [
+    movies.length ? { id: 'movie', label: MEDIA.movies, items: movies } : null,
+    tv.length     ? { id: 'tv',    label: MEDIA.tv,     items: tv }     : null,
+  ].filter(Boolean);
+  const active = lists.find(l => l.id === type) ?? lists[0];
 
   return (
-    <div className="discover-plat-section">
-      <button className="discover-plat-header" onClick={() => setOpen(o => !o)}>
-        <svg
-          className={`discover-plat-chevron${open ? ' open' : ''}`}
-          viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-        >
-          <polyline points="9 18 15 12 9 6"/>
-        </svg>
-        <div className="discover-plat-header-left">
-          {platform.logo_path
-            ? <img className="discover-plat-logo" src={`https://image.tmdb.org/t/p/w45${platform.logo_path}`} alt={platform.name} />
-            : <div className="discover-plat-logo discover-plat-logo-fallback">{platform.name.slice(0, 2)}</div>
+    <div className={`discover-plat-row${active ? '' : ' discover-plat-row--empty'}`}>
+      <div className="discover-plat-label">
+        <div className="discover-plat-ident">
+          {(logoPath || chart?.logo_path)
+            ? <img className="discover-plat-logo" src={`https://image.tmdb.org/t/p/w45${logoPath || chart.logo_path}`} alt="" />
+            : <span className="discover-plat-logo discover-plat-logo-fallback" aria-hidden="true">{def.name.slice(0, 1)}</span>
           }
-          <span className="discover-plat-name">{platform.name}</span>
+          <span className="discover-plat-name">{def.name}</span>
         </div>
-      </button>
+        {!active && <span className="discover-plat-note">{MEDIA.chartUnavailable}</span>}
+        {lists.length > 1 && (
+          <div className="discover-plat-switch" role="tablist" aria-label={`${def.name} chart`}>
+            {lists.map(l => (
+              <button
+                key={l.id}
+                type="button"
+                role="tab"
+                aria-selected={l.id === active.id}
+                className={`discover-plat-switch-btn${l.id === active.id ? ' active' : ''}`}
+                onClick={() => setType(l.id)}
+              >
+                {l.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
-      {open && (
-        <div className="discover-plat-body">
-          {platform.movies.length > 0 && (
-            <>
-              <div className="discover-plat-type-label">Movies</div>
-              <div className="discover-plat-grid">
-                {platform.movies.slice(0, 10).map((item, i) => (
-                  <div key={`${item.id}-${i}`} className="media-card">
-                    <button type="button" className="media-card-hit interactive-surface" onClick={() => openPanel(item.id, 'movie')} aria-label={`View details for ${item.title || item.name}`}>
-                      <div className="media-card-img">
-                        {posterUrl(item.poster_path, 'w185')
-                          ? <img src={posterUrl(item.poster_path, 'w185')} alt={item.title || item.name} loading="lazy" />
-                          : <div className="media-card-img-placeholder" />
-                        }
-                        <span className={`discover-rank-badge${rankBadgeClass(item._rank ?? i + 1)}`}>{item._rank ?? i + 1}</span>
-                      </div>
-                      <div className="media-card-title">{item.title || item.name}</div>
-                    </button>
-                    <FavBtn item={item} />
-                    <SaveBtn item={item} watchlist={watchlist} />
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-          {platform.tv.length > 0 && (
-            <>
-              <div className="discover-plat-type-label">TV Shows</div>
-              <div className="discover-plat-grid">
-                {platform.tv.slice(0, 10).map((item, i) => (
-                  <div key={`${item.id}-${i}`} className="media-card">
-                    <button type="button" className="media-card-hit interactive-surface" onClick={() => openPanel(item.id, 'tv')} aria-label={`View details for ${item.title || item.name}`}>
-                      <div className="media-card-img">
-                        {posterUrl(item.poster_path, 'w185')
-                          ? <img src={posterUrl(item.poster_path, 'w185')} alt={item.title || item.name} loading="lazy" />
-                          : <div className="media-card-img-placeholder" />
-                        }
-                        <span className={`discover-rank-badge${rankBadgeClass(item._rank ?? i + 1)}`}>{item._rank ?? i + 1}</span>
-                      </div>
-                      <div className="media-card-title">{item.title || item.name}</div>
-                    </button>
-                    <FavBtn item={item} />
-                    <SaveBtn item={item} watchlist={watchlist} />
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-          <p className="discover-plat-attribution">
-            Official Top 10 · Netflix and the{' '}
-            <a href="https://www.movieofthenight.com/about/api" target="_blank" rel="noopener noreferrer">
-              Streaming Availability API
-            </a>.
-          </p>
+      {active && (
+        <div className="discover-plat-rail-wrap">
+          <ScrollRail rail={rail} className="discover-plat-rail">
+            {active.items.slice(0, 10).map((item, i) => (
+              <RankedCard key={`${item.id}-${i}`} item={item} rank={item._rank ?? i + 1} showMeta={false} openPanel={openPanel} watchlist={watchlist} />
+            ))}
+          </ScrollRail>
+          <div className="discover-plat-arrows"><RailArrows rail={rail} /></div>
         </div>
       )}
     </div>
   );
 }
 
-/* ── Discover tab content ── */
-function DiscoverContent({ openPanel, watchlist, openSections, setOpenSections, typeFilters, genreFilters }) {
-  const { favorites, profile } = useApp();
+function PlatformCharts({ platformList, openPanel, watchlist, typeFilters, genreFilters }) {
+  const byKey = Object.fromEntries(platformList.map(p => [p.key, p]));
+  const logos = usePlatformLogos();
+  return (
+    <section className="discover-section">
+      <DiscoverSectionHeader title="Top 10 by Platform" subtitle="Official charts" />
+      <div className="discover-plat-list">
+        {OFFICIAL_PLATFORMS.map(def => (
+          <PlatformRow key={def.key} def={def} chart={byKey[def.key]} logoPath={logos[def.key]} openPanel={openPanel} watchlist={watchlist} typeFilters={typeFilters} genreFilters={genreFilters} />
+        ))}
+      </div>
+      <p className="discover-plat-attribution">
+        Official Top 10 · Netflix and the{' '}
+        <a href="https://www.movieofthenight.com/about/api" target="_blank" rel="noopener noreferrer">
+          Streaming Availability API
+        </a>.
+      </p>
+    </section>
+  );
+}
+
+/* ── Home ── */
+function DiscoverContent({ openPanel, watchlist, typeFilters, genreFilters }) {
+  const navigate = useNavigate();
   const { data, loading } = useDiscover();
+  const { data: releases } = useNewReleases();
   // Hard-coded official-chart platforms — the same set for everyone, unrelated
-  // to the user's own streaming selections. Only platforms with real synced
-  // Top 10 data are returned.
+  // to the user's own streaming selections. The hook returns only platforms
+  // with synced rows; PlatformCharts fills in the rest as unavailable.
   const platformList = usePlatformCharts();
   if (loading) {
     return <LoadingSpinner />;
@@ -493,6 +572,7 @@ function DiscoverContent({ openPanel, watchlist, openSections, setOpenSections, 
   const bingedShows       = applyFilters(data.bingedShows);
   const cinemaMovies      = applyFilters(data.cinemaMovies);
   const anticipatedMovies = applyFilters(data.anticipatedMovies);
+  const recent            = applyFilters(releases.recent);
   const hasContent = hero || hotRail.length > 0 || weekly.length > 0 || bingedShows.length > 0 || cinemaMovies.length > 0 || anticipatedMovies.length > 0 || platformList.length > 0;
 
   if (!hasContent) {
@@ -504,158 +584,44 @@ function DiscoverContent({ openPanel, watchlist, openSections, setOpenSections, 
     );
   }
 
-  const toggleSection = (section) => {
-    setOpenSections(prev => ({ ...prev, [section]: !prev[section] }));
-  };
   return (
-    <div>
+    <div className="discover-sections">
       {hero && genreFilters.length === 0 && (
         <section className="discover-section discover-featured-section">
-          <DiscoverSectionHeader
-            title="PLOT's Picks"
-            open={openSections.featured}
-            onToggle={() => toggleSection('featured')}
-          />
-          {openSections.featured && (
-            <div className={`discover-hero-row${onThisDay ? ' has-two' : ''}`}>
-              <HeroCard item={hero} openPanel={openPanel} watchlist={watchlist} />
-              {onThisDay && (
-                <HeroCard
-                  item={onThisDay}
-                  openPanel={openPanel}
-                  watchlist={watchlist}
-                  badge={onThisDay.archive_year ? MEDIA.fromTheArchiveBadge : MEDIA.onThisDay}
-                />
-              )}
-            </div>
-          )}
+          <DiscoverSectionHeader title="PLOT's Picks" />
+          <div className={`discover-hero-row${onThisDay ? ' has-two' : ''}`}>
+            <HeroCard item={hero} openPanel={openPanel} watchlist={watchlist} />
+            {onThisDay && (
+              <HeroCard
+                item={onThisDay}
+                openPanel={openPanel}
+                watchlist={watchlist}
+                badge={onThisDay.archive_year ? MEDIA.fromTheArchiveBadge : MEDIA.onThisDay}
+              />
+            )}
+          </div>
         </section>
       )}
 
       {hotRail.length > 0 && (
-        <RailSection
-          title="Hot Right Now"
-          open={openSections.hot}
-          onToggle={() => toggleSection('hot')}
-          sectionClassName="discover-section discover-binge-section"
-          headerClassName="discover-binge-header"
-          binge
-        >
+        <RailSection title="Hot Right Now" subtitle="Trending today" sectionClassName="discover-section discover-binge-section" binge>
           {hotRail.map(item => (
             <BingeCard key={`${item.media_type}-${item.id}`} item={item} openPanel={openPanel} watchlist={watchlist} />
           ))}
         </RailSection>
       )}
 
-      {bingedShows.length > 0 && (
-        <RailSection
-          title="Most Binged Shows"
-          subtitle="Popular TV"
-          open={openSections.binge}
-          onToggle={() => toggleSection('binge')}
-        >
-          {bingedShows.map(item => (
-            <RankedCard key={`${item.media_type}-${item.id}`} item={item} showRank={false} openPanel={openPanel} watchlist={watchlist} />
-          ))}
-        </RailSection>
-      )}
+      {weekly.length > 0 && <WeeklyChart items={weekly} openPanel={openPanel} watchlist={watchlist} />}
 
-      {weekly.length > 0 && (
-        <section className="discover-section discover-section--list">
-          <DiscoverSectionHeader
-            subtitle="Global ranking"
-            title="Top 20 This Week"
-            open={openSections.weekly}
-            onToggle={() => toggleSection('weekly')}
-          />
-          {openSections.weekly && weekly.map((item, i) => (
-            <ChartRow key={`${item.media_type}-${item.id}`} item={item} rank={i + 1} openPanel={openPanel} watchlist={watchlist} favorites={favorites} region={profile?.region} />
-          ))}
-        </section>
-      )}
-
-      {cinemaMovies.length > 0 && (
-        <RailSection
-          title="Now Showing"
-          subtitle={MEDIA.inCinemas}
-          open={openSections.cinemas}
-          onToggle={() => toggleSection('cinemas')}
-          sectionClassName="discover-section discover-binge-section"
-          headerClassName="discover-binge-header"
-          binge
-        >
-          {cinemaMovies.map(item => (
-            <BingeCard key={`${item.media_type}-${item.id}`} item={item} openPanel={openPanel} watchlist={watchlist} />
-          ))}
-        </RailSection>
-      )}
-
-      {anticipatedMovies.length > 0 && (
-        <RailSection
-          title="Most Anticipated"
-          open={openSections.anticipated}
-          onToggle={() => toggleSection('anticipated')}
-          sectionClassName="discover-section discover-binge-section"
-          headerClassName="discover-binge-header"
-          binge
-        >
-          {anticipatedMovies.map(item => (
-            <BingeCard key={`${item.media_type}-${item.id}`} item={item} openPanel={openPanel} watchlist={watchlist} />
-          ))}
-        </RailSection>
-      )}
-
-      {platformList.length > 0 && (
-        <section className="discover-section discover-section--list">
-          <DiscoverSectionHeader
-            subtitle="Official charts"
-            title="Top 10 by Platform"
-            open={openSections.platforms}
-            onToggle={() => toggleSection('platforms')}
-          />
-          {openSections.platforms && platformList.map(platform => (
-            <PlatformSection key={platform.id} platform={platform} openPanel={openPanel} watchlist={watchlist} typeFilters={typeFilters} genreFilters={genreFilters} />
-          ))}
-        </section>
-      )}
-
-    </div>
-  );
-}
-
-/* ── New Releases tab content ── */
-function NewReleasesContent({ openPanel, watchlist, typeFilters, genreFilters, openSections, setOpenSections }) {
-  const { data, loading } = useNewReleases();
-  if (loading) {
-    return <LoadingSpinner />;
-  }
-
-  const applyFilters = (items) => filterByGenre(filterByType(items, typeFilters), genreFilters);
-  const recent = applyFilters(data.recent);
-  const genreRails = data.genreRails.map(rail => ({ ...rail, items: applyFilters(rail.items) }));
-  const hasContent = recent.length > 0 || genreRails.some(rail => rail.items.length > 0);
-
-  if (!hasContent) {
-    return (
-      <div className="empty-state" style={{ marginTop: '1rem' }}>
-        <div className="empty-title">Nothing new</div>
-        <div className="empty-body">Nothing matches right now. Try widening your filters.</div>
-      </div>
-    );
-  }
-
-  const toggleSection = (section) => {
-    setOpenSections(prev => ({ ...prev, [section]: !prev[section] }));
-  };
-
-  return (
-    <div>
       {recent.length > 0 && (
         <RailSection
-          title="Recently Released"
+          title="New Releases"
           subtitle="Last 30 days"
-          open={openSections.recent}
-          onToggle={() => toggleSection('recent')}
+          headerRight={
+            <button type="button" className="discover-see-all" onClick={() => navigate('/new-releases')}>
+              {MEDIA.seeAll}
+            </button>
+          }
         >
           {recent.map(item => (
             <RankedCard key={`${item.media_type}-${item.id}`} item={item} showRank={false} openPanel={openPanel} watchlist={watchlist} />
@@ -663,218 +629,62 @@ function NewReleasesContent({ openPanel, watchlist, typeFilters, genreFilters, o
         </RailSection>
       )}
 
-      {genreRails.filter(rail => rail.items.length > 0).map(rail => (
-        <RailSection
-          key={rail.key}
-          title={rail.label}
-          subtitle="New releases"
-          open={openSections[rail.key]}
-          onToggle={() => toggleSection(rail.key)}
-        >
-          {rail.items.map(item => (
+      {bingedShows.length > 0 && (
+        <RailSection title="Most Binged Shows" subtitle="Popular TV">
+          {bingedShows.map(item => (
             <RankedCard key={`${item.media_type}-${item.id}`} item={item} showRank={false} openPanel={openPanel} watchlist={watchlist} />
           ))}
         </RailSection>
-      ))}
+      )}
+
+      {cinemaMovies.length > 0 && (
+        <RailSection title="Now Showing" subtitle={MEDIA.inCinemas} sectionClassName="discover-section discover-binge-section" binge>
+          {cinemaMovies.map(item => (
+            <BingeCard key={`${item.media_type}-${item.id}`} item={item} openPanel={openPanel} watchlist={watchlist} />
+          ))}
+        </RailSection>
+      )}
+
+      {anticipatedMovies.length > 0 && (
+        <RailSection title="Coming Soon" sectionClassName="discover-section discover-binge-section" binge>
+          {anticipatedMovies.map(item => (
+            <BingeCard key={`${item.media_type}-${item.id}`} item={item} openPanel={openPanel} watchlist={watchlist} />
+          ))}
+        </RailSection>
+      )}
+
+      {platformList.length > 0 && <PlatformCharts platformList={platformList} openPanel={openPanel} watchlist={watchlist} typeFilters={typeFilters} genreFilters={genreFilters} />}
     </div>
   );
 }
 
 /* ═══════════════════════════════════════
-   DiscoverView — unified home with 3 tabs
+   DiscoverView — Home
 ═══════════════════════════════════════ */
 export default function DiscoverView() {
   const app = useApp();
-  const { genres }    = useGenres();
-  const [tab,          setTab]          = useState('discover');
   const [typeFilters,  setTypeFilters]  = useState(ALL_TYPES);
   const [genreFilters, setGenreFilters] = useState([]);
-  const [discoverSections, setDiscoverSections] = useState({
-    featured: true,
-    hot: true,
-    binge: true,
-    cinemas: true,
-    anticipated: true,
-    weekly: true,
-    platforms: true,
-  });
-  const allDiscoverSectionsOpen = Object.values(discoverSections).every(Boolean);
-  const toggleAllDiscoverSections = () => {
-    setDiscoverSections(prev => Object.fromEntries(
-      Object.keys(prev).map(section => [section, !allDiscoverSectionsOpen]),
-    ));
-  };
-
-  const [releasesAllOpen, setReleasesAllOpen] = useState(true);
-  const [releasesToggleToken, setReleasesToggleToken] = useState(0);
-  const toggleAllReleasesSections = () => {
-    setReleasesAllOpen(o => !o);
-    setReleasesToggleToken(t => t + 1);
-  };
-  const releasesExpandSignal = { token: releasesToggleToken, open: releasesAllOpen };
-
-  const [newReleasesSections, setNewReleasesSections] = useState({
-    recent: true, horror: true, comedy: true, action: true, scifi: true, thriller: true,
-    romance: true, drama: true, documentary: true, truecrime: true, reality: true,
-  });
-  const allNewReleasesSectionsOpen = Object.values(newReleasesSections).every(Boolean);
-  const toggleAllNewReleasesSections = () => {
-    setNewReleasesSections(prev => Object.fromEntries(
-      Object.keys(prev).map(section => [section, !allNewReleasesSectionsOpen]),
-    ));
-  };
-
-  const changeTab = (next) => {
-    if (next === tab) return;
-    setTab(next);
-    track(EVENTS.DISCOVER_TAB_CHANGED, { tab: next });
-  };
 
   if (!app) return null;
 
   const { openPanel, watchlist } = app;
 
   return (
-    <div className={tab === 'guide' ? 'guide-schedule-mode' : ''}>
-
-      {/* ── Sub-tab toolbar ── */}
-      <div className="sub-tabs">
-        <span className="sub-tabs-date"><TodayLabel /></span>
-
-        <div className="sub-tabs-scroll">
-          <button
-            className={`sub-tab-btn${tab === 'discover' ? ' active' : ''}`}
-            onClick={() => changeTab('discover')}
-          >
-            Discover
-          </button>
-          <button
-            className={`sub-tab-btn${tab === 'new' ? ' active' : ''}`}
-            onClick={() => changeTab('new')}
-          >
-            New Releases
-          </button>
-          <button
-            className={`sub-tab-btn${tab === 'releases' ? ' active' : ''}`}
-            onClick={() => changeTab('releases')}
-          >
-            Upcoming
-          </button>
-          <button
-            className={`sub-tab-btn${tab === 'guide' ? ' active' : ''}`}
-            onClick={() => changeTab('guide')}
-          >
-            Guide
-          </button>
-        </div>
-
-        {(tab === 'releases' || tab === 'discover' || tab === 'new') && (
-          <div className="sub-tabs-filters">
-            <GroupedFilterMenu
-              ariaLabel={tab === 'releases' ? 'Filter upcoming' : tab === 'new' ? 'Filter new releases' : 'Filter discover'}
-              groups={[
-                {
-                  heading: MEDIA.typeHeading,
-                  options: [
-                    { id: 'tv',     label: MEDIA.tv     },
-                    { id: 'cinema', label: MEDIA.cinema },
-                    { id: 'movie',  label: MEDIA.movies },
-                  ],
-                  value: typeFilters,
-                  onChange: setTypeFilters,
-                  defaultValue: ALL_TYPES,
-                },
-                {
-                  heading: MEDIA.genreHeading,
-                  options: genres.map(g => ({ id: g.id, label: g.name })),
-                  value: genreFilters,
-                  onChange: setGenreFilters,
-                },
-              ]}
-            />
-
-            {tab === 'discover' && (
-              <button
-                className="section-expand-all-btn"
-                onClick={toggleAllDiscoverSections}
-                aria-label={allDiscoverSectionsOpen ? 'Collapse all Discover sections' : 'Expand all Discover sections'}
-                aria-pressed={!allDiscoverSectionsOpen}
-                title={allDiscoverSectionsOpen ? MEDIA.collapseAllSections : MEDIA.expandAllSections}
-                type="button"
-              >
-                <SectionToggleIcon collapse={allDiscoverSectionsOpen} />
-              </button>
-            )}
-
-            {tab === 'releases' && (
-              <button
-                className="section-expand-all-btn"
-                onClick={toggleAllReleasesSections}
-                aria-label={releasesAllOpen ? 'Collapse all Upcoming sections' : 'Expand all Upcoming sections'}
-                aria-pressed={!releasesAllOpen}
-                title={releasesAllOpen ? MEDIA.collapseAllSections : MEDIA.expandAllSections}
-                type="button"
-              >
-                <SectionToggleIcon collapse={releasesAllOpen} />
-              </button>
-            )}
-
-            {tab === 'new' && (
-              <button
-                className="section-expand-all-btn"
-                onClick={toggleAllNewReleasesSections}
-                aria-label={allNewReleasesSectionsOpen ? 'Collapse all New Releases sections' : 'Expand all New Releases sections'}
-                aria-pressed={!allNewReleasesSectionsOpen}
-                title={allNewReleasesSectionsOpen ? MEDIA.collapseAllSections : MEDIA.expandAllSections}
-                type="button"
-              >
-                <SectionToggleIcon collapse={allNewReleasesSectionsOpen} />
-              </button>
-            )}
-          </div>
-        )}
-
-        {tab === 'guide' && (
-          <div id="guide-top-filters" className="sub-tabs-filters" />
-        )}
-      </div>
-
-      {/* ── Tab content ── */}
-
-      {tab === 'discover' && (
-        <DiscoverContent
-          openPanel={openPanel}
-          watchlist={watchlist}
-          openSections={discoverSections}
-          setOpenSections={setDiscoverSections}
-          typeFilters={typeFilters}
-          genreFilters={genreFilters}
-        />
-      )}
-
-      {tab === 'new' && (
-        <NewReleasesContent
-          openPanel={openPanel}
-          watchlist={watchlist}
-          typeFilters={typeFilters}
-          genreFilters={genreFilters}
-          openSections={newReleasesSections}
-          setOpenSections={setNewReleasesSections}
-        />
-      )}
-
-      {tab === 'releases' && (
-        <UpcomingContent
-          typeFilters={typeFilters}
-          genreFilters={genreFilters}
-          openPanel={openPanel}
-          watchlist={watchlist}
-          expandSignal={releasesExpandSignal}
-        />
-      )}
-
-      {tab === 'guide' && <EpgView />}
-
+    <div>
+      <DiscoverToolbar
+        ariaLabel="Filter discover"
+        typeFilters={typeFilters}
+        setTypeFilters={setTypeFilters}
+        genreFilters={genreFilters}
+        setGenreFilters={setGenreFilters}
+      />
+      <DiscoverContent
+        openPanel={openPanel}
+        watchlist={watchlist}
+        typeFilters={typeFilters}
+        genreFilters={genreFilters}
+      />
     </div>
   );
 }

@@ -10,6 +10,10 @@ import LoadingSpinner from './LoadingSpinner.jsx';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import { MEDIA } from '../copy/media.js';
 import { CALENDAR_VIEW } from '../copy/calendarView.js';
+import { ALL_TYPES } from '@plot/core/mediaFilters.js';
+import { UpcomingContent } from './GuideView.jsx';
+import GroupedFilterMenu from './GroupedFilterMenu.jsx';
+import { useGenres } from '../hooks/useGenres.js';
 
 
 /* ── Helpers ── */
@@ -151,7 +155,14 @@ export default function CalendarView() {
   const [month, setMonth] = useState(todayDate.getMonth());
   const [weekStart, setWeekStart] = useState(() => startOfWeek(todayDate));
   const [selectedDate, setSelectedDate] = useState(todayStr);
-  const [view, setView]   = useState('agenda'); // 'grid' | 'week' | 'agenda'
+  const [view, setView]   = useState('agenda'); // 'grid' | 'week' | 'agenda' | 'upcoming'
+
+  // Upcoming (global release dates, grouped by day) was a sub-tab of Home. It
+  // is about dates, so it lives here now, with the type/genre filter it always
+  // had in place of the month controls.
+  const { genres } = useGenres();
+  const [typeFilters,  setTypeFilters]  = useState(ALL_TYPES);
+  const [genreFilters, setGenreFilters] = useState([]);
 
   const { loading, events: allEvents, eventsForDate } = useCalendar(
     watchlist.items,
@@ -265,6 +276,10 @@ export default function CalendarView() {
 
   /* ── Switch view and sync navigation state ── */
   const switchView = (v) => {
+    if (v === 'upcoming') {
+      setView(v);
+      return;
+    }
     if (v === 'week') {
       // Sync week to contain selected date
       setWeekStart(startOfWeek(new Date(selectedDate + 'T00:00:00')));
@@ -316,9 +331,36 @@ export default function CalendarView() {
           <button className={`sub-tab-btn${view === 'grid' ? ' active' : ''}`} onClick={() => switchView('grid')}>
             Month
           </button>
+          <button className={`sub-tab-btn${view === 'upcoming' ? ' active' : ''}`} onClick={() => switchView('upcoming')}>
+            Upcoming
+          </button>
         </div>
 
         <div className="sub-tabs-filters">
+          {view === 'upcoming' ? (
+            <GroupedFilterMenu
+              ariaLabel="Filter upcoming"
+              groups={[
+                {
+                  heading: MEDIA.typeHeading,
+                  options: [
+                    { id: 'tv',     label: MEDIA.tv     },
+                    { id: 'cinema', label: MEDIA.cinema },
+                    { id: 'movie',  label: MEDIA.movies },
+                  ],
+                  value: typeFilters,
+                  onChange: setTypeFilters,
+                  defaultValue: ALL_TYPES,
+                },
+                {
+                  heading: MEDIA.genreHeading,
+                  options: genres.map(g => ({ id: g.id, label: g.name })),
+                  value: genreFilters,
+                  onChange: setGenreFilters,
+                },
+              ]}
+            />
+          ) : (
           <div className="cal-month-nav">
             <button className="cal-month-btn" onClick={onPrev} aria-label="Previous">
               <svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>
@@ -328,8 +370,18 @@ export default function CalendarView() {
               <svg viewBox="0 0 24 24"><polyline points="9,18 15,12 9,6"/></svg>
             </button>
           </div>
+          )}
         </div>
       </div>
+
+      {view === 'upcoming' && (
+        <UpcomingContent
+          typeFilters={typeFilters}
+          genreFilters={genreFilters}
+          openPanel={openPanel}
+          watchlist={watchlist}
+        />
+      )}
 
       <div className="calendar-wrap">
 

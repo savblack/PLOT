@@ -10,6 +10,10 @@
 export const MEDIA = {
   movie: 'Movie',
   movies: 'Movies',
+  seeAll: 'See all',
+  allTypes: 'All types',
+  allGenres: 'All genres',
+  chartUnavailable: 'Chart unavailable this week',
   tv: 'TV',
   tvSeries: 'TV Series',
   series: 'Series',

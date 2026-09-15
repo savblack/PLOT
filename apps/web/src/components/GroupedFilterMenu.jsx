@@ -8,7 +8,15 @@ function FilterIcon() {
   );
 }
 
-export default function GroupedFilterMenu({ ariaLabel = 'Filter', groups }) {
+/**
+ * @param {object}   props
+ * @param {string}   [props.ariaLabel]
+ * @param {Array}    props.groups
+ * @param {string}   [props.label]  When given, the trigger is a pill carrying
+ *                                  this summary beside the icon instead of the
+ *                                  bare 34px icon button.
+ */
+export default function GroupedFilterMenu({ ariaLabel = 'Filter', groups, label }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
@@ -43,13 +51,14 @@ export default function GroupedFilterMenu({ ariaLabel = 'Filter', groups }) {
   return (
     <div className="guide-filter" ref={ref}>
       <button
-        className={`guide-filter-btn${open ? ' open' : ''}${hasActiveFilters ? ' active' : ''}`}
+        className={`guide-filter-btn${label ? ' guide-filter-btn--labelled' : ''}${open ? ' open' : ''}${hasActiveFilters ? ' active' : ''}`}
         onClick={() => setOpen(o => !o)}
         aria-label={ariaLabel}
         aria-expanded={open}
         type="button"
       >
         <FilterIcon />
+        {label && <span className="guide-filter-btn-label">{label}</span>}
       </button>
       {open && (
         <div className="guide-filter-menu">

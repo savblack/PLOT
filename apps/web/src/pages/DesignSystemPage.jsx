@@ -411,20 +411,16 @@ export default function DesignSystemPage() {
           </div>
 
           <div className="ds-bar-item">
-            <div className="ds-bar-copy"><strong>Platform header</strong><p>Collapsible provider row for platform shelves.</p></div>
-            <button className="discover-plat-header ds-fake-platform-header">
-              <span className="discover-plat-header-left">
+            <div className="ds-bar-copy"><strong>Platform row label</strong><p>Logo, name and the Movies / TV switch that labels one platform's chart rail.</p></div>
+            <div className="discover-plat-label">
+              <span className="discover-plat-ident">
                 <span className="discover-plat-logo discover-plat-logo-fallback">N</span>
                 <span className="discover-plat-name">Netflix</span>
               </span>
-            </button>
-          </div>
-
-          <div className="ds-bar-item">
-            <div className="ds-bar-copy"><strong>Media-type mini header</strong><p>Nested label that splits Movies from TV Shows.</p></div>
-            <div className="ds-mini-header-stack">
-              <div className="discover-plat-type-label">Movies</div>
-              <div className="discover-plat-type-label">TV Shows</div>
+              <div className="discover-plat-switch">
+                <button className="discover-plat-switch-btn active">Movies</button>
+                <button className="discover-plat-switch-btn">TV</button>
+              </div>
             </div>
           </div>
         </div>
@@ -560,16 +556,13 @@ export default function DesignSystemPage() {
           </div>
 
           <div className="ds-card-example">
-            <span className="ds-example-label">Ranked chart row</span>
-            <div className="discover-chart-row ds-chart-row-sample">
+            <span className="ds-example-label">Ranked chart card</span>
+            <div className="discover-chart-card ds-chart-row-sample">
               <span className="discover-chart-rank">1</span>
               <div className="discover-chart-poster"><div className="ds-mini-poster" /></div>
               <div className="discover-chart-info">
                 <div className="discover-chart-title">Top title</div>
                 <div className="discover-chart-meta">2026 · TV</div>
-              </div>
-              <div className="discover-chart-right">
-                <button className="card-save-btn saved" aria-label="Saved sample"><IconBookmark /></button>
               </div>
             </div>
           </div>

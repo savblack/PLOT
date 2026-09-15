@@ -13,6 +13,10 @@ import {
 
 const TAB_ICONS = { home: IconHome, calendar: IconCalendar, 'my-lists': IconLists };
 
+// The drawer has room the bottom bar does not: every destination bar Search
+// (the header has its own icon) and Settings (the drawer's own footer).
+const DRAWER_NAV_ITEMS = APP_NAV_ITEMS.filter(item => item.id !== 'search' && item.id !== 'settings');
+
 export default function AppShell({ currentView, navigateTo, children, profile, user, panelOpen }) {
   const navigate = useNavigate();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -239,7 +243,7 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
         </div>
 
         <nav className="nav-drawer-nav">
-          {PRIMARY_NAV_ITEMS.map(({ id, label }) => (
+          {DRAWER_NAV_ITEMS.map(({ id, label }) => (
             <button
               key={id}
               type="button"
