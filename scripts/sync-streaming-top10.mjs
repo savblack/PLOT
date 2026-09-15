@@ -26,16 +26,24 @@
 // non-zero so the workflow goes red rather than logging "Done".
 //
 // Usage (needs deps):
-//   RAPIDAPI_KEY=… TMDB_API_KEY=… SUPABASE_SERVICE_ROLE_KEY=… node scripts/sync-streaming-top10.mjs
-//   RAPIDAPI_KEY=… TMDB_API_KEY=…                            node scripts/sync-streaming-top10.mjs --dry-run
+//   MOVIEOFTHENIGHT_API_KEY=… TMDB_API_KEY=… SUPABASE_SERVICE_ROLE_KEY=… node scripts/sync-streaming-top10.mjs
+//   MOVIEOFTHENIGHT_API_KEY=… TMDB_API_KEY=…                            node scripts/sync-streaming-top10.mjs --dry-run
+// (RAPIDAPI_KEY still works as a fallback; the direct key has double the free quota.)
 
 import { createClient } from '@supabase/supabase-js';
 
 const args = new Set(process.argv.slice(2));
 const DRY_RUN = args.has('--dry-run');
 
-const API_HOST = 'streaming-availability.p.rapidapi.com';
-const API_KEY = process.env.RAPIDAPI_KEY || process.env.STREAMING_AVAILABILITY_API_KEY;
+// Two doors into the same API. A key from developers.movieofthenight.com gets
+// 1,000 free requests/month; the RapidAPI BASIC plan gets 500. Prefer the
+// direct key when both are set.
+const DIRECT_KEY = process.env.MOVIEOFTHENIGHT_API_KEY;
+const RAPID_KEY = process.env.RAPIDAPI_KEY || process.env.STREAMING_AVAILABILITY_API_KEY;
+const API = DIRECT_KEY
+  ? { base: 'https://api.movieofthenight.com/v4', headers: { 'X-API-Key': DIRECT_KEY }, label: 'direct' }
+  : { base: 'https://streaming-availability.p.rapidapi.com', headers: { 'X-RapidAPI-Key': RAPID_KEY, 'X-RapidAPI-Host': 'streaming-availability.p.rapidapi.com' }, label: 'RapidAPI' };
+const API_KEY = DIRECT_KEY || RAPID_KEY;
 const TMDB_KEY = process.env.TMDB_API_KEY;
 
 const DEFAULT_SUPABASE_URL = 'https://mkegtssedjyqldysvzga.supabase.co';
@@ -90,7 +98,7 @@ async function detectActiveRegions(supabase) {
 }
 
 if (!API_KEY) {
-  console.error('RAPIDAPI_KEY is required.');
+  console.error('MOVIEOFTHENIGHT_API_KEY or RAPIDAPI_KEY is required.');
   process.exit(1);
 }
 if (!TMDB_KEY) {
@@ -110,6 +118,7 @@ console.log(
   + (SUPABASE_URL === DEFAULT_SUPABASE_URL ? ' (production, from default)' : '')
   + (DRY_RUN ? ' — dry run, no writes' : '')
 );
+console.log(`Streaming Availability API via ${API.label}.`);
 
 // "movie/12345" | "tv/678" → { media_type, id }
 function parseTmdbId(tmdbId) {
@@ -118,12 +127,12 @@ function parseTmdbId(tmdbId) {
 }
 
 async function fetchTop(service, country) {
-  const url = new URL(`https://${API_HOST}/shows/top`);
+  const url = new URL(`${API.base}/shows/top`);
   url.searchParams.set('country', country);
   url.searchParams.set('service', service);
   // show_type omitted on purpose: one call returns both movies and series,
   // halving the requests we spend against the free tier.
-  const res = await fetch(url, { headers: { 'X-RapidAPI-Key': API_KEY, 'X-RapidAPI-Host': API_HOST } });
+  const res = await fetch(url, { headers: API.headers });
   if (!res.ok) {
     // Log the body: a 429 alone hides the difference between a per-second
     // rate limit and "you have exceeded the MONTHLY quota", which is the one

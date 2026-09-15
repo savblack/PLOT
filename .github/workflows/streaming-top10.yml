@@ -35,6 +35,7 @@ jobs:
           SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
-          RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
+          MOVIEOFTHENIGHT_API_KEY: ${{ secrets.MOVIEOFTHENIGHT_API_KEY }} # direct key, 1,000 free req/month; preferred
+          RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }} # fallback, 500 free req/month
           CHART_REGIONS: ${{ vars.CHART_REGIONS }}
           CHART_MIN_USERS: ${{ vars.CHART_MIN_USERS }} # optional; script defaults to 3
