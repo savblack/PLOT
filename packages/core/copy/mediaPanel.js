@@ -27,6 +27,21 @@ export const MEDIA_PANEL = {
   couldNotClearWatchStatus: 'Could not clear watch status. Please try again.',
   // Section heading for the TMDB recommendations row on a title.
   moreLikeThis: 'More like this',
+  // The franchise card under the recommendations row (movies only: TMDB has
+  // no collection concept for series).
+  partOfCollection: 'Part of a collection',
+  collectionProgress: (watched, total) => `${total} film${total === 1 ? '' : 's'} · ${watched} watched`,
+  saveCollectionAsList: 'Save as list',
+  savingCollection: 'Saving…',
+  collectionSaved: 'Saved to My Lists',
+  couldNotSaveCollection: 'Could not save this collection. Please try again.',
+  viewing: 'Viewing',
+  // Search: the group of franchise hits above the title results, and the
+  // meta line under each.
+  collectionsHeading: 'Collections',
+  collectionResultMeta: 'Collection',
+  collectionFilmCount: (total) => `${total} film${total === 1 ? '' : 's'}`,
+  couldNotLoadCollection: "Couldn't load this collection. Check your connection and try again.",
   trailerFallback: 'Trailer',
   watching: 'Watching',
   didntFinish: "Didn't finish",

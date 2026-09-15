@@ -1,11 +1,23 @@
 # PLOT marketing automation
 
-This system now runs in one primary path:
+Every post has two halves, and they are reviewed in different places.
 
 1. GitHub prepares the week.
-2. You review and approve in **Linear** — one issue per post, in team PLO,
-   project **Content Automation**.
-3. The daily publish job sends only approved posts.
+2. The social copy is pushed straight into **Buffer**, dated. You review, edit
+   and delete it there; Buffer sends it.
+3. The website article is reviewed in **Linear** — one issue per post, in team
+   PLO, project **Content Automation**. Approving a card puts the piece on
+   theplot.tv; rejecting keeps it off.
+
+**Neither half gates the other.** A rejected article does not pull its posts out
+of Buffer, and a failed send does not take the article off the site. This is
+deliberate: each surface controls what it can actually show you, and nothing
+claims a power it does not have.
+
+The split is the point. Buffer has the character counter, the preview and the
+calendar, so it is where a caption should be judged; it has no idea the article
+exists. Linear can render 600 words of prose, so it is where the writing should
+be judged; it cannot show you how a tweet will look.
 
 The admin desk at `admin.theplot.tv` still exists and still works. It reads the
 same rows, so a decision made in either place shows up in both. Linear is a
@@ -25,20 +37,30 @@ commands exist as fallback and debug tools, not the primary operating model.
 ```text
 Sunday morning
   -> marketing-weekly-batch.yml generates the next week
+  -> and pushes as much of it into Buffer as the queue will hold,
+     each post due at noon Sydney on its own day
 
 Every 5 minutes (pg_cron -> marketing-linear-mirror)
-  -> opens a Linear issue for anything needing review or waiting to publish
+  -> opens a Linear issue for each post's ARTICLE
   -> re-renders issues whose post changed
   -> files every card in the state its row says it belongs in,
-     including Done once the post has gone out
+     including Done once the post is finished
 
-Any time
+Any time, in Buffer
+  -> you edit, reschedule or delete the social posts themselves
+
+Any time, in Linear
   -> you comment /approve, /copy, /reject ... on the issue
   -> marketing-linear-sync applies it to marketing_posts
 
 Daily, 12pm Sydney
-  -> marketing-publish.yml sends only approved posts
+  -> marketing-publish.yml asks Buffer what happened and writes it down,
+     then tops the queue back up with the next posts due
 ```
+
+Nothing sends any more. Buffer sends. The daily run exists to find out what it
+did — Buffer has no webhook, so a post that went out, failed, was rewritten or
+was deleted reaches the database only because that run goes and asks.
 
 Nothing in the GitHub workflows talks to Linear. Both halves are Edge Functions,
 so the Linear credential exists once, as a Supabase secret — and a Linear outage
@@ -59,45 +81,165 @@ Run these from `/Users/savannahblack/Projects/PLOT/marketing`:
 ```sh
 npm run doctor
 npm run weekly
-npm run publish -- --dry-run
+npm run schedule -- --dry-run
+npm run reconcile -- --dry-run
 npm run newsletter -- --dry-run
 npm run snapshot
 ```
 
 Notes:
 
-- `npm run weekly` is the local end-to-end batch runner.
+- `npm run weekly` is the local end-to-end batch runner. It ends by pushing the
+  rendered week into Buffer, so it needs `BUFFER_API_KEY`.
+- `npm run schedule` pushes anything still queued. `--dry-run` reports what it
+  would push and touches neither Buffer nor the database.
+- `npm run reconcile` reads Buffer back. It never writes to Buffer.
 - Codex is the default copy runner **for local runs only** — pass
   `--copy-runner=claude` to match what CI actually uses in production.
 - `--copy-command='...'` is still available for fallback/debug use.
 
 ## Review and publish
 
-- Weekly generation renders posts with status `needs_review`. Within five minutes
-  the mirror sweep opens a Linear issue for each, in **In Review**.
-- **The database is the source of truth.** Linear and the admin desk are two ways
-  to write to it; the publisher reads only `marketing_posts` and the publication
-  rows, so neither surface can gate a send by being unavailable.
-- The publish job runs daily at 12pm Sydney and sends only posts with status
-  `approved`.
-- Leaving a post untouched in review means it does not publish.
+- Weekly generation renders posts with status `needs_review`, then pushes their
+  social copy into Buffer, **on the post's own day, at a time Buffer chose**. It
+  pushes as many as the queue will hold; the daily run tops it up from there
+  (see below).
+
+### Who decides when a post goes out
+
+**The day is ours. The time is Buffer's.**
+
+The day has to be ours, because the copy is written against it and says so out
+loud — "14 days until", "aired last night", "turns 15 this week". A post that
+slides to the next day starts lying about itself, which is why `validateCopy`
+checks day claims in the first place.
+
+The time is Buffer's because Buffer is better placed to judge it. Each channel
+carries a posting schedule — the hours Buffer recommends for that service on that
+weekday, in Sydney time — and the nth post for a channel on a day takes the nth
+slot:
+
+| Channel | Slots per day | Shape |
+| --- | --- | --- |
+| X | 4 | mornings, ~08:00-11:45 |
+| Threads | 2 | mid-morning, ~09:00-12:30 |
+| Instagram | 2 | evenings, ~17:00-22:40 |
+
+So a day's three posts no longer fire together at one hour: X goes out at 08:03,
+Threads at 09:56, Instagram at 18:34. Edit those schedules in Buffer and the next
+push follows them — nothing here needs changing.
+
+**Why not just use Buffer's queue?** Because `addToQueue` lets *queue order*
+decide the date. Threads has 14 slots a week against roughly 16 posts, so posts
+would quietly land on days their own text contradicts. Pinning the day and
+borrowing the hour keeps both judgements where they belong.
+
+When a day has more posts than slots, the extras are spaced 45 minutes after the
+last one rather than stacked on it — two posts on the same minute read as a bot,
+and Instagram may drop the second. A channel with no schedule for that weekday
+falls back to `SEND_HOUR_SYDNEY` in `publish/payload.mjs`.
+
+### The send time really did change
+
+Worth stating plainly, because the repo used to claim otherwise. The old publish
+cron was `0 2 * * *` with a comment reading "12:00pm Sydney" — but GitHub's
+scheduler is best-effort, and this repo's crons run **2.5-5.5 hours behind** their
+stated time, every run, not occasionally. Ten consecutive publish runs all started
+around 07:10 UTC. Posts have actually been going out at about **17:15 Sydney**,
+not midday, for as long as anyone has been reading that comment.
+
+Buffer honours the time it is given, so the schedule above is now what happens
+rather than what was hoped for. Any engagement pattern measured before this
+change was measured at ~17:15 for all three channels at once, which is not a
+baseline the new times can be compared against.
+- Within five minutes the mirror sweep opens a Linear issue for each post's
+  article, in **Review**.
+- **Leaving a card untouched means the article does not go live.** It does not
+  stop the social posts: those are in Buffer and go out on their day unless you
+  delete them there. Silence is a decision about the website only.
+- **The database is the source of truth about what happened**, not about what
+  will happen. Buffer holds the queue; the daily reconcile run reads it back into
+  `marketing_post_publications`.
+
+### The queue is a rolling window, not a week
+
+The Buffer plan caps **10 scheduled posts per channel**, and a week of PLOT is
+about **16 per channel** — roughly 2.6 posts a day, each fanning out to two or
+three channels. A week does not fit, and never will on this plan.
+
+So the queue is a rolling window. The push fills whatever room each channel has,
+in `scheduled_for` order so the slots always go to the soonest posts, and the
+daily job runs the push again **after** reconciling — filling the slots that
+day's sends just freed. Ten slots at about 2.3 sends per channel per day works
+out to roughly **four days of visible runway**: at any moment you can see and
+adjust the next three or four days of posts in Buffer, and the rest arrive as
+room appears.
+
+Two consequences worth knowing:
+
+- **The daily run is load-bearing.** It is not just bookkeeping — it is what
+  drains the backlog. If it stops, the queue empties in about four days and then
+  nothing goes out, even though the week generated fine.
+- **A post that does not fit is not lost.** It stays `queued` in the database and
+  goes in on a later run. The push reports the count rather than failing, because
+  a full queue is the normal state, not an error.
+
+Raising the plan's per-channel limit would widen the window and lengthen the
+review lead time. Nothing else about the design would change.
+
+### Editing and deleting in Buffer
+
+This is the expected way to work. Open the post in Buffer, change the text, move
+it, or delete it. Nothing needs to be told.
+
+What that costs, stated plainly: the copy contract in `copy/schema.mjs` is not
+enforced on an edit you make there. Buffer has a character counter, so the 280
+limit looks after itself, but the rules a counter cannot see — no URLs on X, no
+"this Friday" on a post that runs a fortnight out — are yours to hold. That is
+the same trade the web desk already makes, and the reason a `/copy` comment in
+Linear is validated and a Buffer edit is not.
+
+The reconcile run notices an edit and records the text that actually went out, so
+`sent_text` stays true even when it no longer matches the copy we generated.
 
 ### Reviewing in Linear
+
+**The card is the article.** The headline, the body, the hero, the sources, and
+the reason this pick was made. The social copy is not on it — not folded away,
+not shown read-only, not there. Those posts are in Buffer and reviewed in Buffer;
+a card that reproduced them could not change them, and showing them only invited
+the belief that it could.
+
+**Social-only posts get no card.** `question` posts have no website article —
+they never get a slug and never appear on theplot.tv, they exist purely as
+conversation starters on social. Since the board stopped showing social copy,
+their card said "No article written yet." and nothing else: an approval prompt
+for a page that does not exist, three a week. The sweep now opens cards only for
+posts with a slug, which is exactly the set that has an article (across 226 posts
+the split is clean — `question` on one side, every other type on the other).
 
 Comment on the issue. The first line is the command:
 
 | Comment | What it does |
 | --- | --- |
-| `/approve` | Clears it to publish — the card moves to **Scheduled** |
-| `/reject` | It will not publish |
+| `/approve` | The article goes live on its day — the card moves to **Scheduled** |
+| `/reject` | The article will not go live |
 | `/unapprove` | Back to needs_review |
-| `/reschedule 2026-09-18` | Moves the day. An unpublished post's article URL moves with it; a live URL stays. Re-read copy written for the old day |
-| `/publish-now` | Approves, brings it forward, kicks the publish run |
-| `/retry` | Re-queues platforms that failed |
+| `/reschedule 2026-09-18` | Moves the article's day. An unpublished post's URL moves with it; a live URL stays |
+| `/publish-now` | Approves and brings the article forward to today |
 | `/regenerate` | Throws the copy away; the worker rewrites it |
-| `/pause` · `/resume` | The global publishing switch — **every** post, not just this one |
+| `/pause` · `/resume` | Stops posts entering the Buffer queue — every post, not just this one |
 | `/generate` | Build the coming week now, instead of waiting for Sunday |
 | `/help` | The list, in the issue |
+
+None of these reach into Buffer. `/approve` and `/reject` decide the website
+piece and nothing else; `/pause` stops new posts *entering* the queue but cannot
+empty it. Changing or dropping a post that is already scheduled is done in
+Buffer, on the post.
+
+`/retry` is gone. It re-queued failed publication rows, which is a question about
+sending — use the `retry_failed` input on `marketing-publish.yml`, or the admin
+desk, both of which can actually see the queue.
 
 `/pause`, `/resume`, `/generate` and `/help` act on the whole pipeline rather
 than on one post, so you can comment them on any card in the project — including
@@ -108,17 +250,14 @@ when there is nothing on the board to comment on.
 fires: planning, copy and rendering take a few minutes, then the cards appear
 within five minutes of that finishing. Safely repeatable — the workflow's
 concurrency group queues a second run rather than racing it, and the pipeline
-only fills posts that still need copy. Needs `GH_DISPATCH_TOKEN`; without it the
+only fills posts that still need copy. Needs `GH_DISPATCH_TOKEN_CONTENT`; without it the
 bot says so rather than failing quietly.
 
-To edit copy, comment `/copy` and then only the lines you want changed —
+To edit the article, comment `/copy` and then only the lines you want changed —
 anything you leave out stays as it is:
 
 ```text
 /copy
-x: the new X text
-threads: the new Threads text
-hashtags: A24, folkhorror, mikeflanagan
 title: the new article headline
 body:
 First paragraph.
@@ -126,14 +265,20 @@ First paragraph.
 Second paragraph.
 ```
 
+`title:`, `body:` and `cta:` are the whole vocabulary. `x:`, `instagram:`,
+`threads:`, `hashtags:` and `alt:` are not fields here and never resolve to one —
+a `/copy` that only names those answers "No fields to change." The parser used to
+recognise them in order to refuse them; it does not know the words at all now,
+which is the more honest version of the same answer.
+
 The board reads left to right as the post's life: **Review → Scheduled →
 Published**, with **Canceled** for anything rejected. Backlog and Triage are
 yours; the mirror never touches them.
 
 Dragging an issue to **Scheduled** or **Canceled** does the same as `/approve`
-and `/reject`. Dragging to **Published** deliberately does nothing:
-publishing is something the publisher reports, so the board can never claim a
-post went out when it did not.
+and `/reject`. Dragging to **Published** deliberately does nothing: a card
+reaches Done when its article is actually live, which is a thing the sweep
+works out, not a thing the board may assert.
 
 Unlike the web desk — which writes what you type, because its editor has a live
 character counter — a comment edit is validated against `copy/schema.mjs` before
@@ -212,7 +357,7 @@ No GitHub Actions secret is involved. Everything below is a Supabase secret.
    `<SUPABASE_URL>/functions/v1/marketing-linear-sync` subscribed to **Comments**
    and **Issues**, and set the signing secret it shows you as the
    `LINEAR_WEBHOOK_SECRET` Edge Function secret.
-6. Optional: `GH_DISPATCH_TOKEN` so `/publish-now` and `/regenerate` take effect
+6. Optional: `GH_DISPATCH_TOKEN_CONTENT` so `/publish-now` and `/regenerate` take effect
    immediately instead of waiting for the next scheduled run.
 
 **Before changing which rows the sweep selects, dry-run it.** It reports what a
@@ -231,11 +376,16 @@ meant to move a handful of cards into one that opened 161 Linear issues — and,
 through team PLO's GitHub sync, 170 issues in the repo. The blast radius of this
 function is the size of `marketing_posts`, so the cheap check comes first.
 
-A post is **complete** when it has done everything it is going to do: published
-for a social post, or — for a web-only guide, which has no publication rows and
-so never leaves `approved` — once its scheduled day has passed and it is live on
-the site. Complete posts sit in Done; without that rule a guide would claim to be
-waiting for a send that is never coming.
+A card is **complete** when its article has done everything it is going to do:
+cleared to run, and its day arrived — so it is on `/whats-on`. That is the whole
+rule, and it deliberately ignores the publication rows.
+
+It used to consult them, and the reasons it stopped are worth keeping. A card
+that waited on a send was tracking something it does not show you; once deleting
+a post in Buffer became the ordinary way to drop one, it would have waited
+forever for a send you had personally cancelled; and a guide, which has no
+publication rows at all, needed a special case to escape the same trap. One
+date-and-status question replaces all three.
 
 The row is the source of truth in both directions: a post approved or rejected
 on the web desk drags its card to Approved or Canceled on the next sweep, rather
@@ -252,7 +402,7 @@ that cannot be resolved is reported in the sweep's response as `unresolved`
 rather than failing it — those moves are skipped, not misfiled.
 
 Once a day (the first sweep after 06:00 UTC) the sweep also probes
-`GH_DISPATCH_TOKEN` — the PAT that lets `/generate`, `/publish-now` and
+`GH_DISPATCH_TOKEN_CONTENT` and `GH_DISPATCH_TOKEN_WEBSITE` — the PATs that let `/generate`, `/publish-now` and
 `/regenerate` take effect immediately rather than on the next cron. It is a PAT,
 so it expires, and when it did nothing said so: every command fell back to "it'll
 go on the scheduled run", which reads exactly like normal behaviour. It sat dead
@@ -304,6 +454,26 @@ select jobname, schedule, active from cron.job where jobname = 'marketing-linear
 
 A post that failed to mirror carries the reason in
 `marketing_posts.linear_sync_error`, and is retried on every subsequent tick.
+
+## Hidden gems have a ceiling, not just a floor
+
+`planner/triggers/hidden-gem.mjs` filters on `vote_count` between `MIN_VOTES` and
+`MAX_VOTES`. The floor keeps out the obscure; **the ceiling is what keeps out the
+famous**, and for a while it did not exist. Since the query sorts by
+`vote_average.desc`, the pool was topped by Shawshank, The Dark Knight, Pulp
+Fiction and Forrest Gump — random selection within the tier was the only thing
+stopping a household name going out as a "hidden gem" every week. It did not stop
+Star Wars, and Inglourious Basterds was queued behind it.
+
+12,000 is where the real picks stop and the household names start: every pick
+anyone was happy with sits under 9k, and both complaints were above 22k. Nothing
+lives in the gap, so the line has room on both sides rather than being tuned to
+the last example. Moving it is one constant.
+
+Review cards show the numbers behind the claim — `8.2 rating · 24,733 votes ·
+2009 · Netflix` under "Highly-rated, lesser-seen: …" — because an assertion with
+no evidence cannot be argued with. That is the part that generalises: it catches
+the next category of bad pick too, the one there is no rule for yet.
 
 ## Cadence
 
@@ -396,7 +566,10 @@ and `marketing-linear-sync` on copy edited from a Linear comment.
 
 1. Apply the Supabase migrations and deploy the functions.
 2. Set secrets for Supabase, TMDB, OMDb, Buffer, Resend, the admin email, and
-   `CODEX_AUTH` for the unattended GitHub Codex worker.
+   `CODEX_AUTH` for the unattended GitHub Codex worker. `BUFFER_API_KEY` is now
+   needed by **both** `marketing-weekly-batch.yml` (which ends by pushing the
+   week into Buffer) and `marketing-publish.yml` (which reads it back) — the
+   batch job never needed it before.
 3. Set `ADMIN_PASSWORD` on `admin-review` for `admin.theplot.tv`.
 4. Ensure Codex CLI is installed on the Mac if you want to run the local
    fallback commands (CI uses the Claude Code CLI).

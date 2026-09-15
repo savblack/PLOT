@@ -8,6 +8,9 @@ import { useHistory } from '../hooks/useHistory.js';
 import Spinner from './Spinner.jsx';
 import UserList from './UserList.jsx';
 import { classifySearchResults } from '../utils/search.js';
+import { collectionSearchHits } from '@plot/core/collections.js';
+import { posterUrl } from '../utils/images.js';
+import { MEDIA_PANEL } from '../copy/mediaPanel.js';
 import SearchResultRow from './SearchResultRow.jsx';
 import { useGenres } from '../hooks/useGenres.js';
 import { track, EVENTS } from '../lib/analytics.js';
@@ -36,6 +39,21 @@ function TalentResultRow({ person, onOpen }) {
   );
 }
 
+function CollectionResultRow({ collection, onOpen }) {
+  const image = posterUrl(collection.poster_path, 'w92');
+  return (
+    <button type="button" className="list-row search-result-row talent-result-row" onClick={() => onOpen(collection.id)}>
+      <div className="list-row-poster">
+        {image ? <img src={image} alt="" loading="lazy" /> : <span aria-hidden="true">{collection.name?.charAt(0)}</span>}
+      </div>
+      <div className="list-row-info">
+        <div className="list-row-title">{collection.name}</div>
+        <div className="list-row-meta">{MEDIA_PANEL.collectionResultMeta}</div>
+      </div>
+    </button>
+  );
+}
+
 /* ═══════════════════════════════════════
    SearchView
 ═══════════════════════════════════════ */
@@ -49,6 +67,7 @@ export default function SearchView() {
   const [results, setResults] = useState([]);
   const [users,   setUsers]   = useState([]);
   const [talent,  setTalent]  = useState([]);
+  const [collections, setCollections] = useState([]);
   const [loading, setLoading] = useState(false);
   const [emptyMode, setEmptyMode] = useState('none');
 
@@ -56,7 +75,7 @@ export default function SearchView() {
 
   const runSearch = (v, searchMode) => {
     clearTimeout(timerRef.current);
-    if (!v.trim()) { setResults([]); setUsers([]); setTalent([]); setEmptyMode('none'); return; }
+    if (!v.trim()) { setResults([]); setUsers([]); setTalent([]); setCollections([]); setEmptyMode('none'); return; }
     timerRef.current = setTimeout(async () => {
       setLoading(true);
       let resultCount;
@@ -72,11 +91,19 @@ export default function SearchView() {
       } else {
         // searchTitles, not search: it reads "7 up tv series" / "dune movie"
         // as intent rather than sending the whole phrase to TMDB verbatim.
-        const data = await tmdb.searchTitles(v);
+        // Franchise hits ride alongside: TMDB's collection search is a
+        // separate endpoint, and a name like "Bourne" is as likely to mean
+        // the set as any one film in it.
+        const [data, collectionData] = await Promise.all([
+          tmdb.searchTitles(v),
+          tmdb.searchCollections(v),
+        ]);
         const { filtered, emptyMode: nextEmptyMode } = classifySearchResults(data?.results || []);
+        const hits = collectionSearchHits(collectionData);
         setResults(filtered);
-        setEmptyMode(nextEmptyMode);
-        resultCount = filtered.length;
+        setCollections(hits);
+        setEmptyMode(hits.length && nextEmptyMode === 'generic' ? 'none' : nextEmptyMode);
+        resultCount = filtered.length + hits.length;
       }
       setLoading(false);
       // Track the executed search — never the raw query (PII/privacy): length only.
@@ -174,7 +201,7 @@ export default function SearchView() {
               <div className="empty-body">{MEDIA.searchByTitleBody}</div>
             </div>
           )}
-          {results.length === 0 && emptyMode === 'none' && (
+          {results.length === 0 && collections.length === 0 && emptyMode === 'none' && (
             <div className="empty-state" style={{ paddingTop: '2rem' }}>
               <div className="empty-title">Find anything</div>
               <div className="empty-body">
@@ -182,8 +209,23 @@ export default function SearchView() {
               </div>
             </div>
           )}
+          {collections.length > 0 && (
+            <div>
+              <div className="panel-section-title" style={{ padding: '0 1rem', marginTop: '0.5rem' }}>{MEDIA_PANEL.collectionsHeading}</div>
+              {collections.map(collection => (
+                <CollectionResultRow
+                  key={collection.id}
+                  collection={collection}
+                  onOpen={(id) => openPanel(id, 'collection', 'search')}
+                />
+              ))}
+            </div>
+          )}
           {results.length > 0 && (
             <div>
+              {collections.length > 0 && (
+                <div className="panel-section-title" style={{ padding: '0 1rem', marginTop: '1rem' }}>Titles</div>
+              )}
               {results.map(item => (
                 <SearchResultRow
                   key={`${item.media_type}-${item.id}`}

@@ -5,7 +5,7 @@
  * marketing-linear-mirror) and applies them to marketing_posts:
  *
  *   • a COMMENT starting with a slash command — edit the copy, approve, reject,
- *     reschedule, publish now, retry, regenerate, pause/resume. The bot replies
+ *     reschedule, publish now, regenerate, pause/resume. The bot replies
  *     on the issue saying what it did, or why it refused.
  *   • an ISSUE STATE CHANGE — dragging the issue on the board is the same
  *     decision as commenting /approve or /reject.
@@ -35,7 +35,7 @@
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
 import type { Database, Json } from '../_shared/database.types.ts';
 import { serviceKey } from '../_shared/serviceKey.ts';
-import { parseCommand, BOT_MARKER, HELP_TEXT, WEEK_SCOPED } from '../_shared/linearCommands.js';
+import { parseCommand, BOT_MARKER, HELP_TEXT, WEEK_SCOPED, looksLikeAttempt } from '../_shared/linearCommands.js';
 import { prNumberFromAttachments, prScopeRefusal } from '../_shared/linearIssue.js';
 import { validateCopy, validateGuide, validateConversation } from '../_shared/copySchema.js';
 import { rescheduledSlug } from '../_shared/postSlug.js';
@@ -181,11 +181,6 @@ const logEvent = async (
 
 // Re-arm a post's publication rows so the publisher will actually send them.
 // Rejecting sets rows to 'skipped'; approving must reset them to 'queued'.
-const requeuePubs = (supabase: Db, id: string) =>
-  supabase.from('marketing_post_publications')
-    .update({ status: 'queued', error: null })
-    .eq('post_id', id).in('status', ['skipped', 'failed']);
-
 // ── Copy edits ───────────────────────────────────────────────────────────────
 
 /**
@@ -208,6 +203,8 @@ const applyEdit = async (supabase: Db, post: Row, fields: Record<string, unknown
       : validateCopy(merged, {
         days_until: post.payload?.days_until,
         when_label: post.payload?.when_label,
+        post_type: post.post_type,
+        home_kind: post.payload?.home_kind,
       });
 
   if (!result.valid) return { ok: false as const, errors: result.errors };
@@ -252,19 +249,24 @@ const runCommand = async (
     }
 
     case 'approve': {
+      // The article, and nothing else. This used to re-queue the publication
+      // rows as well; with the posts already scheduled in Buffer that would push
+      // a second copy of each on the next scheduling run — duplicate tweets as a
+      // side effect of approving a piece of writing.
       await supabase.from('marketing_posts').update({ status: 'approved', updated_at: now() }).eq('id', id);
-      await requeuePubs(supabase, id);
       await logEvent(supabase, { postId: id, action: 'approve' });
       const day = new Date(post.scheduled_for).toLocaleDateString('en-AU', { weekday: 'long', timeZone: 'Australia/Sydney' });
-      return `Approved — it goes out on ${day}'s publish run.`;
+      return `Approved — the article goes live on theplot.tv on ${day}. (The social posts are scheduled in Buffer either way.)`;
     }
 
     case 'reject': {
+      // The article, and nothing else. The publication rows are not touched at
+      // all — not even the queued ones. Whether those posts go out is Buffer's
+      // question, and a board that answered it here would be deciding something
+      // it does not show you.
       await supabase.from('marketing_posts').update({ status: 'vetoed', updated_at: now() }).eq('id', id);
-      await supabase.from('marketing_post_publications')
-        .update({ status: 'skipped' }).eq('post_id', id).eq('status', 'queued');
       await logEvent(supabase, { postId: id, action: 'reject' });
-      return 'Rejected — it will not publish.';
+      return 'Rejected — the article will not go live.';
     }
 
     case 'unapprove': {
@@ -288,22 +290,15 @@ const runCommand = async (
     }
 
     case 'publish_now': {
+      // The article, and only the article. /whats-on shows approved posts whose
+      // day has arrived (VISIBLE_STATUSES in marketing-feed), so approving and
+      // moving the date to now IS publishing it — there is no run to kick, which
+      // is why this no longer dispatches a workflow. The social posts keep their
+      // own time in Buffer; bringing those forward is a drag in Buffer's calendar.
       await supabase.from('marketing_posts')
         .update({ status: 'approved', scheduled_for: now(), updated_at: now() }).eq('id', id);
-      await requeuePubs(supabase, id);
-      const kicked = await dispatchWorkflow('marketing-publish.yml');
-      await logEvent(supabase, { postId: id, action: 'publish_now', after: { triggered: kicked.ok, reason: kicked.reason ?? null } as Json });
-      return kicked.ok
-        ? 'Publishing now — sending to X / Instagram / Threads. It should be live in a few minutes.'
-        : `Approved and brought forward. The instant trigger did not fire (${kicked.reason}), so it goes out on the next scheduled publish run.`;
-    }
-
-    case 'retry': {
-      await supabase.from('marketing_post_publications')
-        .update({ status: 'queued', error: null }).eq('post_id', id).eq('status', 'failed');
-      await supabase.from('marketing_posts').update({ status: 'approved', updated_at: now() }).eq('id', id);
-      await logEvent(supabase, { postId: id, action: 'retry' });
-      return 'Failed platforms re-queued — they retry on the next publish run.';
+      await logEvent(supabase, { postId: id, action: 'publish_now' });
+      return 'The article is live on theplot.tv now. The social posts keep their scheduled time in Buffer — move them there if you want them sooner.';
     }
 
     case 'regenerate': {
@@ -506,8 +501,33 @@ Deno.serve(async (req) => {
   // A comment carrying a slash command.
   if (payload.type === 'Comment' && payload.action === 'create') {
     const issueId = payload.data?.issue?.id;
-    const intent = parseCommand(payload.data?.body ?? '');
-    if (!issueId || !intent) return json({ ok: true, ignored: true });
+    const body = payload.data?.body ?? '';
+    const intent = parseCommand(body);
+    if (!issueId) return json({ ok: true, ignored: true });
+
+    if (!intent) {
+      // Say so when it looked like an attempt. A near miss that answers with
+      // silence is indistinguishable from one that worked, which is how a /copy
+      // was lost and the post approved on top of the text it was meant to change.
+      if (looksLikeAttempt(body)) {
+        // Echo the line it actually read. A near miss that only says "I could
+        // not read it" leaves you re-typing the same thing; showing the first
+        // line turns an argument about what you typed into a fact. It is also
+        // the only window into what Linear delivers — the webhook body has
+        // already proved to differ from what the API returns for the same
+        // comment, and a fenced /help that parses locally still failed here.
+        const firstLine = String(body).split(/\r?\n/).find((l) => l.trim()) ?? '';
+        console.error('Unparsed command attempt. Raw body:', JSON.stringify(String(body).slice(0, 300)));
+        await reply(
+          issueId,
+          'That looked like a command, but I could not read it — the command has to be the **first line** of the comment.\n\n' +
+          `I read your first line as \`${firstLine.slice(0, 80).replace(/`/g, '\u02cb')}\`.\n\n` +
+          HELP_TEXT,
+        );
+        return json({ ok: true, rejected: 'unparsed attempt' });
+      }
+      return json({ ok: true, ignored: true });
+    }
 
     if (WEEK_SCOPED.has(intent.command)) {
       try {

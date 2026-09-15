@@ -10,7 +10,7 @@
 // rather than description edits — the description is ours to overwrite, and an
 // operator's words typed into it would be lost the next time the post changed.
 
-import { reason, platformsFor, articleLink } from './postSummary.js';
+import { reason, articleLink, evidenceFor } from './postSummary.js';
 import { HELP_TEXT } from './linearCommands.js';
 
 const MEDIA_BUCKET = 'marketing';
@@ -33,8 +33,6 @@ const aestDate = (iso, opts) =>
 export const dueDateFor = (post) =>
   new Date(post.scheduled_for).toLocaleDateString('en-CA', { timeZone: 'Australia/Sydney' });
 
-const fence = (label, text) => (text ? `**${label}**\n\n\`\`\`\n${text}\n\`\`\`\n` : '');
-
 /** The issue title: enough to recognise the post in a list, nothing more. */
 export const buildTitle = (post) => {
   const day = aestDate(post.scheduled_for, { weekday: 'short', day: 'numeric', month: 'short' });
@@ -44,20 +42,29 @@ export const buildTitle = (post) => {
 };
 
 /**
- * The issue body: everything needed to decide whether this post should go out.
- * @param {object} post   a marketing_posts row (with its publication rows joined)
+ * The issue body: everything needed to decide whether this ARTICLE should run.
+ *
+ * The social copy is not here. It is not hidden, folded away or shown
+ * read-only — it is simply not this board's business. Those posts are scheduled
+ * in Buffer and reviewed there, on the post, with a character counter and a
+ * preview; reproducing them on a card that cannot change them only invited the
+ * belief that it could.
+ *
+ * @param {object} post   a marketing_posts row
  * @param {string} supabaseUrl  project URL, for the public card images
  */
 export const buildDescription = (post, supabaseUrl) => {
   const copy = post.copy || {};
-  const platforms = platformsFor(post);
   const link = articleLink(post);
   const media = post.media || [];
 
+  // The claim, then the numbers behind it. A pick that does not fit its own
+  // description should be arguable from the card alone.
+  const evidence = evidenceFor(post);
   const parts = [
     `**${aestDate(post.scheduled_for, { weekday: 'long', day: 'numeric', month: 'long' })}** · ${reason(post)}`,
+    ...(evidence.length ? ['', `*${evidence.join(' · ')}*`] : []),
     '',
-    platforms.length ? `Publishes to **${platforms.join(', ')}**.` : 'Web article only — never sent to social.',
     link ? `[Read the article ↗](${link})` : '',
     '',
   ];
@@ -73,21 +80,15 @@ export const buildDescription = (post, supabaseUrl) => {
   }
 
   parts.push('---', '');
-  // A post can reach here with no copy at all — a row vetoed before the worker
-  // ran, say. Say so, rather than rendering an issue that looks like the copy
-  // went missing.
-  if (!copy.x && !copy.instagram && !copy.threads && !copy.page_title) {
-    parts.push('*No copy written yet.*', '');
-  }
-  if (copy.x) parts.push(fence(`X · ${copy.x.length}/280`, copy.x));
-  if (copy.instagram) parts.push(fence('Instagram', copy.instagram));
-  if (copy.hashtags?.length) parts.push(`*${copy.hashtags.map((h) => `#${h}`).join(' ')}*`, '');
-  if (copy.threads) parts.push(fence('Threads', copy.threads));
-  if (copy.alt_text) parts.push(`*Alt text: ${copy.alt_text}*`, '');
 
+  // A post can reach here with no article at all — a row vetoed before the
+  // worker ran, say. Say so, rather than rendering a card that looks like the
+  // writing went missing.
   if (copy.page_title || copy.page_body?.length) {
-    parts.push('---', '', `### ${copy.page_title || 'Article'}`, '');
+    parts.push(`### ${copy.page_title || 'Article'}`, '');
     for (const para of copy.page_body || []) parts.push(para, '');
+  } else {
+    parts.push('*No article written yet.*', '');
   }
 
   if (copy.sources?.length) {

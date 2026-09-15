@@ -5,7 +5,8 @@
   "scripts": {
     "doctor": "node scripts/automation.mjs doctor",
     "weekly": "node scripts/automation.mjs weekly",
-    "publish": "node scripts/automation.mjs publish",
+    "schedule": "node scripts/automation.mjs schedule",
+    "reconcile": "node scripts/automation.mjs reconcile",
     "newsletter": "node scripts/automation.mjs newsletter",
     "snapshot": "node scripts/automation.mjs snapshot",
     "preview": "node preview/build-preview.mjs",

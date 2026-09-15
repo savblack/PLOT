@@ -68,6 +68,12 @@ export const evaluate = async (ctx) => {
     payload: {
       streaming, // { US:[…], UK:[…], AU:[…] } — name the platform (US default)
       year: pick.release_date ? Number(pick.release_date.slice(0, 4)) : null,
+      // The numbers behind the "highly-rated, lesser-seen" claim, carried so the
+      // review card can show its working. MIN_VOTES and MAX_VOTES decide what is
+      // eligible; these let a human see where inside that band a pick actually
+      // sits, and argue with it without knowing the film.
+      rating: typeof pick.vote_average === 'number' ? Math.round(pick.vote_average * 10) / 10 : null,
+      votes: typeof pick.vote_count === 'number' ? pick.vote_count : null,
       title: {
         tmdb_id: pick.id,
         media_type: 'movie',

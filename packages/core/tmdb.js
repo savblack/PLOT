@@ -406,6 +406,16 @@ export const tmdb = {
     fetchFromTMDB(`/tv/${id}`, { append_to_response: 'watch/providers,recommendations,videos,aggregate_credits,external_ids' }),
 
   /**
+   * A TMDB collection (franchise set): `{ id, name, poster_path, parts[] }`.
+   * Movie details carry the stub as `belongs_to_collection`; this fetches the
+   * full membership. TV has no equivalent endpoint.
+   * @param {number|string} id
+   */
+  getCollection: (id) => fetchFromTMDB(`/collection/${id}`),
+  /** Collection (franchise) name search. @param {string} query */
+  searchCollections: (query) => fetchFromTMDB('/search/collection', { query }),
+
+  /**
    * Resolve a movie/TV detail record, surfacing transient vs. terminal failure
    * so callers (e.g. the /save deep-link processor) can retry on a rate-limit
    * burst instead of hard-failing on the very first 429.
@@ -429,17 +439,6 @@ export const tmdb = {
   /* ── Reviews (audience-submitted, via TMDB) ── */
   getReviews: (mediaType, id) => fetchFromTMDB(`/${mediaType}/${id}/reviews`),
 
-  /**
-   * Lightweight title lookup — poster, name, dates — without the
-   * recommendations/credits/videos payload getDetails carries. For hydrating
-   * rails built from a bare list of {media_type, tmdb_id} (e.g. For You),
-   * where only card-level fields are rendered.
-   */
-  getBasicDetails: async (mediaType, id) => {
-    const path = mediaType === 'tv' ? `/tv/${id}` : `/movie/${id}`;
-    const movie = await fetchFromTMDB(path);
-    return mediaType === 'tv' ? movie : withRegionalMovieReleaseDate(movie);
-  },
 
   /* ── Talent ── */
   getPersonDetails: (id) => fetchFromTMDB(`/person/${id}`),

@@ -1,6 +1,31 @@
 -- Weekly pg_stat_statements reset — the only thing consuming this project's
 -- Disk IO Budget.
 --
+-- REPLACES 20260913040000 (#872), which merged and then blocked every
+-- migration on main for a day.
+--
+-- Its guard tested `to_regprocedure('extensions.pg_stat_statements_reset()')`,
+-- which matches an exact argument-type list. pg_stat_statements 1.11 declares
+-- the function as (oid, oid, bigint, boolean) with all four defaulted and no
+-- zero-argument overload, so the lookup returned null on a healthy database
+-- and the migration aborted with "pg_stat_statements_reset() is missing". The
+-- Supabase integration stops at the first failing migration, so nothing after
+-- it applied either — including 20260913110000_for_you_retire_cross_user_tier
+-- from a parallel session. Production sat at 20260913100000 the whole time.
+--
+-- An earlier reading of this blamed version ordering: 040000 sorts before
+-- 20260913090000/100000, which production had already applied, so it looked
+-- skipped. That was wrong. The integration attempts any file not in
+-- supabase_migrations.schema_migrations regardless of where it sorts, and the
+-- proof is that its check run for main quotes this migration's own guard
+-- message. Renaming was not what fixed this; the predicate below was.
+--
+-- The timestamp is an exact UTC time rather than a round hour because the
+-- first re-issue picked 20260913110000, which a parallel session had already
+-- taken, and two migrations sharing a version stops the pipeline outright
+-- (npm run migrations:check). Round hours are what collide when more than one
+-- branch is in flight.
+--
 -- WHAT WAS ACTUALLY HAPPENING: Supabase warned on 2026-09-13 that PLOT
 -- Production was depleting its Disk IO Budget. Nothing in this repo was
 -- responsible. Measured against production:
@@ -73,7 +98,21 @@ begin
   -- On Supabase the same guard shape as the webhook and mirror migrations, for
   -- the same reason: fail at deploy time rather than schedule a job that errors
   -- every Sunday into a log nobody reads.
-  if to_regprocedure('extensions.pg_stat_statements_reset()') is null then
+  -- Looked up by NAME, not by signature. `to_regprocedure('...reset()')` was
+  -- the obvious spelling and it is wrong: it matches an exact argument-type
+  -- list, and pg_stat_statements 1.11 declares
+  -- pg_stat_statements_reset(oid, oid, bigint, boolean) with all four
+  -- defaulted. There is no zero-argument overload, so that lookup returns null
+  -- on a perfectly healthy database and this guard aborted the deploy. Calling
+  -- it with no arguments still works — the defaults apply — which is why the
+  -- scheduled command below is unchanged.
+  if not exists (
+    select 1
+      from pg_proc p
+      join pg_namespace n on n.oid = p.pronamespace
+     where n.nspname = 'extensions'
+       and p.proname = 'pg_stat_statements_reset'
+  ) then
     raise exception
       'extensions.pg_stat_statements_reset() is missing — is pg_stat_statements still installed in the extensions schema?';
   end if;

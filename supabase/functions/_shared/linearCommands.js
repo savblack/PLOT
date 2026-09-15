@@ -16,20 +16,17 @@
 
 export const BOT_MARKER = '🤖 **PLOT**';
 
-// Copy fields an operator can set from a comment, mapped to their column key in
-// marketing_posts.copy. Aliases exist because nobody wants to type `page_title`
-// on a phone. `sources` is deliberately absent: it records what the copy worker
-// actually consulted, so a human overwriting it would be recording a fiction.
+// Article fields an operator can set from a comment, mapped to their column key
+// in marketing_posts.copy. Aliases exist because nobody wants to type
+// `page_title` on a phone. `sources` is deliberately absent: it records what the
+// copy worker actually consulted, so a human overwriting it would be recording a
+// fiction.
+//
+// The social fields — x, instagram, threads, hashtags, alt — used to be here.
+// They are gone rather than refused. This board reviews the article; the posts
+// live in Buffer and are edited there, and a field name this parser still
+// recognised would keep implying otherwise.
 const FIELD_ALIASES = {
-  x: 'x',
-  twitter: 'x',
-  instagram: 'instagram',
-  ig: 'instagram',
-  threads: 'threads',
-  hashtags: 'hashtags',
-  tags: 'hashtags',
-  alt: 'alt_text',
-  alt_text: 'alt_text',
   cta: 'cta_variant',
   cta_variant: 'cta_variant',
   title: 'page_title',
@@ -46,7 +43,6 @@ const SIMPLE_COMMANDS = {
   reject: 'reject',
   unapprove: 'unapprove',
   regenerate: 'regenerate',
-  retry: 'retry',
   'publish-now': 'publish_now',
   publish_now: 'publish_now',
   pause: 'pause',
@@ -67,21 +63,35 @@ const unwrap = (line) =>
     .replace(/^\s*`+|`+\s*$/g, '')     // inline code fences
     .trimEnd();
 
+/**
+ * Strip a code fence wrapping the whole comment.
+ *
+ * The help text shows the /copy example inside a fenced block, because that is
+ * how you render a multi-line template legibly. Copy-paste it — the obvious
+ * thing to do — and the fence comes with it, so the first line is ``` rather
+ * than /copy, and the comment parsed as not-a-command: ignored in silence, no
+ * reply, no edit. The bot's own help was teaching an input the bot rejected.
+ *
+ * So a fence around the whole thing is stripped rather than treated as content.
+ * A fence INSIDE the comment is left alone, since that is legitimately part of
+ * the text someone might be pasting.
+ */
+const unwrapCodeFence = (text) => {
+  const trimmed = text.trim();
+  if (!trimmed.startsWith('```')) return text;
+  const lines = trimmed.split(/\r?\n/);
+  if (lines.length < 2) return text;
+  const last = lines[lines.length - 1].trim();
+  if (last !== '```') return text;
+  return lines.slice(1, -1).join('\n');
+};
+
 const isFieldLine = (line) => {
   const m = /^\s*([A-Za-z_][A-Za-z0-9_]*)\s*:\s*(.*)$/.exec(unwrap(line));
   if (!m) return null;
   const key = FIELD_ALIASES[m[1].toLowerCase()];
   return key ? { key, rest: m[2] } : null;
 };
-
-// Hashtags arrive however they were typed: "#A24, folk horror" or "a24 folkhorror".
-// Normalize the same way validateCopy does, so what you see is what it stores.
-const parseHashtags = (value) =>
-  value
-    .split(/[,\n]/)
-    .flatMap((part) => part.trim().split(/\s+/))
-    .map((tag) => tag.replace(/^#/, '').replace(/\s+/g, ''))
-    .filter(Boolean);
 
 // Paragraphs, blank-line separated — the same split the web desk's textarea uses
 // (mergeCopyFromForm in admin-review), so both editors produce the same array.
@@ -111,7 +121,7 @@ export const WEEK_SCOPED = new Set(['pause', 'resume', 'generate', 'help']);
  * }} null when the comment is not addressed to us at all.
  */
 export const parseCommand = (body) => {
-  const text = String(body ?? '');
+  const text = unwrapCodeFence(String(body ?? ''));
   if (text.trimStart().startsWith(BOT_MARKER)) return null; // our own reply
 
   const lines = text.split(/\r?\n/);
@@ -169,26 +179,59 @@ export const parseCommand = (body) => {
       errors.push(`${key} was given with no value — omit the line to leave it unchanged.`);
       continue;
     }
-    if (key === 'hashtags') fields[key] = parseHashtags(value);
-    else if (key === 'page_body') fields[key] = parseParagraphs(value);
+    if (key === 'page_body') fields[key] = parseParagraphs(value);
     else fields[key] = value.replace(/\n+/g, ' ').trim();
   }
 
   if (!Object.keys(fields).length && !errors.length) {
-    errors.push('No fields to change. Use `x:`, `instagram:`, `threads:`, `hashtags:`, `alt:`, `cta:`, `title:` or `body:`.');
+    errors.push('No fields to change. Use `title:`, `body:` or `cta:`.');
   }
 
   return { command: 'edit', fields, ...(errors.length ? { errors } : {}) };
 };
 
+/**
+ * Does this comment look like someone TRYING to run a command that did not parse?
+ *
+ * parseCommand returns null for anything not addressed to us, and silence is
+ * right for ordinary conversation. It is wrong for a near miss: a /copy that
+ * arrived fenced produced no reply at all, so the edit looked applied, the post
+ * was approved on top of it, and it went to Scheduled carrying the old text.
+ * Silence and success were indistinguishable at exactly the moment they differed.
+ *
+ * Narrow on purpose — a known command word on a line of its own, which is what a
+ * misplaced attempt looks like. Mentioning `/approve` mid-sentence in prose does
+ * not match, so talking about the commands stays possible.
+ */
+export const looksLikeAttempt = (body) => {
+  const text = unwrapCodeFence(String(body ?? ''));
+
+  // OUR OWN REPLIES ARE NOT ATTEMPTS. parseCommand has always returned null for
+  // them, which was the whole loop guard — and this function bypassed it. Every
+  // near-miss reply quotes HELP_TEXT, HELP_TEXT lists `/approve` and `/copy` at
+  // line starts, so the reply looked like an attempt, which produced a reply,
+  // which looked like an attempt. It replied to itself until it was stopped.
+  //
+  // The check belongs here rather than at the call site so the next caller
+  // cannot forget it: the two functions must agree about what is ours.
+  if (text.trimStart().startsWith(BOT_MARKER)) return false;
+
+  const known = [...Object.keys(SIMPLE_COMMANDS), ...EDIT_COMMANDS, 'reschedule'].join('|');
+  const pattern = new RegExp(`^\\s*/(${known})\\b`, 'im');
+  return pattern.test(text);
+};
+
 // The help text the bot replies with, kept next to the parser so the two can
 // never disagree about what is actually accepted.
 export const HELP_TEXT = [
-  '`/approve` · `/reject` · `/unapprove` — the publish gate. Only approved posts are sent.',
+  '**This board reviews the article** — the piece that goes on theplot.tv.',
+  'The X, Instagram and Threads posts are scheduled in Buffer and reviewed there.',
+  '',
+  '`/approve` · `/reject` · `/unapprove` — whether the article goes live.',
   '`/reschedule 2026-09-18` — move it to another day.',
-  '`/publish-now` — approve and send within minutes. `/retry` — re-queue failed platforms.',
+  '`/publish-now` — approve and bring it forward to today.',
   '`/regenerate` — throw the copy away and have the worker rewrite it.',
-  '`/pause` · `/resume` — the global publishing switch (affects every post).',
+  '`/pause` · `/resume` — stop new posts entering the Buffer queue (every post, not just this one).',
   '`/generate` — build the coming week now, instead of waiting for Sunday.',
   '',
   // Named, not counted. This line used to say "the last three", which was true
@@ -198,16 +241,17 @@ export const HELP_TEXT = [
   // asserts these names against WEEK_SCOPED so the two cannot drift apart.
   '`/pause`, `/resume`, `/generate` and `/help` act on the whole week, so you can comment them on any card here.',
   '',
-  'To edit copy, comment `/copy` and then any of these lines — anything you leave out stays as it is:',
+  'To edit the article, comment `/copy` and then only the lines you want to change.',
+  'Delete the rest — anything you leave out keeps its current text.',
   '```',
   '/copy',
-  'x: the new X text',
-  'threads: the new Threads text',
-  'hashtags: A24, folkhorror, mikeflanagan',
-  'title: the new article headline',
+  'title: <new article headline>',
   'body:',
-  'First paragraph.',
+  '<first paragraph>',
   '',
-  'Second paragraph.',
+  '<second paragraph>',
   '```',
+  '',
+  'Angle brackets are placeholders, not syntax. Pasting a line unedited writes',
+  'the placeholder, so delete what you are not changing.',
 ].join('\n');

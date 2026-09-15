@@ -55,19 +55,48 @@ test('the body leads with the day and the reason the post exists', () => {
   assert.match(d.split('\n')[0], /^\*\*Saturday 12 September\*\* · Highly-rated, lesser-seen: Hard Boiled$/);
 });
 
-test('it names the platforms and links the article', () => {
+test('it links the article', () => {
   const d = buildDescription(basePost, SUPA);
-  assert.match(d, /Publishes to \*\*x, instagram\*\*/);
   assert.match(d, /\[Read the article ↗\]\(https:\/\/theplot\.tv\/whats-on\/hard-boiled-2026-09-12\)/);
 });
 
-test('a guide says it is web-only rather than listing platforms', () => {
+test('the social copy is not on the card at all', () => {
+  // Not folded away, not shown read-only — absent. Those posts are scheduled in
+  // Buffer and reviewed there; reproducing them on a card that cannot change
+  // them only invited the belief that it could.
+  const d = buildDescription(basePost, SUPA);
+  for (const text of [basePost.copy.x, basePost.copy.instagram, basePost.copy.threads]) {
+    assert.ok(!d.includes(text), `social copy leaked onto the card: ${text}`);
+  }
+  assert.doesNotMatch(d, /#johnwoo/, 'hashtags are a social field');
+  assert.doesNotMatch(d, /280/, 'the X character count has no business here');
+
+  // The collapsed help is allowed one line saying where those posts DO live —
+  // a reviewer who has never seen this board needs to be told once. The body
+  // above it is the part that must be purely the article.
+  const body = d.slice(0, d.indexOf('How to review this from here'));
+  assert.doesNotMatch(body, /Instagram|Threads|Buffer/);
+});
+
+test('the card says nothing about where the post is sent', () => {
+  // It used to open with "Publishes to x, instagram". Which channels a post
+  // fans out to is not a fact this board acts on, and stating it implied the
+  // approval below governed the sending. It does not.
+  const d = buildDescription(basePost, SUPA);
+  assert.doesNotMatch(d, /Publishes to/);
+  assert.doesNotMatch(d, /Sent by Buffer/);
+});
+
+test('a guide renders the same as anything else', () => {
+  // A guide has no social posts, which used to be worth saying on the card.
+  // Now that no card mentions social at all, there is nothing to distinguish:
+  // every card is an article, and a guide is simply one with no cards to show.
   const d = buildDescription(
     { ...basePost, post_type: 'guide', marketing_post_publications: [] },
     SUPA,
   );
-  assert.match(d, /Web article only/);
-  assert.doesNotMatch(d, /Publishes to/);
+  assert.match(d, /### Hard Boiled still sets the bar/);
+  assert.doesNotMatch(d, /Web article only/);
 });
 
 test('cards are embedded as public storage URLs', () => {
@@ -78,17 +107,8 @@ test('cards are embedded as public storage URLs', () => {
   assert.doesNotMatch(d, /portrait/);
 });
 
-test('the X block carries its character count, so over-length is visible', () => {
+test('the whole article makes it into the body', () => {
   const d = buildDescription(basePost, SUPA);
-  assert.match(d, /\*\*X · 37\/280\*\*/);
-});
-
-test('every piece of copy makes it into the body', () => {
-  const d = buildDescription(basePost, SUPA);
-  for (const text of ['Still the best action film ever shot.', 'A caption.', 'A thought.', 'A still from Hard Boiled.']) {
-    assert.ok(d.includes(text), `missing: ${text}`);
-  }
-  assert.match(d, /#johnwoo #hongkongcinema #actionmovies/);
   assert.match(d, /### Hard Boiled still sets the bar/);
   for (const para of basePost.copy.page_body) assert.ok(d.includes(para));
 });
@@ -103,7 +123,9 @@ test('a post with no media or article still renders', () => {
     marketing_post_publications: [{ platform: 'x', status: 'queued' }, { platform: 'threads', status: 'queued' }],
   };
   const d = buildDescription(question, SUPA);
-  assert.match(d, /What did you make of the ending\?/);
+  // Its only copy was social, so there is no article to show — and saying so is
+  // the point: approving this card would put an empty page on the site.
+  assert.match(d, /\*No article written yet\.\*/);
   assert.doesNotMatch(d, /!\[card/);
   assert.doesNotMatch(d, /Read the article/);
 });
@@ -147,5 +169,17 @@ test('the due date agrees with the title for any scheduling convention', () => {
 
 test('a post with no copy says so instead of rendering an empty shell', () => {
   const d = buildDescription({ ...basePost, copy: null, media: [] }, SUPA);
-  assert.match(d, /\*No copy written yet\.\*/);
+  assert.match(d, /\*No article written yet\.\*/);
+});
+
+test('a post with social copy but no article still shows the gap', () => {
+  // The card is for deciding the article. A post whose captions were written but
+  // whose article was not is the one case where approving would put an empty
+  // page on the site, so the absence has to be visible rather than implied.
+  const d = buildDescription(
+    { ...basePost, copy: { x: 'a tweet', threads: 'a post' } },
+    SUPA,
+  );
+  assert.match(d, /\*No article written yet\.\*/);
+  assert.ok(!d.includes('a tweet'));
 });

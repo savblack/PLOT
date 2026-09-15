@@ -13,6 +13,7 @@ import { setTmdbRegion } from '@plot/core/tmdb.js';
 import { setUserTimezone } from './utils/date.js';
 import AppShell from './components/AppShell.jsx';
 import MediaPanel from './components/MediaPanel.jsx';
+import CollectionPanel from './components/CollectionPanel.jsx';
 import { useTheme } from './hooks/useTheme.js';
 import { useWatchlist }    from './hooks/useWatchlist.js';
 import { usePendingSave }  from './hooks/usePendingSave.js';
@@ -206,8 +207,10 @@ export default function App() {
     setPanelItem({ id, type });
     setPanelClosing(false);
     // Canonical "opened a title" action — every surface (rails, search, feed,
-    // deep links) routes through here, so one call covers them all.
-    track(EVENTS.TITLE_VIEWED, { tmdb_id: id, media_type: type, source });
+    // deep links) routes through here, so one call covers them all. A
+    // collection is not a title, so it gets its own event.
+    if (type === 'collection') track(EVENTS.COLLECTION_VIEWED, { collection_id: id, source });
+    else track(EVENTS.TITLE_VIEWED, { tmdb_id: id, media_type: type, source });
   }, []);
 
   const closePanel = useCallback(() => {
@@ -285,7 +288,15 @@ export default function App() {
         <Outlet />
       </AppShell>
 
-      {panelItem && (
+      {panelItem && panelItem.type === 'collection' && (
+        <CollectionPanel
+          collectionId={panelItem.id}
+          closing={panelClosing}
+          onClose={closePanel}
+        />
+      )}
+
+      {panelItem && panelItem.type !== 'collection' && (
         <MediaPanel
           itemId={panelItem.id}
           itemType={panelItem.type}

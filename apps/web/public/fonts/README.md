@@ -5,6 +5,12 @@ both SIL Open Font License — see `OFL.txt`. This directory is the source of tr
 `apps/website/fonts/` holds byte-identical copies because the marketing site deploys
 separately, and `apps/mobile/assets/fonts/` holds the static TTFs Expo bundles.
 
+`apps/website/fonts/` carries **only the `.woff2` files**. Everything served from
+`theplot.tv/fonts/` is fetched by a browser — the site's own pages and the `title-page`
+/ `marketing-feed` edge functions — and the non-browser consumers listed below all read
+from this directory instead. Copying the TTFs back there would ship ~380 KB nothing
+requests.
+
 ## Why both .woff2 and .ttf
 
 They are not duplicates — different consumers need different formats.
@@ -42,8 +48,23 @@ digits read better. Rebuild with:
 python3 scripts/build-tabular-digits.py
 ```
 
+The same script also builds three **full-coverage** cuts into
+`apps/mobile/assets/fonts/` — `InstrumentSerif-Tabular.ttf`, `DMSans-TabularRegular.ttf`
+and `DMSans-TabularSemiBold.ttf`. React Native has no `unicode-range` and a `Text` takes
+exactly one family, so a digits-only file there would leave every other character to the
+platform's fallback. Reach for them via `fontFamily.serifTabular` / `sansTabular` /
+`sansTabularBold` in `apps/mobile/lib/tokens.ts`.
+
+Those full cuts also drop the `kern` feature. Uniform advances alone are not enough:
+DM Sans kerns digit pairs, so `1234567890` renders narrower than `0000000000` and the
+column drifts again. The web faces avoid this for free, because subsetting to digits
+discards GPOS wholesale. `mark`/`mkmk` are kept so accents still position.
+
 The script verifies that the ten digits share an advance at every corner of the
-designspace and refuses to write a font that fails, then copies to `apps/website/fonts/`.
+designspace, that the web faces carry the digits and nothing else, and that the mobile
+cuts lose no glyph the source had — and refuses to write a font that fails. It pins
+`head.modified` from the source, so rebuilding unchanged fonts is byte-identical rather
+than churning five binaries.
 
 ## Regenerating the .woff2 files
 

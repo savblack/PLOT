@@ -174,8 +174,44 @@ jobs:
   smoke:
     name: Smoke tests (Playwright)
     needs: check
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+
+    # Runs on pull requests as well as pushes to main. It used to be
+    # `push && ref == main` only, which meant the one check that actually loads
+    # the app in a browser could not block a merge — it reported after the fact,
+    # on main, with Cloudflare Pages already building the same commit.
+    #
+    # That is not hypothetical. #885 bumped react-dom to 19.3.0 without bumping
+    # react, and React refuses to run when the pair differs:
+    #
+    #   Incompatible React versions: the "react" and "react-dom" packages must
+    #   have the exact same version.
+    #
+    # Every route threw on load. Lint, build, tsc, mobile typecheck and both
+    # Pages builds were green — a version mismatch is not a type error and not a
+    # build error. Only a browser sees it, and no browser ran before merge.
+
+    env:
+      # Fall back to placeholders when the secrets are not readable. Dependabot
+      # PRs run against a separate secret store and see none of these, and a
+      # fork sees none either — and EMPTY is not the same as absent here:
+      # configure() throws "Supabase URL or anon key is missing", which takes
+      # down three of the five tests for a reason that has nothing to do with
+      # the change under test. A red gate that is red for the wrong reason gets
+      # switched off, which is how this job ended up main-only in the first
+      # place.
+      #
+      # Measured on 2026-09-14, running the suite locally with each in turn:
+      # real credentials 5/5, placeholders 5/5, empty strings 2/5. The suite
+      # asserts rendering and routing and is deliberately scoped to the local
+      # document, so it does not need a reachable backend — only a bootable one.
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || 'https://placeholder.supabase.co' }}
+      VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || 'placeholder-not-a-key' }}
+      VITE_TMDB_PROXY_URL: ${{ secrets.VITE_TMDB_PROXY_URL || 'https://placeholder.invalid' }}
+      # No PostHog token, ever: this job drives a real browser through the app,
+      # and every click would land in the production project. The host allowlist
+      # in apps/web/src/utils/analyticsHost.js already blocks 127.0.0.1, so this
+      # is belt and braces.
 
     steps:
       - name: Check out repository
@@ -192,28 +228,12 @@ jobs:
 
       - name: Build
         run: npm run build
-        env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-          VITE_TMDB_PROXY_URL: ${{ secrets.VITE_TMDB_PROXY_URL }}
-          # No PostHog token: the smoke job drives a real browser through the
-          # app, and every click would land in the production project. The host
-          # allowlist in apps/web/src/utils/analyticsHost.js already blocks
-          # 127.0.0.1, so this is belt and braces.
 
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
 
       - name: Smoke tests
         run: npm run test:smoke -w @plot/web
-        env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-          VITE_TMDB_PROXY_URL: ${{ secrets.VITE_TMDB_PROXY_URL }}
-          # No PostHog token: the smoke job drives a real browser through the
-          # app, and every click would land in the production project. The host
-          # allowlist in apps/web/src/utils/analyticsHost.js already blocks
-          # 127.0.0.1, so this is belt and braces.
 
   mobile-typecheck:
     name: Mobile typecheck (Expo)

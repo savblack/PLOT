@@ -11,8 +11,7 @@
 //     worse: logWatchedItem never wrote the column at all, so every row was
 //     NULL. Both fixed alongside this script via genreIdsFromItem.
 //
-// Rows with no genres never match a genre filter and feed no genre signal into
-// user_title_signals, the view behind get_for_you's content-similarity tier.
+// Rows with no genres never match Discover's genre filter.
 //
 // This is idempotent and safe to re-run: it only ever touches rows whose
 // genre_ids is empty, and it never overwrites a populated value.

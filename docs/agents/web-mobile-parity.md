@@ -22,7 +22,7 @@ Lists) and copy.
 | Shared copy catalog (`packages/core/copy/`) | done |
 | My Lists section system, multi-select, Top 10 folded in | done |
 | Date-watched editing in the media panel | done |
-| Discover hooks in core (`useDiscover`, `useNewReleases`, `usePlatformCharts`, `useForYou`, `useGenres`, `useUpcoming`) | done |
+| Discover hooks in core (`useDiscover`, `useNewReleases`, `usePlatformCharts`, `useGenres`, `useUpcoming`) | done |
 | Mobile Discover sub-tabs: Discover · New Releases · Upcoming · Guide | done |
 | Official platform Top 10 charts on mobile | done |
 | Type + Genre filters on Discover / New Releases / Upcoming | done |
@@ -72,23 +72,15 @@ Neither was visible to a type check. Phases 0, 0a and 1 of
 are not**, so most of the app is still unverified at runtime. "It builds and the
 Guide is correct" is not "it works".
 
-There is **no Xcode on this machine** as of 2026-09-11:
+**There is a working simulator on this machine as of 2026-09-14** — Xcode 26.6
+and an iPhone 17 Pro on iOS 26.5, with the app built and driven on it. Earlier
+revisions of this file said there was no Xcode at all; that is out of date.
+Getting the simulator usable needed two fixes that no error message names, both
+written up in [docs/ops/mobile-builds.md](../ops/mobile-builds.md) — read that
+before debugging a simulator that lists no devices, or a `pod install` that dies
+talking about Unicode.
 
-```
-xcode-select -p  → /Library/Developer/CommandLineTools
-/Applications/Xcode.app → absent
-xcrun simctl     → "unable to find utility simctl"
-```
-
-So there is no simulator to fail to build for. (An earlier revision of this
-doc described an Xcode 26.6 SDK/runtime mismatch; that machine state no longer
-applies, and diagnosing against it wastes an hour.)
-
-**Fix (needs a human):** install Xcode from the App Store, then
-`sudo xcode-select -s /Applications/Xcode.app/Contents/Developer`. Needs the
-machine password, so an agent cannot do it.
-
-**But Xcode is not the only path, and nothing is actually waiting.** PLOT is
+**Xcode is still not the only path.** PLOT is
 enrolled in the Apple Developer Program (Individual, confirmed 2026-09-11), and
 EAS builds on hosted macOS workers, so an `eas build --profile development`
 puts a signed build on a real iPhone without Xcode existing locally. That is
@@ -144,9 +136,9 @@ Lessons:
   in the top-left — on Discover that is the hero card, so it looks exactly like
   a frozen app. The status-bar clock keeps ticking regardless; it is drawn by
   the simulator, not the app, and proves nothing.
-- **Staging has no chart or recommendation data**, by design. Every nightly job
-  targets Production. So "Top 10 by Platform" and the For You rail render empty
-  in local dev on both platforms — environmental, not a bug.
+- **Staging has no chart data**, by design. Every nightly job targets
+  Production. So "Top 10 by Platform" renders empty in local dev on both
+  platforms — environmental, not a bug.
 - **`pod install` after an Expo/RN bump** fails with "could not find compatible
   versions for pod ExpoFileSystem … differs from the version stored in
   Pods/Local Podspecs". `rm -rf ios/Pods ios/Podfile.lock && pod install`

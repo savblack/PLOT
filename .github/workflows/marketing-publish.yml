@@ -1,16 +1,36 @@
-name: Marketing — publish
+name: Marketing — reconcile
+
+# The daily job no longer sends. Buffer does the sending now: the week is pushed
+# into its queue at generation time, reviewed and adjusted there, and sent on
+# schedule. What is left for us is finding out what happened — Buffer has no
+# webhook, so a post that sent, failed, was rewritten or was deleted reaches the
+# database only because this run goes and asks.
+#
+# The filename is unchanged on purpose. It is still the daily marketing run, it
+# is still what /publish-now and the desk's button dispatch, and renaming it
+# would throw away the run history that makes "when did this last work?"
+# answerable.
 
 on:
   schedule:
-    - cron: '0 2 * * *' # 12:00pm Sydney (AEST)
+    # Stated 02:00 UTC. REALLY starts ~07:10 UTC (~17:10 Sydney) — measured over
+    # ten consecutive runs, every one of them 5+ hours late. GitHub's scheduler
+    # is best-effort and this repo's crons run 2.5-5.5h behind their stated time,
+    # consistently. Do not read this line as when anything happens.
+    #
+    # It matters less than it used to: this job no longer sends anything, and the
+    # posts it reconciles are sent by Buffer, which is punctual. What the drift
+    # still costs is freshness — the top-up below runs late afternoon Sydney, so
+    # a slot freed at noon is refilled about five hours later.
+    - cron: '0 2 * * *'
   workflow_dispatch:
     inputs:
       retry_failed:
-        description: 'Re-queue failed publications first'
+        description: 'Re-push publications that failed to reach Buffer'
         type: boolean
         default: false
       dry_run:
-        description: 'Log instead of posting'
+        description: 'Report what would change; write nothing'
         type: boolean
         default: false
 
@@ -22,7 +42,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  publish:
+  reconcile:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -31,20 +51,43 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Publish pending posts
+      # Re-push first when asked: a row that never reached Buffer has nothing to
+      # reconcile, so retrying it is a scheduling job, not a reading one.
+      - name: Re-push failed publications
+        if: inputs.retry_failed
         env:
-          RETRY_FAILED: ${{ inputs.retry_failed }}
           DRY_RUN: ${{ inputs.dry_run && '1' || '' }}
           SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
-          BUFFER_CHANNEL_ID: ${{ secrets.BUFFER_CHANNEL_ID }}
-        run: |
-          if [ "$RETRY_FAILED" = "true" ]; then
-            node marketing/publish/publish.mjs --retry-failed
-          else
-            node marketing/publish/publish.mjs
-          fi
+        run: node marketing/publish/schedule.mjs --retry-failed
+
+      - name: Reconcile the Buffer queue
+        env:
+          DRY_RUN: ${{ inputs.dry_run && '1' || '' }}
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
+        run: node marketing/publish/reconcile.mjs
+
+      # Top the queue back up, AFTER reconciling — this is what makes the whole
+      # thing work on a capped plan.
+      #
+      # The queue holds 10 posts per channel and a week produces about 16, so a
+      # week cannot go in at once. It goes in as a rolling window instead: each
+      # day's sends free their slots, and this step fills them with the next
+      # posts due. Without it the overflow from Sunday's batch would sit queued
+      # until the FOLLOWING Sunday and simply never go out.
+      #
+      # Posts are pushed in scheduled_for order, so the slots always go to the
+      # soonest posts and the horizon stays contiguous rather than gappy.
+      - name: Top up the Buffer queue
+        env:
+          DRY_RUN: ${{ inputs.dry_run && '1' || '' }}
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
+        run: node marketing/publish/schedule.mjs
       # Watchdog for the weekly batch, deliberately parked in this job rather
       # than that one. When the 2026-08-30 batch was refused a runner over
       # billing, its own "Alert on failure" step could not run either, and the
@@ -65,7 +108,7 @@ jobs:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           ADMIN_EMAIL: ${{ secrets.MARKETING_ADMIN_EMAIL }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          WORKFLOW_NAME: publish
+          WORKFLOW_NAME: reconcile
           ALERT_SUBJECT: 'PLOT marketing: nothing is queued'
           ALERT_BODY: >-
             No marketing posts are scheduled for the next 3 days. Either the
@@ -80,5 +123,5 @@ jobs:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           ADMIN_EMAIL: ${{ secrets.MARKETING_ADMIN_EMAIL }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          WORKFLOW_NAME: publish
+          WORKFLOW_NAME: reconcile
         run: bash .github/scripts/marketing-alert.sh

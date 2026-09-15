@@ -176,7 +176,7 @@ test('buildImportRows keeps the rating and the review, clamped to the history sc
   assert.equal(rows[0].row.note, 'loved it');
 });
 
-test('buildImportRows carries genre ids so imported titles feed For You', () => {
+test('buildImportRows carries genre ids so imported titles match genre filters', () => {
   const rows = buildImportRows({
     userId: 'u1',
     resolved: [{ status: 'matched', tmdbId: 1, mediaType: 'movie', tmdbTitle: 'A', genreIds: [18] }],

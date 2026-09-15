@@ -156,25 +156,26 @@ const RECONCILED = ['needs_review', 'approved', 'published', 'partially_publishe
  * for a send that is never coming, when in fact they went live on /whats-on the
  * day they were scheduled.
  */
-const isComplete = (post: Row): boolean => {
-  if (post.status === 'published') return true;
-  const pubs = (post.marketing_post_publications ?? []) as Row[];
-  const webOnly = pubs.length === 0;
-  return webOnly && post.status === 'approved' && new Date(post.scheduled_for) <= new Date();
-};
-
 /**
- * A post whose publishing is over, one way or another.
+ * A post is COMPLETE when its ARTICLE has done everything it is going to do:
+ * it has been cleared to run and its day has arrived, so it is on /whats-on.
  *
- * Wider than isComplete on purpose. A partially published post is NOT complete —
- * something failed and wants /retry — but its run has happened, and the board
- * needs to say so. Before this, a partial produced nothing at all: targetState
- * has no entry for it, so reconcile skipped the row entirely and the card sat in
- * Approved looking like a post still waiting its turn. Silence is the one thing
- * the board must never say about a post that needs you.
+ * That is the whole rule now, and it deliberately ignores the publication rows.
+ * This board reviews the article; the social posts are scheduled in Buffer and
+ * their fate is Buffer's to report. A card that stayed open waiting on a send
+ * was claiming to track something it does not show you — and, once deleting a
+ * post in Buffer became the ordinary way to drop one, would have waited forever
+ * for a send the operator had personally cancelled.
+ *
+ * 'published' and 'partially_published' are included because reconcile.mjs still
+ * writes them from what Buffer did. They mean the article is live too; they are
+ * not a second opinion about it.
  */
-const hasFinishedPublishing = (post: Row): boolean =>
-  post.status === 'published' || post.status === 'partially_published' || isComplete(post);
+const LIVE_STATUSES = ['approved', 'published', 'partially_published'];
+
+const isComplete = (post: Row): boolean =>
+  LIVE_STATUSES.includes(post.status as string) &&
+  new Date(post.scheduled_for) <= new Date();
 
 // Identifies our own outcome comment, so a post is reported once rather than on
 // every sweep. Reporting used to ride on the move into Done, which made it
@@ -183,30 +184,16 @@ const hasFinishedPublishing = (post: Row): boolean =>
 //
 // A plain string test rather than a regex: BOT_MARKER contains an emoji, and
 // deno lint rejects the otherwise-valid regex literal that embeds one.
-const OUTCOME_HEADINGS = ['Published.', 'Partly published.', 'Live on the site.'];
+// 'Live on the site.' is the only heading this writes now. The rest are kept so
+// a card reported under the old per-platform wording is not reported a second
+// time when the sweep next runs.
+const OUTCOME_HEADINGS = ['Live on the site.', 'Published.', 'Partly published.'];
 const isOutcomeReport = (body: string): boolean =>
   body.startsWith(BOT_MARKER) && OUTCOME_HEADINGS.some((h) => body.includes(`· ${h}`));
 
-/** What actually happened, per platform, from what the publisher recorded. */
-const outcomeReport = (post: Row): string => {
-  const pubs = (post.marketing_post_publications ?? []) as Row[];
-  const sent = pubs.filter((x) => x.status === 'published');
-  const failed = pubs.filter((x) => x.status === 'failed');
-
-  if (!pubs.length) {
-    return `${BOT_MARKER} · Live on the site.\n- ${articleLink(post) ?? '/whats-on'}`;
-  }
-
-  const lines = sent.map((x) => `- ${x.platform}${x.permalink ? `: ${x.permalink}` : ''}`);
-  if (failed.length) {
-    lines.push(`- **failed: ${failed.map((x) => x.platform).join(', ')}** — comment \`/retry\` to re-queue them`);
-  }
-  const heading = failed.length ? 'Partly published' : 'Published';
-  const tail = failed.length
-    ? '\n\nLeft in Approved rather than moved to Done, because it is not finished.'
-    : '';
-  return `${BOT_MARKER} · ${heading}.\n${lines.join('\n')}${tail}`;
-};
+/** What happened to the article: it went live, and here is where. */
+const outcomeReport = (post: Row): string =>
+  `${BOT_MARKER} · Live on the site.\n- ${articleLink(post) ?? '/whats-on'}`;
 
 // A post whose row moved on since its issue was last rendered.
 //
@@ -381,20 +368,37 @@ const markFailed = (supabase: Db, id: string, error: string) =>
     .eq('id', id);
 
 /**
- * Open an issue for any mirrored post that has none.
+ * Open an issue for any mirrored post that has none — and only for posts this
+ * board can actually review.
  *
  * Covers approved posts as well as those awaiting review: a post approved on the
  * web desk would otherwise never appear on the board, which is exactly the
  * divergence having two surfaces is supposed to avoid. Each opens directly in
  * the state its row is already in, so an approved post is never presented as
  * still needing a decision.
+ *
+ * `slug IS NOT NULL` is the article test, and it is structural rather than a
+ * guess about content. Every post type that goes on theplot.tv gets a slug when
+ * it is rendered; `question` posts are the only ones that never do, because they
+ * are social-only — they live entirely in Buffer and have no page. Across 226
+ * posts the split is exact, with no other type on either side of it.
+ *
+ * Before this, they got a card like everything else, and since the board stopped
+ * showing social copy that card read "No article written yet." and nothing more:
+ * an approval prompt for a page that does not exist. Three a week, forever, on a
+ * board whose whole remaining job is articles.
+ *
+ * Deliberately only the CREATION path. A slugless post that somehow already has
+ * an issue keeps it and goes on being reconciled, because stranding a card that
+ * exists is worse than never opening one.
  */
 const createMissing = async (supabase: Db, ctx: Context, dryRun = false): Promise<number> => {
   const { data, error } = await supabase
     .from('marketing_posts')
-    .select('*, marketing_post_publications(platform,status)')
+    .select('*')
     .in('status', CREATABLE)
     .is('linear_issue_id', null)
+    .not('slug', 'is', null)
     .order('scheduled_for');
   if (error) throw new Error(error.message);
 
@@ -444,7 +448,7 @@ const createMissing = async (supabase: Db, ctx: Context, dryRun = false): Promis
 const refreshChanged = async (supabase: Db, dryRun = false): Promise<number> => {
   const { data, error } = await supabase
     .from('marketing_posts')
-    .select('*, marketing_post_publications(platform,status)')
+    .select('*')
     .not('linear_issue_id', 'is', null)
     .in('status', [...RECONCILED, 'planned', 'copy_ready', 'generated'])
     .order('scheduled_for');
@@ -499,7 +503,7 @@ const refreshChanged = async (supabase: Db, dryRun = false): Promise<number> => 
 const reconcileStates = async (supabase: Db, ctx: Context, dryRun = false): Promise<{ moved: number; reported: number }> => {
   const { data, error } = await supabase
     .from('marketing_posts')
-    .select('*, marketing_post_publications(platform,status,permalink)')
+    .select('*')
     .not('linear_issue_id', 'is', null)
     .in('status', RECONCILED);
   if (error) throw new Error(error.message);
@@ -530,7 +534,7 @@ const reconcileStates = async (supabase: Db, ctx: Context, dryRun = false): Prom
   let reported = 0;
   for (const post of posts) {
     const want = targetState(ctx, post);
-    const needsReport = hasFinishedPublishing(post) && !reportedAlready.has(post.linear_issue_id);
+    const needsReport = isComplete(post) && !reportedAlready.has(post.linear_issue_id);
     const needsMove = want !== null && current.get(post.linear_issue_id) !== want;
     if (!needsReport && !needsMove) continue;
     if (dryRun) {

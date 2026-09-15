@@ -9,7 +9,6 @@ import RailArrows from './RailArrows.jsx';
 import { useRailScroll } from '../hooks/useRailScroll.js';
 import { useGenres } from '../hooks/useGenres.js';
 import { useDiscover } from '../hooks/useDiscover.js';
-import { useForYou } from '../hooks/useForYou.js';
 import { useNewReleases } from '../hooks/useNewReleases.js';
 import { usePlatformCharts } from '../hooks/usePlatformCharts.js';
 import { UpcomingContent } from './GuideView.jsx';
@@ -20,7 +19,6 @@ import LoadingSpinner from './LoadingSpinner.jsx';
 import { track, EVENTS } from '../lib/analytics.js';
 import GroupedFilterMenu from './GroupedFilterMenu.jsx';
 import SectionToggleIcon from './SectionToggleIcon.jsx';
-import { SHOW_FOR_YOU_RAIL } from '../launchFeatures.js';
 
 /* ── Rail ── */
 /* Both rails are ScrollRail: it carries the drag behaviour these used to wire
@@ -48,8 +46,8 @@ function BingeRail({ rail, children }) {
 
    `subtitle` is deliberately optional rather than the old always-present
    kicker: a line under every shelf is noise by the third one. Pass it only
-   where the title does not already say it — "Your Next Watch" needs to explain
-   what it is based on, "Hot Right Now" does not need to be told it is
+   where the title does not already say it — "Top 10 by Platform" needs to say
+   whose ranking it is, "Hot Right Now" does not need to be told it is
    trending. */
 function DiscoverSectionHeader({ subtitle, title, open, onToggle, className = '', headerRight }) {
   return (
@@ -483,7 +481,6 @@ function DiscoverContent({ openPanel, watchlist, openSections, setOpenSections, 
   // to the user's own streaming selections. Only platforms with real synced
   // Top 10 data are returned.
   const platformList = usePlatformCharts();
-  const { items: forYouItems } = useForYou(28, SHOW_FOR_YOU_RAIL);
   if (loading) {
     return <LoadingSpinner />;
   }
@@ -496,8 +493,7 @@ function DiscoverContent({ openPanel, watchlist, openSections, setOpenSections, 
   const bingedShows       = applyFilters(data.bingedShows);
   const cinemaMovies      = applyFilters(data.cinemaMovies);
   const anticipatedMovies = applyFilters(data.anticipatedMovies);
-  const forYou            = applyFilters(forYouItems);
-  const hasContent = hero || hotRail.length > 0 || weekly.length > 0 || bingedShows.length > 0 || cinemaMovies.length > 0 || anticipatedMovies.length > 0 || platformList.length > 0 || forYou.length > 0;
+  const hasContent = hero || hotRail.length > 0 || weekly.length > 0 || bingedShows.length > 0 || cinemaMovies.length > 0 || anticipatedMovies.length > 0 || platformList.length > 0;
 
   if (!hasContent) {
     return (
@@ -534,19 +530,6 @@ function DiscoverContent({ openPanel, watchlist, openSections, setOpenSections, 
             </div>
           )}
         </section>
-      )}
-
-      {forYou.length > 0 && (
-        <RailSection
-          title="Your Next Watch"
-          subtitle="Based on your taste"
-          open={openSections.forYou}
-          onToggle={() => toggleSection('forYou')}
-        >
-          {forYou.map(item => (
-            <RankedCard key={`${item.media_type}-${item.id}`} item={item} showRank={false} openPanel={openPanel} watchlist={watchlist} />
-          ))}
-        </RailSection>
       )}
 
       {hotRail.length > 0 && (
@@ -709,7 +692,6 @@ export default function DiscoverView() {
   const [discoverSections, setDiscoverSections] = useState({
     featured: true,
     hot: true,
-    forYou: true,
     binge: true,
     cinemas: true,
     anticipated: true,

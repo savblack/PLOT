@@ -173,7 +173,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     color: colors.textMuted,
   },
   rankNum: {
-    fontFamily: fontFamily.serif,
+    fontFamily: fontFamily.serifTabular,
     fontSize: 22,
     width: 28,
     textAlign: 'center',

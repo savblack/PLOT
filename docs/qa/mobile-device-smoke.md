@@ -162,13 +162,46 @@ user.
 `app.json` registers `applinks:app.theplot.tv` and the `plot` scheme, with
 `/save`, `/list` and `/u` path prefixes on Android.
 
-- [ ] With the app **already running**, open an `app.theplot.tv/save/...` link.
-      It opens in PLOT, on the right title.
-- [ ] With the app **fully killed**, open the same link. This is the case the
-      `expo-notifications` research flags as racing `AuthGuard`: the link
-      resolves before the session loads, the guard redirects to `(auth)` or
-      `(app)`, and the deep link is lost. Expect this one to fail.
-- [ ] `/u/<username>` and `/list/...` likewise.
+**Read the two notes below before you spend device time here.** Both were
+written on 2026-09-13 from the source alone, with no simulator and no device.
+The first was **confirmed on a simulator on 2026-09-14** and is now a result.
+The second is still a prediction, because a development build cannot test it —
+see the run log.
+
+**Only one of the three declared paths has a route** — confirmed on device
+2026-09-14: `/save` and `/list` both land on expo-router's development
+"Unmatched Route" screen. `apps/mobile/app/` has
+`(app)/u/[username].tsx` and nothing for `/save` or `/list`, and nothing else in
+the app parses an incoming URL (`_layout.tsx` handles only the Trakt code,
+`(auth)/callback.tsx` only the auth callback). Both are real routes on web —
+`/save` is `SavePage`, `/list` redirects to `/my-lists` — so the links exist and
+get sent. On Android the intent filter claims those two prefixes explicitly; on
+iOS `applinks:app.theplot.tv` claims the whole host, so **every** app.theplot.tv
+link opens the app, including paths mobile has never heard of. There is also no
+`app/+not-found.tsx`, so the landing place is expo-router's development
+"Unmatched Route" screen. If that is what you see, it is not a linking failure —
+the link arrived and there was nowhere to put it.
+
+**The AuthGuard race is closed — settled on a Release build, 2026-09-14.**
+Earlier drafts of this phase said to expect the cold-start case to fail, on the
+reasoning that the link resolves before the session loads and the guard
+redirects away from it. That was wrong on both counts: `RootInner` returns a
+loader until `authReady`, so `AuthGuard` and its `<Slot/>` do not mount until
+`getSession()` has resolved; and `AuthGuard`'s three branches each test an
+explicit value, so the `onboardingComplete === null` window matches none of them
+and redirects nowhere. Watched: killed process, fresh pid, straight onto the
+deep-linked profile. Do not re-derive this from the old warning.
+
+- [ ] With the app **already running**, open an `app.theplot.tv/u/<username>`
+      link. It opens in PLOT, on that profile.
+- [ ] With the app **fully killed**, open the same link. This is the cold-start
+      case above: it should land on the profile rather than the home tab. If it
+      lands on home, the guard is eating the link after all — say so here.
+- [ ] Signed **out**, open the same link. It should reach `(auth)`; note whether
+      signing in then returns you to the profile or drops you on home (there is
+      no "return to" memory in `AuthGuard`, so expect home).
+- [ ] `/save/...` and `/list/...`: confirm what actually happens, given neither
+      has a route. What is worth recording is which screen the user ends up on.
 - [ ] The Trakt callback returns into the app (`consumeTraktState` /
       `exchangeTraktCode` run at the root layout).
 
@@ -210,6 +243,99 @@ Two real bugs, neither visible to `tsc` or ESLint:
   across a force-quit is confirmed; the fresh-account path is not. This is the
   path every launch user takes and it writes in a loop in `onboarding/seed.tsx`.
 - **Phase 6 deep links**, both warm and cold start.
+
+### 2026-09-14 — first run on a simulator
+
+iOS Simulator, iPhone 17 Pro on iOS 26.5, Xcode 26.6, local `expo run:ios`
+development build, Metro pointed at **Staging** (`uzrhfivnhdcfieuaxzip`). Signed
+in as `sav-black`. Phase 6 warm start and the block render; everything else
+untouched this run.
+
+**Two ways to lose an hour before the app even builds**, both now fixed:
+
+- **The simulator had zero device types.** Xcode installed fine and both iOS
+  runtimes downloaded and reported Ready, but `xcrun simctl list devicetypes`
+  returned nothing, so there was no iPhone to create. The 124 profiles in
+  `/Library/Developer/CoreSimulator/Profiles/DeviceTypes` were left over from an
+  earlier Xcode and carry no screen geometry at all — CoreSimulator rejects each
+  one with `Missing keys to define the main screen`, visible only in
+  `~/Library/Logs/CoreSimulator/CoreSimulator.log`. Neither
+  `xcodebuild -runFirstLaunch` nor reinstalling `XcodeSystemResources.pkg` fixed
+  it; the installer rewrote the receipt and the CoreSimulator framework but
+  skipped that whole tree. **The fix needs no admin rights:** CoreSimulator also
+  reads `~/Library/Developer/CoreSimulator/Profiles/DeviceTypes`, so expanding
+  the package and copying its profiles there is enough.
+
+  ```sh
+  pkgutil --expand-full /Applications/Xcode.app/Contents/Resources/Packages/XcodeSystemResources.pkg /tmp/xsr
+  mkdir -p ~/Library/Developer/CoreSimulator/Profiles/DeviceTypes
+  ditto /tmp/xsr/Payload/Library/Developer/CoreSimulator/Profiles/DeviceTypes \
+        ~/Library/Developer/CoreSimulator/Profiles/DeviceTypes
+  ```
+
+- **CocoaPods dies without a UTF-8 locale.** An agent shell starts with `LANG`
+  unset and `LC_CTYPE=C`, so Ruby reads the working directory as ASCII-8BIT and
+  `pod install` aborts inside `Pod::Config#installation_root` with
+  `Unicode Normalization not appropriate for ASCII-8BIT`. The message names
+  Unicode and never mentions the locale, so it reads like a corrupt path. Export
+  `LANG=en_US.UTF-8` and `LC_ALL=en_US.UTF-8` before any local iOS build.
+
+**Results:**
+
+- [x] **Warm start, signed out.** `plot://u/test-1` leaves the app on `(auth)`.
+      iOS showed its "Open in PLOT?" confirmation first, so the scheme really is
+      registered and the link really did reach the app.
+- [x] **Warm start, signed in.** `plot://u/test-1` opens straight on that
+      profile, correctly rendered as a private account.
+- [x] **`/save` and `/list` have no route, and it looks exactly as bad as you
+      would guess.** `plot://save/12345` and `plot://list/abc123` both land on
+      expo-router's **development** "Unmatched Route — Page could not be found"
+      screen, complete with `Go back · Sitemap` developer links and rendered in
+      dark theme while the app is in light. `app.json` claims both prefixes on
+      Android, and on iOS `applinks:app.theplot.tv` claims the whole host, so a
+      real `app.theplot.tv/save/...` link opens PLOT and dead-ends here. Both are
+      live routes on web. **This is the one finding from this run that needs a
+      fix, not a note.**
+- [x] **The block not-found render, watched on device at last.** From test-1's
+      profile: ··· → Block → confirm, and the card is replaced in place by
+      "This profile isn't public / @test-1 either doesn't exist or hasn't made
+      their profile public yet." No navigation, no blank frame, no stale card.
+      Identical to web. Staging was returned to 0 blocks, 0 reports, 0 follows.
+- [ ] **Cold start cannot be tested in a development build.** Killing the app
+      and opening the link hands the cold launch to the **Expo Dev Launcher**,
+      which shows its own server picker before any PLOT code runs. Retested the
+      same day against a Release build — see below.
+
+### 2026-09-14 — same day, Release build
+
+`npx expo run:ios --configuration Release`, same simulator and Staging account.
+`main.jsbundle` is embedded and the dev launcher is excluded, so this is what a
+shipped build does. The session survived the reinstall.
+
+- [x] **Cold start passes, and the `AuthGuard` prediction holds.** Proven by pid
+      rather than by eye: the running app (pid 27035) was `kill -9`'d and
+      confirmed gone, `plot://u/test-1` launched a **fresh process** (pid 27690),
+      and it landed directly on test-1's profile, still signed in. No bounce to
+      `(auth)`, no redirect to home. `authReady` gates the guard's mount and
+      `onboardingComplete === null` matches none of its three branches, exactly
+      as reading the source suggested. **The original Phase 6 note telling you to
+      expect this to fail was wrong.**
+- [x] **`/save` and `/list` show the developer error screen to real users.**
+      `plot://save/12345` and `plot://list/abc123` both render expo-router's
+      "Unmatched Route — Page could not be found" screen **in Release**, black,
+      with `Go back · Sitemap` developer links and the raw URL. This screen is
+      **not** dev-only, which is the assumption worth killing: a shipped PLOT
+      build hands a user who taps `app.theplot.tv/save/...` a black screen
+      offering them a route sitemap.
+
+**Method note, learned the hard way.** `timeout` does not exist on this shell,
+so a command written as `timeout 60 xcrun simctl openurl ...` prints whatever
+you echo after it and never runs the simctl call — it looks exactly like "the
+deep link did nothing". `xcrun simctl terminate` also silently left the process
+alive more than once. **Verify a cold start by pid** (`pgrep -f "PLOT.app/PLOT"`
+before and after), never by screenshot alone.
+
+**Still outstanding after this run:** Phase 2 fresh signup.
 
 **Which project a build talks to** (fixed 2026-09-12; it used to be Production
 for all three):

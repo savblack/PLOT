@@ -51,6 +51,9 @@ jobs:
           OMDB_API_KEY: ${{ secrets.OMDB_API_KEY }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           MARKETING_ADMIN_EMAIL: ${{ secrets.MARKETING_ADMIN_EMAIL }}
+          # The batch now ends by pushing the rendered week into Buffer, so the
+          # generation job needs the publishing credential it never used to.
+          BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
 
       - name: Alert on failure
         if: failure()

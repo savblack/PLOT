@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { articleErrors } from '../../supabase/functions/_shared/articleRules.js';
+import { articleErrors, socialErrors } from '../../supabase/functions/_shared/articleRules.js';
+import { formatWeekRange } from '../lib/dates.mjs';
 import { validateCopy, validateGuide } from '../copy/schema.mjs';
 import { rescheduledSlug } from '../../supabase/functions/_shared/postSlug.js';
 
@@ -22,11 +23,16 @@ test('rejects em and en dashes but not hyphens', () => {
   assert.match(articleErrors({ page_title: 'Hope — a return', page_body: ['Fine.'] })[0], /^page_title/);
 });
 
-test('rejects a quoted passage, allows a quoted title', () => {
+test('rejects a quoted passage, and names a quoted title as a style slip', () => {
   assert.equal(articleErrors(body('Her previous film, "Set It Up", was a hit.')).length, 0);
   const e = articleErrors(body('One critic called it "a close remake of a film so many people already love that it has little reason to exist."'));
   assert.equal(e.length, 1);
   assert.match(e[0], /quotes a passage/);
+
+  // A long title in quotes is a style slip, not a smuggled review quote.
+  const t = articleErrors(body('"Blades of the Guardians: Wind Rises in the Desert" opens in April.'));
+  assert.equal(t.length, 1);
+  assert.match(t[0], /puts a title in quotation marks/);
 });
 
 test('rejects narrated research and reception', () => {
@@ -59,7 +65,47 @@ test('caps ratings and refuses a ratings closer', () => {
 
   const closer = articleErrors(body('Premise.', 'Point.', 'It sits at 85% on Rotten Tomatoes, numbers that back up its reputation.'));
   assert.equal(closer.length, 1);
-  assert.match(closer[0], /ends on a ratings sentence/);
+  assert.match(closer[0], /closes on a ratings sentence/);
+
+  // The check reads the closing SENTENCE, not the whole closing paragraph, so a
+  // score cited on the way to a final critical sentence is fine.
+  assert.deepEqual(articleErrors(body(
+    'Premise.',
+    'Point.',
+    'Its 35% on Rotten Tomatoes says how divided reviewers were. The chemistry, not that verdict, is why people still return to it.',
+  )), []);
+});
+
+test('rejects research seams the reader should never see', () => {
+  for (const t of [
+    'PLOT could not verify a second season order.',
+    'We were unable to confirm the release date.',
+    'Nothing in our records ties the two together.',
+  ]) {
+    const e = articleErrors(body(t));
+    assert.equal(e.length, 1, t);
+    assert.match(e[0], /research seams/);
+  }
+});
+
+test('rejects an audience score, which is not in the brief', () => {
+  assert.match(articleErrors(body('It holds a 97% audience score.'))[0], /audience score/);
+  assert.deepEqual(articleErrors(body('It holds a 97% on Rotten Tomatoes.')), []);
+});
+
+test('rejects UK spelling in a US-default article', () => {
+  assert.match(articleErrors(body('It arrives in theatres on Friday.'))[0], /UK spelling/);
+  assert.match(articleErrors(body('The colour palette is muted.'))[0], /UK spelling/);
+  assert.deepEqual(articleErrors(body('It arrives in theaters on Friday, in color.')), []);
+  // "cinemas" is the ordinary word for the place, not a US/UK spelling split.
+  assert.deepEqual(articleErrors(body('It arrives in cinemas on Friday.')), []);
+});
+
+test('rejects a Title Case post-type label on the front of a headline', () => {
+  const e = articleErrors({ page_title: 'On This Day: Die Hard turns 38', page_body: ['One.', 'Two.', 'Three.'] });
+  assert.equal(e.length, 1);
+  assert.match(e[0], /post type in Title Case/);
+  assert.deepEqual(articleErrors({ page_title: 'Die Hard turns 38', page_body: ['One.', 'Two.', 'Three.'] }), []);
 });
 
 test('guides skip the single-title ratings rules but keep the prose rules', () => {
@@ -80,7 +126,68 @@ test('validateCopy carries the article rules', () => {
   const r = validateCopy(copy);
   assert.equal(r.valid, false);
   assert.ok(r.errors.some((e) => /narrates/.test(e)));
-  assert.ok(r.errors.some((e) => /ends on a ratings sentence/.test(e)));
+  assert.ok(r.errors.some((e) => /closes on a ratings sentence/.test(e)));
+});
+
+test('a watchable post must say where to watch', () => {
+  const base = {
+    x: 'Something happens.', instagram: 'A caption.', threads: 'A thought.',
+    hashtags: ['a24', 'folkhorror', 'mikeflanagan'], alt_text: 'A poster.', cta_variant: 'none',
+    page_title: 'A headline',
+  };
+  const noPlatform = { ...base, page_body: ['It has made the move to home viewing.', 'Two.', 'Three.'] };
+  const withService = { ...base, page_body: ['It is now streaming on Netflix.', 'Two.', 'Three.'] };
+  const withStore = { ...base, page_body: ['It is available to rent or buy from today.', 'Two.', 'Three.'] };
+  const spelledOut = { ...base, page_body: ['It is on Disney Plus from today.', 'Two.', 'Three.'] };
+
+  const err = (copy, post_type) => validateCopy(copy, { post_type }).errors.filter(e => /where to watch/.test(e));
+  assert.equal(err(noPlatform, 'now_streaming').length, 1);
+  assert.equal(err(noPlatform, 'watch_tonight').length, 1);
+  assert.equal(err(noPlatform, 'hidden_gem').length, 1);
+  // Other post types are about something else, and a caller that does not say
+  // which type it is keeps working unchanged.
+  assert.deepEqual(err(noPlatform, 'on_this_day'), []);
+  assert.deepEqual(err(noPlatform, undefined), []);
+  for (const c of [withService, withStore, spelledOut]) assert.deepEqual(err(c, 'now_streaming'), []);
+});
+
+test('a rental is never called a store, but a real shop is left alone', () => {
+  for (const t of [
+    'It reaches digital stores on Tuesday.',
+    'Rent it through major digital storefronts.',
+    'It is in stores from Friday.',
+  ]) {
+    const e = articleErrors(body(t));
+    assert.equal(e.length, 1, t);
+    assert.match(e[0], /calls a rental a store/);
+  }
+  // A shop inside the film is not the jargon.
+  assert.deepEqual(articleErrors(body('Its Texas is full of boarded up storefronts.')), []);
+  assert.deepEqual(articleErrors(body('She meets her on smoke breaks behind the store.')), []);
+  // And the phrasing PLOT should use instead.
+  assert.deepEqual(articleErrors(body('It arrives on digital, to rent or buy on Prime Video and Apple TV.')), []);
+  assert.match(socialErrors({ x: 'Out now on digital stores.' })[0], /calls a rental a store/);
+});
+
+test('the social captions carry the same house rules', () => {
+  assert.match(socialErrors({ x: 'It lands 1 \u2013 7 June.' })[0], /em or en dash/);
+  assert.match(socialErrors({ threads: 'It arrives in theatres Friday.' })[0], /UK spelling/);
+  assert.match(socialErrors({ instagram: 'Reportedly the best of the year.' })[0], /narrates research/);
+  assert.deepEqual(socialErrors({ x: 'It lands 1 to 7 June.', threads: 'In theaters Friday.' }), []);
+});
+
+test('a rental is never called streaming in a caption', () => {
+  const copy = { x: 'Michael is now streaming.', threads: 'It just hit streaming.' };
+  assert.equal(socialErrors(copy, { home_kind: 'rental' }).length, 2);
+  assert.deepEqual(socialErrors(copy, { home_kind: 'streaming' }), []);
+  assert.deepEqual(socialErrors(copy), []);
+  assert.deepEqual(socialErrors({ x: 'Michael is out to rent or buy.' }, { home_kind: 'rental' }), []);
+});
+
+test('formatWeekRange never emits a dash', () => {
+  assert.equal(formatWeekRange('2026-06-15', '2026-06-21'), '15 to 21 June');
+  assert.equal(formatWeekRange('2026-06-28', '2026-07-04'), '28 June to 4 July');
+  assert.deepEqual(socialErrors({ x: `All landing ${formatWeekRange('2026-06-01', '2026-06-07')}.` }), []);
 });
 
 test('an unpublished reschedule moves the slug date; a live one does not', () => {
