@@ -12,8 +12,9 @@
 // show_type returns both movies and series — so cost = services(4) × regions per run.
 // Regions are auto-detected from the actual `profiles.region` distribution (see
 // detectActiveRegions below) so we never spend quota on markets with zero users.
-// Regions with fewer than CHART_MIN_USERS (default 3) users are skipped, so one
-// signup from a new market doesn't add 4 requests to every run. The cron is
+// Prime, Apple and Disney (`core`) are fetched for every region with a user;
+// other platforms only for regions with >= CHART_MIN_USERS (default 3) users,
+// so one signup from a new market adds 3 requests per run, not 4. The cron is
 // WEEKLY (see .github/workflows/streaming-top10.yml): 4 × regions × ~4.3
 // runs/month leaves room for ~29 regions. A daily cadence blew the cap once the
 // fifth user region appeared (4 × 7 × 30 = 840) and the charts went dark for the
@@ -47,24 +48,27 @@ const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABAS
 const FALLBACK_REGIONS = 'us,gb,au,ca,de,fr,es,it,br,mx,in,jp';
 
 // Our canonical platform key → Streaming Availability service id (Max = "hbo").
+// `core: true` platforms are fetched for every region that has any user at all
+// (alongside Netflix, which is free). The rest are only fetched for regions with
+// at least MIN_USERS users — see detectActiveRegions.
 const SERVICES = [
-  { platform: 'prime',  service: 'prime'  },
-  { platform: 'max',    service: 'hbo'    },
-  { platform: 'apple',  service: 'apple'  },
-  { platform: 'disney', service: 'disney' },
+  { platform: 'prime',  service: 'prime',  core: true },
+  { platform: 'apple',  service: 'apple',  core: true },
+  { platform: 'disney', service: 'disney', core: true },
+  { platform: 'max',    service: 'hbo',    core: false },
 ];
 
-// A region needs at least this many users before we spend quota on it. Each
-// region costs 4 requests per run, and a single stray signup from a new market
-// used to add a permanent 4/run to the bill (in Sep 2026 four of seven active
-// regions had exactly one user). Those users still get the Netflix chart, which
-// is free and covers every country. Override with CHART_MIN_USERS=1 to serve
-// every market that has anyone in it.
+// Non-core platforms need at least this many users in a region before we spend
+// quota on it there. Each (platform × region) costs one request per run, and a
+// single stray signup from a new market used to add a permanent 4/run to the
+// bill (in Sep 2026 four of seven active regions had exactly one user). Core
+// platforms ignore this and are fetched wherever anyone is. Override with
+// CHART_MIN_USERS=1 to fetch every platform for every market.
 const MIN_USERS = Math.max(1, Number(process.env.CHART_MIN_USERS) || 3);
 
-// Reads the regions real users are actually in, straight from `profiles.region`,
-// keeping only those with at least MIN_USERS users, so we never burn API quota
-// on markets with (almost) nobody in them.
+// Reads the regions real users are actually in, straight from `profiles.region`.
+// Returns { all, established }: every region with a user, and the subset with
+// at least MIN_USERS users. Null when there is nothing to detect from.
 async function detectActiveRegions(supabase) {
   if (!supabase) return null;
   const { data, error } = await supabase.from('profiles').select('region').not('region', 'is', null);
@@ -78,10 +82,11 @@ async function detectActiveRegions(supabase) {
     const key = region.toLowerCase();
     counts.set(key, (counts.get(key) || 0) + 1);
   }
-  const kept = [...counts].filter(([, n]) => n >= MIN_USERS).map(([r]) => r).sort();
-  const skipped = [...counts].filter(([, n]) => n < MIN_USERS).map(([r, n]) => `${r}(${n})`).sort();
-  if (skipped.length) console.log(`Skipping regions under ${MIN_USERS} users: ${skipped.join(', ')}`);
-  return kept.length ? kept : null;
+  const all = [...counts.keys()].sort();
+  const established = [...counts].filter(([, n]) => n >= MIN_USERS).map(([r]) => r).sort();
+  const small = [...counts].filter(([, n]) => n < MIN_USERS).map(([r, n]) => `${r}(${n})`).sort();
+  if (small.length) console.log(`Regions under ${MIN_USERS} users get core platforms only: ${small.join(', ')}`);
+  return all.length ? { all, established } : null;
 }
 
 if (!API_KEY) {
@@ -152,20 +157,26 @@ async function main() {
   // detection and the final upsert share one client.
   const supabase = SERVICE_KEY ? createClient(SUPABASE_URL, SERVICE_KEY) : null;
 
-  let REGIONS;
+  // REGIONS: every region we fetch core platforms for. ESTABLISHED: the subset
+  // (>= MIN_USERS users) that also gets the non-core platforms. An explicit
+  // CHART_REGIONS override, and the fallback list, apply to every platform.
+  let REGIONS, ESTABLISHED;
   if (process.env.CHART_REGIONS) {
-    REGIONS = process.env.CHART_REGIONS.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+    REGIONS = ESTABLISHED = process.env.CHART_REGIONS.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
     console.log(`Using CHART_REGIONS override: ${REGIONS.join(', ')}`);
   } else {
     const detected = await detectActiveRegions(supabase);
-    REGIONS = detected || FALLBACK_REGIONS.split(',');
+    REGIONS = detected?.all || FALLBACK_REGIONS.split(',');
+    ESTABLISHED = detected?.established || REGIONS;
     console.log(detected
       ? `Auto-detected active regions from profiles: ${REGIONS.join(', ')}`
       : `No regions detected; using fallback list: ${REGIONS.join(', ')}`);
   }
 
-  for (const { platform, service } of SERVICES) {
-    for (const region of REGIONS) {
+  for (const { platform, service, core } of SERVICES) {
+    const regions = core ? REGIONS : ESTABLISHED;
+    if (!regions.length) { console.log(`Fetched ${platform}: skipped, no region qualifies.`); continue; }
+    for (const region of regions) {
       // One combined, rank-ordered list per region; split it back into a clean
       // per-type Top 10 using each show's tmdbId media type.
       const shows = await fetchTop(service, region);
