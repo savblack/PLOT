@@ -46,7 +46,9 @@ See `docs/ops/package-manager.md`.
 - `apps/mobile/` (`@plot/mobile`) — Expo / React Native, TypeScript, expo-router.
   Platform seams in `lib/`. **See `apps/mobile/AGENTS.md` before writing mobile code.**
 - `apps/website/` — static marketing site (theplot.tv) → Cloudflare Pages. Plain
-  HTML/CSS/JS, no build step, **not a pnpm workspace.** SSR routes are Pages Functions
+  HTML/CSS/JS, **no build step** — the site ships as-is. The directory *is* a
+  workspace member, but only as `@plot/website-storybook`, a documentation-only
+  Storybook that neither builds nor serves the site. SSR routes are Pages Functions
   in `apps/website/functions/` (admin-host routing via `functions/_middleware.js`).
   Serve it with `pnpm run dev:website`, never a plain static server — the pages render
   either way, but `functions/` routes 404 and the homepage's TMDB surfaces go silently
