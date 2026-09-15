@@ -35,15 +35,19 @@ import { createClient } from '@supabase/supabase-js';
 const args = new Set(process.argv.slice(2));
 const DRY_RUN = args.has('--dry-run');
 
-// Two doors into the same API. A key from developers.movieofthenight.com gets
-// 1,000 free requests/month; the RapidAPI BASIC plan gets 500. Prefer the
-// direct key when both are set.
+// Two doors into the same API, with SEPARATE quotas. A key from
+// developers.movieofthenight.com gets 1,000 free requests/month; the RapidAPI
+// BASIC plan gets 500. We try them in order and fall through to the next on a
+// quota response (429, or 403 "not subscribed"), so together they are 1,500.
+// No other provider publishes these official charts for free, so this chain is
+// the whole fallback story.
 const DIRECT_KEY = process.env.MOVIEOFTHENIGHT_API_KEY;
 const RAPID_KEY = process.env.RAPIDAPI_KEY || process.env.STREAMING_AVAILABILITY_API_KEY;
-const API = DIRECT_KEY
-  ? { base: 'https://api.movieofthenight.com/v4', headers: { 'X-API-Key': DIRECT_KEY }, label: 'direct' }
-  : { base: 'https://streaming-availability.p.rapidapi.com', headers: { 'X-RapidAPI-Key': RAPID_KEY, 'X-RapidAPI-Host': 'streaming-availability.p.rapidapi.com' }, label: 'RapidAPI' };
-const API_KEY = DIRECT_KEY || RAPID_KEY;
+const APIS = [
+  DIRECT_KEY && { base: 'https://api.movieofthenight.com/v4', headers: { 'X-API-Key': DIRECT_KEY }, label: 'direct', exhausted: false },
+  RAPID_KEY && { base: 'https://streaming-availability.p.rapidapi.com', headers: { 'X-RapidAPI-Key': RAPID_KEY, 'X-RapidAPI-Host': 'streaming-availability.p.rapidapi.com' }, label: 'RapidAPI', exhausted: false },
+].filter(Boolean);
+const API_KEY = APIS.length > 0;
 const TMDB_KEY = process.env.TMDB_API_KEY;
 
 const DEFAULT_SUPABASE_URL = 'https://mkegtssedjyqldysvzga.supabase.co';
@@ -118,7 +122,7 @@ console.log(
   + (SUPABASE_URL === DEFAULT_SUPABASE_URL ? ' (production, from default)' : '')
   + (DRY_RUN ? ' — dry run, no writes' : '')
 );
-console.log(`Streaming Availability API via ${API.label}.`);
+console.log(`Streaming Availability API keys, in fallback order: ${APIS.map(a => a.label).join(' → ')}.`);
 
 // "movie/12345" | "tv/678" → { media_type, id }
 function parseTmdbId(tmdbId) {
@@ -126,25 +130,36 @@ function parseTmdbId(tmdbId) {
   return m ? { media_type: m[1], id: Number(m[2]) } : null;
 }
 
+// Quota-style failures: move on to the next key for this and later calls. Any
+// other error (400, 500, network) is reported and the call gives up, since a
+// second key would hit the same problem.
+const isQuotaStatus = (status) => status === 429 || status === 403;
+
 async function fetchTop(service, country) {
-  const url = new URL(`${API.base}/shows/top`);
-  url.searchParams.set('country', country);
-  url.searchParams.set('service', service);
-  // show_type omitted on purpose: one call returns both movies and series,
-  // halving the requests we spend against the free tier.
-  const res = await fetch(url, { headers: API.headers });
-  if (!res.ok) {
+  for (const api of APIS) {
+    if (api.exhausted) continue;
+    const url = new URL(`${api.base}/shows/top`);
+    url.searchParams.set('country', country);
+    url.searchParams.set('service', service);
+    // show_type omitted on purpose: one call returns both movies and series,
+    // halving the requests we spend against the free tier.
+    const res = await fetch(url, { headers: api.headers });
+    if (res.ok) {
+      const data = await res.json();
+      // The endpoint returns shows already in rank order; accept a bare array
+      // or a wrapped shape defensively.
+      return Array.isArray(data) ? data : (data.shows || data.results || []);
+    }
     // Log the body: a 429 alone hides the difference between a per-second
     // rate limit and "you have exceeded the MONTHLY quota", which is the one
     // that matters here.
     const body = (await res.text().catch(() => '')).replace(/\s+/g, ' ').slice(0, 300);
-    console.warn(`  top ${service}/${country} -> HTTP ${res.status}${body ? `: ${body}` : ''}`);
-    return [];
+    console.warn(`  top ${service}/${country} via ${api.label} -> HTTP ${res.status}${body ? `: ${body}` : ''}`);
+    if (!isQuotaStatus(res.status)) return [];
+    api.exhausted = true;
+    console.warn(`  ${api.label} key looks out of quota; falling back to the next key for the rest of the run.`);
   }
-  const data = await res.json();
-  // The endpoint returns shows already in rank order; accept a bare array or a
-  // wrapped shape defensively.
-  return Array.isArray(data) ? data : (data.shows || data.results || []);
+  return [];
 }
 
 async function tmdbDetails(mediaType, id) {
