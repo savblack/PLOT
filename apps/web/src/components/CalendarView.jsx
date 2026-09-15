@@ -1,145 +1,43 @@
-import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useApp } from '../hooks/useApp.js';
-import { TodayLabel } from './TodayLabel.jsx';
-import { posterUrl } from '../utils/images.js';
-import { localDateStr, dateToLocalStr } from '../utils/date.js';
-import { getCalendarRelativeLabel, msUntilNextLocalMidnight } from '../utils/calendar.js';
+import { localDateStr, todayLongLabel } from '../utils/date.js';
+import { msUntilNextLocalMidnight, filterCalendarEvents } from '../utils/calendar.js';
 import { useCalendar } from '../hooks/useCalendar.js';
-import { tmdb } from '@plot/core/tmdb.js';
-import LoadingSpinner from './LoadingSpinner.jsx';
-import PlotLoader from '@plot/ui/PlotLoader.jsx';
-import { MEDIA } from '../copy/media.js';
+import { useFilteredUpcoming } from '../hooks/useFilteredUpcoming.js';
+import { useGenres } from '../hooks/useGenres.js';
 import { CALENDAR_VIEW } from '../copy/calendarView.js';
 import { ALL_TYPES } from '@plot/core/mediaFilters.js';
-import { UpcomingContent } from './GuideView.jsx';
-import GroupedFilterMenu from './GroupedFilterMenu.jsx';
-import { useGenres } from '../hooks/useGenres.js';
+import CalendarSidePanel from './CalendarSidePanel.jsx';
+import CalendarStream from './CalendarStream.jsx';
+import CalendarEventRows from './CalendarEventRows.jsx';
+import CalendarReleaseRail from './CalendarReleaseRail.jsx';
 
-
-/* ── Helpers ── */
-function buildMonthDays(year, month) {
-  const first = new Date(year, month, 1);
-  const last  = new Date(year, month + 1, 0);
-  const days  = [];
-  for (let i = 0; i < first.getDay(); i++) {
-    days.push({ date: new Date(year, month, -(first.getDay() - i - 1)), current: false });
-  }
-  for (let d = 1; d <= last.getDate(); d++) {
-    days.push({ date: new Date(year, month, d), current: true });
-  }
-  const remainder = 7 - (days.length % 7);
-  if (remainder < 7) {
-    for (let i = 1; i <= remainder; i++) {
-      days.push({ date: new Date(year, month + 1, i), current: false });
-    }
-  }
-  return days;
+function monthOf(date) {
+  return { year: date.getFullYear(), month: date.getMonth() };
 }
 
-function startOfWeek(date) {
-  const d = new Date(date);
-  d.setDate(d.getDate() - d.getDay());
-  d.setHours(0, 0, 0, 0);
-  return d;
+const countEvents = (day) => day.events.length;
+const countItems  = (day) => day.items.length;
+
+/* Your own dates, one day per entry, from today forward. */
+function groupEventsByDay(events, todayStr) {
+  const days = new Map();
+  for (const ev of events) {
+    if (ev.date < todayStr) continue;
+    let day = days.get(ev.date);
+    if (!day) { day = { ds: ev.date, events: [] }; days.set(ev.date, day); }
+    day.events.push(ev);
+  }
+  return [...days.values()]; // events arrive date-sorted, so this is too
 }
 
-const PILL_COLORS = {
-  episode:   'cal-pill-ep',
-  cinema:    'cal-pill-cinema',
-  streaming: 'cal-pill-streaming',
-  reminder:  'cal-pill-reminder',
-};
-const EVENT_LABELS = {
-  episode:   CALENDAR_VIEW.eventLabel.episode,
-  cinema:    MEDIA.cinema,
-  streaming: CALENDAR_VIEW.eventLabel.streaming,
-  reminder:  CALENDAR_VIEW.eventLabel.reminder,
-};
-const CHIP_COLORS = {
-  episode:   'chip-episode',
-  cinema:    'chip-cinema',
-  streaming: 'chip-streaming',
-  reminder:  'chip-reminder',
-};
-
-const MAX_PILLS_MONTH = 3;
-/* ═══════════════════════════════════════
-   Shared event row list
-═══════════════════════════════════════ */
-function EventRowList({ events, openPanel }) {
-  const [resolving, setResolving] = useState(null); // tvmaze_ep_id being resolved
-
-  async function openReminder(title, tvmazeEpId) {
-    setResolving(tvmazeEpId);
-    try {
-      const match = await tmdb.resolveTitle(title, 'tv');
-      if (match) openPanel(match.id, 'tv');
-    } finally {
-      setResolving(null);
-    }
-  }
-
-  return events.map((ev, i) => {
-    const item       = ev.item;
-    const id         = item?.tmdb_id;
-    const type       = item?.media_type || 'movie';
-    const img        = posterUrl(item?.poster_path, 'w92');
-    const title      = item?.title || item?.name || MEDIA.unknown;
-    const isReminder = ev.type === 'reminder';
-    const isLoading  = isReminder && resolving === item?.id;
-
-    const handleClick = isReminder
-      ? () => openReminder(title, item?.id)
-      : () => id && openPanel(id, type);
-
-    return (
-      <div
-        key={i}
-        className={`cal-event-row${(!id && !isReminder) ? ' cal-event-row--no-link' : ''}${isLoading ? ' cal-event-row--loading' : ''}`}
-        onClick={handleClick}
-      >
-        {isReminder ? (
-          <div className="cal-event-reminder-icon">
-            {isLoading
-              ? <PlotLoader size="xs" ariaHidden />
-              : <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-                  strokeLinecap="round" strokeLinejoin="round" style={{ width: 20, height: 20 }}>
-                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-                  <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-                </svg>
-            }
-          </div>
-        ) : (
-          <div className="cal-event-poster">
-            {img && <img src={img} alt={title} />}
-          </div>
-        )}
-        <div className="cal-event-info">
-          <div className="cal-event-title">{title}</div>
-          <div className="cal-event-meta">
-            {isReminder && item?.network_name && (
-              <span style={{ color: 'var(--text-muted)' }}>{item.network_name}</span>
-            )}
-            {isReminder && item?.air_time && (
-              <span style={{ marginLeft: '0.3rem' }}>{item.air_time}</span>
-            )}
-            {ev.label && ev.type === 'episode' && (
-              <span>{ev.label}</span>
-            )}
-            {item?.episode?.name && (
-              <span> · {item.episode.name}</span>
-            )}
-          </div>
-        </div>
-        <span
-          className={`chip chip-sm ${CHIP_COLORS[ev.type] || 'chip-muted'}`}
-          style={{ marginLeft: 'auto', flexShrink: 0 }}
-        >
-          {EVENT_LABELS[ev.type] || ev.label}
-        </span>
-      </div>
-    );
-  });
+function EmptyState({ title, body }) {
+  return (
+    <div className="empty-state">
+      <div className="empty-title">{title}</div>
+      <div className="empty-body">{body}</div>
+    </div>
+  );
 }
 
 /* ═══════════════════════════════════════
@@ -149,382 +47,150 @@ export default function CalendarView() {
   const { openPanel, watchlist, watching, reminders } = useApp();
 
   const [todayStr, setTodayStr] = useState(() => localDateStr());
-  const todayDate = useMemo(() => new Date(`${todayStr}T00:00:00`), [todayStr]);
+  const todayYear = Number(todayStr.slice(0, 4));
+  const [view, setView] = useState('mine'); // 'mine' | 'all'
 
-  const [year,  setYear]  = useState(todayDate.getFullYear());
-  const [month, setMonth] = useState(todayDate.getMonth());
-  const [weekStart, setWeekStart] = useState(() => startOfWeek(todayDate));
-  const [selectedDate, setSelectedDate] = useState(todayStr);
-  const [view, setView]   = useState('agenda'); // 'grid' | 'week' | 'agenda' | 'upcoming'
+  // The side panel shows two months starting here; its arrows page it by two.
+  const [panelStart, setPanelStart] = useState(() => monthOf(new Date()));
+  const pagePanel = (n) => setPanelStart(({ year, month }) => monthOf(new Date(year, month + n, 1)));
 
-  // Upcoming (global release dates, grouped by day) was a sub-tab of Home. It
-  // is about dates, so it lives here now, with the type/genre filter it always
-  // had in place of the month controls.
+  // Show + Genre, shared by both scopes.
   const { genres } = useGenres();
   const [typeFilters,  setTypeFilters]  = useState(ALL_TYPES);
   const [genreFilters, setGenreFilters] = useState([]);
+  const filtered = typeFilters.length < ALL_TYPES.length || genreFilters.length > 0;
 
-  const { loading, events: allEvents, eventsForDate } = useCalendar(
+  /* ── My dates ── */
+  const { loading: myLoading, events } = useCalendar(
     watchlist.items,
     watching.items,
     watching.fetchSeason,
     reminders.reminders,
   );
+  const myDays = useMemo(
+    () => groupEventsByDay(filterCalendarEvents(events, typeFilters, genreFilters), todayStr),
+    [events, typeFilters, genreFilters, todayStr],
+  );
+  const hasAnyEvents = useMemo(() => events.some(ev => ev.date >= todayStr), [events, todayStr]);
+  const eventDates   = useMemo(() => new Set(myDays.map(d => d.ds)), [myDays]);
 
-  /* ── Month grid ── */
-  const days   = useMemo(() => buildMonthDays(year, month), [year, month]);
+  /* ── All releases ── */
+  const { loading: allLoading, days: releaseDays, feedEmpty, providerLogos } = useFilteredUpcoming({ typeFilters, genreFilters });
 
-  /* ── Week strip ── */
-  const weekDays = useMemo(() => (
-    Array.from({ length: 7 }, (_, i) => {
-      const d = new Date(weekStart);
-      d.setDate(d.getDate() + i);
-      return d;
-    })
-  ), [weekStart]);
+  /* ── Scrolling the stream from the side panel ── */
+  const streamRef = useRef(null);
+  const days = view === 'mine' ? myDays : releaseDays;
 
-  /* ── Filter helper (identity — type filtering removed) ── */
-  const filterEvs = useCallback((evs) => evs, []);
+  // A day with nothing on it scrolls to the next day that has something.
+  const scrollToDate = useCallback((ds) => {
+    const day = days.find(d => d.ds >= ds);
+    if (!day) return;
+    streamRef.current?.querySelector(`[data-day="${day.ds}"]`)
+      ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [days]);
 
-  /* ── Pill map (month view) ── */
-  const pillEventsMap = useMemo(() => {
-    const map = {};
-    days.forEach(({ date, current }) => {
-      if (!current) return;
-      const ds  = dateToLocalStr(date);
-      const evs = filterEvs(eventsForDate(ds));
-      if (evs.length > 0) map[ds] = evs;
-    });
-    return map;
-  }, [days, eventsForDate, filterEvs]);
-
-  /* ── Auto-advance agenda to nearest month with events (runs once after load) ── */
-  const autoAdvancedRef = useRef(false);
-  useEffect(() => {
-    if (view !== 'agenda' || loading || autoAdvancedRef.current) return;
-    autoAdvancedRef.current = true;
-    const futureEvents = allEvents.filter(ev => ev.date >= todayStr);
-    if (!futureEvents.length) return;
-    const nearest = futureEvents[0]; // already sorted ascending
-    const d = new Date(nearest.date + 'T00:00:00');
-    const nearestYear  = d.getFullYear();
-    const nearestMonth = d.getMonth();
-    const currentMonthHasEvents = allEvents.some(ev => {
-      const prefix = `${year}-${String(month + 1).padStart(2, '0')}`;
-      return ev.date.startsWith(prefix) && ev.date >= todayStr;
-    });
-    if (!currentMonthHasEvents) {
-      // Defer out of the effect body to avoid cascading renders
-      setTimeout(() => {
-        setYear(nearestYear);
-        setMonth(nearestMonth);
-      }, 0);
-    }
-  }, [view, loading, allEvents, todayStr, year, month]);
-
-  /* ── Agenda days — from today onwards within the displayed month ── */
-  const agendaDays = useMemo(() => {
-    const isCurrentMonth = year === todayDate.getFullYear() && month === todayDate.getMonth();
-    return days
-      .filter(({ current }) => current)
-      .filter(({ date }) => !isCurrentMonth || dateToLocalStr(date) >= todayStr)
-      .map(({ date }) => { const ds = dateToLocalStr(date); return { date, ds, events: filterEvs(eventsForDate(ds)) }; })
-      .filter(({ events }) => events.length > 0);
-  }, [days, eventsForDate, filterEvs, year, month, todayDate, todayStr]);
-
-  const dayEvents = filterEvs(eventsForDate(selectedDate));
-
+  /* ── Midnight refresh ── */
   useEffect(() => {
     let timerId = null;
-
     const scheduleMidnightRefresh = () => {
       timerId = window.setTimeout(() => {
         setTodayStr(localDateStr());
         scheduleMidnightRefresh();
       }, msUntilNextLocalMidnight());
     };
-
     scheduleMidnightRefresh();
-
-    return () => {
-      if (timerId) window.clearTimeout(timerId);
-    };
+    return () => { if (timerId) window.clearTimeout(timerId); };
   }, []);
 
-  /* ── Jump back to today ── */
+  /* ── Back to today: panel to this month, page to the top ── */
   const goToToday = () => {
-    const t = new Date();
-    setYear(t.getFullYear());
-    setMonth(t.getMonth());
-    setWeekStart(startOfWeek(t));
-    setSelectedDate(localDateStr(t));
-    // Allow auto-advance to re-run so agenda finds nearest events from today
-    autoAdvancedRef.current = false;
+    setPanelStart(monthOf(new Date()));
+    const scroller = document.querySelector('.app-main');
+    (scroller ?? window).scrollTo({ top: 0, behavior: 'smooth' });
   };
-
-  /* ── Navigation ── */
-  const prevMonth = () => {
-    if (month === 0) { setYear(y => y - 1); setMonth(11); }
-    else setMonth(m => m - 1);
-  };
-  const nextMonth = () => {
-    if (month === 11) { setYear(y => y + 1); setMonth(0); }
-    else setMonth(m => m + 1);
-  };
-  const prevWeek = () => setWeekStart(ws => { const d = new Date(ws); d.setDate(d.getDate() - 7); return d; });
-  const nextWeek = () => setWeekStart(ws => { const d = new Date(ws); d.setDate(d.getDate() + 7); return d; });
-
-  /* ── Switch view and sync navigation state ── */
-  const switchView = (v) => {
-    if (v === 'upcoming') {
-      setView(v);
-      return;
-    }
-    if (v === 'week') {
-      // Sync week to contain selected date
-      setWeekStart(startOfWeek(new Date(selectedDate + 'T00:00:00')));
-    } else {
-      // Sync month to selected date's month
-      const d = new Date(selectedDate + 'T00:00:00');
-      setYear(d.getFullYear());
-      setMonth(d.getMonth());
-    }
-    setView(v);
-  };
-
-  /* ── Nav label ── */
-  const navLabel = useMemo(() => {
-    if (view === 'week') {
-      const end = new Date(weekStart);
-      end.setDate(end.getDate() + 6);
-      const sameMonth = weekStart.getMonth() === end.getMonth();
-      const startStr = weekStart.toLocaleDateString('en', { month: 'short', day: 'numeric' });
-      const endStr   = sameMonth
-        ? end.getDate().toString()
-        : end.toLocaleDateString('en', { month: 'short', day: 'numeric' });
-      return `${startStr}–${endStr}`;
-    }
-    return new Date(year, month, 1).toLocaleDateString('en', { month: 'short', year: 'numeric' });
-  }, [view, year, month, weekStart]);
-
-  const onPrev = view === 'week' ? prevWeek : prevMonth;
-  const onNext = view === 'week' ? nextWeek : nextMonth;
-
-  /* ── Selected day label ── */
-  const selectedLabel = (() => {
-    return getCalendarRelativeLabel(selectedDate, todayStr);
-  })();
 
   return (
     <div>
-      {/* ── Sub-tabs bar ── */}
-      <div className="sub-tabs">
-        <span className="sub-tabs-date"><TodayLabel onClick={goToToday} /></span>
-
-        <div className="sub-tabs-scroll">
-          <button className={`sub-tab-btn${view === 'agenda' ? ' active' : ''}`} onClick={() => switchView('agenda')}>
-            Agenda
+      {/* ── Heading row: today's date under the page title, the scope toggle on the right ── */}
+      <div className="page-toolbar">
+        <span
+          className="page-toolbar-date page-toolbar-date--clickable"
+          onClick={goToToday}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goToToday(); } }}
+        >
+          {todayLongLabel()}
+        </span>
+        <div className="cal-scope" role="tablist">
+          <button
+            role="tab"
+            aria-selected={view === 'mine'}
+            className={`cal-scope-btn${view === 'mine' ? ' active' : ''}`}
+            onClick={() => setView('mine')}
+          >
+            {CALENDAR_VIEW.scope.mine}
           </button>
-          <button className={`sub-tab-btn${view === 'week' ? ' active' : ''}`} onClick={() => switchView('week')}>
-            Week
+          <button
+            role="tab"
+            aria-selected={view === 'all'}
+            className={`cal-scope-btn${view === 'all' ? ' active' : ''}`}
+            onClick={() => setView('all')}
+          >
+            {CALENDAR_VIEW.scope.all}
           </button>
-          <button className={`sub-tab-btn${view === 'grid' ? ' active' : ''}`} onClick={() => switchView('grid')}>
-            Month
-          </button>
-          <button className={`sub-tab-btn${view === 'upcoming' ? ' active' : ''}`} onClick={() => switchView('upcoming')}>
-            Upcoming
-          </button>
-        </div>
-
-        <div className="sub-tabs-filters">
-          {view === 'upcoming' ? (
-            <GroupedFilterMenu
-              ariaLabel="Filter upcoming"
-              groups={[
-                {
-                  heading: MEDIA.typeHeading,
-                  options: [
-                    { id: 'tv',     label: MEDIA.tv     },
-                    { id: 'cinema', label: MEDIA.cinema },
-                    { id: 'movie',  label: MEDIA.movies },
-                  ],
-                  value: typeFilters,
-                  onChange: setTypeFilters,
-                  defaultValue: ALL_TYPES,
-                },
-                {
-                  heading: MEDIA.genreHeading,
-                  options: genres.map(g => ({ id: g.id, label: g.name })),
-                  value: genreFilters,
-                  onChange: setGenreFilters,
-                },
-              ]}
-            />
-          ) : (
-          <div className="cal-month-nav">
-            <button className="cal-month-btn" onClick={onPrev} aria-label="Previous">
-              <svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>
-            </button>
-            <span className="cal-month-nav-label">{navLabel}</span>
-            <button className="cal-month-btn" onClick={onNext} aria-label="Next">
-              <svg viewBox="0 0 24 24"><polyline points="9,18 15,12 9,6"/></svg>
-            </button>
-          </div>
-          )}
         </div>
       </div>
 
-      {view === 'upcoming' && (
-        <UpcomingContent
-          typeFilters={typeFilters}
-          genreFilters={genreFilters}
-          openPanel={openPanel}
-          watchlist={watchlist}
-        />
-      )}
+      <div className="cal-page">
+        <div className="cal-body">
+          <CalendarSidePanel
+            panelStart={panelStart}
+            onPagePanel={pagePanel}
+            todayStr={todayStr}
+            eventDates={view === 'mine' ? eventDates : null}
+            onPickDay={scrollToDate}
+            typeFilters={typeFilters}
+            setTypeFilters={setTypeFilters}
+            genreFilters={genreFilters}
+            setGenreFilters={setGenreFilters}
+            genres={genres}
+          />
 
-      <div className="calendar-wrap">
-
-        {/* ════════════ MONTH VIEW ════════════ */}
-        {view === 'grid' && (
-          <>
-            <div className="calendar-grid calendar-grid--pills">
-              {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d => (
-                <div key={d} className="cal-day-header">{d}</div>
-              ))}
-              {days.map(({ date, current }, i) => {
-                const ds         = dateToLocalStr(date);
-                const cellEvents = pillEventsMap[ds] || [];
-                const isToday    = ds === todayStr;
-                const isSelected = ds === selectedDate;
-                return (
-                  <div
-                    key={i}
-                    className={`cal-day${!current ? ' other-month' : ''}${isToday ? ' today' : ''}${isSelected ? ' selected' : ''}`}
-                    onClick={() => setSelectedDate(ds)}
-                  >
-                    <div className="cal-date">{date.getDate()}</div>
-                    {current && cellEvents.length > 0 ? (
-                      <div className="cal-pills">
-                        {cellEvents.slice(0, MAX_PILLS_MONTH).map((ev, j) => {
-                          const label = ev.item?.title || ev.item?.name || ev.label || EVENT_LABELS[ev.type] || ev.type;
-                          return (
-                            <div key={j} className={`cal-pill ${PILL_COLORS[ev.type] || ''}`}>
-                              <span className="cal-pill-label">{label}</span>
-                            </div>
-                          );
-                        })}
-                        {cellEvents.length > MAX_PILLS_MONTH && (
-                          <span className="cal-pill-more">+{cellEvents.length - MAX_PILLS_MONTH} more</span>
-                        )}
-                      </div>
-                    ) : null}
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Selected day panel */}
-            {loading ? (
-              <LoadingSpinner />
-            ) : (
-              <div className="cal-day-panel">
-                <div className="cal-day-panel-header">{selectedLabel}</div>
-                {dayEvents.length === 0 ? (
-                  <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.84rem' }}>
-                    Nothing on this day
-                  </div>
-                ) : (
-                  <EventRowList events={dayEvents} openPanel={openPanel} />
-                )}
-              </div>
-            )}
-          </>
-        )}
-
-        {/* ════════════ WEEK VIEW ════════════ */}
-        {view === 'week' && (
-          <>
-            <div className="calendar-grid calendar-grid--week">
-              {weekDays.map((date, i) => {
-                const ds         = dateToLocalStr(date);
-                const cellEvents = filterEvs(eventsForDate(ds));
-                const isToday    = ds === todayStr;
-                const isSelected = ds === selectedDate;
-                const dayName    = date.toLocaleDateString('en', { weekday: 'short' }).toUpperCase();
-                return (
-                  <div
-                    key={i}
-                    className={`cal-day cal-day--week${isToday ? ' today' : ''}${isSelected ? ' selected' : ''}`}
-                    onClick={() => setSelectedDate(ds)}
-                  >
-                    <div className="cal-week-day-name">{dayName}</div>
-                    <div className="cal-date">{date.getDate()}</div>
-                    {cellEvents.length > 0 && (
-                      <div className="cal-pills">
-                        {cellEvents.map((ev, j) => {
-                          const label = ev.item?.title || ev.item?.name || ev.label || EVENT_LABELS[ev.type] || ev.type;
-                          return (
-                            <div key={j} className={`cal-pill ${PILL_COLORS[ev.type] || ''}`}>
-                              <span className="cal-pill-label">{label}</span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Selected day panel */}
-            {loading ? (
-              <LoadingSpinner />
-            ) : (
-              <div className="cal-day-panel" style={{ marginTop: '0.75rem' }}>
-                <div className="cal-day-panel-header">{selectedLabel}</div>
-                {dayEvents.length === 0 ? (
-                  <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.84rem' }}>
-                    Nothing on this day
-                  </div>
-                ) : (
-                  <EventRowList events={dayEvents} openPanel={openPanel} />
-                )}
-              </div>
-            )}
-          </>
-        )}
-
-        {/* ════════════ AGENDA VIEW ════════════ */}
-        {view === 'agenda' && (
-          loading ? (
-            <LoadingSpinner />
-          ) : agendaDays.length === 0 ? (
-            <div style={{ padding: '2.5rem 1rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.84rem' }}>
-              Nothing scheduled this month
-            </div>
+          {view === 'mine' ? (
+            <CalendarStream
+              key="mine"
+              streamRef={streamRef}
+              variant="rows"
+              days={myDays}
+              countOf={countEvents}
+              todayYear={todayYear}
+              countLabel={CALENDAR_VIEW.dateCount}
+              loading={myLoading}
+              empty={hasAnyEvents && filtered
+                ? <EmptyState title={CALENDAR_VIEW.empty.filtered} body={CALENDAR_VIEW.empty.filteredBody} />
+                : <EmptyState title={CALENDAR_VIEW.empty.title} body={CALENDAR_VIEW.empty.body} />}
+              renderDay={(day) => <CalendarEventRows day={day} openPanel={openPanel} />}
+            />
           ) : (
-            <div className="cal-agenda">
-              {agendaDays.map(({ date, ds, events }) => {
-                const isToday = ds === todayStr;
-                const dayName = date.toLocaleDateString('en', { weekday: 'short' }).toUpperCase();
-                return (
-                  <div key={ds} className="cal-agenda-group">
-                    <div className="cal-agenda-date-row">
-                      <span className="cal-agenda-day-num">{date.getDate()}</span>
-                      <span className="cal-agenda-day-name">{dayName}</span>
-                      {isToday && <span className="cal-agenda-today-pill">Today</span>}
-                    </div>
-                    <div className={`cal-day-panel${isToday ? ' cal-day-panel--today' : ''}`} style={{ margin: 0 }}>
-                      <EventRowList events={events} openPanel={openPanel} />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )
-        )}
-
+            <CalendarStream
+              key="all"
+              streamRef={streamRef}
+              variant="rail"
+              days={releaseDays}
+              countOf={countItems}
+              todayYear={todayYear}
+              countLabel={CALENDAR_VIEW.releaseCount}
+              loading={allLoading}
+              empty={feedEmpty
+                ? <EmptyState title={CALENDAR_VIEW.releasesEmpty.title} body={CALENDAR_VIEW.releasesEmpty.body} />
+                : <EmptyState title={CALENDAR_VIEW.empty.filtered} body={CALENDAR_VIEW.empty.filteredBody} />}
+              renderDay={(day) => (
+                <CalendarReleaseRail day={day} openPanel={openPanel} watchlist={watchlist} providerLogos={providerLogos} />
+              )}
+            />
+          )}
+        </div>
       </div>
     </div>
   );
