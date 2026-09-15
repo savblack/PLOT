@@ -101,7 +101,7 @@ never been walked.
 
 ## Phase 3: every tab is reachable and renders its own content
 
-`npm run mobile:tabs` now guards the classification statically, but it cannot
+`pnpm run mobile:tabs` now guards the classification statically, but it cannot
 tell you that a tab renders the *right* thing. #587 is the reason this section
 is explicit.
 
@@ -230,7 +230,7 @@ Two real bugs, neither visible to `tsc` or ESLint:
 
 - **The app could not be built.** react-native had drifted a minor above what
   Expo SDK 57 supports; nine packages were off. Fixed and now guarded by
-  `npm run mobile:deps`.
+  `pnpm run mobile:deps`.
 - **The EPG was misaligned by ~7 rows.** The Guide's ruler ScrollView had a
   height but no pinned `flexGrow`, so it grew into the column's spare space and
   pushed the programme grid 355pt below the channel sidebar. Found by measuring

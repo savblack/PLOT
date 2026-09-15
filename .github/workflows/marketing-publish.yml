@@ -46,11 +46,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v7
         with:
           node-version: 22
-          cache: npm
-      - run: npm ci
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
       # Re-push first when asked: a row that never reached Buffer has nothing to
       # reconcile, so retrying it is a scheduling job, not a reading one.
       - name: Re-push failed publications

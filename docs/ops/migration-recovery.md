@@ -108,7 +108,7 @@ Then, in order:
 ## Prevention, cheaply
 
 Merging is applying, so there is no dry run on the way to production. A PLOT
-Staging project does exist, but `npm run supabase:staging` deliberately does not
+Staging project does exist, but `pnpm run supabase:staging` deliberately does not
 wrap database commands, so it is not the rehearsal surface either. The cheap
 rehearsal is local: before a schema change you're unsure about, apply it to a
 scratch local DB first.

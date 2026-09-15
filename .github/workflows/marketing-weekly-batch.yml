@@ -19,12 +19,14 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v7
         with:
           node-version: 22
-          cache: npm
+          cache: pnpm
 
-      - run: npm ci
+      - run: pnpm install --frozen-lockfile
 
       # Pinned, not @latest: 31f4d72 is what an unpinned CLI install costs you
       # here — a flag this workflow relied on was removed upstream and broke

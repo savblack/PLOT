@@ -61,7 +61,7 @@ The first run immediately justified itself, twice:
 
 1. **It could not be built.** react-native had been bumped to 0.87.1 while Expo
    SDK 57 pins 0.86.3, so Expo's `ExpoReactNativeFactoryDelegate` no longer
-   compiled. Nine packages were off the SDK's versions. `npm run mobile:deps`
+   compiled. Nine packages were off the SDK's versions. `pnpm run mobile:deps`
    now guards this.
 2. **The EPG was visibly broken.** The guide's ruler ScrollView was growing into
    the column's spare space, pushing the programme grid 355pt below the channel
@@ -107,7 +107,7 @@ Lessons:
 - A feature-flag or allow-list set is exactly the kind of one-line gate that
   compiles perfectly while disabling the feature. After a rebase, re-read the
   gate, don't just re-run the build.
-- That specific gate is now guarded: `npm run mobile:tabs` fails the build if
+- That specific gate is now guarded: `pnpm run mobile:tabs` fails the build if
   any `DISCOVER_TABS` id is in neither `MOBILE_READY` nor `MOBILE_DEFERRED` in
   `app/(app)/index.tsx`, so "missing" is no longer expressible. The rules and
   the reconstruction of #587 are in

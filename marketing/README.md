@@ -79,21 +79,21 @@ can never fail a render or a publish run.
 Run these from `/Users/savannahblack/Projects/PLOT/marketing`:
 
 ```sh
-npm run doctor
-npm run weekly
-npm run schedule -- --dry-run
-npm run reconcile -- --dry-run
-npm run newsletter -- --dry-run
-npm run snapshot
+pnpm run doctor
+pnpm run weekly
+pnpm run schedule -- --dry-run
+pnpm run reconcile -- --dry-run
+pnpm run newsletter -- --dry-run
+pnpm run snapshot
 ```
 
 Notes:
 
-- `npm run weekly` is the local end-to-end batch runner. It ends by pushing the
+- `pnpm run weekly` is the local end-to-end batch runner. It ends by pushing the
   rendered week into Buffer, so it needs `BUFFER_API_KEY`.
-- `npm run schedule` pushes anything still queued. `--dry-run` reports what it
+- `pnpm run schedule` pushes anything still queued. `--dry-run` reports what it
   would push and touches neither Buffer nor the database.
-- `npm run reconcile` reads Buffer back. It never writes to Buffer.
+- `pnpm run reconcile` reads Buffer back. It never writes to Buffer.
 - Codex is the default copy runner **for local runs only** — pass
   `--copy-runner=claude` to match what CI actually uses in production.
 - `--copy-command='...'` is still available for fallback/debug use.
@@ -514,7 +514,7 @@ release post and the question are deliberately about the same title.
 - Two ways to subscribe now: the forms on theplot.tv, and the in-app opt-in
   (Settings toggle + the watchlist prompt) which writes `profiles.marketing_emails`
   and is mirrored onto the sending list by a database trigger.
-- **No opt-in surface states a send frequency**, because `npm run newsletter` has
+- **No opt-in surface states a send frequency**, because `pnpm run newsletter` has
   no cron behind it — the digest goes out when someone runs it. If a schedule is
   added (a workflow on a cron, like `marketing-publish.yml`), the copy can start
   promising a cadence again: `packages/core/copy/settingsView.js`
@@ -527,7 +527,7 @@ release post and the question are deliberately about the same title.
   analytics path (the Meta-direct token/insights pipeline for IG/Threads was
   retired; it depended on a 60-day token refresh that was never wired back up
   after GitHub workflows were trimmed, so it had been silently dead anyway).
-- Nothing emails performance numbers on a schedule any more. `npm run mkt:report`
+- Nothing emails performance numbers on a schedule any more. `pnpm run mkt:report`
   still sends the report by hand (`marketing/metrics/report.mjs`) if you want it.
 
 ## Output paths

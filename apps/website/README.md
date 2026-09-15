@@ -5,7 +5,7 @@ The theplot.tv marketing site: static HTML pages, deployed as-is (no build step)
 ## Local development
 
 ```
-npm run dev:website
+pnpm run dev:website
 ```
 
 Serves the site on port 5202 through `wrangler pages dev`, so the Pages Functions in `functions/` run alongside the static pages — the same as production.
@@ -22,7 +22,7 @@ The repo `.env` is not loaded, so functions needing secrets (e.g. `/api/newslett
 ## Storybook (documentation only)
 
 ```
-npm run storybook:website
+pnpm run storybook:website
 ```
 
 This is a read-only visual reference for the site's shared patterns (tokens, buttons, nav, footer) — it does not build, bundle, or affect the deployed site in any way. Stories live in `stories/` and import directly from the real files (`theme.css`, `nav.css`, `_partials/footer.html`) wherever possible, so they can't silently drift from what's live.

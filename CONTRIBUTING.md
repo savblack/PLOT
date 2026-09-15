@@ -14,8 +14,8 @@ git config core.hooksPath .githooks
 Run:
 
 ```sh
-npm ci
-npm run check
+pnpm install --frozen-lockfile
+pnpm run check
 ```
 
 ## Development Notes

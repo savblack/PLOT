@@ -52,7 +52,7 @@ language the project does not use (reconsider), or there is a real gap (note it 
 Two vocabulary rules already enforced elsewhere in this repo, which any domain doc must respect:
 
 - The brand is always written `PLOT`, all caps, in prose, copy and comments.
-- User-facing strings belong in `packages/core/copy`, and `npm run copy:check` fails the build
+- User-facing strings belong in `packages/core/copy`, and `pnpm run copy:check` fails the build
   if an app file hardcodes one the catalog already owns. A glossary term and its user-facing
   wording are not the same thing; the catalog owns the latter.
 

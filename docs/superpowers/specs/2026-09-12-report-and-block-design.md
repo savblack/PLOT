@@ -174,7 +174,7 @@ Reuse the existing pattern rather than inventing one: a trigger calling
 `public.notify_edge_function('notify-report')`, mirroring how `feedback` already
 reaches the operator, with the bearer in Vault. Note the standing caveat that
 `http_request` triggers are not reliably transactional, which is why
-`npm run db:write-paths` deliberately does not write-and-rollback.
+`pnpm run db:write-paths` deliberately does not write-and-rollback.
 
 An acknowledgement to the reporter is the floor Apple asks for ("timely
 responses to concerns"). In-app confirmation on submit satisfies it.
@@ -227,18 +227,18 @@ one of two changes with real blast radius: get it wrong and private shelves leak
   concentrated in repointing nine policies, each a drop-and-create.
 - Migration 2 redefines seven `security definer` functions and is the dangerous
   one. Diff every single one against its live definition before touching it —
-  `npm run db:function-diff` now does exactly that, restoring production and
+  `pnpm run db:function-diff` now does exactly that, restoring production and
   printing a unified diff of every function body a pending migration changes.
   For 20260913090000 it reported 0 lines removed across all seven, which is the
   shape a redefinition has to have to be safe.
-- `npm run db:migration-test` before merging, without exception — it is the only
+- `pnpm run db:migration-test` before merging, without exception — it is the only
   check that executes the SQL.
-- `npm run db:write-paths` green before merge.
+- `pnpm run db:write-paths` green before merge.
 - RLS correctness is *not* covered by migration-test (policies are created but
   not exercised), so the block predicate must be verified on **Staging** with two
   real accounts: block, then confirm the blocked account gets zero rows from
   profile, history, favourites, top lists, watching, lists and follows.
-  **Done 2026-09-13**: `npm run staging:block-test` — 31 assertions across the
+  **Done 2026-09-13**: `pnpm run staging:block-test` — 31 assertions across the
   blocker, the blocked account, an unrelated third account and an anonymous
   reader, all inside one transaction that ends in `rollback`. The last two
   matter as much as the first two: they are the only thing that catches a clause
@@ -283,7 +283,7 @@ set: notifications are historical rows, so a blocked account kept its username
 and avatar sitting in your notification feed long after every other path had
 gone dark. The lesson is not "add a seventh row". It is that a list of
 identity surfaces derived by reading code is a list of the ones you thought of,
-which is why `npm run db:block-clause` now derives it from the migrations and
+which is why `pnpm run db:block-clause` now derives it from the migrations and
 fails the build on anything unclassified.
 
 So hiding identity means adding a block clause to **six functions**, each a
