@@ -13,8 +13,23 @@ export default defineConfig({
   plugins: [react(), ...(process.env.PLOT_SMOKE_TEST ? [] : [cloudflare()])],
   // Local configuration is shared at the repository root. Without this Vite
   // only reads apps/web/.env, leaving the local app unable to initialise
-  // Supabase when started through the documented root npm command.
+  // Supabase when started through the documented root pnpm command.
   envDir: '../..',
+  resolve: {
+    // MANDATORY under pnpm. apps/mobile pins react 19.2.3 exactly (react-native
+    // 0.86.3 requires that patch), so 19.2.3 takes the hoisted root slot and
+    // every 19.3.0 consumer nests its own physical copy instead — apps/web,
+    // packages/core, react-router, react-router-dom, posthog-js and
+    // @posthog/react each ended up with one. Same version, different paths, so
+    // Rollup treats them as distinct modules and the bundle ships several React
+    // instances. The app then dies on `useContext` of null the moment a context
+    // is read across the seam, which is exactly what the smoke tests caught.
+    //
+    // npm hid this by hoisting a single react for the whole workspace. Deduping
+    // here restores that for the web bundle without forcing a react version on
+    // mobile, where the exact pin is a hard react-native requirement.
+    dedupe: ['react', 'react-dom', 'scheduler'],
+  },
   server: {
     // Honor an externally assigned port (e.g. the Claude preview harness);
     // fall back to Vite's default when unset
