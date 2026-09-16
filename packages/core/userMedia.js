@@ -34,7 +34,7 @@ export async function saveFavorite({ userId, item }) {
 
   const { data, error } = await supabase
     .from('user_favourites')
-    .upsert({ user_id: userId, ...row }, { onConflict: 'user_id,tmdb_id' })
+    .upsert({ user_id: userId, ...row, genre_ids: genreIdsFromItem(item) }, { onConflict: 'user_id,tmdb_id' })
     .select()
     .single();
 

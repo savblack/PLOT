@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from './supabase.js';
-import { mediaIdentityRow, tmdbIdFromItem } from './media.js';
+import { genreIdsFromItem, mediaIdentityRow, tmdbIdFromItem } from './media.js';
 import { getConfig } from './config.js';
 
 /**
@@ -119,6 +119,7 @@ export function useCustomLists(userId) {
         list_id:     listId,
         user_id:     userId,
         ...row,
+        genre_ids:   genreIdsFromItem(item),
       }, { onConflict: 'list_id,tmdb_id' })
       .select()
       .single();
