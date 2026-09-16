@@ -1,5 +1,8 @@
 # International broadcast Guide
 
+Production integration is now prepared in [production-rollout.md](production-rollout.md).
+The preview notes below document the earlier implementation.
+
 Implemented in the local development preview, 16 September 2026. This does not deploy
 or replace the authenticated production Guide, change user profiles, or add a subscription.
 

@@ -1,0 +1,40 @@
+name: Refresh broadcast Guide
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/*_broadcast_guide.sql'
+      - 'scripts/guide/**'
+      - 'packages/core/broadcastMarkets.json'
+      - '.github/workflows/broadcast-guide.yml'
+  schedule:
+    - cron: '23 */6 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: broadcast-guide-refresh
+  cancel-in-progress: false
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Test feed validation
+        run: python3 -m unittest discover -s scripts/guide -p 'test_*.py'
+      - name: Refresh last-valid snapshots
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python3 scripts/guide/refresh.py --publish
+      - name: Retain per-channel coverage report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: broadcast-guide-health
+          path: .guide-cache/refresh/health.json
+          retention-days: 7

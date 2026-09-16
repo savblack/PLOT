@@ -1,4 +1,11 @@
 export const BROADCAST_GUIDE = {
+  kicker: 'Free-to-air television',
+  chooseMarket: 'Choose your TV market in Settings to see local listings.',
+  notConfigured: 'Choose a TV market',
+  accountNote: 'Your broadcast region and channels sync across your devices. Changing market resets your channel selection.',
+  preferencesError: 'Could not load your broadcast settings.',
+  saveError: 'Could not save your broadcast settings. Your changes are still here. Try again.',
+  saving: 'Saving broadcast settings…',
   country: 'Country', market: 'TV market',
   countries: { AU: 'Australia', NZ: 'New Zealand', US: 'United States', CA: 'Canada', GB: 'United Kingdom' },
   coverage: { capital: 'Capital-city broadcast feed. Reception outside this area may differ.', national: 'National channel feed. Times are shown in the listed timezone.', starter: 'Starter lineup of selected local stations. More channels and areas are coming.', unavailable: 'This source is currently unavailable. We will show listings when it returns.', unsupported: 'Listings are not available for this area yet. We will not substitute another area’s channels.' },

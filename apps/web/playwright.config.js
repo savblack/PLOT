@@ -14,6 +14,13 @@ export default defineConfig({
     trace: 'on-first-retry',
   },
   webServer: {
+    // Smoke fixtures must never reach production, including CI with real secrets.
+    env: {
+      VITE_SUPABASE_URL: 'https://placeholder.supabase.co',
+      VITE_SUPABASE_ANON_KEY: 'placeholder-not-a-key',
+      VITE_TMDB_PROXY_URL: 'https://placeholder.invalid',
+      VITE_PUBLIC_POSTHOG_PROJECT_TOKEN: '',
+    },
     // Vite preview ignores the Cloudflare SPA fallback (see assets.
     // not_found_handling in wrangler.toml), so deep links 404 under it.
     // Use Vite's SPA server after first checking the production build.
