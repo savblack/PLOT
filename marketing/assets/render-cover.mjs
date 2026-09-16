@@ -7,11 +7,6 @@ const here = dirname(fileURLToPath(import.meta.url));
 const targets = [
   ['x-header-wordmark.svg', 'x-header-wordmark.png'],
   ['x-header-wordmark-dark.svg', 'x-header-wordmark-dark.png'],
-  ['x-cover-wordmark.svg', 'x-cover-wordmark.png'],
-  ['x-cover-wordmark-coral.svg', 'x-cover-wordmark-coral.png'],
-  ['x-cover-plotline.svg', 'x-cover-plotline.png'],
-  ['x-cover-filmframe.svg', 'x-cover-filmframe.png'],
-  ['x-cover-letterpress.svg', 'x-cover-letterpress.png'],
 ];
 
 const browser = await chromium.launch();
