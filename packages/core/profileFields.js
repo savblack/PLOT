@@ -1,3 +1,5 @@
+import { PUBLIC_PROFILE_PAGE } from './copy/publicProfilePage.js';
+
 // The editable shape of a PLOT profile: which social links exist, and which
 // content rails a user can show or hide.
 //
@@ -34,11 +36,11 @@ export const SOCIAL_LINKS = [
  * @type {{ key: string, label: string }[]}
  */
 export const PROFILE_SECTIONS = [
-  { key: 'recent',     label: 'Recently Watched' },
+  { key: 'recent',     label: PUBLIC_PROFILE_PAGE.watchHistory },
   { key: 'watching',   label: 'Watching' },
   { key: 'want',       label: 'Want to Watch' },
-  { key: 'topMovies',  label: 'Top 10 Films' },
-  { key: 'topTv',      label: 'Top 10 TV' },
+  { key: 'topMovies',  label: PUBLIC_PROFILE_PAGE.topFilms },
+  { key: 'topTv',      label: PUBLIC_PROFILE_PAGE.topTv },
   { key: 'favourites', label: 'Favorites' },
 ];
 

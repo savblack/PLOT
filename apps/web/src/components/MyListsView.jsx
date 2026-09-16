@@ -1,3 +1,4 @@
+import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
@@ -12,8 +13,7 @@ import ConfirmModal from './ConfirmModal.jsx';
 import KebabMenu from './KebabMenu.jsx';
 import ListCover from './ListCover.jsx';
 import { EVENTS, track } from '../lib/analytics.js';
-import { canCreateCustomList, FREE_CUSTOM_LIST_CAP } from '@plot/core/premium.js';
-import { SHOW_PRICING_PAGE } from '../launchFeatures.js';
+import { canCreateCustomList } from '@plot/core/premium.js';
 import { collectionPath, customListKey, titleCount, wantToWatchItems } from '@plot/core/listCollections.js';
 import { ALL_TYPES, filterByTypeAndGenre, isTypeNarrowed } from '@plot/core/mediaFilters.js';
 import { TypeGenreFilter } from './ListCards.jsx';
@@ -148,21 +148,8 @@ export default function MyListsView() {
 
         <ListSection title="Lists" headerRight={listActions}>
           {showCapNotice && (
-            <div className="mylists-cap-notice">
-              {SHOW_PRICING_PAGE ? (
-                <>
-                  You&rsquo;ve got {FREE_CUSTOM_LIST_CAP} lists. PLOT Premium gets unlimited.{' '}
-                  <button
-                    type="button"
-                    onClick={() => navigate('/settings')}
-                    style={{ background: 'none', border: 'none', padding: 0, color: 'var(--accent-text)', fontWeight: 600, cursor: 'pointer', fontSize: 'inherit' }}
-                  >
-                    Get Premium
-                  </button>
-                </>
-              ) : (
-                <>You&rsquo;ve reached the {FREE_CUSTOM_LIST_CAP}-list limit.</>
-              )}
+            <div className="mylists-cap-notice" role="status">
+              <strong>{CUSTOM_LISTS.limitTitle}</strong> {CUSTOM_LISTS.limitMessage}
             </div>
           )}
 

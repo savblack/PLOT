@@ -1,12 +1,13 @@
+import { customListCreationError } from '@plot/core/customListCreation.js';
+import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
 import { useState } from 'react';
 import { useApp } from '../hooks/useApp.js';
 import { posterUrl } from '../utils/images.js';
 import { collectionPartYear } from '@plot/core/collections.js';
 import { findDuplicateCustomList } from '@plot/core/customLists.js';
-import { canCreateCustomList, FREE_CUSTOM_LIST_CAP } from '@plot/core/premium.js';
+import { canCreateCustomList } from '@plot/core/premium.js';
 import { track, EVENTS } from '../lib/analytics.js';
 import { MEDIA_PANEL } from '../copy/mediaPanel.js';
-import { SHOW_PRICING_PAGE } from '../launchFeatures.js';
 
 /**
  * The films of a collection as rows, plus the "Save as list" footer. Used
@@ -32,14 +33,18 @@ export default function CollectionFilms({ stub, parts, items, onOpenTitle }) {
       track(EVENTS.PREMIUM_GATE_HIT, { feature: 'custom_lists' });
       setSaveState({
         status: 'error',
-        message: SHOW_PRICING_PAGE
-          ? `Free accounts can have ${FREE_CUSTOM_LIST_CAP} lists. PLOT Premium gets unlimited. Upgrade from Settings to unlock.`
-          : `You've reached the ${FREE_CUSTOM_LIST_CAP}-list limit.`,
+        message: CUSTOM_LISTS.limitMessage,
       });
       return;
     }
     setSaveState({ status: 'saving', message: '' });
-    const list = existingList || await customLists.createList(stub.name);
+    let list;
+    try {
+      list = existingList || await customLists.createList(stub.name);
+    } catch (error) {
+      setSaveState({ status: 'error', message: customListCreationError(error, MEDIA_PANEL.couldNotSaveCollection) });
+      return;
+    }
     if (!list) {
       setSaveState({ status: 'error', message: MEDIA_PANEL.couldNotSaveCollection });
       return;
