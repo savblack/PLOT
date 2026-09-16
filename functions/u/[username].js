@@ -65,7 +65,7 @@ async function loadProfile(handle) {
 
 const posterRow = (label, items) =>
   items.length
-    ? `<section style="margin-top:34px"><h2 style="font-family:'Instrument Serif',Georgia,serif;font-weight:400;font-size:1.5rem;margin:0 0 14px">${esc(label)}</h2>` +
+    ? `<section style="margin-top:34px"><h2 style="font-family:'Gabarito', 'DM Sans', system-ui, sans-serif;font-weight:400;font-size:1.5rem;margin:0 0 14px">${esc(label)}</h2>` +
       `<div style="display:flex;gap:12px;flex-wrap:wrap">` +
       items.map((t) => {
         const src = TMDB_IMG(t.poster_path, 'w185');
@@ -78,13 +78,13 @@ const posterRow = (label, items) =>
 
 function seoSnapshot(p) {
   const name = (p.display_name || p.username).replace(/\b([a-z])/g, (m) => m.toUpperCase());
-  const stat = (n, l) => n ? `<div style="text-align:center"><div style="font-family:'Instrument Serif',Georgia,serif;font-size:1.9rem;line-height:1">${esc(n)}</div><div style="font-size:0.68rem;letter-spacing:0.1em;text-transform:uppercase;color:#9a9aa2;margin-top:4px">${esc(l)}</div></div>` : '';
+  const stat = (n, l) => n ? `<div style="text-align:center"><div style="font-family:'Gabarito', 'DM Sans', system-ui, sans-serif;font-size:1.9rem;line-height:1">${esc(n)}</div><div style="font-size:0.68rem;letter-spacing:0.1em;text-transform:uppercase;color:#9a9aa2;margin-top:4px">${esc(l)}</div></div>` : '';
   const avatar = p.avatar_url
     ? `<img src="${esc(p.avatar_url)}" alt="" width="84" height="84" style="border-radius:50%;object-fit:cover;border:2px solid #F06A88">`
     : '';
   return `<div id="seo-snapshot" style="max-width:760px;margin:0 auto;padding:64px 24px;color:#e8e8ec;font-family:'DM Sans',system-ui,sans-serif;background:#0f0f11;min-height:100vh">
   <header style="display:flex;align-items:center;gap:20px">${avatar}
-    <div><h1 style="font-family:'Instrument Serif',Georgia,serif;font-weight:400;font-size:2.4rem;margin:0;line-height:1">${esc(name)}${p.is_premium ? ' <span style="color:#F06A88">●</span>' : ''}</h1>
+    <div><h1 style="font-family:'Gabarito', 'DM Sans', system-ui, sans-serif;font-weight:400;font-size:2.4rem;margin:0;line-height:1">${esc(name)}${p.is_premium ? ' <span style="color:#F06A88">●</span>' : ''}</h1>
     <div style="color:#9a9aa2;margin-top:6px">@${esc(p.username)} · on PLOT</div></div>
   </header>
   <div style="display:flex;gap:40px;margin-top:28px">${stat(p.followers, 'Followers')}${stat(p.watchCount, 'Watched')}${stat(p.reviews, 'Reviews')}${stat(p.avgRating, 'Avg rating')}</div>
@@ -104,7 +104,7 @@ export async function onRequest({ request, params, env }) {
     const shell = await fetch(`https://${host}/index.html`, { headers: { accept: 'text/html' } });
     html = await shell.text();
   } catch {
-    return new Response('<!doctype html><meta charset="utf-8"><title>PLOT</title>', {
+    return new Response('<!doctype html><meta charset="utf-8"><title>plot</title>', {
       status: 502, headers: { 'Content-Type': 'text/html; charset=utf-8' },
     });
   }

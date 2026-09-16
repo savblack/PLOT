@@ -178,7 +178,7 @@ function RuleCard({ label, children }) {
 }
 
 export default function DesignSystemPage() {
-  const [dark, setDark] = useState(true);
+  const [dark, setDark] = useState(false);
 
   useEffect(() => {
     const page = document.querySelector('.design-system-page');
@@ -190,7 +190,7 @@ export default function DesignSystemPage() {
       <header className="ds-hero">
         <div>
           <span className="ds-kicker">Visual Design System</span>
-          <h1>PLOT</h1>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, letterSpacing: '-0.045em' }}>plot</h1>
           <p>A living inventory of the app's fonts, colors, borders, bars, buttons, chips, and layout rules.</p>
         </div>
         <button
@@ -204,20 +204,20 @@ export default function DesignSystemPage() {
 
       <Section eyebrow="01" title="Typography">
         <div className="ds-type-grid">
-          <div className="ds-type-card ds-type-card--serif">
-            <span>Brand and editorial</span>
-            <strong>Instrument Serif</strong>
-            <p>Use for the PLOT mark, page identity, feature headings, and expressive title moments.</p>
+          <div className="ds-type-card ds-type-card--sans">
+            <span>Headlines and the mark</span>
+            <strong style={{ fontFamily: 'var(--font-display)', fontWeight: 700, letterSpacing: 'var(--font-display-tracking)' }}>Gabarito</strong>
+            <p>Bold, tracked −0.03em. The wordmark, page titles, section and panel headings, rank numbers, card names.</p>
           </div>
           <div className="ds-type-card ds-type-card--sans">
             <span>Interface and data</span>
             <strong>DM Sans</strong>
-            <p>Use for buttons, dense rows, metadata, settings, navigation, forms, and repeated controls.</p>
+            <p>Buttons, dense rows, metadata, settings, navigation, forms, and repeated controls.</p>
           </div>
         </div>
         <div className="ds-type-scale">
           <div>
-            <span>Page title · Instrument Serif · 1.6rem / 400 / 1.1 lh / −0.02em ls</span>
+            <span>Page title · Gabarito · 1.6rem / 700 / 1.1 lh / −0.03em ls</span>
             <h3>Calendar</h3>
           </div>
           <div>
@@ -236,7 +236,7 @@ export default function DesignSystemPage() {
 
         <h3 className="ds-subsection-title">Editorial display · marketing surface</h3>
         <p className="ds-section-note" style={{ marginTop: '0.25rem' }}>
-          Marketing hero and manifesto headlines push Instrument Serif large and tight — weight 400, <code>−0.05em</code> tracking, a <code>0.997</code> horizontal condense, at a fluid <code>clamp(2.8rem, 6.5vw, 5rem)</code>. Same font as the app; editorial scale.
+          Marketing headlines set Gabarito bold at a fluid <code>clamp(2.4rem, 4.8vw, 4.4rem)</code>, line-height 0.95, tracked <code>−0.03em</code>. The manifesto is the one place the serif still leads, at <code>clamp(1.5rem, 2.8vw, 2.6rem)</code>. Same faces as the app; editorial scale.
         </p>
         <div className="ds-editorial-display">
           <span>Your film &amp; TV companion</span>
@@ -318,7 +318,7 @@ export default function DesignSystemPage() {
           <div className="ds-bar-item">
             <div className="ds-bar-copy"><strong>App header</strong><p>Fixed top identity and global menu access.</p></div>
             <div className="ds-fake-header">
-              <span className="app-page-title">PLOT</span>
+              <span className="app-page-title">plot</span>
               <button className="icon-btn" aria-label="Sample menu"><IconMenu /></button>
             </div>
           </div>
@@ -497,7 +497,7 @@ export default function DesignSystemPage() {
             <span className="ds-example-label">Poster card</span>
             <div className="media-card ds-media-sample">
               <div className="media-card-img">
-                <div className="ds-poster-art"><span>PLOT</span></div>
+                <div className="ds-poster-art"><span>plot</span></div>
                 <div className="card-chip-overlay"><span className="chip chip-streaming">Movie</span></div>
                 <button className="card-save-btn saved" aria-label="Saved sample"><IconBookmark /></button>
               </div>
@@ -627,7 +627,7 @@ export default function DesignSystemPage() {
             <span className="ds-example-label">Navigation drawer</span>
             <div className="ds-drawer-sample">
               <div className="nav-drawer-header">
-                <span className="nav-drawer-logo-text">PLOT</span>
+                <span className="nav-drawer-logo-text">plot</span>
               </div>
               <div className="nav-drawer-nav">
                 <button className="nav-drawer-item active"><span className="nav-drawer-label">Home</span></button>
@@ -699,7 +699,7 @@ export default function DesignSystemPage() {
             <div className="ds-interactive-demo">
               <div className="media-card interactive-surface ds-interactive-card">
                 <div className="media-card-img">
-                  <div className="ds-poster-art"><span>PLOT</span></div>
+                  <div className="ds-poster-art"><span>plot</span></div>
                 </div>
                 <div className="media-card-title">Hover me</div>
                 <div className="media-card-meta">Card press demo</div>
@@ -926,7 +926,7 @@ export default function DesignSystemPage() {
             <div className="ds-note-list">
               <div className="ds-note-row">
                 <strong>Wordmark</strong>
-                <p>Render the PLOT wordmark as Instrument Serif text through <code>PlotLogo</code> (<code>var(--font-serif)</code>, weight 400, <code>-0.05em</code> tracking). Never use raster or letter-image logos; size it with <code>fontSize</code>.</p>
+                <p>Render the plot wordmark as the plain lowercase word in Gabarito through <code>PlotLogo</code> (<code>var(--font-display)</code>, weight 700, <code>-0.045em</code> tracking). No full stop, no symbol, no mascot. Never use raster or letter-image logos; size it with <code>fontSize</code>.</p>
               </div>
               <div className="ds-note-row">
                 <strong>Navigation icons</strong>
@@ -1037,7 +1037,7 @@ export default function DesignSystemPage() {
             <div className="ds-error-preview ds-error-preview--crash">
               <div className="ds-ep-logo">
                 <svg viewBox="0 0 100 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: 48, height: 12 }}>
-                  <text x="0" y="20" fontFamily="'Instrument Serif', Georgia, serif" fontSize="22" fill="#f0efe8" letterSpacing="-1">PLOT</text>
+                  <text x="0" y="20" fontFamily="'Gabarito', 'DM Sans', system-ui, sans-serif" fontSize="22" fill="#f0efe8" letterSpacing="-1">plot</text>
                 </svg>
               </div>
               <div className="ds-ep-code">Oops</div>
@@ -1050,7 +1050,7 @@ export default function DesignSystemPage() {
             </div>
             <div className="ds-error-screen-meta">
               <strong>Crash screen</strong>
-              <p>Shown by <code>ErrorBoundary</code> when a JS runtime error interrupts rendering. Background <code>#0c0c0c</code>, code rendered in Instrument Serif at fluid 4–8rem, body in DM Sans 300.</p>
+              <p>Shown by <code>ErrorBoundary</code> when a JS runtime error interrupts rendering. Background <code>#0c0c0c</code>, code rendered in Gabarito at fluid 4–8rem, body in DM Sans 300.</p>
               <div className="ds-error-tokens">
                 <span className="ds-chip ds-chip--meta">ErrorBoundary → CrashScreen</span>
               </div>
@@ -1062,7 +1062,7 @@ export default function DesignSystemPage() {
             <div className="ds-error-preview ds-error-preview--crash">
               <div className="ds-ep-logo">
                 <svg viewBox="0 0 100 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: 48, height: 12 }}>
-                  <text x="0" y="20" fontFamily="'Instrument Serif', Georgia, serif" fontSize="22" fill="#f0efe8" letterSpacing="-1">PLOT</text>
+                  <text x="0" y="20" fontFamily="'Gabarito', 'DM Sans', system-ui, sans-serif" fontSize="22" fill="#f0efe8" letterSpacing="-1">plot</text>
                 </svg>
               </div>
               <div className="ds-ep-code">404</div>
@@ -1217,7 +1217,7 @@ export default function DesignSystemPage() {
         </p>
         <div className="ds-utility-grid">
           <RuleCard label="Editorial display headlines">
-            <p>Oversized, condensed Instrument Serif (see §01) for hero and manifesto moments. The app never sets type this large.</p>
+            <p>Oversized, condensed Gabarito (see §01) for hero and manifesto moments. The app never sets type this large.</p>
           </RuleCard>
           <RuleCard label="Black CTA button">
             <p>The marketing primary button fills with <code>--ink</code>; the app keeps its quieter <code>--text-primary</code> button.</p>
@@ -1233,7 +1233,7 @@ export default function DesignSystemPage() {
 
       <Section eyebrow="16" title="Share & Social Cards">
         <p className="ds-section-note">
-          When a PLOT link is shared — a title texted to a friend, a profile or list posted — it unfurls as a 1200×630 card generated on the fly by <code>/api/og</code>. All three variants share the brand dark, Instrument Serif titles, DM Sans meta, the accent eyebrow, and the PLOT wordmark. (Samples below are the real rendered output.)
+          When a PLOT link is shared — a title texted to a friend, a profile or list posted — it unfurls as a 1200×630 card generated on the fly by <code>/api/og</code>. All three variants share the brand dark, Gabarito titles, DM Sans meta, the accent eyebrow, and the PLOT wordmark. (Samples below are the real rendered output.)
         </p>
 
         <div className="ds-share-grid">
@@ -1272,7 +1272,7 @@ export default function DesignSystemPage() {
           <RuleCard label="Shared spec">
             <div className="ds-note-list">
               <div className="ds-note-row"><strong>Canvas</strong><p>1200×630, brand dark, PLOT wordmark, accent eyebrow — <code>--accent</code> sourced from <code>core/tokens.js</code>.</p></div>
-              <div className="ds-note-row"><strong>Type</strong><p>Instrument Serif titles (fluid 58–106px by length), DM Sans meta + labels. The same two families as every other surface.</p></div>
+              <div className="ds-note-row"><strong>Type</strong><p>Gabarito titles (fluid 58–106px by length), DM Sans meta + labels. The same two families as every other surface.</p></div>
               <div className="ds-note-row"><strong>Source</strong><p>Rendered by the <code>plot-og</code> Cloudflare Worker (<code>apps/web/workers/og</code>). These samples come from the real builders via <code>scripts/gen-share-samples.mjs</code>.</p></div>
             </div>
           </RuleCard>
@@ -1286,7 +1286,7 @@ export default function DesignSystemPage() {
 
       <Section eyebrow="17" title="Marketing Collateral">
         <p className="ds-section-note">
-          Outbound assets we publish — social posts, channel art, avatars. Unlike the share cards in §16, these aren't link previews; they're posted to Instagram, X, and Threads. They still inherit the same wordmark, Instrument Serif display, DM Sans labels, accent, and dark palette.
+          Outbound assets we publish — social posts, channel art, avatars. Unlike the share cards in §16, these aren't link previews; they're posted to Instagram, X, and Threads. They still inherit the same wordmark, Gabarito display, DM Sans labels, accent, and dark palette.
         </p>
 
         <h3 className="ds-subsection-title">Social post templates</h3>
@@ -1318,7 +1318,7 @@ export default function DesignSystemPage() {
         <div className="ds-collateral-row">
           <figure className="ds-collateral-item ds-ci--wide">
             <img src="/ds/collateral-x-header.jpg" alt="X header and brand cover — ink PLOT wordmark on cream" />
-            <figcaption><strong>X header &amp; brand cover · cream</strong>Centered Instrument Serif wordmark, ink on cream · 1500×500 · used for both</figcaption>
+            <figcaption><strong>X header &amp; brand cover · cream</strong>Centered Gabarito wordmark, ink on cream · 1500×500 · used for both</figcaption>
           </figure>
           <figure className="ds-collateral-item ds-ci--wide">
             <img src="/ds/collateral-x-header-dark.jpg" alt="X header and brand cover — off-white PLOT wordmark on dark" />
@@ -1345,14 +1345,14 @@ export default function DesignSystemPage() {
 
       <Section eyebrow="18" title="Mobile (native app)">
         <p className="ds-section-note">
-          The PLOT mobile app (Expo / React Native, in <code>mobile/</code>) is a first-class surface of this system. It shares the foundation with web through the <code>@plot/core</code> workspace package (<code>packages/core/tokens.js</code>) — one source both apps import directly, so colors, radii, and the base-4 spacing scale are locked to web with no copy to drift. It now shares the type families too: Instrument Serif for display, DM Sans for UI.
+          The PLOT mobile app (Expo / React Native, in <code>mobile/</code>) is a first-class surface of this system. It shares the foundation with web through the <code>@plot/core</code> workspace package (<code>packages/core/tokens.js</code>) — one source both apps import directly, so colors, radii, and the base-4 spacing scale are locked to web with no copy to drift. It now shares the type families too: Gabarito for display, DM Sans for UI.
         </p>
 
         <div className="ds-mobile-grid">
           <div className="ds-phone" data-theme="dark">
             <div className="ds-phone-bar" />
             <div className="ds-phone-header">
-              <span className="ds-phone-wordmark">PLOT</span>
+              <span className="ds-phone-wordmark">plot</span>
               <span className="ds-phone-glyph" aria-hidden="true">⌕</span>
             </div>
             <div className="ds-phone-subtabs">
@@ -1378,7 +1378,7 @@ export default function DesignSystemPage() {
             <div className="ds-note-list">
               <div className="ds-note-row">
                 <strong>Shared with web (via @plot/core)</strong>
-                <p>Colors, radii (<code>md/lg/badge/pill</code>), the base-4 spacing scale, and the type families (DM Sans + Instrument Serif). Web and mobile import the same <code>@plot/core</code> module directly — the warm dark <code>#0c0c0c</code>/<code>#f0efe8</code> is one value, not a copy, so it cannot drift.</p>
+                <p>Colors, radii (<code>md/lg/badge/pill</code>), the base-4 spacing scale, and the type families (DM Sans + Gabarito). Web and mobile import the same <code>@plot/core</code> module directly — the warm dark <code>#0c0c0c</code>/<code>#f0efe8</code> is one value, not a copy, so it cannot drift.</p>
               </div>
               <div className="ds-note-row">
                 <strong>Platform-specific (by design)</strong>
@@ -1426,7 +1426,7 @@ export default function DesignSystemPage() {
                 <em>Share card<br />accent ring</em>
               </div>
             </div>
-            <p>Circle crop, <code>--surface-raised</code> fill, hairline border. No photo → the display-name initial in Instrument Serif, <code>--text-muted</code>. The OG share card adds a 3px <code>--accent</code> ring.</p>
+            <p>Circle crop, <code>--surface-raised</code> fill, hairline border. No photo → the display-name initial in Gabarito, <code>--text-muted</code>. The OG share card adds a 3px <code>--accent</code> ring.</p>
           </RuleCard>
 
           <RuleCard label="Follow request row">

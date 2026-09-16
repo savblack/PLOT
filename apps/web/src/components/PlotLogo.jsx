@@ -1,23 +1,24 @@
-// The PLOT wordmark. Rendered as Instrument Serif text (var(--font-serif)), never
-// a raster image — see the design system "Icon and mark usage" note. Size it with
-// fontSize via `style` or a `className`; pass `white` for dark backgrounds.
+// The plot wordmark: the plain lowercase word in Gabarito bold, never a raster
+// image and never with punctuation or a mascot (both were tried and declined in
+// the Sept 2026 brand pass). Size it with fontSize via `style` or a
+// `className`; pass `white` for dark or image backgrounds.
 export default function PlotLogo({ className = '', white = false, style, ...props }) {
   return (
     <span
       className={className}
-      aria-label="PLOT"
+      aria-label="plot"
       style={{
-        fontFamily: "var(--font-serif, 'Instrument Serif', Georgia, serif)",
-        fontWeight: 400,
-        fontSize: '1.7rem',
-        letterSpacing: '-0.05em',
+        fontFamily: "var(--font-display, 'Gabarito', 'DM Sans', system-ui, sans-serif)",
+        fontWeight: 700,
+        fontSize: '1.65rem',
+        letterSpacing: '-0.045em',
         lineHeight: 1,
         color: white ? '#fff' : 'var(--text-primary)',
         ...style,
       }}
       {...props}
     >
-      PLOT
+      plot
     </span>
   );
 }

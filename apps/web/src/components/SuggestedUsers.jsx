@@ -22,7 +22,7 @@ export default function SuggestedUsers({ heading = 'People To Follow' }) {
   return (
     <section style={{ margin: '0 0 1.75rem' }}>
       <h2 style={{
-        fontFamily: 'var(--font-serif)', fontSize: '1.5rem', fontWeight: 400, lineHeight: 1.1,
+        fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontWeight: 400, lineHeight: 1.1,
         color: 'var(--text-primary)', margin: '0 0 0.6rem', padding: '0 0.25rem',
       }}>
         {heading}

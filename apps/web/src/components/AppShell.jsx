@@ -140,7 +140,7 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
             onClick={() => navigateTo('home')}
             aria-label={APP_SHELL.goToHome}
           >
-            <span className="app-header-logo-text">PLOT</span>
+            <span className="app-header-logo-text">plot</span>
           </button>
         ) : (
           <span className="app-page-title">{pageTitle}</span>
@@ -249,7 +249,7 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
         aria-hidden={!drawerOpen}
       >
         <div className="nav-drawer-header">
-          <span className="nav-drawer-logo-text">PLOT</span>
+          <span className="nav-drawer-logo-text">plot</span>
           <button type="button" className="icon-btn" onClick={closeDrawer} aria-label={APP_SHELL.closeMenu}>
             <IconClose />
           </button>

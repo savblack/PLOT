@@ -106,6 +106,6 @@ export default function HistorySection({
 
 const makeStyles = (colors: Palette) => StyleSheet.create({
   empty: { paddingVertical: spacing.xl * 2, paddingHorizontal: spacing.xl, alignItems: 'center' },
-  emptyTitle: { fontFamily: fontFamily.serif, fontSize: fontSize.lg, color: colors.textPrimary, marginBottom: spacing.sm },
+  emptyTitle: { fontFamily: fontFamily.displaySemi, fontSize: fontSize.lg, color: colors.textPrimary, marginBottom: spacing.sm },
   emptyBody: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, textAlign: 'center', lineHeight: 20 },
 });

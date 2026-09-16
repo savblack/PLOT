@@ -1,21 +1,16 @@
 import './PlotLoader.css';
 
-const LETTERS = ['P', 'L', 'O', 'T'];
+// The wordmark loader: the lowercase word in Gabarito, each letter rising into
+// place in sequence, with a thin sage bar sweeping underneath. Loops until the
+// content lands. Takes the theme from data-theme on <html> unless told otherwise.
+const LETTERS = ['p', 'l', 'o', 't'];
 
-const SIZE_MAP = {
-  xs: 8,
-  sm: 12,
-  md: 20,
-  lg: 28,
-  button: 8,
-};
+const SIZE_MAP = { xs: 10, sm: 14, md: 22, lg: 30, button: 10 };
 
 function resolveTone(tone) {
   if (tone !== 'auto') return tone;
   if (typeof document === 'undefined') return 'light';
-  return document.documentElement.getAttribute('data-theme') === 'dark'
-    ? 'dark'
-    : 'light';
+  return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
 }
 
 function resolveSize(size) {
@@ -32,25 +27,22 @@ export default function PlotLoader({
   style,
 }) {
   const fontSize = resolveSize(size);
-  const color = resolveTone(tone) === 'dark' ? '#ffffff' : '#0a0a0a';
+  const color = resolveTone(tone) === 'dark' ? '#f8f2ea' : '#292924';
   const classes = ['plot-loader', className].filter(Boolean).join(' ');
-  const ariaProps = ariaHidden
-    ? { 'aria-hidden': true }
-    : { role: 'img', 'aria-label': label };
+  const ariaProps = ariaHidden ? { 'aria-hidden': true } : { role: 'img', 'aria-label': label };
 
   return (
     <span
       className={classes}
-      style={{
-        '--plot-loader-font-size': `${fontSize}px`,
-        '--plot-loader-color': color,
-        ...style,
-      }}
+      style={{ '--plot-loader-font-size': `${fontSize}px`, '--plot-loader-color': color, ...style }}
       {...ariaProps}
     >
-      {LETTERS.map((letter, i) => (
-        <span key={i} className="plot-loader__letter">{letter}</span>
-      ))}
+      <span className="plot-loader__word">
+        {LETTERS.map((letter, i) => (
+          <span key={i} className="plot-loader__letter">{letter}</span>
+        ))}
+      </span>
+      <span className="plot-loader__bar" />
     </span>
   );
 }

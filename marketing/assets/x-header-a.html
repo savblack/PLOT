@@ -6,9 +6,8 @@
   /* Rendered by render-x-header.mjs via page.goto(file://...) — a real file
      navigation, so a relative path resolves correctly (same font files as
      apps/web/public/fonts). */
+  @font-face { font-family: 'Gabarito'; src: url('../../apps/web/public/fonts/Gabarito-Variable.woff2') format('woff2'); font-weight: 400 900; font-style: normal; font-display: swap; }
   @font-face { font-family: 'DM Sans'; src: url('../../apps/web/public/fonts/DMSans-Variable.woff2') format('woff2'); font-weight: 100 900; font-style: normal; font-display: swap; }
-  @font-face { font-family: 'Instrument Serif'; src: url('../../apps/web/public/fonts/InstrumentSerif-Regular.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: swap; }
-  @font-face { font-family: 'Instrument Serif'; src: url('../../apps/web/public/fonts/InstrumentSerif-Italic.woff2') format('woff2'); font-weight: 400; font-style: italic; font-display: swap; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
     width: 1500px; height: 500px; overflow: hidden;
@@ -28,9 +27,9 @@
     text-align: center; padding: 0 140px; }
   .kicker { font-size: 22px; font-weight: 500; letter-spacing: 0.30em;
     text-transform: uppercase; color: rgba(250,250,250,0.52); margin-bottom: 30px; }
-  .headline { font-family: 'Instrument Serif', Georgia, serif; font-weight: 400;
+  .headline { font-family: 'Gabarito', 'DM Sans', system-ui, sans-serif; font-weight: 700;
     font-size: 108px; line-height: 0.96; letter-spacing: -0.02em; text-wrap: balance; }
-  .headline em { font-style: italic; color: #F06A88; letter-spacing: -0.01em; word-spacing: 0.05em; }
+  .headline em { font-style: normal; color: #F06A88; letter-spacing: -0.01em; word-spacing: 0.05em; }
   .url { position: absolute; right: 64px; bottom: 40px; z-index: 4;
     font-size: 25px; font-weight: 200; letter-spacing: 0.04em; color: rgba(250,250,250,0.62); }
   .url b { color: #F06A88; font-weight: 400; }

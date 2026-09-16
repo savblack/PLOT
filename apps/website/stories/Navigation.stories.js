@@ -13,7 +13,7 @@ export const Default = () => {
   wrap.style.height = '64px';
   wrap.innerHTML = `
     <nav style="position: static;">
-      <a href="/" class="nav-logo">PLOT</a>
+      <a href="/" class="nav-logo">plot</a>
       <ul class="nav-links">
         <li><a href="/whats-on">What's On</a></li>
         <li><a href="https://app.theplot.tv/login" data-cta="nav">Log in</a></li>

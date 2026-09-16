@@ -13,7 +13,7 @@ const styles = `
     width: 48px; height: 48px; border-radius: 50%; flex-shrink: 0; object-fit: cover;
     background: var(--surface-raised); border: 1px solid var(--border);
     display: flex; align-items: center; justify-content: center;
-    font-family: var(--font-serif); font-size: 1.2rem; color: var(--text-muted);
+    font-family: var(--font-display); font-size: 1.2rem; color: var(--text-muted);
   }
   .req-id { flex: 1; min-width: 0; }
   .req-name { font-weight: 600; font-size: 0.95rem; color: var(--text-primary); }

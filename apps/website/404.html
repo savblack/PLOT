@@ -53,7 +53,7 @@
     }
   </script>
   <!-- End Google Tag Manager -->
-  <title>Page not found — PLOT</title>
+  <title>Page not found — plot</title>
   <meta name="description" content="The page you were looking for isn't here." />
   <meta name="robots" content="noindex" />
   <link rel="canonical" href="https://theplot.tv/" />
@@ -62,8 +62,8 @@
   <link rel="apple-touch-icon" href="favicon.svg" />
   <link rel="manifest" href="site.webmanifest" />
   <link rel="preload" href="/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin />
-  <link rel="preload" href="/fonts/InstrumentSerif-Regular.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="/theme.css" />
+  <link rel="stylesheet" href="/ui.css" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     /* Brand tokens (--dark, --text-dark, --serif, --sans) come from /theme.css */
@@ -82,16 +82,16 @@
       min-height: 100vh;
     }
     .wordmark {
-      font-family: var(--serif);
-      font-weight: 400;
-      letter-spacing: -0.05em;
+      font-family: var(--display);
+      font-weight: 700;
+      letter-spacing: -0.045em;
       font-size: 2.4rem;
       line-height: 1;
       text-decoration: none;
       color: var(--text-dark);
     }
     .code {
-      font-family: var(--serif);
+      font-family: var(--display);
       font-size: clamp(4rem, 18vw, 8rem);
       line-height: 0.9;
       letter-spacing: -0.04em;
@@ -104,16 +104,17 @@
       align-items: center;
       gap: 0.4rem;
       font-size: 0.95rem;
-      font-weight: 300;
+      font-weight: 500;
       color: var(--text-dark);
-      background: transparent;
-      border: 1px solid rgba(26, 26, 26, 0.25);
+      background: var(--surface);
       text-decoration: none;
       padding: 0.7rem 1.4rem;
       border-radius: 9999px;
-      transition: border-color 0.2s, transform 0.2s;
+      transition: background 0.2s, transform 0.2s;
     }
-    .home:hover { border-color: rgba(26, 26, 26, 0.5); transform: translateY(-1px); }
+    .home:hover { background: var(--surface-hover); transform: translateY(-1px); }
+    .actions .home:first-child { background: var(--fill); }
+    .actions .home:first-child:hover { background: var(--fill-hover); }
     .actions { display: flex; flex-wrap: wrap; gap: 0.6rem; justify-content: center; margin-top: 0.5rem; }
     .actions .home { margin-top: 0; }
   </style>
@@ -123,12 +124,12 @@
 <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PC72PHBN"
 height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <!-- End Google Tag Manager (noscript) -->
-  <a class="wordmark" href="/">PLOT</a>
+  <a class="wordmark" href="/">plot</a>
   <div class="code">404</div>
   <p class="headline">Looks like we've hit a plot hole.</p>
   <p class="sub">Let's get you back to something worth watching.</p>
   <div class="actions">
-    <a class="home" href="/">← Back to PLOT</a>
+    <a class="home" href="/">← Back to plot</a>
     <a class="home" href="/whats-on">See what's on</a>
   </div>
   <script src="js/config.js"></script>

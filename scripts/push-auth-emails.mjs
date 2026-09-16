@@ -21,23 +21,24 @@ const SITE_URL = 'https://theplot.tv';
 // Brand colors derive from @plot/core/tokens.js (the canonical source, enforced by
 // `npm run tokens:marketing`). surfaceTint/accentSoft/border are email-only.
 //
-// NOTE: The pink/rose accent (accent #E05578, surfaceTint #FFF5F7, accentSoft
-// #F7C7D3) is intentional and approved for transactional email — this is an
-// explicit exception to PLOT's "no pink accent in the app UI" rule. Keep it
-// confined to the eyebrow chip and note box here; do not carry pink into the app.
+// The warm system (Sept 2026): cream ground, charcoal ink, the pink as a FILL
+// behind charcoal text on the button. surfaceTint,
+// accentSoft and border are email-only tints of the same palette.
 const c = colors.light;
 const dmSans = "'DM Sans', -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif";
 const t = {
   bg: c.bg,
-  surface: c.surface,
-  surfaceTint: '#FFF5F7',
+  surface: c.surfaceSunken,
+  surfaceTint: '#FFF1F7',
   textPrimary: c.textPrimary,
   textSecondary: c.textSecondary,
   textMuted: c.textMuted,
-  border: '#E4E4E7',
-  accent: c.accent,
+  border: '#E6DFD3',
+  accent: c.accentText,
+  accentFill: c.accentFill,
   accentSoft: '#F7C7D3',
-  serif: "'Instrument Serif', Georgia, 'Times New Roman', serif",
+  display: "'Gabarito', 'DM Sans', -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif",
+  serif: "'Gabarito', 'DM Sans', Helvetica, Arial, sans-serif",
   siteSans: dmSans,
   sans: dmSans,
 };
@@ -45,8 +46,8 @@ const t = {
 const button = (href, label) => `
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin: 0 auto;">
   <tr>
-    <td style="border-radius: 9999px; background-color: transparent; border: 1px solid ${t.textPrimary};">
-      <a href="${href}" target="_blank" style="display: inline-block; padding: 13px 30px; font-family: ${t.siteSans}; font-size: 14px; font-weight: 300; color: ${t.textPrimary}; text-decoration: none; border-radius: 9999px; line-height: 1.2;">${label}</a>
+    <td style="border-radius: 9999px; background-color: ${t.accentFill};">
+      <a href="${href}" target="_blank" style="display: inline-block; padding: 13px 30px; font-family: ${t.siteSans}; font-size: 14px; font-weight: 500; color: ${t.textPrimary}; text-decoration: none; border-radius: 9999px; line-height: 1.2;">${label}</a>
     </td>
   </tr>
 </table>`;
@@ -63,20 +64,20 @@ const noteBlock = (note) => note ? `
 </div>` : '';
 
 const wordmark = () => `
-<a href="${SITE_URL}" target="_blank" style="display: inline-block; text-decoration: none; font-family: ${t.serif}; font-size: 46px; font-weight: 400; letter-spacing: -0.05em; line-height: 1; color: ${t.textPrimary}; white-space: nowrap;">
-  PLOT
+<a href="${SITE_URL}" target="_blank" style="display: inline-block; text-decoration: none; font-family: ${t.display}; font-size: 40px; font-weight: 700; letter-spacing: -0.045em; line-height: 1; color: ${t.textPrimary}; white-space: nowrap;">
+  plot
 </a>`;
 
-const layout = ({ preheader, eyebrow, heading, intro, content, note, safety }) => `<!doctype html>
+const layout = ({ preheader, heading, intro, content, note, safety }) => `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light">
   <meta name="supported-color-schemes" content="light">
-  <title>PLOT</title>
+  <title>plot</title>
   <!--[if !mso]><!-->
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Instrument+Serif&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Gabarito:wght@700&display=swap" rel="stylesheet">
   <!--<![endif]-->
 </head>
 <body style="margin: 0; padding: 0; background-color: ${t.bg};">
@@ -94,8 +95,7 @@ const layout = ({ preheader, eyebrow, heading, intro, content, note, safety }) =
 
           <tr>
             <td style="background-color: ${t.surface}; border: 1px solid ${t.border}; border-radius: 16px; padding: 40px 36px; text-align: center;">
-              <div style="display: inline-block; margin: 0 0 16px; padding: 6px 10px; border-radius: 9999px; background-color: ${t.surfaceTint}; border: 1px solid ${t.accentSoft}; font-family: ${t.sans}; font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: ${t.accent};">${eyebrow}</div>
-              <h1 style="margin: 0 0 14px; font-family: ${t.serif}; font-weight: 400; font-size: 27px; line-height: 1.25; color: ${t.textPrimary};">${heading}</h1>
+              <h1 style="margin: 0 0 14px; font-family: ${t.display}; font-weight: 700; font-size: 26px; line-height: 1.15; letter-spacing: -0.03em; color: ${t.textPrimary};">${heading}</h1>
               <p style="margin: 0 0 28px; font-family: ${t.sans}; font-size: 15px; line-height: 1.65; color: ${t.textSecondary};">${intro}</p>
               ${content}
               ${noteBlock(note)}
@@ -106,7 +106,7 @@ const layout = ({ preheader, eyebrow, heading, intro, content, note, safety }) =
             <td align="center" style="padding: 28px 24px 0;">
               <p style="margin: 0 0 6px; font-family: ${t.sans}; font-size: 12px; line-height: 1.6; color: ${t.textMuted};">${safety}</p>
               <p style="margin: 0; font-family: ${t.sans}; font-size: 12px; line-height: 1.6; color: ${t.textMuted};">
-                <a href="${SITE_URL}" target="_blank" style="color: ${t.textMuted}; text-decoration: underline;">PLOT</a>
+                <a href="${SITE_URL}" target="_blank" style="color: ${t.textMuted}; text-decoration: underline;">plot</a>
                 &middot; Your film and TV companion.
                 <br>SUSUMU HOUSE &middot; Level 1, 63-73 Ann Street, Surry Hills, NSW 2010
               </p>
@@ -140,38 +140,35 @@ const authUrl = (type) =>
 
 const emails = {
   confirmation: {
-    subject: 'Confirm your email for PLOT',
+    subject: 'Confirm your email for plot',
     file: 'confirmation.html',
     html: layout({
       preheader: 'One click and your film & TV journal is ready.',
-      eyebrow: 'New account',
-      heading: 'Welcome to PLOT',
+      heading: 'Welcome to plot',
       intro: "Confirm your email to start logging, rating, and lining up what to watch next.",
       content: button(authUrl('signup'), 'Confirm email') + fallbackLink(authUrl('signup')),
-      note: 'This is the email most new PLOT members see first, so we kept it simple: one step in, then straight to your watch journal.',
-      safety: "Didn't sign up for PLOT? You can safely ignore this email.",
+      note: 'This is the email most new plot members see first, so we kept it simple: one step in, then straight to your watch journal.',
+      safety: "Didn't sign up for plot? You can safely ignore this email.",
     }),
   },
   recovery: {
-    subject: 'Reset your PLOT password',
+    subject: 'Reset your plot password',
     file: 'recovery.html',
     html: layout({
-      preheader: 'Set a new password for your PLOT account.',
-      eyebrow: 'Account security',
+      preheader: 'Set a new password for your plot account.',
       heading: 'Reset your password',
-      intro: 'We received a request to reset your PLOT password. If that was you, set a new one below.',
+      intro: 'We received a request to reset your plot password. If that was you, set a new one below.',
       content: button(authUrl('recovery'), 'Set a new password') + fallbackLink(authUrl('recovery')),
       note: 'For security, only use the latest reset email you requested.',
       safety: "Didn't request this? You can safely ignore this email, your password won't change.",
     }),
   },
   magic_link: {
-    subject: 'Your PLOT sign-in link',
+    subject: 'Your plot sign-in link',
     file: 'magic-link.html',
     html: layout({
-      preheader: 'Your one-time sign-in link for PLOT.',
-      eyebrow: 'Sign in',
-      heading: 'Sign in to PLOT',
+      preheader: 'Your one-time sign-in link for plot.',
+      heading: 'Sign in to plot',
       intro: "Here's your one-time sign-in link. It only works once and expires in an hour.",
       content: button(authUrl('magiclink'), 'Sign in') + fallbackLink(authUrl('magiclink')),
       note: 'If you requested multiple sign-in links, use the newest one.',
@@ -179,39 +176,36 @@ const emails = {
     }),
   },
   email_change: {
-    subject: 'Confirm your new PLOT email',
+    subject: 'Confirm your new plot email',
     file: 'email-change.html',
     html: layout({
-      preheader: 'Confirm the new email address for your PLOT account.',
-      eyebrow: 'Account change',
+      preheader: 'Confirm the new email address for your plot account.',
       heading: 'Confirm your new email',
-      intro: 'Follow the link below to update the email on your PLOT account from {{ .Email }} to {{ .NewEmail }}.',
+      intro: 'Follow the link below to update the email on your plot account from {{ .Email }} to {{ .NewEmail }}.',
       content: button(authUrl('email_change'), 'Confirm change') + fallbackLink(authUrl('email_change')),
       note: 'Nothing changes until you confirm this new address.',
       safety: "Didn't request this change? You can safely ignore this email.",
     }),
   },
   invite: {
-    subject: "You're invited to PLOT",
+    subject: "You're invited to plot",
     file: 'invite.html',
     html: layout({
       preheader: 'A journal for everything you watch.',
-      eyebrow: 'Invite',
       heading: "You're invited",
-      intro: "You’ve been invited to join PLOT, where you’ll always know what to watch next.",
+      intro: "You’ve been invited to join plot, where you’ll always know what to watch next.",
       content: button(authUrl('invite'), 'Accept invite') + fallbackLink(authUrl('invite')),
       note: 'Open the invite, set up your account, and start building your watch history.',
       safety: "Not expecting this invite? You can safely ignore this email.",
     }),
   },
   reauthentication: {
-    subject: 'Your PLOT confirmation code',
+    subject: 'Your plot confirmation code',
     file: 'reauthentication.html',
     html: layout({
       preheader: 'Your one-time confirmation code.',
-      eyebrow: 'Security check',
       heading: "Confirm it's you",
-      intro: 'Enter this code in PLOT to confirm your identity before finishing this action. It expires in an hour.',
+      intro: 'Enter this code in plot to confirm your identity before finishing this action. It expires in an hour.',
       content: `
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
   <tr>
@@ -220,7 +214,7 @@ const emails = {
     </td>
   </tr>
 </table>`,
-      note: 'Use this code to finish signing in or confirming your action in PLOT.',
+      note: 'Use this code to finish signing in or confirming your action in plot.',
       safety: "Didn't request a code? You can safely ignore this email.",
     }),
   },

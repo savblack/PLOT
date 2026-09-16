@@ -22,7 +22,7 @@ export function Avatar({
       backgroundColor: colors.surfaceRaised, borderWidth: 1, borderColor: colors.border,
       alignItems: 'center', justifyContent: 'center',
     }}>
-      <Text style={{ fontFamily: fontFamily.serif, fontSize: size * 0.5, color: colors.textMuted }}>
+      <Text style={{ fontFamily: fontFamily.display, fontSize: size * 0.5, color: colors.textMuted }}>
         {initial}
       </Text>
     </View>

@@ -6,7 +6,7 @@ import { SUPABASE_FN, AUTH_HEADERS, htmlError } from './proxy.js';
 
 const UPSTREAM = `${SUPABASE_FN}/title-page`;
 const FALLBACK = '<!doctype html><meta charset="utf-8">'
-  + '<title>PLOT</title>'
+  + '<title>plot</title>'
   + '<p style="font-family:sans-serif;padding:40px">This page is briefly unavailable. Please try again in a moment.</p>';
 
 export async function titlePage(request, type, slug) {

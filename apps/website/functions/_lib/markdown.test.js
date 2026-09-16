@@ -11,7 +11,7 @@ test('returns markdown without changing browser defaults', async () => {
   const response = homepageMarkdownResponse(new Request('https://theplot.tv/', { headers: { Accept: 'text/markdown' } }));
   assert.equal(response.headers.get('content-type'), 'text/markdown; charset=utf-8');
   assert.equal(response.headers.get('vary'), 'Accept');
-  assert.match(await response.text(), /^# PLOT/m);
+  assert.match(await response.text(), /^# plot/m);
 });
 
 test('omits the Plans link while pricing is hidden (no env, or flag off)', async () => {

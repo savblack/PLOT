@@ -38,8 +38,12 @@ export const iconButtonSize = {
 } as const;
 
 export const fontFamily = {
-  serif:       'InstrumentSerif-Regular',
-  serifItalic: 'InstrumentSerif-Italic',
+  // Display: Gabarito, the headline voice. Page titles, section headings, the
+  // wordmark, rank numbers. displaySemi for card names and list titles.
+  display:     'Gabarito-Bold',
+  displaySemi: 'Gabarito-SemiBold',
+  // Serif: the editorial voice only — notes, quotes, avatar initials.
+  serif:       'Gabarito-Bold',
   sans:        'DMSans-Regular',
   sansMedium:  'DMSans-Medium',
   sansBold:    'DMSans-SemiBold',
@@ -50,7 +54,6 @@ export const fontFamily = {
   // family, and anything but full coverage would drop letters to the system font.
   // Not for running text, where proportional digits read better.
   // Built by scripts/build-tabular-digits.py.
-  serifTabular:      'InstrumentSerif-Tabular',
   sansTabular:       'DMSans-TabularRegular',
   sansTabularBold:   'DMSans-TabularSemiBold',
 } as const;
