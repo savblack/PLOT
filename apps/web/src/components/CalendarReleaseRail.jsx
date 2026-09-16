@@ -8,17 +8,17 @@ import { DayGutter } from './CalendarStream.jsx';
 
 /* One day of "All releases": the diary gutter and a single poster rail of
    that day's titles. The rail is the app's ScrollRail, so wheel, trackpad and
-   drag behave as on Home; its arrows sit in the gutter under the weekday,
-   where they cover nothing, and render only when the rail overflows. */
+   drag behave as on Home; its arrows sit top-right of the rail body, on their
+   own line above the posters, and render only when the rail overflows. */
 export default function CalendarReleaseRail({ day, openPanel, watchlist, providerLogos }) {
   const rail   = useRailScroll();
   const region = getTmdbRegion();
   return (
     <>
-      <DayGutter ds={day.ds}>
-        <span className="cal-gutter-arrows"><RailArrows rail={rail} /></span>
-      </DayGutter>
-      <ScrollRail rail={rail} className="cal-release-rail">
+      <DayGutter ds={day.ds} />
+      <div className="cal-release-body">
+        <div className="cal-release-arrows"><RailArrows rail={rail} /></div>
+        <ScrollRail rail={rail} className="cal-release-rail">
         {day.items.map(item => (
           <MediaCard
             key={`${item.media_type}-${item.id}`}
@@ -32,7 +32,8 @@ export default function CalendarReleaseRail({ day, openPanel, watchlist, provide
             watchlist={watchlist}
           />
         ))}
-      </ScrollRail>
+        </ScrollRail>
+      </div>
     </>
   );
 }

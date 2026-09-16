@@ -1002,8 +1002,8 @@ svg { stroke-width: 1.5; }
   padding: 0;
 }
 .card-save-btn svg {
-  width: 13px;
-  height: 13px;
+  width: 15px;
+  height: 15px;
   stroke: currentColor;
   fill: none;
   stroke-width: 2.5;
@@ -2000,10 +2000,28 @@ svg { stroke-width: 1.5; }
 .cal-filter-tick svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .cal-filter-chev { display: flex; color: var(--text-muted); }
 .cal-filter-chev svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-/* The genre row is the trigger of the shared filter popover; the wrapper
-   spans the column so the menu hangs off the row's right edge. */
+/* The genre row is the trigger of the shared filter popover. The panel is
+   sticky near the bottom of the viewport, so a menu hanging below the row
+   would be clipped; this one opens to the RIGHT of the column, bottom edge
+   level with the row, and grows upward beside the mini months. Two columns
+   of options keep the whole list visible without an inner scroll. */
 .cal-filter-menu { display: block; z-index: 5; }
-.cal-filter-menu .guide-filter-menu { width: 100%; }
+.cal-filter-menu .guide-filter-menu {
+  top: auto;
+  bottom: 0;
+  right: auto;
+  left: calc(100% + 16px);
+  width: 360px;
+  max-height: calc(100vh - 3rem);
+  padding: 0.6rem;
+  border-radius: var(--radius-md);
+}
+.cal-filter-menu .guide-filter-heading { display: none; }
+.cal-filter-menu .guide-filter-group {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 0.5rem;
+}
 
 /* ── Stream ── */
 .cal-stream {
@@ -2149,7 +2167,6 @@ svg { stroke-width: 1.5; }
 .cal-stream--rail .cal-stream-day { padding-top: 14px; }
 .cal-stream--rail .cal-stream-gutter { padding-top: 4px; }
 .cal-release-rail {
-  flex: 1;
   min-width: 0;
   display: flex;
   gap: 16px;
@@ -2161,18 +2178,30 @@ svg { stroke-width: 1.5; }
 }
 .cal-release-rail::-webkit-scrollbar { display: none; }
 .cal-release-rail:active { cursor: grabbing; }
-/* The rail's arrows live in the day gutter, under the weekday. They only
-   render when the rail overflows; the pointer media query mirrors Home's. */
-.cal-gutter-arrows {
+/* The rail's arrows sit top-right of the rail body on their own 28px line,
+   so they never cover a poster; a day whose rail fits keeps the line (so the
+   posters of neighbouring days align) but shows nothing in it. */
+.cal-release-body {
+  flex: 1;
+  min-width: 0;
   display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.cal-release-arrows {
+  display: flex;
+  justify-content: flex-end;
   gap: 0;
-  margin: 6px 0 0 -8px;
+  height: 28px;
+  margin-right: -6px;
 }
-.cal-gutter-arrows .rail-arrow { width: 28px; height: 28px; }
-.cal-gutter-arrows .rail-arrow svg { width: 16px; height: 16px; }
+.cal-release-arrows .rail-arrow { width: 28px; height: 28px; }
+.cal-release-arrows .rail-arrow svg { width: 16px; height: 16px; }
 @media (hover: hover) and (pointer: fine) {
-  .cal-gutter-arrows .rail-arrow { display: inline-flex; }
+  .cal-release-arrows .rail-arrow { display: inline-flex; }
 }
+.cal-stream--rail .cal-stream-day { padding-top: 16px; }
+.cal-stream--rail .cal-stream-gutter { padding-top: 36px; }
 
 @media (min-width: 1024px) {
   .cal-side { display: flex; }

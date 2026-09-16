@@ -61,11 +61,13 @@ export default function CalendarView() {
   const filtered = typeFilters.length < ALL_TYPES.length || genreFilters.length > 0;
 
   /* ── My dates ── */
+  const listsReady = !watchlist.loading && !watching.loading && !reminders.loading;
   const { loading: myLoading, events } = useCalendar(
     watchlist.items,
     watching.items,
     watching.fetchSeason,
     reminders.reminders,
+    { ready: listsReady },
   );
   const myDays = useMemo(
     () => groupEventsByDay(filterCalendarEvents(events, typeFilters, genreFilters), todayStr),
