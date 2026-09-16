@@ -64,3 +64,37 @@ export async function fetchVerifiedAvailability({ tmdbId, mediaType, region }) {
     return null;
   }
 }
+
+/**
+ * The broadcaster(s) a TV series airs on, shaped like provider offers so the
+ * same chip can render them. This is the fallback for the Where to Watch
+ * section when no streaming offer is known for the viewer's region: a new
+ * cable series often has no JustWatch/TMDB availability for weeks, but TMDB
+ * always knows the network.
+ *
+ * @param {any} details TMDB TV details (uses `networks`)
+ * @returns {Array<{providerId: number, providerName: string, logoPath: string|null, offerType: string, price: null, currency: null, providerUrl: null}>}
+ */
+export function networksFromDetails(details) {
+  return (details?.networks || [])
+    .filter((network) => network && network.name)
+    .map((network) => ({
+      providerId: network.id,
+      providerName: network.name,
+      logoPath: network.logo_path || null,
+      offerType: 'Network',
+      price: null,
+      currency: null,
+      providerUrl: null,
+    }));
+}
+
+/** @param {string|null|undefined} region ISO 3166-1 alpha-2, e.g. 'AU' → 'Australia' */
+export function regionDisplayName(region) {
+  if (typeof region !== 'string' || !/^[A-Z]{2}$/.test(region)) return null;
+  try {
+    return new Intl.DisplayNames(['en'], { type: 'region' }).of(region) || region;
+  } catch {
+    return region;
+  }
+}

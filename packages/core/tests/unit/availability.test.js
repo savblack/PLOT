@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { offersFromTmdb, formatOfferPrice, fetchVerifiedAvailability } from '../../availability.js';
+import { offersFromTmdb, formatOfferPrice, fetchVerifiedAvailability, networksFromDetails, regionDisplayName } from '../../availability.js';
 import { configure } from '../../config.js';
 
 const originalFetch = globalThis.fetch;
@@ -110,4 +110,25 @@ test('fetchVerifiedAvailability swallows a fetch rejection and returns null', as
   configure({ watchAvailabilityUrl: 'https://example.test/avail' });
   globalThis.fetch = async () => { throw new Error('network down'); };
   assert.equal(await fetchVerifiedAvailability({ tmdbId: 1, mediaType: 'movie', region: 'US' }), null);
+});
+
+test('networksFromDetails shapes TMDB networks like provider offers', () => {
+  assert.deepEqual(
+    networksFromDetails({ networks: [{ id: 41, name: 'TNT', logo_path: '/tnt.png' }, { id: 2, name: '' }] }),
+    [{ providerId: 41, providerName: 'TNT', logoPath: '/tnt.png', offerType: 'Network', price: null, currency: null, providerUrl: null }],
+  );
+});
+
+test('networksFromDetails returns an empty list when there are no networks', () => {
+  assert.deepEqual(networksFromDetails(null), []);
+  assert.deepEqual(networksFromDetails({}), []);
+});
+
+test('regionDisplayName spells out a region code', () => {
+  assert.equal(regionDisplayName('AU'), 'Australia');
+});
+
+test('regionDisplayName rejects anything that is not a two-letter code', () => {
+  assert.equal(regionDisplayName(null), null);
+  assert.equal(regionDisplayName('australia'), null);
 });
