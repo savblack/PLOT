@@ -1,3 +1,5 @@
+import { customListCreationError } from '@plot/core/customListCreation.js';
+import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useApp } from '../hooks/useApp.js';
 import { countdownChip, formatDate } from '../utils/countdown.js';
@@ -17,7 +19,7 @@ import { track, EVENTS, captureException } from '../lib/analytics.js';
 import CreditsGrid from './TalentCredits.jsx';
 import CollectionCard from './CollectionCard.jsx';
 import { creditMeta, creditTitle, dedupedActingCredits, mediaType, shortBiography } from '../utils/talentCredits.js';
-import { canCreateCustomList, FREE_CUSTOM_LIST_CAP } from '@plot/core/premium.js';
+import { canCreateCustomList } from '@plot/core/premium.js';
 import { buildWatchLink } from '@plot/core/watchLinks.js';
 import {
   getLastSeasonNumber,
@@ -36,7 +38,6 @@ import KebabMenu from './KebabMenu.jsx';
 import { COMMON } from '../copy/common.js';
 import { MEDIA } from '../copy/media.js';
 import { MEDIA_PANEL } from '../copy/mediaPanel.js';
-import { SHOW_PRICING_PAGE } from '../launchFeatures.js';
 
 /* ── Close icon ── */
 function CloseIcon() {
@@ -589,9 +590,7 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
     }
     if (!canCreateCustomList(lists.length, profile)) {
       track(EVENTS.PREMIUM_GATE_HIT, { feature: 'custom_lists' });
-      setCreateError(SHOW_PRICING_PAGE
-        ? `Free accounts can have ${FREE_CUSTOM_LIST_CAP} lists. PLOT Premium gets unlimited. Upgrade from Settings to unlock.`
-        : `You've reached the ${FREE_CUSTOM_LIST_CAP}-list limit.`);
+      setCreateError(CUSTOM_LISTS.limitMessage);
       return;
     }
 
@@ -612,6 +611,8 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
 
       setCreatingName('');
       setShowCreate(false);
+    } catch (error) {
+      setCreateError(customListCreationError(error, MEDIA.couldNotCreateList));
     } finally {
       setIsCreating(false);
     }

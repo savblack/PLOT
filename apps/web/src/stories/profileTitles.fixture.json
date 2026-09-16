@@ -1,0 +1,38 @@
+[
+  {
+    "tmdb_id": 666277,
+    "title": "Past Lives",
+    "media_type": "movie",
+    "poster_path": "/k3waqVXSnvCZWfJYNtdamTgTtTA.jpg"
+  },
+  {
+    "tmdb_id": 965150,
+    "title": "Aftersun",
+    "media_type": "movie",
+    "poster_path": "/evKz85EKouVbIr51zy5fOtpNRPg.jpg"
+  },
+  {
+    "tmdb_id": 937287,
+    "title": "Challengers",
+    "media_type": "movie",
+    "poster_path": "/H6vke7zGiuLsz4v4RPeReb9rsv.jpg"
+  },
+  {
+    "tmdb_id": 496243,
+    "title": "Parasite",
+    "media_type": "movie",
+    "poster_path": "/7IiTTgloJzvGI1TAYymCfbfl3vT.jpg"
+  },
+  {
+    "tmdb_id": 136315,
+    "title": "The Bear",
+    "media_type": "tv",
+    "poster_path": "/eKfVzzEazSIjJMrw9ADa2x8ksLz.jpg"
+  },
+  {
+    "tmdb_id": 111803,
+    "title": "The White Lotus",
+    "media_type": "tv",
+    "poster_path": "/gbSaK9v1CbcYH1ISgbM7XObD2dW.jpg"
+  }
+]

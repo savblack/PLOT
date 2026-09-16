@@ -1,3 +1,4 @@
+import BroadcastSettings from '../../components/BroadcastSettings';
 import { PUBLIC_PROFILE_PAGE } from '@plot/core/copy/publicProfilePage.js';
 import { buildProfileShareUrl } from '@plot/core/sharing.js';
 import { SHARING } from '@plot/core/copy/sharing.js';
@@ -613,7 +614,6 @@ export default function SettingsScreen() {
   const { userId, user, profile, refreshProfile } = useAppData();
 
   const [showProviders,  setShowProviders]  = useState(false);
-  const [showChannels,   setShowChannels]   = useState(false);
   const [showGenres,     setShowGenres]     = useState(false);
   const [showName,       setShowName]       = useState(false);
   const [showRegion,     setShowRegion]     = useState(false);
@@ -625,7 +625,6 @@ export default function SettingsScreen() {
   const [clearingList,   setClearingList]   = useState(false);
 
   const providers     = profile?.streaming_providers || [];
-  const guideChannels = profile?.guide_channels || [];
   const genres        = profile?.genres || [];
   const region        = profile?.region || DEFAULT_REGION;
   const timezone      = profile?.timezone || '';
@@ -733,10 +732,6 @@ export default function SettingsScreen() {
     refreshProfile();
   };
 
-  const saveChannels = async (newChannels: any[]) => {
-    await updateProfile({ userId: userId!, patch: { guide_channels: newChannels } });
-    refreshProfile();
-  };
 
   const saveGenres = async (newGenres: string[]) => {
     await updateProfile({ userId: userId!, patch: { genres: newGenres } });
@@ -948,12 +943,7 @@ export default function SettingsScreen() {
             value={providers.length > 0 ? `${providers.length} selected` : 'None'}
             onPress={() => setShowProviders(true)}
           />
-          <SettingsRow
-            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Polygon points="23,7 16,12 23,17 23,7"/><Rect x={1} y={5} width={15} height={14} rx={2}/></Svg>}
-            label={SETTINGS_VIEW.integrations.myChannelsLabel}
-            value={guideChannels.length > 0 ? `${guideChannels.length} selected` : 'None'}
-            onPress={() => setShowChannels(true)}
-          />
+          <BroadcastSettings />
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><Path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></Svg>}
             label="Genres"
@@ -1113,16 +1103,7 @@ export default function SettingsScreen() {
           onClose={() => setShowProviders(false)}
         />
       )}
-      {showChannels && userId && (
-        <ProviderModal
-          title="My Channels"
-          region={region}
-          selected={guideChannels}
-          channelsOnly
-          onSave={saveChannels}
-          onClose={() => setShowChannels(false)}
-        />
-      )}
+
       {showGenres && (
         <GenreModal selected={genres} onSave={saveGenres} onClose={() => setShowGenres(false)} />
       )}

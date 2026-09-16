@@ -92,6 +92,29 @@ export const Populated = {};
 
 export const AllEmpty = { parameters: { app: emptyApp } };
 
+// Empty custom lists exercise the allowance without fabricated media identities.
+const allowanceApp = (count) => ({
+  ...emptyApp,
+  customLists: {
+    ...emptyApp.customLists,
+    lists: Array.from({ length: count }, (_, i) => ({ id: `allowance-${i}`, name: `My list ${i + 1}`, items: [] })),
+  },
+});
+
+export const FourCustomLists = { parameters: { app: allowanceApp(4) } };
+export const FiveCustomLists = { parameters: { app: allowanceApp(5) } };
+export const StaleListCount = {
+  parameters: {
+    app: {
+      ...allowanceApp(4),
+      customLists: {
+        ...allowanceApp(4).customLists,
+        createList: async () => { throw Object.assign(new Error('List cap'), { code: 'custom_list_limit_reached' }); },
+      },
+    },
+  },
+};
+
 /* A cover, opened: the list page at its route. The shared decorator reads
    `parameters.route` for the router's starting entry. */
 const listPage = (route) => ({

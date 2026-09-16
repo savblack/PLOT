@@ -3,7 +3,7 @@ import { SETTINGS_VIEW } from './copy/settingsView.js';
 // Shared information architecture and selection summaries for web and mobile.
 const keywords = {
   account: 'name photo avatar username email appearance theme light dark system digest',
-  viewing: 'streaming platforms providers channels region timezone genres kids',
+  viewing: 'streaming platforms providers channels broadcast guide market country region timezone genres kids',
   connections: 'plex trakt sync import watch history calendar feed ics',
   billing: 'premium subscription plan payment invoice checkout support tip ko-fi kofi',
   privacy: 'public private profile blocked accounts share invite export json csv clear lists history delete',

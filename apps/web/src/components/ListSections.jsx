@@ -1,3 +1,4 @@
+import { customListCreationError } from '@plot/core/customListCreation.js';
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useApp } from '../hooks/useApp.js';
@@ -322,6 +323,8 @@ export function CreateListModal({ lists, onConfirm, onClose }) {
       if (!created) {
         setError(MEDIA.couldNotCreateList);
       }
+    } catch (failure) {
+      setError(customListCreationError(failure, MEDIA.couldNotCreateList));
     } finally {
       setIsSubmitting(false);
     }

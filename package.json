@@ -59,7 +59,9 @@
     "mkt:manual:media": "node marketing/manual/media.mjs",
     "mkt:manual:publish": "node marketing/manual/publish.mjs",
     "mkt:preview": "node marketing/preview/build-preview.mjs",
-    "mkt:backfill": "node scripts/seed-marketing-backfill.mjs"
+    "mkt:backfill": "node scripts/seed-marketing-backfill.mjs",
+    "staging:broadcast-test": "bash scripts/staging-sql.sh scripts/staging-broadcast-test.sql",
+    "test:guide": "python3 -m unittest discover -s scripts/guide -p \"test_*.py\""
   },
   "dependencies": {
     "@plot/core": "*",

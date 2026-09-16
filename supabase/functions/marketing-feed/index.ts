@@ -259,7 +259,7 @@ ${head}
     /* Marketing palette — mirrors apps/website/theme.css. Cream ground, soft
        charcoal ink, the pink is a FILL behind charcoal text only. */
     --ink: #292924; --paper: #f1e9dc; --bg: #f8f2ea; --fill: #ff88c8; --fill-hover: #ff9fd3;
-    --accent: #5F7030; --sage: #dbe1b0;
+    --accent: #E05578; --sage: #dbe1b0;
     --mut: #5f5a52; --faint: #8a847a; --hair: rgba(41,41,36,0.12);
     --display: 'Gabarito', 'DM Sans', system-ui, sans-serif;
     --ease: cubic-bezier(0.23, 1, 0.32, 1);
@@ -920,7 +920,10 @@ const subscribeForm = (placement: string) => `
 const SUBSCRIBE_CSS = `
   /* Charcoal card. scroll-margin clears the fixed topnav: the footer links
      straight to #newsletter, and without it the heading lands under it. */
-  .nlsub { background: var(--ink); color: var(--bg); padding: 24px 28px; scroll-margin-top: 88px; }
+  /* .nlsub.card outranks the later .card rule in the main stylesheet, which
+     otherwise paints this cream and leaves cream text unreadable on it. */
+  .nlsub.card, .nlsub { background: var(--ink); color: var(--bg); padding: 24px 28px; scroll-margin-top: 88px; }
+  .nlsub .nlsub-title, .nlsub .nlsub-copy { color: var(--bg); }
   .nlsub-copy { display: flex; flex-direction: column; gap: 6px; }
   .nlsub-title { font-family: var(--display); font-weight: 700; letter-spacing: -0.03em; font-size: 1.4rem; line-height: 1; }
   .nlsub-sub { color: rgba(248,242,234,0.7); font-size: 0.92rem; }

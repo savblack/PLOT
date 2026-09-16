@@ -1,5 +1,9 @@
 // Broadcast schedules use absolute instants; timezone affects display and day selection only.
+import { getConfig } from './config.js';
 import markets from './broadcastMarkets.json' with { type: 'json' };
+/** @typedef {{id: string, name: string, number?: number}} BroadcastChannel */
+/** @typedef {{id: string, channelId: string, title: string, start: string, end: string, description?: string}} BroadcastProgramme */
+/** @typedef {{region: string, fetchedAt: string, coverageEnd: string, schemaVersion: number, source: string, sourceUrl: string, channels: BroadcastChannel[], programmes: BroadcastProgramme[], refreshFailed?: boolean}} BroadcastSnapshot */
 export const GUIDE_REGIONS = markets;
 export const GUIDE_COUNTRIES = ['AU', 'NZ', 'US', 'CA', 'GB'];
 
@@ -32,7 +36,8 @@ export function isOnNow(programme, now) {
 }
 
 /** Explicit [] means no channels. null means the region's initial selection.
- * @param {Array<{id: string}>} channels @param {string[] | null} selection
+ * @template {{id: string}} T
+ * @param {T[]} channels @param {string[] | null} selection
  */
 export function selectedGuideChannels(channels, selection) {
   return channels.filter(channel => selection === null || selection.includes(channel.id));
@@ -40,8 +45,12 @@ export function selectedGuideChannels(channels, selection) {
 
 /** Validate a snapshot before replacing the last known good response.
  * @param {any} data @param {string} region
+ * @returns {BroadcastSnapshot}
  */
 export function validateGuideSnapshot(data, region) {
+  const sourceUrls = { mjh: 'https://i.mjh.nz/', tvpassport: 'https://www.tvpassport.com/', freeview: 'https://www.freeview.co.uk/tv-guide' };
+  const market = GUIDE_REGIONS.find(m => m.id === region);
+  if (!market?.provider || data?.schemaVersion !== 2 || data?.sourceUrl !== sourceUrls[market.provider] || typeof data?.source !== 'string' || !Number.isFinite(Date.parse(data?.coverageEnd))) throw new Error('Invalid guide metadata');
   if (data?.region !== region || !Number.isFinite(Date.parse(data?.fetchedAt)) || !Array.isArray(data?.channels) || !data.channels.length || !Array.isArray(data?.programmes) || !data.programmes.length) throw new Error('Invalid guide snapshot');
   const ids = new Set(data.channels.map(c => c.id));
   if (ids.size !== data.channels.length || data.channels.some(c => typeof c.id !== 'string' || typeof c.name !== 'string')) throw new Error('Invalid channel directory');
@@ -60,4 +69,24 @@ export function guideAgenda(programmes, { date, timezone, channelIds, now, mode 
     guideDate(p.start, timezone) <= date && guideDate(Date.parse(p.end) - 1, timezone) >= date &&
     (mode !== 'now' || isOnNow(p, now)))
     .sort((a, b) => Date.parse(a.start) - Date.parse(b.start) || a.channelId.localeCompare(b.channelId));
+}
+
+/** Public, cached snapshots. Uses the same configured backend as account data.
+ * @param {string} region
+ */
+export function broadcastSnapshotUrl(region) {
+  if (!GUIDE_REGIONS.some(m => m.id === region)) throw new Error('Unknown broadcast market');
+  return `${getConfig().supabaseUrl}/storage/v1/object/public/broadcast-guide/${encodeURIComponent(region)}.json`;
+}
+
+/** @param {string} stamp @param {string} date @param {string} timezone */
+export function broadcastTime(stamp, date, timezone) {
+  const instant = new Date(stamp);
+  const clock = instant.toLocaleTimeString('en-AU', { timeZone: timezone, hour: 'numeric', minute: '2-digit' });
+  return guideDate(stamp, timezone) === date ? clock : `${instant.toLocaleDateString('en-AU', { timeZone: timezone, day: 'numeric', month: 'short' })} ${clock}`;
+}
+
+/** @param {string} day @param {Intl.DateTimeFormatOptions} options */
+export function broadcastDayLabel(day, options) {
+  return new Date(`${day}T12:00:00Z`).toLocaleDateString('en-AU', { timeZone: 'UTC', ...options });
 }

@@ -46,6 +46,8 @@ const eq = (label, actual, expected) => {
   eq('apps/website/theme.css --surface', v['--surface'], colors.light.surfaceSunken);
   eq('apps/website/theme.css --text', v['--text'], colors.light.textPrimary);
   eq('apps/website/theme.css --text-secondary', v['--text-secondary'], colors.light.textSecondary);
+  eq('apps/website/theme.css --accent-2', v['--accent-2'], colors.light.accentSecondary);
+  eq('apps/website/theme.css --sage', v['--sage'], colors.light.accentSecondaryFill);
   eq('apps/website/theme.css --fill', v['--fill'], colors.light.accentFill);
   eq('apps/website/theme.css --fill-hover', v['--fill-hover'], colors.light.accentFillHover);
   eq('apps/website/theme.css --success', v['--success'], colors.light.chipNow);
@@ -60,9 +62,7 @@ const eq = (label, actual, expected) => {
   const v = vars(rootBlock(read('marketing/templates/base.css')));
   eq('base.css --bg', v['--bg'], colors.dark.bg);
   eq('base.css --text', v['--text'], colors.dark.textPrimary);
-  // Cards accent with the brand pink, not the app's green: on the dark ground
-  // it carries text at 11:1 (author's call, 17 Sep 2026).
-  eq('base.css --accent', v['--accent'], colors.dark.accentFill);
+  eq('base.css --accent', v['--accent'], colors.dark.accent);
   eq('base.css --chip-cinema', v['--chip-cinema'], colors.dark.chipCinema);
   eq('base.css --chip-streaming', v['--chip-streaming'], colors.dark.chipStreaming);
   eq('base.css --chip-episode', v['--chip-episode'], colors.dark.chipEpisode);
