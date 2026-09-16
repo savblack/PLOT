@@ -39,8 +39,9 @@ const ANON_KEY = 'sb_publishable_sbB7Jrs3Uz97Xm3qiuQgOQ_7dg6kKWk';
 // Brand dark accent — mirrors @plot/core tokens.colors.dark.accent. Inlined so
 // the Worker bundle stays self-contained (no workspace resolution at deploy).
 // Keep in sync with @plot/core if the token changes.
-const ACCENT = '#C9D48A';
-const BG = '#0f0f11';
+const ACCENT = '#C9D48A'; // colors.dark.accent
+const BG = '#0c0c0c'; // colors.dark.bg
+const MUTED = '#a8a69c'; // colors.dark.textSecondary
 // Cache hard at the edge: these cards are share previews, not live data. Short
 // TTLs are exactly what paused Vercel. 1-day browser, 7-day edge, SWR.
 const OG_CACHE = 'public, max-age=86400, s-maxage=604800, stale-while-revalidate=604800';
@@ -142,16 +143,16 @@ function listCard(list, fonts) {
     return new ImageResponse(
       h('div', { style: { width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: BG, color: '#fafafa', fontFamily: 'Gabarito', fontWeight: 700 } },
         h('div', { style: { display: 'flex', fontSize: 120, letterSpacing: -3 } }, 'plot'),
-        h('div', { style: { display: 'flex', fontSize: 36, color: '#9a9aa2', marginTop: 10 } }, 'A list on plot')),
+        h('div', { style: { display: 'flex', fontSize: 36, color: MUTED, marginTop: 10 } }, 'A list on plot')),
       opts);
   }
   const n = (list.name || 'A list').length;
   const nameSize = n <= 18 ? 96 : n <= 30 ? 76 : 60;
-  const el = h('div', { style: { width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', position: 'relative', background: BG, color: '#e8e8ec', padding: 70, fontFamily: 'Gabarito', fontWeight: 700 } },
+  const el = h('div', { style: { width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', position: 'relative', background: BG, color: '#f0efe8', padding: 70, fontFamily: 'Gabarito', fontWeight: 700 } },
     h('div', { style: { display: 'flex', position: 'absolute', top: 56, right: 70, fontSize: 58, color: '#fafafa', letterSpacing: -2 } }, 'plot'),
     h('div', { style: { display: 'flex', fontFamily: 'DM Sans', fontWeight: 500, fontSize: 28, color: ACCENT, letterSpacing: 4, textTransform: 'uppercase' } }, 'plot lists'),
     h('div', { style: { display: 'flex', fontSize: nameSize, lineHeight: 1, color: '#fff', letterSpacing: -1, marginTop: 18, maxWidth: 1010 } }, list.name),
-    list.owner ? h('div', { style: { display: 'flex', fontFamily: 'DM Sans', fontWeight: 400, fontSize: 34, color: '#9a9aa2', marginTop: 16 } }, '@' + list.owner) : null,
+    list.owner ? h('div', { style: { display: 'flex', fontFamily: 'DM Sans', fontWeight: 400, fontSize: 34, color: MUTED, marginTop: 16 } }, '@' + list.owner) : null,
     list.posters.length
       ? h('div', { style: { display: 'flex', gap: 18, marginTop: 48 } },
           ...list.posters.map((src, i) => h('img', { key: i, src, width: 150, height: 225, style: { borderRadius: 10, objectFit: 'cover', boxShadow: '0 12px 30px rgba(0,0,0,0.6)' } })))
@@ -212,7 +213,7 @@ function titleCard(t, fonts) {
   const metaBits = t ? [t.year, t.type === 'tv' ? 'Series' : 'Movie'].filter(Boolean).join('   ·   ') : 'Your film & TV companion';
   const n = title.length;
   const titleSize = n <= 15 ? 106 : n <= 24 ? 86 : n <= 36 ? 70 : 58;
-  const el = h('div', { style: { width: '100%', height: '100%', display: 'flex', position: 'relative', background: '#0b0a0e', color: '#e8e8ec', fontFamily: 'Gabarito', fontWeight: 700 } },
+  const el = h('div', { style: { width: '100%', height: '100%', display: 'flex', position: 'relative', background: '#0b0a0e', color: '#f0efe8', fontFamily: 'Gabarito', fontWeight: 700 } },
     t && t.backdrop ? h('img', { src: t.backdrop, width: 1200, height: 630, style: { position: 'absolute', top: 0, left: 0, objectFit: 'cover' } }) : null,
     h('div', { style: { position: 'absolute', top: 0, left: 0, width: 1200, height: 630, display: 'flex', background: 'linear-gradient(90deg, rgba(7,6,10,0.9) 0%, rgba(7,6,10,0.76) 50%, rgba(7,6,10,0.4) 80%, rgba(7,6,10,0.08) 100%)' } }),
     h('div', { style: { position: 'absolute', top: 0, left: 0, width: 1200, height: 630, display: 'flex', background: 'linear-gradient(0deg, rgba(7,6,10,0.45) 0%, rgba(7,6,10,0) 42%)' } }),
@@ -252,7 +253,7 @@ function postCard(post, fonts) {
   const titleSize = n <= 15 ? 92 : n <= 24 ? 76 : n <= 36 ? 62 : 52;
   const note = post.note ? (post.note.length > 150 ? post.note.slice(0, 147) + '…' : post.note) : null;
 
-  const el = h('div', { style: { width: '100%', height: '100%', display: 'flex', position: 'relative', background: '#0b0a0e', color: '#e8e8ec', fontFamily: 'Gabarito', fontWeight: 700 } },
+  const el = h('div', { style: { width: '100%', height: '100%', display: 'flex', position: 'relative', background: '#0b0a0e', color: '#f0efe8', fontFamily: 'Gabarito', fontWeight: 700 } },
     post.backdrop ? h('img', { src: post.backdrop, width: 1200, height: 630, style: { position: 'absolute', top: 0, left: 0, objectFit: 'cover' } }) : null,
     h('div', { style: { position: 'absolute', top: 0, left: 0, width: 1200, height: 630, display: 'flex', background: 'linear-gradient(90deg, rgba(7,6,10,0.93) 0%, rgba(7,6,10,0.82) 55%, rgba(7,6,10,0.5) 100%)' } }),
     h('div', { style: { position: 'relative', display: 'flex', alignItems: 'center', width: '100%', height: '100%', padding: 70 } },
@@ -286,7 +287,7 @@ function profileCard(profile, fonts) {
     return new ImageResponse(
       h('div', { style: { width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: BG, color: '#fafafa', fontFamily: 'Gabarito', fontWeight: 700 } },
         h('div', { style: { display: 'flex', fontSize: 120, letterSpacing: -3 } }, 'plot'),
-        h('div', { style: { display: 'flex', fontSize: 36, color: '#9a9aa2', marginTop: 10 } }, 'Your film & TV companion'),
+        h('div', { style: { display: 'flex', fontSize: 36, color: MUTED, marginTop: 10 } }, 'Your film & TV companion'),
       ),
       opts,
     );
@@ -301,7 +302,7 @@ function profileCard(profile, fonts) {
     profile.avgRating && { n: profile.avgRating, l: 'Avg rating', star: true },
   ].filter(Boolean);
 
-  const el = h('div', { style: { width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', position: 'relative', background: BG, color: '#e8e8ec', padding: 70, fontFamily: 'Gabarito', fontWeight: 700 } },
+  const el = h('div', { style: { width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', position: 'relative', background: BG, color: '#f0efe8', padding: 70, fontFamily: 'Gabarito', fontWeight: 700 } },
     profile.backdrop ? h('img', { src: profile.backdrop, width: 1200, height: 630, style: { position: 'absolute', top: 0, left: 0, objectFit: 'cover' } }) : null,
     profile.backdrop ? h('div', { style: { position: 'absolute', top: 0, left: 0, width: 1200, height: 630, display: 'flex', background: 'linear-gradient(90deg, rgba(11,10,14,0.97) 0%, rgba(11,10,14,0.9) 55%, rgba(11,10,14,0.66) 100%)' } }) : null,
     h('div', { style: { display: 'flex', position: 'absolute', top: 56, right: 70, fontSize: 58, color: '#fafafa', letterSpacing: -2, textShadow: sh(0.6) } }, 'plot'),
@@ -316,7 +317,7 @@ function profileCard(profile, fonts) {
                 h('path', { d: 'M9.4 12.4l1.7 1.7 3.5-3.7', fill: 'none', stroke: '#fff', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }))
             : null,
         ),
-        h('div', { style: { display: 'flex', fontFamily: 'DM Sans', fontWeight: 400, fontSize: 38, color: '#9a9aa2', marginTop: 14 } }, '@' + profile.username),
+        h('div', { style: { display: 'flex', fontFamily: 'DM Sans', fontWeight: 400, fontSize: 38, color: MUTED, marginTop: 14 } }, '@' + profile.username),
       ),
     ),
     profile.watchCount > 0
@@ -329,7 +330,7 @@ function profileCard(profile, fonts) {
               : h('div', { style: { display: 'flex', fontSize: 110, color: '#fafafa', lineHeight: 1 } }, s.n),
             h('div', { style: labelStyle }, s.l),
           )))
-      : h('div', { style: { position: 'relative', display: 'flex', fontFamily: 'DM Sans', fontWeight: 400, fontSize: 46, color: '#cfcfd6', marginTop: 48 } }, 'Just joined plot!'),
+      : h('div', { style: { position: 'relative', display: 'flex', fontFamily: 'DM Sans', fontWeight: 400, fontSize: 46, color: MUTED, marginTop: 48 } }, 'Just joined plot!'),
   );
   return new ImageResponse(el, opts);
 }

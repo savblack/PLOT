@@ -68,13 +68,13 @@ const page = (title: string, body: string, status = 200) =>
     `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
     <title>${title}</title>
     <style>
-      body { font-family: system-ui, sans-serif; background: #F4F4F5; color: #09090B;
+      body { font-family: 'DM Sans', system-ui, sans-serif; background: #F8F2EA; color: #292924; /* colors.light bg/textPrimary */
              display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
-      .box { background: #fff; border-radius: 16px; padding: 36px; max-width: 420px; text-align: center;
-             box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+      .box { background: #FFFCF7; border: 1px solid rgba(41,41,36,0.08); border-radius: 16px; padding: 36px; max-width: 420px; text-align: center;
+             }
       h1 { font-size: 1.2rem; margin: 0 0 10px; }
-      p { color: #52525B; font-size: 0.95rem; line-height: 1.5; }
-      button { background: #E05578; color: #fff; border: none; border-radius: 9999px;
+      p { color: #5F5A52; font-size: 0.95rem; line-height: 1.5; }
+      button { background: #FF88C8; color: #292924; /* accentFill / onAccentFill */ border: none; border-radius: 9999px;
                padding: 12px 28px; font-size: 1rem; font-weight: 600; cursor: pointer; margin-top: 14px; }
     </style></head><body><div class="box">${body}</div></body></html>`,
     { status, headers: { 'Content-Type': 'text/html; charset=utf-8', ...CORS } },
