@@ -1,3 +1,5 @@
+import MobilePageControls from './MobilePageControls.jsx';
+import { MOBILE_CONTROLS } from '@plot/core/copy/mobileControls.js';
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useApp } from '../hooks/useApp.js';
 import { localDateStr, todayLongLabel } from '../utils/date.js';
@@ -114,7 +116,7 @@ export default function CalendarView() {
   return (
     <div>
       {/* ── Heading row: today's date under the page title, the scope toggle on the right ── */}
-      <div className="page-toolbar">
+      <div className="page-toolbar cal-toolbar">
         <span
           className="page-toolbar-date page-toolbar-date--clickable"
           onClick={goToToday}
@@ -143,6 +145,8 @@ export default function CalendarView() {
           </button>
         </div>
       </div>
+
+      <MobilePageControls title={MOBILE_CONTROLS.calendarView} label={CALENDAR_VIEW.scope[view]} value={view} onChange={setView} options={[{ id: 'mine', label: CALENDAR_VIEW.scope.mine }, { id: 'all', label: CALENDAR_VIEW.scope.all }]} />
 
       <div className="cal-page">
         <div className="cal-body">

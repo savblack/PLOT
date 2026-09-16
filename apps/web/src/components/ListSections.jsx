@@ -860,7 +860,7 @@ export function TopFiveSection({ topLists, Frame = ListSection }) {
   );
 
   return (
-    <Frame title="Top 5" subtitle={typeSwitch} headerRight={actions}>
+    <Frame title="Top 5" headerRight={<>{typeSwitch}{actions}</>}>
       <div className="top5">
         {slot(1)}
         <div className="top5-rest">{slots.slice(1).map(slot)}</div>
