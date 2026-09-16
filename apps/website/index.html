@@ -435,29 +435,39 @@
     .tl-pinned .tl-scroll-track { will-change: transform; }
 
     .timeline-header {
-      padding: 0 3rem;
-      margin-bottom: 3rem;
+      padding: 0 3rem 2rem;
+      margin: 0 auto 0.5rem;
+      max-width: 1440px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 2rem;
     }
+    .timeline-header::after { content: none; }
+    .tl-head-copy { display: flex; flex-direction: column; gap: 1.25rem; align-items: flex-start; }
+    .tl-eyebrow { background: var(--pink); }
+    .tl-rule { height: 1px; background: var(--rule); margin: 0 3rem; }
 
     .timeline-headline {
       font-size: clamp(2.5rem, 5.5vw, 4.5rem);
       line-height: 0.95;
       color: var(--text);
-      margin-bottom: 0.75rem;
+      margin: 0;
     }
 
     .timeline-intro {
       font-size: 1rem;
       font-weight: 300;
       color: var(--text-secondary);
-      max-width: 640px;
-      line-height: 1.45;
+      max-width: 320px;
+      line-height: 1.55;
+      margin: 0 0 0.4rem;
     }
 
     /* horizontal scroll track */
     .tl-scroll-outer {
       overflow-x: auto;
-      padding: 2rem 3rem 3rem;
+      padding: 2.5rem 3rem 3rem;
       scrollbar-width: none;
       -ms-overflow-style: none;
       cursor: grab;
@@ -473,48 +483,42 @@
     }
 
     /* year marker */
+    /* year marker: a small chip at the top of the run, no vertical line */
     .tl-year {
       display: flex;
       flex-direction: column;
-      align-items: center;
-      padding-top: 2rem;
+      align-items: flex-start;
+      padding-top: 0;
       flex-shrink: 0;
-      width: 36px;
     }
 
     .tl-year-label {
-      font-size: 0.6rem;
-      font-weight: 300;
-      letter-spacing: 0.16em;
+      display: inline-flex;
+      align-items: center;
+      padding: 0.4rem 0.7rem;
+      border-radius: var(--r-pill);
+      background: var(--surface);
+      font-size: 0.62rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
-      color: var(--accent);
-      writing-mode: vertical-rl;
-      text-orientation: mixed;
-      transform: rotate(180deg);
+      color: var(--text);
     }
 
-    .tl-year-line {
-      width: 1px;
-      background: rgba(0,0,0,0.08);
-      margin-top: 0.75rem;
-      height: 220px;
-    }
+    .tl-year-line { display: none; }
 
     /* poster card */
     .tl-card {
       flex-shrink: 0;
       display: flex;
       flex-direction: column;
-      width: 140px;
+      width: 172px;
     }
-    .tl-card:nth-child(3n+1) { padding-top: 0; }
-    .tl-card:nth-child(3n+2) { padding-top: 2.5rem; }
-    .tl-card:nth-child(3n)   { padding-top: 1.2rem; }
 
     .tl-poster {
-      width: 140px;
-      height: 210px;
-      border-radius: 8px;
+      width: 172px;
+      height: 258px;
+      border-radius: 10px;
       background-size: cover;
       background-position: center;
       background-color: #ccc;
@@ -529,7 +533,7 @@
 
     .tl-date {
       font-size: 0.62rem;
-      font-weight: 300;
+      font-weight: 500;
       letter-spacing: 0.1em;
       text-transform: uppercase;
       color: var(--accent);
@@ -540,7 +544,7 @@
       font-family: var(--display);
       font-weight: 600;
       letter-spacing: -0.02em;
-      font-size: 0.88rem;
+      font-size: 1rem;
       color: var(--text);
       margin-bottom: 0.25rem;
       line-height: 1.25;
@@ -549,7 +553,7 @@
     .tl-note {
       font-family: var(--serif);
       font-style: italic;
-      font-size: 0.75rem;
+      font-size: 0.85rem;
       color: var(--text-secondary);
       line-height: 1.45;
     }
@@ -1001,7 +1005,8 @@
 
       /* Timeline — tighten padding on mobile */
       #timeline-section { padding: 5rem 0 4rem; }
-      .timeline-header { padding: 0 1.5rem; }
+      .timeline-header { padding: 0 1.5rem 1.5rem; flex-direction: column; align-items: flex-start; gap: 1rem; }
+      .tl-rule { margin: 0 1.5rem; }
       .tl-scroll-outer { padding: 1.5rem 1.5rem 2rem; }
       .tl-poster { width: 110px; height: 165px; }
       .tl-card { width: 110px; }
@@ -1142,7 +1147,7 @@
 
     /* Guide demo — the trending list as one calm panel: deeper cream, 20px
        radius, hairline rows. The same framing every product panel uses. */
-    .guide-panel {
+    .trend-panel {
       width: 100%;
       max-width: 560px;
       background: var(--surface);
@@ -1161,7 +1166,7 @@
     .gp-chip { flex-shrink: 0; display: inline-flex; align-items: center; padding: 0.3rem 0.6rem; border-radius: var(--r-pill); font-size: 0.62rem; font-weight: 500; letter-spacing: 0.04em; background: #dbe1b0; color: var(--text); }
     .gp-chip.is-top { background: var(--pink); }
     @media (max-width: 600px) {
-      .guide-panel { padding: 1.4rem 1.25rem 0.5rem; }
+      .trend-panel { padding: 1.4rem 1.25rem 0.5rem; }
       .gp-title { font-size: 1.35rem; }
       .gp-row { gap: 0.85rem; }
       .gp-poster { width: 40px; height: 60px; }
@@ -1380,22 +1385,32 @@
     #lists-demo { background: var(--bg); padding: 14rem 2rem; }
 
     /* Calendar */
-    #calendar-demo { background: var(--dark); padding: 10rem 2rem 8rem; text-align: center; }
+    #calendar-demo { background: var(--dark); padding: 10rem 2rem 8rem; }
+    .cal-split {
+      display: grid;
+      grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+      gap: 5rem;
+      align-items: start;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .cal-copy { display: flex; flex-direction: column; gap: 1.5rem; align-items: flex-start; }
     .cal-headline {
       font-size: clamp(2.5rem, 5.5vw, 4.5rem);
       line-height: 0.95;
       color: var(--text-dark);
-      margin-bottom: 1.5rem;
+      margin: 0;
     }
     .cal-headline em { font-style: normal; }
     .cal-sub {
       font-size: 1rem;
       font-weight: 300;
       color: var(--text-secondary);
-      max-width: 440px;
-      margin: 0 auto 5rem;
-      line-height: 1.45;
+      max-width: 400px;
+      margin: 0;
+      line-height: 1.55;
     }
+    .cal-eyebrow { background: #dbe1b0; }
     .cal-hdr {
       display: flex;
       align-items: center;
@@ -1404,11 +1419,11 @@
       border-bottom: 1px solid rgba(0,0,0,0.08);
     }
     .cal-month {
-      font-family: var(--serif);
-      font-size: 1.15rem;
-      font-weight: 400;
+      font-family: var(--display);
+      font-size: 1.3rem;
+      font-weight: 700;
       color: var(--text-dark);
-      letter-spacing: var(--serif-tracking);
+      letter-spacing: var(--display-tracking);
     }
     .cal-wdays { display: grid; grid-template-columns: repeat(7, 1fr); padding: 8px 12px 4px; }
     .cal-wd {
@@ -1426,26 +1441,28 @@
     .cf {
       --cf-x: 150px; --cf-fx: 320px;
       position: relative; width: 100%; height: 340px;
-      perspective: 1400px;
-      display: flex; align-items: center; justify-content: center;
+      display: flex; align-items: flex-end; justify-content: center;
     }
     .cf-card {
       position: absolute; width: 210px; aspect-ratio: 2 / 3;
       border-radius: 12px; background-size: cover; background-position: center; background-color: var(--bg);
       box-shadow: 0 22px 50px -22px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(0,0,0,0.08);
       transition: transform 0.7s var(--ease), opacity 0.7s var(--ease);
-      backface-visibility: hidden; will-change: transform, opacity; opacity: 0;
+      transform-origin: bottom center;
+      will-change: transform, opacity; opacity: 0;
     }
     /* Coverflow slide states — 0 = centred cover, neighbours angled, far cards
        parked off-stage so the ring can loop without a visible jump. */
-    .cf-card.s-farLeft  { transform: translateX(calc(-1 * var(--cf-fx))) rotateY(45deg)  scale(0.7);  opacity: 0;   z-index: 0; }
-    .cf-card.s-left     { transform: translateX(calc(-1 * var(--cf-x)))  rotateY(38deg)  scale(0.82); opacity: 0.5; z-index: 1; }
-    .cf-card.s-center   { transform: translateX(0)                       rotateY(0deg)   scale(1);    opacity: 1;   z-index: 3; }
-    .cf-card.s-right    { transform: translateX(var(--cf-x))             rotateY(-38deg) scale(0.82); opacity: 0.5; z-index: 1; }
-    .cf-card.s-farRight { transform: translateX(var(--cf-fx))            rotateY(-45deg) scale(0.7);  opacity: 0;   z-index: 0; }
+    /* Flat: no rotation, side covers scale from their bottom edge so all three
+       share one baseline. */
+    .cf-card.s-farLeft  { transform: translateX(calc(-1 * var(--cf-fx))) scale(0.7);  opacity: 0;   z-index: 0; }
+    .cf-card.s-left     { transform: translateX(calc(-1 * var(--cf-x)))  scale(0.82); opacity: 0.6; z-index: 1; }
+    .cf-card.s-center   { transform: translateX(0)                       scale(1);    opacity: 1;   z-index: 3; }
+    .cf-card.s-right    { transform: translateX(var(--cf-x))             scale(0.82); opacity: 0.6; z-index: 1; }
+    .cf-card.s-farRight { transform: translateX(var(--cf-fx))            scale(0.7);  opacity: 0;   z-index: 0; }
 
     .cf-cap { text-align: center; margin-top: 1.4rem; }
-    .cf-nm { font-family: var(--serif); font-size: 1.5rem; color: var(--text); line-height: 1.05; }
+    .cf-nm { font-family: var(--display); font-weight: 600; letter-spacing: -0.02em; font-size: 1.4rem; color: var(--text); line-height: 1.05; }
     .cf-ct { font-size: 0.64rem; color: var(--text-secondary); margin-top: 0.25rem; letter-spacing: 0.1em; text-transform: uppercase; }
     .cf-dots { display: flex; gap: 6px; justify-content: center; margin-top: 0.85rem; }
     .cf-dots i { width: 5px; height: 5px; border-radius: 50%; background: rgba(0,0,0,0.18); transition: background 0.3s var(--ease); }
@@ -1468,19 +1485,12 @@
     }
 
     /* ── Interactive Calendar Demo ──────────────────────────────── */
-    .cal-interactive {
-      display: grid;
-      grid-template-columns: 1fr 1.15fr;
-      gap: 1.5rem;
-      max-width: 1060px;
-      margin: 3rem auto 0;
-      align-items: stretch;
-    }
-
-    /* Guide panel */
+    /* Upcoming list — sits under the copy, compact */
     .guide-panel {
+      width: 100%;
+      max-width: 400px;
+      margin-top: 0.5rem;
       background: var(--surface);
-      border: 1px solid rgba(0,0,0,0.1);
       border-radius: 20px;
       overflow: hidden;
       display: flex;
@@ -1568,27 +1578,32 @@
     /* Interactive calendar mockup */
     .cal-mockup-int {
       background: var(--surface);
-      border: 1px solid rgba(0,0,0,0.1);
       border-radius: 20px;
       overflow: hidden;
+      padding: 0.75rem 0.75rem 0;
     }
     .cal-grid-int {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
-      padding: 4px 8px 8px;
-      gap: 2px;
+      padding: 4px 8px 12px;
+      gap: 6px;
     }
     .cal-cell-int {
-      border-radius: 7px;
-      padding: 5px 2px 4px;
+      border-radius: 10px;
+      padding: 6px;
       cursor: pointer;
       display: flex;
       flex-direction: column;
-      align-items: center;
+      align-items: flex-start;
       gap: 3px;
       transition: background 0.15s;
-      min-height: 46px;
+      min-height: 62px;
+      background-size: cover;
+      background-position: center;
     }
+    /* A saved date shows its poster as the whole cell */
+    .cal-cell-int.has-poster .cal-dn-int { color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.7); }
+    .cal-cell-int.has-poster .cal-dots-int { display: none; }
     .cal-cell-int:hover:not(.dim) { background: rgba(0,0,0,0.05); }
     .cal-cell-int.dim  { opacity: 0.28; pointer-events: none; }
     .cal-cell-int.selected { background: rgba(0,0,0,0.07); }
@@ -1603,8 +1618,8 @@
       outline-offset: -2px;
     }
     .cal-cell-int.today .cal-dn-int {
-      background: var(--text);
-      color: #fff;
+      background: var(--pink);
+      color: var(--text);
       border-radius: 50%;
       width: 22px; height: 22px;
       display: flex; align-items: center; justify-content: center;
@@ -1671,7 +1686,8 @@
     .cal-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
     @media (max-width: 800px) {
-      .cal-interactive { grid-template-columns: 1fr; }
+      .cal-split { grid-template-columns: minmax(0, 1fr); gap: 2.5rem; }
+      .guide-panel { max-width: none; }
     }
   </style>
   <!-- No eager image preloads: the hero uses live TMDB posters, and these
@@ -1785,7 +1801,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
              refresh-timeline.mjs rewrites weekly; on load a script replaces
              every row from /api/discover, so the committed rows are only the
              pre-hydration fallback. -->
-        <div class="guide-panel" aria-hidden="true">
+        <div class="trend-panel" aria-hidden="true">
           <div class="gp-head"><div class="gp-title">Trending today</div><div class="gp-date" id="gpDate">This week</div></div>
           <div class="gp-rows" id="gpRows">
             <!-- hero-card:start -->
@@ -1807,9 +1823,13 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <div class="tl-pin" id="tlPin">
      <div class="tl-sticky">
       <div class="timeline-header reveal">
-        <h2 class="timeline-headline">A timeline as rich <br class="tl-mbreak">as your taste</h2>
-        <p class="timeline-intro">Your watch history tells a story <br class="tl-mbreak">and every story needs a plot.</p>
+        <div class="tl-head-copy">
+          <span class="section-eyebrow tl-eyebrow">02 · History</span>
+          <h2 class="timeline-headline">A timeline as rich <br class="tl-mbreak">as your taste</h2>
+        </div>
+        <p class="timeline-intro">Your watch history tells a story and every story needs a plot.</p>
       </div>
+      <div class="tl-rule"></div>
 
       <div class="tl-scroll-outer" id="tlScrollOuter">
       <div class="tl-scroll-track" id="tlTrack">
@@ -1946,14 +1966,15 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   </section>
   <!-- ── Calendar Demo ────────────────────────────────────────── -->
   <section id="calendar-demo">
-    <h2 class="cal-headline reveal">Never miss <em>a drop.</em></h2>
-    <p class="cal-sub reveal">
-      Save that new show, movie or cinema release. Whatever you're
-      excited for, let your calendar do the remembering.
-    </p>
-
-    <div class="cal-interactive reveal">
-      <!-- Left: Guide list -->
+    <div class="cal-split">
+     <div class="cal-copy reveal">
+      <span class="section-eyebrow cal-eyebrow">03 · Calendar</span>
+      <h2 class="cal-headline">Never miss <em>a drop.</em></h2>
+      <p class="cal-sub">
+        Save that new show, movie or cinema release. Whatever you're
+        excited for, let your calendar do the remembering.
+      </p>
+      <!-- Upcoming list: tap + and the release lands on the calendar -->
       <div class="guide-panel">
         <div class="guide-hdr">
           <span class="guide-hdr-title" id="guideHdrTitle">Upcoming</span>
@@ -1961,9 +1982,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         </div>
         <div class="guide-list" id="guideList"></div>
       </div>
+     </div>
 
       <!-- Right: Interactive calendar -->
-      <div class="cal-mockup-int">
+      <div class="cal-mockup-int reveal">
         <div class="cal-hdr">
           <div class="cal-month" id="calMonthLabel"></div>
         </div>
@@ -3012,7 +3034,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         GRID.forEach(function(cell) {
           var events = (!cell.dim && dayMap[cell.day]) ? dayMap[cell.day] : [];
           var sel = !cell.dim && cell.day === selectedDay;
-          var cls = 'cal-cell-int' + (cell.dim ? ' dim' : '') + (sel ? ' selected' : '') + (cell.today ? ' today' : '');
+          var cls = 'cal-cell-int' + (cell.dim ? ' dim' : '') + (sel ? ' selected' : '') + (cell.today ? ' today' : '') + (events.length ? ' has-poster' : '');
+          var bg  = events.length ? ' style="background-image:url(\'' + esc(events[0].img) + '\')"' : '';
           var dots = '';
           events.forEach(function(e) { dots += '<div class="cal-dot-int" style="background:' + TYPE[e.type].color + '"></div>'; });
           if (cell.dim) {
@@ -3021,7 +3044,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           } else {
             var label = MONTH_NAME + ' ' + cell.day +
               (events.length ? ', ' + events.length + ' saved release' + (events.length > 1 ? 's' : '') : '');
-            html += '<button type="button" class="' + cls + '" data-day="' + cell.day + '" ' +
+            html += '<button type="button" class="' + cls + '"' + bg + ' data-day="' + cell.day + '" ' +
               'aria-pressed="' + (sel ? 'true' : 'false') + '" ' +
               'aria-label="' + esc(label) + '" ' +
               'onclick="window._calDemo.selectDay(' + cell.day + ')">';
