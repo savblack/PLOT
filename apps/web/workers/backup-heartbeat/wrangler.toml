@@ -60,13 +60,15 @@ MAX_AGE_HOURS = "26"
 # Revisit if the database grows by an order of magnitude.
 MIN_BYTES = "200000"
 
-# Where the alarm goes. Plain var, not a secret, so it is visible and easy to
-# change. Deliberately the operator's own mailbox and NOT the branded
-# feedback@theplot.tv this used to carry: that address is a Cloudflare Email
+# Where the alarm goes: ALERT_EMAIL, set as a Worker secret
+# (`npx wrangler secret put ALERT_EMAIL`), not a var here. It used to be a
+# plain var so it was visible and easy to change, but that put the operator's
+# personal address in the repo, which is a spam and phishing target the moment
+# the source is readable. It is deliberately the operator's own mailbox and
+# NOT the branded feedback@theplot.tv: that address is a Cloudflare Email
 # Routing alias, so it adds a forwarding hop that drops mail silently when the
 # destination is unverified. A watchdog whose only alarm can vanish without
-# trace is no watchdog — the same reason notify-feedback now mails direct.
+# trace is no watchdog — the same reason notify-feedback mails direct.
 #
 # ALERT_FROM stays on theplot.tv: Resend will only send from a verified domain.
-ALERT_EMAIL = "sav.black@outlook.com"
 ALERT_FROM = "PLOT <hello@theplot.tv>"

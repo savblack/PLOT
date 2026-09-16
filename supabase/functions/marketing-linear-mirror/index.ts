@@ -80,7 +80,9 @@ const LEGACY_GH_TOKEN = Deno.env.get('GH_DISPATCH_TOKEN') ?? '';
 const GH_CONTENT_TOKEN = Deno.env.get('GH_DISPATCH_TOKEN_CONTENT') || LEGACY_GH_TOKEN;
 const GH_WEBSITE_TOKEN = Deno.env.get('GH_DISPATCH_TOKEN_WEBSITE') || LEGACY_GH_TOKEN;
 const RESEND_KEY = Deno.env.get('RESEND_API_KEY') ?? '';
-const ALERT_TO = Deno.env.get('MARKETING_ADMIN_EMAIL') ?? 'sav.black@outlook.com';
+// The marketing address if one is set, else the general operator alert
+// address. No hardcoded fallback: an unset pair is logged where it is used.
+const ALERT_TO = Deno.env.get('MARKETING_ADMIN_EMAIL') || Deno.env.get('ALERT_EMAIL') || '';
 const ALERT_FROM = 'PLOT Marketing <feedback@theplot.tv>';
 
 // The board's columns, in the order a post moves through them:
@@ -727,6 +729,10 @@ const shouldProbeToken = (force: boolean): boolean => {
 
 const alertOperator = async (subject: string, body: string): Promise<void> => {
   if (!RESEND_KEY) return;
+  if (!ALERT_TO) {
+    console.error('OPERATOR ALERT SKIPPED: neither MARKETING_ADMIN_EMAIL nor ALERT_EMAIL is set:', subject);
+    return;
+  }
   try {
     await fetch('https://api.resend.com/emails', {
       method: 'POST',

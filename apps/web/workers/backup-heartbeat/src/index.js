@@ -56,6 +56,10 @@ async function sendAlert(env, verdict) {
     console.error('BACKUP HEARTBEAT FAILED and RESEND_API_KEY is unset:', verdict.reason);
     return { sent: false, error: 'RESEND_API_KEY unset' };
   }
+  if (!env.ALERT_EMAIL) {
+    console.error('BACKUP HEARTBEAT FAILED and ALERT_EMAIL is unset (`wrangler secret put ALERT_EMAIL`):', verdict.reason);
+    return { sent: false, error: 'ALERT_EMAIL unset' };
+  }
   const detail = verdict.newest
     ? `<p>Newest artifact: <code>${verdict.newest.key}</code>, ${verdict.newest.size} bytes, uploaded ${verdict.newest.uploaded.toISOString()}.</p>`
     : '<p>No dump artifact was found at all.</p>';

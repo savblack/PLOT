@@ -2,7 +2,7 @@
  * notify-feedback
  *
  * Triggered by a Supabase Database Webhook on INSERT to public.feedback.
- * Emails sav.black@outlook.com so a human sees every submission, and mirrors the
+ * Emails the operator (ALERT_EMAIL secret) so a human sees every submission, and mirrors the
  * feedback into Linear issues using anonymized reporter metadata, preserving
  * archived attachment copies even if the originating user later deletes their
  * account.
@@ -72,7 +72,11 @@ const RESEND_API_URL = 'https://api.resend.com/emails'
 // report its own failure.
 //
 // FROM_EMAIL stays on theplot.tv: Resend will only send from a verified domain.
-const TO_EMAIL = 'sav.black@outlook.com'
+// TO_EMAIL is the operator's own mailbox, read from the ALERT_EMAIL function
+// secret rather than written here: the address was hardcoded in five places
+// across the repo, which is a spam and phishing target the moment the source
+// is readable. `supabase secrets set ALERT_EMAIL=...` sets it.
+const TO_EMAIL = Deno.env.get('ALERT_EMAIL') ?? ''
 const FROM_EMAIL = 'PLOT Feedback <feedback@theplot.tv>'
 const LINEAR_API_URL = 'https://api.linear.app/graphql'
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -438,6 +442,10 @@ async function sendFeedbackEmail({
     ? `PLOT feedback (Linear sync failed): ${feedbackTypeLabel(type)}`
     : `PLOT feedback mirrored: ${feedbackTypeLabel(type)}`
 
+  if (!TO_EMAIL) {
+    console.error('FEEDBACK EMAIL SKIPPED: ALERT_EMAIL is unset. Set it with `supabase secrets set ALERT_EMAIL=...`.')
+    return false
+  }
   try {
     const res = await fetch(RESEND_API_URL, {
       method: 'POST',

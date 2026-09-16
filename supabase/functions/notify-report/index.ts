@@ -52,8 +52,10 @@ import { serviceKey } from '../_shared/serviceKey.ts'
 const RESEND_API_URL = 'https://api.resend.com/emails'
 const LINEAR_API_URL = 'https://api.linear.app/graphql'
 // Same verified sender domain as feedback; a new display name needs no new
-// Resend verification. Straight to Outlook, not the Email Routing alias.
-const TO_EMAIL = 'sav.black@outlook.com'
+// Resend verification. Straight to the operator's mailbox, not the Email
+// Routing alias, and read from the ALERT_EMAIL secret rather than written here
+// (see notify-feedback for why).
+const TO_EMAIL = Deno.env.get('ALERT_EMAIL') ?? ''
 const FROM_EMAIL = 'PLOT Reports <feedback@theplot.tv>'
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 const BACKFILL_DEFAULT_LIMIT = 25
@@ -219,6 +221,10 @@ async function sendReportEmail(resendKey: string, report: ReportRow) {
     ${detail ? `<blockquote>${escapeHtml(detail)}</blockquote>` : '<p><em>No additional detail given.</em></p>'}
     <p style="color:#666">Report id: ${escapeHtml(report.id)}</p>
   `
+  if (!TO_EMAIL) {
+    console.error('REPORT EMAIL SKIPPED: ALERT_EMAIL is unset. Set it with `supabase secrets set ALERT_EMAIL=...`.')
+    return false
+  }
   try {
     const res = await fetch(RESEND_API_URL, {
       method: 'POST',
