@@ -2004,13 +2004,14 @@ svg { stroke-width: 1.5; }
 .cal-filter-chev svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 /* The genre row is the trigger of the shared filter popover. The panel is
    sticky near the bottom of the viewport, so a menu hanging below the row
-   would be clipped; this one opens to the RIGHT of the column, bottom edge
-   level with the row, and grows upward beside the mini months. Two columns
-   of options keep the whole list visible without an inner scroll. */
+   would be clipped; this one opens to the RIGHT of the column, hanging a
+   little below the row so it reads as coming out of it rather than sitting
+   above it, and grows upward beside the mini months. Two columns of options
+   keep the whole list visible without an inner scroll. */
 .cal-filter-menu { display: block; z-index: 5; }
 .cal-filter-menu .guide-filter-menu {
   top: auto;
-  bottom: 0;
+  bottom: -120px;
   right: auto;
   left: calc(100% + 16px);
   width: 360px;
