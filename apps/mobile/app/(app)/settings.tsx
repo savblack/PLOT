@@ -3,6 +3,8 @@ import { PUBLIC_PROFILE_PAGE } from '@plot/core/copy/publicProfilePage.js';
 import { buildProfileShareUrl } from '@plot/core/sharing.js';
 import { SHARING } from '@plot/core/copy/sharing.js';
 import { shareLink } from '../../lib/share';
+import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
+import { FREE_CUSTOM_LIST_CAP } from '@plot/core/premium.js';
 import { useState, useEffect, useMemo } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, Image, TextInput,
@@ -110,6 +112,36 @@ function SettingsGroup({ title, children }: { title: string; children: React.Rea
       <Text style={styles.groupTitle}>{title}</Text>
       <View style={styles.groupCard}>{children}</View>
     </View>
+  );
+}
+
+// Reuse the existing Settings surface; this preview never opens a purchase link.
+function PremiumPreview() {
+  const { colors } = useTheme();
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <SettingsGroup title={SETTINGS_VIEW.premium.groupTitle}>
+      <SettingsRow icon={null} label={PLANS_PAGE.previewAction} value={PLANS_PAGE.comingSoon}
+        onPress={() => setExpanded(!expanded)} />
+      {expanded && <View style={{ padding: spacing.md, gap: spacing.md }}>
+        <Text style={{ color: colors.textPrimary }}>{PLANS_PAGE.lede}</Text>
+        <Text style={{ color: colors.textPrimary, fontFamily: fontFamily.sansMedium }}>{PLANS_PAGE.free.name}</Text>
+        {PLANS_PAGE.freeFeatures.map(feature => <Text key={feature.id} style={{ color: colors.textSecondary }}>
+          {feature.label}{feature.planned ? ` (${PLANS_PAGE.plannedFree})` : ''}
+        </Text>)}
+        <Text style={{ color: colors.textSecondary }}>{PLANS_PAGE.customLists(FREE_CUSTOM_LIST_CAP)}</Text>
+        <Text style={{ color: colors.textPrimary, fontFamily: fontFamily.sansMedium }}>{PLANS_PAGE.premium.name}</Text>
+        <Text style={{ color: colors.textPrimary }}>{PLANS_PAGE.premium.priceSummary}</Text>
+        {PLANS_PAGE.premiumFeatures.map(feature => <View key={feature.id} style={{ gap: spacing.xs }}>
+          <Text style={{ color: colors.textPrimary }}>{feature.label}</Text>
+          <Text style={{ color: colors.textSecondary }}>{feature.description}</Text>
+          <Text style={{ color: colors.textMuted }}>{feature.pendingValidation ? PLANS_PAGE.pendingValidation : PLANS_PAGE.comingSoon}</Text>
+        </View>)}
+        <Text style={{ color: colors.textSecondary }}>{PLANS_PAGE.premium.availability}</Text>
+        <SettingsRow icon={null} label={PLANS_PAGE.upgradeAction}
+          onPress={() => Alert.alert(PLANS_PAGE.comingSoon, PLANS_PAGE.checkoutMessage)} />
+      </View>}
+    </SettingsGroup>
   );
 }
 
@@ -978,6 +1010,8 @@ export default function SettingsScreen() {
             />
           </SettingsGroup>
         )}
+
+        {!profile?.is_premium && <PremiumPreview />}
 
         {/* Integrations — held for post-launch, same as web. Import Watch
             History (under Support) stays available; it needs no credentials. */}

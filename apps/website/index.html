@@ -1654,6 +1654,7 @@
   <!-- No eager image preloads: the hero uses live TMDB posters, and these
        local images appear only in below-the-fold demo sections (discover
        mockup, My Lists) where they are lazy/overwritten. (SUS-89) -->
+  <link rel="stylesheet" href="/premium-home.css?v=5">
 </head>
 <body>
 <!-- Google Tag Manager (noscript) -->
@@ -1976,7 +1977,72 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     </div>
   </section>
 
-  <!-- ── Mobile app — coming soon ─────────────────────────────── -->
+  <!-- PLOT Premium feature preview -->
+  <section id="premium" aria-label="PLOT Premium benefits" aria-roledescription="carousel">
+    <div class="premium-layout">
+      <div>
+        <div class="premium-kicker">PLOT Premium <span>Coming soon</span></div>
+        <h2 class="premium-headline">Less deciding.<br><em>More watching.</em></h2>
+        <div class="premium-copy-stage"><div class="premium-copy-slide is-active"><h3>Find tonight’s film</h3><p>A little time to spare and too much to choose from? Find a film that fits your evening, on the services you use.</p></div><div class="premium-copy-slide" aria-hidden="true" inert><h3>Choose something together</h3><p>You’ve both got a watchlist. Find the overlap, make a list together and get movie night started. Friends can join for free.</p></div><div class="premium-copy-slide" aria-hidden="true" inert><h3>Follow the people behind your favourites</h3><p>Love an actor? Always make time for a certain director? Follow them and get a heads-up when their next film or show is on the way.</p></div></div>
+        <a href="https://app.theplot.tv/plans" class="btn btn-primary btn-large">Explore Premium <span aria-hidden="true">↗</span></a>
+        <p class="premium-note">Your everyday watching stays free.</p>
+        <div class="premium-switcher" role="group" aria-label="Premium benefits" hidden>
+          <button type="button" aria-pressed="true">Tonight</button><span aria-hidden="true">·</span>
+          <button type="button" aria-pressed="false">Together</button><span aria-hidden="true">·</span>
+          <button type="button" aria-pressed="false">Following</button>
+        </div>
+      </div>
+      <div class="premium-visual-stage" aria-live="off">
+        <div class="premium-visual-slide is-active" role="group" aria-label="1 of 3: Find tonight’s film">
+          <div class="premium-shared">
+            <div class="premium-mini">Film picker</div>
+            <h3>What fits tonight?</h3>
+            <div class="premium-story premium-picker" role="img" aria-label="Australian example verified 17 September 2026: select 120 minutes, Disney+, and Comedy. The Grand Budapest Hotel matches at 100 minutes, with Disney+ subscription availability.">
+              <div class="premium-filters">
+                <div class="premium-choice-group"><span class="premium-choice-label">1. How much time?</span><div class="premium-options"><span>30 min</span><span>60 min</span><span>90 min</span><span class="premium-choice-selected premium-time-choice">✓ 120 min</span></div></div>
+                <div class="premium-choice-group"><span class="premium-choice-label">2. Where do you watch?</span><div class="premium-options"><span>Netflix</span><span class="premium-choice-selected premium-service-choice">✓ Disney+</span><span>Prime Video</span><span>Apple TV+</span></div></div>
+              </div>
+              <div class="premium-choice-group premium-mood-group"><span class="premium-choice-label">3. In the mood for?</span><div class="premium-options"><span>Drama</span><span class="premium-choice-selected premium-mood-choice">✓ Comedy</span><span>Thriller</span><span>Romance</span></div></div>
+              <div class="premium-film-result"><span class="premium-result-art"><span aria-hidden="true">✳</span><img data-premium-art src="https://image.tmdb.org/t/p/w185/eWdyYQreja6JGCzqHWXpWHDrrPo.jpg" alt="The Grand Budapest Hotel poster" loading="lazy" decoding="async" width="185" height="278"></span><div><span class="premium-mini">Tonight’s pick</span><strong>The Grand Budapest Hotel</strong><span class="premium-result-meta">Comedy · 100 min · Disney+</span></div><span class="premium-result-play" aria-hidden="true">▶</span></div>
+            </div>
+            <div class="premium-footer">One film that fits your time.<br>On a service you already have.</div>
+          </div>
+          <p class="premium-caption">Australia example · Verified 17 Sep 2026 · <a href="https://www.themoviedb.org/movie/120467/watch?locale=AU" target="_blank" rel="noopener noreferrer">Availability</a></p>
+        </div>
+        <div class="premium-visual-slide" aria-hidden="true" inert role="group" aria-label="2 of 3: Choose something together">
+          <div class="premium-shared">
+            <div class="premium-mini">A list for the two of you</div>
+            <h3>Friday night, sorted.</h3>
+            <div class="premium-story premium-together" role="img" aria-label="Two illustrative watchlists both contain Widow's Bay. Its matching posters reveal a show you both want to watch.">
+              <div class="premium-watchlists"><div><span class="premium-owner">You</span><div class="premium-mini-stack"><span class="premium-other"><span class="premium-art-fallback" aria-hidden="true">◒</span><img data-premium-art src="https://image.tmdb.org/t/p/w185/6izwz7rsy95ARzTR3poZ8H6c5pp.jpg" alt="Dune: Part Two poster" loading="lazy" decoding="async" width="185" height="278"></span><span class="premium-match-art"><span class="premium-art-fallback" aria-hidden="true">✳</span><img data-premium-art src="https://image.tmdb.org/t/p/w185/vKq8XEJKxQTHd2Bm5zZMFPUrke7.jpg" alt="Widow's Bay poster" loading="lazy" decoding="async" width="185" height="278"></span></div></div><span class="premium-join">+</span><div><span class="premium-owner">Your person</span><div class="premium-mini-stack"><span class="premium-match-art"><span class="premium-art-fallback" aria-hidden="true">✳</span><img data-premium-art src="https://image.tmdb.org/t/p/w185/vKq8XEJKxQTHd2Bm5zZMFPUrke7.jpg" alt="Widow's Bay poster" loading="lazy" decoding="async" width="185" height="278"></span><span class="premium-other"><span class="premium-art-fallback" aria-hidden="true">◑</span><img data-premium-art src="https://image.tmdb.org/t/p/w185/eDo0pNruy0Qgj6BdTyHIR4cxHY8.jpg" alt="Materialists poster" loading="lazy" decoding="async" width="185" height="278"></span></div></div></div>
+              <div class="premium-connection"><span></span><b>✓</b><span></span></div>
+              <div class="premium-outcome">You both want to watch this.</div>
+            </div>
+            <div class="premium-footer">Find the overlap in your watchlists.<br>Your friends can join for free.</div>
+          </div>
+          <p class="premium-caption">Shared lists &amp; watchlist matches · Planned for Premium</p>
+        </div>
+        <div class="premium-visual-slide" aria-hidden="true" inert role="group" aria-label="3 of 3: Follow the people behind your favourites">
+          <div class="premium-shared">
+            <div class="premium-mini">Follow actors &amp; directors</div>
+            <h3>Their next thing. Your next watch.</h3>
+            <div class="premium-story premium-releases" role="img" aria-label="Example alerts using verified credits: Cillian Murphy stars in Peaky Blinders: The Immortal Man. Greta Gerwig directs Narnia: The Magician’s Nephew. These illustrate planned notifications, not alerts sent today.">
+              <div class="premium-talent-list">
+                <div class="premium-talent"><span class="premium-avatar"><span aria-hidden="true">CM</span><img data-premium-art src="https://image.tmdb.org/t/p/w185/2lKs67r7FI4bPu0AXxMUJZxmUXn.jpg" alt="Cillian Murphy" loading="lazy" decoding="async" width="185" height="278"></span><div><strong>Cillian Murphy</strong><small>Actor</small></div><span class="premium-followed">✓ Following</span></div>
+                <div class="premium-talent"><span class="premium-avatar"><span aria-hidden="true">GG</span><img data-premium-art src="https://image.tmdb.org/t/p/w185/dxKAhpkz4XNwmRzMG5QOpXjPZ1N.jpg" alt="Greta Gerwig" loading="lazy" decoding="async" width="185" height="278"></span><div><strong>Greta Gerwig</strong><small>Director</small></div><span class="premium-followed">✓ Following</span></div>
+              </div>
+              <div class="premium-notification premium-talent-alert"><span class="premium-notification-icon" aria-hidden="true">↗</span><div><span class="premium-notification-meta">PLOT <small>Example alert</small></span><strong>Peaky Blinders: The Immortal Man</strong><p>Starring Cillian Murphy · Released 2026</p></div></div>
+              <div class="premium-notification premium-director-alert"><span class="premium-notification-icon" aria-hidden="true">↗</span><div><span class="premium-notification-meta">PLOT <small>Example alert</small></span><strong>Narnia: The Magician’s Nephew</strong><p>Directed by Greta Gerwig · Announced</p></div></div>
+            </div>
+            <div class="premium-footer">Their new films and shows, on your radar.<br>Release reminders and calendar updates, too.</div>
+          </div>
+          <p class="premium-caption">Example alerts · <a href="https://media.netflix.com/en/only-on-netflix/81319485" target="_blank" rel="noopener noreferrer">Actor credit</a> · <a href="https://www.netflix.com/tudum/articles/narnia-release-date" target="_blank" rel="noopener noreferrer">Director credit</a></p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
   <section id="app-soon">
     <div class="demo-split">
       <div class="demo-copy reveal">
@@ -3222,5 +3288,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     })();
   </script>
   <script src="js/nav.js"></script>
+  <script src="/js/premium-home.js?v=3"></script>
 </body>
 </html>
