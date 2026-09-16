@@ -256,8 +256,8 @@ function FavBtn({ item }) {
   );
 }
 
-function PosterCard({ item, ranked, i, openPanel, watchlist }) {
-  const img  = posterUrl(item.poster_path, 'w185');
+function PosterCard({ item, ranked, i, openPanel, watchlist, imageSize = 'w185' }) {
+  const img  = posterUrl(item.poster_path, imageSize);
   const id   = item.id || item.tmdb_id;
   const type = item.media_type || 'movie';
   const openDetails = () => openPanel(id, type);
@@ -288,8 +288,8 @@ function PosterGrid({ items, ranked = false, openPanel, watchlist }) {
     <div className="pp-poster-grid" ref={ref} {...handlers}>
       {items.map((it, i) => (
         <figure className="pp-ranked-pick" key={`${it.tmdb_id}-${it.rank ?? i}`}>
-          <PosterCard item={it} ranked={ranked} i={i} openPanel={openPanel} watchlist={watchlist} />
-          <figcaption>{it.title}</figcaption>
+          <PosterCard item={it} imageSize="w500" openPanel={openPanel} watchlist={watchlist} />
+          <figcaption>{ranked && <span className="pp-pick-number">{String(it.rank ?? i + 1).padStart(2, '0')}</span>}{it.title}</figcaption>
         </figure>
       ))}
     </div>
@@ -665,23 +665,9 @@ export default function PublicProfilePage() {
         ) : (
           <>
             <div className="pp-pad">
-              {/* Header — left-aligned, info-dense */}
-              <div className="pp-header">
-                <div className="pp-header-top">
-                  {p.avatar_url
-                    ? <img className="pp-avatar" src={p.avatar_url} alt="" />
-                    : <div className="pp-avatar">{(name || '?').charAt(0).toUpperCase()}</div>}
-                  <div className="pp-header-info">
-                    <h1 className="pp-name">
-                      {name}
-                      <ProfileBadges
-                        isPremium={p.is_premium}
-                        isSupporter={p.is_supporter}
-                        className="pp-verified"
-                      />
-                    </h1>
-                    <p className="pp-handle">@{p.username}</p>
-                    <div className="pp-stats">
+              <ProfileIntro name={name} username={p.username} avatarUrl={p.avatar_url} bio={p.bio}
+                badges={<ProfileBadges isPremium={p.is_premium} isSupporter={p.is_supporter} className="pp-verified" />}
+                stats={<div className="pp-stats">
                       {!locked && watchCount > 0 && <span className="pp-stat"><span className="pp-stat-num">{watchCount}</span><span className="pp-stat-label">watched</span></span>}
                       {followers > 0 && <button type="button" className="pp-stat pp-stat-btn" onClick={() => setFollowList('followers')}>
                         <span className="pp-stat-num">{followers}</span><span className="pp-stat-label">followers</span>
@@ -689,14 +675,8 @@ export default function PublicProfilePage() {
                       {following > 0 && <button type="button" className="pp-stat pp-stat-btn" onClick={() => setFollowList('following')}>
                         <span className="pp-stat-num">{following}</span><span className="pp-stat-label">following</span>
                       </button>}
-                    </div>
-                  </div>
-                </div>
-
-                {p.bio && <p className="pp-bio">{p.bio}</p>}
-
-                <div className="pp-footer-row">
-                  {p.links && Object.keys(p.links).length > 0 && (
+                    </div>}
+                links={p.links && Object.keys(p.links).length > 0 && (
                     <div className="pp-social-row">
                       {SOCIAL_LINKS.filter(({ key }) => p.links[key]).map(({ key, label, url }) => { const Icon = SOCIAL_ICONS[key]; return (
                         <a
@@ -713,8 +693,7 @@ export default function PublicProfilePage() {
                       ); })}
                     </div>
                   )}
-
-                  <div className="pp-btn-row">
+                actions={<div className="pp-btn-row">
                     {isOwn ? (
                       <>
                         <button type="button" className="pp-btn pp-btn-outline" onClick={() => setEditing(true)}>Edit profile</button>
@@ -737,6 +716,7 @@ export default function PublicProfilePage() {
                         </button>
                       )
                     )}
+                    {!isOwn && <button type="button" className="pp-btn pp-btn-outline" onClick={shareProfile}>{copied ? COMMON.copied : PUBLIC_PROFILE_PAGE.shareProfile}<span aria-hidden="true"> ↗</span></button>}
                     {/* Report / block. Guideline 1.2 wants both wherever another
                         account's content is rendered, and the profile is the
                         surface with the most of it. Renders nothing for your own
@@ -753,9 +733,8 @@ export default function PublicProfilePage() {
                       // until you navigate away. refresh() only reloads follows.
                       onChanged={() => { refresh(); refreshProfile(); }}
                     />
-                  </div>
-                </div>
-              </div>
+                  </div>}
+              />
 
               {locked && (
                 <div className="public-profile-status-card" style={{ marginTop: '1.6rem' }}>
@@ -854,36 +833,63 @@ function ProfileHistoryDialog({ profileId, onClose, openPanel }) {
 }
 
 /** DOM layout only. Selection and visibility belong to publicProfileLayout in core. */
+/** Shared visual shell so previews render the production profile header. */
+export function ProfileIntro({ name, username, avatarUrl, bio, badges, stats, links, actions }) {
+  return <header className="pp-header" id="pp-profile-top">
+    <div className="pp-intro-copy">
+      <div className="pp-header-top">
+        {avatarUrl ? <img className="pp-avatar" src={avatarUrl} alt="" /> : <div className="pp-avatar">{(name || '?').charAt(0).toUpperCase()}</div>}
+        <div className="pp-header-info"><h1 className="pp-name">{name}{badges}</h1><p className="pp-handle">@{username}</p></div>
+      </div>
+      {bio && <p className="pp-bio">{bio}</p>}
+      {stats}{links}
+    </div>
+    {actions}
+  </header>;
+}
+
 export function ProfileContent({ profileId, isOwn, openPanel, watchlist, favouriteLabel, ...data }) {
   const content = publicProfileLayout(data);
   const [allLists, setAllLists] = useState(false);
   const [expandedList, setExpandedList] = useState(null);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [pickType, setPickType] = useState('movie');
+  const [activeSection, setActiveSection] = useState('profile');
   if (data.locked) return null;
-  const ranked = [[PUBLIC_PROFILE_PAGE.topFilms, content.topMovies], [PUBLIC_PROFILE_PAGE.topTv, content.topTv]];
+  const picks = ((pickType === 'tv' && content.topTv.length > 0) || !content.topMovies.length) ? content.topTv : content.topMovies;
   return <div className="pp-profile-content pp-pad">
-    {ranked.map(([label, items]) => items.length > 0 && <section className="pp-section pp-featured" key={label}>
-      <h2 className="pp-section-title">{label}</h2>
-      <PosterGrid items={items} ranked openPanel={openPanel} watchlist={watchlist} />
-    </section>)}
+    <nav className="pp-profile-nav" aria-label={PUBLIC_PROFILE_PAGE.profileNavigation}>
+      <a href="#pp-profile-top" aria-current={activeSection === 'profile' ? 'location' : undefined} onClick={() => setActiveSection('profile')}>{PUBLIC_PROFILE_PAGE.profile}</a>
+      {content.recent.length > 0 && <a href="#pp-profile-history" aria-current={activeSection === 'history' ? 'location' : undefined} onClick={() => setActiveSection('history')}>{PUBLIC_PROFILE_PAGE.watchHistory}</a>}
+      {content.customLists.length > 0 && <a href="#pp-profile-lists" aria-current={activeSection === 'lists' ? 'location' : undefined} onClick={() => setActiveSection('lists')}>{PUBLIC_PROFILE_PAGE.lists}</a>}
+    </nav>
+    {picks.length > 0 && <section className="pp-section pp-featured">
+      <div className="pp-section-heading"><h2 className="pp-section-title">{PUBLIC_PROFILE_PAGE.topPicks}</h2>
+        {content.topMovies.length > 0 && content.topTv.length > 0 && <div className="pp-pick-types" role="group" aria-label={PUBLIC_PROFILE_PAGE.topPicks}>
+          <button type="button" aria-pressed={pickType === 'movie'} onClick={() => setPickType('movie')}>{MEDIA.movies}</button>
+          <button type="button" aria-pressed={pickType === 'tv'} onClick={() => setPickType('tv')}>{MEDIA.tv}</button>
+        </div>}
+      </div>
+      <PosterGrid items={picks} ranked openPanel={openPanel} watchlist={watchlist} />
+    </section>}
     {(content.customLists.length > 0 || content.recent.length > 0) && <div className="pp-profile-columns">
-      {content.customLists.length > 0 && <section className="pp-section">
+      {content.customLists.length > 0 && <section className="pp-section" id="pp-profile-lists">
         <div className="pp-section-heading"><h2 className="pp-section-title">{PUBLIC_PROFILE_PAGE.lists}</h2>
-          {content.customLists.length > 1 && <button className="pp-btn pp-btn-outline" aria-expanded={allLists} onClick={() => setAllLists(value => !value)}>{allLists ? PUBLIC_PROFILE_PAGE.showLess : PUBLIC_PROFILE_PAGE.viewAllLists}</button>}
+          {content.customLists.length > 1 && <button className="pp-btn pp-btn-outline" aria-expanded={allLists} onClick={() => setAllLists(value => !value)}>{allLists ? PUBLIC_PROFILE_PAGE.showLess : PUBLIC_PROFILE_PAGE.viewAllLists}<span aria-hidden="true"> ↗</span></button>}
         </div>
         {(allLists ? content.customLists : content.customLists.slice(0, 1)).map(list => <article className="pp-list-preview" key={list.id}>
           <div className="pp-list-cover" aria-hidden="true">{list.items.slice(0, 3).map((item, i) => item.poster_path
             ? <img key={i} src={posterUrl(item.poster_path)} alt="" loading="lazy" />
             : <span key={i}>{item.title}</span>)}</div>
           <div className="pp-section-heading"><h3>{list.name}</h3><button className="pp-btn pp-btn-outline" aria-expanded={expandedList === list.id}
-            onClick={() => setExpandedList(value => value === list.id ? null : list.id)}>{expandedList === list.id ? PUBLIC_PROFILE_PAGE.showLess : PUBLIC_PROFILE_PAGE.viewList}</button></div>
+            onClick={() => setExpandedList(value => value === list.id ? null : list.id)}>{expandedList === list.id ? PUBLIC_PROFILE_PAGE.showLess : PUBLIC_PROFILE_PAGE.viewList}<span aria-hidden="true"> ↗</span></button></div>
           <p className="pp-list-count">{PUBLIC_PROFILE_PAGE.titleCount(list.items.length)}</p>
           {expandedList === list.id && <PosterRail items={list.items} openPanel={openPanel} watchlist={watchlist} />}
         </article>)}
       </section>}
-      {content.recent.length > 0 && <section className="pp-section">
-        <div className="pp-section-heading"><h2 className="pp-section-title">{PUBLIC_PROFILE_PAGE.watchHistory}</h2><button className="pp-btn pp-btn-outline" onClick={() => setHistoryOpen(true)}>{PUBLIC_PROFILE_PAGE.viewAll}</button></div>
-        <HistoryRows items={content.recent.slice(0, 3)} openPanel={openPanel} />
+      {content.recent.length > 0 && <section className="pp-section" id="pp-profile-history">
+        <div className="pp-section-heading"><h2 className="pp-section-title">{PUBLIC_PROFILE_PAGE.watchHistory}</h2><button className="pp-btn pp-btn-outline" onClick={() => setHistoryOpen(true)}>{PUBLIC_PROFILE_PAGE.viewAll}<span aria-hidden="true"> ↗</span></button></div>
+        <HistoryRows items={content.recent.slice(0, 2)} openPanel={openPanel} />
       </section>}
     </div>}
     {[[favouriteLabel, content.favourites], [PUBLIC_PROFILE_PAGE.watching, content.watching], [PUBLIC_PROFILE_PAGE.wantToWatch, content.wantToWatch]].map(([label, items]) => items.length > 0 && <section className="pp-section" key={label}>

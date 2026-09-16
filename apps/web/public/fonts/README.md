@@ -89,3 +89,10 @@ browser synthesise a bold — it thickens every stroke uniformly, which flattens
 thick/thin contrast the face depends on. Keep serif rules at 400 or 500 (500 matches
 400 exactly, with no synthesis) and use DM Sans, a true 100–1000 variable font, wherever
 real bold is needed.
+
+## Taste journal profile
+
+`InstrumentSerif-Regular.woff2` is restored for the selected public-profile
+journal design only (`PublicProfilePage.css`, family `PLOT Profile Serif`).
+Global app typography remains Gabarito / DM Sans. Its original OFL attribution
+is retained in `OFL.txt`.

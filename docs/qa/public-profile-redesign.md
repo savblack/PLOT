@@ -38,3 +38,24 @@ or hardcoded colours.
 Native profile visual parity: https://github.com/savblack/PLOT/issues/931.
 The list cap itself includes both platforms. Native device interaction is not
 claimed by the TypeScript/lint checks.
+
+## Taste journal fidelity correction (17 September 2026)
+
+The first implementation kept the legacy header and global Gabarito headings,
+omitted the profile navigation, and rendered separate five-column ranked shelves.
+It did not reproduce the approved journal composition.
+
+The correction uses the production `ProfileIntro` in both the live page and
+Storybook: serif display name/headings scoped to the profile, actions aligned
+right on desktop, bio then compact stats, Profile / Watch history / Lists anchor
+navigation, four-column picks (two on mobile) with ranks below the artwork, and
+the approved Lists / Watch history column proportions and action positions.
+Where both film and TV picks exist, compact type controls switch one shelf;
+all saved slots remain available. Empty sections and zero counts remain hidden.
+
+Fixtures use IDs and poster paths resolved from TMDB search on 17 September;
+identity, lists and viewing dates are fictional. Desktop and 390px layouts were
+visually reviewed. The list expansion, navigation and sparse single-pick width
+were checked in-browser. The original five shared visibility/history tests pass.
+`pnpm run check` passes; `pnpm run copy:check` passes. Native visual parity
+continues in issue #931. This change contains no database migrations.
