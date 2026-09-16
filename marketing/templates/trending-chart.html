@@ -42,13 +42,16 @@
   .row {
     display: grid;
     grid-template-columns: 76px 96px minmax(0, 1fr) 132px;
+    grid-template-areas: 'rank thumb name move';
     column-gap: 24px;
     align-items: center;
     flex: 1;
     padding: 8px 0;
     border-bottom: 1px solid var(--hair, rgba(240,239,232,0.14));
   }
+  .row .col-head { display: contents; }
   .row .rank {
+    grid-area: rank;
     font-family: var(--font-display);
     font-size: 58px;
     line-height: 1;
@@ -56,14 +59,15 @@
   }
   .row.top-rank .rank { color: var(--accent); }
   .row img.thumb {
+    grid-area: thumb;
     width: 96px; aspect-ratio: 2/3; border-radius: 8px; object-fit: cover;
     border: 1px solid rgba(240,239,232,0.12);
   }
-  .row .name { min-width: 0; font-size: 44px; font-weight: 500; line-height: 1.15; color: var(--text); }
+  .row .name { grid-area: name; min-width: 0; font-size: 44px; font-weight: 500; line-height: 1.15; color: var(--text); }
   .row .name .title-text { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   /* Movement: one right-aligned column. Pink for good news (up, new),
      dimmed for down, nothing at all for "held". */
-  .move { font-size: 28px; font-weight: 600; letter-spacing: 0.04em; text-align: right; font-variant-numeric: tabular-nums; }
+  .move { grid-area: move; font-size: 28px; font-weight: 600; letter-spacing: 0.04em; text-align: right; font-variant-numeric: tabular-nums; }
   .move.up   { color: var(--accent); }
   .move.down { color: var(--text-faint); }
   .move.new  { color: var(--accent); font-size: 23px; letter-spacing: 0.16em; }
@@ -75,16 +79,34 @@
   .detail .display { font-size: 150px; max-width: 96%; }
 
   @media (min-aspect-ratio: 4/3) {
-    .chart-card { padding-top: calc(var(--pad) + 124px); }
-    .header { margin-bottom: 20px; }
-    .chart-card > .meta-caps { top: calc(var(--pad) + 12px); font-size: 22px; }
+    .chart-card { padding-top: calc(var(--pad) + 96px); }
+    .header { margin-bottom: 22px; }
+    .header .meta-caps { margin-bottom: 8px; font-size: 22px; }
     .header .display { font-size: 56px; }
-    .row { grid-template-columns: 56px 62px minmax(0, 1fr) 112px; column-gap: 20px; padding: 4px 0; }
-    .row .rank { font-size: 42px; }
-    .row img.thumb { width: 62px; }
-    .row .name { font-size: 34px; }
+    /* Landscape: the five titles run in a horizontal row, one column each:
+       rank and movement on a line, the poster large beneath, then the name. */
+    .rows {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      column-gap: 40px;
+      border-top: none;
+      overflow: visible;
+    }
+    .row {
+      display: flex; flex-direction: column; align-items: flex-start;
+      gap: 12px; padding: 0; border-bottom: none;
+    }
+    .row .rank { font-size: 50px; }
+    .row .col-head { display: flex; align-items: center; justify-content: space-between; width: 100%; }
+    .row img.thumb { width: 100%; max-width: 232px; border-radius: 10px; }
+    .row .name { font-size: 30px; font-weight: 500; line-height: 1.2; width: 100%; }
+    .row .name .title-text {
+      white-space: normal;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
     .move { font-size: 24px; }
     .move.new { font-size: 20px; }
+    body.light .move.up, body.light .move.new { padding: 3px 10px; }
 
     .detail .display { font-size: 118px; }
   }
@@ -133,12 +155,14 @@ if (d.kind === 'detail') {
   const rows = el('div', 'rows');
   items.forEach(item => {
     const row = el('div', `row${item.rank === 1 ? ' top-rank' : ''}`);
-    row.append(el('div', 'rank', `${item.rank}`));
+    const head = el('div', 'col-head');
+    head.append(el('div', 'rank', `${item.rank}`));
+    head.append(moveNode(item.movement));
+    row.append(head);
     if (item.poster_data_uri) row.append(img('thumb', item.poster_data_uri));
     const name = el('div', 'name');
     name.append(el('span', 'title-text', item.title));
     row.append(name);
-    row.append(moveNode(item.movement));
     rows.append(row);
   });
   card.append(rows);
