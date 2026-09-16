@@ -12,12 +12,12 @@ export default {
   title: 'Views/PublicProfilePage', component: ProfileContent, parameters: { layout: 'fullscreen' },
   args: { profileId: 'story-profile', isOwn: true, openPanel: () => {}, watchlist, favouriteLabel: 'Favourites' },
   decorators: [(Story) => <MemoryRouter><AppContext.Provider value={app}>
-    <style>{profileStyles}</style><main className="pp-view pp-journal"><div className="pp-pad"><ProfileIntro name="Alex Morgan" username="alex" bio="Films, TV, and a good ending."
+    <style>{profileStyles}</style><main className="pp-view"><div className="pp-pad"><ProfileIntro name="Alex Morgan" username="alex" bio="Films, TV, and a good ending."
       stats={<div className="pp-stats"><span className="pp-stat"><span className="pp-stat-num">248</span><span className="pp-stat-label">watched</span></span><span className="pp-stat"><span className="pp-stat-num">86</span><span className="pp-stat-label">followers</span></span></div>}
-      actions={<div className="pp-btn-row"><button className="pp-btn pp-btn-primary">Follow Alex</button><button className="pp-btn pp-btn-outline">Share profile ↗</button></div>} /></div><Story /></main>
+      actions={<div className="pp-btn-row"><button className="btn btn-primary">Follow Alex</button><button className="btn btn-secondary">Share profile</button></div>} /></div><Story /></main>
   </AppContext.Provider></MemoryRouter>],
 };
-export const Populated = { args: { topMovies: resolvedTitles.slice(0, 4).map((item, i) => ({ ...item, rank: i + 1 })), recent: resolvedTitles.slice(4).map(item => ({ ...item, watched_at: '2026-09-14' })), customLists: [
+export const Populated = { args: { topMovies: resolvedTitles.slice(0, 5).map((item, i) => ({ ...item, rank: i + 1 })), recent: resolvedTitles.slice(4).map(item => ({ ...item, watched_at: '2026-09-14' })), customLists: [
   { id: 'sunday', name: 'Sunday films', items: resolvedTitles.slice(0, 3) }, { id: 'weekend', name: 'Weekend watches', items: resolvedTitles.slice(0, 2) },
 ] } };
 export const BothTypes = { args: { ...Populated.args, topTv: resolvedTitles.slice(4) } };

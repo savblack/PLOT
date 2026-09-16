@@ -20,6 +20,7 @@ import { getButtonLikeProps } from '../utils/interactive.js';
 import UserList from '../components/UserList.jsx';
 import ProfileBadges from '../components/ProfileBadges.jsx';
 import SheetHeader from '../components/SheetHeader.jsx';
+import ListCover from '../components/ListCover.jsx';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import { COMMON } from '../copy/common.js';
 import { MEDIA } from '../copy/media.js';
@@ -115,84 +116,21 @@ const SOCIAL_ICONS = {
 };
 
 export const profileStyles = `
-  .pp-view { max-width: 600px; margin: 0 auto; padding: 0.25rem 0 3rem; -webkit-font-smoothing: antialiased; }
-  .pp-pad { padding: 0 1.25rem; }
-
   .pp-empty { text-align: center; max-width: 420px; margin: 2.5rem auto 0; padding: 0 1rem; }
-  .pp-empty-title { margin: 0 0 0.7rem; font-family: var(--font-display); font-size: clamp(1.8rem, 6vw, 2.4rem); font-weight: 500; letter-spacing: -0.03em; line-height: 1; color: var(--text-primary); }
-  .pp-empty-title em { font-style: italic; }
+  .pp-empty-title { margin: 0 0 0.7rem; font-family: var(--font-display); font-size: clamp(1.8rem, 6vw, 2.4rem); font-weight: 700; letter-spacing: var(--font-display-tracking); line-height: 1; color: var(--text-primary); }
   .pp-empty-body { font-size: 0.95rem; line-height: 1.7; color: var(--text-secondary); }
 
-  .public-profile-status-card { margin-top: 1.5rem; padding: 1rem 1rem 1.05rem; border: 1px solid var(--border); border-radius: var(--radius-md); background: color-mix(in srgb, var(--surface-raised) 82%, var(--accent-dim)); }
-  .public-profile-status-kicker { margin: 0; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
+  .public-profile-status-card { margin-top: 1.5rem; padding: 1rem 1rem 1.05rem; border-radius: var(--radius-md); background: var(--surface-sunken); }
+  .public-profile-status-kicker { margin: 0; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent-text); }
   .public-profile-status-copy { margin: 0.55rem 0 0; font-size: 0.88rem; line-height: 1.65; color: var(--text-secondary); }
   .public-profile-actions { display: flex; justify-content: center; gap: 0.8rem; flex-wrap: wrap; margin-top: 1.25rem; }
 
-  /* ── Left-aligned header: avatar + name/handle/stats in one row, bio + actions below ── */
-  .pp-header { padding-top: 1.75rem; }
-  .pp-header-top { display: flex; align-items: center; justify-content: center; gap: 1.75rem; }
   .pp-avatar {
-    width: 108px; height: 108px; border-radius: 50%; flex-shrink: 0;
-    object-fit: cover; background: var(--surface-raised); border: 1px solid var(--border);
+    width: 84px; height: 84px; border-radius: 50%; flex-shrink: 0;
+    object-fit: cover; background: var(--surface-sunken);
     display: flex; align-items: center; justify-content: center;
-    font-family: var(--font-display); font-size: 2.6rem; color: var(--text-muted);
+    font-family: var(--font-display); font-weight: 700; font-size: 2.2rem; color: var(--text-muted);
   }
-  .pp-header-info { flex: 0 1 auto; min-width: 0; }
-  .pp-name { margin: 0; font-family: var(--font-display); font-size: 2.1rem; font-weight: 500; letter-spacing: -0.02em; line-height: 1.2; word-break: break-word; }
-  .pp-handle { margin: 0.15rem 0 0; font-size: 1rem; color: var(--text-muted); }
-  .pp-verified { width: 1.5rem; height: 1.5rem; margin-left: 0.4rem; vertical-align: -0.18rem; flex-shrink: 0; }
-  .pp-bio { margin: 1.6rem 0 0; font-size: 0.9rem; line-height: 1.55; color: var(--text-secondary); white-space: pre-wrap; }
-  .pp-footer-row { display: flex; align-items: center; gap: 0.6rem; margin-top: 1.1rem; flex-wrap: wrap; }
-  .pp-social-row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-right: auto; }
-  .pp-social-btn { display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--border); color: var(--text-secondary); background: var(--surface-raised); transition: var(--transition-fast); }
-  .pp-social-btn svg { width: 15px; height: 15px; }
-  .pp-social-btn:hover { color: var(--text-primary); border-color: color-mix(in srgb, var(--accent) 55%, var(--border)); }
-
-  /* ── Action buttons — compact, not full-width ── */
-  .pp-btn-row { display: flex; gap: 0.5rem; margin-left: auto; }
-  .pp-btn {
-    display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
-    min-height: 34px; padding: 0.45rem 1rem; border-radius: var(--radius-pill);
-    font-size: 0.83rem; font-weight: 600; cursor: pointer; text-decoration: none; white-space: nowrap;
-    transition: opacity 0.2s ease, transform 0.15s ease;
-  }
-  .pp-btn-primary { background: var(--text-primary); color: var(--surface); border: none; }
-  .pp-btn-secondary { background: transparent; color: var(--text-primary); border: 0.75px solid var(--text-primary); }
-  .pp-btn-outline { background: var(--surface-raised); color: var(--text-primary); border: 1px solid var(--border); }
-  .pp-btn:hover { opacity: 0.85; transform: scale(0.99); }
-  .pp-btn:disabled { opacity: 0.55; cursor: default; transform: none; }
-
-  .pp-stats { display: flex; gap: 1.3rem; margin: 0.65rem 0 0; flex-wrap: wrap; }
-  .pp-stat { display: flex; align-items: center; gap: 0.4rem; background: none; border: none; padding: 0; cursor: default; font: inherit; }
-  .pp-stat-num { font-family: var(--font-display); font-size: 1.4rem; font-weight: 500; color: var(--text-primary); line-height: 1; }
-  .pp-stat-label { font-size: 0.9rem; color: var(--text-muted); }
-  .pp-stat-btn { cursor: pointer; }
-  .pp-stat-btn:hover .pp-stat-num { opacity: 0.65; }
-
-  .pp-section { margin-top: 2.2rem; }
-  .pp-section-title { margin: 0 0 0.9rem; font-family: var(--font-display); font-size: 1.5rem; font-weight: 400; line-height: 1.1; letter-spacing: normal; text-transform: none; color: var(--text-primary); }
-
-  /* Grids (Top 10) — horizontal scroll rail, same as recent/favourites */
-  .pp-poster-grid { display: flex; gap: 0.6rem; overflow-x: auto; scrollbar-width: none; cursor: grab; }
-  .pp-poster-grid::-webkit-scrollbar { display: none; }
-  .pp-poster-grid:active { cursor: grabbing; }
-  .pp-poster-grid .pp-poster { flex: 0 0 auto; width: 104px; }
-  /* Rails (recent, favourites) */
-  .pp-rail { display: flex; gap: 0.6rem; overflow-x: auto; scrollbar-width: none; cursor: grab; }
-  .pp-rail::-webkit-scrollbar { display: none; }
-  .pp-rail:active { cursor: grabbing; }
-  .pp-rail .pp-poster { flex: 0 0 auto; width: 104px; }
-
-  .pp-poster { position: relative; aspect-ratio: 2 / 3; border-radius: var(--radius-sm, 8px); overflow: hidden; background: var(--surface-raised); border: 1px solid var(--border); cursor: pointer; transition: transform 0.2s ease; }
-  .pp-poster:hover { transform: scale(0.97); }
-  .pp-poster:active { transform: scale(0.93); }
-  .pp-poster img { width: 100%; height: 100%; object-fit: cover; display: block; }
-  .pp-poster-fallback { display: flex; align-items: center; justify-content: center; height: 100%; padding: 0.4rem; font-size: 0.66rem; line-height: 1.3; text-align: center; color: var(--text-muted); }
-  .pp-poster-rank-scrim { position: absolute; left: 0; right: 0; bottom: 0; height: 44%; background: linear-gradient(to top, rgba(0,0,0,0.65), rgba(0,0,0,0)); pointer-events: none; }
-  .pp-poster-rank { position: absolute; left: 0.45rem; bottom: 0.35rem; min-width: 22px; height: 22px; padding: 0 0.3rem; border-radius: 999px; display: flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--accent) 22%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 60%, transparent); font-family: var(--font-sans-tabular); font-size: 0.72rem; font-weight: 700; letter-spacing: -0.01em; color: var(--accent); }
-  .pp-poster:hover .card-fav-btn, .pp-poster:focus-within .card-fav-btn,
-  .pp-poster:hover .card-save-btn, .pp-poster:focus-within .card-save-btn { opacity: 1; }
-  .pp-poster .card-save-btn.saved { opacity: 1; }
 
   /* ── Edit profile modal ── */
   .pp-edit-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 1rem; }
@@ -281,15 +219,14 @@ function PosterCard({ item, ranked, i, openPanel, watchlist, imageSize = 'w185' 
   );
 }
 
-function PosterGrid({ items, ranked = false, openPanel, watchlist }) {
-  const { ref, handlers } = useDragScroll();
+function TopFiveGrid({ items, openPanel, watchlist }) {
   if (!items?.length) return null;
   return (
-    <div className="pp-poster-grid" ref={ref} {...handlers}>
+    <div className="pp-top5">
       {items.map((it, i) => (
-        <figure className="pp-ranked-pick" key={`${it.tmdb_id}-${it.rank ?? i}`}>
-          <PosterCard item={it} imageSize="w500" openPanel={openPanel} watchlist={watchlist} />
-          <figcaption>{ranked && <span className="pp-pick-number">{String(it.rank ?? i + 1).padStart(2, '0')}</span>}{it.title}</figcaption>
+        <figure className="pp-top5-pick" key={`${it.tmdb_id}-${it.rank ?? i}`}>
+          <PosterCard item={it} ranked i={i} imageSize="w342" openPanel={openPanel} watchlist={watchlist} />
+          <figcaption>{it.title}</figcaption>
         </figure>
       ))}
     </div>
@@ -642,7 +579,7 @@ export default function PublicProfilePage() {
   return (
     <>
       <style>{profileStyles}</style>
-      <div className="pp-view pp-journal">
+      <div className="pp-view">
         {!found ? (
           <div className="pp-empty">
             {loading ? (
@@ -655,8 +592,8 @@ export default function PublicProfilePage() {
                 </p>
                 {!viewer && (
                   <div className="public-profile-actions" style={{ marginTop: '1.5rem' }}>
-                    <Link to="/signup" className="pp-btn pp-btn-primary">Create an account</Link>
-                    <Link to="/login" className="pp-btn pp-btn-secondary">Sign in</Link>
+                    <Link to="/signup" className="btn btn-primary">Create an account</Link>
+                    <Link to="/login" className="btn btn-secondary">Sign in</Link>
                   </div>
                 )}
               </>
@@ -696,27 +633,27 @@ export default function PublicProfilePage() {
                 actions={<div className="pp-btn-row">
                     {isOwn ? (
                       <>
-                        <button type="button" className="pp-btn pp-btn-outline" onClick={() => setEditing(true)}>Edit profile</button>
-                        <button type="button" className="pp-btn pp-btn-outline" onClick={shareProfile}>{copied ? COMMON.copied : PUBLIC_PROFILE_PAGE.shareProfile}</button>
+                        <button type="button" className="btn btn-secondary" onClick={() => setEditing(true)}>Edit profile</button>
+                        <button type="button" className="btn btn-secondary" onClick={shareProfile}>{copied ? COMMON.copied : PUBLIC_PROFILE_PAGE.shareProfile}</button>
 
                       </>
                     ) : !viewer ? (
                       <>
-                        <Link to={`/signup?ref=${encodeURIComponent(p.username)}&src=profile`} className="pp-btn pp-btn-primary">Join to follow</Link>
-                        <Link to="/login" className="pp-btn pp-btn-secondary">Sign in</Link>
+                        <Link to={`/signup?ref=${encodeURIComponent(p.username)}&src=profile`} className="btn btn-primary">Join to follow</Link>
+                        <Link to="/login" className="btn btn-secondary">Sign in</Link>
                       </>
                     ) : canFollow && (
                       status === 'accepted' ? (
-                        <button type="button" className="pp-btn pp-btn-secondary" onClick={unfollow} disabled={busy}>Following</button>
+                        <button type="button" className="btn btn-secondary" onClick={unfollow} disabled={busy}>Following</button>
                       ) : status === 'pending' ? (
-                        <button type="button" className="pp-btn pp-btn-secondary" onClick={unfollow} disabled={busy}>Requested</button>
+                        <button type="button" className="btn btn-secondary" onClick={unfollow} disabled={busy}>Requested</button>
                       ) : (
-                        <button type="button" className="pp-btn pp-btn-primary" onClick={follow} disabled={busy}>
+                        <button type="button" className="btn btn-primary" onClick={follow} disabled={busy}>
                           {isPrivate ? PUBLIC_PROFILE_PAGE.requestToFollow : PUBLIC_PROFILE_PAGE.follow}
                         </button>
                       )
                     )}
-                    {!isOwn && <button type="button" className="pp-btn pp-btn-outline" onClick={shareProfile}>{copied ? COMMON.copied : PUBLIC_PROFILE_PAGE.shareProfile}<span aria-hidden="true"> ↗</span></button>}
+                    {!isOwn && <button type="button" className="btn btn-secondary" onClick={shareProfile}>{copied ? COMMON.copied : PUBLIC_PROFILE_PAGE.shareProfile}</button>}
                     {/* Report / block. Guideline 1.2 wants both wherever another
                         account's content is rendered, and the profile is the
                         surface with the most of it. Renders nothing for your own
@@ -821,12 +758,12 @@ function ProfileHistoryDialog({ profileId, onClose, openPanel }) {
   return createPortal(<dialog ref={ref} className="pp-history-dialog" onCancel={onClose} onClose={onClose}>
     <SheetHeader title={PUBLIC_PROFILE_PAGE.watchHistory} onClose={onClose} />
     <div className="pp-history-dialog-body">
-      {loading ? <p role="status">{COMMON.loading}</p> : result.error ? <div role="alert"><p>{COMMON.genericError}</p><button className="pp-btn pp-btn-outline" onClick={() => setRetry(value => value + 1)}>{PUBLIC_PROFILE_PAGE.retry}</button></div>
+      {loading ? <p role="status">{COMMON.loading}</p> : result.error ? <div role="alert"><p>{COMMON.genericError}</p><button className="btn btn-secondary btn-sm" onClick={() => setRetry(value => value + 1)}>{PUBLIC_PROFILE_PAGE.retry}</button></div>
         : <HistoryRows items={result.items} openPanel={(id, type) => { onClose(); openPanel(id, type); }} />}
       {!loading && !result.error && !result.items.length && <p>{PUBLIC_PROFILE_PAGE.noPublicTitles}</p>}
       <div className="pp-history-pagination">
-        {page > 0 && <button className="pp-btn pp-btn-outline" disabled={loading} onClick={() => setPage(value => value - 1)}>{COMMON.back}</button>}
-        {!result.error && result.hasMore && <button className="pp-btn pp-btn-outline" disabled={loading} onClick={() => setPage(value => value + 1)}>{COMMON.next}</button>}
+        {page > 0 && <button className="btn btn-secondary btn-sm" disabled={loading} onClick={() => setPage(value => value - 1)}>{COMMON.back}</button>}
+        {!result.error && result.hasMore && <button className="btn btn-secondary btn-sm" disabled={loading} onClick={() => setPage(value => value + 1)}>{COMMON.next}</button>}
       </div>
     </div>
   </dialog>, document.body);
@@ -835,6 +772,8 @@ function ProfileHistoryDialog({ profileId, onClose, openPanel }) {
 /** DOM layout only. Selection and visibility belong to publicProfileLayout in core. */
 /** Shared visual shell so previews render the production profile header. */
 export function ProfileIntro({ name, username, avatarUrl, bio, badges, stats, links, actions }) {
+  // Desktop: identity left, actions right. Phone: the header column reverses
+  // so the compact actions sit top-right above the identity (see the CSS).
   return <header className="pp-header" id="pp-profile-top">
     <div className="pp-intro-copy">
       <div className="pp-header-top">
@@ -853,49 +792,49 @@ export function ProfileContent({ profileId, isOwn, openPanel, watchlist, favouri
   const [allLists, setAllLists] = useState(false);
   const [expandedList, setExpandedList] = useState(null);
   const [historyOpen, setHistoryOpen] = useState(false);
-  const [pickType, setPickType] = useState('movie');
-  const [activeSection, setActiveSection] = useState('profile');
+  // Default to whichever list has picks, so a TV-only profile doesn't open on an empty shelf.
+  const [pickType, setPickType] = useState(() => (!data.topMovies?.length && data.topTv?.length ? 'tv' : 'movie'));
   if (data.locked) return null;
-  const picks = ((pickType === 'tv' && content.topTv.length > 0) || !content.topMovies.length) ? content.topTv : content.topMovies;
+  const hasPicks = content.topMovies.length > 0 || content.topTv.length > 0;
+  const picks = pickType === 'tv' ? content.topTv : content.topMovies;
+  const visibleLists = allLists ? content.customLists : content.customLists.slice(0, 3);
+  const expanded = content.customLists.find(list => list.id === expandedList);
   return <div className="pp-profile-content pp-pad">
-    <nav className="pp-profile-nav" aria-label={PUBLIC_PROFILE_PAGE.profileNavigation}>
-      <a href="#pp-profile-top" aria-current={activeSection === 'profile' ? 'location' : undefined} onClick={() => setActiveSection('profile')}>{PUBLIC_PROFILE_PAGE.profile}</a>
-      {content.recent.length > 0 && <a href="#pp-profile-history" aria-current={activeSection === 'history' ? 'location' : undefined} onClick={() => setActiveSection('history')}>{PUBLIC_PROFILE_PAGE.watchHistory}</a>}
-      {content.customLists.length > 0 && <a href="#pp-profile-lists" aria-current={activeSection === 'lists' ? 'location' : undefined} onClick={() => setActiveSection('lists')}>{PUBLIC_PROFILE_PAGE.lists}</a>}
-    </nav>
-    {picks.length > 0 && <section className="pp-section pp-featured">
-      <div className="pp-section-heading"><h2 className="pp-section-title">{PUBLIC_PROFILE_PAGE.topPicks}</h2>
-        {content.topMovies.length > 0 && content.topTv.length > 0 && <div className="pp-pick-types" role="group" aria-label={PUBLIC_PROFILE_PAGE.topPicks}>
-          <button type="button" aria-pressed={pickType === 'movie'} onClick={() => setPickType('movie')}>{MEDIA.movies}</button>
-          <button type="button" aria-pressed={pickType === 'tv'} onClick={() => setPickType('tv')}>{MEDIA.tv}</button>
-        </div>}
+    {hasPicks && <section className="pp-section pp-featured">
+      <div className="pp-section-heading"><h2 className="pp-section-title">{PUBLIC_PROFILE_PAGE.topFive}</h2>
+        {/* Always both, so a visitor can see the other list exists even when it is empty. */}
+        <div className="cal-scope" role="group" aria-label={PUBLIC_PROFILE_PAGE.topFive}>
+          <button type="button" className={`cal-scope-btn${pickType === 'movie' ? ' active' : ''}`} aria-pressed={pickType === 'movie'} onClick={() => setPickType('movie')}>{MEDIA.movies}</button>
+          <button type="button" className={`cal-scope-btn${pickType === 'tv' ? ' active' : ''}`} aria-pressed={pickType === 'tv'} onClick={() => setPickType('tv')}>{MEDIA.tv}</button>
+        </div>
       </div>
-      <PosterGrid items={picks} ranked openPanel={openPanel} watchlist={watchlist} />
+      {picks.length > 0
+        ? <TopFiveGrid items={picks} openPanel={openPanel} watchlist={watchlist} />
+        : <p className="pp-sparse-line">{PUBLIC_PROFILE_PAGE.noPicksOfType(pickType === 'tv' ? MEDIA.tv : MEDIA.movies)}{isOwn && <> <Link to="/my-lists">{PUBLIC_PROFILE_PAGE.addFirstPick}</Link></>}</p>}
     </section>}
     {(content.customLists.length > 0 || content.recent.length > 0) && <div className="pp-profile-columns">
       {content.customLists.length > 0 && <section className="pp-section" id="pp-profile-lists">
         <div className="pp-section-heading"><h2 className="pp-section-title">{PUBLIC_PROFILE_PAGE.lists}</h2>
-          {content.customLists.length > 1 && <button className="pp-btn pp-btn-outline" aria-expanded={allLists} onClick={() => setAllLists(value => !value)}>{allLists ? PUBLIC_PROFILE_PAGE.showLess : PUBLIC_PROFILE_PAGE.viewAllLists}<span aria-hidden="true"> ↗</span></button>}
+          {content.customLists.length > 3 && <button type="button" className="btn btn-secondary btn-sm" aria-expanded={allLists} onClick={() => setAllLists(value => !value)}>{allLists ? PUBLIC_PROFILE_PAGE.showLess : PUBLIC_PROFILE_PAGE.viewAll}</button>}
         </div>
-        {(allLists ? content.customLists : content.customLists.slice(0, 1)).map(list => <article className="pp-list-preview" key={list.id}>
-          <div className="pp-list-cover" aria-hidden="true">{list.items.slice(0, 3).map((item, i) => item.poster_path
-            ? <img key={i} src={posterUrl(item.poster_path)} alt="" loading="lazy" />
-            : <span key={i}>{item.title}</span>)}</div>
-          <div className="pp-section-heading"><h3>{list.name}</h3><button className="pp-btn pp-btn-outline" aria-expanded={expandedList === list.id}
-            onClick={() => setExpandedList(value => value === list.id ? null : list.id)}>{expandedList === list.id ? PUBLIC_PROFILE_PAGE.showLess : PUBLIC_PROFILE_PAGE.viewList}<span aria-hidden="true"> ↗</span></button></div>
-          <p className="pp-list-count">{PUBLIC_PROFILE_PAGE.titleCount(list.items.length)}</p>
-          {expandedList === list.id && <PosterRail items={list.items} openPanel={openPanel} watchlist={watchlist} />}
-        </article>)}
+        <div className="pp-list-covers">
+          {visibleLists.map(list => <ListCover key={list.id} name={list.name} count={PUBLIC_PROFILE_PAGE.titleCount(list.items.length)}
+            posters={list.items.map(item => item.poster_path)} onOpen={() => setExpandedList(value => value === list.id ? null : list.id)} />)}
+        </div>
+        {expanded && <div className="pp-list-expanded">
+          <div className="pp-section-heading"><h3>{expanded.name}</h3><button type="button" className="btn btn-secondary btn-sm" onClick={() => setExpandedList(null)}>{PUBLIC_PROFILE_PAGE.showLess}</button></div>
+          <PosterRail items={expanded.items} openPanel={openPanel} watchlist={watchlist} />
+        </div>}
       </section>}
       {content.recent.length > 0 && <section className="pp-section" id="pp-profile-history">
-        <div className="pp-section-heading"><h2 className="pp-section-title">{PUBLIC_PROFILE_PAGE.watchHistory}</h2><button className="pp-btn pp-btn-outline" onClick={() => setHistoryOpen(true)}>{PUBLIC_PROFILE_PAGE.viewAll}<span aria-hidden="true"> ↗</span></button></div>
-        <HistoryRows items={content.recent.slice(0, 2)} openPanel={openPanel} />
+        <div className="pp-section-heading"><h2 className="pp-section-title">{PUBLIC_PROFILE_PAGE.watchHistory}</h2><button type="button" className="btn btn-secondary btn-sm" onClick={() => setHistoryOpen(true)}>{PUBLIC_PROFILE_PAGE.viewAll}</button></div>
+        <HistoryRows items={content.recent.slice(0, 4)} openPanel={openPanel} />
       </section>}
     </div>}
     {[[favouriteLabel, content.favourites], [PUBLIC_PROFILE_PAGE.watching, content.watching], [PUBLIC_PROFILE_PAGE.wantToWatch, content.wantToWatch]].map(([label, items]) => items.length > 0 && <section className="pp-section" key={label}>
       <h2 className="pp-section-title">{label}</h2><PosterRail items={items} openPanel={openPanel} watchlist={watchlist} />
     </section>)}
-    {content.empty && <div className="pp-sparse"><p>{PUBLIC_PROFILE_PAGE.noPublicTitles}</p>{isOwn && <Link className="pp-btn pp-btn-outline" to="/my-lists">{PUBLIC_PROFILE_PAGE.addFirstPick}</Link>}</div>}
+    {content.empty && <div className="pp-sparse"><p>{PUBLIC_PROFILE_PAGE.noPublicTitles}</p>{isOwn && <Link className="btn btn-secondary btn-sm" to="/my-lists">{PUBLIC_PROFILE_PAGE.addFirstPick}</Link>}</div>}
     {historyOpen && content.recent.length > 0 && <ProfileHistoryDialog profileId={profileId} onClose={() => setHistoryOpen(false)} openPanel={openPanel} />}
   </div>;
 }
