@@ -15,6 +15,8 @@ import { posterUrl, profileUrl } from '../utils/images.js';
 import { getButtonLikeProps } from '../utils/interactive.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import { IconChevronLeft, IconChevronRight, IconSearch } from './navIcons.jsx';
+import SideFilters, { FilterRow } from './SideFilters.jsx';
+import { TYPE_ROWS } from './sideFilterRows.js';
 import { HISTORY_VIEW as T } from '../copy/historyView.js';
 
 /* History is its own page: the poster shelf, one month at a time, with a
@@ -28,7 +30,10 @@ import { HISTORY_VIEW as T } from '../copy/historyView.js';
    users. */
 
 const WEEKDAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const MAX_VISIBLE_GENRES = 6;
+// The Calendar's Show rows minus Cinema: a history row records that you
+// watched something, not where, so a Cinema row could never match anything.
+const HISTORY_TYPE_ROWS = TYPE_ROWS.filter(r => r.id !== 'cinema');
+const ALL_HISTORY_TYPES = HISTORY_TYPE_ROWS.map(r => r.id);
 
 function dayLabel(dateStr) {
   const p = calendarParts(dateStr);
@@ -49,14 +54,6 @@ function NoteIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M4 4h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8l-4 4V6a2 2 0 0 1 2-2z" />
-    </svg>
-  );
-}
-
-function TickIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M5 12l5 5L20 7" />
     </svg>
   );
 }
@@ -163,7 +160,7 @@ function MiniMonthCard({ year, monthIndex, monthGroups, onMonthIndex, entries, t
   );
 }
 
-function CrowdCard({ entries, details, openPanel }) {
+function CrowdCard({ entries, details, detailsLoading, openPanel }) {
   const cmp = crowdComparison(entries, details);
   const sentence = crowdSentence(cmp);
   return (
@@ -185,13 +182,13 @@ function CrowdCard({ entries, details, openPanel }) {
           </div>
         </div>
       ) : (
-        <span className="hist-card-note">{T.crowdNeedsRatings}</span>
+        <span className="hist-card-note">{detailsLoading ? T.loadingCard : T.crowdNeedsRatings}</span>
       )}
     </div>
   );
 }
 
-function PeopleCard({ entries, details, navigateTo }) {
+function PeopleCard({ entries, details, detailsLoading, navigateTo }) {
   const people = recurringPeople(entries, details);
   return (
     <div className="hist-card">
@@ -212,53 +209,32 @@ function PeopleCard({ entries, details, navigateTo }) {
           })}
         </div>
       ) : (
-        <span className="hist-card-note">{T.peopleNeedsMore}</span>
+        <span className="hist-card-note">{detailsLoading ? T.loadingCard : T.peopleNeedsMore}</span>
       )}
     </div>
   );
 }
 
-function FilterRow({ name, on, onClick }) {
-  return (
-    <button type="button" className={`hist-filter-row${on ? '' : ' hist-filter-row--off'}`} onClick={onClick} aria-pressed={on}>
-      <span className="hist-filter-name">{name}</span>
-      <span className="hist-filter-tick">{on && <TickIcon />}</span>
-    </button>
-  );
-}
-
+/* The Calendar's Show and Genre rows, then History's own Status rows in the
+   same style. Reviewed and Didn't finish are OR-ed: either state qualifies. */
 function Filters({ types, setTypes, genres, setGenres, genreOptions, reviewed, setReviewed, dnf, setDnf }) {
-  const [allGenres, setAllGenres] = useState(false);
-  const toggleIn = (list, set, id) => set(list.includes(id) ? list.filter(x => x !== id) : [...list, id]);
-  const shown = allGenres ? genreOptions : genreOptions.slice(0, MAX_VISIBLE_GENRES);
   return (
-    <div className="hist-filters">
-      <span className="hist-filter-label">{T.filterShow}</span>
-      <div className="hist-filter-group">
-        <FilterRow name={T.filterMovies} on={!types.length || types.includes('movie')} onClick={() => toggleIn(types, setTypes, 'movie')} />
-        <FilterRow name={T.filterTV} on={!types.length || types.includes('tv')} onClick={() => toggleIn(types, setTypes, 'tv')} />
+    <SideFilters
+      typeRows={HISTORY_TYPE_ROWS}
+      typeFilters={types}
+      setTypeFilters={setTypes}
+      genreFilters={genres}
+      setGenreFilters={setGenres}
+      genres={genreOptions}
+    >
+      <div className="cal-filter">
+        <div className="cal-filter-label">{T.filterStatus}</div>
+        <div>
+          <FilterRow label={T.filterReviewed} on={reviewed} onToggle={() => setReviewed(v => !v)} />
+          <FilterRow label={T.filterDidntFinish} on={dnf} onToggle={() => setDnf(v => !v)} />
+        </div>
       </div>
-      {genreOptions.length > 0 && (
-        <>
-          <span className="hist-filter-label">{T.filterGenre}</span>
-          <div className="hist-filter-group">
-            {shown.map(g => (
-              <FilterRow key={g.id} name={g.name} on={!genres.length || genres.includes(g.id)} onClick={() => toggleIn(genres, setGenres, g.id)} />
-            ))}
-            {genreOptions.length > MAX_VISIBLE_GENRES && (
-              <button type="button" className="hist-filter-more" onClick={() => setAllGenres(v => !v)}>
-                {allGenres ? T.filterFewerGenres : T.filterMoreGenres}
-              </button>
-            )}
-          </div>
-        </>
-      )}
-      <span className="hist-filter-label">{T.filterStatus}</span>
-      <div className="hist-filter-group">
-        <FilterRow name={T.filterReviewed} on={reviewed} onClick={() => setReviewed(v => !v)} />
-        <FilterRow name={T.filterDidntFinish} on={dnf} onClick={() => setDnf(v => !v)} />
-      </div>
-    </div>
+    </SideFilters>
   );
 }
 
@@ -321,7 +297,7 @@ export function HistoryPage({ entries, details, detailsLoading, genreList, openP
   const years = useMemo(() => yearsWithEntries(entries), [entries]);
   const yearEntries = useMemo(() => entriesInYear(entries, activeYear), [entries, activeYear]);
 
-  const [types, setTypes] = useState([]);
+  const [types, setTypes] = useState(ALL_HISTORY_TYPES);
   const [genres, setGenres] = useState([]);
   const [reviewed, setReviewed] = useState(false);
   const [dnf, setDnf] = useState(false);
@@ -339,8 +315,11 @@ export function HistoryPage({ entries, details, detailsLoading, genreList, openP
   useEffect(() => { setMonthIndex(0); }, [activeYear, monthGroups.length]); // eslint-disable-line react-hooks/set-state-in-effect
 
   const genreName = (id) => genreList.find(g => g.id === id)?.name ?? null;
+  // Only genres that occur in this year's history, so the menu offers nothing
+  // that would empty the page; alphabetical, as the Calendar lists them.
   const genreOptions = useMemo(
-    () => genreCounts(yearEntries).map(g => ({ id: g.id, name: genreName(g.id), count: g.count })).filter(g => g.name),
+    () => genreCounts(yearEntries).map(g => ({ id: g.id, name: genreName(g.id) })).filter(g => g.name)
+      .sort((a, b) => a.name.localeCompare(b.name)),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- genreName reads genreList
     [yearEntries, genreList],
   );
@@ -361,9 +340,9 @@ export function HistoryPage({ entries, details, detailsLoading, genreList, openP
         <div className="hist-toolbar-controls">
           {years.length > 1 && (
             years.length <= 4 ? (
-              <div className="hist-years" role="tablist">
+              <div className="cal-scope" role="tablist">
                 {[...years].reverse().map(y => (
-                  <button key={y} type="button" role="tab" className={`hist-year-btn${y === activeYear ? ' active' : ''}`} aria-selected={y === activeYear} onClick={() => onYear(y)}>{y}</button>
+                  <button key={y} type="button" role="tab" className={`cal-scope-btn${y === activeYear ? ' active' : ''}`} aria-selected={y === activeYear} onClick={() => onYear(y)}>{y}</button>
                 ))}
               </div>
             ) : (
@@ -400,8 +379,8 @@ export function HistoryPage({ entries, details, detailsLoading, genreList, openP
               openPanel={openPanel}
             />
           )}
-          <CrowdCard entries={yearEntries} details={details} openPanel={openPanel} />
-          <PeopleCard entries={yearEntries} details={details} navigateTo={navigateTo} />
+          <CrowdCard entries={yearEntries} details={details} detailsLoading={detailsLoading} openPanel={openPanel} />
+          <PeopleCard entries={yearEntries} details={details} detailsLoading={detailsLoading} navigateTo={navigateTo} />
           <Filters
             types={types} setTypes={setTypes}
             genres={genres} setGenres={setGenres} genreOptions={genreOptions}
