@@ -6,6 +6,9 @@ import { titleCount } from '../listCollections.js';
 // the web app and the Storybook Content page look for copy.
 
 export const PUBLIC_PROFILE_PAGE = {
+  profile: 'Profile',
+  profileNavigation: 'Profile sections',
+  topPicks: 'Top picks',
   topFilms: 'Top films',
   topTv: 'Top TV',
   lists: 'Lists',
