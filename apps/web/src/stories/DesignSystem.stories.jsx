@@ -41,9 +41,11 @@ export const Palette = () => (
       <Swatch name="Accent text" token="--accent-text" text="#fff" />
       <Swatch name="Fill (surfaces)" token="--accent-fill" text="var(--on-accent-fill)" />
       <Swatch name="Fill hover" token="--accent-fill-hover" text="var(--on-accent-fill)" />
+      <Swatch name="Secondary accent" token="--accent-secondary" text="#fff" />
+      <Swatch name="Secondary fill" token="--accent-secondary-fill" text="var(--accent-secondary)" />
     </Row>
     <p style={{ maxWidth: 560, color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.55 }}>
-      The pink fill only ever sits behind charcoal text. The green accent colours small text, icons and rings, and never fills a surface larger than a dot.
+      The pink fill only ever sits behind charcoal text; the pink accent colours small text, icons and rings. The green is the secondary accent for availability, on its sage fill.
     </p>
   </div>
 );

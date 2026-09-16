@@ -39,7 +39,7 @@ const ANON_KEY = 'sb_publishable_sbB7Jrs3Uz97Xm3qiuQgOQ_7dg6kKWk';
 // Brand dark accent — mirrors @plot/core tokens.colors.dark.accent. Inlined so
 // the Worker bundle stays self-contained (no workspace resolution at deploy).
 // Keep in sync with @plot/core if the token changes.
-const ACCENT = '#C9D48A';
+const ACCENT = '#F06A88';
 const BG = '#0f0f11';
 // Cache hard at the edge: these cards are share previews, not live data. Short
 // TTLs are exactly what paused Vercel. 1-day browser, 7-day edge, SWR.

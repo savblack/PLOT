@@ -27,14 +27,21 @@ export const colors = {
     textMuted: '#6B655D',
     border: 'rgba(41,41,36,0.08)',
     borderStrong: 'rgba(41,41,36,0.16)',
-    accent: '#5F7030',
-    accentDim: 'rgba(95,112,48,0.12)',
+    accent: '#E05578',
+    accentDim: 'rgba(224,85,120,0.12)',
     // The ACCENT is a soft green (the deep end of Marshmallow's sage) for type
     // and line: small text, icons, rank numbers, rings, the active tab. 4.91:1
     // on --bg and 4.53:1 on the sunken cream. accentText is a step darker for
     // the smallest labels. Green replaced the pink accent on 16 Sep 2026; the
     // pink lives on as the fill below.
-    accentText: '#5A6A2C',
+    accentText: '#B83558',
+    // The SECONDARY accent is a soft green (the deep end of Marshmallow's
+    // sage): availability, "now at home", a second voice next to the pink.
+    // 4.91:1 on --bg, 4.53:1 on the sunken cream. accentSecondaryFill is the
+    // sage tint it sits on as a chip.
+    accentSecondary: '#5F7030',
+    accentSecondaryDim: 'rgba(95,112,48,0.12)',
+    accentSecondaryFill: '#DBE1B0',
     // The FILL: the brand pink. Too light to carry text (1.97:1 on cream), so
     // it only ever sits behind charcoal text (6.69:1): the primary button,
     // chips, the Live badge, the sign-up pill.
@@ -97,9 +104,13 @@ export const colors = {
     textMuted: '#919085',
     border: 'rgba(240,239,232,0.08)',
     borderStrong: 'rgba(240,239,232,0.16)',
-    accent: '#C9D48A',
-    accentDim: 'rgba(201,212,138,0.15)',
-    accentText: '#C9D48A',
+    accent: '#F06A88',
+    accentDim: 'rgba(240,106,136,0.15)',
+    accentText: '#F06A88',
+    // The green lightened for the dark ground (12.4:1).
+    accentSecondary: '#C9D48A',
+    accentSecondaryDim: 'rgba(201,212,138,0.15)',
+    accentSecondaryFill: '#DBE1B0',
     // The green lightened for the dark ground (12.4:1); the fill is the same pink.
     accentFill: '#FF88C8',
     accentFillHover: '#FF9FD3',
