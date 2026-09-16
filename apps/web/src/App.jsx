@@ -14,6 +14,7 @@ import { setUserTimezone } from './utils/date.js';
 import AppShell from './components/AppShell.jsx';
 import MediaPanel from './components/MediaPanel.jsx';
 import CollectionPanel from './components/CollectionPanel.jsx';
+import SearchPalette from './components/SearchPalette.jsx';
 import { useTheme } from './hooks/useTheme.js';
 import { useWatchlist }    from './hooks/useWatchlist.js';
 import { usePendingSave }  from './hooks/usePendingSave.js';
@@ -129,6 +130,22 @@ export default function App() {
   // Media panel state
   const [panelItem,    setPanelItem]    = useState(null);
   const [panelClosing, setPanelClosing] = useState(false);
+
+  // Search palette. One box for titles, people and friends, opened from the
+  // Search nav item, the header icon, or Cmd/Ctrl+K anywhere in the app.
+  const [searchOpen, setSearchOpen] = useState(false);
+  const openSearch  = useCallback(() => setSearchOpen(true), []);
+  const closeSearch = useCallback(() => setSearchOpen(false), []);
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setSearchOpen(open => !open);
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, []);
 
   const [tzCheckTime, setTzCheckTime] = useState(() => Date.now());
 
@@ -264,6 +281,7 @@ export default function App() {
     setTheme,
     openPanel,
     closePanel,
+    openSearch,
     navigateTo,
     watchlist,
     watching,
@@ -284,9 +302,12 @@ export default function App() {
         profile={profile}
         user={user}
         panelOpen={!!panelItem && !panelClosing}
+        onOpenSearch={openSearch}
       >
         <Outlet />
       </AppShell>
+
+      {searchOpen && <SearchPalette onClose={closeSearch} />}
 
       {panelItem && panelItem.type === 'collection' && (
         <CollectionPanel

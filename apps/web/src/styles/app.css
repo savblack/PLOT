@@ -872,11 +872,10 @@ svg { stroke-width: 1.5; }
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 32%, transparent);
 }
 
-/* Discover/Search cards below have their real "view details" control nested
+/* Discover cards below have their real "view details" control nested
    one level in (a sibling of the always-visible Favorite/Save buttons rather
    than a wrapper around them), so their focus indicator keys off :focus-within
    on the row/card instead of :focus-visible + .interactive-surface on it. */
-.list-row.search-result-row:focus-within,
 .discover-chart-card:focus-within {
   background: var(--surface-raised);
 }
@@ -3004,10 +3003,6 @@ svg { stroke-width: 1.5; }
 .panel-cast-name, .panel-similar-name { margin-top: 0.4rem; font-size: 0.72rem; font-weight: 600; }
 .panel-cast-role, .panel-similar-meta { margin-top: 0.1rem; font-size: 0.65rem; color: var(--text-muted); }
 
-.talent-result-row { width: 100%; border: 0; background: none; color: inherit; cursor: pointer; text-align: left; }
-.talent-result-row .list-row-poster span { display: flex; width: 100%; height: 100%; align-items: center; justify-content: center; background: var(--surface-raised); color: var(--text-muted); font-family: var(--font-serif); font-size: 1.4rem; }
-.talent-known-for { margin-top: 0.2rem; overflow: hidden; color: var(--text-muted); font-size: 0.72rem; text-overflow: ellipsis; white-space: nowrap; }
-
 .providers-grid {
   display: flex;
   gap: 0.5rem;
@@ -3270,54 +3265,6 @@ a.provider-chip--link:hover {
   height: 12px;
 }
 
-.search-row-status {
-  margin-left: auto;
-  padding-right: 0.1rem;
-  transition: opacity 0.15s ease, transform 0.15s ease;
-}
-.search-row-status .chip {
-  font-size: 0.62rem;
-  white-space: nowrap;
-}
-.search-result-row {
-  position: relative;
-}
-.search-result-original {
-  font-size: 0.74rem;
-  color: var(--text-muted);
-  font-style: italic;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.search-result-meta {
-  color: var(--text-secondary);
-}
-.search-result-rating {
-  color: var(--text-primary);
-  font-weight: 600;
-}
-.search-result-row .search-row-actions {
-  position: absolute;
-  right: 1rem;
-  top: 50%;
-  opacity: 0;
-  pointer-events: none;
-  transform: translate(4px, -50%);
-  transition: opacity 0.15s ease, transform 0.15s ease;
-}
-.search-result-row:hover .search-row-status,
-.search-result-row:focus-within .search-row-status {
-  opacity: 0;
-  transform: translateX(-4px);
-  pointer-events: none;
-}
-.search-result-row:hover .search-row-actions,
-.search-result-row:focus-within .search-row-actions {
-  opacity: 1;
-  pointer-events: auto;
-  transform: translate(0, -50%);
-}
 .search-action-btn {
   position: relative;
   width: 30px;
@@ -5688,17 +5635,9 @@ a.provider-chip--link:hover {
      sit on top of (the status chip below). */
   .discover-hero-corner-btns,
   .discover-hero-corner-btn,
-  .discover-chart-card .discover-chart-actions,
-  .search-result-row .search-row-actions {
+  .discover-chart-card .discover-chart-actions {
     opacity: 1;
     pointer-events: auto;
-  }
-  .search-result-row .search-row-actions {
-    transform: translate(0, -50%);
-  }
-  .search-result-row .search-row-status {
-    opacity: 0;
-    pointer-events: none;
   }
 
   .icon-btn,
@@ -5806,17 +5745,9 @@ a.provider-chip--link:hover {
 
   .discover-hero-corner-btns,
   .discover-hero-corner-btn,
-  .discover-chart-card .discover-chart-actions,
-  .search-result-row .search-row-actions {
+  .discover-chart-card .discover-chart-actions {
     opacity: 1;
     pointer-events: auto;
-  }
-  .search-result-row .search-row-actions {
-    transform: translate(0, -50%);
-  }
-  .search-result-row .search-row-status {
-    opacity: 0;
-    pointer-events: none;
   }
 
   .app-header {

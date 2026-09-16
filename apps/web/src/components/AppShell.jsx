@@ -17,7 +17,7 @@ const TAB_ICONS = { home: IconHome, calendar: IconCalendar, 'my-lists': IconList
 // (the header has its own icon) and Settings (the drawer's own footer).
 const DRAWER_NAV_ITEMS = APP_NAV_ITEMS.filter(item => item.id !== 'search' && item.id !== 'settings');
 
-export default function AppShell({ currentView, navigateTo, children, profile, user, panelOpen }) {
+export default function AppShell({ currentView, navigateTo, children, profile, user, panelOpen, onOpenSearch }) {
   const navigate = useNavigate();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
@@ -70,8 +70,12 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
   const openDrawer  = () => setDrawerOpen(true);
   const closeDrawer = () => setDrawerOpen(false);
 
+  // Search is not a destination any more: the nav item and the header icon
+  // open the palette over whatever is on screen. Everything else routes.
+  const go = (id) => (id === 'search' ? onOpenSearch() : navigateTo(id));
+
   const handleNav = (id) => {
-    navigateTo(id);
+    go(id);
     closeDrawer();
   };
 
@@ -100,7 +104,7 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
         profile={profile}
         user={user}
         unread={unread}
-        onNavigate={navigateTo}
+        onNavigate={go}
         onNavigateProfile={(username) => navigate(`/u/${username}`)}
       />
 
@@ -159,10 +163,9 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
           <button
             type="button"
             className="icon-btn"
-            onClick={() => navigateTo('search')}
+            onClick={onOpenSearch}
             aria-label={APP_SHELL.openSearch}
             title={APP_SHELL.search}
-            aria-current={currentView === 'search' ? 'page' : undefined}
           >
             <IconSearch />
           </button>
