@@ -17,7 +17,7 @@ test('public landing page renders', async ({ page }) => {
   // scoped to the local document so it does not depend on Supabase session
   // configuration or a cross-origin page that is outside this app's build.
   await page.goto('/', { waitUntil: 'commit' });
-  await expect(page).toHaveTitle(/PLOT/);
+  await expect(page).toHaveTitle(/plot/i);
 });
 
 test('auth routes render their forms', async ({ page }) => {
