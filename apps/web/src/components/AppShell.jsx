@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { APP_NAV_ITEMS, PRIMARY_NAV_ITEMS, titleForView } from '../navigation.js';
+import { APP_NAV_ITEMS, PRIMARY_NAV_ITEMS, isActiveView, titleForView } from '../navigation.js';
 import { useNotifications } from '../hooks/useNotifications.js';
 import { APP_SHELL } from '../copy/appShell.js';
 import AppSidebar from './AppSidebar.jsx';
@@ -202,10 +202,10 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
             <button
               key={id}
               type="button"
-              className={`tab-btn${currentView === id ? ' active' : ''}`}
+              className={`tab-btn${isActiveView(currentView, id) ? ' active' : ''}`}
               onClick={() => navigateTo(id)}
               aria-label={label}
-              aria-current={currentView === id ? 'page' : undefined}
+              aria-current={isActiveView(currentView, id) ? 'page' : undefined}
             >
               {Icon && <Icon />}
             </button>
@@ -247,9 +247,9 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
             <button
               key={id}
               type="button"
-              className={`nav-drawer-item${currentView === id ? ' active' : ''}`}
+              className={`nav-drawer-item${isActiveView(currentView, id) ? ' active' : ''}`}
               onClick={() => handleNav(id)}
-              aria-current={currentView === id ? 'page' : undefined}
+              aria-current={isActiveView(currentView, id) ? 'page' : undefined}
             >
               <span className="nav-drawer-label">{label}</span>
             </button>

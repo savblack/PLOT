@@ -1,5 +1,5 @@
-// One-off backfill: fill in genre_ids on list_items and history rows that were
-// saved without them.
+// One-off backfill: fill in genre_ids on list_items, history, user_favourites
+// and user_custom_list_items rows that were saved without them.
 //
 // WHY THIS EXISTS
 // Two separate causes, same symptom:
@@ -11,7 +11,10 @@
 //     worse: logWatchedItem never wrote the column at all, so every row was
 //     NULL. Both fixed alongside this script via genreIdsFromItem.
 //
-// Rows with no genres never match Discover's genre filter.
+//  3. user_favourites and user_custom_list_items had no genre column at all
+//     until 20260916000000, so every row predating it is empty.
+//
+// Rows with no genres never match Discover's or My Lists' genre filter.
 //
 // This is idempotent and safe to re-run: it only ever touches rows whose
 // genre_ids is empty, and it never overwrites a populated value.
@@ -26,6 +29,7 @@
 //   node --env-file=.env scripts/backfill-genre-ids.mjs                  # dry run, both tables
 //   node --env-file=.env scripts/backfill-genre-ids.mjs --apply          # actually write
 //   node --env-file=.env scripts/backfill-genre-ids.mjs --table=history  # one table only
+//   (tables: list_items, history, user_favourites, user_custom_list_items)
 //   node --env-file=.env scripts/backfill-genre-ids.mjs --limit=50       # cap titles processed
 //
 // Needs SUPABASE_SERVICE_KEY (RLS would otherwise hide other users' rows) and
@@ -41,12 +45,14 @@ const ONLY_TABLE = args.find(a => a.startsWith('--table='))?.split('=')[1];
 // list_items.genre_ids is NOT NULL default '{}'; history.genre_ids is nullable
 // and has always been NULL, so each table needs its own "missing" test.
 const TABLES = [
-  { name: 'list_items', nullable: false },
-  { name: 'history',    nullable: true  },
+  { name: 'list_items',              nullable: false },
+  { name: 'history',                 nullable: true  },
+  { name: 'user_favourites',         nullable: false },
+  { name: 'user_custom_list_items',  nullable: false },
 ].filter(t => !ONLY_TABLE || t.name === ONLY_TABLE);
 
 if (!TABLES.length) {
-  console.error(`--table must be one of: list_items, history`);
+  console.error(`--table must be one of: list_items, history, user_favourites, user_custom_list_items`);
   process.exit(1);
 }
 

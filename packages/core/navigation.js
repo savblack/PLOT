@@ -16,6 +16,9 @@ export const VIEW_TITLES = APP_NAV_ITEMS.reduce(
   (titles, item) => ({ ...titles, [item.id]: item.id === 'home' ? 'PLOT' : item.label }),
   {
     'new-releases': 'New Releases',
+    // Web: the page behind My Lists' "Recently Watched" rail. Mobile keeps
+    // History as a My Lists sub-tab (MY_LISTS_TABS).
+    history: 'History',
     'design-system': 'Design System',
     requests: 'Follow requests',
     notifications: 'Notifications',
@@ -43,6 +46,17 @@ export function titleForView(view) {
   return VIEW_TITLES[view] ?? VIEW_TITLES[view.split('/')[0]] ?? VIEW_TITLES.home;
 }
 
+/**
+ * Whether a nav item should read as active for the current view. A nested
+ * page keeps its parent lit: `/my-lists/want` is still My Lists.
+ *
+ * @param {string} view
+ * @param {string} id
+ */
+export function isActiveView(view, id) {
+  return view === id || (view || '').startsWith(`${id}/`);
+}
+
 export function pathForView(view) {
   return APP_NAV_ITEMS.find(item => item.id === view)?.path ?? `/${view}`;
 }
@@ -68,8 +82,8 @@ export const DISCOVER_TABS = [
   { id: 'guide',    label: 'Guide' },
 ];
 
-/* Tabs nested under My Lists. Ids match the collapsible section ids so the
-   expand/collapse-all control can scope itself to the active tab. */
+/* Sub-tabs nested under My Lists on MOBILE. Web no longer has them: My Lists
+   is one scroll of every list and History has its own route (/history). */
 export const MY_LISTS_TABS = [
   { id: 'all',       label: 'All'           },
   { id: 'watching',  label: 'Watching'      },
