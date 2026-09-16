@@ -1,3 +1,4 @@
+import MobilePageControls from './MobilePageControls.jsx';
 import { useEffect, useRef, useState } from 'react';
 
 function FilterIcon() {
@@ -20,9 +21,10 @@ function FilterIcon() {
  *                                  button (Calendar's side-panel row). The
  *                                  menu, outside-click and active logic are
  *                                  unchanged.
+ * @param {boolean}  [props.mobileControls] Show a bottom sheet instead of this menu below sidebar widths.
  * @param {string}   [props.className]  Extra class on the wrapper.
  */
-export default function GroupedFilterMenu({ ariaLabel = 'Filter', groups, label, trigger, className }) {
+export default function GroupedFilterMenu({ ariaLabel = 'Filter', groups, label, trigger, className, mobileControls = false }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
@@ -55,7 +57,9 @@ export default function GroupedFilterMenu({ ariaLabel = 'Filter', groups, label,
   const hasActiveFilters = visibleGroups.some(isGroupActive);
 
   return (
-    <div className={`guide-filter${className ? ` ${className}` : ''}`} ref={ref}>
+    <>
+    {mobileControls && <MobilePageControls groups={groups} />}
+    <div className={`guide-filter${mobileControls ? ' desktop-page-filter' : ''}${className ? ` ${className}` : ''}`} ref={ref}>
       {trigger ? trigger({ open, toggle: () => setOpen(o => !o), active: hasActiveFilters }) : (
         <button
           className={`guide-filter-btn${label ? ' guide-filter-btn--labelled' : ''}${open ? ' open' : ''}${hasActiveFilters ? ' active' : ''}`}
@@ -88,5 +92,6 @@ export default function GroupedFilterMenu({ ariaLabel = 'Filter', groups, label,
         </div>
       )}
     </div>
+    </>
   );
 }

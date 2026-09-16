@@ -1,0 +1,80 @@
+.broadcast-guide { max-width: 1280px; margin: auto; padding: 48px 36px; color: var(--text-primary); font-family: 'DM Sans', sans-serif; }
+.broadcast-guide button, .broadcast-guide input, .broadcast-guide select { font: inherit; color: inherit; }
+.broadcast-guide button, .broadcast-guide select, .broadcast-toolbar input { background: var(--surface); border: 1px solid var(--border-strong); border-radius: 6px; padding: 9px 12px; }
+.broadcast-guide button { cursor: pointer; }
+.broadcast-guide button:disabled { opacity: .5; cursor: default; }
+.broadcast-guide :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.broadcast-guide button:hover { border-color: var(--accent); }
+.broadcast-heading { margin-bottom: 36px; }
+.broadcast-heading > p:first-child { font-size: 11px; text-transform: uppercase; letter-spacing: .12em; }
+.broadcast-heading p { color: var(--text-secondary); margin: 8px 0; }
+.broadcast-heading h1 { font-family: 'Instrument Serif', serif; font-weight: 400; font-size: 64px; margin: 0; }
+.broadcast-heading h1 span { color: var(--text-muted); }
+.broadcast-layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 44px; }
+.broadcast-sidebar { border-right: 1px solid var(--border-strong); padding-right: 24px; }
+.broadcast-sidebar > label { display: block; font-size: 12px; margin-bottom: 9px; }
+.broadcast-sidebar select { width: 100%; }
+.broadcast-note { font-size: 11px; color: var(--text-muted); line-height: 1.7; }
+.broadcast-side-title { display: flex; justify-content: space-between; align-items: center; margin-top: 28px; }
+.broadcast-side-title h2 { font-size: 13px; }
+.broadcast-side-title > span { font-size: 11px; color: var(--text-muted); }
+.broadcast-channel-list { margin-top: 18px; }
+.broadcast-channel-list > div { display: flex; gap: 10px; padding: 8px 0; font-size: 12px; }
+.broadcast-channel-list > div > span:first-child { width: 25px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.broadcast-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border-bottom: 1px solid var(--border-strong); gap: 6px; padding-bottom: 20px; }
+.broadcast-days button { display: grid; gap: 8px; background: transparent; border-color: transparent; }
+.broadcast-days span { font-size: 11px; }
+.broadcast-days strong { font-size: 23px; font-weight: 400; }
+.broadcast-guide button[aria-pressed=true] { color: var(--accent-text); border-color: var(--accent); background: var(--accent-dim); }
+.broadcast-toolbar { display: flex; justify-content: space-between; gap: 12px; padding: 22px 0; }
+.broadcast-toolbar input { min-width: 0; width: 210px; }
+.broadcast-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.broadcast-actions button { font-size: 12px; }
+.broadcast-date { border-bottom: 1px solid var(--border-strong); padding: 12px 0 20px; }
+.broadcast-date h2 { font-family: 'Instrument Serif', serif; font-size: 28px; font-weight: 400; margin: 0 0 5px; }
+.broadcast-date > span { font-size: 11px; color: var(--text-muted); }
+.broadcast-guide .broadcast-row { display: flex; width: 100%; align-items: center; gap: 20px; padding: 21px 0; border: 0; border-bottom: 1px solid var(--border); border-radius: 0; background: transparent; text-align: left; }
+.broadcast-row > time { width: 78px; flex-shrink: 0; font-size: 12px; color: var(--text-secondary); }
+.broadcast-programme { display: grid; gap: 6px; flex: 1; min-width: 0; }
+.broadcast-programme strong { font-size: 15px; font-weight: 500; overflow-wrap: anywhere; }
+.broadcast-programme > span { font-size: 11px; color: var(--text-muted); }
+.broadcast-live { color: var(--accent-text); font-size: 10px; white-space: nowrap; }
+.broadcast-empty { padding: 50px 0; color: var(--text-secondary); }
+.broadcast-empty h3 { font-weight: 500; }
+.broadcast-picker { border: 0; margin: 12px 0; padding: 0; }
+.broadcast-picker legend { position: absolute; width: 1px; height: 1px; overflow: hidden; }
+.broadcast-picker label { display: flex; gap: 8px; align-items: center; min-height: 36px; font-size: 12px; }
+.broadcast-picker input { accent-color: var(--accent); }
+.broadcast-picker .broadcast-actions { margin: 12px 0; }
+.broadcast-guide .broadcast-primary { color: var(--accent-text); border-color: var(--accent); }
+.broadcast-notice { font-size: 12px; border-bottom: 1px solid var(--border); padding-bottom: 16px; }
+.broadcast-dialog { max-width: 520px; width: calc(100% - 48px); background: var(--surface); color: var(--text-primary); padding: 28px; border: 1px solid var(--border-strong); border-radius: 10px; }
+.broadcast-dialog::backdrop { background: rgba(0, 0, 0, 0.4); }
+.broadcast-dialog > button { float: right; }
+.broadcast-dialog h2 { font-family: 'Instrument Serif', serif; font-size: 32px; font-weight: 400; }
+.broadcast-dialog p { line-height: 1.7; font-size: 14px; }
+@media (max-width: 700px) {
+  .broadcast-guide { padding: 24px 18px; }
+  .broadcast-heading h1 { font-size: 48px; }
+  .broadcast-layout { grid-template-columns: 1fr; gap: 24px; }
+  .broadcast-sidebar { border-right: 0; border-bottom: 1px solid var(--border-strong); padding: 0 0 20px; }
+  .broadcast-sidebar select { width: auto; }
+  .broadcast-channel-list { display: none; }
+  .broadcast-side-title { margin-top: 12px; }
+  .broadcast-days { gap: 1px; }
+  .broadcast-days button { padding: 10px 4px; }
+  .broadcast-toolbar { flex-wrap: wrap; }
+  .broadcast-toolbar input { width: 100%; }
+  .broadcast-guide .broadcast-row { gap: 10px; }
+  .broadcast-row > time { width: 64px; }
+  .broadcast-live { max-width: 36px; white-space: normal; }
+}
+.broadcast-region-link { color: var(--text-secondary); font-size: 12px; text-align: right; margin-bottom: 14px; }
+.broadcast-guide a { color: inherit; text-underline-offset: 3px; }
+.broadcast-region-settings { max-width: 480px; border-top: 1px solid var(--border-strong); border-bottom: 1px solid var(--border-strong); padding: 24px 0; }
+.broadcast-region-settings > label { display: block; }
+.broadcast-region-settings > button { margin-left: 10px; }
+.broadcast-region-settings [role=status], .broadcast-region-settings [role=alert] { font-size: 12px; }
+.broadcast-region-settings > label:not(:first-child) { margin-top: 24px; }
+.broadcast-region-settings select { margin-top: 10px; max-width: 100%; }
+.broadcast-region-settings > .broadcast-primary { margin-left: 0; }

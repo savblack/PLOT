@@ -129,9 +129,10 @@ export default function MyListsView() {
 
   return (
     <div>
-      <div className="discover-toolbar">
+      <div className="page-toolbar mylists-toolbar">
         <span />
         <TypeGenreFilter
+          mobileControls
           ariaLabel="Filter lists"
           typeFilters={typeFilters}
           setTypeFilters={setTypeFilters}

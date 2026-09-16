@@ -32,15 +32,16 @@ function filterSummary(typeFilters, genreFilters, genres) {
 }
 
 /* The labelled type + genre pill, the same control as Home's. */
-export function TypeGenreFilter({ ariaLabel, typeFilters, setTypeFilters, genreFilters, setGenreFilters }) {
+export function TypeGenreFilter({ ariaLabel, typeFilters, setTypeFilters, genreFilters, setGenreFilters, mobileControls = false }) {
   const { genres } = useGenres();
   return (
     <GroupedFilterMenu
+      mobileControls={mobileControls}
       ariaLabel={ariaLabel}
       label={filterSummary(typeFilters, genreFilters, genres)}
       groups={[
-        { heading: MEDIA.typeHeading, options: TYPE_OPTIONS, value: typeFilters, onChange: setTypeFilters, defaultValue: ALL_TYPES },
-        { heading: MEDIA.genreHeading, options: genres.map(g => ({ id: g.id, label: g.name })), value: genreFilters, onChange: setGenreFilters },
+        { heading: MEDIA.typeHeading, allLabel: MEDIA.allTypes, options: TYPE_OPTIONS, value: typeFilters, onChange: setTypeFilters, defaultValue: ALL_TYPES },
+        { heading: MEDIA.genreHeading, allLabel: MEDIA.allGenres, options: genres.map(g => ({ id: g.id, label: g.name })), value: genreFilters, onChange: setGenreFilters },
       ]}
     />
   );

@@ -29,9 +29,9 @@ test('buildTitleShareUrl returns null for invalid input', () => {
   assert.equal(buildTitleShareUrl({ tmdbId: 5, mediaType: 'book', origin: ORIGIN }), null);
 });
 
-test('buildTitleShareUrl returns null when no origin is available', () => {
-  // No DOM in node, and no explicit origin passed.
-  assert.equal(buildTitleShareUrl({ tmdbId: 5, mediaType: 'movie' }), null);
+test('buildTitleShareUrl defaults to a public origin without DOM access', () => {
+  const options = { tmdbId: 5, mediaType: 'movie' };
+  assert.equal(buildTitleShareUrl(options), buildTitleShareUrl({ ...options, origin: ORIGIN }));
 });
 
 // --- shareUrl: native share / clipboard fallback ---------------------------

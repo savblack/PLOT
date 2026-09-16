@@ -1,6 +1,7 @@
 import process from 'node:process'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { guidePreviewFeed } from '../../scripts/guide/dev-plugin.mjs'
 
 import { cloudflare } from "@cloudflare/vite-plugin";
 
@@ -10,7 +11,7 @@ export default defineConfig({
   // fallback. Everything else runs through Cloudflare's local asset handler,
   // whose SPA fallback comes from `assets.not_found_handling` in
   // apps/web/wrangler.toml — see the note there.
-  plugins: [react(), ...(process.env.PLOT_SMOKE_TEST ? [] : [cloudflare()])],
+  plugins: [guidePreviewFeed(), react(), ...(process.env.PLOT_SMOKE_TEST ? [] : [cloudflare()])],
   // Local configuration is shared at the repository root. Without this Vite
   // only reads apps/web/.env, leaving the local app unable to initialise
   // Supabase when started through the documented root pnpm command.

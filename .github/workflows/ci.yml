@@ -28,6 +28,7 @@ jobs:
   check:
     name: Lint and build
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - name: Check out repository
@@ -38,12 +39,6 @@ jobs:
           # seconds: .git is ~146 MB over ~1,000 commits.
           fetch-depth: 0
 
-      # Folded in from what used to be a standalone `secret-scan` job. Actions
-      # bills every job rounded UP to a whole minute and this scan's median
-      # runtime is 8s, so owning a job cost a full billed minute per run
-      # (~750 min/month) for 8 seconds of work. It stays the FIRST step so a leak
-      # still fails within seconds, before the install and build rather than
-      # after them — the fail-fast property the separate job was giving us.
       - name: Scan changed lines for secret-shaped strings
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
@@ -70,28 +65,14 @@ jobs:
           node-version: 22
           cache: pnpm
 
-      # Folded in from what used to be a standalone `edge-typecheck` job, for the
-      # same reason #563 folded the secret scan in: Actions bills every job
-      # rounded UP to a whole minute, and this one's real work is ~25s, so owning
-      # a job cost a full billed minute per run (~730 min/month). `check` totals
-      # ~60s, so it absorbs this and still lands inside one 2-minute bill.
-      #
-      # Deliberately placed BEFORE the install. check-edge-types.sh explains
-      # that Deno must not find a node_modules/ directory or it switches to node
-      # resolution and gives up on every npm: specifier — which silently skipped
-      # four functions until `--node-modules-dir=none` was added. The flag makes
-      # it robust either way, but running before the install keeps this step's
-      # environment identical to the standalone job it replaces.
+      # Keep edge validation before the workspace install. All checks share one
+      # runner to avoid repeated setup and per-job minute rounding.
       - name: Set up Deno
         uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
 
-      # Edge functions are hand-deployed: `pnpm run build` does not compile them
-      # and no test imports them, so this is the only gate on them. Unconditional
-      # on purpose — a paths gate would burn the minute it saves, and this way the
-      # functions are checked on 100% of PRs rather than only the ones that touch
-      # them.
+      # Every run still validates every edge function, including shared helpers.
       - name: Typecheck edge functions
         run: pnpm run edge:check
 
@@ -174,118 +155,23 @@ jobs:
           VITE_PUBLIC_POSTHOG_PROJECT_TOKEN: ${{ secrets.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN }}
           VITE_PUBLIC_POSTHOG_HOST: ${{ secrets.VITE_PUBLIC_POSTHOG_HOST }}
 
-  smoke:
-    name: Smoke tests (Playwright)
-    needs: check
-    runs-on: ubuntu-latest
-
-    # Runs on pull requests as well as pushes to main. It used to be
-    # `push && ref == main` only, which meant the one check that actually loads
-    # the app in a browser could not block a merge — it reported after the fact,
-    # on main, with Cloudflare Pages already building the same commit.
-    #
-    # That is not hypothetical. #885 bumped react-dom to 19.3.0 without bumping
-    # react, and React refuses to run when the pair differs:
-    #
-    #   Incompatible React versions: the "react" and "react-dom" packages must
-    #   have the exact same version.
-    #
-    # Every route threw on load. Lint, build, tsc, mobile typecheck and both
-    # Pages builds were green — a version mismatch is not a type error and not a
-    # build error. Only a browser sees it, and no browser ran before merge.
-
-    env:
-      # Fall back to placeholders when the secrets are not readable. Dependabot
-      # PRs run against a separate secret store and see none of these, and a
-      # fork sees none either — and EMPTY is not the same as absent here:
-      # configure() throws "Supabase URL or anon key is missing", which takes
-      # down three of the five tests for a reason that has nothing to do with
-      # the change under test. A red gate that is red for the wrong reason gets
-      # switched off, which is how this job ended up main-only in the first
-      # place.
-      #
-      # Measured on 2026-09-14, running the suite locally with each in turn:
-      # real credentials 5/5, placeholders 5/5, empty strings 2/5. The suite
-      # asserts rendering and routing and is deliberately scoped to the local
-      # document, so it does not need a reachable backend — only a bootable one.
-      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || 'https://placeholder.supabase.co' }}
-      VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || 'placeholder-not-a-key' }}
-      VITE_TMDB_PROXY_URL: ${{ secrets.VITE_TMDB_PROXY_URL || 'https://placeholder.invalid' }}
-      # No PostHog token, ever: this job drives a real browser through the app,
-      # and every click would land in the production project. The host allowlist
-      # in apps/web/src/utils/analyticsHost.js already blocks 127.0.0.1, so this
-      # is belt and braces.
-
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v7
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Set up Node
-        uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build
-        run: pnpm run build
-
-      - name: Install Playwright browser
-        run: npx playwright install --with-deps chromium
-
-      - name: Smoke tests
-        run: pnpm --filter @plot/web run test:smoke
-
-  mobile-typecheck:
-    name: Mobile typecheck (Expo)
-    runs-on: ubuntu-latest
-    steps:
-      # Runs on every PR rather than behind a path-filter gate. Actions bills each
-      # job rounded UP to a whole minute, and this job's median is 41s (it has
-      # never exceeded 60s), so a separate "did mobile change?" job spent a billed
-      # minute of its own to skip a single billed minute here. Measured across
-      # August that gate cost ~700 min/month to save ~350. Running unconditionally
-      # is cheaper and simpler, and type-checks mobile on 100% of PRs, not 58%.
-      # The web and mobile apps now share one source of truth: the @plot/core
-      # workspace package (packages/core). There is no copy to drift, so the old
-      # mirror drift-guard is gone. This job just type-checks the Expo app, which
-      # also proves it still resolves @plot/core.
-      #
-      # Mobile linting is NOT here — `eslint .` in the `check` job covers
-      # apps/mobile now that it is no longer in globalIgnores, so mobile gets
-      # linted on every PR rather than only when mobile files change.
-      - name: Check out repository
-        uses: actions/checkout@v7
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Set up Node
-        uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: pnpm
-
-      # Installs the whole workspace (web + mobile + @plot/core). The mixed react
-      # versions (react-native pins a different patch) are tolerated via
-      # strict-peer-dependencies=false in the root .npmrc — pnpm's equivalent of
-      # the legacy-peer-deps flag npm needed here.
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      # tsc proves the JS type-checks. It cannot prove the app BUILDS: the native
-      # build is Swift against Expo's and React Native's own headers, and nothing
-      # in this repo compiles it. On 2026-09-11 the first iOS build in five weeks
-      # failed because react-native sat one minor above what Expo SDK 57 is built
-      # against, after a Dependabot group PR moved it. Nine packages were off in
-      # total. This is the check that would have caught it the day it landed.
+      # These used to be a separate job with its own checkout and install.
       - name: Check native deps match the Expo SDK
         run: pnpm run mobile:deps
 
-      - name: TypeScript
+      - name: Mobile typecheck (Expo)
         run: pnpm --filter @plot/mobile run typecheck
+
+      - name: Install Playwright browser
+        run: pnpm --filter @plot/web exec playwright install --with-deps chromium
+
+      # Build already passed above. Calling test:smoke here would build again.
+      # Browser checks still run before merging, including Dependabot PRs.
+      - name: Smoke tests (Playwright)
+        run: pnpm --filter @plot/web exec playwright test
+        env:
+          # The suite checks local rendering/routing, so placeholders let forks
+          # and Dependabot boot without repository secrets. Never send analytics.
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || 'https://placeholder.supabase.co' }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || 'placeholder-not-a-key' }}
+          VITE_TMDB_PROXY_URL: ${{ secrets.VITE_TMDB_PROXY_URL || 'https://placeholder.invalid' }}

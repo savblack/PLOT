@@ -1,3 +1,6 @@
+import { buildTitleShareUrl } from '@plot/core/sharing.js';
+import { SHARING } from '@plot/core/copy/sharing.js';
+import { shareLink } from '../lib/share';
 /**
  * MediaPanel — slide-up detail sheet, mobile port of web MediaPanel.jsx.
  * Sections: backdrop → title/meta → actions → watching/watched → where to watch → episodes (TV)
@@ -10,7 +13,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useEffect, useState, useRef, useMemo } from 'react';
 import {
   View, Text, Image, ScrollView, TouchableOpacity, Modal,
-  StyleSheet, Dimensions, ActivityIndicator, TextInput, Animated, Share, Linking, Alert,
+  StyleSheet, Dimensions, ActivityIndicator, TextInput, Animated, Linking, Alert,
   Platform,
 } from 'react-native';
 import Svg, { Path, Line, Polyline, Circle, Polygon, Rect } from 'react-native-svg';
@@ -41,11 +44,6 @@ import { TrailerPlayer } from './TrailerPlayer';
 import CollectionCard from './CollectionCard';
 import { MEDIA } from '@plot/core/copy/media.js';
 
-// Shared link points at the web /save route (works for anyone, app or not) —
-// mirrors web buildTitleShareUrl.
-const SHARE_BASE = 'https://app.theplot.tv';
-const buildShareUrl = (tmdbId: number, mediaType: string) =>
-  `${SHARE_BASE}/save?media_type=${mediaType}&tmdb_id=${tmdbId}&src=share`;
 
 const SCREEN_H = Dimensions.get('window').height;
 const SCREEN_W = Dimensions.get('window').width;
@@ -700,14 +698,13 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
     return result;
   };
 
-  const handleShare = async () => {
-    try {
-      const t = details?.title || details?.name || '';
-      const url = buildShareUrl(itemId, itemType);
-      await Share.share({ message: t ? `${t}. ${url}` : url, url });
-      track(EVENTS.TITLE_SHARED, { tmdb_id: itemId, media_type: itemType });
-    } catch { /* user dismissed the share sheet */ }
-  };
+  const handleShare = () => shareLink({
+    url: buildTitleShareUrl({ tmdbId: itemId, mediaType: itemType, source: 'panel' }),
+    title: details?.title || details?.name,
+    text: SHARING.titleText(details?.title || details?.name || ''),
+    event: EVENTS.TITLE_SHARED,
+    eventProps: { tmdb_id: itemId, media_type: itemType, source: 'panel' },
+  });
 
   // Sync review state
   useEffect(() => {
@@ -996,7 +993,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.btnSecondary} onPress={handleShare}>
                       <IconShare />
-                      <Text style={styles.btnSecondaryText}>Share</Text>
+                      <Text style={styles.btnSecondaryText}>{COMMON.share}</Text>
                     </TouchableOpacity>
                   </View>
                 </View>

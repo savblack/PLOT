@@ -1,7 +1,11 @@
+import { PUBLIC_PROFILE_PAGE } from '@plot/core/copy/publicProfilePage.js';
+import { buildProfileShareUrl } from '@plot/core/sharing.js';
+import { SHARING } from '@plot/core/copy/sharing.js';
+import { shareLink } from '../../lib/share';
 import { useState, useEffect, useMemo } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, Image, TextInput,
-  Modal, Alert, ActivityIndicator, StyleSheet, Switch, Platform, Share, Linking,
+  Modal, Alert, ActivityIndicator, StyleSheet, Switch, Platform, Linking,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -663,13 +667,12 @@ export default function SettingsScreen() {
     setGeneratingCalToken(false);
   };
 
-  const handleShareCalUrl = async () => {
-    if (!calFeedUrl) return;
-    try {
-      await Share.share({ message: `Subscribe to my PLOT calendar:\n${calFeedUrl}`, url: calFeedUrl });
-      track(EVENTS.LIST_SHARED, { kind: 'calendar_feed' });
-    } catch { /* user dismissed the share sheet */ }
-  };
+  const handleShareCalUrl = () => shareLink({
+    url: calFeedUrl,
+    text: 'Subscribe to my PLOT calendar:',
+    event: EVENTS.LIST_SHARED,
+    eventProps: { kind: 'calendar_feed' },
+  });
 
   const handleAddToCalendar = () => {
     if (calWebcalUrl) {
@@ -902,6 +905,17 @@ export default function SettingsScreen() {
 
         {/* Social */}
         <SettingsGroup title="Public profile">
+          {username && <SettingsRow
+            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2}><Path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M19 8v6M16 11h6"/><Circle cx={9} cy={7} r={4}/></Svg>}
+            label={PUBLIC_PROFILE_PAGE.shareProfile}
+            onPress={() => { void shareLink({
+              url: buildProfileShareUrl({ username }),
+              title: SETTINGS_VIEW.shareTitleWithUsername(username),
+              text: SHARING.profileText(displayName || username),
+              event: EVENTS.PROFILE_SHARED,
+            }); }}
+          />}
+
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><Circle cx={12} cy={7} r={4}/></Svg>}
             label="My profile"

@@ -1,7 +1,11 @@
+// Web settings use DOM panels, browser sharing and Stripe portal redirects.
+// Shared navigation/copy lives in core; native layout parity: GitHub issue 922.
+import { SHARING } from '@plot/core/copy/sharing.js';
+import { buildProfileShareUrl } from '@plot/core/sharing.js';
 import { USERNAME_RE } from '@plot/core/profileFields.js';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { logoUrl } from '../utils/images.js';
 import { tmdb, setTmdbRegion } from '@plot/core/tmdb.js';
@@ -32,7 +36,10 @@ import { MODERATION } from '../copy/moderation.js';
 import { useBlocks } from '@plot/core/useBlocks.js';
 import { IANA_TIMEZONES } from '../utils/timezones.js';
 import { REGIONS, DEFAULT_REGION, regionName } from '@plot/core/regions.js';
-import { SHOW_MEDIA_SYNC_INTEGRATIONS, SHOW_PRICING_PAGE } from '../launchFeatures.js';
+import { SHOW_MEDIA_SYNC_INTEGRATIONS } from '../launchFeatures.js';
+import { SETTINGS_SECTIONS, settingsSelectionSummary } from '@plot/core/settings.js';
+import SettingsPage, { SettingsPreferenceRow, SettingsSwitch } from './SettingsPage.jsx';
+import SettingsBilling from './SettingsBilling.jsx';
 import SheetHeader from './SheetHeader.jsx';
 import ConfirmModal from './ConfirmModal.jsx';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
@@ -114,11 +121,6 @@ function RegionPicker({ current, onSave, onClose }) {
   );
 }
 
-/* ── Chevron icon ── */
-function Chevron() {
-  return <svg viewBox="0 0 24 24" width="14" height="14" stroke="var(--text-muted)" fill="none" strokeWidth="2.5"><polyline points="9,18 15,12 9,6"/></svg>;
-}
-
 function PremiumBadge() {
   return (
     <span style={{ fontSize: '0.66rem', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--accent)', background: 'var(--accent-dim)', borderRadius: 999, padding: '0.15rem 0.5rem', marginLeft: '0.35rem', verticalAlign: 'middle' }}>
@@ -136,7 +138,6 @@ function SettingsTextAction({ children, onClick, disabled = false, tone = 'defau
       disabled={disabled}
     >
       <span>{children}</span>
-      <span aria-hidden="true">›</span>
     </button>
   );
 }
@@ -1128,6 +1129,12 @@ export function FeedbackPanel({ user, initialType, onClose, allTypes = false }) 
 export default function SettingsView() {
   const { profile, user, theme, setTheme, refreshProfile, watchlist, watching, reminders, customLists } = useApp();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeSection = SETTINGS_SECTIONS.some(item => item.id === searchParams.get('section')) ? searchParams.get('section') : 'account';
+  const changeSection = (section) => {
+    setActionError(null);
+    setSearchParams(previous => { const next = new URLSearchParams(previous); next.set('section', section); return next; });
+  };
   const sync  = useMediaSync(user?.id);
   const trakt = useTraktSync(user?.id);
   const premium = usePremium(profile);
@@ -1142,6 +1149,8 @@ export default function SettingsView() {
   const [showGuideChannels,   setShowGuideChannels]   = useState(false);
   const [savingProviders,     setSavingProviders]     = useState(false);
   const [savingMarketingEmails, setSavingMarketingEmails] = useState(false);
+  const [savingKidsContent, setSavingKidsContent] = useState(false);
+  const [savingVisibility, setSavingVisibility] = useState(false);
   const [savingGuideChannels, setSavingGuideChannels] = useState(false);
   const [providerDraft,       setProviderDraft]       = useState(null);
   const [guideChannelDraft,   setGuideChannelDraft]   = useState(null);
@@ -1172,11 +1181,9 @@ export default function SettingsView() {
   const [actionError,         setActionError]         = useState(null);
   const [confirmModal,        setConfirmModal]        = useState(null); // { title, message, confirmLabel, danger, onConfirm }
   const [billingReturn,       setBillingReturn]       = useState(null); // null|'premium'|'tip'
-  const [requestedIntegrations, setRequestedIntegrations] = useState(() => new Set());
-  const [requestingIntegration, setRequestingIntegration] = useState(null);
   const premiumEventFired = useRef(false);
 
-  const showConfirm = useCallback((opts) => setConfirmModal(opts), []);
+  const showConfirm = useCallback((opts) => setConfirmModal(opts), [setConfirmModal]);
 
   // Back from Stripe checkout: thank the user and re-pull the profile a few
   // times — the webhook that flips is_premium can lag the redirect.
@@ -1185,7 +1192,7 @@ export default function SettingsView() {
     const checkout = params.get('checkout');
     const tip = params.get('tip');
     if (!checkout && !tip) return;
-    navigate('/settings', { replace: true });
+    navigate('/settings?section=billing', { replace: true });
     const returnState = checkout === 'success' ? 'premium' : tip === 'thanks' ? 'tip' : null;
     if (returnState) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- reflect the external checkout return URL in local UI state
@@ -1210,17 +1217,12 @@ export default function SettingsView() {
   const calFeedUrl = calendarToken ? edgeFunctionUrl('calendar-feed', { token: calendarToken }) : null;
 
   const { share: shareProfileLink, copied: profileUrlCopied } = useShare();
-  const { share: shareInvite, copied: inviteCopied } = useShare();
 
   const username      = profile?.username || '';
   const isPublic      = !!profile?.is_public;
   const usernameValue = usernameDraft ?? username;
   const usernameDirty = usernameValue.trim().toLowerCase() !== username.toLowerCase();
-  const profileUrl    = username ? `${window.location.origin}/u/${username}` : null;
-  // Invite link: the profile URL tagged with ?ref=<me>. attribution.js captures
-  // ref on the new visitor; after they sign up, usePendingReferral auto-follows
-  // me (and the follows trigger notifies me).
-  const inviteUrl     = username ? `${profileUrl}?ref=${encodeURIComponent(username)}` : null;
+  const profileUrl    = buildProfileShareUrl({ username });
   // Sync local token back to null once profile catches up (or if revoked elsewhere)
   useEffect(() => {
     const shouldClearLocalToken = localCalToken && (
@@ -1326,8 +1328,11 @@ export default function SettingsView() {
   };
 
   const handleToggleKidsContent = async () => {
+    if (savingKidsContent) return;
+    setSavingKidsContent(true);
     setActionError(null);
     const { error } = await updateProfile({ userId: user.id, patch: { include_kids_content: !includeKidsContent } });
+    setSavingKidsContent(false);
     if (error) { setActionError(error.message); return; }
     refreshProfile();
   };
@@ -1629,16 +1634,14 @@ export default function SettingsView() {
   };
 
   const handleTogglePublic = async () => {
-    if (!user) return;
+    if (savingVisibility || !user) return;
+    setSavingVisibility(true);
     const { error } = await updateProfile({ userId: user.id, patch: { is_public: !isPublic } });
+    setSavingVisibility(false);
     if (error) { setActionError(error.message); return; }
     track(EVENTS.PROFILE_VISIBILITY_CHANGED, { is_public: !isPublic });
     refreshProfile();
   };
-
-  // A little personality for profile shares — one picked at random (the card
-  // already carries the avatar, stats and PLOT branding).
-  const PROFILE_SHARE_LINES = SETTINGS_VIEW.shareTaglines;
 
   const handleShareProfile = () => {
     if (!profileUrl) return;
@@ -1646,40 +1649,94 @@ export default function SettingsView() {
     return shareProfileLink({
       url: profileUrl,
       title: username ? SETTINGS_VIEW.shareTitleWithUsername(username) : SETTINGS_VIEW.shareTitleDefault,
-      text: PROFILE_SHARE_LINES[Math.floor(Math.random() * PROFILE_SHARE_LINES.length)],
+      text: SHARING.profileText(profile?.display_name || username),
       event: 'profile_shared',
     });
   };
 
-  const handleInvite = () => {
-    if (!inviteUrl) return;
-    return shareInvite({
-      url: inviteUrl,
-      title: SETTINGS_VIEW.shareJoinMe,
-      text: SETTINGS_VIEW.inviteText,
-      event: EVENTS.INVITE_SHARED,
-    });
-  };
-
   return (
-    <div className="view-reading" style={{ paddingBottom: '2rem' }}>
-      {actionError && (
-        <div
-          role="alert"
-          style={{
-            margin: '0.75rem 0 1rem',
-            padding: '0.85rem 0.95rem',
-            borderRadius: 'var(--radius-md)',
-            border: '1px solid var(--danger-border)',
-            background: 'var(--danger-dim)',
-            color: 'var(--danger)',
-            fontSize: '0.82rem',
-            lineHeight: 1.5,
-          }}
-        >
-          {actionError}
+    <>
+      <SettingsPage section={activeSection} onSection={changeSection} onSignOut={() => setConfirmSignOut(true)}>
+        {actionError && <p className="settings-error" role="alert">{actionError}</p>}
+        {activeSection === 'account' && <>
+      {/* Public profile */}
+      <div className="settings-group">
+        <div className="settings-group-title">Profile</div>
+        <AvatarSetting
+          user={user}
+          profile={profile}
+          refreshProfile={refreshProfile}
+          onError={setActionError}
+        />
+
+        {/* Username */}
+        <div className="settings-row" style={{ cursor: 'default' }}>
+          <div className="settings-row-left" style={{ flex: 1, minWidth: 0 }}>
+            <div className="settings-row-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+              </svg>
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div className="settings-row-label">Username</div>
+              {usernameDraft === null ? (
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                  {username}
+                </div>
+              ) : (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.35rem' }}>
+                    <input
+                      type="text"
+                      value={usernameValue}
+                      spellCheck={false}
+                      autoCapitalize="none"
+                      maxLength={30}
+                      autoFocus
+                      aria-label="Username"
+                      onChange={(e) => setUsernameDraft(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                      style={{
+                        flex: 1, minWidth: 0, padding: '0.45rem 0.6rem',
+                        borderRadius: 'var(--radius-sm, 8px)', border: '1px solid var(--border)',
+                        background: 'var(--surface)', color: 'var(--text-primary)', fontSize: '0.9rem',
+                      }}
+                    />
+                  </div>
+                  <div style={{
+                    fontSize: '0.72rem', marginTop: '0.3rem', minHeight: '1rem',
+                    color: usernameStatus === 'available' || usernameStatus === 'saved' ? 'var(--accent)'
+                      : usernameStatus === 'taken' || usernameStatus === 'invalid' || usernameStatus === 'error' ? 'var(--danger)'
+                      : 'var(--text-muted)',
+                  }}>
+                    {usernameStatus === 'checking' && SETTINGS_VIEW.username.checkingAvailability}
+                    {usernameStatus === 'available' && SETTINGS_VIEW.username.available}
+                    {usernameStatus === 'taken' && SETTINGS_VIEW.username.taken}
+                    {usernameStatus === 'invalid' && SETTINGS_VIEW.username.formatHint}
+                    {usernameStatus === 'saving' && COMMON.saving}
+                    {usernameStatus === 'saved' && SETTINGS_VIEW.username.saved}
+                    {usernameStatus === 'error' && SETTINGS_VIEW.username.error}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+          <div className="settings-inline-actions" style={{ flexShrink: 0, alignSelf: 'center' }}>
+            {usernameDraft === null ? (
+              <SettingsTextAction onClick={() => setUsernameDraft(username)}>
+                Edit
+              </SettingsTextAction>
+            ) : (
+              <SettingsTextAction
+                disabled={usernameStatus === 'checking' || usernameStatus === 'saving' || usernameStatus === 'invalid' || usernameStatus === 'taken'}
+                onClick={handleSaveUsername}
+              >
+                Save
+              </SettingsTextAction>
+            )}
+          </div>
         </div>
-      )}
+
+      </div>
       {/* Account */}
       <div className="settings-group" style={{ marginTop: '0.75rem' }}>
         <div className="settings-group-title">Account</div>
@@ -1807,42 +1864,6 @@ export default function SettingsView() {
           </div>
         </div>
 
-        <div
-          className="settings-row interactive-surface"
-          onClick={() => { setActionError(null); setShowRegion(true); }}
-          {...getButtonLikeProps({ onPress: () => { setActionError(null); setShowRegion(true); }, label: SETTINGS_VIEW.region.openRegionSettings })}
-        >
-          <div className="settings-row-left">
-            <div className="settings-row-icon">
-              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-            </div>
-            <span className="settings-row-label">Region</span>
-          </div>
-          <div className="settings-row-value">
-            <span>{regionName(region)}</span>
-            <Chevron />
-          </div>
-        </div>
-
-        <div
-          className="settings-row interactive-surface"
-          onClick={() => setShowTimezone(true)}
-          {...getButtonLikeProps({ onPress: () => setShowTimezone(true), label: SETTINGS_VIEW.timezone.openTimezoneSettings })}
-        >
-          <div className="settings-row-left">
-            <div className="settings-row-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
-            </div>
-            <span className="settings-row-label">Timezone</span>
-          </div>
-          <div className="settings-row-value">
-            <span style={{ fontSize: '0.78rem', maxWidth: 160, textAlign: 'right', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {timezone ? fmtTz(timezone) : COMMON.notSet}
-            </span>
-            <Chevron />
-          </div>
-        </div>
-
         {/* Theme */}
         <div className="settings-row" style={{ cursor: 'default' }}>
           <div className="settings-row-left">
@@ -1867,271 +1888,8 @@ export default function SettingsView() {
           </div>
         </div>
 
-        <div
-          className="settings-row interactive-surface"
-          onClick={() => setConfirmSignOut(true)}
-          {...getButtonLikeProps({ onPress: () => setConfirmSignOut(true), label: SETTINGS_VIEW.signOut })}
-        >
-          <div className="settings-row-left">
-            <div className="settings-row-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
-              </svg>
-            </div>
-            <span className="settings-row-label">Sign out</span>
-          </div>
-        </div>
       </div>
-
-      {confirmSignOut && (
-        <ConfirmModal
-          title="Sign out?"
-          message="You can sign back in anytime."
-          confirmLabel="Sign out"
-          onConfirm={() => { navigate('/logout'); return true; }}
-          onClose={() => setConfirmSignOut(false)}
-        />
-      )}
-
-      {/* Public profile */}
-      <div className="settings-group">
-        <div className="settings-group-title">Profile</div>
-        <AvatarSetting
-          user={user}
-          profile={profile}
-          refreshProfile={refreshProfile}
-          onError={setActionError}
-        />
-
-        {/* Visibility */}
-        <div className="settings-row" style={{ cursor: 'default' }}>
-          <div className="settings-row-left" style={{ flex: 1, minWidth: 0 }}>
-            <div className="settings-row-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>
-                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-              </svg>
-            </div>
-            <div>
-              <div className="settings-row-label">{isPublic ? 'Profile is public' : 'Profile is private'}</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                {isPublic
-                  ? 'Anyone with your link can see your watch count, recent watches and public lists.'
-                  : 'Only you can see your activity. Make it public to share a profile link.'}
-              </div>
-            </div>
-          </div>
-          <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
-            <SettingsTextAction onClick={handleTogglePublic} tone={isPublic ? 'danger' : 'default'}>
-              {isPublic ? COMMON.makePrivate : COMMON.makePublic}
-            </SettingsTextAction>
-          </div>
-        </div>
-
-        {/* Username */}
-        <div className="settings-row" style={{ cursor: 'default' }}>
-          <div className="settings-row-left" style={{ flex: 1, minWidth: 0 }}>
-            <div className="settings-row-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-              </svg>
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div className="settings-row-label">Username</div>
-              {usernameDraft === null ? (
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                  {username}
-                </div>
-              ) : (
-                <>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.35rem' }}>
-                    <input
-                      type="text"
-                      value={usernameValue}
-                      spellCheck={false}
-                      autoCapitalize="none"
-                      maxLength={30}
-                      autoFocus
-                      aria-label="Username"
-                      onChange={(e) => setUsernameDraft(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
-                      style={{
-                        flex: 1, minWidth: 0, padding: '0.45rem 0.6rem',
-                        borderRadius: 'var(--radius-sm, 8px)', border: '1px solid var(--border)',
-                        background: 'var(--surface)', color: 'var(--text-primary)', fontSize: '0.9rem',
-                      }}
-                    />
-                  </div>
-                  <div style={{
-                    fontSize: '0.72rem', marginTop: '0.3rem', minHeight: '1rem',
-                    color: usernameStatus === 'available' || usernameStatus === 'saved' ? 'var(--accent)'
-                      : usernameStatus === 'taken' || usernameStatus === 'invalid' || usernameStatus === 'error' ? 'var(--danger)'
-                      : 'var(--text-muted)',
-                  }}>
-                    {usernameStatus === 'checking' && SETTINGS_VIEW.username.checkingAvailability}
-                    {usernameStatus === 'available' && SETTINGS_VIEW.username.available}
-                    {usernameStatus === 'taken' && SETTINGS_VIEW.username.taken}
-                    {usernameStatus === 'invalid' && SETTINGS_VIEW.username.formatHint}
-                    {usernameStatus === 'saving' && COMMON.saving}
-                    {usernameStatus === 'saved' && SETTINGS_VIEW.username.saved}
-                    {usernameStatus === 'error' && SETTINGS_VIEW.username.error}
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-          <div className="settings-inline-actions" style={{ flexShrink: 0, alignSelf: 'center' }}>
-            {usernameDraft === null ? (
-              <SettingsTextAction onClick={() => setUsernameDraft(username)}>
-                Edit
-              </SettingsTextAction>
-            ) : (
-              <SettingsTextAction
-                disabled={usernameStatus === 'checking' || usernameStatus === 'saving' || usernameStatus === 'invalid' || usernameStatus === 'taken'}
-                onClick={handleSaveUsername}
-              >
-                Save
-              </SettingsTextAction>
-            )}
-          </div>
-        </div>
-
-        {/* Shareable link — works for private profiles too (logged-in visitors
-            can still request to follow). */}
-        {profileUrl && (
-          <div className="settings-row" style={{ cursor: 'default' }}>
-            <div className="settings-row-left" style={{ minWidth: 0 }}>
-              <div className="settings-row-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
-                </svg>
-              </div>
-              <div style={{ minWidth: 0 }}>
-                <div className="settings-row-label">Your profile link</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {profileUrl.replace(/^https?:\/\//, '')}
-                </div>
-              </div>
-            </div>
-            <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
-              <SettingsTextAction onClick={handleShareProfile}>
-                {profileUrlCopied ? COMMON.copied : COMMON.share}
-              </SettingsTextAction>
-              <a className="settings-text-action" href={profileUrl} target="_blank" rel="noreferrer">
-                <span>View</span><span aria-hidden="true">›</span>
-              </a>
-            </div>
-          </div>
-        )}
-
-        {/* Invite friends — shares your profile tagged with ?ref so new signups
-            attribute to you and follow you (notification fires). On a private
-            profile the follow is a request you approve. */}
-        {inviteUrl && (
-          <div className="settings-row" style={{ cursor: 'default' }}>
-            <div className="settings-row-left" style={{ minWidth: 0 }}>
-              <div className="settings-row-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-                  <circle cx="9" cy="7" r="4"/>
-                  <line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/>
-                </svg>
-              </div>
-              <div style={{ minWidth: 0 }}>
-                <div className="settings-row-label">Invite friends</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  They join from your profile &amp; {isPublic ? 'start following you' : 'request to follow you'}
-                </div>
-              </div>
-            </div>
-            <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
-              <SettingsTextAction onClick={handleInvite}>
-                {inviteCopied ? COMMON.copied : SETTINGS_VIEW.invite}
-              </SettingsTextAction>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Viewing */}
-      <BlockedAccounts viewerId={user?.id} />
-
-      <div className="settings-group">
-        <div className="settings-group-title">Viewing</div>
-
-        <div
-          className="settings-row interactive-surface"
-          onClick={() => { if (!savingProviders) setShowProviders(true); }}
-          {...getButtonLikeProps({ onPress: () => { if (!savingProviders) setShowProviders(true); }, label: SETTINGS_VIEW.integrations.openStreamingPlatforms, disabled: savingProviders })}
-        >
-          <div className="settings-row-left">
-            <div className="settings-row-icon">
-              <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-            </div>
-            <span className="settings-row-label">{SETTINGS_VIEW.integrations.streamingPlatformsLabel}</span>
-          </div>
-          <div className="settings-row-value">
-            <span>{savingProviders ? COMMON.saving : providers.length > 0 ? SETTINGS_VIEW.integrations.selectedCount(providers.length) : COMMON.none}</span>
-            <Chevron />
-          </div>
-        </div>
-
-        <div
-          className="settings-row interactive-surface"
-          onClick={() => { if (!savingGuideChannels) setShowGuideChannels(true); }}
-          {...getButtonLikeProps({ onPress: () => { if (!savingGuideChannels) setShowGuideChannels(true); }, label: SETTINGS_VIEW.integrations.openMyChannels, disabled: savingGuideChannels })}
-        >
-          <div className="settings-row-left">
-            <div className="settings-row-icon">
-              <svg viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
-            </div>
-            <span className="settings-row-label">{SETTINGS_VIEW.integrations.myChannelsLabel}</span>
-          </div>
-          <div className="settings-row-value">
-            <span>{savingGuideChannels ? COMMON.saving : guideChannels.length > 0 ? SETTINGS_VIEW.integrations.selectedCount(guideChannels.length) : COMMON.none}</span>
-            <Chevron />
-          </div>
-        </div>
-
-        <div
-          className="settings-row interactive-surface"
-          onClick={() => { if (!savingGenres) setShowGenres(true); }}
-          {...getButtonLikeProps({ onPress: () => { if (!savingGenres) setShowGenres(true); }, label: SETTINGS_VIEW.integrations.openGenres, disabled: savingGenres })}
-        >
-          <div className="settings-row-left">
-            <div className="settings-row-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-            </div>
-            <span className="settings-row-label">{SETTINGS_VIEW.integrations.genresLabel}</span>
-          </div>
-          <div className="settings-row-value">
-            <span>{savingGenres ? COMMON.saving : genres.length > 0 ? SETTINGS_VIEW.integrations.selectedCount(genres.length) : COMMON.none}</span>
-            <Chevron />
-          </div>
-        </div>
-
-        {/* Kids content */}
-        <div className="settings-row" style={{ cursor: 'default' }}>
-          <div className="settings-row-left">
-            <div className="settings-row-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="8.5" cy="10" r="1"/><circle cx="15.5" cy="10" r="1"/><path d="M8 15s1.5 2 4 2 4-2 4-2"/></svg>
-            </div>
-            <div>
-              <div className="settings-row-label">{SETTINGS_VIEW.kidsContent.label}</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                {includeKidsContent
-                  ? SETTINGS_VIEW.kidsContent.onHint
-                  : SETTINGS_VIEW.kidsContent.offHint}
-              </div>
-            </div>
-          </div>
-          <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
-            <SettingsTextAction onClick={handleToggleKidsContent}>
-              {includeKidsContent ? COMMON.turnOff : COMMON.turnOn}
-            </SettingsTextAction>
-          </div>
-        </div>
-
+      <div className="settings-group"><div className="settings-group-title">{SETTINGS_VIEW.page.emailPreferences}</div>
         <div className="settings-row" style={{ cursor: 'default' }}>
           <div className="settings-row-left">
             <div className="settings-row-icon">
@@ -2147,128 +1905,53 @@ export default function SettingsView() {
             </div>
           </div>
           <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
-            <SettingsTextAction onClick={toggleMarketingEmails} disabled={savingMarketingEmails}>
-              {savingMarketingEmails ? COMMON.saving : marketingEmailsEnabled ? COMMON.turnOff : COMMON.turnOn}
-            </SettingsTextAction>
+            <SettingsSwitch label={SETTINGS_VIEW.marketingEmails.label} checked={marketingEmailsEnabled} disabled={savingMarketingEmails} onChange={toggleMarketingEmails} />
           </div>
         </div>
       </div>
-
-      {/* PLOT Premium — the free-user upsell branch is hidden while pricing
-          isn't public (SHOW_PRICING_PAGE); existing subscribers still see
-          their management row regardless. */}
-      {(premium.isPremium || SHOW_PRICING_PAGE) && (
+        </>}
+        {activeSection === 'viewing' && <>
       <div className="settings-group">
-        <div className="settings-group-title">{SETTINGS_VIEW.premium.groupTitle}</div>
-        {premium.isPremium ? (
-          <div className="settings-row" style={{ cursor: 'default' }}>
-            <div className="settings-row-left">
-              <div className="settings-row-icon" style={{ color: 'var(--accent)' }}>
-                <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-              </div>
-              <div>
-                <div className="settings-row-label">{SETTINGS_VIEW.premium.youHavePremium}</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                  {SETTINGS_VIEW.premium.thankYou}
-                </div>
-              </div>
-            </div>
-            <SettingsTextAction onClick={premium.openPortal} disabled={premium.busy}>
-              {premium.busy ? SETTINGS_VIEW.premium.opening : SETTINGS_VIEW.premium.manageSubscription}
-            </SettingsTextAction>
-          </div>
-        ) : (
-          <div className="settings-row" style={{ cursor: 'default' }}>
-            <div className="settings-row-left">
-              <div className="settings-row-icon" style={{ color: 'var(--accent)' }}>
-                <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-              </div>
-              <div>
-                <div className="settings-row-label">{SETTINGS_VIEW.premium.upsellLabel}</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                  {SETTINGS_VIEW.premium.upsellBlurb}
-                </div>
-              </div>
-            </div>
-            <SettingsTextAction onClick={() => { track(EVENTS.PREMIUM_GATE_HIT, { feature: 'settings_upsell' }); navigate('/pricing'); }}>
-              {SETTINGS_VIEW.premium.upgradeButton}
-            </SettingsTextAction>
-          </div>
-        )}
-        {billingReturn && (
-          <div style={{ padding: '0.5rem 1rem', fontSize: '0.78rem', color: 'var(--accent)', background: 'var(--accent-dim)', borderRadius: 8, margin: '0.25rem 1rem' }}>
-            {billingReturn === 'tip' ? SETTINGS_VIEW.premium.thanksForTip : SETTINGS_VIEW.premium.activeThankYou}
-          </div>
-        )}
-        {premium.error && (
-          <div style={{ padding: '0.5rem 1rem', fontSize: '0.78rem', color: 'var(--danger)', background: 'var(--danger-dim)', border: '1px solid var(--danger-border)', borderRadius: 8, margin: '0.25rem 1rem' }}>
-            {premium.error}
-          </div>
-        )}
+        <div className="settings-group-title">{SETTINGS_VIEW.page.whereYouWatch}</div>
+        <SettingsPreferenceRow label={SETTINGS_VIEW.integrations.streamingPlatformsLabel} value={settingsSelectionSummary(providers)} disabled={savingProviders} onEdit={() => setShowProviders(true)} />
+        <SettingsPreferenceRow label={SETTINGS_VIEW.integrations.myChannelsLabel} value={settingsSelectionSummary(guideChannels)} disabled={savingGuideChannels} onEdit={() => setShowGuideChannels(true)} />
+        <SettingsPreferenceRow label={SETTINGS_VIEW.page.regionLabel} value={regionName(region)} onEdit={() => { setActionError(null); setShowRegion(true); }} />
+        <SettingsPreferenceRow label={SETTINGS_VIEW.page.timezoneLabel} value={timezone ? fmtTz(timezone) : COMMON.notSet} onEdit={() => setShowTimezone(true)} />
       </div>
-      )}
+      <div className="settings-group">
+        <div className="settings-group-title">{SETTINGS_VIEW.page.whatYouWatch}</div>
+        <SettingsPreferenceRow label={SETTINGS_VIEW.integrations.genresLabel} value={genres.length ? SETTINGS_VIEW.integrations.selectedCount(genres.length) : SETTINGS_VIEW.page.noneSelected} disabled={savingGenres} onEdit={() => setShowGenres(true)} />
+        <div className="settings-row" style={{ cursor: 'default' }}>
+          <div className="settings-row-left">
+            <div className="settings-row-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="8.5" cy="10" r="1"/><circle cx="15.5" cy="10" r="1"/><path d="M8 15s1.5 2 4 2 4-2 4-2"/></svg>
+            </div>
+            <div>
+              <div className="settings-row-label">{SETTINGS_VIEW.kidsContent.label}</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                {includeKidsContent
+                  ? SETTINGS_VIEW.kidsContent.onHint
+                  : SETTINGS_VIEW.kidsContent.offHint}
+              </div>
+            </div>
+          </div>
+          <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
+            <SettingsSwitch label={SETTINGS_VIEW.kidsContent.label} checked={includeKidsContent} disabled={savingKidsContent} onChange={handleToggleKidsContent} />
+          </div>
+        </div>
 
-      {/* Plex */}
+      </div>
+        </>}
+        {activeSection === 'connections' && <>
       <div className="settings-group">
         <div className="settings-group-title">{SETTINGS_VIEW.integrations.groupTitle}</div>
-        {SHOW_MEDIA_SYNC_INTEGRATIONS && !premium.isPremium ? (
-          <>
-            {[
-              { name: SETTINGS_VIEW.integrations.plexName,  blurb: SETTINGS_VIEW.integrations.plexBlurb, connected: sync.isConnected,  disconnect: sync.disconnect,  icon: PLEX_ICON },
-              { name: SETTINGS_VIEW.integrations.traktName, blurb: SETTINGS_VIEW.integrations.traktBlurb,  connected: trakt.isConnected, disconnect: trakt.disconnect, icon: TRAKT_ICON },
-            ].map(row => {
-              const feature = `${row.name.toLowerCase()}_sync`;
-              const requested = requestedIntegrations.has(feature);
-              return (
-                <div key={row.name} className="settings-row" style={{ cursor: 'default' }}>
-                  <div className="settings-row-left">
-                    <div className="settings-row-icon">{row.icon}</div>
-                    <div>
-                      <div className="settings-row-label">
-                        {row.name}<PremiumBadge />
-                      </div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                        {row.connected ? SETTINGS_VIEW.integrations.pausedNeedsPremium : row.blurb}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
-                    <SettingsTextAction
-                      disabled={requested || requestingIntegration === feature}
-                      onClick={async () => {
-                        track(EVENTS.PREMIUM_GATE_HIT, { feature });
-                        setRequestingIntegration(feature);
-                        const { error } = await supabase.from('feedback').insert({
-                          user_id:    user?.id ?? null,
-                          user_email: user?.email ?? null,
-                          type:       'feature',
-                          message:    SETTINGS_VIEW.integrations.requestedAccessMessage(row.name),
-                        });
-                        setRequestingIntegration(null);
-                        if (!error) {
-                          setRequestedIntegrations(prev => new Set(prev).add(feature));
-                        }
-                      }}
-                    >
-                      {requested ? SETTINGS_VIEW.integrations.requested : requestingIntegration === feature ? COMMON.sending : SETTINGS_VIEW.integrations.requestAccess}
-                    </SettingsTextAction>
-                    {row.connected && (
-                      <SettingsTextAction onClick={row.disconnect} tone="danger">
-                        {SETTINGS_VIEW.integrations.disconnect}
-                      </SettingsTextAction>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </>
-        ) : SHOW_MEDIA_SYNC_INTEGRATIONS ? (
+        {premium.isPremium && SHOW_MEDIA_SYNC_INTEGRATIONS ? (
           <>
             <div className="settings-row" style={{ cursor: 'default' }}>
               <div className="settings-row-left">
                 <div className="settings-row-icon">{PLEX_ICON}</div>
                 <div>
-                  <div className="settings-row-label">{SETTINGS_VIEW.integrations.plexName}</div>
+                  <div className="settings-row-label">{SETTINGS_VIEW.integrations.plexName}<PremiumBadge /></div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                     {sync.isConnected ? SETTINGS_VIEW.integrations.connectedLastSynced(
                       sync.integration?.last_sync_at
@@ -2305,7 +1988,7 @@ export default function SettingsView() {
               <div className="settings-row-left">
                 <div className="settings-row-icon">{TRAKT_ICON}</div>
                 <div>
-                  <div className="settings-row-label">{SETTINGS_VIEW.integrations.traktName}</div>
+                  <div className="settings-row-label">{SETTINGS_VIEW.integrations.traktName}<PremiumBadge /></div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                     {trakt.isConnected
                       ? SETTINGS_VIEW.integrations.connectedLastSynced(
@@ -2340,7 +2023,27 @@ export default function SettingsView() {
               </div>
             )}
           </>
-        ) : null}
+        ) : (
+          <>
+            {[
+              { name: SETTINGS_VIEW.integrations.plexName, blurb: SETTINGS_VIEW.integrations.plexBlurb, connected: sync.isConnected, disconnect: sync.disconnect, icon: PLEX_ICON },
+              { name: SETTINGS_VIEW.integrations.traktName, blurb: SETTINGS_VIEW.integrations.traktBlurb, connected: trakt.isConnected, disconnect: trakt.disconnect, icon: TRAKT_ICON },
+            ].map(row => (
+              <div key={row.name} className="settings-row">
+                <div className="settings-row-left">
+                  <div className="settings-row-icon">{row.icon}</div>
+                  <div><div className="settings-row-label">{row.name}<PremiumBadge /></div><p className="settings-selection">{row.connected && !premium.isPremium ? SETTINGS_VIEW.integrations.pausedNeedsPremium : row.blurb}</p></div>
+                </div>
+                <div className="settings-inline-actions">
+                  <SettingsTextAction onClick={() => premium.isPremium ? showConfirm({ informational: true, title: SETTINGS_VIEW.billing.syncComingSoon, message: SETTINGS_VIEW.billing.syncComingSoonMessage, confirmLabel: COMMON.done }) : changeSection('billing')}>
+                    {premium.isPremium ? SETTINGS_VIEW.billing.syncComingSoon : SETTINGS_VIEW.billing.viewPremium}
+                  </SettingsTextAction>
+                  {row.connected && <SettingsTextAction onClick={row.disconnect} tone="danger">{SETTINGS_VIEW.integrations.disconnect}</SettingsTextAction>}
+                </div>
+              </div>
+            ))}
+          </>
+        )}
 
         {/* ── Import watch history ── */}
         <div
@@ -2373,9 +2076,7 @@ export default function SettingsView() {
       <div className="settings-group">
         <div className="settings-group-title">{SETTINGS_VIEW.calendarFeed.groupTitle}</div>
 
-        {/* Subscribe — hidden for free users while pricing is dark (SHOW_PRICING_PAGE);
-            an existing subscriber still sees and uses their own feed regardless. */}
-        {(premium.isPremium || SHOW_PRICING_PAGE) && (
+
         <div className="settings-row" style={{ cursor: 'default' }}>
           <div className="settings-row-left">
             <div className="settings-row-icon">
@@ -2398,27 +2099,7 @@ export default function SettingsView() {
           <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
             {!premium.isPremium ? (
               <>
-                <SettingsTextAction
-                  disabled={requestedIntegrations.has('calendar_subscribe') || requestingIntegration === 'calendar_subscribe'}
-                  onClick={async () => {
-                    track(EVENTS.PREMIUM_GATE_HIT, { feature: 'calendar_subscribe' });
-                    setRequestingIntegration('calendar_subscribe');
-                    const { error } = await supabase.from('feedback').insert({
-                      user_id:    user?.id ?? null,
-                      user_email: user?.email ?? null,
-                      type:       'feature',
-                      message:    SETTINGS_VIEW.calendarFeed.requestedCalendarSubscribeMessage,
-                    });
-                    setRequestingIntegration(null);
-                    if (!error) {
-                      setRequestedIntegrations(prev => new Set(prev).add('calendar_subscribe'));
-                    }
-                  }}
-                >
-                  {requestedIntegrations.has('calendar_subscribe')
-                    ? SETTINGS_VIEW.integrations.requested
-                    : requestingIntegration === 'calendar_subscribe' ? COMMON.sending : SETTINGS_VIEW.integrations.requestAccess}
-                </SettingsTextAction>
+                <SettingsTextAction onClick={() => changeSection('billing')}>{SETTINGS_VIEW.billing.viewPremium}</SettingsTextAction>
                 {calendarToken && (
                   <SettingsTextAction onClick={handleRevokeCalToken} tone="danger">
                     {SETTINGS_VIEW.confirm.revoke}
@@ -2441,7 +2122,6 @@ export default function SettingsView() {
             )}
           </div>
         </div>
-        )}
 
         {/* Export */}
         <div className="settings-row" style={{ cursor: 'default' }}>
@@ -2468,6 +2148,71 @@ export default function SettingsView() {
           </SettingsTextAction>
         </div>
 
+      </div>
+        </>}
+        {activeSection === 'billing' && <SettingsBilling
+          isPremium={premium.isPremium} busy={premium.busy} error={premium.error} onManage={premium.openPortal}
+          notice={billingReturn === 'tip' ? SETTINGS_VIEW.premium.thanksForTip : billingReturn === 'premium' ? (premium.isPremium ? SETTINGS_VIEW.premium.activeThankYou : SETTINGS_VIEW.billing.confirming) : null}
+        />}
+        {activeSection === 'privacy' && <>
+          <div className="settings-group">
+        {/* Visibility */}
+        <div className="settings-row" style={{ cursor: 'default' }}>
+          <div className="settings-row-left" style={{ flex: 1, minWidth: 0 }}>
+            <div className="settings-row-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+              </svg>
+            </div>
+            <div>
+              <div className="settings-row-label">{isPublic ? 'Profile is public' : 'Profile is private'}</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                {isPublic
+                  ? 'Anyone with your link can see your watch count, recent watches and public lists.'
+                  : 'Only you can see your activity. Make it public to share a profile link.'}
+              </div>
+            </div>
+          </div>
+          <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
+            <SettingsSwitch label={SETTINGS_VIEW.page.privacyLabel} checked={isPublic} disabled={savingVisibility} onChange={handleTogglePublic} />
+          </div>
+        </div>
+
+        {/* Shareable link — works for private profiles too (logged-in visitors
+            can still request to follow). */}
+        {profileUrl && (
+          <div className="settings-row" style={{ cursor: 'default' }}>
+            <div className="settings-row-left" style={{ minWidth: 0 }}>
+              <div className="settings-row-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                </svg>
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <div className="settings-row-label">Your profile link</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {profileUrl.replace(/^https?:\/\//, '')}
+                </div>
+              </div>
+            </div>
+            <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
+              <SettingsTextAction onClick={handleShareProfile}>
+                {profileUrlCopied ? COMMON.copied : COMMON.share}
+              </SettingsTextAction>
+              <a className="settings-text-action" href={profileUrl} target="_blank" rel="noreferrer">
+                <span>View</span><span aria-hidden="true">›</span>
+              </a>
+            </div>
+          </div>
+        )}
+
+
+      </div>
+
+          <BlockedAccounts viewerId={user?.id} />
+          <div className="settings-group">
         {/* Export all data */}
         <div className="settings-row" style={{ cursor: 'default' }}>
           <div className="settings-row-left">
@@ -2499,27 +2244,71 @@ export default function SettingsView() {
             </SettingsTextAction>
           </div>
         </div>
+          </div>
+<details className="settings-danger-details"><summary>{SETTINGS_VIEW.page.resetData}</summary>      {/* Danger zone */}
+      <div className="settings-group">
+        <div className="settings-group-title">{SETTINGS_VIEW.dangerZone.groupTitle}</div>
+
+        <div
+          className="settings-row interactive-surface"
+          onClick={clearingWatchlist ? undefined : () => setShowClearWatchlist(true)}
+          style={{ cursor: clearingWatchlist ? 'default' : 'pointer' }}
+          {...getButtonLikeProps({
+            onPress: () => setShowClearWatchlist(true),
+            disabled: clearingWatchlist,
+            label: SETTINGS_VIEW.dangerZone.clearListsAria,
+          })}
+        >
+          <div className="settings-row-left">
+            <div className="settings-row-icon" style={{ borderColor: 'var(--danger-border)', color: 'var(--danger)' }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            </div>
+            <span className="settings-row-label" style={{ color: clearingWatchlist ? 'var(--text-muted)' : undefined }}>
+              {clearingWatchlist ? SETTINGS_VIEW.clearing : SETTINGS_VIEW.dangerZone.clearListsLabel}
+            </span>
+          </div>
+        </div>
+
+        <div
+          className="settings-row interactive-surface"
+          onClick={clearingHistory ? undefined : handleClearHistory}
+          style={{ cursor: clearingHistory ? 'default' : 'pointer' }}
+          {...getButtonLikeProps({
+            onPress: handleClearHistory,
+            disabled: clearingHistory,
+            label: SETTINGS_VIEW.dangerZone.clearWatchHistoryAria,
+          })}
+        >
+          <div className="settings-row-left">
+            <div className="settings-row-icon" style={{ borderColor: 'var(--danger-border)', color: 'var(--danger)' }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
+            </div>
+            <span className="settings-row-label" style={{ color: clearingHistory ? 'var(--text-muted)' : undefined }}>
+              {clearingHistory ? SETTINGS_VIEW.clearing : SETTINGS_VIEW.dangerZone.clearWatchHistoryLabel}
+            </span>
+          </div>
+        </div>
+
+        <div
+          className="settings-row interactive-surface"
+          onClick={handleDeleteAccount}
+          style={{ color: 'var(--danger)' }}
+          {...getButtonLikeProps({ onPress: handleDeleteAccount, label: SETTINGS_VIEW.dangerZone.deleteAccountAria })}
+        >
+          <div className="settings-row-left">
+            <div className="settings-row-icon" style={{ borderColor: 'var(--danger-border)', color: 'var(--danger)' }}>
+              <svg viewBox="0 0 24 24"><polyline points="3,6 5,6 21,6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+            </div>
+            <span className="settings-row-label" style={{ color: 'var(--danger)' }}>{SETTINGS_VIEW.dangerZone.deleteAccountLabel}</span>
+          </div>
+        </div>
       </div>
 
+</details>        </>}
+        {activeSection === 'help' && <>
       {/* Support */}
       <div className="settings-group">
         <div className="settings-group-title">{SETTINGS_VIEW.support.groupTitle}</div>
-        <div className="settings-row" style={{ cursor: 'default' }}>
-          <div className="settings-row-left">
-            <div className="settings-row-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-            </div>
-            <div>
-              <div className="settings-row-label">{SETTINGS_VIEW.support.supportPlot}</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                {SETTINGS_VIEW.support.kofiHint}<br className="support-plot-hint-break" />{SETTINGS_VIEW.support.kofiHintContinued}
-              </div>
-            </div>
-          </div>
-          <a href="https://ko-fi.com/J7P123TYGK" target="_blank" rel="noreferrer">
-            <img height="36" style={{ border: 0, height: 36 }} src="https://storage.ko-fi.com/cdn/kofi3.png?v=6" alt="Buy Me a Coffee at ko-fi.com" />
-          </a>
-        </div>
         <div
           className="settings-row interactive-surface"
           onClick={() => setFeedbackType('bug')}
@@ -2578,64 +2367,21 @@ export default function SettingsView() {
         </div>
       </div>
 
-      {/* Danger zone */}
-      <div className="settings-group">
-        <div className="settings-group-title">{SETTINGS_VIEW.dangerZone.groupTitle}</div>
-
-        <div
-          className="settings-row interactive-surface"
-          onClick={clearingWatchlist ? undefined : () => setShowClearWatchlist(true)}
-          style={{ cursor: clearingWatchlist ? 'default' : 'pointer' }}
-          {...getButtonLikeProps({
-            onPress: () => setShowClearWatchlist(true),
-            disabled: clearingWatchlist,
-            label: SETTINGS_VIEW.dangerZone.clearListsAria,
-          })}
-        >
-          <div className="settings-row-left">
-            <div className="settings-row-icon" style={{ borderColor: 'var(--danger-border)', color: 'var(--danger)' }}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-            </div>
-            <span className="settings-row-label" style={{ color: clearingWatchlist ? 'var(--text-muted)' : undefined }}>
-              {clearingWatchlist ? SETTINGS_VIEW.clearing : SETTINGS_VIEW.dangerZone.clearListsLabel}
-            </span>
-          </div>
-        </div>
-
-        <div
-          className="settings-row interactive-surface"
-          onClick={clearingHistory ? undefined : handleClearHistory}
-          style={{ cursor: clearingHistory ? 'default' : 'pointer' }}
-          {...getButtonLikeProps({
-            onPress: handleClearHistory,
-            disabled: clearingHistory,
-            label: SETTINGS_VIEW.dangerZone.clearWatchHistoryAria,
-          })}
-        >
-          <div className="settings-row-left">
-            <div className="settings-row-icon" style={{ borderColor: 'var(--danger-border)', color: 'var(--danger)' }}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
-            </div>
-            <span className="settings-row-label" style={{ color: clearingHistory ? 'var(--text-muted)' : undefined }}>
-              {clearingHistory ? SETTINGS_VIEW.clearing : SETTINGS_VIEW.dangerZone.clearWatchHistoryLabel}
-            </span>
-          </div>
-        </div>
-
-        <div
-          className="settings-row interactive-surface"
-          onClick={handleDeleteAccount}
-          style={{ color: 'var(--danger)' }}
-          {...getButtonLikeProps({ onPress: handleDeleteAccount, label: SETTINGS_VIEW.dangerZone.deleteAccountAria })}
-        >
-          <div className="settings-row-left">
-            <div className="settings-row-icon" style={{ borderColor: 'var(--danger-border)', color: 'var(--danger)' }}>
-              <svg viewBox="0 0 24 24"><polyline points="3,6 5,6 21,6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-            </div>
-            <span className="settings-row-label" style={{ color: 'var(--danger)' }}>{SETTINGS_VIEW.dangerZone.deleteAccountLabel}</span>
-          </div>
-        </div>
+      <div className="settings-legal-links">
+        <a href="/terms">{COMMON.termsOfService}</a>
+        <a href="/privacy">{COMMON.privacyPolicy}</a>
       </div>
+        </>}
+      </SettingsPage>
+      {confirmSignOut && (
+        <ConfirmModal
+          title={SETTINGS_VIEW.page.signOutTitle}
+          message={SETTINGS_VIEW.page.signOutMessage}
+          confirmLabel={SETTINGS_VIEW.signOut}
+          onConfirm={() => { navigate('/logout'); return true; }}
+          onClose={() => setConfirmSignOut(false)}
+        />
+      )}
 
       {/* Provider picker modal */}
       {showProviders && (
@@ -2717,6 +2463,6 @@ export default function SettingsView() {
           onClose={() => setConfirmModal(null)}
         />
       )}
-    </div>
+    </>
   );
 }

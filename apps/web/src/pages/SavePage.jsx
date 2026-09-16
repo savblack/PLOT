@@ -1,3 +1,4 @@
+import { SHARING } from '@plot/core/copy/sharing.js';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@plot/core/supabase.js';
@@ -83,7 +84,7 @@ export default function SavePage() {
         .then(({ ok, data }) => setTitle(ok ? data : null))
         .catch(() => {})
         .finally(() => setPhase('preview'));
-    });
+    }).catch(() => setPhase('preview'));
   }, [params, navigate, src]);
 
   if (phase !== 'preview') {
@@ -116,7 +117,7 @@ export default function SavePage() {
           ? <img className="save-poster" src={poster} alt={name ? `${name} poster` : ''} />
           : <div className="save-poster save-poster--empty" aria-hidden="true" />}
 
-        <p className="save-kicker">Save to your PLOT</p>
+        <p className="save-kicker">{SHARING.previewKicker}</p>
         <h1 className="save-title">
           {name || SAVE_PAGE.thisTitleFallback}
           {year && <span className="save-year"> ({year})</span>}
@@ -133,12 +134,12 @@ export default function SavePage() {
 
         <div className="save-actions">
           <Link to={`/signup?src=${encodeURIComponent(src)}`} className="btn btn-primary">
-            Create free account to save
+            {SHARING.signupToSave}
           </Link>
           <Link to="/login" className="btn btn-ghost">Sign in</Link>
         </div>
 
-        <p className="save-rule">Your personal watchlist across every streaming service.</p>
+        <p className="save-rule">{SHARING.previewBenefit}</p>
       </div>
     </div>
   );

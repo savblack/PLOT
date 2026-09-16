@@ -1,3 +1,5 @@
+import { buildProfileShareUrl } from '@plot/core/sharing.js';
+import { SHARING } from '@plot/core/copy/sharing.js';
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useParams, useNavigate } from 'react-router-dom';
@@ -625,8 +627,9 @@ export default function PublicProfilePage() {
   const shareProfile = () => {
     if (!p) return;
     share({
-      url: `${window.location.origin}/u/${p.username}`,
+      url: buildProfileShareUrl({ username: p.username }),
       title: `${name} on PLOT`,
+      text: SHARING.profileText(name),
       event: EVENTS.PROFILE_SHARED,
       eventProps: { profile_id: p.id },
     });
@@ -712,6 +715,7 @@ export default function PublicProfilePage() {
                       <>
                         <button type="button" className="pp-btn pp-btn-outline" onClick={() => setEditing(true)}>Edit profile</button>
                         <button type="button" className="pp-btn pp-btn-outline" onClick={shareProfile}>{copied ? COMMON.copied : PUBLIC_PROFILE_PAGE.shareProfile}</button>
+
                       </>
                     ) : !viewer ? (
                       <>

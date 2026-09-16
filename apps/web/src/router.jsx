@@ -23,6 +23,8 @@ import App from './App.jsx';
 // Layout + views
 const DiscoverView = lazy(() => import('./components/DiscoverView.jsx'));
 const NewReleasesView = lazy(() => import('./components/NewReleasesView.jsx'));
+const BroadcastRegionSettingsPreview = lazy(() => import('./components/BroadcastRegionSettings.jsx'));
+const BroadcastGuidePreview = lazy(() => import('./components/BroadcastGuidePreview.jsx'));
 const GuideView   = lazy(() => import('./components/GuideView.jsx'));
 const CalendarView= lazy(() => import('./components/CalendarView.jsx'));
 const MyListsView   = lazy(() => import('./components/MyListsView.jsx'));
@@ -72,7 +74,7 @@ const router = createBrowserRouter([
   { path: '/plans',          element: SHOW_PRICING_PAGE ? wrap(<PlansPage />) : <Navigate to="/app" replace /> },
 
   // Design system — standalone, no auth, dev builds only
-  ...(import.meta.env.DEV ? [{ path: '/design-system', element: wrap(<DesignSystemPage />) }] : []),
+  ...(import.meta.env.DEV ? [{ path: '/design-system', element: wrap(<DesignSystemPage />) }, { path: '/guide-preview', element: wrap(<BroadcastGuidePreview />) }, { path: '/guide-settings-preview', element: wrap(<BroadcastRegionSettingsPreview />) }] : []),
 
   // Deep link: "Save to watchlist" from outside the app (newsletter, chart page)
   { path: '/save',           element: wrap(<SavePage />) },

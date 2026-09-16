@@ -16,6 +16,7 @@ import { OFFICIAL_PLATFORMS } from '@plot/core/usePlatformCharts.js';
 import { tmdb, getTmdbRegion } from '@plot/core/tmdb.js';
 import { filterByType, filterByGenre } from '../utils/mediaFilters.js';
 import { MEDIA } from '../copy/media.js';
+import { DISCOVER_VIEW } from '@plot/core/copy/discoverView.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import GroupedFilterMenu from './GroupedFilterMenu.jsx';
 
@@ -110,18 +111,19 @@ export function DiscoverToolbar({ ariaLabel, typeFilters, setTypeFilters, genreF
     <div className="page-toolbar">
       <span className="page-toolbar-date">{todayLongLabel()}</span>
       <GroupedFilterMenu
+        mobileControls
         ariaLabel={ariaLabel}
         label={filterSummary(typeFilters, genreFilters, genres)}
         groups={[
           {
-            heading: MEDIA.typeHeading,
+            heading: MEDIA.typeHeading, allLabel: MEDIA.allTypes,
             options: TYPE_OPTIONS,
             value: typeFilters,
             onChange: setTypeFilters,
             defaultValue: ALL_TYPES,
           },
           {
-            heading: MEDIA.genreHeading,
+            heading: MEDIA.genreHeading, allLabel: MEDIA.allGenres,
             options: genres.map(g => ({ id: g.id, label: g.name })),
             value: genreFilters,
             onChange: setGenreFilters,
@@ -537,12 +539,6 @@ function PlatformCharts({ platformList, openPanel, watchlist, typeFilters, genre
           <PlatformRow key={def.key} def={def} chart={byKey[def.key]} logoPath={logos[def.key]} openPanel={openPanel} watchlist={watchlist} typeFilters={typeFilters} genreFilters={genreFilters} />
         ))}
       </div>
-      <p className="discover-plat-attribution">
-        Official Top 10 · Netflix and the{' '}
-        <a href="https://www.movieofthenight.com/about/api" target="_blank" rel="noopener noreferrer">
-          Streaming Availability API
-        </a>.
-      </p>
     </section>
   );
 }
@@ -642,7 +638,7 @@ function DiscoverContent({ openPanel, watchlist, typeFilters, genreFilters }) {
       )}
 
       {anticipatedMovies.length > 0 && (
-        <RailSection title="Coming Soon" sectionClassName="discover-section discover-binge-section" binge>
+        <RailSection title={DISCOVER_VIEW.mostAnticipatedTitle} subtitle={DISCOVER_VIEW.mostAnticipatedSubtitle} sectionClassName="discover-section discover-binge-section" binge>
           {anticipatedMovies.map(item => (
             <BingeCard key={`${item.media_type}-${item.id}`} item={item} openPanel={openPanel} watchlist={watchlist} />
           ))}
