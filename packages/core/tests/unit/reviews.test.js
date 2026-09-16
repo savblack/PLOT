@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { fetchCriticScore, pickAudienceQuote, getConsensusLine } from '../../reviews.js';
+import { fetchCriticScore, pickAudienceQuote, getConsensusLine, audienceScoreFromDetails } from '../../reviews.js';
 import { configure } from '../../config.js';
 
 const originalFetch = globalThis.fetch;
@@ -145,4 +145,25 @@ test('getConsensusLine returns null instead of throwing when scores are outside 
 test('getConsensusLine treats 0 and 100 as valid boundary scores, not out-of-range', () => {
   assert.equal(getConsensusLine(100, 100), 'The reviews are unanimous. A must-watch.');
   assert.equal(getConsensusLine(100, 0), 'Adored by critics. Audiences, less so.');
+});
+
+test('audienceScoreFromDetails returns a rounded percentage when people have voted', () => {
+  assert.equal(audienceScoreFromDetails({ vote_average: 7.86, vote_count: 120 }), 79);
+});
+
+test('audienceScoreFromDetails hides the score for a title nobody has voted on', () => {
+  assert.equal(audienceScoreFromDetails({ vote_average: 0, vote_count: 0 }), null);
+});
+
+test('audienceScoreFromDetails hides a score that rounds below 1%', () => {
+  assert.equal(audienceScoreFromDetails({ vote_average: 0.04, vote_count: 3 }), null);
+});
+
+test('audienceScoreFromDetails still shows a score when vote_count is missing', () => {
+  assert.equal(audienceScoreFromDetails({ vote_average: 6.5 }), 65);
+});
+
+test('audienceScoreFromDetails returns null for missing details', () => {
+  assert.equal(audienceScoreFromDetails(null), null);
+  assert.equal(audienceScoreFromDetails({}), null);
 });

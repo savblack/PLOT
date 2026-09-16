@@ -179,3 +179,20 @@ export function getConsensusLine(criticScore, audienceScore, { audienceVoteCount
   const band = LEVEL_BANDS.find(b => lower >= b.min);
   return pick(band.lines, seed);
 }
+
+/**
+ * TMDB's audience score as a percentage, or null when there is nothing to show.
+ * A title nobody has voted on reports vote_average 0, and "0% Audience" reads
+ * as a verdict rather than an absence — so anything that rounds below 1% is
+ * treated as no score.
+ *
+ * @param {{vote_average?: number, vote_count?: number}|null|undefined} details
+ * @returns {number|null}
+ */
+export function audienceScoreFromDetails(details) {
+  const average = details?.vote_average;
+  if (!Number.isFinite(average)) return null;
+  if (Number.isFinite(details?.vote_count) && details.vote_count <= 0) return null;
+  const score = Math.round(average * 10);
+  return score >= 1 ? score : null;
+}

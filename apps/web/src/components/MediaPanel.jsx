@@ -25,8 +25,8 @@ import {
   getSeasonWatchState,
   isSeriesComplete,
 } from '@plot/core/watchingProgress.js';
-import { fetchVerifiedAvailability, formatOfferPrice, offersFromTmdb } from '@plot/core/availability.js';
-import { fetchCriticScore, pickAudienceQuote, getConsensusLine } from '@plot/core/reviews.js';
+import { fetchVerifiedAvailability, formatOfferPrice, offersFromTmdb, networksFromDetails, regionDisplayName } from '@plot/core/availability.js';
+import { fetchCriticScore, pickAudienceQuote, getConsensusLine, audienceScoreFromDetails } from '@plot/core/reviews.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import SheetHeader from './SheetHeader.jsx';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
@@ -1137,10 +1137,12 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
   const cast = (details?.credits?.cast || details?.aggregate_credits?.cast || []).slice(0, 12);
   const similar = recommendationsFromDetails(details);
 
-  const audienceScore = Number.isFinite(details?.vote_average) ? Math.round(details.vote_average * 10) : null;
+  const audienceScore = audienceScoreFromDetails(details);
   const consensusLine = criticScore
     ? getConsensusLine(criticScore.criticScore, audienceScore, { audienceVoteCount: details?.vote_count, seed: details?.id })
     : null;
+  const hasWatchOffers = whereToWatch.streaming.length > 0 || whereToWatch.rentBuy.length > 0 || whereToWatch.inCinemas;
+  const watchNetworks = isMovie ? [] : networksFromDetails(details);
 
   const runStatusAction = useCallback(async (actionLabel, action) => {
     if (statusActionPending) return;
@@ -1617,8 +1619,10 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
               </>
             )}
 
-            {/* Where to watch */}
-            {(whereToWatch.streaming.length > 0 || whereToWatch.rentBuy.length > 0 || whereToWatch.inCinemas) && (
+            {/* Where to watch — always present once details load. Knowing where
+                a title can be watched is the point of the panel, so an unknown
+                answer is stated rather than the section quietly vanishing. */}
+            {details && (
               <>
                 <div className="panel-section-title">Where to Watch</div>
                 {whereToWatch.inCinemas && (
@@ -1661,15 +1665,43 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                     </div>
                   </>
                 )}
-                <p className="providers-attribution">
-                  Streaming availability by JustWatch.
-                  {[...whereToWatch.streaming, ...whereToWatch.rentBuy].some(p =>
-                    buildWatchLink({
-                      providerUrl: p.providerUrl,
-                      justwatchLink: whereToWatch.justwatchLink,
-                    })?.kind === 'provider'
-                  ) && ' Links open the verified title offer.'}
-                </p>
+                {!hasWatchOffers && (
+                  <>
+                    {watchNetworks.length > 0 && (
+                      <div className="providers-grid">
+                        {watchNetworks.map(network => (
+                          <ProviderChip
+                            key={network.providerId}
+                            provider={network}
+                            mediaType={itemType}
+                            tmdbId={itemId}
+                            region={whereToWatch.region}
+                            justwatchLink={null}
+                          />
+                        ))}
+                      </div>
+                    )}
+                    <p className="providers-empty">
+                      {whereToWatch.region && regionDisplayName(whereToWatch.region)
+                        ? `Not streaming in ${regionDisplayName(whereToWatch.region)} yet.`
+                        : 'Not streaming anywhere yet.'}
+                      {whereToWatch.justwatchLink && (
+                        <> <a href={whereToWatch.justwatchLink} target="_blank" rel="noopener">Check JustWatch</a></>
+                      )}
+                    </p>
+                  </>
+                )}
+                {hasWatchOffers && (
+                  <p className="providers-attribution">
+                    Streaming availability by JustWatch.
+                    {[...whereToWatch.streaming, ...whereToWatch.rentBuy].some(p =>
+                      buildWatchLink({
+                        providerUrl: p.providerUrl,
+                        justwatchLink: whereToWatch.justwatchLink,
+                      })?.kind === 'provider'
+                    ) && ' Links open the verified title offer.'}
+                  </p>
+                )}
               </>
             )}
 

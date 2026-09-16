@@ -33,8 +33,8 @@ import {
 import { MEDIA_PANEL } from '@plot/core/copy/mediaPanel.js';
 import { COMMON } from '@plot/core/copy/common.js';
 import { track, EVENTS, captureException } from '../lib/analytics';
-import { fetchVerifiedAvailability, offersFromTmdb } from '@plot/core/availability.js';
-import { fetchCriticScore, pickAudienceQuote, getConsensusLine } from '@plot/core/reviews.js';
+import { fetchVerifiedAvailability, offersFromTmdb, networksFromDetails, regionDisplayName } from '@plot/core/availability.js';
+import { fetchCriticScore, pickAudienceQuote, getConsensusLine, audienceScoreFromDetails } from '@plot/core/reviews.js';
 import { canCreateCustomList, FREE_CUSTOM_LIST_CAP } from '@plot/core/premium.js';
 import { SHOW_PRICING_PAGE } from '../lib/launchFeatures';
 import { TrailerPlayer } from './TrailerPlayer';
@@ -808,7 +808,10 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
   const year   = (details?.release_date || details?.first_air_date || '').slice(0, 4);
   const rating = details?.vote_average ? `${details.vote_average.toFixed(1)} ★` : '';
   const genres = (details?.genres || []).slice(0, 3).map((g: any) => g.name).join(' · ');
-  const audienceScore = Number.isFinite(details?.vote_average) ? Math.round((details!.vote_average as number) * 10) : null;
+  const audienceScore = audienceScoreFromDetails(details);
+  const hasWatchOffers = whereToWatch.streaming.length > 0 || whereToWatch.rentBuy.length > 0 || whereToWatch.inCinemas;
+  const watchNetworks = isMovie ? [] : networksFromDetails(details);
+  const watchRegionName = regionDisplayName(whereToWatch.region);
   const consensusLine = criticScore
     ? getConsensusLine(criticScore.criticScore, audienceScore, { audienceVoteCount: details?.vote_count, seed: details?.id })
     : null;
@@ -1124,8 +1127,9 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                   </>
                 )}
 
-                {/* Where to watch */}
-                {(whereToWatch.streaming.length > 0 || whereToWatch.rentBuy.length > 0 || whereToWatch.inCinemas) && (
+                {/* Where to watch — always present once details load, matching web:
+                    an unknown answer is stated rather than the section vanishing. */}
+                {details && (
                   <>
                     <Text style={styles.sectionTitle}>Where to Watch</Text>
 
@@ -1160,12 +1164,32 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                       </>
                     )}
 
-                    <Text style={styles.providersAttribution}>
-                      Streaming availability by JustWatch.
-                      {[...whereToWatch.streaming, ...whereToWatch.rentBuy].some((p: any) =>
-                        buildWatchLink({ providerUrl: p.providerUrl, justwatchLink: whereToWatch.justwatchLink })?.kind === 'provider'
-                      ) ? ' Links open the verified title offer.' : ''}
-                    </Text>
+                    {!hasWatchOffers && (
+                      <>
+                        {watchNetworks.length > 0 && (
+                          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm, paddingBottom: spacing.md }}>
+                            {watchNetworks.map((network) => (
+                              <View key={network.providerId} style={styles.providerChip}>
+                                {network.logoPath && <Image source={{ uri: logoUrl(network.logoPath, 'w45') ?? '' }} style={styles.providerLogo} />}
+                                <Text style={styles.providerName} numberOfLines={1}>{network.providerName}</Text>
+                                <Text style={styles.providerOffer}>Network</Text>
+                              </View>
+                            ))}
+                          </ScrollView>
+                        )}
+                        <Text style={styles.providersEmpty}>
+                          {watchRegionName ? `Not streaming in ${watchRegionName} yet.` : 'Not streaming anywhere yet.'}
+                        </Text>
+                      </>
+                    )}
+                    {hasWatchOffers && (
+                      <Text style={styles.providersAttribution}>
+                        Streaming availability by JustWatch.
+                        {[...whereToWatch.streaming, ...whereToWatch.rentBuy].some((p: any) =>
+                          buildWatchLink({ providerUrl: p.providerUrl, justwatchLink: whereToWatch.justwatchLink })?.kind === 'provider'
+                        ) ? ' Links open the verified title offer.' : ''}
+                      </Text>
+                    )}
                   </>
                 )}
 
@@ -1332,6 +1356,8 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   providerChipRentBuy: { opacity: 0.8 },
   providerLogo: { width: 24, height: 24, borderRadius: 6 },
   providerName: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.xs, color: colors.textPrimary, maxWidth: 90 },
+  providerOffer: { fontFamily: fontFamily.sans, fontSize: 10, color: colors.textMuted },
+  providersEmpty: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted, marginBottom: spacing.md, lineHeight: 18 },
   providersAttribution: { fontFamily: fontFamily.sans, fontSize: 11, color: colors.textMuted, marginBottom: spacing.md, lineHeight: 15 },
   providerSublabel: { fontFamily: fontFamily.sansBold, fontSize: 10, letterSpacing: 0.8, textTransform: 'uppercase', color: colors.textMuted, marginTop: spacing.xs, marginBottom: spacing.sm },
   // Trailer card — 16:9 backdrop with a play affordance; opens YouTube on tap.

@@ -32,6 +32,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import { favoriteWords } from '../../lib/spelling';
 import { MEDIA } from '@plot/core/copy/media.js';
+import { CALENDAR_VIEW } from '@plot/core/copy/calendarView.js';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -547,9 +548,9 @@ function UpcomingContent({ typeFilters, genreFilters, savedIds, onSave, isFav, o
     const filtered = typeFilters.length < ALL_TYPES.length || genreFilters.length > 0;
     return (
       <View style={styles.section}>
-        <Text style={styles.emptyTitle}>{filtered ? 'Nothing matching this filter' : 'Unavailable right now'}</Text>
+        <Text style={styles.emptyTitle}>{filtered ? CALENDAR_VIEW.empty.filtered : CALENDAR_VIEW.releasesEmpty.title}</Text>
         <Text style={styles.emptyBody}>
-          {filtered ? 'Try selecting a different type.' : 'New releases will appear here. Check back soon.'}
+          {filtered ? CALENDAR_VIEW.empty.filteredBody : CALENDAR_VIEW.releasesEmpty.body}
         </Text>
       </View>
     );
