@@ -7,6 +7,7 @@ export const EXPORT_STEPS = Object.freeze([
   { table: 'broadcast_preferences', match: { type: 'eq', column: 'user_id' } },
   { table: 'lists', match: { type: 'eq', column: 'user_id' } },
   { table: 'list_items', match: { type: 'eq', column: 'user_id' } },
+  { table: 'private_title_notes', match: { type: 'eq', column: 'user_id' } },
   { table: 'history', match: { type: 'eq', column: 'user_id' } },
   { table: 'history_board', match: { type: 'eq', column: 'user_id' } },
   { table: 'watching_progress', match: { type: 'eq', column: 'user_id' } },
@@ -47,6 +48,20 @@ export async function runDataExport(supabaseClient, userId) {
   const data = {};
 
   for (const step of EXPORT_STEPS) {
+    // Notes persist beyond watchlist membership; paginate so long-lived accounts
+    // receive all of them rather than Supabase's default response limit.
+    if (step.table === 'private_title_notes') {
+      const rows = [];
+      for (let offset = 0; ; offset += 500) {
+        const result = await supabaseClient.from(step.table).select('*').eq('user_id', userId)
+          .order('tmdb_id').order('media_type').range(offset, offset + 499);
+        if (result.error) return { table: step.table, error: result.error };
+        rows.push(...(result.data || []));
+        if (!result.data || result.data.length < 500) break;
+      }
+      data[step.table] = rows;
+      continue;
+    }
     const query = supabaseClient.from(step.table).select('*');
     const result = step.match.type === 'or'
       ? await query.or(step.match.columns.map((column) => `${column}.eq.${userId}`).join(','))

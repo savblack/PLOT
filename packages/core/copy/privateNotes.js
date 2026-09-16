@@ -1,0 +1,17 @@
+export const PRIVATE_NOTES = Object.freeze({
+  add: 'Add a private note',
+  edit: 'Edit private note',
+  label: 'Your private note',
+  privacy: 'Only you can see this. Never posted as a review.',
+  placeholder: 'Who recommended it? Who is it for? Why this one?',
+  save: 'Save note',
+  saved: 'Note saved',
+  deleted: 'Note deleted',
+  loading: 'Loading private notes…',
+  loadError: 'Could not load your private notes. Try again.',
+  saveError: 'Could not save your note. Check your connection and try again. Your draft is still here.',
+  conflict: 'This note changed elsewhere. Your draft is still here. Load the latest note before editing again.',
+  reload: 'Load latest note',
+  tooLong: 'Keep your note to 1,000 characters or fewer.',
+  invalid: 'This title is unavailable for notes.',
+});

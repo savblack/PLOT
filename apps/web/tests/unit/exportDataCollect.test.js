@@ -10,10 +10,14 @@ function createExportClient({ rowsByTable = {}, failingTable = null } = {}) {
       return {
         select() {
           return {
-            async eq(column, value) {
+            eq(column, value) {
               calls.push({ table, method: 'eq', column, value });
-              if (failingTable === table) return { error: { message: `failed:${table}` } };
-              return { data: rowsByTable[table] ?? [], error: null };
+              const result = failingTable === table ? { error: { message: `failed:${table}` } } : { data: rowsByTable[table] ?? [], error: null };
+              if (table !== 'private_title_notes') return result;
+              return {
+                order() { return this; },
+                async range(start, end) { return result.error ? result : { data: result.data.slice(start, end + 1) }; },
+              };
             },
             async or(filter) {
               calls.push({ table, method: 'or', filter });
@@ -77,4 +81,19 @@ test('runDataExport returns the failing table and stops on the first read error'
   assert.equal(result.table, 'history');
   assert.equal(result.error?.message, 'failed:history');
   assert.equal(calls.some((call) => call.table === 'feedback'), false);
+});
+
+test('private notes are included only in the authenticated owner export', async () => {
+  const { client, calls } = createExportClient({ rowsByTable: { private_title_notes: [{ user_id: 'owner', note: 'fictional personal note' }] } });
+  const result = await runDataExport(client, 'owner');
+  assert.equal(result.data.private_title_notes[0].note, 'fictional personal note');
+  assert.deepEqual(calls.find(call => call.table === 'private_title_notes'), { table: 'private_title_notes', method: 'eq', column: 'user_id', value: 'owner' });
+});
+
+
+test('private note exports read past the response page limit', async () => {
+  const rows = Array.from({ length: 1001 }, (_, revision) => ({ note: `fictional note ${revision}` }));
+  const { client } = createExportClient({ rowsByTable: { private_title_notes: rows } });
+  const result = await runDataExport(client, 'owner');
+  assert.deepEqual(result.data.private_title_notes, rows);
 });

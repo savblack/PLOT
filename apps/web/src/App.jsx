@@ -1,4 +1,5 @@
 import { useBroadcastPreferences } from '@plot/core/useBroadcastPreferences.js';
+import { usePrivateNotes } from '@plot/core/usePrivateNotes.js';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 // The bulk of the app's CSS (~4800 lines: every authenticated view — Discover,
@@ -244,6 +245,7 @@ export default function App() {
   /* ── Global data hooks ── */
   const broadcastPreferences = useBroadcastPreferences(user?.id);
   const watchlist    = useWatchlist(user?.id);
+  const privateNotes = usePrivateNotes(user?.id);
   const watching     = useWatching(user?.id);
   const reminders    = useReminders(user?.id);
   const topLists     = useTopLists(user?.id);
@@ -287,6 +289,7 @@ export default function App() {
     openSearch,
     navigateTo,
     watchlist,
+    privateNotes,
     watching,
     reminders,
     topLists,

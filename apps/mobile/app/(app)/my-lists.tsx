@@ -1,3 +1,4 @@
+import PrivateNote from '../../components/PrivateNote';
 import { buildListShareUrl } from '@plot/core/sharing.js';
 import { SHARING } from '@plot/core/copy/sharing.js';
 import { shareLink } from '../../lib/share';
@@ -568,8 +569,8 @@ export default function MyListsScreen() {
                   const rel  = countdownChip(item.release_date, colors);
                   const strm = countdownChip(item.streaming_date, colors);
                   return (
+                    <View key={item.id}>
                     <ListRow
-                      key={item.id}
                       item={item}
                       sel={wantSel}
                       onPress={() => item.tmdb_id && openPanel(item.tmdb_id, item.media_type === 'tv' ? 'tv' : 'movie')}
@@ -588,6 +589,8 @@ export default function MyListsScreen() {
                         </View>
                       ) : undefined}
                     />
+                    {!wantSel.editMode && <View style={{ marginLeft: 64 }}><PrivateNote id={item.tmdb_id} type={item.media_type === 'tv' ? 'tv' : 'movie'} title={item.title || item.name || ''} /></View>}
+                    </View>
                   );
                 })
               )

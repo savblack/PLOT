@@ -170,12 +170,6 @@ export default function MyListsView() {
         <TopFiveSection topLists={topLists} />
 
         <ListSection title="Lists" headerRight={listActions}>
-          {showCapNotice && (
-            <div className="mylists-cap-notice" role="status">
-              <strong>{CUSTOM_LISTS.limitTitle}</strong> {CUSTOM_LISTS.limitMessage}
-            </div>
-          )}
-
           <div className="list-covers">
             {cover('want', 'Want to Watch', want, 'Nothing saved yet')}
             {cover('favorites', fw.plural, favorites.favorites, 'Nothing hearted yet')}
@@ -207,6 +201,15 @@ export default function MyListsView() {
         </ListSection>
       </div>}
 
+      {showCapNotice && (
+        <ConfirmModal
+          title={CUSTOM_LISTS.limitTitle}
+          message={CUSTOM_LISTS.limitMessage}
+          informational
+          confirmLabel={COMMON.close}
+          onClose={() => setShowCapNotice(false)}
+        />
+      )}
       {creatingList && (
         <CreateListModal lists={lists} onConfirm={handleCreate} onClose={() => setCreatingList(false)} />
       )}

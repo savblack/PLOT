@@ -1,3 +1,4 @@
+import PrivateNote from './PrivateNote.jsx';
 import { customListCreationError } from '@plot/core/customListCreation.js';
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
@@ -16,7 +17,7 @@ import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import SheetHeader from './SheetHeader.jsx';
 import { DiscoverSectionHeader } from './DiscoverView.jsx';
 import { filterByTypeAndGenre } from '@plot/core/mediaFilters.js';
-import { CardGrid, ListCard } from './ListCards.jsx';
+import { CardGrid, ListCard, SelectCircle } from './ListCards.jsx';
 import { MEDIA } from '../copy/media.js';
 import { TOP_LIST_SIZE } from '@plot/core/listCollections.js';
 
@@ -572,23 +573,26 @@ export function WantToWatchSection({ items, narrowed, Frame = ListSection }) {
       {items.length === 0 ? (
         <Empty>Nothing saved yet. Tap the bookmark on any title to save it here.</Empty>
       ) : (
-        <CardGrid>
+        <div className="private-watchlist">
           {items.map(item => {
             const title = item.title || item.name || MEDIA.unknown;
+            const type = item.media_type || 'movie';
+            const open = () => selection.editMode ? selection.toggle(item.tmdb_id) : openPanel(item.tmdb_id, type);
             return (
-              <ListCard
-                key={item.id}
-                title={title}
-                img={posterUrl(item.poster_path, 'w185')}
-                meta={wantMeta(item)}
-                onOpen={() => openPanel(item.tmdb_id, item.media_type || 'movie')}
-                editMode={selection.editMode}
-                selected={selection.selected.has(item.tmdb_id)}
-                onToggleSelect={() => selection.toggle(item.tmdb_id)}
-              />
+              <div className="private-watchlist-row" key={`${type}:${item.tmdb_id}`}>
+                <button type="button" className="private-watchlist-poster" onClick={open} aria-label={title}>
+                  {item.poster_path && <img src={posterUrl(item.poster_path, 'w185')} alt="" loading="lazy" />}
+                </button>
+                <div className="private-watchlist-body">
+                  <button type="button" className="private-watchlist-title" onClick={open}>{title}</button>
+                  <div className="mylists-card-meta">{wantMeta(item)}</div>
+                  {!selection.editMode && <PrivateNote id={item.tmdb_id} type={type} title={title} />}
+                </div>
+                {selection.editMode && <SelectCircle selected={selection.selected.has(item.tmdb_id)} onClick={open} label={`Select ${title}`} />}
+              </div>
             );
           })}
-        </CardGrid>
+        </div>
       )}
     </Frame>
   );
