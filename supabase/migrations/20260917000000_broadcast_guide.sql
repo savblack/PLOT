@@ -1,9 +1,11 @@
 -- Separate broadcast IDs from legacy TMDB streaming-provider selections.
 create table public.broadcast_preferences (
-  user_id uuid primary key references auth.users(id) on delete cascade,
+  user_id uuid references auth.users(id) on delete cascade,
   market_id text not null check (length(market_id) between 1 and 100),
   channel_ids text[] check (cardinality(channel_ids) <= 200)
 );
+alter table public.broadcast_preferences
+  add constraint broadcast_preferences_pkey primary key (user_id);
 alter table public.broadcast_preferences enable row level security;
 grant select, insert, update, delete on public.broadcast_preferences to authenticated;
 create policy "Own broadcast preferences" on public.broadcast_preferences
