@@ -22,7 +22,7 @@ const SITE_URL = 'https://theplot.tv';
 // `npm run tokens:marketing`). surfaceTint/accentSoft/border are email-only.
 //
 // The warm system (Sept 2026): cream ground, charcoal ink, the pink as a FILL
-// behind charcoal text on the button, --accent for the eyebrow. surfaceTint,
+// behind charcoal text on the button. surfaceTint,
 // accentSoft and border are email-only tints of the same palette.
 const c = colors.light;
 const dmSans = "'DM Sans', -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif";
@@ -68,7 +68,7 @@ const wordmark = () => `
   plot
 </a>`;
 
-const layout = ({ preheader, eyebrow, heading, intro, content, note, safety }) => `<!doctype html>
+const layout = ({ preheader, heading, intro, content, note, safety }) => `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -95,7 +95,6 @@ const layout = ({ preheader, eyebrow, heading, intro, content, note, safety }) =
 
           <tr>
             <td style="background-color: ${t.surface}; border: 1px solid ${t.border}; border-radius: 16px; padding: 40px 36px; text-align: center;">
-              <div style="display: inline-block; margin: 0 0 16px; padding: 6px 10px; border-radius: 9999px; background-color: ${t.surfaceTint}; border: 1px solid ${t.accentSoft}; font-family: ${t.sans}; font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: ${t.accent};">${eyebrow}</div>
               <h1 style="margin: 0 0 14px; font-family: ${t.display}; font-weight: 700; font-size: 26px; line-height: 1.15; letter-spacing: -0.03em; color: ${t.textPrimary};">${heading}</h1>
               <p style="margin: 0 0 28px; font-family: ${t.sans}; font-size: 15px; line-height: 1.65; color: ${t.textSecondary};">${intro}</p>
               ${content}
@@ -145,7 +144,6 @@ const emails = {
     file: 'confirmation.html',
     html: layout({
       preheader: 'One click and your film & TV journal is ready.',
-      eyebrow: 'New account',
       heading: 'Welcome to plot',
       intro: "Confirm your email to start logging, rating, and lining up what to watch next.",
       content: button(authUrl('signup'), 'Confirm email') + fallbackLink(authUrl('signup')),
@@ -158,7 +156,6 @@ const emails = {
     file: 'recovery.html',
     html: layout({
       preheader: 'Set a new password for your plot account.',
-      eyebrow: 'Account security',
       heading: 'Reset your password',
       intro: 'We received a request to reset your plot password. If that was you, set a new one below.',
       content: button(authUrl('recovery'), 'Set a new password') + fallbackLink(authUrl('recovery')),
@@ -171,7 +168,6 @@ const emails = {
     file: 'magic-link.html',
     html: layout({
       preheader: 'Your one-time sign-in link for plot.',
-      eyebrow: 'Sign in',
       heading: 'Sign in to plot',
       intro: "Here's your one-time sign-in link. It only works once and expires in an hour.",
       content: button(authUrl('magiclink'), 'Sign in') + fallbackLink(authUrl('magiclink')),
@@ -184,7 +180,6 @@ const emails = {
     file: 'email-change.html',
     html: layout({
       preheader: 'Confirm the new email address for your plot account.',
-      eyebrow: 'Account change',
       heading: 'Confirm your new email',
       intro: 'Follow the link below to update the email on your plot account from {{ .Email }} to {{ .NewEmail }}.',
       content: button(authUrl('email_change'), 'Confirm change') + fallbackLink(authUrl('email_change')),
@@ -197,7 +192,6 @@ const emails = {
     file: 'invite.html',
     html: layout({
       preheader: 'A journal for everything you watch.',
-      eyebrow: 'Invite',
       heading: "You're invited",
       intro: "You’ve been invited to join plot, where you’ll always know what to watch next.",
       content: button(authUrl('invite'), 'Accept invite') + fallbackLink(authUrl('invite')),
@@ -210,7 +204,6 @@ const emails = {
     file: 'reauthentication.html',
     html: layout({
       preheader: 'Your one-time confirmation code.',
-      eyebrow: 'Security check',
       heading: "Confirm it's you",
       intro: 'Enter this code in plot to confirm your identity before finishing this action. It expires in an hour.',
       content: `
