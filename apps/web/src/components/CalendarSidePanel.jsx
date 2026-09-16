@@ -1,8 +1,7 @@
 import { dateToLocalStr, monthLongName } from '../utils/date.js';
 import { monthKey } from '@plot/core/history.js';
-import { MEDIA } from '../copy/media.js';
 import { CALENDAR_VIEW } from '../copy/calendarView.js';
-import GroupedFilterMenu from './GroupedFilterMenu.jsx';
+import SideFilters from './SideFilters.jsx';
 
 /* The Calendar page's left column, shared by both scopes: two mini months in
    a card (the arrows page them two at a time; a day click scrolls the stream
@@ -11,15 +10,8 @@ import GroupedFilterMenu from './GroupedFilterMenu.jsx';
 
 const WEEKDAY_INITIALS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
-const TYPE_ROWS = [
-  { id: 'tv',     label: MEDIA.tv     },
-  { id: 'movie',  label: MEDIA.movies },
-  { id: 'cinema', label: MEDIA.cinema },
-];
-
 const ChevronLeft  = () => <svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6" /></svg>;
 const ChevronRight = () => <svg viewBox="0 0 24 24"><polyline points="9,18 15,12 9,6" /></svg>;
-const Tick = () => <svg viewBox="0 0 24 24"><polyline points="20,6 9,17 4,12" /></svg>;
 
 function MiniMonth({ year, month, todayStr, todayYear, eventDates, onPickDay, nav }) {
   const first = new Date(year, month, 1);
@@ -64,14 +56,6 @@ function MiniMonth({ year, month, todayStr, todayYear, eventDates, onPickDay, na
   );
 }
 
-/* "All genres", the one or two picked, or a count. */
-function genreSummary(genreFilters, genres) {
-  const picked = genres.filter(g => genreFilters.includes(g.id)).map(g => g.name);
-  if (picked.length === 0) return MEDIA.allGenres;
-  if (picked.length <= 2) return picked.join(', ');
-  return CALENDAR_VIEW.filter.genreCount(picked.length);
-}
-
 /**
  * @param {object} props
  * @param {{year: number, month: number}} props.panelStart   first mini month shown
@@ -95,16 +79,6 @@ export default function CalendarSidePanel({
 
   const nav = { prev: () => onPagePanel(-2), next: () => onPagePanel(2) };
 
-  // A type can be switched off only while another stays on: with nothing
-  // ticked the filter would read as "show nothing" but behave as "show all".
-  const toggleType = (id) => {
-    if (typeFilters.includes(id)) {
-      if (typeFilters.length > 1) setTypeFilters(typeFilters.filter(t => t !== id));
-    } else {
-      setTypeFilters([...typeFilters, id]);
-    }
-  };
-
   return (
     <aside className="cal-side">
       <div className="cal-mini-card">
@@ -122,53 +96,13 @@ export default function CalendarSidePanel({
         ))}
       </div>
 
-      <div className="cal-filter">
-        <div className="cal-filter-label">{CALENDAR_VIEW.filter.show}</div>
-        <div>
-          {TYPE_ROWS.map(({ id, label }) => {
-            const on = typeFilters.includes(id);
-            return (
-              <button
-                key={id}
-                type="button"
-                role="checkbox"
-                aria-checked={on}
-                className={`cal-filter-row${on ? '' : ' cal-filter-row--off'}`}
-                onClick={() => toggleType(id)}
-              >
-                <span className="cal-filter-name">{label}</span>
-                {on && <span className="cal-filter-tick"><Tick /></span>}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      <div className="cal-filter">
-        <div className="cal-filter-label">{CALENDAR_VIEW.filter.genre}</div>
-        <GroupedFilterMenu
-          ariaLabel={CALENDAR_VIEW.filter.genre}
-          className="cal-filter-menu"
-          groups={[{
-            heading: MEDIA.genreHeading,
-            options: genres.map(g => ({ id: g.id, label: g.name })),
-            value: genreFilters,
-            onChange: setGenreFilters,
-          }]}
-          trigger={({ open, toggle }) => (
-            <button
-              type="button"
-              className="cal-filter-row"
-              onClick={toggle}
-              aria-expanded={open}
-              aria-haspopup="true"
-            >
-              <span className="cal-filter-name">{genreSummary(genreFilters, genres)}</span>
-              <span className="cal-filter-chev"><ChevronRight /></span>
-            </button>
-          )}
-        />
-      </div>
+      <SideFilters
+        typeFilters={typeFilters}
+        setTypeFilters={setTypeFilters}
+        genreFilters={genreFilters}
+        setGenreFilters={setGenreFilters}
+        genres={genres}
+      />
     </aside>
   );
 }
