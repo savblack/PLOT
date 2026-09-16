@@ -95,7 +95,7 @@ const STYLE = `
    theplot.tv, so an absolute path resolves against that origin regardless
    of where the HTML itself is generated. */
 @font-face { font-family: 'DM Sans'; src: url('${SITE}/fonts/DMSans-Variable.woff2') format('woff2'); font-weight: 100 900; font-style: normal; font-display: swap; }
-:root{--ink:#0c0c0c;--paper:#F4F4F5;--pink:#5F7030;--mut:#6b6b70;--faint:#a1a1a6;--hair:rgba(12,12,12,0.14);--serif:'Gabarito', 'DM Sans', system-ui, sans-serif;--ease:cubic-bezier(0.23,1,0.32,1);}
+:root{--ink:#0c0c0c;--paper:#F4F4F5;--pink:#E05578;--mut:#6b6b70;--faint:#a1a1a6;--hair:rgba(12,12,12,0.14);--serif:'Gabarito', 'DM Sans', system-ui, sans-serif;--ease:cubic-bezier(0.23,1,0.32,1);}
 *{margin:0;padding:0;box-sizing:border-box;}
 body{background:#fff;color:var(--ink);font-family:'DM Sans',system-ui,sans-serif;line-height:1.6;position:relative;}
 body::before{content:'';position:fixed;inset:0;pointer-events:none;opacity:.035;z-index:10;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-size:200px 200px;}
