@@ -588,9 +588,10 @@ svg { stroke-width: 1.5; }
   text-transform: uppercase;
 }
 .app-sidebar-scroll { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow-y: auto; }
-.app-sidebar-nav { padding: 8px 12px 24px; overflow: visible; flex-shrink: 0; align-items: flex-start; }
+.app-sidebar-nav { padding: 8px 12px 24px; overflow: visible; flex-shrink: 0; align-items: stretch; }
 .app-sidebar-nav > .app-sidebar-item:first-child { margin-bottom: 10px; }
 .app-sidebar-item { width: auto; max-width: 100%; border-radius: var(--radius-md); padding: 10px 12px; gap: 12px; }
+.app-sidebar-nav > .app-sidebar-item { width: 100%; }
 .app-sidebar-item.active { background: var(--surface-raised); font-weight: 600; }
 .app-sidebar-label { font-size: 0.9rem; font-weight: 550; }
 .app-sidebar-item svg { stroke-width: 1.7; }
