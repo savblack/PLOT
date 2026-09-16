@@ -9,7 +9,8 @@
      column grid so ranks, posters, names and movement all align. ── */
   .chart-card { justify-content: flex-start; padding-top: calc(var(--pad) + 124px); }
   .header { position: relative; z-index: 2; margin-bottom: 40px; }
-  .header .meta-caps { display: block; margin-bottom: 14px; font-size: 26px; }
+  /* Kicker sits top-right, on the wordmark's line, so the header is just the week. */
+  .chart-card > .meta-caps { position: absolute; top: calc(var(--pad) + 18px); right: var(--pad); z-index: 4; font-size: 26px; }
   .header .display { font-size: 76px; }
   .header .display .wk { color: var(--accent); }
   .rows {
@@ -56,7 +57,7 @@
   @media (min-aspect-ratio: 4/3) {
     .chart-card { padding-top: calc(var(--pad) + 84px); }
     .header { margin-bottom: 20px; }
-    .header .meta-caps { margin-bottom: 8px; font-size: 22px; }
+    .chart-card > .meta-caps { top: calc(var(--pad) + 12px); font-size: 22px; }
     .header .display { font-size: 56px; }
     .row { grid-template-columns: 52px 52px minmax(0, 1fr) 104px; column-gap: 18px; padding: 4px 0; }
     .row .rank { font-size: 38px; }
@@ -110,7 +111,7 @@ if (d.kind === 'detail') {
   if (art) card.append(img('backdrop', art));
   card.append(el('div', 'scrim'));
   const content = el('div', 'content');
-  content.append(el('div', 'meta-caps', 'Trending this week'));
+  content.append(el('div', 'meta-caps', 'The charts'));
   content.append(el('h1', 'display', t.title));
   const stat = el('div', 'subline');
   stat.append(el('span', 'n', `${t.rank}`));
@@ -120,12 +121,12 @@ if (d.kind === 'detail') {
 } else {
   card.classList.add('chart-card');
   const header = el('div', 'header');
-  header.append(el('div', 'meta-caps', 'Trending this week'));
   const weekDate = String(d.week_label || '').replace(/^week of\s+/i, '');
   const h = el('h1', 'display', 'Week of ');
   h.append(el('span', 'wk', weekDate));
   header.append(h);
   card.append(header);
+  card.append(el('div', 'meta-caps', 'The charts'));
   const items = (d.items || []).slice(0, 10);
   const rows = el('div', `rows${items.length > 5 ? ' rows-10' : ''}`);
   items.forEach(item => {
