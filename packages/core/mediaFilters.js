@@ -28,6 +28,18 @@ export function filterByType(items, typeFilters) {
   });
 }
 
+/**
+ * True once the type filter has been narrowed away from "everything". An
+ * empty selection also means everything — filterByType treats it that way —
+ * so a filter's label and the page it drives agree.
+ *
+ * @param {string[]} typeFilters
+ * @returns {boolean}
+ */
+export function isTypeNarrowed(typeFilters) {
+  return typeFilters.length > 0 && !ALL_TYPES.every(t => typeFilters.includes(t));
+}
+
 /* ── Genre filter helper ── */
 
 /**
@@ -48,4 +60,17 @@ export function filterByGenre(items, genreFilters) {
   return items.filter(i =>
     !i.genre_ids?.length || i.genre_ids.some(id => genreFilters.includes(id))
   );
+}
+
+/**
+ * Type then genre, the way every filter pill in the app applies them.
+ *
+ * @template {{ media_type?: string, _cinema?: boolean, genre_ids?: number[] }} T
+ * @param {T[] | null | undefined} items
+ * @param {string[]} typeFilters
+ * @param {number[]} genreFilters
+ * @returns {T[]}
+ */
+export function filterByTypeAndGenre(items, typeFilters, genreFilters) {
+  return filterByGenre(filterByType(items || [], typeFilters), genreFilters) || [];
 }

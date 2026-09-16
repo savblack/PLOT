@@ -1,4 +1,4 @@
-import { APP_NAV_ITEMS } from '../navigation.js';
+import { APP_NAV_ITEMS, isActiveView } from '../navigation.js';
 import { APP_SHELL } from '../copy/appShell.js';
 import { IconHome, IconGuide, IconCalendar, IconLists, IconSearch, IconBell, IconSettings } from './navIcons.jsx';
 
@@ -62,9 +62,9 @@ export default function AppSidebar({
             <button
               key={id}
               type="button"
-              className={`app-sidebar-item interactive-surface${currentView === id ? ' active' : ''}`}
+              className={`app-sidebar-item interactive-surface${isActiveView(currentView, id) ? ' active' : ''}`}
               onClick={() => onNavigate(id)}
-              aria-current={currentView === id ? 'page' : undefined}
+              aria-current={isActiveView(currentView, id) ? 'page' : undefined}
             >
               {Icon && <Icon />}
               <span className="app-sidebar-label">{label}</span>

@@ -1,0 +1,50 @@
+// The collections on My Lists: every list a viewer owns, each with a cover,
+// addressed by one key so the overview and the list page agree on what
+// exists. Custom lists are keyed by id; the built-in lists by name.
+
+/** @typedef {'want' | 'favorites' | 'history'} BuiltInKey */
+
+export const BUILT_IN_KEYS = ['want', 'favorites', 'history'];
+
+/* The ranked list shows five slots. user_top_lists still stores ranks 1-10,
+   so anything a user ranked 6-10 before the change is kept in the table and
+   simply not shown; the editor never writes past this. */
+export const TOP_LIST_SIZE = 5;
+
+/** @param {string} id */
+export const customListKey = (id) => `list-${id}`;
+
+/** @param {string} key @returns {string | null} the custom list id, or null */
+export function customListIdFromKey(key) {
+  return key?.startsWith('list-') ? key.slice(5) : null;
+}
+
+/** Route for a collection. History already has a page of its own. */
+export function collectionPath(key) {
+  return key === 'history' ? '/history' : `/my-lists/${key}`;
+}
+
+/** "3 titles", "1 title", or the empty-state wording the caller supplies. */
+export function titleCount(n, empty = 'Nothing yet') {
+  if (!n) return empty;
+  return `${n} ${n === 1 ? 'title' : 'titles'}`;
+}
+
+/**
+ * Want to Watch: the watchlist minus anything being watched, soonest
+ * upcoming release first, then what is already out.
+ *
+ * @template {{ tmdb_id: number|string, release_date?: string|null }} T
+ * @param {T[]} watchlistItems
+ * @param {{ tmdb_id: number }[]} watchingItems
+ * @param {string} todayStr "YYYY-MM-DD" in the viewer's local calendar
+ * @returns {T[]}
+ */
+export function wantToWatchItems(watchlistItems, watchingItems, todayStr) {
+  const watchingIds = new Set((watchingItems || []).map(i => i.tmdb_id));
+  const saved = (watchlistItems || []).filter(i => !watchingIds.has(Number(i.tmdb_id)));
+  const comingSoon = saved.filter(i => i.release_date && i.release_date > todayStr)
+    .sort((a, b) => a.release_date.localeCompare(b.release_date));
+  const availableNow = saved.filter(i => !i.release_date || i.release_date <= todayStr);
+  return [...comingSoon, ...availableNow];
+}

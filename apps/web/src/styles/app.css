@@ -2355,33 +2355,612 @@ svg { stroke-width: 1.5; }
   align-items: center;
   gap: 0.35rem;
 }
-.mylists-row-status {
-  margin-left: auto;
-  justify-content: flex-end;
-  max-width: 44%;
-  flex-wrap: wrap;
+/* ═══════════════════════════════════════
+   MY LISTS / HISTORY — poster-card grids
+   Every list on My Lists (and every month on History) is a grid or a rail of
+   these cards. Grids for the working lists (Watching, Want to Watch,
+   Favourites, History), rails for the bounded ones (each custom list,
+   Recently Watched) so a page of many lists still shows every list.
+═══════════════════════════════════════ */
+.mylists-grid {
+  display: grid;
+  /* Three across on a phone; the wider minimum below gives a sidebar-width
+     column eight or nine, the same card size as a rail. */
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 0.9rem 0.6rem;
+  padding: 0 var(--gut);
 }
-.mylists-row-status .chip {
-  font-size: 0.62rem;
-  white-space: nowrap;
+@media (min-width: 1024px) {
+  .mylists-grid {
+    grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+    gap: 1rem 0.75rem;
+  }
 }
-.history-list-row {
+.mylists-rail {
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  padding: 2px var(--gut) 6px;
+  cursor: grab;
+  user-select: none;
+}
+.mylists-rail::-webkit-scrollbar { display: none; }
+.mylists-rail:active { cursor: grabbing; }
+.mylists-rail .mylists-card { flex: 0 0 auto; width: 112px; }
+
+.mylists-card {
+  position: relative;
+  min-width: 0;
+}
+.mylists-card-hit {
+  display: block;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.mylists-card-hit:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 32%, transparent);
+  border-radius: var(--radius-md);
+}
+.mylists-card-img {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 2/3;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--surface-raised);
+  margin-bottom: 0.45rem;
+  transition: transform 0.2s var(--ease);
+}
+.mylists-card-hit:hover .mylists-card-img { transform: scale(0.97); }
+.mylists-card-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.mylists-card-placeholder {
+  display: flex;
   align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 0.35rem;
+  font-size: 0.65rem;
+  text-align: center;
+  color: var(--text-muted);
 }
-.history-row-rating {
+.mylists-card-title {
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--text-primary);
+  /* Always two lines tall, so one long title does not drop its meta line
+     below every other card's in the row. */
+  min-height: 2.6em;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.mylists-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 2px;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mylists-card-rating {
   color: #f59e0b;
   font-weight: 600;
 }
-/* Permanent "you wrote a review" signal — never toggled, so a row's height
+/* Permanent "you wrote a review" signal; never toggled, so a card's height
    never changes based on whether it has one. */
-.history-row-note-indicator {
+.mylists-card-note {
   display: inline-flex;
   flex-shrink: 0;
   color: var(--text-secondary);
 }
-.history-row-note-indicator svg {
-  width: 13px;
-  height: 13px;
+.mylists-card-note svg { width: 12px; height: 12px; }
+
+/* Watching: season progress under the title */
+.mylists-card-progress {
+  height: 3px;
+  margin-top: 6px;
+  border-radius: 2px;
+  background: var(--surface-sunken);
+  overflow: hidden;
+}
+.mylists-card-progress > span {
+  display: block;
+  height: 100%;
+  background: var(--chip-episode);
+  border-radius: 2px;
+}
+
+/* A list with nothing in it is one quiet line, not a block. */
+.mylists-empty {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0 var(--gut);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+.mylists-empty-add {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+.mylists-empty-add:hover { color: var(--text-secondary); }
+.mylists-empty-add svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+}
+.mylists-done {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+/* Blocks inside a section: one custom list, one Top 10 list. */
+.mylists-sub + .mylists-sub { margin-top: 1.25rem; }
+.mylists-sub-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 34px;
+  padding: 0 var(--gut) 0.4rem;
+}
+.mylists-sub-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mylists-sub-count {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-family: var(--font-sans-tabular);
+}
+.mylists-sub-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.mylists-public-badge {
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent-text);
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  border-radius: var(--radius-pill);
+  padding: 0.1rem 0.4rem;
+}
+.mylists-rename {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0 var(--gut) 0.6rem;
+}
+.mylists-rename input {
+  flex: 1;
+  min-width: 0;
+  max-width: 320px;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  outline: none;
+}
+.mylists-rename input:focus-visible { border-color: var(--accent); }
+.mylists-cap-notice {
+  margin: 0 var(--gut) 0.75rem;
+  padding: 0.65rem 0.85rem;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+/* Top 10: ten slots across. Each column is at least 88px and grows to share
+   the row, so at sidebar widths all ten fit and below them the row scrolls. */
+.mylists-top10-rail {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(88px, 1fr);
+  gap: 0.75rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  padding: 2px var(--gut) 6px;
+  cursor: grab;
+  user-select: none;
+}
+.mylists-top10-rail::-webkit-scrollbar { display: none; }
+.mylists-top10-rail:active { cursor: grabbing; }
+.mylists-top10-slot { min-width: 0; }
+.mylists-top10-controls {
+  display: flex;
+  justify-content: center;
+  gap: 0.1rem;
+  margin-top: 0.25rem;
+}
+
+/* ── Top 5 podium ──
+   #1 is a tall poster on the left; 2-5 share the row beside it. Below the
+   sidebar breakpoint the podium stacks: #1 alone, then the four. */
+.top5 {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  gap: 0.75rem;
+  padding: 0 var(--gut);
+  align-items: start;
+}
+.top5-rest {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+/* At sidebar widths the four sit in one row and #1's column is sized so its
+   poster stands about as tall as a small poster plus its title. */
+@media (min-width: 1024px) {
+  .top5 {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 4fr);
+    gap: 1.25rem;
+  }
+  .top5-rest { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; }
+}
+.top5-slot { min-width: 0; }
+.top5-slot--first .top5-poster,
+.top5-slot--first.top5-slot--empty { border-radius: var(--radius-md); }
+.top5-hit {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.top5-hit:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 32%, transparent);
+  border-radius: var(--radius-md);
+}
+.top5-poster {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 2/3;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--surface-raised);
+  transition: transform 0.2s var(--ease);
+}
+.top5-hit:hover .top5-poster { transform: scale(0.98); }
+.top5-poster img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.top5-slot--first .discover-rank-badge { font-size: 3rem; left: 18px; bottom: 12px; }
+.top5-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--text-primary);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.top5-slot--first .top5-title { font-size: 1rem; }
+/* An unfilled rank: a dashed poster with the numeral and a hint. */
+.top5-slot--empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  width: 100%;
+  aspect-ratio: 2/3;
+  padding: 0;
+  border: 1.5px dashed var(--border-strong);
+  border-radius: var(--radius-md);
+  background: none;
+  color: var(--text-muted);
+  font: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.top5-slot--empty:hover { border-color: var(--text-secondary); color: var(--text-secondary); }
+.top5-slot--empty svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.top5-rank {
+  font-family: var(--font-serif-tabular);
+  font-size: 1.75rem;
+  line-height: 1;
+  color: var(--accent-text);
+}
+.top5-slot--first .top5-rank { font-size: 2.75rem; }
+.top5-rank.rank-top3 { color: var(--text-secondary); }
+.top5-rank.rank-rest { color: var(--text-muted); }
+.top5-hint {
+  font-size: 0.75rem;
+  font-style: italic;
+  line-height: 1.3;
+  padding: 0 0.5rem;
+  text-align: center;
+}
+
+/* ── Collection covers ──
+   Every list on My Lists is a cover: its three newest posters standing
+   upright on one baseline, the front one centred and full size, the two
+   behind peeking out either side. No field behind them. Name and count
+   beneath. One grid, four across at sidebar widths. */
+.list-covers {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 1.75rem 1.25rem;
+  padding: 0 var(--gut);
+}
+@media (min-width: 1024px) {
+  .list-covers {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 2.5rem 3rem;
+  }
+}
+.list-cover {
+  position: relative;
+  min-width: 0;
+}
+.list-cover--dim { opacity: 0.45; }
+.list-cover-hit {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.list-cover-hit:disabled { cursor: default; }
+.list-cover-hit:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 32%, transparent);
+  border-radius: var(--radius-md);
+}
+/* The fan's box is as tall as the front poster; the back two are scaled
+   from their bottom edge so all three feet sit on the same line. */
+.list-cover-art {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 0.86;
+  transition: transform 0.2s var(--ease);
+}
+.list-cover-hit:hover:not(:disabled) .list-cover-art { transform: translateY(-2px); }
+.list-cover-poster {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 57%;
+  aspect-ratio: 2/3;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  transform-origin: bottom center;
+}
+.list-cover-poster img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.list-cover-poster--left  { transform: translateX(calc(-50% - 36%)) scale(0.88); z-index: 1; }
+.list-cover-poster--right { transform: translateX(calc(-50% + 36%)) scale(0.88); z-index: 1; }
+.list-cover-poster--front { transform: translateX(-50%); z-index: 2; }
+/* An unfilled slot is a faint sheet, so a one-title list still reads as a
+   stack; a list with nothing in it shows three. */
+.list-cover-poster.is-empty { background: var(--surface-sunken); border-style: dashed; border-color: var(--border-strong); }
+.list-cover-label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.list-cover-name {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-serif);
+  font-size: 1.35rem;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  color: var(--text-primary);
+  overflow: hidden;
+}
+.list-cover-name--muted { color: var(--text-muted); }
+.list-cover-count {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+/* "New list" is the same shape: a dashed front sheet with a plus. */
+.list-cover--new {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+.list-cover-art--dashed {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.list-cover-art--dashed::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 57%;
+  aspect-ratio: 2/3;
+  transform: translateX(-50%);
+  border-radius: 10px;
+  border: 1.5px dashed var(--border-strong);
+  transition: border-color 0.15s ease;
+}
+.list-cover--new:hover .list-cover-art--dashed::before { border-color: var(--text-secondary); }
+.list-cover--new:hover .list-cover-art--dashed svg { color: var(--text-secondary); }
+.list-cover-art--dashed svg {
+  position: relative;
+  width: 22px;
+  height: 22px;
+  margin-bottom: calc(57% * 0.75 - 11px);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  color: var(--text-muted);
+  transition: color 0.15s ease;
+}
+
+/* ── A list's own page: the cover as header ── */
+.list-page { display: flex; flex-direction: column; gap: 1.5rem; padding-bottom: 3rem; }
+.list-page-head {
+  display: flex;
+  align-items: flex-end;
+  gap: 2rem;
+  padding: 0 var(--gut);
+}
+.list-page-head .list-cover { flex-shrink: 0; }
+.list-page-head .list-cover-art { aspect-ratio: 1 / 0.9; }
+.list-page-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+  padding-bottom: 0.25rem;
+}
+.list-page-title {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 2.25rem;
+  font-weight: 400;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: var(--text-primary);
+}
+.list-page-sub { font-size: 0.85rem; color: var(--text-muted); }
+.list-page-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.35rem;
+  flex-wrap: wrap;
+}
+.list-page-actions { display: flex; align-items: center; gap: 0.35rem; }
+@media (max-width: 640px) {
+  .list-page-head { flex-direction: column; align-items: flex-start; gap: 1rem; }
+  .list-page-head .list-cover { width: 120px; }
+}
+
+/* An unfilled rank: a dashed poster with the numeral, and a hint below. */
+.mylists-slot {
+  display: block;
+  width: 100%;
+  padding: 0;
+  background: none;
+  border: none;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.mylists-slot-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  aspect-ratio: 2/3;
+  border: 1.5px dashed var(--border-strong);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  margin-bottom: 0.45rem;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+.mylists-slot:hover .mylists-slot-box {
+  border-color: var(--text-secondary);
+  color: var(--text-secondary);
+}
+.mylists-slot-rank {
+  font-family: var(--font-serif-tabular);
+  font-size: 1.75rem;
+  line-height: 1;
+}
+/* Same colour ladder as the rank badge on a filled slot. */
+.mylists-slot-box:not(.rank-top3):not(.rank-rest) .mylists-slot-rank { color: var(--accent-text); }
+.mylists-slot-box.rank-top3 .mylists-slot-rank { color: var(--text-secondary); }
+.mylists-slot-box svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+.mylists-slot-hint {
+  display: block;
+  font-size: 0.72rem;
+  font-style: italic;
+  line-height: 1.3;
+  color: var(--text-muted);
 }
 
 .half-star-rating {
@@ -4120,22 +4699,6 @@ a.provider-chip--link:hover {
 @media (prefers-reduced-motion: reduce) {
   .collapse-body,
   .collapse-chevron { transition: none; }
-}
-
-/* Watching-row season progress bar */
-.list-row-progress {
-  height: 3px;
-  border-radius: 2px;
-  background: var(--surface-sunken);
-  overflow: hidden;
-  margin-top: 6px;
-  max-width: 200px;
-}
-.list-row-progress > span {
-  display: block;
-  height: 100%;
-  background: var(--chip-episode);
-  border-radius: 2px;
 }
 
 .date-group-subheader {
