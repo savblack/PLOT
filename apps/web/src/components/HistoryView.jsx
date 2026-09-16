@@ -340,9 +340,9 @@ export function HistoryPage({ entries, details, detailsLoading, genreList, openP
         <div className="hist-toolbar-controls">
           {years.length > 1 && (
             years.length <= 4 ? (
-              <div className="hist-years" role="tablist">
+              <div className="cal-scope" role="tablist">
                 {[...years].reverse().map(y => (
-                  <button key={y} type="button" role="tab" className={`hist-year-btn${y === activeYear ? ' active' : ''}`} aria-selected={y === activeYear} onClick={() => onYear(y)}>{y}</button>
+                  <button key={y} type="button" role="tab" className={`cal-scope-btn${y === activeYear ? ' active' : ''}`} aria-selected={y === activeYear} onClick={() => onYear(y)}>{y}</button>
                 ))}
               </div>
             ) : (

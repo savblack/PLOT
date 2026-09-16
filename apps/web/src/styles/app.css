@@ -6501,28 +6501,7 @@ a.provider-chip--link:hover {
 .hist-toolbar-sub { font-size: 0.85rem; color: var(--text-muted); }
 .hist-toolbar-controls { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
 
-.hist-years {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  padding: 3px;
-  border-radius: 12px;
-  background: var(--surface-sunken);
-}
-.hist-year-btn {
-  border: 0;
-  background: transparent;
-  padding: 6px 14px;
-  border-radius: 10px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: color 0.12s ease, background 0.12s ease;
-}
-.hist-year-btn:hover { color: var(--text-primary); }
-.hist-year-btn.active { background: var(--surface); color: var(--text-primary); font-weight: 600; }
-.hist-year-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+/* The year switcher is the Calendar's segmented control (.cal-scope). */
 .hist-year-select {
   height: 32px;
   padding: 0 10px;
