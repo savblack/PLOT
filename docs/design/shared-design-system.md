@@ -134,6 +134,27 @@ on the glyphs.
 - **Both treatments:** verify readable contrast over light and dark image areas in both
   themes; never rely on colour alone to communicate the state.
 
+### The reference: the Trending panel
+
+The landing page's "Everything. In one place." section is the canonical use of every
+colour, and new work should match it rather than invent a new distribution:
+
+- **Cream panel** (`--surface-sunken`, 20px radius, no border, no shadow) on the cream ground,
+  rows separated by hairlines.
+- **Charcoal for everything that carries information**: the panel title, the rank numbers,
+  the titles, the meta line in the warm grey. Rank numbers are charcoal, not pink.
+- **One pink fill chip** (`--accent-fill`, charcoal text) on the single item that earns it —
+  the lead, "Trending #1". Never more than one pink chip per panel.
+- **Sage chips** (`--accent-secondary-fill`, charcoal text) for kind and availability —
+  "Film", "Series", "Now at home". They repeat freely; they are labels, not signals.
+- **The secondary button** is the cream pill (`--surface-sunken`, charcoal text) — "See
+  what's on". The pink primary button appears in a section only when the action is the
+  point of the section (the hero, the sign-up), not beside a panel.
+- **Pink as type** (`--accent`) is reserved for the smallest cues: an eyebrow, a date,
+  a live dot. It does not appear in this panel at all, and that is correct.
+
+Rule of thumb: charcoal says what, sage says which kind, pink says the one that matters.
+
 ## Shared foundations
 
 - Typography — two faces, two jobs:
