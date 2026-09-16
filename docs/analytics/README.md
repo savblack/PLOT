@@ -80,8 +80,12 @@ Encoded here once so nobody rediscovers them.
   with `already_saved: true` when the title was already there. The Tier 2 action
   filters those out; a raw event query does not.
 - **`search_performed` is not comparable across platforms.** Web fires per
-  debounced keystroke pause across three modes and carries `query_length`;
-  mobile fires only for titles and omits it.
+  debounced keystroke pause and carries `query_length`; mobile fires only for
+  titles and omits it. Web's `mode` changed meaning on 2026-09-16: before, it
+  was the tab (`titles` / `talent` / `friends`); since the search palette it
+  is the scope (`all` for one unified search across titles, franchises,
+  people and friends, or `friends` / `people` when the query was prefixed with
+  `@` or `/`). `result_count` counts the merged list.
 - **`trakt_connected` before 2026-08-18 is inflated.** It fired on the click,
   before Trakt's own authorize page, so abandoners counted. Now split into
   `trakt_connect_started` and `trakt_connected`.
