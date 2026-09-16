@@ -58,3 +58,11 @@ updates:
       day: monday
       time: "09:30"
       timezone: Australia/Sydney
+    # Bundle routine action updates; major upgrades still get individual review.
+    groups:
+      actions-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
