@@ -109,7 +109,7 @@ const main = async () => {
 
   // Which platform sees which render (mirrors publish.mjs):
   //   portrait  -> Instagram carousel; landscape -> Threads carousel;
-  //   X gets ONE landscape image: the first card that allows 'x'.
+  //   X gets up to four landscape images: every card that allows 'x'.
   //   cards[i].channels (null = all) limits a card to specific platforms.
   const allows = (card, ch) => !card.channels || card.channels.includes(ch);
   const channelLabel = (type, cards, cardIndex, size) => {
@@ -126,8 +126,9 @@ const main = async () => {
         if (type === 'upcoming' && cardIndex === 0) parts.push('email digest');
       }
     } else {
-      if (allows(card, 'x') && cards.findIndex(c => allows(c, 'x')) === cardIndex) {
-        parts.push('X · the single image');
+      if (allows(card, 'x')) {
+        const xs = cards.filter(c => allows(c, 'x'));
+        parts.push(xs.length > 1 ? `X · image ${xs.indexOf(card) + 1}/${xs.length}` : 'X');
       }
       if (allows(card, 'threads')) parts.push(`Threads${seq('threads')}`);
     }
