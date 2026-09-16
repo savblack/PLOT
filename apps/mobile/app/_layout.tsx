@@ -91,6 +91,9 @@ function RootInner() {
   const [authReady,          setAuthReady]          = useState(false);
 
   const [fontsLoaded] = useFonts({
+    // Display face: Gabarito static cuts (RN cannot pick a weight axis from a variable font).
+    'Gabarito-Bold':           require('../assets/fonts/Gabarito-Bold.ttf'),
+    'Gabarito-SemiBold':       require('../assets/fonts/Gabarito-SemiBold.ttf'),
     'InstrumentSerif-Regular': require('../assets/fonts/InstrumentSerif-Regular.ttf'),
     'InstrumentSerif-Italic':  require('../assets/fonts/InstrumentSerif-Italic.ttf'),
     'DMSans-Regular':          require('../assets/fonts/DMSans-Regular.ttf'),

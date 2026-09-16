@@ -48,7 +48,7 @@ const styles = StyleSheet.create({
     padding: spacing.xl * 2,
   },
   title: {
-    fontFamily: fontFamily.serif,
+    fontFamily: fontFamily.display,
     fontSize: fontSize.xxl,
     color: colors.textPrimary,
     marginBottom: spacing.md,

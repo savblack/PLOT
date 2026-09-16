@@ -38,6 +38,11 @@ export const iconButtonSize = {
 } as const;
 
 export const fontFamily = {
+  // Display: Gabarito, the headline voice. Page titles, section headings, the
+  // wordmark, rank numbers. displaySemi for card names and list titles.
+  display:     'Gabarito-Bold',
+  displaySemi: 'Gabarito-SemiBold',
+  // Serif: the editorial voice only — notes, quotes, avatar initials.
   serif:       'InstrumentSerif-Regular',
   serifItalic: 'InstrumentSerif-Italic',
   sans:        'DMSans-Regular',

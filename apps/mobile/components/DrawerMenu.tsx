@@ -92,7 +92,7 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
         <BlurView intensity={72} tint={resolved} style={[StyleSheet.absoluteFill, styles.blurBackground]} />
 
         <View style={[styles.content, { paddingTop: insets.top + spacing.xl, paddingBottom: insets.bottom + spacing.xl }]}>
-          <Text style={styles.wordmark}>PLOT</Text>
+          <Text style={styles.wordmark}>plot</Text>
 
           {/* Main nav */}
           <View style={styles.nav}>
@@ -180,7 +180,7 @@ const makeStyles = (colors: Palette, dark: boolean) => StyleSheet.create({
   content: { flex: 1 },
 
   wordmark: {
-    fontFamily: fontFamily.serif,
+    fontFamily: fontFamily.display,
     fontSize: 28,
     color: colors.textPrimary,
     letterSpacing: 0,

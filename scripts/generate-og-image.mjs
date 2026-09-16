@@ -18,6 +18,7 @@ const html = `<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <style>
+  @font-face { font-family: 'Gabarito'; src: url(${fontDataUri('Gabarito-Bold.ttf')}) format('truetype'); font-weight: 700; font-style: normal; font-display: swap; }
   @font-face { font-family: 'DM Sans'; src: url(${fontDataUri('DMSans-Variable.ttf')}) format('truetype-variations'); font-weight: 100 900; font-style: normal; font-display: swap; }
   @font-face { font-family: 'Instrument Serif'; src: url(${fontDataUri('InstrumentSerif-Regular.ttf')}) format('truetype'); font-weight: 400; font-style: normal; font-display: swap; }
   @font-face { font-family: 'Instrument Serif'; src: url(${fontDataUri('InstrumentSerif-Italic.ttf')}) format('truetype'); font-weight: 400; font-style: italic; font-display: swap; }
@@ -44,9 +45,9 @@ const html = `<!DOCTYPE html>
     background-size: 200px 200px;
   }
   .wordmark {
-    font-family: 'Instrument Serif', Georgia, serif;
-    font-size: 220px;
-    font-weight: 400;
+    font-family: 'Gabarito', 'DM Sans', sans-serif;
+    font-size: 200px;
+    font-weight: 700;
     letter-spacing: -0.05em;
     line-height: 1;
     color: #1a1a1a;
@@ -59,7 +60,8 @@ const html = `<!DOCTYPE html>
     letter-spacing: 0.01em;
   }
   .tagline em {
-    font-family: 'Instrument Serif', Georgia, serif;
+    font-family: 'Gabarito', 'DM Sans', sans-serif;
+    font-weight: 700;
     font-style: italic;
     color: #1a1a1a;
   }
@@ -72,7 +74,7 @@ const html = `<!DOCTYPE html>
 </style>
 </head>
 <body>
-  <div class="wordmark">PLOT</div>
+  <div class="wordmark">plot</div>
   <div class="rule"></div>
   <div class="tagline">Your film &amp; TV journal &mdash; <em>everything you've watched, everything you want to watch.</em></div>
 </body>

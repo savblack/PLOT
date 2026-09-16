@@ -315,7 +315,7 @@ export default function AuthScreen() {
       >
         {/* Wordmark at top */}
         <View style={[styles.wordmarkWrap, { paddingTop: insets.top + spacing.xl }]}>
-          <Text style={styles.wordmark}>PLOT</Text>
+          <Text style={styles.wordmark}>plot</Text>
           <Text style={styles.tagline}>Your personal film & TV companion</Text>
         </View>
 
@@ -463,7 +463,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
   },
   wordmark: {
-    fontFamily: fontFamily.serif,
+    fontFamily: fontFamily.display,
     fontSize: 52,
     color: '#FAFAFA',
     letterSpacing: -1,
@@ -491,7 +491,7 @@ const styles = StyleSheet.create({
   },
   panelTitle: {
     // Editorial serif headline, matching web .auth-header h1 (var(--font-serif)).
-    fontFamily: fontFamily.serif,
+    fontFamily: fontFamily.display,
     fontSize: fontSize.xxl,
     color: '#09090B',
     marginBottom: 4,

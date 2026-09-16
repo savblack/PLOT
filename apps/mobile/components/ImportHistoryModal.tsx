@@ -447,7 +447,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     paddingHorizontal: spacing.lg, paddingVertical: spacing.md,
     borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border,
   },
-  headerTitle: { fontFamily: fontFamily.serif, fontSize: fontSize.lg, color: colors.textPrimary },
+  headerTitle: { fontFamily: fontFamily.displaySemi, fontSize: fontSize.lg, color: colors.textPrimary },
   backBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
   closeBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
 
@@ -455,7 +455,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   center: { alignItems: 'center', justifyContent: 'center', gap: spacing.md },
 
   stepTitle: {
-    fontFamily: fontFamily.serif,
+    fontFamily: fontFamily.display,
     fontSize: fontSize.lg,
     color: colors.textPrimary,
     marginBottom: spacing.xs,
@@ -501,7 +501,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   filePickerText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.md, color: colors.accent },
   filePickerSub: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted },
 
-  resolvingTitle: { fontFamily: fontFamily.serif, fontSize: fontSize.md, color: colors.textPrimary },
+  resolvingTitle: { fontFamily: fontFamily.displaySemi, fontSize: fontSize.md, color: colors.textPrimary },
   resolvingCount: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textMuted },
   resolvingSub: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, textAlign: 'center', lineHeight: 20, maxWidth: 280 },
 

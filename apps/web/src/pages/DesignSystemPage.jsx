@@ -178,7 +178,7 @@ function RuleCard({ label, children }) {
 }
 
 export default function DesignSystemPage() {
-  const [dark, setDark] = useState(true);
+  const [dark, setDark] = useState(false);
 
   useEffect(() => {
     const page = document.querySelector('.design-system-page');
@@ -190,7 +190,7 @@ export default function DesignSystemPage() {
       <header className="ds-hero">
         <div>
           <span className="ds-kicker">Visual Design System</span>
-          <h1>PLOT</h1>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, letterSpacing: '-0.045em' }}>plot</h1>
           <p>A living inventory of the app's fonts, colors, borders, bars, buttons, chips, and layout rules.</p>
         </div>
         <button
@@ -204,15 +204,20 @@ export default function DesignSystemPage() {
 
       <Section eyebrow="01" title="Typography">
         <div className="ds-type-grid">
-          <div className="ds-type-card ds-type-card--serif">
-            <span>Brand and editorial</span>
-            <strong>Instrument Serif</strong>
-            <p>Use for the PLOT mark, page identity, feature headings, and expressive title moments.</p>
+          <div className="ds-type-card ds-type-card--sans">
+            <span>Headlines and the mark</span>
+            <strong style={{ fontFamily: 'var(--font-display)', fontWeight: 700, letterSpacing: 'var(--font-display-tracking)' }}>Gabarito</strong>
+            <p>Bold, tracked −0.03em. The wordmark, page titles, section and panel headings, rank numbers, card names.</p>
           </div>
           <div className="ds-type-card ds-type-card--sans">
             <span>Interface and data</span>
             <strong>DM Sans</strong>
-            <p>Use for buttons, dense rows, metadata, settings, navigation, forms, and repeated controls.</p>
+            <p>Buttons, dense rows, metadata, settings, navigation, forms, and repeated controls.</p>
+          </div>
+          <div className="ds-type-card ds-type-card--serif">
+            <span>Editorial voice</span>
+            <strong>Instrument Serif</strong>
+            <p>Quotes and notes, review slips, the landing manifesto, avatar initials. Italic for quoted speech. Not a heading face.</p>
           </div>
         </div>
         <div className="ds-type-scale">
@@ -236,7 +241,7 @@ export default function DesignSystemPage() {
 
         <h3 className="ds-subsection-title">Editorial display · marketing surface</h3>
         <p className="ds-section-note" style={{ marginTop: '0.25rem' }}>
-          Marketing hero and manifesto headlines push Instrument Serif large and tight — weight 400, <code>−0.05em</code> tracking, a <code>0.997</code> horizontal condense, at a fluid <code>clamp(2.8rem, 6.5vw, 5rem)</code>. Same font as the app; editorial scale.
+          Marketing headlines set Gabarito bold at a fluid <code>clamp(2.4rem, 4.8vw, 4.4rem)</code>, line-height 0.95, tracked <code>−0.03em</code>. The manifesto is the one place the serif still leads, at <code>clamp(1.5rem, 2.8vw, 2.6rem)</code>. Same faces as the app; editorial scale.
         </p>
         <div className="ds-editorial-display">
           <span>Your film &amp; TV companion</span>

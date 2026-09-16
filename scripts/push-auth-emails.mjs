@@ -21,22 +21,23 @@ const SITE_URL = 'https://theplot.tv';
 // Brand colors derive from @plot/core/tokens.js (the canonical source, enforced by
 // `npm run tokens:marketing`). surfaceTint/accentSoft/border are email-only.
 //
-// NOTE: The pink/rose accent (accent #E05578, surfaceTint #FFF5F7, accentSoft
-// #F7C7D3) is intentional and approved for transactional email — this is an
-// explicit exception to PLOT's "no pink accent in the app UI" rule. Keep it
-// confined to the eyebrow chip and note box here; do not carry pink into the app.
+// The warm system (Sept 2026): cream ground, charcoal ink, the pink as a FILL
+// behind charcoal text on the button, --accent for the eyebrow. surfaceTint,
+// accentSoft and border are email-only tints of the same palette.
 const c = colors.light;
 const dmSans = "'DM Sans', -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif";
 const t = {
   bg: c.bg,
-  surface: c.surface,
-  surfaceTint: '#FFF5F7',
+  surface: c.surfaceSunken,
+  surfaceTint: '#FFF1F7',
   textPrimary: c.textPrimary,
   textSecondary: c.textSecondary,
   textMuted: c.textMuted,
-  border: '#E4E4E7',
-  accent: c.accent,
+  border: '#E6DFD3',
+  accent: c.accentText,
+  accentFill: c.accentFill,
   accentSoft: '#F7C7D3',
+  display: "'Gabarito', 'DM Sans', -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif",
   serif: "'Instrument Serif', Georgia, 'Times New Roman', serif",
   siteSans: dmSans,
   sans: dmSans,
@@ -45,8 +46,8 @@ const t = {
 const button = (href, label) => `
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin: 0 auto;">
   <tr>
-    <td style="border-radius: 9999px; background-color: transparent; border: 1px solid ${t.textPrimary};">
-      <a href="${href}" target="_blank" style="display: inline-block; padding: 13px 30px; font-family: ${t.siteSans}; font-size: 14px; font-weight: 300; color: ${t.textPrimary}; text-decoration: none; border-radius: 9999px; line-height: 1.2;">${label}</a>
+    <td style="border-radius: 9999px; background-color: ${t.accentFill};">
+      <a href="${href}" target="_blank" style="display: inline-block; padding: 13px 30px; font-family: ${t.siteSans}; font-size: 14px; font-weight: 500; color: ${t.textPrimary}; text-decoration: none; border-radius: 9999px; line-height: 1.2;">${label}</a>
     </td>
   </tr>
 </table>`;
@@ -63,8 +64,8 @@ const noteBlock = (note) => note ? `
 </div>` : '';
 
 const wordmark = () => `
-<a href="${SITE_URL}" target="_blank" style="display: inline-block; text-decoration: none; font-family: ${t.serif}; font-size: 46px; font-weight: 400; letter-spacing: -0.05em; line-height: 1; color: ${t.textPrimary}; white-space: nowrap;">
-  PLOT
+<a href="${SITE_URL}" target="_blank" style="display: inline-block; text-decoration: none; font-family: ${t.display}; font-size: 40px; font-weight: 700; letter-spacing: -0.045em; line-height: 1; color: ${t.textPrimary}; white-space: nowrap;">
+  plot
 </a>`;
 
 const layout = ({ preheader, eyebrow, heading, intro, content, note, safety }) => `<!doctype html>
@@ -76,7 +77,7 @@ const layout = ({ preheader, eyebrow, heading, intro, content, note, safety }) =
   <meta name="supported-color-schemes" content="light">
   <title>PLOT</title>
   <!--[if !mso]><!-->
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Instrument+Serif&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Gabarito:wght@700&family=Instrument+Serif&display=swap" rel="stylesheet">
   <!--<![endif]-->
 </head>
 <body style="margin: 0; padding: 0; background-color: ${t.bg};">
@@ -95,7 +96,7 @@ const layout = ({ preheader, eyebrow, heading, intro, content, note, safety }) =
           <tr>
             <td style="background-color: ${t.surface}; border: 1px solid ${t.border}; border-radius: 16px; padding: 40px 36px; text-align: center;">
               <div style="display: inline-block; margin: 0 0 16px; padding: 6px 10px; border-radius: 9999px; background-color: ${t.surfaceTint}; border: 1px solid ${t.accentSoft}; font-family: ${t.sans}; font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: ${t.accent};">${eyebrow}</div>
-              <h1 style="margin: 0 0 14px; font-family: ${t.serif}; font-weight: 400; font-size: 27px; line-height: 1.25; color: ${t.textPrimary};">${heading}</h1>
+              <h1 style="margin: 0 0 14px; font-family: ${t.display}; font-weight: 700; font-size: 26px; line-height: 1.15; letter-spacing: -0.03em; color: ${t.textPrimary};">${heading}</h1>
               <p style="margin: 0 0 28px; font-family: ${t.sans}; font-size: 15px; line-height: 1.65; color: ${t.textSecondary};">${intro}</p>
               ${content}
               ${noteBlock(note)}

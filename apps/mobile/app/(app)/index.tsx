@@ -993,7 +993,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   },
 
   dateLabel: {
-    fontFamily: fontFamily.serif,
+    fontFamily: fontFamily.display,
     fontSize: fontSize.xl,
     color: colors.textSecondary,
   },
@@ -1034,7 +1034,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     letterSpacing: 0.8,
   },
   heroTitle: {
-    fontFamily: fontFamily.serif,
+    fontFamily: fontFamily.display,
     fontSize: fontSize.xxl,
     color: '#fff',
     paddingRight: 48, // reserve room for the bottom-right save bookmark so long titles wrap before it
@@ -1127,7 +1127,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     right: spacing.md,
   },
   bingeTitle: {
-    fontFamily: fontFamily.serif,
+    fontFamily: fontFamily.display,
     fontSize: 18,
     color: '#fff',
     marginBottom: 3,
@@ -1148,7 +1148,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     borderBottomColor: colors.border,
   },
   chartRank: {
-    fontFamily: fontFamily.serif,
+    fontFamily: fontFamily.display,
     fontSize: 22,
     width: 36,
     textAlign: 'center',
@@ -1196,7 +1196,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     position: 'absolute',
     bottom: 4,
     left: 10,
-    fontFamily: fontFamily.serif,
+    fontFamily: fontFamily.display,
     fontSize: 28,
     color: '#fff',
     textShadowColor: 'rgba(0,0,0,0.8)',
@@ -1281,7 +1281,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     alignItems: 'center',
   },
   emptyTitle: {
-    fontFamily: fontFamily.serif,
+    fontFamily: fontFamily.display,
     fontSize: fontSize.xl,
     color: colors.textPrimary,
     marginBottom: spacing.sm,

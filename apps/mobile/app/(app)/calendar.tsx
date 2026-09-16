@@ -580,6 +580,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   todayPillText: { fontFamily: fontFamily.sansBold, fontSize: 10, color: colors.accent },
 
   empty: { alignItems: 'center', justifyContent: 'center', padding: spacing.xl * 2 },
-  emptyTitle: { fontFamily: fontFamily.serif, fontSize: fontSize.xl, color: colors.textPrimary, marginBottom: spacing.sm },
+  emptyTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary, marginBottom: spacing.sm },
   emptyBody: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, textAlign: 'center' },
 });

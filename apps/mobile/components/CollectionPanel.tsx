@@ -111,7 +111,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   backdropGradient: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.25)' },
   closeBtn: { position: 'absolute', top: spacing.lg, right: spacing.lg, width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.85)', alignItems: 'center', justifyContent: 'center' },
   body: { padding: spacing.xl },
-  title: { fontFamily: fontFamily.serif, fontSize: fontSize.xxl, color: colors.textPrimary, marginBottom: spacing.sm },
+  title: { fontFamily: fontFamily.display, fontSize: fontSize.xxl, color: colors.textPrimary, marginBottom: spacing.sm },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.sm, flexWrap: 'wrap' },
   metaType: { fontFamily: fontFamily.sansBold, fontSize: 11, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
   metaCount: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted },

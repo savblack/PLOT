@@ -245,7 +245,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     paddingBottom: spacing.lg,
     borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border,
   },
-  title:  { fontFamily: fontFamily.serif, fontSize: fontSize.xl, color: colors.textPrimary },
+  title:  { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary },
   cancel: { fontFamily: fontFamily.sans, fontSize: fontSize.md, color: colors.textMuted },
   save:   { fontFamily: fontFamily.sansMedium, fontSize: fontSize.md, color: colors.accent },
   saveDisabled: { color: colors.textMuted },

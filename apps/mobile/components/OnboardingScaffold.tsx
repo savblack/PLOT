@@ -63,7 +63,7 @@ export default function OnboardingScaffold({
         ) : <View style={styles.backBtn} />}
 
         <View style={styles.headerCenter}>
-          <Text style={styles.wordmark}>PLOT</Text>
+          <Text style={styles.wordmark}>plot</Text>
           <View style={styles.progress}>
             {Array.from({ length: TOTAL_STEPS }, (_, i) => (
               <View
@@ -129,7 +129,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   backBtn: { width: 28, height: 28, marginTop: 6, alignItems: 'center', justifyContent: 'center' },
   headerCenter: { flex: 1, alignItems: 'center' },
   wordmark: {
-    fontFamily: fontFamily.serif,
+    fontFamily: fontFamily.display,
     fontSize: 22,
     letterSpacing: -1.1,
     color: colors.textPrimary,
@@ -158,7 +158,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     paddingHorizontal: spacing.xl,
   },
   heading: {
-    fontFamily: fontFamily.serif,
+    fontFamily: fontFamily.display,
     fontSize: 32,
     letterSpacing: -0.64,
     color: colors.textPrimary,

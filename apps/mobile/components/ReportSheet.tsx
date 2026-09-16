@@ -162,7 +162,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     paddingHorizontal: spacing.xl, paddingVertical: spacing.md,
     borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border,
   },
-  title: { fontFamily: fontFamily.serif, fontSize: fontSize.xl, color: colors.textPrimary },
+  title: { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary },
   cancel: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.md, color: colors.textSecondary },
   body: { padding: spacing.xl, gap: spacing.md },
   message: { fontFamily: fontFamily.sans, fontSize: fontSize.md, color: colors.textSecondary, lineHeight: 21 },
