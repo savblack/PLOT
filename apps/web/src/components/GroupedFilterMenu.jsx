@@ -15,8 +15,14 @@ function FilterIcon() {
  * @param {string}   [props.label]  When given, the trigger is a pill carrying
  *                                  this summary beside the icon instead of the
  *                                  bare 34px icon button.
+ * @param {(state: { open: boolean, toggle: () => void, active: boolean }) => import('react').ReactNode} [props.trigger]
+ *                                  Renders the trigger in place of the icon
+ *                                  button (Calendar's side-panel row). The
+ *                                  menu, outside-click and active logic are
+ *                                  unchanged.
+ * @param {string}   [props.className]  Extra class on the wrapper.
  */
-export default function GroupedFilterMenu({ ariaLabel = 'Filter', groups, label }) {
+export default function GroupedFilterMenu({ ariaLabel = 'Filter', groups, label, trigger, className }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
@@ -49,17 +55,19 @@ export default function GroupedFilterMenu({ ariaLabel = 'Filter', groups, label 
   const hasActiveFilters = visibleGroups.some(isGroupActive);
 
   return (
-    <div className="guide-filter" ref={ref}>
-      <button
-        className={`guide-filter-btn${label ? ' guide-filter-btn--labelled' : ''}${open ? ' open' : ''}${hasActiveFilters ? ' active' : ''}`}
-        onClick={() => setOpen(o => !o)}
-        aria-label={ariaLabel}
-        aria-expanded={open}
-        type="button"
-      >
-        <FilterIcon />
-        {label && <span className="guide-filter-btn-label">{label}</span>}
-      </button>
+    <div className={`guide-filter${className ? ` ${className}` : ''}`} ref={ref}>
+      {trigger ? trigger({ open, toggle: () => setOpen(o => !o), active: hasActiveFilters }) : (
+        <button
+          className={`guide-filter-btn${label ? ' guide-filter-btn--labelled' : ''}${open ? ' open' : ''}${hasActiveFilters ? ' active' : ''}`}
+          onClick={() => setOpen(o => !o)}
+          aria-label={ariaLabel}
+          aria-expanded={open}
+          type="button"
+        >
+          <FilterIcon />
+          {label && <span className="guide-filter-btn-label">{label}</span>}
+        </button>
+      )}
       {open && (
         <div className="guide-filter-menu">
           {visibleGroups.map(group => (

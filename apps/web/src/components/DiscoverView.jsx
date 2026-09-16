@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { posterUrl, backdropUrl } from '../utils/images.js';
+import { todayLongLabel } from '../utils/date.js';
 import { favoriteWords } from '../utils/spelling.js';
 import ScrollRail from './ScrollRail.jsx';
 import RailArrows from './RailArrows.jsx';
@@ -99,11 +100,6 @@ function filterSummary(typeFilters, genreFilters, genres) {
   return `${types} · ${genreText}`;
 }
 
-/* Today, spelt out in the viewer's own locale ("Tuesday 15 September"). */
-function todayLabel() {
-  return new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
-}
-
 /* The date and the type + genre filter, in one row. At sidebar widths the row
    is pulled up onto the page heading: the date sits under "Home" and the
    filter pill on the right, so Home does not spend a row on one control.
@@ -111,8 +107,8 @@ function todayLabel() {
 export function DiscoverToolbar({ ariaLabel, typeFilters, setTypeFilters, genreFilters, setGenreFilters }) {
   const { genres } = useGenres();
   return (
-    <div className="discover-toolbar">
-      <span className="discover-toolbar-date">{todayLabel()}</span>
+    <div className="page-toolbar">
+      <span className="page-toolbar-date">{todayLongLabel()}</span>
       <GroupedFilterMenu
         ariaLabel={ariaLabel}
         label={filterSummary(typeFilters, genreFilters, genres)}

@@ -9,6 +9,7 @@ import {
   buildReminderCalendarSignature,
   getCalendarRelativeLabel,
   buildCalendarEvents,
+  filterCalendarEvents,
 } from '../../calendar.js';
 
 test('msUntilNextLocalMidnight returns a full day from local midnight', () => {
@@ -257,4 +258,85 @@ test('buildCalendarEvents sorts every source into one date order', async () => {
 
   assert.deepEqual(events.map(e => e.date), ['2026-08-20', '2026-12-01']);
   assert.equal(events[0].type, 'reminder');
+});
+
+test('buildCalendarEvents counts how many aired episodes an in-progress show is behind', async () => {
+  const events = await buildCalendarEvents({
+    watching: [{ tmdb_id: 9, title: 'Show', current_season: 2, current_episode: 5 }],
+    todayStr: TODAY,
+    ...fakeFetchers({
+      seasons: {
+        '9:2': { episodes: [
+          { episode_number: 5, season_number: 2, air_date: '2026-09-08' },
+          { episode_number: 7, season_number: 2, air_date: '2026-09-22' },
+        ] },
+      },
+    }),
+  });
+
+  assert.deepEqual(events.map(e => e.behind), [0, 2]);
+});
+
+test('buildCalendarEvents merges the saved and in-progress copies of one airing', async () => {
+  const events = await buildCalendarEvents({
+    watchlist: [{ tmdb_id: 7, media_type: 'tv', title: 'Both' }],
+    watching:  [{ tmdb_id: 7, title: 'Both', current_season: 1, current_episode: 1 }],
+    todayStr: TODAY,
+    ...fakeFetchers({
+      details: { 7: { next_episode_to_air: { season_number: 1 }, networks: [{ name: 'HBO' }] } },
+      seasons: { '7:1': { episodes: [{ episode_number: 3, season_number: 1, air_date: '2026-09-01' }] } },
+    }),
+  });
+
+  assert.equal(events.length, 1);
+  assert.equal(events[0].item.network_name, 'HBO');
+  assert.equal(events[0].behind, 2);
+});
+
+test('buildCalendarEvents carries genre ids from the saved row, the show details, or the in-progress details', async () => {
+  const events = await buildCalendarEvents({
+    watchlist: [
+      { tmdb_id: 1, media_type: 'movie', title: 'Film', release_date: '2026-09-01', genre_ids: [878] },
+      { tmdb_id: 2, media_type: 'tv',    title: 'Saved show' },              // no row genres -> details
+    ],
+    watching: [{ tmdb_id: 3, title: 'In progress', current_season: 1, current_episode: 1 }],
+    todayStr: TODAY,
+    ...fakeFetchers({
+      details: {
+        2: { next_episode_to_air: { season_number: 1 }, genres: [{ id: 18, name: 'Drama' }] },
+        3: { genres: [{ id: 35, name: 'Comedy' }], networks: [{ name: 'FX' }] },
+      },
+      seasons: {
+        '2:1': { episodes: [{ episode_number: 1, season_number: 1, air_date: '2026-09-02' }] },
+        '3:1': { episodes: [{ episode_number: 1, season_number: 1, air_date: '2026-09-03' }] },
+      },
+    }),
+  });
+
+  assert.deepEqual(events.map(e => e.item.genre_ids), [[878], [18], [35]]);
+  assert.equal(events[2].item.network_name, 'FX');
+});
+
+test('filterCalendarEvents applies the Show types the way the release filter does', () => {
+  const events = [
+    { date: '2026-09-01', type: 'episode',   item: { media_type: 'tv' } },
+    { date: '2026-09-02', type: 'cinema',    item: { media_type: 'movie' } },
+    { date: '2026-09-03', type: 'streaming', item: { media_type: 'movie' } },
+    { date: '2026-09-04', type: 'reminder',  item: { media_type: 'tv' } },
+  ];
+  assert.deepEqual(filterCalendarEvents(events, ['tv']).map(e => e.type), ['episode', 'reminder']);
+  assert.deepEqual(filterCalendarEvents(events, ['cinema']).map(e => e.type), ['cinema']);
+  assert.deepEqual(filterCalendarEvents(events, ['movie']).map(e => e.type), ['streaming']);
+  assert.equal(filterCalendarEvents(events, ['tv', 'cinema', 'movie']).length, 4);
+  assert.equal(filterCalendarEvents(events, []).length, 4);
+});
+
+test('filterCalendarEvents keeps genre matches and events with no genre data', () => {
+  const events = [
+    { date: '2026-09-01', type: 'episode',  item: { media_type: 'tv', genre_ids: [18] } },
+    { date: '2026-09-02', type: 'cinema',   item: { media_type: 'movie', genre_ids: [878] } },
+    { date: '2026-09-03', type: 'reminder', item: { media_type: 'tv' } },  // EPG: no TMDB genres
+  ];
+  assert.deepEqual(filterCalendarEvents(events, undefined, [18]).map(e => e.type), ['episode', 'reminder']);
+  assert.deepEqual(filterCalendarEvents(events, ['movie', 'cinema'], [878]).map(e => e.type), ['cinema']);
 });

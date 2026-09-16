@@ -78,7 +78,7 @@ fade; this is readability treatment, not decorative depth.
 State rings are separate from elevation: visible keyboard-focus rings and selected-state
 rings may use an outline or an inset `box-shadow` to mark state (for example the
 [interactive focus ring](../../apps/web/src/styles/app.css#L622) and
-[selected calendar day](../../apps/web/src/styles/app.css#L1446)). They do not count as
+[today in the Calendar mini month](../../apps/web/src/styles/app.css#L1944)). They do not count as
 decorative lift and must remain visible in both themes.
 
 **Never apply a shadow to text.** No `text-shadow`, anywhere. When text must stay legible

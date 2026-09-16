@@ -301,3 +301,234 @@ export function describeSearchResult(item, genres = []) {
 
   return { year, genres: genreNames, rating, originalTitle };
 }
+
+/* ═══════════════════════════════════════
+   Unified search (the palette)
+═══════════════════════════════════════ */
+
+/**
+ * Prefixes that scope a query to one kind of thing, command-palette style.
+ * "@sam" is a friend; "/damon" is a person. Anything else searches everything.
+ */
+const SCOPE_PREFIXES = { '@': 'friends', '/': 'people' };
+
+/**
+ * @typedef {'all'|'friends'|'people'} SearchScope
+ */
+
+/**
+ * Split a typed query into its scope and the text to actually search for.
+ *
+ * @param {string} [raw]
+ * @returns {{ scope: SearchScope, term: string }}
+ */
+export function parseSearchScope(raw = '') {
+  const text = String(raw ?? '').trim();
+  const scope = SCOPE_PREFIXES[text.charAt(0)];
+  if (!scope) return { scope: 'all', term: text };
+  return { scope, term: text.slice(1).trim() };
+}
+
+/** How many of each kind the merged list carries when searching everything. */
+export const UNIFIED_SEARCH_LIMITS = { collections: 2, titles: 8, people: 4, friends: 4 };
+
+/**
+ * @typedef {object} UnifiedSearchItem
+ * @property {'collection'|'title'|'person'|'friend'|'library'} kind
+ * @property {string} key Stable React key, unique across kinds.
+ * @property {Record<string, any>} data The raw record: a TMDB collection hit,
+ *   a TMDB title (with media_type), a TMDB person, or a search_users row.
+ */
+
+/**
+ * Fold the four result sets into the one list the palette renders, in a
+ * fixed order: the franchise (if the name matched), then titles, then people,
+ * then friends. Each bucket is already ranked by its own source; this does
+ * not re-rank across kinds, because a popularity score and a username prefix
+ * match are not comparable numbers.
+ *
+ * Two exceptions to the fixed order. A person or friend whose name answers
+ * the query outright leads when no title does (pickLeadingMatch). And titles
+ * listed in `exclude` (`"<media_type>-<id>"`) are skipped, so a title the
+ * viewer already has (matchLibrary) is not shown twice.
+ *
+ * A scoped query ("@", "/") returns only that bucket, uncapped to its
+ * source's own limit.
+ *
+ * @param {{ collections?: any[], titles?: any[], people?: any[], friends?: any[] }} buckets
+ * @param {{ scope?: SearchScope, limits?: Partial<typeof UNIFIED_SEARCH_LIMITS>, term?: string, exclude?: string[] }} [options]
+ * @returns {UnifiedSearchItem[]}
+ */
+export function mergeSearchResults(buckets = {}, { scope = 'all', limits = {}, term = '', exclude = [] } = {}) {
+  const caps = { ...UNIFIED_SEARCH_LIMITS, ...limits };
+  const list = (value) => (Array.isArray(value) ? value : []);
+  const excluded = new Set(list(exclude));
+
+  const friends = list(buckets.friends)
+    .filter(u => u?.id && u?.username)
+    .map(u => ({ kind: 'friend', key: `friend-${u.id}`, data: u }));
+  const people = list(buckets.people)
+    .filter(p => p?.id && p?.name && !p.adult)
+    .map(p => ({ kind: 'person', key: `person-${p.id}`, data: p }));
+
+  if (scope === 'friends') return friends;
+  if (scope === 'people') return people;
+
+  const collections = list(buckets.collections)
+    .filter(c => c?.id && c?.name)
+    .slice(0, caps.collections)
+    .map(c => ({ kind: 'collection', key: `collection-${c.id}`, data: c }));
+  const titles = list(buckets.titles)
+    .filter(t => t?.id && (t.media_type === 'movie' || t.media_type === 'tv'))
+    .filter(t => !excluded.has(`${t.media_type}-${t.id}`))
+    .slice(0, caps.titles)
+    .map(t => ({ kind: 'title', key: `title-${t.media_type}-${t.id}`, data: t }));
+
+  const lead = pickLeadingMatch({ titles: list(buckets.titles), people: people.map(p => p.data), friends: friends.map(f => f.data) }, term);
+  const leadKey = lead ? `${lead.kind}-${lead.data.id}` : null;
+  const leading = lead ? [{ kind: lead.kind, key: leadKey, data: lead.data }] : [];
+
+  return [
+    ...leading,
+    ...collections,
+    ...titles,
+    ...people.filter(p => p.key !== leadKey).slice(0, caps.people),
+    ...friends.filter(f => f.key !== leadKey).slice(0, caps.friends),
+  ];
+}
+
+/**
+ * TMDB search pads its results with stubs: entries with no poster, no
+ * release date and a vote count you can count on one hand ("Jason Bourne 6",
+ * a "Severance" with no year). They are real database rows, but nobody
+ * typing a title means them, and they took three of eight slots in testing.
+ *
+ * @param {Record<string, any>} result
+ * @returns {boolean}
+ */
+export function isPlaceholderTitle(result) {
+  if (!result) return true;
+  const hasPoster = !!result.poster_path;
+  const hasDate = !!(result.release_date || result.first_air_date);
+  const votes = Number(result.vote_count) || 0;
+  return !hasPoster && (!hasDate || votes < 5);
+}
+
+/**
+ * Stable partition: everything that looks like a real title first, stubs
+ * after, each group in its incoming order. Nothing is dropped, so a stub is
+ * still reachable when it is the only thing that matched.
+ *
+ * @param {Record<string, any>[]} results
+ * @returns {Record<string, any>[]}
+ */
+export function demotePlaceholderTitles(results = []) {
+  const list = Array.isArray(results) ? results : [];
+  return [...list.filter(r => !isPlaceholderTitle(r)), ...list.filter(isPlaceholderTitle)];
+}
+
+/**
+ * Does this name answer the query on its own? Exact or prefix, on the
+ * person's name or a friend's username / display name.
+ *
+ * @param {string[]} names
+ * @param {string} term
+ * @returns {boolean}
+ */
+const nameAnswersQuery = (names, term) => {
+  const query = normalizeTitle(term);
+  if (!query) return false;
+  return names.some(name => titleMatchScore(normalizeTitle(name), query) >= STRONG_MATCH_SCORE);
+};
+
+/**
+ * Which of the merged list's leading candidates should go first. The buckets
+ * come in a fixed order (franchise, titles, people, friends) because their
+ * scores are not comparable, but one signal is: an exact name. Type "greta
+ * gerwig" and no title answers that, while a person does, so she leads.
+ * A title that answers the query keeps its place, but only a title anyone
+ * has actually rated (MIN_RATED_VOTES, the same floor the rows use before
+ * showing a score). TMDB has an obscure short called "Greta Gerwig"; nobody
+ * typing her name is after it, and the same goes for its poster-less stubs.
+ *
+ * @param {{ titles: any[], people: any[], friends: any[] }} buckets
+ * @param {string} term
+ * @returns {{ kind: 'person'|'friend', data: any } | null}
+ */
+export function pickLeadingMatch({ titles = [], people = [], friends = [] } = {}, term = '') {
+  const ratedTitles = (Array.isArray(titles) ? titles : [])
+    .filter(t => !isPlaceholderTitle(t) && (Number(t?.vote_count) || 0) >= MIN_RATED_VOTES);
+  if (!term || hasStrongTitleMatch(ratedTitles, term)) return null;
+  const friend = friends.find(f => nameAnswersQuery([f?.username, f?.display_name], term));
+  if (friend) return { kind: 'friend', data: friend };
+  const person = people.find(p => nameAnswersQuery([p?.name], term));
+  if (person) return { kind: 'person', data: person };
+  return null;
+}
+
+/** How many of the viewer's own titles lead the list. */
+export const LIBRARY_MATCH_LIMIT = 3;
+
+/**
+ * @typedef {object} LibraryRow One row from watching_progress, the watchlist
+ *   or history: `tmdb_id`, `media_type`, `title`, `poster_path`, plus the
+ *   status the caller tags it with.
+ * @property {number} tmdb_id
+ * @property {string} [media_type]
+ * @property {string} [title]
+ * @property {string|null} [poster_path]
+ * @property {'watching'|'saved'|'watched'} status
+ */
+
+/**
+ * The viewer's own titles that answer the query. These are already in memory,
+ * so they can lead the list before TMDB replies, and most searches are for
+ * something the viewer already knows about. Contains-match or better; one
+ * row per title, the first status wins (pass rows in priority order).
+ *
+ * @param {string} term
+ * @param {LibraryRow[]} rows
+ * @param {{ limit?: number }} [options]
+ * @returns {import('./search.js').UnifiedSearchItem[]}
+ */
+export function matchLibrary(term, rows = [], { limit = LIBRARY_MATCH_LIMIT } = {}) {
+  const query = normalizeTitle(term);
+  if (!query || query.length < 2) return [];
+  const seen = new Set();
+  return (Array.isArray(rows) ? rows : [])
+    .map((row, index) => ({ row, index, score: titleMatchScore(normalizeTitle(row?.title), query) }))
+    .filter(({ row, score }) => score > 0 && row?.tmdb_id)
+    .filter(({ row }) => {
+      const key = `${row.media_type || 'movie'}-${row.tmdb_id}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .sort((a, b) => b.score - a.score || a.index - b.index)
+    .slice(0, limit)
+    .map(({ row }) => ({
+      kind: 'library',
+      key: `library-${row.media_type || 'movie'}-${row.tmdb_id}`,
+      data: row,
+    }));
+}
+
+/** How many recent searches to keep. */
+export const RECENT_SEARCH_LIMIT = 5;
+
+/**
+ * Add a term to the front of a recent-searches list: trimmed, deduplicated
+ * case-insensitively, capped. Pure, so each app persists the result its own
+ * way (web: localStorage).
+ *
+ * @param {string[]} recent
+ * @param {string} term
+ * @returns {string[]}
+ */
+export function pushRecentSearch(recent = [], term = '') {
+  const clean = String(term ?? '').trim().replace(/\s+/g, ' ');
+  if (clean.length < 2) return Array.isArray(recent) ? recent : [];
+  const lower = clean.toLowerCase();
+  return [clean, ...(Array.isArray(recent) ? recent : []).filter(t => String(t).toLowerCase() !== lower)]
+    .slice(0, RECENT_SEARCH_LIMIT);
+}

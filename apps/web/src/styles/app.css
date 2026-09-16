@@ -872,11 +872,10 @@ svg { stroke-width: 1.5; }
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 32%, transparent);
 }
 
-/* Discover/Search cards below have their real "view details" control nested
+/* Discover cards below have their real "view details" control nested
    one level in (a sibling of the always-visible Favorite/Save buttons rather
    than a wrapper around them), so their focus indicator keys off :focus-within
    on the row/card instead of :focus-visible + .interactive-surface on it. */
-.list-row.search-result-row:focus-within,
 .discover-chart-card:focus-within {
   background: var(--surface-raised);
 }
@@ -1002,8 +1001,8 @@ svg { stroke-width: 1.5; }
   padding: 0;
 }
 .card-save-btn svg {
-  width: 13px;
-  height: 13px;
+  width: 15px;
+  height: 15px;
   stroke: currentColor;
   fill: none;
   stroke-width: 2.5;
@@ -1675,10 +1674,9 @@ svg { stroke-width: 1.5; }
    CALENDAR
 ═══════════════════════════════════════ */
 
-.calendar-wrap {
-  padding: 1.25rem 1.25rem 1.5rem;
-}
-
+/* Month nav + day panel primitives. The Calendar page itself no longer uses
+   these, but the Design System page renders them as samples and My Lists
+   borrows .cal-month-nav, so they stay. */
 .calendar-nav {
   display: flex;
   align-items: center;
@@ -1720,61 +1718,6 @@ svg { stroke-width: 1.5; }
   stroke-width: 2.5;
 }
 
-.calendar-grid {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 1px;
-  background: var(--border);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-}
-
-.cal-day-header {
-  background: var(--surface);
-  min-width: 0;
-  padding: 0.4rem 0;
-  text-align: center;
-  font-size: 0.62rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-
-.cal-day {
-  background: var(--surface);
-  min-width: 0;
-  min-height: 56px;
-  padding: 0.35rem 0.3rem 0.3rem;
-  cursor: pointer;
-  position: relative;
-  transition: background 0.12s ease;
-  -webkit-tap-highlight-color: transparent;
-}
-.cal-day:hover { background: var(--surface-raised); }
-.cal-day.other-month { background: var(--surface-sunken); }
-.cal-day.other-month .cal-date { color: var(--text-muted); opacity: 0.4; }
-.cal-day.selected { background: var(--surface); box-shadow: inset 0 0 0 1px var(--accent); border-radius: 4px; }
-.cal-day.selected:hover { background: var(--surface); }
-
-.cal-date {
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  width: 22px;
-  height: 22px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  margin-bottom: 0.2rem;
-}
-.cal-day.today .cal-date {
-  background: transparent;
-  color: var(--accent);
-}
-
 /* ── Calendar day panel ── */
 .cal-day-panel {
   background: var(--surface);
@@ -1792,19 +1735,6 @@ svg { stroke-width: 1.5; }
   text-transform: uppercase;
   color: var(--text-secondary);
 }
-/* ── Calendar reminder icon cell ── */
-.cal-event-row--no-link { cursor: default; }
-.cal-event-row--loading { opacity: 0.6; pointer-events: none; }
-.cal-event-reminder-icon {
-  width: 36px;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.4rem;
-  flex-shrink: 0;
-}
-
 .cal-event-row {
   display: flex;
   align-items: center;
@@ -1838,187 +1768,6 @@ svg { stroke-width: 1.5; }
   font-size: 0.72rem;
   color: var(--text-secondary);
   margin-top: 1px;
-}
-
-/* ── View toggle (grid / agenda) ── */
-.cal-view-toggle {
-  display: flex;
-  gap: 0.2rem;
-  align-items: center;
-}
-.cal-view-btn {
-  width: 28px;
-  height: 28px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border);
-  background: var(--surface);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-muted);
-  transition: var(--transition-fast);
-}
-.cal-view-btn:hover { background: var(--surface-raised); color: var(--text-primary); }
-.cal-view-btn.active {
-  background: var(--accent-dim);
-  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
-  color: var(--accent);
-}
-.cal-view-btn svg {
-  width: 13px;
-  height: 13px;
-  stroke: currentColor;
-  fill: none;
-  stroke-width: 2;
-}
-
-/* ── Event pills (grid mode) ── */
-.calendar-grid--pills .cal-day {
-  min-height: 80px;
-}
-/* Round the bottom outer corners of the first and last cells in the last row
-   to match the grid container — same fix as the week view.
-   In a 7-column grid the total cell count is always a multiple of 7, so
-   :last-child is always column 7 (bottom-right) and
-   :nth-last-child(7) is always column 1 (bottom-left). */
-.calendar-grid--pills .cal-day.selected:last-child {
-  border-bottom-right-radius: calc(var(--radius-md) - 1px);
-}
-.calendar-grid--pills .cal-day.selected:nth-last-child(7) {
-  border-bottom-left-radius: calc(var(--radius-md) - 1px);
-}
-
-/* ── Week view grid ── */
-.calendar-grid--week {
-  grid-template-rows: 1fr; /* single row */
-}
-.calendar-grid--week .cal-day {
-  min-height: 140px;
-  align-items: flex-start;
-}
-/* Round the outer corners of the first and last cells to match the grid container,
-   preventing overflow:hidden from clipping their borders */
-.calendar-grid--week .cal-day:first-child {
-  border-top-left-radius: calc(var(--radius-md) - 1px);
-  border-bottom-left-radius: calc(var(--radius-md) - 1px);
-}
-.calendar-grid--week .cal-day:last-child {
-  border-top-right-radius: calc(var(--radius-md) - 1px);
-  border-bottom-right-radius: calc(var(--radius-md) - 1px);
-}
-.cal-day--week {
-  padding: 0.5rem 0.4rem;
-}
-.cal-week-day-name {
-  font-size: 0.58rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  text-align: center;
-  margin-bottom: 0.15rem;
-}
-.cal-day--week .cal-date {
-  margin: 0 auto 0.35rem;
-}
-.cal-pills {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  width: 100%;
-  overflow: hidden;
-}
-.cal-pill {
-  display: flex;
-  align-items: center;
-  min-width: 0;
-  gap: 3px;
-  padding: 1px 4px 1px 3px;
-  border-radius: 3px;
-  font-size: 0.65rem;
-  font-weight: 600;
-  line-height: 1.4;
-  overflow: hidden;
-  white-space: nowrap;
-  max-width: 100%;
-}
-.cal-pill-dot {
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-.cal-pill-label {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  flex: 1;
-  min-width: 0;
-}
-.cal-pill-ep        { background: color-mix(in srgb, var(--chip-episode)   12%, transparent); color: var(--chip-episode);   }
-.cal-pill-premiere  { background: color-mix(in srgb, var(--chip-now)       12%, transparent); color: var(--chip-now);       }
-.cal-pill-release   { background: color-mix(in srgb, var(--chip-cinema)    12%, transparent); color: var(--chip-cinema);    }
-.cal-pill-cinema    { background: color-mix(in srgb, var(--chip-cinema)    12%, transparent); color: var(--chip-cinema);    }
-.cal-pill-streaming { background: color-mix(in srgb, var(--chip-streaming) 12%, transparent); color: var(--chip-streaming); }
-.cal-pill-reminder  { background: color-mix(in srgb, #f59e0b 12%, transparent); color: #d97706; }
-.cal-pill-ep .cal-pill-dot        { background: var(--chip-episode);   }
-.cal-pill-premiere .cal-pill-dot  { background: var(--chip-now);       }
-.cal-pill-release .cal-pill-dot   { background: var(--chip-cinema);    }
-.cal-pill-cinema .cal-pill-dot    { background: var(--chip-cinema);    }
-.cal-pill-streaming .cal-pill-dot { background: var(--chip-streaming); }
-.cal-pill-reminder .cal-pill-dot  { background: #f59e0b;               }
-/* ── Calendar legend ── */
-.cal-legend {
-  display: flex;
-  gap: 0.4rem;
-  flex-wrap: wrap;
-  padding: 0 0.25rem 0.75rem;
-}
-.cal-legend-item {
-  font-size: 0.68rem;
-  padding: 0.2rem 0.55rem;
-  border-radius: 20px;
-  cursor: default;
-  position: relative;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-}
-/* Tooltip */
-.cal-legend-item::after {
-  content: attr(data-tip);
-  position: absolute;
-  bottom: calc(100% + 7px);
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--text-primary);
-  color: var(--bg);
-  font-size: 0.68rem;
-  font-weight: 500;
-  line-height: 1.4;
-  padding: 0.35rem 0.65rem;
-  border-radius: 7px;
-  white-space: nowrap;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.15s ease;
-  z-index: 100;
-}
-.cal-legend-item:hover::after { opacity: 1; }
-.cal-legend-icon {
-  display: inline-flex;
-  align-items: center;
-  margin-left: 3px;
-  opacity: 0.55;
-  vertical-align: middle;
-}
-
-.cal-pill-more {
-  font-size: 0.49rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  padding: 0 2px;
-  line-height: 1.3;
 }
 
 /* ── Month nav (< May 2026 >) styled like multi-select-btn ── */
@@ -2060,47 +1809,404 @@ svg { stroke-width: 1.5; }
   align-items: center;
 }
 
-/* ── Agenda view ── */
-.cal-agenda {
-  margin-top: 0.75rem;
-  padding-bottom: 1rem;
+/* ── Calendar page ─────────────────────────────────────────────────────────
+   Heading row is the shared .page-toolbar (see Home). Under it, "My dates" is
+   two columns: a fixed side panel (two mini months in a card, then a plain
+   list of the months after them) and one continuous stream of days from today
+   onward. No paging anywhere; the side panel only scrolls the stream. */
+.cal-page {
+  padding: 0 var(--gut) 2rem;
 }
-.cal-agenda-group {
-  margin-bottom: 1rem;
-}
-.cal-agenda-date-row {
+
+/* Scope toggle: a two-option segmented control. */
+.cal-scope {
   display: flex;
-  align-items: baseline;
-  gap: 0.45rem;
-  padding: 0.25rem 0.25rem 0.4rem;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 12px;
+  background: var(--surface-sunken);
+  flex-shrink: 0;
 }
-.cal-agenda-day-num {
-  font-family: var(--font-serif-tabular);
-  font-size: 1.55rem;
+.cal-scope-btn {
+  border: 0;
+  background: transparent;
+  padding: 6px 14px;
+  border-radius: 10px;
+  font-size: 13px;
   font-weight: 500;
-  line-height: 1;
-  color: var(--text-primary);
-  letter-spacing: -0.04em;
-  min-width: 1.4ch;
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.12s ease, background 0.12s ease;
+  -webkit-tap-highlight-color: transparent;
 }
-.cal-agenda-day-name {
-  font-size: 0.62rem;
+.cal-scope-btn:hover { color: var(--text-primary); }
+.cal-scope-btn.active {
+  background: var(--surface);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+.cal-scope-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+.cal-body {
+  display: flex;
+  align-items: flex-start;
+  gap: 72px;
+}
+
+/* ── Side panel ── */
+.cal-side {
+  display: none;
+  width: 264px;
+  flex-shrink: 0;
+  flex-direction: column;
+  gap: 24px;
+  position: sticky;
+  top: 1rem;
+  /* Above the stream, so the genre popover paints over the posters. */
+  z-index: 10;
+}
+.cal-mini-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.cal-mini {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.cal-mini-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 28px;
+  padding-left: 4px;
+}
+.cal-mini-name {
+  font-family: var(--font-serif);
+  font-size: 18px;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+.cal-mini-nav { display: flex; gap: 2px; }
+.cal-mini-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.cal-mini-btn:hover { background: var(--surface-raised); color: var(--text-primary); }
+.cal-mini-btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.cal-mini-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+}
+.cal-mini-wd {
+  text-align: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  padding-bottom: 2px;
+}
+.cal-mini-day {
+  position: relative;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-primary);
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.12s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.cal-mini-day:hover { background: var(--surface-raised); }
+.cal-mini-day:disabled { cursor: default; color: var(--text-muted); }
+.cal-mini-day:disabled:hover { background: transparent; }
+.cal-mini-day--today,
+.cal-mini-day--today:hover,
+.cal-mini-day--today:disabled {
+  background: color-mix(in srgb, var(--chip-cinema) 12%, transparent);
+  color: var(--chip-cinema);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--chip-cinema) 34%, var(--border));
+  font-weight: 600;
+}
+.cal-mini-dot {
+  position: absolute;
+  bottom: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.cal-mini-day--today .cal-mini-dot { background: var(--chip-cinema); }
+
+/* Show / Genre filter rows under the mini months. Same row metrics as a
+   plain list: 14px name, 11px 4px padding, hairline between rows. */
+.cal-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 8px;
+}
+.cal-filter-label {
+  font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.09em;
   text-transform: uppercase;
   color: var(--text-muted);
-  margin-bottom: 1px;
+  padding: 0 4px;
 }
-.cal-agenda-today-pill {
-  font-size: 0.6rem;
+.cal-filter-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 11px 4px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.cal-filter-row:last-child { border-bottom: 0; }
+.cal-filter-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 6px; }
+.cal-filter-name { font-size: 14px; font-weight: 500; color: var(--text-primary); transition: color 0.12s ease; }
+.cal-filter-row--off .cal-filter-name { color: var(--text-muted); }
+.cal-filter-row:hover .cal-filter-name { color: var(--accent-text); }
+.cal-filter-tick { display: flex; color: var(--text-primary); }
+.cal-filter-tick svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.cal-filter-chev { display: flex; color: var(--text-muted); }
+.cal-filter-chev svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+/* The genre row is the trigger of the shared filter popover. The panel is
+   sticky near the bottom of the viewport, so a menu hanging below the row
+   would be clipped; this one opens to the RIGHT of the column, hanging a
+   little below the row so it reads as coming out of it rather than sitting
+   above it, and grows upward beside the mini months. Two columns of options
+   keep the whole list visible without an inner scroll. */
+.cal-filter-menu { display: block; z-index: 5; }
+.cal-filter-menu .guide-filter-menu {
+  top: auto;
+  bottom: -120px;
+  right: auto;
+  left: calc(100% + 16px);
+  width: 360px;
+  max-height: calc(100vh - 3rem);
+  padding: 0.6rem;
+  border-radius: var(--radius-md);
+}
+.cal-filter-menu .guide-filter-heading { display: none; }
+.cal-filter-menu .guide-filter-group {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 0.5rem;
+}
+
+/* ── Stream ── */
+.cal-stream {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.cal-stream-group {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.cal-stream-month {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 4px 4px 0;
+  scroll-margin-top: 1rem;
+}
+.cal-stream-month-name {
+  font-family: var(--font-serif);
+  font-size: 24px;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: var(--text-primary);
+}
+.cal-stream-month-count { font-size: 12px; color: var(--text-muted); }
+
+.cal-stream-day {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+  scroll-margin-top: 1rem;
+}
+.cal-stream-gutter {
+  width: 56px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 6px;
+}
+.cal-stream-num {
+  font-family: var(--font-serif-tabular);
+  font-size: 30px;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: var(--text-primary);
+}
+.cal-stream-wd {
+  font-size: 10px;
   font-weight: 600;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
-  color: var(--accent);
-  margin-bottom: 1px;
+  color: var(--text-muted);
 }
-.cal-day-panel--today {
-  border-color: var(--accent);
+.cal-stream-rows {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.cal-stream-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 4px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.cal-stream-row:last-child { border-bottom: 0; }
+.cal-stream-row:hover .cal-stream-title { color: var(--accent-text); }
+.cal-stream-row--no-link { cursor: default; }
+.cal-stream-row--no-link:hover .cal-stream-title { color: var(--text-primary); }
+.cal-stream-row--loading { opacity: 0.6; pointer-events: none; }
+.cal-stream-poster {
+  width: 48px;
+  height: 72px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--surface-raised);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+.cal-stream-poster img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cal-stream-poster svg { width: 20px; height: 20px; }
+.cal-stream-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.cal-stream-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.12s ease;
+}
+.cal-stream-sub  { font-size: 13px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cal-stream-meta { font-size: 12px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cal-stream-behind {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 3px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--accent-text);
+  background: var(--accent-dim);
+  border: 1px solid color-mix(in srgb, var(--accent) 34%, var(--border));
+  white-space: nowrap;
+}
+.cal-stream-chev {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+.cal-stream-chev svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ── All releases: a poster rail per day ── */
+.cal-stream--rail .cal-stream-group { gap: 6px; }
+.cal-stream--rail .cal-stream-month { padding-bottom: 8px; }
+.cal-stream--rail .cal-stream-month + .cal-stream-day { border-top: 0; }
+.cal-stream--rail .cal-stream-day { padding-top: 14px; }
+.cal-stream--rail .cal-stream-gutter { padding-top: 4px; }
+.cal-release-rail {
+  min-width: 0;
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 0 0 18px;
+  cursor: grab;
+  user-select: none;
+}
+.cal-release-rail::-webkit-scrollbar { display: none; }
+.cal-release-rail:active { cursor: grabbing; }
+/* The rail's arrows sit top-right of the rail body on their own 28px line,
+   so they never cover a poster; a day whose rail fits keeps the line (so the
+   posters of neighbouring days align) but shows nothing in it. */
+.cal-release-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.cal-release-arrows {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0;
+  height: 28px;
+  margin-right: -6px;
+}
+.cal-release-arrows .rail-arrow { width: 28px; height: 28px; }
+.cal-release-arrows .rail-arrow svg { width: 16px; height: 16px; }
+@media (hover: hover) and (pointer: fine) {
+  .cal-release-arrows .rail-arrow { display: inline-flex; }
+}
+.cal-stream--rail .cal-stream-day { padding-top: 16px; }
+.cal-stream--rail .cal-stream-gutter { padding-top: 36px; }
+
+@media (min-width: 1024px) {
+  .cal-side { display: flex; }
 }
 
 /* ═══════════════════════════════════════
@@ -2897,10 +3003,6 @@ svg { stroke-width: 1.5; }
 .panel-cast-name, .panel-similar-name { margin-top: 0.4rem; font-size: 0.72rem; font-weight: 600; }
 .panel-cast-role, .panel-similar-meta { margin-top: 0.1rem; font-size: 0.65rem; color: var(--text-muted); }
 
-.talent-result-row { width: 100%; border: 0; background: none; color: inherit; cursor: pointer; text-align: left; }
-.talent-result-row .list-row-poster span { display: flex; width: 100%; height: 100%; align-items: center; justify-content: center; background: var(--surface-raised); color: var(--text-muted); font-family: var(--font-serif); font-size: 1.4rem; }
-.talent-known-for { margin-top: 0.2rem; overflow: hidden; color: var(--text-muted); font-size: 0.72rem; text-overflow: ellipsis; white-space: nowrap; }
-
 .providers-grid {
   display: flex;
   gap: 0.5rem;
@@ -3163,54 +3265,6 @@ a.provider-chip--link:hover {
   height: 12px;
 }
 
-.search-row-status {
-  margin-left: auto;
-  padding-right: 0.1rem;
-  transition: opacity 0.15s ease, transform 0.15s ease;
-}
-.search-row-status .chip {
-  font-size: 0.62rem;
-  white-space: nowrap;
-}
-.search-result-row {
-  position: relative;
-}
-.search-result-original {
-  font-size: 0.74rem;
-  color: var(--text-muted);
-  font-style: italic;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.search-result-meta {
-  color: var(--text-secondary);
-}
-.search-result-rating {
-  color: var(--text-primary);
-  font-weight: 600;
-}
-.search-result-row .search-row-actions {
-  position: absolute;
-  right: 1rem;
-  top: 50%;
-  opacity: 0;
-  pointer-events: none;
-  transform: translate(4px, -50%);
-  transition: opacity 0.15s ease, transform 0.15s ease;
-}
-.search-result-row:hover .search-row-status,
-.search-result-row:focus-within .search-row-status {
-  opacity: 0;
-  transform: translateX(-4px);
-  pointer-events: none;
-}
-.search-result-row:hover .search-row-actions,
-.search-result-row:focus-within .search-row-actions {
-  opacity: 1;
-  pointer-events: auto;
-  transform: translate(0, -50%);
-}
 .search-action-btn {
   position: relative;
   width: 30px;
@@ -3883,15 +3937,6 @@ a.provider-chip--link:hover {
 
 .date-group {
   margin-bottom: 0;
-}
-
-.upcoming-content {
-  margin-top: 0;
-  padding-top: 0;
-}
-
-.sub-tabs + .upcoming-content {
-  margin-top: -1px;
 }
 
 /* Filled strip header — Option B style */
@@ -4947,32 +4992,42 @@ a.provider-chip--link:hover {
 .discover-see-all:hover { color: var(--text-primary); }
 .discover-see-all:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
 
-/* The filter menu's row. Below sidebar widths it is a plain row under the
-   header; at sidebar widths it is pulled up onto the page heading's line so
-   Home does not spend a row on one control. */
-.discover-toolbar {
+/* The row under a page heading: today's date on the left, that page's
+   controls on the right (Home's filter; Calendar's scope toggle). Below
+   sidebar widths it is a plain row under the header; at sidebar widths it is
+   pulled up onto the page heading's line so the page does not spend a row on
+   one control. */
+.page-toolbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 1rem;
   padding: 0.75rem var(--gut) 0.25rem;
 }
-.discover-toolbar-date {
+.page-toolbar-date {
   font-size: 0.85rem;
   color: var(--text-muted);
+}
+.page-toolbar-date--clickable { cursor: pointer; }
+.page-toolbar-date--clickable:hover { color: var(--text-secondary); }
+.page-toolbar-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
 }
 @media (min-width: 1024px) {
   /* .app-page-heading: 1.75rem top padding, 2rem line, 1.5rem bottom margin.
      Pull the row up over that bottom margin so the date lands directly under
      the heading and the pill centres on the heading + date block. */
-  .discover-toolbar {
+  .page-toolbar {
     margin-top: calc(-1 * (2rem + 1.5rem));
     min-height: 3.5rem;
     padding: 0 var(--gut);
     margin-bottom: 1.5rem;
     align-items: center;
   }
-  .discover-toolbar-date {
+  .page-toolbar-date {
     align-self: flex-end;
     padding-bottom: 0.15rem;
   }
@@ -5474,6 +5529,7 @@ a.provider-chip--link:hover {
      to say the row continues. Give the thumb back at hairline weight, always
      present rather than on hover, so it costs no layout shift. */
   .rail-scroll,
+  .cal-release-rail,
   .discover-binge-rail,
   .discover-chart-rail,
   .discover-plat-rail,
@@ -5483,6 +5539,7 @@ a.provider-chip--link:hover {
     scrollbar-color: var(--border-strong) transparent;
   }
   .rail-scroll::-webkit-scrollbar,
+  .cal-release-rail::-webkit-scrollbar,
   .discover-binge-rail::-webkit-scrollbar,
   .discover-chart-rail::-webkit-scrollbar,
   .discover-plat-rail::-webkit-scrollbar,
@@ -5492,6 +5549,7 @@ a.provider-chip--link:hover {
     height: 8px;
   }
   .rail-scroll::-webkit-scrollbar-track,
+  .cal-release-rail::-webkit-scrollbar-track,
   .discover-binge-rail::-webkit-scrollbar-track,
   .discover-chart-rail::-webkit-scrollbar-track,
   .discover-plat-rail::-webkit-scrollbar-track,
@@ -5500,6 +5558,7 @@ a.provider-chip--link:hover {
     background: transparent;
   }
   .rail-scroll::-webkit-scrollbar-thumb,
+  .cal-release-rail::-webkit-scrollbar-thumb,
   .discover-binge-rail::-webkit-scrollbar-thumb,
   .discover-chart-rail::-webkit-scrollbar-thumb,
   .discover-plat-rail::-webkit-scrollbar-thumb,
@@ -5576,17 +5635,9 @@ a.provider-chip--link:hover {
      sit on top of (the status chip below). */
   .discover-hero-corner-btns,
   .discover-hero-corner-btn,
-  .discover-chart-card .discover-chart-actions,
-  .search-result-row .search-row-actions {
+  .discover-chart-card .discover-chart-actions {
     opacity: 1;
     pointer-events: auto;
-  }
-  .search-result-row .search-row-actions {
-    transform: translate(0, -50%);
-  }
-  .search-result-row .search-row-status {
-    opacity: 0;
-    pointer-events: none;
   }
 
   .icon-btn,
@@ -5694,17 +5745,9 @@ a.provider-chip--link:hover {
 
   .discover-hero-corner-btns,
   .discover-hero-corner-btn,
-  .discover-chart-card .discover-chart-actions,
-  .search-result-row .search-row-actions {
+  .discover-chart-card .discover-chart-actions {
     opacity: 1;
     pointer-events: auto;
-  }
-  .search-result-row .search-row-actions {
-    transform: translate(0, -50%);
-  }
-  .search-result-row .search-row-status {
-    opacity: 0;
-    pointer-events: none;
   }
 
   .app-header {

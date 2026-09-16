@@ -16,7 +16,15 @@ import { tmdb } from '@plot/core/tmdb.js';
  * The derivation itself — which airings count, how they're labelled, what
  * collapses together — lives in core so mobile runs the same rules.
  */
-export function useCalendar(watchlistItems = [], watchingItems = [], fetchSeason, reminders = []) {
+/**
+ * @param {object} [opts]
+ * @param {boolean} [opts.ready=true]  false while the lists this derives from are
+ *   still loading. The first build used to run against empty lists and finish
+ *   instantly, so the page showed "Nothing coming up" for a beat before the
+ *   real events arrived. Nothing is built, and `loading` stays true, until
+ *   the inputs are real.
+ */
+export function useCalendar(watchlistItems = [], watchingItems = [], fetchSeason, reminders = [], { ready = true } = {}) {
   const [events,  setEvents]  = useState([]);
   const [loading, setLoading] = useState(true);
   const hasLoadedOnce = useRef(false);
@@ -70,9 +78,10 @@ export function useCalendar(watchlistItems = [], watchingItems = [], fetchSeason
   }, [fetchSeason]);
 
   useEffect(() => {
+    if (!ready) return undefined;
     buildEvents();
     return () => { cancelledRef.current = true; buildInFlight.current = false; };
-  }, [buildEvents, remindersSignature, watchlistSignature, watchingSignature]);
+  }, [buildEvents, ready, remindersSignature, watchlistSignature, watchingSignature]);
 
   const eventsForDate = useCallback(
     (dateStr) => events.filter(e => e.date === dateStr),
