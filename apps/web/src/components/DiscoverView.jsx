@@ -402,21 +402,21 @@ function ChartCard({ item, rank, openPanel, watchlist, favorites, region }) {
       <div className="discover-chart-actions search-row-actions">
         <button
           type="button"
-          className={`search-action-btn${inList ? ' active' : ''}`}
-          onClick={e => { e.stopPropagation(); watchlist.toggle({ ...item, id, media_type: type }); }}
-          data-tip={inList ? MEDIA.removeFromWatchlist : MEDIA.saveToWatchlist}
-          aria-label={inList ? `Remove ${title} from list` : `Add ${title} to list`}
-        >
-          <BookmarkIcon filled={inList} />
-        </button>
-        <button
-          type="button"
           className={`search-action-btn search-action-btn--heart${isFav ? ' active' : ''}`}
           onClick={async e => { e.stopPropagation(); await favorites.toggleFavorite({ ...item, id, tmdb_id: id, media_type: type }); }}
           data-tip={isFav ? `Remove ${fw.nounLower}` : fw.noun}
           aria-label={isFav ? `Remove ${title} from ${fw.pluralLower}` : `Add ${title} to ${fw.pluralLower}`}
         >
           <HeartIcon filled={isFav} />
+        </button>
+        <button
+          type="button"
+          className={`search-action-btn${inList ? ' active' : ''}`}
+          onClick={e => { e.stopPropagation(); watchlist.toggle({ ...item, id, media_type: type }); }}
+          data-tip={inList ? MEDIA.removeFromWatchlist : MEDIA.saveToWatchlist}
+          aria-label={inList ? `Remove ${title} from list` : `Add ${title} to list`}
+        >
+          <BookmarkIcon filled={inList} />
         </button>
       </div>
     </div>

@@ -48,3 +48,23 @@ export function wantToWatchItems(watchlistItems, watchingItems, todayStr) {
   const availableNow = saved.filter(i => !i.release_date || i.release_date <= todayStr);
   return [...comingSoon, ...availableNow];
 }
+
+/**
+ * Search collection titles, preserving source order and showing each media item once.
+ * Type and genre filtering should happen before this so richer matching records survive.
+ * @template {{ tmdb_id?: number|string, id?: number|string, media_type?: string, title?: string, name?: string }} T
+ * @param {T[][]} collections
+ * @param {string} query
+ * @returns {T[]}
+ */
+export function searchCollectionTitles(collections, query) {
+  const term = query.trim().toLowerCase();
+  const seen = new Set();
+  return collections.flat().filter(item => {
+    if (!(item.title || item.name || '').toLowerCase().includes(term)) return false;
+    const key = `${item.media_type || 'movie'}:${item.tmdb_id ?? item.id}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}

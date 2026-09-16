@@ -1,15 +1,15 @@
 export const APP_NAV_ITEMS = [
   { id: 'home', label: 'Home', path: '/home', primary: true },
-  // Web only in practice: mobile keeps Guide as a Home sub-tab (DISCOVER_TABS)
-  // and its drawer hardcodes its own list. Not primary, so it stays out of the
-  // web bottom tab bar; the sidebar and drawer render it.
-  { id: 'guide', label: 'Guide', path: '/guide', primary: false },
   { id: 'calendar', label: 'Calendar', path: '/calendar', primary: true },
   { id: 'my-lists', label: 'My Lists', path: '/my-lists', primary: true },
   // Web only for now: on web History is its own page (poster shelf plus an
   // insights panel); mobile still shows history as a My Lists tab, which is
   // why MY_LISTS_TABS below keeps its 'history' entry.
   { id: 'history', label: 'History', path: '/history', primary: true },
+  // Web only in practice: mobile keeps Guide as a Home sub-tab (DISCOVER_TABS)
+  // and its drawer hardcodes its own list. Not primary, so it stays out of the
+  // web bottom tab bar; the sidebar and drawer render it.
+  { id: 'guide', label: 'Guide', path: '/guide', primary: false },
   { id: 'search', label: 'Search', path: '/search', primary: false },
   { id: 'settings', label: 'Settings', path: '/settings', primary: false },
 ];

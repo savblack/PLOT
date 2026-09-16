@@ -39,7 +39,7 @@ import { IANA_TIMEZONES } from '../utils/timezones.js';
 import { REGIONS, DEFAULT_REGION, regionName } from '@plot/core/regions.js';
 import { SHOW_MEDIA_SYNC_INTEGRATIONS } from '../launchFeatures.js';
 import { SETTINGS_SECTIONS, settingsSelectionSummary } from '@plot/core/settings.js';
-import SettingsPage, { SettingsPreferenceRow, SettingsSwitch } from './SettingsPage.jsx';
+import SettingsPage, { SettingsPreferenceRow, SettingsSwitch, SettingsTextAction } from './SettingsPage.jsx';
 import SettingsBilling from './SettingsBilling.jsx';
 import SheetHeader from './SheetHeader.jsx';
 import ConfirmModal from './ConfirmModal.jsx';
@@ -127,19 +127,6 @@ function PremiumBadge() {
     <span style={{ fontSize: '0.66rem', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--accent)', background: 'var(--accent-dim)', borderRadius: 999, padding: '0.15rem 0.5rem', marginLeft: '0.35rem', verticalAlign: 'middle' }}>
       Premium
     </span>
-  );
-}
-
-function SettingsTextAction({ children, onClick, disabled = false, tone = 'default' }) {
-  return (
-    <button
-      type="button"
-      className={`settings-text-action${tone === 'danger' ? ' settings-text-action--danger' : ''}`}
-      onClick={onClick}
-      disabled={disabled}
-    >
-      <span>{children}</span>
-    </button>
   );
 }
 
@@ -1781,14 +1768,12 @@ export default function SettingsView() {
                 {!emailNotice && !emailVerified && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.72rem', marginTop: '0.3rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>
                     <span>Not verified</span>
-                    <button
-                      type="button"
+                    <SettingsTextAction
                       onClick={handleResendVerification}
                       disabled={resendVerifyStatus === 'sending' || resendVerifyStatus === 'sent'}
-                      style={{ background: 'none', border: 'none', padding: 0, font: 'inherit', color: 'var(--text-secondary)', textDecoration: 'underline', cursor: 'pointer' }}
                     >
                       {resendVerifyStatus === 'sending' ? COMMON.sending : resendVerifyStatus === 'sent' ? SETTINGS_VIEW.verifyEmail.sent : resendVerifyStatus === 'error' ? SETTINGS_VIEW.verifyEmail.tryAgain : SETTINGS_VIEW.verifyEmail.verifyNow}
-                    </button>
+                    </SettingsTextAction>
                   </div>
                 )}
               </div>
@@ -2175,7 +2160,7 @@ export default function SettingsView() {
                 {profileUrlCopied ? COMMON.copied : COMMON.share}
               </SettingsTextAction>
               <a className="settings-text-action" href={profileUrl} target="_blank" rel="noreferrer">
-                <span>View</span><span aria-hidden="true">›</span>
+                <span>View</span><span aria-hidden="true">→</span>
               </a>
             </div>
           </div>
@@ -2240,6 +2225,7 @@ export default function SettingsView() {
               {clearingWatchlist ? SETTINGS_VIEW.clearing : SETTINGS_VIEW.dangerZone.clearListsLabel}
             </span>
           </div>
+          <span aria-hidden="true">→</span>
         </div>
 
         <div
@@ -2260,6 +2246,7 @@ export default function SettingsView() {
               {clearingHistory ? SETTINGS_VIEW.clearing : SETTINGS_VIEW.dangerZone.clearWatchHistoryLabel}
             </span>
           </div>
+          <span aria-hidden="true">→</span>
         </div>
 
         <div
@@ -2274,6 +2261,7 @@ export default function SettingsView() {
             </div>
             <span className="settings-row-label" style={{ color: 'var(--danger)' }}>{SETTINGS_VIEW.dangerZone.deleteAccountLabel}</span>
           </div>
+          <span aria-hidden="true">→</span>
         </div>
       </div>
 
@@ -2294,7 +2282,7 @@ export default function SettingsView() {
             <span className="settings-row-label">{SETTINGS_VIEW.support.reportABugLabel}</span>
           </div>
           <div className="settings-row-value">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ width: 14, height: 14, opacity: 0.4 }}><polyline points="9 18 15 12 9 6"/></svg>
+            <span aria-hidden="true">→</span>
           </div>
         </div>
         <div
@@ -2309,7 +2297,7 @@ export default function SettingsView() {
             <span className="settings-row-label">{SETTINGS_VIEW.support.leaveFeedbackLabel}</span>
           </div>
           <div className="settings-row-value">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ width: 14, height: 14, opacity: 0.4 }}><polyline points="9 18 15 12 9 6"/></svg>
+            <span aria-hidden="true">→</span>
           </div>
         </div>
       </div>
@@ -2341,8 +2329,8 @@ export default function SettingsView() {
       </div>
 
       <div className="settings-legal-links">
-        <a href="/terms">{COMMON.termsOfService}</a>
-        <a href="/privacy">{COMMON.privacyPolicy}</a>
+        <a className="settings-text-action" href="/terms">{COMMON.termsOfService}<span aria-hidden="true">→</span></a>
+        <a className="settings-text-action" href="/privacy">{COMMON.privacyPolicy}<span aria-hidden="true">→</span></a>
       </div>
         </>}
       </SettingsPage>

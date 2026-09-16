@@ -143,7 +143,6 @@ export default function AppSidebar({
               ? <img className="app-sidebar-avatar" src={profile.avatar_url} alt="" />
               : <span className="app-sidebar-avatar app-sidebar-avatar-initial">{(profile.display_name || profile.username).charAt(0).toUpperCase()}</span>}
             <span className="app-sidebar-profile-copy"><span className="app-sidebar-label">{profile.display_name || profile.username}</span><small>{APP_SHELL.viewYourProfile}</small></span>
-            <span className="app-sidebar-profile-arrow" aria-hidden="true">›</span>
           </button>
         )}
       </div>
