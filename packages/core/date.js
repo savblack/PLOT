@@ -96,3 +96,16 @@ export function relativeTime(iso, now = Date.now()) {
   const d = Math.floor(h / 24); if (d < 7) return `${d}d ago`;
   return new Date(iso).toLocaleDateString();
 }
+
+/** Today, spelt out in the viewer's own locale ("Tuesday 15 September"). The
+ *  line under the Home and Calendar page headings. */
+export function todayLongLabel(now = new Date()) {
+  return now.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
+}
+
+/** "October" while the year is the current one, "January 2027" once it is not.
+ *  Month headings in the Calendar stream and its mini months. */
+export function monthLongName(year, month, todayYear) {
+  const d = new Date(year, month, 1);
+  return d.toLocaleDateString('en', year === todayYear ? { month: 'long' } : { month: 'long', year: 'numeric' });
+}

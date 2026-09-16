@@ -1,4 +1,6 @@
 import { dateToLocalStr } from './date.js';
+import { genreIdsFromItem } from './media.js';
+import { ALL_TYPES } from './mediaFilters.js';
 
 export function msUntilNextLocalMidnight(now = new Date()) {
   const nextMidnight = new Date(now);
@@ -17,6 +19,12 @@ export function buildWatchlistMovieCalendarEvents(item, todayStr) {
     item.release_date === item.streaming_date;
 
   const events = [];
+  // list_items rows carry genre_ids; a title saved from the detail panel may
+  // carry `genres` instead. Normalise only that case so the genre filter can
+  // read it — everything else keeps the row itself as the event's item.
+  const eventItem = (!Array.isArray(item.genre_ids) && Array.isArray(item.genres))
+    ? { ...item, genre_ids: genreIdsFromItem(item) }
+    : item;
 
   if (hasUpcomingRelease) {
     const isCinemaWindow = !isSameDayStreamingRelease;
@@ -24,7 +32,7 @@ export function buildWatchlistMovieCalendarEvents(item, todayStr) {
       date: item.release_date,
       type: isSameDayStreamingRelease ? 'streaming' : isCinemaWindow ? 'cinema' : 'streaming',
       label: isSameDayStreamingRelease ? 'Streaming' : isCinemaWindow ? 'Cinema' : 'Streaming',
-      item,
+      item: eventItem,
     });
   }
 
@@ -33,7 +41,7 @@ export function buildWatchlistMovieCalendarEvents(item, todayStr) {
       date: item.streaming_date,
       type: 'streaming',
       label: 'Streaming',
-      item,
+      item: eventItem,
     });
   }
 
@@ -159,6 +167,9 @@ export async function buildCalendarEvents({
           1;
         const season = await fetchSeason?.(item.tmdb_id, seasonNum);
         if (!season?.episodes) return [];
+        const networkName = details?.networks?.[0]?.name ?? null;
+        const rowGenres   = genreIdsFromItem(item);
+        const genreIds    = rowGenres.length ? rowGenres : genreIdsFromItem(details);
         return season.episodes
           .filter(ep => ep.air_date && ep.air_date >= todayStr)
           .map(ep => ({
@@ -166,11 +177,13 @@ export async function buildCalendarEvents({
             type:  'episode',
             label: episodeLabel(seasonNum, ep.episode_number),
             item: {
-              title:       item.title || item.name,
-              poster_path: item.poster_path,
-              tmdb_id:     item.tmdb_id,
-              media_type:  'tv',
-              episode:     ep,
+              title:        item.title || item.name,
+              poster_path:  item.poster_path,
+              tmdb_id:      item.tmdb_id,
+              media_type:   'tv',
+              network_name: networkName,
+              genre_ids:    genreIds,
+              episode:      ep,
             },
           }));
       } catch {
@@ -181,11 +194,19 @@ export async function buildCalendarEvents({
   all.push(...watchlistEpisodes.flat());
 
   // ── In-progress shows — only episodes at or ahead of where you are ───────
+  // watching_progress rows store no network or genres, so the show's details
+  // are fetched too (cached by the TMDB layer); a failed details read only
+  // costs those two fields, not the episodes.
   const watchingEpisodes = await Promise.all(
     watching.map(async (progress) => {
       try {
-        const season = await fetchSeason?.(progress.tmdb_id, progress.current_season);
+        const [season, details] = await Promise.all([
+          fetchSeason?.(progress.tmdb_id, progress.current_season),
+          Promise.resolve(fetchTvDetails?.(progress.tmdb_id)).catch(() => null),
+        ]);
         if (!season?.episodes) return [];
+        const networkName = details?.networks?.[0]?.name ?? null;
+        const genreIds    = genreIdsFromItem(details);
         return season.episodes
           .filter(ep =>
             ep.episode_number >= progress.current_episode &&
@@ -195,12 +216,17 @@ export async function buildCalendarEvents({
             date:  ep.air_date,
             type:  'episode',
             label: episodeLabel(progress.current_season, ep.episode_number),
+            // current_episode is the next one to watch, so everything between
+            // it and this airing is already out and still unwatched.
+            behind: Math.max(0, ep.episode_number - progress.current_episode),
             item: {
-              title:       progress.title,
-              poster_path: progress.poster_path,
-              tmdb_id:     progress.tmdb_id,
-              media_type:  'tv',
-              episode:     ep,
+              title:        progress.title,
+              poster_path:  progress.poster_path,
+              tmdb_id:      progress.tmdb_id,
+              media_type:   'tv',
+              network_name: networkName,
+              genre_ids:    genreIds,
+              episode:      ep,
             },
           }));
       } catch {
@@ -212,15 +238,55 @@ export async function buildCalendarEvents({
 
   if (isCancelled()) return [];
 
-  const seen = new Set();
-  return all
-    .filter(ev => {
-      const key = calendarEventKey(ev);
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    })
-    .sort((a, b) => a.date.localeCompare(b.date));
+  // Dedupe, but let the duplicates fill each other in: the watchlist copy of
+  // an airing knows the network, the in-progress copy knows how far behind
+  // you are, and the row wants both.
+  const byKey = new Map();
+  for (const ev of all) {
+    const key = calendarEventKey(ev);
+    const kept = byKey.get(key);
+    if (!kept) { byKey.set(key, ev); continue; }
+    if (kept.behind == null && ev.behind != null) kept.behind = ev.behind;
+    if (kept.item && !kept.item.network_name && ev.item?.network_name) {
+      kept.item.network_name = ev.item.network_name;
+    }
+    if (kept.item && !kept.item.genre_ids?.length && ev.item?.genre_ids?.length) {
+      kept.item.genre_ids = ev.item.genre_ids;
+    }
+  }
+  return [...byKey.values()].sort((a, b) => a.date.localeCompare(b.date));
+}
+
+/* Which of the three filter types an event answers to. Episodes and EPG
+   reminders are TV; a movie's streaming date is a movie; its cinema window is
+   cinema, matching the `_cinema` distinction filterByType draws for releases. */
+function calendarEventFilterType(ev) {
+  if (ev.type === 'cinema') return 'cinema';
+  if (ev.type === 'episode' || ev.type === 'reminder') return 'tv';
+  return ev.item?.media_type === 'tv' ? 'tv' : 'movie';
+}
+
+/**
+ * Apply the Calendar's Show (type) and Genre filters to built events. Shares
+ * filterByGenre's rule that an item with no genre data is kept rather than
+ * dropped — EPG reminders carry no TMDB id, so they have none.
+ *
+ * @param {any[]} events
+ * @param {string[]} typeFilters - subset of ALL_TYPES; empty or full = no filter
+ * @param {number[]} genreFilters - empty = no filter
+ */
+export function filterCalendarEvents(events, typeFilters = ALL_TYPES, genreFilters = []) {
+  let out = events;
+  if (typeFilters.length && typeFilters.length < ALL_TYPES.length) {
+    out = out.filter(ev => typeFilters.includes(calendarEventFilterType(ev)));
+  }
+  if (genreFilters.length) {
+    out = out.filter(ev => {
+      const ids = ev.item?.genre_ids;
+      return !ids?.length || ids.some(id => genreFilters.includes(id));
+    });
+  }
+  return out;
 }
 
 export function getCalendarRelativeLabel(selectedDate, todayStr) {
