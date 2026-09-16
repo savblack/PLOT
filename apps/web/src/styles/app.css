@@ -3098,29 +3098,18 @@ svg { stroke-width: 1.5; }
   height: 28px;
 }
 .review-textarea {
+  display: block;
   width: 100%;
+  min-height: 110px;
   box-sizing: border-box;
-  background: color-mix(in srgb, var(--surface-sunken) 92%, var(--bg) 8%);
-  border: 1.5px solid var(--border);
-  border-radius: 0.65rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
   color: var(--text-primary);
-  font-size: 0.84rem;
-  /* Bottom gutter reserved for .review-edit-count. */
-  padding: 0.6rem 0.75rem 1.5rem;
-  resize: none;
-  outline: none;
-  font-family: inherit;
-  line-height: 1.5;
-  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
-}
-.review-textarea--saved {
-  background: color-mix(in srgb, var(--surface-raised) 90%, var(--bg) 10%);
-  border-color: color-mix(in srgb, var(--border) 80%, var(--text-muted) 20%);
-}
-.review-textarea--active {
-  background: color-mix(in srgb, var(--surface-raised) 84%, var(--accent) 10%);
-  border-color: color-mix(in srgb, var(--accent) 58%, var(--border));
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 24%, transparent);
+  padding: .8rem;
+  resize: vertical;
+  font: inherit;
+  line-height: 1.6;
 }
 .review-textarea:focus {
   border-color: var(--accent);
@@ -3280,26 +3269,17 @@ svg { stroke-width: 1.5; }
   min-width: 0;
 }
 
-/* ── Editing ───────────────────────────────────────────────────────────────
-   The only state that spends the accent, and the only one with a boundary: a
-   form needs an edge to hold its fields, a record does not. Rating and date
-   come first (one tap each) so the cursor lands in the textarea last. */
+/* Review editing shares the private note's neutral, open form treatment. */
 .review-edit {
   display: flex;
   flex-direction: column;
-  gap: 0.7rem;
-  padding: 0.85rem 0.9rem;
-  margin-bottom: 1rem;
-  background: var(--surface-raised);
-  border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--border));
-  border-radius: var(--radius-md);
+  gap: .7rem;
+  margin: .65rem 0 1rem;
+  font-size: .85rem;
 }
 .review-edit-label {
-  font-size: 0.58rem;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-muted);
+  color: var(--text-secondary);
+  font: inherit;
 }
 /* One label treatment for every row, so "Your rating" and "Watched on" read as
    the same kind of thing. Both controls sit hard right, giving the form a
@@ -3318,51 +3298,24 @@ svg { stroke-width: 1.5; }
   white-space: nowrap;
   flex: 0 0 auto;
 }
-.review-edit-field {
-  position: relative;
-}
-/* The counter lives in the field's own bottom gutter, so it belongs to what it
-   is counting and can never overlap the last line of text. */
 .review-edit-count {
-  position: absolute;
-  right: 0.7rem;
-  bottom: 0.5rem;
-  font-size: 0.62rem;
-  font-family: var(--font-sans-tabular);
+  display: block;
+  margin-top: .5rem;
+  text-align: right;
+  font-size: .75rem;
   color: var(--text-muted);
-  pointer-events: none;
 }
 .review-edit-count--warn { color: #f59e0b; }
 .review-edit-count--over { color: var(--danger); }
 .review-edit-actions {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: 0.5rem;
 }
-/* Compact pills, never full width: the house rule the old full-width Save
-   button was the standing exception to. */
-.review-edit-btn {
-  padding: 0.42rem 1rem;
-  border-radius: var(--radius-pill);
-  border: 1.5px solid var(--border);
-  background: transparent;
-  color: var(--text-secondary);
-  font-family: inherit;
-  font-size: 0.78rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+@media (max-width: 540px) {
+  .review-textarea { font-size: 16px; }
 }
-.review-edit-btn--primary {
-  border-color: var(--accent);
-  background: var(--accent);
-  color: #fff;
-  min-width: 74px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-.review-edit-btn:disabled { cursor: default; opacity: 0.6; }
 
 .review-action-btn {
   width: 100%;
