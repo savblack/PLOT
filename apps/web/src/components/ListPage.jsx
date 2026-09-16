@@ -1,10 +1,12 @@
+import { buildListShareUrl } from '@plot/core/sharing.js';
+import { SHARING } from '@plot/core/copy/sharing.js';
 import { useCallback, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { useShare } from '../hooks/useShare.js';
 import { favoriteWords } from '../utils/spelling.js';
 import { EVENTS } from '../lib/analytics.js';
-import { ALL_TYPES, filterByTypeAndGenre, isTypeNarrowed } from '@plot/core/mediaFilters.js';
+import { ALL_TYPES, filterByTypeAndGenre } from '@plot/core/mediaFilters.js';
 import { customListIdFromKey, customListKey, wantToWatchItems } from '@plot/core/listCollections.js';
 import { localDateStr } from '../utils/date.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
@@ -40,15 +42,14 @@ export default function ListPage() {
   const navigate = useNavigate();
   const { user, profile, topLists, favorites, customLists, watching, watchlist } = useApp();
   const fw = favoriteWords(profile?.region);
-  const { share } = useShare();
+  const { share, copied } = useShare();
   const [typeFilters,  setTypeFilters]  = useState(ALL_TYPES);
   const [genreFilters, setGenreFilters] = useState([]);
-  const narrowed = isTypeNarrowed(typeFilters) || genreFilters.length > 0;
 
   const shareList = useCallback((list) => share({
-    url: `${window.location.origin}/list/${list.id}`,
+    url: list.is_public ? buildListShareUrl({ listId: list.id }) : null,
     title: `${list.name} · PLOT`,
-    text: `My list "${list.name}" on PLOT`,
+    text: SHARING.listText(list.name),
     event: EVENTS.LIST_SHARED,
     eventProps: { list_id: list.id },
   }), [share]);
@@ -66,7 +67,7 @@ export default function ListPage() {
     return [];
   }, [key, want, favorites.favorites, list]);
 
-  const showFilter = key === 'want' || key === 'favorites' || !!list;
+  const showFilter = key === 'want' || key === 'favorites';
 
   // One frame component per page, memoised so the list inside it keeps its
   // state (selection, open sheets) across re-renders.
@@ -100,10 +101,11 @@ export default function ListPage() {
         key={customListKey(list.id)}
         list={list}
         customLists={customLists}
-        typeFilters={typeFilters}
-        genreFilters={genreFilters}
-        narrowed={narrowed}
+        typeFilters={ALL_TYPES}
+        genreFilters={[]}
+        narrowed={false}
         share={shareList}
+        shareCopied={copied}
         onDeleted={() => navigate('/my-lists')}
         Frame={Frame}
       />
