@@ -920,7 +920,10 @@ const subscribeForm = (placement: string) => `
 const SUBSCRIBE_CSS = `
   /* Charcoal card. scroll-margin clears the fixed topnav: the footer links
      straight to #newsletter, and without it the heading lands under it. */
-  .nlsub { background: var(--ink); color: var(--bg); padding: 24px 28px; scroll-margin-top: 88px; }
+  /* .nlsub.card outranks the later .card rule in the main stylesheet, which
+     otherwise paints this cream and leaves cream text unreadable on it. */
+  .nlsub.card, .nlsub { background: var(--ink); color: var(--bg); padding: 24px 28px; scroll-margin-top: 88px; }
+  .nlsub .nlsub-title, .nlsub .nlsub-copy { color: var(--bg); }
   .nlsub-copy { display: flex; flex-direction: column; gap: 6px; }
   .nlsub-title { font-family: var(--display); font-weight: 700; letter-spacing: -0.03em; font-size: 1.4rem; line-height: 1; }
   .nlsub-sub { color: rgba(248,242,234,0.7); font-size: 0.92rem; }
