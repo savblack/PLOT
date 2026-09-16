@@ -157,7 +157,7 @@
    anchored above it sits against the viewport edge instead. */
 @media (min-width: 1024px) {
   :root {
-    --sidebar-w:      220px;
+    --sidebar-w:      260px;
     --tab-bar-height: 0px;
   }
 }

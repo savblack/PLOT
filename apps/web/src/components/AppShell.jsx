@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { APP_NAV_ITEMS, PRIMARY_NAV_ITEMS, isActiveView, titleForView } from '../navigation.js';
 import { useNotifications } from '../hooks/useNotifications.js';
@@ -11,6 +11,8 @@ import {
 /* ── SVG Icons ───────────────────────── */
 /* Shared with AppSidebar — see ./navIcons.jsx. */
 
+const FeedbackPanel = lazy(() => import('./SettingsView.jsx').then(module => ({ default: module.FeedbackPanel })));
+
 const TAB_ICONS = { home: IconHome, calendar: IconCalendar, 'my-lists': IconLists, history: IconHistory };
 
 // The drawer has room the bottom bar does not: every destination bar Search
@@ -19,6 +21,7 @@ const DRAWER_NAV_ITEMS = APP_NAV_ITEMS.filter(item => item.id !== 'search' && it
 
 export default function AppShell({ currentView, navigateTo, children, profile, user, panelOpen, onOpenSearch }) {
   const navigate = useNavigate();
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const mainRef = useRef(null);
@@ -104,9 +107,16 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
         profile={profile}
         user={user}
         unread={unread}
+        onFeedback={() => user ? setFeedbackOpen(true) : navigate('/login')}
         onNavigate={go}
         onNavigateProfile={(username) => navigate(`/u/${username}`)}
       />
+
+      {feedbackOpen && user && (
+        <Suspense fallback={null}>
+          <FeedbackPanel user={user} allTypes onClose={() => setFeedbackOpen(false)} />
+        </Suspense>
+      )}
 
       {/* ── Header ── */}
       <header className="app-header">

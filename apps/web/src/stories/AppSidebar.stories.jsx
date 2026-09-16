@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import { FeedbackPanel } from '../components/SettingsView.jsx';
 import AppSidebar from '../components/AppSidebar.jsx';
 
 /* The sidebar only appears above 1024px in the app, and its two most stateful
@@ -35,8 +37,8 @@ export default {
       <div
         className="sb-rail"
         style={{
-          width: 220,
-          height: 560,
+          width: 260,
+          height: 800,
           display: 'flex',
           background: 'var(--surface)',
           borderRight: '1px solid var(--border)',
@@ -49,6 +51,7 @@ export default {
   ],
   args: {
     currentView: 'home',
+    onFeedback: () => {},
     onNavigate: () => {},
     onNavigateProfile: () => {},
   },
@@ -76,7 +79,7 @@ export const WithAvatar = {
   args: { ...signedIn, profile: { ...profile, avatar_url: AVATAR } },
 };
 
-// The accent is the only cue for the active row, so check each one lands.
+// Active rows have an accent label and a neutral selected surface.
 export const ActiveCalendar = { args: { ...signedIn, currentView: 'calendar' } };
 export const ActiveSettings = { args: { ...signedIn, currentView: 'settings' } };
 export const ActiveNotifications = {
@@ -93,3 +96,16 @@ export const LongDisplayName = {
     profile: { ...profile, display_name: 'Savannah Alexandra Blackwood-Fitzgerald' },
   },
 };
+
+export const ShortViewport = { parameters: {}, decorators: [(Story) => <div style={{ height: 480, overflow: 'hidden' }}><style>{`.sb-rail { height: 480px !important; }`}</style><Story /></div>], args: signedIn };
+
+
+function FeedbackFlow(args) {
+  const [open, setOpen] = useState(false);
+  return <><AppSidebar {...args} onFeedback={() => setOpen(true)} />{open && <FeedbackPanel user={args.user} allTypes onClose={() => setOpen(false)} />}</>;
+}
+
+// Exercises the real composer without submitting data to the backend.
+export const FeedbackEntry = { args: signedIn, render: (args) => <FeedbackFlow {...args} /> };
+
+export const Dark = { args: signedIn, decorators: [(Story) => <div data-theme="dark"><Story /></div>] };
