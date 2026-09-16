@@ -27,15 +27,18 @@
 
 :root {
   /* Brand accent — same semantics + value as the app. (CANON colors.light.accent) */
-  --accent:          #E05578;
-  --accent-dim:      rgba(224,85,120,0.12);   /* (CANON colors.light.accentDim) */
+  --accent:          #5F7030;
+  --accent-dim:      rgba(95,112,48,0.12);
+  /* The accent lightened for text on the charcoal ticker bar. (CANON colors.dark.accent) */
+  --accent-on-dark:  #C9D48A;   /* (CANON colors.light.accentDim) */
 
-  /* The fill — Marshmallow's soft sage, used ONLY behind charcoal text (primary
-     button, chips, the Live badge, the sign-up pill). --accent stays the pink
-     for small text accents. Marketing mirrors of the canonical values. */
-  --fill:            #dbe1b0;   /* (CANON colors.light.accentFill) */
-  --fill-hover:      #cfd79e;   /* (CANON colors.light.accentFillHover) */
-  --sage:            var(--fill);
+  /* The fill — the brand pink, used ONLY behind charcoal text (primary button,
+     chips, the Live badge, the sign-up pill). --accent is the soft green for
+     small text accents. Marketing mirrors of the canonical values. */
+  --fill:            #ff88c8;   /* (CANON colors.light.accentFill) */
+  --fill-hover:      #ff9fd3;   /* (CANON colors.light.accentFillHover) */
+  /* Sage — the secondary tint, for "now at home" / availability chips. */
+  --sage:            #dbe1b0;
 
   /* Charcoal ink — the marketing site's near-black. Softer than #000 on the
      cream ground. Used for body text, the ticker bar and dark fills. */

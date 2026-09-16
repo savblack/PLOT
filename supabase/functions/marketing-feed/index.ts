@@ -257,9 +257,9 @@ ${head}
   @font-face { font-family: 'DM Sans'; src: url('${SITE}/fonts/DMSans-Variable.woff2') format('woff2'); font-weight: 100 900; font-style: normal; font-display: swap; }
   :root {
     /* Marketing palette — mirrors apps/website/theme.css. Cream ground, soft
-       charcoal ink, the sage is a FILL behind charcoal text only. */
-    --ink: #292924; --paper: #f1e9dc; --bg: #f8f2ea; --fill: #dbe1b0; --fill-hover: #cfd79e;
-    --accent: #E05578; --sage: #dbe1b0;
+       charcoal ink, the pink is a FILL behind charcoal text only. */
+    --ink: #292924; --paper: #f1e9dc; --bg: #f8f2ea; --fill: #ff88c8; --fill-hover: #ff9fd3;
+    --accent: #5F7030; --sage: #dbe1b0;
     --mut: #5f5a52; --faint: #8a847a; --hair: rgba(41,41,36,0.12);
     --display: 'Gabarito', 'DM Sans', system-ui, sans-serif;
     --ease: cubic-bezier(0.23, 1, 0.32, 1);

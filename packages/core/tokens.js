@@ -27,22 +27,19 @@ export const colors = {
     textMuted: '#6B655D',
     border: 'rgba(41,41,36,0.08)',
     borderStrong: 'rgba(41,41,36,0.16)',
-    accent: '#E05578',
-    accentDim: 'rgba(224,85,120,0.12)',
-    // The accent reads at 3.29:1 on --bg: fine for the icons, borders and
-    // large type it mostly marks, short of the bar wherever it colours small
-    // text (the active sidebar label). accentText is the darker sibling for
-    // those (4.73 on the sunken cream), so --accent itself keeps its brand
-    // value everywhere else. Dark needs no adjustment, so it is the accent
-    // unchanged.
-    accentText: '#B83558',
-    // The FILL: Marshmallow's soft sage. Too light to carry text, so it only
-    // ever sits behind charcoal text (10.7:1): the primary button, chips, the
-    // Live badge, the sign-up pill. --accent stays the pink for small text,
-    // icons and rings. The pink fill (#FF88C8) was tried first and replaced by
-    // the green on 16 Sep 2026.
-    accentFill: '#DBE1B0',
-    accentFillHover: '#CFD79E',
+    accent: '#5F7030',
+    accentDim: 'rgba(95,112,48,0.12)',
+    // The ACCENT is a soft green (the deep end of Marshmallow's sage) for type
+    // and line: small text, icons, rank numbers, rings, the active tab. 4.91:1
+    // on --bg and 4.53:1 on the sunken cream. accentText is a step darker for
+    // the smallest labels. Green replaced the pink accent on 16 Sep 2026; the
+    // pink lives on as the fill below.
+    accentText: '#5A6A2C',
+    // The FILL: the brand pink. Too light to carry text (1.97:1 on cream), so
+    // it only ever sits behind charcoal text (6.69:1): the primary button,
+    // chips, the Live badge, the sign-up pill.
+    accentFill: '#FF88C8',
+    accentFillHover: '#FF9FD3',
     onAccentFill: '#292924',
     danger: '#B9384A',
     dangerDim: 'rgba(185,56,74,0.1)',
@@ -100,12 +97,12 @@ export const colors = {
     textMuted: '#919085',
     border: 'rgba(240,239,232,0.08)',
     borderStrong: 'rgba(240,239,232,0.16)',
-    accent: '#F06A88',
-    accentDim: 'rgba(240,106,136,0.15)',
-    accentText: '#F06A88',
-    // Same fill in the dark theme: charcoal text on sage reads on any ground.
-    accentFill: '#DBE1B0',
-    accentFillHover: '#CFD79E',
+    accent: '#C9D48A',
+    accentDim: 'rgba(201,212,138,0.15)',
+    accentText: '#C9D48A',
+    // The green lightened for the dark ground (12.4:1); the fill is the same pink.
+    accentFill: '#FF88C8',
+    accentFillHover: '#FF9FD3',
     onAccentFill: '#292924',
     danger: '#F18997',
     dangerDim: 'rgba(241,137,151,0.16)',

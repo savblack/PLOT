@@ -14,12 +14,12 @@
 }
 
 /* The wordmark loader. Letters rise into place one after another, then a thin
-   sage bar sweeps left to right beneath the word; the whole thing loops every
+   pink bar sweeps left to right beneath the word; the whole thing loops every
    1.8s. Colour comes from the theme; the bar is the fill token. */
 .plot-loader {
   --plot-loader-font-size: 30px;
   --plot-loader-color: #292924;
-  --plot-loader-fill: var(--accent-fill, #dbe1b0);
+  --plot-loader-fill: var(--accent-fill, #ff88c8);
   display: inline-flex;
   flex-direction: column;
   align-items: center;

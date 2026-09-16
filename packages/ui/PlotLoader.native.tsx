@@ -62,7 +62,7 @@ const BAR_W = 92;
 export default function PlotLoader({
   backgroundColor = '#f8f2ea',
   color = '#292924',
-  fillColor = '#dbe1b0',
+  fillColor = '#ff88c8',
 }: {
   backgroundColor?: string;
   color?: string;
