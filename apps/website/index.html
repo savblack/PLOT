@@ -483,8 +483,9 @@
     }
 
     /* year marker */
-    /* year marker: a small chip at the top of the run, no vertical line */
-    .tl-year {
+    /* year markers are hidden: each card carries its own month + year */
+    .tl-year { display: none; }
+    .tl-year-legacy {
       display: flex;
       flex-direction: column;
       align-items: flex-start;
@@ -1591,22 +1592,32 @@
     .cal-cell-int {
       border-radius: 10px;
       padding: 6px;
-      cursor: pointer;
       display: flex;
       flex-direction: column;
       align-items: flex-start;
       gap: 3px;
-      transition: background 0.15s;
-      min-height: 62px;
+      min-height: 84px;
       background-size: cover;
       background-position: center;
+      overflow: hidden;
     }
-    /* A saved date shows its poster as the whole cell */
+    /* A release date shows its poster as the whole cell, title along the foot */
     .cal-cell-int.has-poster .cal-dn-int { color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.7); }
     .cal-cell-int.has-poster .cal-dots-int { display: none; }
-    .cal-cell-int:hover:not(.dim) { background: rgba(0,0,0,0.05); }
+    .cal-cap {
+      margin-top: auto;
+      font-size: 0.62rem;
+      font-weight: 600;
+      line-height: 1.15;
+      color: #fff;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.75);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .cal-cap small { display: block; font-weight: 400; opacity: 0.85; font-size: 0.55rem; margin-top: 1px; }
     .cal-cell-int.dim  { opacity: 0.28; pointer-events: none; }
-    .cal-cell-int.selected { background: rgba(0,0,0,0.07); }
     /* Interactive day cells render as <button> — reset native chrome and give a
        clear keyboard focus ring (SUS-79). */
     button.cal-cell-int {
@@ -1802,7 +1813,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
              every row from /api/discover, so the committed rows are only the
              pre-hydration fallback. -->
         <div class="trend-panel" aria-hidden="true">
-          <div class="gp-head"><div class="gp-title">Trending today</div><div class="gp-date" id="gpDate">This week</div></div>
+          <div class="gp-head"><div class="gp-title">Trending now</div><div class="gp-date" id="gpDate">This week</div></div>
           <div class="gp-rows" id="gpRows">
             <!-- hero-card:start -->
 
@@ -1974,14 +1985,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         Save that new show, movie or cinema release. Whatever you're
         excited for, let your calendar do the remembering.
       </p>
-      <!-- Upcoming list: tap + and the release lands on the calendar -->
-      <div class="guide-panel">
-        <div class="guide-hdr">
-          <span class="guide-hdr-title" id="guideHdrTitle">Upcoming</span>
-          <span class="guide-hdr-hint" id="guideHdrHint">Tap + to save</span>
-        </div>
-        <div class="guide-list" id="guideList"></div>
-      </div>
      </div>
 
       <!-- Right: Interactive calendar -->
@@ -1994,13 +1997,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           <div class="cal-wd">We</div><div class="cal-wd">Th</div><div class="cal-wd">Fr</div><div class="cal-wd">Sa</div>
         </div>
         <div class="cal-grid-int" id="calGridInt"></div>
-        <div class="cal-day-panel" id="calDayPanel">
-          <div class="cal-day-empty">Add releases from the guide to see them here</div>
-        </div>
       </div>
     </div>
-
-    <div class="cal-toast" id="calToastInt"></div>
   </section>
 
 
@@ -2281,11 +2279,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     // weekly by refresh-timeline.mjs) stay on screen if the proxy is unavailable.
     (function () {
       var rows = document.getElementById('gpRows');
-      var date = document.getElementById('gpDate');
       if (!rows) return;
-      if (date) {
-        try { date.textContent = new Date().toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'short' }); } catch (e) {}
-      }
       fetchTrendingSets().then(function (sets) {
         var IMG = 'https://image.tmdb.org/t/p/w185';
         var seen = {};
@@ -3028,29 +3022,25 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         if (!grid) return;
         var dayMap = {};
         RELEASES.forEach(function(r) {
-          if (saved[r.id]) { if (!dayMap[r.day]) dayMap[r.day] = []; dayMap[r.day].push(r); }
+          if (!dayMap[r.day]) dayMap[r.day] = [];
+          dayMap[r.day].push(r);
         });
         var html = '';
         GRID.forEach(function(cell) {
           var events = (!cell.dim && dayMap[cell.day]) ? dayMap[cell.day] : [];
           var sel = !cell.dim && cell.day === selectedDay;
           var cls = 'cal-cell-int' + (cell.dim ? ' dim' : '') + (sel ? ' selected' : '') + (cell.today ? ' today' : '') + (events.length ? ' has-poster' : '');
-          var bg  = events.length ? ' style="background-image:url(\'' + esc(events[0].img) + '\')"' : '';
+          var bg  = events.length ? ' style="background-image:linear-gradient(to top, rgba(0,0,0,0.7), rgba(0,0,0,0) 60%), url(\'' + esc(events[0].img) + '\')"' : '';
           var dots = '';
           events.forEach(function(e) { dots += '<div class="cal-dot-int" style="background:' + TYPE[e.type].color + '"></div>'; });
           if (cell.dim) {
             // Adjacent-month padding cells: decorative, skipped by keyboard + SR.
             html += '<div class="' + cls + '" aria-hidden="true"><div class="cal-dn-int">' + cell.day + '</div></div>';
           } else {
-            var label = MONTH_NAME + ' ' + cell.day +
-              (events.length ? ', ' + events.length + ' saved release' + (events.length > 1 ? 's' : '') : '');
-            html += '<button type="button" class="' + cls + '"' + bg + ' data-day="' + cell.day + '" ' +
-              'aria-pressed="' + (sel ? 'true' : 'false') + '" ' +
-              'aria-label="' + esc(label) + '" ' +
-              'onclick="window._calDemo.selectDay(' + cell.day + ')">';
+            html += '<div class="' + cls + '"' + bg + ' data-day="' + cell.day + '">';
             html += '<div class="cal-dn-int">' + cell.day + '</div>';
-            if (dots) html += '<div class="cal-dots-int" aria-hidden="true">' + dots + '</div>';
-            html += '</button>';
+            if (events.length) html += '<div class="cal-cap">' + esc(events[0].title) + '<small>' + TYPE[events[0].type].label + '</small></div>';
+            html += '</div>';
           }
         });
         grid.innerHTML = html;
@@ -3180,7 +3170,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       }
 
       function init() {
-        if (document.getElementById('guideList')) {
+        if (document.getElementById('calGridInt')) {
           var hdrTitle = document.getElementById('guideHdrTitle');
           if (hdrTitle) hdrTitle.textContent = 'Upcoming';
           // Match the save-hint verb to the input type (SUS-83)
