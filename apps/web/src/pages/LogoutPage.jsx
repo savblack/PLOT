@@ -49,14 +49,14 @@ export default function LogoutPage() {
         </div>
         <div className="auth-visual-gradient" />
         <div className="auth-visual-brand">
-          <span className="auth-visual-logo">PLOT</span>
+          <span className="auth-visual-logo">plot</span>
           <span className="auth-visual-tagline">Your film &amp; TV companion</span>
         </div>
       </div>
 
       {/* ── Right: confirmation panel ── */}
       <div className="auth-panel">
-        <Link to="/login" className="auth-panel-logo" aria-label="PLOT">
+        <Link to="/login" className="auth-panel-logo" aria-label="plot">
           PLOT
         </Link>
 

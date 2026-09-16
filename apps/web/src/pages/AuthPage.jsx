@@ -372,14 +372,14 @@ export default function AuthPage({ initialMode = 'signup' }) {
         </div>
         <div className="auth-visual-gradient" />
         <div className="auth-visual-brand">
-          <span className="auth-visual-logo">PLOT</span>
+          <span className="auth-visual-logo">plot</span>
           <span className="auth-visual-tagline">Your film &amp; TV companion</span>
         </div>
       </div>
 
       {/* ── Right: form panel ── */}
       <div className="auth-panel">
-        <Link to="/" className="auth-panel-logo" aria-label="PLOT">
+        <Link to="/" className="auth-panel-logo" aria-label="plot">
           PLOT
         </Link>
 

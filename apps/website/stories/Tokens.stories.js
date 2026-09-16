@@ -25,8 +25,10 @@ const swatches = (pairs) => {
 
 export const Colors = () =>
   swatches([
-    ['Accent', '--accent'],
-    ['Ink (CTA)', '--ink'],
+    ['Accent (type, line)', '--accent'],
+    ['Pink fill (surfaces)', '--pink'],
+    ['Sage (availability)', '--sage'],
+    ['Ink', '--ink'],
     ['Background', '--bg'],
     ['Surface', '--surface'],
     ['Text', '--text'],

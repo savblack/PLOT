@@ -41,6 +41,14 @@ const eq = (label, actual, expected) => {
   const v = vars(rootBlock(read('apps/website/theme.css')));
   eq('apps/website/theme.css --accent', v['--accent'], colors.light.accent);
   eq('apps/website/theme.css --accent-dim', v['--accent-dim'], colors.light.accentDim);
+  // The warm system (Sept 2026): ground, card cream, ink and the pink fill are
+  // one value across the app and the marketing site.
+  eq('apps/website/theme.css --bg', v['--bg'], colors.light.bg);
+  eq('apps/website/theme.css --surface', v['--surface'], colors.light.surfaceSunken);
+  eq('apps/website/theme.css --text', v['--text'], colors.light.textPrimary);
+  eq('apps/website/theme.css --text-secondary', v['--text-secondary'], colors.light.textSecondary);
+  eq('apps/website/theme.css --pink', v['--pink'], colors.light.accentFill);
+  eq('apps/website/theme.css --pink-hover', v['--pink-hover'], colors.light.accentFillHover);
   eq('apps/website/theme.css --success', v['--success'], colors.light.chipNow);
   eq('apps/website/theme.css --r-badge', v['--r-badge'], `${radii.badge}px`);
   eq('apps/website/theme.css --r-md', v['--r-md'], `${radii.md}px`);

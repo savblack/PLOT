@@ -41,10 +41,10 @@ svg { stroke-width: 1.5; }
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--font-display-tracking);
   font-size: 1.55rem;
-  font-weight: 400;
-  letter-spacing: -0.05em;
   color: var(--text-primary);
   white-space: nowrap;
   max-width: calc(100% - 7.5rem);
@@ -69,10 +69,10 @@ svg { stroke-width: 1.5; }
 }
 
 .app-header-logo-text {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--font-display-tracking);
   font-size: 1.7rem;
-  font-weight: 400;
-  letter-spacing: -0.05em;
   line-height: 1;
   color: var(--text-primary);
   user-select: none;
@@ -160,10 +160,10 @@ svg { stroke-width: 1.5; }
    the sidebar breakpoint, where the app header still carries the title. */
 .app-page-heading {
   display: none;
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--font-display-tracking);
   font-size: 2rem;
-  font-weight: 400;
-  letter-spacing: -0.03em;
   line-height: 1;
   color: var(--text-primary);
   margin: 0 0 1.5rem;
@@ -329,10 +329,10 @@ svg { stroke-width: 1.5; }
   flex-shrink: 0;
 }
 .nav-drawer-logo-text {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--font-display-tracking);
   font-size: 1.7rem;
-  font-weight: 400;
-  letter-spacing: -0.05em;
   line-height: 1;
   color: var(--text-primary);
   user-select: none;
@@ -476,10 +476,10 @@ svg { stroke-width: 1.5; }
   cursor: pointer;
 }
 .app-sidebar-brand-text {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--font-display-tracking);
   font-size: 1.7rem;
-  font-weight: 400;
-  letter-spacing: -0.05em;
   line-height: 1;
   color: var(--text-primary);
   user-select: none;
@@ -1360,10 +1360,10 @@ svg { stroke-width: 1.5; }
   padding: 0.6rem 1rem 0.25rem;
 }
 .view-title {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--font-display-tracking);
   font-size: 1.9rem;
-  font-weight: 500;
-  letter-spacing: -0.03em;
   color: var(--text-primary);
   line-height: 1.1;
 }
@@ -1412,11 +1412,11 @@ svg { stroke-width: 1.5; }
   bottom: 0.75rem;
   left: 0.9rem;
   right: 0.9rem;
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--font-display-tracking);
   font-size: 1.3rem;
-  font-weight: 500;
   color: #fff;
-  letter-spacing: -0.02em;
 }
 
 .watching-body {
@@ -1620,18 +1620,20 @@ svg { stroke-width: 1.5; }
   font-family: var(--font-sans);
   -webkit-tap-highlight-color: transparent;
 }
+/* Primary: the brand pink as a fill behind charcoal text. The fill is the one
+   place the pink is spent generously; --accent stays for small text and icons. */
 .btn-primary {
-  background: var(--text-primary);
-  color: var(--bg);
+  background: var(--accent-fill);
+  color: var(--on-accent-fill);
 }
-.btn-primary:hover { opacity: 0.82; }
+.btn-primary:hover { background: var(--accent-fill-hover); }
 
 .btn-secondary {
-  background: var(--surface-raised);
+  background: var(--surface-sunken);
   color: var(--text-primary);
-  border: 1px solid var(--border);
+  border: none;
 }
-.btn-secondary:hover { background: var(--surface-sunken); }
+.btn-secondary:hover { background: var(--border-strong); }
 
 .btn-accent {
   background: var(--accent);
@@ -1740,10 +1742,10 @@ svg { stroke-width: 1.5; }
   padding: 0 0.1rem;
 }
 .calendar-month-label {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--font-display-tracking);
   font-size: 1.25rem;
-  font-weight: 500;
-  letter-spacing: -0.02em;
   color: var(--text-primary);
 }
 .calendar-nav-btns {
@@ -1944,9 +1946,10 @@ svg { stroke-width: 1.5; }
   padding-left: 4px;
 }
 .cal-mini-name {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--font-display-tracking);
   font-size: 18px;
-  letter-spacing: -0.02em;
   color: var(--text-primary);
 }
 .cal-mini-nav { display: flex; gap: 2px; }
@@ -2101,9 +2104,10 @@ svg { stroke-width: 1.5; }
   scroll-margin-top: 1rem;
 }
 .cal-stream-month-name {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--font-display-tracking);
   font-size: 24px;
-  letter-spacing: -0.03em;
   line-height: 1;
   color: var(--text-primary);
 }
@@ -3562,10 +3566,10 @@ svg { stroke-width: 1.5; }
 }
 
 .panel-title {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--font-display-tracking);
   font-size: 1.6rem;
-  font-weight: 500;
-  letter-spacing: -0.03em;
   color: var(--text-primary);
   line-height: 1.15;
   margin-bottom: 0.35rem;
@@ -4439,10 +4443,10 @@ a.provider-chip--link:hover {
 }
 .empty-icon { font-size: 2.8rem; opacity: 0.6; }
 .empty-title {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--font-display-tracking);
   font-size: 1.35rem;
-  font-weight: 500;
-  letter-spacing: -0.02em;
   color: var(--text-primary);
 }
 .empty-body {
@@ -5406,11 +5410,11 @@ a.provider-chip--link:hover {
 }
 
 .discover-hero-title {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--font-display-tracking);
   font-size: 1.9rem;
-  font-weight: 500;
   color: #fff;
-  letter-spacing: -0.03em;
   line-height: 1.05;
   margin-bottom: 0.25rem;
 }
@@ -5688,10 +5692,10 @@ a.provider-chip--link:hover {
 }
 .discover-section-title {
   margin: 0;
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--font-display-tracking);
   font-size: 1.25rem;
-  font-weight: 400;
-  letter-spacing: -0.02em;
   line-height: 1.15;
   color: var(--text-primary);
 }
@@ -5808,11 +5812,11 @@ a.provider-chip--link:hover {
    inheriting. Without the colour it picked up --text-primary, which is
    near-black in light mode and unreadable against the image. */
 .discover-binge-card-title {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--font-display-tracking);
   font-size: 1.32rem;
-  font-weight: 500;
   color: #fff;
-  letter-spacing: -0.02em;
   line-height: 1.1;
   overflow: hidden;
   text-overflow: ellipsis;

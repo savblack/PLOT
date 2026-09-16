@@ -10,27 +10,40 @@
 
 export const colors = {
   light: {
-    bg: '#F4F4F5',
-    surface: '#FFFFFF',
-    surfaceRaised: '#FAFAFA',
-    surfaceSunken: '#EBEBEC',
-    textPrimary: '#09090B',
-    textSecondary: '#52525B',
-    // Was #A1A1AA, which measured 2.33:1 on --bg against the 4.5:1 the
-    // accessibility contract asks for. Muted carries empty states, hints,
-    // timestamps, counts and the TMDB credit, none of which are the inactive
-    // controls WCAG exempts, so it has to clear the bar like any other text.
-    textMuted: '#6E6E78',
-    border: 'rgba(0,0,0,0.07)',
-    borderStrong: 'rgba(0,0,0,0.14)',
+    // Warm neutrals (Sept 2026 brand pass). Cream ground, near-white warm
+    // surfaces, a deeper cream for sunken areas and cards, soft charcoal ink.
+    // Every text token clears 4.5:1 on --bg AND on --surface-sunken, since
+    // cards are the sunken cream and carry body text.
+    bg: '#F8F2EA',
+    surface: '#FFFCF7',
+    surfaceRaised: '#FFFFFF',
+    surfaceSunken: '#F1E9DC',
+    textPrimary: '#292924',
+    textSecondary: '#5F5A52',
+    // 4.78:1 on the sunken cream, 5.2 on --bg. Muted carries empty states,
+    // hints, timestamps, counts and the TMDB credit, none of which are the
+    // inactive controls WCAG exempts, so it has to clear the bar like any
+    // other text.
+    textMuted: '#6B655D',
+    border: 'rgba(41,41,36,0.08)',
+    borderStrong: 'rgba(41,41,36,0.16)',
     accent: '#E05578',
     accentDim: 'rgba(224,85,120,0.12)',
-    // The accent reads at 3.33:1 on --bg: fine for the icons, borders and
+    // The accent reads at 3.29:1 on --bg: fine for the icons, borders and
     // large type it mostly marks, short of the bar wherever it colours small
     // text (the active sidebar label). accentText is the darker sibling for
-    // those, so --accent itself keeps its brand value everywhere else. Dark
-    // needs no adjustment (5.26 at worst), so it is the accent unchanged.
-    accentText: '#C43C5F',
+    // those (4.73 on the sunken cream), so --accent itself keeps its brand
+    // value everywhere else. Dark needs no adjustment, so it is the accent
+    // unchanged.
+    accentText: '#B83558',
+    // The brand pink as a FILL. Too light to carry text (1.97:1 on cream), so
+    // it only ever sits behind charcoal text: the primary button, chips, the
+    // Live badge, the sign-up pill. onAccentFill is the text that goes on it
+    // (6.69:1). This is the one place the marketing site and the app share a
+    // "pop" colour; --accent stays the pink for small text, icons and rings.
+    accentFill: '#FF88C8',
+    accentFillHover: '#FF9FD3',
+    onAccentFill: '#292924',
     danger: '#B9384A',
     dangerDim: 'rgba(185,56,74,0.1)',
     dangerBorder: 'rgba(185,56,74,0.22)',
@@ -90,6 +103,10 @@ export const colors = {
     accent: '#F06A88',
     accentDim: 'rgba(240,106,136,0.15)',
     accentText: '#F06A88',
+    // Same fill in the dark theme: charcoal text on candy pink reads on any ground.
+    accentFill: '#FF88C8',
+    accentFillHover: '#FF9FD3',
+    onAccentFill: '#292924',
     danger: '#F18997',
     dangerDim: 'rgba(241,137,151,0.16)',
     dangerBorder: 'rgba(241,137,151,0.26)',

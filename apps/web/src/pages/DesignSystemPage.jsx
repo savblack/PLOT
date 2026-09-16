@@ -217,7 +217,7 @@ export default function DesignSystemPage() {
         </div>
         <div className="ds-type-scale">
           <div>
-            <span>Page title · Instrument Serif · 1.6rem / 400 / 1.1 lh / −0.02em ls</span>
+            <span>Page title · Gabarito · 1.6rem / 700 / 1.1 lh / −0.03em ls</span>
             <h3>Calendar</h3>
           </div>
           <div>
@@ -926,7 +926,7 @@ export default function DesignSystemPage() {
             <div className="ds-note-list">
               <div className="ds-note-row">
                 <strong>Wordmark</strong>
-                <p>Render the PLOT wordmark as Instrument Serif text through <code>PlotLogo</code> (<code>var(--font-serif)</code>, weight 400, <code>-0.05em</code> tracking). Never use raster or letter-image logos; size it with <code>fontSize</code>.</p>
+                <p>Render the plot wordmark as the plain lowercase word in Gabarito through <code>PlotLogo</code> (<code>var(--font-display)</code>, weight 700, <code>-0.045em</code> tracking). No full stop, no symbol, no mascot. Never use raster or letter-image logos; size it with <code>fontSize</code>.</p>
               </div>
               <div className="ds-note-row">
                 <strong>Navigation icons</strong>

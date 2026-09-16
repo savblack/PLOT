@@ -67,10 +67,10 @@
 
 .auth-visual-logo {
   display: block;
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.045em;
   font-size: 2.5rem;
-  font-weight: 400;
-  letter-spacing: -0.05em;
   line-height: 1;
   color: #fff;
   user-select: none;
@@ -101,10 +101,10 @@
   padding: clamp(1.25rem, 2.5vh, 2rem) 2.5rem;
   text-decoration: none;
   flex-shrink: 0;
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.045em;
   font-size: 1.7rem;
-  font-weight: 400;
-  letter-spacing: -0.05em;
   line-height: 1;
   color: var(--text-primary);
   user-select: none;
@@ -139,10 +139,10 @@
 }
 
 .auth-header h1 {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--font-display-tracking);
   font-size: clamp(1.7rem, 2.5vw, 2.2rem);
-  font-weight: 500;
-  letter-spacing: -0.03em;
   color: var(--text-primary);
   line-height: 1.15;
   margin-bottom: 0.5rem;
@@ -369,10 +369,10 @@ a.auth-cta { text-decoration: none; }
 }
 
 .auth-success h1 {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--font-display-tracking);
   font-size: 1.8rem;
-  font-weight: 500;
-  letter-spacing: -0.03em;
   color: var(--text-primary);
 }
 

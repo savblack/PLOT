@@ -1,20 +1,46 @@
 ---
 status: active
 owner: Savannah Black
-last_reviewed: 2026-07-21
+last_reviewed: 2026-09-16
 ---
 
 # Shared Design System
 
-PLOT uses one visual foundation across the app and the marketing site. The surfaces
+plot uses one visual foundation across the app and the marketing site. The surfaces
 do not need identical layouts, but they should share the same brand mark, typography,
 color roles, spacing rhythm, radii, motion language, and core control patterns.
 
-The system is **flat and monochrome for neutral UI by default.** Structure comes from
-surface tokens and hairline borders, not from depth or colour. Semantic guide and status
-colours remain valid when they communicate time, availability, media type, or account
-state. Accent and shadow are still exceptions you spend deliberately (see the two rules
-below), never defaults you reach for.
+The system is **warm, flat and quiet.** The ground is cream, the ink is a soft charcoal,
+and structure comes from two creams and hairline borders, not from depth or colour.
+Semantic guide and status colours remain valid when they communicate time, availability,
+media type, or account state. The brand pink is spent in two deliberate ways (below);
+shadow is a legibility rescue only.
+
+## The warm palette (Sept 2026)
+
+| Role | Light | Notes |
+| --- | --- | --- |
+| `--bg` | `#F8F2EA` | Cream ground. Marketing and app share it. |
+| `--surface` | `#FFFCF7` | Near-white warm surface for inputs and raised rows. |
+| `--surface-raised` | `#FFFFFF` | Pure white, reserved for the rare element that must lift. |
+| `--surface-sunken` | `#F1E9DC` | The deeper cream: cards, panels, secondary buttons, chips. |
+| `--text-primary` | `#292924` | Charcoal ink. Never `#000`. |
+| `--text-secondary` | `#5F5A52` | Body copy on marketing, secondary labels in the app. |
+| `--text-muted` | `#6B655D` | 4.78:1 on the deeper cream, so it still passes on cards. |
+| `--accent` | `#E05578` | The pink for small text, icons, rings, rank numbers. Unchanged. |
+| `--accent-text` | `#B83558` | The accent darkened for small text on any cream. |
+| `--accent-fill` | `#FF88C8` | The pink as a **fill** behind charcoal text. See below. |
+| `--on-accent-fill` | `#292924` | The only text colour that goes on the fill. 6.69:1. |
+
+Dark mode is unchanged: the warm-neutral `#0c0c0c` / `#f0efe8` scale already fit, and
+the fill is the same pink in both themes.
+
+### The wordmark
+
+The mark is the plain lowercase word **plot** in Gabarito 700, tracked `−0.045em`.
+No full stop, no symbol, no mascot: all three were explored and declined in the Sept
+2026 brand pass. Render it as text through `PlotLogo` (web) or the display face
+(marketing, edge functions); never a raster.
 
 ## Canonical sources
 
@@ -38,12 +64,21 @@ rendered page is the visual contract; this file is the prose for what code can't
 
 ## The two spending rules
 
-### Accent color — spend it deliberately
+### Accent color — two pinks, two jobs
 
-The accent is `--accent` (`#E05578` light / `#F06A88` dark — the same role, lightened
-for contrast on the dark surface). Neutral UI is **black, white, and grey.** The accent
-is not a general-purpose palette colour; it is a signal you spend on the few things that
-earn it. Semantic guide/status tokens are the separate, permitted exception for meaning.
+There are two pinks and they are not interchangeable.
+
+- **`--accent` (`#E05578` light / `#F06A88` dark)** colours *type and line*: small
+  text, icons, focus and selection rings, rank numbers, the active tab underline. It is
+  a signal you spend on the few things that earn it.
+- **`--accent-fill` (`#FF88C8`)** colours *surfaces*: the primary button, chips, the
+  Live badge, the sign-up pill. It only ever sits behind `--on-accent-fill` charcoal
+  text. It is too light to carry text itself (1.97:1 on cream) and must never colour
+  type, an icon, or a border.
+
+Neutral UI is **cream, charcoal and the warm greys.** Neither pink is a general-purpose
+palette colour. Semantic guide/status tokens are the separate, permitted exception for
+meaning.
 
 Keep the accent for these approved interaction and hierarchy cues:
 
@@ -96,14 +131,30 @@ on the glyphs.
 
 ## Shared foundations
 
-- Typography:
-  - `--font-serif` for brand, editorial headings, and expressive page titles.
-  - `--font-sans` for controls, forms, navigation, metadata, and dense product UI.
+- Typography — three faces, three jobs:
+  - `--font-display` (Gabarito, 700, tracked `−0.03em`) for the wordmark, page titles,
+    section headings, panel titles and rank numbers. This is the headline voice.
+  - `--font-sans` (DM Sans) for body, controls, forms, navigation, metadata, dense UI.
+  - `--font-serif` (Instrument Serif) for the editorial voice: the landing manifesto,
+    quotes and notes, review slips, avatar initials. Italic for quoted speech. It is no
+    longer a heading face.
+  - On the marketing site the same three are `--display` / `--sans` / `--serif` in
+    `apps/website/theme.css`, with shared components in `apps/website/ui.css`.
 - Color roles:
   - `--bg`, `--surface`, `--surface-raised`, `--surface-sunken`
   - `--text-primary`, `--text-secondary`, `--text-muted`
   - `--border`, `--border-strong`
-  - `--accent`, `--accent-dim` (spend per the accent rule), `--danger`, `--danger-dim`, `--danger-border`
+  - `--accent`, `--accent-text`, `--accent-dim` (type and line), `--accent-fill`,
+    `--accent-fill-hover`, `--on-accent-fill` (surfaces), `--danger`, `--danger-dim`,
+    `--danger-border`
+- Components (marketing `ui.css`, app `app.css`):
+  - **Buttons** are pills. Primary is the pink fill with charcoal text; secondary is the
+    deeper cream; ink is charcoal with cream text for the rare emphatic case. No outline
+    buttons.
+  - **Chips** are small pills in the deeper cream; pink for the lead or a rank, sage
+    (`#DBE1B0`, marketing only) for availability.
+  - **Cards and panels** are the deeper cream at 20px radius with no border and no shadow.
+    Rows inside them separate with a hairline.
 - Semantic guide/status roles (meaning-bearing colours, not neutral surfaces):
   - `--chip-now`, `--chip-today`, `--chip-tomorrow`, `--chip-soon`, `--chip-cinema`,
     `--chip-streaming`, `--chip-episode`

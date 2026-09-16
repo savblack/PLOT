@@ -123,7 +123,7 @@ export default function PlansPage() {
       <div className="plans-shell">
         <header className="plans-head">
           <Link to="/" className="plans-back">{PLANS_PAGE.back}</Link>
-          <span className="plans-wordmark">PLOT</span>
+          <span className="plans-wordmark">plot</span>
         </header>
 
         <div className="plans-hero">

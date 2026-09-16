@@ -113,6 +113,7 @@
   <link rel="preload" href="/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/fonts/InstrumentSerif-Regular.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="/theme.css" />
+  <link rel="stylesheet" href="/ui.css" />
   <link rel="stylesheet" href="/nav.css" />
   <style>
     /* ── Reset & Tokens ─────────────────────────────────────── */
@@ -217,53 +218,7 @@
 
     /* Navbar styling lives in the shared /nav.css (single source of truth). */
 
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      padding: 0.55rem 1.4rem;
-      border-radius: var(--r-pill);
-      font-family: var(--sans);
-      font-size: 0.8rem;
-      font-weight: 500;
-      cursor: pointer;
-      text-decoration: none;
-      transition: all 0.25s var(--ease);
-      border: none;
-    }
-    /* Primary: pink fill, charcoal text. The pink is a fill only (see --pink). */
-    .btn-primary {
-      background: var(--pink);
-      color: var(--text);
-    }
-    .btn-primary:hover {
-      background: var(--pink-hover);
-      transform: translateY(-1px);
-    }
-    /* Secondary: the deeper cream, no border */
-    .btn-outline {
-      background: var(--surface);
-      color: var(--text);
-    }
-    .btn-outline:hover {
-      background: var(--surface-hover);
-      transform: translateY(-1px);
-    }
-    /* Kept as its own class for the sections that used to sit on black — now
-       the same cream secondary as .btn-outline. */
-    .btn-outline-white {
-      background: var(--surface);
-      color: var(--text);
-    }
-    .btn-outline-white:hover {
-      background: var(--surface-hover);
-      transform: translateY(-1px);
-    }
-    .btn-large {
-      padding: 0.85rem 2.2rem;
-      font-size: 0.85rem;
-      min-height: 44px;
-    }
+    /* Buttons live in /ui.css (shared with every page). */
 
     /* ── Poster side-slides — float in from edges on scroll ── */
     #posterSide {
@@ -991,7 +946,6 @@
          and the footer. */
       #hero { align-items: flex-start; padding-top: 7rem; padding-bottom: 2rem; }
       .hero-actions { flex-direction: column; align-items: center; }
-      .btn-large { padding: 0.75rem 1.5rem; font-size: 0.85rem; }
       .ticker-section { display: none; }
       :root { --ticker-height: 0px; }
       .hero-peek { transform: translateY(45%); bottom: 0; }

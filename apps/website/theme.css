@@ -48,8 +48,10 @@
      text (primary button, chips, the Live badge). It is too light to carry
      text on cream, so it never colours type; --accent stays the canonical
      pink for small text accents and for the app. Marketing-only. */
-  --pink:            #ff88c8;
-  --pink-hover:      #ff9fd3;
+  --pink:            #ff88c8;   /* (CANON colors.light.accentFill) */
+  --pink-hover:      #ff9fd3;   /* (CANON colors.light.accentFillHover) */
+  /* Sage — the one secondary tint, for "now at home" / availability chips. */
+  --sage:            #dbe1b0;
 
   /* Charcoal ink — the marketing site's near-black. Softer than #000 on the
      cream ground. Used for body text, the ticker bar and dark fills. */
@@ -58,11 +60,11 @@
 
   /* Surface + text — a warm cream ground with a deeper cream for cards and
      secondary buttons. The marketing palette is its own; the app stays white. */
-  --bg:              #f8f2ea;
-  --surface:         #f1e9dc;
+  --bg:              #f8f2ea;   /* (CANON colors.light.bg) */
+  --surface:         #f1e9dc;   /* (CANON colors.light.surfaceSunken) */
   --surface-hover:   #eadfcf;
-  --text:            #292924;
-  --text-secondary:  #5f5a52;
+  --text:            #292924;   /* (CANON colors.light.textPrimary) */
+  --text-secondary:  #5f5a52;   /* (CANON colors.light.textSecondary) */
   --rule:            rgba(41,41,36,0.12);
   --glass-bg:        rgba(248,242,234,0.86);
   --glass-border:    rgba(41,41,36,0.06);

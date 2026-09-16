@@ -109,7 +109,7 @@ export default function SavePage() {
   return (
     <div className="save-preview">
       <style>{styles}</style>
-      <Link to="/" className="save-brand" aria-label="PLOT">PLOT</Link>
+      <Link to="/" className="save-brand" aria-label="plot">plot</Link>
 
       <div className="save-inner">
         {poster
