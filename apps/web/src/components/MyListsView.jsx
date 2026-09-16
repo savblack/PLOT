@@ -6,6 +6,7 @@ import { useSelection } from '../hooks/useSelection.js';
 import { localDateStr } from '../utils/date.js';
 import { favoriteWords } from '../utils/spelling.js';
 import { COMMON } from '../copy/common.js';
+import { HISTORY_VIEW } from '../copy/historyView.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import ConfirmModal from './ConfirmModal.jsx';
 import KebabMenu from './KebabMenu.jsx';
@@ -182,7 +183,7 @@ export default function MyListsView() {
                 onToggleSelect={() => selection.toggle(list.id)}
               />
             ))}
-            {cover('history', 'History', history, historyLoading ? '' : 'Nothing watched yet')}
+            {cover('history', 'History', history, historyLoading ? '' : HISTORY_VIEW.emptyTitle)}
             {!selection.editMode && (
               <button type="button" className="list-cover list-cover--new interactive-surface" onClick={requestCreate} aria-label="Create new list">
                 <span className="list-cover-art list-cover-art--dashed">
