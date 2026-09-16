@@ -204,8 +204,8 @@ export const SETTINGS_VIEW = {
     thanksForTip: 'Thanks for supporting PLOT ♥',
     activeThankYou: 'PLOT Premium is active. Thank you ♥',
     upsellLabel: 'Go Premium',
-    upsellBlurb: 'Unlimited custom lists and a live calendar feed.',
-    upgradeButton: 'Upgrade',
+    upsellBlurb: 'Find tonight’s film, keep up with releases and choose together. Coming soon.',
+    upgradeButton: 'Explore Premium',
   },
 
   calendarFeed: {

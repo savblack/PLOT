@@ -16,10 +16,5 @@ export const SHOW_MEDIA_SYNC_INTEGRATIONS = false;
 export const SHOW_GOOGLE_LOGIN = import.meta.env.VITE_SHOW_GOOGLE_LOGIN === 'true';
 export const SHOW_APPLE_LOGIN = false;
 
-// Pricing/plans page (/pricing, /plans) and the free-user "Upgrade" row in
-// Settings. Hidden while pricing isn't ready to be public; existing
-// subscribers can still manage their subscription regardless of this flag,
-// and the marketing site's own premium-intent signup link is gated
-// separately (see apps/website/functions/_middleware.js). Flip to true to
-// bring PlansPage back.
-export const SHOW_PRICING_PAGE = false;
+// The plan preview is public; checkout remains closed in usePremium and stripe-billing.
+export const SHOW_PRICING_PAGE = true;

@@ -10,7 +10,7 @@ import { isPremiumProfile } from '@plot/core/premium.js';
  * Premium *status* comes from profile.is_premium, already loaded by
  * App.jsx's profile select and mirrored by the stripe-webhook edge function.
  * Server-side gates (RLS + edge functions) are the authority; this hook just
- * starts checkout / opens the Stripe customer portal.
+ * previews upcoming subscriptions / opens the Stripe customer portal.
  */
 async function callBilling(action, body = {}) {
   const { data: { session } } = await supabase.auth.getSession();
@@ -30,23 +30,15 @@ async function callBilling(action, body = {}) {
 }
 
 export function usePremium(profile) {
+  const [comingSoon, setComingSoon] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
 
-  const startCheckout = useCallback(async (plan = 'monthly', source = 'settings') => {
-    if (busy) return;
-    setBusy(true);
-    setError(null);
-    track(EVENTS.PREMIUM_CHECKOUT_STARTED, { plan, source });
-    try {
-      window.location.assign(await callBilling('checkout', { plan }));
-      return true;
-    } catch (e) {
-      setError(e.message);
-      setBusy(false);
-      return false;
-    }
-  }, [busy]);
+  // Preview only: all callers, including legacy signup intents, stop before billing.
+  const startCheckout = useCallback(async () => {
+    setComingSoon(true);
+    return false;
+  }, []);
 
   const openPortal = useCallback(async () => {
     if (busy) return;
@@ -76,6 +68,7 @@ export function usePremium(profile) {
   return {
     isPremium: isPremiumProfile(profile),
     startCheckout,
+    comingSoon,
     startTipCheckout,
     openPortal,
     busy,
