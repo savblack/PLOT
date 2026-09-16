@@ -137,10 +137,12 @@ export const buildPayload = (post, platform) => {
   let imageUrls;
 
   if (platform === 'x') {
-    // X has no carousels — send exactly one image (first card targeting X).
-    const hero = cardsFor(media, 'x')[0] || media[0];
+    // X has no carousels but takes up to four images on one post; send every
+    // card targeting X (the trending chart is two five-row images).
+    const xCards = cardsFor(media, 'x');
+    const chosen = (xCards.length ? xCards : media.slice(0, 1)).slice(0, 4);
     text = copy.x;
-    imageUrls = hero ? [publicUrl(hero.landscape_path)] : [];
+    imageUrls = chosen.map((m) => publicUrl(m.landscape_path));
   } else if (platform === 'instagram') {
     const hashtags = (copy.hashtags || []).map((h) => `#${h.replace(/^#/, '')}`).join(' ');
     text = hashtags ? `${copy.instagram}\n\n${hashtags}` : copy.instagram;

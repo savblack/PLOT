@@ -102,13 +102,17 @@ test('noon Sydney survives the daylight-saving changeover', () => {
   }
 });
 
-test('X gets one image and the bare copy', () => {
+test('X gets every landscape image targeting it (max four) and the bare copy', () => {
   const p = buildPayload(post, 'x');
   assert.equal(p.service, 'twitter');
   assert.equal(p.text, post.copy.x);
-  assert.equal(p.imageUrls.length, 1, 'X has no carousel');
+  assert.equal(p.imageUrls.length, post.media.length, 'one X post carries all its cards');
+  assert.ok(p.imageUrls.every((u) => u.endsWith('-l.jpg')), 'landscape crops');
   assert.match(p.imageUrls[0], /a-l\.jpg$/);
   assert.equal(p.altText, 'A poster on a wall');
+
+  const six = { ...post, media: Array.from({ length: 6 }, (_, i) => ({ ...post.media[0], landscape_path: `m${i}-l.jpg` })) };
+  assert.equal(buildPayload(six, 'x').imageUrls.length, 4, 'X caps at four images');
 });
 
 test('Instagram gets the carousel, portrait, with hashtags appended', () => {

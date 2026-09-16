@@ -109,7 +109,7 @@ const main = async () => {
 
   // Which platform sees which render (mirrors publish.mjs):
   //   portrait  -> Instagram carousel; landscape -> Threads carousel;
-  //   X gets ONE landscape image: the first card that allows 'x'.
+  //   X gets up to four landscape images: every card that allows 'x'.
   //   cards[i].channels (null = all) limits a card to specific platforms.
   const allows = (card, ch) => !card.channels || card.channels.includes(ch);
   const channelLabel = (type, cards, cardIndex, size) => {
@@ -126,8 +126,9 @@ const main = async () => {
         if (type === 'upcoming' && cardIndex === 0) parts.push('email digest');
       }
     } else {
-      if (allows(card, 'x') && cards.findIndex(c => allows(c, 'x')) === cardIndex) {
-        parts.push('X · the single image');
+      if (allows(card, 'x')) {
+        const xs = cards.filter(c => allows(c, 'x'));
+        parts.push(xs.length > 1 ? `X · image ${xs.indexOf(card) + 1}/${xs.length}` : 'X');
       }
       if (allows(card, 'threads')) parts.push(`Threads${seq('threads')}`);
     }
@@ -158,18 +159,18 @@ const main = async () => {
     return `<section><h2>${type.replace(/_/g, ' ')}</h2><div class="grid">${imgs}</div></section>`;
   }).join('');
 
-  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>PLOT marketing templates</title>
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>plot marketing templates</title>
   <style>
-    body { font-family: system-ui, sans-serif; background: #18181B; color: #FAFAFA; padding: 40px; }
+    body { font-family: 'DM Sans', system-ui, sans-serif; background: #0c0c0c; color: #f0efe8; padding: 40px; }
     h1 { font-size: 1.4rem; } h2 { font-size: 1.05rem; margin: 40px 0 12px; text-transform: capitalize; }
     .grid { display: flex; flex-wrap: wrap; gap: 16px; }
     figure { margin: 0; }
     img { width: 300px; border-radius: 10px; display: block; }
-    figcaption { font-size: 0.72rem; color: #A1A1AA; margin-top: 6px; line-height: 1.5; }
-    figcaption b { color: #FAFAFA; font-weight: 500; }
+    figcaption { font-size: 0.72rem; color: #a8a69c; margin-top: 6px; line-height: 1.5; }
+    figcaption b { color: #f0efe8; font-weight: 500; }
   </style></head><body>
-  <h1>PLOT marketing templates — contact sheet</h1>
-  <p style="color:#A1A1AA;font-size:0.85rem;">Live TMDB data, generated ${new Date().toISOString()}</p>
+  <h1>plot marketing templates — contact sheet</h1>
+  <p style="color:#a8a69c;font-size:0.85rem;">Live TMDB data, generated ${new Date().toISOString()}</p>
   ${groups}</body></html>`;
 
   await writeFile(path.join(OUT_DIR, 'index.html'), html);

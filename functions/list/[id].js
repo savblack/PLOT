@@ -12,6 +12,12 @@ import { SHARING } from '../../packages/core/copy/sharing.js';
 //
 // Routing: file path functions/list/[id].js → /list/<id>.
 import { ogBase } from '../_lib/og-base.js';
+import { colors } from '../../packages/core/tokens.js';
+
+// Warm brand neutrals from the canonical token source, so this page can't drift
+// from the app the way the old zinc literals did.
+const themeVars = (c) =>
+  `--bg:${c.bg};--surface:${c.surface};--surface-raised:${c.surfaceRaised};--text-primary:${c.textPrimary};--text-secondary:${c.textSecondary};--text-muted:${c.textMuted};--border:${c.border}`;
 
 const SUPABASE_URL = 'https://mkegtssedjyqldysvzga.supabase.co';
 const ANON_KEY = 'sb_publishable_sbB7Jrs3Uz97Xm3qiuQgOQ_7dg6kKWk';
@@ -60,8 +66,8 @@ ${head}
 <style>
 @font-face{font-family:'DM Sans';src:url('/fonts/DMSans-Variable.woff2') format('woff2');font-weight:100 900;font-style:normal;font-display:swap}
 *{margin:0;padding:0;box-sizing:border-box}
-:root{--bg:#F4F4F5;--surface:#FFFFFF;--surface-raised:#FAFAFA;--text-primary:#09090B;--text-secondary:#52525B;--text-muted:#A1A1AA;--border:rgba(0,0,0,.07)}
-@media (prefers-color-scheme:dark){:root{--bg:#0c0c0c;--surface:#191919;--surface-raised:#242424;--text-primary:#f0efe8;--text-secondary:#a8a69c;--text-muted:#6b6a63;--border:rgba(240,239,232,.08)}}
+:root{${themeVars(colors.light)}}
+@media (prefers-color-scheme:dark){:root{${themeVars({ ...colors.light, ...colors.dark })}}}
 body{background:var(--bg);color:var(--text-primary);font-family:'DM Sans',system-ui,sans-serif;line-height:1.6}
 a{color:inherit;text-decoration:none}
 .wrap{max-width:900px;margin:0 auto;padding:64px 24px 96px}

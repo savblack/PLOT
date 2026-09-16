@@ -8,8 +8,7 @@
  *
  * Covers:
  *   - apps/website/theme.css            → brand accent, accent-dim, success, radii (light)
- *   - marketing/templates/base.css → dark accent + media chips (social cards)
- *   - marketing/assets/x-*         → static collateral carries the canonical accent
+ *   - marketing/templates/base.css → pink card accent + media chips (social cards)
  *
  * Email/newsletter generators (scripts/push-auth-emails.mjs,
  * marketing/newsletter/send-digest.mjs) import the values directly, so they
@@ -63,29 +62,15 @@ const eq = (label, actual, expected) => {
   const v = vars(rootBlock(read('marketing/templates/base.css')));
   eq('base.css --bg', v['--bg'], colors.dark.bg);
   eq('base.css --text', v['--text'], colors.dark.textPrimary);
-  eq('base.css --accent', v['--accent'], colors.dark.accent);
+  // Cards accent with the fill pink, not the app's primary (author's call, 17 Sep 2026).
+  eq('base.css --accent', v['--accent'], colors.dark.accentFill);
   eq('base.css --chip-cinema', v['--chip-cinema'], colors.dark.chipCinema);
   eq('base.css --chip-streaming', v['--chip-streaming'], colors.dark.chipStreaming);
   eq('base.css --chip-episode', v['--chip-episode'], colors.dark.chipEpisode);
 }
 
-// 3. Static social collateral must carry the canonical accent for its mode.
-{
-  const light = colors.light.accent.toLowerCase();
-  const dark = colors.dark.accent.toLowerCase();
-  const collateral = [
-    ['marketing/assets/x-header-a.html', dark],
-    ['marketing/assets/x-header-b.html', dark],
-    ['marketing/assets/x-header-light-a.html', light],
-    ['marketing/assets/x-header-light-b.html', light],
-    ['marketing/assets/x-cover-wordmark-coral.svg', light],
-  ];
-  for (const [file, expected] of collateral) {
-    if (!read(file).toLowerCase().includes(expected)) {
-      fails.push(`${file}: missing canonical accent ${expected}`);
-    }
-  }
-}
+// The remaining static collateral (Instagram marks, wordmark headers) is
+// cream/charcoal only and carries no accent, so there is nothing to check there.
 
 if (fails.length) {
   console.error('✗ marketing tokens out of sync with @plot/core/tokens.js:');
@@ -93,4 +78,4 @@ if (fails.length) {
   console.error('\nUpdate whichever is wrong so the app and marketing surfaces share one source of truth.');
   process.exit(1);
 }
-console.log('✓ marketing tokens in sync (theme.css + base.css + collateral)');
+console.log('✓ marketing tokens in sync (theme.css + base.css)');

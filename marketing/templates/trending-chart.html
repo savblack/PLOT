@@ -4,70 +4,74 @@
 <meta charset="UTF-8">
 <style>/*INLINE_BASE_CSS*/</style>
 <style>
-  /* ── Chart card: dark editorial chart, #1's art glowing behind the header ──
-     Generous top padding: the PLOT mark and the header need air. */
-  .chart-card { justify-content: flex-start; padding-top: calc(var(--pad) + 150px); }
-  .hero-art {
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 46%;
-    z-index: 0;
-    object-fit: cover;
-    width: 100%;
-    -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,0.85), transparent);
-            mask-image: linear-gradient(to bottom, rgba(0,0,0,0.85), transparent);
-    opacity: 0.45;
+  /* ── Chart card: a flat dark table. No art behind the rows: the chart IS the
+     image, so nothing competes with the names. One hairline per row, a fixed
+     column grid so ranks, posters, names and movement all align. ── */
+  .chart-card { justify-content: flex-start; padding-top: calc(var(--pad) + 176px); }
+  /* The chart is the one light-mode card: cream ground, charcoal ink
+     (colors.light). The pink stays as type (author's call, 17 Sep 2026: no
+     highlight blocks), so it only carries the display-size date and the
+     bold NEW / up-move marks. */
+  body.light {
+    --bg: #F8F2EA;
+    --text: #292924;
+    --text-dim: #5F5A52;
+    --text-faint: #6B655D;
+    --hair: rgba(41,41,36,0.14);
   }
-  /* Hierarchy: dim caps week kicker -> hero headline -> the chart itself. */
-  .header { position: relative; z-index: 2; margin-bottom: 72px; }
-  .header .meta-caps { display: block; margin-bottom: 20px; font-size: 28px; }
-  .header .display { font-size: 84px; }
-  .header .display .wk { color: var(--accent); font-style: normal; }
+  body.light .plot-mark, body.light .plot-footer .site { text-shadow: none; }
+  body.light .plot-footer .site b { color: var(--text); font-weight: 700; }
+  body.light .row.top-rank .rank { color: var(--text); }
+  body.light .row img.thumb { border-color: rgba(41,41,36,0.12); }
+  body.light .move.up, body.light .move.new {
+    color: var(--text); background: var(--accent);
+    justify-self: end; padding: 4px 12px; border-radius: 999px;
+  }
+  body.light .move.down { color: var(--text-faint); }
+  .header { position: relative; z-index: 2; margin-bottom: 40px; }
+  /* Kicker sits top-right, on the wordmark's line, so the header is just the week. */
+  .chart-card > .meta-caps { position: absolute; top: calc(var(--pad) + 18px); right: var(--pad); z-index: 4; font-size: 26px; }
+  .header .display { font-size: 76px; }
+  .header .display .wk { color: var(--accent); }
   .rows {
     position: relative; z-index: 2; flex: 1; min-height: 0;
-    display: flex; flex-direction: column; justify-content: space-between;
+    display: flex; flex-direction: column;
     overflow: hidden;
   }
   .row {
-    display: flex; align-items: center; gap: 28px;
-    padding: 4px 0;
-    border-bottom: 1px solid rgba(250,250,250,0.10);
+    display: grid;
+    grid-template-columns: 76px 96px minmax(0, 1fr) 132px;
+    grid-template-areas: 'rank thumb name move';
+    column-gap: 24px;
+    align-items: center;
+    flex: 1;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--hair, rgba(240,239,232,0.14));
   }
   .row:last-child { border-bottom: none; }
-  /* Default sizing: five roomy rows per card (the IG/Threads carousel).
-     Rank sits in a snug box (fits "10") with a tight gap to the poster. */
-  /* Natural-width rank pulled snug to its poster (negative margin offsets the
-     row gap). Left edge still aligns with the header text above. */
+  .row .col-head { display: contents; }
   .row .rank {
+    grid-area: rank;
     font-family: var(--font-display);
-    font-size: 68px;
-    margin-right: -4px;
+    font-size: 58px;
+    line-height: 1;
     color: var(--text-faint);
   }
   .row.top-rank .rank { color: var(--accent); }
-  .row img.thumb { width: 76px; aspect-ratio: 2/3; border-radius: 10px; object-fit: cover; box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
-  .row .name {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    align-items: baseline;
-    font-size: 42px; font-weight: 400; color: var(--text);
+  .row img.thumb {
+    grid-area: thumb;
+    width: 96px; aspect-ratio: 2/3; border-radius: 8px; object-fit: cover;
+    border: 1px solid rgba(240,239,232,0.12);
   }
-  .row .name .title-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .row .kind { flex-shrink: 0; font-size: 25px; font-weight: 300; color: var(--text-faint); margin-left: 16px; letter-spacing: 0.06em; }
-  .move { font-size: 38px; font-weight: 500; width: 130px; text-align: right; }
-
-  /* Ten-row variant (the X single image): tighter rows. */
-  .rows-10 .row { padding: 3px 0; gap: 24px; }
-  .rows-10 .row .rank { font-size: 48px; }
-  .rows-10 .row img.thumb { width: 46px; border-radius: 7px; }
-  .rows-10 .row .name { font-size: 33px; }
-  .rows-10 .row .kind { font-size: 21px; }
-  .rows-10 .move { font-size: 30px; width: 104px; }
-  .move.up   { color: #34D399; }
-  .move.down { color: #F87171; }
-  .move.same { color: var(--text-faint); }
-  .move.new  { color: var(--accent); font-size: 26px; letter-spacing: 0.14em; }
+  .row .name { grid-area: name; min-width: 0; font-size: 44px; font-weight: 500; line-height: 1.15; color: var(--text); }
+  .row .name .title-text { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* Movement: one right-aligned column. Pink for good news (up, new),
+     dimmed for down, nothing at all for "held". */
+  .move { grid-area: move; font-size: 28px; font-weight: 600; letter-spacing: 0.04em; text-align: right; font-variant-numeric: tabular-nums; }
+  .move.up   { color: var(--accent); }
+  .move.down { color: var(--text-faint); }
+  .move.new  { color: var(--accent); font-size: 23px; letter-spacing: 0.16em; }
+  .move.same { color: transparent; }
 
   /* ── Detail card: full-bleed art. Hierarchy: dim caps kicker ->
      hero title -> rank line beneath ("#3" accent + quiet movement note). ── */
@@ -75,33 +79,43 @@
   .detail .display { font-size: 150px; max-width: 96%; }
 
   @media (min-aspect-ratio: 4/3) {
-    .chart-card { padding-top: calc(var(--pad) + 110px); }
-    .header { margin-bottom: 48px; }
-    .header .meta-caps { margin-bottom: 12px; font-size: 24px; }
-    .header .display { font-size: 72px; }
-    .row { gap: 24px; padding: 0; }
-    .row .rank { font-size: 52px; }
-    .row img.thumb { width: 54px; }
-    .row .name { font-size: 34px; }
-    .row .kind { font-size: 21px; }
-    .move { font-size: 32px; width: 104px; }
-
-    /* Ten-row landscape: two columns (1-5 left, 6-10 right), spread across
-       the full width. */
-    .rows-10 {
+    .chart-card { padding-top: calc(var(--pad) + 140px); }
+    .header { margin-bottom: 36px; }
+    .header .meta-caps { margin-bottom: 8px; font-size: 22px; }
+    .header .display { font-size: 56px; }
+    /* Landscape: the five titles run in a horizontal row, one column each:
+       rank and movement on a line, the poster large beneath, then the name. */
+    .rows {
       display: grid;
-      grid-template-rows: repeat(5, 1fr);
-      grid-auto-flow: column;
-      column-gap: 72px;
-      align-items: center;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      column-gap: 40px;
+      border-top: none;
+      overflow: visible;
     }
-    .rows-10 .row { gap: 22px; padding: 0; }
-    .rows-10 .row:nth-child(5n) { border-bottom: none; }
-    .rows-10 .row .rank { font-size: 42px; }
-    .rows-10 .row img.thumb { width: 46px; }
-    .rows-10 .row .name { font-size: 33px; }
-    .rows-10 .row .kind { font-size: 21px; }
-    .rows-10 .move { font-size: 27px; width: 90px; }
+    .row {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      grid-template-areas: 'thumb thumb' 'rank name';
+      column-gap: 14px; row-gap: 6px;
+      align-content: start;
+      position: relative;
+      padding: 0; border-bottom: none;
+    }
+    .row .col-head { display: contents; }
+    .row .rank { grid-area: rank; font-size: 56px; line-height: 0.9; align-self: start; }
+    .row img.thumb { grid-area: thumb; width: 100%; max-width: 232px; border-radius: 10px; margin-bottom: 12px; }
+    .row .name { grid-area: name; font-size: 30px; font-weight: 500; line-height: 1.2; }
+    .row .name .title-text {
+      white-space: normal;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    /* Movement chip rides on the poster's top-right corner. */
+    .move { position: absolute; top: 10px; right: 10px; font-size: 22px; }
+    .move.down { background: rgba(41,41,36,0.72); color: var(--text); padding: 3px 10px; border-radius: 999px; font-weight: 600; }
+    body.light .move.down { color: #F8F2EA; }
+    .move.new { font-size: 18px; }
+    .move.same { display: none; }
+    body.light .move.up, body.light .move.new { padding: 3px 10px; }
 
     .detail .display { font-size: 118px; }
   }
@@ -118,7 +132,7 @@ const card = document.getElementById('card');
 const moveNode = (m) => {
   if (!m || m.dir === 'none') return el('span', 'move same', '');
   if (m.dir === 'new') return el('span', 'move new', 'NEW');
-  if (m.dir === 'same') return el('span', 'move same', '·');
+  if (m.dir === 'same') return el('span', 'move same', '');
   return el('span', `move ${m.dir}`, `${m.dir === 'up' ? '▲' : '▼'} ${m.delta}`);
 };
 
@@ -129,7 +143,7 @@ if (d.kind === 'detail') {
   if (art) card.append(img('backdrop', art));
   card.append(el('div', 'scrim'));
   const content = el('div', 'content');
-  content.append(el('div', 'meta-caps', 'Trending this week'));
+  content.append(el('div', 'meta-caps', 'The charts'));
   content.append(el('h1', 'display', t.title));
   const stat = el('div', 'subline');
   stat.append(el('span', 'n', `${t.rank}`));
@@ -138,25 +152,26 @@ if (d.kind === 'detail') {
   card.append(content);
 } else {
   card.classList.add('chart-card');
-  const heroArt = d.items?.[0]?.backdrop_data_uri || d.items?.[0]?.poster_data_uri;
-  if (heroArt) card.append(img('hero-art', heroArt));
+  document.body.classList.add('light');
   const header = el('div', 'header');
-  header.append(el('div', 'meta-caps', 'Trending this week'));
   const weekDate = String(d.week_label || '').replace(/^week of\s+/i, '');
   const h = el('h1', 'display', 'Week of ');
   h.append(el('span', 'wk', weekDate));
   header.append(h);
   card.append(header);
-  const items = (d.items || []).slice(0, 10);
-  const rows = el('div', `rows${items.length > 5 ? ' rows-10' : ''}`);
+  card.append(el('div', 'meta-caps', 'The charts'));
+  const items = (d.items || []).slice(0, 5);
+  const rows = el('div', 'rows');
   items.forEach(item => {
     const row = el('div', `row${item.rank === 1 ? ' top-rank' : ''}`);
-    row.append(el('div', 'rank', `${item.rank}`));
+    const head = el('div', 'col-head');
+    head.append(el('div', 'rank', `${item.rank}`));
+    head.append(moveNode(item.movement));
+    row.append(head);
     if (item.poster_data_uri) row.append(img('thumb', item.poster_data_uri));
     const name = el('div', 'name');
     name.append(el('span', 'title-text', item.title));
     row.append(name);
-    row.append(moveNode(item.movement));
     rows.append(row);
   });
   card.append(rows);

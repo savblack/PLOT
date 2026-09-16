@@ -11,6 +11,10 @@
 //
 // Routing: file path functions/u/[username].js → /u/<username>.
 import { ogBase } from '../_lib/og-base.js';
+import { colors } from '../../packages/core/tokens.js';
+
+// Warm dark neutrals + the green accent from the canonical token source.
+const D = { ...colors.light, ...colors.dark };
 
 const SUPABASE_URL = 'https://mkegtssedjyqldysvzga.supabase.co';
 // Publishable key — the same one the client ships. Replaces the legacy anon
@@ -71,26 +75,26 @@ const posterRow = (label, items) =>
         const src = TMDB_IMG(t.poster_path, 'w185');
         return `<a href="${esc(titleHref(t.media_type, t.tmdb_id, t.title))}" style="text-decoration:none;width:104px">` +
           (src ? `<img src="${esc(src)}" alt="${esc(t.title)}" loading="lazy" style="width:104px;height:156px;object-fit:cover;border-radius:8px;display:block">` : '') +
-          `<div style="font-size:0.74rem;color:#cfcfd6;margin-top:6px;line-height:1.3">${esc(t.title)}</div></a>`;
+          `<div style="font-size:0.74rem;color:${D.textSecondary};margin-top:6px;line-height:1.3">${esc(t.title)}</div></a>`;
       }).join('') +
       `</div></section>`
     : '';
 
 function seoSnapshot(p) {
   const name = (p.display_name || p.username).replace(/\b([a-z])/g, (m) => m.toUpperCase());
-  const stat = (n, l) => n ? `<div style="text-align:center"><div style="font-family:'Gabarito', 'DM Sans', system-ui, sans-serif;font-size:1.9rem;line-height:1">${esc(n)}</div><div style="font-size:0.68rem;letter-spacing:0.1em;text-transform:uppercase;color:#9a9aa2;margin-top:4px">${esc(l)}</div></div>` : '';
+  const stat = (n, l) => n ? `<div style="text-align:center"><div style="font-family:'Gabarito', 'DM Sans', system-ui, sans-serif;font-size:1.9rem;line-height:1">${esc(n)}</div><div style="font-size:0.68rem;letter-spacing:0.1em;text-transform:uppercase;color:${D.textMuted};margin-top:4px">${esc(l)}</div></div>` : '';
   const avatar = p.avatar_url
-    ? `<img src="${esc(p.avatar_url)}" alt="" width="84" height="84" style="border-radius:50%;object-fit:cover;border:2px solid #F06A88">`
+    ? `<img src="${esc(p.avatar_url)}" alt="" width="84" height="84" style="border-radius:50%;object-fit:cover;border:2px solid ${D.accent}">`
     : '';
-  return `<div id="seo-snapshot" style="max-width:760px;margin:0 auto;padding:64px 24px;color:#e8e8ec;font-family:'DM Sans',system-ui,sans-serif;background:#0f0f11;min-height:100vh">
+  return `<div id="seo-snapshot" style="max-width:760px;margin:0 auto;padding:64px 24px;color:${D.textPrimary};font-family:'DM Sans',system-ui,sans-serif;background:${D.bg};min-height:100vh">
   <header style="display:flex;align-items:center;gap:20px">${avatar}
-    <div><h1 style="font-family:'Gabarito', 'DM Sans', system-ui, sans-serif;font-weight:400;font-size:2.4rem;margin:0;line-height:1">${esc(name)}${p.is_premium ? ' <span style="color:#F06A88">●</span>' : ''}</h1>
-    <div style="color:#9a9aa2;margin-top:6px">@${esc(p.username)} · on PLOT</div></div>
+    <div><h1 style="font-family:'Gabarito', 'DM Sans', system-ui, sans-serif;font-weight:400;font-size:2.4rem;margin:0;line-height:1">${esc(name)}${p.is_premium ? ' <span style="color:${D.accent}">●</span>' : ''}</h1>
+    <div style="color:${D.textSecondary};margin-top:6px">@${esc(p.username)} · on plot</div></div>
   </header>
   <div style="display:flex;gap:40px;margin-top:28px">${stat(p.followers, 'Followers')}${stat(p.watchCount, 'Watched')}${stat(p.reviews, 'Reviews')}${stat(p.avgRating, 'Avg rating')}</div>
   ${posterRow('Top films', p.topMovies)}
   ${posterRow('Top TV', p.topTv)}
-  <p style="margin-top:40px"><a href="/signup?ref=${encodeURIComponent(p.username)}&amp;src=profile" data-cta="profile_ssr" style="display:inline-block;border:1.5px solid #e8e8ec;color:#e8e8ec;text-decoration:none;font-weight:600;padding:0.7rem 1.3rem;border-radius:999px">Follow ${esc(name)} on PLOT →</a></p>
+  <p style="margin-top:40px"><a href="/signup?ref=${encodeURIComponent(p.username)}&amp;src=profile" data-cta="profile_ssr" style="display:inline-block;border:1.5px solid ${D.textPrimary};color:${D.textPrimary};text-decoration:none;font-weight:600;padding:0.7rem 1.3rem;border-radius:999px">Follow ${esc(name)} on plot →</a></p>
 </div>`;
 }
 

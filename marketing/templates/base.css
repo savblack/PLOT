@@ -26,11 +26,13 @@
   --text:         #f0efe8;        /* colors.dark.textPrimary */
   --text-dim:     rgba(240,239,232,0.72);
   --text-faint:   rgba(240,239,232,0.45);
-  --accent:       #F06A88;        /* dark-mode accent from the app */
+  --accent:       #FF88C8;        /* the brand fill pink (colors.dark.accentFill); the cards use it
+                                     as accent type too (author's call, 17 Sep 2026) */
   --chip-cinema:    #E16A73;
   --chip-streaming: #78BDB7;
   --chip-episode:   #7A75E0;
-  --font-serif:   'Gabarito', 'DM Sans', system-ui, sans-serif; /* legacy name; the display face */
+  --font-display: 'Gabarito', 'DM Sans', system-ui, sans-serif; /* the display face */
+  --font-serif:   var(--font-display); /* legacy name */
   --font-sans:    'DM Sans', system-ui, sans-serif;
   --pad:          72px;
   --footer-h:     116px;          /* clearance between content and the site mark */
@@ -154,7 +156,7 @@ body::before {
   z-index: 4;
   font-family: var(--font-display);
   font-size: 100px;
-  letter-spacing: 0.02em;
+  letter-spacing: -0.045em; /* the wordmark's tracking (docs/design/shared-design-system.md) */
   line-height: 1;
   color: var(--text);
   text-shadow: 0 2px 22px rgba(0,0,0,0.55);
