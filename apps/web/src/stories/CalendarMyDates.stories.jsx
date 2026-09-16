@@ -25,7 +25,7 @@ const ep = (date, title, poster, season, number, name, { item: extraItem = {}, .
   ...extra,
 });
 
-const EVENTS = [
+const SAMPLE_EVENTS = [
   ep(plusDays(0), 'Slow Horses', '/1ubkmdLnuFAqMVzOdHIsLGDNr4b.jpg', 5, 3, 'Blindsided', { item: { network_name: 'Apple TV+', genre_ids: [18, 80] } }),
   ep(plusDays(0), 'The Bear', '/sHFlbKS3WLqMnp9t2ghADIJFnuQ.jpg', 5, 1, 'Family Meal', { behind: 1, item: { network_name: 'Disney+', genre_ids: [18, 35] } }),
   { date: plusDays(2), type: 'cinema', label: 'Cinema', item: { title: 'Dune: Part Three', poster_path: null, tmdb_id: 42, media_type: 'movie', genre_ids: [878] } },
@@ -103,7 +103,7 @@ export default {
 /* Today with two dates, a cinema release, shows you are behind on, a season
    premiere without a name yet, a reminder, and months far enough out to need
    the mini-month arrows. */
-export const Stream = { render: () => <Harness events={EVENTS} /> };
+export const Stream = { render: () => <Harness events={SAMPLE_EVENTS} /> };
 
 export const Empty = { render: () => <Harness events={[]} /> };
 
