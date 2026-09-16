@@ -37,7 +37,6 @@
     position: relative; z-index: 2; flex: 1; min-height: 0;
     display: flex; flex-direction: column;
     overflow: hidden;
-    border-top: 1px solid var(--hair, rgba(240,239,232,0.14));
   }
   .row {
     display: grid;
@@ -49,6 +48,7 @@
     padding: 8px 0;
     border-bottom: 1px solid var(--hair, rgba(240,239,232,0.14));
   }
+  .row:last-child { border-bottom: none; }
   .row .col-head { display: contents; }
   .row .rank {
     grid-area: rank;
