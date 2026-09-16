@@ -78,6 +78,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   stack: { width: 40, flexDirection: 'row', flexWrap: 'wrap', gap: 2, borderRadius: 8, overflow: 'hidden' },
   stackCell: { width: 19, aspectRatio: 2 / 3, backgroundColor: colors.surfaceRaised },
   titles: { flex: 1, minWidth: 0, gap: 3 },
-  name: { fontFamily: fontFamily.serif, fontSize: fontSize.lg, color: colors.textPrimary },
+  name: { fontFamily: fontFamily.displaySemi, fontSize: fontSize.lg, color: colors.textPrimary },
   count: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted },
 });

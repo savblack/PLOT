@@ -17,7 +17,7 @@ export const APP_NAV_ITEMS = [
 export const PRIMARY_NAV_ITEMS = APP_NAV_ITEMS.filter(item => item.primary);
 
 export const VIEW_TITLES = APP_NAV_ITEMS.reduce(
-  (titles, item) => ({ ...titles, [item.id]: item.id === 'home' ? 'PLOT' : item.label }),
+  (titles, item) => ({ ...titles, [item.id]: item.id === 'home' ? 'plot' : item.label }),
   {
     'new-releases': 'New Releases',
     'design-system': 'Design System',

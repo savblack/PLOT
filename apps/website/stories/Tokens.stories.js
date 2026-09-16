@@ -25,8 +25,9 @@ const swatches = (pairs) => {
 
 export const Colors = () =>
   swatches([
-    ['Accent', '--accent'],
-    ['Ink (CTA)', '--ink'],
+    ['Accent (type, line)', '--accent'],
+    ['Fill (surfaces)', '--fill'],
+    ['Ink', '--ink'],
     ['Background', '--bg'],
     ['Surface', '--surface'],
     ['Text', '--text'],
@@ -41,8 +42,8 @@ export const Typography = () => {
   const serif = document.createElement('div');
   serif.className = 'sb-type-row';
   serif.innerHTML =
-    '<div class="sb-type-label">--serif (Instrument Serif)</div>' +
-    '<div style="font-family: var(--serif); font-size: 2.5rem; letter-spacing: var(--serif-tracking);">Your film &amp; TV companion</div>';
+    '<div class="sb-type-label">--display (Gabarito)</div>' +
+    '<div style="font-family: var(--display); font-size: 2.5rem; letter-spacing: var(--display-tracking); font-weight: 700;">Your film &amp; TV companion</div>';
 
   const sans = document.createElement('div');
   sans.className = 'sb-type-row';

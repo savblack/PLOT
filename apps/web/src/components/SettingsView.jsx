@@ -663,7 +663,7 @@ function AvatarCropModal({ src, saving, onCancel, onSave }) {
           boxShadow: '0 20px 50px rgba(0,0,0,0.4)',
         }}
       >
-        <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.3rem', fontWeight: 500, marginBottom: '0.25rem' }}>
+        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.3rem', fontWeight: 500, marginBottom: '0.25rem' }}>
           Crop photo
         </h2>
         <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '0.85rem' }}>
@@ -788,7 +788,7 @@ function AvatarSetting({ user, profile, refreshProfile, onError }) {
               width: 32, height: 32, borderRadius: '50%', overflow: 'hidden',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               background: 'var(--accent-dim)', color: 'var(--accent)',
-              fontFamily: 'var(--font-serif)', fontSize: '0.85rem', fontWeight: 600,
+              fontFamily: 'var(--font-display)', fontSize: '0.85rem', fontWeight: 600,
               flexShrink: 0,
             }}
           >

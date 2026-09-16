@@ -272,8 +272,8 @@ export default function OnboardingFlow() {
             </button>
           ) : <div style={{ width: 28, flexShrink: 0 }} />}
           <div style={{ flex: 1, textAlign: 'center' }}>
-            <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1.375rem', fontWeight: 400, letterSpacing: '-0.05em', textTransform: 'uppercase', marginBottom: '1rem' }}>
-              PLOT
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.375rem', fontWeight: 400, letterSpacing: '-0.05em', textTransform: 'uppercase', marginBottom: '1rem' }}>
+              plot
             </div>
             <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'center', marginBottom: '0.5rem' }}>
               {Array.from({ length: TOTAL }, (_, i) => (
@@ -290,7 +290,7 @@ export default function OnboardingFlow() {
         {/* ── Step 1: First name ── */}
         {step === 1 && (
           <div style={card}>
-            <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: '2rem', fontWeight: 400, letterSpacing: '-0.02em', marginBottom: '0.5rem', textAlign: 'center' }}>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 400, letterSpacing: '-0.02em', marginBottom: '0.5rem', textAlign: 'center' }}>
               {ONBOARDING_FLOW.step1.title}
             </h1>
             <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', marginBottom: '1.5rem', lineHeight: 1.5, textAlign: 'center' }}>
@@ -310,7 +310,7 @@ export default function OnboardingFlow() {
         {/* ── Step 2: Seed shows ── */}
         {step === 2 && (
           <div style={card}>
-            <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: '2rem', fontWeight: 400, letterSpacing: '-0.02em', marginBottom: '0.5rem', textAlign: 'center' }}>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 400, letterSpacing: '-0.02em', marginBottom: '0.5rem', textAlign: 'center' }}>
               {ONBOARDING_FLOW.step2.title}
             </h1>
             <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', marginBottom: '1.25rem', lineHeight: 1.5, textAlign: 'center' }}>

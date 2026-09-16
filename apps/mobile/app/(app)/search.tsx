@@ -417,7 +417,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     backgroundColor: colors.accent,
   },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
-  emptyTitle: { fontFamily: fontFamily.serif, fontSize: fontSize.xl, color: colors.textPrimary, marginBottom: spacing.sm },
+  emptyTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary, marginBottom: spacing.sm },
   emptyBody:  { fontFamily: fontFamily.sans,  fontSize: fontSize.sm, color: colors.textMuted, textAlign: 'center' },
   row: {
     flexDirection: 'row',

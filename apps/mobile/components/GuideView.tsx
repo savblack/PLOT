@@ -475,7 +475,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   dayTabActive: { backgroundColor: colors.accentDim },
   dayTabLabel: { fontFamily: fontFamily.sans, fontSize: 9, color: colors.textMuted, marginBottom: 1, textTransform: 'uppercase', letterSpacing: 0.4 },
   dayTabLabelActive: { color: colors.accent },
-  dayTabNum:   { fontFamily: fontFamily.serif, fontSize: 16, color: colors.textSecondary },
+  dayTabNum:   { fontFamily: fontFamily.displaySemi, fontSize: 16, color: colors.textSecondary },
   dayTabNumActive: { color: colors.accent },
 
   // Ruler
@@ -516,7 +516,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   // Loading / empty
   loadingWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
-  emptyTitle: { fontFamily: fontFamily.serif, fontSize: fontSize.xl, color: colors.textPrimary, marginBottom: spacing.sm },
+  emptyTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary, marginBottom: spacing.sm },
   emptyBody:  { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, textAlign: 'center' },
 
   // Program sheet
@@ -530,7 +530,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.08, shadowRadius: 16, elevation: 16,
   },
   sheetHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: colors.border, alignSelf: 'center', marginBottom: spacing.lg },
-  sheetTitle:  { fontFamily: fontFamily.serif, fontSize: fontSize.xl, color: colors.textPrimary, marginBottom: spacing.sm },
+  sheetTitle:  { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary, marginBottom: spacing.sm },
   sheetMeta:   { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, marginBottom: spacing.xl },
   sheetClose:  { backgroundColor: colors.surfaceSunken, borderRadius: radii.md, paddingVertical: spacing.md, alignItems: 'center' },
   sheetCloseText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textSecondary },

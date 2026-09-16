@@ -1,9 +1,9 @@
 .talent-header { display: flex; align-items: center; gap: 1.25rem; }
 .talent-portrait { width: 100px; flex: 0 0 auto; aspect-ratio: 2 / 3; overflow: hidden; border-radius: var(--radius-md); background: var(--surface-raised); box-shadow: var(--shadow-xs); }
 .talent-portrait img, .talent-portrait span { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; object-fit: cover; }
-.talent-portrait span { color: var(--text-muted); font-family: var(--font-serif); font-size: 2.5rem; }
+.talent-portrait span { color: var(--text-muted); font-family: var(--font-display); font-size: 2.5rem; }
 .talent-kicker { color: var(--text-muted); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; }
-.talent-header h1 { margin: 0.3rem 0; font-family: var(--font-serif); font-size: clamp(2rem, 8vw, 3rem); font-weight: 500; letter-spacing: -0.04em; line-height: 0.95; }
+.talent-header h1 { margin: 0.3rem 0; font-family: var(--font-display); font-size: clamp(1.8rem, 7vw, 2.6rem); font-weight: 700; letter-spacing: var(--font-display-tracking); line-height: 0.98; }
 .talent-birthday { margin: 0; color: var(--text-muted); font-size: 0.82rem; }
 .talent-biography { max-width: 65ch; margin: 1.75rem 0 2rem; color: var(--text-secondary); font-size: 0.92rem; line-height: 1.7; white-space: pre-line; }
 .talent-credits-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1.25rem; }

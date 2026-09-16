@@ -114,7 +114,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     position: 'absolute',
     left: 0, right: 0,
     textAlign: 'center',
-    fontFamily: fontFamily.serif,
+    fontFamily: fontFamily.display,
     fontSize: fontSize.xl,
     color: colors.textPrimary,
   },

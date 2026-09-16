@@ -63,7 +63,7 @@ export default function SheetHeader({ title, onClose, onBack, action, bordered =
           position: 'absolute', top: 0, bottom: 0, left: 56, right: 56,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           margin: 0, pointerEvents: 'none', textAlign: 'center',
-          fontFamily: 'var(--font-serif)', fontSize: '1.4rem', fontWeight: 500,
+          fontFamily: 'var(--font-display)', fontSize: '1.4rem', fontWeight: 500,
           color: 'var(--text-primary)',
           whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
         }}

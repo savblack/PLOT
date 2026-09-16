@@ -57,10 +57,8 @@ const shell = (title, head, body) =>
 ${PH}
 ${head}
 <link rel="preload" href="/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="/fonts/InstrumentSerif-Regular.woff2" as="font" type="font/woff2" crossorigin>
 <style>
 @font-face{font-family:'DM Sans';src:url('/fonts/DMSans-Variable.woff2') format('woff2');font-weight:100 900;font-style:normal;font-display:swap}
-@font-face{font-family:'Instrument Serif';src:url('/fonts/InstrumentSerif-Regular.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap}
 *{margin:0;padding:0;box-sizing:border-box}
 :root{--bg:#F4F4F5;--surface:#FFFFFF;--surface-raised:#FAFAFA;--text-primary:#09090B;--text-secondary:#52525B;--text-muted:#A1A1AA;--border:rgba(0,0,0,.07)}
 @media (prefers-color-scheme:dark){:root{--bg:#0c0c0c;--surface:#191919;--surface-raised:#242424;--text-primary:#f0efe8;--text-secondary:#a8a69c;--text-muted:#6b6a63;--border:rgba(240,239,232,.08)}}
@@ -68,7 +66,7 @@ body{background:var(--bg);color:var(--text-primary);font-family:'DM Sans',system
 a{color:inherit;text-decoration:none}
 .wrap{max-width:900px;margin:0 auto;padding:64px 24px 96px}
 .kick{font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted)}
-h1{font-family:'Instrument Serif',Georgia,serif;font-weight:400;font-size:clamp(2.2rem,6vw,3.4rem);line-height:1.02;margin:.3rem 0 .5rem}
+h1{font-family:'Gabarito', 'DM Sans', system-ui, sans-serif;font-weight:400;font-size:clamp(2.2rem,6vw,3.4rem);line-height:1.02;margin:.3rem 0 .5rem}
 .by{color:var(--text-secondary);font-size:.95rem}
 .by a{color:var(--text-secondary);text-decoration:underline;text-decoration-color:var(--border);text-underline-offset:2px}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:18px;margin-top:36px}
@@ -77,9 +75,9 @@ h1{font-family:'Instrument Serif',Georgia,serif;font-weight:400;font-size:clamp(
 .grid a:hover .t{color:var(--text-primary)}
 .cta{display:inline-block;margin-top:40px;background:var(--text-primary);color:var(--surface);font-weight:600;padding:.7rem 1.3rem;border-radius:999px;transition:opacity .15s}
 .cta:hover{opacity:.85}
-.brand{font-family:'Instrument Serif',Georgia,serif;font-size:1.6rem;letter-spacing:-.04em}
+.brand{font-family:'Gabarito', 'DM Sans', system-ui, sans-serif;font-size:1.6rem;letter-spacing:-.04em}
 </style></head>
-<body><div class="wrap"><a href="${SITE}" class="brand">PLOT</a>${body}</div></body></html>`;
+<body><div class="wrap"><a href="${SITE}" class="brand">plot</a>${body}</div></body></html>`;
 
 function notFound() {
   return shell(

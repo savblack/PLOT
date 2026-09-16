@@ -41,10 +41,10 @@ svg { stroke-width: 1.5; }
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--font-display-tracking);
   font-size: 1.55rem;
-  font-weight: 400;
-  letter-spacing: -0.05em;
   color: var(--text-primary);
   white-space: nowrap;
   max-width: calc(100% - 7.5rem);
@@ -69,10 +69,10 @@ svg { stroke-width: 1.5; }
 }
 
 .app-header-logo-text {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--font-display-tracking);
   font-size: 1.7rem;
-  font-weight: 400;
-  letter-spacing: -0.05em;
   line-height: 1;
   color: var(--text-primary);
   user-select: none;
@@ -160,10 +160,10 @@ svg { stroke-width: 1.5; }
    the sidebar breakpoint, where the app header still carries the title. */
 .app-page-heading {
   display: none;
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--font-display-tracking);
   font-size: 2rem;
-  font-weight: 400;
-  letter-spacing: -0.03em;
   line-height: 1;
   color: var(--text-primary);
   margin: 0 0 1.5rem;
@@ -241,7 +241,7 @@ svg { stroke-width: 1.5; }
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 0.85rem;
   color: var(--text-muted);
 }
@@ -329,10 +329,10 @@ svg { stroke-width: 1.5; }
   flex-shrink: 0;
 }
 .nav-drawer-logo-text {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--font-display-tracking);
   font-size: 1.7rem;
-  font-weight: 400;
-  letter-spacing: -0.05em;
   line-height: 1;
   color: var(--text-primary);
   user-select: none;
@@ -476,10 +476,10 @@ svg { stroke-width: 1.5; }
   cursor: pointer;
 }
 .app-sidebar-brand-text {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--font-display-tracking);
   font-size: 1.7rem;
-  font-weight: 400;
-  letter-spacing: -0.05em;
   line-height: 1;
   color: var(--text-primary);
   user-select: none;
@@ -566,7 +566,7 @@ svg { stroke-width: 1.5; }
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 0.85rem;
   color: var(--text-muted);
 }
@@ -1361,10 +1361,10 @@ svg { stroke-width: 1.5; }
   padding: 0.6rem 1rem 0.25rem;
 }
 .view-title {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--font-display-tracking);
   font-size: 1.9rem;
-  font-weight: 500;
-  letter-spacing: -0.03em;
   color: var(--text-primary);
   line-height: 1.1;
 }
@@ -1413,11 +1413,11 @@ svg { stroke-width: 1.5; }
   bottom: 0.75rem;
   left: 0.9rem;
   right: 0.9rem;
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--font-display-tracking);
   font-size: 1.3rem;
-  font-weight: 500;
   color: #fff;
-  letter-spacing: -0.02em;
 }
 
 .watching-body {
@@ -1621,18 +1621,20 @@ svg { stroke-width: 1.5; }
   font-family: var(--font-sans);
   -webkit-tap-highlight-color: transparent;
 }
+/* Primary: the brand pink as a fill behind charcoal text. The fill is the one
+   place the pink is spent generously; --accent stays for small text and icons. */
 .btn-primary {
-  background: var(--text-primary);
-  color: var(--bg);
+  background: var(--accent-fill);
+  color: var(--on-accent-fill);
 }
-.btn-primary:hover { opacity: 0.82; }
+.btn-primary:hover { background: var(--accent-fill-hover); }
 
 .btn-secondary {
-  background: var(--surface-raised);
+  background: var(--surface-sunken);
   color: var(--text-primary);
-  border: 1px solid var(--border);
+  border: none;
 }
-.btn-secondary:hover { background: var(--surface-sunken); }
+.btn-secondary:hover { background: var(--border-strong); }
 
 .btn-accent {
   background: var(--accent);
@@ -1741,10 +1743,10 @@ svg { stroke-width: 1.5; }
   padding: 0 0.1rem;
 }
 .calendar-month-label {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--font-display-tracking);
   font-size: 1.25rem;
-  font-weight: 500;
-  letter-spacing: -0.02em;
   color: var(--text-primary);
 }
 .calendar-nav-btns {
@@ -1945,9 +1947,10 @@ svg { stroke-width: 1.5; }
   padding-left: 4px;
 }
 .cal-mini-name {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--font-display-tracking);
   font-size: 18px;
-  letter-spacing: -0.02em;
   color: var(--text-primary);
 }
 .cal-mini-nav { display: flex; gap: 2px; }
@@ -2102,9 +2105,10 @@ svg { stroke-width: 1.5; }
   scroll-margin-top: 1rem;
 }
 .cal-stream-month-name {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--font-display-tracking);
   font-size: 24px;
-  letter-spacing: -0.03em;
   line-height: 1;
   color: var(--text-primary);
 }
@@ -2127,7 +2131,7 @@ svg { stroke-width: 1.5; }
   padding-top: 6px;
 }
 .cal-stream-num {
-  font-family: var(--font-serif-tabular);
+  font-family: var(--font-display);
   font-size: 30px;
   line-height: 1;
   letter-spacing: -0.04em;
@@ -2792,7 +2796,7 @@ svg { stroke-width: 1.5; }
 .top5-slot--empty:hover { border-color: var(--text-secondary); color: var(--text-secondary); }
 .top5-slot--empty svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
 .top5-rank {
-  font-family: var(--font-serif-tabular);
+  font-family: var(--font-display);
   font-size: 1.75rem;
   line-height: 1;
   color: var(--accent-text);
@@ -2910,7 +2914,7 @@ svg { stroke-width: 1.5; }
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 1.35rem;
   letter-spacing: -0.02em;
   line-height: 1.1;
@@ -2985,7 +2989,7 @@ svg { stroke-width: 1.5; }
 }
 .list-page-title {
   margin: 0;
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 2.25rem;
   font-weight: 400;
   letter-spacing: -0.03em;
@@ -3037,7 +3041,7 @@ svg { stroke-width: 1.5; }
   color: var(--text-secondary);
 }
 .mylists-slot-rank {
-  font-family: var(--font-serif-tabular);
+  font-family: var(--font-display);
   font-size: 1.75rem;
   line-height: 1;
 }
@@ -3184,7 +3188,7 @@ svg { stroke-width: 1.5; }
    otherwise need, and says "out of five" in words, which nine-pixel stars
    cannot do reliably. */
 .review-slip-num {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 2.75rem;
   line-height: 0.86;
   letter-spacing: -0.02em;
@@ -3222,7 +3226,7 @@ svg { stroke-width: 1.5; }
 }
 .review-slip-text {
   margin: 0;
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 1.0625rem;
   line-height: 1.4;
   color: var(--text-primary);
@@ -3607,10 +3611,10 @@ svg { stroke-width: 1.5; }
 }
 
 .panel-title {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--font-display-tracking);
   font-size: 1.6rem;
-  font-weight: 500;
-  letter-spacing: -0.03em;
   color: var(--text-primary);
   line-height: 1.15;
   margin-bottom: 0.35rem;
@@ -4484,10 +4488,10 @@ a.provider-chip--link:hover {
 }
 .empty-icon { font-size: 2.8rem; opacity: 0.6; }
 .empty-title {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--font-display-tracking);
   font-size: 1.35rem;
-  font-weight: 500;
-  letter-spacing: -0.02em;
   color: var(--text-primary);
 }
 .empty-body {
@@ -4869,7 +4873,7 @@ a.provider-chip--link:hover {
 .epg-card-poster img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .epg-card-fallback {
   width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
-  padding: 0.5rem; font-family: var(--font-serif); font-size: 0.85rem; line-height: 1.2;
+  padding: 0.5rem; font-family: var(--font-display); font-size: 0.85rem; line-height: 1.2;
   text-align: center; color: var(--text-muted);
 }
 .epg-card-ring {
@@ -4979,7 +4983,7 @@ a.provider-chip--link:hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--font-serif-tabular);
+  font-family: var(--font-display);
   font-size: 2.2rem;
   font-weight: 400;
   color: var(--text-primary);
@@ -5451,11 +5455,11 @@ a.provider-chip--link:hover {
 }
 
 .discover-hero-title {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--font-display-tracking);
   font-size: 1.9rem;
-  font-weight: 500;
   color: #fff;
-  letter-spacing: -0.03em;
   line-height: 1.05;
   margin-bottom: 0.25rem;
 }
@@ -5544,7 +5548,7 @@ a.provider-chip--link:hover {
 
 /* Rank badge overlaid on poster */
 .discover-rank-badge {
-  font-family: var(--font-serif-tabular);
+  font-family: var(--font-display);
   font-size: 2rem;
   font-weight: 500;
   color: var(--accent);
@@ -5733,10 +5737,10 @@ a.provider-chip--link:hover {
 }
 .discover-section-title {
   margin: 0;
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--font-display-tracking);
   font-size: 1.25rem;
-  font-weight: 400;
-  letter-spacing: -0.02em;
   line-height: 1.15;
   color: var(--text-primary);
 }
@@ -5853,11 +5857,11 @@ a.provider-chip--link:hover {
    inheriting. Without the colour it picked up --text-primary, which is
    near-black in light mode and unreadable against the image. */
 .discover-binge-card-title {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--font-display-tracking);
   font-size: 1.32rem;
-  font-weight: 500;
   color: #fff;
-  letter-spacing: -0.02em;
   line-height: 1.1;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -5905,7 +5909,7 @@ a.provider-chip--link:hover {
 }
 .discover-chart-card .list-row-hit { gap: 0.85rem; }
 .discover-chart-rank {
-  font-family: var(--font-serif-tabular);
+  font-family: var(--font-display);
   font-size: 1.75rem;
   font-weight: 400;
   color: var(--accent);
@@ -6673,7 +6677,7 @@ a.provider-chip--link:hover {
   padding-left: 4px;
 }
 .hist-card-title {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 18px;
   letter-spacing: -0.02em;
   color: var(--text-primary);
@@ -6688,7 +6692,7 @@ a.provider-chip--link:hover {
 }
 .hist-card-body { display: flex; flex-direction: column; gap: 10px; padding: 0 4px; }
 .hist-card-lead {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 20px;
   line-height: 1.1;
   letter-spacing: -0.02em;
@@ -6718,7 +6722,7 @@ a.provider-chip--link:hover {
 }
 .hist-stat { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .hist-stat-value {
-  font-family: var(--font-serif-tabular);
+  font-family: var(--font-display);
   font-size: 28px;
   line-height: 1;
   letter-spacing: -0.02em;
@@ -6731,7 +6735,7 @@ a.provider-chip--link:hover {
 .hist-sentence {
   margin: 0;
   padding: 0 4px;
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-style: italic;
   font-size: 15px;
   line-height: 1.35;
@@ -6887,7 +6891,7 @@ a.provider-chip--link:hover {
 .hist-stream .hist-month:first-child .hist-month-head { border-top: 0; padding-top: 4px; }
 .hist-month-name-row { display: flex; align-items: baseline; gap: 10px; }
 .hist-month-name {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 24px;
   letter-spacing: -0.03em;
   line-height: 1;
@@ -6895,7 +6899,7 @@ a.provider-chip--link:hover {
 }
 .hist-month-count { font-size: 12px; color: var(--text-muted); }
 .hist-month-insight {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-style: italic;
   font-size: 15px;
   color: var(--text-secondary);

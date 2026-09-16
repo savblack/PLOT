@@ -1260,7 +1260,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
 
   body: { padding: spacing.xl },
 
-  title:    { fontFamily: fontFamily.serif, fontSize: fontSize.xxl, color: colors.textPrimary, marginBottom: spacing.sm },
+  title:    { fontFamily: fontFamily.display, fontSize: fontSize.xxl, color: colors.textPrimary, marginBottom: spacing.sm },
   metaRow:  { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.sm, flexWrap: 'wrap' },
   metaYear: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textSecondary },
   metaType: { fontFamily: fontFamily.sansBold, fontSize: 11, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
@@ -1273,7 +1273,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   consensusLine: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textSecondary, marginBottom: spacing.sm, lineHeight: 17 },
   overview: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary, lineHeight: 20, marginBottom: spacing.lg },
   audienceQuote: { borderLeftWidth: 2, borderLeftColor: colors.accent, paddingLeft: spacing.md, marginBottom: spacing.md },
-  audienceQuoteText: { fontFamily: fontFamily.serif, fontStyle: 'italic', fontSize: fontSize.md, color: colors.textSecondary, lineHeight: 21 },
+  audienceQuoteText: { fontFamily: fontFamily.display, fontSize: fontSize.md, color: colors.textSecondary, lineHeight: 21 },
   audienceQuoteAttr: { fontFamily: fontFamily.sansBold, fontSize: 10, color: colors.textMuted, marginTop: 4, letterSpacing: 0.3 },
 
   // Single-source spacing.sm rhythm for the action block: the col gap handles
@@ -1422,7 +1422,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     paddingHorizontal: spacing.xl, paddingTop: spacing.sm,
   },
   lsHandle: { alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: colors.borderStrong, marginBottom: spacing.md },
-  lsTitle: { fontFamily: fontFamily.serif, fontSize: fontSize.xl, color: colors.textPrimary, marginBottom: spacing.md },
+  lsTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary, marginBottom: spacing.md },
   lsEmpty: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, paddingVertical: spacing.md },
   lsRow: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.md,

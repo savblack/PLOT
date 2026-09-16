@@ -726,7 +726,7 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
               {!pickingMoveTo ? (
                 <>
                   <p style={{
-                    fontFamily: 'var(--font-serif)', fontSize: '1.15rem', fontWeight: 400,
+                    fontFamily: 'var(--font-display)', fontSize: '1.15rem', fontWeight: 400,
                     color: 'var(--text-primary)', lineHeight: 1.3, margin: '0 0 0.25rem',
                   }}>
                     Replace "{rankConflict.occupant.title}" at #{rankConflict.rank} with "{item.title}"?
@@ -750,7 +750,7 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
               ) : (
                 <>
                   <p style={{
-                    fontFamily: 'var(--font-serif)', fontSize: '1.15rem', fontWeight: 400,
+                    fontFamily: 'var(--font-display)', fontSize: '1.15rem', fontWeight: 400,
                     color: 'var(--text-primary)', lineHeight: 1.3, margin: '0 0 0.25rem',
                   }}>
                     Move "{rankConflict.occupant.title}" to which open spot?
@@ -1546,7 +1546,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
 
             {audienceQuote && (
               <blockquote style={{ borderLeft: '2px solid var(--accent)', margin: '0 0 0.75rem', padding: '0.4rem 0 0.4rem 0.75rem' }}>
-                <p style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '1rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
+                <p style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
                   &ldquo;{audienceQuote.text}&rdquo;
                 </p>
                 <cite style={{ display: 'block', fontStyle: 'normal', fontSize: '0.68rem', fontWeight: 600, color: 'var(--text-muted)', marginTop: '0.25rem', letterSpacing: '0.02em' }}>

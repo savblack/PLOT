@@ -120,7 +120,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.sm + 2, paddingHorizontal: spacing.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
   rowCurrent: { backgroundColor: colors.accentDim },
   rowPoster: { width: 42, aspectRatio: 2 / 3, borderRadius: 7, overflow: 'hidden', backgroundColor: colors.surfaceRaised, alignItems: 'center', justifyContent: 'center' },
-  rowPosterFallback: { fontFamily: fontFamily.serif, fontSize: fontSize.md, color: colors.textMuted },
+  rowPosterFallback: { fontFamily: fontFamily.display, fontSize: fontSize.md, color: colors.textMuted },
   rowText: { flex: 1, minWidth: 0 },
   rowTitle: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textPrimary },
   rowMeta: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textSecondary, marginTop: 2 },

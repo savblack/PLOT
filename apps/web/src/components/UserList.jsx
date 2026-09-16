@@ -13,7 +13,7 @@ const avatarStyle = {
   width: 44, height: 44, borderRadius: '50%', flexShrink: 0, objectFit: 'cover',
   background: 'var(--surface-raised)', border: '1px solid var(--border)',
   display: 'flex', alignItems: 'center', justifyContent: 'center',
-  fontFamily: 'var(--font-serif)', fontSize: '1.1rem', color: 'var(--text-muted)',
+  fontFamily: 'var(--font-display)', fontSize: '1.1rem', color: 'var(--text-muted)',
 };
 
 /** Follow / Request / Following / Requested button driven by `follows`. */

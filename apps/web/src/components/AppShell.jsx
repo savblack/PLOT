@@ -179,7 +179,7 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
         aria-hidden={!drawerOpen}
       >
         <div className="nav-drawer-header">
-          <span className="nav-drawer-logo-text">PLOT</span>
+          <span className="nav-drawer-logo-text">plot</span>
           <button type="button" className="icon-btn" onClick={closeDrawer} aria-label={APP_SHELL.closeMenu}>
             <IconClose />
           </button>

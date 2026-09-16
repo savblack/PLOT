@@ -95,7 +95,7 @@ export default function ReportDialog({ targetId, targetName, surface, viewerId, 
       >
         {sent ? (
           <>
-            <p id={titleId} style={{ fontFamily: 'var(--font-serif)', fontSize: '1.15rem', margin: '0 0 0.5rem' }}>
+            <p id={titleId} style={{ fontFamily: 'var(--font-display)', fontSize: '1.15rem', margin: '0 0 0.5rem' }}>
               {MODERATION.reportSentTitle}
             </p>
             <p id={leadId} style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: '0 0 1.25rem' }}>
@@ -107,7 +107,7 @@ export default function ReportDialog({ targetId, targetName, surface, viewerId, 
           </>
         ) : (
           <>
-            <p id={titleId} style={{ fontFamily: 'var(--font-serif)', fontSize: '1.15rem', margin: '0 0 0.4rem' }}>
+            <p id={titleId} style={{ fontFamily: 'var(--font-display)', fontSize: '1.15rem', margin: '0 0 0.4rem' }}>
               {MODERATION.reportTitle}
             </p>
             <p id={leadId} style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: '0 0 1.1rem' }}>

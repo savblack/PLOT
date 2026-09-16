@@ -22,11 +22,11 @@ export const FOOTER = {
   signup: 'Sign up',
   privacy: 'Privacy',
   terms: 'Terms',
-  copyright: (year) => `© ${year} PLOT`,
+  copyright: (year) => `© ${year} plot`,
   socialAria: {
     instagram: 'PLOT on Instagram',
-    threads: 'PLOT on Threads',
-    x: 'PLOT on X',
+    threads: 'plot on Threads',
+    x: 'plot on X',
   },
 };
 

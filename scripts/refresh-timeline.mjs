@@ -161,12 +161,11 @@ async function fetchTrending() {
 
 const KIND = { movie: 'Film', tv: 'Series' };
 
+// Row 1 of the guide-demo trending panel (index.html #gpRows). The panel's
+// other rows are static fallbacks the browser replaces on load.
 const renderHeroCard = (hero) => [
   '',
-  `            <div class="af-card af-hero" style="background-image:url('${IMG}${hero.poster_path}')">`,
-  '              <span class="af-badge">TRENDING #1</span>',
-  `              <div class="af-cap">${esc(hero.title)}<small>${hero.year} &middot; ${KIND[hero.media_type]}</small></div>`,
-  '            </div>',
+  `            <div class="gp-row"><div class="gp-rank">1</div><img class="gp-poster" src="${IMG}${hero.poster_path}" alt="" loading="lazy" decoding="async"><div class="gp-meta"><div class="gp-name">${esc(hero.title)}</div><div class="gp-sub">${hero.year} &middot; ${KIND[hero.media_type]}</div></div><span class="gp-chip is-top">Trending #1</span></div>`,
 ].join('\n');
 
 function replaceBlock(html, name, body, indent = '        ') {

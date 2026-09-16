@@ -52,9 +52,10 @@
   gap: 3px;
 }
 .collection-card-name {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--font-display-tracking);
   font-size: 1.1rem;
-  letter-spacing: -0.02em;
   line-height: 1.15;
   color: var(--text-primary);
   overflow: hidden;
@@ -131,7 +132,7 @@
   align-items: center;
   justify-content: center;
   color: var(--text-muted);
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 1rem;
 }
 .collection-card-row-text {

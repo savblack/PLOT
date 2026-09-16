@@ -22,7 +22,7 @@ const img = (className, src) => {
 // odd crops. Poster is only a fallback when no backdrop exists.
 const pickArt = (title) => title.backdrop_data_uri || title.poster_data_uri;
 
-// A display headline with an italic accent segment: serifLine('7', ' days to go')
+// A display headline with an accent segment: serifLine('7', ' days to go')
 const accentLine = (plain, italic) => {
   const h = el('h1', 'display', plain);
   if (italic != null) h.append(el('em', null, italic));
@@ -43,7 +43,7 @@ const metaCaps = (kind, dateText) => {
 // Brand chrome on every card: big PLOT wordmark top-left, and a footer
 // strip with the site. (TMDB attribution lives in the profile bios and the
 // website footer, not on the cards.)
-const plotMark = () => el('div', 'plot-mark', 'PLOT');
+const plotMark = () => el('div', 'plot-mark', 'plot');
 
 const plotFooter = () => {
   const footer = el('div', 'plot-footer');

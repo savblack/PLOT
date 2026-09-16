@@ -110,7 +110,7 @@ export default function SavePage() {
   return (
     <div className="save-preview">
       <style>{styles}</style>
-      <Link to="/" className="save-brand" aria-label="PLOT">PLOT</Link>
+      <Link to="/" className="save-brand" aria-label="plot">plot</Link>
 
       <div className="save-inner">
         {poster
@@ -153,7 +153,7 @@ const styles = `
     background: var(--bg);
   }
   .save-brand {
-    font-family: var(--font-serif); font-size: 1.5rem; font-weight: 400;
+    font-family: var(--font-display); font-size: 1.5rem; font-weight: 400;
     letter-spacing: -0.05em; color: var(--text-primary);
     margin-bottom: clamp(1.5rem, 4vh, 2.4rem); text-decoration: none;
   }
@@ -168,7 +168,7 @@ const styles = `
     color: var(--text-secondary); margin: 0;
   }
   .save-title {
-    font-family: var(--font-serif); font-weight: 400;
+    font-family: var(--font-display); font-weight: 400;
     font-size: clamp(2.1rem, 6vw, 3rem); line-height: 1.02; letter-spacing: -0.02em;
     margin: 0.35rem 0 0.65rem; color: var(--text-primary); text-wrap: balance;
   }

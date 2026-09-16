@@ -99,21 +99,21 @@ Deno.serve(async (req) => {
   // ── Unsubscribe flow ──
   if (url.searchParams.get('action') === 'unsubscribe') {
     const token = url.searchParams.get('token') ?? '';
-    if (!token) return page('PLOT', '<h1>Missing token</h1>', 400);
+    if (!token) return page('plot', '<h1>Missing token</h1>', 400);
 
     const { data: sub } = await supabase
       .from('marketing_subscribers')
       .select('id, status, email')
       .eq('unsubscribe_token', token)
       .maybeSingle();
-    if (!sub) return page('PLOT', '<h1>Link not valid</h1>', 404);
+    if (!sub) return page('plot', '<h1>Link not valid</h1>', 404);
 
     if (req.method === 'GET') {
       if (sub.status === 'unsubscribed') {
-        return page('PLOT', '<h1>Unsubscribed</h1><p>You will not receive the PLOT digest again.</p>');
+        return page('plot', '<h1>Unsubscribed</h1><p>You will not receive the plot digest again.</p>');
       }
       return page('PLOT — unsubscribe', `
-        <h1>Unsubscribe from the PLOT digest?</h1>
+        <h1>Unsubscribe from the plot digest?</h1>
         <button onclick="fetch(location.href,{method:'POST'}).then(()=>location.reload())">Unsubscribe</button>`);
     }
 
@@ -134,9 +134,9 @@ Deno.serve(async (req) => {
         }
       }
 
-      return page('PLOT', '<h1>Unsubscribed</h1><p>You will not receive the PLOT digest again.</p>');
+      return page('plot', '<h1>Unsubscribed</h1><p>You will not receive the plot digest again.</p>');
     }
-    return page('PLOT', '<h1>Method not allowed</h1>', 405);
+    return page('plot', '<h1>Method not allowed</h1>', 405);
   }
 
   // ── Subscribe flow ──

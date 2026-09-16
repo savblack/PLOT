@@ -3,7 +3,7 @@
  *
  * The "where to watch X" SEO surface (think JustWatch/Reelgood): a server-rendered
  * page per movie / show with regional streaming availability, cast, related titles,
- * rich OG + JSON-LD, and a "Save to your PLOT" CTA that deep-links into the app.
+ * rich OG + JSON-LD, and a "Save to your plot" CTA that deep-links into the app.
  *
  * Served via a Cloudflare Pages Function on the static site, which proxies
  * straight through to this Edge Function (apps/website/functions/_lib/title.js):
@@ -95,16 +95,14 @@ const STYLE = `
    theplot.tv, so an absolute path resolves against that origin regardless
    of where the HTML itself is generated. */
 @font-face { font-family: 'DM Sans'; src: url('${SITE}/fonts/DMSans-Variable.woff2') format('woff2'); font-weight: 100 900; font-style: normal; font-display: swap; }
-@font-face { font-family: 'Instrument Serif'; src: url('${SITE}/fonts/InstrumentSerif-Regular.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: swap; }
-@font-face { font-family: 'Instrument Serif'; src: url('${SITE}/fonts/InstrumentSerif-Italic.woff2') format('woff2'); font-weight: 400; font-style: italic; font-display: swap; }
-:root{--ink:#0c0c0c;--paper:#F4F4F5;--pink:#E05578;--mut:#6b6b70;--faint:#a1a1a6;--hair:rgba(12,12,12,0.14);--serif:'Instrument Serif',Georgia,serif;--ease:cubic-bezier(0.23,1,0.32,1);}
+:root{--ink:#0c0c0c;--paper:#F4F4F5;--pink:#E05578;--mut:#6b6b70;--faint:#a1a1a6;--hair:rgba(12,12,12,0.14);--serif:'Gabarito', 'DM Sans', system-ui, sans-serif;--ease:cubic-bezier(0.23,1,0.32,1);}
 *{margin:0;padding:0;box-sizing:border-box;}
 body{background:#fff;color:var(--ink);font-family:'DM Sans',system-ui,sans-serif;line-height:1.6;position:relative;}
 body::before{content:'';position:fixed;inset:0;pointer-events:none;opacity:.035;z-index:10;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-size:200px 200px;}
 a{color:inherit;}
 nav.topnav{position:fixed;top:0;left:0;right:0;z-index:100;padding:0 2rem;height:64px;display:flex;align-items:center;justify-content:space-between;background:transparent;transition:background .3s var(--ease),backdrop-filter .3s var(--ease);}
 nav.topnav.scrolled{background:rgba(255,255,255,.8);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);}
-.nav-logo{text-decoration:none;display:flex;align-items:center;font-family:var(--serif);font-size:1.7rem;font-weight:400;letter-spacing:-.05em;color:var(--ink);line-height:1;}
+.nav-logo{text-decoration:none;display:flex;align-items:center;font-family:var(--display);font-size:1.7rem;font-weight:400;letter-spacing:-.05em;color:var(--ink);line-height:1;}
 .nav-links{display:flex;align-items:center;gap:2rem;list-style:none;}
 .nav-links li{display:flex;}
 .nav-links a{display:inline-block;padding:.75rem .25rem;text-decoration:none;color:var(--mut);font-size:.7rem;font-weight:200;letter-spacing:.12em;text-transform:uppercase;transition:color .2s;}
@@ -123,7 +121,7 @@ nav.topnav.scrolled{background:rgba(255,255,255,.8);backdrop-filter:blur(16px);-
 .lead{display:grid;grid-template-columns:160px 1fr;gap:28px;align-items:start;}
 .poster{width:160px;border-radius:12px;overflow:hidden;border:1px solid var(--hair);background:var(--paper);}
 .poster img{width:100%;display:block;aspect-ratio:2/3;object-fit:cover;}
-h1.title{font-family:var(--serif);font-size:clamp(2.2rem,5vw,3.4rem);font-weight:400;line-height:.98;letter-spacing:-.02em;}
+h1.title{font-family:var(--display);font-size:clamp(2.2rem,5vw,3.4rem);font-weight:400;line-height:.98;letter-spacing:-.02em;}
 .meta{color:var(--mut);font-size:.95rem;margin:10px 0 16px;}
 .meta .dot{margin:0 .5em;color:var(--faint);}
 .genres{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:18px;}
@@ -131,7 +129,7 @@ h1.title{font-family:var(--serif);font-size:clamp(2.2rem,5vw,3.4rem);font-weight
 .cta{display:inline-block;background:transparent;color:var(--ink);border:1.5px solid var(--ink);text-decoration:none;font-weight:600;font-size:.92rem;padding:.68rem 1.3rem;border-radius:999px;transition:background .15s var(--ease),color .15s var(--ease);}
 .cta:hover{background:var(--ink);color:#fff;}
 .section{margin-top:44px;}
-.section h2{font-family:var(--serif);font-size:1.6rem;font-weight:400;margin-bottom:16px;letter-spacing:-.01em;}
+.section h2{font-family:var(--display);font-size:1.6rem;font-weight:400;margin-bottom:16px;letter-spacing:-.01em;}
 .overview{font-size:1.05rem;color:#2a2a2e;max-width:64ch;}
 .watch{display:flex;flex-direction:column;gap:18px;}
 .watch-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
@@ -150,7 +148,7 @@ h1.title{font-family:var(--serif);font-size:clamp(2.2rem,5vw,3.4rem);font-weight
 .rel a{text-decoration:none;}
 .rel img,.rel .noart2{width:100%;aspect-ratio:2/3;border-radius:10px;object-fit:cover;border:1px solid var(--hair);background:var(--paper);display:block;}
 .rel .rt{font-size:.82rem;margin-top:8px;color:var(--ink);line-height:1.3;}
-.rel a:hover .rt{color:var(--pink);}
+.rel a:hover .rt{color:var(--fill);}
 .disclaimer{color:var(--faint);font-size:.78rem;margin-top:10px;}
 @media (max-width:640px){.wrap{padding:84px 20px 80px;}.lead{grid-template-columns:110px 1fr;gap:18px;}.poster{width:110px;}nav.topnav{padding:0 1.2rem;}.nav-links{gap:1rem;}}
 `;
@@ -166,13 +164,12 @@ ${PH}
 ${GA_GTM}
 ${head}
 <link rel="preload" href="${SITE}/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="${SITE}/fonts/InstrumentSerif-Regular.woff2" as="font" type="font/woff2" crossorigin>
 <style>${STYLE}</style>
 </head>
 <body>
 ${GTM_NOSCRIPT}
 <nav class="topnav" id="topnav">
-  <a href="${SITE}" class="nav-logo" aria-label="PLOT">PLOT</a>
+  <a href="${SITE}" class="nav-logo" aria-label="plot">plot</a>
   <ul class="nav-links" id="navLinks">
     <li><a href="${SITE}/whats-on">What's On</a></li>
     <li><a href="${APP}/login?src=title_page_nav" data-cta="nav">Log in</a></li>
@@ -223,10 +220,10 @@ ${FOOTER_HTML}
 
 function notFound() {
   return page(
-    'Not found · PLOT',
+    'Not found · plot',
     '<meta name="robots" content="noindex">',
     `<div class="section"><h1 class="title">We couldn't find that title.</h1>
-     <p class="overview" style="margin-top:16px">It may have moved or never existed. Try <a href="${SITE}/whats-on" style="color:var(--pink)">What's On</a>.</p></div>`,
+     <p class="overview" style="margin-top:16px">It may have moved or never existed. Try <a href="${SITE}/whats-on" style="color:var(--fill)">What's On</a>.</p></div>`,
     404,
     false,
   );
@@ -296,7 +293,7 @@ Deno.serve(async (req) => {
   if (!Number.isInteger(id) || id <= 0) return notFound();
 
   const key = Deno.env.get('TMDB_API_KEY');
-  if (!key) return page('PLOT', '<meta name="robots" content="noindex">', '<p>Temporarily unavailable.</p>', 503, false);
+  if (!key) return page('plot', '<meta name="robots" content="noindex">', '<p>Temporarily unavailable.</p>', 503, false);
 
   let data: any;
   try {
@@ -304,10 +301,10 @@ Deno.serve(async (req) => {
       `${TMDB}/${type}/${id}?api_key=${key}&language=en-US&append_to_response=watch/providers,credits,videos,recommendations`,
     );
     if (r.status === 404) return notFound();
-    if (!r.ok) return page('PLOT', '<meta name="robots" content="noindex">', '<p>Temporarily unavailable.</p>', 502, false);
+    if (!r.ok) return page('plot', '<meta name="robots" content="noindex">', '<p>Temporarily unavailable.</p>', 502, false);
     data = await r.json();
   } catch {
-    return page('PLOT', '<meta name="robots" content="noindex">', '<p>Temporarily unavailable.</p>', 502, false);
+    return page('plot', '<meta name="robots" content="noindex">', '<p>Temporarily unavailable.</p>', 502, false);
   }
 
   const isMovie = type === 'movie';
@@ -353,7 +350,7 @@ Deno.serve(async (req) => {
   if (streaming.length) watchHtml += `<div class="watch-row"><span class="watch-label">Stream</span>${streaming.map(provChip).join('')}</div>`;
   if (rentBuy.length) watchHtml += `<div class="watch-row"><span class="watch-label">Rent / Buy</span>${rentBuy.map(provChip).join('')}</div>`;
   if (inCinemas) watchHtml += `<div class="cinema">🎬 In cinemas now</div>`;
-  if (!watchHtml) watchHtml = `<p class="nowatch">No streaming availability in ${esc(regionName(region))} right now — add it to your PLOT and we'll track it for you.</p>`;
+  if (!watchHtml) watchHtml = `<p class="nowatch">No streaming availability in ${esc(regionName(region))} right now — add it to your plot and we'll track it for you.</p>`;
 
   // ── Cast (top 8) ──
   const cast = (data.credits?.cast || []).slice(0, 8);
@@ -380,8 +377,8 @@ Deno.serve(async (req) => {
   const saveHref = `${APP}/save?media_type=${type}&tmdb_id=${id}&src=title_page`;
 
   // ── <head>: description, canonical, OG, JSON-LD ──
-  const desc = (overview || `Where to watch ${title}${yr ? ` (${yr})` : ''} — streaming, rent and buy options on PLOT.`).slice(0, 300);
-  const metaTitle = `${title}${yr ? ` (${yr})` : ''} — where to watch · PLOT`;
+  const desc = (overview || `Where to watch ${title}${yr ? ` (${yr})` : ''} — streaming, rent and buy options on plot.`).slice(0, 300);
+  const metaTitle = `${title}${yr ? ` (${yr})` : ''} — where to watch · plot`;
   const jsonLd = ldjson({
     '@context': 'https://schema.org',
     '@type': isMovie ? 'Movie' : 'TVSeries',
@@ -422,7 +419,7 @@ ${backdrop ? `<div class="hero"><img src="${esc(backdrop)}" alt="" fetchpriority
     <h1 class="title">${esc(title)}</h1>
     <div class="meta">${metaBits}</div>
     ${genres.length ? `<div class="genres">${genres.map((g: string) => `<span class="genre">${esc(g)}</span>`).join('')}</div>` : ''}
-    <a class="cta" href="${esc(saveHref)}" data-cta="title_save">Save to your PLOT →</a>
+    <a class="cta" href="${esc(saveHref)}" data-cta="title_save">Save to your plot →</a>
   </div>
 </div>
 
