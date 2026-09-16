@@ -1,3 +1,4 @@
+import PrivateNote from './PrivateNote.jsx';
 import { customListCreationError } from '@plot/core/customListCreation.js';
 import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -1502,6 +1503,8 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                 {statusActionError}
               </div>
             )}
+
+            {user && <PrivateNote id={itemId} type={itemType} title={title} />}
 
             {/* ── Your review ──
                 Sits directly under the title rather than below the action tray,

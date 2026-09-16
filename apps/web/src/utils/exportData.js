@@ -84,6 +84,7 @@ export function downloadDataExport(payload, filename = exportFilename()) {
 // Anything without those columns (raw settings, follows, integration rows) stays
 // in the JSON export only — a single flat CSV can't represent it faithfully.
 const CSV_SECTIONS = [
+  { table: 'private_title_notes', section: 'Private note', date: (r) => r.updated_at },
   { table: 'list_items',             section: 'Watchlist',   date: (r) => r.created_at || r.added_at },
   { table: 'history',                section: 'History',     date: (r) => r.watched_at },
   { table: 'watching_progress',      section: 'Watching',    date: (r) => r.updated_at || r.started_at },

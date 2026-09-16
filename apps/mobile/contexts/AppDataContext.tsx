@@ -1,4 +1,5 @@
 import { useBroadcastPreferences } from '@plot/core/useBroadcastPreferences.js';
+import { usePrivateNotes } from '@plot/core/usePrivateNotes.js';
 /**
  * App-wide user data — mirrors web's AppProvider (src/App.jsx): the shared
  * core hooks are instantiated ONCE here and every screen consumes them via
@@ -20,6 +21,7 @@ interface AppData {
   user: any;
   profile: any;
   refreshProfile: () => void;
+  privateNotes: ReturnType<typeof usePrivateNotes>;
   watchlist: any;
   watching: any;
   favorites: any;
@@ -34,6 +36,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const { userId, user, profile, refreshProfile } = useCurrentUser();
   const broadcastPreferences = useBroadcastPreferences(userId);
   const watchlist   = useWatchlist(userId);
+  const privateNotes = usePrivateNotes(userId);
   const watching    = useWatching(userId);
   const favorites   = useFavorites(userId, { watching, watchlist });
   const customLists = useCustomLists(userId);
@@ -41,7 +44,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const history     = useHistory(userId);
 
   return (
-    <AppDataContext.Provider value={{ broadcastPreferences, userId, user, profile, refreshProfile, watchlist, watching, favorites, customLists, topLists, history }}>
+    <AppDataContext.Provider value={{ broadcastPreferences, userId, user, profile, refreshProfile, privateNotes, watchlist, watching, favorites, customLists, topLists, history }}>
       {children}
     </AppDataContext.Provider>
   );

@@ -196,6 +196,8 @@ if (posthogToken) {
         // unless network capture is enabled — kept so that turning it on later
         // can't start recording the Supabase auth calls with their tokens.
         maskCapturedNetworkRequestFn: (request) => {
+          // Private note bodies must never enter replay network recordings.
+          if (/\/(private_title_notes|rpc\/save_private_title_note|export-user-data)(?:[?/#]|$)/.test(request?.name || '')) return null;
           if (request?.name) request.name = redactSensitiveUrl(request.name);
           return request;
         },

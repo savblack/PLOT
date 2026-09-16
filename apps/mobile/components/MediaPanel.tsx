@@ -1,3 +1,4 @@
+import PrivateNote from './PrivateNote';
 import { buildTitleShareUrl } from '@plot/core/sharing.js';
 import { SHARING } from '@plot/core/copy/sharing.js';
 import { shareLink } from '../lib/share';
@@ -1030,6 +1031,8 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                     </Text>
                   </TouchableOpacity>
                 )}
+
+                <PrivateNote id={itemId} type={itemType} title={title} />
 
                 {watched && (
                   <View style={{ marginBottom: spacing.lg }}>
