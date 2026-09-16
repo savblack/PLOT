@@ -27,13 +27,13 @@ shadow is a legibility rescue only.
 | `--text-primary` | `#292924` | Charcoal ink. Never `#000`. |
 | `--text-secondary` | `#5F5A52` | Body copy on marketing, secondary labels in the app. |
 | `--text-muted` | `#6B655D` | 4.78:1 on the deeper cream, so it still passes on cards. |
-| `--accent` | `#E05578` | The pink for small text, icons, rings, rank numbers. Unchanged. |
-| `--accent-text` | `#B83558` | The accent darkened for small text on any cream. |
-| `--accent-fill` | `#DBE1B0` | Marshmallow-soft sage as a **fill** behind charcoal text. See below. |
-| `--on-accent-fill` | `#292924` | The only text colour that goes on the fill. 10.7:1. |
+| `--accent` | `#5F7030` | Soft green for small text, icons, rings, rank numbers. 4.9:1 on cream. |
+| `--accent-text` | `#5A6A2C` | The accent a step darker for the smallest labels. |
+| `--accent-fill` | `#FF88C8` | The brand pink as a **fill** behind charcoal text. See below. |
+| `--on-accent-fill` | `#292924` | The only text colour that goes on the fill. 6.69:1. |
 
-Dark mode is unchanged: the warm-neutral `#0c0c0c` / `#f0efe8` scale already fit, and
-the fill is the same sage in both themes.
+Dark mode keeps the warm-neutral `#0c0c0c` / `#f0efe8` scale; the accent lightens to
+`#C9D48A` there and the fill is the same pink in both themes.
 
 ### The wordmark
 
@@ -66,17 +66,17 @@ rendered page is the visual contract; this file is the prose for what code can't
 
 ### Accent and fill — two colours, two jobs
 
-The pink and the sage are not interchangeable.
+The green and the pink are not interchangeable.
 
-- **`--accent` (`#E05578` light / `#F06A88` dark)** colours *type and line*: small
+- **`--accent` (`#5F7030` light / `#C9D48A` dark, soft green)** colours *type and line*: small
   text, icons, focus and selection rings, rank numbers, the active tab underline. It is
   a signal you spend on the few things that earn it.
-- **`--accent-fill` (`#DBE1B0`, sage)** colours *surfaces*: the primary button, chips, the
-  Live badge, the sign-up pill. It only ever sits behind `--on-accent-fill` charcoal
-  text. It is too light to carry text itself and must never colour type, an icon, or a
-  border. (The pink `#FF88C8` fill was tried first and replaced by the sage.)
+- **`--accent-fill` (`#FF88C8`, the brand pink)** colours *surfaces*: the primary button,
+  chips, the Live badge, the sign-up pill. It only ever sits behind `--on-accent-fill`
+  charcoal text. It is too light to carry text itself (1.97:1 on cream) and must never
+  colour type, an icon, or a border.
 
-Neutral UI is **cream, charcoal and the warm greys.** Neither the pink nor the sage is a general-purpose
+Neutral UI is **cream, charcoal and the warm greys.** Neither the green nor the pink is a general-purpose
 palette colour. Semantic guide/status tokens are the separate, permitted exception for
 meaning.
 
@@ -148,11 +148,11 @@ on the glyphs.
     `--accent-fill-hover`, `--on-accent-fill` (surfaces), `--danger`, `--danger-dim`,
     `--danger-border`
 - Components (marketing `ui.css`, app `app.css`):
-  - **Buttons** are pills. Primary is the sage fill with charcoal text; secondary is the
+  - **Buttons** are pills. Primary is the pink fill with charcoal text; secondary is the
     deeper cream; ink is charcoal with cream text for the rare emphatic case. No outline
     buttons.
-  - **Chips** are small pills in the deeper cream; the sage fill marks the lead, a rank or
-    availability.
+  - **Chips** are small pills in the deeper cream; the pink fill marks the lead or a rank,
+    a sage tint (`#DBE1B0`, marketing only) marks availability.
   - **Cards and panels** are the deeper cream at 20px radius with no border and no shadow.
     Rows inside them separate with a hairline.
 - Semantic guide/status roles (meaning-bearing colours, not neutral surfaces):

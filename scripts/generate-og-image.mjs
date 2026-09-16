@@ -69,7 +69,7 @@ const html = `<!DOCTYPE html>
     width: 72px;
     height: 6px;
     border-radius: 3px;
-    background: #dbe1b0;
+    background: #ff88c8;
   }
 </style>
 </head>

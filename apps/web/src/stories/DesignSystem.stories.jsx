@@ -43,7 +43,7 @@ export const Palette = () => (
       <Swatch name="Fill hover" token="--accent-fill-hover" text="var(--on-accent-fill)" />
     </Row>
     <p style={{ maxWidth: 560, color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.55 }}>
-      The sage fill only ever sits behind charcoal text. The pink accent colours small text, icons and rings, and never fills a surface larger than a dot.
+      The pink fill only ever sits behind charcoal text. The green accent colours small text, icons and rings, and never fills a surface larger than a dot.
     </p>
   </div>
 );
