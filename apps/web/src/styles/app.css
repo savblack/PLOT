@@ -1865,6 +1865,8 @@ svg { stroke-width: 1.5; }
   gap: 24px;
   position: sticky;
   top: 1rem;
+  /* Above the stream, so the genre popover paints over the posters. */
+  z-index: 10;
 }
 .cal-mini-card {
   background: var(--surface);
@@ -2186,7 +2188,7 @@ svg { stroke-width: 1.5; }
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 12px;
 }
 .cal-release-arrows {
   display: flex;
@@ -5567,6 +5569,7 @@ a.provider-chip--link:hover {
      to say the row continues. Give the thumb back at hairline weight, always
      present rather than on hover, so it costs no layout shift. */
   .rail-scroll,
+  .cal-release-rail,
   .discover-binge-rail,
   .discover-chart-rail,
   .discover-plat-rail,
@@ -5576,6 +5579,7 @@ a.provider-chip--link:hover {
     scrollbar-color: var(--border-strong) transparent;
   }
   .rail-scroll::-webkit-scrollbar,
+  .cal-release-rail::-webkit-scrollbar,
   .discover-binge-rail::-webkit-scrollbar,
   .discover-chart-rail::-webkit-scrollbar,
   .discover-plat-rail::-webkit-scrollbar,
@@ -5585,6 +5589,7 @@ a.provider-chip--link:hover {
     height: 8px;
   }
   .rail-scroll::-webkit-scrollbar-track,
+  .cal-release-rail::-webkit-scrollbar-track,
   .discover-binge-rail::-webkit-scrollbar-track,
   .discover-chart-rail::-webkit-scrollbar-track,
   .discover-plat-rail::-webkit-scrollbar-track,
@@ -5593,6 +5598,7 @@ a.provider-chip--link:hover {
     background: transparent;
   }
   .rail-scroll::-webkit-scrollbar-thumb,
+  .cal-release-rail::-webkit-scrollbar-thumb,
   .discover-binge-rail::-webkit-scrollbar-thumb,
   .discover-chart-rail::-webkit-scrollbar-thumb,
   .discover-plat-rail::-webkit-scrollbar-thumb,
