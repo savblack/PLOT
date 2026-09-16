@@ -15,7 +15,7 @@ export const BROADCAST_GUIDE = {
   settings: 'Settings', saveRegion: 'Save region', regionSaved: 'Broadcast region saved.',
   storageError: 'Your browser could not save this setting. Please enable site storage and try again.',
   changeRegion: 'Change', backToGuide: 'Back to Guide',
-  title: 'Guide', subtitle: 'A little structure for your next night in.',
+  title: 'Guide', subtitle: 'Free-to-air TV',
   preview: 'Development preview · Free-to-air television',
   previewNote: 'Local feed evaluation. Channel choices are saved on this device only.',
   region: 'Broadcast region', regionNote: 'Capital-city feeds for now. Regional reception areas still need verification.',

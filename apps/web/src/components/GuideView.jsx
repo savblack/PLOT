@@ -10,6 +10,6 @@ export default function GuideView() {
   if (preferences.loading) return <p role="status">{COPY.loading}</p>;
   if (preferences.error) return <div role="alert"><p>{COPY.preferencesError}</p><button onClick={preferences.retry}>{COPY.retry}</button></div>;
   const market = GUIDE_REGIONS.find(m => m.id === preferences.value.market_id);
-  if (!market || !market.provider || market.scope === 'unavailable') return <section className="broadcast-guide"><h1>{COPY.title}</h1><p>{market ? COPY.unsupported : COPY.chooseMarket}</p><Link to="/settings?section=viewing">{COPY.settings}</Link></section>;
+  if (!market || !market.provider || market.scope === 'unavailable') return <section className="broadcast-guide"><p>{market ? COPY.unsupported : COPY.chooseMarket}</p><Link to="/settings?section=viewing">{COPY.settings}</Link></section>;
   return <BroadcastAgenda key={market.id} region={market.id} selection={preferences.value.channel_ids} saving={preferences.saving} onSave={channel_ids => preferences.save({ market_id: market.id, channel_ids })} />;
 }

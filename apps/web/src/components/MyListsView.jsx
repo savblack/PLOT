@@ -14,9 +14,11 @@ import KebabMenu from './KebabMenu.jsx';
 import ListCover from './ListCover.jsx';
 import { EVENTS, track } from '../lib/analytics.js';
 import { canCreateCustomList } from '@plot/core/premium.js';
-import { collectionPath, customListKey, titleCount, wantToWatchItems } from '@plot/core/listCollections.js';
+import { collectionPath, customListKey, titleCount, wantToWatchItems, searchCollectionTitles, TOP_LIST_SIZE } from '@plot/core/listCollections.js';
 import { ALL_TYPES, filterByTypeAndGenre, isTypeNarrowed } from '@plot/core/mediaFilters.js';
-import { TypeGenreFilter } from './ListCards.jsx';
+import { IconSearch } from './navIcons.jsx';
+import { posterUrl } from '../utils/images.js';
+import { CardGrid, ListCard, TypeGenreFilter } from './ListCards.jsx';
 import {
   CreateListModal, HeaderIconButton, ListSection, TopFiveSection, TrashIcon, WatchingSection,
 } from './ListSections.jsx';
@@ -31,7 +33,7 @@ import {
 const posters = (items) => items.map(i => i.poster_path);
 
 export default function MyListsView() {
-  const { user, profile, topLists, favorites, customLists, watching, watchlist } = useApp();
+  const { user, profile, topLists, favorites, customLists, watching, watchlist, openPanel } = useApp();
   const fw = favoriteWords(profile?.region);
   const navigate = useNavigate();
   const { entries: history, loading: historyLoading } = useHistory(user?.id);
@@ -41,6 +43,7 @@ export default function MyListsView() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [typeFilters,  setTypeFilters]  = useState(ALL_TYPES);
   const [genreFilters, setGenreFilters] = useState([]);
+  const [query, setQuery] = useState('');
 
   const want = useMemo(() => wantToWatchItems(watchlist.items, watching.items, localDateStr()), [watchlist.items, watching.items]);
 
@@ -57,6 +60,12 @@ export default function MyListsView() {
   // leaves the other lists' counts unchanged.
   const narrowed = isTypeNarrowed(typeFilters) || genreFilters.length > 0;
   const apply = (items) => filterByTypeAndGenre(items, typeFilters, genreFilters);
+  const searching = query.trim().length > 0;
+  const searchResults = searching ? searchCollectionTitles([
+    watching.items.map(item => ({ ...item, media_type: 'tv' })),
+    ...Object.entries(topLists.lists).map(([type, items]) => items.filter(item => item.rank <= TOP_LIST_SIZE).map(item => ({ ...item, media_type: type === 'tv' ? 'tv' : 'movie' }))),
+    want, favorites.favorites, ...lists.map(list => list.items || []), history,
+  ].map(items => apply(items || [])), query) : [];
   const coverCount = (items, emptyLabel) => {
     if (!narrowed) return titleCount(items.length, emptyLabel);
     const n = apply(items).length;
@@ -129,8 +138,11 @@ export default function MyListsView() {
 
   return (
     <div>
-      <div className="page-toolbar mylists-toolbar">
-        <span />
+      <div className="page-toolbar mylists-toolbar mylists-search-toolbar">
+        <label className="hist-search">
+          <IconSearch />
+          <input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder={CUSTOM_LISTS.searchPlaceholder} aria-label={CUSTOM_LISTS.searchPlaceholder} />
+        </label>
         <TypeGenreFilter
           mobileControls
           ariaLabel="Filter lists"
@@ -141,7 +153,18 @@ export default function MyListsView() {
         />
       </div>
 
-      <div className="discover-sections">
+      {searching ? (
+        <div className="discover-sections">
+          <ListSection title={CUSTOM_LISTS.searchResults}>
+            <p role="status">{searchResults.length ? CUSTOM_LISTS.searchCount(searchResults.length) : CUSTOM_LISTS.noSearchResults}</p>
+            <CardGrid>
+              {searchResults.map(item => (
+                <ListCard key={`${item.media_type || 'movie'}:${item.tmdb_id ?? item.id}`} title={item.title || item.name} img={posterUrl(item.poster_path, 'w185')} onOpen={() => openPanel(item.tmdb_id ?? item.id, item.media_type || 'movie')} />
+              ))}
+            </CardGrid>
+          </ListSection>
+        </div>
+      ) : <div className="discover-sections">
         <WatchingSection watching={watching} hidden={isTypeNarrowed(typeFilters) && !typeFilters.includes('tv')} />
 
         <TopFiveSection topLists={topLists} />
@@ -182,7 +205,7 @@ export default function MyListsView() {
             )}
           </div>
         </ListSection>
-      </div>
+      </div>}
 
       {creatingList && (
         <CreateListModal lists={lists} onConfirm={handleCreate} onClose={() => setCreatingList(false)} />

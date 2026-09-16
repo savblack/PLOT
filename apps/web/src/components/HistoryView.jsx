@@ -80,7 +80,7 @@ function YearCard({ year, isCurrentYear, entries, details, detailsLoading, genre
     dnf: entries.filter(e => e.dnf).length,
   });
   return (
-    <div className="hist-card">
+    <div className="hist-card hist-year-card">
       <div className="hist-card-head">
         <span className="hist-card-title">{isCurrentYear ? T.yearSoFar(year) : T.yearCardTitle(year)}</span>
         {detailsLoading && <span className="hist-card-note" aria-live="polite">{T.loadingInsights}</span>}
@@ -160,57 +160,51 @@ function MiniMonthCard({ year, monthIndex, monthGroups, onMonthIndex, entries, t
   );
 }
 
-function CrowdCard({ entries, details, detailsLoading, openPanel }) {
+function CrowdCard({ entries, details, openPanel }) {
   const cmp = crowdComparison(entries, details);
+  if (!cmp || cmp.compared < 3) return null;
   const sentence = crowdSentence(cmp);
   return (
     <div className="hist-card">
       <span className="hist-card-label">{T.crowdHeading}</span>
-      {cmp && cmp.compared >= 3 ? (
-        <div className="hist-card-body">
-          <span className="hist-card-lead">{sentence}</span>
-          <div className="hist-crowd-row">
-            {cmp.disagreements.map(({ entry }) => {
-              const img = posterUrl(entry.poster_path, 'w92');
-              return (
-                <button key={entry.id} type="button" className="hist-crowd-poster" onClick={() => openPanel(entry.tmdb_id, entry.media_type || 'movie')} aria-label={T.openTitle(entry.title)} title={entry.title}>
-                  {img && <img src={img} alt="" />}
-                </button>
-              );
-            })}
-            <span className="hist-card-note">{T.crowdDisagreements}</span>
-          </div>
+      <div className="hist-card-body">
+        <span className="hist-card-lead">{sentence}</span>
+        <div className="hist-crowd-row">
+          {cmp.disagreements.map(({ entry }) => {
+            const img = posterUrl(entry.poster_path, 'w92');
+            return (
+              <button key={entry.id} type="button" className="hist-crowd-poster" onClick={() => openPanel(entry.tmdb_id, entry.media_type || 'movie')} aria-label={T.openTitle(entry.title)} title={entry.title}>
+                {img && <img src={img} alt="" />}
+              </button>
+            );
+          })}
+          <span className="hist-card-note">{T.crowdDisagreements}</span>
         </div>
-      ) : (
-        <span className="hist-card-note">{detailsLoading ? T.loadingCard : T.crowdNeedsRatings}</span>
-      )}
+      </div>
     </div>
   );
 }
 
-function PeopleCard({ entries, details, detailsLoading, navigateTo }) {
+function PeopleCard({ entries, details, navigateTo }) {
   const people = recurringPeople(entries, details);
+  if (!people.length) return null;
   return (
     <div className="hist-card">
       <span className="hist-card-label">{T.peopleHeading}</span>
-      {people.length ? (
-        <div className="hist-card-body">
-          {people.map(p => {
-            const img = profileUrl(p.profile_path, 'w185');
-            return (
-              <button key={p.id} type="button" className="hist-person" onClick={() => navigateTo(`person/${p.id}`)}>
-                <span className="hist-person-avatar">{img && <img src={img} alt="" />}</span>
-                <span className="hist-person-text">
-                  <span className="hist-person-name">{p.name}</span>
-                  <span className="hist-card-note">{p.line}</span>
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      ) : (
-        <span className="hist-card-note">{detailsLoading ? T.loadingCard : T.peopleNeedsMore}</span>
-      )}
+      <div className="hist-card-body">
+        {people.map(p => {
+          const img = profileUrl(p.profile_path, 'w185');
+          return (
+            <button key={p.id} type="button" className="hist-person" onClick={() => navigateTo(`person/${p.id}`)}>
+              <span className="hist-person-avatar">{img && <img src={img} alt="" />}</span>
+              <span className="hist-person-text">
+                <span className="hist-person-name">{p.name}</span>
+                <span className="hist-card-note">{p.line}</span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -379,8 +373,8 @@ export function HistoryPage({ entries, details, detailsLoading, genreList, openP
               openPanel={openPanel}
             />
           )}
-          <CrowdCard entries={yearEntries} details={details} detailsLoading={detailsLoading} openPanel={openPanel} />
-          <PeopleCard entries={yearEntries} details={details} detailsLoading={detailsLoading} navigateTo={navigateTo} />
+          <CrowdCard entries={yearEntries} details={details} openPanel={openPanel} />
+          <PeopleCard entries={yearEntries} details={details} navigateTo={navigateTo} />
           <Filters
             types={types} setTypes={setTypes}
             genres={genres} setGenres={setGenres} genreOptions={genreOptions}

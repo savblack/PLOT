@@ -4,7 +4,23 @@ import { useEffect, useRef, useState } from 'react';
 import { SETTINGS_SECTIONS, searchSettingsSections } from '@plot/core/settings.js';
 import { SETTINGS_VIEW as T } from '../copy/settingsView.js';
 import { COMMON } from '../copy/common.js';
+import { IconSearch } from './navIcons.jsx';
 import './SettingsPage.css';
+
+export function SettingsTextAction({ children, onClick, disabled = false, tone = 'default', label }) {
+  return (
+    <button
+      type="button"
+      className={`settings-text-action${tone === 'danger' ? ' settings-text-action--danger' : ''}`}
+      aria-label={label}
+      onClick={onClick}
+      disabled={disabled}
+    >
+      <span>{children}</span>
+      <span aria-hidden="true">→</span>
+    </button>
+  );
+}
 
 export function SettingsPreferenceRow({ label, value, onEdit, disabled = false }) {
   return (
@@ -13,9 +29,9 @@ export function SettingsPreferenceRow({ label, value, onEdit, disabled = false }
         <span className="settings-row-label">{label}</span>
         <span className="settings-selection">{value}</span>
       </div>
-      <button type="button" className="settings-text-action" aria-label={T.page.editSetting(label)} onClick={onEdit} disabled={disabled}>
+      <SettingsTextAction label={T.page.editSetting(label)} onClick={onEdit} disabled={disabled}>
         {COMMON.edit}
-      </button>
+      </SettingsTextAction>
     </div>
   );
 }
@@ -44,15 +60,17 @@ export default function SettingsPage({ section = 'account', onSection, onSignOut
   return (
     <div className="settings-page">
       <header className="settings-page-heading">
-        <div><h1>{T.page.title}</h1><p>{T.page.subtitle}</p></div>
-        <input type="search" className="settings-search" aria-label={T.page.search} placeholder={T.page.search} value={query} onChange={event => setQuery(event.target.value)} />
+        <label className="hist-search settings-search">
+          <IconSearch />
+          <input type="search" aria-label={T.page.search} placeholder={T.page.search} value={query} onChange={event => setQuery(event.target.value)} />
+        </label>
       </header>
       <div className="settings-layout">
         <nav ref={navRef} className="settings-section-nav" aria-label={T.page.navigation}>
           {SETTINGS_SECTIONS.map(item => (
             <button key={item.id} type="button" aria-current={active.id === item.id && !query ? 'page' : undefined} onClick={() => select(item.id)}>{item.title}</button>
           ))}
-          <button type="button" className="settings-sign-out" onClick={onSignOut}>{T.signOut}</button>
+          <button type="button" className="settings-sign-out" onClick={onSignOut}>{T.signOut}<span aria-hidden="true"> →</span></button>
         </nav>
         <div className="settings-detail">
           {query.trim() ? (

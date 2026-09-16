@@ -1,10 +1,8 @@
 /* Web settings layout. Native uses the same core section/copy definitions. */
 .settings-page { max-width: 1240px; margin: 0 auto; padding: 2rem var(--gut) 3rem; }
-.settings-page-heading { display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; margin-bottom: 2rem; }
-.settings-page h1 { font: 400 3rem/1.1 var(--font-serif); margin: 0 0 .6rem; }
+.settings-page-heading { display: flex; align-items: center; justify-content: flex-end; gap: 1.5rem; margin-bottom: 2rem; }
 .settings-page p { color: var(--text-secondary); line-height: 1.6; }
-.settings-page-heading p, .settings-detail-heading p { font-size: .875rem; margin: .5rem 0 0; }
-.settings-search { min-height: 44px; width: 230px; padding: .6rem 1rem; border: 1px solid var(--border-strong); border-radius: var(--radius-pill); background: var(--surface); color: var(--text-primary); font: inherit; font-size: .85rem; }
+.settings-detail-heading p { font-size: .875rem; margin: .5rem 0 0; }
 .settings-layout { display: grid; grid-template-columns: 190px minmax(0, 1fr); gap: 40px; border-top: 1px solid var(--border); padding-top: 2rem; }
 .settings-section-nav { display: flex; flex-direction: column; gap: .35rem; align-self: start; position: sticky; top: calc(var(--header-h) + 1rem); }
 .settings-section-nav button { background: transparent; border: 0; padding: .75rem .9rem; text-align: left; min-height: 44px; border-radius: var(--radius-md); color: var(--text-secondary); font: inherit; font-size: .85rem; cursor: pointer; }
@@ -19,8 +17,8 @@
 .settings-page .settings-row { cursor: default; min-height: 80px; padding: 1rem 0; border-bottom: 1px solid var(--border); border-radius: 0; gap: 1rem; }
 .settings-page .settings-row-icon { display: none; }
 .settings-page .settings-row-left { min-width: 0; flex: 1; }
-.settings-page .settings-text-action { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: .5rem 1rem; border: 1px solid var(--border-strong); border-radius: var(--radius-pill); background: var(--surface); white-space: nowrap; text-decoration: none; font: inherit; font-size: .8rem; }
-.settings-page .settings-text-action:hover { border-color: var(--accent); color: var(--accent-text); }
+.settings-page .settings-text-action { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; min-width: 44px; gap: .4rem; padding: .5rem 0; border: 0; border-radius: 0; background: transparent; white-space: nowrap; text-decoration: none; font: inherit; font-size: .8rem; }
+.settings-page .settings-text-action:hover:not(:disabled) { color: var(--accent-text); }
 .settings-page .settings-text-action:disabled { opacity: .55; cursor: wait; }
 .settings-preference-copy { min-width: 0; }
 .settings-selection { display: block; color: var(--text-secondary); font-size: .8rem; margin-top: .4rem; line-height: 1.6; overflow-wrap: anywhere; }
@@ -44,9 +42,9 @@
 .settings-billing-cycle button[aria-pressed="true"] { background: var(--text-primary); color: var(--surface); }
 .settings-billing-actions { display: flex; gap: 1.5rem; justify-content: space-between; align-items: center; margin-top: 1.5rem; }
 .settings-billing-actions p { font-size: .8rem; flex: 1; }
-.settings-billing-actions .btn { flex-shrink: 0; width: auto; }
+.settings-billing-actions .settings-text-action { flex-shrink: 0; width: auto; }
 .settings-support { margin-top: 1.5rem; border-top: 1px solid var(--border); padding-top: 1.5rem; }
-.settings-support .btn { margin: .5rem 0; width: auto; }
+.settings-support .settings-text-action { margin: .5rem 0; width: auto; }
 .settings-error { color: var(--danger) !important; border: 1px solid var(--danger-border); background: var(--danger-dim); padding: .75rem; border-radius: var(--radius-md); margin-bottom: 1rem; }
 .settings-danger-details { margin-top: 2rem; }
 .settings-danger-details summary { min-height: 44px; cursor: pointer; color: var(--danger); }
@@ -73,3 +71,8 @@
 
 .settings-page .settings-row.interactive-surface { cursor: pointer; }
 .settings-page .settings-row:not(.interactive-surface):hover { background: transparent; }
+
+.settings-page .settings-text-action--danger:hover:not(:disabled) { color: var(--danger); }
+
+/* The shared search shell supplies the same focus border as History. */
+.settings-page .settings-search input:focus-visible { outline: none; }

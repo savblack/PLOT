@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { APP_NAV_ITEMS, isActiveView, titleForView } from '../navigation.js';
 import { useNotifications } from '../hooks/useNotifications.js';
 import { APP_SHELL } from '../copy/appShell.js';
+import { SETTINGS_VIEW } from '../copy/settingsView.js';
+import { BROADCAST_GUIDE } from '@plot/core/copy/broadcastGuide.js';
 import AppSidebar from './AppSidebar.jsx';
 import {
   IconMenu, IconClose, IconSearch, IconArrowUp,
@@ -93,6 +95,9 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
     ? (isOwnProfile ? APP_SHELL.profile : `@${currentView.slice(2)}`)
     : (APP_NAV_ITEMS.find(item => item.id === currentView)?.label ?? pageTitle);
 
+  const pageSubtitle = currentView === 'settings' ? SETTINGS_VIEW.page.subtitle
+    : currentView === 'guide' ? BROADCAST_GUIDE.subtitle : null;
+
   return (
     <div className={`app-shell${panelOpen ? ' panel-docked' : ''}`}>
       {/* ── Desktop sidebar ── */}
@@ -152,7 +157,8 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
         <div className="app-main-inner">
           {/* Sidebar widths only — below them the header above carries the
               title and this is display: none. */}
-          <h1 className="app-page-heading">{desktopTitle}</h1>
+          <h1 className={`app-page-heading${pageSubtitle ? ' app-page-heading--with-subtitle' : ''}`}>{desktopTitle}</h1>
+          {pageSubtitle && <p className="app-page-subtitle">{pageSubtitle}</p>}
           {children}
         </div>
       </main>

@@ -49,7 +49,7 @@ export function BroadcastAgenda({ region, selection, onSave, saving = false, end
     else setSaveError(true);
   }
   return <main className="broadcast-guide">
-    <header className="broadcast-heading"><p>{preview ? COPY.preview : COPY.kicker}</p><h1>{COPY.title}<span>.</span></h1><p>{COPY.subtitle}</p></header>
+    {preview && <header className="broadcast-heading"><h1>{COPY.title}</h1><p>{COPY.subtitle}</p></header>}
     <div className="broadcast-layout">
       <aside className="broadcast-sidebar">
         <div className="broadcast-side-title"><h2>{COPY.channels}</h2><span>{visibleChannels.length}/{channels.length}</span></div>
