@@ -1,0 +1,294 @@
+[
+  {
+    "id": "Sydney",
+    "name": "Sydney",
+    "country": "AU",
+    "timezone": "Australia/Sydney",
+    "provider": "mjh",
+    "feedPath": "au/Sydney",
+    "scope": "capital",
+    "days": 7
+  },
+  {
+    "id": "Melbourne",
+    "name": "Melbourne",
+    "country": "AU",
+    "timezone": "Australia/Melbourne",
+    "provider": "mjh",
+    "feedPath": "au/Melbourne",
+    "scope": "capital",
+    "days": 7
+  },
+  {
+    "id": "Brisbane",
+    "name": "Brisbane",
+    "country": "AU",
+    "timezone": "Australia/Brisbane",
+    "provider": "mjh",
+    "feedPath": "au/Brisbane",
+    "scope": "capital",
+    "days": 7
+  },
+  {
+    "id": "Adelaide",
+    "name": "Adelaide",
+    "country": "AU",
+    "timezone": "Australia/Adelaide",
+    "provider": "mjh",
+    "feedPath": "au/Adelaide",
+    "scope": "capital",
+    "days": 7
+  },
+  {
+    "id": "Perth",
+    "name": "Perth",
+    "country": "AU",
+    "timezone": "Australia/Perth",
+    "provider": "mjh",
+    "feedPath": "au/Perth",
+    "scope": "capital",
+    "days": 7
+  },
+  {
+    "id": "Hobart",
+    "name": "Hobart",
+    "country": "AU",
+    "timezone": "Australia/Hobart",
+    "provider": "mjh",
+    "feedPath": "au/Hobart",
+    "scope": "capital",
+    "days": 7
+  },
+  {
+    "id": "Darwin",
+    "name": "Darwin",
+    "country": "AU",
+    "timezone": "Australia/Darwin",
+    "provider": "mjh",
+    "feedPath": "au/Darwin",
+    "scope": "capital",
+    "days": 7
+  },
+  {
+    "id": "Canberra",
+    "name": "Canberra",
+    "country": "AU",
+    "timezone": "Australia/Sydney",
+    "provider": "mjh",
+    "feedPath": "au/Canberra",
+    "scope": "capital",
+    "days": 7
+  },
+  {
+    "id": "NZ-national",
+    "name": "New Zealand",
+    "country": "NZ",
+    "timezone": "Pacific/Auckland",
+    "provider": "mjh",
+    "feedPath": "nz",
+    "scope": "national",
+    "days": 7
+  },
+  {
+    "id": "US-NewYork",
+    "name": "New York, NY",
+    "country": "US",
+    "timezone": "America/New_York",
+    "provider": "tvpassport",
+    "scope": "starter",
+    "days": 2,
+    "channels": [
+      {
+        "id": "tvpassport:1769",
+        "name": "ABC (WABC) New York, NY",
+        "siteId": "abc-wabc-new-york-ny/1769"
+      },
+      {
+        "id": "tvpassport:1766",
+        "name": "CBS (WCBS) New York, NY",
+        "siteId": "cbs-wcbs-new-york-ny/1766"
+      },
+      {
+        "id": "tvpassport:1767",
+        "name": "NBC (WNBC) New York, NY",
+        "siteId": "nbc-wnbc-new-york-ny/1767"
+      },
+      {
+        "id": "tvpassport:1638",
+        "name": "FOX (WNYW) New York, NY",
+        "siteId": "fox-wnyw-new-york-ny/1638"
+      },
+      {
+        "id": "tvpassport:1774",
+        "name": "PBS (WNET) New York, NY",
+        "siteId": "pbs-wnet-new-york-ny/1774"
+      }
+    ]
+  },
+  {
+    "id": "US-LosAngeles",
+    "name": "Los Angeles, CA",
+    "country": "US",
+    "timezone": "America/Los_Angeles",
+    "provider": "tvpassport",
+    "scope": "starter",
+    "days": 2,
+    "channels": [
+      {
+        "id": "tvpassport:2589",
+        "name": "ABC (KABC) Los Angeles, CA",
+        "siteId": "abc-kabc-los-angeles-ca/2589"
+      },
+      {
+        "id": "tvpassport:2172",
+        "name": "CBS (KCBS) Los Angeles, CA",
+        "siteId": "cbs-kcbs-los-angeles-ca/2172"
+      },
+      {
+        "id": "tvpassport:2588",
+        "name": "NBC (KNBC) Los Angeles, CA",
+        "siteId": "nbc-knbc-los-angeles-ca/2588"
+      },
+      {
+        "id": "tvpassport:1949",
+        "name": "FOX (KTTV) Los Angeles, CA",
+        "siteId": "fox-kttv-los-angeles-ca/1949"
+      }
+    ]
+  },
+  {
+    "id": "US-Chicago",
+    "name": "Chicago, IL",
+    "country": "US",
+    "timezone": "America/Chicago",
+    "provider": "tvpassport",
+    "scope": "starter",
+    "days": 2,
+    "channels": [
+      {
+        "id": "tvpassport:1608",
+        "name": "ABC (WLS) Chicago, IL",
+        "siteId": "abc-wls-chicago-il/1608"
+      },
+      {
+        "id": "tvpassport:1830",
+        "name": "CBS (WBBM) Chicago, IL",
+        "siteId": "cbs-wbbm-chicago-il/1830"
+      },
+      {
+        "id": "tvpassport:1831",
+        "name": "NBC (WMAQ) Chicago, IL",
+        "siteId": "nbc-wmaq-chicago-il/1831"
+      },
+      {
+        "id": "tvpassport:1606",
+        "name": "FOX (WFLD) Chicago, IL",
+        "siteId": "fox-wfld-chicago-il/1606"
+      },
+      {
+        "id": "tvpassport:1832",
+        "name": "PBS (WTTW) Chicago, IL",
+        "siteId": "pbs-wttw-chicago-il/1832"
+      }
+    ]
+  },
+  {
+    "id": "CA-Toronto",
+    "name": "Toronto, ON",
+    "country": "CA",
+    "timezone": "America/Toronto",
+    "provider": "tvpassport",
+    "scope": "starter",
+    "days": 2,
+    "channels": [
+      {
+        "id": "tvpassport:34",
+        "name": "CBC (CBLT) Toronto, ON",
+        "siteId": "cbc-cblt-toronto-on/34"
+      },
+      {
+        "id": "tvpassport:39",
+        "name": "CTV (CFTO) Toronto, ON",
+        "siteId": "ctv-cfto-toronto-on/39"
+      },
+      {
+        "id": "tvpassport:42",
+        "name": "CITY Toronto, ON",
+        "siteId": "city-toronto-on/42"
+      },
+      {
+        "id": "tvpassport:13585",
+        "name": "Global (CIII-DT-41) Toronto",
+        "siteId": "global-ciii-dt-41-toronto/13585"
+      }
+    ]
+  },
+  {
+    "id": "GB-London",
+    "name": "London",
+    "country": "GB",
+    "timezone": "Europe/London",
+    "provider": "freeview",
+    "networkId": "64257",
+    "scope": "unavailable",
+    "days": 2,
+    "channels": [
+      {
+        "id": "freeview:4164",
+        "name": "BBC ONE Lon",
+        "siteId": "4164"
+      },
+      {
+        "id": "freeview:4287",
+        "name": "BBC TWO",
+        "siteId": "4287"
+      },
+      {
+        "id": "freeview:8384",
+        "name": "Channel 4",
+        "siteId": "8384"
+      },
+      {
+        "id": "freeview:8261",
+        "name": "ITV1",
+        "siteId": "8261"
+      }
+    ]
+  },
+  {
+    "id": "AU-other",
+    "name": "Other area",
+    "country": "AU",
+    "timezone": null,
+    "provider": null,
+    "scope": "unsupported",
+    "days": 0
+  },
+  {
+    "id": "US-other",
+    "name": "Other area",
+    "country": "US",
+    "timezone": null,
+    "provider": null,
+    "scope": "unsupported",
+    "days": 0
+  },
+  {
+    "id": "CA-other",
+    "name": "Other area",
+    "country": "CA",
+    "timezone": null,
+    "provider": null,
+    "scope": "unsupported",
+    "days": 0
+  },
+  {
+    "id": "GB-other",
+    "name": "Other area",
+    "country": "GB",
+    "timezone": null,
+    "provider": null,
+    "scope": "unsupported",
+    "days": 0
+  }
+]

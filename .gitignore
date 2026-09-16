@@ -46,3 +46,7 @@ apps/website/images/product/*.gif
 marketing/preview/out/
 # Manually generated marketing posts (media + per-day copy docs)
 plot-posts/
+# Downloaded broadcast-feed snapshots; generated locally, never committed.
+.guide-cache/
+# Python feed importer bytecode.
+scripts/guide/__pycache__/
