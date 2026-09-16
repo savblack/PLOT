@@ -54,6 +54,7 @@ export default function MobilePageControls({ groups = [], options, value, onChan
                 {option.label}<span aria-hidden="true">{value === option.id ? '✓' : ''}</span>
               </button>
             )) : <>
+              <div className="mobile-controls-scroll">
               {visible.map(group => (
                 <fieldset className="mobile-controls-group" key={group.heading}>
                   <legend>{group.heading}</legend>
@@ -63,6 +64,7 @@ export default function MobilePageControls({ groups = [], options, value, onChan
                   </div>
                 </fieldset>
               ))}
+              </div>
               <div className="mobile-controls-footer">
                 <button type="button" className="mobile-controls-reset" onClick={() => visible.forEach(group => group.onChange(group.defaultValue ?? []))}>{MOBILE_CONTROLS.reset}</button>
                 <button type="button" className="btn btn-primary btn-sm" onClick={close}>{COMMON.done}</button>

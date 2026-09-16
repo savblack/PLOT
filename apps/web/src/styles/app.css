@@ -2700,8 +2700,7 @@ svg { stroke-width: 1.5; }
 }
 
 /* ── Top 5 podium ──
-   #1 is a tall poster on the left; 2-5 share the row beside it. Below the
-   sidebar breakpoint the podium stacks: #1 alone, then the four. */
+   Mobile uses equal slots in a horizontal shelf; desktop keeps the podium. */
 .top5 {
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
@@ -2799,13 +2798,34 @@ svg { stroke-width: 1.5; }
 }
 .top5-slot--first .top5-rank { font-size: 2.75rem; }
 .top5-rank.rank-top3 { color: var(--text-secondary); }
-.top5-rank.rank-rest { color: var(--text-muted); }
+.top5-rank.rank-rest { color: var(--text-secondary); }
 .top5-hint {
+  color: var(--text-secondary);
   font-size: 0.75rem;
   font-style: italic;
   line-height: 1.3;
   padding: 0 0.5rem;
   text-align: center;
+}
+
+@media (max-width: 1023px) {
+  .top5 {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: 116px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    scroll-padding-inline: var(--gut);
+    padding-bottom: 12px;
+    scrollbar-width: none;
+  }
+  .top5::-webkit-scrollbar { display: none; }
+  .top5-rest { display: contents; }
+  .top5-slot { scroll-snap-align: start; }
+  .top5-slot--first .top5-rank { font-size: 1.75rem; }
+  .top5-slot--first .top5-title { font-size: 0.82rem; }
+  .top5-slot--first .discover-rank-badge { font-size: 2rem; left: 14px; bottom: 9px; }
 }
 
 /* ── Collection covers ──
@@ -5893,8 +5913,8 @@ a.provider-chip--link:hover {
   flex-shrink: 0;
   line-height: 1;
 }
-.discover-chart-rank.rank-top3 { color: var(--text-secondary); }
-.discover-chart-rank.rank-rest { color: var(--text-muted); font-size: 1.5rem; }
+.discover-chart-rank.rank-top3 { color: var(--accent); }
+.discover-chart-rank.rank-rest { color: var(--accent); font-size: 1.5rem; }
 
 .discover-chart-poster {
   width: 52px;
@@ -6988,12 +7008,16 @@ a.provider-chip--link:hover {
   bottom: calc(60px + env(safe-area-inset-bottom, 0px));
   width: 100%;
   max-height: calc(90dvh - 60px - env(safe-area-inset-bottom, 0px));
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   overscroll-behavior: contain;
   background: var(--surface);
   border-radius: 18px 18px 0 0;
   padding: 10px 20px 20px;
 }
+.mobile-controls-scroll { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.mobile-controls-handle, .mobile-controls-heading, .mobile-controls-footer { flex-shrink: 0; }
 .mobile-controls-handle { width: 32px; height: 3px; border-radius: 3px; background: var(--border-strong); margin: 0 auto 14px; }
 .mobile-controls-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
 .mobile-controls-heading h2 { font-family: var(--font-serif); font-size: 26px; font-weight: 400; }
@@ -7023,8 +7047,18 @@ a.provider-chip--link:hover {
   .scroll-top-btn { bottom: calc(1rem + env(safe-area-inset-bottom, 0px)); }
   .app-shell:has(.mobile-controls-anchor) .scroll-top-btn { bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
   .desktop-page-filter, .cal-toolbar .cal-scope { display: none; }
+  .page-toolbar-date { display: none; }
+  .page-toolbar, .page-toolbar.cal-toolbar { padding: 0; height: 0; margin: 0; }
   .mylists-toolbar { padding: 0; height: 0; margin: 0; }
   .mobile-page-controls { position: fixed; bottom: 0; left: 0; right: 0; z-index: 210; display: flex; justify-content: center; align-items: center; height: calc(60px + env(safe-area-inset-bottom, 0px)); padding-bottom: env(safe-area-inset-bottom, 0px); border-top: 1px solid var(--border); background: var(--surface); }
   .mobile-controls-trigger { min-width: 124px; min-height: 44px; display: flex; align-items: center; justify-content: center; gap: 9px; background: none; border: 0; color: var(--text-primary); font: inherit; font-size: 14px; font-weight: 500; cursor: pointer; }
   .mobile-controls-trigger svg { width: 12px; height: 12px; stroke: var(--text-muted); stroke-width: 1.7; fill: none; }
+}
+
+@media (max-width: 600px) {
+  .top5-slot--empty { min-height: 104px; padding: 8px 0; }
+  .list-row-title { white-space: normal; overflow-wrap: anywhere; }
+  .mylists-card-title, .top5-title { display: block; overflow: visible; overflow-wrap: anywhere; }
+  .panel-title { overflow-wrap: anywhere; }
+  .cal-stream-info { min-width: 100px; }
 }
