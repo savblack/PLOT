@@ -75,7 +75,7 @@ const layout = ({ preheader, eyebrow, heading, intro, content, note, safety }) =
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light">
   <meta name="supported-color-schemes" content="light">
-  <title>PLOT</title>
+  <title>plot</title>
   <!--[if !mso]><!-->
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Gabarito:wght@700&family=Instrument+Serif&display=swap" rel="stylesheet">
   <!--<![endif]-->
@@ -107,7 +107,7 @@ const layout = ({ preheader, eyebrow, heading, intro, content, note, safety }) =
             <td align="center" style="padding: 28px 24px 0;">
               <p style="margin: 0 0 6px; font-family: ${t.sans}; font-size: 12px; line-height: 1.6; color: ${t.textMuted};">${safety}</p>
               <p style="margin: 0; font-family: ${t.sans}; font-size: 12px; line-height: 1.6; color: ${t.textMuted};">
-                <a href="${SITE_URL}" target="_blank" style="color: ${t.textMuted}; text-decoration: underline;">PLOT</a>
+                <a href="${SITE_URL}" target="_blank" style="color: ${t.textMuted}; text-decoration: underline;">plot</a>
                 &middot; Your film and TV companion.
                 <br>SUSUMU HOUSE &middot; Level 1, 63-73 Ann Street, Surry Hills, NSW 2010
               </p>
@@ -141,38 +141,38 @@ const authUrl = (type) =>
 
 const emails = {
   confirmation: {
-    subject: 'Confirm your email for PLOT',
+    subject: 'Confirm your email for plot',
     file: 'confirmation.html',
     html: layout({
       preheader: 'One click and your film & TV journal is ready.',
       eyebrow: 'New account',
-      heading: 'Welcome to PLOT',
+      heading: 'Welcome to plot',
       intro: "Confirm your email to start logging, rating, and lining up what to watch next.",
       content: button(authUrl('signup'), 'Confirm email') + fallbackLink(authUrl('signup')),
-      note: 'This is the email most new PLOT members see first, so we kept it simple: one step in, then straight to your watch journal.',
-      safety: "Didn't sign up for PLOT? You can safely ignore this email.",
+      note: 'This is the email most new plot members see first, so we kept it simple: one step in, then straight to your watch journal.',
+      safety: "Didn't sign up for plot? You can safely ignore this email.",
     }),
   },
   recovery: {
-    subject: 'Reset your PLOT password',
+    subject: 'Reset your plot password',
     file: 'recovery.html',
     html: layout({
-      preheader: 'Set a new password for your PLOT account.',
+      preheader: 'Set a new password for your plot account.',
       eyebrow: 'Account security',
       heading: 'Reset your password',
-      intro: 'We received a request to reset your PLOT password. If that was you, set a new one below.',
+      intro: 'We received a request to reset your plot password. If that was you, set a new one below.',
       content: button(authUrl('recovery'), 'Set a new password') + fallbackLink(authUrl('recovery')),
       note: 'For security, only use the latest reset email you requested.',
       safety: "Didn't request this? You can safely ignore this email, your password won't change.",
     }),
   },
   magic_link: {
-    subject: 'Your PLOT sign-in link',
+    subject: 'Your plot sign-in link',
     file: 'magic-link.html',
     html: layout({
-      preheader: 'Your one-time sign-in link for PLOT.',
+      preheader: 'Your one-time sign-in link for plot.',
       eyebrow: 'Sign in',
-      heading: 'Sign in to PLOT',
+      heading: 'Sign in to plot',
       intro: "Here's your one-time sign-in link. It only works once and expires in an hour.",
       content: button(authUrl('magiclink'), 'Sign in') + fallbackLink(authUrl('magiclink')),
       note: 'If you requested multiple sign-in links, use the newest one.',
@@ -180,39 +180,39 @@ const emails = {
     }),
   },
   email_change: {
-    subject: 'Confirm your new PLOT email',
+    subject: 'Confirm your new plot email',
     file: 'email-change.html',
     html: layout({
-      preheader: 'Confirm the new email address for your PLOT account.',
+      preheader: 'Confirm the new email address for your plot account.',
       eyebrow: 'Account change',
       heading: 'Confirm your new email',
-      intro: 'Follow the link below to update the email on your PLOT account from {{ .Email }} to {{ .NewEmail }}.',
+      intro: 'Follow the link below to update the email on your plot account from {{ .Email }} to {{ .NewEmail }}.',
       content: button(authUrl('email_change'), 'Confirm change') + fallbackLink(authUrl('email_change')),
       note: 'Nothing changes until you confirm this new address.',
       safety: "Didn't request this change? You can safely ignore this email.",
     }),
   },
   invite: {
-    subject: "You're invited to PLOT",
+    subject: "You're invited to plot",
     file: 'invite.html',
     html: layout({
       preheader: 'A journal for everything you watch.',
       eyebrow: 'Invite',
       heading: "You're invited",
-      intro: "You’ve been invited to join PLOT, where you’ll always know what to watch next.",
+      intro: "You’ve been invited to join plot, where you’ll always know what to watch next.",
       content: button(authUrl('invite'), 'Accept invite') + fallbackLink(authUrl('invite')),
       note: 'Open the invite, set up your account, and start building your watch history.',
       safety: "Not expecting this invite? You can safely ignore this email.",
     }),
   },
   reauthentication: {
-    subject: 'Your PLOT confirmation code',
+    subject: 'Your plot confirmation code',
     file: 'reauthentication.html',
     html: layout({
       preheader: 'Your one-time confirmation code.',
       eyebrow: 'Security check',
       heading: "Confirm it's you",
-      intro: 'Enter this code in PLOT to confirm your identity before finishing this action. It expires in an hour.',
+      intro: 'Enter this code in plot to confirm your identity before finishing this action. It expires in an hour.',
       content: `
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
   <tr>
@@ -221,7 +221,7 @@ const emails = {
     </td>
   </tr>
 </table>`,
-      note: 'Use this code to finish signing in or confirming your action in PLOT.',
+      note: 'Use this code to finish signing in or confirming your action in plot.',
       safety: "Didn't request a code? You can safely ignore this email.",
     }),
   },

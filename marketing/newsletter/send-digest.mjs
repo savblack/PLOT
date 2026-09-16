@@ -342,7 +342,7 @@ const main = async () => {
   const dateLabel = now.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
   const data = { dateLabel, featured, kicker: "This week's No.1", chart, weekend, streaming };
   const issueHtml = buildHtml(data, `${SITE}/?unsubscribe_preview`);
-  const subject = 'This week in film & TV — PLOT';
+  const subject = 'This week in film & TV — plot';
   const localIssueDate = datePartsInTz(now);
   const weekStart = addDays(localIssueDate.date, -ISSUE_WEEK_OFFSET[localIssueDate.weekday]);
 
