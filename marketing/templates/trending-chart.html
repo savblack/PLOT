@@ -7,7 +7,31 @@
   /* ── Chart card: a flat dark table. No art behind the rows: the chart IS the
      image, so nothing competes with the names. One hairline per row, a fixed
      column grid so ranks, posters, names and movement all align. ── */
-  .chart-card { justify-content: flex-start; padding-top: calc(var(--pad) + 124px); }
+  .chart-card { justify-content: flex-start; padding-top: calc(var(--pad) + 176px); }
+  /* The chart is the one light-mode card: cream ground, charcoal ink
+     (colors.light). The pink can't carry text on cream (1.97:1), so here it is
+     a FILL: charcoal type on pink pills for the date, NEW and up-moves. */
+  body.light {
+    --bg: #F8F2EA;
+    --text: #292924;
+    --text-dim: #5F5A52;
+    --text-faint: #6B655D;
+    --hair: rgba(41,41,36,0.14);
+  }
+  body.light .plot-mark, body.light .plot-footer .site { text-shadow: none; }
+  body.light .plot-footer .site b { color: var(--text); font-weight: 700; }
+  body.light .header .display .wk {
+    color: var(--text); background: var(--accent);
+    padding: 0 0.22em; margin-left: 0.04em; border-radius: 0.18em;
+    box-decoration-break: clone; -webkit-box-decoration-break: clone;
+  }
+  body.light .row.top-rank .rank { color: var(--text); }
+  body.light .row img.thumb { border-color: rgba(41,41,36,0.12); }
+  body.light .move.up, body.light .move.new {
+    color: var(--text); background: var(--accent);
+    justify-self: end; padding: 4px 12px; border-radius: 999px;
+  }
+  body.light .move.down { color: var(--text-faint); }
   .header { position: relative; z-index: 2; margin-bottom: 40px; }
   /* Kicker sits top-right, on the wordmark's line, so the header is just the week. */
   .chart-card > .meta-caps { position: absolute; top: calc(var(--pad) + 18px); right: var(--pad); z-index: 4; font-size: 26px; }
@@ -17,7 +41,7 @@
     position: relative; z-index: 2; flex: 1; min-height: 0;
     display: flex; flex-direction: column;
     overflow: hidden;
-    border-top: 1px solid rgba(240,239,232,0.14);
+    border-top: 1px solid var(--hair, rgba(240,239,232,0.14));
   }
   .row {
     display: grid;
@@ -26,7 +50,7 @@
     align-items: center;
     flex: 1;
     padding: 12px 0;
-    border-bottom: 1px solid rgba(240,239,232,0.14);
+    border-bottom: 1px solid var(--hair, rgba(240,239,232,0.14));
   }
   .row .rank {
     font-family: var(--font-display);
@@ -55,13 +79,13 @@
   .detail .display { font-size: 150px; max-width: 96%; }
 
   @media (min-aspect-ratio: 4/3) {
-    .chart-card { padding-top: calc(var(--pad) + 84px); }
+    .chart-card { padding-top: calc(var(--pad) + 124px); }
     .header { margin-bottom: 20px; }
     .chart-card > .meta-caps { top: calc(var(--pad) + 12px); font-size: 22px; }
     .header .display { font-size: 56px; }
-    .row { grid-template-columns: 52px 52px minmax(0, 1fr) 104px; column-gap: 18px; padding: 4px 0; }
+    .row { grid-template-columns: 52px 50px minmax(0, 1fr) 104px; column-gap: 18px; padding: 2px 0; }
     .row .rank { font-size: 38px; }
-    .row img.thumb { width: 52px; }
+    .row img.thumb { width: 50px; }
     .row .name { font-size: 30px; }
     .move { font-size: 24px; }
     .move.new { font-size: 20px; }
@@ -76,11 +100,11 @@
     }
     .rows-10::before {
       content: ''; position: absolute; top: 0; bottom: 0; left: 50%;
-      width: 1px; background: rgba(240,239,232,0.14);
+      width: 1px; background: var(--hair, rgba(240,239,232,0.14));
     }
-    .rows-10 .row { grid-template-columns: 48px 46px minmax(0, 1fr) 88px; column-gap: 16px; padding: 4px 0; }
+    .rows-10 .row { grid-template-columns: 48px 44px minmax(0, 1fr) 88px; column-gap: 16px; padding: 2px 0; }
     .rows-10 .row .rank { font-size: 36px; }
-    .rows-10 .row img.thumb { width: 46px; border-radius: 6px; }
+    .rows-10 .row img.thumb { width: 44px; border-radius: 6px; }
     .rows-10 .row .name { font-size: 29px; }
     .rows-10 .move { font-size: 22px; }
     .rows-10 .move.new { font-size: 18px; }
@@ -120,6 +144,7 @@ if (d.kind === 'detail') {
   card.append(content);
 } else {
   card.classList.add('chart-card');
+  document.body.classList.add('light');
   const header = el('div', 'header');
   const weekDate = String(d.week_label || '').replace(/^week of\s+/i, '');
   const h = el('h1', 'display', 'Week of ');
