@@ -6,6 +6,10 @@ export const APP_NAV_ITEMS = [
   { id: 'guide', label: 'Guide', path: '/guide', primary: false },
   { id: 'calendar', label: 'Calendar', path: '/calendar', primary: true },
   { id: 'my-lists', label: 'My Lists', path: '/my-lists', primary: true },
+  // Web only for now: on web History is its own page (poster shelf plus an
+  // insights panel); mobile still shows history as a My Lists tab, which is
+  // why MY_LISTS_TABS below keeps its 'history' entry.
+  { id: 'history', label: 'History', path: '/history', primary: true },
   { id: 'search', label: 'Search', path: '/search', primary: false },
   { id: 'settings', label: 'Settings', path: '/settings', primary: false },
 ];
@@ -16,9 +20,6 @@ export const VIEW_TITLES = APP_NAV_ITEMS.reduce(
   (titles, item) => ({ ...titles, [item.id]: item.id === 'home' ? 'PLOT' : item.label }),
   {
     'new-releases': 'New Releases',
-    // Web: the page behind My Lists' "Recently Watched" rail. Mobile keeps
-    // History as a My Lists sub-tab (MY_LISTS_TABS).
-    history: 'History',
     'design-system': 'Design System',
     requests: 'Follow requests',
     notifications: 'Notifications',
