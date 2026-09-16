@@ -1,4 +1,5 @@
 import { dateToLocalStr, monthLongName } from '../utils/date.js';
+import { monthKey } from '@plot/core/history.js';
 import { MEDIA } from '../copy/media.js';
 import { CALENDAR_VIEW } from '../copy/calendarView.js';
 import GroupedFilterMenu from './GroupedFilterMenu.jsx';
@@ -19,10 +20,6 @@ const TYPE_ROWS = [
 const ChevronLeft  = () => <svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6" /></svg>;
 const ChevronRight = () => <svg viewBox="0 0 24 24"><polyline points="9,18 15,12 9,6" /></svg>;
 const Tick = () => <svg viewBox="0 0 24 24"><polyline points="20,6 9,17 4,12" /></svg>;
-
-function monthKey(year, month) {
-  return `${year}-${String(month + 1).padStart(2, '0')}`;
-}
 
 function MiniMonth({ year, month, todayStr, todayYear, eventDates, onPickDay, nav }) {
   const first = new Date(year, month, 1);
