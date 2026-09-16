@@ -1,3 +1,5 @@
+import { buildTitleShareUrl } from '../../packages/core/sharing.js';
+import { SHARING } from '../../packages/core/copy/sharing.js';
 // Public custom-list page — app.theplot.tv/list/<id>.
 // Cloudflare Pages Function — port of api/list.js (Node `(req,res)` → Pages
 // `onRequest`). Logic unchanged; only request/response plumbing differs.
@@ -127,7 +129,7 @@ export async function onRequest({ request, params, env }) {
     : '';
   const count = items.length;
   const desc = `${count} title${count === 1 ? '' : 's'} in "${list.name}"${owner ? ` by @${owner.username}` : ''} on PLOT.`;
-  const metaTitle = `${list.name} — a list on PLOT`;
+  const metaTitle = `${list.name} · a list on PLOT`;
 
   const jsonLd = ldjson({
     '@context': 'https://schema.org',
@@ -163,7 +165,7 @@ export async function onRequest({ request, params, env }) {
   const posters = count
     ? `<div class="grid">${items.map((it) => {
         const src = TMDB_IMG(it.poster_path, 'w342');
-        return `<a href="${esc(titleHref(it.media_type, it.tmdb_id, it.title))}">${src ? `<img src="${esc(src)}" alt="${esc(it.title)}" loading="lazy">` : '<div class="ph"></div>'}<div class="t">${esc(it.title)}</div></a>`;
+        return `<a href="${esc(buildTitleShareUrl({ tmdbId: it.tmdb_id, mediaType: it.media_type, source: 'list_page' }))}">${src ? `<img src="${esc(src)}" alt="${esc(it.title)}" loading="lazy">` : '<div class="ph"></div>'}<div class="t">${esc(it.title)}</div></a>`;
       }).join('')}</div>`
     : `<p class="by" style="margin-top:24px">This list is empty for now.</p>`;
 
@@ -173,8 +175,10 @@ export async function onRequest({ request, params, env }) {
   <h1>${esc(list.name)}</h1>
   ${ownerLine}
 </div>
+<p class="by" style="margin-top:20px">${esc(SHARING.listBenefit)}</p>
 ${posters}
-<a class="cta" href="/signup?src=list_page" data-cta="list_signup">Build your own PLOT →</a>`;
+<a class="cta" href="/signup?src=list_page" data-cta="list_signup">${esc(SHARING.listSignup)} →</a>
+<p class="by" style="margin-top:16px">Already on PLOT? <a href="/login?src=list_page">Sign in</a></p>`;
 
   return htmlResponse(shell(metaTitle, head, body), 200, true);
 }

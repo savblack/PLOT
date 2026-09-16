@@ -668,7 +668,7 @@ export function FavoritesSection({ favorites: favsHook, typeFilters, genreFilter
 
 
 /* ── One custom list, as a page: grid plus rename / public / share / delete ── */
-export function CustomListSection({ list, customLists, typeFilters, genreFilters = [], narrowed, share, onDeleted, Frame = ListSection }) {
+export function CustomListSection({ list, customLists, typeFilters, genreFilters = [], narrowed, share, shareCopied = false, onDeleted, Frame = ListSection }) {
   const { openPanel } = useApp();
   const { renameList, setListPublic, addItem, removeItem, deleteList } = customLists;
   const selection = useSelection();
@@ -702,6 +702,7 @@ export function CustomListSection({ list, customLists, typeFilters, genreFilters
       subtitle={list.is_public ? 'Public' : undefined}
       headerRight={
         <>
+          {list.is_public && share && <button type="button" className="btn btn-ghost btn-sm" onClick={() => share(list)}>{shareCopied ? COMMON.copied : COMMON.share}</button>}
           <SelectControls
             selection={selection}
             hasItems={visible.length > 0}

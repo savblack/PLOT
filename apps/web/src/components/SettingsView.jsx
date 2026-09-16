@@ -1,5 +1,7 @@
 // Web settings use DOM panels, browser sharing and Stripe portal redirects.
 // Shared navigation/copy lives in core; native layout parity: GitHub issue #922.
+import { SHARING } from '@plot/core/copy/sharing.js';
+import { buildProfileShareUrl } from '@plot/core/sharing.js';
 import { USERNAME_RE } from '@plot/core/profileFields.js';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
@@ -1215,17 +1217,12 @@ export default function SettingsView() {
   const calFeedUrl = calendarToken ? edgeFunctionUrl('calendar-feed', { token: calendarToken }) : null;
 
   const { share: shareProfileLink, copied: profileUrlCopied } = useShare();
-  const { share: shareInvite, copied: inviteCopied } = useShare();
 
   const username      = profile?.username || '';
   const isPublic      = !!profile?.is_public;
   const usernameValue = usernameDraft ?? username;
   const usernameDirty = usernameValue.trim().toLowerCase() !== username.toLowerCase();
-  const profileUrl    = username ? `${window.location.origin}/u/${username}` : null;
-  // Invite link: the profile URL tagged with ?ref=<me>. attribution.js captures
-  // ref on the new visitor; after they sign up, usePendingReferral auto-follows
-  // me (and the follows trigger notifies me).
-  const inviteUrl     = username ? `${profileUrl}?ref=${encodeURIComponent(username)}` : null;
+  const profileUrl    = buildProfileShareUrl({ username });
   // Sync local token back to null once profile catches up (or if revoked elsewhere)
   useEffect(() => {
     const shouldClearLocalToken = localCalToken && (
@@ -1646,28 +1643,14 @@ export default function SettingsView() {
     refreshProfile();
   };
 
-  // A little personality for profile shares — one picked at random (the card
-  // already carries the avatar, stats and PLOT branding).
-  const PROFILE_SHARE_LINES = SETTINGS_VIEW.shareTaglines;
-
   const handleShareProfile = () => {
     if (!profileUrl) return;
     // Native share sheet where available, clipboard fallback otherwise.
     return shareProfileLink({
       url: profileUrl,
       title: username ? SETTINGS_VIEW.shareTitleWithUsername(username) : SETTINGS_VIEW.shareTitleDefault,
-      text: PROFILE_SHARE_LINES[Math.floor(Math.random() * PROFILE_SHARE_LINES.length)],
+      text: SHARING.profileText(profile?.display_name || username),
       event: 'profile_shared',
-    });
-  };
-
-  const handleInvite = () => {
-    if (!inviteUrl) return;
-    return shareInvite({
-      url: inviteUrl,
-      title: SETTINGS_VIEW.shareJoinMe,
-      text: SETTINGS_VIEW.inviteText,
-      event: EVENTS.INVITE_SHARED,
     });
   };
 
@@ -2225,33 +2208,7 @@ export default function SettingsView() {
           </div>
         )}
 
-        {/* Invite friends — shares your profile tagged with ?ref so new signups
-            attribute to you and follow you (notification fires). On a private
-            profile the follow is a request you approve. */}
-        {inviteUrl && (
-          <div className="settings-row" style={{ cursor: 'default' }}>
-            <div className="settings-row-left" style={{ minWidth: 0 }}>
-              <div className="settings-row-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-                  <circle cx="9" cy="7" r="4"/>
-                  <line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/>
-                </svg>
-              </div>
-              <div style={{ minWidth: 0 }}>
-                <div className="settings-row-label">Invite friends</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  They join from your profile &amp; {isPublic ? 'start following you' : 'request to follow you'}
-                </div>
-              </div>
-            </div>
-            <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
-              <SettingsTextAction onClick={handleInvite}>
-                {inviteCopied ? COMMON.copied : SETTINGS_VIEW.invite}
-              </SettingsTextAction>
-            </div>
-          </div>
-        )}
+
       </div>
 
           <BlockedAccounts viewerId={user?.id} />

@@ -1,3 +1,7 @@
+import { buildProfileShareUrl } from '@plot/core/sharing.js';
+import { SHARING } from '@plot/core/copy/sharing.js';
+import { shareLink } from '../../../lib/share';
+import { EVENTS } from '../../../lib/analytics';
 /**
  * Public profile — /u/:username (mirrors web PublicProfilePage).
  * Header + follow button + stats, a locked state for private profiles the
@@ -151,6 +155,19 @@ export default function ProfileScreen({ usernameOverride }: { usernameOverride?:
                 ))}
               </View>
             )}
+
+            <View style={styles.actions}>
+              <TouchableOpacity style={styles.btnSecondary} accessibilityRole="button" onPress={() => { void shareLink({
+                url: buildProfileShareUrl({ username: profile?.username }),
+                title: `${name} on PLOT`,
+                text: SHARING.profileText(name),
+                event: EVENTS.PROFILE_SHARED,
+                eventProps: { profile_id: profile?.id },
+              }); }}>
+                <Text style={styles.btnSecondaryText}>{PUBLIC_PROFILE_PAGE.shareProfile}</Text>
+              </TouchableOpacity>
+
+            </View>
 
             {/* Report / block. Its own row rather than inside the follow block:
                 the follow actions are gated on canFollow, and Guideline 1.2

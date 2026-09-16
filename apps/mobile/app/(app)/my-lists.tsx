@@ -1,7 +1,10 @@
+import { buildListShareUrl } from '@plot/core/sharing.js';
+import { SHARING } from '@plot/core/copy/sharing.js';
+import { shareLink } from '../../lib/share';
 import { useState, useMemo } from 'react';
 import {
   View, Text, ScrollView, FlatList, Image, TouchableOpacity, TextInput,
-  Modal, StyleSheet, Dimensions, ActivityIndicator, Alert, Share, LayoutAnimation,
+  Modal, StyleSheet, Dimensions, ActivityIndicator, Alert, LayoutAnimation,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -23,7 +26,7 @@ import { TopTenSection } from '../../components/TopTenSection';
 import { MY_LISTS_TABS } from '@plot/core/navigation.js';
 import GroupedFilterMenu from '../../components/GroupedFilterMenu';
 import { filterByType } from '@plot/core/mediaFilters.js';
-import { track, EVENTS } from '../../lib/analytics';
+import { EVENTS } from '../../lib/analytics';
 import HistorySection from '../../components/HistorySection';
 import { groupEntriesByMonth, monthLabel } from '@plot/core/history.js';
 import { getSectionOpen, setSectionOpen } from '../../lib/sectionOpenState';
@@ -37,9 +40,6 @@ const SCREEN_W = Dimensions.get('window').width;
 const POSTER_W = (SCREEN_W - spacing.xl * 2 - spacing.sm * 2) / 3;
 const POSTER_H = POSTER_W * 1.5; // 2:3 — explicit height (aspectRatio collapses in a flex-wrap row on Fabric)
 
-// Public custom-list share URL — mirrors web buildListShareUrl (/list/:id).
-const SHARE_BASE = 'https://app.theplot.tv';
-const buildListShareUrl = (listId: string) => `${SHARE_BASE}/list/${listId}`;
 
 // Filter list items by media type. Items are treated as movies when untyped.
 // Mirrors web's ALL_LIST_SECTION_IDS (MyListsView.jsx). Tab ids match section
@@ -423,13 +423,13 @@ export default function MyListsScreen() {
   const watchingList = byType(watching.items.map((i: any) => ({ ...i, media_type: 'tv' })));
   const favList      = byType(favorites.favorites);
 
-  const handleShareList = async (list: any) => {
-    try {
-      const url = buildListShareUrl(list.id);
-      await Share.share({ message: `My list "${list.name}" on PLOT. ${url}`, url });
-      track(EVENTS.LIST_SHARED, { list_id: list.id });
-    } catch { /* user dismissed the share sheet */ }
-  };
+  const handleShareList = (list: { id: string; name: string; is_public: boolean }) => shareLink({
+    url: list.is_public ? buildListShareUrl({ listId: list.id }) : null,
+    title: `${list.name} · PLOT`,
+    text: SHARING.listText(list.name),
+    event: EVENTS.LIST_SHARED,
+    eventProps: { list_id: list.id },
+  });
 
   const isAll       = tab === 'all';
   const showWatching  = isAll || tab === 'watching';
@@ -895,6 +895,9 @@ function CustomListCard({
           </>
         ) : (
           <>
+            {list.is_public && <TouchableOpacity onPress={(event) => { event.stopPropagation(); onShare(); }} accessibilityRole="button" accessibilityLabel={COMMON.share} style={{ marginRight: spacing.sm }}>
+              <Text style={styles.sectionActionText}>{COMMON.share}</Text>
+            </TouchableOpacity>}
             <TouchableOpacity onPress={onAddItem} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Add item to list" accessibilityRole="button">
               <Text style={{ color: colors.textMuted, fontSize: 16, marginLeft: spacing.sm }}>+</Text>
             </TouchableOpacity>

@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { shareUrl } from '../utils/share.js';
 import { track } from '../lib/analytics.js';
 
+import { SHARING } from '@plot/core/copy/sharing.js';
+
 const COPIED_RESET_MS = 2000;
 
 /**
@@ -31,6 +33,10 @@ export function useShare() {
         if (timer.current) clearTimeout(timer.current);
         timer.current = setTimeout(() => setCopied(false), COPIED_RESET_MS);
       }
+    }
+    if (!result.ok && !result.cancelled && url) {
+      // Browser-only last resort when both native sharing and clipboard are blocked.
+      window.prompt(SHARING.copyManually, url);
     }
     return result;
   }, []);
