@@ -35,9 +35,11 @@ function dayLabel(dateStr) {
   return p ? `${WEEKDAY_SHORT[p.weekday]} ${p.day}` : '';
 }
 
-function StarIcon({ size = 11, color = '#F59E0B' }) {
+/* White on the chip's dark scrim: the star rating token is tuned for the page
+   surface, not for an overlay on artwork. */
+function StarIcon({ size = 11 }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill={color} stroke="none" aria-hidden="true">
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true">
       <path d="M12 2l3 7 7 .6-5.3 4.7 1.6 7.2L12 17.8 5.7 21.5l1.6-7.2L2 9.6 9 9z" />
     </svg>
   );
