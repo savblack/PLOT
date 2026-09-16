@@ -160,7 +160,7 @@ function MiniMonthCard({ year, monthIndex, monthGroups, onMonthIndex, entries, t
   );
 }
 
-function CrowdCard({ entries, details, openPanel }) {
+function CrowdCard({ entries, details, detailsLoading, openPanel }) {
   const cmp = crowdComparison(entries, details);
   const sentence = crowdSentence(cmp);
   return (
@@ -182,13 +182,13 @@ function CrowdCard({ entries, details, openPanel }) {
           </div>
         </div>
       ) : (
-        <span className="hist-card-note">{T.crowdNeedsRatings}</span>
+        <span className="hist-card-note">{detailsLoading ? T.loadingCard : T.crowdNeedsRatings}</span>
       )}
     </div>
   );
 }
 
-function PeopleCard({ entries, details, navigateTo }) {
+function PeopleCard({ entries, details, detailsLoading, navigateTo }) {
   const people = recurringPeople(entries, details);
   return (
     <div className="hist-card">
@@ -209,7 +209,7 @@ function PeopleCard({ entries, details, navigateTo }) {
           })}
         </div>
       ) : (
-        <span className="hist-card-note">{T.peopleNeedsMore}</span>
+        <span className="hist-card-note">{detailsLoading ? T.loadingCard : T.peopleNeedsMore}</span>
       )}
     </div>
   );
@@ -379,8 +379,8 @@ export function HistoryPage({ entries, details, detailsLoading, genreList, openP
               openPanel={openPanel}
             />
           )}
-          <CrowdCard entries={yearEntries} details={details} openPanel={openPanel} />
-          <PeopleCard entries={yearEntries} details={details} navigateTo={navigateTo} />
+          <CrowdCard entries={yearEntries} details={details} detailsLoading={detailsLoading} openPanel={openPanel} />
+          <PeopleCard entries={yearEntries} details={details} detailsLoading={detailsLoading} navigateTo={navigateTo} />
           <Filters
             types={types} setTypes={setTypes}
             genres={genres} setGenres={setGenres} genreOptions={genreOptions}
