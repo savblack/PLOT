@@ -329,7 +329,7 @@ ${head}
   .dex-links { display: flex; gap: 28px; flex-wrap: wrap; }
   .dex a { color: var(--mut); text-decoration: none; padding-bottom: 12px; border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; }
   .dex a:hover { color: var(--ink); }
-  .dex a.active { color: var(--ink); border-bottom-color: var(--fill); }
+  .dex a.active { color: var(--ink); border-bottom-color: var(--accent); }
 
   /* ── front page: feed column + sidebar ── */
   .feed-grid { display: grid; grid-template-columns: minmax(0, 8fr) minmax(0, 4fr); gap: 40px; align-items: start; margin-top: 28px; }
