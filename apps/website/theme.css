@@ -18,6 +18,13 @@
   font-display: swap;
 }
 @font-face {
+  font-family: 'Gabarito';
+  src: url('/fonts/Gabarito-Variable.woff2') format('woff2');
+  font-weight: 400 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
   font-family: 'Instrument Serif';
   src: url('/fonts/InstrumentSerif-Regular.woff2') format('woff2');
   font-weight: 400;
@@ -37,30 +44,44 @@
   --accent:          #E05578;
   --accent-dim:      rgba(224,85,120,0.12);   /* (CANON colors.light.accentDim) */
 
-  /* Black CTA ink — marketing-only near-black used for .btn-primary. Not an app token. */
-  --ink:             #000000;
-  --ink-hover:       #222222;
+  /* Marketing pink — a lighter, candy pink used ONLY as a fill behind charcoal
+     text (primary button, chips, the Live badge). It is too light to carry
+     text on cream, so it never colours type; --accent stays the canonical
+     pink for small text accents and for the app. Marketing-only. */
+  --pink:            #ff88c8;
+  --pink-hover:      #ff9fd3;
 
-  /* Surface + text (marketing presentation; the marketing palette is its own) */
-  --bg:              #ffffff;      /* homepage default; content pages override to #f8f8f8 */
-  --surface:         #ffffff;
-  --text:            #1a1a1a;
-  --text-secondary:  #666666;      /* was --muted */
-  --glass-bg:        rgba(255,255,255,0.8);
-  --glass-border:    rgba(0,0,0,0.05);
+  /* Charcoal ink — the marketing site's near-black. Softer than #000 on the
+     cream ground. Used for body text, the ticker bar and dark fills. */
+  --ink:             #292924;
+  --ink-hover:       #3a3a33;
+
+  /* Surface + text — a warm cream ground with a deeper cream for cards and
+     secondary buttons. The marketing palette is its own; the app stays white. */
+  --bg:              #f8f2ea;
+  --surface:         #f1e9dc;
+  --surface-hover:   #eadfcf;
+  --text:            #292924;
+  --text-secondary:  #5f5a52;
+  --rule:            rgba(41,41,36,0.12);
+  --glass-bg:        rgba(248,242,234,0.86);
+  --glass-border:    rgba(41,41,36,0.06);
 
   /* Editorial surface — the "second" ground the site alternates into for its
      demo sections, closing CTA, footer and error screens. The marketing site
      runs a single light palette: this ground is white and its text is the same
      ink as body copy, so no section on theplot.tv inverts to black. The names
      are historical (this used to be the near-black #0c0c0c / #f0efe8 pair). */
-  --dark:            #ffffff;
-  --text-dark:       #1a1a1a;
+  --dark:            #f8f2ea;
+  --text-dark:       #292924;
 
   /* Success — reconciled to the app's green. (CANON colors.light.chipNow) */
   --success:         #059669;
 
-  /* Typography */
+  /* Typography — Gabarito carries headlines, DM Sans body and UI, Instrument
+     Serif the editorial voice (manifesto, quotes, notes). */
+  --display:         'Gabarito', 'DM Sans', system-ui, sans-serif;
+  --display-tracking: -0.03em;
   --serif:           'Instrument Serif', Georgia, serif;
   --sans:            'DM Sans', system-ui, sans-serif;
   --serif-tracking:  -0.05em;

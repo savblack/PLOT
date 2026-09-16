@@ -1,0 +1,3 @@
+# People type these on the marketing domain; the app owns them.
+/signup  https://app.theplot.tv/signup  302
+/login   https://app.theplot.tv/login   302

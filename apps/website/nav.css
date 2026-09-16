@@ -34,10 +34,10 @@ nav.scrolled {
   text-decoration: none;
   display: flex;
   align-items: center;
-  font-family: var(--serif);
-  font-size: 1.7rem;
-  font-weight: 400;
-  letter-spacing: var(--serif-tracking);
+  font-family: var(--display);
+  font-size: 1.65rem;
+  font-weight: 700;
+  letter-spacing: -0.045em;
   color: var(--text);
   line-height: 1;
   user-select: none;
@@ -56,15 +56,20 @@ nav.scrolled {
   display: inline-block;
   padding: 0.75rem 0.25rem;
   text-decoration: none;
-  color: var(--text-secondary);
-  font-size: 0.7rem;
-  font-weight: 200;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  transition: color 0.2s;
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: color 0.2s, background 0.2s;
 }
-.nav-links a:hover { color: var(--text); }
-.nav-cta { color: var(--text) !important; font-weight: 300 !important; }
+.nav-links a:hover { color: var(--text-secondary); }
+/* The sign-up link is a pink pill, the same shape as .btn-primary */
+.nav-cta {
+  background: var(--pink);
+  padding: 0.6rem 1.1rem !important;
+  border-radius: var(--r-pill);
+  line-height: 1;
+}
+.nav-cta:hover { color: var(--text) !important; background: var(--pink-hover); }
 
 /* Mobile nav toggle — padded to a ≥44px tap target, negative margin keeps
    the icon optically aligned with the nav's right edge */
@@ -103,7 +108,7 @@ nav.scrolled {
     /* Translucent but opaque enough to keep the links legible over page
        content. The navbar matches this when open so the top of the panel
        reads as one seamless surface. */
-    background: rgba(255, 255, 255, 0.92);
+    background: rgba(248, 242, 234, 0.94);
     backdrop-filter: blur(30px);
     -webkit-backdrop-filter: blur(30px);
     padding: 1.25rem 2rem;
@@ -112,9 +117,10 @@ nav.scrolled {
   }
   .nav-links.open li { display: block; }
   .nav-links.open a { display: block; padding: 0.85rem 0; text-align: center; }
+  .nav-links.open .nav-cta { margin-top: 0.5rem; padding: 0.85rem 0 !important; }
   .nav-hamburger { display: flex; }
   nav.nav-open {
-    background: rgba(255, 255, 255, 0.92);
+    background: rgba(248, 242, 234, 0.94);
     backdrop-filter: blur(30px);
     -webkit-backdrop-filter: blur(30px);
   }

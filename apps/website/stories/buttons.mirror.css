@@ -10,30 +10,27 @@
   padding: 0.55rem 1.4rem;
   border-radius: var(--r-pill);
   font-family: var(--sans);
-  font-size: 0.68rem;
-  font-weight: 300;
+  font-size: 0.8rem;
+  font-weight: 500;
   cursor: pointer;
   text-decoration: none;
   transition: all 0.25s var(--ease);
   border: none;
 }
 .btn-primary {
-  background: var(--ink);
-  color: #fff;
+  background: var(--pink);
+  color: var(--text);
 }
 .btn-primary:hover {
-  background: var(--ink-hover);
+  background: var(--pink-hover);
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
 }
 .btn-outline {
-  background: transparent;
+  background: var(--surface);
   color: var(--text);
-  border: 1px solid var(--text);
 }
 .btn-outline:hover {
-  background: var(--text);
-  color: #fff;
+  background: var(--surface-hover);
   transform: translateY(-1px);
 }
 .btn-outline-white {
