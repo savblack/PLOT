@@ -79,8 +79,8 @@
   .detail .display { font-size: 150px; max-width: 96%; }
 
   @media (min-aspect-ratio: 4/3) {
-    .chart-card { padding-top: calc(var(--pad) + 96px); }
-    .header { margin-bottom: 22px; }
+    .chart-card { padding-top: calc(var(--pad) + 116px); }
+    .header { margin-bottom: 40px; }
     .header .meta-caps { margin-bottom: 8px; font-size: 22px; }
     .header .display { font-size: 56px; }
     /* Landscape: the five titles run in a horizontal row, one column each:
@@ -108,10 +108,10 @@
       white-space: normal;
       display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
     }
-    .move { grid-area: move; justify-self: start; text-align: left; font-size: 22px; }
+    .move { grid-area: move; justify-self: end; text-align: right; font-size: 22px; }
     .move.new { font-size: 18px; }
     .move.same { display: none; }
-    body.light .move.up, body.light .move.new { padding: 3px 10px; justify-self: start; }
+    body.light .move.up, body.light .move.new { padding: 3px 10px; justify-self: end; }
 
     .detail .display { font-size: 118px; }
   }
