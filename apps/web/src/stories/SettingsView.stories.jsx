@@ -1,4 +1,5 @@
 import '../index.css';
+import { useState } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { configure } from '@plot/core/config.js';
 import { AppContext } from '../hooks/useApp.js';
@@ -17,14 +18,15 @@ const profile = {
   display_name: 'Sam', username: 'samwatches', is_public: false, is_premium: false,
   region: 'AU', timezone: 'Australia/Sydney',
   streaming_providers: ['Netflix', 'Apple TV+', 'Prime Video', 'Disney+', 'Stan'].map(name => ({ name })),
-  guide_channels: ['ABC', 'SBS', 'Seven', 'Nine', 'Ten', 'ABC TV Plus', 'SBS Viceland', '7Two'].map(name => ({ name })),
   genres: [],
 };
 
 function Preview({ initialSection = 'viewing', premium = false }) {
+  const [broadcastValue, setBroadcastValue] = useState({ market_id: 'Sydney', channel_ids: null });
   return (
     <MemoryRouter initialEntries={[`/settings?section=${initialSection}`]}>
       <AppContext.Provider value={{
+        broadcastPreferences: { value: broadcastValue, loading: false, saving: false, error: false, retry: noop, save: async value => { setBroadcastValue(value); return true; } },
         profile: { ...profile, is_premium: premium }, user: null, theme: 'system', setTheme: noop,
         refreshProfile: noop, watchlist: { items: [] }, watching: { items: [], fetchSeason: noop },
         reminders: { reminders: [] }, customLists: { lists: [] },

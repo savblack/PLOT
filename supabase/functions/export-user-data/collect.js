@@ -4,6 +4,7 @@
 // token hashes) so they never end up in a downloadable file.
 export const EXPORT_STEPS = Object.freeze([
   { table: 'profiles', match: { type: 'eq', column: 'id' }, omit: ['calendar_token'] },
+  { table: 'broadcast_preferences', match: { type: 'eq', column: 'user_id' } },
   { table: 'lists', match: { type: 'eq', column: 'user_id' } },
   { table: 'list_items', match: { type: 'eq', column: 'user_id' } },
   { table: 'history', match: { type: 'eq', column: 'user_id' } },

@@ -134,6 +134,9 @@ jobs:
       - name: Check mobile renders every Discover tab it should
         run: pnpm run mobile:tabs
 
+      - name: Broadcast importer tests
+        run: python3 -m unittest discover -s scripts/guide -p 'test_*.py'
+
       - name: Unit tests
         run: pnpm run test:unit
 

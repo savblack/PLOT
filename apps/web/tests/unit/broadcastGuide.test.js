@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { guideDate, guideDay, isOnNow, selectedGuideChannels, validateGuideSnapshot, guideAgenda } from '../../../../packages/core/broadcastGuide.js';
 const programme = { id: 'abc:1', channelId: 'abc', title: 'News', start: '2026-09-16T13:45:00Z', end: '2026-09-16T14:30:00Z' };
-const snapshot = { region: 'Sydney', fetchedAt: '2026-09-16T00:00:00Z', channels: [{ id: 'abc', name: 'ABC' }], programmes: [programme] };
+const snapshot = { schemaVersion: 2, source: 'Matt Huisman', sourceUrl: 'https://i.mjh.nz/', coverageEnd: programme.end, region: 'Sydney', fetchedAt: '2026-09-16T00:00:00Z', channels: [{ id: 'abc', name: 'ABC' }], programmes: [programme] };
 test('keeps local date and DST timezone conversion together', () => {
   assert.equal(guideDate('2026-09-16T14:15:00Z', 'Australia/Sydney'), '2026-09-17');
   assert.equal(guideDate('2026-10-05T13:15:00Z', 'Australia/Sydney'), '2026-10-06');

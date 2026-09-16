@@ -1,3 +1,4 @@
+import { useBroadcastPreferences } from '@plot/core/useBroadcastPreferences.js';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 // The bulk of the app's CSS (~4800 lines: every authenticated view — Discover,
@@ -241,6 +242,7 @@ export default function App() {
   const currentView = viewFromPath(location.pathname);
 
   /* ── Global data hooks ── */
+  const broadcastPreferences = useBroadcastPreferences(user?.id);
   const watchlist    = useWatchlist(user?.id);
   const watching     = useWatching(user?.id);
   const reminders    = useReminders(user?.id);
@@ -275,6 +277,7 @@ export default function App() {
   }
 
   const ctx = {
+    broadcastPreferences,
     user,
     profile,
     theme,

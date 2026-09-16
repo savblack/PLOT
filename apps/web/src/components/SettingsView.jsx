@@ -1,3 +1,4 @@
+import BroadcastAccountSettings from './BroadcastAccountSettings.jsx';
 // Web settings use DOM panels, browser sharing and Stripe portal redirects.
 // Shared navigation/copy lives in core; native layout parity: GitHub issue 922.
 import { SHARING } from '@plot/core/copy/sharing.js';
@@ -1146,14 +1147,11 @@ export default function SettingsView() {
   );
 
   const [showProviders,       setShowProviders]       = useState(false);
-  const [showGuideChannels,   setShowGuideChannels]   = useState(false);
   const [savingProviders,     setSavingProviders]     = useState(false);
   const [savingMarketingEmails, setSavingMarketingEmails] = useState(false);
   const [savingKidsContent, setSavingKidsContent] = useState(false);
   const [savingVisibility, setSavingVisibility] = useState(false);
-  const [savingGuideChannels, setSavingGuideChannels] = useState(false);
   const [providerDraft,       setProviderDraft]       = useState(null);
-  const [guideChannelDraft,   setGuideChannelDraft]   = useState(null);
   const [showGenres,          setShowGenres]          = useState(false);
   const [savingGenres,        setSavingGenres]        = useState(false);
   const [genreDraft,          setGenreDraft]          = useState(null);
@@ -1243,13 +1241,6 @@ export default function SettingsView() {
     setSavingProviders(false);
   }, [profile?.streaming_providers, providerDraft]);
 
-  useEffect(() => {
-    if (!guideChannelDraft) return;
-    if (JSON.stringify(profile?.guide_channels ?? []) !== JSON.stringify(guideChannelDraft)) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- clear optimistic state once persisted profile data catches up
-    setGuideChannelDraft(null);
-    setSavingGuideChannels(false);
-  }, [profile?.guide_channels, guideChannelDraft]);
 
   useEffect(() => {
     if (!genreDraft) return;
@@ -1267,7 +1258,6 @@ export default function SettingsView() {
 
   const providers      = providerDraft ?? profile?.streaming_providers ?? [];
   const marketingEmailsEnabled = !!profile?.marketing_emails;
-  const guideChannels  = guideChannelDraft ?? profile?.guide_channels ?? [];
   const genres         = genreDraft ?? profile?.genres ?? [];
   const region         = profile?.region || DEFAULT_REGION;
   const timezone  = profile?.timezone || '';
@@ -1291,23 +1281,6 @@ export default function SettingsView() {
     return true;
   };
 
-  const saveGuideChannels = async (newChannels) => {
-    setActionError(null);
-    setGuideChannelDraft(newChannels);
-    setSavingGuideChannels(true);
-
-    const { error } = await updateProfile({ userId: user.id, patch: { guide_channels: newChannels } });
-
-    setSavingGuideChannels(false);
-
-    if (error) {
-      setActionError(error.message || SETTINGS_VIEW.errors.failedToSaveChannels);
-      return false;
-    }
-
-    refreshProfile();
-    return true;
-  };
 
   const saveGenres = async (newGenres) => {
     setActionError(null);
@@ -1914,7 +1887,7 @@ export default function SettingsView() {
       <div className="settings-group">
         <div className="settings-group-title">{SETTINGS_VIEW.page.whereYouWatch}</div>
         <SettingsPreferenceRow label={SETTINGS_VIEW.integrations.streamingPlatformsLabel} value={settingsSelectionSummary(providers)} disabled={savingProviders} onEdit={() => setShowProviders(true)} />
-        <SettingsPreferenceRow label={SETTINGS_VIEW.integrations.myChannelsLabel} value={settingsSelectionSummary(guideChannels)} disabled={savingGuideChannels} onEdit={() => setShowGuideChannels(true)} />
+        <BroadcastAccountSettings />
         <SettingsPreferenceRow label={SETTINGS_VIEW.page.regionLabel} value={regionName(region)} onEdit={() => { setActionError(null); setShowRegion(true); }} />
         <SettingsPreferenceRow label={SETTINGS_VIEW.page.timezoneLabel} value={timezone ? fmtTz(timezone) : COMMON.notSet} onEdit={() => setShowTimezone(true)} />
       </div>
@@ -2397,20 +2370,6 @@ export default function SettingsView() {
         />
       )}
 
-      {showGuideChannels && (
-        <ProviderPicker
-          title={SETTINGS_VIEW.integrations.myChannelsLabel}
-          hint="Select the free-to-air and broadcast channels to include in your Guide. For example, ABC iview, SBS On Demand, 9Now, 7Plus, 10 Play."
-          region={region}
-          selected={guideChannels}
-          channelsOnly
-          onSave={saveGuideChannels}
-          onClose={() => {
-            setShowGuideChannels(false);
-            if (!savingGuideChannels) setGuideChannelDraft(null);
-          }}
-        />
-      )}
 
       {showGenres && (
         <GenrePicker

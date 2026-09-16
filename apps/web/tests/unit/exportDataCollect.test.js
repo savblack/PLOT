@@ -40,6 +40,7 @@ test('runDataExport reads every export step in order, scoped to the user', async
     EXPORT_STEPS.map((step) => step.table),
   );
   assert.deepEqual(calls.at(0), { table: 'profiles', method: 'eq', column: 'id', value: 'user-123' });
+  assert.deepEqual(calls.find((call) => call.table === 'broadcast_preferences'), { table: 'broadcast_preferences', method: 'eq', column: 'user_id', value: 'user-123' });
   assert.deepEqual(calls.at(-1), { table: 'feedback', method: 'eq', column: 'user_id', value: 'user-123' });
   const followsCall = calls.find((call) => call.table === 'follows');
   assert.deepEqual(followsCall, { table: 'follows', method: 'or', filter: 'follower_id.eq.user-123,following_id.eq.user-123' });

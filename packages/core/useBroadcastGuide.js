@@ -1,16 +1,16 @@
 import { useEffect, useState } from 'react';
-import { validateGuideSnapshot } from './broadcastGuide.js';
+import { broadcastSnapshotUrl, validateGuideSnapshot } from './broadcastGuide.js';
 
 /** Shared loading lifecycle. Endpoint is injected by the host app.
  * @param {string} endpoint @param {string} region @param {number} revision
  */
 export function useBroadcastGuide(endpoint, region, revision = 0) {
-  const [state, setState] = useState({ region: '', data: null, error: false, loading: true });
+  const [state, setState] = useState(/** @type {{region: string, data: import('./broadcastGuide.js').BroadcastSnapshot | null, error: boolean, loading: boolean}} */ ({ region: '', data: null, error: false, loading: true }));
   useEffect(() => {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 245_000);
+    const timeout = setTimeout(() => controller.abort(), endpoint ? 245_000 : 20_000);
     let active = true;
-    fetch(`${endpoint}?region=${encodeURIComponent(region)}`, { signal: controller.signal })
+    fetch(endpoint ? `${endpoint}?region=${encodeURIComponent(region)}` : broadcastSnapshotUrl(region), { signal: controller.signal })
       .then(response => {
         if (!response.ok) throw new Error('Guide unavailable');
         return response.json();

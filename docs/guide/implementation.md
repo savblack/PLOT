@@ -1,5 +1,8 @@
 # Free-to-air Guide: first implementation
 
+Production integration is now prepared in [production-rollout.md](production-rollout.md).
+The preview notes below document the earlier implementation.
+
 Status: local development preview, 16 September 2026. The live `/guide` route is unchanged.
 
 ## Review locally
