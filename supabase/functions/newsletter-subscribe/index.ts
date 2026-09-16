@@ -112,7 +112,7 @@ Deno.serve(async (req) => {
       if (sub.status === 'unsubscribed') {
         return page('plot', '<h1>Unsubscribed</h1><p>You will not receive the plot digest again.</p>');
       }
-      return page('PLOT — unsubscribe', `
+      return page('plot — unsubscribe', `
         <h1>Unsubscribe from the plot digest?</h1>
         <button onclick="fetch(location.href,{method:'POST'}).then(()=>location.reload())">Unsubscribe</button>`);
     }
