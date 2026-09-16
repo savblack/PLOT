@@ -1,6 +1,6 @@
 import { APP_NAV_ITEMS } from '../navigation.js';
 import { APP_SHELL } from '../copy/appShell.js';
-import { IconHome, IconGuide, IconCalendar, IconLists, IconSearch, IconBell, IconSettings } from './navIcons.jsx';
+import { IconHome, IconGuide, IconCalendar, IconLists, IconHistory, IconSearch, IconBell, IconSettings } from './navIcons.jsx';
 
 /* The desktop nav rail. Replaces the bottom tab bar and the nav drawer above
    1024px — the two of them listed the same destinations bar Settings.
@@ -17,6 +17,7 @@ const SIDEBAR_ICONS = {
   guide: IconGuide,
   calendar: IconCalendar,
   'my-lists': IconLists,
+  history: IconHistory,
   search: IconSearch,
   settings: IconSettings,
 };

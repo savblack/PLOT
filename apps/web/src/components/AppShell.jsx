@@ -5,13 +5,13 @@ import { useNotifications } from '../hooks/useNotifications.js';
 import { APP_SHELL } from '../copy/appShell.js';
 import AppSidebar from './AppSidebar.jsx';
 import {
-  IconMenu, IconClose, IconSearch, IconHome, IconCalendar, IconLists, IconBell, IconArrowUp,
+  IconMenu, IconClose, IconSearch, IconHome, IconCalendar, IconLists, IconHistory, IconBell, IconArrowUp,
 } from './navIcons.jsx';
 
 /* ── SVG Icons ───────────────────────── */
 /* Shared with AppSidebar — see ./navIcons.jsx. */
 
-const TAB_ICONS = { home: IconHome, calendar: IconCalendar, 'my-lists': IconLists };
+const TAB_ICONS = { home: IconHome, calendar: IconCalendar, 'my-lists': IconLists, history: IconHistory };
 
 // The drawer has room the bottom bar does not: every destination bar Search
 // (the header has its own icon) and Settings (the drawer's own footer).

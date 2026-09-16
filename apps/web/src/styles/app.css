@@ -5876,3 +5876,447 @@ a.provider-chip--link:hover {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ═══════════════════════════════════════
+   HISTORY PAGE
+   The poster shelf with an insights column beside it. Same frame as the
+   Calendar: 264px side column, 72px gap, serif month names on the stream.
+═══════════════════════════════════════ */
+
+.hist-page { padding: 0 var(--gut) 2.5rem; }
+
+.hist-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 0 1.25rem;
+}
+.hist-toolbar-sub { font-size: 0.85rem; color: var(--text-muted); }
+.hist-toolbar-controls { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+
+.hist-years {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 12px;
+  background: var(--surface-sunken);
+}
+.hist-year-btn {
+  border: 0;
+  background: transparent;
+  padding: 6px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color 0.12s ease, background 0.12s ease;
+}
+.hist-year-btn:hover { color: var(--text-primary); }
+.hist-year-btn.active { background: var(--surface); color: var(--text-primary); font-weight: 600; }
+.hist-year-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.hist-year-select {
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 13px;
+}
+
+.hist-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  width: 220px;
+  padding: 0 12px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text-muted);
+}
+.hist-search svg { width: 16px; height: 16px; flex-shrink: 0; stroke: currentColor; fill: none; stroke-width: 2; }
+.hist-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  color: var(--text-primary);
+  outline: none;
+}
+.hist-search:focus-within { border-color: var(--accent); }
+
+.hist-body { display: flex; flex-direction: column; gap: 24px; }
+
+/* ── Side column ── */
+.hist-side { display: flex; flex-direction: column; gap: 24px; }
+.hist-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.hist-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 28px;
+  padding-left: 4px;
+}
+.hist-card-title {
+  font-family: var(--font-serif);
+  font-size: 18px;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+.hist-card-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 0 4px;
+}
+.hist-card-body { display: flex; flex-direction: column; gap: 10px; padding: 0 4px; }
+.hist-card-lead {
+  font-family: var(--font-serif);
+  font-size: 20px;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  text-wrap: pretty;
+}
+.hist-card-note { font-size: 12px; color: var(--text-muted); line-height: 1.35; padding: 0 4px; }
+.hist-card-body .hist-card-note,
+.hist-crowd-row .hist-card-note,
+.hist-person .hist-card-note { padding: 0; }
+.hist-card-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 4px 0;
+  font-size: 12px;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border);
+}
+.hist-card-foot b { color: var(--text-primary); font-weight: 600; }
+
+.hist-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  padding: 0 4px;
+}
+.hist-stat { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.hist-stat-value {
+  font-family: var(--font-serif-tabular);
+  font-size: 28px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hist-stat-label { font-size: 12px; color: var(--text-muted); }
+.hist-sentence {
+  margin: 0;
+  padding: 0 4px;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 15px;
+  line-height: 1.35;
+  color: var(--text-secondary);
+  text-wrap: pretty;
+}
+
+/* Mini month: one poster per watched day */
+.hist-mini-nav { display: flex; gap: 2px; }
+.hist-mini-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.hist-mini-btn:hover { background: var(--surface-raised); color: var(--text-primary); }
+.hist-mini-btn:disabled { color: var(--text-muted); opacity: 0.4; cursor: default; }
+.hist-mini-btn:disabled:hover { background: transparent; }
+.hist-mini-btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.hist-mini-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 3px;
+}
+.hist-mini-wd {
+  text-align: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  padding-bottom: 2px;
+}
+.hist-mini-blank { aspect-ratio: 2 / 3; }
+.hist-mini-day {
+  aspect-ratio: 2 / 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 5px;
+  background: var(--surface-raised);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+.hist-mini-day--future { background: transparent; box-shadow: inset 0 0 0 1px var(--border); color: var(--text-muted); }
+.hist-mini-day--today,
+.hist-mini-day--today.hist-mini-day--future {
+  background: color-mix(in srgb, var(--chip-cinema) 12%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--chip-cinema) 34%, var(--border));
+  color: var(--chip-cinema);
+  font-weight: 600;
+}
+.hist-mini-tile {
+  position: relative;
+  aspect-ratio: 2 / 3;
+  border: 0;
+  padding: 0;
+  border-radius: 5px;
+  overflow: hidden;
+  background: var(--surface-sunken);
+  cursor: pointer;
+  display: block;
+}
+.hist-mini-tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.hist-mini-tile-day {
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  padding: 0 4px;
+  border-radius: 6px;
+  background: rgba(9, 9, 11, 0.78);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 14px;
+}
+.hist-mini-tile:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+.hist-crowd-row { display: flex; align-items: center; gap: 8px; }
+.hist-crowd-poster {
+  width: 34px;
+  height: 51px;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  overflow: hidden;
+  padding: 0;
+  background: var(--surface-sunken);
+  cursor: pointer;
+}
+.hist-crowd-poster img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.hist-crowd-poster:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+.hist-person {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+.hist-person-avatar {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+}
+.hist-person-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.hist-person-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.hist-person-name { font-size: 14px; font-weight: 600; color: var(--text-primary); transition: color 0.12s ease; }
+.hist-person:hover .hist-person-name { color: var(--accent-text); }
+.hist-person:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 8px; }
+
+/* Filter rows: same metrics as a plain list. */
+.hist-filters { display: flex; flex-direction: column; gap: 6px; padding: 0 8px; }
+.hist-filter-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 0 4px;
+}
+.hist-filter-group { display: flex; flex-direction: column; margin-bottom: 12px; }
+.hist-filter-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 11px 4px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.hist-filter-row:last-child { border-bottom: 0; }
+.hist-filter-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 6px; }
+.hist-filter-name { font-size: 14px; font-weight: 500; color: var(--text-primary); transition: color 0.12s ease; }
+.hist-filter-row--off .hist-filter-name { color: var(--text-muted); }
+.hist-filter-row:hover .hist-filter-name { color: var(--accent-text); }
+.hist-filter-tick { display: flex; width: 14px; height: 14px; color: var(--text-primary); }
+.hist-filter-tick svg { width: 14px; height: 14px; }
+.hist-filter-more {
+  align-self: flex-start;
+  border: 0;
+  background: transparent;
+  padding: 8px 4px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.hist-filter-more:hover { color: var(--accent-text); }
+
+/* ── Stream ── */
+.hist-stream { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 28px; }
+.hist-month { display: flex; flex-direction: column; gap: 14px; scroll-margin-top: 1rem; }
+.hist-month-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 18px 4px 0;
+  border-top: 1px solid var(--border);
+}
+.hist-stream .hist-month:first-child .hist-month-head { border-top: 0; padding-top: 4px; }
+.hist-month-name-row { display: flex; align-items: baseline; gap: 10px; }
+.hist-month-name {
+  font-family: var(--font-serif);
+  font-size: 24px;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: var(--text-primary);
+}
+.hist-month-count { font-size: 12px; color: var(--text-muted); }
+.hist-month-insight {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 15px;
+  color: var(--text-secondary);
+  text-align: right;
+}
+
+.hist-wall { display: flex; flex-wrap: wrap; gap: 14px; padding: 0 4px; }
+.hist-poster {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  width: 112px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.hist-poster-art {
+  position: relative;
+  aspect-ratio: 2 / 3;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  margin-bottom: 6px;
+}
+.hist-poster-art img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.hist-chip {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  border-radius: var(--radius-badge);
+  background: rgba(9, 9, 11, 0.82);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.hist-chip--dnf { font-size: 10px; letter-spacing: 0.04em; }
+.hist-poster-note {
+  position: absolute;
+  right: 6px;
+  top: 6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(9, 9, 11, 0.82);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.hist-poster-note svg { width: 12px; height: 12px; }
+.hist-poster-title {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.12s ease;
+}
+.hist-poster:hover .hist-poster-title { color: var(--accent-text); }
+.hist-poster:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 10px; }
+.hist-poster-day { font-size: 11px; color: var(--text-muted); }
+
+@media (max-width: 1023px) {
+  .hist-toolbar { flex-wrap: wrap; }
+  .hist-toolbar-controls { width: 100%; justify-content: space-between; }
+  .hist-search { flex: 1; width: auto; }
+  /* Poster-shaped day cells at full phone width make a very tall card; cap
+     the grid so a tile stays a thumbnail, not a poster. */
+  .hist-mini-grid { max-width: 240px; }
+  .hist-month-head { flex-wrap: wrap; }
+  .hist-month-insight { text-align: left; }
+  /* Three across on a phone: the desktop card width leaves a two-up wall
+     with a wide empty gutter. */
+  .hist-poster { width: calc((100% - 28px) / 3); }
+}
+
+@media (min-width: 1024px) {
+  .hist-body { flex-direction: row; align-items: flex-start; gap: 72px; }
+  /* Not sticky, unlike the Calendar's panel: with five cards and the filter
+     rows it is taller than most viewports, and a sticky column taller than
+     the window hides its bottom until the stream runs out. */
+  .hist-side { width: 264px; flex-shrink: 0; }
+}

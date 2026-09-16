@@ -26,6 +26,7 @@ const NewReleasesView = lazy(() => import('./components/NewReleasesView.jsx'));
 const GuideView   = lazy(() => import('./components/GuideView.jsx'));
 const CalendarView= lazy(() => import('./components/CalendarView.jsx'));
 const MyListsView   = lazy(() => import('./components/MyListsView.jsx'));
+const HistoryView   = lazy(() => import('./components/HistoryView.jsx'));
 const SearchView  = lazy(() => import('./components/SearchView.jsx'));
 const SettingsView= lazy(() => import('./components/SettingsView.jsx'));
 const ImportView  = lazy(() => import('./components/ImportView.jsx'));
@@ -109,7 +110,7 @@ const router = createBrowserRouter([
       { path: 'calendar', element: wrap(<CalendarView />) },
       { path: 'watching', element: <Navigate to="/my-lists" replace /> },
       { path: 'list',     element: <Navigate to="/my-lists" replace /> },
-      { path: 'history',  element: <Navigate to="/my-lists" replace state={{ tab: 'history' }} /> },
+      { path: 'history',  element: wrap(<HistoryView />) },
       { path: 'my-lists', element: wrap(<MyListsView />) },
       { path: 'search',   element: wrap(<SearchView />) },
       { path: 'person/:personId', element: wrap(<TalentPage />) },

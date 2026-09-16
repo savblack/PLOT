@@ -1,9 +1,8 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocation } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { countdownChip } from '../utils/countdown.js';
-import { TodayLabel } from './TodayLabel.jsx';
 import { posterUrl } from '../utils/images.js';
 import { tmdb } from '@plot/core/tmdb.js';
 import { findDuplicateCustomList } from '@plot/core/customLists.js';
@@ -11,7 +10,6 @@ import { useHistory } from '../hooks/useHistory.js';
 import { localDateStr } from '../utils/date.js';
 import { favoriteWords } from '../utils/spelling.js';
 import { COMMON } from '../copy/common.js';
-import { groupEntriesByMonth, historyRatingLabel, monthLabel } from '../utils/history.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import CollapsibleSection from './CollapsibleSection.jsx';
 import GroupedFilterMenu from './GroupedFilterMenu.jsx';
@@ -1456,129 +1454,16 @@ function WantToWatchSection({ watchlist, watching, open, onOpenChange }) {
   );
 }
 
-/* ── History row ──
-   No expand/collapse here on purpose: every row must stay the same height
-   whether or not it carries a review, so a written review is signalled by a
-   permanent icon in the meta line instead of a toggle that changes layout.
-   Reading the review itself happens in the media panel (tap the row), which
-   already shows it — this indicator's only job is "you wrote something here". */
-function HistoryRow({ entry, openPanel }) {
-  const img   = posterUrl(entry.poster_path, 'w92');
-  const title = entry.title || 'Unknown';
-  const date  = entry.watched_at
-    ? new Date(entry.watched_at).toLocaleDateString('en', { month: 'short', day: 'numeric' })
-    : '';
-  const ratingLabel = historyRatingLabel(entry.rating);
-  const openDetails = () => openPanel(entry.tmdb_id, entry.media_type || 'movie');
-  const hasNote = !!entry.note;
-
-  return (
-    <div
-      className="list-row history-list-row interactive-surface"
-      onClick={openDetails}
-      {...getButtonLikeProps({ onPress: openDetails, label: hasNote ? `View details for ${title} (reviewed)` : `View details for ${title}` })}
-    >
-      <div className="list-row-poster">
-        {img && <img src={img} alt={title} />}
-      </div>
-      <div className="list-row-info">
-        <div className="list-row-title">{title}</div>
-        <div className="list-row-meta">
-          {date && <span>{date}</span>}
-          {ratingLabel && <span className="history-row-rating">{ratingLabel}</span>}
-          {hasNote && (
-            <span className="history-row-note-indicator" title="You wrote a review" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M4 4h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8l-4 4V6a2 2 0 0 1 2-2z" />
-              </svg>
-            </span>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ── One month's worth of history, independently collapsible. `expandSignal`
-   mirrors GuideView's DateGroup pattern: a new {token, open} forces this
-   group open/closed from the toolbar's expand/collapse-all button, without
-   the parent needing to track every dynamically-created month's state. ── */
-function useSignalledOpen(expandSignal, defaultOpen) {
-  const [open, setOpen] = useState(defaultOpen);
-  const initialToken = useRef(expandSignal?.token);
-  useEffect(() => {
-    if (!expandSignal || expandSignal.token === initialToken.current) return;
-    setOpen(expandSignal.open);
-  }, [expandSignal]);
-  return [open, setOpen];
-}
-
-function HistoryMonthGroup({ year, month, entries, expandSignal }) {
-  const { openPanel } = useApp();
-  const [open, setOpen] = useSignalledOpen(expandSignal, true);
-
-  return (
-    <CollapsibleSection
-      id={`history-${year}-${month}`}
-      label={monthLabel(year, month)}
-      count={entries.length}
-      open={open}
-      onOpenChange={setOpen}
-    >
-      {entries.map(entry => (
-        <HistoryRow key={entry.id} entry={entry} openPanel={openPanel} />
-      ))}
-    </CollapsibleSection>
-  );
-}
-
-/* ── History section: every month with activity, newest first ── */
-function HistorySection({ groups, loading, hasAnyEntries, expandSignal }) {
-  if (loading) return <LoadingSpinner />;
-
-  if (!hasAnyEntries) {
-    return (
-      <div className="empty-state" style={{ marginTop: '1rem' }}>
-        <div className="empty-title">Nothing watched yet</div>
-        <div className="empty-body">
-          Your watch history will appear here. Search for a title and mark it as watched to get started.
-        </div>
-      </div>
-    );
-  }
-
-  if (groups.length === 0) {
-    return (
-      <div className="empty-state" style={{ marginTop: '1rem' }}>
-        <div className="empty-title">No matches</div>
-        <div className="empty-body">No history matches the current filters.</div>
-      </div>
-    );
-  }
-
-  return (
-    <div style={{ paddingBottom: '2rem' }}>
-      {groups.map(g => (
-        <HistoryMonthGroup key={g.key} year={g.year} month={g.month} entries={g.entries} expandSignal={expandSignal} />
-      ))}
-    </div>
-  );
-}
-
 /* ── Main view ── */
 export default function MyListsView() {
   const { user, profile, topLists, favorites, customLists, watching, watchlist } = useApp();
   const fw = favoriteWords(profile?.region);
   const location = useLocation();
-  const { entries: historyEntries, loading: historyLoading } = useHistory(user?.id);
-
   const [tab,          setTab]          = useState(location.state?.tab || 'all');
   const [typeFilters,  setTypeFilters]  = useState([]);
   const [listSectionsOpen, setListSectionsOpen] = useState(() => Object.fromEntries(
     ALL_LIST_SECTION_IDS.map(id => [id, getStoredSectionOpen(id)]),
   ));
-
-  const today = useMemo(() => new Date(), []);
 
   const filterItems = useCallback((items) => {
     if (!typeFilters.length) return items;
@@ -1588,48 +1473,6 @@ export default function MyListsView() {
       (typeFilters.includes('movie') && i.media_type === 'movie' && !i._cinema)
     );
   }, [typeFilters]);
-
-  // History shows every month at once, newest first, skipping any month
-  // with nothing in it. `historyYear`/`historyMonth` no longer select what's
-  // rendered — they're just which month the nav widget last jumped to.
-  const historyMonthGroups = useMemo(
-    () => groupEntriesByMonth(filterItems(historyEntries)),
-    [historyEntries, filterItems],
-  );
-  const hasAnyHistoryEntries = historyEntries.length > 0;
-
-  const [historyYear,  setHistoryYear]  = useState(today.getFullYear());
-  const [historyMonth, setHistoryMonth] = useState(today.getMonth());
-  const [historyGroupsOpen,   setHistoryGroupsOpen]   = useState(true);
-  const [historyExpandSignal, setHistoryExpandSignal] = useState(null);
-
-  const scrollToHistoryMonth = (year, month) => {
-    document.getElementById(`history-${year}-${month}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
-  const historyGroupIndex = historyMonthGroups.findIndex(g => g.year === historyYear && g.month === historyMonth);
-  const canGoOlderHistoryMonth = historyGroupIndex === -1 ? historyMonthGroups.length > 0 : historyGroupIndex < historyMonthGroups.length - 1;
-  const canGoNewerHistoryMonth = historyGroupIndex > 0;
-  const hasCurrentHistoryMonth = historyMonthGroups.some(g => g.year === today.getFullYear() && g.month === today.getMonth());
-
-  const prevHistoryMonth = () => {
-    if (!canGoOlderHistoryMonth) return;
-    const target = historyGroupIndex === -1 ? historyMonthGroups[0] : historyMonthGroups[historyGroupIndex + 1];
-    setHistoryYear(target.year);
-    setHistoryMonth(target.month);
-    scrollToHistoryMonth(target.year, target.month);
-  };
-  const nextHistoryMonth = () => {
-    if (!canGoNewerHistoryMonth) return;
-    const target = historyMonthGroups[historyGroupIndex - 1];
-    setHistoryYear(target.year);
-    setHistoryMonth(target.month);
-    scrollToHistoryMonth(target.year, target.month);
-  };
-  const goToHistoryToday = () => {
-    setHistoryYear(today.getFullYear());
-    setHistoryMonth(today.getMonth());
-    scrollToHistoryMonth(today.getFullYear(), today.getMonth());
-  };
 
   if (!user) return null;
   if (topLists.loading || favorites.loading || customLists.loading || watchlist.loading || watching.loading) {
@@ -1643,49 +1486,35 @@ export default function MyListsView() {
     { id: 'top10',     label: 'Top 10'        },
     { id: 'favorites', label: fw.plural        },
     { id: 'lists',     label: 'Lists'         },
-    { id: 'history',   label: 'History'       },
   ];
 
   const isAll       = tab === 'all';
-  const isHistory   = tab === 'history';
   const showWatching = isAll || tab === 'watching';
   const showWant     = isAll || tab === 'want';
   const showTop10    = isAll || tab === 'top10';
   const showFavs     = isAll || tab === 'favorites';
   const showLists    = isAll || tab === 'lists';
 
-  // Expand/collapse-all acts on every section on the "All" tab, every month
-  // group on the History tab, or just the one section relevant to whichever
-  // other single tab is active (tab ids match section ids 1:1 there).
+  // Expand/collapse-all acts on every section on the "All" tab, or just the
+  // one section relevant to whichever single tab is active (tab ids match
+  // section ids 1:1 there).
   const relevantSectionIds = isAll ? ALL_LIST_SECTION_IDS : [tab];
-  const sectionsOpenForView = isHistory
-    ? historyGroupsOpen
-    : relevantSectionIds.every(id => listSectionsOpen[id]);
+  const sectionsOpenForView = relevantSectionIds.every(id => listSectionsOpen[id]);
   const setListSectionOpen = (id, open) => {
     setListSectionsOpen(prev => ({ ...prev, [id]: open }));
   };
   const toggleSectionsForView = () => {
     const next = !sectionsOpenForView;
-    if (isHistory) {
-      setHistoryGroupsOpen(next);
-      setHistoryExpandSignal(prev => ({ token: (prev?.token ?? 0) + 1, open: next }));
-      return;
-    }
     setListSectionsOpen(prev => ({ ...prev, ...Object.fromEntries(relevantSectionIds.map(id => [id, next])) }));
     relevantSectionIds.forEach(id => storeSectionOpen(id, next));
   };
-  const sectionsToggleLabel = (isAll || isHistory)
+  const sectionsToggleLabel = isAll
     ? (sectionsOpenForView ? MEDIA.collapseAllSections : MEDIA.expandAllSections)
     : (sectionsOpenForView ? 'Collapse section' : 'Expand section');
 
   return (
     <div style={{ paddingBottom: '2rem' }}>
       <div className="sub-tabs">
-        {isHistory && (
-          <span className="sub-tabs-date">
-            <TodayLabel onClick={hasCurrentHistoryMonth ? goToHistoryToday : undefined} />
-          </span>
-        )}
         <div className="sub-tabs-scroll">
           {TABS.map(({ id, label }) => (
             <button
@@ -1723,17 +1552,6 @@ export default function MyListsView() {
           >
             <SectionToggleIcon collapse={sectionsOpenForView} />
           </button>
-          {isHistory && historyMonthGroups.length > 0 && (
-            <div className="cal-month-nav">
-              <button className="cal-month-btn" onClick={prevHistoryMonth} disabled={!canGoOlderHistoryMonth} aria-label="Jump to an older month">
-                <svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>
-              </button>
-              <span className="cal-month-nav-label">{monthLabel(historyYear, historyMonth, 'short')}</span>
-              <button className="cal-month-btn" onClick={nextHistoryMonth} disabled={!canGoNewerHistoryMonth} aria-label="Jump to a more recent month">
-                <svg viewBox="0 0 24 24"><polyline points="9,18 15,12 9,6"/></svg>
-              </button>
-            </div>
-          )}
         </div>
       </div>
 
@@ -1788,15 +1606,6 @@ export default function MyListsView() {
         />
       )}
 
-      {/* ── History ── */}
-      {isHistory && (
-        <HistorySection
-          groups={historyMonthGroups}
-          loading={historyLoading}
-          hasAnyEntries={hasAnyHistoryEntries}
-          expandSignal={historyExpandSignal}
-        />
-      )}
     </div>
   );
 }

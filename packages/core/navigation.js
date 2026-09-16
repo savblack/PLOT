@@ -6,6 +6,10 @@ export const APP_NAV_ITEMS = [
   { id: 'guide', label: 'Guide', path: '/guide', primary: false },
   { id: 'calendar', label: 'Calendar', path: '/calendar', primary: true },
   { id: 'my-lists', label: 'My Lists', path: '/my-lists', primary: true },
+  // Web only for now: on web History is its own page (poster shelf plus an
+  // insights panel); mobile still shows history as a My Lists tab, which is
+  // why MY_LISTS_TABS below keeps its 'history' entry.
+  { id: 'history', label: 'History', path: '/history', primary: true },
   { id: 'search', label: 'Search', path: '/search', primary: false },
   { id: 'settings', label: 'Settings', path: '/settings', primary: false },
 ];
@@ -69,7 +73,9 @@ export const DISCOVER_TABS = [
 ];
 
 /* Tabs nested under My Lists. Ids match the collapsible section ids so the
-   expand/collapse-all control can scope itself to the active tab. */
+   expand/collapse-all control can scope itself to the active tab. Consumed by
+   MOBILE only: web's MyListsView hardcodes its own list (region-spelled
+   Favourites) and dropped 'history' when History became its own page. */
 export const MY_LISTS_TABS = [
   { id: 'all',       label: 'All'           },
   { id: 'watching',  label: 'Watching'      },
