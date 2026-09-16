@@ -1,6 +1,8 @@
 import { buildTitleShareUrl } from '@plot/core/sharing.js';
 import { SHARING } from '@plot/core/copy/sharing.js';
 import { shareLink } from '../lib/share';
+import { customListCreationError } from '@plot/core/customListCreation.js';
+import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
 /**
  * MediaPanel — slide-up detail sheet, mobile port of web MediaPanel.jsx.
  * Sections: backdrop → title/meta → actions → watching/watched → where to watch → episodes (TV)
@@ -38,8 +40,7 @@ import { COMMON } from '@plot/core/copy/common.js';
 import { track, EVENTS, captureException } from '../lib/analytics';
 import { fetchVerifiedAvailability, offersFromTmdb, networksFromDetails, regionDisplayName } from '@plot/core/availability.js';
 import { fetchCriticScore, pickAudienceQuote, getConsensusLine, audienceScoreFromDetails } from '@plot/core/reviews.js';
-import { canCreateCustomList, FREE_CUSTOM_LIST_CAP } from '@plot/core/premium.js';
-import { SHOW_PRICING_PAGE } from '../lib/launchFeatures';
+import { canCreateCustomList } from '@plot/core/premium.js';
 import { TrailerPlayer } from './TrailerPlayer';
 import CollectionCard from './CollectionCard';
 import { MEDIA } from '@plot/core/copy/media.js';
@@ -452,16 +453,20 @@ function AddToListSheet({ item, customLists, topLists, onClose }: {
     if (!trimmed) return;
     if (findDuplicateCustomList(lists, trimmed)) { setError('A list with that name already exists.'); return; }
     if (!canCreateCustomList(lists.length, profile)) {
-      setError(SHOW_PRICING_PAGE
-        ? `Free accounts can have ${FREE_CUSTOM_LIST_CAP} lists. PLOT Premium gets unlimited.`
-        : `You've reached the ${FREE_CUSTOM_LIST_CAP}-list limit.`);
+      setError(CUSTOM_LISTS.limitMessage);
       return;
     }
     setBusy(true);
-    const newList = await createList(trimmed);
-    if (!newList) { setBusy(false); setError(MEDIA.couldNotCreateList); return; }
-    await addItem(newList.id, item);   // create + immediately add this title, like web
-    setBusy(false); setCreating(false); setName(''); setError('');
+    try {
+      const newList = await createList(trimmed);
+      if (!newList) { setError(MEDIA.couldNotCreateList); return; }
+      await addItem(newList.id, item);
+      setCreating(false); setName(''); setError('');
+    } catch (error) {
+      setError(customListCreationError(error, MEDIA.couldNotCreateList));
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (

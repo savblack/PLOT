@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from './supabase.js';
 import { genreIdsFromItem, mediaIdentityRow, tmdbIdFromItem } from './media.js';
 import { getConfig } from './config.js';
+import { createCustomListRecord, CUSTOM_LIST_LIMIT_CODE } from './customListCreation.js';
 
 /**
  * User-created custom lists.
@@ -38,12 +39,11 @@ export function useCustomLists(userId) {
 
   const createList = useCallback(async (name) => {
     if (!userId || !name?.trim()) return null;
-    const { data, error } = await supabase
-      .from('user_custom_lists')
-      .insert({ user_id: userId, name: name.trim() })
-      .select()
-      .single();
-    if (error) {
+    let data;
+    try {
+      data = await createCustomListRecord(supabase, userId, name);
+    } catch (error) {
+      if (error.code === CUSTOM_LIST_LIMIT_CODE) throw error;
       console.error('Failed to create custom list', error);
       return null;
     }

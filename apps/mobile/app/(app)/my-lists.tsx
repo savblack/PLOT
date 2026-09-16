@@ -1,6 +1,8 @@
 import { buildListShareUrl } from '@plot/core/sharing.js';
 import { SHARING } from '@plot/core/copy/sharing.js';
 import { shareLink } from '../../lib/share';
+import { customListCreationError } from '@plot/core/customListCreation.js';
+import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
 import { useState, useMemo } from 'react';
 import {
   View, Text, ScrollView, FlatList, Image, TouchableOpacity, TextInput,
@@ -14,7 +16,7 @@ import ScreenHeaderBar from '../../components/ScreenHeaderBar';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 import { useMediaPanel } from '../../contexts/MediaPanelContext';
 import { useAppData } from '../../contexts/AppDataContext';
-import { canCreateCustomList, FREE_CUSTOM_LIST_CAP } from '@plot/core/premium.js';
+import { canCreateCustomList } from '@plot/core/premium.js';
 import { favoriteWords } from '../../lib/spelling';
 import CollapsibleSection from '../../components/CollapsibleSection';
 import SectionToggleIcon from '../../components/SectionToggleIcon';
@@ -34,7 +36,6 @@ import { MEDIA } from '@plot/core/copy/media.js';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 import { COMMON } from '@plot/core/copy/common.js';
-import { SHOW_PRICING_PAGE } from '../../lib/launchFeatures';
 
 const SCREEN_W = Dimensions.get('window').width;
 const POSTER_W = (SCREEN_W - spacing.xl * 2 - spacing.sm * 2) / 3;
@@ -311,10 +312,26 @@ function PosterGrid({ items, onRemove, horizontal, removeLabel = COMMON.remove, 
 
 
 // ── Create list modal ─────────────────────────────────────────────────
-function CreateListModal({ onConfirm, onClose }: { onConfirm: (name: string) => void; onClose: () => void }) {
+function CreateListModal({ onConfirm, onClose }: { onConfirm: (name: string) => Promise<unknown>; onClose: () => void }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [name, setName] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const submit = async () => {
+    if (!name.trim() || busy) return;
+    setBusy(true);
+    setError('');
+    try {
+      const created = await onConfirm(name.trim());
+      if (created) onClose();
+      else setError(MEDIA.couldNotCreateList);
+    } catch (failure) {
+      setError(customListCreationError(failure, MEDIA.couldNotCreateList));
+    } finally {
+      setBusy(false);
+    }
+  };
   return (
     <Modal visible animationType="slide" presentationStyle="formSheet" onRequestClose={onClose}>
       <View style={styles.createModal}>
@@ -327,12 +344,15 @@ function CreateListModal({ onConfirm, onClose }: { onConfirm: (name: string) => 
           onChangeText={setName}
           autoFocus
           returnKeyType="done"
-          onSubmitEditing={() => name.trim() && onConfirm(name.trim())}
+          editable={!busy}
+          onSubmitEditing={submit}
         />
+        {!!error && <Text accessibilityRole="alert" style={{ color: colors.textSecondary, marginBottom: spacing.sm }}>{error}</Text>}
         <View style={{ flexDirection: 'row', gap: spacing.sm }}>
           <TouchableOpacity
+            disabled={busy || !name.trim()}
             style={[styles.createModalBtn, { flex: 1, backgroundColor: name.trim() ? colors.accent : colors.surfaceSunken }]}
-            onPress={() => name.trim() && onConfirm(name.trim())}
+            onPress={submit}
           >
             <Text style={{ color: name.trim() ? '#fff' : colors.textMuted, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm }}>Create</Text>
           </TouchableOpacity>
@@ -395,9 +415,7 @@ export default function MyListsScreen() {
   // (RLS insert policy) is the authority — this is just friendlier UX.
   const requestCreateList = () => {
     if (!canCreateCustomList(customLists.lists.length, profile)) {
-      Alert.alert('List limit', SHOW_PRICING_PAGE
-        ? `You've got ${FREE_CUSTOM_LIST_CAP} lists. PLOT Premium gets unlimited.`
-        : `You've reached the ${FREE_CUSTOM_LIST_CAP}-list limit.`);
+      Alert.alert(CUSTOM_LISTS.limitTitle, CUSTOM_LISTS.limitMessage);
       return;
     }
     setShowCreateList(true);
@@ -788,7 +806,7 @@ export default function MyListsScreen() {
       )}
       {showCreateList && (
         <CreateListModal
-          onConfirm={(name) => { customLists.createList(name); setShowCreateList(false); }}
+          onConfirm={(name) => customLists.createList(name)}
           onClose={() => setShowCreateList(false)}
         />
       )}

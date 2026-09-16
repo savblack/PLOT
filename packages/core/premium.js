@@ -8,7 +8,7 @@
  * authority, the client only pre-checks for friendlier UX.
  */
 
-export const FREE_CUSTOM_LIST_CAP = 3;
+export const FREE_CUSTOM_LIST_CAP = 5;
 
 export const PREMIUM_PLANS = Object.freeze({
   monthly: { id: 'monthly', label: '$3/mo' },
