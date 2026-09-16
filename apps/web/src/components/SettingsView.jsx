@@ -1,5 +1,5 @@
 // Web settings use DOM panels, browser sharing and Stripe portal redirects.
-// Shared navigation/copy lives in core; native layout parity: GitHub issue #922.
+// Shared navigation/copy lives in core; native layout parity: GitHub issue 922.
 import { SHARING } from '@plot/core/copy/sharing.js';
 import { buildProfileShareUrl } from '@plot/core/sharing.js';
 import { USERNAME_RE } from '@plot/core/profileFields.js';

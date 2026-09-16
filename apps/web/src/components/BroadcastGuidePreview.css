@@ -49,7 +49,7 @@
 .broadcast-guide .broadcast-primary { color: var(--accent-text); border-color: var(--accent); }
 .broadcast-notice { font-size: 12px; border-bottom: 1px solid var(--border); padding-bottom: 16px; }
 .broadcast-dialog { max-width: 520px; width: calc(100% - 48px); background: var(--surface); color: var(--text-primary); padding: 28px; border: 1px solid var(--border-strong); border-radius: 10px; }
-.broadcast-dialog::backdrop { background: rgb(0 0 0 / .4); }
+.broadcast-dialog::backdrop { background: rgba(0, 0, 0, 0.4); }
 .broadcast-dialog > button { float: right; }
 .broadcast-dialog h2 { font-family: 'Instrument Serif', serif; font-size: 32px; font-weight: 400; }
 .broadcast-dialog p { line-height: 1.7; font-size: 14px; }
