@@ -13,6 +13,7 @@ import AppSidebar from '../components/AppSidebar.jsx';
 const RAIL_CSS = `
   .sb-rail .app-sidebar {
     display: flex;
+    flex-direction: column;
     position: static;
     width: 100%;
     height: 100%;

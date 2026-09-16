@@ -117,7 +117,10 @@ export default function AppSidebar({
             <p>{APP_SHELL.helpBuildHint}</p>
           </div>
           <button type="button" className="app-sidebar-action" onClick={onFeedback}>
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11a8 8 0 0 1-8 8H7l-5 3 2-6a8 8 0 1 1 17-5Z" /><path d="M8 11h8" /></svg>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M21 14a3 3 0 0 1-3 3H8l-5 4V6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3Z" />
+              <path d="M8 8h8M8 12h5" />
+            </svg>
             <span><strong>{APP_SHELL.giveFeedback}</strong><small>{APP_SHELL.feedbackHint}</small></span>
             <span className="app-sidebar-action-arrow" aria-hidden="true">→</span>
           </button>
