@@ -26,7 +26,8 @@
   --text:         #f0efe8;        /* colors.dark.textPrimary */
   --text-dim:     rgba(240,239,232,0.72);
   --text-faint:   rgba(240,239,232,0.45);
-  --accent:       #F06A88;        /* the primary pink (colors.dark.accent) */
+  --accent:       #FF88C8;        /* the brand fill pink (colors.dark.accentFill); the cards use it
+                                     as accent type too (author's call, 17 Sep 2026) */
   --chip-cinema:    #E16A73;
   --chip-streaming: #78BDB7;
   --chip-episode:   #7A75E0;

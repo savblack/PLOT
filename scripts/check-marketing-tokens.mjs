@@ -62,7 +62,8 @@ const eq = (label, actual, expected) => {
   const v = vars(rootBlock(read('marketing/templates/base.css')));
   eq('base.css --bg', v['--bg'], colors.dark.bg);
   eq('base.css --text', v['--text'], colors.dark.textPrimary);
-  eq('base.css --accent', v['--accent'], colors.dark.accent);
+  // Cards accent with the fill pink, not the app's primary (author's call, 17 Sep 2026).
+  eq('base.css --accent', v['--accent'], colors.dark.accentFill);
   eq('base.css --chip-cinema', v['--chip-cinema'], colors.dark.chipCinema);
   eq('base.css --chip-streaming', v['--chip-streaming'], colors.dark.chipStreaming);
   eq('base.css --chip-episode', v['--chip-episode'], colors.dark.chipEpisode);
