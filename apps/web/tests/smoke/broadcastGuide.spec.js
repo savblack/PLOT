@@ -1,5 +1,8 @@
 import { expect, test } from '@playwright/test';
 
+// Match the account fixture so host timezone prompts do not obscure the Guide.
+test.use({ timezoneId: 'Australia/Sydney' });
+
 let pageErrors = [];
 test.beforeEach(async ({ page }) => {
   pageErrors = [];
