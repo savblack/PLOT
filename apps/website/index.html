@@ -111,7 +111,6 @@
 
   <link rel="preload" href="/fonts/Gabarito-Variable.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin />
-  <link rel="preload" href="/fonts/InstrumentSerif-Regular.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="/theme.css" />
   <link rel="stylesheet" href="/ui.css" />
   <link rel="stylesheet" href="/nav.css" />
@@ -279,7 +278,7 @@
       align-items: center;
       padding: 0.4rem 0.75rem;
       border-radius: var(--r-pill);
-      background: var(--pink);
+      background: var(--fill);
       color: var(--text);
       font-size: 0.68rem;
       font-weight: 500;
@@ -346,7 +345,7 @@
       color: rgba(41,41,36,0.35);
     }
     .manifesto-line em {
-      font-style: italic;
+      font-style: normal; font-weight: 500;
     }
     .manifesto-line.no-fade.passed {
       color: var(--text);
@@ -400,7 +399,7 @@
     }
     .timeline-header::after { content: none; }
     .tl-head-copy { display: flex; flex-direction: column; gap: 1.25rem; align-items: flex-start; }
-    .tl-eyebrow { background: var(--pink); }
+    .tl-eyebrow { background: var(--fill); }
     .tl-rule { height: 1px; background: var(--rule); margin: 0 3rem; }
 
     .timeline-headline {
@@ -507,8 +506,7 @@
     }
 
     .tl-note {
-      font-family: var(--serif);
-      font-style: italic;
+      font-family: var(--display);
       font-size: 0.85rem;
       color: var(--text-secondary);
       line-height: 1.45;
@@ -546,7 +544,7 @@
       letter-spacing: 0.12em;
       text-transform: uppercase;
       color: var(--text);
-      background: var(--pink);
+      background: var(--fill);
       padding: 0 1rem;
       height: 100%;
       display: flex;
@@ -587,7 +585,7 @@
       font-weight: 200;
       letter-spacing: 0.14em;
       text-transform: uppercase;
-      color: var(--pink);
+      color: var(--fill);
       padding: 0 1.25rem 0 2rem;
       white-space: nowrap;
     }
@@ -675,7 +673,7 @@
       margin-bottom: 1.1rem;
       color: var(--text-dark);
     }
-    .woc-headline em { font-style: italic; }
+    .woc-headline em { font-style: normal; }
 
     .woc-sub {
       font-size: 1.05rem;
@@ -1119,7 +1117,7 @@
     .gp-name { font-family: var(--display); font-weight: 600; letter-spacing: -0.02em; font-size: 1.05rem; line-height: 1.15; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .gp-sub { font-size: 0.78rem; color: var(--text-secondary); }
     .gp-chip { flex-shrink: 0; display: inline-flex; align-items: center; padding: 0.3rem 0.6rem; border-radius: var(--r-pill); font-size: 0.62rem; font-weight: 500; letter-spacing: 0.04em; background: #dbe1b0; color: var(--text); }
-    .gp-chip.is-top { background: var(--pink); }
+    .gp-chip.is-top { background: var(--fill); }
     @media (max-width: 600px) {
       .trend-panel { padding: 1.4rem 1.25rem 0.5rem; }
       .gp-title { font-size: 1.35rem; }
@@ -1220,7 +1218,7 @@
       background: #f4f4f0;
     }
     .demo-app-bar-title {
-      font-family: 'Instrument Serif', Georgia, serif;
+      font-family: 'Gabarito', 'DM Sans', system-ui, sans-serif;
       font-size: 1.1rem;
       font-weight: 400;
       letter-spacing: -0.05em;
@@ -1269,7 +1267,7 @@
     .app-eyebrow {
       display: inline-flex; align-items: center;
       padding: 0.35rem 0.7rem; border-radius: var(--r-pill);
-      background: var(--pink); color: var(--text);
+      background: var(--fill); color: var(--text);
       font-size: 0.62rem; font-weight: 600;
       letter-spacing: 0.12em; text-transform: uppercase;
       margin-bottom: 1.4rem;
@@ -1300,7 +1298,7 @@
     }
     .disc-ham { display: flex; flex-direction: column; gap: 3px; width: 13px; }
     .disc-ham span { height: 1.4px; background: rgba(240,239,232,0.7); border-radius: 1px; }
-    .disc-logo { font-family: var(--serif); font-size: 0.98rem; letter-spacing: 0.04em; color: #f0efe8; }
+    .disc-logo { font-family: var(--display); font-size: 0.98rem; letter-spacing: 0.04em; color: #f0efe8; }
     .disc-search { width: 14px; height: 14px; color: rgba(240,239,232,0.7); }
     .disc-tabs {
       display: flex; align-items: flex-end; gap: 11px;
@@ -1317,7 +1315,7 @@
     }
     .disc-hero-grad { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.15) 52%, transparent 100%); }
     .disc-trend { position: absolute; top: 11px; left: 11px; font-size: 0.42rem; font-weight: 600; letter-spacing: 0.06em; color: #fff; background: rgba(224,85,120,0.92); padding: 3px 7px; border-radius: 20px; }
-    .disc-hero-title { position: relative; font-family: var(--serif); font-size: 1.2rem; line-height: 1; color: #fff; letter-spacing: -0.02em; }
+    .disc-hero-title { position: relative; font-family: var(--display); font-size: 1.2rem; line-height: 1; color: #fff; letter-spacing: -0.02em; }
     .disc-hero-meta { position: relative; font-size: 0.5rem; color: rgba(255,255,255,0.72); margin-top: 4px; }
     .disc-sec { padding: 13px 0 9px; }
     .disc-sec-sub { font-size: 0.42rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(240,239,232,0.3); }
@@ -1583,7 +1581,7 @@
       outline-offset: -2px;
     }
     .cal-cell-int.today .cal-dn-int {
-      background: var(--pink);
+      background: var(--fill);
       color: var(--text);
       border-radius: 50%;
       width: 22px; height: 22px;

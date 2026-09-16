@@ -64,12 +64,12 @@ nav.scrolled {
 .nav-links a:hover { color: var(--text-secondary); }
 /* The sign-up link is a pink pill, the same shape as .btn-primary */
 .nav-cta {
-  background: var(--pink);
+  background: var(--fill);
   padding: 0.6rem 1.1rem !important;
   border-radius: var(--r-pill);
   line-height: 1;
 }
-.nav-cta:hover { color: var(--text) !important; background: var(--pink-hover); }
+.nav-cta:hover { color: var(--text) !important; background: var(--fill-hover); }
 
 /* Mobile nav toggle — padded to a ≥44px tap target, negative margin keeps
    the icon optically aligned with the nav's right edge */

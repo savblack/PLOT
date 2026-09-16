@@ -38,7 +38,7 @@ const t = {
   accentFill: c.accentFill,
   accentSoft: '#F7C7D3',
   display: "'Gabarito', 'DM Sans', -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif",
-  serif: "'Instrument Serif', Georgia, 'Times New Roman', serif",
+  serif: "'Gabarito', 'DM Sans', Helvetica, Arial, sans-serif",
   siteSans: dmSans,
   sans: dmSans,
 };
@@ -77,7 +77,7 @@ const layout = ({ preheader, heading, intro, content, note, safety }) => `<!doct
   <meta name="supported-color-schemes" content="light">
   <title>plot</title>
   <!--[if !mso]><!-->
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Gabarito:wght@700&family=Instrument+Serif&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Gabarito:wght@700&display=swap" rel="stylesheet">
   <!--<![endif]-->
 </head>
 <body style="margin: 0; padding: 0; background-color: ${t.bg};">

@@ -1276,7 +1276,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   consensusLine: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textSecondary, marginBottom: spacing.sm, lineHeight: 17 },
   overview: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary, lineHeight: 20, marginBottom: spacing.lg },
   audienceQuote: { borderLeftWidth: 2, borderLeftColor: colors.accent, paddingLeft: spacing.md, marginBottom: spacing.md },
-  audienceQuoteText: { fontFamily: fontFamily.serif, fontStyle: 'italic', fontSize: fontSize.md, color: colors.textSecondary, lineHeight: 21 },
+  audienceQuoteText: { fontFamily: fontFamily.display, fontSize: fontSize.md, color: colors.textSecondary, lineHeight: 21 },
   audienceQuoteAttr: { fontFamily: fontFamily.sansBold, fontSize: 10, color: colors.textMuted, marginTop: 4, letterSpacing: 0.3 },
 
   // Single-source spacing.sm rhythm for the action block: the col gap handles

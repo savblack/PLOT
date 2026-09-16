@@ -168,12 +168,12 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   },
   rankEmptyPrompt: {
     flex: 1,
-    fontFamily: fontFamily.serifItalic,
+    fontFamily: fontFamily.display,
     fontSize: fontSize.sm,
     color: colors.textMuted,
   },
   rankNum: {
-    fontFamily: fontFamily.serifTabular,
+    fontFamily: fontFamily.display,
     fontSize: 22,
     width: 28,
     textAlign: 'center',

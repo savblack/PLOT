@@ -380,7 +380,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
       {/* ── Right: form panel ── */}
       <div className="auth-panel">
         <Link to="/" className="auth-panel-logo" aria-label="plot">
-          PLOT
+          plot
         </Link>
 
         <div className="auth-panel-body">

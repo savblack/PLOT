@@ -569,7 +569,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     paddingVertical: spacing.sm,
     gap: spacing.sm,
   },
-  agendaDayNum: { fontFamily: fontFamily.serifTabular, fontSize: 26, color: colors.textPrimary, width: 34 },
+  agendaDayNum: { fontFamily: fontFamily.display, fontSize: 26, color: colors.textPrimary, width: 34 },
   agendaDayName: { fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, color: colors.textMuted, letterSpacing: 0.6, textTransform: 'uppercase' },
   todayPill: {
     backgroundColor: colors.accentDim,

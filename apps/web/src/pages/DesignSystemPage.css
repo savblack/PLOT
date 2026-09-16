@@ -169,7 +169,7 @@
 }
 
 .ds-type-card--serif strong {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 2.1rem;
   font-weight: 500;
   letter-spacing: -0.04em;
@@ -541,7 +541,7 @@
 
 .ds-poster-art span {
   color: #fff;
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 2rem;
   font-weight: 400;
   letter-spacing: -0.07em;
@@ -931,7 +931,7 @@
 }
 
 .ds-modal-title {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 1.05rem;
   font-weight: 400;
   color: var(--text-primary);
@@ -1136,7 +1136,7 @@
 }
 
 .ds-ep-code {
-  font-family: 'Instrument Serif', Georgia, serif;
+  font-family: 'Gabarito', 'DM Sans', system-ui, sans-serif;
   font-size: clamp(2.5rem, 8vw, 4rem);
   font-weight: 400;
   line-height: 0.9;
@@ -1296,7 +1296,7 @@
 
 .ds-layout-token-value {
   display: block;
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 1.6rem;
   line-height: 1;
   letter-spacing: -0.02em;
@@ -1438,7 +1438,7 @@
   flex-shrink: 0;
   background: var(--surface-raised);
   border: 1px solid var(--border);
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   color: var(--text-muted);
 }
 .ds-avatar--lg { width: 64px; height: 64px; font-size: 1.6rem; }
@@ -1533,7 +1533,7 @@
 }
 .ds-pp-header > span:last-child { display: flex; flex-direction: column; }
 .ds-pp-name {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 1.6rem;
   font-weight: 500;
   letter-spacing: -0.03em;
@@ -1583,7 +1583,7 @@
   padding: 0 0.8rem 0.55rem;
 }
 .ds-phone-wordmark {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 1.3rem;
   letter-spacing: -0.04em;
   color: var(--text-primary);
@@ -1650,7 +1650,7 @@
 
 .ds-editorial-display span {
   display: inline-block;
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-weight: 400;
   letter-spacing: -0.05em;
   line-height: 0.95;

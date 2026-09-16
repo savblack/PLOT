@@ -50,7 +50,7 @@ const INK = colors.light.textPrimary, MUT = colors.light.textSecondary, FAINT = 
 const FILL = colors.light.accentFill, ON_FILL = colors.light.onAccentFill;
 const HAIR = '#e6dfd3', PAPER = colors.light.bg;
 const DISPLAY = "'Gabarito', 'DM Sans', -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif";
-const SERIF = "'Instrument Serif', Georgia, 'Times New Roman', serif";
+const SERIF = "'Gabarito', 'DM Sans', Helvetica, Arial, sans-serif";
 const SANS = "'Helvetica Neue', Helvetica, Arial, sans-serif";
 
 // One-click "Save to watchlist" deep link. Returns '' for anything that isn't a
@@ -210,7 +210,7 @@ const buildHtml = ({ dateLabel, featured, kicker, chart, weekend, streaming }, u
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light only">
-<link href="https://fonts.googleapis.com/css2?family=Gabarito:wght@600;700&family=Instrument+Serif&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Gabarito:wght@600;700&display=swap" rel="stylesheet">
 <title>This week in film &amp; TV</title>
 </head>
 <body style="margin:0;padding:0;background:${PAPER};">

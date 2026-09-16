@@ -36,13 +36,13 @@ export const colors = {
     // value everywhere else. Dark needs no adjustment, so it is the accent
     // unchanged.
     accentText: '#B83558',
-    // The brand pink as a FILL. Too light to carry text (1.97:1 on cream), so
-    // it only ever sits behind charcoal text: the primary button, chips, the
-    // Live badge, the sign-up pill. onAccentFill is the text that goes on it
-    // (6.69:1). This is the one place the marketing site and the app share a
-    // "pop" colour; --accent stays the pink for small text, icons and rings.
-    accentFill: '#FF88C8',
-    accentFillHover: '#FF9FD3',
+    // The FILL: Marshmallow's soft sage. Too light to carry text, so it only
+    // ever sits behind charcoal text (10.7:1): the primary button, chips, the
+    // Live badge, the sign-up pill. --accent stays the pink for small text,
+    // icons and rings. The pink fill (#FF88C8) was tried first and replaced by
+    // the green on 16 Sep 2026.
+    accentFill: '#DBE1B0',
+    accentFillHover: '#CFD79E',
     onAccentFill: '#292924',
     danger: '#B9384A',
     dangerDim: 'rgba(185,56,74,0.1)',
@@ -103,9 +103,9 @@ export const colors = {
     accent: '#F06A88',
     accentDim: 'rgba(240,106,136,0.15)',
     accentText: '#F06A88',
-    // Same fill in the dark theme: charcoal text on candy pink reads on any ground.
-    accentFill: '#FF88C8',
-    accentFillHover: '#FF9FD3',
+    // Same fill in the dark theme: charcoal text on sage reads on any ground.
+    accentFill: '#DBE1B0',
+    accentFillHover: '#CFD79E',
     onAccentFill: '#292924',
     danger: '#F18997',
     dangerDim: 'rgba(241,137,151,0.16)',

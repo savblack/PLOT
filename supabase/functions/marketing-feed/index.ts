@@ -31,7 +31,7 @@ import { serviceKey } from '../_shared/serviceKey.ts';
 const SITE = 'https://theplot.tv';
 const APP = 'https://app.theplot.tv';
 const FEED_TITLE = "What's On";
-const FEED_SEO_TITLE = "What's On: Film & TV Releases, Streaming & Trends – PLOT";
+const FEED_SEO_TITLE = "What's On: Film & TV Releases, Streaming & Trends – plot";
 const FEED_PATH = '/whats-on';
 const PAGE_SIZE = 30;
 
@@ -190,7 +190,7 @@ const kicker = (p: Pick<FeedPost, 'post_type' | 'payload'>, lead = false) => {
   const m = TYPE_META[p.post_type];
   if (!m) return '';
   const label = (p.post_type === 'now_streaming' && HOME_KIND_LABEL[p.payload?.home_kind ?? '']) || m.label;
-  return `<span class="kick${lead ? ' pink' : ''}"${lead ? ' style="background:var(--pink)"' : ''}>${esc(label)}</span>`;
+  return `<span class="kick${lead ? ' pink' : ''}"${lead ? ' style="background:var(--fill)"' : ''}>${esc(label)}</span>`;
 };
 
 // PostHog snippet for the server-rendered /whats-on pages. Same project token
@@ -249,28 +249,19 @@ ${GA_GTM}
 ${head}
 <link rel="preload" href="${SITE}/fonts/Gabarito-Variable.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="${SITE}/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="${SITE}/fonts/InstrumentSerif-Regular.woff2" as="font" type="font/woff2" crossorigin>
 <style>
   /* Self-hosted from apps/website/fonts — this function is proxied under
      theplot.tv, so an absolute path resolves against that origin regardless
      of where the HTML itself is generated. */
   @font-face { font-family: 'Gabarito'; src: url('${SITE}/fonts/Gabarito-Variable.woff2') format('woff2'); font-weight: 400 900; font-style: normal; font-display: swap; }
   @font-face { font-family: 'DM Sans'; src: url('${SITE}/fonts/DMSans-Variable.woff2') format('woff2'); font-weight: 100 900; font-style: normal; font-display: swap; }
-  @font-face { font-family: 'Instrument Serif'; src: url('${SITE}/fonts/InstrumentSerif-Regular.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: swap; }
-  @font-face { font-family: 'Instrument Serif'; src: url('${SITE}/fonts/InstrumentSerif-Italic.woff2') format('woff2'); font-weight: 400; font-style: italic; font-display: swap; }
-  /* Digits respaced to a common width (scripts/build-tabular-digits.py). Instrument Serif
-     has no tnum feature and draws digits proportionally, so a rank column would otherwise
-     sit ragged; unicode-range keeps this face to the digits alone. */
-  @font-face { font-family: 'Instrument Serif Tabular'; src: url('${SITE}/fonts/InstrumentSerif-TabularDigits.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: swap; unicode-range: U+0030-0039; }
   :root {
     /* Marketing palette — mirrors apps/website/theme.css. Cream ground, soft
-       charcoal ink, the candy pink is a FILL behind charcoal text only. */
-    --ink: #292924; --paper: #f1e9dc; --bg: #f8f2ea; --pink: #ff88c8; --pink-hover: #ff9fd3;
+       charcoal ink, the sage is a FILL behind charcoal text only. */
+    --ink: #292924; --paper: #f1e9dc; --bg: #f8f2ea; --fill: #dbe1b0; --fill-hover: #cfd79e;
     --accent: #E05578; --sage: #dbe1b0;
     --mut: #5f5a52; --faint: #8a847a; --hair: rgba(41,41,36,0.12);
     --display: 'Gabarito', 'DM Sans', system-ui, sans-serif;
-    --serif: 'Instrument Serif', Georgia, serif;
-    --serif-tabular: 'Instrument Serif Tabular', var(--serif);
     --ease: cubic-bezier(0.23, 1, 0.32, 1);
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -289,7 +280,7 @@ ${head}
   .hl { font-family: var(--display); font-weight: 600; letter-spacing: -0.02em; line-height: 1.2; }
   .card { background: var(--paper); border-radius: 20px; }
   .chip { display: inline-flex; align-items: center; padding: 5px 10px; border-radius: 9999px; font-size: 0.66rem; font-weight: 500; letter-spacing: 0.02em; background: var(--bg); color: var(--ink); }
-  .chip.pink { background: var(--pink); } .chip.sage { background: var(--sage); }
+  .chip.pink { background: var(--fill); } .chip.sage { background: var(--sage); }
   @keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
   .r1, .r2, .r3, .r4 { animation: rise 0.7s var(--ease) both; }
   .r2 { animation-delay: 0.08s; } .r3 { animation-delay: 0.16s; } .r4 { animation-delay: 0.24s; }
@@ -310,8 +301,8 @@ ${head}
   .nav-links a { display: inline-block; padding: 0.75rem 0.25rem; text-decoration: none; color: var(--ink); font-size: 0.9rem; font-weight: 500; transition: color 0.2s, background 0.2s; }
   .nav-links a:hover { color: var(--mut); }
   .nav-links a.current { color: var(--ink); }
-  .nav-cta { background: var(--pink); padding: 0.6rem 1.1rem !important; border-radius: 9999px; line-height: 1; }
-  .nav-cta:hover { color: var(--ink) !important; background: var(--pink-hover); }
+  .nav-cta { background: var(--fill); padding: 0.6rem 1.1rem !important; border-radius: 9999px; line-height: 1; }
+  .nav-cta:hover { color: var(--ink) !important; background: var(--fill-hover); }
   .nav-hamburger { display: none; background: none; border: none; cursor: pointer; padding: 14px 12px; margin-right: -12px; flex-direction: column; gap: 5px; }
   .nav-hamburger span { display: block; width: 22px; height: 2px; background: var(--ink); border-radius: 2px; transition: all 0.3s var(--ease); }
   .nav-hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
@@ -332,13 +323,13 @@ ${head}
   .head-row { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; flex-wrap: wrap; }
   .dateline { color: var(--mut); white-space: nowrap; padding-bottom: 0.6em; }
   h1.feed-title { font-family: var(--display); font-size: clamp(2.8rem, 6vw, 4rem); font-weight: 700; line-height: 1; letter-spacing: -0.03em; }
-  h1.feed-title em { font-family: var(--serif); font-style: italic; font-weight: 400; letter-spacing: -0.04em; color: inherit; }
+  h1.feed-title em { font-style: normal; font-weight: 500; color: var(--mut); }
 
   nav.dex { display: flex; justify-content: space-between; align-items: baseline; gap: 24px; border-bottom: 1px solid var(--hair); margin: 28px 0 0; }
   .dex-links { display: flex; gap: 28px; flex-wrap: wrap; }
   .dex a { color: var(--mut); text-decoration: none; padding-bottom: 12px; border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; }
   .dex a:hover { color: var(--ink); }
-  .dex a.active { color: var(--ink); border-bottom-color: var(--pink); }
+  .dex a.active { color: var(--ink); border-bottom-color: var(--fill); }
 
   /* ── front page: feed column + sidebar ── */
   .feed-grid { display: grid; grid-template-columns: minmax(0, 8fr) minmax(0, 4fr); gap: 40px; align-items: start; margin-top: 28px; }
@@ -371,7 +362,7 @@ ${head}
   .sec-card { padding: 24px 28px 28px; display: flex; flex-direction: column; gap: 18px; }
   .sec-card.tight { padding-bottom: 12px; }
   .sec-head { display: flex; align-items: center; gap: 10px; }
-  .sec-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--pink); flex-shrink: 0; }
+  .sec-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--fill); flex-shrink: 0; }
   .sec-label { font-family: var(--display); font-weight: 700; letter-spacing: -0.03em; font-size: 1.4rem; line-height: 1; white-space: nowrap; }
   .sec-rule { flex: 1; }
   .view-all { font-size: 0.68rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink); text-decoration: none; white-space: nowrap; }
@@ -395,7 +386,7 @@ ${head}
   .trend-t { font-family: var(--display); font-weight: 600; letter-spacing: -0.02em; font-size: 1rem; line-height: 1.2; transition: color 0.25s var(--ease); min-width: 0; }
   .trend-row:hover .trend-t { color: var(--mut); }
   .ch-move { font-size: 0.64rem; font-weight: 500; letter-spacing: 0.02em; white-space: nowrap; }
-  .mv-new { display: inline-flex; align-items: center; padding: 4px 9px; border-radius: 9999px; background: var(--pink); color: var(--ink); }
+  .mv-new { display: inline-flex; align-items: center; padding: 4px 9px; border-radius: 9999px; background: var(--fill); color: var(--ink); }
   .mv-up { color: #0F6E56; } .mv-down { color: #B03A5E; } .mv-same { color: var(--faint); }
 
   /* Coming soon: date block + thumb + title, sidebar */
@@ -461,10 +452,10 @@ ${head}
   .article-provider { display:inline-flex; align-items:center; gap:6px; min-height:28px; padding:4px 8px 4px 5px; border-radius:999px; background:var(--bg); font-size:0.75rem; white-space:nowrap; }
   .article-provider img { width:21px; height:21px; object-fit:contain; border-radius:5px; display:block; }
   .article-watch-empty { color:var(--mut); font-size:0.82rem; }
-  .article-save { display:inline-flex; align-items:center; gap:0.5rem; min-height:44px; padding:0.8rem 1.2rem; border-radius:999px; background:var(--pink); color:var(--ink); text-decoration:none; font-size:0.85rem; font-weight:500; white-space:nowrap; transition:transform 0.2s var(--ease), background 0.2s var(--ease); }
-  .article-save:hover { background:var(--pink-hover); transform:translateY(-1px); }
-  .cta { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.85rem 1.6rem; min-height: 44px; border-radius: 9999px; background: var(--pink); color: var(--ink); text-decoration: none; font-weight: 500; font-size: 0.9rem; white-space: nowrap; transition: all 0.25s var(--ease); }
-  .cta:hover { background: var(--pink-hover); transform: translateY(-1px); }
+  .article-save { display:inline-flex; align-items:center; gap:0.5rem; min-height:44px; padding:0.8rem 1.2rem; border-radius:999px; background:var(--fill); color:var(--ink); text-decoration:none; font-size:0.85rem; font-weight:500; white-space:nowrap; transition:transform 0.2s var(--ease), background 0.2s var(--ease); }
+  .article-save:hover { background:var(--fill-hover); transform:translateY(-1px); }
+  .cta { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.85rem 1.6rem; min-height: 44px; border-radius: 9999px; background: var(--fill); color: var(--ink); text-decoration: none; font-weight: 500; font-size: 0.9rem; white-space: nowrap; transition: all 0.25s var(--ease); }
+  .cta:hover { background: var(--fill-hover); transform: translateY(-1px); }
   .back { display: inline-block; margin-top: 40px; color: var(--mut); text-decoration: none; }
   .back:hover { color: var(--ink); }
   .post-foot { max-width: 680px; margin: 0 auto; }
@@ -691,7 +682,7 @@ const CHART_CSS = `
     text-decoration: none; font-size: 0.78rem; font-weight: 500; white-space: nowrap;
     transition: background 0.2s var(--ease), transform 0.2s var(--ease);
   }
-  .ch-save:hover { background: var(--pink); transform: translateY(-1px); }
+  .ch-save:hover { background: var(--fill); transform: translateY(-1px); }
   @media (max-width: 600px) {
     .ch-row { grid-template-columns: 34px 48px 1fr; gap: 14px 14px; }
     .ch-rank { font-size: 1.6rem; }
@@ -936,8 +927,8 @@ const SUBSCRIBE_CSS = `
   .nlsub-form { display: flex; gap: 6px; margin-top: 16px; align-items: center; background: var(--bg); border-radius: 9999px; padding: 5px 5px 5px 16px; }
   .nlsub-form input[type=email] { flex: 1 1 120px; min-width: 0; padding: 8px 0; border: 0; font: inherit; font-size: 0.9rem; color: var(--ink); background: transparent; }
   .nlsub-form input[type=email]:focus { outline: none; }
-  .nlsub-form button { padding: 9px 16px; border: 0; border-radius: 9999px; background: var(--pink); color: var(--ink); font: inherit; font-size: 0.85rem; font-weight: 500; cursor: pointer; transition: background 0.2s; white-space: nowrap; }
-  .nlsub-form button:hover { background: var(--pink-hover); }
+  .nlsub-form button { padding: 9px 16px; border: 0; border-radius: 9999px; background: var(--fill); color: var(--ink); font: inherit; font-size: 0.85rem; font-weight: 500; cursor: pointer; transition: background 0.2s; white-space: nowrap; }
+  .nlsub-form button:hover { background: var(--fill-hover); }
   .nlsub-form button:disabled { opacity: 0.5; cursor: default; }
   .nlsub-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
   .nlsub-msg { margin-top: 10px; color: rgba(248,242,234,0.7); font-size: 0.86rem; min-height: 1.2em; }
@@ -1148,7 +1139,7 @@ Deno.serve(async (req) => {
       .eq('post_type', 'trending')
       .maybeSingle();
     if (legacyChart) return await renderChart(supabase);
-    return page('Not found · PLOT', '', `
+    return page('Not found · plot', '', `
       <article class="post r2">
         <header class="post-head"><h1>Nothing here yet</h1></header>
         <div class="post-body"><p>This update does not exist or has not been published.</p></div>
@@ -1183,7 +1174,7 @@ Deno.serve(async (req) => {
     datePublished: typed.scheduled_for,
     ...(hero ? { image: [hero] } : {}),
     url: pageUrl,
-    publisher: { '@type': 'Organization', name: 'PLOT', url: SITE },
+    publisher: { '@type': 'Organization', name: 'plot', url: SITE },
   }).replace(/</g, '\\u003c');
 
   const head = `<meta name="description" content="${esc(description)}">

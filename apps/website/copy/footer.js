@@ -9,7 +9,7 @@
 // mirror the change here.
 
 export const FOOTER_PARTIAL = {
-  logo: 'PLOT',
+  logo: 'plot',
   nav: {
     home: 'Home',
     whatsOn: "What's On",
@@ -18,10 +18,10 @@ export const FOOTER_PARTIAL = {
     privacy: 'Privacy',
     terms: 'Terms',
   },
-  copyright: (year) => `© ${year} PLOT`,
+  copyright: (year) => `© ${year} plot`,
   socialAria: {
     instagram: 'PLOT on Instagram',
-    threads: 'PLOT on Threads',
-    x: 'PLOT on X',
+    threads: 'plot on Threads',
+    x: 'plot on X',
   },
 };

@@ -57,7 +57,7 @@ export default function LogoutPage() {
       {/* ── Right: confirmation panel ── */}
       <div className="auth-panel">
         <Link to="/login" className="auth-panel-logo" aria-label="plot">
-          PLOT
+          plot
         </Link>
 
         <div className="auth-panel-body">

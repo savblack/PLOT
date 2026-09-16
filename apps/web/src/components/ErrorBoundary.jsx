@@ -28,7 +28,7 @@ const styles = `
   }
 
   .plot-error-number {
-    font-family: 'Instrument Serif', Georgia, serif;
+    font-family: 'Gabarito', 'DM Sans', system-ui, sans-serif;
     font-size: clamp(4rem, 18vw, 8rem);
     font-weight: 400;
     line-height: 0.9;

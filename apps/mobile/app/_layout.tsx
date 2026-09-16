@@ -94,13 +94,10 @@ function RootInner() {
     // Display face: Gabarito static cuts (RN cannot pick a weight axis from a variable font).
     'Gabarito-Bold':           require('../assets/fonts/Gabarito-Bold.ttf'),
     'Gabarito-SemiBold':       require('../assets/fonts/Gabarito-SemiBold.ttf'),
-    'InstrumentSerif-Regular': require('../assets/fonts/InstrumentSerif-Regular.ttf'),
-    'InstrumentSerif-Italic':  require('../assets/fonts/InstrumentSerif-Italic.ttf'),
     'DMSans-Regular':          require('../assets/fonts/DMSans-Regular.ttf'),
     'DMSans-Medium':           require('../assets/fonts/DMSans-Medium.ttf'),
     'DMSans-SemiBold':         require('../assets/fonts/DMSans-SemiBold.ttf'),
     // Tabular-digit cuts — see lib/tokens.ts and apps/web/public/fonts/README.md.
-    'InstrumentSerif-Tabular': require('../assets/fonts/InstrumentSerif-Tabular.ttf'),
     'DMSans-TabularRegular':   require('../assets/fonts/DMSans-TabularRegular.ttf'),
     'DMSans-TabularSemiBold':  require('../assets/fonts/DMSans-TabularSemiBold.ttf'),
   });
@@ -182,7 +179,7 @@ function RootInner() {
     return () => sub.remove();
   }, []);
 
-  // The wordmark loader needs Instrument Serif — before the fonts are in it
+  // The wordmark loader needs Gabarito — before the fonts are in it
   // would render in the system fallback with mangled spacing. Blank until then.
   if (!fontsLoaded) return <ThemedBlank />;
   if (!authReady)   return <PlotLoader backgroundColor={colors.bg} color={colors.textPrimary} />;

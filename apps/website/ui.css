@@ -32,8 +32,8 @@
   border: none;
   color: var(--text);
 }
-.btn-primary { background: var(--pink); }
-.btn-primary:hover { background: var(--pink-hover); transform: translateY(-1px); }
+.btn-primary { background: var(--fill); }
+.btn-primary:hover { background: var(--fill-hover); transform: translateY(-1px); }
 .btn-outline,
 .btn-outline-white { background: var(--surface); }
 .btn-outline:hover,
@@ -61,7 +61,7 @@
   text-transform: uppercase;
   white-space: nowrap;
 }
-.chip-pink { background: var(--pink); }
+.chip-pink { background: var(--fill); }
 .chip-sage { background: var(--sage); }
 .chip-plain { text-transform: none; letter-spacing: 0.02em; font-weight: 500; font-size: 0.66rem; }
 
@@ -83,4 +83,4 @@
 /* Display type helpers */
 .display { font-family: var(--display); font-weight: 700; letter-spacing: var(--display-tracking); line-height: 0.95; }
 .caps { font-size: 0.7rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-secondary); }
-.quote { font-family: var(--serif); font-style: italic; }
+.quote { font-family: var(--display); font-weight: 500; }

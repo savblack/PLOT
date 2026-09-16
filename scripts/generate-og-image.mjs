@@ -20,13 +20,13 @@ const html = `<!DOCTYPE html>
 <style>
   @font-face { font-family: 'Gabarito'; src: url(${fontDataUri('Gabarito-Bold.ttf')}) format('truetype'); font-weight: 700; font-style: normal; font-display: swap; }
   @font-face { font-family: 'DM Sans'; src: url(${fontDataUri('DMSans-Variable.ttf')}) format('truetype-variations'); font-weight: 100 900; font-style: normal; font-display: swap; }
-  @font-face { font-family: 'Instrument Serif'; src: url(${fontDataUri('InstrumentSerif-Regular.ttf')}) format('truetype'); font-weight: 400; font-style: normal; font-display: swap; }
-  @font-face { font-family: 'Instrument Serif'; src: url(${fontDataUri('InstrumentSerif-Italic.ttf')}) format('truetype'); font-weight: 400; font-style: italic; font-display: swap; }
+) format('truetype'); font-weight: 400; font-style: normal; font-display: swap; }
+) format('truetype'); font-weight: 400; font-style: italic; font-display: swap; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
     width: 1200px;
     height: 630px;
-    background: #f8f8f8;
+    background: #f8f2ea;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -48,35 +48,35 @@ const html = `<!DOCTYPE html>
     font-family: 'Gabarito', 'DM Sans', sans-serif;
     font-size: 200px;
     font-weight: 700;
-    letter-spacing: -0.05em;
+    letter-spacing: -0.045em;
     line-height: 1;
-    color: #1a1a1a;
+    color: #292924;
   }
   .tagline {
-    margin-top: 28px;
-    font-size: 34px;
-    font-weight: 200;
-    color: #666;
-    letter-spacing: 0.01em;
+    margin-top: 30px;
+    font-size: 26px;
+    font-weight: 400;
+    color: #5f5a52;
+    white-space: nowrap;
   }
   .tagline em {
-    font-family: 'Gabarito', 'DM Sans', sans-serif;
-    font-weight: 700;
-    font-style: italic;
-    color: #1a1a1a;
+    font-style: normal;
+    font-weight: 500;
+    color: #292924;
   }
   .rule {
-    margin-top: 44px;
-    width: 64px;
-    height: 2px;
-    background: #e05578;
+    margin-top: 40px;
+    width: 72px;
+    height: 6px;
+    border-radius: 3px;
+    background: #dbe1b0;
   }
 </style>
 </head>
 <body>
   <div class="wordmark">plot</div>
   <div class="rule"></div>
-  <div class="tagline">Your film &amp; TV journal &mdash; <em>everything you've watched, everything you want to watch.</em></div>
+  <div class="tagline">Your film &amp; TV companion &mdash; <em>everything you've watched, everything you want to watch.</em></div>
 </body>
 </html>`;
 

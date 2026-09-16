@@ -289,7 +289,7 @@ export default function ImportView() {
         >
           <BackIcon />
         </button>
-        <h1 style={{ fontSize: '1.55rem', fontWeight: 400, fontFamily: 'var(--font-serif)', letterSpacing: '-0.05em', color: 'var(--text-primary)', margin: 0 }}>
+        <h1 style={{ fontSize: '1.55rem', fontWeight: 400, fontFamily: 'var(--font-display)', letterSpacing: '-0.05em', color: 'var(--text-primary)', margin: 0 }}>
           Import Watch History
         </h1>
       </div>
@@ -451,7 +451,7 @@ export default function ImportView() {
         <>
           {/* Editorial headline */}
           <div style={{ marginBottom: '1.25rem' }}>
-            <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1.5rem', fontWeight: 400, lineHeight: 1.25, letterSpacing: '-0.03em', color: 'var(--text-primary)', marginBottom: '0.35rem' }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontWeight: 400, lineHeight: 1.25, letterSpacing: '-0.03em', color: 'var(--text-primary)', marginBottom: '0.35rem' }}>
               Found <span style={{ color: 'var(--accent)' }}>{results.length} title{results.length !== 1 ? 's' : ''}</span> from {platform?.name}
             </div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>

@@ -7,7 +7,7 @@
    the app), the black CTA is --ink. */
 
 /* Self-hosted brand fonts (same files as apps/web/public/fonts) — every page
-   that loads this stylesheet gets DM Sans + Instrument Serif without a
+   that loads this stylesheet gets DM Sans + Gabarito without a
    Google Fonts round trip. Weight range covers every wght@ used across the
    site's pages (200–700). */
 @font-face {
@@ -24,34 +24,18 @@
   font-style: normal;
   font-display: swap;
 }
-@font-face {
-  font-family: 'Instrument Serif';
-  src: url('/fonts/InstrumentSerif-Regular.woff2') format('woff2');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Instrument Serif';
-  src: url('/fonts/InstrumentSerif-Italic.woff2') format('woff2');
-  font-weight: 400;
-  font-style: italic;
-  font-display: swap;
-}
 
 :root {
   /* Brand accent — same semantics + value as the app. (CANON colors.light.accent) */
   --accent:          #E05578;
   --accent-dim:      rgba(224,85,120,0.12);   /* (CANON colors.light.accentDim) */
 
-  /* Marketing pink — a lighter, candy pink used ONLY as a fill behind charcoal
-     text (primary button, chips, the Live badge). It is too light to carry
-     text on cream, so it never colours type; --accent stays the canonical
-     pink for small text accents and for the app. Marketing-only. */
-  --pink:            #ff88c8;   /* (CANON colors.light.accentFill) */
-  --pink-hover:      #ff9fd3;   /* (CANON colors.light.accentFillHover) */
-  /* Sage — the one secondary tint, for "now at home" / availability chips. */
-  --sage:            #dbe1b0;
+  /* The fill — Marshmallow's soft sage, used ONLY behind charcoal text (primary
+     button, chips, the Live badge, the sign-up pill). --accent stays the pink
+     for small text accents. Marketing mirrors of the canonical values. */
+  --fill:            #dbe1b0;   /* (CANON colors.light.accentFill) */
+  --fill-hover:      #cfd79e;   /* (CANON colors.light.accentFillHover) */
+  --sage:            var(--fill);
 
   /* Charcoal ink — the marketing site's near-black. Softer than #000 on the
      cream ground. Used for body text, the ticker bar and dark fills. */
@@ -80,14 +64,10 @@
   /* Success — reconciled to the app's green. (CANON colors.light.chipNow) */
   --success:         #059669;
 
-  /* Typography — Gabarito carries headlines, DM Sans body and UI, Instrument
-     Serif the editorial voice (manifesto, quotes, notes). */
+  /* Typography — Gabarito carries headlines and the editorial voice, DM Sans body and UI. */
   --display:         'Gabarito', 'DM Sans', system-ui, sans-serif;
   --display-tracking: -0.03em;
-  --serif:           'Instrument Serif', Georgia, serif;
   --sans:            'DM Sans', system-ui, sans-serif;
-  --serif-tracking:  -0.05em;
-  --serif-condense:  0.997;
 
   /* Radii — (CANON radii.badge / md / lg / pill) */
   --r-badge:         10px;

@@ -8,7 +8,7 @@ function homepageMarkdown(showPricingPage) {
     '- [Terms of service](https://theplot.tv/terms.html)',
   ].join('\n');
 
-  return `# PLOT — Your film & TV companion
+  return `# plot — Your film & TV companion
 
 PLOT is the beautiful way to track what you watch. Log, rate, and share your film and TV taste in one place.
 

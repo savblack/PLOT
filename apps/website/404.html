@@ -62,7 +62,6 @@
   <link rel="apple-touch-icon" href="favicon.svg" />
   <link rel="manifest" href="site.webmanifest" />
   <link rel="preload" href="/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin />
-  <link rel="preload" href="/fonts/InstrumentSerif-Regular.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="/theme.css" />
   <link rel="stylesheet" href="/ui.css" />
   <style>
@@ -92,7 +91,7 @@
       color: var(--text-dark);
     }
     .code {
-      font-family: var(--serif);
+      font-family: var(--display);
       font-size: clamp(4rem, 18vw, 8rem);
       line-height: 0.9;
       letter-spacing: -0.04em;
@@ -114,8 +113,8 @@
       transition: background 0.2s, transform 0.2s;
     }
     .home:hover { background: var(--surface-hover); transform: translateY(-1px); }
-    .actions .home:first-child { background: var(--pink); }
-    .actions .home:first-child:hover { background: var(--pink-hover); }
+    .actions .home:first-child { background: var(--fill); }
+    .actions .home:first-child:hover { background: var(--fill-hover); }
     .actions { display: flex; flex-wrap: wrap; gap: 0.6rem; justify-content: center; margin-top: 0.5rem; }
     .actions .home { margin-top: 0; }
   </style>

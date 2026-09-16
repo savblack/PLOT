@@ -138,7 +138,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 15px;
   color: var(--text-muted);
 }

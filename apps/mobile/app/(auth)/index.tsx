@@ -490,7 +490,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   panelTitle: {
-    // Editorial serif headline, matching web .auth-header h1 (var(--font-serif)).
+    // Editorial serif headline, matching web .auth-header h1 (var(--font-display)).
     fontFamily: fontFamily.display,
     fontSize: fontSize.xxl,
     color: '#09090B',

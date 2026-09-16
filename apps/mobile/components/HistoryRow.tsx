@@ -107,7 +107,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   rowPoster: { marginRight: spacing.md },
   rowQuote: {
     paddingTop: spacing.lg,
-    fontFamily: fontFamily.serifItalic,
+    fontFamily: fontFamily.display,
     fontSize: fontSize.sm,
     lineHeight: fontSize.sm * 1.3,
     color: colors.textSecondary,

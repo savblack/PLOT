@@ -247,7 +247,7 @@ function postCard(post, fonts) {
   const name = (author.display_name || author.username || 'Someone').replace(/\b([a-z])/g, (m) => m.toUpperCase());
   const verb = post.source_type === 'favourite' ? 'favorited'
     : post.source_type === 'top_list' ? 'added to their Top 10' : 'watched';
-  const title = post.title || 'PLOT';
+  const title = post.title || 'plot';
   const n = title.length;
   const titleSize = n <= 15 ? 92 : n <= 24 ? 76 : n <= 36 ? 62 : 52;
   const note = post.note ? (post.note.length > 150 ? post.note.slice(0, 147) + '…' : post.note) : null;

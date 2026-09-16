@@ -266,7 +266,7 @@ export default function ProfileScreen({ usernameOverride }: { usernameOverride?:
 function Stat({ num, label, colors }: { num: string; label: string; colors: Palette }) {
   return (
     <View style={{ alignItems: 'center' }}>
-      <Text style={{ fontFamily: fontFamily.serifTabular, fontSize: fontSize.xxl, color: colors.textPrimary, lineHeight: fontSize.xxl + 2 }}>{num}</Text>
+      <Text style={{ fontFamily: fontFamily.display, fontSize: fontSize.xxl, color: colors.textPrimary, lineHeight: fontSize.xxl + 2 }}>{num}</Text>
       <Text style={{ fontFamily: fontFamily.sans, fontSize: 11, letterSpacing: 0.6, textTransform: 'uppercase', color: colors.textMuted, marginTop: 3 }}>{label}</Text>
     </View>
   );
@@ -392,7 +392,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   posterFallback: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 4 },
   posterFallbackText: { fontFamily: fontFamily.sans, fontSize: 10, color: colors.textMuted, textAlign: 'center' },
   rankBadge: { position: 'absolute', top: 0, left: 0, minWidth: 22, paddingHorizontal: 5, paddingVertical: 1, backgroundColor: 'rgba(0,0,0,0.6)', borderBottomRightRadius: 8 },
-  rankText: { fontFamily: fontFamily.serifTabular, fontSize: fontSize.sm, color: '#fff', textAlign: 'center' },
+  rankText: { fontFamily: fontFamily.display, fontSize: fontSize.sm, color: '#fff', textAlign: 'center' },
   sheetOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' },
   sheet: { backgroundColor: colors.surface, borderTopLeftRadius: radii.md, borderTopRightRadius: radii.md, maxHeight: '75%', paddingHorizontal: spacing.xl, paddingTop: spacing.lg },
   sheetHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },

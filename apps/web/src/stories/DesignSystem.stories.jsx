@@ -35,15 +35,15 @@ export const Palette = () => (
       <Swatch name="Secondary" token="--text-secondary" text="#fff" />
       <Swatch name="Muted" token="--text-muted" text="#fff" />
     </Row>
-    <H>Two pinks, two jobs</H>
+    <H>Accent and fill</H>
     <Row>
       <Swatch name="Accent (type, line)" token="--accent" text="#fff" />
       <Swatch name="Accent text" token="--accent-text" text="#fff" />
-      <Swatch name="Accent fill (surfaces)" token="--accent-fill" text="var(--on-accent-fill)" />
-      <Swatch name="Accent fill hover" token="--accent-fill-hover" text="var(--on-accent-fill)" />
+      <Swatch name="Fill (surfaces)" token="--accent-fill" text="var(--on-accent-fill)" />
+      <Swatch name="Fill hover" token="--accent-fill-hover" text="var(--on-accent-fill)" />
     </Row>
     <p style={{ maxWidth: 560, color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.55 }}>
-      The fill is too light to carry text (1.97:1 on cream). It only ever sits behind charcoal. The accent colours small text, icons and rings, and never fills a surface larger than a dot.
+      The sage fill only ever sits behind charcoal text. The pink accent colours small text, icons and rings, and never fills a surface larger than a dot.
     </p>
   </div>
 );
@@ -59,8 +59,8 @@ export const Type = () => (
       <p style={{ fontFamily: 'var(--font-sans)', fontSize: 16, lineHeight: 1.55, color: 'var(--text-secondary)', maxWidth: 520, margin: 0 }}>Track what you've seen, save what's coming, and keep the notes that make it yours.</p>
     </div>
     <div>
-      <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Editorial · Instrument Serif italic · --font-serif</div>
-      <p style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: 22, margin: 0 }}>"Quietly devastating."</p>
+      <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Editorial · Gabarito italic · --font-serif</div>
+      <p style={{ fontFamily: 'var(--font-display)', fontSize: 22, margin: 0 }}>"Quietly devastating."</p>
     </div>
     <div>
       <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Wordmark · PlotLogo</div>

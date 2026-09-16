@@ -14,29 +14,8 @@
   font-display: swap;
 }
 
-@font-face {
-  font-family: 'Instrument Serif';
-  src: url('/fonts/InstrumentSerif-Regular.woff2') format('woff2');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
 
-@font-face {
-  font-family: 'Instrument Serif';
-  src: url('/fonts/InstrumentSerif-Italic.woff2') format('woff2');
-  font-weight: 400;
-  font-style: italic;
-  font-display: swap;
-}
 
-/* Digits-only companion faces, built by scripts/build-tabular-digits.py.
-   Neither family ships a `tnum` feature and both draw digits proportionally — DM Sans
-   sets '1' at half the width of '0' — so `font-variant-numeric: tabular-nums` has
-   nothing to switch on and columns of numbers come out ragged. These faces respace the
-   ten digits to a shared advance; `unicode-range` means they supply nothing else, so
-   letters still come from the real font. Reach for them via the two tokens below on
-   anything that stacks numbers or counts in place, not on running text. */
 @font-face {
   font-family: 'DM Sans Tabular';
   src: url('/fonts/DMSans-TabularDigits.woff2') format('woff2');
@@ -46,14 +25,6 @@
   unicode-range: U+0030-0039;
 }
 
-@font-face {
-  font-family: 'Instrument Serif Tabular';
-  src: url('/fonts/InstrumentSerif-TabularDigits.woff2') format('woff2');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-  unicode-range: U+0030-0039;
-}
 
 /* ── Light mode ──────────────────────── */
 :root {
@@ -71,8 +42,8 @@
   --accent: #E05578;
   --accent-dim: rgba(224,85,120,0.12);
   --accent-text: #B83558;
-  --accent-fill: #FF88C8;
-  --accent-fill-hover: #FF9FD3;
+  --accent-fill: #DBE1B0;
+  --accent-fill-hover: #CFD79E;
   --on-accent-fill: #292924;
   --danger: #B9384A;
   --danger-dim: rgba(185,56,74,0.1);
@@ -108,19 +79,14 @@
   --glass-bg:       rgba(248,242,234,0.86);
   --glass-border:   rgba(41,41,36,0.06);
 
-  /* Typography — three faces, three jobs:
+  /* Typography — two faces, two jobs:
      --font-display  Gabarito, bold. Page titles, section headings, the wordmark,
                      rank numbers. Tracked −0.03em.
-     --font-sans     DM Sans. Body, controls, forms, metadata, dense UI.
-     --font-serif    Instrument Serif. The editorial voice: notes, quotes, review
-                     slips, avatar initials. Italic for quoted speech. */
+     --font-sans     DM Sans. Body, controls, forms, metadata, dense UI. */
   --font-display:   'Gabarito', 'DM Sans', system-ui, sans-serif;
   --font-display-tracking: -0.03em;
-  --font-serif:     'Instrument Serif', Georgia, serif;
   --font-sans:      'DM Sans', system-ui, sans-serif;
-  /* Same two faces with the digits respaced to a common width — the tabular face is
-     listed first so it wins for U+0030-0039 and falls through for everything else. */
-  --font-serif-tabular: 'Instrument Serif Tabular', var(--font-serif);
+  /* DM Sans with the digits respaced to a common width (scripts/build-tabular-digits.py) */
   --font-sans-tabular:  'DM Sans Tabular', var(--font-sans);
 
   /* Layout constants */
@@ -196,8 +162,8 @@
   --accent: #F06A88;
   --accent-dim: rgba(240,106,136,0.15);
   --accent-text: #F06A88;
-  --accent-fill: #FF88C8;
-  --accent-fill-hover: #FF9FD3;
+  --accent-fill: #DBE1B0;
+  --accent-fill-hover: #CFD79E;
   --on-accent-fill: #292924;
   --danger: #F18997;
   --danger-dim: rgba(241,137,151,0.16);

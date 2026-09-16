@@ -47,8 +47,8 @@ const eq = (label, actual, expected) => {
   eq('apps/website/theme.css --surface', v['--surface'], colors.light.surfaceSunken);
   eq('apps/website/theme.css --text', v['--text'], colors.light.textPrimary);
   eq('apps/website/theme.css --text-secondary', v['--text-secondary'], colors.light.textSecondary);
-  eq('apps/website/theme.css --pink', v['--pink'], colors.light.accentFill);
-  eq('apps/website/theme.css --pink-hover', v['--pink-hover'], colors.light.accentFillHover);
+  eq('apps/website/theme.css --fill', v['--fill'], colors.light.accentFill);
+  eq('apps/website/theme.css --fill-hover', v['--fill-hover'], colors.light.accentFillHover);
   eq('apps/website/theme.css --success', v['--success'], colors.light.chipNow);
   eq('apps/website/theme.css --r-badge', v['--r-badge'], `${radii.badge}px`);
   eq('apps/website/theme.css --r-md', v['--r-md'], `${radii.md}px`);

@@ -132,7 +132,7 @@
   align-items: center;
   justify-content: center;
   color: var(--text-muted);
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 1rem;
 }
 .collection-card-row-text {

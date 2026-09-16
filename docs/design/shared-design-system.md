@@ -29,11 +29,11 @@ shadow is a legibility rescue only.
 | `--text-muted` | `#6B655D` | 4.78:1 on the deeper cream, so it still passes on cards. |
 | `--accent` | `#E05578` | The pink for small text, icons, rings, rank numbers. Unchanged. |
 | `--accent-text` | `#B83558` | The accent darkened for small text on any cream. |
-| `--accent-fill` | `#FF88C8` | The pink as a **fill** behind charcoal text. See below. |
-| `--on-accent-fill` | `#292924` | The only text colour that goes on the fill. 6.69:1. |
+| `--accent-fill` | `#DBE1B0` | Marshmallow-soft sage as a **fill** behind charcoal text. See below. |
+| `--on-accent-fill` | `#292924` | The only text colour that goes on the fill. 10.7:1. |
 
 Dark mode is unchanged: the warm-neutral `#0c0c0c` / `#f0efe8` scale already fit, and
-the fill is the same pink in both themes.
+the fill is the same sage in both themes.
 
 ### The wordmark
 
@@ -64,19 +64,19 @@ rendered page is the visual contract; this file is the prose for what code can't
 
 ## The two spending rules
 
-### Accent color — two pinks, two jobs
+### Accent and fill — two colours, two jobs
 
-There are two pinks and they are not interchangeable.
+The pink and the sage are not interchangeable.
 
 - **`--accent` (`#E05578` light / `#F06A88` dark)** colours *type and line*: small
   text, icons, focus and selection rings, rank numbers, the active tab underline. It is
   a signal you spend on the few things that earn it.
-- **`--accent-fill` (`#FF88C8`)** colours *surfaces*: the primary button, chips, the
+- **`--accent-fill` (`#DBE1B0`, sage)** colours *surfaces*: the primary button, chips, the
   Live badge, the sign-up pill. It only ever sits behind `--on-accent-fill` charcoal
-  text. It is too light to carry text itself (1.97:1 on cream) and must never colour
-  type, an icon, or a border.
+  text. It is too light to carry text itself and must never colour type, an icon, or a
+  border. (The pink `#FF88C8` fill was tried first and replaced by the sage.)
 
-Neutral UI is **cream, charcoal and the warm greys.** Neither pink is a general-purpose
+Neutral UI is **cream, charcoal and the warm greys.** Neither the pink nor the sage is a general-purpose
 palette colour. Semantic guide/status tokens are the separate, permitted exception for
 meaning.
 
@@ -131,14 +131,14 @@ on the glyphs.
 
 ## Shared foundations
 
-- Typography — three faces, three jobs:
+- Typography — two faces, two jobs:
   - `--font-display` (Gabarito, 700, tracked `−0.03em`) for the wordmark, page titles,
     section headings, panel titles and rank numbers. This is the headline voice.
   - `--font-sans` (DM Sans) for body, controls, forms, navigation, metadata, dense UI.
-  - `--font-serif` (Instrument Serif) for the editorial voice: the landing manifesto,
-    quotes and notes, review slips, avatar initials. Italic for quoted speech. It is no
-    longer a heading face.
-  - On the marketing site the same three are `--display` / `--sans` / `--serif` in
+  - Instrument Serif is **retired** (16 Sep 2026): every former serif use, including quotes,
+    notes, review slips and avatar initials, is now Gabarito. There is no italic face; quoted
+    speech is Gabarito 500 in quotation marks.
+  - On the marketing site the same two are `--display` / `--sans` in
     `apps/website/theme.css`, with shared components in `apps/website/ui.css`.
 - Color roles:
   - `--bg`, `--surface`, `--surface-raised`, `--surface-sunken`
@@ -148,11 +148,11 @@ on the glyphs.
     `--accent-fill-hover`, `--on-accent-fill` (surfaces), `--danger`, `--danger-dim`,
     `--danger-border`
 - Components (marketing `ui.css`, app `app.css`):
-  - **Buttons** are pills. Primary is the pink fill with charcoal text; secondary is the
+  - **Buttons** are pills. Primary is the sage fill with charcoal text; secondary is the
     deeper cream; ink is charcoal with cream text for the rare emphatic case. No outline
     buttons.
-  - **Chips** are small pills in the deeper cream; pink for the lead or a rank, sage
-    (`#DBE1B0`, marketing only) for availability.
+  - **Chips** are small pills in the deeper cream; the sage fill marks the lead, a rank or
+    availability.
   - **Cards and panels** are the deeper cream at 20px radius with no border and no shadow.
     Rows inside them separate with a hairline.
 - Semantic guide/status roles (meaning-bearing colours, not neutral surfaces):
