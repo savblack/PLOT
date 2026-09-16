@@ -1,4 +1,7 @@
+// Desktop web layout: the fixed rail and scroll regions use DOM/CSS. Mobile parity: https://github.com/savblack/PLOT/issues/920.
 import { APP_NAV_ITEMS, isActiveView } from '../navigation.js';
+import PlotLogo from './PlotLogo.jsx';
+import { SETTINGS_VIEW } from '../copy/settingsView.js';
 import { APP_SHELL } from '../copy/appShell.js';
 import { IconHome, IconGuide, IconCalendar, IconLists, IconHistory, IconSearch, IconBell, IconSettings } from './navIcons.jsx';
 
@@ -22,8 +25,11 @@ const SIDEBAR_ICONS = {
   settings: IconSettings,
 };
 
-// Everything but Settings, which sits in the footer beside the profile row.
-const SIDEBAR_NAV_ITEMS = APP_NAV_ITEMS.filter(item => item.id !== 'settings');
+// Search leads the desktop list; Settings follows Notifications.
+const SIDEBAR_NAV_ITEMS = [
+  APP_NAV_ITEMS.find(item => item.id === 'search'),
+  ...APP_NAV_ITEMS.filter(item => item.id !== 'settings' && item.id !== 'search'),
+];
 const SETTINGS_NAV_ITEM = APP_NAV_ITEMS.find(item => item.id === 'settings');
 
 /**
@@ -33,6 +39,7 @@ const SETTINGS_NAV_ITEM = APP_NAV_ITEMS.find(item => item.id === 'settings');
  * @param {object}   [props.user]            Auth user; gates the notifications row.
  * @param {number}   [props.unread]          Unread notification count.
  * @param {Function} props.onNavigate        Called with a view id.
+ * @param {Function} props.onFeedback        Opens the existing feedback composer.
  * @param {Function} props.onNavigateProfile Called with a username.
  */
 export default function AppSidebar({
@@ -42,6 +49,7 @@ export default function AppSidebar({
   unread = 0,
   onNavigate,
   onNavigateProfile,
+  onFeedback,
 }) {
   const isOwnProfile = !!profile?.username && currentView === `u/${profile.username}`;
 
@@ -53,66 +61,86 @@ export default function AppSidebar({
         onClick={() => onNavigate('home')}
         aria-label={APP_SHELL.goToHome}
       >
-        <span className="app-sidebar-brand-text">PLOT</span>
+        <PlotLogo className="app-sidebar-brand-text" style={{ fontSize: '2.35rem' }} />
+        <span className="app-sidebar-beta">{APP_SHELL.beta}</span>
       </button>
 
-      <nav className="app-sidebar-nav">
-        {SIDEBAR_NAV_ITEMS.map(({ id, label }) => {
-          const Icon = SIDEBAR_ICONS[id];
-          return (
+      <div className="app-sidebar-scroll">
+        <nav className="app-sidebar-nav">
+          {SIDEBAR_NAV_ITEMS.map(({ id, label }) => {
+            const Icon = SIDEBAR_ICONS[id];
+            return (
+              <button
+                key={id}
+                type="button"
+                className={`app-sidebar-item interactive-surface${isActiveView(currentView, id) ? ' active' : ''}`}
+                onClick={() => onNavigate(id)}
+                aria-current={isActiveView(currentView, id) ? 'page' : undefined}
+              >
+                {Icon && <Icon />}
+                <span className="app-sidebar-label">{label}</span>
+              </button>
+            );
+          })}
+
+          {user && (
             <button
-              key={id}
               type="button"
-              className={`app-sidebar-item interactive-surface${isActiveView(currentView, id) ? ' active' : ''}`}
-              onClick={() => onNavigate(id)}
-              aria-current={isActiveView(currentView, id) ? 'page' : undefined}
+              className={`app-sidebar-item interactive-surface${currentView === 'notifications' ? ' active' : ''}`}
+              onClick={() => onNavigate('notifications')}
+              aria-label={`${APP_SHELL.notifications}${unread ? ` (${unread} unread)` : ''}`}
+              aria-current={currentView === 'notifications' ? 'page' : undefined}
             >
-              {Icon && <Icon />}
-              <span className="app-sidebar-label">{label}</span>
+              <IconBell />
+              <span className="app-sidebar-label">{APP_SHELL.notifications}</span>
+              {unread > 0 && (
+                <span className="app-sidebar-badge" aria-hidden="true">{unread > 9 ? '9+' : unread}</span>
+              )}
             </button>
-          );
-        })}
+          )}
 
-        {user && (
-          <button
-            type="button"
-            className={`app-sidebar-item interactive-surface${currentView === 'notifications' ? ' active' : ''}`}
-            onClick={() => onNavigate('notifications')}
-            aria-label={`${APP_SHELL.notifications}${unread ? ` (${unread} unread)` : ''}`}
-            aria-current={currentView === 'notifications' ? 'page' : undefined}
-          >
-            <IconBell />
-            <span className="app-sidebar-label">{APP_SHELL.notifications}</span>
-            {unread > 0 && (
-              <span className="app-sidebar-badge" aria-hidden="true">{unread > 9 ? '9+' : unread}</span>
-            )}
+          {SETTINGS_NAV_ITEM && (
+            <button
+              type="button"
+              className={`app-sidebar-item interactive-surface${currentView === 'settings' ? ' active' : ''}`}
+              onClick={() => onNavigate('settings')}
+              aria-current={currentView === 'settings' ? 'page' : undefined}
+            >
+              <IconSettings />
+              <span className="app-sidebar-label">{SETTINGS_NAV_ITEM.label}</span>
+            </button>
+          )}
+        </nav>
+        <section className="app-sidebar-help" aria-label={APP_SHELL.helpBuild}>
+          <div className="app-sidebar-help-intro">
+            <h2>{APP_SHELL.helpBuild}</h2>
+            <p>{APP_SHELL.helpBuildHint}</p>
+          </div>
+          <button type="button" className="app-sidebar-action" onClick={onFeedback}>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11a8 8 0 0 1-8 8H7l-5 3 2-6a8 8 0 1 1 17-5Z" /><path d="M8 11h8" /></svg>
+            <span><strong>{APP_SHELL.giveFeedback}</strong><small>{APP_SHELL.feedbackHint}</small></span>
+            <span className="app-sidebar-action-arrow" aria-hidden="true">→</span>
           </button>
-        )}
-      </nav>
-
+          <a className="app-sidebar-action" href="https://ko-fi.com/J7P123TYGK" target="_blank" rel="noopener noreferrer">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 5c-3-3-6-1-8 1-2-2-5-4-8-1-4 4 1 9 8 15 7-6 12-11 8-15Z" /></svg>
+            <span><strong>{SETTINGS_VIEW.support.supportPlot}</strong><small>{APP_SHELL.supportHint}</small></span>
+            <span className="app-sidebar-action-arrow" aria-hidden="true">↗</span>
+          </a>
+        </section>
+      </div>
       <div className="app-sidebar-foot">
-        {SETTINGS_NAV_ITEM && (
-          <button
-            type="button"
-            className={`app-sidebar-item interactive-surface${currentView === 'settings' ? ' active' : ''}`}
-            onClick={() => onNavigate('settings')}
-            aria-current={currentView === 'settings' ? 'page' : undefined}
-          >
-            <IconSettings />
-            <span className="app-sidebar-label">{SETTINGS_NAV_ITEM.label}</span>
-          </button>
-        )}
         {profile?.username && (
           <button
             type="button"
-            className={`app-sidebar-item interactive-surface${isOwnProfile ? ' active' : ''}`}
+            className={`app-sidebar-item app-sidebar-profile interactive-surface${isOwnProfile ? ' active' : ''}`}
             onClick={() => onNavigateProfile(profile.username)}
             aria-current={isOwnProfile ? 'page' : undefined}
           >
             {profile.avatar_url
               ? <img className="app-sidebar-avatar" src={profile.avatar_url} alt="" />
               : <span className="app-sidebar-avatar app-sidebar-avatar-initial">{(profile.display_name || profile.username).charAt(0).toUpperCase()}</span>}
-            <span className="app-sidebar-label">{profile.display_name || profile.username}</span>
+            <span className="app-sidebar-profile-copy"><span className="app-sidebar-label">{profile.display_name || profile.username}</span><small>{APP_SHELL.viewYourProfile}</small></span>
+            <span className="app-sidebar-profile-arrow" aria-hidden="true">›</span>
           </button>
         )}
       </div>

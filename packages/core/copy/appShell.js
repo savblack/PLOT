@@ -14,4 +14,11 @@ export const APP_SHELL = {
   scrollRailLeft: 'Scroll left',
   scrollRailRight: 'Scroll right',
   profile: 'Profile',
+  beta: 'Beta',
+  viewYourProfile: 'View your profile',
+  helpBuild: 'Help build PLOT',
+  helpBuildHint: 'Your ideas. A better PLOT.',
+  giveFeedback: 'Give feedback',
+  feedbackHint: 'Ideas, bugs, or feature requests',
+  supportHint: 'Keep an independent project growing',
 };

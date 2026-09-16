@@ -898,13 +898,14 @@ function BlockedAccounts({ viewerId }) {
   );
 }
 
-function FeedbackPanel({ user, initialType, onClose }) {
+export function FeedbackPanel({ user, initialType, onClose, allTypes = false }) {
   // "Report a Bug" (initialType 'bug') only offers the bug card; "Leave Feedback"
   // (any other entry point) offers feature request + general feedback only.
-  const visibleTypes = initialType === 'bug'
+  // The sidebar combines all feedback entry points in one composer.
+  const visibleTypes = allTypes ? FEEDBACK_TYPES : initialType === 'bug'
     ? FEEDBACK_TYPES.filter(entry => entry.id === 'bug')
     : FEEDBACK_TYPES.filter(entry => entry.id !== 'bug');
-  const [type,      setType]      = useState(initialType === 'bug' ? 'bug' : visibleTypes[0].id);
+  const [type,      setType]      = useState(allTypes ? 'general' : initialType === 'bug' ? 'bug' : visibleTypes[0].id);
   const [message,   setMessage]   = useState('');
   const [images,    setImages]    = useState([]); // [{ file, preview }]
   const [status,    setStatus]    = useState('idle'); // idle | submitting | done | error
