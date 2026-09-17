@@ -2,7 +2,7 @@
 // advertise the Plans page to AI crawlers while it 302s for everyone else.
 function homepageMarkdown(showPricingPage) {
   const moreInfo = [
-    '- [About PLOT](https://theplot.tv/about.html)',
+    '- [About plot](https://theplot.tv/about.html)',
     ...(showPricingPage ? ['- [Plans](https://theplot.tv/plans.html)'] : []),
     '- [Privacy policy](https://theplot.tv/privacy.html)',
     '- [Terms of service](https://theplot.tv/terms.html)',
@@ -10,9 +10,9 @@ function homepageMarkdown(showPricingPage) {
 
   return `# plot — Your film & TV companion
 
-PLOT is the beautiful way to track what you watch. Log, rate, and share your film and TV taste in one place.
+plot is the beautiful way to track what you watch. Log, rate, and share your film and TV taste in one place.
 
-## What PLOT helps you do
+## What plot helps you do
 
 - Keep a personal timeline of films and shows you have watched.
 - Write private notes and ratings, and build watchlists for what is next.
@@ -27,7 +27,7 @@ Create an account or sign in at https://app.theplot.tv.
 
 ${moreInfo}
 
-PLOT does not offer a public third-party API. Personal viewing history, lists, ratings, notes, and account details require the member's authenticated, explicit permission.
+plot does not offer a public third-party API. Personal viewing history, lists, ratings, notes, and account details require the member's authenticated, explicit permission.
 `;
 }
 

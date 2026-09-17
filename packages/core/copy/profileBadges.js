@@ -8,6 +8,6 @@
 // like ("Supporter", never "pink heart").
 
 export const PROFILE_BADGES = {
-  premium: 'PLOT Premium',
+  premium: 'plot Premium',
   supporter: 'Supporter',
 };

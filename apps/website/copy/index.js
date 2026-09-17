@@ -7,7 +7,7 @@
 
 export const META = {
   title: 'plot – Your Film & TV Companion',
-  description: "PLOT is your personal film and TV companion: for everything you've watched and everything you want to watch, all in one beautiful home.",
+  description: "plot is your personal film and TV companion: for everything you've watched and everything you want to watch, all in one beautiful home.",
   ogImageAlt: 'plot — your film & TV companion',
 };
 
@@ -26,7 +26,7 @@ export const MANIFESTO = {
     'You carry them with you.',
     'But no app has ever cared\nas much as you do.',
   ],
-  payoff: 'does.', // rendered after the PLOT wordmark, e.g. "plot does."
+  payoff: 'does.', // rendered after the plot wordmark, e.g. "plot does."
 };
 
 export const GUIDE_DEMO = {

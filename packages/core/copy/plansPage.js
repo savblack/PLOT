@@ -1,7 +1,7 @@
 // Shared plan preview for web and mobile. Planned features are never shown as live entitlements.
 export const PLANS_PAGE = {
   back: '← Back',
-  eyebrow: 'PLOT Premium',
+  eyebrow: 'plot Premium',
   title: 'Less deciding. More watching.',
   lede: 'A film that fits your evening. A new episode you won’t miss. Something you both want to watch. Make more of the time you set aside for it.',
   comingSoon: 'Coming soon',
@@ -9,7 +9,7 @@ export const PLANS_PAGE = {
   plannedFree: 'Free, coming soon',
   previewAction: 'Explore Premium',
   upgradeAction: 'Upgrade to Premium',
-  checkoutMessage: 'PLOT Premium is coming soon. Checkout is not open yet. There is nothing to pay today.',
+  checkoutMessage: 'plot Premium is coming soon. Checkout is not open yet. There is nothing to pay today.',
   free: {
     name: 'Free',
     perpetual: 'forever',
@@ -88,7 +88,7 @@ export const PLANS_PAGE = {
   planSummary: ['Pick a film by runtime and service', 'Follow actors and directors for new releases', 'Choose together and share lists', 'Build unlimited and smart lists'],
   stories: [
     { id: 'picker', kicker: 'FOR TONIGHT', title: 'Something you can actually watch tonight.',
-      description: 'An hour and a half to spare? Narrow the choices by runtime and the services you use. Pick from a shortlist, or let PLOT choose at random.',
+      description: 'An hour and a half to spare? Narrow the choices by runtime and the services you use. Pick from a shortlist, or let plot choose at random.',
       detail: 'Tonight’s film picker', example: ['90 minutes to spare', 'Your streaming services', 'A shorter shortlist'],
       caption: 'Your time + your services → tonight’s options' },
     { id: 'alerts', kicker: 'FOR WHAT’S NEXT', title: 'Their next thing. Your next watch.',
@@ -110,7 +110,7 @@ export const PLANS_PAGE = {
     { q: 'What happens to Free?', a: 'Your current free features stay available. Private watchlist notes are included in Free, separate from public reviews.' },
     { q: 'Can my friends join without Premium?', a: 'Yes. Joining a Premium host’s collaborative lists and shared watch sessions is planned for Free. Premium is only needed to create or host them.' },
     { q: 'How many lists are included in Free?', a: 'Free includes up to five custom lists.' },
-    { q: 'Does PLOT play the movie for us?', a: 'No. Shared watch sessions help you choose a title together. You watch it on your streaming service; PLOT does not stream or sync playback.' },
+    { q: 'Does plot play the movie for us?', a: 'No. Shared watch sessions help you choose a title together. You watch it on your streaming service; plot does not stream or sync playback.' },
     { q: 'Are these alerts available now?', a: 'No. These are planned Premium features. Whole-season alerts need verified availability for every episode on your selected service, and departure alerts are still pending data validation.' },
   ],
   terms: 'Terms',

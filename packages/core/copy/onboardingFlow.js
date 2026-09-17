@@ -7,7 +7,7 @@
 export const ONBOARDING_FLOW = {
   step1: {
     title: "What's your name?",
-    subtitle: 'So we can make PLOT yours.',
+    subtitle: 'So we can make plot yours.',
     placeholder: 'First name',
   },
   // Genre picking used to be step 2. It was the only step that couldn't render
