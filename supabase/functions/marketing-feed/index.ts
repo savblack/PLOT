@@ -43,6 +43,21 @@ const esc = (s: unknown) =>
 const slugify = (s: string) =>
   String(s || '').toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '')
     .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80) || 'title';
+// Refs are written {id, title, media_type} by the planner but were read as
+// `tmdb_id` here, so most of them resolved to undefined and silently dropped the
+// title link and the save CTA. Read both shapes; don't migrate the rows.
+const refId = (r: TmdbRef | null | undefined) => r?.tmdb_id ?? r?.id ?? null;
+
+// Reads as prose in a sentence ("not streaming in the UK"). Mirrors the same
+// map in supabase/functions/title-page, so the two surfaces word it alike.
+const REGION_NAMES: Record<string, string> = {
+  US: 'the US', GB: 'the UK', AU: 'Australia', CA: 'Canada', NZ: 'New Zealand',
+  IE: 'Ireland', IN: 'India', DE: 'Germany', FR: 'France', ES: 'Spain', IT: 'Italy',
+  NL: 'the Netherlands', SE: 'Sweden', BR: 'Brazil', MX: 'Mexico', JP: 'Japan',
+  KR: 'South Korea', SG: 'Singapore',
+};
+const regionName = (code: string) => REGION_NAMES[code] || code;
+
 const titleHref = (mediaType: string, tmdbId: number | string, title: string) =>
   `${SITE}/${mediaType === 'tv' ? 'tv' : 'movie'}/${slugify(title)}-${tmdbId}`;
 
@@ -74,6 +89,7 @@ const TYPE_META: Record<string, { label: string; tone: string }> = {
   watch_tonight: { label: 'What to watch tonight', tone: '#0F6E56' },
   hidden_gem: { label: 'Hidden gem', tone: '#534AB7' },
   question: { label: 'Let’s talk', tone: '#8A5410' },
+  guide: { label: 'Guide', tone: '#185FA5' },
 };
 
 // Content-type filters for the feed. The chart is its own page, linked from the
@@ -86,7 +102,7 @@ const FILTERS: { key: string | null; label: string }[] = [
   { key: 'trailer', label: 'First look' },
 ];
 
-type TmdbRef = { media_type: string; tmdb_id: number; title: string; poster_path?: string | null };
+type TmdbRef = { media_type: string; tmdb_id?: number; id?: number; title: string; poster_path?: string | null };
 type WatchProvider = { provider_id: number; provider_name: string; logo_path?: string | null };
 type FeedPost = {
   slug: string;
@@ -117,7 +133,8 @@ const OG_FALLBACK = `${SITE}/og-image.png`;
 const postShareImage = (p: FeedPost) => {
   if (p.media?.[0]?.landscape_path) return mediaUrl(p.media[0].landscape_path);
   const ref = p.tmdb_refs?.[0];
-  if (ref?.tmdb_id && ref.media_type) return `${APP}/api/og?type=${ref.media_type === 'tv' ? 'tv' : 'movie'}&id=${ref.tmdb_id}`;
+  const rid = refId(ref);
+  if (rid && ref?.media_type) return `${APP}/api/og?type=${ref.media_type === 'tv' ? 'tv' : 'movie'}&id=${rid}`;
   const hero = p.copy?.hero_image;
   return typeof hero === 'string' && /^https?:\/\//.test(hero) ? hero : OG_FALLBACK;
 };
@@ -135,45 +152,84 @@ const uniqueProviders = (providers: WatchProvider[]) => {
 // Article CTAs use a fresh, regional TMDB watch-provider lookup. This keeps the
 // destination logos honest when a title moves between services, rather than
 // freezing a provider name into the marketing-post record.
-const titleCta = async (post: FeedPost, region: string) => {
+// "In this story" — the module that gives an article somewhere to go. An
+// article about one film that never links that film, and offers no way to keep
+// it, is a dead end; this sits under the lede rather than at the foot, because
+// that is where a reader is still deciding whether they care.
+//
+// Three states, the same three the title page card has: providers, in cinemas,
+// and nothing. The last is the common one across the back catalogue, so it says
+// so plainly and lets the watchlist be the way out.
+const storyModule = async (post: FeedPost, region: string) => {
   const ref = post.tmdb_refs?.[0];
-  if (!ref?.tmdb_id || !ref.media_type) return '';
+  const id = refId(ref);
+  if (!id || !ref?.media_type) return '';
 
-  const title = ref.title || postTitle(post);
   const mediaType = ref.media_type === 'tv' ? 'tv' : 'movie';
-  const saveUrl = `${APP}/save?media_type=${mediaType}&tmdb_id=${ref.tmdb_id}&src=whats_on_article`;
-  let providers: WatchProvider[] = [];
+  const saveUrl = `${APP}/save?media_type=${mediaType}&tmdb_id=${id}&src=whats_on_article`;
+  const pageUrl = titleHref(ref.media_type, id, ref.title || postTitle(post));
 
+  let detail: Record<string, unknown> | null = null;
   try {
     const key = Deno.env.get('TMDB_API_KEY');
     if (key) {
-      const response = await fetch(
-        `https://api.themoviedb.org/3/${mediaType}/${ref.tmdb_id}/watch/providers?api_key=${key}`,
+      const r = await fetch(
+        `https://api.themoviedb.org/3/${mediaType}/${id}?api_key=${key}&language=en-US&append_to_response=watch/providers,credits`,
       );
-      if (response.ok) {
-        const data = await response.json();
-        const availability = data?.results?.[region] || {};
-        providers = uniqueProviders([
-          ...(availability.flatrate || []),
-          ...(availability.free || []),
-          ...(availability.ads || []),
-        ]).slice(0, 5);
-      }
+      if (r.ok) detail = await r.json();
     }
   } catch {
-    // A provider lookup should never stop an editorial article from rendering.
+    // A TMDB hiccup should never stop an editorial article from rendering.
   }
 
-  const whereToWatch = providers.length
-    ? `<div class="article-watch"><span class="article-watch-label">Where to watch in ${esc(region)}</span><div class="article-providers">${providers.map((provider) => {
-      const logo = providerLogo(provider.logo_path);
-      return `<span class="article-provider">${logo ? `<img src="${esc(logo)}" alt="${esc(provider.provider_name)}" loading="lazy">` : ''}<span>${esc(provider.provider_name)}</span></span>`;
-    }).join('')}</div></div>`
-    : `<div class="article-watch"><span class="article-watch-label">Where to watch</span><span class="article-watch-empty">Availability is not currently confirmed in ${esc(region)}.</span></div>`;
+  const d = detail || {};
+  const isMovie = mediaType === 'movie';
+  const title = (isMovie ? d.title : d.name) as string || ref.title || postTitle(post);
+  const date = (isMovie ? d.release_date : d.first_air_date) as string | undefined;
+  const yr = date ? String(date).slice(0, 4) : '';
+  const runtime = isMovie
+    ? (d.runtime ? `${Math.floor((d.runtime as number) / 60)}h ${(d.runtime as number) % 60}m` : '')
+    : ((d as any).number_of_seasons ? `${(d as any).number_of_seasons} season${(d as any).number_of_seasons === 1 ? '' : 's'}` : '');
+  const byline = isMovie
+    ? (((d as any).credits?.crew || []).find((c: any) => c.job === 'Director')?.name || '')
+    : (((d as any).networks || [])[0]?.name || '');
+  const facts = [yr, runtime, byline].filter(Boolean).join(' · ');
 
-  return `<aside class="article-cta">
-    <div class="article-cta-copy"><span class="article-cta-title">${esc(title)}</span>${whereToWatch}</div>
-    <a class="article-save" data-cta="article_save" href="${esc(saveUrl)}">Save to my PLOT <span aria-hidden="true">&rarr;</span></a>
+  const posterPath = (d.poster_path as string) || ref.poster_path || null;
+  const poster = posterPath ? `https://image.tmdb.org/t/p/w185${posterPath}` : null;
+
+  const avail = ((d as any)['watch/providers']?.results || {})[region] || {};
+  const streaming = uniqueProviders([...(avail.flatrate || []), ...(avail.free || []), ...(avail.ads || [])]).slice(0, 4);
+  const rentBuy = uniqueProviders([...(avail.rent || []), ...(avail.buy || [])]).slice(0, 4);
+  let inCinemas = false;
+  if (isMovie && d.status === 'Released' && date) {
+    const days = (Date.now() - new Date(date).getTime()) / 86400000;
+    inCinemas = days >= 0 && days <= 90 && !streaming.length && !rentBuy.length;
+  }
+
+  const chips = (label: string, list: WatchProvider[]) =>
+    `<span class="sm-row"><span class="sm-label">${esc(label)}</span>${list.map((pr) => {
+      const logo = providerLogo(pr.logo_path);
+      return logo
+        ? `<img class="sm-logo" src="${esc(logo)}" alt="${esc(pr.provider_name)}" loading="lazy">`
+        : `<span class="sm-plain">${esc(pr.provider_name)}</span>`;
+    }).join('')}</span>`;
+
+  let status: string;
+  if (streaming.length) status = chips('Stream', streaming);
+  else if (rentBuy.length) status = chips('Rent or buy', rentBuy);
+  else if (inCinemas) status = `<span class="sm-row"><span class="sm-chip">In cinemas</span><span class="sm-note">Not yet on any streaming service.</span></span>`;
+  else status = `<span class="sm-note">Not streaming in ${esc(regionName(region))} right now.</span>`;
+
+  return `<aside class="storymod">
+    ${poster ? `<a href="${esc(pageUrl)}" class="sm-art"><img src="${esc(poster)}" alt="${esc(title)} poster" loading="lazy"></a>` : ''}
+    <div class="sm-copy">
+      <span class="sm-eyebrow">In this story</span>
+      <a class="sm-title" href="${esc(pageUrl)}">${esc(title)}</a>
+      ${facts ? `<span class="sm-facts">${esc(facts)}</span>` : ''}
+      ${status}
+    </div>
+    <a class="sm-save" data-cta="article_save" href="${esc(saveUrl)}">Add to my watchlist</a>
   </aside>`;
 };
 
@@ -431,7 +487,11 @@ ${head}
   .older:hover { color: var(--ink); }
 
   /* entry page */
-  .post { max-width: 680px; margin: 0 auto; padding-top: 64px; }
+  .crumbs { max-width: 680px; margin: 0 auto; padding-top: 40px; display: flex; align-items: center; gap: 8px; font-size: 0.78rem; color: var(--mut); }
+  .crumbs a { color: var(--mut); text-decoration: none; }
+  .crumbs a:hover { color: var(--ink); }
+  .crumbs .sep2 { color: var(--faint); }
+  .post { max-width: 680px; margin: 0 auto; padding-top: 24px; }
   .post-head .a-meta { display: flex; gap: 14px; align-items: center; margin-bottom: 20px; }
   .post-head .a-meta .d { color: var(--mut); }
   .post-head .a-meta .sep { width: 3px; height: 3px; border-radius: 50%; background: var(--faint); opacity: 0.6; }
@@ -443,6 +503,28 @@ ${head}
   .endcta { display: flex; align-items: center; justify-content: space-between; gap: 32px; margin-top: 52px; padding: 28px 32px; background: var(--paper); border-radius: 20px; }
   .endcta .ec-title { display: block; font-family: var(--display); font-weight: 700; font-size: 1.6rem; line-height: 1.05; letter-spacing: -0.03em; }
   .endcta .ec-sub { display: block; color: var(--mut); font-size: 0.9rem; margin-top: 8px; }
+  /* The story module. Sits inside .post-body, so the margins are its own. */
+  .storymod { display: flex; align-items: center; gap: 18px; margin: 0 0 30px; padding: 20px 22px; border-radius: 16px; background: var(--paper); }
+  .storymod .sm-art { flex-shrink: 0; display: block; }
+  .storymod .sm-art img { width: 76px; height: 114px; object-fit: cover; border-radius: 8px; display: block; }
+  .storymod .sm-copy { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+  .storymod .sm-eyebrow { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--mut); }
+  .storymod .sm-title { font-family: var(--display); font-weight: 700; font-size: 1.35rem; letter-spacing: -0.02em; line-height: 1.1; margin-top: 5px; text-decoration: none; color: var(--ink); }
+  .storymod .sm-title:hover { color: var(--accent); }
+  .storymod .sm-facts { font-size: 0.84rem; color: var(--mut); margin-top: 3px; }
+  .storymod .sm-row { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; margin-top: 10px; }
+  .storymod .sm-label { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--mut); }
+  .storymod .sm-logo { width: 24px; height: 24px; object-fit: contain; border-radius: 5px; display: block; }
+  .storymod .sm-plain { font-size: 0.8rem; }
+  .storymod .sm-chip { background: var(--sage); color: var(--ink); font-size: 0.62rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; padding: 5px 11px; border-radius: 999px; }
+  .storymod .sm-note { font-size: 0.84rem; color: var(--ink); margin-top: 9px; }
+  .storymod .sm-row .sm-note { margin-top: 0; }
+  .storymod .sm-save { flex-shrink: 0; display: inline-flex; align-items: center; min-height: 44px; padding: 0.7rem 1.05rem; border-radius: 999px; background: var(--fill); color: var(--ink); text-decoration: none; font-size: 0.82rem; font-weight: 600; white-space: nowrap; transition: background 0.2s var(--ease); }
+  .storymod .sm-save:hover { background: var(--fill-hover); }
+  @media (max-width: 640px) {
+    .storymod { flex-wrap: wrap; gap: 14px; padding: 16px; }
+    .storymod .sm-save { margin-left: auto; }
+  }
   .article-cta { display:flex; align-items:center; justify-content:space-between; gap:28px; margin-top:52px; padding:28px 32px; border-radius:20px; background:var(--paper); }
   .article-cta-copy { min-width:0; }
   .article-cta-title { display:block; font-family:var(--display); font-weight:700; font-size:1.5rem; line-height:1.05; letter-spacing:-0.03em; }
@@ -875,8 +957,8 @@ const tailList = (posts: FeedPost[]) => sectionCard('More updates', undefined,
 const subscribeForm = (placement: string) => `
 <aside class="nlsub card r4" id="newsletter">
   <div class="nlsub-copy">
-    <span class="nlsub-title">Get the next one</span>
-    <span class="nlsub-sub">Straight to your inbox. Unsubscribe any time.</span>
+    <span class="nlsub-title">What to watch, sorted</span>
+    <span class="nlsub-sub">The week's good stuff handpicked and delivered directly to your inbox.</span>
   </div>
   <form class="nlsub-form" id="nlForm" data-placement="${esc(placement)}">
     <input type="email" name="email" placeholder="your@email.com" required autocomplete="email" aria-label="Email address">
@@ -1204,13 +1286,14 @@ Deno.serve(async (req) => {
   const titleParagraph = (text: string, r: TmdbRef) => {
     const poster = r.poster_path ? `https://image.tmdb.org/t/p/w185${esc(r.poster_path)}` : null;
     return `<div style="display:flex;gap:16px;align-items:flex-start;margin:20px 0">
-        <a href="${esc(titleHref(r.media_type, r.tmdb_id, r.title))}" style="flex-shrink:0;width:84px">${poster ? `<img src="${poster}" alt="${esc(r.title)}" loading="lazy" style="width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:8px;border:1px solid var(--hair);display:block">` : '<span style="display:block;width:100%;aspect-ratio:2/3;border-radius:8px;background:var(--paper);border:1px solid var(--hair)"></span>'}</a>
+        <a href="${esc(titleHref(r.media_type, refId(r) ?? 0, r.title))}" style="flex-shrink:0;width:84px">${poster ? `<img src="${poster}" alt="${esc(r.title)}" loading="lazy" style="width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:8px;border:1px solid var(--hair);display:block">` : '<span style="display:block;width:100%;aspect-ratio:2/3;border-radius:8px;background:var(--paper);border:1px solid var(--hair)"></span>'}</a>
         <p style="margin:0;flex:1">${esc(text)}</p>
       </div>`;
   };
+  const bodyLede = body.length ? `<p class="lede">${esc(body[0])}</p>` : '';
   const postBodyHtml = inlineTitles
-    ? [`<p class="lede">${esc(body[0])}</p>`, ...refs.map((r, i) => titleParagraph(body[i + 1], r)), `<p>${esc(body[refs.length + 1])}</p>`].join('')
-    : body.map((p, i) => `<p${i === 0 ? ' class="lede"' : ''}>${esc(p)}</p>`).join('');
+    ? [...refs.map((r, i) => titleParagraph(body[i + 1], r)), `<p>${esc(body[refs.length + 1])}</p>`].join('')
+    : body.slice(1).map((p) => `<p>${esc(p)}</p>`).join('');
 
   // Redundant once titles render inline next to their own paragraph above.
   const titlesSection = typed.post_type === 'guide' && refs.length && !inlineTitles
@@ -1218,29 +1301,37 @@ Deno.serve(async (req) => {
         <h2 style="font-family:var(--display);font-size:1.5rem;font-weight:700;letter-spacing:-0.03em;margin:0 0 18px">Titles in this guide</h2>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:18px">${refs.map((r) => {
           const poster = r.poster_path ? `https://image.tmdb.org/t/p/w185${esc(r.poster_path)}` : null;
-          return `<a href="${esc(titleHref(r.media_type, r.tmdb_id, r.title))}" style="text-decoration:none;color:inherit">${poster ? `<img src="${poster}" alt="${esc(r.title)}" loading="lazy" style="width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:10px;border:1px solid var(--hair);display:block">` : '<span style="display:block;width:100%;aspect-ratio:2/3;border-radius:10px;background:var(--paper);border:1px solid var(--hair)"></span>'}<span style="display:block;font-size:0.82rem;margin-top:8px;line-height:1.3">${esc(r.title)}</span></a>`;
+          return `<a href="${esc(titleHref(r.media_type, refId(r) ?? 0, r.title))}" style="text-decoration:none;color:inherit">${poster ? `<img src="${poster}" alt="${esc(r.title)}" loading="lazy" style="width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:10px;border:1px solid var(--hair);display:block">` : '<span style="display:block;width:100%;aspect-ratio:2/3;border-radius:10px;background:var(--paper);border:1px solid var(--hair)"></span>'}<span style="display:block;font-size:0.82rem;margin-top:8px;line-height:1.3">${esc(r.title)}</span></a>`;
         }).join('')}</div>
       </section>`
     : '';
 
   const k = kicker(typed);
   const region = (url.searchParams.get('r') || 'US').toUpperCase().slice(0, 2) || 'US';
-  const articleCta = typed.post_type !== 'guide' && refs.length === 1
-    ? await titleCta(typed, region)
+  const storyHtml = typed.post_type !== 'guide' && refs.length === 1
+    ? await storyModule(typed, region)
     : '';
+  // ~220 wpm, rounded up — enough to set an expectation, not a precise claim.
+  const words = body.join(' ').split(/\s+/).filter(Boolean).length;
+  const readMins = Math.max(1, Math.round(words / 220));
   return page(`${title} · PLOT`, head, `
+    <nav class="crumbs" aria-label="Breadcrumb">
+      <a href="${SITE}">Home</a><span class="sep2">/</span><a href="${FEED_PATH}">What's On</a>${k ? `<span class="sep2">/</span><span>${esc(TYPE_META[typed.post_type]?.label ?? 'Update')}</span>` : ''}
+    </nav>
     <article class="post r2">
       <header class="post-head">
-        <div class="a-meta">${k}${k ? '<span class="sep"></span>' : ''}<span class="d sc">${esc(fmtDate(typed.scheduled_for))}</span></div>
+        <div class="a-meta">${k}${k ? '<span class="sep"></span>' : ''}<span class="d sc">${esc(fmtDate(typed.scheduled_for))}</span><span class="sep"></span><span class="d sc">${readMins} min read</span></div>
         <h1>${esc(title)}</h1>
       </header>
       ${hero ? `<figure class="hero"><img src="${esc(hero)}" alt=""></figure>` : ''}
       <div class="post-body">
+        ${bodyLede}
+        ${storyHtml}
         ${postBodyHtml}
       </div>
       ${titlesSection}
-      ${articleCta}
     </article>
+    ${subscribeForm('whats_on_article')}
     ${more}
     <div class="post-foot"><a class="back sc" href="${FEED_PATH}">&larr; All updates</a></div>
   `);
