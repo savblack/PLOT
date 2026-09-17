@@ -33,7 +33,6 @@ const ListPage      = lazy(() => import('./components/ListPage.jsx'));
 const SearchView  = lazy(() => import('./components/SearchView.jsx'));
 const SettingsView= lazy(() => import('./components/SettingsView.jsx'));
 const ImportView  = lazy(() => import('./components/ImportView.jsx'));
-const RequestsView= lazy(() => import('./components/RequestsView.jsx'));
 const NotificationsView = lazy(() => import('./components/NotificationsView.jsx'));
 
 // Standalone pages
@@ -123,7 +122,8 @@ const router = createBrowserRouter([
       { path: 'search',   element: wrap(<SearchView />) },
       { path: 'person/:personId', element: wrap(<TalentPage />) },
       { path: 'settings', element: wrap(<SettingsView />) },
-      { path: 'requests', element: wrap(<RequestsView />) },
+      // Follow requests live on the Notifications page now (17 Sep 2026).
+      { path: 'requests', element: <Navigate to="/notifications" replace /> },
       { path: 'notifications', element: wrap(<NotificationsView />) },
       { path: 'import',   element: wrap(<ImportView />) },
     ],

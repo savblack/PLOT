@@ -1,0 +1,50 @@
+/* Notifications on the History shell (.hist-page, .hist-toolbar, .hist-card,
+   .cal-stream-month). Only the notification-specific parts live here. */
+.notif-page { max-width: 760px; }
+.notif-body { display: flex; flex-direction: column; gap: 28px; }
+.notif-section { display: flex; flex-direction: column; gap: 12px; }
+.notif-status { padding: 8px 4px; }
+.notif-hint { padding: 0 4px; }
+
+/* Requests: cards, two across, Approve as the pink fill. */
+.notif-request-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.notif-request { flex-direction: row; align-items: center; gap: 12px; padding: 12px; }
+.notif-request-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.notif-request-name { background: none; border: 0; padding: 0; text-align: left; font: inherit; font-size: 14px; font-weight: 600; color: var(--text-primary); cursor: pointer; overflow-wrap: anywhere; }
+.notif-request-name:hover { color: var(--accent-text); }
+.notif-request-actions { display: inline-flex; gap: 6px; flex-shrink: 0; }
+
+/* Avatars: a monogram or photo, with a small badge saying what kind of row it is. */
+.notif-avatar-wrap { position: relative; display: inline-flex; flex-shrink: 0; }
+.notif-avatar { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 50%; object-fit: cover; background: var(--surface-sunken); font-family: var(--font-display); font-weight: 700; font-size: 16px; color: var(--text-secondary); }
+.notif-avatar--sm { width: 32px; height: 32px; font-size: 12px; border: 2px solid var(--bg); }
+.notif-kind { position: absolute; right: -2px; bottom: -2px; width: 18px; height: 18px; border-radius: 50%; background: var(--surface); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; }
+.notif-kind svg { width: 10px; height: 10px; stroke: var(--text-primary); fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Followers rolled into one card with stacked avatars. */
+.notif-rollup { flex-direction: row; align-items: center; gap: 14px; padding: 12px; text-align: left; cursor: pointer; font: inherit; color: inherit; width: 100%; }
+.notif-stack { display: inline-flex; }
+.notif-stack .notif-avatar-wrap + .notif-avatar-wrap { margin-left: -10px; }
+.notif-rollup-text { flex: 1; min-width: 0; font-size: 14.5px; line-height: 1.4; }
+.notif-rollup-text strong { font-weight: 600; }
+
+/* Everything else: day groups of hairline rows, a pink dot for unread. */
+.notif-group { display: flex; flex-direction: column; gap: 4px; }
+.notif-group-label { font-size: 10px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: var(--text-muted); padding: 8px 4px 0; }
+.notif-rows { display: flex; flex-direction: column; }
+.notif-row { display: flex; align-items: center; gap: 14px; width: 100%; padding: 12px 4px; border: 0; border-bottom: 1px solid var(--border); background: none; text-align: left; cursor: pointer; font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
+.notif-row:last-child { border-bottom: 0; }
+.notif-row:hover strong { color: var(--accent-text); }
+.notif-row-text { flex: 1; min-width: 0; font-size: 14.5px; line-height: 1.4; }
+.notif-row-text strong { font-weight: 600; }
+.notif-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+.notif-dot--read { background: transparent; }
+.notif-time { white-space: nowrap; flex-shrink: 0; }
+
+@media (max-width: 760px) {
+  .notif-request-grid { grid-template-columns: minmax(0, 1fr); }
+  .notif-request { flex-wrap: wrap; }
+  .notif-request-actions { width: 100%; padding-left: 56px; }
+  .notif-rollup { flex-wrap: wrap; }
+  .notif-rollup .notif-time { display: none; }
+}
