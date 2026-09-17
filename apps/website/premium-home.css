@@ -16,9 +16,7 @@
 .premium-visual-slide { display: flex; flex-direction: column; }
 .premium-shared { flex: 1; display: flex; flex-direction: column; padding: 28px; border: 1px solid var(--rule); border-radius: var(--r-lg); background: var(--surface); }
 .premium-mini { font-size: 0.62rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-secondary); }
-.premium-caption { text-align: center; margin: 14px 0 0; font-size: 0.7rem; color: var(--text-secondary); }
 .premium-shared h3 { margin: 8px 0 24px; font: 600 1.5rem/1.2 var(--display); letter-spacing: -0.02em; }
-.premium-footer { border-top: 1px solid var(--rule); padding-top: 18px; font-size: 0.8rem; line-height: 1.55; color: var(--text-secondary); }
 @media (max-width: 760px) {
   #premium { padding: 5rem 24px; }
   .premium-layout { grid-template-columns: 1fr; gap: 35px; }
@@ -39,7 +37,7 @@
 /* ── Storyboards ────────────────────────────────────────────────
    Base styles are each card's END state so the story reads with motion off;
    keyframes only describe how it gets there. One pass ≈ 6s inside the 7s rotation. */
-.premium-story { position: relative; margin: 0 0 24px; }
+.premium-story { position: relative; margin: 0; }
 .premium-story * { animation-fill-mode: both; animation-timing-function: var(--ease); }
 .premium-story img { display: block; }
 .premium-pill-cta { display: inline-flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 16px; border-radius: var(--r-pill); background: var(--fill); color: var(--text); font: 500 0.75rem var(--sans); white-space: nowrap; }
@@ -139,7 +137,7 @@
 .premium-row .premium-o { opacity: 0; }
 .premium-m1 { position: relative; z-index: 2; transform: translate(var(--dx), var(--dy)) scale(1.6); }
 .premium-m2 { position: relative; z-index: 3; transform: translate(calc(-1 * var(--dx)), calc(-1 * var(--dy))) scale(1.6); }
-.premium-ring { position: absolute; left: calc(50% - 76px); top: 64px; width: 152px; height: 220px; border-radius: 20px; border: 2px solid var(--accent); }
+.premium-ring { position: absolute; left: calc(50% - 76px); top: 64px; width: 152px; height: 220px; border-radius: 20px; border: 2px solid var(--sage); }
 .premium-both { position: absolute; left: 50%; top: 270px; z-index: 4; display: flex; transform: translateX(-50%); }
 .premium-both .premium-av { width: 26px; height: 26px; font-size: 0.7rem; border-color: var(--bg); }
 .premium-both .premium-av + .premium-av { margin-left: -8px; }
@@ -217,7 +215,6 @@
 @keyframes premium-alert2 { 0%, 68% { opacity: 0; transform: translateY(-22px) scale(0.96); } 76% { transform: translateY(3px) scale(1); } 82%, 100% { opacity: 1; transform: none; } }
 @keyframes premium-toast  { 0%, 86% { opacity: 0; transform: translateY(10px); } 96%, 100% { opacity: 1; transform: none; } }
 
-.premium-caption a { color: inherit; text-underline-offset: 3px; }
 @media (prefers-reduced-motion: reduce) {
   .premium-visual-slide.is-active .premium-story * { animation: none; }
 }
