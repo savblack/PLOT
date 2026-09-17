@@ -72,10 +72,12 @@
 .pp-fav-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; flex: 1; align-content: space-between; }
 .pp-fav-grid > :nth-child(n + 7) { display: none; }
 .pp-history-rows--columns { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 40px; }
-.pp-history-page-head { align-items: flex-end; padding-top: 40px; }
+.pp-section-page-head { align-items: flex-end; padding-top: 40px; }
+.pp-list-covers--page { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 32px 24px; }
+.pp-poster-page-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 16px; }
 .pp-back { display: inline-block; margin-bottom: 6px; font-size: 14px; color: var(--text-muted); }
 .pp-back:hover { color: var(--accent-text); }
-.pp-history-page .pp-history-pagination { justify-content: flex-start; gap: 8px; padding-top: 24px; }
+.pp-section-page .pp-history-pagination { justify-content: flex-start; gap: 8px; padding-top: 24px; }
 .pp-list-covers .list-cover-name { font-size: 15px; font-family: var(--font-sans); letter-spacing: normal; font-weight: 600; }
 .pp-list-expanded { margin-top: 28px; }
 .pp-history-row { display: flex; align-items: center; gap: 14px; text-align: left; width: 100%; padding: 10px 0; border: 0; border-bottom: 1px solid var(--border); background: none; color: var(--text-primary); cursor: pointer; }
@@ -119,7 +121,9 @@
   .pp-fav-grid .card-fav-btn, .pp-fav-grid .card-save-btn { display: none; }
   .pp-history-rows--columns { grid-template-columns: minmax(0, 1fr); }
   .pp-history-rows--columns > :nth-child(n + 5) { display: none; }
-  .pp-history-page .pp-history-rows--columns > :nth-child(n + 5) { display: flex; }
+  .pp-section-page .pp-history-rows--columns > :nth-child(n + 5) { display: flex; }
+  .pp-list-covers--page { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px 12px; }
+  .pp-poster-page-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
   .pp-list-covers .list-cover-name { font-size: 13px; }
   .pp-rail { gap: 8px; } .pp-rail .pp-poster { width: 64px; border-radius: 8px; }
 }

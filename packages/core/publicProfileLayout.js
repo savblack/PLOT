@@ -34,3 +34,18 @@ export async function profileHistoryPage(client, userId, page = 0) {
   if (error) throw error;
   return { items: data || [], hasMore: (page + 1) * size < (count || 0) };
 }
+
+/** A bounded favourites page, newest first; RLS enforces access for the current viewer.
+ * @param {object} client Supabase-compatible client.
+ * @param {string} userId Profile owner.
+ * @param {number} page Zero-based page.
+ */
+export async function profileFavouritesPage(client, userId, page = 0) {
+  const size = 30;
+  const { data, error, count } = await client.from('user_favourites')
+    .select('tmdb_id, media_type, title, poster_path', { count: 'exact' })
+    .eq('user_id', userId).order('created_at', { ascending: false })
+    .range(page * size, (page + 1) * size - 1);
+  if (error) throw error;
+  return { items: data || [], hasMore: (page + 1) * size < (count || 0) };
+}

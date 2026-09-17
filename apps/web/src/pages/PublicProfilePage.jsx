@@ -1,7 +1,7 @@
 // DOM-specific profile layout and native dialog. Native layout parity: https://github.com/savblack/PLOT/issues/931.
 import { buildProfileShareUrl } from '@plot/core/sharing.js';
 import { SHARING } from '@plot/core/copy/sharing.js';
-import { publicProfileLayout, profileHistoryPage, PUBLIC_LIST_LIMIT } from '@plot/core/publicProfileLayout.js';
+import { publicProfileLayout, profileHistoryPage, profileFavouritesPage, PUBLIC_LIST_LIMIT } from '@plot/core/publicProfileLayout.js';
 import './PublicProfilePage.css';
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
@@ -737,38 +737,60 @@ function HistoryRows({ items, openPanel, columns = false }) {
   ))}</div>;
 }
 
-/** Full watch history for a profile, at /u/:username/history. RLS scopes the rows to the viewer. */
-export function ProfileHistoryPage() {
+/** A profile section on its own page: /u/:username/{history,favourites,lists}. RLS scopes rows to the viewer. */
+export function ProfileSectionPage({ section }) {
   const { username = '' } = useParams();
-  const { user: viewer, openPanel } = useApp();
-  const { loading, profile, locked } = usePublicProfile(username, viewer?.id);
+  const { user: viewer, openPanel, watchlist, profile: viewerProfile } = useApp();
+  const { loading, profile, locked, customLists } = usePublicProfile(username, viewer?.id);
   const [page, setPage] = useState(0);
   const [retry, setRetry] = useState(0);
+  const [expandedList, setExpandedList] = useState(null);
   const [result, setResult] = useState({ items: [], hasMore: false, page: -1, retry: -1, error: false });
   const profileId = profile?.id;
-  const fetching = result.page !== page || result.retry !== retry;
+  const paged = section !== 'lists';
+  const fetching = paged && (result.page !== page || result.retry !== retry);
+  const fetchPage = section === 'favourites' ? profileFavouritesPage : profileHistoryPage;
   useEffect(() => {
-    if (!profileId || locked) return undefined;
+    if (!paged || !profileId || locked) return undefined;
     let cancelled = false;
-    profileHistoryPage(supabase, profileId, page).then(next => {
+    fetchPage(supabase, profileId, page).then(next => {
       if (!cancelled) setResult({ ...next, page, retry, error: false });
     }).catch(() => {
       if (!cancelled) setResult({ items: [], hasMore: false, page, retry, error: true });
     });
     return () => { cancelled = true; };
-  }, [profileId, locked, page, retry]);
+  }, [paged, fetchPage, profileId, locked, page, retry]);
   const name = profile ? (profile.display_name || profile.username) : '';
+  const fw = favoriteWords(viewerProfile?.region);
+  const title = section === 'favourites' ? fw.plural : section === 'lists' ? PUBLIC_PROFILE_PAGE.lists : PUBLIC_PROFILE_PAGE.watchHistory;
+  const lists = (customLists || []).filter(list => list.items?.length);
+  const expanded = lists.find(list => list.id === expandedList);
+  const busy = loading || (profile && !locked && fetching);
+  const empty = section === 'lists' ? lists.length === 0 : result.items.length === 0;
   return <>
     <style>{profileStyles}</style>
-    <div className="pp-view pp-history-page">
-      <div className="pp-section-heading pp-history-page-head">
-        <div><Link to={`/u/${username}`} className="pp-back">{name || `@${username}`}</Link><h1 className="pp-section-title">{PUBLIC_PROFILE_PAGE.watchHistory}</h1></div>
+    <div className="pp-view pp-section-page">
+      <div className="pp-section-heading pp-section-page-head">
+        <div><Link to={`/u/${username}`} className="pp-back">{name || `@${username}`}</Link><h1 className="pp-section-title">{title}</h1></div>
       </div>
-      {loading || (profile && !locked && fetching) ? <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}><PlotLoader /></div>
+      {busy ? <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}><PlotLoader /></div>
         : !profile || locked ? <p className="pp-sparse-line">{PUBLIC_PROFILE_PAGE.noPublicTitles}</p>
         : result.error ? <div role="alert" className="pp-sparse"><p>{COMMON.genericError}</p><button className="btn btn-secondary btn-sm" onClick={() => setRetry(value => value + 1)}>{PUBLIC_PROFILE_PAGE.retry}</button></div>
+        : empty ? <p className="pp-sparse-line">{PUBLIC_PROFILE_PAGE.noPublicTitles}</p>
+        : section === 'lists' ? <>
+          <div className="pp-list-covers pp-list-covers--page">
+            {lists.map(list => <ListCover key={list.id} name={list.name} count={PUBLIC_PROFILE_PAGE.titleCount(list.items.length)}
+              posters={list.items.map(item => item.poster_path)} onOpen={() => setExpandedList(value => value === list.id ? null : list.id)} />)}
+          </div>
+          {expanded && <div className="pp-list-expanded">
+            <div className="pp-section-heading"><h3>{expanded.name}</h3><button type="button" className="btn btn-secondary btn-sm" onClick={() => setExpandedList(null)}>{PUBLIC_PROFILE_PAGE.showLess}</button></div>
+            <PosterRail items={expanded.items} openPanel={openPanel} watchlist={watchlist} />
+          </div>}
+        </>
         : <>
-          {result.items.length ? <HistoryRows items={result.items} openPanel={openPanel} columns /> : <p className="pp-sparse-line">{PUBLIC_PROFILE_PAGE.noPublicTitles}</p>}
+          {section === 'favourites'
+            ? <div className="pp-poster-page-grid">{result.items.map((it, i) => <PosterCard key={`${it.tmdb_id}-${i}`} item={it} openPanel={openPanel} watchlist={watchlist} />)}</div>
+            : <HistoryRows items={result.items} openPanel={openPanel} columns />}
           <div className="pp-history-pagination">
             {page > 0 && <button className="btn btn-secondary btn-sm" onClick={() => setPage(value => value - 1)}>{COMMON.back}</button>}
             {result.hasMore && <button className="btn btn-secondary btn-sm" onClick={() => setPage(value => value + 1)}>{COMMON.next}</button>}
@@ -820,7 +842,7 @@ export function ProfileContent({ username, isOwn, openPanel, watchlist, favourit
     </section>}
     {(content.customLists.length > 0 || content.favourites.length > 0) && <div className="pp-profile-columns">
       {content.customLists.length > 0 && <section className="pp-section" id="pp-profile-lists">
-        <div className="pp-section-heading"><h2 className="pp-section-title">{PUBLIC_PROFILE_PAGE.lists}</h2></div>
+        <div className="pp-section-heading"><h2 className="pp-section-title">{PUBLIC_PROFILE_PAGE.lists}</h2><Link to={`/u/${username}/lists`} className="btn btn-secondary btn-sm">{PUBLIC_PROFILE_PAGE.viewAll}</Link></div>
         {/* Up to PUBLIC_LIST_LIMIT covers, three per row, so two rows at most. */}
         <div className="pp-list-covers">
           {content.customLists.map(list => <ListCover key={list.id} name={list.name} count={PUBLIC_PROFILE_PAGE.titleCount(list.items.length)}
@@ -832,7 +854,7 @@ export function ProfileContent({ username, isOwn, openPanel, watchlist, favourit
         </div>}
       </section>}
       {content.favourites.length > 0 && <section className="pp-section" id="pp-profile-favourites">
-        <div className="pp-section-heading"><h2 className="pp-section-title">{favouriteLabel}</h2></div>
+        <div className="pp-section-heading"><h2 className="pp-section-title">{favouriteLabel}</h2><Link to={`/u/${username}/favourites`} className="btn btn-secondary btn-sm">{PUBLIC_PROFILE_PAGE.viewAll}</Link></div>
         {/* Two full rows: three across beside the lists, five across on phone; the CSS hides the rest. */}
         <div className="pp-fav-grid">
           {content.favourites.slice(0, 10).map((it, i) => <PosterCard key={`${it.tmdb_id}-${i}`} item={it} openPanel={openPanel} watchlist={watchlist} />)}
