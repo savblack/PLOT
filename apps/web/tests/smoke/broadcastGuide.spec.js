@@ -57,7 +57,9 @@ test('production Guide saves empty channels and preserves a failed draft', async
   const backend = await setup(page);
   await page.goto('/guide');
   await expect(page.getByRole('button', { name: /Test evening news/ })).toBeVisible();
-  await page.getByRole('button', { name: 'My channels', exact: true }).click();
+  // #946 replaced the "My channels" toggle with an always-visible tick list plus an
+  // Edit channels button (COPY.editChannels); the picker behind it is unchanged.
+  await page.getByRole('button', { name: 'Edit channels' }).click();
   await page.getByRole('button', { name: 'Clear selection' }).click();
   backend.failSave(true);
   await page.getByRole('button', { name: 'Apply channels' }).click();
