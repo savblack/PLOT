@@ -43,6 +43,23 @@ export const MEDIA_PANEL = {
   collectionFilmCount: (total) => `${total} movie${total === 1 ? '' : 's'}`,
   couldNotLoadCollection: "Couldn't load this collection. Check your connection and try again.",
   trailerFallback: 'Trailer',
+  // Where to watch is a disclosure on web: collapsed it shows the provider
+  // logos and nothing else, so the heading and the region line carry the
+  // meaning when it opens.
+  whereToWatch: 'Where to watch',
+  offersIn: (region) => `Offers in ${region}`,
+  changeRegion: 'Change region',
+  moreProviders: (count) => `+${count}`,
+  // The two scores read as a pair, with the audience review beside them.
+  critics: 'Critics',
+  audience: 'Audience',
+  // The bar pinned to the foot of the panel. It is present whether or not
+  // anything has been written: the heading is the invitation until there is
+  // something to summarise.
+  yourTake: 'Your take',
+  leaveNoteOrReview: 'Leave a note or review',
+  takeHint: 'Rate it, write a review, or keep a private note',
+  takeNeedsWatch: 'Mark this watched to rate it and write a review.',
   watching: 'Watching',
   didntFinish: "Didn't finish",
   status: 'Status',
