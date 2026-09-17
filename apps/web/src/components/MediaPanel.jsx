@@ -181,6 +181,102 @@ function CheckCircleIcon({ filled }) {
   );
 }
 
+/* ── Up next: the mid-watch summary for a series ──
+   A series you are part-way through is asking one question — what do I watch
+   now — and the panel used to answer it only if you scrolled to the episode
+   guide and counted. This says it at the top: the episode the pointer is on,
+   where it plays, and the two things you might do about it.
+
+   It reads the same pointer the guide does and advances it through the same
+   `markEpisodeWatched`, so the card and the list can't disagree. ── */
+function UpNextCard({ tvId, details, progress, whereToWatch, onSeriesFinished }) {
+  const { watching } = useApp();
+  const [episodes, setEpisodes] = useState([]);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState('');
+  const season = progress?.current_season || 0;
+  const episodeNumber = progress?.current_episode || 0;
+
+  useEffect(() => {
+    if (!season) return;
+    let cancelled = false;
+    tmdb.getSeason(tvId, season).then(data => {
+      if (!cancelled) setEpisodes(data?.episodes || []);
+    });
+    return () => { cancelled = true; };
+  }, [tvId, season]);
+
+  const episode = episodes.find(e => e.episode_number === episodeNumber);
+  if (!season || !episodeNumber) return null;
+
+  const watchedInSeason = Math.max(0, episodeNumber - 1);
+  const seasonTotal = episodes.length;
+  const offer = whereToWatch.streaming[0] || whereToWatch.rentBuy[0] || null;
+  const link = offer && buildWatchLink({ providerUrl: offer.providerUrl, justwatchLink: whereToWatch.justwatchLink });
+  const still = episode?.still_path ? backdropUrl(episode.still_path, 'w300') : null;
+  const runtime = episode?.runtime ? MEDIA_PANEL.episodeRuntime(episode.runtime) : '';
+  const where = [offer?.providerName, runtime].filter(Boolean).join(' · ');
+
+  const markWatched = async () => {
+    if (pending) return;
+    setPending(true);
+    setError('');
+    const result = await watching.markEpisodeWatched(tvId);
+    if (!result?.ok) {
+      setError(result?.error || MEDIA_PANEL.couldNotUpdateWatchStatus);
+    } else if (isSeriesComplete({
+      lastSeason: getLastSeasonNumber(details),
+      nextSeason: result.data?.current_season,
+      status: details?.status,
+    })) {
+      track(EVENTS.SERIES_COMPLETED, { tmdb_id: tvId, seasons: getLastSeasonNumber(details) });
+      const finished = await onSeriesFinished?.();
+      if (finished && !finished.ok) setError(finished.error || MEDIA_PANEL.couldNotUpdateWatchStatus);
+    }
+    setPending(false);
+  };
+
+  return (
+    <section className="panel-card panel-upnext">
+      <h3 className="panel-card-title panel-upnext-title">{MEDIA_PANEL.upNext}</h3>
+      <div className="panel-upnext-row">
+        <div className="panel-upnext-still">
+          {still && <img src={still} alt="" />}
+        </div>
+        <div className="panel-upnext-copy">
+          <div className="panel-upnext-kicker">{MEDIA_PANEL.seasonEpisode(season, episodeNumber)}</div>
+          <div className="panel-upnext-name">{episode?.name || MEDIA_PANEL.seasonEpisode(season, episodeNumber)}</div>
+          {where && <div className="panel-upnext-where">{where}</div>}
+        </div>
+        <div className="panel-upnext-actions">
+          <button className="panel-pill panel-pill--primary" onClick={markWatched} disabled={pending}>
+            <CheckIcon />
+            {pending ? MEDIA_PANEL.updating : MEDIA.markWatched}
+          </button>
+          {link && offer && (
+            <a className="panel-pill panel-pill--ghost" href={link.url} target="_blank" rel="noopener">
+              {MEDIA_PANEL.openOn(offer.providerName)}
+            </a>
+          )}
+        </div>
+      </div>
+      {seasonTotal > 0 && (
+        <div
+          className="panel-upnext-progress"
+          role="progressbar"
+          aria-valuenow={watchedInSeason}
+          aria-valuemin={0}
+          aria-valuemax={seasonTotal}
+          aria-label={MEDIA_PANEL.seasonWatchedCount(watchedInSeason, seasonTotal)}
+        >
+          <span style={{ width: `${Math.round((watchedInSeason / seasonTotal) * 100)}%` }} />
+        </div>
+      )}
+      {error && <p className="panel-upnext-error" role="alert">{error}</p>}
+    </section>
+  );
+}
+
 /* ── Season selector + episode list ── */
 function EpisodeGuide({ tvId, currentProgress, details, timezone, onSeriesFinished }) {
   const { watching } = useApp();
@@ -192,6 +288,7 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone, onSeriesFinish
   const [checkingEp, setCheckingEp] = useState(null); // ep number being toggled
   const [episodeActionError, setEpisodeActionError] = useState('');
   const [seasonPending, setSeasonPending] = useState(false);
+  const [seasonMenuOpen, setSeasonMenuOpen] = useState(false);
   const checkingEpRef = useRef(false); // sync guard to prevent double-tap race
 
   // Track whether user manually changed season (to suppress auto-follow)
@@ -357,33 +454,49 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone, onSeriesFinish
 
   return (
     <div>
-      {seasons.length > 1 && (
-        <div className="season-select">
-          {seasons.map(s => (
+      {/* Season picker and the season-level action share one line: the season
+          as a pill you open, the bulk action as plain text on the right. The
+          chip-per-season strip it replaces grew a row for every season. */}
+      <div className="season-row">
+        {seasons.length > 1 ? (
+          <div className="season-picker" onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) setSeasonMenuOpen(false); }}>
             <button
-              key={s.season_number}
-              className={`season-chip${selSeason === s.season_number ? ' active' : ''}`}
-              onClick={() => {
-                userChangedSeason.current = true;
-                setSelSeason(s.season_number);
-              }}
+              type="button"
+              className="panel-pill season-pill"
+              onClick={() => setSeasonMenuOpen(v => !v)}
+              aria-haspopup="menu"
+              aria-expanded={seasonMenuOpen}
             >
-              S{s.season_number}
+              {MEDIA_PANEL.seasonLabel(selSeason)}
+              <ChevronIcon size={13} />
             </button>
-          ))}
-        </div>
-      )}
-
-      {isTracking && episodes.length > 0 && (
-        <div className="season-bulk">
-          <div className="season-bulk-info">
-            <span className="season-bulk-title">{MEDIA_PANEL.seasonLabel(selSeason)}</span>
-            <span className="season-bulk-count">
-              {MEDIA_PANEL.seasonWatchedCount(seasonState.watchedCount, seasonState.episodeCount)}
-            </span>
+            {seasonMenuOpen && (
+              <div className="panel-status-menu season-menu" role="menu" aria-label={MEDIA_PANEL.chooseSeason}>
+                {seasons.map(s => (
+                  <button
+                    key={s.season_number}
+                    role="menuitem"
+                    className={`panel-status-option${s.season_number === selSeason ? ' panel-status-option--current' : ''}`}
+                    onClick={() => {
+                      userChangedSeason.current = true;
+                      setSelSeason(s.season_number);
+                      setSeasonMenuOpen(false);
+                    }}
+                  >
+                    {MEDIA_PANEL.seasonLabel(s.season_number)}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
+        ) : (
+          <span className="panel-pill season-pill season-pill--static">{MEDIA_PANEL.seasonLabel(selSeason)}</span>
+        )}
+
+        {isTracking && episodes.length > 0 && (
           <button
-            className="season-bulk-btn"
+            type="button"
+            className="season-bulk-link"
             onClick={handleToggleSeason}
             disabled={seasonPending}
           >
@@ -393,8 +506,8 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone, onSeriesFinish
                 ? MEDIA_PANEL.unmarkSeasonWatched
                 : MEDIA_PANEL.markSeasonWatched}
           </button>
-        </div>
-      )}
+        )}
+      </div>
 
       {episodeActionError && (
         <div style={{
@@ -1517,6 +1630,16 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
 
             {statusActionError && (
               <div className="panel-status-error" role="alert">{statusActionError}</div>
+            )}
+
+            {!isMovie && isWatching && details && (
+              <UpNextCard
+                tvId={itemId}
+                details={details}
+                progress={progress}
+                whereToWatch={whereToWatch}
+                onSeriesFinished={handleSeriesFinished}
+              />
             )}
 
             {/* ── Where to watch ──

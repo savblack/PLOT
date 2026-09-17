@@ -15,6 +15,13 @@ export const MEDIA_PANEL = {
   seasonLabel: (season) => `Season ${season}`,
   seasonWatchedCount: (watched, total) => `${watched} of ${total} watched`,
   markSeasonWatched: 'Mark season watched',
+  // The mid-watch summary card: what a series you are part-way through is
+  // actually asking you to do next.
+  upNext: 'Up next',
+  seasonEpisode: (season, episode) => `Season ${season} · Episode ${episode}`,
+  openOn: (provider) => `Open on ${provider}`,
+  episodeRuntime: (minutes) => `${minutes} min`,
+  chooseSeason: 'Choose a season',
   unmarkSeasonWatched: 'Unmark season',
   couldNotUpdateSeason: 'Could not update this season right now. Please try again.',
   top10TvShows: 'TV Shows',
