@@ -1441,7 +1441,7 @@ export default function DesignSystemPage() {
                 <button type="button" className="ds-req-btn ds-req-btn--decline">Decline</button>
               </span>
             </div>
-            <p>Avatar + name/handle + pill actions, hairline-divided rows (<code>.req-row</code>, RequestsView). Approve fills with <code>--text-primary</code>; decline stays ghost.</p>
+            <p>Avatar + name/handle + pill actions, request cards on the Notifications page (<code>.notif-request</code>). Approve is the pink fill; decline is the cream secondary.</p>
           </RuleCard>
 
           <RuleCard label="Notification bell + unread">
