@@ -1280,7 +1280,7 @@ export default function DesignSystemPage() {
 
         <h3 className="ds-subsection-title">Where each surface points</h3>
         <p className="ds-section-note" style={{ marginTop: '0.25rem' }}>
-          The app's <code>/save</code> link points <code>og:image</code> at the title's TMDB backdrop. The marketing surfaces have not been moved across yet: <code>theplot.tv/movie/:slug</code> (<code>supabase/functions/title-page</code>) and single-title <code>/whats-on</code> posts still point at <code>/api/og</code>, a Vercel-era path that no longer exists — it resolves to the SPA shell as <code>text/html</code>. The <code>/whats-on</code> index + chart carry the static fallback image, which is fine. The real poster still backs the JSON-LD for SEO rich results.
+          A title unfurls the same way wherever its link is shared: the app's <code>/save</code> link and the marketing <code>theplot.tv/movie/:slug</code> page (<code>supabase/functions/title-page</code>) both point <code>og:image</code> at its TMDB backdrop, and both fall back to the static card for titles TMDB has no backdrop for. <code>/whats-on</code> articles prefer their branded per-post social render, then the hero still; the index + chart carry the static fallback image. The real poster still backs the JSON-LD for SEO rich results.
         </p>
       </Section>
 

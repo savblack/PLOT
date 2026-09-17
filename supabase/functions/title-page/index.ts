@@ -325,9 +325,16 @@ Deno.serve(async (req) => {
   const poster = img(data.poster_path, 'w342');
   const backdrop = img(data.backdrop_path, 'w1280');
   const posterImage = img(data.backdrop_path, 'w780') || img(data.poster_path, 'w500') || '';
-  // Branded 1200×630 PLOT share card (same one app.theplot.tv/save uses), so a
-  // title unfurls identically wherever its link is shared.
-  const shareCard = `${APP}/api/og?type=${type}&id=${id}`;
+  // Link-preview image. This was the branded PLOT card at /api/og on the app
+  // domain — a Vercel path that has not existed since the move to Cloudflare,
+  // so it resolved to the SPA shell as text/html and every title page unfurled
+  // with no image. Its Cloudflare replacement (the plot-og Worker) cannot
+  // render on the free plan either, so point at TMDB's own backdrop, exactly as
+  // app.theplot.tv/save now does — see functions/_lib/og-card.js. Titles with
+  // no backdrop take the static brand card; a 2:3 poster crops badly into a
+  // 1.91:1 slot.
+  const shareCard = backdrop || `${SITE}/og-image.png`;
+  const [shareW, shareH] = backdrop ? [1280, 720] : [1200, 630];
   const genres = (data.genres || []).map((g: any) => g.name).filter(Boolean);
   const overview: string = data.overview || '';
   const rating = typeof data.vote_average === 'number' && data.vote_average > 0 ? data.vote_average.toFixed(1) : null;
@@ -397,8 +404,8 @@ Deno.serve(async (req) => {
 <meta property="og:description" content="${esc(desc)}">
 <meta property="og:url" content="${esc(canonicalUrl)}">
 <meta property="og:image" content="${esc(shareCard)}">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="630">
+<meta property="og:image:width" content="${shareW}">
+<meta property="og:image:height" content="${shareH}">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="${esc(shareCard)}">
 <script type="application/ld+json">${jsonLd}</script>`;
