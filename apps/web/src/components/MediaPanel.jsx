@@ -1224,6 +1224,7 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
     ? getConsensusLine(criticScore.criticScore, audienceScore, { audienceVoteCount: details?.vote_count, seed: details?.id })
     : null;
   const hasWatchOffers = whereToWatch.streaming.length > 0 || whereToWatch.rentBuy.length > 0 || whereToWatch.inCinemas;
+  const watchNetworks = isMovie ? [] : networksFromDetails(details);
 
   // ── What this is, in one line under the title ──
   // Year and length for a film, year and season count for a series; the person
@@ -1245,15 +1246,15 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
   const genreChips = (details?.genres || []).slice(0, 2);
 
   // ── The logos the collapsed Where to watch card shows in place of its rows ──
-  const stackProviders = [...whereToWatch.streaming, ...whereToWatch.rentBuy]
-    .filter((p, i, all) => all.findIndex(o => o.providerId === p.providerId) === i);
+  // With no offers anywhere it falls back to the networks, so the card still
+  // answers "who has this" at a glance instead of collapsing to a bare heading.
+  const stackProviders = (hasWatchOffers
+    ? [...whereToWatch.streaming, ...whereToWatch.rentBuy]
+    : watchNetworks
+  ).filter((p, i, all) => all.findIndex(o => o.providerId === p.providerId) === i);
   const stackShown = stackProviders.slice(0, 3);
   const stackExtra = stackProviders.length - stackShown.length;
-  // With nothing to show, the card has only its empty state to offer, so it
-  // opens rather than hiding that behind a chevron.
-  const watchExpanded = watchOpen || !hasWatchOffers;
 
-  const watchNetworks = isMovie ? [] : networksFromDetails(details);
 
   const runStatusAction = useCallback(async (actionLabel, action) => {
     if (statusActionPending) return;
@@ -1455,6 +1456,8 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                   className={`panel-pill panel-pill--status${isWatching ? ' panel-pill--watching' : watched ? ' panel-pill--watched' : ''}`}
                   onClick={() => setShowStatusDropdown(v => !v)}
                   disabled={!!statusActionPending}
+                  aria-haspopup="menu"
+                  aria-expanded={showStatusDropdown}
                 >
                   <StatusIcon size={15} />
                   <span className="panel-pill-label">
@@ -1464,7 +1467,6 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                       : watched ? MEDIA.watched
                       : MEDIA_PANEL.status}
                   </span>
-                  <ChevronIcon size={12} />
                 </button>
                 {showStatusDropdown && (
                   <div className="panel-status-menu">
@@ -1527,12 +1529,11 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                 <button
                   type="button"
                   className="panel-disclosure"
-                  aria-expanded={watchExpanded}
+                  aria-expanded={watchOpen}
                   onClick={() => setWatchOpen(v => !v)}
-                  disabled={!hasWatchOffers}
                 >
                   <h3 className="panel-card-title">{MEDIA_PANEL.whereToWatch}</h3>
-                  {!watchExpanded && stackShown.length > 0 && (
+                  {!watchOpen && stackShown.length > 0 && (
                     <span className="panel-logo-stack" aria-hidden="true">
                       {stackShown.map(p => (
                         <img
@@ -1544,10 +1545,10 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                       {stackExtra > 0 && <span className="panel-logo-more">{MEDIA_PANEL.moreProviders(stackExtra)}</span>}
                     </span>
                   )}
-                  {hasWatchOffers && <ChevronIcon />}
+                  <ChevronIcon />
                 </button>
 
-                {watchExpanded && (
+                {watchOpen && (
                   <div className="panel-watch-body">
                     {hasWatchOffers && (
                       <div className="panel-watch-region">
@@ -1598,16 +1599,18 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                     )}
                     {!hasWatchOffers && (
                       <>
+                        {/* Nothing to buy or stream yet, so the network is a
+                            mark rather than an offer: the logo alone, in the
+                            same circle the collapsed card stacks. */}
                         {watchNetworks.length > 0 && (
-                          <div className="providers-grid">
+                          <div className="panel-network-row">
                             {watchNetworks.map(network => (
-                              <ProviderChip
+                              <img
                                 key={network.providerId}
-                                provider={network}
-                                mediaType={itemType}
-                                tmdbId={itemId}
-                                region={whereToWatch.region}
-                                justwatchLink={null}
+                                className="panel-network-logo"
+                                src={network.logoPath?.startsWith('http') ? network.logoPath : logoUrl(network.logoPath, 'w45')}
+                                alt={network.providerName}
+                                title={network.providerName}
                               />
                             ))}
                           </div>

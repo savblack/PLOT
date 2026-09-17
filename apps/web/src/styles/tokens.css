@@ -128,9 +128,6 @@
      content, where a hairline can't separate them). Never decorative lift, and
      never on text. See docs/design/shared-design-system.md. */
   --shadow-overlay: 0 2px 8px rgba(0,0,0,0.12);
-  /* The same rescue, thrown upward: for the bar pinned to the foot of the title
-     panel, which content scrolls under. */
-  --shadow-overlay-up: 0 -2px 8px rgba(0,0,0,0.12);
 }
 
 /* ── Poster ramp ──────────────────────── */
@@ -203,5 +200,4 @@
   --glass-border:   rgba(240,239,232,0.08);
 
   --shadow-overlay: 0 2px 8px rgba(0,0,0,0.5);
-  --shadow-overlay-up: 0 -2px 8px rgba(0,0,0,0.5);
 }

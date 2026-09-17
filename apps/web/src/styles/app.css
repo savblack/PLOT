@@ -3680,6 +3680,11 @@ svg { stroke-width: 1.5; }
   margin-bottom: 1.1rem;
 }
 .panel-poster {
+  /* The cover wrap is positioned (it carries the scrim), so an in-flow poster
+     paints underneath it and loses its top 40px. Positioning the poster puts
+     it back in front of the artwork it overlaps. */
+  position: relative;
+  z-index: 1;
   width: 124px;
   height: 186px;
   margin-top: -40px;
@@ -3790,7 +3795,6 @@ svg { stroke-width: 1.5; }
 .panel-pill--saved { background: var(--status-watched-dim); color: var(--status-watched); }
 .panel-pill--watching { background: var(--status-watching-dim); color: var(--status-watching); }
 .panel-pill--watched { background: var(--status-watched-dim); color: var(--status-watched); }
-.panel-pill--status { padding-right: 0.7rem; }
 .panel-pill-label { max-width: 8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .panel-icon-btn {
@@ -3890,7 +3894,9 @@ svg { stroke-width: 1.5; }
   cursor: pointer;
 }
 .panel-disclosure:disabled { cursor: default; }
-.panel-disclosure svg { flex-shrink: 0; color: var(--text-secondary); transition: transform 0.18s var(--ease); }
+/* Direct children only: the rating stars live inside the foot bar's button
+   and have their own colours. */
+.panel-disclosure > svg { flex-shrink: 0; color: var(--text-secondary); transition: transform 0.18s var(--ease); }
 .panel-disclosure[aria-expanded="true"] > svg:last-child { transform: rotate(90deg); }
 
 .panel-logo-stack { display: flex; align-items: center; padding-right: 0.15rem; }
@@ -3902,7 +3908,9 @@ svg { stroke-width: 1.5; }
   border-radius: var(--radius-pill);
   border: 2px solid var(--surface-sunken);
   background: var(--surface-raised);
-  object-fit: cover;
+  /* Provider marks are square, network marks are wide: cover crops the wide
+     ones to their middle, which is how a wordmark turns into two letters. */
+  object-fit: contain;
 }
 .panel-logo-stack > * + * { margin-left: -10px; }
 .panel-logo-more {
@@ -3916,6 +3924,14 @@ svg { stroke-width: 1.5; }
 }
 
 .panel-watch-body { padding-bottom: 0.6rem; }
+.panel-network-row { display: flex; gap: 0.5rem; margin-bottom: 0.6rem; }
+.panel-network-logo {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-raised);
+  object-fit: contain;
+}
 .panel-watch-region {
   padding-bottom: 0.6rem;
   font-size: 0.72rem;
@@ -3998,8 +4014,6 @@ svg { stroke-width: 1.5; }
   background: var(--surface-sunken);
   border-top: 1px solid var(--border);
   padding: 0 1.25rem;
-  /* Legibility rescue: a bar over content that scrolls under it. */
-  box-shadow: var(--shadow-overlay-up);
 }
 .panel-take-head { padding: 0.85rem 0; }
 .panel-take-stars { display: flex; gap: 1px; flex-shrink: 0; color: var(--accent); }
@@ -4070,7 +4084,7 @@ svg { stroke-width: 1.5; }
   cursor: pointer;
   text-align: left;
 }
-.panel-cast-card img, .panel-cast-fallback, .panel-similar-card img {
+.panel-similar-card img {
   display: flex;
   width: 76px;
   aspect-ratio: 2 / 3;
@@ -4080,6 +4094,25 @@ svg { stroke-width: 1.5; }
   background: var(--surface-raised);
   box-shadow: var(--shadow-xs);
   object-fit: cover;
+}
+/* Cast are people, not artwork: a round crop of the portrait, the way the
+   rest of the app draws a face. A 2/3 poster crop of a headshot only ever
+   framed the chin. */
+.panel-cast-card { text-align: center; }
+.panel-cast-card img, .panel-cast-fallback {
+  display: flex;
+  width: 76px;
+  height: 76px;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  object-fit: cover;
+  object-position: center 22%;
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text-muted);
 }
 .panel-cast-name, .panel-cast-role, .panel-similar-name, .panel-similar-meta { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .panel-cast-name, .panel-similar-name { margin-top: 0.4rem; font-size: 0.72rem; font-weight: 600; }
