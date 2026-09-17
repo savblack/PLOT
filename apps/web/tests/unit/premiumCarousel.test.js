@@ -106,11 +106,13 @@ test('Marketing film example matches its verified Australian filters', () => {
   assert.ok(evidence.tonight.runtime <= 120);
   assert.ok(evidence.tonight.genres.some(genre => genre.name === 'Comedy'));
   assert.ok(evidence.tonight.providers.some(provider => provider.provider_name === 'Disney Plus'));
-  assert.ok(html.includes('premium-time-choice">✓ 120 min'));
-  assert.ok(html.includes('premium-service-choice">✓ Disney+'));
+  // The redesigned picker (#942) marks the chosen option with .premium-on and
+  // states the verification in the storyboard's aria-label rather than a caption.
+  assert.ok(html.includes('<span class="premium-on"><b class="premium-k">120 min</b>'));
+  assert.ok(html.includes('<span class="premium-on"><b class="premium-k">Disney+</b>'));
   assert.ok(html.includes(`${evidence.tonight.runtime} min · Disney+`));
   assert.ok(html.includes(evidence.tonight.poster_path));
-  assert.ok(html.includes('Australia example · Verified 17 Sep 2026'));
+  assert.ok(html.includes('Australian example verified 17 September 2026'));
   for (const person of ['Cillian Murphy', 'Greta Gerwig']) {
     assert.ok(html.includes(evidence.artwork[person].profile_path));
   }
