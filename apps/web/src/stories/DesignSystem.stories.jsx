@@ -61,7 +61,7 @@ export const Type = () => (
       <p style={{ fontFamily: 'var(--font-sans)', fontSize: 16, lineHeight: 1.55, color: 'var(--text-secondary)', maxWidth: 520, margin: 0 }}>Track what you've seen, save what's coming, and keep the notes that make it yours.</p>
     </div>
     <div>
-      <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Editorial · Gabarito italic · --font-serif</div>
+      <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Editorial · Gabarito · --font-display</div>
       <p style={{ fontFamily: 'var(--font-display)', fontSize: 22, margin: 0 }}>"Quietly devastating."</p>
     </div>
     <div>

@@ -63,8 +63,10 @@ const shell = (title, head, body) =>
 ${PH}
 ${head}
 <link rel="preload" href="/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/Gabarito-Variable.woff2" as="font" type="font/woff2" crossorigin>
 <style>
 @font-face{font-family:'DM Sans';src:url('/fonts/DMSans-Variable.woff2') format('woff2');font-weight:100 900;font-style:normal;font-display:swap}
+@font-face{font-family:'Gabarito';src:url('/fonts/Gabarito-Variable.woff2') format('woff2');font-weight:400 700;font-style:normal;font-display:swap}
 *{margin:0;padding:0;box-sizing:border-box}
 :root{${themeVars(colors.light)}}
 @media (prefers-color-scheme:dark){:root{${themeVars({ ...colors.light, ...colors.dark })}}}

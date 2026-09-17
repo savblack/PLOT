@@ -23,7 +23,7 @@ import { HISTORY_VIEW as T } from '../copy/historyView.js';
    sticky column of small cards beside it that say something about the year
    (how much, how kind, how it compares with TMDB's audience, who keeps
    turning up). The frame matches the Calendar's: 264px side column, 72px
-   gap, 24px serif month names on the stream.
+   gap, 24px Gabarito month names on the stream.
 
    Every number here comes from history rows plus the TMDB details PLOT
    already fetches for the media panel. Nothing is compared with other PLOT

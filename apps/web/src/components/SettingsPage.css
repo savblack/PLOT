@@ -11,7 +11,7 @@
 .settings-section-nav .settings-sign-out { margin-top: 1rem; border-top: 1px solid var(--border); border-radius: 0; color: var(--accent-text); }
 .settings-detail { min-width: 0; }
 .settings-detail-heading { margin-bottom: 2rem; }
-.settings-detail h2 { font: 400 2rem/1.15 var(--font-serif); margin: 0; }
+.settings-detail h2 { font: 400 2rem/1.15 var(--font-display); margin: 0; }
 .settings-page .settings-group-title { padding-left: 0; padding-right: 0; }
 .settings-page .settings-group { margin: 0 0 2rem; }
 .settings-page .settings-row { cursor: default; min-height: 80px; padding: 1rem 0; border-bottom: 1px solid var(--border); border-radius: 0; gap: 1rem; }
@@ -30,7 +30,7 @@
 .settings-switch:disabled { opacity: .5; cursor: wait; }
 .settings-premium-card { border: 1px solid var(--border-strong); background: var(--surface); border-radius: var(--radius-md); padding: 1.5rem; }
 .settings-premium-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
-.settings-premium-heading h3, .settings-support h3 { font: 400 1.9rem/1.2 var(--font-serif); margin: 0; }
+.settings-premium-heading h3, .settings-support h3 { font: 400 1.9rem/1.2 var(--font-display); margin: 0; }
 .settings-status { padding: .3rem .5rem; border-radius: var(--radius-badge); color: var(--accent-text); background: var(--accent-dim); font-size: .7rem; white-space: nowrap; }
 .settings-premium-card > p, .settings-support p { font-size: .85rem; margin: .7rem 0; }
 .settings-premium-features { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; list-style: none; margin: 1.5rem 0; padding: 1.25rem 0; border-block: 1px solid var(--border); }
@@ -52,7 +52,7 @@
 .settings-legal-links a { min-height: 44px; display: inline-flex; align-items: center; color: var(--text-secondary); }
 .settings-search-results { display: grid; gap: 1rem; }
 .settings-search-results button { border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1rem; background: var(--surface); color: var(--text-primary); text-align: left; cursor: pointer; }
-.settings-search-results strong { font: 400 1.6rem var(--font-serif); display: block; }
+.settings-search-results strong { font: 400 1.6rem var(--font-display); display: block; }
 .settings-search-results span { display: block; font-size: .85rem; color: var(--text-secondary); margin-top: .5rem; }
 .settings-page :is(button, input, a, summary):focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 @media (max-width: 760px) {
