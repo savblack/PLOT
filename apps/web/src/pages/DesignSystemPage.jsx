@@ -1233,7 +1233,7 @@ export default function DesignSystemPage() {
 
       <Section eyebrow="16" title="Share & Social Cards">
         <p className="ds-section-note">
-          When a PLOT link is shared — a title texted to a friend, a profile or list posted — it unfurls as a 1200×630 card generated on the fly by <code>/api/og</code>. All three variants share the brand dark, Gabarito titles, DM Sans meta, the accent eyebrow, and the PLOT wordmark. (Samples below are the real rendered output.)
+          When a PLOT link is shared — a title texted to a friend, a profile or list posted — the <code>og:image</code> is written by the Pages Function that serves the page. Titles point at their TMDB backdrop; profiles, lists and bare-domain links point at the static 1200×630 <code>og-image.png</code>. The branded cards below are the <code>plot-og</code> renderer's output, kept for reference: it is dormant, not deleted. A Satori render costs ~25ms of CPU against the free plan's 10ms per-request ceiling, so it needs Workers Paid before anything can point at it again.
         </p>
 
         <div className="ds-share-grid">
@@ -1241,21 +1241,21 @@ export default function DesignSystemPage() {
             <img src="/ds/share-title.jpg" alt="Title share card — Dune: Part Two" />
             <figcaption>
               <strong>Title card</strong>
-              <p>Sent when someone shares a movie or show. Backdrop + poster, "Found on PLOT" eyebrow, year · type · rating. <code>/api/og?type=movie&amp;id=…</code></p>
+              <p>Sent when someone shares a movie or show. Backdrop + poster, "Found on PLOT" eyebrow, year · type · rating. <code>plot-og?type=movie&amp;id=…</code></p>
             </figcaption>
           </figure>
           <figure className="ds-share-card">
             <img src="/ds/share-profile.jpg" alt="Profile share card" />
             <figcaption>
               <strong>Profile card</strong>
-              <p>Avatar, name, premium seal, and watch stats over a backdrop from a recent watch. <code>/api/og?u=…</code></p>
+              <p>Avatar, name, premium seal, and watch stats over a backdrop from a recent watch. <code>plot-og?u=…</code></p>
             </figcaption>
           </figure>
           <figure className="ds-share-card">
             <img src="/ds/share-list.jpg" alt="List share card" />
             <figcaption>
               <strong>List card</strong>
-              <p>List name, owner, and up to five posters. "PLOT LISTS" eyebrow. <code>/api/og?list=…</code></p>
+              <p>List name, owner, and up to five posters. "PLOT LISTS" eyebrow. <code>plot-og?list=…</code></p>
             </figcaption>
           </figure>
         </div>
@@ -1263,24 +1263,24 @@ export default function DesignSystemPage() {
         <div className="ds-utility-grid">
           <RuleCard label="How a link becomes a card">
             <div className="ds-note-list">
-              <div className="ds-note-row"><strong>Title</strong><p>An in-app Share button builds a <code>/save</code> link; <code>api/save.js</code> rewrites the page head so <code>og:image</code> points at <code>/api/og?type=&amp;id=</code>.</p></div>
-              <div className="ds-note-row"><strong>Profile</strong><p><code>/u/&lt;username&gt;</code> → <code>api/profile.js</code> → <code>og:image = /api/og?u=</code>.</p></div>
-              <div className="ds-note-row"><strong>List</strong><p><code>/list/&lt;id&gt;</code> → <code>api/list.js</code> → <code>og:image = /api/og?list=</code>.</p></div>
-              <div className="ds-note-row"><strong>Fallback</strong><p>Bare-domain links use the static 1200×630 <code>og-image</code>. Each card also has a branded no-data fallback (wordmark + tagline).</p></div>
+              <div className="ds-note-row"><strong>Title</strong><p>An in-app Share button builds a <code>/save</code> link; <code>functions/save.js</code> rewrites the page head so <code>og:image</code> points at the title's TMDB backdrop.</p></div>
+              <div className="ds-note-row"><strong>Profile</strong><p><code>/u/&lt;username&gt;</code> → <code>functions/u/[username].js</code> → <code>og:image</code> = the static card.</p></div>
+              <div className="ds-note-row"><strong>List</strong><p><code>/list/&lt;id&gt;</code> → <code>functions/list/[id].js</code> → <code>og:image</code> = the static card.</p></div>
+              <div className="ds-note-row"><strong>Fallback</strong><p><code>functions/_lib/og-card.js</code> holds the choice. Bare-domain links, and titles TMDB has no backdrop for, use the static 1200×630 <code>og-image.png</code>.</p></div>
             </div>
           </RuleCard>
           <RuleCard label="Shared spec">
             <div className="ds-note-list">
               <div className="ds-note-row"><strong>Canvas</strong><p>1200×630, brand dark, PLOT wordmark, accent eyebrow — <code>--accent</code> sourced from <code>core/tokens.js</code>.</p></div>
               <div className="ds-note-row"><strong>Type</strong><p>Gabarito titles (fluid 58–106px by length), DM Sans meta + labels. The same two families as every other surface.</p></div>
-              <div className="ds-note-row"><strong>Source</strong><p>Rendered by the <code>plot-og</code> Cloudflare Worker (<code>apps/web/workers/og</code>). These samples come from the real builders via <code>scripts/gen-share-samples.mjs</code>.</p></div>
+              <div className="ds-note-row"><strong>Source</strong><p>Rendered by the <code>plot-og</code> Cloudflare Worker (<code>apps/web/workers/og</code>), which nothing currently points at. These samples come from the real builders via <code>scripts/gen-share-samples.mjs</code>.</p></div>
             </div>
           </RuleCard>
         </div>
 
-        <h3 className="ds-subsection-title">One card, every surface</h3>
+        <h3 className="ds-subsection-title">Where each surface points</h3>
         <p className="ds-section-note" style={{ marginTop: '0.25rem' }}>
-          A title now unfurls identically wherever its link is shared: the app's <code>/save</code> link and the marketing <code>theplot.tv/movie/:slug</code> page (<code>supabase/functions/title-page</code>) both point <code>og:image</code> at the same branded <code>/api/og</code> card. <code>/whats-on</code> articles use their branded per-post render, and the <code>/whats-on</code> index + chart carry the branded fallback image. The real poster still backs the JSON-LD for SEO rich results.
+          The app's <code>/save</code> link points <code>og:image</code> at the title's TMDB backdrop. The marketing surfaces have not been moved across yet: <code>theplot.tv/movie/:slug</code> (<code>supabase/functions/title-page</code>) and single-title <code>/whats-on</code> posts still point at <code>/api/og</code>, a Vercel-era path that no longer exists — it resolves to the SPA shell as <code>text/html</code>. The <code>/whats-on</code> index + chart carry the static fallback image, which is fine. The real poster still backs the JSON-LD for SEO rich results.
         </p>
       </Section>
 

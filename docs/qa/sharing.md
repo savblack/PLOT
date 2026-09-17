@@ -34,8 +34,10 @@ are not accidentally sent to friends. Tests can explicitly supply a local origin
 5. Disable browser native sharing and clipboard access: the fallback must show the
    selectable link. Cancelling the native sheet must not open that fallback.
 6. Open a public list and select a poster. Verify the `/save` URL and `src=list_page`.
-7. Check messages/WhatsApp/iMessage link previews against the deployed Pages Functions
-   and OG Worker. Vite alone does not run those Pages Functions.
+7. Check messages/WhatsApp/iMessage link previews against the deployed Pages Functions.
+   Vite alone does not run them. A title's card is its TMDB backdrop; profiles, lists
+   and titles without a backdrop get the static og-image.png. The plot-og Worker no
+   longer serves any of them.
 
 ## Verification on 2026-09-16
 
