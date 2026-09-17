@@ -65,7 +65,11 @@ def import_mjh(market, now):
             continue
         if market['country'] == 'AU' and channel.get('network') not in ['ABC', 'SBS', 'Seven', 'Nine', 'Ten']:
             continue
-        channels.append(dict(id=channel['epg_id'], name=channel['name'], number=int(number), network=channel.get('network')))
+        entry = dict(id=channel['epg_id'], name=channel['name'], number=int(number), network=channel.get('network'))
+        logo = channel.get('logo')
+        if isinstance(logo, str) and logo.startswith('https://'):
+            entry['logo'] = logo
+        channels.append(entry)
     channels.sort(key=lambda c: (c['number'], c['name']))
     return channels, parse_xmltv(unpack(download(base + 'epg.xml.gz')), channels)
 

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { guideDate, guideDay, isOnNow, selectedGuideChannels, validateGuideSnapshot, guideAgenda } from '../../../../packages/core/broadcastGuide.js';
+import { guideDate, guideDay, isOnNow, selectedGuideChannels, validateGuideSnapshot, guideAgenda, groupByHour, programmeProgress } from '../../../../packages/core/broadcastGuide.js';
 const programme = { id: 'abc:1', channelId: 'abc', title: 'News', start: '2026-09-16T13:45:00Z', end: '2026-09-16T14:30:00Z' };
 const snapshot = { schemaVersion: 2, source: 'Matt Huisman', sourceUrl: 'https://i.mjh.nz/', coverageEnd: programme.end, region: 'Sydney', fetchedAt: '2026-09-16T00:00:00Z', channels: [{ id: 'abc', name: 'ABC' }], programmes: [programme] };
 test('keeps local date and DST timezone conversion together', () => {
@@ -48,4 +48,22 @@ test('country markets never fall back to a different country', async () => {
 test('US and NZ days preserve the station timezone across midnight', () => {
   assert.equal(guideDate('2026-09-17T01:00:00Z', 'America/New_York'), '2026-09-16');
   assert.equal(guideDate('2026-09-17T01:00:00Z', 'Pacific/Auckland'), '2026-09-17');
+});
+
+test('channel logos must be https URLs when present', () => {
+  const ok = { ...snapshot, channels: [{ ...snapshot.channels[0], logo: 'https://example.test/abc.png' }] };
+  assert.equal(validateGuideSnapshot(ok, snapshot.region).channels[0].logo, 'https://example.test/abc.png');
+  const bad = { ...snapshot, channels: [{ ...snapshot.channels[0], logo: 'http://example.test/abc.png' }] };
+  assert.throws(() => validateGuideSnapshot(bad, snapshot.region));
+});
+
+test('groupByHour buckets by the local start hour, in agenda order', () => {
+  const rows = [
+    { start: '2026-09-16T09:30:00Z', end: '2026-09-16T10:00:00Z' }, // 7:30 pm Sydney
+    { start: '2026-09-16T09:45:00Z', end: '2026-09-16T10:30:00Z' }, // 7:45 pm
+    { start: '2026-09-16T10:00:00Z', end: '2026-09-16T11:00:00Z' }, // 8:00 pm
+  ];
+  const groups = groupByHour(rows, 'Australia/Sydney');
+  assert.deepEqual(groups.map(g => [g.label, g.items.length]), [['7 pm', 2], ['8 pm', 1]]);
+  assert.equal(programmeProgress(rows[2], Date.parse('2026-09-16T10:30:00Z')), 0.5);
 });

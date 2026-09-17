@@ -1,7 +1,7 @@
 // Broadcast schedules use absolute instants; timezone affects display and day selection only.
 import { getConfig } from './config.js';
 import markets from './broadcastMarkets.json' with { type: 'json' };
-/** @typedef {{id: string, name: string, number?: number}} BroadcastChannel */
+/** @typedef {{id: string, name: string, number?: number, network?: string, logo?: string}} BroadcastChannel */
 /** @typedef {{id: string, channelId: string, title: string, start: string, end: string, description?: string}} BroadcastProgramme */
 /** @typedef {{region: string, fetchedAt: string, coverageEnd: string, schemaVersion: number, source: string, sourceUrl: string, channels: BroadcastChannel[], programmes: BroadcastProgramme[], refreshFailed?: boolean}} BroadcastSnapshot */
 export const GUIDE_REGIONS = markets;
@@ -53,7 +53,7 @@ export function validateGuideSnapshot(data, region) {
   if (!market?.provider || data?.schemaVersion !== 2 || data?.sourceUrl !== sourceUrls[market.provider] || typeof data?.source !== 'string' || !Number.isFinite(Date.parse(data?.coverageEnd))) throw new Error('Invalid guide metadata');
   if (data?.region !== region || !Number.isFinite(Date.parse(data?.fetchedAt)) || !Array.isArray(data?.channels) || !data.channels.length || !Array.isArray(data?.programmes) || !data.programmes.length) throw new Error('Invalid guide snapshot');
   const ids = new Set(data.channels.map(c => c.id));
-  if (ids.size !== data.channels.length || data.channels.some(c => typeof c.id !== 'string' || typeof c.name !== 'string')) throw new Error('Invalid channel directory');
+  if (ids.size !== data.channels.length || data.channels.some(c => typeof c.id !== 'string' || typeof c.name !== 'string' || (c.logo !== undefined && !/^https:\/\//.test(String(c.logo))))) throw new Error('Invalid channel directory');
   const keys = new Set();
   for (const p of data.programmes) {
     if (!ids.has(p.channelId) || typeof p.id !== 'string' || keys.has(p.id) || typeof p.title !== 'string' || !p.title.trim() || !Number.isFinite(Date.parse(p.start)) || !(Date.parse(p.end) > Date.parse(p.start))) throw new Error('Invalid programme');
@@ -84,6 +84,35 @@ export function broadcastTime(stamp, date, timezone) {
   const instant = new Date(stamp);
   const clock = instant.toLocaleTimeString('en-AU', { timeZone: timezone, hour: 'numeric', minute: '2-digit' });
   return guideDate(stamp, timezone) === date ? clock : `${instant.toLocaleDateString('en-AU', { timeZone: timezone, day: 'numeric', month: 'short' })} ${clock}`;
+}
+
+/** The hour a programme starts in, as a heading ("8 pm").
+ * @param {string} stamp @param {string} timezone */
+export function broadcastHour(stamp, timezone) {
+  return new Date(stamp).toLocaleTimeString('en-AU', { timeZone: timezone, hour: 'numeric' });
+}
+
+/** Group an agenda by the hour each programme starts, keeping agenda order.
+ * @template {{start: string}} T
+ * @param {T[]} programmes @param {string} timezone
+ * @returns {{key: string, label: string, items: T[]}[]} */
+export function groupByHour(programmes, timezone) {
+  const groups = [];
+  for (const p of programmes) {
+    const instant = new Date(p.start);
+    const key = `${guideDate(p.start, timezone)}T${instant.toLocaleTimeString('en-GB', { timeZone: timezone, hour: '2-digit' })}`;
+    const last = groups[groups.length - 1];
+    if (last && last.key === key) last.items.push(p);
+    else groups.push({ key, label: broadcastHour(p.start, timezone), items: [p] });
+  }
+  return groups;
+}
+
+/** How far through a programme we are, 0 to 1.
+ * @param {{start: string, end: string}} programme @param {number} now */
+export function programmeProgress(programme, now) {
+  const start = Date.parse(programme.start), end = Date.parse(programme.end);
+  return Math.min(1, Math.max(0, (now - start) / (end - start)));
 }
 
 /** @param {string} day @param {Intl.DateTimeFormatOptions} options */
