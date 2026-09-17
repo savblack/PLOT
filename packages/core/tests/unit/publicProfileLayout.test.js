@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { publicProfileLayout, profileHistoryPage } from '../../publicProfileLayout.js';
+import { publicProfileLayout, profileHistoryPage, profileFavouritesPage } from '../../publicProfileLayout.js';
 
 test('locked profiles suppress all content including lists and ranked picks', () => {
   const item = { title: 'Sample title' };
@@ -36,4 +36,25 @@ test('history pagination scopes to the profile owner and uses a stable bounded o
 test('history errors propagate rather than masquerading as empty history', async () => {
   const query = { select() { return this; }, eq() { return this; }, order() { return this; }, range() { return { error: new Error('denied') }; } };
   await assert.rejects(profileHistoryPage({ from: () => query }, 'owner'), /denied/);
+});
+
+test('a profile shows at most six custom lists, in order', () => {
+  const lists = Array.from({ length: 8 }, (_, i) => ({ id: i, items: [{ title: `t${i}` }] }));
+  const content = publicProfileLayout({ customLists: lists });
+  assert.equal(content.customLists.length, 6);
+  assert.deepEqual(content.customLists.map(l => l.id), [0, 1, 2, 3, 4, 5]);
+});
+
+test('profileFavouritesPage pages newest first and reports whether more remain', async () => {
+  const calls = [];
+  const client = { from: (table) => ({ select: (cols, opts) => ({ eq: (k, v) => ({ order: (col, o) => ({ range: async (from, to) => {
+    calls.push({ table, cols, opts, k, v, col, o, from, to });
+    return { data: [{ tmdb_id: 1 }], error: null, count: 61 };
+  } }) }) }) }) };
+  const first = await profileFavouritesPage(client, 'owner', 0);
+  assert.equal(first.hasMore, true);
+  assert.deepEqual(calls[0].table, 'user_favourites');
+  assert.deepEqual([calls[0].k, calls[0].v, calls[0].col, calls[0].o.ascending, calls[0].from, calls[0].to], ['user_id', 'owner', 'created_at', false, 0, 29]);
+  const last = await profileFavouritesPage(client, 'owner', 2);
+  assert.equal(last.hasMore, false);
 });

@@ -9,9 +9,14 @@ export const PUBLIC_PROFILE_PAGE = {
   profile: 'Profile',
   profileNavigation: 'Profile sections',
   topPicks: 'Top picks',
+  topFive: 'Top 5',
+  /** @param {string} type The switch label the shelf is on ('Movies' / 'TV'). */
+  noPicksOfType: (type) => `No ${type} picks yet.`,
   topFilms: 'Top films',
   topTv: 'Top TV',
   lists: 'Lists',
+  /** @param {number} n */
+  publicListLimit: (n) => `Up to ${n} lists show on your profile.`,
   watchHistory: 'Watch history',
   viewAll: 'View all',
   viewAllLists: 'View all lists',
