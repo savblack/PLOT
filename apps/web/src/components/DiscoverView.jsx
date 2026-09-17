@@ -176,33 +176,45 @@ function cardMeta(item) {
   return [year, type].filter(Boolean).join(' · ');
 }
 
-// Matches the rank coloring used for the profile's Top 10 lists: gold for #1,
-// secondary for the rest of the podium, muted beyond that.
+// The Top 20 rows tier their ranks: accent for #1, secondary for the rest of
+// the podium, muted beyond that.
 function rankBadgeClass(rank) {
   if (rank === 1) return '';
   if (rank <= 3)  return ' rank-top3';
   return ' rank-rest';
 }
 
-/* ── Poster card with optional rank badge ──
+/* ── Poster card with optional rank numeral ──
    Fav/Save stay real, always-visible buttons anchored to .media-card
    (position:relative) rather than nested inside the "view details" button,
-   so no control ends up nested inside another one. */
+   so no control ends up nested inside another one. A ranked card wraps its
+   poster in the frame that cuts the numeral (.rank-cut in app.css); the
+   numeral comes after the poster so it is drawn on the artwork. */
 export function RankedCard({ item, rank, showRank = true, showMeta = true, openPanel, watchlist }) {
   const title = item.title || item.name;
   const img   = posterUrl(item.poster_path, 'w185');
   const type  = item.media_type || 'movie';
   const openDetails = () => openPanel(item.id, type);
+  const poster = (
+    <div className="media-card-img">
+      {img
+        ? <img src={img} alt={title} loading="lazy" />
+        : <div className="media-card-img-placeholder" />
+      }
+    </div>
+  );
   return (
-    <div className="media-card">
+    <div className={`media-card${showRank ? ' media-card--ranked' : ''}`}>
       <button type="button" className="media-card-hit interactive-surface" onClick={openDetails} aria-label={`View details for ${title}`}>
-        <div className="media-card-img">
-          {img
-            ? <img src={img} alt={title} loading="lazy" />
-            : <div className="media-card-img-placeholder" />
-          }
-          {showRank && <span className={`discover-rank-badge${rankBadgeClass(rank)}`}>{rank}</span>}
-        </div>
+        {showRank
+          ? (
+            <div className="rank-cut-frame">
+              {poster}
+              <span className="rank-cut">{rank}</span>
+            </div>
+          )
+          : poster
+        }
         <div className="media-card-title">{title}</div>
         {showMeta && <div className="media-card-meta">{cardMeta(item)}</div>}
       </button>

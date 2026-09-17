@@ -199,7 +199,7 @@ function PosterCard({ item, ranked, i, openPanel, watchlist, imageSize = 'w185' 
   const id   = item.id || item.tmdb_id;
   const type = item.media_type || 'movie';
   const openDetails = () => openPanel(id, type);
-  return (
+  const poster = (
     <div
       className="pp-poster interactive-surface"
       title={item.title}
@@ -209,12 +209,16 @@ function PosterCard({ item, ranked, i, openPanel, watchlist, imageSize = 'w185' 
       {img ? <img src={img} alt={item.title} loading="lazy" draggable="false" /> : <div className="pp-poster-fallback">{item.title}</div>}
       <FavBtn item={item} />
       <SaveBtn item={item} watchlist={watchlist} />
-      {ranked && (
-        <>
-          {img && <div className="pp-poster-rank-scrim" />}
-          <span className="pp-poster-rank">{item.rank ?? i + 1}</span>
-        </>
-      )}
+    </div>
+  );
+  // A ranked pick carries its numeral cut out of the poster's bottom-left
+  // corner (.rank-cut in app.css). The frame is what clips it, so the poster
+  // itself stays the plain one every other surface on the page uses.
+  if (!ranked) return poster;
+  return (
+    <div className="rank-cut-frame">
+      {poster}
+      <span className="rank-cut">{item.rank ?? i + 1}</span>
     </div>
   );
 }
