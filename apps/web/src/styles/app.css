@@ -3674,7 +3674,7 @@ svg { stroke-width: 1.5; }
 
 .panel-head {
   display: grid;
-  grid-template-columns: 124px 1fr;
+  grid-template-columns: 132px 1fr;
   align-items: start;
   gap: 1rem;
   margin-bottom: 1.1rem;
@@ -3685,8 +3685,8 @@ svg { stroke-width: 1.5; }
      it back in front of the artwork it overlaps. */
   position: relative;
   z-index: 1;
-  width: 124px;
-  height: 186px;
+  width: 132px;
+  height: 198px;
   margin-top: -40px;
   object-fit: cover;
   border-radius: var(--radius-md);
@@ -3695,7 +3695,9 @@ svg { stroke-width: 1.5; }
   box-shadow: var(--shadow-overlay);
 }
 .panel-poster--empty { background: var(--surface-sunken); }
-.panel-head-text { min-width: 0; padding-top: 0.1rem; }
+/* The kicker needs air under the band; the poster grows by the same amount
+   so its foot still lands below the text column. */
+.panel-head-text { min-width: 0; padding-top: 0.8rem; }
 
 .panel-kicker {
   font-size: 0.7rem;
@@ -4044,8 +4046,9 @@ svg { stroke-width: 1.5; }
 .panel-take-body .private-note { margin-bottom: 0; }
 
 @media (max-width: 560px) {
-  .panel-poster { width: 104px; height: 156px; margin-top: -32px; }
-  .panel-head { grid-template-columns: 104px 1fr; }
+  .panel-poster { width: 112px; height: 168px; margin-top: -32px; }
+  .panel-head { grid-template-columns: 112px 1fr; }
+  .panel-head-text { padding-top: 0.6rem; }
   .panel-title { font-size: 1.5rem; }
   .panel-take-summary > span { max-width: 210px; }
   /* Two labelled pills and three icons don't fit a phone's width, and
