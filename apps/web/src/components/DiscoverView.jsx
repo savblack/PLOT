@@ -580,7 +580,7 @@ function DiscoverContent({ openPanel, watchlist, typeFilters, genreFilters }) {
     <div className="discover-sections">
       {hero && genreFilters.length === 0 && (
         <section className="discover-section discover-featured-section">
-          <DiscoverSectionHeader title="PLOT's Picks" />
+          <DiscoverSectionHeader title="plot's Picks" />
           <div className={`discover-hero-row${onThisDay ? ' has-two' : ''}`}>
             <HeroCard item={hero} openPanel={openPanel} watchlist={watchlist} />
             {onThisDay && (

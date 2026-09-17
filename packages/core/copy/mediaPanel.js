@@ -30,7 +30,7 @@ export const MEDIA_PANEL = {
   // The franchise card under the recommendations row (movies only: TMDB has
   // no collection concept for series).
   partOfCollection: 'Part of a collection',
-  collectionProgress: (watched, total) => `${total} film${total === 1 ? '' : 's'} · ${watched} watched`,
+  collectionProgress: (watched, total) => `${total} movie${total === 1 ? '' : 's'} · ${watched} watched`,
   saveCollectionAsList: 'Save as list',
   savingCollection: 'Saving…',
   collectionSaved: 'Saved to My Lists',
@@ -40,7 +40,7 @@ export const MEDIA_PANEL = {
   // meta line under each.
   collectionsHeading: 'Collections',
   collectionResultMeta: 'Collection',
-  collectionFilmCount: (total) => `${total} film${total === 1 ? '' : 's'}`,
+  collectionFilmCount: (total) => `${total} movie${total === 1 ? '' : 's'}`,
   couldNotLoadCollection: "Couldn't load this collection. Check your connection and try again.",
   trailerFallback: 'Trailer',
   watching: 'Watching',

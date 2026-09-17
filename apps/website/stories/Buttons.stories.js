@@ -15,7 +15,7 @@ export const Primary = () => {
   const a = document.createElement('a');
   a.className = 'btn btn-primary btn-large';
   a.href = '#';
-  a.textContent = 'Start your PLOT →';
+  a.textContent = 'Start your PLOT';
   return a;
 };
 
@@ -23,7 +23,7 @@ export const Outline = () => {
   const a = document.createElement('a');
   a.className = 'btn btn-outline btn-large';
   a.href = '#';
-  a.textContent = 'Start your PLOT →';
+  a.textContent = 'Start your PLOT';
   return a;
 };
 
@@ -38,7 +38,7 @@ export const OutlineOnEditorial = () => {
   const a = document.createElement('a');
   a.className = 'btn btn-outline-white btn-large';
   a.href = '#';
-  a.textContent = 'Unify your entertainment universe →';
+  a.textContent = 'Unify your entertainment universe';
   wrap.appendChild(a);
   return wrap;
 };

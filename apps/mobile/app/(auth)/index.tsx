@@ -316,7 +316,7 @@ export default function AuthScreen() {
         {/* Wordmark at top */}
         <View style={[styles.wordmarkWrap, { paddingTop: insets.top + spacing.xl }]}>
           <Text style={styles.wordmark}>plot</Text>
-          <Text style={styles.tagline}>Your personal film & TV companion</Text>
+          <Text style={styles.tagline}>Your personal movie & TV companion</Text>
         </View>
 
         {/* Glass panel */}

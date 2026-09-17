@@ -6,13 +6,13 @@
 // is long and sections don't share much vocabulary.
 
 export const META = {
-  title: 'plot – Your Film & TV Companion',
-  description: "PLOT is your personal film and TV companion: for everything you've watched and everything you want to watch, all in one beautiful home.",
-  ogImageAlt: 'plot — your film & TV companion',
+  title: 'PLOT | Movie & TV Tracker',
+  description: "PLOT is your personal movie and TV companion: for everything you've watched and everything you want to watch, all in one beautiful home.",
+  ogImageAlt: 'plot — your movie & TV companion',
 };
 
 export const HERO = {
-  headline: 'Your film & TV companion',
+  headline: 'Your movie and TV companion',
   sub: "Everything you've watched. Everything you want to watch.",
   cta: 'Start your plot →',
 };
@@ -98,13 +98,13 @@ export const LISTS_DEMO = {
   headline: 'The lists only ',
   headlineEm: 'you',
   headlineEnd: ' could curate.',
-  body: "Organise by decade, director, or whatever mood you're in. Create and share film and TV collections that are unmistakably yours.",
+  body: "Organise by decade, director, or whatever mood you're in. Create and share movie and TV collections that are unmistakably yours.",
   cta: 'Start curating →',
   // Sample list categories cycled through in the coverflow demo
   sampleLists: [
-    { name: 'Award winners', count: '20 films' },
-    { name: 'Date night', count: '12 films' },
-    { name: 'Spooky season', count: '13 films' },
+    { name: 'Award winners', count: '20 movies' },
+    { name: 'Date night', count: '12 movies' },
+    { name: 'Spooky season', count: '13 movies' },
   ],
 };
 
@@ -114,7 +114,6 @@ export const APP_SOON = {
   headlineEm: 'your pocket.',
   body: 'Everything you love about plot: discover, track, curate and share. Landing on iPhone and Android. Be the first to know when it drops.',
   notifyCta: 'Notify me',
-  badge: 'Coming soon',
   // Static labels inside the phone mockup screenshot
   mockup: {
     tabs: ['Discover', 'Releases', 'Guide'],

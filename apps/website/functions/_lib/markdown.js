@@ -8,13 +8,13 @@ function homepageMarkdown(showPricingPage) {
     '- [Terms of service](https://theplot.tv/terms.html)',
   ].join('\n');
 
-  return `# plot — Your film & TV companion
+  return `# plot — Your movie & TV companion
 
-PLOT is the beautiful way to track what you watch. Log, rate, and share your film and TV taste in one place.
+PLOT is the beautiful way to track what you watch. Log, rate, and share your movie and TV taste in one place.
 
 ## What PLOT helps you do
 
-- Keep a personal timeline of films and shows you have watched.
+- Keep a personal timeline of movies and shows you have watched.
 - Write private notes and ratings, and build watchlists for what is next.
 - Curate and share lists that reflect your taste.
 - See new releases and decide what to watch without searching each streaming service.

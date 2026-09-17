@@ -21,7 +21,7 @@ export default function PrivacyPage() {
         <ul>
           <li><strong>Account information</strong>: your email address and hashed password (managed via Supabase Auth)</li>
           <li><strong>Profile and preference data</strong>: your username, display name, optional bio, region, timezone, and channel/provider preferences</li>
-          <li><strong>Activity data</strong>: films and TV shows you log, rate, save, add to lists, or track in progress</li>
+          <li><strong>Activity data</strong>: movies and TV shows you log, rate, save, add to lists, or track in progress</li>
           <li><strong>History entries</strong>: notes and reviews you write about content you've watched</li>
           <li><strong>Integration and utility data</strong>: calendar feed tokens, reminder settings, and optional Plex/Trakt integration records where enabled</li>
           <li><strong>Support data</strong>: feedback messages and optional screenshot attachments you submit through the app</li>
@@ -44,7 +44,7 @@ export default function PrivacyPage() {
         <p>The Service relies on third-party infrastructure and data providers. By using PLOT, you acknowledge and accept that your data may be processed by these third parties under their own policies, over which SUSUMU HOUSE has no control:</p>
         <ul>
           <li><strong>Supabase</strong>: authentication, database, storage, and edge functions</li>
-          <li><strong>The Movie Database (TMDB)</strong>: film and TV metadata. This product uses the TMDB API but is not endorsed or certified by TMDB.</li>
+          <li><strong>The Movie Database (TMDB)</strong>: movie and TV metadata. This product uses the TMDB API but is not endorsed or certified by TMDB.</li>
           <li><strong>JustWatch</strong>: streaming availability ("where to watch") data, delivered via the TMDB API.</li>
           <li><strong>Cloudflare</strong>: website and application hosting and content delivery. Your requests are routed through Cloudflare's infrastructure.</li>
           <li><strong>PostHog</strong>: product analytics used to understand how the Service is used.</li>

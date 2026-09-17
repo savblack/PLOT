@@ -373,7 +373,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
         <div className="auth-visual-gradient" />
         <div className="auth-visual-brand">
           <span className="auth-visual-logo">plot</span>
-          <span className="auth-visual-tagline">Your film &amp; TV companion</span>
+          <span className="auth-visual-tagline">Your movie &amp; TV companion</span>
         </div>
       </div>
 

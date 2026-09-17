@@ -1,6 +1,6 @@
 # PLOT
 
-PLOT is a film and television companion for tracking what you watch, keeping a watchlist, writing private notes and ratings, and deciding what to watch next.
+PLOT is a movie and television companion for tracking what you watch, keeping a watchlist, writing private notes and ratings, and deciding what to watch next.
 
 The public website explains PLOT and its plans. The web app at https://app.theplot.tv is where signed-in members manage their personal viewing journal.
 

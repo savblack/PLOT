@@ -28,7 +28,7 @@ const watchlistItems = [
   title(14, 'The Bear', 'tv', { streaming_date: '2026-09-25' }),
   title(15, 'Dune: Part Three', 'movie', { release_date: '2026-12-18' }),
   title(16, 'Andor', 'tv'),
-  title(17, 'A very long film title that wraps onto two lines and then clips'),
+  title(17, 'A very long movie title that wraps onto two lines and then clips'),
   title(18, 'Heretic'),
 ];
 

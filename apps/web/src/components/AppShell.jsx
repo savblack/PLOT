@@ -4,6 +4,7 @@ import { APP_NAV_ITEMS, isActiveView, titleForView } from '../navigation.js';
 import { useNotifications } from '../hooks/useNotifications.js';
 import { APP_SHELL } from '../copy/appShell.js';
 import { SETTINGS_VIEW } from '../copy/settingsView.js';
+import { HISTORY_VIEW } from '@plot/core/copy/historyView.js';
 import { BROADCAST_GUIDE } from '@plot/core/copy/broadcastGuide.js';
 import AppSidebar from './AppSidebar.jsx';
 import {
@@ -96,6 +97,7 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
     : (APP_NAV_ITEMS.find(item => item.id === currentView)?.label ?? pageTitle);
 
   const pageSubtitle = currentView === 'settings' ? SETTINGS_VIEW.page.subtitle
+    : currentView === 'history' ? HISTORY_VIEW.subtitle
     : currentView === 'guide' ? BROADCAST_GUIDE.subtitle : null;
 
   return (

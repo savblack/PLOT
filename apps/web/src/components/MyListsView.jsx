@@ -139,10 +139,6 @@ export default function MyListsView() {
   return (
     <div>
       <div className="page-toolbar mylists-toolbar mylists-search-toolbar">
-        <label className="hist-search">
-          <IconSearch />
-          <input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder={CUSTOM_LISTS.searchPlaceholder} aria-label={CUSTOM_LISTS.searchPlaceholder} />
-        </label>
         <TypeGenreFilter
           mobileControls
           ariaLabel="Filter lists"
@@ -151,6 +147,10 @@ export default function MyListsView() {
           genreFilters={genreFilters}
           setGenreFilters={setGenreFilters}
         />
+        <label className="hist-search">
+          <IconSearch />
+          <input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder={CUSTOM_LISTS.searchPlaceholder} aria-label={CUSTOM_LISTS.searchPlaceholder} />
+        </label>
       </div>
 
       {searching ? (
