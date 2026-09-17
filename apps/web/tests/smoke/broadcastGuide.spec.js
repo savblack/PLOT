@@ -57,7 +57,7 @@ test('production Guide saves empty channels and preserves a failed draft', async
   const backend = await setup(page);
   await page.goto('/guide');
   await expect(page.getByRole('button', { name: /Test evening news/ })).toBeVisible();
-  await page.getByRole('button', { name: 'My channels', exact: true }).click();
+  await page.getByRole('button', { name: 'Edit channels', exact: true }).click();
   await page.getByRole('button', { name: 'Clear selection' }).click();
   backend.failSave(true);
   await page.getByRole('button', { name: 'Apply channels' }).click();
