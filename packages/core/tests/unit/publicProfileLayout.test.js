@@ -37,3 +37,10 @@ test('history errors propagate rather than masquerading as empty history', async
   const query = { select() { return this; }, eq() { return this; }, order() { return this; }, range() { return { error: new Error('denied') }; } };
   await assert.rejects(profileHistoryPage({ from: () => query }, 'owner'), /denied/);
 });
+
+test('a profile shows at most six custom lists, in order', () => {
+  const lists = Array.from({ length: 8 }, (_, i) => ({ id: i, items: [{ title: `t${i}` }] }));
+  const content = publicProfileLayout({ customLists: lists });
+  assert.equal(content.customLists.length, 6);
+  assert.deepEqual(content.customLists.map(l => l.id), [0, 1, 2, 3, 4, 5]);
+});

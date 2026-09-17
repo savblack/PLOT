@@ -1,6 +1,9 @@
 import { isSectionEnabled } from './profileFields.js';
 import { TOP_LIST_SIZE } from './listCollections.js';
 
+/** Most custom lists a profile shows: two rows of three. Owners pick which are public. */
+export const PUBLIC_LIST_LIMIT = 6;
+
 /** Select only owner-enabled, viewable content. Empty sections never get placeholders.
  * @param {{locked?: boolean, sections?: string[] | null, topMovies?: object[], topTv?: object[], favourites?: object[], recent?: object[], watching?: object[], wantToWatch?: object[], customLists?: object[]}} data
  */
@@ -12,7 +15,7 @@ export function publicProfileLayout(data = {}) {
   const recent = visible('recent', data.recent);
   const watching = visible('watching', data.watching);
   const wantToWatch = visible('want', data.wantToWatch);
-  const customLists = data.locked ? [] : (data.customLists || []).filter(list => list.items?.length);
+  const customLists = data.locked ? [] : (data.customLists || []).filter(list => list.items?.length).slice(0, PUBLIC_LIST_LIMIT);
   return { topMovies, topTv, favourites, recent, watching, wantToWatch, customLists,
     empty: ![topMovies, topTv, favourites, recent, watching, wantToWatch, customLists].some(items => items.length) };
 }

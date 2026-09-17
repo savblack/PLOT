@@ -46,6 +46,7 @@ const TermsPage         = lazy(() => import('./pages/TermsPage.jsx'));
 const PrivacyPage       = lazy(() => import('./pages/PrivacyPage.jsx'));
 const CommunityPage     = lazy(() => import('./pages/CommunityPage.jsx'));
 const PublicProfilePage = lazy(() => import('./pages/PublicProfilePage.jsx'));
+const ProfileHistoryPage = lazy(() => import('./pages/PublicProfilePage.jsx').then(m => ({ default: m.ProfileHistoryPage })));
 const RootRoute         = lazy(() => import('./pages/RootRoute.jsx'));
 const DesignSystemPage  = lazy(() => import('./pages/DesignSystemPage.jsx'));
 const SavePage          = lazy(() => import('./pages/SavePage.jsx'));
@@ -107,6 +108,7 @@ const router = createBrowserRouter([
     children: [
       { path: 'app',      element: <Navigate to="/home" replace /> },
       { path: 'u/:username', element: wrap(<PublicProfilePage />) },
+      { path: 'u/:username/history', element: wrap(<ProfileHistoryPage />) },
       { path: 'home',     element: wrap(<DiscoverView />) },
       { path: 'new-releases', element: wrap(<NewReleasesView />) },
       { path: 'guide',    element: wrap(<GuideView />) },

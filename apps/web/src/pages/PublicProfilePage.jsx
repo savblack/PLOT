@@ -1,7 +1,7 @@
 // DOM-specific profile layout and native dialog. Native layout parity: https://github.com/savblack/PLOT/issues/931.
 import { buildProfileShareUrl } from '@plot/core/sharing.js';
 import { SHARING } from '@plot/core/copy/sharing.js';
-import { publicProfileLayout, profileHistoryPage } from '@plot/core/publicProfileLayout.js';
+import { publicProfileLayout, profileHistoryPage, PUBLIC_LIST_LIMIT } from '@plot/core/publicProfileLayout.js';
 import './PublicProfilePage.css';
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
@@ -513,12 +513,14 @@ function EditProfileModal({ userId, current, onClose, onSaved, favWord }) {
                 />
               </label>
             ))}
+            {customLists.length > 0 && <p className="pp-toggle-help" style={{ margin: '0.6rem 0 0.3rem' }}>{PUBLIC_PROFILE_PAGE.publicListLimit(PUBLIC_LIST_LIMIT)}</p>}
             {customLists.map((list) => (
               <label key={list.id} className="pp-section-toggle">
                 <span>{list.name}</span>
                 <input
                   type="checkbox"
                   checked={!!list.is_public}
+                  disabled={!list.is_public && customLists.filter((l) => l.is_public).length >= PUBLIC_LIST_LIMIT}
                   onChange={(e) => setListPublic(list.id, e.target.checked)}
                   style={{ width: 20, height: 20, accentColor: 'var(--accent)' }}
                 />
@@ -685,7 +687,7 @@ export default function PublicProfilePage() {
               )}
             </div>
 
-            <ProfileContent key={p.id} profileId={p.id} isOwn={!!isOwn} locked={locked}
+            <ProfileContent key={p.id} profileId={p.id} username={p.username} isOwn={!!isOwn} locked={locked}
               sections={p.profile_sections} topMovies={topMovies} topTv={topTv}
               favourites={favourites} recent={recent} watching={watching} wantToWatch={wantToWatch}
               customLists={customLists} openPanel={openPanel} watchlist={watchlist} favouriteLabel={fw.plural} />
@@ -725,8 +727,8 @@ export default function PublicProfilePage() {
   );
 }
 
-function HistoryRows({ items, openPanel }) {
-  return <div className="pp-history-rows">{items.map((item, i) => (
+function HistoryRows({ items, openPanel, columns = false }) {
+  return <div className={`pp-history-rows${columns ? ' pp-history-rows--columns' : ''}`}>{items.map((item, i) => (
     <button type="button" className="pp-history-row" key={item.id || `${item.tmdb_id}-${i}`}
       onClick={() => openPanel(item.tmdb_id, item.media_type || 'movie')}>
       {item.poster_path ? <img src={posterUrl(item.poster_path, 'w185')} alt="" loading="lazy" /> : <span className="pp-history-placeholder" />}
@@ -735,18 +737,18 @@ function HistoryRows({ items, openPanel }) {
   ))}</div>;
 }
 
-function ProfileHistoryDialog({ profileId, onClose, openPanel }) {
-  const ref = useRef(null);
+/** Full watch history for a profile, at /u/:username/history. RLS scopes the rows to the viewer. */
+export function ProfileHistoryPage() {
+  const { username = '' } = useParams();
+  const { user: viewer, openPanel } = useApp();
+  const { loading, profile, locked } = usePublicProfile(username, viewer?.id);
   const [page, setPage] = useState(0);
   const [retry, setRetry] = useState(0);
   const [result, setResult] = useState({ items: [], hasMore: false, page: -1, retry: -1, error: false });
-  const loading = result.page !== page || result.retry !== retry;
+  const profileId = profile?.id;
+  const fetching = result.page !== page || result.retry !== retry;
   useEffect(() => {
-    const dialog = ref.current;
-    dialog.showModal();
-    return () => dialog.close();
-  }, []);
-  useEffect(() => {
+    if (!profileId || locked) return undefined;
     let cancelled = false;
     profileHistoryPage(supabase, profileId, page).then(next => {
       if (!cancelled) setResult({ ...next, page, retry, error: false });
@@ -754,19 +756,26 @@ function ProfileHistoryDialog({ profileId, onClose, openPanel }) {
       if (!cancelled) setResult({ items: [], hasMore: false, page, retry, error: true });
     });
     return () => { cancelled = true; };
-  }, [profileId, page, retry]);
-  return createPortal(<dialog ref={ref} className="pp-history-dialog" onCancel={onClose} onClose={onClose}>
-    <SheetHeader title={PUBLIC_PROFILE_PAGE.watchHistory} onClose={onClose} />
-    <div className="pp-history-dialog-body">
-      {loading ? <p role="status">{COMMON.loading}</p> : result.error ? <div role="alert"><p>{COMMON.genericError}</p><button className="btn btn-secondary btn-sm" onClick={() => setRetry(value => value + 1)}>{PUBLIC_PROFILE_PAGE.retry}</button></div>
-        : <HistoryRows items={result.items} openPanel={(id, type) => { onClose(); openPanel(id, type); }} />}
-      {!loading && !result.error && !result.items.length && <p>{PUBLIC_PROFILE_PAGE.noPublicTitles}</p>}
-      <div className="pp-history-pagination">
-        {page > 0 && <button className="btn btn-secondary btn-sm" disabled={loading} onClick={() => setPage(value => value - 1)}>{COMMON.back}</button>}
-        {!result.error && result.hasMore && <button className="btn btn-secondary btn-sm" disabled={loading} onClick={() => setPage(value => value + 1)}>{COMMON.next}</button>}
+  }, [profileId, locked, page, retry]);
+  const name = profile ? (profile.display_name || profile.username) : '';
+  return <>
+    <style>{profileStyles}</style>
+    <div className="pp-view pp-history-page">
+      <div className="pp-section-heading pp-history-page-head">
+        <div><Link to={`/u/${username}`} className="pp-back">{name || `@${username}`}</Link><h1 className="pp-section-title">{PUBLIC_PROFILE_PAGE.watchHistory}</h1></div>
       </div>
+      {loading || (profile && !locked && fetching) ? <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}><PlotLoader /></div>
+        : !profile || locked ? <p className="pp-sparse-line">{PUBLIC_PROFILE_PAGE.noPublicTitles}</p>
+        : result.error ? <div role="alert" className="pp-sparse"><p>{COMMON.genericError}</p><button className="btn btn-secondary btn-sm" onClick={() => setRetry(value => value + 1)}>{PUBLIC_PROFILE_PAGE.retry}</button></div>
+        : <>
+          {result.items.length ? <HistoryRows items={result.items} openPanel={openPanel} columns /> : <p className="pp-sparse-line">{PUBLIC_PROFILE_PAGE.noPublicTitles}</p>}
+          <div className="pp-history-pagination">
+            {page > 0 && <button className="btn btn-secondary btn-sm" onClick={() => setPage(value => value - 1)}>{COMMON.back}</button>}
+            {result.hasMore && <button className="btn btn-secondary btn-sm" onClick={() => setPage(value => value + 1)}>{COMMON.next}</button>}
+          </div>
+        </>}
     </div>
-  </dialog>, document.body);
+  </>;
 }
 
 /** DOM layout only. Selection and visibility belong to publicProfileLayout in core. */
@@ -787,17 +796,14 @@ export function ProfileIntro({ name, username, avatarUrl, bio, badges, stats, li
   </header>;
 }
 
-export function ProfileContent({ profileId, isOwn, openPanel, watchlist, favouriteLabel, ...data }) {
+export function ProfileContent({ username, isOwn, openPanel, watchlist, favouriteLabel, ...data }) {
   const content = publicProfileLayout(data);
-  const [allLists, setAllLists] = useState(false);
   const [expandedList, setExpandedList] = useState(null);
-  const [historyOpen, setHistoryOpen] = useState(false);
   // Default to whichever list has picks, so a TV-only profile doesn't open on an empty shelf.
   const [pickType, setPickType] = useState(() => (!data.topMovies?.length && data.topTv?.length ? 'tv' : 'movie'));
   if (data.locked) return null;
   const hasPicks = content.topMovies.length > 0 || content.topTv.length > 0;
   const picks = pickType === 'tv' ? content.topTv : content.topMovies;
-  const visibleLists = allLists ? content.customLists : content.customLists.slice(0, 3);
   const expanded = content.customLists.find(list => list.id === expandedList);
   return <div className="pp-profile-content pp-pad">
     {hasPicks && <section className="pp-section pp-featured">
@@ -812,13 +818,12 @@ export function ProfileContent({ profileId, isOwn, openPanel, watchlist, favouri
         ? <TopFiveGrid items={picks} openPanel={openPanel} watchlist={watchlist} />
         : <p className="pp-sparse-line">{PUBLIC_PROFILE_PAGE.noPicksOfType(pickType === 'tv' ? MEDIA.tv : MEDIA.movies)}{isOwn && <> <Link to="/my-lists">{PUBLIC_PROFILE_PAGE.addFirstPick}</Link></>}</p>}
     </section>}
-    {(content.customLists.length > 0 || content.recent.length > 0) && <div className="pp-profile-columns">
+    {(content.customLists.length > 0 || content.favourites.length > 0) && <div className="pp-profile-columns">
       {content.customLists.length > 0 && <section className="pp-section" id="pp-profile-lists">
-        <div className="pp-section-heading"><h2 className="pp-section-title">{PUBLIC_PROFILE_PAGE.lists}</h2>
-          {content.customLists.length > 3 && <button type="button" className="btn btn-secondary btn-sm" aria-expanded={allLists} onClick={() => setAllLists(value => !value)}>{allLists ? PUBLIC_PROFILE_PAGE.showLess : PUBLIC_PROFILE_PAGE.viewAll}</button>}
-        </div>
+        <div className="pp-section-heading"><h2 className="pp-section-title">{PUBLIC_PROFILE_PAGE.lists}</h2></div>
+        {/* Up to PUBLIC_LIST_LIMIT covers, three per row, so two rows at most. */}
         <div className="pp-list-covers">
-          {visibleLists.map(list => <ListCover key={list.id} name={list.name} count={PUBLIC_PROFILE_PAGE.titleCount(list.items.length)}
+          {content.customLists.map(list => <ListCover key={list.id} name={list.name} count={PUBLIC_PROFILE_PAGE.titleCount(list.items.length)}
             posters={list.items.map(item => item.poster_path)} onOpen={() => setExpandedList(value => value === list.id ? null : list.id)} />)}
         </div>
         {expanded && <div className="pp-list-expanded">
@@ -826,15 +831,21 @@ export function ProfileContent({ profileId, isOwn, openPanel, watchlist, favouri
           <PosterRail items={expanded.items} openPanel={openPanel} watchlist={watchlist} />
         </div>}
       </section>}
-      {content.recent.length > 0 && <section className="pp-section" id="pp-profile-history">
-        <div className="pp-section-heading"><h2 className="pp-section-title">{PUBLIC_PROFILE_PAGE.watchHistory}</h2><button type="button" className="btn btn-secondary btn-sm" onClick={() => setHistoryOpen(true)}>{PUBLIC_PROFILE_PAGE.viewAll}</button></div>
-        <HistoryRows items={content.recent.slice(0, 4)} openPanel={openPanel} />
+      {content.favourites.length > 0 && <section className="pp-section" id="pp-profile-favourites">
+        <div className="pp-section-heading"><h2 className="pp-section-title">{favouriteLabel}</h2></div>
+        {/* Two full rows: four across beside the lists, five across on phone; the CSS hides the rest. */}
+        <div className="pp-fav-grid">
+          {content.favourites.slice(0, 10).map((it, i) => <PosterCard key={`${it.tmdb_id}-${i}`} item={it} openPanel={openPanel} watchlist={watchlist} />)}
+        </div>
       </section>}
     </div>}
-    {[[favouriteLabel, content.favourites], [PUBLIC_PROFILE_PAGE.watching, content.watching], [PUBLIC_PROFILE_PAGE.wantToWatch, content.wantToWatch]].map(([label, items]) => items.length > 0 && <section className="pp-section" key={label}>
+    {content.recent.length > 0 && <section className="pp-section" id="pp-profile-history">
+      <div className="pp-section-heading"><h2 className="pp-section-title">{PUBLIC_PROFILE_PAGE.watchHistory}</h2><Link to={`/u/${username}/history`} className="btn btn-secondary btn-sm">{PUBLIC_PROFILE_PAGE.viewAll}</Link></div>
+      <HistoryRows items={content.recent.slice(0, 6)} openPanel={openPanel} columns />
+    </section>}
+    {[[PUBLIC_PROFILE_PAGE.watching, content.watching], [PUBLIC_PROFILE_PAGE.wantToWatch, content.wantToWatch]].map(([label, items]) => items.length > 0 && <section className="pp-section" key={label}>
       <h2 className="pp-section-title">{label}</h2><PosterRail items={items} openPanel={openPanel} watchlist={watchlist} />
     </section>)}
     {content.empty && <div className="pp-sparse"><p>{PUBLIC_PROFILE_PAGE.noPublicTitles}</p>{isOwn && <Link className="btn btn-secondary btn-sm" to="/my-lists">{PUBLIC_PROFILE_PAGE.addFirstPick}</Link>}</div>}
-    {historyOpen && content.recent.length > 0 && <ProfileHistoryDialog profileId={profileId} onClose={() => setHistoryOpen(false)} openPanel={openPanel} />}
   </div>;
 }

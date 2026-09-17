@@ -15,6 +15,8 @@ export const PUBLIC_PROFILE_PAGE = {
   topFilms: 'Top films',
   topTv: 'Top TV',
   lists: 'Lists',
+  /** @param {number} n */
+  publicListLimit: (n) => `Up to ${n} lists show on your profile.`,
   watchHistory: 'Watch history',
   viewAll: 'View all',
   viewAllLists: 'View all lists',
