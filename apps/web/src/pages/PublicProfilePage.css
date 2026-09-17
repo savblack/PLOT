@@ -61,15 +61,17 @@
 .pp-rail .pp-poster { flex: 0 0 auto; width: 120px; }
 
 /* Lists + history side by side; one column collapses to a single 600px column. */
-.pp-profile-columns { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 64px; align-items: start; }
+.pp-profile-columns { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 64px; align-items: stretch; }
 .pp-profile-columns:has(> :only-child) { grid-template-columns: minmax(0, 1fr); max-width: 640px; }
 .pp-profile-columns .pp-section { margin-top: 44px; }
 #pp-profile-lists .pp-section-heading { margin-bottom: 30px; }
-.pp-list-covers { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px 24px; }
+.pp-list-covers { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px 24px; }
 /* Favourites beside the lists: four across, two rows; anything past the eighth is hidden. */
-.pp-fav-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+/* The section stretches to the lists' height and the two rows spread to fill it, so the columns end level. */
+#pp-profile-favourites { display: flex; flex-direction: column; }
+.pp-fav-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; flex: 1; align-content: space-between; }
 .pp-fav-grid > :nth-child(n + 9) { display: none; }
-.pp-history-rows--columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 48px; }
+.pp-history-rows--columns { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 40px; }
 .pp-history-page-head { align-items: flex-end; padding-top: 40px; }
 .pp-back { display: inline-block; margin-bottom: 6px; font-size: 14px; color: var(--text-muted); }
 .pp-back:hover { color: var(--accent-text); }
@@ -110,8 +112,8 @@
   .pp-top5 .pp-poster-rank { min-width: 20px; height: 20px; padding: 0 5px; right: 5px; top: 5px; font-size: 11px; }
   .pp-top5 .card-fav-btn, .pp-top5 .card-save-btn { display: none; }
   .pp-profile-columns { grid-template-columns: minmax(0, 1fr); gap: 0; }
-  .pp-list-covers { gap: 20px 12px; }
-  .pp-fav-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+  .pp-list-covers { gap: 16px 12px; }
+  .pp-fav-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; align-content: start; }
   .pp-fav-grid > :nth-child(n + 9) { display: block; }
   .pp-fav-grid .pp-poster { border-radius: 8px; }
   .pp-fav-grid .card-fav-btn, .pp-fav-grid .card-save-btn { display: none; }
