@@ -958,7 +958,7 @@ const subscribeForm = (placement: string) => `
 <aside class="nlsub card r4" id="newsletter">
   <div class="nlsub-copy">
     <span class="nlsub-title">What to watch, sorted</span>
-    <span class="nlsub-sub">The week's good stuff handpicked and delivered to your inbox once a week.</span>
+    <span class="nlsub-sub">The week's good stuff handpicked and delivered directly to your inbox.</span>
   </div>
   <form class="nlsub-form" id="nlForm" data-placement="${esc(placement)}">
     <input type="email" name="email" placeholder="your@email.com" required autocomplete="email" aria-label="Email address">
