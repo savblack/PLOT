@@ -20,6 +20,9 @@ export default {
 export const Populated = { args: { topMovies: resolvedTitles.slice(0, 5).map((item, i) => ({ ...item, rank: i + 1 })), recent: resolvedTitles.slice(4).map(item => ({ ...item, watched_at: '2026-09-14' })), customLists: [
   { id: 'sunday', name: 'Sunday films', items: resolvedTitles.slice(0, 3) }, { id: 'weekend', name: 'Weekend watches', items: resolvedTitles.slice(0, 2) },
 ] } };
+export const ManyLists = { args: { ...Populated.args, customLists: [
+  ...Populated.args.customLists, { id: 'comfort', name: 'Comfort rewatches', items: resolvedTitles.slice(3) }, { id: 'cinema', name: 'Want to see in cinemas', items: resolvedTitles.slice(1, 4) }, { id: 'rainy', name: 'Rainy day', items: resolvedTitles.slice(2, 6) },
+] } };
 export const BothTypes = { args: { ...Populated.args, topTv: resolvedTitles.slice(4) } };
 export const OnePick = { args: { topMovies: titles.slice(0, 1) } };
 export const EmptyOwner = { args: {} };
