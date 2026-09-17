@@ -833,7 +833,7 @@ export function ProfileContent({ username, isOwn, openPanel, watchlist, favourit
       </section>}
       {content.favourites.length > 0 && <section className="pp-section" id="pp-profile-favourites">
         <div className="pp-section-heading"><h2 className="pp-section-title">{favouriteLabel}</h2></div>
-        {/* Two full rows: four across beside the lists, five across on phone; the CSS hides the rest. */}
+        {/* Two full rows: three across beside the lists, five across on phone; the CSS hides the rest. */}
         <div className="pp-fav-grid">
           {content.favourites.slice(0, 10).map((it, i) => <PosterCard key={`${it.tmdb_id}-${i}`} item={it} openPanel={openPanel} watchlist={watchlist} />)}
         </div>
