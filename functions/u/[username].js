@@ -10,7 +10,7 @@
 // replaces #root on mount. Private/unknown handles get a noindex plain shell.
 //
 // Routing: file path functions/u/[username].js → /u/<username>.
-import { ogBase } from '../_lib/og-base.js';
+import { staticCard } from '../_lib/og-card.js';
 import { colors } from '../../packages/core/tokens.js';
 
 // Warm dark neutrals + the green accent from the canonical token source.
@@ -98,7 +98,7 @@ function seoSnapshot(p) {
 </div>`;
 }
 
-export async function onRequest({ request, params, env }) {
+export async function onRequest({ request, params }) {
   const host = request.headers.get('host') || 'app.theplot.tv';
   const raw = Array.isArray(params?.username) ? params.username[0] : params?.username;
   const handle = (raw || '').replace(/^@/, '').trim().toLowerCase();
@@ -122,7 +122,8 @@ export async function onRequest({ request, params, env }) {
     const desc = profile.watchCount
       ? `@${profile.username} has tracked ${profile.watchCount} film${profile.watchCount === 1 ? '' : 's'} & shows on PLOT${profile.followers ? `, with ${profile.followers} follower${profile.followers === 1 ? '' : 's'}` : ''}. See their taste.`
       : `See what @${profile.username} is watching — their film & TV taste on PLOT.`;
-    const image = `${ogBase(host, env)}?u=${encodeURIComponent(profile.username)}`;
+    // The branded profile card cannot render on the free plan — see _lib/og-card.js.
+    const image = staticCard(host);
     const url = `https://${host}/u/${encodeURIComponent(profile.username)}`;
     const jsonLd = ldjson({
       '@context': 'https://schema.org',
