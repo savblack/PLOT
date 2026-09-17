@@ -159,7 +159,7 @@ h1.title{font-family:var(--display);font-size:clamp(1.9rem,4.4vw,2.9rem);font-we
 .answer-hd{font-size:1.05rem;font-weight:600;line-height:1.35;}
 .answer-sub{font-size:.88rem;color:var(--mut);margin-top:4px;}
 .answer-act{display:flex;align-items:center;gap:12px;}
-.badge{background:var(--fill);color:var(--ink);font-size:.62rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:6px 12px;border-radius:999px;white-space:nowrap;}
+.badge{background:var(--sage);color:var(--ink);font-size:.62rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:6px 12px;border-radius:999px;white-space:nowrap;}
 .cta{display:inline-block;background:var(--fill);color:var(--ink);text-decoration:none;font-size:.81rem;font-weight:600;padding:9px 16px;border-radius:999px;white-space:nowrap;transition:background .15s var(--ease);}
 .cta:hover{background:var(--fill-hover);}
 .link2{font-size:.81rem;font-weight:600;color:var(--accent-2);text-decoration:none;white-space:nowrap;}
