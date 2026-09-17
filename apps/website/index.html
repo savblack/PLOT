@@ -1144,7 +1144,7 @@
          back the whole wrap in screen black. The bezel (z-index 10) covers all
          of it except the glass, and the radius keeps the fill inside the phone's
          own outline (measured ~49px) rather than squaring off its corners. */
-      background: #0c0c0c;
+      background: var(--bg);
       border-radius: 50px;
     }
 
@@ -1290,49 +1290,36 @@
       overflow: hidden;
       position: relative;
     }
-    /* Discover screen mockup — mirrors the app's mobile Discover UI */
-    .disc { background: #0c0c0c; }
+    /* Home screen mockup — the app's home on the warm brand (design canvas, option A) */
+    .disc { background: var(--bg); color: var(--text); }
     .disc-bar {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 0 13px; height: 34px; flex-shrink: 0;
+      padding: 18px 15px 10px; flex-shrink: 0;
     }
-    .disc-ham { display: flex; flex-direction: column; gap: 3px; width: 13px; }
-    .disc-ham span { height: 1.4px; background: rgba(240,239,232,0.7); border-radius: 1px; }
-    .disc-logo { font-family: var(--display); font-size: 0.98rem; letter-spacing: 0.04em; color: #f0efe8; }
-    .disc-search { width: 14px; height: 14px; color: rgba(240,239,232,0.7); }
-    .disc-tabs {
-      display: flex; align-items: flex-end; gap: 11px;
-      padding: 0 13px 7px; border-bottom: 1px solid rgba(255,255,255,0.07); flex-shrink: 0;
-    }
-    .disc-tab { font-size: 0.62rem; color: rgba(240,239,232,0.4); position: relative; padding-bottom: 6px; }
-    .disc-tab-on { color: #f0efe8; }
-    .disc-tab-on::after { content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 1.5px; background: var(--accent); border-radius: 2px; }
-    .disc-scroll { flex: 1; overflow: hidden; padding: 9px 13px 0; }
+    .disc-logo { font-family: var(--display); font-weight: 700; font-size: 1.2rem; letter-spacing: -0.03em; color: var(--text); }
+    .disc-search { width: 30px; height: 30px; padding: 7px; border-radius: 50%; background: var(--surface); color: var(--text); box-sizing: border-box; }
+    .disc-scroll { flex: 1; overflow: hidden; display: flex; flex-direction: column; gap: 16px; min-height: 0; }
     .disc-hero {
-      position: relative; height: 152px; border-radius: 11px; overflow: hidden;
-      background-size: cover; background-position: center 22%;
-      display: flex; flex-direction: column; justify-content: flex-end; padding: 11px;
+      position: relative; flex-shrink: 0; margin: 0 15px; height: 148px; border-radius: 15px; overflow: hidden;
+      background-color: var(--surface); background-size: cover; background-position: center 22%;
+      display: flex; flex-direction: column; justify-content: flex-end; padding: 12px;
     }
-    .disc-hero-grad { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.15) 52%, transparent 100%); }
-    .disc-trend { position: absolute; top: 11px; left: 11px; font-size: 0.42rem; font-weight: 600; letter-spacing: 0.06em; color: #fff; background: rgba(224,85,120,0.92); padding: 3px 7px; border-radius: 20px; }
-    .disc-hero-title { position: relative; font-family: var(--display); font-size: 1.2rem; line-height: 1; color: #fff; letter-spacing: -0.02em; }
-    .disc-hero-meta { position: relative; font-size: 0.5rem; color: rgba(255,255,255,0.72); margin-top: 4px; }
-    .disc-sec { padding: 13px 0 9px; }
-    .disc-sec-sub { font-size: 0.42rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(240,239,232,0.3); }
-    .disc-sec-t { font-size: 0.74rem; font-weight: 600; color: #f0efe8; margin-top: 2px; }
-    .disc-row { display: flex; gap: 9px; }
-    .disc-card { width: 79px; flex-shrink: 0; }
-    .disc-poster { position: relative; width: 79px; height: 118px; border-radius: 8px; background-size: cover; background-position: center; }
-    .disc-tag { position: absolute; top: 5px; left: 5px; font-size: 0.36rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #fff; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); padding: 2px 5px; border-radius: 20px; }
-    .disc-tag-tv { background: rgba(74,144,217,0.9); }
-    .disc-bk { position: absolute; top: 5px; right: 6px; width: 9px; height: 11px; color: #fff; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.55)); }
-    .disc-card-t { font-size: 0.55rem; color: #f0efe8; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .disc-nav {
-      display: flex; align-items: center; justify-content: space-around;
-      padding: 9px 4px; border-top: 1px solid rgba(255,255,255,0.07); flex-shrink: 0;
-    }
-    .disc-nav span { font-size: 0.5rem; color: rgba(240,239,232,0.35); }
-    .disc-nav-on { color: var(--accent) !important; }
+    .disc-hero-grad { position: absolute; inset: 0; background: linear-gradient(to top, rgba(20,18,16,0.85) 0%, rgba(20,18,16,0.15) 55%, transparent 100%); }
+    .disc-hero-btn { position: absolute; top: 9px; width: 24px; height: 24px; display: grid; place-items: center; border-radius: 50%; background: rgba(248,242,234,0.92); color: var(--text); }
+    .disc-hero-btn svg { width: 11px; height: 11px; }
+    .disc-fav { left: 9px; }
+    .disc-save { right: 9px; }
+    .disc-trend { position: relative; align-self: flex-start; margin-bottom: 6px; padding: 4px 7px; border-radius: var(--r-pill); background: var(--fill); color: var(--text); font-size: 0.42rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; }
+    .disc-hero-title { position: relative; font-family: var(--display); font-weight: 600; font-size: 1.1rem; line-height: 1.1; color: var(--bg); letter-spacing: -0.02em; }
+    .disc-hero-meta { position: relative; font-size: 0.52rem; color: rgba(248,242,234,0.8); margin-top: 4px; }
+    .disc-sec { flex-shrink: 0; display: flex; flex-direction: column; gap: 9px; }
+    .disc-sec-head { padding: 0 15px; display: flex; flex-direction: column; }
+    .disc-sec-sub { font-size: 0.46rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-secondary); }
+    .disc-sec-t { font-family: var(--display); font-weight: 600; font-size: 0.92rem; letter-spacing: -0.02em; color: var(--text); margin-top: 1px; }
+    .disc-row { display: flex; gap: 9px; padding: 0 15px; overflow: hidden; }
+    .disc-card { width: 77px; flex-shrink: 0; display: flex; flex-direction: column; gap: 6px; }
+    .disc-poster { position: relative; width: 77px; height: 116px; border-radius: 9px; background-color: var(--surface); background-size: cover; background-position: center; box-shadow: 0 4px 12px rgba(41,41,36,0.10); }
+    .disc-card-t { font-size: 0.56rem; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
     /* My Lists screen */
     #lists-demo { background: var(--bg); padding: 14rem 2rem; }
@@ -2067,42 +2054,39 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             <div class="phone-frame">
               <div class="guide-screen disc">
                 <div class="disc-bar">
-                  <span class="disc-ham"><span></span><span></span><span></span></span>
                   <span class="disc-logo">plot</span>
-                  <svg class="disc-search" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="8" cy="8" r="5.5"/><path d="M12.5 12.5L16 16"/></svg>
-                </div>
-                <div class="disc-tabs">
-                  <span class="disc-tab disc-tab-on">Discover</span>
-                  <span class="disc-tab">Releases</span>
-                  <span class="disc-tab">Guide</span>
+                  <svg class="disc-search" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="8" r="5.5"/><path d="M12.5 12.5L16 16"/></svg>
                 </div>
                 <div class="disc-scroll">
-                  <div class="disc-hero" data-bg="https://image.tmdb.org/t/p/w342/5rhTDKUhPYvpdQIijFIs5VoWsON.jpg">
+                  <div class="disc-hero" data-bg="https://image.tmdb.org/t/p/w780/iuylzRSllrGn7YB322kwKoOVMcq.jpg">
                     <div class="disc-hero-grad"></div>
-                    <span class="disc-trend">TRENDING #1</span>
+                    <span class="disc-hero-btn disc-fav" aria-hidden="true"><svg viewBox="0 0 24 22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M12 20.5 3.6 12.2A5 5 0 0 1 12 5.4a5 5 0 0 1 8.4 6.8z"/></svg></span>
+                    <span class="disc-hero-btn disc-save" aria-hidden="true"><svg viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg></span>
+                    <span class="disc-trend">Trending #1</span>
                     <div class="disc-hero-title">The Odyssey</div>
                     <div class="disc-hero-meta">2026 &middot; Film</div>
                   </div>
-                  <div class="disc-sec"><div class="disc-sec-sub">Trending today</div><div class="disc-sec-t">Hot right now</div></div>
+                  <div class="disc-sec"><div class="disc-sec-head"><div class="disc-sec-sub">Trending today</div><div class="disc-sec-t">Hot right now</div></div>
                   <div class="disc-row">
-                    <div class="disc-card"><div class="disc-poster" data-bg="https://image.tmdb.org/t/p/w500/jOiEa1NMdGHktRE3lVwErq0nCNT.jpg"><span class="disc-tag">Movie</span><svg class="disc-bk" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg></div><div class="disc-card-t">Sinners</div></div>
-                    <div class="disc-card"><div class="disc-poster" data-bg="https://image.tmdb.org/t/p/w500/A8UIMJTwSaflmWmUlfPOFdenSBT.jpg"><span class="disc-tag">Movie</span><svg class="disc-bk" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg></div><div class="disc-card-t">Nosferatu</div></div>
-                    <div class="disc-card"><div class="disc-poster" data-bg="https://image.tmdb.org/t/p/w500/5aj8vVGFwGVbQQs26ywhg4Zxk2L.jpg"><span class="disc-tag">Movie</span><svg class="disc-bk" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg></div><div class="disc-card-t">Longlegs</div></div>
-                    <div class="disc-card"><div class="disc-poster" data-bg="https://image.tmdb.org/t/p/w500/lqoMzCcZYEFK729d6qzt349fB4o.jpg"><span class="disc-tag">Movie</span><svg class="disc-bk" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg></div><div class="disc-card-t">The Substance</div></div>
-                  </div>
-                  <div class="disc-sec"><div class="disc-sec-sub">Popular TV</div><div class="disc-sec-t">Most binged shows</div></div>
+                    <div class="disc-card"><div class="disc-poster" data-bg="https://image.tmdb.org/t/p/w342/jOiEa1NMdGHktRE3lVwErq0nCNT.jpg"></div><div class="disc-card-t">Sinners</div></div>
+                    <div class="disc-card"><div class="disc-poster" data-bg="https://image.tmdb.org/t/p/w342/A8UIMJTwSaflmWmUlfPOFdenSBT.jpg"></div><div class="disc-card-t">Nosferatu</div></div>
+                    <div class="disc-card"><div class="disc-poster" data-bg="https://image.tmdb.org/t/p/w342/5aj8vVGFwGVbQQs26ywhg4Zxk2L.jpg"></div><div class="disc-card-t">Longlegs</div></div>
+                    <div class="disc-card"><div class="disc-poster" data-bg="https://image.tmdb.org/t/p/w342/lqoMzCcZYEFK729d6qzt349fB4o.jpg"></div><div class="disc-card-t">The Substance</div></div>
+                  </div></div>
+                  <div class="disc-sec"><div class="disc-sec-head"><div class="disc-sec-sub">Popular TV</div><div class="disc-sec-t">Most binged shows</div></div>
                   <div class="disc-row">
-                    <div class="disc-card"><div class="disc-poster" data-bg="https://image.tmdb.org/t/p/w342/pPHpeI2X1qEd1CS1SeyrdhZ4qnT.jpg"><span class="disc-tag disc-tag-tv">TV</span><svg class="disc-bk" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg></div><div class="disc-card-t">Severance</div></div>
-                    <div class="disc-card"><div class="disc-poster" data-bg="https://image.tmdb.org/t/p/w342/eKfVzzEazSIjJMrw9ADa2x8ksLz.jpg"><span class="disc-tag disc-tag-tv">TV</span><svg class="disc-bk" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg></div><div class="disc-card-t">The Bear</div></div>
-                    <div class="disc-card"><div class="disc-poster" data-bg="https://image.tmdb.org/t/p/w342/20i4nShZZg1g1VFHSB8xpaYM4r7.jpg"><span class="disc-tag disc-tag-tv">TV</span><svg class="disc-bk" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg></div><div class="disc-card-t">Adolescence</div></div>
-                    <div class="disc-card"><div class="disc-poster" data-bg="https://image.tmdb.org/t/p/w342/7MXg0BxuSRWz2yKc03M40du2mrc.jpg"><span class="disc-tag disc-tag-tv">TV</span><svg class="disc-bk" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg></div><div class="disc-card-t">Presumed Innocent</div></div>
-                  </div>
-                </div>
-                <div class="disc-nav">
-                  <span class="disc-nav-on">Home</span>
-                  <span>Calendar</span>
-                  <span>My Lists</span>
-                  <span>History</span>
+                    <div class="disc-card"><div class="disc-poster" data-bg="https://image.tmdb.org/t/p/w342/pPHpeI2X1qEd1CS1SeyrdhZ4qnT.jpg"></div><div class="disc-card-t">Severance</div></div>
+                    <div class="disc-card"><div class="disc-poster" data-bg="https://image.tmdb.org/t/p/w342/eKfVzzEazSIjJMrw9ADa2x8ksLz.jpg"></div><div class="disc-card-t">The Bear</div></div>
+                    <div class="disc-card"><div class="disc-poster" data-bg="https://image.tmdb.org/t/p/w342/20i4nShZZg1g1VFHSB8xpaYM4r7.jpg"></div><div class="disc-card-t">Adolescence</div></div>
+                    <div class="disc-card"><div class="disc-poster" data-bg="https://image.tmdb.org/t/p/w342/7MXg0BxuSRWz2yKc03M40du2mrc.jpg"></div><div class="disc-card-t">Presumed Innocent</div></div>
+                  </div></div>
+                  <div class="disc-sec"><div class="disc-sec-head"><div class="disc-sec-sub">Global ranking</div><div class="disc-sec-t">Top 20 this week</div></div>
+                  <div class="disc-row">
+                    <div class="disc-card"><div class="disc-poster" data-bg="https://image.tmdb.org/t/p/w342/5rhTDKUhPYvpdQIijFIs5VoWsON.jpg"></div><div class="disc-card-t">The Odyssey</div></div>
+                    <div class="disc-card"><div class="disc-poster" data-bg="https://image.tmdb.org/t/p/w342/jOiEa1NMdGHktRE3lVwErq0nCNT.jpg"></div><div class="disc-card-t">Sinners</div></div>
+                    <div class="disc-card"><div class="disc-poster" data-bg="https://image.tmdb.org/t/p/w342/pPHpeI2X1qEd1CS1SeyrdhZ4qnT.jpg"></div><div class="disc-card-t">Severance</div></div>
+                    <div class="disc-card"><div class="disc-poster" data-bg="https://image.tmdb.org/t/p/w342/5aj8vVGFwGVbQQs26ywhg4Zxk2L.jpg"></div><div class="disc-card-t">Longlegs</div></div>
+                  </div></div>
                 </div>
               </div>
             </div>
@@ -2723,7 +2707,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         var movies = unseen(nowPlaying.filter(function(r){ return r.poster_path; }), seen);
         var shows = unseen(tv.filter(function(r){ return r.poster_path; }), seen);
         if (top) {
-          hero.style.backgroundImage = "url('" + (top.backdrop_path ? BACK + top.backdrop_path : POSTER + top.poster_path) + "')";
+          var heroArt = top.backdrop_path ? BACK + top.backdrop_path : POSTER + top.poster_path;
+          hero.dataset.bg = heroArt;
+          hero.style.backgroundImage = "url('" + heroArt + "')";
           var date = top.release_date || top.first_air_date || '';
           var isTv = top.media_type === 'tv' || (!top.title && !!top.name);
           var t = hero.querySelector('.disc-hero-title'); if (t) t.textContent = top.title || top.name || t.textContent;
@@ -2736,7 +2722,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             // one already in the row.
             var item = list[i];
             if (!item) return;
-            card.querySelector('.disc-poster').style.backgroundImage = "url('" + POSTER + item.poster_path + "')";
+            var poster = card.querySelector('.disc-poster');
+            poster.dataset.bg = POSTER + item.poster_path;
+            poster.style.backgroundImage = "url('" + POSTER + item.poster_path + "')";
             var tag = card.querySelector('.disc-tag');
             if (tag) { tag.textContent = isTv ? 'TV' : 'Movie'; tag.className = 'disc-tag' + (isTv ? ' disc-tag-tv' : ''); }
             var title = card.querySelector('.disc-card-t'); if (title) title.textContent = item.title || item.name || title.textContent;
