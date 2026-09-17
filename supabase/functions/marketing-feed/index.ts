@@ -958,7 +958,6 @@ const subscribeForm = (placement: string) => `
 <aside class="nlsub card r4" id="newsletter">
   <div class="nlsub-copy">
     <span class="nlsub-title">What to watch, sorted</span>
-    <span class="nlsub-sub">The week's good stuff handpicked and delivered to your inbox once a week.</span>
   </div>
   <form class="nlsub-form" id="nlForm" data-placement="${esc(placement)}">
     <input type="email" name="email" placeholder="your@email.com" required autocomplete="email" aria-label="Email address">
@@ -1006,9 +1005,8 @@ const SUBSCRIBE_CSS = `
      otherwise paints this cream and leaves cream text unreadable on it. */
   .nlsub.card, .nlsub { background: var(--ink); color: var(--bg); padding: 24px 28px; scroll-margin-top: 88px; }
   .nlsub .nlsub-title, .nlsub .nlsub-copy { color: var(--bg); }
-  .nlsub-copy { display: flex; flex-direction: column; gap: 6px; }
+  .nlsub-copy { display: flex; flex-direction: column; }
   .nlsub-title { font-family: var(--display); font-weight: 700; letter-spacing: -0.03em; font-size: 1.4rem; line-height: 1; }
-  .nlsub-sub { color: rgba(248,242,234,0.7); font-size: 0.92rem; }
   .nlsub-form { display: flex; gap: 6px; margin-top: 16px; align-items: center; background: var(--bg); border-radius: 9999px; padding: 5px 5px 5px 16px; }
   .nlsub-form input[type=email] { flex: 1 1 120px; min-width: 0; padding: 8px 0; border: 0; font: inherit; font-size: 0.9rem; color: var(--ink); background: transparent; }
   .nlsub-form input[type=email]:focus { outline: none; }
