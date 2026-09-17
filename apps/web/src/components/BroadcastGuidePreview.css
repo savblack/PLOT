@@ -1,76 +1,96 @@
-.broadcast-guide { max-width: 1280px; margin: auto; padding: 48px 36px; color: var(--text-primary); font-family: var(--font-sans); }
-.broadcast-guide button, .broadcast-guide input, .broadcast-guide select { font: inherit; color: inherit; }
-.broadcast-guide button, .broadcast-guide select, .broadcast-toolbar input { background: var(--surface); border: 1px solid var(--border-strong); border-radius: 6px; padding: 9px 12px; }
-.broadcast-guide button { cursor: pointer; }
-.broadcast-guide button:disabled { opacity: .5; cursor: default; }
-.broadcast-guide :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
-.broadcast-guide button:hover { border-color: var(--accent); }
-.broadcast-heading { margin-bottom: 36px; }
-.broadcast-heading > p:first-child { font-size: 11px; text-transform: uppercase; letter-spacing: .12em; }
-.broadcast-heading p { color: var(--text-secondary); margin: 8px 0; }
-.broadcast-heading h1 { font-family: var(--font-display); font-weight: 700; font-size: 64px; margin: 0; }
-.broadcast-heading h1 span { color: var(--text-muted); }
-.broadcast-layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 44px; }
-.broadcast-sidebar { border-right: 1px solid var(--border-strong); padding-right: 24px; }
-.broadcast-sidebar > label { display: block; font-size: 12px; margin-bottom: 9px; }
-.broadcast-sidebar select { width: 100%; }
-.broadcast-note { font-size: 11px; color: var(--text-muted); line-height: 1.7; }
-.broadcast-side-title { display: flex; justify-content: space-between; align-items: center; margin-top: 28px; }
-.broadcast-side-title h2 { font-size: 13px; }
-.broadcast-side-title > span { font-size: 11px; color: var(--text-muted); }
-.broadcast-channel-list { margin-top: 18px; }
-.broadcast-channel-list > div { display: flex; gap: 10px; padding: 8px 0; font-size: 12px; }
-.broadcast-channel-list > div > span:first-child { width: 25px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
-.broadcast-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border-bottom: 1px solid var(--border-strong); gap: 6px; padding-bottom: 20px; }
-.broadcast-days button { display: grid; gap: 8px; background: transparent; border-color: transparent; }
-.broadcast-days span { font-size: 11px; }
-.broadcast-days strong { font-size: 23px; font-weight: 400; }
-.broadcast-guide button[aria-pressed=true] { color: var(--accent-text); border-color: var(--accent); background: var(--accent-dim); }
-.broadcast-toolbar { display: flex; justify-content: space-between; gap: 12px; padding: 22px 0; }
-.broadcast-toolbar input { min-width: 0; width: 210px; }
-.broadcast-actions { display: flex; gap: 6px; flex-wrap: wrap; }
-.broadcast-actions button { font-size: 12px; }
-.broadcast-date { border-bottom: 1px solid var(--border-strong); padding: 12px 0 20px; }
-.broadcast-date h2 { font-family: var(--font-display); font-size: 28px; font-weight: 400; margin: 0 0 5px; }
-.broadcast-date > span { font-size: 11px; color: var(--text-muted); }
-.broadcast-guide .broadcast-row { display: flex; width: 100%; align-items: center; gap: 20px; padding: 21px 0; border: 0; border-bottom: 1px solid var(--border); border-radius: 0; background: transparent; text-align: left; }
-.broadcast-row > time { width: 78px; flex-shrink: 0; font-size: 12px; color: var(--text-secondary); }
-.broadcast-programme { display: grid; gap: 6px; flex: 1; min-width: 0; }
-.broadcast-programme strong { font-size: 15px; font-weight: 500; overflow-wrap: anywhere; }
-.broadcast-programme > span { font-size: 11px; color: var(--text-muted); }
-.broadcast-live { color: var(--accent-text); font-size: 10px; white-space: nowrap; }
-.broadcast-empty { padding: 50px 0; color: var(--text-secondary); }
-.broadcast-empty h3 { font-weight: 500; }
-.broadcast-picker { border: 0; margin: 12px 0; padding: 0; }
-.broadcast-picker legend { position: absolute; width: 1px; height: 1px; overflow: hidden; }
-.broadcast-picker label { display: flex; gap: 8px; align-items: center; min-height: 36px; font-size: 12px; }
-.broadcast-picker input { accent-color: var(--accent); }
-.broadcast-picker .broadcast-actions { margin: 12px 0; }
-.broadcast-guide .broadcast-primary { color: var(--accent-text); border-color: var(--accent); }
-.broadcast-notice { font-size: 12px; border-bottom: 1px solid var(--border); padding-bottom: 16px; }
-.broadcast-dialog { max-width: 520px; width: calc(100% - 48px); background: var(--surface); color: var(--text-primary); padding: 28px; border: 1px solid var(--border-strong); border-radius: 10px; }
+/* The Guide on the Calendar/History shell (.hist-page, .hist-toolbar, .cal-body,
+   .cal-side, .cal-stream, .hist-card, .cal-filter-row, .cal-scope). Only what
+   is guide-specific is defined here. */
+.guide-page .hist-toolbar-sub a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+.guide-page .hist-toolbar-sub a:hover { color: var(--accent-text); }
+.guide-search { width: 240px; }
+.guide-card-head { min-height: 0; padding: 0 4px; }
+.guide-card-head .cal-filter-label { padding: 0; }
+.guide-side .hist-card { padding: 14px 12px 12px; }
+.guide-note { padding: 0 12px; line-height: 1.7; }
+.guide-notice { padding: 6px 4px 0; }
+.guide-footer { padding: 24px 4px 0; }
+.guide-footer a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+
+/* Week picker: the seven days of coverage in one row. */
+.guide-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; }
+.guide-day { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 0 6px; border: 0; border-radius: 10px; background: none; cursor: pointer; font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
+.guide-day span { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); }
+.guide-day strong { font-family: var(--font-display); font-weight: 700; font-size: 18px; letter-spacing: -0.02em; line-height: 1; }
+.guide-day:hover { background: var(--surface-sunken); }
+.guide-day--on, .guide-day--on:hover { background: var(--accent-fill); }
+.guide-day--on span { color: var(--on-accent-fill); }
+.guide-day:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* Channel rows reuse .cal-filter-row; the picker adds bulk actions. */
+.guide-edit-row .cal-filter-name { color: var(--accent-text); }
+.guide-picker { border: 0; margin: 0; padding: 0; min-width: 0; }
+.guide-picker legend { position: absolute; width: 1px; height: 1px; overflow: hidden; }
+.guide-picker-actions { display: flex; gap: 6px; flex-wrap: wrap; padding: 4px 4px 8px; }
+.guide-picker-list { max-height: 50vh; overflow-y: auto; }
+
+/* Channel mark: the network logo on a charcoal tile (most network marks are
+   white or bright, so cream loses them), or a monogram on cream. */
+.guide-mark { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 10px; background: var(--surface-sunken); font-family: var(--font-display); font-weight: 700; font-size: 12px; letter-spacing: -0.02em; color: var(--text-primary); flex-shrink: 0; overflow: hidden; }
+.guide-mark--sm { width: 28px; height: 28px; border-radius: 7px; font-size: 10px; }
+.guide-mark--logo { padding: 6px; background: var(--text-primary); }
+.guide-mark--sm.guide-mark--logo { padding: 4px; }
+.guide-mark img { width: 100%; height: 100%; object-fit: contain; display: block; }
+
+/* On now: a card grid, three across beside the column. */
+.guide-now-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.guide-now-card { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 12px; background: var(--surface); border: 1px solid var(--border); text-align: left; cursor: pointer; font: inherit; color: inherit; min-width: 0; -webkit-tap-highlight-color: transparent; }
+.guide-now-card:hover .guide-now-title { color: var(--accent-text); }
+.guide-now-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.guide-now-channel { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); min-width: 0; }
+.guide-now-channel > span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.guide-now-head > .hist-card-note { white-space: nowrap; flex-shrink: 0; }
+.guide-now-channel { flex: 1; }
+/* Desktop shows the end time beside the channel; phone moves it under the bar so the name keeps its room. */
+.guide-now-ends--below { display: none; }
+.guide-now-title { font-size: 14px; font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
+.guide-bar { display: block; height: 3px; border-radius: 2px; background: var(--surface-sunken); overflow: hidden; }
+.guide-bar i { display: block; height: 100%; background: var(--accent); }
+.guide-upcoming-head { padding-top: 20px; }
+
+/* Coming up: the Calendar's day stream, with the hour in the gutter. */
+.guide-hour { font-size: 22px; letter-spacing: -0.03em; white-space: nowrap; }
+.guide-row { display: flex; align-items: center; gap: 14px; width: 100%; padding: 10px 4px; border: 0; border-bottom: 1px solid var(--border); background: none; text-align: left; cursor: pointer; font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
+.guide-row:last-child { border-bottom: 0; }
+.guide-row:hover strong { color: var(--accent-text); }
+.guide-row-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.guide-row-text strong { font-size: 15px; font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
+.guide-row-text span { font-size: 12px; color: var(--text-muted); }
+
+/* Phone: the column's controls move above the stream. */
+.guide-mobile-bar { display: flex; flex-direction: column; gap: 12px; padding-bottom: 8px; }
+.guide-mobile-bar .btn { align-self: flex-start; }
+@media (min-width: 1024px) { .guide-mobile-bar { display: none; } }
+@media (max-width: 1023px) {
+  .guide-search { display: none; }
+  .guide-now-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .guide-now-head > .guide-now-ends { display: none; }
+  .guide-now-ends--below { display: block; }
+  .guide-hour { font-size: 18px; }
+  .cal-stream .cal-stream-gutter { width: 44px; }
+}
+
+/* Programme details dialog. */
+.broadcast-dialog { max-width: 520px; width: calc(100% - 48px); background: var(--surface); color: var(--text-primary); padding: 28px; border: 0; border-radius: var(--radius-lg); font-family: var(--font-sans); }
 .broadcast-dialog::backdrop { background: rgba(0, 0, 0, 0.4); }
 .broadcast-dialog > button { float: right; }
-.broadcast-dialog h2 { font-family: var(--font-display); font-size: 32px; font-weight: 400; }
+.broadcast-dialog h2 { font-family: var(--font-display); font-size: 28px; font-weight: 700; letter-spacing: var(--font-display-tracking); margin: 8px 0; }
 .broadcast-dialog p { line-height: 1.7; font-size: 14px; }
-@media (max-width: 700px) {
-  .broadcast-guide { padding: 24px 18px; }
-  .broadcast-heading h1 { font-size: 48px; }
-  .broadcast-layout { grid-template-columns: 1fr; gap: 24px; }
-  .broadcast-sidebar { border-right: 0; border-bottom: 1px solid var(--border-strong); padding: 0 0 20px; }
-  .broadcast-sidebar select { width: auto; }
-  .broadcast-channel-list { display: none; }
-  .broadcast-side-title { margin-top: 12px; }
-  .broadcast-days { gap: 1px; }
-  .broadcast-days button { padding: 10px 4px; }
-  .broadcast-toolbar { flex-wrap: wrap; }
-  .broadcast-toolbar input { width: 100%; }
-  .broadcast-guide .broadcast-row { gap: 10px; }
-  .broadcast-row > time { width: 64px; }
-  .broadcast-live { max-width: 36px; white-space: normal; }
-}
-.broadcast-region-link { color: var(--text-secondary); font-size: 12px; text-align: right; margin-bottom: 14px; }
+.broadcast-dialog .hist-card-note { display: flex; align-items: center; gap: 8px; }
+
+/* Dev preview heading and the region settings preview keep their old styling. */
+.broadcast-heading { margin-bottom: 12px; padding: 24px 0 0; }
+.broadcast-heading p { color: var(--text-secondary); margin: 8px 0; }
+.broadcast-heading h1 { font-family: var(--font-display); font-weight: 700; letter-spacing: var(--font-display-tracking); font-size: 40px; margin: 0; }
+.broadcast-guide { max-width: 1280px; margin: auto; padding: 48px 36px; color: var(--text-primary); font-family: var(--font-sans); }
 .broadcast-guide a { color: inherit; text-underline-offset: 3px; }
+.broadcast-guide button, .broadcast-guide select { font: inherit; color: inherit; background: var(--surface); border: 1px solid var(--border-strong); border-radius: 6px; padding: 9px 12px; cursor: pointer; }
+.broadcast-guide .broadcast-primary { color: var(--accent-text); border-color: var(--accent); }
 .broadcast-region-settings { max-width: 480px; border-top: 1px solid var(--border-strong); border-bottom: 1px solid var(--border-strong); padding: 24px 0; }
 .broadcast-region-settings > label { display: block; }
 .broadcast-region-settings > button { margin-left: 10px; }
@@ -78,3 +98,4 @@
 .broadcast-region-settings > label:not(:first-child) { margin-top: 24px; }
 .broadcast-region-settings select { margin-top: 10px; max-width: 100%; }
 .broadcast-region-settings > .broadcast-primary { margin-left: 0; }
+.broadcast-note { font-size: 11px; color: var(--text-muted); line-height: 1.7; }
