@@ -39,6 +39,13 @@ export const MEDIA_PANEL = {
   partOfCollection: 'Part of a collection',
   collectionProgress: (watched, total) => `${total} movie${total === 1 ? '' : 's'} · ${watched} watched`,
   saveCollectionAsList: 'Save as list',
+  // The franchise panel's progress card: one segment per film, so it reads as
+  // "which three of nine" rather than a percentage.
+  yourRun: 'Your run',
+  collectionRunCount: (watched, total) => `${watched} of ${total} watched`,
+  collectionNextUp: (title) => `Next up: ${title}`,
+  collectionAllWatched: 'You have seen every one.',
+  collectionYears: (first, last) => (first === last ? `${first}` : `${first} – ${last}`),
   savingCollection: 'Saving…',
   collectionSaved: 'Saved to My Lists',
   couldNotSaveCollection: 'Could not save this collection. Please try again.',

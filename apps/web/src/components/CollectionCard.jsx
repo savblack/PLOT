@@ -4,6 +4,7 @@ import { collectionStubFromDetails, orderedCollectionParts } from '@plot/core/co
 import { posterUrl } from '../utils/images.js';
 import { MEDIA_PANEL } from '../copy/mediaPanel.js';
 import CollectionFilms from './CollectionFilms.jsx';
+import CollectionRun from './CollectionRun.jsx';
 import { useCollectionProgress } from '../hooks/useCollectionProgress.js';
 import './CollectionCard.css';
 
@@ -42,11 +43,12 @@ export default function CollectionCard({ details, itemId, history, onOpenTitle }
   }, [collectionId]);
 
   const parts = orderedCollectionParts(collection);
-  const { items, watched, total, fraction } = useCollectionProgress(parts, { currentId: itemId, history });
+  const { items, watched, total } = useCollectionProgress(parts, { currentId: itemId, history });
 
   if (!stub || !collection || parts.length < 2) return null;
 
   const stack = items.slice(0, 4);
+  const nextUp = items.find(item => !item.watched);
   const headerId = `collection-card-${stub.id}`;
 
   return (
@@ -69,13 +71,14 @@ export default function CollectionCard({ details, itemId, history, onOpenTitle }
           </span>
           <span className="collection-card-titles">
             <span className="collection-card-name">{stub.name}</span>
-            <span className="collection-card-count">{MEDIA_PANEL.collectionProgress(watched, total)}</span>
+            <span className="collection-card-count">
+              {MEDIA_PANEL.collectionProgress(watched, total)}
+              {nextUp && <>{' · '}{MEDIA_PANEL.collectionNextUp(nextUp.title)}</>}
+            </span>
           </span>
           <span className={`collection-card-chevron${open ? ' collection-card-chevron--open' : ''}`}><ChevronIcon /></span>
         </button>
-        <div className="collection-card-bar" role="progressbar" aria-valuemin={0} aria-valuemax={total} aria-valuenow={watched}>
-          <div className="collection-card-bar-fill" style={{ width: `${Math.round(fraction * 100)}%` }} />
-        </div>
+        <CollectionRun items={items} watched={watched} total={total} compact />
         {open && (
           <div id={`${headerId}-body`}>
             <CollectionFilms stub={stub} parts={parts} items={items} onOpenTitle={onOpenTitle} />
