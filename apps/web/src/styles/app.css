@@ -3463,8 +3463,8 @@ svg { stroke-width: 1.5; }
    UP NEXT — the mid-watch summary card
 ═══════════════════════════════════════ */
 
-.panel-upnext { padding: 1rem; }
-.panel-upnext-title { margin-bottom: 0.6rem; }
+.panel-upnext { padding: 1rem 1rem 1.15rem; }
+.panel-upnext-title { margin-bottom: 0.75rem; }
 .panel-upnext-row { display: flex; align-items: center; gap: 0.75rem; }
 .panel-upnext-still {
   width: 116px;
@@ -3540,7 +3540,9 @@ svg { stroke-width: 1.5; }
 }
 .panel-upnext-progress {
   height: 5px;
-  margin-bottom: 0.9rem;
+  /* Closer to the episode it belongs to than to the card's edge, so it reads
+     as that row's progress rather than as the card's bottom rule. */
+  margin-top: 0.6rem;
   border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--text-primary) 10%, transparent);
   overflow: hidden;

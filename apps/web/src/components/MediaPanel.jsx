@@ -241,18 +241,6 @@ function UpNextCard({ tvId, details, progress, whereToWatch, onSeriesFinished })
   return (
     <section className="panel-card panel-upnext">
       <h3 className="panel-card-title panel-upnext-title">{MEDIA_PANEL.upNext}</h3>
-      {seasonTotal > 0 && (
-        <div
-          className="panel-upnext-progress"
-          role="progressbar"
-          aria-valuenow={watchedInSeason}
-          aria-valuemin={0}
-          aria-valuemax={seasonTotal}
-          aria-label={MEDIA_PANEL.seasonWatchedCount(watchedInSeason, seasonTotal)}
-        >
-          <span style={{ width: `${Math.round((watchedInSeason / seasonTotal) * 100)}%` }} />
-        </div>
-      )}
       <div className="panel-upnext-row">
         <div className="panel-upnext-still">
           {still && <img src={still} alt="" />}
@@ -274,6 +262,18 @@ function UpNextCard({ tvId, details, progress, whereToWatch, onSeriesFinished })
           )}
         </div>
       </div>
+      {seasonTotal > 0 && (
+        <div
+          className="panel-upnext-progress"
+          role="progressbar"
+          aria-valuenow={watchedInSeason}
+          aria-valuemin={0}
+          aria-valuemax={seasonTotal}
+          aria-label={MEDIA_PANEL.seasonWatchedCount(watchedInSeason, seasonTotal)}
+        >
+          <span style={{ width: `${Math.round((watchedInSeason / seasonTotal) * 100)}%` }} />
+        </div>
+      )}
       {error && <p className="panel-upnext-error" role="alert">{error}</p>}
     </section>
   );
