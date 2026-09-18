@@ -25,6 +25,7 @@
     "colors:check": "node scripts/check-color-literals.mjs",
     "storybook:website": "pnpm --filter @plot/website-storybook run storybook",
     "storybook:web": "pnpm --filter @plot/web run storybook",
+    "test-storybook:web": "pnpm --filter @plot/web run test-storybook",
     "storybook:mobile": "pnpm --filter @plot/mobile run storybook",
     "storybook:mobile:web": "pnpm --filter @plot/mobile run storybook:web",
     "storybook:web:deploy": "bash scripts/deploy-storybook.sh apps/web plot-storybook-web-app",

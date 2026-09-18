@@ -176,14 +176,14 @@ export default function ConfirmModal({ title, message, confirmLabel = COMMON.con
               onClick={handleConfirm}
               disabled={submitting || !phraseMatches}
               style={{
-                background: danger ? '#dc2626' : 'var(--accent)',
+                background: danger ? '#dc2626' : 'var(--accent-fill)',
                 border: 'none',
                 borderRadius: '9999px',
                 padding: '0.55rem 1.1rem',
                 fontSize: '0.8rem',
                 fontWeight: 600,
                 fontFamily: 'var(--font-sans)',
-                color: '#fff',
+                color: danger ? '#fff' : 'var(--on-accent-fill)',
                 cursor: phraseMatches ? 'pointer' : 'not-allowed',
                 opacity: phraseMatches ? 1 : 0.5,
                 transition: 'opacity 0.15s',
