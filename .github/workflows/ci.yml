@@ -171,6 +171,18 @@ jobs:
           VITE_PUBLIC_POSTHOG_PROJECT_TOKEN: ${{ secrets.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN }}
           VITE_PUBLIC_POSTHOG_HOST: ${{ secrets.VITE_PUBLIC_POSTHOG_HOST }}
 
+      # Storybook is a maintained QA surface for web, website, and mobile.
+      # Building all three catches missing addons, broken story imports, and
+      # configuration drift before those failures reach a manual review.
+      - name: Build web Storybook
+        run: pnpm --filter @plot/web run build-storybook
+
+      - name: Build website Storybook
+        run: pnpm --filter @plot/website-storybook run build-storybook
+
+      - name: Build mobile Storybook for web
+        run: pnpm --filter @plot/mobile run build-storybook
+
       # These used to be a separate job with its own checkout and install.
       - name: Check native deps match the Expo SDK
         run: pnpm run mobile:deps

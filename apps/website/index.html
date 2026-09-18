@@ -759,84 +759,25 @@
     /* Honeypot: invisible to humans, tempting to bots */
     .woc-form .fn-website { position: absolute; left: -9999px; opacity: 0; pointer-events: none; }
 
-    /* Footer — lean nav rail. No hairline above it: the closing section now
-       fades its poster wall out to the same white ground the footer sits on, so
-       a rule there just draws a seam across an otherwise continuous surface.
-       (The old `margin-top: -1px` went with that border, pulling the footer up
-       to overlap the section edge so the two never doubled up.) */
+    /* Homepage footer overrides: the poster wall meets it without a seam, and
+       the bottom padding clears the fixed ticker. */
     footer {
-      background: var(--dark);
-      color: var(--text-dark);
+      border-top: 0;
       padding: 2.6rem 3rem calc(2.6rem + var(--ticker-height) + env(safe-area-inset-bottom, 0px));
-      position: relative;
-      z-index: 3;
-    }
-
-    .footer-inner {
-      max-width: 1100px;
-      margin: 0 auto;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1.5rem 2rem;
-      flex-wrap: wrap;
+      margin-top: 0;
     }
 
     .footer-logo {
-      text-decoration: none;
-      font-family: var(--display);
       font-weight: 700;
       letter-spacing: -0.045em;
       font-size: 1.7rem;
-      line-height: 1;
-      color: var(--text-dark);
-      user-select: none;
     }
-
-    .footer-nav { display: flex; gap: 1.3rem; flex-wrap: wrap; }
-
-    .footer-nav a {
-      font-size: 0.82rem;
-      color: var(--text-secondary);
-      text-decoration: none;
-      transition: color 0.2s;
-      white-space: nowrap;
-    }
-    .footer-nav a:hover { color: var(--text); }
-
-    .footer-bottom {
-      width: 100%;
-      padding-top: 1.2rem;
-      margin-top: 0.4rem;
-      border-top: 1px solid var(--glass-border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
-      flex-wrap: wrap;
-    }
-
-    .footer-copy {
-      font-size: 0.75rem;
-      color: var(--text-secondary);
-    }
-
-    .footer-social { display: flex; gap: 1rem; align-items: center; }
-
-    .footer-social a {
-      color: var(--text-secondary);
-      display: inline-flex;
-      transition: color 0.2s;
-    }
-    .footer-social a:hover { color: var(--text); }
-    .footer-social svg { width: 19px; height: 19px; display: block; }
 
     @media (max-width: 820px) { .woc-wall { grid-template-columns: repeat(6, 1fr); } }
     @media (max-width: 600px) {
       /* The 11rem/9rem desktop breathing room just pushes the form off the
          fold on a phone. */
       #whats-on-cta { padding: 7rem 1.5rem 6rem; }
-      footer { padding-left: 1.5rem; padding-right: 1.5rem; }
     }
 
 
@@ -966,9 +907,6 @@
       .tl-card { width: 110px; }
       .tl-year-line { height: 165px; }
 
-
-      /* Footer — tighten side padding on narrow screens */
-      footer { padding-left: 1.5rem; padding-right: 1.5rem; }
     }
 
     /* ═══════════════════════════════════════════════════════════

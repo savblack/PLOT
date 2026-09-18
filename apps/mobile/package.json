@@ -32,6 +32,7 @@
     "react-native-webview": "13.16.1"
   },
   "devDependencies": {
+    "@storybook/addon-docs": "^10.6.0",
     "@storybook/addon-ondevice-actions": "^10.6.0",
     "@storybook/addon-ondevice-backgrounds": "^10.6.0",
     "@storybook/addon-ondevice-controls": "^10.6.0",
