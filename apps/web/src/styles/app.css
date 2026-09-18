@@ -960,6 +960,13 @@ svg { stroke-width: 1.5; }
 }
 .media-card:hover  { transform: scale(0.97); }
 .media-card:active { transform: scale(0.93); }
+/* A ranked card is the poster plus the gutter its numeral hangs into, so the
+   poster keeps its width and the title still hangs off the poster's left edge. */
+.media-card--ranked {
+  --ranked-card-w: calc(var(--poster-w) + var(--rank-cut-size) * 0.2);
+  width: var(--ranked-card-w);
+}
+.media-card--ranked .card-fav-btn { left: calc(var(--rank-cut-size) * 0.2 + 6px); }
 
 /* The actual "view details" control — a real button so Fav/Save (real
    buttons anchored to .media-card, not nested inside this one) never end up
@@ -1159,6 +1166,12 @@ svg { stroke-width: 1.5; }
   .card-share-btn { display: none; }
 }
 
+/* Inside a numeral frame the poster's bottom margin would be trapped by the
+   frame's own clipping, and the frame — not the poster — would be what the
+   numeral sits at the bottom of. The spacing moves out to the frame. */
+.rank-cut-frame > .media-card-img { margin-bottom: 0; }
+.media-card .rank-cut-frame { margin-bottom: 0.55rem; }
+
 /* The title used to carry margin-top: 1rem on top of the image's own
    margin-bottom, so the gap under a poster was two stacked spacings totalling
    1.45rem. One spacing now, on the image. min-height reserves both clamped
@@ -1182,6 +1195,85 @@ svg { stroke-width: 1.5; }
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* ═══════════════════════════════════════
+   CHART NUMERALS
+═══════════════════════════════════════ */
+
+/* A rank cut out of the artwork: a solid pink numeral standing on the poster's
+   bottom-left corner, hanging off its left edge and sinking past its bottom, and
+   clipped at both by the frame around the poster. What separates it from the
+   image is a ring of copies in the page's own colour, painted behind the glyph —
+   so where the numeral leaves the poster it merges into the page, and the poster
+   looks cut rather than labelled.
+
+   The ring is not a drop shadow and not decoration: it is an outline, and it has
+   to be drawn this way. `-webkit-text-stroke` paints over the fill instead of
+   behind it, so a stroke thick enough to read eats the numeral hollow. The 64
+   offsets below are one circle at 0.2em, so the ring scales with the numeral
+   wherever it is used and needs no per-surface value. Change the radius by
+   regenerating the circle, not by editing one offset.
+
+   A surface opts in by wrapping its poster in .rank-cut-frame, putting the
+   numeral after the poster inside it, and setting --rank-cut-size. */
+.rank-cut-frame {
+  position: relative;
+  display: block;
+  /* The gutter the numeral hangs into, and the clip that cuts it at the poster's
+     edges. The clip is load-bearing: the ring reaches 0.2em past the glyph on
+     every side, and the numeral is positioned, so without it the ring would
+     paint the page's own colour over the top of the title beneath the card. */
+  padding-left: calc(var(--rank-cut-size) * 0.2);
+  overflow: hidden;
+}
+/* When the poster itself is the control (the profile's picks, an empty Top 5
+   slot), its focus ring would be clipped away by that same overflow. The ring
+   moves out to the frame, whose own outline the clip does not touch. */
+.rank-cut-frame:has(:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-md);
+}
+.rank-cut-frame > :focus-visible { outline: none; }
+.rank-cut {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  transform: translateY(0.12em);
+  font-family: var(--font-display);
+  font-size: var(--rank-cut-size);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: var(--accent-fill);
+  text-shadow:
+    0.2em 0em 0 var(--bg), 0.199em 0.02em 0 var(--bg), 0.196em 0.039em 0 var(--bg),
+    0.191em 0.058em 0 var(--bg), 0.185em 0.077em 0 var(--bg), 0.176em 0.094em 0 var(--bg),
+    0.166em 0.111em 0 var(--bg), 0.155em 0.127em 0 var(--bg), 0.141em 0.141em 0 var(--bg),
+    0.127em 0.155em 0 var(--bg), 0.111em 0.166em 0 var(--bg), 0.094em 0.176em 0 var(--bg),
+    0.077em 0.185em 0 var(--bg), 0.058em 0.191em 0 var(--bg), 0.039em 0.196em 0 var(--bg),
+    0.02em 0.199em 0 var(--bg), 0em 0.2em 0 var(--bg), -0.02em 0.199em 0 var(--bg),
+    -0.039em 0.196em 0 var(--bg), -0.058em 0.191em 0 var(--bg), -0.077em 0.185em 0 var(--bg),
+    -0.094em 0.176em 0 var(--bg), -0.111em 0.166em 0 var(--bg), -0.127em 0.155em 0 var(--bg),
+    -0.141em 0.141em 0 var(--bg), -0.155em 0.127em 0 var(--bg), -0.166em 0.111em 0 var(--bg),
+    -0.176em 0.094em 0 var(--bg), -0.185em 0.077em 0 var(--bg), -0.191em 0.058em 0 var(--bg),
+    -0.196em 0.039em 0 var(--bg), -0.199em 0.02em 0 var(--bg), -0.2em 0em 0 var(--bg),
+    -0.199em -0.02em 0 var(--bg), -0.196em -0.039em 0 var(--bg),
+    -0.191em -0.058em 0 var(--bg), -0.185em -0.077em 0 var(--bg),
+    -0.176em -0.094em 0 var(--bg), -0.166em -0.111em 0 var(--bg),
+    -0.155em -0.127em 0 var(--bg), -0.141em -0.141em 0 var(--bg),
+    -0.127em -0.155em 0 var(--bg), -0.111em -0.166em 0 var(--bg),
+    -0.094em -0.176em 0 var(--bg), -0.077em -0.185em 0 var(--bg),
+    -0.058em -0.191em 0 var(--bg), -0.039em -0.196em 0 var(--bg),
+    -0.02em -0.199em 0 var(--bg), 0em -0.2em 0 var(--bg), 0.02em -0.199em 0 var(--bg),
+    0.039em -0.196em 0 var(--bg), 0.058em -0.191em 0 var(--bg), 0.077em -0.185em 0 var(--bg),
+    0.094em -0.176em 0 var(--bg), 0.111em -0.166em 0 var(--bg), 0.127em -0.155em 0 var(--bg),
+    0.141em -0.141em 0 var(--bg), 0.155em -0.127em 0 var(--bg), 0.166em -0.111em 0 var(--bg),
+    0.176em -0.094em 0 var(--bg), 0.185em -0.077em 0 var(--bg), 0.191em -0.058em 0 var(--bg),
+    0.196em -0.039em 0 var(--bg), 0.199em -0.02em 0 var(--bg);
+  pointer-events: none;
+  user-select: none;
 }
 
 /* ═══════════════════════════════════════
@@ -2739,9 +2831,17 @@ svg { stroke-width: 1.5; }
   }
   .top5-rest { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; }
 }
-.top5-slot { min-width: 0; }
+/* The podium's posters are grid columns, not --poster-w, and they range from a
+   116px phone shelf to about 210px beside the sidebar. Each slot is its own
+   query container so the numeral is a share of the column it lands in: 36% of
+   the slot is 39% of the poster once the numeral's own gutter is taken out. */
+.top5-slot {
+  min-width: 0;
+  container-type: inline-size;
+  --rank-cut-size: 36cqw;
+}
 .top5-slot--first .top5-poster,
-.top5-slot--first.top5-slot--empty { border-radius: var(--radius-md); }
+.top5-slot--first .top5-slot--empty { border-radius: var(--radius-md); }
 .top5-hit {
   display: flex;
   flex-direction: column;
@@ -2774,7 +2874,6 @@ svg { stroke-width: 1.5; }
 }
 .top5-hit:hover .top5-poster { transform: scale(0.98); }
 .top5-poster img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.top5-slot--first .discover-rank-badge { font-size: 3rem; left: 18px; bottom: 12px; }
 .top5-title {
   font-size: 0.82rem;
   font-weight: 600;
@@ -2786,7 +2885,8 @@ svg { stroke-width: 1.5; }
   overflow: hidden;
 }
 .top5-slot--first .top5-title { font-size: 1rem; }
-/* An unfilled rank: a dashed poster with the numeral and a hint. */
+/* An unfilled rank: a dashed poster and a hint. Its numeral is the same one a
+   filled slot carries, cut by the same frame, so the row reads as one chart. */
 .top5-slot--empty {
   display: flex;
   flex-direction: column;
@@ -2807,15 +2907,6 @@ svg { stroke-width: 1.5; }
 }
 .top5-slot--empty:hover { border-color: var(--text-secondary); color: var(--text-secondary); }
 .top5-slot--empty svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
-.top5-rank {
-  font-family: var(--font-display);
-  font-size: 1.75rem;
-  line-height: 1;
-  color: var(--accent-text);
-}
-.top5-slot--first .top5-rank { font-size: 2.75rem; }
-.top5-rank.rank-top3 { color: var(--text-secondary); }
-.top5-rank.rank-rest { color: var(--text-secondary); }
 .top5-hint {
   color: var(--text-secondary);
   font-size: 0.75rem;
@@ -2829,7 +2920,9 @@ svg { stroke-width: 1.5; }
   .top5 {
     grid-template-columns: none;
     grid-auto-flow: column;
-    grid-auto-columns: 116px;
+    /* 116px of poster plus the numeral's gutter. A literal, because the track
+       cannot be sized from a container unit the track itself defines. */
+    grid-auto-columns: 125px;
     overflow-x: auto;
     overscroll-behavior-x: contain;
     scroll-snap-type: x proximity;
@@ -2840,9 +2933,7 @@ svg { stroke-width: 1.5; }
   .top5::-webkit-scrollbar { display: none; }
   .top5-rest { display: contents; }
   .top5-slot { scroll-snap-align: start; }
-  .top5-slot--first .top5-rank { font-size: 1.75rem; }
   .top5-slot--first .top5-title { font-size: 0.82rem; }
-  .top5-slot--first .discover-rank-badge { font-size: 2rem; left: 14px; bottom: 9px; }
 }
 
 /* ── Collection covers ──
@@ -5511,24 +5602,6 @@ a.provider-chip--link:hover {
   transform: scale(1.08);
 }
 
-/* Rank badge overlaid on poster */
-.discover-rank-badge {
-  font-family: var(--font-display);
-  font-size: 2rem;
-  font-weight: 500;
-  color: var(--accent);
-  position: absolute;
-  bottom: 9px;
-  left: 14px;
-  line-height: 1;
-  z-index: 2;
-  text-shadow: 0 1px 6px rgba(0,0,0,0.75), 0 0 2px rgba(0,0,0,0.6);
-  pointer-events: none;
-  user-select: none;
-}
-.discover-rank-badge.rank-top3 { color: var(--text-secondary); }
-.discover-rank-badge.rank-rest { color: var(--text-muted); }
-
 /* Chart row */
 /* Shared "view details" hit area for list-row-style cards (discover chart
    rows, search result rows) whose real Bookmark/Heart buttons must stay
@@ -6069,7 +6142,7 @@ a.provider-chip--link:hover {
 .discover-plat-rail::-webkit-scrollbar { display: none; }
 .discover-plat-rail:active { cursor: grabbing; }
 .discover-plat-rail > .media-card { flex: 0 0 var(--poster-w); }
-.discover-plat-rail .discover-rank-badge { color: var(--accent); }
+.discover-plat-rail > .media-card--ranked { flex-basis: var(--ranked-card-w); }
 .discover-plat-arrows {
   display: flex;
   align-items: center;
