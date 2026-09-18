@@ -5,7 +5,7 @@ import type { Database, Json } from '../_shared/database.types.ts'
 type Db = SupabaseClient<Database>
 // What the sync helpers actually need off a media_integrations row.
 type IntegrationRef = { id: string; user_id: string }
-import { isSafePlexConnectionUrl } from '../_shared/plexConnectionPolicy.js'
+import { eligiblePlexServers, isSafePlexConnectionUrl } from '../_shared/plexConnectionPolicy.js'
 import { HISTORY_CONFLICT_TARGET, dedupeHistoryRows } from '../_shared/historyConflict.ts'
 import { selectTmdbMatch, tmdbIdFromGuids, yearFrom } from '../_shared/tmdbMatch.js'
 import { parsePlexItems, parsePlexResources } from '../_shared/plexXml.js'
@@ -386,23 +386,66 @@ async function fetchPlexResources(token: string) {
   return parsePlexResources(await res.text())
 }
 
-async function fetchWithTimeout(url: URL, timeoutMs = 8000) {
+const MAX_PLEX_HISTORY_BYTES = 2 * 1024 * 1024
+const MAX_PLEX_HISTORY_ITEMS = 100
+const PLEX_METADATA_CONCURRENCY = 5
+
+async function fetchPlexXmlWithTimeout(url: URL, timeoutMs = 8000, maxBytes = MAX_PLEX_HISTORY_BYTES) {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), timeoutMs)
   try {
-    return await fetch(url, {
+    const response = await fetch(url, {
       headers: { Accept: 'application/xml' },
       signal: controller.signal,
       redirect: 'error',
     })
+    const contentLength = Number(response.headers.get('content-length') || 0)
+    if (contentLength > maxBytes) throw new Error('Plex response exceeded size limit')
+    if (!response.body) return { ok: response.ok, status: response.status, text: '' }
+
+    const reader = response.body.getReader()
+    const decoder = new TextDecoder()
+    let text = ''
+    let total = 0
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      total += value.byteLength
+      if (total > maxBytes) {
+        controller.abort()
+        await reader.cancel().catch(() => {})
+        throw new Error('Plex response exceeded size limit')
+      }
+      text += decoder.decode(value, { stream: true })
+    }
+    text += decoder.decode()
+    return { ok: response.ok, status: response.status, text }
   } finally {
     clearTimeout(timeout)
+    controller.abort()
   }
 }
 
-async function fetchPlexWatched(token: string, resources: Array<Record<string, unknown>>) {
-  const servers = resources.filter(resource => resource.provides === 'server')
+async function mapWithConcurrency<T, R>(items: T[], limit: number, mapper: (item: T) => Promise<R>) {
+  const results = new Array<R>(items.length)
+  let next = 0
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (next < items.length) {
+      const index = next++
+      results[index] = await mapper(items[index])
+    }
+  })
+  await Promise.all(workers)
+  return results
+}
+
+async function fetchPlexWatched(resources: Array<Record<string, unknown>>) {
+  // The account token is valid across the Plex account and must remain limited
+  // to Plex-owned endpoints. Server resources carry a resource-scoped token;
+  // only owned resources may receive it.
+  const servers = eligiblePlexServers(resources)
   for (const server of servers) {
+    const serverToken = String(server.accessToken)
     const connections = Array.isArray(server.connections) ? server.connections as Array<Record<string, string>> : []
     for (const connection of connections) {
       if (!connection.uri) continue
@@ -414,15 +457,21 @@ async function fetchPlexWatched(token: string, resources: Array<Record<string, u
       }
       // SSRF guard: a malicious Plex server can advertise an internal address.
       if (!isSafePlexConnectionUrl(url)) continue
-      url.searchParams.set('X-Plex-Token', token)
+      url.searchParams.set('X-Plex-Token', serverToken)
       url.searchParams.set('X-Plex-Container-Start', '0')
       url.searchParams.set('X-Plex-Container-Size', '100')
       url.searchParams.set('sort', 'viewedAt:desc')
       try {
-        const res = await fetchWithTimeout(url)
+        const res = await fetchPlexXmlWithTimeout(url)
         if (!res.ok) continue
-        const rawItems = parsePlexItems(await res.text()).filter(item => item.viewedAt || item.lastViewedAt)
-        const normalized = await Promise.all(rawItems.map(item => normalizePlexItem('plex_history', item)))
+        const rawItems = parsePlexItems(res.text)
+          .filter(item => item.viewedAt || item.lastViewedAt)
+          .slice(0, MAX_PLEX_HISTORY_ITEMS)
+        const normalized = await mapWithConcurrency(
+          rawItems,
+          PLEX_METADATA_CONCURRENCY,
+          (item) => normalizePlexItem('plex_history', item),
+        )
         return {
           server,
           items: normalized.filter(item => item.tmdb_id).map((item, index) => ({
@@ -605,14 +654,24 @@ async function handlePollAuth(supabaseAdmin: Db, userId: string) {
 async function handleSync(supabaseAdmin: Db, userId: string) {
   const integration = await findPlexIntegration(supabaseAdmin, userId)
   if (!integration) return json({ error: 'Plex is not connected' }, 404)
-  const token = await decryptToken(integration.plex_token_ciphertext, integration.plex_token_iv)
+  const staleBefore = new Date(Date.now() - 5 * 60 * 1000).toISOString()
+  const { data: claimed, error: claimError } = await supabaseAdmin
+    .from('media_integrations')
+    .update({ sync_started_at: new Date().toISOString() })
+    .eq('id', integration.id)
+    .or(`sync_started_at.is.null,sync_started_at.lt.${staleBefore}`)
+    .select('id')
+    .maybeSingle()
+  if (claimError) throw claimError
+  if (!claimed) return json({ error: 'A Plex sync is already running' }, 409)
 
-  await supabaseAdmin.from('media_integrations').update({ last_error: null }).eq('id', integration.id)
   try {
+    const token = await decryptToken(integration.plex_token_ciphertext, integration.plex_token_iv)
+    await supabaseAdmin.from('media_integrations').update({ last_error: null }).eq('id', integration.id)
     const resources = await fetchPlexResources(token)
     const [watchlistItems, watched] = await Promise.all([
       fetchPlexWatchlist(token),
-      fetchPlexWatched(token, resources),
+      fetchPlexWatched(resources),
     ])
     const counts = await upsertSnapshot(supabaseAdmin, integration, watchlistItems, watched.items)
     const outboxProcessed = await processOutbox(supabaseAdmin, integration, token)
@@ -627,6 +686,7 @@ async function handleSync(supabaseAdmin: Db, userId: string) {
         last_error: historyStatus === 'unavailable' ? 'Plex Watchlist synced. Watched history is unavailable because no Plex server was reachable.' : null,
         plex_servers: resources,
         selected_server: selectedServer ? asJson(selectedServer) : null,
+        sync_started_at: null,
       })
       .eq('id', integration.id)
       .select('id, provider, display_name, status, last_sync_at, last_error, created_at, plex_account, plex_servers, selected_server')
@@ -635,7 +695,11 @@ async function handleSync(supabaseAdmin: Db, userId: string) {
 
     return json({ ok: true, integration: data, ...counts, outboxProcessed, historyStatus })
   } catch (err) {
-    await supabaseAdmin.from('media_integrations').update({ status: 'error', last_error: (err as Error).message }).eq('id', integration.id)
+    await supabaseAdmin.from('media_integrations').update({
+      status: 'error',
+      last_error: (err as Error).message,
+      sync_started_at: null,
+    }).eq('id', integration.id)
     throw err
   }
 }

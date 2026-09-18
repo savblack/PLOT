@@ -12,6 +12,7 @@ import { getPremiumCheckoutIntent, rememberPremiumCheckoutIntent } from '../util
 import { COMMON } from '../copy/common.js';
 import { AUTH_PAGE } from '../copy/authPage.js';
 import { authErrorReason } from '@plot/core/authErrors.js';
+import { markSignupReferralPending } from '../utils/attribution.js';
 
 const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY;
 
@@ -209,6 +210,10 @@ export default function AuthPage({ initialMode = 'signup' }) {
         // session — carrying first-touch attribution — stitches to this user.
         identifyUser(data.user?.id, { email: data.user?.email || email });
         track(EVENTS.USER_SIGNED_UP, { method: 'email' });
+        // Supabase returns an obfuscated user with no identities when the email
+        // already exists. Only a genuinely new account may authorize the
+        // referral follow mutation after signup.
+        if (data.user?.identities?.length) markSignupReferralPending(data.user.email || email);
         // Confirm email is off, so signUp returns a live session immediately —
         // let them straight into the app instead of gating on the inbox click.
         // Users still get the confirmation email and can verify any time from
@@ -228,8 +233,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
   // failed: the Edge Function does its own bot mitigation (honeypot, submit
   // timing, per-IP rate limit) and creates the account via the Admin API,
   // bypassing the need for a Turnstile token. On success it hands back a
-  // magic-link token_hash we verify client-side to get a live session
-  // immediately — no "check your email" round-trip for this path.
+  // confirmation link delivered only to the supplied mailbox.
   const submitViaBypass = async () => {
     const { data, error } = await supabase.functions.invoke('signup-bypass', {
       method: 'POST',
@@ -247,7 +251,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
       track(EVENTS.SIGNUP_SUBMIT_FAILED, { reason: `bypass_${data.reason || 'unknown'}` });
       return;
     }
-    if (!data?.token_hash) {
+    if (!data?.requires_email_confirmation) {
       // Honeypot/timing fake-success — indistinguishable from a real success
       // response, but no account was actually created. A genuine user can
       // never hit this branch (the honeypot field is invisible to humans).
@@ -255,20 +259,9 @@ export default function AuthPage({ initialMode = 'signup' }) {
       setSuccess(true);
       return;
     }
-    const { data: verifyData, error: verifyError } = await supabase.auth.verifyOtp({
-      token_hash: data.token_hash,
-      type: 'magiclink',
-    });
-    if (verifyError) {
-      setError(friendlyError(verifyError.message));
-      setLoading(false);
-      track(EVENTS.SIGNUP_SUBMIT_FAILED, { reason: 'bypass_verify_failed' });
-      return;
-    }
-    identifyUser(verifyData.user?.id, { email: verifyData.user?.email || email });
-    track(EVENTS.USER_SIGNED_UP, { method: 'bypass' });
-    const plan = getPremiumCheckoutIntent();
-    navigate(plan ? `/pricing?billing=${plan}` : '/onboarding');
+    markSignupReferralPending(email);
+    setLoading(false);
+    setSuccess(true);
   };
 
   // OAuth: hand off to the provider. We can't fire the signup/login event here

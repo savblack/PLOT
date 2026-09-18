@@ -70,7 +70,10 @@ Deno.serve(async (req) => {
     .filter(Boolean)
 
   if (attachmentPaths.length > 0) {
-    const { error: storageError } = await supabaseAdmin.storage.from('feedback-attachments').remove(attachmentPaths)
+    // Delete through the caller's authenticated client so Storage RLS verifies
+    // object ownership. A service-role delete would turn a caller-controlled
+    // URL in their feedback row into authority over somebody else's object.
+    const { error: storageError } = await supabaseClient.storage.from('feedback-attachments').remove(attachmentPaths)
     if (storageError) return jsonError(storageError.message || 'Failed to delete feedback attachments.')
   }
 

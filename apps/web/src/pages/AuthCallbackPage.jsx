@@ -7,6 +7,7 @@ import { authErrorReason } from '@plot/core/authErrors.js';
 import PlotLogo from '../components/PlotLogo.jsx';
 import { AUTH_PAGE } from '../copy/authPage.js';
 import { AUTH_CALLBACK_PAGE } from '../copy/authCallbackPage.js';
+import { markSignupReferralPending } from '../utils/attribution.js';
 
 // Report a sign-in that died here. Unlike reportAuth this fires even with no
 // method marker: an expired confirmation link opened in a fresh tab has none, and
@@ -58,6 +59,7 @@ function reportAuth(session, method) {
   identifyUser(user.id, { email: user.email });
   const createdMs = user.created_at ? Date.parse(user.created_at) : 0;
   const isNew = createdMs > 0 && (Date.now() - createdMs) < 60_000;
+  if (isNew) markSignupReferralPending(user.email);
   track(isNew ? EVENTS.USER_SIGNED_UP : EVENTS.USER_LOGGED_IN, { method });
 }
 

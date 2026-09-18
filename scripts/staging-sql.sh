@@ -17,6 +17,7 @@
 #
 # Requires: brew install postgresql@17
 set -uo pipefail
+export PATH="/opt/homebrew/opt/postgresql@17/bin:$PATH"
 
 STAGING_REF=uzrhfivnhdcfieuaxzip
 FILE="${1:?usage: staging-sql.sh <file.sql>}"

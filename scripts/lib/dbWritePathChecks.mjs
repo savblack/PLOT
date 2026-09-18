@@ -249,3 +249,83 @@ export function describeDbUrlShape(raw) {
       + 'Supabase (a rotated password pasted in on its own does this)',
   };
 }
+
+/**
+ * Parse a libpq URI or keyword/value connection string without dropping any
+ * options. The result is suitable for a protected pg_service.conf file, which
+ * keeps both the password and TLS settings out of process arguments.
+ *
+ * @param {string | undefined} raw
+ * @returns {Record<string, string> | null}
+ */
+export function parseDbConnectionOptions(raw) {
+  const value = String(raw ?? '').trim();
+
+  if (/^postgres(ql)?:\/\//i.test(value)) {
+    let parsed;
+    try { parsed = new URL(value); } catch { return null; }
+    if (!parsed.hostname) return null;
+
+    const options = Object.fromEntries(parsed.searchParams.entries());
+    options.host = parsed.hostname.replace(/^\[|\]$/g, '');
+    if (parsed.port) options.port = parsed.port;
+    if (parsed.username) options.user = decodeURIComponent(parsed.username);
+    if (parsed.password) options.password = decodeURIComponent(parsed.password);
+    const database = decodeURIComponent(parsed.pathname.replace(/^\//, ''));
+    if (database) options.dbname = database;
+    return options;
+  }
+
+  const options = {};
+  let index = 0;
+  while (index < value.length) {
+    while (/\s/.test(value[index] ?? '')) index += 1;
+    if (index >= value.length) break;
+
+    const keyMatch = /^[A-Za-z_][A-Za-z0-9_]*/.exec(value.slice(index));
+    if (!keyMatch) return null;
+    const key = keyMatch[0].toLowerCase();
+    index += keyMatch[0].length;
+    while (/\s/.test(value[index] ?? '')) index += 1;
+    if (value[index] !== '=') return null;
+    index += 1;
+    while (/\s/.test(value[index] ?? '')) index += 1;
+
+    let option = '';
+    if (value[index] === "'") {
+      index += 1;
+      let closed = false;
+      while (index < value.length) {
+        const char = value[index++];
+        if (char === '\\' && index < value.length) option += value[index++];
+        else if (char === "'") { closed = true; break; }
+        else option += char;
+      }
+      if (!closed || (index < value.length && !/\s/.test(value[index]))) return null;
+    } else {
+      while (index < value.length && !/\s/.test(value[index])) {
+        const char = value[index++];
+        option += char === '\\' && index < value.length ? value[index++] : char;
+      }
+    }
+    options[key] = option;
+  }
+
+  return Object.keys(options).length > 0 ? options : null;
+}
+
+/** Encode connection options as a single libpq service definition. */
+export function serializePgService(name, options) {
+  if (!/^[A-Za-z0-9_-]+$/.test(name)) throw new Error('Invalid PostgreSQL service name.');
+  const lines = [`[${name}]`];
+  for (const [key, rawValue] of Object.entries(options)) {
+    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(key)) throw new Error('Invalid PostgreSQL option name.');
+    const value = String(rawValue);
+    if (/[\r\n\0]/.test(value)) throw new Error('Invalid control character in PostgreSQL option.');
+    // pg_service.conf is INI-like rather than conninfo: quotes are literal.
+    // Everything after the first '=' is the value, so control-character
+    // rejection is the injection boundary and punctuation needs no escaping.
+    lines.push(`${key}=${value}`);
+  }
+  return `${lines.join('\n')}\n`;
+}

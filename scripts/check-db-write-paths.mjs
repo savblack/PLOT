@@ -51,12 +51,14 @@
 // no new secret is needed. Read-only either way.
 
 import { execFileSync } from 'node:child_process';
-import { readdirSync, readFileSync } from 'node:fs';
+import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
   colKey, resolveConflictTargets, extractTableRefs,
   extractStringConstants, extractAppConflictTargets,
-  projectPendingSchema, describeDbUrlShape,
+  projectPendingSchema, describeDbUrlShape, parseDbConnectionOptions,
+  serializePgService,
 } from './lib/dbWritePathChecks.mjs';
 
 // Two transports so this runs both locally and in CI without a new secret:
@@ -114,24 +116,28 @@ async function query(sql) {
   // json_agg cell comes back parseable. Empty result → 'null'.
   const wrapped = `select coalesce(json_agg(t), '[]'::json) from (${sql.replace(/;\s*$/, '')}) t`;
   //
-  // Keep the credential out of argv when we can. Process arguments are
+  // Keep the credential and every connection option out of argv. Process arguments are
   // world-readable (`ps`, /proc/*/cmdline), so a password passed this way is
   // exposed to every other process on the machine for the life of the call —
   // on every run, not just failures.
   //
-  // connEnv understands the two conninfo shapes libpq documents. When it
-  // recognises the string, the parts go through the environment and argv holds
-  // only the query. When it does not, the string goes to psql exactly as it
-  // always has: psql's parser is authoritative, and a parser of mine that must
-  // be RIGHT about an unfamiliar input is a parser that can break this gate.
-  // Three attempts at a version without that fallback did break it.
-  const parsed = connEnv(DB_URL);
-  const pgEnv = parsed ? { ...process.env, ...parsed } : process.env;
-  const connArgs = parsed ? [] : [DB_URL];
+  // A mode-0600 libpq service file preserves sslmode, sslrootcert,
+  // channel_binding and every other supplied option. The previous PG* mapping
+  // silently discarded those options and weakened a verified connection.
+  const parsed = parseDbConnectionOptions(DB_URL);
+  if (!parsed) throw new Error('SUPABASE_DB_URL could not be parsed safely.');
+  const serviceDir = mkdtempSync(join(tmpdir(), 'plot-db-check-'));
+  const serviceFile = join(serviceDir, 'pg_service.conf');
+  writeFileSync(serviceFile, serializePgService('plot_write_path_check', parsed), { mode: 0o600 });
+  const pgEnv = {
+    ...process.env,
+    PGSERVICE: 'plot_write_path_check',
+    PGSERVICEFILE: serviceFile,
+  };
 
   let out;
   try {
-    out = execFileSync('psql', ['-X', '-tAc', wrapped, ...connArgs], {
+    out = execFileSync('psql', ['-X', '-tAc', wrapped], {
       encoding: 'utf8', maxBuffer: 32 * 1024 * 1024, env: pgEnv,
     }).trim();
   } catch (err) {
@@ -142,11 +148,12 @@ async function query(sql) {
     if (err?.code === 'ENOENT') {
       console.error('psql not found. Production is PG17: brew install postgresql@17');
       console.error('and put it on PATH, e.g. PATH="/opt/homebrew/opt/postgresql@17/bin:$PATH"');
+      rmSync(serviceDir, { recursive: true, force: true });
       process.exit(1);
     }
     const redact = (t) => {
       let out = String(t ?? '');
-      for (const secret of [DB_URL, parsed?.PGPASSWORD]) {
+      for (const secret of [DB_URL, parsed.password]) {
         if (secret) out = out.split(secret).join('«redacted»');
       }
       return out;
@@ -165,52 +172,12 @@ async function query(sql) {
       console.error(`  contains "@": ${DB_URL.includes('@')}   contains "=": ${DB_URL.includes('=')}`);
       console.error('Expected either postgresql://user:pw@host:port/db or host=… user=… password=…');
     }
+    rmSync(serviceDir, { recursive: true, force: true });
     process.exit(1);
+  } finally {
+    rmSync(serviceDir, { recursive: true, force: true });
   }
   return JSON.parse(out || '[]');
-}
-
-/**
- * Split a libpq connection string into PG* environment variables, so the
- * password never reaches argv.
- *
- * Handles the URI form (postgresql://user:pw@host:port/db) and the
- * keyword/value form (host=… port=… user=… password=… dbname=…).
- *
- * Returns null when it does not recognise the shape. Null is NOT an error: the
- * caller hands the string to psql instead, whose parser is authoritative. That
- * fallback is why this can only ever improve things — it cannot break a gate
- * that was working. Never throws, and never echoes the input, which is a
- * credential.
- */
-function connEnv(conn) {
-  const raw = String(conn ?? '').trim();
-
-  if (/^postgres(ql)?:\/\//i.test(raw)) {
-    let u;
-    try { u = new URL(raw); } catch { return null; }
-    if (!u.hostname) return null;
-    return {
-      PGHOST: u.hostname,
-      PGPORT: u.port || '5432',
-      PGUSER: decodeURIComponent(u.username),
-      PGPASSWORD: decodeURIComponent(u.password),
-      PGDATABASE: u.pathname.replace(/^\//, '') || 'postgres',
-    };
-  }
-
-  const kv = {};
-  for (const [, k, q, v] of raw.matchAll(/(\w+)\s*=\s*(?:'((?:[^'\\]|\\.)*)'|(\S+))/g)) {
-    kv[k.toLowerCase()] = (q ?? v ?? '').replace(/\\(.)/g, '$1');
-  }
-  if (!kv.host) return null;
-  return {
-    PGHOST: kv.host,
-    PGPORT: kv.port || '5432',
-    PGUSER: kv.user || 'postgres',
-    PGPASSWORD: kv.password || '',
-    PGDATABASE: kv.dbname || 'postgres',
-  };
 }
 
 const problems = [];
