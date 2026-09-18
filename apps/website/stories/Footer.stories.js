@@ -1,7 +1,7 @@
 // Renders the actual apps/website/_partials/footer.html contents (raw import)
 // so this story can never drift from what the live pages include.
 import footerHtml from '../_partials/footer.html?raw';
-import './footer.mirror.css';
+import '../ui.css';
 
 export default {
   title: 'Foundations/Footer',

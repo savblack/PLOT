@@ -1,10 +1,7 @@
 // Documents the .btn / .btn-primary / .btn-outline / .btn-outline-white
 // pattern used across apps/website/index.html, about.html, plans.html.
-// These rules aren't in a shared file on the live site (each page currently
-// carries its own inline copy) — see buttons.mirror.css for why this story
-// needs its own stylesheet, and keep the two in sync if a page's .btn rules
-// change.
-import './buttons.mirror.css';
+// The live site and this story both read the canonical rules from ui.css.
+import '../ui.css';
 
 export default {
   title: 'Foundations/Buttons',

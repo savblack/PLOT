@@ -1,3 +1,0 @@
-/* The button rules used to be duplicated inline per page and mirrored here.
-   They now live in one shared file, so this just pulls it in. */
-@import '../ui.css';
