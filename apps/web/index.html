@@ -20,7 +20,7 @@
         function showFallback() {
           try {
             var root = document.getElementById('root');
-            if (!root || root.firstChild) return;
+            if (!root || (root.firstChild && !root.querySelector('[data-initial-app-loader]'))) return;
             root.innerHTML =
               '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;' +
               'padding:1.5rem;font-family:Georgia,serif;color:#1a1a1a;background:#faf9f7;text-align:center">' +
@@ -32,6 +32,7 @@
               'Reload</button></div></div>';
           } catch (e) {}
         }
+        window.__plotShowStartupFallback = showFallback;
 
         try {
           window.addEventListener('error', function (event) {
@@ -97,9 +98,49 @@
         } catch (e) {}
       })();
     </script>
+    <!-- React cannot paint until its entry graph has downloaded and executed.
+         Keep the existing PLOT loader in the initial document so slow devices
+         get useful pixels immediately; React replaces it on its first commit. -->
+    <style data-critical="app-boot-loader">
+      html, body, #root { height: 100%; margin: 0; }
+      body { background: #f8f2ea; }
+      [data-theme="dark"] body { background: #0c0c0c; }
+      .app-boot-loader {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        place-items: center;
+      }
+      .initial-wordmark {
+        display: inline-flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.28em;
+        width: fit-content;
+        color: #292924;
+        font: 700 30px/1 system-ui, sans-serif;
+        letter-spacing: -0.045em;
+      }
+      [data-theme="dark"] .initial-wordmark { color: #f8f2ea; }
+      .initial-wordmark::after {
+        content: '';
+        display: block;
+        width: 100%;
+        height: 0.14em;
+        border-radius: 999px;
+        background: #ff88c8;
+      }
+      @media (max-width: 720px) {
+        .initial-wordmark { font-size: 26px; }
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
+    <div id="root">
+      <div class="app-boot-loader" data-initial-app-loader>
+        <span class="initial-wordmark" role="img" aria-label="Loading PLOT">plot</span>
+      </div>
+    </div>
+    <script type="module" async src="/src/main.jsx"></script>
   </body>
 </html>
