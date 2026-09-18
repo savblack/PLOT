@@ -49,7 +49,7 @@ export function Gallery(){
  // In this isolated gallery, sharing opens a payload preview instead of contacting another app.
  Object.defineProperty(navigator,'share',{configurable:true,value:async data=>setPayload(data)});
  const choose=id=>{setActive(id);setRecipient(false);setPayload(null);};
- return <><header className="gallery-header"><span className="wordmark">PLOT</span><span className="preview-label">Sharing preview · Sample account</span></header>
+ return <><header className="gallery-header"><span className="wordmark">plot</span><span className="preview-label">Sharing preview · Sample account</span></header>
  <main className="gallery"><aside><p className="eyebrow">Made to be passed on</p><h1>Good stories.<br/>Better together.</h1><p className="intro">Explore each sharing flow, from the button you tap to the page your friend sees.</p><nav>{sections.map(([id,n,label,desc])=><button key={id} className={active===id?'active':''} onClick={()=>choose(id)}><span className="number">{n}</span><span><strong>{label}</strong><small>{desc}</small></span></button>)}</nav><p className="fine">Actual web components with fictional account data. Share buttons show the outgoing message here; nothing is sent.</p></aside>
  <section className="stage"><div className="stage-toolbar"><span>{sections.find(s=>s[0]===active)?.[2]}</span><div className="switch"><button className={!recipient?'selected':''} onClick={()=>setRecipient(false)}>You share</button><button className={recipient?'selected':''} onClick={()=>setRecipient(true)}>They receive</button></div></div>
  <div className="screen" key={`${active}-${recipient}`}>

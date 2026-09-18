@@ -20,7 +20,7 @@ export const FOOTER_PARTIAL = {
   },
   copyright: (year) => `© ${year} plot`,
   socialAria: {
-    instagram: 'PLOT on Instagram',
+    instagram: 'plot on Instagram',
     threads: 'plot on Threads',
     x: 'plot on X',
   },

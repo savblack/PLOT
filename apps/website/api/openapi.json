@@ -1,0 +1,180 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "PLOT public API",
+    "version": "1.0.0",
+    "summary": "The endpoints theplot.tv serves to anyone, without an account.",
+    "description": "PLOT is a film and television companion. This description covers the only endpoints theplot.tv offers publicly: newsletter and waitlist signup, and a health check for them. There is no public API for member data. Watch history, lists, ratings and private notes are reachable only through an authenticated session in the PLOT app, and no part of this API exposes them.",
+    "contact": {
+      "name": "PLOT",
+      "url": "https://theplot.tv/about.html"
+    }
+  },
+  "externalDocs": {
+    "description": "PLOT public API documentation",
+    "url": "https://theplot.tv/api/docs.md"
+  },
+  "servers": [
+    {
+      "url": "https://theplot.tv",
+      "description": "Production"
+    }
+  ],
+  "paths": {
+    "/api/newsletter": {
+      "get": {
+        "operationId": "getUnsubscribe",
+        "summary": "Unsubscribe confirmation page",
+        "description": "Opens the confirmation page for an unsubscribe link sent in a PLOT email. The token comes from that email; there is no way to obtain one for an address you do not control.",
+        "parameters": [
+          { "$ref": "#/components/parameters/action" },
+          { "$ref": "#/components/parameters/token" }
+        ],
+        "responses": {
+          "200": { "$ref": "#/components/responses/HtmlPage" },
+          "400": { "$ref": "#/components/responses/HtmlPage" },
+          "404": { "$ref": "#/components/responses/HtmlPage" }
+        }
+      },
+      "post": {
+        "operationId": "subscribe",
+        "summary": "Subscribe an email address, or complete an unsubscribe",
+        "description": "Without query parameters, subscribes the address in the request body to the PLOT digest, or to the mobile app waitlist when list is mobile-app. The response is the same whether or not the address was already subscribed, so it cannot be used to test whether someone has an account. With action=unsubscribe and a token, the request body is ignored and the subscription is ended; email clients use this form for one-click unsubscribe.",
+        "parameters": [
+          { "$ref": "#/components/parameters/action" },
+          { "$ref": "#/components/parameters/token" }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/Subscription" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Subscribed, or unsubscribed when action=unsubscribe was given.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Ok" }
+              },
+              "text/html": {
+                "schema": { "type": "string" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/Error" },
+          "429": {
+            "description": "Too many signup attempts from one address. Retry after the period given in Retry-After.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before retrying.",
+                "schema": { "type": "integer" }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "500": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api/health": {
+      "get": {
+        "operationId": "health",
+        "summary": "Health of the public endpoints listed in the API catalog",
+        "description": "Reports whether theplot.tv is serving this API. It makes no calls of its own, so it answers for this host only and never for the systems behind it.",
+        "responses": {
+          "200": {
+            "description": "The API is serving.",
+            "content": {
+              "application/health+json": {
+                "schema": { "$ref": "#/components/schemas/Health" }
+              }
+            }
+          },
+          "405": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    }
+  },
+  "components": {
+    "parameters": {
+      "action": {
+        "name": "action",
+        "in": "query",
+        "required": false,
+        "description": "Set to unsubscribe to work with an existing subscription instead of creating one.",
+        "schema": { "type": "string", "enum": ["unsubscribe"] }
+      },
+      "token": {
+        "name": "token",
+        "in": "query",
+        "required": false,
+        "description": "The unsubscribe token from a PLOT email. Required when action=unsubscribe.",
+        "schema": { "type": "string" }
+      }
+    },
+    "schemas": {
+      "Subscription": {
+        "type": "object",
+        "required": ["email"],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 254,
+            "description": "The address to subscribe. Subscribe only an address you own or have been asked to subscribe."
+          },
+          "list": {
+            "type": "string",
+            "enum": ["mobile-app"],
+            "description": "Omit for the weekly PLOT digest. Use mobile-app to join the app launch waitlist instead."
+          },
+          "source": {
+            "type": "string",
+            "pattern": "^[a-z0-9-]{1,32}$",
+            "description": "Optional slug recording which form a waitlist signup came from. Anything else is replaced with the default."
+          }
+        }
+      },
+      "Ok": {
+        "type": "object",
+        "properties": {
+          "ok": { "type": "boolean", "const": true }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": { "type": "string" }
+        }
+      },
+      "Health": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "string", "enum": ["pass", "fail"] },
+          "description": { "type": "string" }
+        }
+      }
+    },
+    "responses": {
+      "HtmlPage": {
+        "description": "An HTML page for the person who followed the link.",
+        "content": {
+          "text/html": { "schema": { "type": "string" } }
+        }
+      },
+      "Error": {
+        "description": "The request was not accepted.",
+        "content": {
+          "application/json": { "schema": { "$ref": "#/components/schemas/Error" } }
+        }
+      }
+    }
+  }
+}

@@ -46,14 +46,6 @@ export function TrashIcon() {
   );
 }
 
-// Matches Home's chart ranks: accent for #1, secondary for the rest of the
-// podium, muted beyond that.
-function rankClass(rank) {
-  if (rank === 1) return '';
-  if (rank <= 3)  return ' rank-top3';
-  return ' rank-rest';
-}
-
 /* ── Search sheet for Top 10 additions ── */
 export function AddToRankModal({ listType, rank, onAdd, onClose }) {
   const { user } = useApp();
@@ -783,9 +775,9 @@ export function CustomListSection({ list, customLists, typeFilters, genreFilters
 }
 
 /* ── Top 5: a podium, one per type behind a Movies / TV switch ──
-   #1 gets the room and the accent numeral; 2-5 sit beside it. Five slots is a
-   list people finish, where ten was mostly dashed boxes. Reordering is the
-   arrow pair under each card while editing. */
+   #1 gets the room; 2-5 sit beside it, every rank a numeral cut out of its
+   poster's corner. Five slots is a list people finish, where ten was mostly
+   dashed boxes. Reordering is the arrow pair under each card while editing. */
 export function TopFiveSection({ topLists, Frame = ListSection }) {
   const { openPanel } = useApp();
   const [listType,   setListType]   = useState('movies');
@@ -802,17 +794,20 @@ export function TopFiveSection({ topLists, Frame = ListSection }) {
     const cls  = `top5-slot top5-slot--${rank === 1 ? 'first' : 'rest'}`;
     if (!item) {
       return (
-        <button
-          key={rank}
-          type="button"
-          className={`${cls} top5-slot--empty interactive-surface`}
-          onClick={() => setAddingRank(rank)}
-          aria-label={`Add your #${rank} ${typeLabel}`}
-        >
-          <span className={`top5-rank${rankClass(rank)}`}>{rank}</span>
-          <PlusIcon />
-          <span className="top5-hint">{rank === 1 ? "What's your GOAT?" : 'Add a title'}</span>
-        </button>
+        <div key={rank} className={cls}>
+          <span className="rank-cut-frame">
+            <button
+              type="button"
+              className="top5-slot--empty interactive-surface"
+              onClick={() => setAddingRank(rank)}
+              aria-label={`Add your #${rank} ${typeLabel}`}
+            >
+              <PlusIcon />
+              <span className="top5-hint">{rank === 1 ? "What's your GOAT?" : 'Add a title'}</span>
+            </button>
+            <span className="rank-cut">{rank}</span>
+          </span>
+        </div>
       );
     }
     const img = posterUrl(item.poster_path, rank === 1 ? 'w342' : 'w185');
@@ -824,9 +819,11 @@ export function TopFiveSection({ topLists, Frame = ListSection }) {
           onClick={() => openPanel(item.tmdb_id, item.media_type)}
           aria-label={`View details for ${item.title}`}
         >
-          <span className="top5-poster">
-            {img ? <img src={img} alt="" loading="lazy" /> : <span className="mylists-card-placeholder">{item.title}</span>}
-            <span className={`discover-rank-badge${rankClass(rank)}`}>{rank}</span>
+          <span className="rank-cut-frame">
+            <span className="top5-poster">
+              {img ? <img src={img} alt="" loading="lazy" /> : <span className="mylists-card-placeholder">{item.title}</span>}
+            </span>
+            <span className="rank-cut">{rank}</span>
           </span>
           <span className="top5-title">{item.title}</span>
         </button>

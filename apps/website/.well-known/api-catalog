@@ -1,0 +1,35 @@
+{
+  "linkset": [
+    {
+      "anchor": "https://theplot.tv/api/newsletter",
+      "service-desc": [
+        {
+          "href": "https://theplot.tv/api/openapi.json",
+          "type": "application/openapi+json",
+          "title": "PLOT public API description (OpenAPI 3.1)"
+        }
+      ],
+      "service-doc": [
+        {
+          "href": "https://theplot.tv/api/docs.md",
+          "type": "text/markdown",
+          "title": "PLOT public API documentation"
+        }
+      ],
+      "status": [
+        {
+          "href": "https://theplot.tv/api/health",
+          "type": "application/health+json",
+          "title": "PLOT public API health"
+        }
+      ],
+      "describedby": [
+        {
+          "href": "https://theplot.tv/llms.txt",
+          "type": "text/plain",
+          "title": "PLOT agent guidance"
+        }
+      ]
+    }
+  ]
+}

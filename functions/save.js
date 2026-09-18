@@ -5,12 +5,12 @@
 //
 // The /save deep link is where shared title links point (see utils/share.js).
 // Serves the SPA shell but rewrites the OG/Twitter tags for the requested title,
-// with og:image pointing at the OG Worker. Humans boot the SPA and the
+// with og:image pointing at the title's TMDB backdrop. Humans boot the SPA and the
 // pending-save flow runs; crawlers read the injected per-title tags.
 //
 // Routing: file path functions/save.js → /save (query string passes through).
 import { loadTitle } from './_lib/tmdb.js';
-import { ogBase } from './_lib/og-base.js';
+import { staticCard, STATIC_CARD, TMDB_BACKDROP } from './_lib/og-card.js';
 
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
@@ -26,7 +26,7 @@ export async function onRequest({ request, env }) {
     const shell = await fetch(`https://${host}/index.html`, { headers: { accept: 'text/html' } });
     html = await shell.text();
   } catch {
-    return new Response('<!doctype html><meta charset="utf-8"><title>PLOT</title>', {
+    return new Response('<!doctype html><meta charset="utf-8"><title>plot</title>', {
       status: 502, headers: { 'Content-Type': 'text/html; charset=utf-8' },
     });
   }
@@ -41,11 +41,16 @@ export async function onRequest({ request, env }) {
   if (title && title.title) {
     const id = Number(tmdbId);
     const yearStr = title.year ? ` (${title.year})` : '';
-    const ogTitle = `${title.title}${yearStr} on PLOT`;
+    const ogTitle = `${title.title}${yearStr} on plot`;
     const desc = title.overview
       ? (title.overview.length > 180 ? `${title.overview.slice(0, 177)}…` : title.overview)
-      : `Save ${title.title} to your watchlist on PLOT.`;
-    const image = `${ogBase(host, env)}?type=${title.type}&id=${id}`;
+      : `Save ${title.title} to your watchlist on plot.`;
+    // Artwork over a rendered card: see functions/_lib/og-card.js. Not every
+    // title has a backdrop — older and obscure ones often carry only a poster,
+    // and a 2:3 poster in a 1.91:1 slot crops badly — so those take the card.
+    const image = title.backdrop || staticCard(host);
+    const { width: imgW, height: imgH } = title.backdrop ? TMDB_BACKDROP : STATIC_CARD;
+    const imgAlt = title.backdrop ? `${title.title}${yearStr}` : 'plot';
     const url = `https://${host}/save?media_type=${title.type}&tmdb_id=${id}`;
     const tags =
       `<meta property="og:type" content="video.other"/>` +
@@ -53,8 +58,9 @@ export async function onRequest({ request, env }) {
       `<meta property="og:description" content="${esc(desc)}"/>` +
       `<meta property="og:url" content="${esc(url)}"/>` +
       `<meta property="og:image" content="${esc(image)}"/>` +
-      `<meta property="og:image:width" content="1200"/>` +
-      `<meta property="og:image:height" content="630"/>` +
+      `<meta property="og:image:alt" content="${esc(imgAlt)}"/>` +
+      `<meta property="og:image:width" content="${imgW}"/>` +
+      `<meta property="og:image:height" content="${imgH}"/>` +
       `<meta name="twitter:card" content="summary_large_image"/>` +
       `<meta name="twitter:title" content="${esc(ogTitle)}"/>` +
       `<meta name="twitter:description" content="${esc(desc)}"/>` +

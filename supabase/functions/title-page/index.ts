@@ -93,64 +93,139 @@ const GTM_NOSCRIPT = `<noscript><iframe src="https://www.googletagmanager.com/ns
 const STYLE = `
 /* Self-hosted from apps/website/fonts — this function is proxied under
    theplot.tv, so an absolute path resolves against that origin regardless
-   of where the HTML itself is generated. */
+   of where the HTML itself is generated. Gabarito is the display face
+   (--display); it was referenced here long before it was ever loaded. */
 @font-face { font-family: 'DM Sans'; src: url('${SITE}/fonts/DMSans-Variable.woff2') format('woff2'); font-weight: 100 900; font-style: normal; font-display: swap; }
-:root{--ink:#0c0c0c;--paper:#F4F4F5;--pink:#E05578;--mut:#6b6b70;--faint:#a1a1a6;--hair:rgba(12,12,12,0.14);--serif:'Gabarito', 'DM Sans', system-ui, sans-serif;--ease:cubic-bezier(0.23,1,0.32,1);}
+@font-face { font-family: 'Gabarito'; src: url('${SITE}/fonts/Gabarito-Variable.woff2') format('woff2'); font-weight: 400 900; font-style: normal; font-display: swap; }
+/* Warm brand system — mirrors apps/website/theme.css. The pink is a FILL
+   behind charcoal text and never carries type; --accent is the pink for small
+   text accents, --accent-2 the green, --sage its fill for kind/availability. */
+:root{--ink:#292924;--bg:#f8f2ea;--surface:#f1e9dc;--mut:#5f5a52;--faint:#a39c91;--rule:rgba(41,41,36,0.12);--accent:#E05578;--fill:#ff88c8;--fill-hover:#ff9fd3;--accent-2:#5F7030;--sage:#dbe1b0;--display:'Gabarito','DM Sans',system-ui,sans-serif;--ease:cubic-bezier(0.23,1,0.32,1);}
 *{margin:0;padding:0;box-sizing:border-box;}
-body{background:#fff;color:var(--ink);font-family:'DM Sans',system-ui,sans-serif;line-height:1.6;position:relative;}
-body::before{content:'';position:fixed;inset:0;pointer-events:none;opacity:.035;z-index:10;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-size:200px 200px;}
+body{background:var(--bg);color:var(--ink);font-family:'DM Sans',system-ui,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased;}
 a{color:inherit;}
 nav.topnav{position:fixed;top:0;left:0;right:0;z-index:100;padding:0 2rem;height:64px;display:flex;align-items:center;justify-content:space-between;background:transparent;transition:background .3s var(--ease),backdrop-filter .3s var(--ease);}
-nav.topnav.scrolled{background:rgba(255,255,255,.8);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);}
-.nav-logo{text-decoration:none;display:flex;align-items:center;font-family:var(--display);font-size:1.7rem;font-weight:400;letter-spacing:-.05em;color:var(--ink);line-height:1;}
-.nav-links{display:flex;align-items:center;gap:2rem;list-style:none;}
+nav.topnav.scrolled{background:rgba(248,242,234,.86);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);}
+.nav-logo{text-decoration:none;display:flex;align-items:center;font-family:var(--display);font-size:1.6rem;font-weight:700;letter-spacing:-.045em;color:var(--ink);line-height:1;}
+.nav-links{display:flex;align-items:center;gap:1.75rem;list-style:none;}
 .nav-links li{display:flex;}
-.nav-links a{display:inline-block;padding:.75rem .25rem;text-decoration:none;color:var(--mut);font-size:.7rem;font-weight:200;letter-spacing:.12em;text-transform:uppercase;transition:color .2s;}
+.nav-links a{display:inline-block;padding:.75rem .25rem;text-decoration:none;color:var(--mut);font-size:.69rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;transition:color .2s;}
 .nav-links a:hover{color:var(--ink);}
-.nav-cta{color:var(--ink)!important;font-weight:300!important;}
+.nav-cta{background:var(--fill);color:var(--ink)!important;font-weight:700!important;padding:.55rem 1rem!important;border-radius:999px;}
+.nav-cta:hover{background:var(--fill-hover);}
 .nav-hamburger{display:none;background:none;border:none;cursor:pointer;padding:14px 12px;margin-right:-12px;flex-direction:column;gap:5px;}
 .nav-hamburger span{display:block;width:22px;height:2px;background:var(--ink);border-radius:2px;transition:all .3s var(--ease);}
 .nav-hamburger.open span:nth-child(1){transform:translateY(7px) rotate(45deg);}
 .nav-hamburger.open span:nth-child(2){opacity:0;}
 .nav-hamburger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg);}
-@media (max-width:600px){.nav-links{display:none;}.nav-links.open{display:flex;flex-direction:column;position:fixed;top:64px;left:0;right:0;background:rgba(255,255,255,.92);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);padding:1.25rem 2rem;gap:.35rem;align-items:stretch;}.nav-links.open li{display:block;}.nav-links.open a{display:block;padding:.85rem 0;text-align:center;}.nav-hamburger{display:flex;}nav.topnav.nav-open{background:rgba(255,255,255,.92);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);}}
-.wrap{max-width:960px;margin:0 auto;padding:96px 28px 110px;}
-.hero{position:relative;border-radius:18px;overflow:hidden;border:1px solid var(--hair);margin-bottom:34px;}
-.hero img{width:100%;display:block;aspect-ratio:16/9;object-fit:cover;}
-.hero.noart{aspect-ratio:16/6;background:var(--ink);}
-.lead{display:grid;grid-template-columns:160px 1fr;gap:28px;align-items:start;}
-.poster{width:160px;border-radius:12px;overflow:hidden;border:1px solid var(--hair);background:var(--paper);}
+@media (max-width:600px){.nav-links{display:none;}.nav-links.open{display:flex;flex-direction:column;position:fixed;top:64px;left:0;right:0;background:rgba(248,242,234,.94);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);padding:1.25rem 2rem;gap:.35rem;align-items:stretch;}.nav-links.open li{display:block;}.nav-links.open a{display:block;padding:.85rem 0;text-align:center;}.nav-links.open .nav-cta{text-align:center;}.nav-hamburger{display:flex;}nav.topnav.nav-open{background:rgba(248,242,234,.94);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);}}
+.wrap{max-width:960px;margin:0 auto;padding:64px 28px 0;}
+.crumbs{height:44px;display:flex;align-items:center;gap:8px;font-size:.76rem;color:var(--mut);}
+.crumbs a{text-decoration:none;}
+.crumbs a:hover{color:var(--accent);}
+.crumbs .sep{color:var(--faint);}
+/* The backdrop is a band, not a screen-filling hero. No overflow clip: the
+   radius sits on the image itself and the scrim reaches solid --bg well before
+   the bottom edge, so there is no seam where the band meets the page. */
+.band{position:relative;height:240px;}
+.band img{width:100%;height:240px;display:block;object-fit:cover;object-position:50% 28%;border-radius:16px 16px 0 0;}
+.band .scrim{position:absolute;left:0;right:0;bottom:0;height:184px;background:linear-gradient(to bottom,rgba(248,242,234,0) 0%,rgba(248,242,234,.04) 13%,rgba(248,242,234,.13) 25%,rgba(248,242,234,.28) 37%,rgba(248,242,234,.47) 49%,rgba(248,242,234,.67) 60%,rgba(248,242,234,.84) 70%,rgba(248,242,234,.95) 79%,var(--bg) 88%,var(--bg) 100%);}
+.band.noart{height:0;}
+.lead{display:flex;align-items:flex-end;gap:24px;margin-top:-64px;padding-left:28px;position:relative;}
+.lead.noart{margin-top:0;padding-left:0;}
+.poster{width:132px;flex-shrink:0;border-radius:10px;overflow:hidden;border:1px solid var(--rule);background:var(--surface);}
 .poster img{width:100%;display:block;aspect-ratio:2/3;object-fit:cover;}
-h1.title{font-family:var(--display);font-size:clamp(2.2rem,5vw,3.4rem);font-weight:400;line-height:.98;letter-spacing:-.02em;}
-.meta{color:var(--mut);font-size:.95rem;margin:10px 0 16px;}
+.lead-meta{flex-grow:1;min-width:0;padding-bottom:4px;}
+.kind{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+.chip{background:var(--sage);color:var(--ink);font-size:.62rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;padding:5px 10px;border-radius:999px;}
+.kind .genre{font-size:.62rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--mut);}
+h1.title{font-family:var(--display);font-size:clamp(1.9rem,4.4vw,2.9rem);font-weight:700;line-height:1;letter-spacing:-.025em;}
+.meta{color:var(--mut);font-size:.94rem;margin-top:10px;}
 .meta .dot{margin:0 .5em;color:var(--faint);}
-.genres{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:18px;}
-.genre{font-size:.72rem;letter-spacing:.04em;text-transform:uppercase;color:var(--mut);border:1px solid var(--hair);border-radius:999px;padding:.25rem .7rem;}
-.cta{display:inline-block;background:transparent;color:var(--ink);border:1.5px solid var(--ink);text-decoration:none;font-weight:600;font-size:.92rem;padding:.68rem 1.3rem;border-radius:999px;transition:background .15s var(--ease),color .15s var(--ease);}
-.cta:hover{background:var(--ink);color:#fff;}
-.section{margin-top:44px;}
-.section h2{font-family:var(--display);font-size:1.6rem;font-weight:400;margin-bottom:16px;letter-spacing:-.01em;}
-.overview{font-size:1.05rem;color:#2a2a2e;max-width:64ch;}
-.watch{display:flex;flex-direction:column;gap:18px;}
-.watch-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
-.watch-label{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);min-width:108px;}
-.prov{display:inline-flex;align-items:center;gap:.5rem;border:1px solid var(--hair);border-radius:10px;padding:.4rem .7rem;font-size:.85rem;}
-.prov img{width:24px;height:24px;border-radius:6px;display:block;}
-.cinema{font-size:.95rem;color:var(--ink);background:var(--paper);border:1px solid var(--hair);border-radius:10px;padding:.6rem .9rem;display:inline-block;}
-.nowatch{color:var(--mut);font-size:.95rem;}
-.cast{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:18px;}
-.cast figure{text-align:center;}
-.cast img,.cast .noface{width:100%;aspect-ratio:1;border-radius:50%;object-fit:cover;border:1px solid var(--hair);background:var(--paper);display:block;}
-.cast figcaption{font-size:.8rem;margin-top:8px;line-height:1.3;}
+.card{background:var(--surface);border-radius:16px;padding:22px 26px;margin-top:28px;}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:16px;}
+.card h2,.section h2{font-family:var(--display);font-size:1.3rem;font-weight:700;letter-spacing:-.01em;}
+.region{display:inline-flex;align-items:center;gap:7px;background:var(--bg);border:1px solid var(--rule);color:var(--ink);font-family:inherit;font-size:.81rem;font-weight:600;padding:9px 14px;border-radius:999px;white-space:nowrap;}
+.region svg{width:11px;height:11px;display:block;}
+.watch{display:flex;flex-direction:column;gap:14px;margin-top:18px;}
+.watch-row{display:flex;align-items:center;gap:18px;flex-wrap:wrap;}
+.watch-label{width:96px;flex-shrink:0;font-size:.62rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);}
+.provs{display:flex;gap:10px;flex-wrap:wrap;flex-grow:1;}
+.prov{display:inline-flex;align-items:center;gap:9px;background:var(--bg);border:1px solid var(--rule);border-radius:10px;padding:7px 14px 7px 7px;font-size:.84rem;font-weight:600;}
+.prov img{width:28px;height:28px;border-radius:6px;display:block;}
+.avail{background:var(--sage);color:var(--ink);font-size:.62rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:5px 11px;border-radius:999px;white-space:nowrap;}
+.answer{display:flex;align-items:center;gap:20px;margin-top:16px;}
+.answer-text{flex-grow:1;min-width:0;}
+.answer-hd{font-size:1.05rem;font-weight:600;line-height:1.35;}
+.answer-sub{font-size:.88rem;color:var(--mut);margin-top:4px;}
+.answer-act{display:flex;align-items:center;gap:12px;}
+.badge{background:var(--sage);color:var(--ink);font-size:.62rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:6px 12px;border-radius:999px;white-space:nowrap;}
+.cta{display:inline-block;background:var(--fill);color:var(--ink);text-decoration:none;font-size:.81rem;font-weight:600;padding:9px 16px;border-radius:999px;white-space:nowrap;transition:background .15s var(--ease);}
+.cta:hover{background:var(--fill-hover);}
+.link2{font-size:.81rem;font-weight:600;color:var(--accent-2);text-decoration:none;white-space:nowrap;}
+.link2:hover{text-decoration:underline;}
+.card-foot{margin-top:18px;padding-top:14px;border-top:1px solid var(--rule);display:flex;align-items:center;justify-content:space-between;gap:16px;}
+.card-foot .src{font-size:.75rem;color:var(--mut);}
+.cols{display:flex;gap:24px;align-items:flex-start;margin-top:28px;}
+.cols .col-main{flex-grow:1;min-width:0;}
+.facts{width:264px;flex-shrink:0;background:var(--surface);border-radius:14px;padding:6px 18px;}
+.fact{display:flex;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid var(--rule);font-size:.81rem;}
+.fact:last-child{border-bottom:none;}
+.fact .k{color:var(--mut);}
+.fact .v{font-weight:600;text-align:right;}
+.section{margin-top:28px;}
+.sec-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:14px;}
+.overview{font-size:1rem;line-height:1.62;max-width:64ch;}
+.cast{display:flex;gap:26px;flex-wrap:wrap;}
+.cast figure{width:112px;}
+.cast img,.cast .noface{width:56px;height:56px;border-radius:50%;object-fit:cover;background:var(--surface);display:block;margin-bottom:9px;}
+.cast figcaption{font-size:.79rem;line-height:1.32;}
 .cast .cn{font-weight:600;}
 .cast .cc{color:var(--mut);font-size:.74rem;}
-.rel{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:18px;}
+.rel{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:14px;}
 .rel a{text-decoration:none;}
-.rel img,.rel .noart2{width:100%;aspect-ratio:2/3;border-radius:10px;object-fit:cover;border:1px solid var(--hair);background:var(--paper);display:block;}
-.rel .rt{font-size:.82rem;margin-top:8px;color:var(--ink);line-height:1.3;}
-.rel a:hover .rt{color:var(--fill);}
-.disclaimer{color:var(--faint);font-size:.78rem;margin-top:10px;}
-@media (max-width:640px){.wrap{padding:84px 20px 80px;}.lead{grid-template-columns:110px 1fr;gap:18px;}.poster{width:110px;}nav.topnav{padding:0 1.2rem;}.nav-links{gap:1rem;}}
+.rel img,.rel .noart2{width:100%;aspect-ratio:2/3;border-radius:10px;object-fit:cover;background:var(--surface);display:block;}
+.rel .rt{font-size:.78rem;font-weight:600;margin-top:8px;line-height:1.3;}
+.rel a:hover .rt{color:var(--accent);}
+/* The footer partial shipped with no CSS at all here — it rendered as a raw
+   list of underlined links. Cream ground, matching the page. */
+footer{margin-top:40px;background:var(--bg);}
+.footer-inner{max-width:960px;margin:0 auto;padding:26px 28px 34px;display:flex;align-items:center;justify-content:space-between;gap:1.2rem 2rem;flex-wrap:wrap;}
+.footer-logo{text-decoration:none;font-family:var(--display);font-weight:700;letter-spacing:-.045em;font-size:1.4rem;line-height:1;color:var(--ink);}
+.footer-nav{display:flex;gap:1.2rem;flex-wrap:wrap;}
+.footer-nav a{font-size:.8rem;color:var(--mut);text-decoration:none;white-space:nowrap;transition:color .2s;}
+.footer-nav a:hover{color:var(--ink);}
+.footer-bottom{width:100%;padding-top:1.1rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;}
+.footer-copy{font-size:.74rem;color:var(--mut);}
+.footer-social{display:flex;gap:1rem;align-items:center;}
+.footer-social a{color:var(--mut);display:inline-flex;transition:color .2s;}
+.footer-social a:hover{color:var(--ink);}
+.footer-social svg{width:19px;height:19px;display:block;}
+@media (max-width:640px){
+.wrap{padding:64px 16px 0;}
+nav.topnav{padding:0 1rem;}
+.band{height:172px;}
+.band img{height:172px;border-radius:14px 14px 0 0;}
+.band .scrim{height:132px;}
+.lead{gap:14px;margin-top:-48px;padding-left:14px;}
+/* The lead is bottom-aligned, so a text block taller than the poster grows
+   UPWARDS over the photo. One genre keeps the chip row to a single line. */
+.kind{flex-wrap:nowrap;margin-bottom:8px;}
+.kind .genre:nth-of-type(n+2){display:none;}
+.poster{width:92px;}
+.card{padding:16px;border-radius:14px;}
+.card h2,.section h2{font-size:1.06rem;}
+.answer{flex-direction:column;align-items:stretch;gap:0;}
+.answer-act{margin-top:16px;margin-left:auto;}
+.card-foot{justify-content:flex-end;}
+.card-foot .src{text-align:right;}
+.cols{flex-direction:column;}
+.facts{width:100%;}
+.watch-label{width:100%;}
+.cast{gap:18px;}
+.cast figure{width:96px;}
+.footer-inner{padding:24px 16px 30px;}
+}
 `;
 
 function page(title: string, head: string, body: string, status = 200, cache = true) {
@@ -164,6 +239,7 @@ ${PH}
 ${GA_GTM}
 ${head}
 <link rel="preload" href="${SITE}/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="${SITE}/fonts/Gabarito-Variable.woff2" as="font" type="font/woff2" crossorigin>
 <style>${STYLE}</style>
 </head>
 <body>
@@ -223,7 +299,7 @@ function notFound() {
     'Not found · plot',
     '<meta name="robots" content="noindex">',
     `<div class="section"><h1 class="title">We couldn't find that title.</h1>
-     <p class="overview" style="margin-top:16px">It may have moved or never existed. Try <a href="${SITE}/whats-on" style="color:var(--fill)">What's On</a>.</p></div>`,
+     <p class="overview" style="margin-top:16px">It may have moved or never existed. Try <a href="${SITE}/whats-on" style="color:var(--accent-2);font-weight:600">What's On</a>.</p></div>`,
     404,
     false,
   );
@@ -325,9 +401,16 @@ Deno.serve(async (req) => {
   const poster = img(data.poster_path, 'w342');
   const backdrop = img(data.backdrop_path, 'w1280');
   const posterImage = img(data.backdrop_path, 'w780') || img(data.poster_path, 'w500') || '';
-  // Branded 1200×630 PLOT share card (same one app.theplot.tv/save uses), so a
-  // title unfurls identically wherever its link is shared.
-  const shareCard = `${APP}/api/og?type=${type}&id=${id}`;
+  // Link-preview image. This was the branded PLOT card at /api/og on the app
+  // domain — a Vercel path that has not existed since the move to Cloudflare,
+  // so it resolved to the SPA shell as text/html and every title page unfurled
+  // with no image. Its Cloudflare replacement (the plot-og Worker) cannot
+  // render on the free plan either, so point at TMDB's own backdrop, exactly as
+  // app.theplot.tv/save now does — see functions/_lib/og-card.js. Titles with
+  // no backdrop take the static brand card; a 2:3 poster crops badly into a
+  // 1.91:1 slot.
+  const shareCard = backdrop || `${SITE}/og-image.png`;
+  const [shareW, shareH] = backdrop ? [1280, 720] : [1200, 630];
   const genres = (data.genres || []).map((g: any) => g.name).filter(Boolean);
   const overview: string = data.overview || '';
   const rating = typeof data.vote_average === 'number' && data.vote_average > 0 ? data.vote_average.toFixed(1) : null;
@@ -346,11 +429,82 @@ Deno.serve(async (req) => {
     const days = (Date.now() - new Date(date).getTime()) / 86400000;
     inCinemas = days >= 0 && days <= 90 && streaming.length === 0 && rentBuy.length === 0;
   }
-  let watchHtml = '';
-  if (streaming.length) watchHtml += `<div class="watch-row"><span class="watch-label">Stream</span>${streaming.map(provChip).join('')}</div>`;
-  if (rentBuy.length) watchHtml += `<div class="watch-row"><span class="watch-label">Rent / Buy</span>${rentBuy.map(provChip).join('')}</div>`;
-  if (inCinemas) watchHtml += `<div class="cinema">🎬 In cinemas now</div>`;
-  if (!watchHtml) watchHtml = `<p class="nowatch">No streaming availability in ${esc(regionName(region))} right now — add it to your plot and we'll track it for you.</p>`;
+  const saveHref = `${APP}/save?media_type=${type}&tmdb_id=${id}&src=title_page`;
+  const regionPill = `<span class="region">${esc(regionName(region))}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg></span>`;
+
+  // The card answers the question the page was found for, so it comes first and
+  // names the region in its own heading. Three shapes: availability, in cinemas,
+  // and nothing — the last is the common case across the indexed long tail, so
+  // it states the fact once and then gives a reason to act rather than repeating
+  // the negative.
+  let watchBody: string;
+  if (streaming.length || rentBuy.length) {
+    const rows = [
+      streaming.length
+        ? `<div class="watch-row"><span class="watch-label">Stream</span><div class="provs">${streaming.map(provChip).join('')}</div><span class="avail">Included</span></div>`
+        : '',
+      rentBuy.length
+        ? `<div class="watch-row"><span class="watch-label">Rent or buy</span><div class="provs">${rentBuy.map(provChip).join('')}</div></div>`
+        : '',
+    ].filter(Boolean).join('');
+    watchBody = `<div class="watch">${rows}</div>
+  <div class="card-foot">
+    <span class="src">Availability from JustWatch via TMDB. Changes over time.</span>
+    <a class="cta" href="${esc(saveHref)}" data-cta="title_save">Save to your plot</a>
+  </div>`;
+  } else if (inCinemas) {
+    watchBody = `<div class="answer">
+    <div class="answer-text" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <span class="badge">In cinemas</span>
+      <span><span class="answer-hd">Showing in cinemas now.</span><span class="answer-sub">Not yet on any streaming service.</span></span>
+    </div>
+    <div class="answer-act"><a class="cta" href="${esc(saveHref)}" data-cta="title_track">Tell me when it streams</a></div>
+  </div>
+  <div class="card-foot"><span class="src">Availability from JustWatch via TMDB. Changes over time.</span></div>`;
+  } else {
+    watchBody = `<div class="answer">
+    <div class="answer-text">
+      <div class="answer-hd">Not streaming in ${esc(regionName(region))}</div>
+      <div class="answer-sub">We'll tell you the day it lands on a service here.</div>
+    </div>
+    <div class="answer-act">
+      <a class="cta" href="${esc(saveHref)}" data-cta="title_track">Tell me when it lands</a>
+    </div>
+  </div>
+  <div class="card-foot"><span class="src">Availability from JustWatch via TMDB. Changes over time.</span></div>`;
+  }
+
+  const watchHtml = `<div class="card" id="watch">
+  <div class="card-head"><h2>Where to watch in ${esc(regionName(region))}</h2>${regionPill}</div>
+  ${watchBody}
+</div>`;
+
+  // ── The facts block, beside the synopsis ──
+  const fmtDate = (iso: string) => {
+    const d = new Date(iso);
+    return isNaN(d.getTime())
+      ? ''
+      : `${d.getUTCDate()} ${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+  };
+  const director = isMovie
+    ? (data.credits?.crew || []).find((c: any) => c.job === 'Director')?.name || ''
+    : '';
+  const facts: [string, string][] = (isMovie
+    ? [
+      ['Released', date ? fmtDate(date) : ''],
+      ['Runtime', runtime],
+      ['Director', director],
+      ['TMDB rating', rating ? `${rating} / 10` : ''],
+    ]
+    : [
+      ['First aired', date ? fmtDate(date) : ''],
+      ['Network', (data.networks || [])[0]?.name || ''],
+      ['Episodes', data.number_of_episodes ? String(data.number_of_episodes) : ''],
+      ['TMDB rating', rating ? `${rating} / 10` : ''],
+    ]).filter(([, v]) => v) as [string, string][];
+  const factsHtml = facts.length
+    ? `<div class="facts">${facts.map(([k, v]) => `<div class="fact"><span class="k">${esc(k)}</span><span class="v">${esc(v)}</span></div>`).join('')}</div>`
+    : '';
 
   // ── Cast (top 8) ──
   const cast = (data.credits?.cast || []).slice(0, 8);
@@ -366,15 +520,13 @@ Deno.serve(async (req) => {
     .filter((r: any) => r.poster_path && (r.media_type === 'movie' || r.media_type === 'tv' || !r.media_type))
     .slice(0, 12);
   const relHtml = recs.length
-    ? `<div class="section"><h2>More like this</h2><div class="rel">${recs.map((r: any) => {
+    ? `<div class="section"><div class="sec-head"><h2>More like this</h2></div><div class="rel">${recs.map((r: any) => {
         const rType = r.media_type === 'tv' || (!r.media_type && !isMovie) ? 'tv' : (r.media_type === 'movie' ? 'movie' : type);
         const rTitle = r.title || r.name || 'Untitled';
         const href = `${SITE}/${rType}/${slugify(rTitle)}-${r.id}`;
         return `<a href="${esc(href)}"><img src="${esc(img(r.poster_path, 'w185'))}" alt="${esc(rTitle)}" loading="lazy"><div class="rt">${esc(rTitle)}</div></a>`;
       }).join('')}</div></div>`
     : '';
-
-  const saveHref = `${APP}/save?media_type=${type}&tmdb_id=${id}&src=title_page`;
 
   // ── <head>: description, canonical, OG, JSON-LD ──
   const desc = (overview || `Where to watch ${title}${yr ? ` (${yr})` : ''} — streaming, rent and buy options on plot.`).slice(0, 300);
@@ -397,40 +549,51 @@ Deno.serve(async (req) => {
 <meta property="og:description" content="${esc(desc)}">
 <meta property="og:url" content="${esc(canonicalUrl)}">
 <meta property="og:image" content="${esc(shareCard)}">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="630">
+<meta property="og:image:width" content="${shareW}">
+<meta property="og:image:height" content="${shareH}">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="${esc(shareCard)}">
 <script type="application/ld+json">${jsonLd}</script>`;
 
   // ── Body ──
+  // Where to watch leads: the page title promises it and the search that found
+  // this page asked for it. Everything else keeps the order it already had.
   const metaBits = [
-    yr,
-    isMovie ? 'Film' : 'Series',
+    yr && !isMovie && data.last_air_date && year(data.last_air_date) !== yr
+      ? `${yr}–${year(data.last_air_date)}`
+      : yr,
     runtime,
-    rating ? `★ ${rating}` : '',
+    !isMovie && data.number_of_episodes ? `${data.number_of_episodes} episodes` : '',
+    isMovie ? '' : (data.networks || [])[0]?.name || '',
   ].filter(Boolean).join('<span class="dot">·</span>');
 
   const body = `
-${backdrop ? `<div class="hero"><img src="${esc(backdrop)}" alt="" fetchpriority="high"></div>` : ''}
-<div class="lead">
-  <div class="poster">${poster ? `<img src="${esc(poster)}" alt="${esc(title)} poster">` : ''}</div>
-  <div>
+<nav class="crumbs" aria-label="Breadcrumb">
+  <a href="${SITE}">Home</a><span class="sep">/</span><span>${isMovie ? 'Films' : 'Series'}</span>${genres[0] ? `<span class="sep">/</span><span>${esc(genres[0])}</span>` : ''}
+</nav>
+
+<div class="band${backdrop ? '' : ' noart'}">${backdrop ? `<img src="${esc(backdrop)}" alt="" fetchpriority="high"><div class="scrim"></div>` : ''}</div>
+<div class="lead${backdrop ? '' : ' noart'}">
+  ${poster ? `<div class="poster"><img src="${esc(poster)}" alt="${esc(title)} poster"></div>` : ''}
+  <div class="lead-meta">
+    <div class="kind">
+      <span class="chip">${isMovie ? 'Film' : 'Series'}</span>
+      ${genres.slice(0, 2).map((g: string) => `<span class="genre">${esc(g)}</span>`).join('')}
+    </div>
     <h1 class="title">${esc(title)}</h1>
-    <div class="meta">${metaBits}</div>
-    ${genres.length ? `<div class="genres">${genres.map((g: string) => `<span class="genre">${esc(g)}</span>`).join('')}</div>` : ''}
-    <a class="cta" href="${esc(saveHref)}" data-cta="title_save">Save to your plot →</a>
+    ${metaBits ? `<div class="meta">${metaBits}</div>` : ''}
   </div>
 </div>
 
-${overview ? `<div class="section"><h2>${isMovie ? 'Synopsis' : 'About'}</h2><p class="overview">${esc(overview)}</p></div>` : ''}
-${castHtml}
+${watchHtml}
 
-<div class="section">
-  <h2>Where to watch</h2>
-  <div class="watch">${watchHtml}</div>
-  <p class="disclaimer">Availability from JustWatch via TMDB. Varies by region and changes over time.</p>
+<div class="cols">
+  <div class="col-main">
+    ${overview ? `<h2>${isMovie ? 'Synopsis' : 'About'}</h2><p class="overview" style="margin-top:12px">${esc(overview)}</p>` : ''}
+  </div>
+  ${factsHtml}
 </div>
+${castHtml}
 ${relHtml}
 `;
 

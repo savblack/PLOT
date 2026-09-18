@@ -12,17 +12,17 @@
 .plans-shell { width: 100%; max-width: 1080px; margin: 0 auto; }
 .plans-head { display: flex; align-items: center; justify-content: space-between; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border); }
 .plans-back { display: inline-flex; align-items: center; min-height: 44px; font-size: 0.8rem; color: var(--text-secondary); text-decoration: none; }
-.plans-wordmark { font-family: var(--font-serif); font-size: 1.8rem; letter-spacing: -0.05em; }
+.plans-wordmark { font-family: var(--font-display); font-size: 1.8rem; letter-spacing: -0.05em; }
 .plans-opening { display: grid; grid-template-columns: 1.35fr 1fr; gap: 5rem; padding: 4.5rem 0 4rem; align-items: center; }
 .plans-eyebrow, .plans-kicker { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-secondary); }
-.plans-title { font-family: var(--font-serif); font-size: clamp(3.5rem, 6.5vw, 5.7rem); line-height: 1.02; font-weight: 400; letter-spacing: -0.025em; max-width: 100%; margin: 1.25rem 0 1.5rem; }
+.plans-title { font-family: var(--font-display); font-size: clamp(3.5rem, 6.5vw, 5.7rem); line-height: 1.02; font-weight: 400; letter-spacing: -0.025em; max-width: 100%; margin: 1.25rem 0 1.5rem; }
 .plans-lede { max-width: 39ch; color: var(--text-secondary); line-height: 1.75; font-size: 1rem; }
 .plans-text-link { display: inline-flex; gap: 1rem; align-items: center; min-height: 44px; margin-top: 1.25rem; font-size: 0.8rem; text-underline-offset: 5px; }
 .plans-offer { padding: 1.8rem; border: 1px solid var(--border-strong); border-radius: var(--radius-md); background: var(--surface); }
 .plan-status { display: inline-block; font-size: 0.67rem; font-weight: 600; letter-spacing: 0.05em; color: var(--text-secondary); }
-.plans-offer > h2 { font-family: var(--font-serif); font-size: 1.7rem; font-weight: 400; line-height: 1.15; margin: 0.85rem 0 1.3rem; max-width: 23ch; }
+.plans-offer > h2 { font-family: var(--font-display); font-size: 1.7rem; font-weight: 400; line-height: 1.15; margin: 0.85rem 0 1.3rem; max-width: 23ch; }
 .plan-price { display: flex; align-items: baseline; gap: 0.35rem; }
-.plan-amount { font-family: var(--font-serif); font-size: 3.5rem; font-weight: 400; line-height: 1; }
+.plan-amount { font-family: var(--font-display); font-size: 3.5rem; font-weight: 400; line-height: 1; }
 .plan-per { font-size: 0.83rem; color: var(--text-secondary); }
 .plan-billed { font-size: 0.8rem; color: var(--text-secondary); margin: 0.4rem 0 1.35rem; }
 .plan-features { list-style: none; display: grid; gap: 0.65rem; margin: 0 0 1.6rem; padding: 1.25rem 0 0; border-top: 1px solid var(--border); }
@@ -33,11 +33,11 @@
 .plans-note { margin-top: 1rem; padding: 0.8rem; font-size: 0.8rem; line-height: 1.6; border: 1px solid var(--border); border-radius: var(--radius-sm); }
 .plans-note--err { color: var(--danger); }
 .plans-section-head { display: flex; justify-content: space-between; gap: 1rem; align-items: baseline; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border-strong); }
-.plans-section-head h2, .plans-free h2, .faq-title { font-family: var(--font-serif); font-size: 2rem; font-weight: 400; line-height: 1.15; }
+.plans-section-head h2, .plans-free h2, .faq-title { font-family: var(--font-display); font-size: 2rem; font-weight: 400; line-height: 1.15; }
 .plans-stories { scroll-margin-top: 1.5rem; }
 .plans-story { display: grid; grid-template-columns: 1.35fr 1fr; gap: 5rem; align-items: center; padding: 2.75rem 0; border-bottom: 1px solid var(--border); }
 .plans-kicker span { display: inline-block; margin-right: 0.75rem; color: var(--text-muted); }
-.plans-story h3 { font-family: var(--font-serif); font-size: 2rem; font-weight: 400; line-height: 1.15; margin: 0.8rem 0; }
+.plans-story h3 { font-family: var(--font-display); font-size: 2rem; font-weight: 400; line-height: 1.15; margin: 0.8rem 0; }
 .plans-story-copy > p:not(.plans-kicker) { font-size: 0.88rem; color: var(--text-secondary); line-height: 1.75; max-width: 53ch; }
 .plans-story-copy > .plans-story-detail { margin-top: 1rem; font-size: 0.72rem !important; color: var(--text-muted) !important; }
 .plans-example { margin: 0; border-left: 1px solid var(--border); padding: 0.3rem 0 0.3rem 2rem; }

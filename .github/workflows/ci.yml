@@ -85,6 +85,11 @@ jobs:
       - name: Check shared footer is in sync
         run: pnpm run footer:check
 
+      # A published skill digest that no longer matches its SKILL.md is worse
+      # than none: a careful client rejects the skill outright.
+      - name: Check agent skills index is in sync
+        run: pnpm run skills:check
+
       - name: Check design tokens are in sync (web ↔ core ↔ mobile)
         run: pnpm run tokens:check
 
@@ -142,6 +147,14 @@ jobs:
 
       - name: Website unit tests
         run: pnpm run test:website
+
+      # The Workers are not pnpm workspace members, so their suites ran nowhere
+      # until this step existed. They cover the TMDB proxy's cache keys (get one
+      # wrong and either a response is shared with a caller it does not belong
+      # to, or nothing is shared and the quota is back on the open internet) and
+      # the backup heartbeat's freshness rules.
+      - name: Worker unit tests
+        run: pnpm run test:workers
 
       # marketing/ isn't a pnpm workspace, so this suite otherwise never runs
       # anywhere — it caught nothing when the Codex/Claude CLI shell-outs broke

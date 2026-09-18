@@ -6,8 +6,8 @@
 // is long and sections don't share much vocabulary.
 
 export const META = {
-  title: 'PLOT | Movie & TV Tracker',
-  description: "PLOT is your personal movie and TV companion: for everything you've watched and everything you want to watch, all in one beautiful home.",
+  title: 'plot | Movie & TV Tracker',
+  description: "plot is your personal movie and TV companion: for everything you've watched and everything you want to watch, all in one beautiful home.",
   ogImageAlt: 'plot — your movie & TV companion',
 };
 
@@ -26,7 +26,7 @@ export const MANIFESTO = {
     'You carry them with you.',
     'But no app has ever cared\nas much as you do.',
   ],
-  payoff: 'does.', // rendered after the PLOT wordmark, e.g. "plot does."
+  payoff: 'does.', // rendered after the plot wordmark, e.g. "plot does."
 };
 
 export const GUIDE_DEMO = {

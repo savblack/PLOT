@@ -121,16 +121,28 @@ rings may use an outline or an inset `box-shadow` to mark state (for example the
 [today in the Calendar mini month](../../apps/web/src/styles/app.css#L1944)). They do not count as
 decorative lift and must remain visible in both themes.
 
-**Never apply a shadow to text.** No `text-shadow`, anywhere. When text must stay legible
-over an image, put a scrim or solid chip behind it — the shadow goes on the surface, not
-on the glyphs.
+**Never apply a shadow to text for legibility.** No soft `text-shadow` under glyphs to lift
+them off an image. When text must stay legible over an image, put a scrim or solid chip
+behind it — the shadow goes on the surface, not on the glyphs.
+
+The one sanctioned `text-shadow` in the app is not a shadow at all: the chart rank numeral
+(`.rank-cut`) draws its outline as a ring of copies in `--bg`, painted behind the glyph, so
+the numeral reads as cut out of the poster art and merges into the page where it leaves the
+artwork. It is flat, has no blur and no offset, and exists because `-webkit-text-stroke`
+paints over the fill instead of behind it. Adding a blurred or offset shadow to any text,
+including that numeral, is still out.
 
 ### Text over imagery
 
 - **Hero or backdrop copy:** use a dark image scrim, usually a bottom-to-transparent
   gradient, to create a readable lower-third without obscuring the artwork.
-- **Ranks, badges, and compact labels:** use a small solid dark chip behind the text with
+- **Badges and compact labels:** use a small solid dark chip behind the text with
   a modest radius and padding. Keep the glyphs free of `text-shadow`.
+- **Chart ranks** are the exception, and have their own treatment: the big pink numeral cut
+  out of the poster's bottom-left corner (`.rank-cut`), sized at 39% of the poster's width,
+  hanging off the poster's left edge and clipped there by `.rank-cut-frame`. It is the same
+  on the Discover platform charts, the My Lists Top 5 and the public profile Top 5; a rank
+  does not get a chip.
 - **Both treatments:** verify readable contrast over light and dark image areas in both
   themes; never rely on colour alone to communicate the state.
 

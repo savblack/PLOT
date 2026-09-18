@@ -48,6 +48,23 @@ const slugify = (s: string) =>
 // title link and the save CTA. Read both shapes; don't migrate the rows.
 const refId = (r: TmdbRef | null | undefined) => r?.tmdb_id ?? r?.id ?? null;
 
+// Ranks a post's refs against its own copy. `mention` is the first paragraph that
+// names the title, -1 when it is never named (planner order then stands). The
+// planner's ref order is its guess at importance; the prose is the article's own
+// answer, and the two disagree: on the Emmy guide refs[0] is The Pitt while the
+// copy says "take Widow's Bay". Measured over every published guide, 19 of 19
+// refs are named somewhere in the body, and this picks a different lead on
+// exactly that one post.
+const rankRefs = (body: string[], refs: TmdbRef[]) =>
+  refs.map((ref, order) => ({
+    ref,
+    order,
+    mention: body.findIndex((para) => {
+      const t = String(ref.title || '').toLowerCase().trim();
+      return t ? String(para || '').toLowerCase().includes(t) : false;
+    }),
+  }));
+
 // Reads as prose in a sentence ("not streaming in the UK"). Mirrors the same
 // map in supabase/functions/title-page, so the two surfaces word it alike.
 const REGION_NAMES: Record<string, string> = {
@@ -127,14 +144,18 @@ const postImage = (p: FeedPost) => {
 // Static branded 1200×630 fallback (PLOT wordmark + tagline) for pages with no
 // per-post image, so every shared PLOT link previews on-brand.
 const OG_FALLBACK = `${SITE}/og-image.png`;
-// Link-preview image: prefer the branded per-post social render, then a branded
-// /api/og title card for a single-title post, then the plain hero still, then
-// the static brand image. (The on-page hero keeps using postImage's plain still.)
+// Link-preview image: prefer the branded per-post social render, then the plain
+// hero still, then the static brand image. (The on-page hero keeps using
+// postImage's plain still.)
+//
+// A single-title post used to fall back to a branded app.theplot.tv/api/og
+// card. That path died with the move off Vercel — it returns the SPA shell as
+// text/html — and its Cloudflare replacement cannot render on the free plan,
+// so there is nothing left to point at: such a post now takes its hero still,
+// or the static card. tmdb_refs carries only poster_path, and a 2:3 poster
+// crops badly into a 1.91:1 slot.
 const postShareImage = (p: FeedPost) => {
   if (p.media?.[0]?.landscape_path) return mediaUrl(p.media[0].landscape_path);
-  const ref = p.tmdb_refs?.[0];
-  const rid = refId(ref);
-  if (rid && ref?.media_type) return `${APP}/api/og?type=${ref.media_type === 'tv' ? 'tv' : 'movie'}&id=${rid}`;
   const hero = p.copy?.hero_image;
   return typeof hero === 'string' && /^https?:\/\//.test(hero) ? hero : OG_FALLBACK;
 };
@@ -160,8 +181,7 @@ const uniqueProviders = (providers: WatchProvider[]) => {
 // Three states, the same three the title page card has: providers, in cinemas,
 // and nothing. The last is the common one across the back catalogue, so it says
 // so plainly and lets the watchlist be the way out.
-const storyModule = async (post: FeedPost, region: string) => {
-  const ref = post.tmdb_refs?.[0];
+const storyModule = async (post: FeedPost, region: string, ref = post.tmdb_refs?.[0]) => {
   const id = refId(ref);
   if (!id || !ref?.media_type) return '';
 
@@ -503,6 +523,28 @@ ${head}
   .endcta { display: flex; align-items: center; justify-content: space-between; gap: 32px; margin-top: 52px; padding: 28px 32px; background: var(--paper); border-radius: 20px; }
   .endcta .ec-title { display: block; font-family: var(--display); font-weight: 700; font-size: 1.6rem; line-height: 1.05; letter-spacing: -0.03em; }
   .endcta .ec-sub { display: block; color: var(--mut); font-size: 0.9rem; margin-top: 8px; }
+  /* The tail of a guide: what the modules did not feature. Two columns on a
+     desktop, one on a phone; the row is the same shape at two titles or twenty. */
+  .gt { max-width: 680px; margin: 40px auto 0; padding-top: 26px; border-top: 1px solid var(--hair); }
+  .gt-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+  .gt-head h2 { font-family: var(--display); font-weight: 700; font-size: 1.32rem; letter-spacing: -0.03em; }
+  .gt-count { font-size: 0.74rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--mut); }
+  .gt-card { background: var(--paper); border-radius: 16px; padding: 6px 20px; margin-top: 14px; display: flex; gap: 26px; }
+  .gt-col { flex: 1; min-width: 0; }
+  .gt-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid rgba(41,41,36,0.1); }
+  .gt-col .gt-row:last-child { border-bottom: none; }
+  .gt-art { flex-shrink: 0; display: block; width: 40px; }
+  .gt-art img, .gt-ph { width: 40px; height: 60px; object-fit: cover; border-radius: 6px; display: block; background: var(--bg); }
+  .gt-name { flex-grow: 1; min-width: 0; font-family: var(--display); font-weight: 700; font-size: 0.94rem; letter-spacing: -0.015em; line-height: 1.2; text-decoration: none; color: var(--ink); }
+  .gt-name:hover { color: var(--accent); }
+  .gt-add { flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%; background: var(--fill); color: var(--ink); display: inline-flex; align-items: center; justify-content: center; }
+  .gt-add:hover { background: var(--fill-hover); }
+  .gt-add svg { width: 13px; height: 13px; display: block; }
+  @media (max-width: 640px) {
+    .gt-card { flex-direction: column; gap: 0; padding: 6px 16px; }
+    .gt-col:first-child .gt-row:last-child { border-bottom: 1px solid rgba(41,41,36,0.1); }
+    .gt-col:last-child .gt-row:last-child { border-bottom: none; }
+  }
   /* The story module. Sits inside .post-body, so the margins are its own. */
   .storymod { display: flex; align-items: center; gap: 18px; margin: 0 0 30px; padding: 20px 22px; border-radius: 16px; background: var(--paper); }
   .storymod .sm-art { flex-shrink: 0; display: block; }
@@ -792,9 +834,9 @@ const renderChart = async (supabase: Db) => {
   const pageUrl = `${SITE}${FEED_PATH}/chart`;
 
   const head = `<style>${CHART_CSS}</style>
-<meta name="description" content="The twenty film and TV titles the world is watching this week, ranked by PLOT.">
+<meta name="description" content="The twenty film and TV titles the world is watching this week, ranked by plot.">
 <link rel="canonical" href="${pageUrl}">
-<meta property="og:title" content="The chart · PLOT">
+<meta property="og:title" content="The chart · plot">
 <meta property="og:description" content="The twenty titles the world is watching this week, ranked.">
 <meta property="og:url" content="${pageUrl}">
 <meta property="og:image" content="${OG_FALLBACK}">
@@ -812,7 +854,7 @@ const renderChart = async (supabase: Db) => {
     </aside>`;
 
   if (!latest) {
-    return page('The chart · PLOT', head, `
+    return page('The chart · plot', head, `
       <div class="head r2"><div class="head-row">
         <h1 class="feed-title">The <em>chart</em></h1>
       </div></div>
@@ -841,7 +883,7 @@ const renderChart = async (supabase: Db) => {
     </div></li>`;
   }).join('');
 
-  return page('The chart · PLOT', head, `
+  return page('The chart · plot', head, `
     <div class="head r2">
       <div class="head-row">
         <h1 class="feed-title">The <em>chart</em></h1>
@@ -1087,10 +1129,10 @@ Deno.serve(async (req) => {
     });
 
     const head = `<style>${SUBSCRIBE_CSS}</style>
-<meta name="description" content="What’s On is PLOT’s guide to what’s coming, streaming and trending in film and TV, so you can spend less time searching and more time watching.">
+<meta name="description" content="What’s On is plot’s guide to what’s coming, streaming and trending in film and TV, so you can spend less time searching and more time watching.">
 <link rel="canonical" href="${SITE}${FEED_PATH}">
 <meta property="og:title" content="${FEED_SEO_TITLE}">
-<meta property="og:description" content="What’s On is PLOT’s guide to what’s coming, streaming and trending in film and TV, so you can spend less time searching and more time watching.">
+<meta property="og:description" content="What’s On is plot’s guide to what’s coming, streaming and trending in film and TV, so you can spend less time searching and more time watching.">
 <meta property="og:url" content="${SITE}${FEED_PATH}">
 <meta property="og:image" content="${OG_FALLBACK}">
 <meta property="og:image:width" content="1200">
@@ -1237,7 +1279,7 @@ Deno.serve(async (req) => {
   const shareImg = postShareImage(typed);
   const title = postTitle(typed);
   const body = postBody(typed);
-  const description = body[0] ? String(body[0]).slice(0, 160) : `Film & TV updates from PLOT.`;
+  const description = body[0] ? String(body[0]).slice(0, 160) : `Film & TV updates from plot.`;
   const pageUrl = entryUrl(typed);
 
   const { data: others } = await baseQuery()
@@ -1291,30 +1333,69 @@ Deno.serve(async (req) => {
       </div>`;
   };
   const bodyLede = body.length ? `<p class="lede">${esc(body[0])}</p>` : '';
-  const postBodyHtml = inlineTitles
-    ? [...refs.map((r, i) => titleParagraph(body[i + 1], r)), `<p>${esc(body[refs.length + 1])}</p>`].join('')
-    : body.slice(1).map((p) => `<p>${esc(p)}</p>`).join('');
+  const paragraphs = (from: number, to?: number) =>
+    body.slice(from, to).map((p) => `<p>${esc(p)}</p>`).join('');
 
-  // Redundant once titles render inline next to their own paragraph above.
-  const titlesSection = typed.post_type === 'guide' && refs.length && !inlineTitles
-    ? `<section style="margin:48px 0 0">
-        <h2 style="font-family:var(--display);font-size:1.5rem;font-weight:700;letter-spacing:-0.03em;margin:0 0 18px">Titles in this guide</h2>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:18px">${refs.map((r) => {
-          const poster = r.poster_path ? `https://image.tmdb.org/t/p/w185${esc(r.poster_path)}` : null;
-          return `<a href="${esc(titleHref(r.media_type, refId(r) ?? 0, r.title))}" style="text-decoration:none;color:inherit">${poster ? `<img src="${poster}" alt="${esc(r.title)}" loading="lazy" style="width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:10px;border:1px solid var(--hair);display:block">` : '<span style="display:block;width:100%;aspect-ratio:2/3;border-radius:10px;background:var(--paper);border:1px solid var(--hair)"></span>'}<span style="display:block;font-size:0.82rem;margin-top:8px;line-height:1.3">${esc(r.title)}</span></a>`;
-        }).join('')}</div>
-      </section>`
-    : '';
+  // What the modules did not feature. Poster, name, and the same action — the
+  // grid this replaces offered neither, so an eleven-title guide carried less
+  // than a one-title article. No service is named here: where to watch is the
+  // app's job, and naming one would cost a lookup per row.
+  const shown = new Set<TmdbRef>();
+  const restRows = (list: TmdbRef[]) => list.map((r) => {
+    const rid = refId(r);
+    const poster = r.poster_path ? `https://image.tmdb.org/t/p/w185${esc(r.poster_path)}` : null;
+    return `<div class="gt-row">
+      <a href="${esc(titleHref(r.media_type, rid ?? 0, r.title))}" class="gt-art">${poster ? `<img src="${poster}" alt="" loading="lazy">` : '<span class="gt-ph"></span>'}</a>
+      <a href="${esc(titleHref(r.media_type, rid ?? 0, r.title))}" class="gt-name">${esc(r.title)}</a>
+      ${rid ? `<a class="gt-add" href="${APP}/save?media_type=${r.media_type === 'tv' ? 'tv' : 'movie'}&tmdb_id=${rid}&src=whats_on_guide" data-cta="guide_save" aria-label="Add ${esc(r.title)} to my watchlist"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></a>` : ''}
+    </div>`;
+  }).join('');
 
   const k = kicker(typed);
   const region = (url.searchParams.get('r') || 'US').toUpperCase().slice(0, 2) || 'US';
-  const storyHtml = typed.post_type !== 'guide' && refs.length === 1
-    ? await storyModule(typed, region)
-    : '';
+  // A guide earns up to two modules: the title its copy opens with, and the
+  // planner's top remaining pick placed where the copy first names it. The rest
+  // become compact rows at the foot. Two TMDB lookups at most, whatever the
+  // title count — the poster grid it replaces made none, but offered no action
+  // and no link a reader could act on.
+  const ranked = rankRefs(body, refs);
+  const lead = ranked.length
+    ? [...ranked].sort((a, b) =>
+        Number(a.mention < 0) - Number(b.mention < 0) || a.mention - b.mention || a.order - b.order)[0]
+    : null;
+  const runnerUp = typed.post_type === 'guide' && lead
+    ? ranked.filter((r) => r !== lead).sort((a, b) => a.order - b.order)[0]
+    : undefined;
+  // Only when the copy names it late enough to sit clear of the lede and still
+  // inside the body, so the second module never doubles up or dangles.
+  const runnerUpAt = runnerUp && runnerUp.mention >= 2 && runnerUp.mention <= body.length - 1
+    ? runnerUp.mention
+    : -1;
+
+  const wantsModule = (typed.post_type === 'guide' && refs.length > 0) || refs.length === 1;
+  const storyHtml = wantsModule && lead && !inlineTitles ? await storyModule(typed, region, lead.ref) : '';
+  const runnerUpHtml = storyHtml && runnerUpAt > 0 ? await storyModule(typed, region, runnerUp!.ref) : '';
   // ~220 wpm, rounded up — enough to set an expectation, not a precise claim.
   const words = body.join(' ').split(/\s+/).filter(Boolean).length;
   const readMins = Math.max(1, Math.round(words / 220));
-  return page(`${title} · PLOT`, head, `
+  if (storyHtml && lead) shown.add(lead.ref);
+  if (runnerUpHtml && runnerUp) shown.add(runnerUp.ref);
+  const rest = refs.filter((r) => !shown.has(r));
+  const titlesSection = typed.post_type === 'guide' && rest.length && !inlineTitles
+    ? `<section class="gt">
+        <div class="gt-head">
+          <h2>Also in this guide</h2>
+          <span class="gt-count">${rest.length} more</span>
+        </div>
+        <div class="gt-card">
+          <div class="gt-col">${restRows(rest.slice(0, Math.ceil(rest.length / 2)))}</div>
+          <div class="gt-col">${restRows(rest.slice(Math.ceil(rest.length / 2)))}</div>
+        </div>
+      </section>`
+    : '';
+
+
+  return page(`${title} · plot`, head, `
     <nav class="crumbs" aria-label="Breadcrumb">
       <a href="${SITE}">Home</a><span class="sep2">/</span><a href="${FEED_PATH}">What's On</a>${k ? `<span class="sep2">/</span><span>${esc(TYPE_META[typed.post_type]?.label ?? 'Update')}</span>` : ''}
     </nav>
@@ -1327,7 +1408,11 @@ Deno.serve(async (req) => {
       <div class="post-body">
         ${bodyLede}
         ${storyHtml}
-        ${postBodyHtml}
+        ${inlineTitles
+          ? [...refs.map((r, i) => titleParagraph(body[i + 1], r)), `<p>${esc(body[refs.length + 1])}</p>`].join('')
+          : runnerUpHtml
+            ? `${paragraphs(1, runnerUpAt + 1)}${runnerUpHtml}${paragraphs(runnerUpAt + 1)}`
+            : paragraphs(1)}
       </div>
       ${titlesSection}
     </article>
