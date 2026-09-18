@@ -5655,7 +5655,7 @@ a.provider-chip--link:hover {
   padding: 0;
 }
 
-/* Section header: serif title, optional subtitle, and the rail's arrows or a
+/* Section header: Gabarito title, optional subtitle, and the rail's arrows or a
    "See all" on the right. Nothing collapses, so there is no chevron and no
    band — the sections are separated by space, and a hairline above each one
    after the first. */
@@ -5891,7 +5891,7 @@ a.provider-chip--link:hover {
 }
 
 /* Matches .discover-hero-title: an overlay title over artwork is an editorial
-   moment, so it takes the serif, and it sets #fff explicitly rather than
+   moment, so it takes the display face, and it sets #fff explicitly rather than
    inheriting. Without the colour it picked up --text-primary, which is
    near-black in light mode and unreadable against the image. */
 .discover-binge-card-title {
@@ -6641,7 +6641,7 @@ a.provider-chip--link:hover {
 /* ═══════════════════════════════════════
    HISTORY PAGE
    The poster shelf with an insights column beside it. Same frame as the
-   Calendar: 264px side column, 72px gap, serif month names on the stream.
+   Calendar: 264px side column, 72px gap, Gabarito month names on the stream.
 ═══════════════════════════════════════ */
 
 .hist-page { padding: 0 var(--gut) 2.5rem; }
@@ -7089,7 +7089,7 @@ a.provider-chip--link:hover {
 .mobile-controls-handle, .mobile-controls-heading, .mobile-controls-footer { flex-shrink: 0; }
 .mobile-controls-handle { width: 32px; height: 3px; border-radius: 3px; background: var(--border-strong); margin: 0 auto 14px; }
 .mobile-controls-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-.mobile-controls-heading h2 { font-family: var(--font-serif); font-size: 26px; font-weight: 400; }
+.mobile-controls-heading h2 { font-family: var(--font-display); font-size: 26px; font-weight: 400; }
 .mobile-controls-close { width: 44px; height: 44px; border: 0; background: none; color: var(--text-secondary); font-size: 24px; }
 .mobile-controls-option { width: 100%; min-height: 52px; padding: 12px 0; display: flex; align-items: center; justify-content: space-between; border: 0; border-top: 1px solid var(--border); background: none; font: inherit; font-size: 14px; color: var(--text-secondary); text-align: left; }
 .mobile-controls-option[aria-pressed="true"] { color: var(--text-primary); font-weight: 600; }

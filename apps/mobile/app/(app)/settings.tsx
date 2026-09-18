@@ -581,7 +581,7 @@ function FeedbackModal({ userId, userEmail, initialType, onClose }: { userId: st
               </Svg>
             </View>
             <Text style={styles.feedbackDoneTitle}>Thanks for your feedback!</Text>
-            <Text style={styles.feedbackDoneBody}>We read every submission and use it to improve PLOT.</Text>
+            <Text style={styles.feedbackDoneBody}>We read every submission and use it to improve plot.</Text>
             <TouchableOpacity style={[styles.saveBtn, { marginTop: spacing.lg }]} onPress={onClose} activeOpacity={0.8}>
               <Text style={styles.saveBtnText}>Done</Text>
             </TouchableOpacity>
@@ -609,7 +609,7 @@ function FeedbackModal({ userId, userEmail, initialType, onClose }: { userId: st
               numberOfLines={6}
               placeholder={
                 type === 'bug' ? 'Describe what happened…' :
-                type === 'feature' ? 'What would you like to see in PLOT?' :
+                type === 'feature' ? 'What would you like to see in plot?' :
                 'Share your thoughts…'
               }
               placeholderTextColor={colors.textMuted}
@@ -700,7 +700,7 @@ export default function SettingsScreen() {
 
   const handleShareCalUrl = () => shareLink({
     url: calFeedUrl,
-    text: 'Subscribe to my PLOT calendar:',
+    text: 'Subscribe to my plot calendar:',
     event: EVENTS.LIST_SHARED,
     eventProps: { kind: 'calendar_feed' },
   });
@@ -793,7 +793,7 @@ export default function SettingsScreen() {
   };
 
   const handleSignOut = () => {
-    Alert.alert('Sign out?', 'Sign out of your PLOT account?', [
+    Alert.alert('Sign out?', 'Sign out of your plot account?', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Sign out', style: 'destructive', onPress: async () => {
         // Capture before the reset, or the event lands on the fresh anonymous

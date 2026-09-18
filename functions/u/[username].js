@@ -118,10 +118,10 @@ export async function onRequest({ request, params }) {
 
   if (profile) {
     const name = profile.display_name || profile.username;
-    const title = `${name} on PLOT`;
+    const title = `${name} on plot`;
     const desc = profile.watchCount
-      ? `@${profile.username} has tracked ${profile.watchCount} film${profile.watchCount === 1 ? '' : 's'} & shows on PLOT${profile.followers ? `, with ${profile.followers} follower${profile.followers === 1 ? '' : 's'}` : ''}. See their taste.`
-      : `See what @${profile.username} is watching — their film & TV taste on PLOT.`;
+      ? `@${profile.username} has tracked ${profile.watchCount} film${profile.watchCount === 1 ? '' : 's'} & shows on plot${profile.followers ? `, with ${profile.followers} follower${profile.followers === 1 ? '' : 's'}` : ''}. See their taste.`
+      : `See what @${profile.username} is watching — their film & TV taste on plot.`;
     // The branded profile card cannot render on the free plan — see _lib/og-card.js.
     const image = staticCard(host);
     const url = `https://${host}/u/${encodeURIComponent(profile.username)}`;

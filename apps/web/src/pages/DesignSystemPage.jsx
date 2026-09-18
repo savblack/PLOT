@@ -236,7 +236,7 @@ export default function DesignSystemPage() {
 
         <h3 className="ds-subsection-title">Editorial display · marketing surface</h3>
         <p className="ds-section-note" style={{ marginTop: '0.25rem' }}>
-          Marketing headlines set Gabarito bold at a fluid <code>clamp(2.4rem, 4.8vw, 4.4rem)</code>, line-height 0.95, tracked <code>−0.03em</code>. The manifesto is the one place the serif still leads, at <code>clamp(1.5rem, 2.8vw, 2.6rem)</code>. Same faces as the app; editorial scale.
+          Marketing headlines set Gabarito bold at a fluid <code>clamp(2.4rem, 4.8vw, 4.4rem)</code>, line-height 0.95, tracked <code>−0.03em</code>. The manifesto drops to 600 at <code>clamp(1.5rem, 2.8vw, 2.6rem)</code> — the one place a lighter weight leads. Same faces as the app; editorial scale.
         </p>
         <div className="ds-editorial-display">
           <span>Your movie &amp; TV companion</span>
@@ -858,7 +858,7 @@ export default function DesignSystemPage() {
               onSave={async () => true}
               onClear={async () => true}
             />
-            <div className="ds-form-note">Saved is prose, not a form: hairlines, serif review text, 44px numeral over 9px stars, house kebab for Edit and Remove.</div>
+            <div className="ds-form-note">Saved is prose, not a form: hairlines, Gabarito review text, 44px numeral over 9px stars, house kebab for Edit and Remove.</div>
           </div>
           <div className="ds-form-card">
             <span className="ds-example-label">Title review — watched, nothing written</span>
@@ -1407,7 +1407,7 @@ export default function DesignSystemPage() {
 
       <Section eyebrow="19" title="Social & Identity">
         <p className="ds-section-note">
-          The social layer — profiles, follows, notifications. Avatars are circles with a serif-initial fallback; approve/decline pairs follow the primary/ghost button pattern.
+          The social layer — profiles, follows, notifications. Avatars are circles with a Gabarito-initial fallback; approve/decline pairs follow the primary/ghost button pattern.
         </p>
 
         <div className="ds-utility-grid">
@@ -1465,7 +1465,7 @@ export default function DesignSystemPage() {
                 <span className="ds-pp-handle">@savwatches</span>
               </span>
             </div>
-            <p>Serif display name (1.35rem / 500 / −0.02em) beside the 68px avatar, left-aligned with muted handle and stats below (<code>.pp-header</code>, PublicProfilePage). Stat numbers use serif numerals, as on the share card.</p>
+            <p>Gabarito display name (<code>clamp(2rem, 4vw, 44px)</code> / 700 / −0.03em) beside the 68px avatar, left-aligned with muted handle and stats below (<code>.pp-header</code>, PublicProfilePage). Stat numbers use Gabarito numerals, as on the share card.</p>
           </RuleCard>
         </div>
       </Section>

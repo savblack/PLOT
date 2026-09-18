@@ -26,7 +26,7 @@ export async function onRequest({ request, env }) {
     const shell = await fetch(`https://${host}/index.html`, { headers: { accept: 'text/html' } });
     html = await shell.text();
   } catch {
-    return new Response('<!doctype html><meta charset="utf-8"><title>PLOT</title>', {
+    return new Response('<!doctype html><meta charset="utf-8"><title>plot</title>', {
       status: 502, headers: { 'Content-Type': 'text/html; charset=utf-8' },
     });
   }
@@ -41,10 +41,10 @@ export async function onRequest({ request, env }) {
   if (title && title.title) {
     const id = Number(tmdbId);
     const yearStr = title.year ? ` (${title.year})` : '';
-    const ogTitle = `${title.title}${yearStr} on PLOT`;
+    const ogTitle = `${title.title}${yearStr} on plot`;
     const desc = title.overview
       ? (title.overview.length > 180 ? `${title.overview.slice(0, 177)}…` : title.overview)
-      : `Save ${title.title} to your watchlist on PLOT.`;
+      : `Save ${title.title} to your watchlist on plot.`;
     // Artwork over a rendered card: see functions/_lib/og-card.js. Not every
     // title has a backdrop — older and obscure ones often carry only a poster,
     // and a 2:3 poster in a 1.91:1 slot crops badly — so those take the card.

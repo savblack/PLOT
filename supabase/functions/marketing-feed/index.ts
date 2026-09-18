@@ -834,9 +834,9 @@ const renderChart = async (supabase: Db) => {
   const pageUrl = `${SITE}${FEED_PATH}/chart`;
 
   const head = `<style>${CHART_CSS}</style>
-<meta name="description" content="The twenty film and TV titles the world is watching this week, ranked by PLOT.">
+<meta name="description" content="The twenty film and TV titles the world is watching this week, ranked by plot.">
 <link rel="canonical" href="${pageUrl}">
-<meta property="og:title" content="The chart · PLOT">
+<meta property="og:title" content="The chart · plot">
 <meta property="og:description" content="The twenty titles the world is watching this week, ranked.">
 <meta property="og:url" content="${pageUrl}">
 <meta property="og:image" content="${OG_FALLBACK}">
@@ -854,7 +854,7 @@ const renderChart = async (supabase: Db) => {
     </aside>`;
 
   if (!latest) {
-    return page('The chart · PLOT', head, `
+    return page('The chart · plot', head, `
       <div class="head r2"><div class="head-row">
         <h1 class="feed-title">The <em>chart</em></h1>
       </div></div>
@@ -883,7 +883,7 @@ const renderChart = async (supabase: Db) => {
     </div></li>`;
   }).join('');
 
-  return page('The chart · PLOT', head, `
+  return page('The chart · plot', head, `
     <div class="head r2">
       <div class="head-row">
         <h1 class="feed-title">The <em>chart</em></h1>
@@ -1129,10 +1129,10 @@ Deno.serve(async (req) => {
     });
 
     const head = `<style>${SUBSCRIBE_CSS}</style>
-<meta name="description" content="What’s On is PLOT’s guide to what’s coming, streaming and trending in film and TV, so you can spend less time searching and more time watching.">
+<meta name="description" content="What’s On is plot’s guide to what’s coming, streaming and trending in film and TV, so you can spend less time searching and more time watching.">
 <link rel="canonical" href="${SITE}${FEED_PATH}">
 <meta property="og:title" content="${FEED_SEO_TITLE}">
-<meta property="og:description" content="What’s On is PLOT’s guide to what’s coming, streaming and trending in film and TV, so you can spend less time searching and more time watching.">
+<meta property="og:description" content="What’s On is plot’s guide to what’s coming, streaming and trending in film and TV, so you can spend less time searching and more time watching.">
 <meta property="og:url" content="${SITE}${FEED_PATH}">
 <meta property="og:image" content="${OG_FALLBACK}">
 <meta property="og:image:width" content="1200">
@@ -1279,7 +1279,7 @@ Deno.serve(async (req) => {
   const shareImg = postShareImage(typed);
   const title = postTitle(typed);
   const body = postBody(typed);
-  const description = body[0] ? String(body[0]).slice(0, 160) : `Film & TV updates from PLOT.`;
+  const description = body[0] ? String(body[0]).slice(0, 160) : `Film & TV updates from plot.`;
   const pageUrl = entryUrl(typed);
 
   const { data: others } = await baseQuery()
@@ -1395,7 +1395,7 @@ Deno.serve(async (req) => {
     : '';
 
 
-  return page(`${title} · PLOT`, head, `
+  return page(`${title} · plot`, head, `
     <nav class="crumbs" aria-label="Breadcrumb">
       <a href="${SITE}">Home</a><span class="sep2">/</span><a href="${FEED_PATH}">What's On</a>${k ? `<span class="sep2">/</span><span>${esc(TYPE_META[typed.post_type]?.label ?? 'Update')}</span>` : ''}
     </nav>

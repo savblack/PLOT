@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
-"""Build the tabular-digit companion faces used by --font-sans-tabular / --font-serif-tabular.
+"""Build the tabular-digit companion faces used by --font-sans-tabular.
 
-Neither DM Sans nor Instrument Serif ships a `tnum` feature, and both draw digits at
-proportional widths (DM Sans: '1' is 342 units against '0' at 656). That makes any column
-of numbers ragged and makes an in-place counter shift sideways as it ticks over. Since the
-feature isn't in the font, `font-variant-numeric: tabular-nums` cannot fix it — the digits
-themselves have to be respaced.
+DM Sans ships no `tnum` feature and draws digits at proportional widths ('1' is 342 units
+against '0' at 656). That makes any column of numbers ragged and makes an in-place counter
+shift sideways as it ticks over. Since the feature isn't in the font,
+`font-variant-numeric: tabular-nums` cannot fix it — the digits themselves have to be
+respaced.
 
-This produces a digits-only face per family in which every digit shares the '0' advance and
-sits centred within it. Loaded via `unicode-range: U+0030-0039`, it supplies only the digits;
+This produces a digits-only face in which every digit shares the '0' advance and sits
+centred within it. Loaded via `unicode-range: U+0030-0039`, it supplies only the digits;
 every other character still comes from the real font, so the text is untouched.
 
-Both upstreams are OFL with no Reserved Font Name, so a renamed derivative is permitted;
-`OFL.txt` ships alongside and the derived faces are renamed to avoid being mistaken for
-upstream. See apps/web/public/fonts/README.md.
+DM Sans is OFL with no Reserved Font Name, so a renamed derivative is permitted; `OFL.txt`
+ships alongside and the derived faces are renamed to avoid being mistaken for upstream.
+See apps/web/public/fonts/README.md.
 
 Usage: python3 scripts/build-tabular-digits.py
 Requires: fonttools[woff2]  (pip install 'fonttools[woff2]')
@@ -39,7 +39,6 @@ DIGIT_UNICODES = "U+0030-0039"
 # (source file, output stem, family name written into the face)
 WEB_TARGETS = [
     ("DMSans-Variable.ttf", "DMSans-TabularDigits", "DM Sans Tabular"),
-    ("InstrumentSerif-Regular.ttf", "InstrumentSerif-TabularDigits", "Instrument Serif Tabular"),
 ]
 
 # Mobile: React Native has no `unicode-range`, and a Text gets exactly one family —
@@ -47,7 +46,6 @@ WEB_TARGETS = [
 # So these keep full coverage and only the digits are respaced. Built from the static
 # TTFs Expo already bundles, which carry no `gvar`/`HVAR`, so it is a plain metrics edit.
 MOBILE_TARGETS = [
-    ("InstrumentSerif-Regular.ttf", "InstrumentSerif-Tabular", "Instrument Serif Tabular"),
     ("DMSans-Regular.ttf", "DMSans-TabularRegular", "DM Sans Tabular"),
     ("DMSans-SemiBold.ttf", "DMSans-TabularSemiBold", "DM Sans Tabular SemiBold"),
 ]
@@ -73,9 +71,9 @@ def drop_kerning(font, source_cmap):
 
     Uniform advances are not enough on their own: DM Sans kerns digit pairs, so
     '1234567890' comes out narrower than '0000000000' and a column drifts again. The web
-    faces dodge this because subsetting to digits discards GPOS wholesale; these full
+    face dodges this because subsetting to digits discards GPOS wholesale; these full
     cuts have to drop it deliberately. Tabular figures are conventionally unkerned, and
-    these families exist only for numeric UI, so losing kern costs nothing here.
+    this family exists only for numeric UI here, so losing kern costs nothing.
     `mark`/`mkmk` are kept so accented characters still position correctly.
     """
     opts = subset.Options()

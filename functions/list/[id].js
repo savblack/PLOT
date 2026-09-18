@@ -63,8 +63,10 @@ const shell = (title, head, body) =>
 ${PH}
 ${head}
 <link rel="preload" href="/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/Gabarito-Variable.woff2" as="font" type="font/woff2" crossorigin>
 <style>
 @font-face{font-family:'DM Sans';src:url('/fonts/DMSans-Variable.woff2') format('woff2');font-weight:100 900;font-style:normal;font-display:swap}
+@font-face{font-family:'Gabarito';src:url('/fonts/Gabarito-Variable.woff2') format('woff2');font-weight:400 700;font-style:normal;font-display:swap}
 *{margin:0;padding:0;box-sizing:border-box}
 :root{${themeVars(colors.light)}}
 @media (prefers-color-scheme:dark){:root{${themeVars({ ...colors.light, ...colors.dark })}}}
@@ -87,7 +89,7 @@ h1{font-family:'Gabarito', 'DM Sans', system-ui, sans-serif;font-weight:400;font
 
 function notFound() {
   return shell(
-    'List not found · PLOT',
+    'List not found · plot',
     '<meta name="robots" content="noindex">',
     `<h1>This list isn't available.</h1><p class="by">It may be private or no longer exist. <a href="${SITE}/whats-on">See What's On →</a></p>`,
   );
@@ -133,8 +135,8 @@ export async function onRequest({ request, params }) {
     ? `<span class="by">by <a href="https://${host}/u/${encodeURIComponent(owner.username)}">@${esc(owner.username)}</a></span>`
     : '';
   const count = items.length;
-  const desc = `${count} title${count === 1 ? '' : 's'} in "${list.name}"${owner ? ` by @${owner.username}` : ''} on PLOT.`;
-  const metaTitle = `${list.name} · a list on PLOT`;
+  const desc = `${count} title${count === 1 ? '' : 's'} in "${list.name}"${owner ? ` by @${owner.username}` : ''} on plot.`;
+  const metaTitle = `${list.name} · a list on plot`;
 
   const jsonLd = ldjson({
     '@context': 'https://schema.org',
@@ -176,14 +178,14 @@ export async function onRequest({ request, params }) {
 
   const body = `
 <div style="margin-top:40px">
-  <span class="kick">A list on PLOT</span>
+  <span class="kick">A list on plot</span>
   <h1>${esc(list.name)}</h1>
   ${ownerLine}
 </div>
 <p class="by" style="margin-top:20px">${esc(SHARING.listBenefit)}</p>
 ${posters}
 <a class="cta" href="/signup?src=list_page" data-cta="list_signup">${esc(SHARING.listSignup)} →</a>
-<p class="by" style="margin-top:16px">Already on PLOT? <a href="/login?src=list_page">Sign in</a></p>`;
+<p class="by" style="margin-top:16px">Already on plot? <a href="/login?src=list_page">Sign in</a></p>`;
 
   return htmlResponse(shell(metaTitle, head, body), 200, true);
 }

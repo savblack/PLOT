@@ -45,7 +45,7 @@ function BingeRail({ rail, children }) {
   return <ScrollRail rail={rail} className="discover-binge-rail">{children}</ScrollRail>;
 }
 
-/* The section banner: a serif title, an optional subtitle, and a slot on the
+/* The section banner: a Gabarito title, an optional subtitle, and a slot on the
    right for the rail's scroll arrows or a "See all" link.
 
    `subtitle` is deliberately optional rather than an always-present kicker: a

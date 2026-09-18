@@ -3,7 +3,7 @@
 // item); mobile has not adopted it yet and still reads MEDIA.searchPlaceholder.
 export const SEARCH_PALETTE = {
   placeholder: 'Search titles, people and friends…',
-  label: 'Search PLOT',
+  label: 'Search plot',
   loading: 'Searching',
   // Before anything is typed.
   hintTitle: 'Find anything',

@@ -3,7 +3,7 @@
  * consistent in alignment, type size, and padding — mirrors the mobile
  * app's <SheetHeader>.
  *
- * A centred serif title (1.4rem). With no primary action, ✕ close sits on the
+ * A centred Gabarito title (1.4rem). With no primary action, ✕ close sits on the
  * right (or a back-chevron on the left, if supplied). When a primary action
  * (e.g. Save) is present, the action moves to the right and ✕ close (or the
  * back-chevron) takes the left slot. The title is absolutely centred so it

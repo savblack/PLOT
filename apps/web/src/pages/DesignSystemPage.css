@@ -168,13 +168,6 @@
   font-size: 1.4rem;
 }
 
-.ds-type-card--serif strong {
-  font-family: var(--font-display);
-  font-size: 2.1rem;
-  font-weight: 500;
-  letter-spacing: -0.04em;
-}
-
 .ds-type-card--sans strong {
   font-family: var(--font-sans);
   font-weight: 600;
