@@ -3464,7 +3464,7 @@ svg { stroke-width: 1.5; }
 ═══════════════════════════════════════ */
 
 .panel-upnext { padding: 1rem; }
-.panel-upnext-title { margin-bottom: 0.75rem; }
+.panel-upnext-title { margin-bottom: 0.6rem; }
 .panel-upnext-row { display: flex; align-items: center; gap: 0.75rem; }
 .panel-upnext-still {
   width: 116px;
@@ -3493,27 +3493,54 @@ svg { stroke-width: 1.5; }
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
 }
-.panel-upnext-where { margin-top: 0.2rem; font-size: 0.72rem; color: var(--text-muted); }
+.panel-upnext-where { margin-top: 0.2rem; font-size: 0.72rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* Stacked and right-aligned beside the episode copy, so the primary action
    keeps the card's right edge rather than pushing the copy into a column. */
 .panel-upnext-actions {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: stretch;
   gap: 0.5rem;
   flex-shrink: 0;
 }
+.panel-upnext-actions {
+  /* Capped so a long provider name can't squeeze the episode copy into a
+     two-line column. */
+  max-width: 200px;
+}
 .panel-upnext-actions .panel-pill {
+  max-width: 100%;
   min-height: 34px;
   padding: 0 0.85rem;
   font-size: 0.8rem;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+  line-height: 34px;
   text-decoration: none;
+  text-align: center;
 }
-.panel-pill--ghost { background: var(--surface); color: var(--text-primary); font-weight: 500; }
+.panel-upnext-actions .panel-pill--primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  line-height: 1;
+}
+/* Wins over .panel-pill's own background, which is the card's colour. */
+.panel-upnext-actions .panel-pill--ghost {
+  background: var(--surface);
+  color: var(--text-primary);
+  /* A shade smaller so "Open on Amazon Prime Video" — the longest provider
+     name TMDB hands us — fits the column instead of ellipsing. */
+  font-size: 0.76rem;
+  font-weight: 500;
+  padding: 0 0.7rem;
+}
 .panel-upnext-progress {
   height: 5px;
-  margin-top: 0.85rem;
+  margin-bottom: 0.9rem;
   border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--text-primary) 10%, transparent);
   overflow: hidden;
