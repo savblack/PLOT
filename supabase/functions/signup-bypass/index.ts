@@ -28,10 +28,9 @@
  *      real rejection (429), not a faked success — it's capacity control, not bot
  *      detection.
  *
- * On success, creates the account via the Admin API (bypasses Supabase
- * Auth's own captcha gate, which only applies to client-facing calls) and
- * returns a magic-link token_hash the client verifies immediately
- * (supabase.auth.verifyOtp) to get a live session — no email round-trip.
+ * On success, creates an unconfirmed account via the Admin API and sends a
+ * magic link to the supplied mailbox. The verification credential never
+ * returns to the anonymous caller.
  *
  * Deploy with --no-verify-jwt (no session exists yet when this is called —
  * see supabase/config.toml).
@@ -67,6 +66,24 @@ function json(body: unknown, origin: string | null, status = 200, extraHeaders: 
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const RESEND_API_URL = 'https://api.resend.com/emails';
+const CONFIRM_FROM = 'PLOT <hello@theplot.tv>';
+
+async function sendConfirmationEmail(email: string, actionLink: string) {
+  const resendKey = Deno.env.get('RESEND_API_KEY');
+  if (!resendKey) throw new Error('RESEND_API_KEY is not configured');
+  const res = await fetch(RESEND_API_URL, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      from: CONFIRM_FROM,
+      to: [email],
+      subject: 'Confirm your PLOT account',
+      text: `Confirm your PLOT account by opening this link:\n\n${actionLink}\n\nIf you did not request this, you can ignore this email.`,
+    }),
+  });
+  if (!res.ok) throw new Error(`Resend request failed (${res.status})`);
+}
 
 // Deliberately fast — a real user reads the form and types for at least this
 // long; a script that fills+submits immediately doesn't.
@@ -207,14 +224,12 @@ Deno.serve(async (req) => {
     );
   }
 
-  // Account creation. email_confirm: true — this path exists specifically to
-  // get a blocked user into a live session immediately (see verifyOtp below);
-  // there's no working captcha-gated flow left to fall back on for a second
-  // confirmation step.
+  // Account creation deliberately stays unconfirmed. The credential capable
+  // of confirming it is delivered only to the supplied mailbox below.
   const { data: created, error: createError } = await supabaseAdmin.auth.admin.createUser({
     email,
     password,
-    email_confirm: true,
+    email_confirm: false,
   });
   if (createError) {
     const already = /already|exists|registered/i.test(createError.message || '');
@@ -230,10 +245,20 @@ Deno.serve(async (req) => {
   const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
     type: 'magiclink',
     email,
+    options: { redirectTo: 'https://app.theplot.tv/auth/callback' },
   });
-  if (linkError || !linkData?.properties?.hashed_token) {
+  if (linkError || !linkData?.properties?.action_link) {
+    await supabaseAdmin.auth.admin.deleteUser(created.user.id);
     return json({ error: 'Something went wrong. Please try again.', reason: 'unknown' }, origin, 500);
   }
 
-  return json({ token_hash: linkData.properties.hashed_token, user_id: created.user.id }, origin);
+  try {
+    await sendConfirmationEmail(email, linkData.properties.action_link);
+  } catch (error) {
+    console.error('Could not send fallback signup confirmation:', (error as Error).message);
+    await supabaseAdmin.auth.admin.deleteUser(created.user.id);
+    return json({ error: 'We could not send your confirmation email. Please try again.', reason: 'email_failed' }, origin, 503);
+  }
+
+  return json({ ok: true, requires_email_confirmation: true }, origin);
 });

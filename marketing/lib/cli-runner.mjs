@@ -10,6 +10,18 @@ import { spawnSync } from 'node:child_process';
 
 const hasCommand = (command) => spawnSync('which', [command], { stdio: 'ignore' }).status === 0;
 
+// Copy workers read third-party research. Give them only the environment needed
+// to start the selected model CLI, never database, email or publishing secrets.
+const SAFE_ENV_KEYS = [
+  'ANTHROPIC_API_KEY', 'CLAUDE_CODE_OAUTH_TOKEN', 'CODEX_HOME', 'HOME', 'LANG',
+  'LC_ALL', 'PATH', 'SHELL', 'TERM', 'TMPDIR', 'USER', 'XDG_CACHE_HOME',
+  'XDG_CONFIG_HOME', 'XDG_DATA_HOME',
+];
+
+export const copyWorkerEnv = (env = process.env) => Object.fromEntries(
+  SAFE_ENV_KEYS.flatMap((key) => env[key] ? [[key, env[key]]] : []),
+);
+
 // Each runner declares how to build its argv and which flags to verify.
 // Variadic flags (they consume all following argv, e.g. claude's
 // --allowedTools) are commented where they must stay last in the built args.
@@ -17,10 +29,9 @@ const RUNNERS = {
   codex: {
     command: 'codex',
     helpArgs: ['exec', '--help'],
-    flags: (opts) => (opts.dangerous ? ['--dangerously-bypass-approvals-and-sandbox'] : []),
-    buildArgs: (prompt, opts) => {
-      const args = ['exec'];
-      if (opts.dangerous) args.push('--dangerously-bypass-approvals-and-sandbox');
+    flags: () => ['--sandbox'],
+    buildArgs: (prompt) => {
+      const args = ['exec', '--sandbox', 'workspace-write', '--ephemeral'];
       args.push(prompt); // positional prompt; keep last
       return args;
     },
@@ -31,8 +42,9 @@ const RUNNERS = {
     flags: () => ['--permission-mode', '--allowedTools'],
     buildArgs: (prompt) => [
       '-p', prompt,
-      '--permission-mode', 'bypassPermissions',
-      '--allowedTools', 'Bash,Read,Write,WebSearch,WebFetch', // variadic; keep last
+      '--permission-mode', 'dontAsk',
+      '--no-session-persistence',
+      '--allowedTools', 'Read,Write,WebSearch,WebFetch', // variadic; keep last
     ],
   },
 };
@@ -73,6 +85,15 @@ export const buildInvocation = (name, prompt, opts = {}) => {
   return { command: runner.command, args: runner.buildArgs(prompt, opts) };
 };
 
+export const copyWorkerSandboxProfile = (blockedPaths = []) => [
+  '(version 1)',
+  '(allow default)',
+  ...blockedPaths.flatMap((path) => [
+    `(deny file-read* (subpath ${JSON.stringify(path)}))`,
+    `(deny file-write* (subpath ${JSON.stringify(path)}))`,
+  ]),
+].join('\n');
+
 export const runCli = (label, name, prompt, opts = {}, spawnOpts = {}) => {
   const runner = getRunner(name);
   if (!hasCommand(runner.command)) {
@@ -80,8 +101,18 @@ export const runCli = (label, name, prompt, opts = {}, spawnOpts = {}) => {
   }
   preflight(runner, opts);
   const { args } = buildInvocation(name, prompt, opts);
+  const { blockedPaths = [], ...safeSpawnOpts } = spawnOpts;
+  if (process.platform !== 'darwin' || !hasCommand('sandbox-exec')) {
+    throw new Error('Copy workers require macOS sandbox-exec filesystem isolation.');
+  }
   console.log(`\n== ${label} (${runner.command}) ==`);
-  const result = spawnSync(runner.command, args, { stdio: 'inherit', ...spawnOpts });
+  const result = spawnSync('sandbox-exec', [
+    '-p', copyWorkerSandboxProfile(blockedPaths), runner.command, ...args,
+  ], {
+    stdio: 'inherit',
+    ...safeSpawnOpts,
+    env: copyWorkerEnv(safeSpawnOpts.env),
+  });
   if (result.status !== 0) {
     throw new Error(`${label} failed with exit code ${result.status ?? 1}`);
   }

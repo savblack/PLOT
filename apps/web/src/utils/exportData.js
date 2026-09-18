@@ -97,7 +97,14 @@ const CSV_HEADERS = ['Section', 'Title', 'Type', 'TMDB ID', 'Rating', 'Watched o
 
 function csvCell(value) {
   if (value === null || value === undefined) return '';
-  const s = String(value);
+  let s = String(value);
+  // Spreadsheet apps can evaluate cells after leading whitespace/control
+  // characters. Prefix every formula-shaped string so imported reviews and
+  // saved public titles remain plain text when the CSV is opened.
+  let firstContent = 0;
+  while (firstContent < s.length
+    && (s.charCodeAt(firstContent) <= 0x20 || s[firstContent] === '\u00a0')) firstContent += 1;
+  if ('=+-@'.includes(s[firstContent])) s = `'${s}`;
   return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 

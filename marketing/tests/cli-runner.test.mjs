@@ -1,16 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildInvocation } from '../lib/cli-runner.mjs';
+import { buildInvocation, copyWorkerEnv, copyWorkerSandboxProfile } from '../lib/cli-runner.mjs';
 
 test('codex invocation keeps the prompt as the last, positional argument', () => {
   const { command, args } = buildInvocation('codex', 'PROMPT');
   assert.equal(command, 'codex');
-  assert.deepEqual(args, ['exec', 'PROMPT']);
+  assert.deepEqual(args, ['exec', '--sandbox', 'workspace-write', '--ephemeral', 'PROMPT']);
 });
 
-test('codex --dangerous adds the bypass flag before the prompt, not after', () => {
+test('codex never bypasses its sandbox for copy generation', () => {
   const { args } = buildInvocation('codex', 'PROMPT', { dangerous: true });
-  assert.deepEqual(args, ['exec', '--dangerously-bypass-approvals-and-sandbox', 'PROMPT']);
+  assert.deepEqual(args, ['exec', '--sandbox', 'workspace-write', '--ephemeral', 'PROMPT']);
   assert.equal(args[args.length - 1], 'PROMPT', 'prompt must stay last');
 });
 
@@ -19,8 +19,9 @@ test('claude invocation puts the prompt right after -p, not after --allowedTools
   assert.equal(command, 'claude');
   assert.deepEqual(args, [
     '-p', 'PROMPT',
-    '--permission-mode', 'bypassPermissions',
-    '--allowedTools', 'Bash,Read,Write,WebSearch,WebFetch',
+    '--permission-mode', 'dontAsk',
+    '--no-session-persistence',
+    '--allowedTools', 'Read,Write,WebSearch,WebFetch',
   ]);
 });
 
@@ -39,4 +40,25 @@ test('unknown runner name fails loudly instead of silently doing nothing', () =>
     () => buildInvocation('not-a-real-cli', 'PROMPT'),
     /Unknown CLI runner "not-a-real-cli"/,
   );
+});
+
+test('copy worker environment excludes production and publishing credentials', () => {
+  assert.deepEqual(copyWorkerEnv({
+    PATH: '/bin',
+    CLAUDE_CODE_OAUTH_TOKEN: 'model-token',
+    SUPABASE_SERVICE_ROLE_KEY: 'database-secret',
+    BUFFER_API_KEY: 'publisher-secret',
+    RESEND_API_KEY: 'email-secret',
+  }), {
+    CLAUDE_CODE_OAUTH_TOKEN: 'model-token',
+    PATH: '/bin',
+  });
+});
+
+test('copy worker OS sandbox denies reads and writes to production repositories', () => {
+  const profile = copyWorkerSandboxProfile(['/repo/worktree', '/repo/production']);
+  assert.match(profile, /deny file-read\*/);
+  assert.match(profile, /deny file-write\*/);
+  assert.match(profile, /\/repo\/worktree/);
+  assert.match(profile, /\/repo\/production/);
 });

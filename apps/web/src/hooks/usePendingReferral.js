@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { supabase } from '@plot/core/supabase.js';
-import { getAttribution } from '../utils/attribution.js';
+import { consumeSignupReferralPending, getAttribution } from '../utils/attribution.js';
 import { readStorage, writeStorage } from '../utils/storage.js';
 import { track, EVENTS } from '../lib/analytics.js';
 
@@ -29,6 +29,12 @@ export function usePendingReferral({ user }) {
 
     const ref = getAttribution().ref;
     if (!ref) return;
+    if (!consumeSignupReferralPending(user.email)) {
+      // Acquisition parameters are not mutation authority. Existing accounts
+      // may open any referral URL without silently following its sender.
+      writeStorage(doneKey, '1');
+      return;
+    }
 
     const handle = String(ref).replace(/^@/, '').trim().toLowerCase();
     if (!handle) { writeStorage(doneKey, '1'); return; }
@@ -63,5 +69,5 @@ export function usePendingReferral({ user }) {
         processing.current = false;
       }
     })();
-  }, [user?.id]);
+  }, [user?.id, user?.email]);
 }

@@ -4,6 +4,7 @@ import { supabase } from '@plot/core/supabase.js';
 import { HERO_POSTERS } from '../constants/heroPosters.js';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import { track, resetAnalytics, EVENTS } from '../lib/analytics.js';
+import { clearCachedSession } from '../utils/sessionCache.js';
 import './AuthPage.css';
 
 // The marketing site doubles as the logged-out home.
@@ -20,6 +21,10 @@ export default function LogoutPage() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      // This route replaces the app shell, so its auth listener may already be
+      // unmounted. Clear the cached profile, including calendar_token, before
+      // any network operation or redirect can fail.
+      clearCachedSession();
       // Capture before the reset, or the event lands on the fresh anonymous
       // profile instead of the person who actually signed out.
       track(EVENTS.USER_SIGNED_OUT, {});

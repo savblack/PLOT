@@ -59,6 +59,9 @@ jobs:
       AWS_REQUEST_CHECKSUM_CALCULATION:  when_required
       AWS_RESPONSE_CHECKSUM_VALIDATION:  when_required
     steps:
+      - name: Check out backup tooling
+        uses: actions/checkout@v4
+
       - name: Install pg_dump 17 (match server major version)
         run: |
           set -euo pipefail
@@ -80,6 +83,9 @@ jobs:
           set -euo pipefail
           STAMP="$(date -u +%Y-%m-%dT%H%M%SZ)"
           FILE="plot-${STAMP}.dump"
+          SERVICE_FILE="$RUNNER_TEMP/plot-prod-service.conf"
+          PLOT_DB_CONNINFO="$SUPABASE_DB_URL" node scripts/write-pg-service.mjs "$SERVICE_FILE" plot_production
+          export PGSERVICEFILE="$SERVICE_FILE" PGSERVICE=plot_production
           # Custom format (-Fc) is compressed and restorable with pg_restore.
           # Limit to the schemas we actually need to recover (avoids noise/permission
           # errors on Supabase-internal schemas).
@@ -91,7 +97,7 @@ jobs:
           # rows-per-migration, so there is no reason not to carry it.
           pg_dump -Fc --no-owner --no-privileges \
             -n public -n auth -n storage -n supabase_migrations \
-            -d "$SUPABASE_DB_URL" -f "$FILE"
+            -f "$FILE"
           gpg --batch --yes --symmetric --cipher-algo AES256 \
             --passphrase "$BACKUP_GPG_PASSPHRASE" -o "${FILE}.gpg" "$FILE"
           rm -f "$FILE"

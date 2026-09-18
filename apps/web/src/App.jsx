@@ -1,6 +1,6 @@
 import { useBroadcastPreferences } from '@plot/core/useBroadcastPreferences.js';
 import { usePrivateNotes } from '@plot/core/usePrivateNotes.js';
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 // The bulk of the app's CSS (~4800 lines: every authenticated view — Discover,
 // Settings, Calendar, etc.) lives here instead of the global stylesheet, so
@@ -150,6 +150,7 @@ export default function App() {
   }, []);
 
   const [tzCheckTime, setTzCheckTime] = useState(() => Date.now());
+  const activeUserIdRef = useRef(null);
 
   // Confirmation toast for "save to watchlist" deep links
   const [saveToast, setSaveToast] = useState(null);
@@ -161,6 +162,7 @@ export default function App() {
       .select('id, region, timezone, onboarding_complete, guide_channels, streaming_providers, genres, include_kids_content, marketing_emails, digest_prompt_dismissed_at, calendar_token, username, display_name, is_public, is_premium, is_supporter, last_kofi_tip_at, avatar_url, bio, links')
       .eq('id', userId)
       .maybeSingle();
+    if (activeUserIdRef.current !== userId) return;
     setProfile(data);
     if (data?.region) setTmdbRegion(data.region);
     setUserTimezone(data?.timezone || null);
@@ -175,17 +177,22 @@ export default function App() {
   /* ── Auth ── */
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
+      activeUserIdRef.current = session?.user?.id ?? null;
       setUser(session?.user ?? null);
       if (session?.user) loadProfile(session.user.id);
       else { setLoading(false); clearCachedSession(); }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
+      activeUserIdRef.current = session?.user?.id ?? null;
       setUser(session?.user ?? null);
       if (session?.user) loadProfile(session.user.id);
       else { setProfile(null); setLoading(false); clearCachedSession(); }
     });
-    return () => subscription.unsubscribe();
+    return () => {
+      activeUserIdRef.current = null;
+      subscription.unsubscribe();
+    };
   }, [loadProfile]);
 
   /* ── Timezone mismatch check ── */

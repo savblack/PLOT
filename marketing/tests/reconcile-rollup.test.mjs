@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 process.env.SUPABASE_URL ??= 'https://example.supabase.co';
 process.env.SUPABASE_SERVICE_ROLE_KEY ??= 'test-key';
 
-const { rollUp } = await import('../publish/reconcile.mjs');
+const { rollUp, canApplySocialRollUp } = await import('../publish/reconcile.mjs');
 
 const rows = (...statuses) => statuses.map((status) => ({ status }));
 
@@ -44,4 +44,11 @@ test('still waiting is not an outcome', () => {
 
 test('a web-only post has nothing to roll up', () => {
   assert.equal(rollUp([]), null);
+});
+
+test('social delivery never supplies article approval', () => {
+  assert.equal(canApplySocialRollUp('needs_review'), false);
+  assert.equal(canApplySocialRollUp('vetoed'), false);
+  assert.equal(canApplySocialRollUp('approved'), true);
+  assert.equal(canApplySocialRollUp('partially_published'), true);
 });

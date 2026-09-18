@@ -29,14 +29,10 @@ export function useFollows(targetId, viewerId, initialStatus = null) {
 
   const refresh = useCallback(async () => {
     if (!targetId) return;
-    const [f1, f2] = await Promise.all([
-      supabase.from('follows').select('follower_id', { count: 'exact', head: true })
-        .eq('following_id', targetId).eq('status', 'accepted'),
-      supabase.from('follows').select('following_id', { count: 'exact', head: true })
-        .eq('follower_id', targetId).eq('status', 'accepted'),
-    ]);
-    setFollowers(f1.count || 0);
-    setFollowing(f2.count || 0);
+    const { data: rows } = await supabase.rpc('get_follow_counts', { p_target: targetId });
+    const counts = Array.isArray(rows) ? rows[0] : rows;
+    setFollowers(Number(counts?.followers) || 0);
+    setFollowing(Number(counts?.following) || 0);
     setStatus(await readStatus());
   }, [targetId, readStatus]);
 

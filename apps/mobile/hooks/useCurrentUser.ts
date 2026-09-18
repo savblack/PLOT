@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { setUserTimezone } from '@plot/core/date.js';
 
@@ -20,6 +20,7 @@ export function useCurrentUser() {
   const [userId,  setUserId]  = useState<string | null>(null);
   const [user,    setUser]    = useState<any>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const profileOwnerRef = useRef<string | null>(null);
 
   const loadProfile = async (uid: string, isMounted: () => boolean) => {
     const { data } = await supabase
@@ -27,7 +28,7 @@ export function useCurrentUser() {
       .select('*')
       .eq('id', uid)
       .maybeSingle();
-    if (!isMounted() || !data) return;
+    if (!isMounted() || profileOwnerRef.current !== uid || !data) return;
     setProfile(data);
     // Every date helper in @plot/core/date.js reads this. Applied on the
     // initial load and on every refreshProfile() so a timezone change made
@@ -40,10 +41,13 @@ export function useCurrentUser() {
     const applySession = (session: any) => {
       if (!mounted) return;
       if (session?.user) {
+        profileOwnerRef.current = session.user.id;
         setUserId(session.user.id);
         setUser(session.user);
+        setProfile(null);
         loadProfile(session.user.id, () => mounted);
       } else {
+        profileOwnerRef.current = null;
         setUserId(null);
         setUser(null);
         setProfile(null);
@@ -57,7 +61,7 @@ export function useCurrentUser() {
   }, []);
 
   const refreshProfile = () => {
-    if (userId) loadProfile(userId, () => true);
+    if (userId) loadProfile(userId, () => profileOwnerRef.current === userId);
   };
 
   return { userId, user, profile, refreshProfile };

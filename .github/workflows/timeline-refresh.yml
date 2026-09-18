@@ -177,5 +177,12 @@ jobs:
             exit 0
           fi
 
+          HEAD_REPO=$(gh pr view "$PR_NUM" --json headRepository --jq '.headRepository.nameWithOwner')
+          HEAD_SHA=$(gh pr view "$PR_NUM" --json headRefOid --jq '.headRefOid')
+          if [ "$HEAD_REPO" != "$GH_REPO" ] || [ "$HEAD_SHA" != "${{ github.event.workflow_run.head_sha }}" ]; then
+            echo "PR #$PR_NUM does not match the repository and commit that passed CI. Leaving it open."
+            exit 0
+          fi
+
           echo "CI passed for $HEAD_BRANCH -> merging PR #$PR_NUM"
-          gh pr merge "$PR_NUM" --squash --delete-branch
+          gh pr merge "$PR_NUM" --squash --delete-branch --match-head-commit "$HEAD_SHA"

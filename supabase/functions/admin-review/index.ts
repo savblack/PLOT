@@ -49,6 +49,7 @@ const ADMIN_PASSWORD = Deno.env.get('ADMIN_PASSWORD') ?? '';
 // Either secret signs you in: the friendly ADMIN_PASSWORD (typed on the login
 // page) or the original ADMIN_TOKEN. Both are compared in constant time.
 const SECRETS = [ADMIN_PASSWORD, ADMIN_TOKEN].filter((s) => s.length > 0);
+const ADMIN_AUTH_CONFIGURED = SECRETS.length > 0;
 
 // Constant-time compare — avoids leaking the secret via response timing.
 function timingSafeEqual(a: string, b: string): boolean {
@@ -288,6 +289,7 @@ const cookieToken = (req: Request) => {
 // Cookie-only session auth. The ?key= URL param was removed — it leaked the
 // secret into proxy logs, browser history and Referer headers.
 const authed = (req: Request): boolean => {
+  if (!ADMIN_AUTH_CONFIGURED) return false;
   const c = cookieToken(req);
   return !!c && timingSafeEqual(c, SESSION_TOKEN);
 };
@@ -968,6 +970,12 @@ const runLine = (r: Row) => {
 };
 
 Deno.serve(async (req) => {
+  if (!ADMIN_AUTH_CONFIGURED) {
+    return new Response('Admin review is not configured.', {
+      status: 503,
+      headers: { 'content-type': 'text/plain; charset=utf-8' },
+    });
+  }
   const url = new URL(req.url);
   // Read the body once: it carries either the sign-in password or a desk action.
   const form = req.method === 'POST' ? await req.formData() : null;
