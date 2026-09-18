@@ -1,0 +1,139 @@
+# PLOT's required pull-request CI. Scheduled operations, backups and GitHub
+# automation remain in .github/workflows because they depend on GitHub events,
+# permissions and GITHUB_TOKEN.
+version: 2.1
+
+jobs:
+  check:
+    docker:
+      # The browsers variant supplies Playwright's system dependencies. Pin the
+      # Node major to match .github/workflows/ci.yml while accepting patch fixes.
+      - image: cimg/node:22.17.1-browsers
+    resource_class: medium
+    retention:
+      caches: 7d
+    environment:
+      # CI only proves that the app builds and renders locally. These values are
+      # deliberately inert, so browser-safe production config need not be copied
+      # into a second CI provider.
+      VITE_SUPABASE_URL: https://placeholder.supabase.co
+      VITE_SUPABASE_ANON_KEY: placeholder-not-a-key
+      VITE_TMDB_PROXY_URL: https://placeholder.invalid
+      VITE_PUBLIC_POSTHOG_PROJECT_TOKEN: placeholder
+      VITE_PUBLIC_POSTHOG_HOST: https://placeholder.invalid
+    steps:
+      # The secret scan needs the PR merge-base (or previous main commit), so a
+      # shallow/blobless checkout is not sufficient.
+      - checkout:
+          method: full
+
+      - run:
+          name: Scan changed lines for secret-shaped strings
+          command: |
+            git fetch --no-tags --quiet origin main
+            if [ "$CIRCLE_BRANCH" = "main" ]; then
+              base_sha="$(git rev-parse HEAD^)"
+            else
+              base_sha="$(git merge-base origin/main HEAD)"
+            fi
+            ./scripts/scan-secrets.sh "$base_sha" HEAD
+
+      - run:
+          name: Set up pnpm 10.6.3
+          command: |
+            sudo corepack enable
+            corepack prepare pnpm@10.6.3 --activate
+            pnpm config set store-dir ~/.pnpm-store
+            pnpm --version
+
+      - run:
+          name: Set up Deno 2
+          command: |
+            curl -fsSL https://deno.land/install.sh | sh -s v2.9.5
+            echo 'export DENO_INSTALL="$HOME/.deno"' >> "$BASH_ENV"
+            echo 'export PATH="$DENO_INSTALL/bin:$PATH"' >> "$BASH_ENV"
+            "$HOME/.deno/bin/deno" --version
+
+      - run:
+          name: Typecheck edge functions
+          command: pnpm run edge:check
+
+      - restore_cache:
+          keys:
+            - pnpm-v1-{{ arch }}-{{ checksum "pnpm-lock.yaml" }}
+
+      - run:
+          name: Install dependencies
+          command: pnpm install --frozen-lockfile
+
+      - save_cache:
+          key: pnpm-v1-{{ arch }}-{{ checksum "pnpm-lock.yaml" }}
+          paths:
+            - ~/.pnpm-store
+
+      - run:
+          name: Lint
+          command: pnpm run lint
+
+      - run:
+          name: Check generated and shared sources
+          command: |
+            pnpm run footer:check
+            pnpm run skills:check
+            pnpm run tokens:check
+            pnpm run colors:check
+            pnpm run tokens:marketing
+            pnpm run emails:check
+
+      - run:
+          name: Check migrations and cross-platform contracts
+          command: |
+            pnpm run migrations:check
+            pnpm run db:block-clause
+            pnpm run copy:check
+            pnpm run core:check
+            pnpm run mobile:tabs
+
+      - run:
+          name: Broadcast importer tests
+          command: python3 -m unittest discover -s scripts/guide -p 'test_*.py'
+
+      - run:
+          name: JavaScript unit tests
+          command: |
+            pnpm run test:unit
+            pnpm run test:website
+            pnpm run test:workers
+            pnpm run test:marketing
+
+      - run:
+          name: Build
+          command: pnpm run build
+
+      - run:
+          name: Check mobile
+          command: |
+            pnpm run mobile:deps
+            pnpm --filter @plot/mobile run typecheck
+
+      - restore_cache:
+          keys:
+            - playwright-v1-{{ arch }}-{{ checksum "pnpm-lock.yaml" }}
+
+      - run:
+          name: Install Playwright Chromium
+          command: pnpm --filter @plot/web exec playwright install chromium
+
+      - save_cache:
+          key: playwright-v1-{{ arch }}-{{ checksum "pnpm-lock.yaml" }}
+          paths:
+            - ~/.cache/ms-playwright
+
+      - run:
+          name: Smoke tests
+          command: pnpm --filter @plot/web exec playwright test
+
+workflows:
+  build-and-test:
+    jobs:
+      - check
