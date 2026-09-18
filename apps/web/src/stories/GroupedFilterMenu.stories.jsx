@@ -1,10 +1,12 @@
 import { useState } from 'react';
+import { expect, userEvent, within } from 'storybook/test';
 import GroupedFilterMenu from '../components/GroupedFilterMenu.jsx';
 
 export default {
   title: 'Components/GroupedFilterMenu',
   component: GroupedFilterMenu,
-  parameters: { layout: 'padded' },
+  tags: ['interaction-test'],
+  parameters: { layout: 'padded', a11y: { test: 'error' } },
 };
 
 function Wrapper() {
@@ -38,4 +40,22 @@ function Wrapper() {
   return <GroupedFilterMenu ariaLabel="Filter" groups={groups} />;
 }
 
-export const Default = () => <Wrapper />;
+export const Default = {
+  render: () => <Wrapper />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const trigger = canvas.getByRole('button', { name: 'Filter' });
+
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    await userEvent.click(trigger);
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    const watching = canvas.getByRole('checkbox', { name: 'Watching' });
+    await userEvent.click(watching);
+    await expect(watching).toBeChecked();
+    await expect(trigger).toHaveClass('active');
+
+    await userEvent.click(canvasElement.ownerDocument.body);
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  },
+};

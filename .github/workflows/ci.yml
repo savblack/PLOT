@@ -193,6 +193,9 @@ jobs:
       - name: Install Playwright browser
         run: pnpm --filter @plot/web exec playwright install --with-deps chromium
 
+      - name: Storybook interaction and accessibility tests
+        run: pnpm run test-storybook:web
+
       # Build already passed above. Calling test:smoke here would build again.
       # Browser checks still run before merging, including Dependabot PRs.
       - name: Smoke tests (Playwright)
