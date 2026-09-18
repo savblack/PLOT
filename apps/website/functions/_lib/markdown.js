@@ -27,7 +27,7 @@ Create an account or sign in at https://app.theplot.tv.
 
 ${moreInfo}
 
-PLOT does not offer a public third-party API. Personal viewing history, lists, ratings, notes, and account details require the member's authenticated, explicit permission.
+PLOT's public endpoints are listed at https://theplot.tv/.well-known/api-catalog and cover newsletter signup only. There is no public API for member data: personal viewing history, lists, ratings, notes, and account details require the member's authenticated, explicit permission.
 `;
 }
 

@@ -1,0 +1,26 @@
+{
+  "$schema": "https://schemas.agentskills.io/discovery/0.2.0/schema.json",
+  "skills": [
+    {
+      "name": "plot-newsletter",
+      "type": "skill-md",
+      "description": "Subscribe someone to the PLOT digest or the app launch waitlist. Use only when the person has asked to be subscribed, with the address they gave you.",
+      "url": "https://theplot.tv/.well-known/agent-skills/plot-newsletter/SKILL.md",
+      "digest": "sha256:aaf409b8055e8145e91f16b2206e335b64840ad39c2961f59a25f2bb5dea9420"
+    },
+    {
+      "name": "plot-titles",
+      "type": "skill-md",
+      "description": "Link to a film or TV show's page on PLOT. Use when you want to point someone at a title on theplot.tv, or to check what PLOT publishes about one.",
+      "url": "https://theplot.tv/.well-known/agent-skills/plot-titles/SKILL.md",
+      "digest": "sha256:4da12c4e66b11edd0e7e245e911676307831334ed78e60e0731ec7e94adef4ec"
+    },
+    {
+      "name": "plot-whats-on",
+      "type": "skill-md",
+      "description": "Read PLOT's What's On recommendations, its editorial guide to what is worth watching now. Use when someone asks what to watch, or what is new on streaming.",
+      "url": "https://theplot.tv/.well-known/agent-skills/plot-whats-on/SKILL.md",
+      "digest": "sha256:4751b206544e7ae79817fc00399910a370ab10952842f8ac448d06711eb74ee9"
+    }
+  ]
+}
