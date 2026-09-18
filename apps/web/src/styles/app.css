@@ -3614,14 +3614,29 @@ svg { stroke-width: 1.5; }
   right: 0;
   bottom: 0;
   z-index: 501;
-  width: min(var(--panel-w), 100vw);
+  /* One width at every size, and never wider than the window it is in. The
+     border the docked panel gains is inside that width, not added to it. */
+  width: var(--panel-w);
+  max-width: 100vw;
+  box-sizing: border-box;
   background: var(--surface);
   overflow-y: auto;
+  /* Nothing inside may push the panel sideways: a child wider than the column
+     would otherwise turn the panel into a horizontal scroller and leave every
+     row looking clipped at the right. The rails scroll inside themselves. */
+  overflow-x: clip;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   box-shadow: var(--shadow-overlay);
   animation: panelIn 0.32s var(--ease);
 }
+/* Guards, so the clip above never has anything to do: text columns shrink and
+   ellipse rather than pushing their row wider than the panel. */
+.panel-body,
+.panel-head-text,
+.panel-upnext-copy,
+.collection-card-row-text { min-width: 0; }
+.panel-body { max-width: 100%; }
 .panel::-webkit-scrollbar { display: none; }
 @keyframes panelIn {
   from { transform: translateX(100%); }
