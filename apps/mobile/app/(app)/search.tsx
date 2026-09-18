@@ -196,7 +196,7 @@ export default function SearchScreen() {
         query.length < 2 ? (
           <View style={styles.empty}>
             <Text style={styles.emptyTitle}>Find people</Text>
-            <Text style={styles.emptyBody}>Search by username or name to follow other film & TV fans.</Text>
+            <Text style={styles.emptyBody}>Search by username or name to follow other movie & TV fans.</Text>
           </View>
         ) : (
           <FlatList

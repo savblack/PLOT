@@ -589,10 +589,11 @@ svg { stroke-width: 1.5; }
 .app-sidebar { overflow: hidden; }
 .app-sidebar-brand { gap: 12px; min-height: 80px; height: 80px; border-bottom: 0; }
 .app-sidebar-beta {
-  padding: 3px 6px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  color: var(--text-secondary);
+  padding: 3px 8px;
+  border: 1px solid var(--accent-secondary-fill);
+  border-radius: var(--radius-pill);
+  background: var(--accent-secondary-fill);
+  color: var(--on-accent-fill);
   font-size: 0.6rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -6579,7 +6580,6 @@ a.provider-chip--link:hover {
   gap: 1rem;
   padding: 0.75rem 0 1.25rem;
 }
-.hist-toolbar-sub { font-size: 0.85rem; color: var(--text-muted); }
 .hist-toolbar-controls { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
 
 /* The year switcher is the Calendar's segmented control (.cal-scope). */
@@ -6772,7 +6772,7 @@ a.provider-chip--link:hover {
   align-items: center;
   justify-content: center;
   border-radius: 5px;
-  background: var(--surface-raised);
+  background: var(--surface-sunken);
   font-size: 11px;
   font-weight: 500;
   color: var(--text-secondary);
@@ -7065,4 +7065,4 @@ a.provider-chip--link:hover {
   .mylists-search-toolbar .hist-search { width: 100%; }
 }
 
-.page-toolbar.mylists-search-toolbar { margin-top: 0; }
+.page-toolbar.mylists-search-toolbar { margin-top: 0; justify-content: flex-end; gap: 10px; }

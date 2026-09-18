@@ -53,8 +53,8 @@
     }
   </script>
   <!-- End Google Tag Manager -->
-  <title>plot – Your Film &amp; TV Companion</title>
-  <meta name="description" content="plot is your personal film and TV companion: for everything you've watched and everything you want to watch, all in one beautiful home." />
+  <title>PLOT | Movie &amp; TV Tracker</title>
+  <meta name="description" content="plot is your personal movie and TV companion: for everything you've watched and everything you want to watch, all in one beautiful home." />
   <link rel="canonical" href="https://theplot.tv/" />
   <meta name="theme-color" content="#f8f2ea" />
 
@@ -70,19 +70,19 @@
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="plot" />
-  <meta property="og:title" content="plot – Your Film &amp; TV Companion" />
-  <meta property="og:description" content="plot is your personal film and TV companion: for everything you've watched and everything you want to watch, all in one beautiful home." />
+  <meta property="og:title" content="PLOT | Movie &amp; TV Tracker" />
+  <meta property="og:description" content="plot is your personal movie and TV companion: for everything you've watched and everything you want to watch, all in one beautiful home." />
   <meta property="og:image" content="https://theplot.tv/og-image.png" />
   <meta property="og:image:type" content="image/png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
-  <meta property="og:image:alt" content="plot — your film &amp; TV companion" />
+  <meta property="og:image:alt" content="plot — your movie &amp; TV companion" />
   <meta property="og:url" content="https://theplot.tv" />
 
   <!-- Twitter / X card -->
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="plot – Your Film &amp; TV Companion" />
-  <meta name="twitter:description" content="plot is your personal film and TV companion: for everything you've watched and everything you want to watch, all in one beautiful home." />
+  <meta name="twitter:title" content="PLOT | Movie &amp; TV Tracker" />
+  <meta name="twitter:description" content="plot is your personal movie and TV companion: for everything you've watched and everything you want to watch, all in one beautiful home." />
   <meta name="twitter:image" content="https://theplot.tv/og-image.png" />
 
   <!-- Structured data -->
@@ -102,7 +102,7 @@
         "@id": "https://theplot.tv/#website",
         "url": "https://theplot.tv/",
         "name": "plot",
-        "description": "plot is your personal film and TV companion: for everything you've watched and everything you want to watch, all in one beautiful home.",
+        "description": "plot is your personal movie and TV companion: for everything you've watched and everything you want to watch, all in one beautiful home.",
         "publisher": { "@id": "https://theplot.tv/#organization" }
       }
     ]
@@ -276,9 +276,6 @@
     .hero-eyebrow {
       display: inline-flex;
       align-items: center;
-      padding: 0.4rem 0.75rem;
-      border-radius: var(--r-pill);
-      background: var(--fill);
       color: var(--text);
       font-size: 0.68rem;
       font-weight: 500;
@@ -551,6 +548,10 @@
       align-items: center;
       white-space: nowrap;
     }
+    .ticker-badge-live {
+      line-height: 1;
+      transform: translateY(1px);
+    }
     .ticker-badge-mark {
       font-family: var(--display);
       font-weight: 700;
@@ -582,7 +583,7 @@
     .ticker-cat {
       font-family: var(--sans);
       font-size: 0.58rem;
-      font-weight: 200;
+      font-weight: 700;
       letter-spacing: 0.14em;
       text-transform: uppercase;
       color: var(--accent-on-dark);
@@ -1273,15 +1274,7 @@
       margin-bottom: 1.4rem;
     }
     .app-notify { margin-top: 1.8rem; }   /* breathing room between the copy and the email capture */
-    .app-phone { position: relative; width: 320px; }   /* badge anchors here, outside the clipped frame */
-    .app-phone-badge {
-      position: absolute; z-index: 20; top: 26px; right: -10px;
-      background: #0c0c0c; color: #f0efe8;
-      border: 1px solid rgba(240,239,232,0.18);
-      font-size: 0.72rem; font-weight: 600; letter-spacing: 0.1em;
-      text-transform: uppercase;
-      padding: 10px 20px; border-radius: 999px;
-    }
+    .app-phone { position: relative; width: 320px; }
 
     .guide-screen {
       display: flex;
@@ -1668,11 +1661,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   <!-- ── Hero ────────────────────────────────────────────────── -->
   <section id="hero">
     <div class="hero-content">
-      <span class="hero-eyebrow reveal">Your film &amp; TV companion</span>
+      <span class="hero-eyebrow reveal">Your movie and TV companion</span>
       <h1 class="hero-headline reveal reveal-delay-1">Everything you've watched.<br>Everything you want to watch.</h1>
       <p class="hero-sub reveal reveal-delay-2">Track what you've seen, save what's coming, and keep the notes that make it yours.</p>
       <div class="hero-actions reveal reveal-delay-3">
-        <a href="https://app.theplot.tv/signup" class="btn btn-primary btn-large" data-cta="hero">Start your plot →</a>
+        <a href="https://app.theplot.tv/signup" class="btn btn-primary btn-large" data-cta="hero">Start your plot</a>
         <a href="/whats-on" class="btn btn-outline btn-large" data-cta="hero-whats-on">See what's on</a>
       </div>
     </div>
@@ -1715,7 +1708,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           worldwide, pulls the top 10 across the major platforms and every
           release on the way into a single feed. <em>Your</em> feed.
         </p>
-        <a href="/whats-on" class="btn btn-outline-white btn-large" data-cta="demo-whats-on">See what's on &rarr;</a>
+        <a href="/whats-on" class="btn btn-outline-white btn-large" data-cta="demo-whats-on">See what's on</a>
         <div class="marquee" aria-hidden="true">
           <div class="marquee-track">
             <!-- set 1 -->
@@ -1755,10 +1748,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           <div class="gp-rows" id="gpRows">
             <!-- hero-card:start -->
 
-            <div class="gp-row"><div class="gp-rank">1</div><img class="gp-poster" src="https://image.tmdb.org/t/p/w185/uxCaBoYXsDC4A0SqTm3SISj0OwK.jpg" alt="" loading="lazy" decoding="async"><div class="gp-meta"><div class="gp-name">The Runner</div><div class="gp-sub">2026 &middot; Film</div></div><span class="gp-chip is-top">Trending #1</span></div>
+            <div class="gp-row"><div class="gp-rank">1</div><img class="gp-poster" src="https://image.tmdb.org/t/p/w185/uxCaBoYXsDC4A0SqTm3SISj0OwK.jpg" alt="" loading="lazy" decoding="async"><div class="gp-meta"><div class="gp-name">The Runner</div><div class="gp-sub">2026 &middot; Movie</div></div><span class="gp-chip is-top">Trending #1</span></div>
             <!-- hero-card:end -->
-            <div class="gp-row"><div class="gp-rank">2</div><img class="gp-poster" src="https://image.tmdb.org/t/p/w185/A8UIMJTwSaflmWmUlfPOFdenSBT.jpg" alt="" loading="lazy" decoding="async"><div class="gp-meta"><div class="gp-name">Hot right now</div><div class="gp-sub">Film</div></div><span class="gp-chip">Film</span></div>
-            <div class="gp-row"><div class="gp-rank">3</div><img class="gp-poster" src="https://image.tmdb.org/t/p/w185/jOiEa1NMdGHktRE3lVwErq0nCNT.jpg" alt="" loading="lazy" decoding="async"><div class="gp-meta"><div class="gp-name">Top 10</div><div class="gp-sub">Film</div></div><span class="gp-chip">Film</span></div>
+            <div class="gp-row"><div class="gp-rank">2</div><img class="gp-poster" src="https://image.tmdb.org/t/p/w185/A8UIMJTwSaflmWmUlfPOFdenSBT.jpg" alt="" loading="lazy" decoding="async"><div class="gp-meta"><div class="gp-name">Hot right now</div><div class="gp-sub">Movie</div></div><span class="gp-chip">Movie</span></div>
+            <div class="gp-row"><div class="gp-rank">3</div><img class="gp-poster" src="https://image.tmdb.org/t/p/w185/jOiEa1NMdGHktRE3lVwErq0nCNT.jpg" alt="" loading="lazy" decoding="async"><div class="gp-meta"><div class="gp-name">Top 10</div><div class="gp-sub">Movie</div></div><span class="gp-chip">Movie</span></div>
             <div class="gp-row"><div class="gp-rank">4</div><img class="gp-poster" src="https://image.tmdb.org/t/p/w185/pPHpeI2X1qEd1CS1SeyrdhZ4qnT.jpg" alt="" loading="lazy" decoding="async"><div class="gp-meta"><div class="gp-name">Most binged shows</div><div class="gp-sub">Series</div></div><span class="gp-chip">Series</span></div>
           </div>
         </div>
@@ -1949,7 +1942,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           <div class="cf" id="listsCf"></div>
           <div class="cf-cap">
             <div class="cf-nm" id="cfNm">Award winners</div>
-            <div class="cf-ct" id="cfCt">20 films</div>
+            <div class="cf-ct" id="cfCt">20 movies</div>
             <div class="cf-dots" id="cfDots"><i class="on"></i><i></i><i></i></div>
           </div>
         </div>
@@ -1957,9 +1950,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <div class="demo-copy reveal">
         <h2 class="demo-headline" style="color:var(--text)">The lists only<br><span style="white-space:nowrap">you could curate.</span></h2>
         <p class="demo-body" style="color:var(--text-secondary)">
-          Organise by decade, director, or whatever mood you're in. Create and share film and TV collections that are unmistakably yours.
+          Organise by decade, director, or whatever mood you're in. Create and share movie and TV collections that are unmistakably yours.
         </p>
-        <a href="https://app.theplot.tv/signup" class="btn btn-outline btn-large" data-cta="demo-create">Start curating &rarr;</a>
+        <a href="https://app.theplot.tv/signup" class="btn btn-outline btn-large" data-cta="demo-create">Start curating</a>
       </div>
     </div>
   </section>
@@ -1970,9 +1963,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <div>
         <div class="premium-kicker">PLOT Premium <span>Coming soon</span></div>
         <h2 class="premium-headline">Less deciding.<br><em>More watching.</em></h2>
-        <div class="premium-copy-stage"><div class="premium-copy-slide is-active"><h3>Find tonight’s film</h3><p>A little time to spare and too much to choose from? Find a film that fits your evening, on the services you use.</p></div><div class="premium-copy-slide" aria-hidden="true" inert><h3>Choose something together</h3><p>You’ve both got a watchlist. Find the overlap, make a list together and get movie night started. Friends can join for free.</p></div><div class="premium-copy-slide" aria-hidden="true" inert><h3>Follow the people behind your favourites</h3><p>Love an actor? Always make time for a certain director? Follow them and get a heads-up when their next film or show is on the way.</p></div></div>
+        <div class="premium-copy-stage"><div class="premium-copy-slide is-active"><h3>Find tonight’s movie</h3><p>A little time to spare and too much to choose from? Find a movie that fits your evening, on the services you use.</p></div><div class="premium-copy-slide" aria-hidden="true" inert><h3>Choose something together</h3><p>You’ve both got a watchlist. Find the overlap, make a list together and get movie night started. Friends can join for free.</p></div><div class="premium-copy-slide" aria-hidden="true" inert><h3>Follow the people behind your favourites</h3><p>Love an actor? Always make time for a certain director? Follow them and get a heads-up when their next movie or show is on the way.</p></div></div>
         <p class="premium-note">Your everyday watching stays free.</p>
-        <a href="https://app.theplot.tv/plans" class="btn btn-primary btn-large">Explore Premium <span aria-hidden="true">↗</span></a>
+        <a href="https://app.theplot.tv/plans" class="btn btn-primary btn-large">Explore Premium</a>
         <div class="premium-switcher" role="group" aria-label="Premium benefits" hidden>
           <button type="button" aria-pressed="true">Tonight</button><span aria-hidden="true">·</span>
           <button type="button" aria-pressed="false">Together</button><span aria-hidden="true">·</span>
@@ -1980,9 +1973,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         </div>
       </div>
       <div class="premium-visual-stage" aria-live="off">
-        <div class="premium-visual-slide is-active" role="group" aria-label="1 of 3: Find tonight’s film">
+        <div class="premium-visual-slide is-active" role="group" aria-label="1 of 3: Find tonight’s movie">
           <div class="premium-shared">
-            <div class="premium-mini">Film picker</div>
+            <div class="premium-mini">Movie picker</div>
             <h3>What fits tonight?</h3>
             <div class="premium-story premium-picker" role="img" aria-label="Australian example verified 17 September 2026: choose 120 minutes, Disney+ and Comedy. The Grand Budapest Hotel matches at 100 minutes on Disney+.">
               <div><span class="premium-q-label">How much time?</span><div class="premium-seg premium-time"><span class="premium-ind"></span><span class="premium-o premium-o1"><b class="premium-k">30 min</b><b class="premium-w">30 min</b></span><span class="premium-o premium-o2"><b class="premium-k">60 min</b><b class="premium-w">60 min</b></span><span class="premium-o premium-o3"><b class="premium-k">90 min</b><b class="premium-w">90 min</b></span><span class="premium-on"><b class="premium-k">120 min</b><b class="premium-w">120 min</b></span></div></div>
@@ -2064,7 +2057,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                     <span class="disc-hero-btn disc-save" aria-hidden="true"><svg viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><path d="M1 1h10v12l-5-3-5 3V1z"/></svg></span>
                     <span class="disc-trend">Trending #1</span>
                     <div class="disc-hero-title">The Odyssey</div>
-                    <div class="disc-hero-meta">2026 &middot; Film</div>
+                    <div class="disc-hero-meta">2026 &middot; Movie</div>
                   </div>
                   <div class="disc-sec"><div class="disc-sec-head"><div class="disc-sec-sub">Trending today</div><div class="disc-sec-t">Hot right now</div></div>
                   <div class="disc-row">
@@ -2091,7 +2084,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
               </div>
             </div>
           </div>
-          <div class="app-phone-badge">Coming soon</div>
         </div>
       </div>
     </div>
@@ -2105,7 +2097,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <p class="demo-body" style="color:var(--text-secondary)">plot is built by one person around a full time job. No team, no investors, nothing to answer to except the people using it. So the roadmap gets written with you. Tell me what would make plot better for the way you watch and it shapes what I build or fix next. Support along the way is what lets me keep building a product you love.</p>
         <div class="origin-actions">
           <a href="https://ko-fi.com/J7P123TYGK" class="btn btn-outline btn-large" target="_blank" rel="noopener" data-cta="origin-kofi">Support plot on Ko-fi</a>
-          <a href="/about.html" class="demo-link dark-link" data-cta="origin-about">Read the story &rarr;</a>
+          <a href="/about.html" class="demo-link dark-link" data-cta="origin-about">Read the story</a>
         </div>
       </div>
     </div>
@@ -2113,7 +2105,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
   <!-- ── Live Ticker ──────────────────────────────────────────── -->
   <div class="ticker-section" aria-hidden="true">
-    <div class="ticker-badge"><span class="ticker-badge-mark">plot</span> Live</div>
+    <div class="ticker-badge"><span class="ticker-badge-mark">plot</span> <span class="ticker-badge-live">Live</span></div>
     <div class="ticker-outer">
       <div class="ticker-track" id="tickerTrack">
         <!-- populated by JS -->
@@ -2134,7 +2126,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             <input type="text" name="website" class="fn-website" tabindex="-1" autocomplete="off" aria-hidden="true">
             <button type="submit">Subscribe</button>
           </form>
-          <span class="woc-hint">Or <a href="/whats-on" data-cta="whats-on-closer">browse What's On &rarr;</a></span>
+          <span class="woc-hint">Or <a href="/whats-on" data-cta="whats-on-closer">browse What's On</a></span>
           <div class="woc-msg" id="newsletterMsg" role="status"></div>
         </div>
       </div>
@@ -2277,7 +2269,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     }
 
     // Guide-demo trending panel — four rows from TMDB: the top three trending
-    // films and the top trending series. The committed rows (row 1 is rewritten
+    // movies and the top trending series. The committed rows (row 1 is rewritten
     // weekly by refresh-timeline.mjs) stay on screen if the proxy is unavailable.
     (function () {
       var rows = document.getElementById('gpRows');
@@ -2295,7 +2287,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           var isTv  = !!r.first_air_date || r.media_type === 'tv';
           var title = r.title || r.name || '';
           var year  = ((r.release_date || r.first_air_date || '') + '').slice(0, 4);
-          var kind  = isTv ? 'Series' : 'Film';
+          var kind  = isTv ? 'Series' : 'Movie';
           var chip  = i === 0 ? '<span class="gp-chip is-top">Trending #1</span>' : '<span class="gp-chip">' + kind + '</span>';
           return '<div class="gp-row"><div class="gp-rank">' + (i + 1) + '</div>'
             + '<img class="gp-poster" src="' + IMG + r.poster_path + '" alt="" loading="lazy" decoding="async">'
@@ -2713,7 +2705,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           var date = top.release_date || top.first_air_date || '';
           var isTv = top.media_type === 'tv' || (!top.title && !!top.name);
           var t = hero.querySelector('.disc-hero-title'); if (t) t.textContent = top.title || top.name || t.textContent;
-          var m = hero.querySelector('.disc-hero-meta'); if (m) m.textContent = (date ? date.slice(0,4) + ' · ' : '') + (isTv ? 'TV Series' : 'Film');
+          var m = hero.querySelector('.disc-hero-meta'); if (m) m.textContent = (date ? date.slice(0,4) + ' · ' : '') + (isTv ? 'TV Series' : 'Movie');
         }
         function fill(row, list, isTv) {
           [].slice.call(row.querySelectorAll('.disc-card')).forEach(function(card, i) {
@@ -2791,7 +2783,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           tmdbProxy('tv/top_rated'),
         ]);
 
-        // One running record across all four groups, so a film that is both
+        // One running record across all four groups, so a movie that is both
         // trending and in cinemas is listed once, under the first label that
         // claims it. Deduping before the slice keeps every group full length.
         const seen = {};
@@ -2830,20 +2822,20 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       // `imgs` are the stills the section ships with: they paint immediately and
       // remain the fallback. `q` then pulls live artwork per list, because each
       // heading needs its own query — the shared trending sets would put the
-      // same three films under all three headings, and a horror release is not
+      // same three movies under all three headings, and a horror release is not
       // a date-night pick. The counts stay hardcoded: they describe an imagined
       // user's list, not anything TMDB knows.
       //
       // TMDB exposes no awards data, so "Award winners" uses acclaim (a high
       // rating earned over a large vote count) as the closest honest proxy.
       const cats = [
-        { nm: 'Award winners', ct: '20 films',
+        { nm: 'Award winners', ct: '20 movies',
           q: 'sort_by=vote_average.desc&vote_count.gte=2500',
           imgs: ['https://image.tmdb.org/t/p/w342/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg', 'https://image.tmdb.org/t/p/w500/kQs6keheMwCxJxrzV83VUwFtHkB.jpg', 'https://image.tmdb.org/t/p/w500/yx3hS1sZIljZgZNTyt0ATmcs0PC.jpg'] },
-        { nm: 'Date night',    ct: '12 films',
+        { nm: 'Date night',    ct: '12 movies',
           q: 'with_genres=10749&sort_by=popularity.desc&vote_count.gte=200',   // 10749 = Romance
           imgs: ['https://image.tmdb.org/t/p/w500/wLATJOQ9yQfaVxpCHGeLYWVKS6K.jpg', 'https://image.tmdb.org/t/p/w500/yRt7MGBElkLQOYRvLTT1b3B1rcp.jpg', 'https://image.tmdb.org/t/p/w500/xzZaU0MN6L9oc1pl0RUXSB7hWwD.jpg'] },
-        { nm: 'Spooky season', ct: '13 films',
+        { nm: 'Spooky season', ct: '13 movies',
           q: 'with_genres=27&sort_by=popularity.desc&vote_count.gte=200',      // 27 = Horror
           imgs: ['https://image.tmdb.org/t/p/w500/A8UIMJTwSaflmWmUlfPOFdenSBT.jpg', 'https://image.tmdb.org/t/p/w500/5aj8vVGFwGVbQQs26ywhg4Zxk2L.jpg', 'https://image.tmdb.org/t/p/w500/fr96XzlzsONrQrGfdLMiwtQjott.jpg'] },
       ];

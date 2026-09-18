@@ -232,7 +232,7 @@ export default function ProfileScreen({ usernameOverride }: { usernameOverride?:
               <Section title="Recently watched" colors={colors}><PosterGrid items={recent} styles={styles} onPress={openMedia} /></Section>
             )}
             {topMovies.length > 0 && (
-              <Section title="Top 10 films" colors={colors}><PosterGrid items={topMovies} ranked styles={styles} onPress={openMedia} /></Section>
+              <Section title="Top 10 movies" colors={colors}><PosterGrid items={topMovies} ranked styles={styles} onPress={openMedia} /></Section>
             )}
             {topTv.length > 0 && (
               <Section title="Top 10 TV" colors={colors}><PosterGrid items={topTv} ranked styles={styles} onPress={openMedia} /></Section>

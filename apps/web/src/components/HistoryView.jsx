@@ -7,7 +7,7 @@ import { groupEntriesByMonth, monthLabel } from '../utils/history.js';
 import {
   calendarParts, entriesInYear, yearsWithEntries, filterEntries, genreCounts,
   titlePerDay, streaks, favouriteWeekday, movieMinutes, formatDuration,
-  averageStars, crowdComparison, crowdSentence, recurringPeople, monthInsight,
+  crowdComparison, crowdSentence, recurringPeople, monthInsight,
   yearSentence, topGenreId,
 } from '@plot/core/historyStats.js';
 import { ratingToStars } from '@plot/core/ratings.js';
@@ -70,7 +70,6 @@ function Stat({ value, label }) {
 }
 
 function YearCard({ year, isCurrentYear, entries, details, detailsLoading, genreName }) {
-  const avg = averageStars(entries);
   const wd = favouriteWeekday(entries);
   const mins = movieMinutes(entries, details);
   const sentence = yearSentence({
@@ -88,7 +87,6 @@ function YearCard({ year, isCurrentYear, entries, details, detailsLoading, genre
       <div className="hist-stats">
         <Stat value={entries.length} label={T.titles} />
         <Stat value={mins.counted ? formatDuration(mins.minutes) : '–'} label={T.watchingMovies} />
-        <Stat value={avg ? avg.stars : '–'} label={T.yourAverage} />
         <Stat value={wd && wd.total >= 3 ? wd.name : '–'} label={T.yourNight} />
       </div>
       {sentence && <p className="hist-sentence">{sentence}</p>}
@@ -152,10 +150,11 @@ function MiniMonthCard({ year, monthIndex, monthGroups, onMonthIndex, entries, t
         {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((w, i) => <span key={`wd-${i}`} className="hist-mini-wd" aria-hidden="true">{w}</span>)}
         {cells}
       </div>
-      <div className="hist-card-foot">
-        <span>{T.daysWithAWatch(perDay.size)}</span>
-        {s.best > 1 && <span>{T.bestStreak} <b>{s.best}</b>{s.bestMonth ? ` in ${s.bestMonth.slice(0, 3)}` : ''}</span>}
-      </div>
+      {s.best > 1 && (
+        <div className="hist-card-foot">
+          <span>{T.bestStreak} <b>{s.best}</b>{s.bestMonth ? ` in ${s.bestMonth.slice(0, 3)}` : ''}</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -330,7 +329,6 @@ export function HistoryPage({ entries, details, detailsLoading, genreList, openP
   return (
     <div className="hist-page">
       <div className="hist-toolbar">
-        <span className="hist-toolbar-sub">{T.subtitle}</span>
         <div className="hist-toolbar-controls">
           {years.length > 1 && (
             years.length <= 4 ? (

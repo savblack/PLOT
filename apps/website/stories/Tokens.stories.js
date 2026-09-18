@@ -43,7 +43,7 @@ export const Typography = () => {
   serif.className = 'sb-type-row';
   serif.innerHTML =
     '<div class="sb-type-label">--display (Gabarito)</div>' +
-    '<div style="font-family: var(--display); font-size: 2.5rem; letter-spacing: var(--display-tracking); font-weight: 700;">Your film &amp; TV companion</div>';
+    '<div style="font-family: var(--display); font-size: 2.5rem; letter-spacing: var(--display-tracking); font-weight: 700;">Your movie &amp; TV companion</div>';
 
   const sans = document.createElement('div');
   sans.className = 'sb-type-row';

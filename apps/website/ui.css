@@ -46,6 +46,35 @@
   .btn-large { padding: 0.75rem 1.5rem; font-size: 0.85rem; }
 }
 
+/* Website-only CTA motion: CSS arrows follow hover and keyboard focus.
+   A CSS-drawn icon keeps decorative arrows out of accessible names. */
+:is(.btn, .nav-cta, .demo-link, a[data-cta], button[type="submit"])::after {
+  content: "";
+  display: inline-block;
+  flex-shrink: 0;
+  width: 0.85em;
+  height: 0.85em;
+  margin-left: 0.4em;
+  vertical-align: -0.1em;
+  background: currentColor;
+  clip-path: polygon(0 43%, 73% 43%, 43% 13%, 53% 3%, 100% 50%, 53% 97%, 43% 87%, 73% 57%, 0 57%);
+  transform: rotate(0deg);
+  transition: transform 180ms var(--ease, ease);
+}
+:is(.btn, .nav-cta, .demo-link, a[data-cta], button[type="submit"]):focus-visible::after {
+  transform: rotate(-45deg);
+}
+@media (hover: hover) {
+  :is(.btn, .nav-cta, .demo-link, a[data-cta], button[type="submit"]):not(:disabled):hover::after {
+    transform: rotate(-45deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  :is(.btn, .nav-cta, .demo-link, a[data-cta], button[type="submit"])::after {
+    transition: none;
+  }
+}
+
 /* Chips — small labels. Cream by default; pink and sage carry meaning. */
 .chip {
   display: inline-flex;

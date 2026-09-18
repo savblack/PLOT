@@ -239,7 +239,7 @@ export default function DesignSystemPage() {
           Marketing headlines set Gabarito bold at a fluid <code>clamp(2.4rem, 4.8vw, 4.4rem)</code>, line-height 0.95, tracked <code>−0.03em</code>. The manifesto is the one place the serif still leads, at <code>clamp(1.5rem, 2.8vw, 2.6rem)</code>. Same faces as the app; editorial scale.
         </p>
         <div className="ds-editorial-display">
-          <span>Your film &amp; TV companion</span>
+          <span>Your movie &amp; TV companion</span>
         </div>
       </Section>
 
@@ -1488,7 +1488,7 @@ export default function DesignSystemPage() {
           </RuleCard>
           <RuleCard label="Product copy patterns">
             <div className="ds-note-list">
-              <div className="ds-note-row"><strong>Errors stay in-world</strong><p>"Looks like we've hit a plot hole." / "That scene didn't quite load." — film language, warm, never blame-y.</p></div>
+              <div className="ds-note-row"><strong>Errors stay in-world</strong><p>"Looks like we've hit a plot hole." / "That scene didn't quite load." — movie language, warm, never blame-y.</p></div>
               <div className="ds-note-row"><strong>Empty states point forward</strong><p>"Nothing saved yet" + one concrete next step ("Browse the Guide or search for titles…"). Never a dead end.</p></div>
               <div className="ds-note-row"><strong>CTAs are product verbs</strong><p>"Save to your watchlist" / "Add to your PLOT" — one soft CTA or none. Never "link in bio", never stacked CTAs.</p></div>
             </div>

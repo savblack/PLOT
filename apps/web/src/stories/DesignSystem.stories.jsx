@@ -89,7 +89,7 @@ export const Card = () => (
         <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, letterSpacing: 'var(--font-display-tracking)', fontSize: 22 }}>Trending now</span>
         <span style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>This week</span>
       </div>
-      {[['1', 'The End of Oak Street', 'Trending #1', true], ['2', 'Moana', 'Film', false], ['3', 'Mayday', 'Film', false]].map(([n, t, c, pink]) => (
+      {[['1', 'The End of Oak Street', 'Trending #1', true], ['2', 'Moana', 'Movie', false], ['3', 'Mayday', 'Movie', false]].map(([n, t, c, pink]) => (
         <div key={n} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '12px 0', borderTop: '1px solid var(--border)' }}>
           <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 22, width: 24, color: 'var(--accent)' }}>{n}</span>
           <span style={{ width: 36, height: 54, borderRadius: 6, background: 'var(--surface)' }} />

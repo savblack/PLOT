@@ -204,7 +204,7 @@ export const SETTINGS_VIEW = {
     thanksForTip: 'Thanks for supporting PLOT ♥',
     activeThankYou: 'PLOT Premium is active. Thank you ♥',
     upsellLabel: 'Go Premium',
-    upsellBlurb: 'Find tonight’s film, keep up with releases and choose together. Coming soon.',
+    upsellBlurb: 'Find tonight’s movie, keep up with releases and choose together. Coming soon.',
     upgradeButton: 'Explore Premium',
   },
 
