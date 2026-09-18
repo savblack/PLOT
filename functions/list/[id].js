@@ -11,7 +11,7 @@ import { SHARING } from '../../packages/core/copy/sharing.js';
 // "not found" page.
 //
 // Routing: file path functions/list/[id].js → /list/<id>.
-import { ogBase } from '../_lib/og-base.js';
+import { staticCard } from '../_lib/og-card.js';
 import { colors } from '../../packages/core/tokens.js';
 
 // Warm brand neutrals from the canonical token source, so this page can't drift
@@ -102,7 +102,7 @@ const htmlResponse = (html, status, cache) =>
     },
   });
 
-export async function onRequest({ request, params, env }) {
+export async function onRequest({ request, params }) {
   const host = request.headers.get('host') || 'app.theplot.tv';
   const id = (Array.isArray(params?.id) ? params.id[0] : params?.id || '').trim();
 
@@ -127,7 +127,8 @@ export async function onRequest({ request, params, env }) {
   }
 
   const url = `https://${host}/list/${encodeURIComponent(id)}`;
-  const ogImage = `${ogBase(host, env)}?list=${encodeURIComponent(id)}`;
+  // The branded list card cannot render on the free plan — see _lib/og-card.js.
+  const ogImage = staticCard(host);
   const ownerLine = owner
     ? `<span class="by">by <a href="https://${host}/u/${encodeURIComponent(owner.username)}">@${esc(owner.username)}</a></span>`
     : '';

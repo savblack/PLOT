@@ -189,12 +189,14 @@ async function loadPost(id) {
 
 async function loadFont(base, file) {
   try {
-    const r = await fetch(`${base}/fonts/${file}`);
+    // cacheEverything keeps the .ttf at the edge, so an isolate that does start
+    // cold pays a colo cache read rather than a round trip to the Pages origin.
+    const r = await fetch(`${base}/fonts/${file}`, { cf: { cacheTtl: 86400, cacheEverything: true } });
     if (r.ok) return await r.arrayBuffer();
   } catch { /* missing font → Satori falls back */ }
   return null;
 }
-async function loadFonts() {
+async function fetchFonts() {
   const [display, sansR, sansM] = await Promise.all([
     loadFont(FONT_BASE, 'Gabarito-Bold.ttf'),
     loadFont(FONT_BASE, 'DMSans-Regular.ttf'),
@@ -205,6 +207,27 @@ async function loadFonts() {
   if (sansR) fonts.push({ name: 'DM Sans', data: sansR, weight: 400, style: 'normal' });
   if (sansM) fonts.push({ name: 'DM Sans', data: sansM, weight: 500, style: 'normal' });
   return fonts;
+}
+
+// The fonts never change, so fetch and decode them once per isolate instead of
+// pulling ~215KB and re-parsing it on every render — that cost sat in the
+// request path of a Worker whose whole problem is CPU per invocation.
+//
+// The promise (not the resolved value) is memoized so concurrent first requests
+// share one fetch. A load that yields NO usable font is not memoized: that is a
+// transient origin failure, and pinning it would serve unstyled cards for the
+// life of the isolate rather than for one request.
+let fontsPromise = null;
+function loadFonts() {
+  if (!fontsPromise) {
+    fontsPromise = fetchFonts()
+      .then((fonts) => {
+        if (!fonts.length) fontsPromise = null;
+        return fonts;
+      })
+      .catch((e) => { fontsPromise = null; throw e; });
+  }
+  return fontsPromise;
 }
 
 // ── Title card: backdrop + gradient scrim + serif title + DM Sans meta ──

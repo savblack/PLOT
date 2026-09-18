@@ -144,14 +144,18 @@ const postImage = (p: FeedPost) => {
 // Static branded 1200×630 fallback (PLOT wordmark + tagline) for pages with no
 // per-post image, so every shared PLOT link previews on-brand.
 const OG_FALLBACK = `${SITE}/og-image.png`;
-// Link-preview image: prefer the branded per-post social render, then a branded
-// /api/og title card for a single-title post, then the plain hero still, then
-// the static brand image. (The on-page hero keeps using postImage's plain still.)
+// Link-preview image: prefer the branded per-post social render, then the plain
+// hero still, then the static brand image. (The on-page hero keeps using
+// postImage's plain still.)
+//
+// A single-title post used to fall back to a branded app.theplot.tv/api/og
+// card. That path died with the move off Vercel — it returns the SPA shell as
+// text/html — and its Cloudflare replacement cannot render on the free plan,
+// so there is nothing left to point at: such a post now takes its hero still,
+// or the static card. tmdb_refs carries only poster_path, and a 2:3 poster
+// crops badly into a 1.91:1 slot.
 const postShareImage = (p: FeedPost) => {
   if (p.media?.[0]?.landscape_path) return mediaUrl(p.media[0].landscape_path);
-  const ref = p.tmdb_refs?.[0];
-  const rid = refId(ref);
-  if (rid && ref?.media_type) return `${APP}/api/og?type=${ref.media_type === 'tv' ? 'tv' : 'movie'}&id=${rid}`;
   const hero = p.copy?.hero_image;
   return typeof hero === 'string' && /^https?:\/\//.test(hero) ? hero : OG_FALLBACK;
 };
