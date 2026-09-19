@@ -801,7 +801,8 @@
         right: 1.5rem;
         bottom: calc(var(--ticker-height) + env(safe-area-inset-bottom, 0px));
         /* Peek up far enough to be visible before the first scroll (SUS-112) */
-        transform: translateY(30%);
+        /* Keep a clear pause below the CTA row before the artwork enters. */
+        transform: translateY(50%);
         pointer-events: none;
         z-index: 1;
       }
@@ -888,7 +889,7 @@
       .hero-actions { flex-direction: column; align-items: center; }
       .ticker-section { display: none; }
       :root { --ticker-height: 0px; }
-      .hero-peek { transform: translateY(45%); bottom: 0; }
+      .hero-peek { transform: translateY(55%); bottom: 0; }
 
       /* Unify the mobile gutter — the interactive demo sections default to a
          2rem side padding while the editorial sections (manifesto, closing,
