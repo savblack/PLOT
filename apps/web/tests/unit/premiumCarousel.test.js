@@ -8,7 +8,7 @@ const script = readFileSync(new URL('../../../website/js/premium-home.js', impor
 function fixture({ reducedMotion = false } = {}) {
   const element = () => ({
     listeners: {}, attrs: {}, inert: false,
-    classList: { add() {}, remove() {} },
+    classList: { add() {}, remove() {}, toggle() {} },
     setAttribute(name, value) { this.attrs[name] = value; },
     removeAttribute(name) { delete this.attrs[name]; },
     addEventListener(name, callback) { this.listeners[name] = callback; },

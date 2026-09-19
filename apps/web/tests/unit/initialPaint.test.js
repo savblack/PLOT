@@ -4,6 +4,9 @@ import { test } from 'node:test';
 
 const html = readFileSync(new URL('../../index.html', import.meta.url), 'utf8');
 const main = readFileSync(new URL('../../src/main.jsx', import.meta.url), 'utf8');
+const router = readFileSync(new URL('../../src/router.jsx', import.meta.url), 'utf8');
+const rootRoute = readFileSync(new URL('../../src/pages/RootRoute.jsx', import.meta.url), 'utf8');
+const protectedRoute = readFileSync(new URL('../../src/components/ProtectedRoute.jsx', import.meta.url), 'utf8');
 
 test('the initial document paints before React starts', () => {
   const criticalStyles = html.indexOf('<style data-critical="app-boot-loader">');
@@ -18,4 +21,18 @@ test('the initial document paints before React starts', () => {
   assert.doesNotMatch(main, /import router from ['"]\.\/router\.jsx['"]/, 'the route graph must not be render-blocking');
   assert.match(main, /import\('\.\/index\.css'\)/, 'global CSS should load after the initial paint');
   assert.doesNotMatch(main, /^import ['"]\.\/index\.css['"];?$/m, 'global CSS must not be render-blocking');
+});
+
+test('public auth routes do not eagerly load the authenticated app shell', () => {
+  assert.match(router, /const App = lazy\(\(\) => import\(['"]\.\/App\.jsx['"]\)\)/);
+  assert.doesNotMatch(router, /import App from ['"]\.\/App\.jsx['"]/);
+  assert.match(router, /const ProtectedRoute = lazy\(\(\) => import\(['"]\.\/components\/ProtectedRoute\.jsx['"]\)\)/);
+  assert.doesNotMatch(router, /import ProtectedRoute from ['"]\.\/components\/ProtectedRoute\.jsx['"]/);
+});
+
+test('route gates do not block their first render on the Supabase SDK', () => {
+  for (const source of [rootRoute, protectedRoute]) {
+    assert.match(source, /loadSupabase/);
+    assert.doesNotMatch(source, /import \{ supabase \} from ['"]@plot\/core\/supabase\.js['"]/);
+  }
 });

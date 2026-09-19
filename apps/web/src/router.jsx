@@ -2,7 +2,6 @@ import { Suspense, lazy } from 'react';
 import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import RouteErrorBoundary from './components/RouteErrorBoundary.jsx';
-import ProtectedRoute from './components/ProtectedRoute.jsx';
 import LoadingSpinner from './components/LoadingSpinner.jsx';
 import { SHOW_MEDIA_SYNC_INTEGRATIONS, SHOW_PRICING_PAGE } from './launchFeatures.js';
 import { isPreviewDeployment } from './utils/previewDeployment.js';
@@ -14,11 +13,12 @@ import { isPreviewDeployment } from './utils/previewDeployment.js';
 // the main bundle means the app can always get you in or out.
 import AuthPage from './pages/AuthPage.jsx';
 import LogoutPage from './pages/LogoutPage.jsx';
-// App is the shell almost every visitor hits, so it's bundled eagerly too —
-// lazy-loading it meant its own boot loader (auth/profile fetch) had to wait
-// on a chunk fetch first, showing an unstyled flash before the real one even
-// started.
-import App from './App.jsx';
+// Keep the authenticated shell out of the public-route bundle. In particular,
+// /login should not download and parse every app hook, panel and stylesheet
+// before it can render the sign-in form. The shared Suspense boundary below
+// keeps authenticated cold starts styled while this chunk loads.
+const App = lazy(() => import('./App.jsx'));
+const ProtectedRoute = lazy(() => import('./components/ProtectedRoute.jsx'));
 
 // Layout + views
 const DiscoverView = lazy(() => import('./components/DiscoverView.jsx'));
