@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { supabase } from '@plot/core/supabase.js';
 import './AuthPage.css';
 import { track, identifyUser, EVENTS } from '../lib/analytics.js';
 import { getAuthCallbackUrl } from '../utils/redirects.js';
@@ -13,6 +12,7 @@ import { COMMON } from '../copy/common.js';
 import { AUTH_PAGE } from '../copy/authPage.js';
 import { authErrorReason } from '@plot/core/authErrors.js';
 import { markSignupReferralPending } from '../utils/attribution.js';
+import { loadSupabase } from '../utils/loadSupabase.js';
 
 const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY;
 
@@ -122,7 +122,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
   // Auto-redirect if already logged in
   const [hasSession, setHasSession] = useState(null); // null = still checking
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    loadSupabase().then((supabase) => supabase.auth.getSession()).then(({ data: { session } }) => {
       if (session) {
         const plan = getPremiumCheckoutIntent();
         navigate(plan ? `/pricing?billing=${plan}` : '/app', { replace: true });
@@ -143,7 +143,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
       // Fetched unconditionally (not just once Turnstile fails) so the token's
       // age reflects real time-on-page even if bypass turns out to be needed
       // later. No side effects server-side — safe to call every visit.
-      supabase.functions.invoke('signup-bypass', { method: 'GET' })
+      loadSupabase().then((supabase) => supabase.functions.invoke('signup-bypass', { method: 'GET' }))
         .then(({ data }) => { if (data?.formToken) formTokenRef.current = data.formToken; })
         .catch(() => { /* bypass simply won't be available if this fails */ });
     }
@@ -153,6 +153,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    const supabase = await loadSupabase();
 
     if (mode === 'forgot') {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
@@ -235,6 +236,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
   // bypassing the need for a Turnstile token. On success it hands back a
   // confirmation link delivered only to the supplied mailbox.
   const submitViaBypass = async () => {
+    const supabase = await loadSupabase();
     const { data, error } = await supabase.functions.invoke('signup-bypass', {
       method: 'POST',
       body: { email, password, website, formToken: formTokenRef.current },
@@ -297,6 +299,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
     };
 
     try {
+      const supabase = await loadSupabase();
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: { redirectTo: getAuthCallbackUrl() },
@@ -317,6 +320,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
     setLoading(true);
     setError(null);
     try { sessionStorage.setItem('plot_auth_method', 'magic_link'); } catch { /* ignore */ }
+    const supabase = await loadSupabase();
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: { emailRedirectTo: getAuthCallbackUrl(), captchaToken },
@@ -339,6 +343,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
   const handleResend = async () => {
     if (resendStatus === 'sending' || resendStatus === 'sent') return;
     setResendStatus('sending');
+    const supabase = await loadSupabase();
     const { error } = await supabase.auth.resend({
       type: 'signup',
       email,
