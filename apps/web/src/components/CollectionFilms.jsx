@@ -55,7 +55,6 @@ export default function CollectionFilms({ stub, parts, items, onOpenTitle }) {
     // state update is per call.
     let failed = false;
     for (const part of [...parts].reverse()) {
-      // eslint-disable-next-line no-await-in-loop
       const added = await customLists.addItem(list.id, part);
       if (!added) failed = true;
     }
