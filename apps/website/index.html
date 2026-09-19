@@ -1213,7 +1213,20 @@
       background: var(--sage); color: var(--text);
     }
     .app-notify { margin-top: 1.8rem; }   /* breathing room between the copy and the email capture */
-    .app-phone { position: relative; width: 320px; }
+    .app-phone {
+      position: relative;
+      width: min(100%, 430px);
+      display: flex;
+      justify-content: center;
+      padding: 2rem 0;
+      perspective: 1100px;
+    }
+    /* Give the mobile preview the wider, editorial three-quarter presentation
+       of a device mockup without replacing the accurate in-product screen. */
+    .app-phone .iphone-png-wrap {
+      transform: rotateY(-11deg) rotateZ(4deg) scale(1.1);
+      transform-origin: center;
+    }
 
     .guide-screen {
       display: flex;
@@ -1348,11 +1361,14 @@
       #guide-demo .demo-split { gap: 2.4rem; }
       #guide-demo .marquee { margin-top: 3rem; }
       #guide-demo .marquee-track { gap: 2.2rem; }
+      .app-phone { width: min(100%, 370px); }
+      .app-phone .iphone-png-wrap { transform: rotateY(-8deg) rotateZ(3deg); }
     }
 
     @media (max-width: 420px) {
       .cf { height: 300px; --cf-x: 118px; --cf-fx: 250px; }
       .cf-card { width: 170px; }
+      .app-phone .iphone-png-wrap { transform: rotateY(-6deg) rotateZ(2deg) scale(0.9); }
     }
 
     /* ── Interactive Calendar Demo ──────────────────────────────── */
