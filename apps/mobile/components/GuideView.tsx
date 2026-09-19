@@ -11,17 +11,18 @@ import { TAB_BAR_CLEARANCE } from '../lib/tabBar';
 import { GUIDE_REGIONS, guideDay, broadcastTime, broadcastDayLabel, isOnNow } from '@plot/core/broadcastGuide.js';
 import { useBroadcastAgenda } from '@plot/core/useBroadcastAgenda.js';
 import { BROADCAST_GUIDE as COPY } from '@plot/core/copy/broadcastGuide.js';
+import BroadcastGuideSetup from './BroadcastGuideSetup';
 
 type Programme = { id: string; channelId: string; title: string; start: string; end: string; description?: string };
 type Channel = { id: string; name: string };
 
 export default function GuideView() {
-  const { broadcastPreferences: preferences } = useAppData();
+  const { broadcastPreferences: preferences, profile } = useAppData();
   const { colors } = useTheme();
   if (preferences.loading) return <Text style={{ color: colors.textPrimary }}>{COPY.loading}</Text>;
   if (preferences.error) return <View><Text style={{ color: colors.textPrimary }}>{COPY.preferencesError}</Text><Pressable accessibilityRole="button" onPress={preferences.retry}><Text style={{ color: colors.accentText }}>{COPY.retry}</Text></Pressable></View>;
   const market = GUIDE_REGIONS.find(m => m.id === preferences.value.market_id);
-  if (!market || !market.provider || market.scope === 'unavailable') return <View style={{ padding: 20, gap: 16 }}><Text style={{ color: colors.textPrimary }}>{market ? COPY.unsupported : COPY.chooseMarket}</Text><Pressable accessibilityRole="button" onPress={() => router.push('/settings')}><Text style={{ color: colors.accentText }}>{COPY.settings}</Text></Pressable></View>;
+  if (!market || !market.provider || market.scope === 'unavailable') return <BroadcastGuideSetup key={preferences.value.market_id || 'new'} preferences={preferences} profileRegion={profile?.region} />;
   return <BroadcastAgenda key={market.id} region={market.id} preferences={preferences} />;
 }
 

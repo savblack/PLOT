@@ -75,15 +75,75 @@ test('production Guide saves empty channels and preserves a failed draft', async
 
 test('Settings saves an unsupported market without substituting listings', async ({ page }) => {
   const backend = await setup(page, null);
-  await page.goto('/guide');
-  await expect(page.getByText('Choose your TV market in Settings to see local listings.')).toBeVisible();
-  await page.locator('a[href="/settings?section=viewing"]').click();
+  await page.goto('/settings?section=viewing');
   await page.getByLabel('Country', { exact: true }).selectOption('US');
   await page.getByLabel('TV market', { exact: true }).selectOption('US-other');
   await page.getByRole('button', { name: 'Save region', exact: true }).click();
   await expect.poll(() => backend.getPreferences()?.market_id).toBe('US-other');
   await page.getByRole('link', { name: 'Back to Guide' }).click();
-  await expect(page.getByText('Your local guide is not available yet.')).toBeVisible();
+  await expect(page.getByText('Listings are not available for this area yet. We will not substitute another area’s channels.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Show my guide' })).toBeDisabled();
+});
+
+test('inline setup keeps a failed draft and opens the saved guide without leaving the page', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 1600, height: 1000 });
+  const backend = await setup(page, null);
+  await page.goto('/guide');
+  await expect(page.getByRole('heading', { name: 'A little less scrolling. A little more watching.' })).toBeVisible();
+  await expect(page.getByLabel('Country', { exact: true })).toHaveValue('AU');
+  await expect(page.getByLabel('City or region')).toHaveValue('');
+  const submit = page.getByRole('button', { name: 'Show my guide' });
+  await expect(submit).toBeDisabled();
+  await page.getByLabel('City or region').selectOption('Sydney');
+  await expect(submit).toBeEnabled();
+  await page.screenshot({ path: testInfo.outputPath('guide-setup-desktop.png') });
+  const banner = await page.locator('.guide-setup').boundingBox();
+  const main = await page.locator('.app-main').boundingBox();
+  expect(banner.width).toBeGreaterThan(main.width * 0.9);
+  const button = await submit.boundingBox();
+  const row = await page.locator('.guide-setup-row').last().boundingBox();
+  expect(Math.abs(button.x + button.width - row.x - row.width)).toBeLessThan(2);
+  backend.failSave(true);
+  await submit.click();
+  await expect(page.getByRole('alert')).toContainText('Your changes are still here');
+  await expect(page.getByLabel('City or region')).toHaveValue('Sydney');
+  expect(backend.getPreferences()).toBeNull();
+  backend.failSave(false);
+  await submit.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('button', { name: /Test evening news/ })).toBeVisible();
+  expect(backend.getPreferences()).toEqual({ market_id: 'Sydney', channel_ids: null });
+  await expect(page).toHaveURL(/\/guide$/);
+  await page.reload();
+  await expect(page.getByRole('button', { name: /Test evening news/ })).toBeVisible();
+});
+
+test('narrow setup resets the city on country change and explains unavailable coverage', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const backend = await setup(page, null);
+  await page.goto('/guide');
+  const country = page.getByLabel('Country', { exact: true });
+  const region = page.getByLabel('City or region');
+  const submit = page.getByRole('button', { name: 'Show my guide' });
+  await region.selectOption('Sydney');
+  await expect(submit).toBeEnabled();
+  await page.screenshot({ path: testInfo.outputPath('guide-setup-mobile.png') });
+  await country.selectOption('GB');
+  await expect(region).toHaveValue('');
+  await expect(submit).toBeDisabled();
+  await region.selectOption('GB-London');
+  await expect(page.getByRole('status')).toContainText('This source is currently unavailable');
+  await expect(submit).toBeDisabled();
+  await country.selectOption('US');
+  await region.selectOption('US-other');
+  await expect(page.getByRole('status')).toContainText('We will not substitute another area’s channels');
+  expect(backend.getPreferences()).toBeNull();
+  await country.selectOption('AU');
+  await region.selectOption('Sydney');
+  await expect(page.getByText('We will not substitute', { exact: false })).not.toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await submit.click();
+  await expect(page.getByRole('button', { name: /Test evening news/ })).toBeVisible();
 });
 
 test('programme details and narrow agenda render on the production route', async ({ page }) => {
