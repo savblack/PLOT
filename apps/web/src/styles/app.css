@@ -610,6 +610,7 @@ svg { stroke-width: 1.5; }
 .app-sidebar-item svg { stroke-width: 1.7; }
 .app-sidebar-help { display: flex; flex-direction: column; }
 .app-sidebar-help .app-sidebar-item { text-decoration: none; }
+.app-sidebar-help-toggle { width: 100%; }
 .app-sidebar-help-toggle svg { transition: transform 0.15s ease; }
 .app-sidebar-help-toggle[aria-expanded="true"] svg { transform: rotate(90deg); }
 @media (prefers-reduced-motion: reduce) {
