@@ -43,9 +43,10 @@ quality varies by title, and no share carries PLOT branding in the image.
    Fonts are the likeliest problem — they load from `FONT_BASE`, so confirm
    `https://app.theplot.tv/fonts/DMSans-Regular.ttf` is reachable.
 6. Point the callers back at it in `functions/_lib/og-card.js`. There is no env
-   switch any more: `OG_BASE_URL` was removed from the Pages project along with
-   `functions/_lib/og-base.js`, whose fallback pointed at `/api/og` on Vercel —
-   a path that stopped existing when the app moved to Cloudflare.
+   switch in source any more: `functions/_lib/og-base.js` was removed, and its
+   fallback pointed at `/api/og` on Vercel, a path that stopped existing when
+   the app moved to Cloudflare. If `OG_BASE_URL` still exists in the Pages
+   project settings, it is inert and can be removed there separately.
 
 ## Notes
 

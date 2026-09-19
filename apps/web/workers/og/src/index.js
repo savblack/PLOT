@@ -5,23 +5,20 @@
 //   ?post=<uuid>           → feed-post card
 //   ?type=movie&id=<id>    → title card
 //
-// This is a port of apps/web/api/og.js off Vercel. On-the-fly Satori rendering
-// is the single heaviest CPU consumer in the app and it exhausted the Vercel
-// Hobby CPU/origin-transfer caps (which paused production). Cloudflare's free
-// tier is far more generous for this workload, and the tmdb-proxy Worker already
-// proves the pattern. The card-render functions are copied verbatim from og.js
-// so the output is pixel-identical; only the runtime plumbing differs:
+// NOT DEPLOYED. The deployment was deleted on 2026-09-18 because a Satori
+// render costs ~25ms of CPU against the Workers Free 10ms ceiling. Nothing in
+// production points here; callers choose TMDB backdrops or the static card in
+// functions/_lib/og-card.js. See README.md before restoring this Worker.
+//
+// This is a port of the former Vercel apps/web/api/og.js renderer. The card
+// builders are retained as the path back to branded cards; only the runtime
+// plumbing differs:
 //   - ImageResponse comes from `workers-og` (not `@vercel/og`)
 //   - secrets/config come from `env` (not process.env)
 //   - fonts are fetched from FONT_BASE (the Worker host doesn't serve /fonts)
 //
-// Deploy:
-//   cd apps/web/workers/og
-//   npm install
-//   npx wrangler secret put TMDB_API_KEY   # same value as the Vercel env
-//   npx wrangler deploy
-// Then VERIFY the workers.dev URL renders each card variant before pointing the
-// app at it (set OG_BASE_URL / VITE_OG_BASE_URL — see the README).
+// Restoring it requires Workers Paid first, then the TMDB_API_KEY secret and a
+// deploy. Verify every card variant before changing callers. See README.md.
 import { ImageResponse } from 'workers-og';
 import React from 'react';
 

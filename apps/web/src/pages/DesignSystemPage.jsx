@@ -1233,7 +1233,7 @@ export default function DesignSystemPage() {
 
       <Section eyebrow="16" title="Share & Social Cards">
         <p className="ds-section-note">
-          When a PLOT link is shared — a title texted to a friend, a profile or list posted — the <code>og:image</code> is written by the Pages Function that serves the page. Titles point at their TMDB backdrop; profiles, lists and bare-domain links point at the static 1200×630 <code>og-image.png</code>. The branded cards below are the <code>plot-og</code> renderer's output, kept for reference: it is dormant, not deleted. A Satori render costs ~25ms of CPU against the free plan's 10ms per-request ceiling, so it needs Workers Paid before anything can point at it again.
+          When a PLOT link is shared, whether it is a title texted to a friend or a profile or list posted, the <code>og:image</code> is written by the Pages Function that serves the page. Titles point at their TMDB backdrop; profiles, lists and bare-domain links point at the static 1200×630 <code>og-image.png</code>. The branded cards below are the retired <code>plot-og</code> renderer's output, kept for reference in source only. Its deployment was deleted on 18 September 2026 because a Satori render costs ~25ms of CPU against the free plan's 10ms per-request ceiling, so it needs Workers Paid before anything can point at it again.
         </p>
 
         <div className="ds-share-grid">
@@ -1273,7 +1273,7 @@ export default function DesignSystemPage() {
             <div className="ds-note-list">
               <div className="ds-note-row"><strong>Canvas</strong><p>1200×630, brand dark, PLOT wordmark, accent eyebrow — <code>--accent</code> sourced from <code>core/tokens.js</code>.</p></div>
               <div className="ds-note-row"><strong>Type</strong><p>Gabarito titles (fluid 58–106px by length), DM Sans meta + labels. The same two families as every other surface.</p></div>
-              <div className="ds-note-row"><strong>Source</strong><p>Rendered by the <code>plot-og</code> Cloudflare Worker (<code>apps/web/workers/og</code>), which nothing currently points at. These samples come from the real builders via <code>scripts/gen-share-samples.mjs</code>.</p></div>
+              <div className="ds-note-row"><strong>Source</strong><p>Rendered from the retired <code>plot-og</code> Cloudflare Worker source (<code>apps/web/workers/og</code>). The Worker is not deployed and nothing currently points at it. These samples come from the real builders via <code>scripts/gen-share-samples.mjs</code>.</p></div>
             </div>
           </RuleCard>
         </div>
