@@ -45,7 +45,7 @@ export const SETTINGS_VIEW = {
     comingSoonMessage: 'Upgrades are not available yet. You can keep using plot for free in the meantime.',
     portalHint: 'Update payment details, view invoices or cancel your subscription.',
     supportTitle: 'A little support goes a long way.',
-    supportHint: 'If you’d like to support plot without a subscription, you can leave a tip on Ko-fi. Thank you for helping keep it running.',
+    supportHint: 'If you’d like to support PLOT without a subscription, you can leave a tip on Ko-fi. Thank you for helping keep it running.',
     supportAction: 'Support on Ko-fi',
     supportNote: 'Optional support. A Ko-fi tip does not activate Premium.',
     viewPremium: 'View Premium',
@@ -234,8 +234,8 @@ export const SETTINGS_VIEW = {
 
   support: {
     groupTitle: 'Support',
-    supportPlot: 'Support plot',
-    kofiHint: 'Help keep plot ',
+    supportPlot: 'Support PLOT',
+    kofiHint: 'Help keep PLOT ',
     kofiHintContinued: 'subscription-free',
     reportABugAria: 'Report a bug',
     reportABugLabel: 'Report a Bug',

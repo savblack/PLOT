@@ -80,6 +80,9 @@ export const WithAvatar = {
   args: { ...signedIn, profile: { ...profile, avatar_url: AVATAR } },
 };
 
+export const HelpClosed = { args: signedIn };
+export const HelpOpen = { args: { ...signedIn, defaultHelpOpen: true } };
+
 // Active rows have an accent label and a neutral selected surface.
 export const ActiveCalendar = { args: { ...signedIn, currentView: 'calendar' } };
 export const ActiveSettings = { args: { ...signedIn, currentView: 'settings' } };
