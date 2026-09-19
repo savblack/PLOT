@@ -75,12 +75,12 @@ export function DiscoverSectionHeader({ subtitle, title, headerRight }) {
 
 /* A section whose body is a rail. Owns the scroll state so the header can
    carry the arrows while the rail itself holds the cards. */
-export function RailSection({ title, subtitle, sectionClassName = 'discover-section', binge = false, headerRight, children }) {
+export function RailSection({ id, title, subtitle, sectionClassName = 'discover-section', binge = false, headerRight, children }) {
   const rail = useRailScroll();
   const RailBody = binge ? BingeRail : Rail;
 
   return (
-    <section className={sectionClassName}>
+    <section id={id} className={sectionClassName}>
       <DiscoverSectionHeader
         title={title}
         subtitle={subtitle}
@@ -88,6 +88,52 @@ export function RailSection({ title, subtitle, sectionClassName = 'discover-sect
       />
       <RailBody rail={rail}>{children}</RailBody>
     </section>
+  );
+}
+
+const HOME_SECTION = {
+  picks: { id: 'home-picks', label: "plot's Picks", navLabel: "Plot's Picks" },
+  hot: { id: 'home-hot', label: 'Hot Right Now', navLabel: 'Hot Right Now' },
+  weekly: { id: 'home-weekly', label: 'Top 20 This Week', navLabel: 'Top 20 This Week' },
+  releases: { id: 'home-releases', label: 'New Releases', navLabel: 'New Releases' },
+  binged: { id: 'home-binged', label: 'Most Binged Shows', navLabel: 'Most Binged Shows' },
+  cinema: { id: 'home-cinema', label: 'Now Showing', navLabel: 'Now Showing' },
+  anticipated: { id: 'home-anticipated', label: DISCOVER_VIEW.mostAnticipatedTitle, navLabel: 'Most Anticipated' },
+  platforms: { id: 'home-platforms', label: 'Top 10 by Platform', navLabel: 'Top 10 By Platform' },
+};
+
+function HomePageNav({ sections }) {
+  const [activeId, setActiveId] = useState(sections[0]?.id);
+  const currentId = sections.some(section => section.id === activeId) ? activeId : sections[0]?.id;
+
+  useEffect(() => {
+    const nodes = sections.map(section => document.getElementById(section.id)).filter(Boolean);
+    const observer = new IntersectionObserver(entries => {
+      const visible = entries.filter(entry => entry.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+      if (visible[0]) setActiveId(visible[0].target.id);
+    }, { rootMargin: '-15% 0px -65% 0px' });
+    nodes.forEach(node => observer.observe(node));
+    return () => observer.disconnect();
+  }, [sections]);
+
+  if (!sections.length) return null;
+  const goTo = (id) => {
+    setActiveId(id);
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  return (
+    <nav className="hist-card home-page-nav" aria-label="On this page">
+      <h2 className="home-page-nav-title">On this page</h2>
+      <div className="home-page-nav-list">
+        {sections.map(section => (
+          <button key={section.id} type="button" className={`home-page-nav-row${currentId === section.id ? ' active' : ''}`} onClick={() => goTo(section.id)}>
+            <span>{section.navLabel}</span>
+            <span className="home-page-nav-chev" aria-hidden="true"><IconChevronRight /></span>
+          </button>
+        ))}
+      </div>
+    </nav>
   );
 }
 
@@ -477,11 +523,11 @@ function ChartCard({ item, rank, openPanel, watchlist, favorites, region }) {
 }
 
 /* ── Top 20 ── a two-row rail. */
-function WeeklyChart({ items, openPanel, watchlist }) {
+function WeeklyChart({ id, items, openPanel, watchlist }) {
   const { favorites, profile } = useApp();
   const rail = useRailScroll();
   return (
-    <section className="discover-section">
+    <section id={id} className="discover-section">
       <DiscoverSectionHeader
         title="Top 20 This Week"
         subtitle="Global ranking"
@@ -581,11 +627,11 @@ function PlatformRow({ def, chart, logoPath, openPanel, watchlist, typeFilters, 
   );
 }
 
-function PlatformCharts({ platformList, openPanel, watchlist, typeFilters, genreFilters }) {
+function PlatformCharts({ id, platformList, openPanel, watchlist, typeFilters, genreFilters }) {
   const byKey = Object.fromEntries(platformList.map(p => [p.key, p]));
   const logos = usePlatformLogos();
   return (
-    <section className="discover-section">
+    <section id={id} className="discover-section">
       <DiscoverSectionHeader title="Top 10 by Platform" subtitle="Official charts" />
       <div className="discover-plat-list">
         {OFFICIAL_PLATFORMS.map(def => (
@@ -619,6 +665,16 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
   const anticipatedMovies = applyFilters(data.anticipatedMovies);
   const recent            = applyFilters(releases.recent);
   const hasContent = hero || hotRail.length > 0 || weekly.length > 0 || bingedShows.length > 0 || cinemaMovies.length > 0 || anticipatedMovies.length > 0 || platformList.length > 0;
+  const pageSections = [
+    hero && genreFilters.length === 0 ? HOME_SECTION.picks : null,
+    hotRail.length > 0 ? HOME_SECTION.hot : null,
+    weekly.length > 0 ? HOME_SECTION.weekly : null,
+    recent.length > 0 ? HOME_SECTION.releases : null,
+    bingedShows.length > 0 ? HOME_SECTION.binged : null,
+    cinemaMovies.length > 0 ? HOME_SECTION.cinema : null,
+    anticipatedMovies.length > 0 ? HOME_SECTION.anticipated : null,
+    platformList.length > 0 ? HOME_SECTION.platforms : null,
+  ].filter(Boolean);
 
   if (!hasContent) {
     return (
@@ -635,11 +691,12 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
         <HomePersonalCard state={personalState} upNext={upNext} todayStr={todayStr} openPanel={openPanel} openSearch={openSearch} navigate={navigate} />
         <OnThisDayCard item={onThisDay} openPanel={openPanel} />
         <section className="hist-card home-filter-card"><SideFilters typeFilters={typeFilters} setTypeFilters={setTypeFilters} genreFilters={genreFilters} setGenreFilters={setGenreFilters} genres={genres} /></section>
+        <HomePageNav sections={pageSections} />
       </aside>
       <div className="discover-sections home-stream">
       {hero && genreFilters.length === 0 && (
-        <section className="discover-section discover-featured-section">
-          <DiscoverSectionHeader title="plot's Picks" />
+        <section id={HOME_SECTION.picks.id} className="discover-section discover-featured-section">
+          <DiscoverSectionHeader title={HOME_SECTION.picks.label} />
           <div className="discover-hero-row">
             <HeroCard item={hero} openPanel={openPanel} watchlist={watchlist} />
           </div>
@@ -647,18 +704,19 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
       )}
 
       {hotRail.length > 0 && (
-        <RailSection title="Hot Right Now" subtitle="Trending today" sectionClassName="discover-section discover-binge-section" binge>
+        <RailSection id={HOME_SECTION.hot.id} title={HOME_SECTION.hot.label} subtitle="Trending today" sectionClassName="discover-section discover-binge-section" binge>
           {hotRail.map(item => (
             <BingeCard key={`${item.media_type}-${item.id}`} item={item} openPanel={openPanel} watchlist={watchlist} />
           ))}
         </RailSection>
       )}
 
-      {weekly.length > 0 && <WeeklyChart items={weekly} openPanel={openPanel} watchlist={watchlist} />}
+      {weekly.length > 0 && <WeeklyChart id={HOME_SECTION.weekly.id} items={weekly} openPanel={openPanel} watchlist={watchlist} />}
 
       {recent.length > 0 && (
         <RailSection
-          title="New Releases"
+          id={HOME_SECTION.releases.id}
+          title={HOME_SECTION.releases.label}
           subtitle="Last 30 days"
           headerRight={
             <button type="button" className="discover-see-all" onClick={() => navigate('/new-releases')}>
@@ -673,7 +731,7 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
       )}
 
       {bingedShows.length > 0 && (
-        <RailSection title="Most Binged Shows" subtitle="Popular TV">
+        <RailSection id={HOME_SECTION.binged.id} title={HOME_SECTION.binged.label} subtitle="Popular TV">
           {bingedShows.map(item => (
             <RankedCard key={`${item.media_type}-${item.id}`} item={item} showRank={false} openPanel={openPanel} watchlist={watchlist} />
           ))}
@@ -681,7 +739,7 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
       )}
 
       {cinemaMovies.length > 0 && (
-        <RailSection title="Now Showing" subtitle={MEDIA.inCinemas} sectionClassName="discover-section discover-binge-section" binge>
+        <RailSection id={HOME_SECTION.cinema.id} title={HOME_SECTION.cinema.label} subtitle={MEDIA.inCinemas} sectionClassName="discover-section discover-binge-section" binge>
           {cinemaMovies.map(item => (
             <BingeCard key={`${item.media_type}-${item.id}`} item={item} openPanel={openPanel} watchlist={watchlist} />
           ))}
@@ -689,14 +747,14 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
       )}
 
       {anticipatedMovies.length > 0 && (
-        <RailSection title={DISCOVER_VIEW.mostAnticipatedTitle} subtitle={DISCOVER_VIEW.mostAnticipatedSubtitle} sectionClassName="discover-section discover-binge-section" binge>
+        <RailSection id={HOME_SECTION.anticipated.id} title={HOME_SECTION.anticipated.label} subtitle={DISCOVER_VIEW.mostAnticipatedSubtitle} sectionClassName="discover-section discover-binge-section" binge>
           {anticipatedMovies.map(item => (
             <BingeCard key={`${item.media_type}-${item.id}`} item={item} openPanel={openPanel} watchlist={watchlist} />
           ))}
         </RailSection>
       )}
 
-      {platformList.length > 0 && <PlatformCharts platformList={platformList} openPanel={openPanel} watchlist={watchlist} typeFilters={typeFilters} genreFilters={genreFilters} />}
+      {platformList.length > 0 && <PlatformCharts id={HOME_SECTION.platforms.id} platformList={platformList} openPanel={openPanel} watchlist={watchlist} typeFilters={typeFilters} genreFilters={genreFilters} />}
       </div>
     </div>
   );

@@ -88,9 +88,10 @@ CI on Node 22.
 
 ## Code style
 
-- **The brand is always written `PLOT`** (all caps) in any prose, copy, or comments —
-  never "Plot" or "plot". The only exceptions are code identifiers, tags, and URLs
-  (e.g. the `@plot/core` package, the `plot` deploy project, `theplot.tv`).
+- **Brand casing follows its typography.** Write `plot` in the logo and anywhere the
+  brand is set in Gabarito; write `Plot` in all other prose, copy, and comments. Code
+  identifiers, tags, and URLs remain lowercase where required (e.g. the `@plot/core`
+  package, the `plot` deploy project, `theplot.tv`).
 - **Never use em dashes in user-facing copy.** Use a period, colon, comma, or parentheses
   instead. This applies to copy shown to users (UI strings, marketing, emails, legal
   pages) — code comments are unaffected.
