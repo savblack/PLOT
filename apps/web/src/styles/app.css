@@ -1982,6 +1982,8 @@ svg { stroke-width: 1.5; }
   font-weight: 600;
 }
 .cal-scope-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.cal-toolbar-controls { gap: 12px; }
+.cal-search { width: min(280px, 26vw); }
 
 .cal-body {
   display: flex;
@@ -3071,6 +3073,20 @@ svg { stroke-width: 1.5; }
 .mylists-stream .top5 { margin-inline: calc(-1 * var(--gut)); padding-inline: var(--gut); }
 
 @media (min-width: 1024px) {
+  /* Match Calendar's heading row: the collection summary sits directly under
+     "My Lists", while the search remains aligned with the heading on the right. */
+  .mylists-page .hist-toolbar {
+    margin-top: calc(-1 * (2rem + 1.5rem));
+    min-height: 3.5rem;
+    padding: 0;
+    margin-bottom: 1.5rem;
+  }
+  .mylists-page .hist-toolbar-sub {
+    align-self: flex-end;
+    padding-bottom: 0.15rem;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+  }
   /* Four covers fit the full window, not a column 264px narrower than it. */
   .mylists-stream .list-covers { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2.25rem 2rem; }
   .mylists-stream .top5 { margin-inline: 0; padding-inline: 0; }
@@ -7662,6 +7678,12 @@ a.provider-chip--link:hover {
   .desktop-page-filter, .cal-toolbar .cal-scope { display: none; }
   .page-toolbar-date { display: none; }
   .page-toolbar, .page-toolbar.cal-toolbar { padding: 0; height: 0; margin: 0; }
+  .page-toolbar.cal-toolbar--search {
+    height: auto;
+    padding: 12px var(--gut) 0;
+  }
+  .cal-toolbar-controls { width: 100%; }
+  .cal-search { width: 100%; }
   .mobile-page-controls { position: fixed; bottom: 0; left: 0; right: 0; z-index: 210; display: flex; justify-content: center; align-items: center; height: calc(60px + env(safe-area-inset-bottom, 0px)); padding-bottom: env(safe-area-inset-bottom, 0px); border-top: 1px solid var(--border); background: var(--surface); }
   .mobile-controls-trigger { min-width: 124px; min-height: 44px; display: flex; align-items: center; justify-content: center; gap: 9px; background: none; border: 0; color: var(--text-primary); font: inherit; font-size: 14px; font-weight: 500; cursor: pointer; }
   .mobile-controls-trigger svg { width: 12px; height: 12px; stroke: var(--text-muted); stroke-width: 1.7; fill: none; }

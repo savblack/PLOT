@@ -17,6 +17,11 @@ export function titleFromItem(item) {
   return item?.title || item?.name || '';
 }
 
+export function titleMatchesQuery(item, query = '') {
+  const term = query.trim().toLocaleLowerCase();
+  return !term || titleFromItem(item).toLocaleLowerCase().includes(term);
+}
+
 export function posterPathFromItem(item) {
   return item?.poster_path || null;
 }
