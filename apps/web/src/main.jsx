@@ -110,7 +110,7 @@ const posthogToken = !isDnt && analyticsAllowed() && import.meta.env.VITE_PUBLIC
 // so signup / activation stay traceable to their source. First-touch wins.
 const attribution = captureAttribution();
 
-// posthog-js (+ @posthog/react) is the single largest chunk in the app —
+// posthog-js is the single largest chunk in the app —
 // bigger than React itself — so it's dynamically imported after the app has
 // already started rendering instead of sitting on the initial critical path.
 // Nothing breaks in the gap: every analytics call in lib/analytics.js queues

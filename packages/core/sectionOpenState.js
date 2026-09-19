@@ -6,8 +6,7 @@
 // thing on both platforms, and so neither side can quietly change '1'/'0' to
 // 'true'/'false' and orphan every stored preference.
 //
-// Callers: apps/web/src/utils/sectionOpenState.js (localStorage) and
-// apps/mobile/lib/sectionOpenState.ts (AsyncStorage).
+// Caller: apps/mobile/lib/sectionOpenState.ts (AsyncStorage).
 
 /**
  * @param {string} id Section id, e.g. 'watching' or 'history-2026-3'.

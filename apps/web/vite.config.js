@@ -20,8 +20,8 @@ export default defineConfig({
     // MANDATORY under pnpm. apps/mobile pins react 19.2.3 exactly (react-native
     // 0.86.3 requires that patch), so 19.2.3 takes the hoisted root slot and
     // every 19.3.0 consumer nests its own physical copy instead — apps/web,
-    // packages/core, react-router, react-router-dom, posthog-js and
-    // @posthog/react each ended up with one. Same version, different paths, so
+    // packages/core, react-router, react-router-dom and posthog-js each ended
+    // up with one. Same version, different paths, so
     // Rollup treats them as distinct modules and the bundle ships several React
     // instances. The app then dies on `useContext` of null the moment a context
     // is read across the seam, which is exactly what the smoke tests caught.

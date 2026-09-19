@@ -174,7 +174,6 @@
             "npm:@playwright/test@^1.63.0",
             "npm:@plot/core@*",
             "npm:@plot/ui@*",
-            "npm:@posthog/react@^1.10.6",
             "npm:@storybook/react-vite@^10.6.0",
             "npm:@supabase/supabase-js@^2.116.0",
             "npm:@types/react-dom@^19.2.7",

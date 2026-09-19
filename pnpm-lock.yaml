@@ -172,9 +172,6 @@ importers:
       '@plot/ui':
         specifier: '*'
         version: link:../../packages/ui
-      '@posthog/react':
-        specifier: ^1.10.6
-        version: 1.11.0(@types/react@19.2.18)(posthog-js@1.433.3(@types/react@19.2.18)(react@19.3.0))(react@19.3.0)
       '@supabase/supabase-js':
         specifier: ^2.116.0
         version: 2.116.0
@@ -1767,16 +1764,6 @@ packages:
 
   '@posthog/core@1.54.0':
     resolution: {integrity: sha512-168MROFCM9YsGcCrbI4zukwR1lmLtKCvJk1NRuRS3PlhpMDBgmdNBxefPifb7nBCQz+61lrWq70saXdFhNdbiQ==}
-
-  '@posthog/react@1.11.0':
-    resolution: {integrity: sha512-FphJGsot2XzoYJNuFC9G/WEjl+2+6DSXaO0injldPXmmT7C4A+Z0IenwDvccf0tD5U3Xhz2xpUggfyhQl/xyjQ==}
-    peerDependencies:
-      '@types/react': '>=16.8.0'
-      posthog-js: '>=1.257.2'
-      react: '>=16.8.0'
-    peerDependenciesMeta:
-      '@types/react':
-        optional: true
 
   '@posthog/types@1.412.0':
     resolution: {integrity: sha512-EP+lSTnEmftW/slhGXsuGcYAygO4oho3hjWqObP+GeceZ+6qcwK9qZwVRqJjsiZAl0xLPy5s0U0SZqGKayFyeQ==}
@@ -7052,13 +7039,6 @@ snapshots:
   '@posthog/core@1.54.0':
     dependencies:
       '@posthog/types': 1.412.0
-
-  '@posthog/react@1.11.0(@types/react@19.2.18)(posthog-js@1.433.3(@types/react@19.2.18)(react@19.3.0))(react@19.3.0)':
-    dependencies:
-      posthog-js: 1.433.3(@types/react@19.2.18)(react@19.3.0)
-      react: 19.3.0
-    optionalDependencies:
-      '@types/react': 19.2.18
 
   '@posthog/types@1.412.0': {}
 

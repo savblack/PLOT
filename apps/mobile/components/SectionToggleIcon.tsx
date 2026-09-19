@@ -1,7 +1,5 @@
 /**
- * The two expand/collapse-all arrow glyphs — RN counterpart of web's
- * apps/web/src/components/SectionToggleIcon.jsx, same paths so the control
- * reads identically on both platforms.
+ * The two expand/collapse-all arrow glyphs used by mobile My Lists.
  */
 import Svg, { Path } from 'react-native-svg';
 import { useTheme } from '../contexts/ThemeContext';

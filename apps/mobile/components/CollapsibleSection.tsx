@@ -1,15 +1,14 @@
 /**
- * Collapsible section banner — the RN counterpart of web's
- * apps/web/src/components/CollapsibleSection.jsx. Chevron, label, optional
- * count, optional right-hand slot, over an animated body.
+ * Collapsible section banner with a chevron, label, optional count, optional
+ * right-hand slot, and an animated body.
  *
  * Open state persists per `id` so a collapsed group stays collapsed across tab
- * switches and app restarts, matching web. The stored value is seeded
+ * switches and app restarts. The stored value is seeded
  * synchronously from lib/sectionOpenState's in-memory cache (hydrated once at
  * app start) — reading AsyncStorage here would make every section flash open
  * before collapsing.
  *
- * Supports the same controlled/uncontrolled split as web: pass `open` to drive
+ * Supports a controlled/uncontrolled split: pass `open` to drive
  * it from outside (expand/collapse-all), omit it to let the section own and
  * persist its own state. A controlled section still writes on toggle, so the
  * bulk control's result is remembered too.
