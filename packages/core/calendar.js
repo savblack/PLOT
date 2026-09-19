@@ -1,5 +1,5 @@
 import { dateToLocalStr } from './date.js';
-import { genreIdsFromItem } from './media.js';
+import { genreIdsFromItem, titleMatchesQuery } from './media.js';
 import { ALL_TYPES } from './mediaFilters.js';
 
 export function msUntilNextLocalMidnight(now = new Date()) {
@@ -267,16 +267,20 @@ function calendarEventFilterType(ev) {
 }
 
 /**
- * Apply the Calendar's Show (type) and Genre filters to built events. Shares
+ * Apply the Calendar's title search, Show (type), and Genre filters to built events. Shares
  * filterByGenre's rule that an item with no genre data is kept rather than
  * dropped — EPG reminders carry no TMDB id, so they have none.
  *
  * @param {any[]} events
  * @param {string[]} typeFilters - subset of ALL_TYPES; empty or full = no filter
  * @param {number[]} genreFilters - empty = no filter
+ * @param {string} query - case-insensitive title substring
  */
-export function filterCalendarEvents(events, typeFilters = ALL_TYPES, genreFilters = []) {
+export function filterCalendarEvents(events, typeFilters = ALL_TYPES, genreFilters = [], query = '') {
   let out = events;
+  if (query.trim()) {
+    out = out.filter(ev => titleMatchesQuery(ev.item, query));
+  }
   if (typeFilters.length && typeFilters.length < ALL_TYPES.length) {
     out = out.filter(ev => typeFilters.includes(calendarEventFilterType(ev)));
   }

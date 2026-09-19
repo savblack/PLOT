@@ -6,6 +6,7 @@ import {
   mediaTypeFromItem,
   tmdbIdFromItem,
   titleFromItem,
+  titleMatchesQuery,
   posterPathFromItem,
   releaseDateFromItem,
   genreIdsFromItem,
@@ -62,6 +63,13 @@ test('titleFromItem prefers title over name and falls back when title is empty',
   assert.equal(titleFromItem({ title: '', name: 'Fallback' }), 'Fallback');
   assert.equal(titleFromItem({}), '');
   assert.equal(titleFromItem(null), '');
+});
+
+test('titleMatchesQuery trims and matches titles case-insensitively', () => {
+  assert.equal(titleMatchesQuery({ title: 'The Substance' }, ' substance '), true);
+  assert.equal(titleMatchesQuery({ name: 'Lanterns' }, 'LANT'), true);
+  assert.equal(titleMatchesQuery({ title: 'Dune' }, 'Lanterns'), false);
+  assert.equal(titleMatchesQuery({ title: 'Dune' }, ''), true);
 });
 
 test('posterPathFromItem returns the path or null', () => {
