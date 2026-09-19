@@ -1033,12 +1033,16 @@
     /* Guide demo — the trending list as one calm panel: deeper cream, 20px
        radius, hairline rows. The same framing every product panel uses. */
     .trend-panel {
+      position: static;
       width: 100%;
       max-width: 560px;
+      max-height: none;
+      overflow: visible;
       background: var(--surface);
       border-radius: 20px;
       padding: 1.75rem 2rem 0.75rem;
     }
+    .gp-rows { max-height: none; overflow: visible; }
     .gp-head { display: flex; justify-content: space-between; align-items: baseline; padding-bottom: 1.1rem; gap: 1rem; }
     .gp-title { font-family: var(--display); font-weight: 700; letter-spacing: var(--display-tracking); font-size: 1.6rem; line-height: 1; }
     .gp-date { font-size: 0.62rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-secondary); white-space: nowrap; }
@@ -1650,7 +1654,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             <!-- hero-card:end -->
             <div class="gp-row"><div class="gp-rank">2</div><img class="gp-poster" src="https://image.tmdb.org/t/p/w185/A8UIMJTwSaflmWmUlfPOFdenSBT.jpg" alt="" loading="lazy" decoding="async"><div class="gp-meta"><div class="gp-name">Hot right now</div><div class="gp-sub">Movie</div></div><span class="gp-chip">Movie</span></div>
             <div class="gp-row"><div class="gp-rank">3</div><img class="gp-poster" src="https://image.tmdb.org/t/p/w185/jOiEa1NMdGHktRE3lVwErq0nCNT.jpg" alt="" loading="lazy" decoding="async"><div class="gp-meta"><div class="gp-name">Top 10</div><div class="gp-sub">Movie</div></div><span class="gp-chip">Movie</span></div>
-            <div class="gp-row"><div class="gp-rank">4</div><img class="gp-poster" src="https://image.tmdb.org/t/p/w185/pPHpeI2X1qEd1CS1SeyrdhZ4qnT.jpg" alt="" loading="lazy" decoding="async"><div class="gp-meta"><div class="gp-name">Most binged shows</div><div class="gp-sub">Series</div></div><span class="gp-chip">Series</span></div>
           </div>
         </div>
       </div>
@@ -2204,8 +2207,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       return trendingSetsPromise;
     }
 
-    // Guide-demo trending panel — four rows from TMDB: the top three trending
-    // movies and the top trending series. The committed rows (row 1 is rewritten
+    // Guide-demo trending panel — the top three trending movies from TMDB.
+    // The committed rows (row 1 is rewritten
     // weekly by refresh-timeline.mjs) stay on screen if the proxy is unavailable.
     (function () {
       var rows = document.getElementById('gpRows');
@@ -2215,9 +2218,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         var seen = {};
         function withPoster(list) { return (list || []).filter(function (r) { return r.poster_path; }); }
         var movies = unseen(withPoster(sets[0] && sets[0].results), seen);
-        var tv     = unseen(withPoster(sets[2] && sets[2].results), seen);
-        var picks = [movies[0], movies[1], movies[2], tv[0]].filter(Boolean);
-        if (picks.length < 4) return;
+        var picks = [movies[0], movies[1], movies[2]].filter(Boolean);
+        if (picks.length < 3) return;
         function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
         rows.innerHTML = picks.map(function (r, i) {
           var isTv  = !!r.first_air_date || r.media_type === 'tv';
