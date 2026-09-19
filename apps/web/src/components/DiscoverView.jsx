@@ -18,11 +18,12 @@ import { filterByType, filterByGenre } from '../utils/mediaFilters.js';
 import { MEDIA } from '../copy/media.js';
 import { DISCOVER_VIEW } from '@plot/core/copy/discoverView.js';
 import { COMMON } from '@plot/core/copy/common.js';
-import { homePersonalState, selectHomeUpNext } from '@plot/core/home.js';
+import { homePersonalState, selectHomeHero, selectHomeUpNext } from '@plot/core/home.js';
 import { getCalendarRelativeLabel } from '@plot/core/calendar.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import GroupedFilterMenu from './GroupedFilterMenu.jsx';
 import SideFilters from './SideFilters.jsx';
+import { TYPE_ROWS } from './sideFilterRows.js';
 import { IconCalendar, IconChevronRight, IconSearch } from './navIcons.jsx';
 import { useCalendar } from '../hooks/useCalendar.js';
 import { localDateStr } from '../utils/date.js';
@@ -90,30 +91,9 @@ export function RailSection({ title, subtitle, sectionClassName = 'discover-sect
   );
 }
 
-const TYPE_OPTIONS = [
-  { id: 'tv',     label: MEDIA.tv     },
-  { id: 'cinema', label: MEDIA.cinema },
-  { id: 'movie',  label: MEDIA.movies },
-];
-
-/* What the filter pill says: "All types · All genres" until something is
-   narrowed, then the chosen names (or a count once that gets long). */
-function filterSummary(typeFilters, genreFilters, genres) {
-  const allTypes = ALL_TYPES.every(t => typeFilters.includes(t));
-  const types = allTypes
-    ? MEDIA.allTypes
-    : TYPE_OPTIONS.filter(o => typeFilters.includes(o.id)).map(o => o.label).join(', ');
-  const picked = genres.filter(g => genreFilters.includes(g.id)).map(g => g.name);
-  const genreText = picked.length === 0 ? MEDIA.allGenres : picked.length <= 2 ? picked.join(', ') : `${picked.length} genres`;
-  return `${types} · ${genreText}`;
-}
-
-/* The date and the type + genre filter, in one row. At sidebar widths the row
-   is pulled up onto the page heading: the date sits under "Home" and the
-   filter pill on the right, so Home does not spend a row on one control.
-   Below them it is a plain row under the header. */
-export function DiscoverToolbar({ ariaLabel, typeFilters, setTypeFilters, genreFilters, setGenreFilters, onOpenSearch }) {
-  const { genres } = useGenres();
+/* The date and title search share the Home header row. The grouped filter is
+   retained only as the mobile bottom sheet; the desktop trigger is hidden. */
+export function DiscoverToolbar({ typeFilters, setTypeFilters, genreFilters, setGenreFilters, genres, onOpenSearch }) {
   return (
     <div className="page-toolbar">
       <span className="page-toolbar-date">{todayLongLabel()}</span>
@@ -123,22 +103,23 @@ export function DiscoverToolbar({ ariaLabel, typeFilters, setTypeFilters, genreF
         </button>
         <GroupedFilterMenu
           mobileControls
-          ariaLabel={ariaLabel}
-          label={filterSummary(typeFilters, genreFilters, genres)}
+          ariaLabel="Filter discover"
           groups={[
-          {
-            heading: MEDIA.typeHeading, allLabel: MEDIA.allTypes,
-            options: TYPE_OPTIONS,
-            value: typeFilters,
-            onChange: setTypeFilters,
-            defaultValue: ALL_TYPES,
-          },
-          {
-            heading: MEDIA.genreHeading, allLabel: MEDIA.allGenres,
-            options: genres.map(g => ({ id: g.id, label: g.name })),
-            value: genreFilters,
-            onChange: setGenreFilters,
-          },
+            {
+              heading: MEDIA.typeHeading,
+              allLabel: MEDIA.allTypes,
+              options: TYPE_ROWS,
+              value: typeFilters,
+              onChange: setTypeFilters,
+              defaultValue: ALL_TYPES,
+            },
+            {
+              heading: MEDIA.genreHeading,
+              allLabel: MEDIA.allGenres,
+              options: genres.map(genre => ({ id: genre.id, label: genre.name })),
+              value: genreFilters,
+              onChange: setGenreFilters,
+            },
           ]}
         />
       </div>
@@ -179,11 +160,11 @@ function HomePersonalCard({ state, upNext, todayStr, openPanel, openSearch, navi
   );
 }
 
-function OnThisDayCard({ item, openPanel, mobile = false }) {
+function OnThisDayCard({ item, openPanel }) {
   if (!item) return null;
   const image = posterUrl(item.poster_path, 'w185');
   return (
-    <section className={`hist-card home-on-this-day${mobile ? ' home-on-this-day--mobile' : ''}`}>
+    <section className="hist-card home-on-this-day">
       <span className="hist-card-label">{DISCOVER_VIEW.onThisDay}</span>
       <button type="button" className="home-on-this-day-hit" onClick={() => openPanel(item.id, item.media_type || 'movie')}>
         <span className="home-on-this-day-poster">{image && <img src={image} alt="" />}</span>
@@ -616,9 +597,8 @@ function PlatformCharts({ platformList, openPanel, watchlist, typeFilters, genre
 }
 
 /* ── Home ── */
-function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTypeFilters, genreFilters, setGenreFilters, personalState, upNext, todayStr }) {
+function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTypeFilters, genreFilters, setGenreFilters, genres, personalState, upNext, todayStr }) {
   const navigate = useNavigate();
-  const { genres } = useGenres();
   const { data, loading } = useDiscover();
   const { data: releases } = useNewReleases();
   // Hard-coded official-chart platforms — the same set for everyone, unrelated
@@ -630,9 +610,9 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
   }
 
   const applyFilters = (items) => filterByGenre(filterByType(items, typeFilters), genreFilters);
-  const { hero } = data;
+  const hero              = selectHomeHero(data.heroByType, typeFilters);
   const onThisDay        = data.onThisDay;
-  const hotRail           = applyFilters(data.hotRail);
+  const hotRail           = applyFilters(data.hotRail).filter(item => item.id !== hero?.id || item.media_type !== hero?.media_type);
   const weekly            = applyFilters(data.weekly);
   const bingedShows       = applyFilters(data.bingedShows);
   const cinemaMovies      = applyFilters(data.cinemaMovies);
@@ -663,7 +643,6 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
           <div className="discover-hero-row">
             <HeroCard item={hero} openPanel={openPanel} watchlist={watchlist} />
           </div>
-          <OnThisDayCard item={onThisDay} openPanel={openPanel} mobile />
         </section>
       )}
 
@@ -728,6 +707,7 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
 ═══════════════════════════════════════ */
 export default function DiscoverView() {
   const app = useApp();
+  const { genres } = useGenres();
   const [typeFilters,  setTypeFilters]  = useState(ALL_TYPES);
   const [genreFilters, setGenreFilters] = useState([]);
 
@@ -741,11 +721,11 @@ export default function DiscoverView() {
   return (
     <div className="home-page">
       <DiscoverToolbar
-        ariaLabel="Filter discover"
         typeFilters={typeFilters}
         setTypeFilters={setTypeFilters}
         genreFilters={genreFilters}
         setGenreFilters={setGenreFilters}
+        genres={genres}
         onOpenSearch={openSearch}
       />
       <DiscoverContent
@@ -756,6 +736,7 @@ export default function DiscoverView() {
         setTypeFilters={setTypeFilters}
         genreFilters={genreFilters}
         setGenreFilters={setGenreFilters}
+        genres={genres}
         personalState={personalState}
         upNext={upNext}
         todayStr={todayStr}

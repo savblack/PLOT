@@ -30,3 +30,24 @@ export function homePersonalState({ loading = false, upNext = [], savedCount = 0
   if (upNext.length) return 'up-next';
   return savedCount + watchingCount === 0 ? 'start' : 'quiet';
 }
+
+/**
+ * Choose the featured Home title for the active type filter. Each candidate
+ * comes from that type's own ranked feed, so selecting TV or movies does not
+ * merely scan down the mixed overall chart.
+ *
+ * @param {{overall?: any, tv?: any, movie?: any, cinema?: any}} heroes
+ * @param {string[]} typeFilters
+ * @returns {any|null}
+ */
+export function selectHomeHero(heroes = {}, typeFilters = []) {
+  const selected = typeFilters.length ? typeFilters : ['tv', 'cinema', 'movie'];
+  if (selected.length === 3) return heroes.overall || null;
+  if (selected.length === 1) return heroes[selected[0]] || null;
+
+  const overallType = heroes.overall?._cinema
+    ? 'cinema'
+    : heroes.overall?.media_type === 'tv' ? 'tv' : 'movie';
+  if (selected.includes(overallType)) return heroes.overall || null;
+  return selected.map(type => heroes[type]).find(Boolean) || null;
+}

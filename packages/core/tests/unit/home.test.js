@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { homePersonalState, selectHomeUpNext } from '../../home.js';
+import { homePersonalState, selectHomeHero, selectHomeUpNext } from '../../home.js';
 
 test('selectHomeUpNext keeps the next distinct shows with episodes', () => {
   const events = [
@@ -19,4 +19,18 @@ test('homePersonalState distinguishes new and established accounts', () => {
   assert.equal(homePersonalState({}), 'start');
   assert.equal(homePersonalState({ savedCount: 1 }), 'quiet');
   assert.equal(homePersonalState({ watchingCount: 1 }), 'quiet');
+});
+
+test('selectHomeHero follows the active type chart', () => {
+  const heroes = {
+    overall: { id: 1, media_type: 'tv', title: 'Overall' },
+    tv: { id: 2, media_type: 'tv', title: 'TV' },
+    movie: { id: 3, media_type: 'movie', title: 'Movie' },
+    cinema: { id: 4, media_type: 'movie', _cinema: true, title: 'Cinema' },
+  };
+
+  assert.equal(selectHomeHero(heroes, ['tv', 'cinema', 'movie']).title, 'Overall');
+  assert.equal(selectHomeHero(heroes, ['tv']).title, 'TV');
+  assert.equal(selectHomeHero(heroes, ['movie']).title, 'Movie');
+  assert.equal(selectHomeHero(heroes, ['cinema']).title, 'Cinema');
 });

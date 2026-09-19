@@ -30,21 +30,22 @@ const MIN_RAIL_SIZE = 14;
  *   it in, so core stays free of app context.
  */
 export function useDiscover({ hideKids = false } = {}) {
-  const [data, setData]       = useState({ hero: null, onThisDay: null, hotRail: [], weekly: [], bingedShows: [], cinemaMovies: [], anticipatedMovies: [] });
+  const [data, setData]       = useState({ hero: null, heroByType: {}, onThisDay: null, hotRail: [], weekly: [], bingedShows: [], cinemaMovies: [], anticipatedMovies: [] });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
-    const emptyData = { hero: null, onThisDay: null, hotRail: [], weekly: [], bingedShows: [], cinemaMovies: [], anticipatedMovies: [] };
+    const emptyData = { hero: null, heroByType: {}, onThisDay: null, hotRail: [], weekly: [], bingedShows: [], cinemaMovies: [], anticipatedMovies: [] };
 
     async function load() {
       setLoading(true);
       setData(emptyData);
       try {
-        const [trendingDay, trendingWeek, trendingTVDay, onThisDay, upcoming, nowPlaying] = await Promise.all([
+        const [trendingDay, trendingWeek, trendingTVDay, trendingMovieDay, onThisDay, upcoming, nowPlaying] = await Promise.all([
           tmdb.getTrending('all', 'day'),
           tmdb.getTrending('all', 'week'),
           tmdb.getTrending('tv', 'day'),
+          tmdb.getTrending('movie', 'day'),
           tmdb.getOnThisDay().catch(() => null),
           tmdb.getUpcoming().catch(() => null),
           tmdb.getNowPlaying().catch(() => null),
@@ -56,11 +57,15 @@ export function useDiscover({ hideKids = false } = {}) {
         const hero    = trendingItems[0] || null;
         const hotRail = trendingItems.slice(1, 10);
         const weekly  = dedupeByMediaId(excludeKidsContent((trendingWeek?.results || []).filter(isEnglishOriginTitle), hideKids)).slice(0, 20);
-        const bingedShows = dedupeByMediaId(
+        const trendingTVItems = dedupeByMediaId(
           excludeKidsContent((trendingTVDay?.results || []).filter(isEnglishOriginTitle), hideKids)
-            .filter(hasPoster)
             .map(show => ({ ...show, media_type: 'tv' }))
-        ).slice(0, Math.max(MIN_RAIL_SIZE, 18));
+        );
+        const trendingMovieItems = dedupeByMediaId(
+          excludeKidsContent((trendingMovieDay?.results || []).filter(isEnglishOriginTitle), hideKids)
+            .map(movie => ({ ...movie, media_type: 'movie' }))
+        );
+        const bingedShows = trendingTVItems.filter(hasPoster).slice(0, Math.max(MIN_RAIL_SIZE, 18));
         // Now and next are separate rails, split strictly on today's date, so
         // neither can show the other's titles. The date TMDB reports on a
         // discover result is the film's *primary* release date, so a film that
@@ -68,18 +73,29 @@ export function useDiscover({ hideKids = false } = {}) {
         // dated in the past — those belong in the cinemas rail, not next to
         // Avengers: Doomsday with a stale year on the card.
         const today = localDateStr();
-        const cinemaMovies = dedupeByMediaId(
+        const currentCinemaMovies = dedupeByMediaId(
           excludeKidsContent((nowPlaying?.results || []).filter(isEnglishOriginTitle), hideKids)
             .filter(movie => (movie.release_date || '') <= today)
             .map(movie => ({ ...movie, media_type: 'movie', _cinema: true }))
-        ).slice(0, 10);
+        );
+        const cinemaMovies = currentCinemaMovies.slice(0, 10);
         const anticipatedMovies = dedupeByMediaId(
           excludeKidsContent((upcoming?.results || []).filter(isEnglishOriginTitle), hideKids)
             .filter(movie => (movie.release_date || '') > today)
             .map(movie => ({ ...movie, media_type: 'movie' }))
         ).slice(0, 10);
 
-        setData({ hero, onThisDay, hotRail, weekly, bingedShows, cinemaMovies, anticipatedMovies });
+        const trendingCinema = trendingMovieItems
+          .map(movie => currentCinemaMovies.find(cinema => cinema.id === movie.id))
+          .find(Boolean) || cinemaMovies[0] || null;
+        const heroByType = {
+          overall: hero,
+          tv: trendingTVItems[0] || null,
+          movie: trendingMovieItems[0] || null,
+          cinema: trendingCinema,
+        };
+
+        setData({ hero, heroByType, onThisDay, hotRail, weekly, bingedShows, cinemaMovies, anticipatedMovies });
       } catch (error) {
         console.error('Discover load failed:', error);
         if (!cancelled) setData(emptyData);
