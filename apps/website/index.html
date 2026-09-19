@@ -1200,13 +1200,17 @@
 
     /* Origin — built by one person */
     #origin { background: var(--bg); padding: 10rem 2rem; }
-    .app-eyebrow {
-      display: inline-flex; align-items: center;
-      padding: 0.35rem 0.7rem; border-radius: var(--r-pill);
-      background: var(--fill); color: var(--text);
+    .app-kicker {
+      display: flex; align-items: center; gap: 10px;
+      color: var(--text-secondary);
       font-size: 0.62rem; font-weight: 600;
       letter-spacing: 0.12em; text-transform: uppercase;
       margin-bottom: 1.4rem;
+    }
+    .app-kicker span {
+      display: inline-flex; align-items: center;
+      padding: 0.35rem 0.7rem; border-radius: var(--r-pill);
+      background: var(--sage); color: var(--text);
     }
     .app-notify { margin-top: 1.8rem; }   /* breathing room between the copy and the email capture */
     .app-phone { position: relative; width: 320px; }
@@ -1966,7 +1970,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   <section id="app-soon">
     <div class="demo-split">
       <div class="demo-copy reveal">
-        <span class="app-eyebrow">Coming soon</span>
+        <div class="app-kicker">PLOT MOBILE <span>Coming soon</span></div>
         <h2 class="demo-headline">plot, in<br><em>your pocket.</em></h2>
         <p class="demo-body">Everything you love about plot: discover, track, curate and share. Landing on iPhone and Android. Be the first to know when it drops.</p>
         <div class="woc-sub-wrap app-notify">
