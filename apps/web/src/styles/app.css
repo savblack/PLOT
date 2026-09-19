@@ -1386,22 +1386,6 @@ svg { stroke-width: 1.5; }
 /* date label sitting left of the tabs */
 .sub-tabs--compact { padding-top: 0.4rem; padding-bottom: 0.4rem; }
 
-.today-label {
-  font-size: 0.68rem;
-  font-weight: 600;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  user-select: none;
-  transition: color 0.15s ease;
-}
-.today-label--clickable {
-  cursor: pointer;
-}
-.today-label--clickable:hover {
-  color: var(--text-secondary);
-}
-
 .sub-tabs-date {
   font-size: 0.68rem;
   font-weight: 600;
@@ -4772,95 +4756,6 @@ a.provider-chip--link:hover {
 }
 .date-group-chevron.open { transform: rotate(180deg); }
 
-/* ── Shared collapsible section (CollapsibleSection.jsx) ───────────────
-   One fixed-height banner + an animated body. Every banner is the same
-   height regardless of its contents (label / count). The banner is a plain
-   row — the chevron/label/count toggle and any header actions (kebab menu,
-   etc.) are separate sibling buttons so actions never nest inside the
-   toggle button. */
-.collapse-section {
-  /* Leaves room for the sticky .sub-tabs-bar when a section is scrolled
-     into view via its id (e.g. jumping to a month in History). */
-  scroll-margin-top: 52px;
-}
-.collapse-head {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  min-height: 46px;
-  padding: 0 var(--gut);
-  background: var(--bg);
-  border-bottom: 1px solid var(--border);
-  transition: background 0.15s ease;
-}
-.collapse-head:hover { background: color-mix(in srgb, var(--bg) 85%, var(--accent) 15%); }
-.collapse-head-toggle {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  flex: 1;
-  min-width: 0;
-  height: 100%;
-  background: none;
-  border: none;
-  padding: 0;
-  margin: 0;
-  cursor: pointer;
-  text-align: left;
-  color: inherit;
-  font: inherit;
-  -webkit-tap-highlight-color: transparent;
-}
-.collapse-head-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-.collapse-head-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  flex-shrink: 0;
-  margin-left: 0.4rem;
-}
-
-.collapse-chevron {
-  width: 14px;
-  height: 14px;
-  stroke: var(--text-muted);
-  fill: none;
-  stroke-width: 2.5;
-  flex-shrink: 0;
-  transform: rotate(-90deg);
-  transition: transform 0.22s var(--ease);
-}
-.collapse-chevron.open { transform: rotate(0deg); }
-
-.collapse-label {
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-primary);
-  white-space: nowrap;
-}
-.collapse-count {
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  font-family: var(--font-sans-tabular);
-}
-
-/* Animated collapse — grid-rows 1fr → 0fr, body clipped while closed */
-.collapse-body {
-  display: grid;
-  grid-template-rows: 1fr;
-  transition: grid-template-rows 0.28s var(--ease);
-}
-.collapse-body.collapsed { grid-template-rows: 0fr; }
-.collapse-body-inner { overflow: hidden; min-height: 0; }
-
-@media (prefers-reduced-motion: reduce) {
-  .collapse-body,
-  .collapse-chevron { transition: none; }
-}
-
 .date-group-subheader {
   padding: 0.35rem 1rem 0.4rem;
   font-size: 0.64rem;
@@ -4897,8 +4792,7 @@ a.provider-chip--link:hover {
   height: 100%;
   overflow: hidden;
 }
-.guide-schedule-mode .epg-outer,
-.guide-schedule-mode .epg-rails-outer {
+.guide-schedule-mode .epg-outer {
   flex: 1;
   min-height: 0;
 }
@@ -4908,43 +4802,6 @@ a.provider-chip--link:hover {
   flex-direction: column;
   overflow: hidden;
 }
-
-/* ── EPG as Now / Up Next / Later poster rails ── */
-.epg-rails-outer { display: flex; flex-direction: column; min-height: 0; }
-.epg-rails { flex: 1; min-height: 0; padding: 1rem 0 2rem; overflow-y: auto; }
-.epg-bucket { margin-bottom: 1.75rem; }
-.epg-bucket-label {
-  font-size: 0.66rem; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase;
-  color: var(--text-muted); padding: 0 1rem; margin-bottom: 0.6rem;
-}
-.epg-rail { display: flex; gap: 0.8rem; padding: 0 1rem 0.25rem; }
-.epg-card {
-  flex: 0 0 auto; width: var(--poster-w); padding: 0; border: none; background: none;
-  text-align: left; cursor: pointer; color: inherit; font: inherit;
-}
-.epg-card-poster {
-  position: relative; width: var(--poster-w); aspect-ratio: 2 / 3; border-radius: var(--radius-md);
-  overflow: hidden; background: var(--surface-raised); margin-bottom: 0.5rem;
-}
-.epg-card-poster img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.epg-card-fallback {
-  width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
-  padding: 0.5rem; font-family: var(--font-display); font-size: 0.85rem; line-height: 1.2;
-  text-align: center; color: var(--text-muted);
-}
-.epg-card-ring {
-  position: absolute; inset: 0; border: 2px solid var(--accent); border-radius: var(--radius-md);
-  pointer-events: none;
-}
-.epg-card-title {
-  font-size: 0.8rem; font-weight: 500; color: var(--text-primary); line-height: 1.25;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.epg-card-meta {
-  font-size: 0.72rem; color: var(--text-muted); margin-top: 0.15rem;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.epg-card-time { font-family: var(--font-sans-tabular); font-weight: 700; color: var(--accent); }
 
 /* ── Channel filter bar ── */
 .epg-filter-bar {

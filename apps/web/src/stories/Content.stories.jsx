@@ -5,7 +5,6 @@ import { AUTH_PAGE } from '../copy/authPage.js';
 import { CALENDAR_VIEW } from '../copy/calendarView.js';
 import { COMMON } from '../copy/common.js';
 import { CONFIRM_MODAL } from '../copy/confirmModal.js';
-import { EPG_VIEW } from '../copy/epgView.js';
 import { HISTORY_VIEW } from '../copy/historyView.js';
 import { IMPORT_VIEW } from '../copy/importView.js';
 import { MEDIA } from '../copy/media.js';
@@ -27,7 +26,6 @@ const MODULES = {
   authCallbackPage: AUTH_CALLBACK_PAGE,
   calendarView: CALENDAR_VIEW,
   confirmModal: CONFIRM_MODAL,
-  epgView: EPG_VIEW,
   historyView: HISTORY_VIEW,
   importView: IMPORT_VIEW,
   mediaPanel: MEDIA_PANEL,

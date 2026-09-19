@@ -16,7 +16,6 @@
   "dependencies": {
     "@plot/core": "*",
     "@plot/ui": "*",
-    "@posthog/react": "^1.10.6",
     "@supabase/supabase-js": "^2.116.0",
     "posthog-js": "^1.429.5",
     "react": "^19.2.8",
