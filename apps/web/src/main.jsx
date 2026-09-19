@@ -1,11 +1,9 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { RouterProvider } from 'react-router-dom';
 import { configure } from '@plot/core/config.js';
-import router from './router.jsx';
-import './index.css';
 import { captureAttribution } from './utils/attribution.js';
 import { analyticsAllowed } from './utils/analyticsHost.js';
+import { isChunkError, markChunkReload, recentlyReloaded } from './utils/chunkError.js';
 import { redactSensitiveUrl } from './utils/redactUrl.js';
 import { isOpaqueBrowserException } from './utils/opaqueException.js';
 import { track, EVENTS, _setPostHogClient } from './lib/analytics.js';
@@ -222,8 +220,30 @@ if (posthogToken) {
   });
 }
 
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <RouterProvider router={router} />
-  </StrictMode>,
-);
+// Keep every external stylesheet and the route graph off the browser's
+// render-blocking path. index.html has the tiny styles needed for its wordmark;
+// Vite resolves these imports only after the app CSS is ready, preventing an
+// unstyled app flash when React replaces that initial document content.
+Promise.all([
+  import('./index.css'),
+  import('react-router-dom'),
+  import('./router.jsx'),
+])
+  .then(([, { RouterProvider }, { default: router }]) => {
+    const mount = () => createRoot(document.getElementById('root')).render(
+      <StrictMode>
+        <RouterProvider router={router} />
+      </StrictMode>,
+    );
+    if (document.getElementById('root')) mount();
+    else document.addEventListener('DOMContentLoaded', mount, { once: true });
+  })
+  .catch((error) => {
+    if (isChunkError(error) && !recentlyReloaded()) {
+      markChunkReload();
+      window.location.reload();
+      return;
+    }
+    console.error('PLOT startup error:', error);
+    window.__plotShowStartupFallback?.();
+  });
