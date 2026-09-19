@@ -354,7 +354,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
   const ctaLabels = AUTH_PAGE.submitLabel;
 
   return (
-    <div className="auth-page">
+    <div className={`auth-page auth-page--${mode}`}>
 
       {/* ── Left: living poster wall ── */}
       <div className="auth-visual" aria-hidden="true">

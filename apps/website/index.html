@@ -269,7 +269,7 @@
       font-size: clamp(2.4rem, 4.8vw, 4.4rem);
       line-height: 0.95;
       color: var(--text);
-      margin-bottom: 1.25rem;
+      margin-bottom: 1.75rem;
       text-wrap: balance;
     }
 
@@ -281,7 +281,7 @@
       font-weight: 500;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      margin-bottom: 1.75rem;
+      margin-bottom: 1.5rem;
     }
 
     .hero-sub {
@@ -344,6 +344,11 @@
     .manifesto-line em {
       font-style: normal; font-weight: 500;
     }
+    #plotDoes .manifesto-wordmark {
+      font-weight: 700;
+      letter-spacing: -0.045em;
+    }
+    #plotDoes em { font-style: italic; }
     .manifesto-line.no-fade.passed {
       color: var(--text);
     }
@@ -396,12 +401,10 @@
     }
     .timeline-header::after { content: none; }
     .tl-head-copy { display: flex; flex-direction: column; gap: 1.25rem; align-items: flex-start; }
-    .tl-eyebrow { background: var(--fill); }
-    .tl-rule { height: 1px; background: var(--rule); margin: 0 3rem; }
-
+    .section-eyebrow.tl-eyebrow { background: var(--sage); }
     .timeline-headline {
       font-size: clamp(2.5rem, 5.5vw, 4.5rem);
-      line-height: 0.95;
+      line-height: 0.86;
       color: var(--text);
       margin: 0;
     }
@@ -412,6 +415,7 @@
       color: var(--text-secondary);
       max-width: 320px;
       line-height: 1.55;
+      text-align: right;
       margin: 0 0 0.4rem;
     }
 
@@ -670,7 +674,7 @@
 
     .woc-headline {
       font-size: clamp(2.5rem, 5.5vw, 4.5rem);
-      line-height: 0.95;
+      line-height: 0.86;
       margin-bottom: 1.1rem;
       color: var(--text-dark);
     }
@@ -727,9 +731,9 @@
     .woc-form button {
       height: 40px;
       padding: 0 18px;
-      border: 1px solid var(--text);
+      border: 1px solid var(--fill);
       border-radius: var(--r-pill);
-      background: transparent;
+      background: var(--fill);
       color: var(--text);
       font-family: var(--sans);
       font-size: 0.82rem;
@@ -738,14 +742,10 @@
       white-space: nowrap;
       transition: all 0.25s var(--ease);
     }
-    .woc-form button:hover:not(:disabled) { background: var(--text); color: #fff; }
+    .woc-form button:hover:not(:disabled) { background: var(--fill-hover); border-color: var(--fill-hover); }
     .woc-form button:disabled { opacity: 0.6; cursor: default; }
 
-    /* Subscribe is the closer's one primary action, so it takes the site's
-       existing solid CTA ink. The app-soon capture stays outlined: two solid
-       buttons on one page would leave neither of them reading as primary. */
-    #whats-on-cta .woc-form button { background: var(--ink); border-color: var(--ink); color: #fff; }
-    #whats-on-cta .woc-form button:hover:not(:disabled) { background: var(--ink-hover); border-color: var(--ink-hover); }
+    /* Notify and Subscribe are each the primary action in their own section. */
 
     /* One quiet line carries both secondary routes (browse, and the archive)
        below the form, replacing the orphaned link that used to sit above it. */
@@ -803,16 +803,16 @@
         /* Peek up far enough to be visible before the first scroll (SUS-112) */
         transform: translateY(30%);
         pointer-events: none;
-        z-index: 5;
+        z-index: 1;
       }
       .hpk {
-        width: 30%;            /* JS overrides width/height for varied sizes */
+        width: auto;           /* JS varies this once fresh artwork is ready */
+        height: clamp(150px, 24vh, 220px);
         aspect-ratio: 2 / 3;
         flex-shrink: 0;
         border-radius: 12px;
         background-color: rgba(0,0,0,0.05);
-        background-size: cover;
-        background-position: center;
+        object-fit: cover;
         box-shadow: 0 -10px 30px rgba(0,0,0,0.12);
       }
 
@@ -901,7 +901,6 @@
       /* Timeline — tighten padding on mobile */
       #timeline-section { padding: 5rem 0 4rem; }
       .timeline-header { padding: 0 1.5rem 1.5rem; flex-direction: column; align-items: flex-start; gap: 1rem; }
-      .tl-rule { margin: 0 1.5rem; }
       .tl-scroll-outer { padding: 1.5rem 1.5rem 2rem; }
       .tl-poster { width: 110px; height: 165px; }
       .tl-card { width: 110px; }
@@ -946,7 +945,7 @@
     .demo-copy { position: sticky; top: 10rem; }
     .demo-headline {
       font-size: clamp(2.5rem, 5.5vw, 4.5rem);
-      line-height: 0.95;
+      line-height: 0.86;
       margin-bottom: 1.8rem;
       color: var(--text-dark);
     }
@@ -989,52 +988,45 @@
     }
     .origin-actions { display: flex; align-items: center; gap: 1.8rem; flex-wrap: wrap; margin-top: 2.2rem; }
     .origin-actions .demo-link { margin-top: 0; }
+    .origin-body + .origin-body { margin-top: 1rem; }
 
     /* "Pulls from" platform-proof row — substantiates the "every platform"
-       claim. Logos keep their own brand colours and are sized per-logo for even
-       optical weight. Every mark is a WebP cropped tight to its artwork, so the
-       heights below are true ink heights rather than boxes with padding.
-       Two marks ship recoloured rather than as supplied: AMC+ drew its "+" and
-       one frame corner in white, which left both invisible here, and its cyan
-       was too pale to read at the row's opacity — it's flattened to one darker
-       teal. Disney+ is darkened the same way for weight parity with Paramount+
-       and HBO max, which flank it. */
+       claim. Every mark is a WebP cropped tight to its artwork, so the heights
+       below are true ink heights rather than boxes with padding. */
     .demo-copy .btn { margin-top: 2.6rem; }
-    /* Let the column keep its grid share; the marquee's wide track clips inside. */
-    .demo-copy { min-width: 0; }
-
-    /* Platform logos as a slow marquee under the CTA. Edges fade out; three
-       copies of the set loop seamlessly. Muted so the copy + CTA still lead. */
+    /* Platform logos as a slow, full-viewport marquee below the complete
+       Trending panel. Three copies of the set loop seamlessly. */
     .marquee {
-      margin-top: 3rem; overflow: hidden;
+      width: 100vw;
+      margin-top: 4rem;
+      margin-left: calc(50% - 50vw);
+      overflow: hidden;
       -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
       mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
     }
     .marquee-track {
-      display: flex; width: max-content; align-items: center; gap: 3.2rem;
-      animation: marquee-scroll 48s linear infinite;   /* two copies of the set */
+      display: flex; width: max-content; align-items: center; gap: 4rem;
+      animation: marquee-scroll 48s linear infinite;   /* three copies of the set */
     }
-    @keyframes marquee-scroll { to { transform: translateX(-50%); } }
-    .marquee .pl { width: auto; display: block; opacity: 0.55; }
-    /* No filter needed: every mark now ships dark enough to read on white, and
-       flattening would cost Peacock its colour dots and Disney+ its teal. */
-    .pl-netflix     { height: 13px; }   /* all-caps, so a shorter measure than the lowercase marks */
-    .pl-prime       { height: 16px; }
-    .pl-max         { height: 21px; }
-    .pl-disney      { height: 23px; }   /* the swoosh takes the top third, so the script needs the extra measure */
-    .pl-paramount   { height: 21px; }
-    .pl-amc         { height: 20px; }
-    .pl-crunchyroll { height: 16px; }
-    .pl-hulu        { height: 18px; }   /* ascenders eat the measure, so it runs taller than the row's other lowercase marks */
-    .pl-peacock     { height: 15px; }
-    .pl-stan        { height: 17px; }
-    .pl-hayu        { height: 16px; }
-    /* Peacock opts out of the row's fade: its five colour dots are the point of
-       the mark, and mixing 45% white into them turns the amber one invisible.
-       Its wordmark is baked to the grey the fade used to produce, so it still
-       matches its neighbours. Needs the .marquee prefix to outrank the opacity
-       above; rebake the file if that opacity ever changes. */
-    .marquee .pl-peacock { opacity: 1; }
+    @keyframes marquee-scroll { to { transform: translateX(-33.333333%); } }
+    .marquee .pl {
+      width: auto;
+      display: block;
+      opacity: 1;
+      /* Flatten every supplied brand colour to PLOT's #292924 charcoal. */
+      filter: brightness(0) saturate(100%) invert(14%) sepia(8%) saturate(390%) hue-rotate(22deg) brightness(94%) contrast(92%);
+    }
+    .pl-netflix     { height: 26px; }   /* all-caps, so a shorter measure than the lowercase marks */
+    .pl-prime       { height: 32px; }
+    .pl-max         { height: 42px; }
+    .pl-disney      { height: 46px; }   /* the swoosh takes the top third, so the script needs the extra measure */
+    .pl-paramount   { height: 42px; }
+    .pl-amc         { height: 40px; }
+    .pl-crunchyroll { height: 32px; }
+    .pl-hulu        { height: 36px; }   /* ascenders eat the measure, so it runs taller than the row's other lowercase marks */
+    .pl-peacock     { height: 30px; }
+    .pl-stan        { height: 34px; }
+    .pl-hayu        { height: 32px; }
     @media (prefers-reduced-motion: reduce) { .marquee-track { animation: none; } }
 
     /* Guide demo — the trending list as one calm panel: deeper cream, 20px
@@ -1268,7 +1260,7 @@
     .cal-copy { display: flex; flex-direction: column; gap: 1.5rem; align-items: flex-start; }
     .cal-headline {
       font-size: clamp(2.5rem, 5.5vw, 4.5rem);
-      line-height: 0.95;
+      line-height: 0.86;
       color: var(--text-dark);
       margin: 0;
     }
@@ -1325,9 +1317,9 @@
     /* Coverflow slide states — 0 = centred cover, neighbours angled, far cards
        parked off-stage so the ring can loop without a visible jump. */
     .cf-card.s-farLeft  { transform: translateX(calc(-1 * var(--cf-fx))) rotateY(45deg)  scale(0.7);  opacity: 0;   z-index: 0; }
-    .cf-card.s-left     { transform: translateX(calc(-1 * var(--cf-x)))  rotateY(38deg)  scale(0.82); opacity: 0.5; z-index: 1; }
+    .cf-card.s-left     { transform: translateX(calc(-1 * var(--cf-x)))  rotateY(38deg)  scale(0.82); opacity: 0.7; z-index: 1; }
     .cf-card.s-center   { transform: translateX(0)                       rotateY(0deg)   scale(1);    opacity: 1;   z-index: 3; }
-    .cf-card.s-right    { transform: translateX(var(--cf-x))             rotateY(-38deg) scale(0.82); opacity: 0.5; z-index: 1; }
+    .cf-card.s-right    { transform: translateX(var(--cf-x))             rotateY(-38deg) scale(0.82); opacity: 0.7; z-index: 1; }
     .cf-card.s-farRight { transform: translateX(var(--cf-fx))            rotateY(-45deg) scale(0.7);  opacity: 0;   z-index: 0; }
 
     .cf-cap { text-align: center; margin-top: 1.4rem; }
@@ -1345,6 +1337,7 @@
       /* Guide demo — tighten the stacked layout on mobile */
       section#guide-demo, section#app-soon, section#origin { padding-top: 5rem; padding-bottom: 5rem; }
       #guide-demo .demo-split { gap: 2.4rem; }
+      #guide-demo .marquee { margin-top: 3rem; }
       #guide-demo .marquee-track { gap: 2.2rem; }
     }
 
@@ -1446,6 +1439,9 @@
 
     /* Interactive calendar mockup */
     .cal-mockup-int {
+      width: 100%;
+      max-width: 560px;
+      justify-self: end;
       background: var(--surface);
       border-radius: 20px;
       overflow: hidden;
@@ -1469,22 +1465,14 @@
       background-position: center;
       overflow: hidden;
     }
-    /* A release date shows its poster as the whole cell, title along the foot */
-    .cal-cell-int.has-poster .cal-dn-int { color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.7); }
-    .cal-cell-int.has-poster .cal-dots-int { display: none; }
-    .cal-cap {
-      margin-top: auto;
-      font-size: 0.62rem;
-      font-weight: 600;
-      line-height: 1.15;
-      color: #fff;
-      text-shadow: 0 1px 3px rgba(0,0,0,0.75);
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
+    /* Release cells are poster-only. Their true poster ratio shows the full
+       artwork without a gradient, date, title or platform overlay. */
+    .cal-cell-int.has-poster {
+      aspect-ratio: 2 / 3;
+      min-height: 0;
+      padding: 0;
+      background-position: center;
     }
-    .cal-cap small { display: block; font-weight: 400; opacity: 0.85; font-size: 0.55rem; margin-top: 1px; }
     .cal-cell-int.dim  { opacity: 0.28; pointer-events: none; }
     /* Interactive day cells render as <button> — reset native chrome and give a
        clear keyboard focus ring (SUS-79). */
@@ -1509,9 +1497,6 @@
       width: 22px; height: 22px;
       display: flex; align-items: center; justify-content: center;
     }
-    .cal-dots-int { display: flex; gap: 2px; flex-wrap: wrap; justify-content: center; }
-    .cal-dot-int  { width: 4px; height: 4px; border-radius: 50%; }
-
     /* Day events panel */
     .cal-day-panel {
       border-top: 1px solid rgba(0,0,0,0.08);
@@ -1566,12 +1551,15 @@
 
     @media (max-width: 800px) {
       .cal-split { grid-template-columns: minmax(0, 1fr); gap: 2.5rem; }
+      .cal-mockup-int { justify-self: center; }
       .guide-panel { max-width: none; }
     }
   </style>
-  <!-- No eager image preloads: the hero uses live TMDB posters, and these
-       local images appear only in below-the-fold demo sections (discover
-       mockup, My Lists) where they are lazy/overwritten. (SUS-89) -->
+  <!-- The three mobile/tablet hero posters are real first-frame fallbacks.
+       Preload them so the hero never waits for the live discovery request. -->
+  <link rel="preload" as="image" media="(max-width: 1100px)" href="https://image.tmdb.org/t/p/w500/6izwz7rsy95ARzTR3poZ8H6c5pp.jpg">
+  <link rel="preload" as="image" media="(max-width: 1100px)" href="https://image.tmdb.org/t/p/w500/gRMalasZEzsZi4w2VFuYusfSfqf.jpg">
+  <link rel="preload" as="image" media="(max-width: 1100px)" href="https://image.tmdb.org/t/p/w500/eDo0pNruy0Qgj6BdTyHIR4cxHY8.jpg">
   <link rel="stylesheet" href="/premium-home.css?v=16">
 </head>
 <body>
@@ -1603,22 +1591,21 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <h1 class="hero-headline reveal reveal-delay-1">Everything you've watched.<br>Everything you want to watch.</h1>
       <p class="hero-sub reveal reveal-delay-2">Track what you've seen, save what's coming, and keep the notes that make it yours.</p>
       <div class="hero-actions reveal reveal-delay-3">
-        <a href="https://app.theplot.tv/signup" class="btn btn-primary btn-large" data-cta="hero">Start your plot</a>
         <a href="/whats-on" class="btn btn-outline btn-large" data-cta="hero-whats-on">See what's on</a>
+        <a href="https://app.theplot.tv/signup" class="btn btn-primary btn-large" data-cta="hero">Start your plot</a>
       </div>
     </div>
     <div class="hero-peek" aria-hidden="true">
-      <div class="hpk"></div>
-      <div class="hpk"></div>
-      <div class="hpk"></div>
+      <img class="hpk" src="https://image.tmdb.org/t/p/w500/6izwz7rsy95ARzTR3poZ8H6c5pp.jpg" alt="" width="120" height="180" loading="eager" fetchpriority="high" decoding="async">
+      <img class="hpk" src="https://image.tmdb.org/t/p/w500/gRMalasZEzsZi4w2VFuYusfSfqf.jpg" alt="" width="120" height="180" loading="eager" fetchpriority="high" decoding="async">
+      <img class="hpk" src="https://image.tmdb.org/t/p/w500/eDo0pNruy0Qgj6BdTyHIR4cxHY8.jpg" alt="" width="120" height="180" loading="eager" fetchpriority="high" decoding="async">
     </div>
   </section>
 
   <!-- ── Manifesto ────────────────────────────────────────────── -->
   <section id="manifesto">
     <div class="manifesto-beat">
-      <p class="manifesto-line reveal">You don't just watch things.</p>
-      <p class="manifesto-line reveal reveal-delay-1">You think about them.<br>You talk about them.<br>You carry them with you.</p>
+      <p class="manifesto-line reveal">You don't just watch things.<br>You think about them.<br>You talk about them.<br>You carry them with you.</p>
     </div>
     <div class="manifesto-poster-row reveal">
       <div class="manifesto-poster"></div>
@@ -1632,7 +1619,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <div class="manifesto-poster"></div>
       <div class="manifesto-poster"></div>
     </div>
-    <p class="manifesto-line no-fade reveal" id="plotDoes">plot does.</p>
+    <p class="manifesto-line no-fade reveal" id="plotDoes"><span class="manifesto-wordmark">plot</span> <em>does.</em></p>
   </section>
 
 
@@ -1646,35 +1633,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           worldwide, pulls the top 10 across the major platforms and every
           release on the way into a single feed. <em>Your</em> feed.
         </p>
-        <a href="/whats-on" class="btn btn-outline-white btn-large" data-cta="demo-whats-on">See what's on</a>
-        <div class="marquee" aria-hidden="true">
-          <div class="marquee-track">
-            <!-- set 1 -->
-            <img class="pl pl-netflix"     src="images/platforms/netflix.webp"            alt="" loading="lazy" decoding="async">
-            <img class="pl pl-prime"       src="images/platforms/amazon-prime-video.webp"  alt="" loading="lazy" decoding="async">
-            <img class="pl pl-max"         src="images/platforms/hbo-max.webp"            alt="" loading="lazy" decoding="async">
-            <img class="pl pl-disney"      src="images/platforms/disney-plus.webp"        alt="" loading="lazy" decoding="async">
-            <img class="pl pl-paramount"   src="images/platforms/paramount-plus.webp"      alt="" loading="lazy" decoding="async">
-            <img class="pl pl-amc"         src="images/platforms/amc-plus.webp"           alt="" loading="lazy" decoding="async">
-            <img class="pl pl-crunchyroll" src="images/platforms/crunchyroll.webp"         alt="" loading="lazy" decoding="async">
-            <img class="pl pl-hulu"        src="images/platforms/hulu.webp"                alt="" loading="lazy" decoding="async">
-            <img class="pl pl-peacock"     src="images/platforms/peacock.webp"             alt="" loading="lazy" decoding="async">
-            <img class="pl pl-stan"        src="images/platforms/stan.webp"                alt="" loading="lazy" decoding="async">
-            <img class="pl pl-hayu"        src="images/platforms/hayu.webp"                alt="" loading="lazy" decoding="async">
-            <!-- set 2 (duplicate for a seamless loop) -->
-            <img class="pl pl-netflix"     src="images/platforms/netflix.webp"            alt="" loading="lazy" decoding="async">
-            <img class="pl pl-prime"       src="images/platforms/amazon-prime-video.webp"  alt="" loading="lazy" decoding="async">
-            <img class="pl pl-max"         src="images/platforms/hbo-max.webp"            alt="" loading="lazy" decoding="async">
-            <img class="pl pl-disney"      src="images/platforms/disney-plus.webp"        alt="" loading="lazy" decoding="async">
-            <img class="pl pl-paramount"   src="images/platforms/paramount-plus.webp"      alt="" loading="lazy" decoding="async">
-            <img class="pl pl-amc"         src="images/platforms/amc-plus.webp"           alt="" loading="lazy" decoding="async">
-            <img class="pl pl-crunchyroll" src="images/platforms/crunchyroll.webp"         alt="" loading="lazy" decoding="async">
-            <img class="pl pl-hulu"        src="images/platforms/hulu.webp"                alt="" loading="lazy" decoding="async">
-            <img class="pl pl-peacock"     src="images/platforms/peacock.webp"             alt="" loading="lazy" decoding="async">
-            <img class="pl pl-stan"        src="images/platforms/stan.webp"                alt="" loading="lazy" decoding="async">
-            <img class="pl pl-hayu"        src="images/platforms/hayu.webp"                alt="" loading="lazy" decoding="async">
-          </div>
-        </div>
+        <a href="/whats-on" class="btn btn-primary btn-large" data-cta="demo-whats-on">See what's on</a>
       </div>
       <div class="phone-wrap reveal">
         <!-- The trending list as a panel. Row 1 is committed markup that
@@ -1695,6 +1654,44 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         </div>
       </div>
     </div>
+    <div class="marquee" aria-hidden="true">
+      <div class="marquee-track">
+        <!-- Three duplicate sets create a seamless loop. -->
+        <img class="pl pl-netflix" src="images/platforms/netflix.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-prime" src="images/platforms/amazon-prime-video.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-max" src="images/platforms/hbo-max.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-disney" src="images/platforms/disney-plus.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-paramount" src="images/platforms/paramount-plus.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-amc" src="images/platforms/amc-plus.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-crunchyroll" src="images/platforms/crunchyroll.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-hulu" src="images/platforms/hulu.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-peacock" src="images/platforms/peacock.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-stan" src="images/platforms/stan.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-hayu" src="images/platforms/hayu.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-netflix" src="images/platforms/netflix.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-prime" src="images/platforms/amazon-prime-video.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-max" src="images/platforms/hbo-max.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-disney" src="images/platforms/disney-plus.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-paramount" src="images/platforms/paramount-plus.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-amc" src="images/platforms/amc-plus.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-crunchyroll" src="images/platforms/crunchyroll.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-hulu" src="images/platforms/hulu.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-peacock" src="images/platforms/peacock.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-stan" src="images/platforms/stan.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-hayu" src="images/platforms/hayu.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-netflix" src="images/platforms/netflix.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-prime" src="images/platforms/amazon-prime-video.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-max" src="images/platforms/hbo-max.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-disney" src="images/platforms/disney-plus.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-paramount" src="images/platforms/paramount-plus.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-amc" src="images/platforms/amc-plus.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-crunchyroll" src="images/platforms/crunchyroll.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-hulu" src="images/platforms/hulu.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-peacock" src="images/platforms/peacock.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-stan" src="images/platforms/stan.webp" alt="" loading="lazy" decoding="async">
+        <img class="pl pl-hayu" src="images/platforms/hayu.webp" alt="" loading="lazy" decoding="async">
+      </div>
+    </div>
   </section>
 
 
@@ -1704,13 +1701,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
      <div class="tl-sticky">
       <div class="timeline-header reveal">
         <div class="tl-head-copy">
-          <span class="section-eyebrow tl-eyebrow">02 · History</span>
+          <span class="section-eyebrow tl-eyebrow">Your watch history</span>
           <h2 class="timeline-headline">A timeline as rich <br class="tl-mbreak">as your taste</h2>
         </div>
         <p class="timeline-intro">Your watch history tells a story and every story needs a plot.</p>
       </div>
-      <div class="tl-rule"></div>
-
       <div class="tl-scroll-outer" id="tlScrollOuter">
       <div class="tl-scroll-track" id="tlTrack">
         <!-- timeline:start -->
@@ -1848,12 +1843,13 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   <section id="calendar-demo">
     <div class="cal-split">
      <div class="cal-copy reveal">
-      <span class="section-eyebrow cal-eyebrow">03 · Calendar</span>
+      <span class="section-eyebrow cal-eyebrow">Your release calendar</span>
       <h2 class="cal-headline">Never miss <em>a drop.</em></h2>
       <p class="cal-sub">
         Save that new show, movie or cinema release. Whatever you're
         excited for, let your calendar do the remembering.
       </p>
+      <a href="https://app.theplot.tv/signup" class="btn btn-primary btn-large" data-cta="calendar-signup">Start your plot</a>
      </div>
 
       <!-- Right: Interactive calendar -->
@@ -1890,7 +1886,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <p class="demo-body" style="color:var(--text-secondary)">
           Organise by decade, director, or whatever mood you're in. Create and share movie and TV collections that are unmistakably yours.
         </p>
-        <a href="https://app.theplot.tv/signup" class="btn btn-outline btn-large" data-cta="demo-create">Start curating</a>
+        <a href="https://app.theplot.tv/signup" class="btn btn-primary btn-large" data-cta="demo-create">Start curating</a>
       </div>
     </div>
   </section>
@@ -2032,9 +2028,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <div class="origin-split">
       <h2 class="demo-headline reveal" style="color:var(--text)">Built by a<br>solo developer.</h2>
       <div class="reveal">
-        <p class="demo-body" style="color:var(--text-secondary)">plot is built by one person around a full time job. No team, no investors, nothing to answer to except the people using it. So the roadmap gets written with you. Tell me what would make plot better for the way you watch and it shapes what I build or fix next. Support along the way is what lets me keep building a product you love.</p>
+        <p class="demo-body origin-body" style="color:var(--text-secondary)">PLOT is built by one person, around a full-time job. There’s no team, no investors and no corporate roadmap to follow. It’s shaped by feedback from the people who actually use it.</p>
+        <p class="demo-body origin-body" style="color:var(--text-secondary)">Your support helps keep PLOT independent and worth coming back to. Your movies, your shows, your PLOT.</p>
         <div class="origin-actions">
-          <a href="https://ko-fi.com/J7P123TYGK" class="btn btn-outline btn-large" target="_blank" rel="noopener" data-cta="origin-kofi">Support plot on Ko-fi</a>
+          <a href="https://ko-fi.com/J7P123TYGK" class="btn btn-primary btn-large" target="_blank" rel="noopener" data-cta="origin-kofi">Support plot on Ko-fi</a>
           <a href="/about.html" class="demo-link dark-link" data-cta="origin-about">Read the story</a>
         </div>
       </div>
@@ -2472,11 +2469,13 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
         const plotDoes      = document.getElementById('plotDoes');
         const plotDoesPageY = plotDoes ? plotDoes.getBoundingClientRect().top + window.scrollY : 999999;
-        const gFadeStart    = plotDoesPageY - vh * 0.9;
-        const gFadeEnd      = plotDoesPageY - vh * 0.15;
-        const globalOp      = Math.max(0, Math.min(1, 1 - (window.scrollY - gFadeStart) / (gFadeEnd - gFadeStart)));
-
-        posterSide.style.opacity = globalOp;
+        // Clear the stage for the closing statement. All edge posters begin
+        // travelling back off-screen as it approaches, and are fully gone
+        // before "plot does." reaches the viewport's focal area.
+        const exitStart     = plotDoesPageY - vh * 0.95;
+        const exitEnd       = plotDoesPageY - vh * 0.62;
+        const exitProgress  = Math.max(0, Math.min(1, (window.scrollY - exitStart) / (exitEnd - exitStart)));
+        const exitEase      = easeInCubic(exitProgress);
 
         sidePosters.forEach(({ el, data }) => {
           const { side, vy, showAt, w, restX } = data;
@@ -2506,6 +2505,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             opacity = 0;
             tx = dir * slideAmt;
           }
+
+          opacity *= 1 - exitProgress;
+          tx += dir * slideAmt * exitEase;
 
           el.style.top       = `${vy * vh}px`;
           el.style.opacity   = opacity;
@@ -2571,7 +2573,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           var ptmp = pFactors[p]; pFactors[p] = pFactors[pt]; pFactors[pt] = ptmp;
         }
         peekEls.forEach(function(el, i) {
-          el.style.backgroundImage = "url('" + IMG + paths[i % paths.length] + "')";
+          el.src = IMG + paths[i % paths.length];
           var w = Math.round(pSlot * (pFactors[i] || 1));
           el.style.width = w + 'px';
           el.style.height = Math.round(w * 1.5) + 'px'; // fixed 2:3 poster ratio
@@ -2966,16 +2968,13 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           var events = (!cell.dim && dayMap[cell.day]) ? dayMap[cell.day] : [];
           var sel = !cell.dim && cell.day === selectedDay;
           var cls = 'cal-cell-int' + (cell.dim ? ' dim' : '') + (sel ? ' selected' : '') + (cell.today ? ' today' : '') + (events.length ? ' has-poster' : '');
-          var bg  = events.length ? ' style="background-image:linear-gradient(to top, rgba(0,0,0,0.7), rgba(0,0,0,0) 60%), url(\'' + esc(events[0].img) + '\')"' : '';
-          var dots = '';
-          events.forEach(function(e) { dots += '<div class="cal-dot-int" style="background:' + TYPE[e.type].color + '"></div>'; });
+          var bg  = events.length ? ' style="background-image:url(\'' + esc(events[0].img) + '\')"' : '';
           if (cell.dim) {
             // Adjacent-month padding cells: decorative, skipped by keyboard + SR.
             html += '<div class="' + cls + '" aria-hidden="true"><div class="cal-dn-int">' + cell.day + '</div></div>';
           } else {
             html += '<div class="' + cls + '"' + bg + ' data-day="' + cell.day + '">';
-            html += '<div class="cal-dn-int">' + cell.day + '</div>';
-            if (events.length) html += '<div class="cal-cap">' + esc(events[0].title) + '<small>' + TYPE[events[0].type].label + '</small></div>';
+            if (!events.length) html += '<div class="cal-dn-int">' + cell.day + '</div>';
             html += '</div>';
           }
         });

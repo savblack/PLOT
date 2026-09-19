@@ -52,6 +52,19 @@
   pointer-events: none;
 }
 
+/* Logout confirmation uses the current PLOT charcoal between posters and at
+   the poster wall's top/bottom fade, instead of the legacy near-black. */
+.auth-page--logout .auth-visual,
+.auth-page--logout .poster-cell,
+.auth-page--login .auth-visual,
+.auth-page--login .poster-cell {
+  background-color: var(--text-primary);
+}
+.auth-page--logout .auth-visual-gradient,
+.auth-page--login .auth-visual-gradient {
+  background: linear-gradient(to bottom, var(--text-primary) 0%, transparent 20%, transparent 75%, var(--text-primary) 100%);
+}
+
 /* PLOT brand mark on the poster wall */
 .auth-visual-brand {
   position: absolute;
@@ -214,6 +227,13 @@
   box-shadow: none;
 }
 
+/* Login uses the warm sunken cream for editable fields. Google remains white
+   so the third-party action is visually distinct from first-party controls. */
+.auth-page--login .auth-field input,
+.auth-page--login .auth-field input:focus {
+  background: var(--surface-sunken);
+}
+
 /* Password wrapper */
 .auth-password-wrap {
   position: relative;
@@ -309,6 +329,19 @@
 
 /* CTA rendered as a link (e.g. sign-out page) shouldn't be underlined */
 a.auth-cta { text-decoration: none; }
+
+.auth-page--login .auth-form .auth-cta {
+  background: var(--accent-fill);
+  color: var(--on-accent-fill);
+}
+.auth-page--login .auth-form .auth-cta:hover:not(:disabled) {
+  background: var(--accent-fill-hover);
+  opacity: 1;
+}
+.auth-page--login .auth-form .auth-cta:disabled {
+  background: var(--accent-fill);
+  opacity: 0.55;
+}
 
 /* Toggle mode */
 .auth-toggle {
@@ -414,6 +447,22 @@ a.auth-cta { text-decoration: none; }
   margin: 0;
   box-sizing: border-box;
   white-space: nowrap;
+}
+.logout-actions .auth-cta--primary {
+  background: var(--accent-fill);
+  color: var(--on-accent-fill);
+}
+.logout-actions .auth-cta--primary:hover:not(:disabled) {
+  background: var(--accent-fill-hover);
+  opacity: 1;
+}
+.logout-actions .auth-cta--secondary {
+  background: var(--surface-sunken);
+  color: var(--text-primary);
+}
+.logout-actions .auth-cta--secondary:hover:not(:disabled) {
+  background: var(--border-strong);
+  opacity: 1;
 }
 /* Neutralise the outline variant's auto-width + wide side padding so both
    buttons share the row equally and match height. */

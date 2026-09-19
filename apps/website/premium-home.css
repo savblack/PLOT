@@ -39,6 +39,8 @@
    keyframes only describe how it gets there. One pass ≈ 6s inside the 7s rotation. */
 .premium-story { position: relative; margin: 0; }
 .premium-story * { animation-fill-mode: both; animation-timing-function: var(--ease); }
+#premium:not(.is-in-view) .premium-story,
+#premium:not(.is-in-view) .premium-story * { animation-play-state: paused !important; }
 .premium-story img { display: block; }
 .premium-pill-cta { display: inline-flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 16px; border-radius: var(--r-pill); background: var(--fill); color: var(--text); font: 500 0.75rem var(--sans); white-space: nowrap; }
 .premium-pill-cta svg { flex-shrink: 0; }

@@ -112,7 +112,7 @@
      width the treatment is drawn for. Derived from --poster-w so it ramps with
      the poster; the surfaces whose posters are grid columns rather than this
      token (the two Top 5s) set their own. */
-  --rank-cut-size:  calc(var(--poster-w) * 0.39);
+  --rank-cut-size:  calc(var(--poster-w) * 0.35);
   /* Desktop nav rail. 0 below the sidebar breakpoint so anything offsetting
      against it (the app header, main, fixed overlays) can do the arithmetic
      unconditionally. */

@@ -52,6 +52,7 @@
   reduced.addEventListener('change', schedule);
   new IntersectionObserver(function (entries) {
     visible = entries[0].isIntersecting;
+    panel.classList.toggle('is-in-view', visible);
     schedule();
   }).observe(panel);
 })();

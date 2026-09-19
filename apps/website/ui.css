@@ -129,6 +129,8 @@ footer {
 .footer-social a { color: var(--text-secondary); display: inline-flex; transition: color 0.2s; }
 .footer-social a:hover { color: var(--text); }
 .footer-social svg { width: 19px; height: 19px; display: block; }
+.nav-links a[data-cta="nav"]::after,
+.footer-inner a::after { content: none; }
 @media (max-width: 600px) {
   footer { padding-left: 1.5rem; padding-right: 1.5rem; }
 }
