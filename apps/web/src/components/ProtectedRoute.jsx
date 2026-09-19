@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { supabase } from '@plot/core/supabase.js';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import { isPreviewDeployment } from '../utils/previewDeployment.js';
 import { readCachedSession, clearCachedSession } from '../utils/sessionCache.js';
+import { loadSupabase } from '../utils/loadSupabase.js';
 
 export default function ProtectedRoute({ children, skipOnboardingCheck = false, publicPrefixes = [] }) {
   const location = useLocation();
@@ -20,7 +20,11 @@ export default function ProtectedRoute({ children, skipOnboardingCheck = false, 
   );
 
   useEffect(() => {
-    const checkSession = async (session) => {
+    let subscription;
+    let cancelled = false;
+
+    const checkSession = async (supabase, session) => {
+      if (cancelled) return;
       if (!session) {
         setAuthenticated(false);
         setNeedsOnboarding(false);
@@ -43,15 +47,22 @@ export default function ProtectedRoute({ children, skipOnboardingCheck = false, 
       setLoading(false);
     };
 
-    // Initial session check
-    supabase.auth.getSession().then(({ data: { session } }) => checkSession(session));
+    loadSupabase().then(async (supabase) => {
+      if (cancelled) return;
+      const { data: { session } } = await supabase.auth.getSession();
+      await checkSession(supabase, session);
+      if (cancelled) return;
 
-    // Stay in sync if session expires or is revoked
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      checkSession(session);
+      // Stay in sync if session expires or is revoked.
+      ({ data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+        checkSession(supabase, nextSession);
+      }));
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      cancelled = true;
+      subscription?.unsubscribe();
+    };
   }, [isPreview, skipOnboardingCheck]);
 
   if (loading) {
