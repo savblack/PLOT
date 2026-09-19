@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { useFonts } from 'expo-font';
 import type { BroadcastPreferences } from '@plot/core/broadcastPreferences.js';
 import BroadcastGuideSetup from '../components/BroadcastGuideSetup';
 import { colors, fontFamily } from '../lib/tokens';
@@ -11,12 +10,6 @@ export function Preview() {
   const [value, setValue] = useState<BroadcastPreferences>({ market_id: null, channel_ids: null });
   const [fail, setFail] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [loaded] = useFonts({
-    'Gabarito-Bold': require('../assets/fonts/Gabarito-Bold.ttf'),
-    'DMSans-Regular': require('../assets/fonts/DMSans-Regular.ttf'),
-    'DMSans-Medium': require('../assets/fonts/DMSans-Medium.ttf'),
-  });
-  if (!loaded) return null;
   const preferences = {
     value, saving, loading: false, error: false, retry: () => {},
     save: async (next: BroadcastPreferences) => {
