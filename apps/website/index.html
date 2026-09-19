@@ -352,6 +352,14 @@
     .manifesto-line.no-fade.passed {
       color: var(--text);
     }
+    .manifesto-line.manifesto-stack {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.18em;
+      line-height: 1;
+    }
+    .manifesto-stack > span { display: block; }
     /* Poster interludes — mobile only (desktop uses edge side-posters) */
     .manifesto-poster { display: none; }
     .manifesto-poster-row { display: none; }
@@ -1630,14 +1638,14 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   <!-- ── Manifesto ────────────────────────────────────────────── -->
   <section id="manifesto">
     <div class="manifesto-beat">
-      <p class="manifesto-line reveal">You don't just watch things.<br>You think about them.<br>You talk about them.<br>You carry them with you.</p>
+      <p class="manifesto-line manifesto-stack reveal"><span>You don't just watch things.</span><span>You think about them.</span><span>You talk about them.</span><span>You carry them with you.</span></p>
     </div>
     <div class="manifesto-poster-row reveal">
       <div class="manifesto-poster"></div>
       <div class="manifesto-poster"></div>
     </div>
     <div class="manifesto-beat">
-      <p class="manifesto-line reveal">But no app has ever cared<br>as much as you do.</p>
+      <p class="manifesto-line manifesto-stack reveal"><span>But no app has ever cared</span><span>as much as you do.</span></p>
     </div>
     <div class="manifesto-poster-row reveal">
       <div class="manifesto-poster"></div>
