@@ -123,8 +123,8 @@ function HomePageNav({ sections }) {
   };
 
   return (
-    <nav className="hist-card home-page-nav" aria-label="On this page">
-      <h2 className="home-page-nav-title">On this page</h2>
+    <nav className="hist-card home-page-nav" aria-label="Jump to">
+      <h2 className="home-page-nav-title">Jump to</h2>
       <div className="home-page-nav-list">
         {sections.map(section => (
           <button key={section.id} type="button" className={`home-page-nav-row${currentId === section.id ? ' active' : ''}`} onClick={() => goTo(section.id)}>
@@ -615,12 +615,12 @@ function PlatformRow({ def, chart, logoPath, openPanel, watchlist, typeFilters, 
 
       {active && (
         <div className="discover-plat-rail-wrap">
+          <div className="discover-plat-arrows"><RailArrows rail={rail} /></div>
           <ScrollRail rail={rail} className="discover-plat-rail">
             {active.items.slice(0, 10).map((item, i) => (
               <RankedCard key={`${item.id}-${i}`} item={item} rank={item._rank ?? i + 1} showMeta={false} openPanel={openPanel} watchlist={watchlist} />
             ))}
           </ScrollRail>
-          <div className="discover-plat-arrows"><RailArrows rail={rail} /></div>
         </div>
       )}
     </div>
@@ -690,8 +690,8 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
       <aside className="cal-side home-side">
         <HomePersonalCard state={personalState} upNext={upNext} todayStr={todayStr} openPanel={openPanel} openSearch={openSearch} navigate={navigate} />
         <OnThisDayCard item={onThisDay} openPanel={openPanel} />
-        <section className="hist-card home-filter-card"><SideFilters typeFilters={typeFilters} setTypeFilters={setTypeFilters} genreFilters={genreFilters} setGenreFilters={setGenreFilters} genres={genres} /></section>
         <HomePageNav sections={pageSections} />
+        <section className="hist-card home-filter-card"><SideFilters typeFilters={typeFilters} setTypeFilters={setTypeFilters} genreFilters={genreFilters} setGenreFilters={setGenreFilters} genres={genres} /></section>
       </aside>
       <div className="discover-sections home-stream">
       {hero && genreFilters.length === 0 && (

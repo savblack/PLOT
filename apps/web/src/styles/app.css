@@ -6220,15 +6220,13 @@ a.provider-chip--link:hover {
 .home-up-next-chev svg { width: 15px; height: 15px; }
 .home-on-this-day-hit { border-bottom: 0; padding-block: 0; }
 .home-on-this-day-poster { width: 52px; height: 78px; border-radius: 8px; }
-.home-filter-card {
-  gap: 32px;
-  padding: 18px 12px 20px;
+.hist-card.home-filter-card {
+  gap: 24px;
+  padding: 0;
   border: 0;
   border-radius: 0;
   background: transparent;
 }
-.home-filter-card .cal-filter { gap: 8px; }
-.home-filter-card .cal-filter-row { min-height: 44px; }
 .home-page-nav { gap: 18px; padding: 20px 12px 12px; }
 .home-page-nav-title { padding: 0 4px; font-family: var(--font-display); font-size: 18px; letter-spacing: -0.02em; color: var(--text-primary); }
 .home-page-nav-list { display: flex; flex-direction: column; }
@@ -6246,6 +6244,16 @@ a.provider-chip--link:hover {
 .home-search-trigger:hover { border-color: var(--text-muted); color: var(--text-secondary); }
 .home-toolbar-actions > .desktop-page-filter { display: none; }
 @media (min-width: 1024px) {
+  .app-main:has(.home-page) { overflow-y: hidden; }
+  .app-main:has(.home-page) .app-main-inner { width: 100%; height: 100%; display: flex; flex-direction: column; min-height: 0; }
+  .home-page { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  .home-layout { flex: 1; min-height: 0; align-items: stretch; padding-bottom: 0; overflow: hidden; }
+  .home-side,
+  .home-stream { height: 100%; overflow-y: auto; overscroll-behavior-y: contain; scrollbar-width: none; }
+  .home-side { position: static; padding-bottom: 3rem; }
+  .home-stream { padding-bottom: 3rem; }
+  .home-side::-webkit-scrollbar,
+  .home-stream::-webkit-scrollbar { display: none; }
   .home-stream { --discover-rail-gut: 0px; }
   .home-stream .discover-section-header,
   .home-stream .discover-hero-row { padding-inline: 0; }
@@ -6618,6 +6626,7 @@ a.provider-chip--link:hover {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  --rank-cut-size: calc(var(--poster-w) * 0.31);
   padding: 1.25rem 0;
   border-top: 1px solid var(--border);
 }
@@ -6682,7 +6691,7 @@ a.provider-chip--link:hover {
 
 .discover-plat-rail-wrap {
   display: flex;
-  align-items: flex-start;
+  flex-direction: column;
   gap: 0.5rem;
   min-width: 0;
 }
@@ -6706,8 +6715,9 @@ a.provider-chip--link:hover {
 .discover-plat-arrows {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   flex-shrink: 0;
-  padding-top: 0.25rem;
+  min-height: 28px;
 }
 .discover-plat-arrows:empty { display: none; }
 
