@@ -15,6 +15,9 @@ import { markMediaAsWatched, moveSavedShowToWatching } from '../utils/mediaStatu
 import { resolveMediaPanelEscapeAction } from '../utils/mediaPanel.js';
 import { pickBestTvmazeShowMatch } from '../utils/tvmaze.js';
 import { favoriteWords } from '../utils/spelling.js';
+import { starFillPercent, STAR_COUNT } from '../utils/ratings.js';
+import { privateNoteKey } from '@plot/core/privateNotes.js';
+import { formatWatchedOn } from '@plot/core/date.js';
 import { useShareTitle } from '../hooks/useShareTitle.js';
 import { track, EVENTS, captureException } from '../lib/analytics.js';
 import CreditsGrid from './TalentCredits.jsx';
@@ -35,6 +38,7 @@ import SheetHeader from './SheetHeader.jsx';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import Spinner from './Spinner.jsx';
 import TitleReview from './TitleReview.jsx';
+import StarIcon from './StarIcon.jsx';
 import KebabMenu from './KebabMenu.jsx';
 import { COMMON } from '../copy/common.js';
 import { MEDIA } from '../copy/media.js';
@@ -123,6 +127,20 @@ function CheckIcon({ size = 15 }) {
     </svg>
   );
 }
+function ChevronIcon({ size = 18 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="9 18 15 12 9 6"/>
+    </svg>
+  );
+}
+function LockIcon({ size = 14 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+    </svg>
+  );
+}
 function StatusIcon({ size = 18 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -163,6 +181,104 @@ function CheckCircleIcon({ filled }) {
   );
 }
 
+/* ── Up next: the mid-watch summary for a series ──
+   A series you are part-way through is asking one question — what do I watch
+   now — and the panel used to answer it only if you scrolled to the episode
+   guide and counted. This says it at the top: the episode the pointer is on,
+   where it plays, and the two things you might do about it.
+
+   It reads the same pointer the guide does and advances it through the same
+   `markEpisodeWatched`, so the card and the list can't disagree. ── */
+function UpNextCard({ tvId, details, progress, whereToWatch, onSeriesFinished }) {
+  const { watching } = useApp();
+  const [episodes, setEpisodes] = useState([]);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState('');
+  const season = progress?.current_season || 0;
+  const episodeNumber = progress?.current_episode || 0;
+
+  useEffect(() => {
+    if (!season) return;
+    let cancelled = false;
+    tmdb.getSeason(tvId, season).then(data => {
+      if (!cancelled) setEpisodes(data?.episodes || []);
+    });
+    return () => { cancelled = true; };
+  }, [tvId, season]);
+
+  const episode = episodes.find(e => e.episode_number === episodeNumber);
+  if (!season || !episodeNumber) return null;
+
+  const watchedInSeason = Math.max(0, episodeNumber - 1);
+  const seasonTotal = episodes.length;
+  const offer = whereToWatch.streaming[0] || whereToWatch.rentBuy[0] || null;
+  const link = offer && buildWatchLink({ providerUrl: offer.providerUrl, justwatchLink: whereToWatch.justwatchLink });
+  const still = episode?.still_path ? backdropUrl(episode.still_path, 'w300') : null;
+  const runtime = episode?.runtime ? MEDIA_PANEL.episodeRuntime(episode.runtime) : '';
+  // The button names the provider, so the meta line only carries it when
+  // there is no button to open.
+  const where = [link ? '' : offer?.providerName, runtime].filter(Boolean).join(' · ');
+
+  const markWatched = async () => {
+    if (pending) return;
+    setPending(true);
+    setError('');
+    const result = await watching.markEpisodeWatched(tvId);
+    if (!result?.ok) {
+      setError(result?.error || MEDIA_PANEL.couldNotUpdateWatchStatus);
+    } else if (isSeriesComplete({
+      lastSeason: getLastSeasonNumber(details),
+      nextSeason: result.data?.current_season,
+      status: details?.status,
+    })) {
+      track(EVENTS.SERIES_COMPLETED, { tmdb_id: tvId, seasons: getLastSeasonNumber(details) });
+      const finished = await onSeriesFinished?.();
+      if (finished && !finished.ok) setError(finished.error || MEDIA_PANEL.couldNotUpdateWatchStatus);
+    }
+    setPending(false);
+  };
+
+  return (
+    <section className="panel-card panel-upnext">
+      <h3 className="panel-card-title panel-upnext-title">{MEDIA_PANEL.upNext}</h3>
+      <div className="panel-upnext-row">
+        <div className="panel-upnext-still">
+          {still && <img src={still} alt="" />}
+        </div>
+        <div className="panel-upnext-copy">
+          <div className="panel-upnext-kicker">{MEDIA_PANEL.seasonEpisode(season, episodeNumber)}</div>
+          <div className="panel-upnext-name">{episode?.name || MEDIA_PANEL.seasonEpisode(season, episodeNumber)}</div>
+          {where && <div className="panel-upnext-where">{where}</div>}
+        </div>
+        <div className="panel-upnext-actions">
+          <button className="panel-pill panel-pill--primary" onClick={markWatched} disabled={pending}>
+            <CheckIcon />
+            {pending ? MEDIA_PANEL.updating : MEDIA.markWatched}
+          </button>
+          {link && offer && (
+            <a className="panel-pill panel-pill--ghost" href={link.url} target="_blank" rel="noopener">
+              {MEDIA_PANEL.openOn(offer.providerName)}
+            </a>
+          )}
+        </div>
+      </div>
+      {seasonTotal > 0 && (
+        <div
+          className="panel-upnext-progress"
+          role="progressbar"
+          aria-valuenow={watchedInSeason}
+          aria-valuemin={0}
+          aria-valuemax={seasonTotal}
+          aria-label={MEDIA_PANEL.seasonWatchedCount(watchedInSeason, seasonTotal)}
+        >
+          <span style={{ width: `${Math.round((watchedInSeason / seasonTotal) * 100)}%` }} />
+        </div>
+      )}
+      {error && <p className="panel-upnext-error" role="alert">{error}</p>}
+    </section>
+  );
+}
+
 /* ── Season selector + episode list ── */
 function EpisodeGuide({ tvId, currentProgress, details, timezone, onSeriesFinished }) {
   const { watching } = useApp();
@@ -174,6 +290,7 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone, onSeriesFinish
   const [checkingEp, setCheckingEp] = useState(null); // ep number being toggled
   const [episodeActionError, setEpisodeActionError] = useState('');
   const [seasonPending, setSeasonPending] = useState(false);
+  const [seasonMenuOpen, setSeasonMenuOpen] = useState(false);
   const checkingEpRef = useRef(false); // sync guard to prevent double-tap race
 
   // Track whether user manually changed season (to suppress auto-follow)
@@ -339,33 +456,49 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone, onSeriesFinish
 
   return (
     <div>
-      {seasons.length > 1 && (
-        <div className="season-select">
-          {seasons.map(s => (
+      {/* Season picker and the season-level action share one line: the season
+          as a pill you open, the bulk action as plain text on the right. The
+          chip-per-season strip it replaces grew a row for every season. */}
+      <div className="season-row">
+        {seasons.length > 1 ? (
+          <div className="season-picker" onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) setSeasonMenuOpen(false); }}>
             <button
-              key={s.season_number}
-              className={`season-chip${selSeason === s.season_number ? ' active' : ''}`}
-              onClick={() => {
-                userChangedSeason.current = true;
-                setSelSeason(s.season_number);
-              }}
+              type="button"
+              className="panel-pill season-pill"
+              onClick={() => setSeasonMenuOpen(v => !v)}
+              aria-haspopup="menu"
+              aria-expanded={seasonMenuOpen}
             >
-              S{s.season_number}
+              {MEDIA_PANEL.seasonLabel(selSeason)}
+              <ChevronIcon size={13} />
             </button>
-          ))}
-        </div>
-      )}
-
-      {isTracking && episodes.length > 0 && (
-        <div className="season-bulk">
-          <div className="season-bulk-info">
-            <span className="season-bulk-title">{MEDIA_PANEL.seasonLabel(selSeason)}</span>
-            <span className="season-bulk-count">
-              {MEDIA_PANEL.seasonWatchedCount(seasonState.watchedCount, seasonState.episodeCount)}
-            </span>
+            {seasonMenuOpen && (
+              <div className="panel-status-menu season-menu" role="menu" aria-label={MEDIA_PANEL.chooseSeason}>
+                {seasons.map(s => (
+                  <button
+                    key={s.season_number}
+                    role="menuitem"
+                    className={`panel-status-option${s.season_number === selSeason ? ' panel-status-option--current' : ''}`}
+                    onClick={() => {
+                      userChangedSeason.current = true;
+                      setSelSeason(s.season_number);
+                      setSeasonMenuOpen(false);
+                    }}
+                  >
+                    {MEDIA_PANEL.seasonLabel(s.season_number)}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
+        ) : (
+          <span className="panel-pill season-pill season-pill--static">{MEDIA_PANEL.seasonLabel(selSeason)}</span>
+        )}
+
+        {isTracking && episodes.length > 0 && (
           <button
-            className="season-bulk-btn"
+            type="button"
+            className="season-bulk-link"
             onClick={handleToggleSeason}
             disabled={seasonPending}
           >
@@ -375,8 +508,8 @@ function EpisodeGuide({ tvId, currentProgress, details, timezone, onSeriesFinish
                 ? MEDIA_PANEL.unmarkSeasonWatched
                 : MEDIA_PANEL.markSeasonWatched}
           </button>
-        </div>
-      )}
+        )}
+      </div>
 
       {episodeActionError && (
         <div style={{
@@ -556,6 +689,67 @@ function pillButtonStyle(variant) {
     background: variant === 'solid' ? 'var(--accent)' : 'var(--surface-raised)',
     color: variant === 'solid' ? '#fff' : 'var(--text-primary)',
   };
+}
+
+/* ── Your take: the bar pinned to the foot of the panel ──
+   Present whether or not anything has been written, so your rating, your review
+   and your private note are one tap from any scroll position rather than a
+   section to scroll for. Collapsed it summarises; open it holds the same review
+   slip and note editor as before.
+
+   A separate component for the same reason TitleReview is one: reading
+   `watchedEntry`-derived values in the panel's own render body makes the React
+   Compiler bail out of the manual memoization on its watch-status callbacks. ── */
+function TakeBar({ itemId, itemType, title, watched, watchedEntry, rating, note, dnf, watchedAt, onSave, onClear, user }) {
+  const { privateNotes } = useApp();
+  const [open, setOpen] = useState(false);
+  const hasPrivateNote = !!privateNotes?.rows?.[privateNoteKey(itemId, itemType)]?.note;
+  const hasTake = !!(rating || note.trim() || dnf);
+  const preview = hasTake
+    ? (note.trim() || MEDIA_PANEL.watchedOnDate(formatWatchedOn(watchedAt)))
+    : MEDIA_PANEL.takeHint;
+
+  return (
+    <div className={`panel-take${open ? ' panel-take--open' : ''}`}>
+      <button
+        type="button"
+        className="panel-disclosure panel-take-head"
+        aria-expanded={open}
+        onClick={() => setOpen(v => !v)}
+      >
+        <span className="panel-take-stars" aria-hidden="true">
+          {Array.from({ length: STAR_COUNT }, (_, i) => i + 1).map(n => (
+            <StarIcon key={n} fillPercent={starFillPercent(rating, n)} />
+          ))}
+        </span>
+        <span className="panel-take-summary">
+          <b>{hasTake ? MEDIA_PANEL.yourTake : MEDIA_PANEL.leaveNoteOrReview}</b>
+          <span>{preview}</span>
+        </span>
+        {hasPrivateNote && <LockIcon />}
+        <ChevronIcon />
+      </button>
+
+      {open && (
+        <div className="panel-take-body">
+          {watched ? (
+            <TitleReview
+              entry={watchedEntry}
+              rating={rating}
+              note={note}
+              dnf={dnf}
+              watchedAt={watchedAt}
+              onSave={onSave}
+              onClear={onClear}
+            />
+          ) : (
+            <p className="panel-take-note">{MEDIA_PANEL.takeNeedsWatch}</p>
+          )}
+          {user && <PrivateNote id={itemId} type={itemType} title={title} />}
+        </div>
+      )}
+    </div>
+  );
 }
 
 /* ── Add to custom list sheet ── */
@@ -968,6 +1162,9 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
 
   const [showListSheet,     setShowListSheet]     = useState(false);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+  // Where to watch opens closed — its logos say enough at a glance. The foot
+  // bar owns its own open state, inside TakeBar.
+  const [watchOpen, setWatchOpen] = useState(false);
   const [statusActionPending, setStatusActionPending] = useState('');
   const [statusActionError, setStatusActionError] = useState('');
 
@@ -1132,8 +1329,6 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
   useEffect(() => { loadDetails(); }, [loadDetails]);
 
   const title   = details?.title || details?.name || '';
-  const rating  = details?.vote_average ? `${details.vote_average.toFixed(1)} ★` : '';
-  const genres  = (details?.genres || []).slice(0, 3).map(g => g.name).join(' · ');
   const date    = details?.release_date || details?.first_air_date;
   const chip    = date ? countdownChip(date) : null;
   const cast = (details?.credits?.cast || details?.aggregate_credits?.cast || []).slice(0, 12);
@@ -1145,6 +1340,36 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
     : null;
   const hasWatchOffers = whereToWatch.streaming.length > 0 || whereToWatch.rentBuy.length > 0 || whereToWatch.inCinemas;
   const watchNetworks = isMovie ? [] : networksFromDetails(details);
+
+  // ── What this is, in one line under the title ──
+  // Year and length for a film, year and season count for a series; the person
+  // behind it goes on the line below rather than being squeezed in beside them.
+  const year = date ? new Date(date).getFullYear() : '';
+  const runtimeText = isMovie
+    ? (details?.runtime
+        ? (details.runtime >= 60
+            ? `${Math.floor(details.runtime / 60)}h ${details.runtime % 60}m`
+            : `${details.runtime}m`)
+        : '')
+    : (details?.number_of_seasons
+        ? `${details.number_of_seasons} season${details.number_of_seasons > 1 ? 's' : ''}`
+        : '');
+  const factLine = [year, runtimeText].filter(Boolean).join(' · ');
+  const author = isMovie
+    ? (details?.credits?.crew || []).find(c => c.job === 'Director')?.name
+    : (details?.created_by || [])[0]?.name;
+  const genreChips = (details?.genres || []).slice(0, 2);
+
+  // ── The logos the collapsed Where to watch card shows in place of its rows ──
+  // With no offers anywhere it falls back to the networks, so the card still
+  // answers "who has this" at a glance instead of collapsing to a bare heading.
+  const stackProviders = (hasWatchOffers
+    ? [...whereToWatch.streaming, ...whereToWatch.rentBuy]
+    : watchNetworks
+  ).filter((p, i, all) => all.findIndex(o => o.providerId === p.providerId) === i);
+  const stackShown = stackProviders.slice(0, 3);
+  const stackExtra = stackProviders.length - stackShown.length;
+
 
   const runStatusAction = useCallback(async (actionLabel, action) => {
     if (statusActionPending) return;
@@ -1301,246 +1526,274 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
           </div>
         ) : (
           <div className="panel-body">
-            {/* Title */}
-            <h2 className="panel-title">{title}</h2>
-
-            {/* Meta row */}
-            <div className="panel-meta-row">
-              {isMovie ? (
-                <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Movie</span>
-              ) : (
-                <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                  Series{details?.number_of_seasons ? ` · ${details.number_of_seasons} season${details.number_of_seasons > 1 ? 's' : ''}` : ''}
-                </span>
-              )}
-              {rating && <span style={{ fontSize: '0.8rem', color: 'var(--rating)', fontWeight: 600 }}>{rating}</span>}
-              {date && (
-                <span style={{ fontSize: '0.76rem', color: 'var(--text-muted)', fontWeight: 500 }}>
-                  {new Date(date).toLocaleDateString('en', { month: 'short', day: 'numeric', year: 'numeric' })}
-                </span>
-              )}
-              {chip && chip.cls !== 'chip-muted' && (
-                <span className={`chip ${chip.cls}`}>{chip.label}</span>
-              )}
+            {/* ── Head ──
+                The cover is a band rather than a full 16:9 hero, and the poster
+                overlaps it, so what this is — kind, title, year, length, who
+                made it, genre — is all above the fold instead of below a
+                half-panel of artwork. ── */}
+            <div className="panel-head">
+              {details?.poster_path
+                ? <img className="panel-poster" src={posterUrl(details.poster_path, 'w342')} alt="" />
+                : <div className="panel-poster panel-poster--empty" aria-hidden="true" />
+              }
+              <div className="panel-head-text">
+                <div className="panel-kicker">{isMovie ? MEDIA.movie : MEDIA.series}</div>
+                <h2 className="panel-title">{title}</h2>
+                <p className="panel-facts">
+                  {factLine}
+                  {author && <><br />{author}</>}
+                </p>
+                {(genreChips.length > 0 || (chip && chip.cls !== 'chip-muted')) && (
+                  <div className="panel-genres">
+                    {chip && chip.cls !== 'chip-muted' && <span className={`chip ${chip.cls}`}>{chip.label}</span>}
+                    {genreChips.map(g => <span className="panel-genre" key={g.id}>{g.name}</span>)}
+                  </div>
+                )}
+              </div>
             </div>
 
-            {genres && (
-              <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>{genres}</div>
-            )}
-
-            {/* ── Action cluster: hero Save + secondary tray (Status · Favourite · List · Share) ──
-                Sits between the metadata and your review: the actions are what
-                you came to the panel to do, so they lead, and the review reads
-                as the record underneath them rather than being buried below the
-                overview, cast and trailer. ── */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
-              {(() => {
-                // The two status-row buttons are peers, so they share one style:
-                // icon to the left of the label at the same type size. Matches
-                // mobile, where both halves have always been btnPrimary.
-                // minHeight rather than padding alone pins the height, so the
-                // tray below can reuse it at a smaller type size and still come
-                // out level.
-                const statusRowBtn = {
-                  minWidth: 0, width: '100%', minHeight: '2.2rem',
-                  padding: '0.35rem 0.5rem', borderRadius: '0.75rem', cursor: 'pointer',
-                  fontSize: '0.84rem', lineHeight: 1.2, transition: 'all 0.18s', boxSizing: 'border-box',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
-                };
-                // Secondary tray: the same geometry as the status row, so all
-                // five buttons are one height, with a smaller label to keep it
-                // subordinate. The icon-over-label stack this replaces made the
-                // tray half again as tall as the row above it. Mobile has always
-                // been a row here (btnSecondary sized to match btnPrimary); web
-                // was the outlier.
-                const trayBtn = {
-                  ...statusRowBtn, flex: 1, width: 'auto',
-                  fontSize: '0.76rem', fontWeight: 500,
-                };
-
-                const statusLabel = statusActionPending ? statusActionPending
-                  : isWatching ? MEDIA_PANEL.watching
-                  : watched && watchedEntry?.dnf ? MEDIA_PANEL.didntFinish
-                  : watched ? MEDIA.watched
-                  : MEDIA_PANEL.status;
-                const statusActive = isWatching || watched;
-                const statusColors = isWatching
-                  ? { background: 'var(--status-watching-dim)', border: '1.5px solid color-mix(in srgb, var(--status-watching) 45%, transparent)', color: 'var(--status-watching)' }
-                  : watched
-                  ? { background: 'var(--status-watched-dim)', border: '1.5px solid color-mix(in srgb, var(--status-watched) 30%, transparent)', color: 'var(--status-watched)' }
-                  : { background: 'transparent', border: '1.5px solid var(--border)', color: 'var(--text-secondary)' };
-
-                return (<>
-
-              {/* Status row: watchlist and watch state are the two answers to
-                  "where is this for me", so they share a line rather than being
-                  separated by the secondary actions. Matches mobile. */}
-              {/* Grid rather than flex: a <button> flex item won't shrink to an
-                  even share the way a <div> does, so the two halves come out
-                  lopsided. 1fr 1fr splits them exactly. */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+            {/* ── Actions ──
+                The two that carry state keep their labels; favourite, list and
+                share are icons. Every one is sized to itself rather than
+                stretched to a share of the panel, so the row reads as controls
+                rather than as a wall. ── */}
+            <div className="panel-actions-row">
               <button
+                className={`panel-pill${inList ? ' panel-pill--saved' : ' panel-pill--primary'}`}
                 onClick={() => watchlist.toggle({ ...details, id: itemId, media_type: itemType })}
-                style={{
-                  ...statusRowBtn, fontWeight: 600,
-                  border: inList ? '1.5px solid color-mix(in srgb, var(--status-watched) 30%, transparent)' : '1.5px solid transparent',
-                  background: inList ? 'var(--status-watched-dim)' : 'var(--accent)',
-                  color: inList ? 'var(--status-watched)' : '#fff',
-                }}
               >
                 {inList ? <CheckIcon /> : <BookmarkIcon />}
                 {inList ? MEDIA_PANEL.inWatchlist : MEDIA_PANEL.addToWatchlist}
               </button>
 
-                {/* Watch status (with dropdown) */}
-                <div style={{ minWidth: 0, position: 'relative' }} onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) setShowStatusDropdown(false); }}>
-                  <button
-                    onClick={() => setShowStatusDropdown(v => !v)}
-                    disabled={!!statusActionPending}
-                    style={{ ...statusRowBtn, ...statusColors, fontWeight: statusActive ? 600 : 500, opacity: statusActionPending ? 0.7 : 1 }}
-                  >
-                    <StatusIcon size={15} />
-                    <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{statusLabel}</span>
-                  </button>
-                  {showStatusDropdown && (
-                    <div style={{
-                      position: 'absolute', top: 'calc(100% + 6px)', left: 0, minWidth: '160px', zIndex: 100,
-                      background: 'var(--surface-raised)', border: '1px solid var(--border)',
-                      borderRadius: '0.75rem', overflow: 'hidden',
-                      boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
-                    }}>
-                      {[
-                        { label: MEDIA_PANEL.watching, action: () => runStatusAction(MEDIA_PANEL.updating, handleWatchingStatus), hidden: isMovie },
-                        { label: MEDIA.watched, action: () => runStatusAction(MEDIA_PANEL.updating, () => handleWatchedStatus(false)) },
-                        { label: MEDIA_PANEL.didntFinish, action: () => runStatusAction(MEDIA_PANEL.updating, () => handleWatchedStatus(true)) },
-                        { label: MEDIA_PANEL.clearStatus, action: () => runStatusAction(MEDIA_PANEL.clearing, handleClearStatus), hidden: !statusActive, muted: true },
-                      ].filter(o => !o.hidden).map((opt, i, arr) => (
-                        <button
-                          key={opt.label}
-                          onClick={opt.action}
-                          disabled={!!statusActionPending}
-                          style={{
-                            width: '100%', padding: '0.6rem 0.85rem',
-                            background: 'transparent', whiteSpace: 'nowrap',
-                            border: 'none', borderBottom: i < arr.length - 1 ? '1px solid var(--border)' : 'none',
-                            color: opt.muted ? 'var(--text-muted)' : 'var(--text-primary)', fontSize: '0.82rem', fontWeight: 500, cursor: 'pointer',
-                            display: 'flex', alignItems: 'center', textAlign: 'left',
-                            transition: 'background 0.12s',
-                            opacity: statusActionPending ? 0.6 : 1,
-                          }}
-                          onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-sunken)'}
-                          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                        >
-                          {opt.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
+              <div className="panel-status" onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) setShowStatusDropdown(false); }}>
+                <button
+                  className={`panel-pill panel-pill--status${isWatching ? ' panel-pill--watching' : watched ? ' panel-pill--watched' : ''}`}
+                  onClick={() => setShowStatusDropdown(v => !v)}
+                  disabled={!!statusActionPending}
+                  aria-haspopup="menu"
+                  aria-expanded={showStatusDropdown}
+                >
+                  <StatusIcon size={15} />
+                  <span className="panel-pill-label">
+                    {statusActionPending ? statusActionPending
+                      : isWatching ? MEDIA_PANEL.watching
+                      : watched && watchedEntry?.dnf ? MEDIA_PANEL.didntFinish
+                      : watched ? MEDIA.watched
+                      : MEDIA_PANEL.status}
+                  </span>
+                </button>
+                {showStatusDropdown && (
+                  <div className="panel-status-menu">
+                    {[
+                      { label: MEDIA_PANEL.watching, action: () => runStatusAction(MEDIA_PANEL.updating, handleWatchingStatus), hidden: isMovie },
+                      { label: MEDIA.watched, action: () => runStatusAction(MEDIA_PANEL.updating, () => handleWatchedStatus(false)) },
+                      { label: MEDIA_PANEL.didntFinish, action: () => runStatusAction(MEDIA_PANEL.updating, () => handleWatchedStatus(true)) },
+                      { label: MEDIA_PANEL.clearStatus, action: () => runStatusAction(MEDIA_PANEL.clearing, handleClearStatus), hidden: !(isWatching || watched), muted: true },
+                    ].filter(o => !o.hidden).map(opt => (
+                      <button
+                        key={opt.label}
+                        className={`panel-status-option${opt.muted ? ' panel-status-option--muted' : ''}`}
+                        onClick={opt.action}
+                        disabled={!!statusActionPending}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
-              {/* Secondary tray */}
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                {/* Favourite */}
-                <button
-                  onClick={() => favorites.toggleFavorite({ ...details, id: itemId, media_type: itemType })}
-                  style={{
-                    ...trayBtn,
-                    border: isFav ? '1.5px solid color-mix(in srgb, var(--accent) 40%, transparent)' : '1.5px solid var(--border)',
-                    background: isFav ? 'var(--accent-dim)' : 'transparent',
-                    color: isFav ? 'var(--accent)' : 'var(--text-secondary)',
-                  }}
-                >
-                  <HeartIcon filled={isFav} size={15} />
-                  {isFav ? fw.pastTitle : fw.noun}
-                </button>
-
-                {/* Add to list */}
-                <button
-                  onClick={() => setShowListSheet(true)}
-                  style={{
-                    ...trayBtn,
-                    border: isInAnyList ? '1.5px solid color-mix(in srgb, var(--status-watching) 40%, transparent)' : '1.5px solid var(--border)',
-                    background: isInAnyList ? 'var(--status-watching-dim)' : 'transparent',
-                    color: isInAnyList ? 'var(--status-watching)' : 'var(--text-secondary)',
-                  }}
-                >
-                  <ListIcon size={15} />
-                  {isInAnyList ? MEDIA_PANEL.onList : MEDIA_PANEL.list}
-                </button>
-
-                {/* Share */}
-                <button
-                  onClick={() => shareTitle({ tmdbId: itemId, mediaType: itemType, title })}
-                  style={{
-                    ...trayBtn,
-                    border: shareCopied ? '1.5px solid color-mix(in srgb, var(--accent) 40%, transparent)' : '1.5px solid var(--border)',
-                    background: shareCopied ? 'var(--accent-dim)' : 'transparent',
-                    color: shareCopied ? 'var(--accent)' : 'var(--text-secondary)',
-                  }}
-                >
-                  <ShareIcon size={15} />
-                  {shareCopied ? COMMON.copied : COMMON.share}
-                </button>
+              <div className="panel-icon-group">
+              <button
+                className={`panel-icon-btn${isFav ? ' panel-icon-btn--fav' : ''}`}
+                onClick={() => favorites.toggleFavorite({ ...details, id: itemId, media_type: itemType })}
+                aria-label={isFav ? fw.pastTitle : fw.noun}
+                aria-pressed={isFav}
+              >
+                <HeartIcon filled={isFav} size={17} />
+              </button>
+              <button
+                className={`panel-icon-btn${isInAnyList ? ' panel-icon-btn--on' : ''}`}
+                onClick={() => setShowListSheet(true)}
+                aria-label={isInAnyList ? MEDIA_PANEL.onList : MEDIA_PANEL.list}
+              >
+                <ListIcon size={17} />
+              </button>
+              <button
+                className={`panel-icon-btn${shareCopied ? ' panel-icon-btn--fav' : ''}`}
+                onClick={() => shareTitle({ tmdbId: itemId, mediaType: itemType, title })}
+                aria-label={shareCopied ? COMMON.copied : COMMON.share}
+              >
+                <ShareIcon size={17} />
+              </button>
               </div>
-
-            </>); })()}
             </div>
 
             {statusActionError && (
-              <div style={{
-                marginTop: '-0.25rem',
-                marginBottom: '1rem',
-                padding: '0.7rem 0.85rem',
-                borderRadius: '0.85rem',
-                border: '1px solid var(--danger-border)',
-                background: 'var(--danger-dim)',
-                color: 'var(--danger)',
-                fontSize: '0.8rem',
-                lineHeight: 1.45,
-              }}>
-                {statusActionError}
-              </div>
+              <div className="panel-status-error" role="alert">{statusActionError}</div>
             )}
 
-            {user && <PrivateNote id={itemId} type={itemType} title={title} />}
-
-            {/* ── Your review ──
-                Sits directly under the title rather than below the action tray,
-                where it used to be the last thing on the panel. Your verdict now
-                reads ahead of the overview and the critic scores: what this is,
-                what you thought, then what everyone else thought. The three
-                states (saved / editing / nothing written yet) live in
-                TitleReview. */}
-            {watched && (
-              <TitleReview
-                entry={watchedEntry}
-                rating={savedRating}
-                note={savedReview}
-                dnf={savedDnf}
-                watchedAt={savedWatchedAt}
-                onSave={saveReview}
-                onClear={clearReview}
+            {!isMovie && isWatching && details && (
+              <UpNextCard
+                tvId={itemId}
+                details={details}
+                progress={progress}
+                whereToWatch={whereToWatch}
+                onSeriesFinished={handleSeriesFinished}
               />
             )}
 
-            {/* Critic / audience scores */}
-            {(criticScore || Number.isFinite(audienceScore)) && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '0.25rem', fontSize: '0.9rem', fontWeight: 700 }}>
-                {criticScore && (
-                  <span style={{ color: 'var(--text-primary)' }}>{criticScore.criticScore}% Critics</span>
+            {/* ── Where to watch ──
+                First, because it is what the panel is for, and collapsed to its
+                provider logos, because that answers the question at a glance.
+                Everything it used to sit under — the overview, the cast, the
+                trailer, the episode guide — now sits under it. ── */}
+            {details && (
+              <section className="panel-card panel-watch">
+                <button
+                  type="button"
+                  className="panel-disclosure"
+                  aria-expanded={watchOpen}
+                  onClick={() => setWatchOpen(v => !v)}
+                >
+                  <h3 className="panel-card-title">{MEDIA_PANEL.whereToWatch}</h3>
+                  {!watchOpen && stackShown.length > 0 && (
+                    <span className="panel-logo-stack" aria-hidden="true">
+                      {stackShown.map(p => (
+                        <img
+                          key={p.providerId}
+                          src={p.logoPath?.startsWith('http') ? p.logoPath : logoUrl(p.logoPath, 'w45')}
+                          alt=""
+                        />
+                      ))}
+                      {stackExtra > 0 && <span className="panel-logo-more">{MEDIA_PANEL.moreProviders(stackExtra)}</span>}
+                    </span>
+                  )}
+                  <ChevronIcon />
+                </button>
+
+                {watchOpen && (
+                  <div className="panel-watch-body">
+                    {hasWatchOffers && (
+                      <div className="panel-watch-region">
+                        <span>
+                          {whereToWatch.region && regionDisplayName(whereToWatch.region)
+                            ? MEDIA_PANEL.offersIn(regionDisplayName(whereToWatch.region))
+                            : ''}
+                        </span>
+                      </div>
+                    )}
+                    {whereToWatch.inCinemas && (
+                      <div className="providers-grid">
+                        <div className="provider-chip provider-chip--cinema">In Cinemas</div>
+                      </div>
+                    )}
+                    {whereToWatch.streaming.length > 0 && (
+                      <div className="providers-grid">
+                        {whereToWatch.streaming.map(p => (
+                          <ProviderChip
+                            key={`${p.providerId}-${p.offerType}`}
+                            provider={p}
+                            mediaType={itemType}
+                            tmdbId={itemId}
+                            region={whereToWatch.region}
+                            justwatchLink={whereToWatch.justwatchLink}
+                          />
+                        ))}
+                      </div>
+                    )}
+                    {whereToWatch.rentBuy.length > 0 && (
+                      <>
+                        {whereToWatch.streaming.length > 0 && (
+                          <div className="providers-sublabel">Rent or Buy</div>
+                        )}
+                        <div className="providers-grid">
+                          {whereToWatch.rentBuy.map(p => (
+                            <ProviderChip
+                              key={`${p.providerId}-${p.offerType}`}
+                              provider={p}
+                              mediaType={itemType}
+                              tmdbId={itemId}
+                              region={whereToWatch.region}
+                              justwatchLink={whereToWatch.justwatchLink}
+                            />
+                          ))}
+                        </div>
+                      </>
+                    )}
+                    {!hasWatchOffers && (
+                      <>
+                        {/* Nothing to buy or stream yet, so the network is a
+                            mark rather than an offer: the logo alone, in the
+                            same circle the collapsed card stacks. */}
+                        {watchNetworks.length > 0 && (
+                          <div className="panel-network-row">
+                            {watchNetworks.map(network => (
+                              <img
+                                key={network.providerId}
+                                className="panel-network-logo"
+                                src={network.logoPath?.startsWith('http') ? network.logoPath : logoUrl(network.logoPath, 'w45')}
+                                alt={network.providerName}
+                                title={network.providerName}
+                              />
+                            ))}
+                          </div>
+                        )}
+                        <p className="providers-empty">
+                          {whereToWatch.region && regionDisplayName(whereToWatch.region)
+                            ? `Not streaming in ${regionDisplayName(whereToWatch.region)} yet.`
+                            : 'Not streaming anywhere yet.'}
+                          {whereToWatch.justwatchLink && (
+                            <> <a href={whereToWatch.justwatchLink} target="_blank" rel="noopener">Check JustWatch</a></>
+                          )}
+                        </p>
+                      </>
+                    )}
+                    {hasWatchOffers && (
+                      <p className="providers-attribution">
+                        Streaming availability by JustWatch.
+                        {[...whereToWatch.streaming, ...whereToWatch.rentBuy].some(p =>
+                          buildWatchLink({
+                            providerUrl: p.providerUrl,
+                            justwatchLink: whereToWatch.justwatchLink,
+                          })?.kind === 'provider'
+                        ) && ' Links open the verified title offer.'}
+                      </p>
+                    )}
+                  </div>
                 )}
-                {criticScore && Number.isFinite(audienceScore) && (
-                  <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>·</span>
-                )}
-                {Number.isFinite(audienceScore) && (
-                  <span style={{ color: 'var(--accent)' }}>{audienceScore}% Audience</span>
-                )}
-              </div>
+              </section>
             )}
-            {consensusLine && (
-              <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>{consensusLine}</div>
+
+            {/* ── What everyone else thought ──
+                The two numbers read as a pair, with a real audience review in
+                the space beside them rather than a consensus sentence on its
+                own line. ── */}
+            {(criticScore || Number.isFinite(audienceScore)) && (
+              <div className="panel-scores">
+                {criticScore && (
+                  <div className="panel-score">
+                    <b>{criticScore.criticScore}%</b>
+                    <span>{MEDIA_PANEL.critics}</span>
+                  </div>
+                )}
+                {criticScore && Number.isFinite(audienceScore) && <span className="panel-score-rule" />}
+                {Number.isFinite(audienceScore) && (
+                  <div className="panel-score">
+                    <b>{audienceScore}%</b>
+                    <span>{MEDIA_PANEL.audience}</span>
+                  </div>
+                )}
+                {audienceQuote ? (
+                  <blockquote className="panel-quote">
+                    <p>&ldquo;{audienceQuote.text}&rdquo;</p>
+                    <cite>{audienceQuote.author || 'A TMDB audience review'}</cite>
+                  </blockquote>
+                ) : consensusLine ? (
+                  <p className="panel-consensus">{consensusLine}</p>
+                ) : null}
+              </div>
             )}
 
             {/* Overview */}
@@ -1548,16 +1801,6 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
               <p className="panel-overview">{details.overview}</p>
             )}
 
-            {audienceQuote && (
-              <blockquote style={{ borderLeft: '2px solid var(--accent)', margin: '0 0 0.75rem', padding: '0.4rem 0 0.4rem 0.75rem' }}>
-                <p style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
-                  &ldquo;{audienceQuote.text}&rdquo;
-                </p>
-                <cite style={{ display: 'block', fontStyle: 'normal', fontSize: '0.68rem', fontWeight: 600, color: 'var(--text-muted)', marginTop: '0.25rem', letterSpacing: '0.02em' }}>
-                  {audienceQuote.author || 'A TMDB audience review'}
-                </cite>
-              </blockquote>
-            )}
 
             {cast.length > 0 && (
               <section className="panel-cast-section" aria-labelledby="panel-cast-title">
@@ -1608,8 +1851,8 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
               );
             })()}
 
-            {/* Episode guide for TV — ahead of Where to Watch so that section
-                lands at the bottom for both movies and TV. */}
+            {/* Episode guide for TV. Where to watch now leads the panel, so this
+                sits with the rest of the title's detail. */}
             {!isMovie && details && (
               <>
                 <div className="panel-section-title">Episodes</div>
@@ -1620,92 +1863,6 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
                   timezone={timezone}
                   onSeriesFinished={handleSeriesFinished}
                 />
-              </>
-            )}
-
-            {/* Where to watch — always present once details load. Knowing where
-                a title can be watched is the point of the panel, so an unknown
-                answer is stated rather than the section quietly vanishing. */}
-            {details && (
-              <>
-                <div className="panel-section-title">Where to Watch</div>
-                {whereToWatch.inCinemas && (
-                  <div className="providers-grid">
-                    <div className="provider-chip provider-chip--cinema">
-                      In Cinemas
-                    </div>
-                  </div>
-                )}
-                {whereToWatch.streaming.length > 0 && (
-                  <div className="providers-grid">
-                    {whereToWatch.streaming.map(p => (
-                      <ProviderChip
-                          key={`${p.providerId}-${p.offerType}`}
-                          provider={p}
-                        mediaType={itemType}
-                        tmdbId={itemId}
-                        region={whereToWatch.region}
-                        justwatchLink={whereToWatch.justwatchLink}
-                      />
-                    ))}
-                  </div>
-                )}
-                {whereToWatch.rentBuy.length > 0 && (
-                  <>
-                    {whereToWatch.streaming.length > 0 && (
-                      <div className="providers-sublabel">Rent or Buy</div>
-                    )}
-                    <div className="providers-grid">
-                      {whereToWatch.rentBuy.map(p => (
-                        <ProviderChip
-                        key={`${p.providerId}-${p.offerType}`}
-                        provider={p}
-                          mediaType={itemType}
-                          tmdbId={itemId}
-                          region={whereToWatch.region}
-                          justwatchLink={whereToWatch.justwatchLink}
-                        />
-                      ))}
-                    </div>
-                  </>
-                )}
-                {!hasWatchOffers && (
-                  <>
-                    {watchNetworks.length > 0 && (
-                      <div className="providers-grid">
-                        {watchNetworks.map(network => (
-                          <ProviderChip
-                            key={network.providerId}
-                            provider={network}
-                            mediaType={itemType}
-                            tmdbId={itemId}
-                            region={whereToWatch.region}
-                            justwatchLink={null}
-                          />
-                        ))}
-                      </div>
-                    )}
-                    <p className="providers-empty">
-                      {whereToWatch.region && regionDisplayName(whereToWatch.region)
-                        ? `Not streaming in ${regionDisplayName(whereToWatch.region)} yet.`
-                        : 'Not streaming anywhere yet.'}
-                      {whereToWatch.justwatchLink && (
-                        <> <a href={whereToWatch.justwatchLink} target="_blank" rel="noopener">Check JustWatch</a></>
-                      )}
-                    </p>
-                  </>
-                )}
-                {hasWatchOffers && (
-                  <p className="providers-attribution">
-                    Streaming availability by JustWatch.
-                    {[...whereToWatch.streaming, ...whereToWatch.rentBuy].some(p =>
-                      buildWatchLink({
-                        providerUrl: p.providerUrl,
-                        justwatchLink: whereToWatch.justwatchLink,
-                      })?.kind === 'provider'
-                    ) && ' Links open the verified title offer.'}
-                  </p>
-                )}
               </>
             )}
 
@@ -1740,6 +1897,24 @@ export default function MediaPanel({ itemId, itemType, closing, onClose }) {
               <CollectionCard details={details} itemId={itemId} history={history} onOpenTitle={goToTitle} />
             )}
           </div>
+        )}
+
+        {!talentId && !loading && !detailsError && details && (
+          <TakeBar
+            key={`${itemType}:${itemId}`}
+            itemId={itemId}
+            itemType={itemType}
+            title={title}
+            watched={watched}
+            watchedEntry={watchedEntry}
+            rating={savedRating}
+            note={savedReview}
+            dnf={savedDnf}
+            watchedAt={savedWatchedAt}
+            onSave={saveReview}
+            onClear={clearReview}
+            user={user}
+          />
         )}
       </div>
     </>

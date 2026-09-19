@@ -3447,6 +3447,134 @@ svg { stroke-width: 1.5; }
 }
 
 /* ═══════════════════════════════════════
+   UP NEXT — the mid-watch summary card
+═══════════════════════════════════════ */
+
+.panel-card.panel-upnext { padding: 1rem 1rem 1.15rem; }
+.panel-upnext-title { margin-bottom: 0.75rem; }
+.panel-upnext-row { display: flex; align-items: center; gap: 0.75rem; }
+.panel-upnext-still {
+  width: 116px;
+  height: 66px;
+  flex-shrink: 0;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  overflow: hidden;
+}
+.panel-upnext-still img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.panel-upnext-copy { flex: 1; min-width: 0; }
+.panel-upnext-kicker {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 0.2rem;
+}
+.panel-upnext-name {
+  font-size: 0.88rem;
+  font-weight: 600;
+  line-height: 1.3;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.panel-upnext-where { margin-top: 0.2rem; font-size: 0.72rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Stacked and right-aligned beside the episode copy, so the primary action
+   keeps the card's right edge rather than pushing the copy into a column. */
+.panel-upnext-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+.panel-upnext-actions {
+  /* Capped so a long provider name can't squeeze the episode copy into a
+     two-line column. */
+  max-width: 200px;
+}
+.panel-upnext-actions .panel-pill {
+  max-width: 100%;
+  min-height: 34px;
+  padding: 0 0.85rem;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+  line-height: 34px;
+  text-decoration: none;
+  text-align: center;
+}
+.panel-upnext-actions .panel-pill--primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  line-height: 1;
+}
+/* Wins over .panel-pill's own background, which is the card's colour. */
+.panel-upnext-actions .panel-pill--ghost {
+  background: var(--surface);
+  color: var(--text-primary);
+  /* A shade smaller so "Open on Amazon Prime Video" — the longest provider
+     name TMDB hands us — fits the column instead of ellipsing. */
+  font-size: 0.76rem;
+  font-weight: 500;
+  padding: 0 0.7rem;
+}
+.panel-upnext-progress {
+  height: 5px;
+  /* Closer to the episode it belongs to than to the card's edge, so it reads
+     as that row's progress rather than as the card's bottom rule. */
+  margin-top: 0.6rem;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--text-primary) 10%, transparent);
+  overflow: hidden;
+}
+.panel-upnext-progress span {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--status-watching);
+}
+.panel-upnext-error { margin: 0.65rem 0 0; font-size: 0.75rem; color: var(--danger); }
+
+/* ── The season line above the episode list ── */
+.season-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+.season-picker { position: relative; }
+.season-pill { min-height: 34px; padding: 0 0.85rem; font-size: 0.82rem; }
+.season-pill svg { transition: transform 0.18s var(--ease); }
+.season-pill[aria-expanded="true"] svg { transform: rotate(90deg); }
+.season-pill--static { display: inline-flex; cursor: default; }
+.season-menu { max-height: 240px; overflow-y: auto; }
+.panel-status-option--current { color: var(--accent-text); }
+.season-bulk-link {
+  flex-shrink: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--accent-text);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.season-bulk-link:disabled { opacity: 0.6; cursor: default; }
+
+@media (max-width: 560px) {
+  .panel-upnext-row { flex-wrap: wrap; }
+  .panel-upnext-actions { flex-direction: row; width: 100%; justify-content: flex-start; }
+}
+
+/* ═══════════════════════════════════════
    MEDIA PANEL (slide-in)
 ═══════════════════════════════════════ */
 
@@ -3475,14 +3603,29 @@ svg { stroke-width: 1.5; }
   right: 0;
   bottom: 0;
   z-index: 501;
-  width: min(var(--panel-w), 100vw);
+  /* One width at every size, and never wider than the window it is in. The
+     border the docked panel gains is inside that width, not added to it. */
+  width: var(--panel-w);
+  max-width: 100vw;
+  box-sizing: border-box;
   background: var(--surface);
   overflow-y: auto;
+  /* Nothing inside may push the panel sideways: a child wider than the column
+     would otherwise turn the panel into a horizontal scroller and leave every
+     row looking clipped at the right. The rails scroll inside themselves. */
+  overflow-x: clip;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   box-shadow: var(--shadow-overlay);
   animation: panelIn 0.32s var(--ease);
 }
+/* Guards, so the clip above never has anything to do: text columns shrink and
+   ellipse rather than pushing their row wider than the panel. */
+.panel-body,
+.panel-head-text,
+.panel-upnext-copy,
+.collection-card-row-text { min-width: 0; }
+.panel-body { max-width: 100%; }
 .panel::-webkit-scrollbar { display: none; }
 @keyframes panelIn {
   from { transform: translateX(100%); }
@@ -3548,33 +3691,45 @@ svg { stroke-width: 1.5; }
   }
 }
 
+/* The cover is a 168px band rather than a 16:9 hero. At the panel's 560px a
+   16:9 crop was 315px — over a third of the panel spent before a single fact,
+   with the title repeating underneath it. The poster overlaps the band instead,
+   and the scrim keeps the close button legible over any artwork. */
 .panel-header-img {
   width: 100%;
-  aspect-ratio: 16/9;
+  height: 168px;
   object-fit: cover;
   display: block;
 }
 .panel-header-fallback {
   width: 100%;
-  aspect-ratio: 16/9;
+  height: 168px;
   background: var(--surface-raised);
 }
 .panel-header-wrap {
   position: relative;
 }
+.panel-header-wrap::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(to top, color-mix(in srgb, var(--text-primary) 55%, transparent), transparent 62%);
+}
+.panel-header-wrap--no-backdrop::after { display: none; }
 .panel-drag-handle {
   display: none;
 }
 
 .panel-close-btn {
   position: absolute;
-  top: 0.7rem;
-  left: 0.7rem;
+  top: 0.75rem;
+  left: 0.75rem;
   width: 32px;
   height: 32px;
-  border-radius: 0;
+  border-radius: var(--radius-pill);
   border: none;
-  background: transparent;
+  background: color-mix(in srgb, var(--text-primary) 55%, transparent);
   color: white;
   cursor: pointer;
   display: flex;
@@ -3586,6 +3741,7 @@ svg { stroke-width: 1.5; }
    dark mode), so a white ✕ vanishes against it and the panel looks stuck.
    Fall back to the regular text colour there. */
 .panel-header-wrap--no-backdrop .panel-close-btn {
+  background: var(--surface-sunken);
   color: var(--text-primary);
 }
 .panel-close-btn svg {
@@ -3626,7 +3782,7 @@ svg { stroke-width: 1.5; }
 }
 
 .panel-body {
-  padding: 1.1rem 1.1rem 2rem;
+  padding: 0 1.25rem 2rem;
 }
 
 .panel-talent-view .talent-credits-grid {
@@ -3637,22 +3793,82 @@ svg { stroke-width: 1.5; }
   margin-top: 0.65rem;
 }
 
+/* ═══════════════════════════════════════
+   THE HEAD
+   Poster over the cover band, everything that identifies the title beside it.
+   Only the poster rises into the band: the text column starts at the band's
+   edge and grows downward, so a two-line title or a long director credit can't
+   push the kicker onto the artwork (which is exactly what a bottom-aligned
+   column did — it looked right until a title wrapped).
+═══════════════════════════════════════ */
+
+.panel-head {
+  display: grid;
+  grid-template-columns: 132px 1fr;
+  align-items: start;
+  gap: 1rem;
+  margin-bottom: 1.1rem;
+}
+.panel-poster {
+  /* The cover wrap is positioned (it carries the scrim), so an in-flow poster
+     paints underneath it and loses its top 40px. Positioning the poster puts
+     it back in front of the artwork it overlaps. */
+  position: relative;
+  z-index: 1;
+  width: 132px;
+  height: 198px;
+  margin-top: -40px;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  /* Legibility rescue: the poster sits half on artwork, half on the panel. */
+  box-shadow: var(--shadow-overlay);
+}
+.panel-poster--empty { background: var(--surface-sunken); }
+/* The kicker needs air under the band; the poster grows by the same amount
+   so its foot still lands below the text column. */
+.panel-head-text { min-width: 0; padding-top: 0.8rem; }
+
+.panel-kicker {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 0.35rem;
+}
+
 .panel-title {
   font-family: var(--font-display);
   font-weight: 700;
   letter-spacing: var(--font-display-tracking);
-  font-size: 1.6rem;
+  font-size: 1.7rem;
   color: var(--text-primary);
-  line-height: 1.15;
-  margin-bottom: 0.35rem;
+  line-height: 1.08;
+  margin-bottom: 0.45rem;
 }
 
-.panel-meta-row {
+.panel-facts {
+  font-size: 0.82rem;
+  font-weight: 500;
+  line-height: 1.55;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.panel-genres {
   display: flex;
-  align-items: center;
-  gap: 0.4rem;
   flex-wrap: wrap;
-  margin-bottom: 0.85rem;
+  gap: 0.35rem;
+  margin-top: 0.65rem;
+}
+.panel-genre {
+  padding: 0.15rem 0.55rem;
+  border-radius: var(--radius-badge);
+  background: var(--accent-secondary-fill);
+  color: var(--on-accent-fill);
+  font-size: 0.7rem;
+  font-weight: 600;
 }
 
 .panel-overview {
@@ -3662,11 +3878,314 @@ svg { stroke-width: 1.5; }
   margin-bottom: 1rem;
 }
 
-.panel-actions {
+/* Still used by the collection panel and the design-system page; the title
+   panel's own metadata is the head block above. */
+.panel-meta-row {
   display: flex;
-  gap: 0.5rem;
+  align-items: center;
+  gap: 0.4rem;
   flex-wrap: wrap;
+  margin-bottom: 0.85rem;
+}
+
+/* ═══════════════════════════════════════
+   ACTIONS
+   Two labelled pills for the states you set (watchlist, watch status), icons
+   for the rest. Sized to their labels, per the design system: the five
+   stretched buttons this replaces read as a wall before any information.
+═══════════════════════════════════════ */
+
+.panel-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   margin-bottom: 1.25rem;
+}
+/* The three icon actions travel together: on a phone they wrap onto their
+   own line as a group rather than breaking up mid-row. */
+.panel-icon-group { display: flex; gap: 0.5rem; margin-left: auto; }
+
+.panel-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 38px;
+  padding: 0 1rem;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+.panel-pill:hover { filter: brightness(0.97); }
+.panel-pill:disabled { opacity: 0.7; cursor: default; }
+.panel-pill--primary { background: var(--accent-fill); color: var(--on-accent-fill); }
+.panel-pill--primary:hover { background: var(--accent-fill-hover); }
+.panel-pill--saved { background: var(--status-watched-dim); color: var(--status-watched); }
+.panel-pill--watching { background: var(--status-watching-dim); color: var(--status-watching); }
+.panel-pill--watched { background: var(--status-watched-dim); color: var(--status-watched); }
+.panel-pill-label { max-width: 8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.panel-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+.panel-icon-btn:hover { color: var(--text-primary); }
+.panel-icon-btn--fav { background: var(--accent-dim); color: var(--accent); }
+.panel-icon-btn--on { background: var(--status-watching-dim); color: var(--status-watching); }
+
+.panel-status { position: relative; min-width: 0; }
+.panel-status-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 100;
+  min-width: 160px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  overflow: hidden;
+  /* A menu over arbitrary panel content: the hairline alone can't hold it. */
+  box-shadow: var(--shadow-overlay);
+}
+.panel-status-option {
+  display: block;
+  width: 100%;
+  padding: 0.6rem 0.85rem;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  font-weight: 500;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.panel-status-option:last-child { border-bottom: none; }
+.panel-status-option:hover { background: var(--surface-sunken); }
+.panel-status-option--muted { color: var(--text-muted); }
+.panel-status-option:disabled { opacity: 0.6; cursor: default; }
+
+.panel-status-error {
+  margin: -0.25rem 0 1rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--danger-border);
+  border-radius: var(--radius-md);
+  background: var(--danger-dim);
+  color: var(--danger);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+/* ═══════════════════════════════════════
+   CARDS AND DISCLOSURES
+   Where to watch leads the panel and stays collapsed to its provider logos.
+   Cards are the deeper cream at 20px with no border and no shadow, rows inside
+   separated by hairlines — the same shape as the Calendar and History cards.
+═══════════════════════════════════════ */
+
+.panel-card {
+  background: var(--surface-sunken);
+  border-radius: 20px;
+  padding: 0.35rem 1rem;
+  margin-bottom: 1.1rem;
+}
+.panel-card-title {
+  flex: 1;
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--font-display-tracking);
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+.panel-disclosure {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.75rem 0;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+.panel-disclosure:disabled { cursor: default; }
+/* Direct children only: the rating stars live inside the foot bar's button
+   and have their own colours. */
+.panel-disclosure > svg { flex-shrink: 0; color: var(--text-secondary); transition: transform 0.18s var(--ease); }
+.panel-disclosure[aria-expanded="true"] > svg:last-child { transform: rotate(90deg); }
+
+.panel-logo-stack { display: flex; align-items: center; padding-right: 0.15rem; }
+.panel-logo-stack img,
+.panel-logo-more {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: var(--radius-pill);
+  border: 2px solid var(--surface-sunken);
+  background: var(--surface-raised);
+  /* Provider marks are square, network marks are wide: cover crops the wide
+     ones to their middle, which is how a wordmark turns into two letters. */
+  object-fit: contain;
+}
+.panel-logo-stack > * + * { margin-left: -10px; }
+.panel-logo-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--text-primary) 8%, var(--surface-sunken));
+  color: var(--text-secondary);
+  font-size: 0.65rem;
+  font-weight: 700;
+}
+
+.panel-watch-body { padding-bottom: 0.6rem; }
+.panel-network-row { display: flex; gap: 0.5rem; margin-bottom: 0.6rem; }
+.panel-network-logo {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-raised);
+  object-fit: contain;
+}
+.panel-watch-region {
+  padding-bottom: 0.6rem;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+.panel-watch .providers-grid { margin-bottom: 0.5rem; }
+.panel-watch .provider-chip { background: var(--surface); }
+.panel-watch .providers-attribution,
+.panel-watch .providers-empty { margin-bottom: 0; }
+
+/* ═══════════════════════════════════════
+   SCORES
+   The pair of numbers with a real audience review beside them, rather than a
+   bare percentage line and a quote three sections apart.
+═══════════════════════════════════════ */
+
+.panel-scores {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding-bottom: 1rem;
+  margin-bottom: 1.1rem;
+  border-bottom: 1px solid var(--border);
+}
+.panel-score { flex-shrink: 0; }
+.panel-score b {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: var(--font-display-tracking);
+}
+.panel-score span {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.panel-score-rule { width: 1px; height: 30px; flex-shrink: 0; background: var(--border); }
+.panel-quote {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 0.1rem 0 0.1rem 0.8rem;
+  border-left: 2px solid var(--accent);
+}
+.panel-quote p {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 0.92rem;
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+.panel-quote cite {
+  display: block;
+  margin-top: 0.25rem;
+  font-style: normal;
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+}
+.panel-consensus { flex: 1; min-width: 0; margin: 0; font-size: 0.78rem; line-height: 1.45; color: var(--text-secondary); }
+
+/* ═══════════════════════════════════════
+   YOUR TAKE
+   Pinned to the foot of the panel, expanding upward. Sticky inside the panel's
+   own scroll, so it holds whatever the rest of the panel is doing.
+═══════════════════════════════════════ */
+
+.panel-take {
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
+  background: var(--surface-sunken);
+  border-top: 1px solid var(--border);
+  padding: 0 1.25rem;
+}
+.panel-take-head { padding: 0.85rem 0; }
+.panel-take-stars { display: flex; gap: 1px; flex-shrink: 0; color: var(--accent); }
+.panel-take-stars svg { width: 17px; height: 17px; }
+.panel-take-summary { flex: 1; min-width: 0; }
+.panel-take-summary b { display: block; font-size: 0.85rem; font-weight: 600; }
+.panel-take-summary > span {
+  display: block;
+  max-width: 300px;
+  margin-top: 0.1rem;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.panel-take-head[aria-expanded="false"] > svg:last-child { transform: rotate(-90deg); }
+.panel-take-body { padding-bottom: 0.9rem; }
+.panel-take-body .review-slip,
+.panel-take-body .review-empty { border-top: 1px solid var(--border); }
+.panel-take-note {
+  margin: 0;
+  padding: 0.75rem 0 0;
+  border-top: 1px solid var(--border);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.panel-take-body .private-note { margin-bottom: 0; }
+
+@media (max-width: 560px) {
+  .panel-poster { width: 112px; height: 168px; margin-top: -32px; }
+  .panel-head { grid-template-columns: 112px 1fr; }
+  .panel-head-text { padding-top: 0.6rem; }
+  .panel-title { font-size: 1.5rem; }
+  .panel-take-summary > span { max-width: 210px; }
+  /* Two labelled pills and three icons don't fit a phone's width, and
+     squeezing them crops the last one. The icon group drops to its own line
+     instead of being pushed to the right of the row. */
+  .panel-actions-row { flex-wrap: wrap; }
+  .panel-icon-group { margin-left: 0; }
 }
 
 .panel-section-title {
@@ -3698,7 +4217,7 @@ svg { stroke-width: 1.5; }
   cursor: pointer;
   text-align: left;
 }
-.panel-cast-card img, .panel-cast-fallback, .panel-similar-card img {
+.panel-similar-card img {
   display: flex;
   width: 76px;
   aspect-ratio: 2 / 3;
@@ -3708,6 +4227,25 @@ svg { stroke-width: 1.5; }
   background: var(--surface-raised);
   box-shadow: var(--shadow-xs);
   object-fit: cover;
+}
+/* Cast are people, not artwork: a round crop of the portrait, the way the
+   rest of the app draws a face. A 2/3 poster crop of a headshot only ever
+   framed the chin. */
+.panel-cast-card { text-align: center; }
+.panel-cast-card img, .panel-cast-fallback {
+  display: flex;
+  width: 76px;
+  height: 76px;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  object-fit: cover;
+  object-position: center 22%;
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text-muted);
 }
 .panel-cast-name, .panel-cast-role, .panel-similar-name, .panel-similar-meta { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .panel-cast-name, .panel-similar-name { margin-top: 0.4rem; font-size: 0.72rem; font-weight: 600; }

@@ -15,6 +15,13 @@ export const MEDIA_PANEL = {
   seasonLabel: (season) => `Season ${season}`,
   seasonWatchedCount: (watched, total) => `${watched} of ${total} watched`,
   markSeasonWatched: 'Mark season watched',
+  // The mid-watch summary card: what a series you are part-way through is
+  // actually asking you to do next.
+  upNext: 'Up next',
+  seasonEpisode: (season, episode) => `Season ${season} · Episode ${episode}`,
+  openOn: (provider) => `Open on ${provider}`,
+  episodeRuntime: (minutes) => `${minutes} min`,
+  chooseSeason: 'Choose a season',
   unmarkSeasonWatched: 'Unmark season',
   couldNotUpdateSeason: 'Could not update this season right now. Please try again.',
   top10TvShows: 'TV Shows',
@@ -32,6 +39,13 @@ export const MEDIA_PANEL = {
   partOfCollection: 'Part of a collection',
   collectionProgress: (watched, total) => `${total} movie${total === 1 ? '' : 's'} · ${watched} watched`,
   saveCollectionAsList: 'Save as list',
+  // The franchise panel's progress card: one segment per film, so it reads as
+  // "which three of nine" rather than a percentage.
+  yourRun: 'Your run',
+  collectionRunCount: (watched, total) => `${watched} of ${total} watched`,
+  collectionNextUp: (title) => `Next up: ${title}`,
+  collectionAllWatched: 'You have seen every one.',
+  collectionYears: (first, last) => (first === last ? `${first}` : `${first} – ${last}`),
   savingCollection: 'Saving…',
   collectionSaved: 'Saved to My Lists',
   couldNotSaveCollection: 'Could not save this collection. Please try again.',
@@ -43,6 +57,23 @@ export const MEDIA_PANEL = {
   collectionFilmCount: (total) => `${total} movie${total === 1 ? '' : 's'}`,
   couldNotLoadCollection: "Couldn't load this collection. Check your connection and try again.",
   trailerFallback: 'Trailer',
+  // Where to watch is a disclosure on web: collapsed it shows the provider
+  // logos and nothing else, so the heading and the region line carry the
+  // meaning when it opens.
+  whereToWatch: 'Where to watch',
+  offersIn: (region) => `Offers in ${region}`,
+  changeRegion: 'Change region',
+  moreProviders: (count) => `+${count}`,
+  // The two scores read as a pair, with the audience review beside them.
+  critics: 'Critics',
+  audience: 'Audience',
+  // The bar pinned to the foot of the panel. It is present whether or not
+  // anything has been written: the heading is the invitation until there is
+  // something to summarise.
+  yourTake: 'Your take',
+  leaveNoteOrReview: 'Leave a note or review',
+  takeHint: 'Rate it, write a review, or keep a private note',
+  takeNeedsWatch: 'Mark this watched to rate it and write a review.',
   watching: 'Watching',
   didntFinish: "Didn't finish",
   status: 'Status',
