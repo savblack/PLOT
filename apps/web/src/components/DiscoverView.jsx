@@ -98,7 +98,7 @@ const HOME_SECTION = {
   releases: { id: 'home-releases', label: 'New Releases', navLabel: 'New Releases' },
   binged: { id: 'home-binged', label: 'Most Binged Shows', navLabel: 'Most Binged Shows' },
   cinema: { id: 'home-cinema', label: 'Now Showing', navLabel: 'Now Showing' },
-  anticipated: { id: 'home-anticipated', label: DISCOVER_VIEW.mostAnticipatedTitle, navLabel: 'Most Anticipated' },
+  anticipated: { id: 'home-anticipated', label: DISCOVER_VIEW.mostAnticipatedTitle, navLabel: DISCOVER_VIEW.mostAnticipatedTitle },
   platforms: { id: 'home-platforms', label: 'Top 10 by Platform', navLabel: 'Top 10 By Platform' },
 };
 
