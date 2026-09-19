@@ -16,9 +16,7 @@ export const APP_SHELL = {
   profile: 'Profile',
   beta: 'Beta',
   viewYourProfile: 'View your profile',
-  helpBuild: 'Help build plot',
-  helpBuildHint: 'Your ideas. A better plot.',
+  helpBuild: 'Help build PLOT',
   giveFeedback: 'Give feedback',
-  feedbackHint: 'Ideas, bugs, or feature requests',
-  supportHint: 'Keep an independent project growing',
+  opensNewTab: 'opens in a new tab',
 };

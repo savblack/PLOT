@@ -13,7 +13,7 @@ import {
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Polyline, Circle, Rect, Line, Polygon } from 'react-native-svg';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { tmdb, setTmdbRegion } from '../../lib/tmdb';
 import { IANA_TIMEZONES } from '@plot/core/timezones.js';
@@ -650,11 +650,19 @@ export default function SettingsScreen() {
   const [showName,       setShowName]       = useState(false);
   const [showRegion,     setShowRegion]     = useState(false);
   const [showTimezone,   setShowTimezone]   = useState(false);
+  const { feedback: feedbackParam } = useLocalSearchParams<{ feedback?: string }>();
   const [feedbackType,   setFeedbackType]   = useState<string | null>(null);
   const [showImport,     setShowImport]     = useState(false);
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const [clearingHist,   setClearingHist]   = useState(false);
   const [clearingList,   setClearingList]   = useState(false);
+
+  useEffect(() => {
+    if (!feedbackParam || !FEEDBACK_TYPES.some(t => t.id === feedbackParam)) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setFeedbackType(feedbackParam);
+    router.setParams({ feedback: undefined });
+  }, [feedbackParam, router]);
 
   const providers     = profile?.streaming_providers || [];
   const genres        = profile?.genres || [];

@@ -1,4 +1,5 @@
 // Desktop web layout: the fixed rail and scroll regions use DOM/CSS. Mobile parity: https://github.com/savblack/PLOT/issues/920.
+import { useState } from 'react';
 import { APP_NAV_ITEMS, isActiveView } from '../navigation.js';
 import PlotLogo from './PlotLogo.jsx';
 import { SETTINGS_VIEW } from '../copy/settingsView.js';
@@ -41,6 +42,9 @@ const SETTINGS_NAV_ITEM = APP_NAV_ITEMS.find(item => item.id === 'settings');
  * @param {Function} props.onNavigate        Called with a view id.
  * @param {Function} props.onFeedback        Opens the existing feedback composer.
  * @param {Function} props.onNavigateProfile Called with a username.
+ * @param {boolean}  [props.defaultHelpOpen] Seeds the help disclosure. Only so
+ *   Storybook can render the open state; the app leaves it closed and lets the
+ *   viewer decide.
  */
 export default function AppSidebar({
   currentView,
@@ -50,8 +54,10 @@ export default function AppSidebar({
   onNavigate,
   onNavigateProfile,
   onFeedback,
+  defaultHelpOpen = false,
 }) {
   const isOwnProfile = !!profile?.username && currentView === `u/${profile.username}`;
+  const [helpOpen, setHelpOpen] = useState(defaultHelpOpen);
 
   return (
     <aside className="app-sidebar">
@@ -111,39 +117,57 @@ export default function AppSidebar({
             </button>
           )}
         </nav>
-        <section className="app-sidebar-help" aria-label={APP_SHELL.helpBuild}>
-          <div className="app-sidebar-help-intro">
-            <h2>{APP_SHELL.helpBuild}</h2>
-            <p>{APP_SHELL.helpBuildHint}</p>
-          </div>
-          <button type="button" className="app-sidebar-action" onClick={onFeedback}>
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M21 14a3 3 0 0 1-3 3H8l-5 4V6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3Z" />
-              <path d="M8 8h8M8 12h5" />
-            </svg>
-            <span><strong>{APP_SHELL.giveFeedback}</strong><small>{APP_SHELL.feedbackHint}</small></span>
-            <span className="app-sidebar-action-arrow" aria-hidden="true">→</span>
-          </button>
-          <a className="app-sidebar-action" href="https://ko-fi.com/J7P123TYGK" target="_blank" rel="noopener noreferrer">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 5c-3-3-6-1-8 1-2-2-5-4-8-1-4 4 1 9 8 15 7-6 12-11 8-15Z" /></svg>
-            <span><strong>{SETTINGS_VIEW.support.supportPlot}</strong><small>{APP_SHELL.supportHint}</small></span>
-            <span className="app-sidebar-action-arrow" aria-hidden="true">↗</span>
-          </a>
-        </section>
       </div>
       <div className="app-sidebar-foot">
+        <button
+          type="button"
+          className="app-sidebar-item app-sidebar-help-toggle interactive-surface"
+          onClick={() => setHelpOpen(open => !open)}
+          aria-expanded={helpOpen}
+          aria-controls="app-sidebar-help"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="10,6 16,12 10,18" />
+          </svg>
+          <span className="app-sidebar-label">{APP_SHELL.helpBuild}</span>
+        </button>
+        {helpOpen && (
+          <div id="app-sidebar-help" className="app-sidebar-help" aria-label={APP_SHELL.helpBuild}>
+            <button type="button" className="app-sidebar-item interactive-surface" onClick={onFeedback}>
+              <svg viewBox="0 0 24 24" aria-hidden="true" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 14a3 3 0 0 1-3 3H8l-5 4V6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3Z" />
+                <path d="M12 7.5v6M9 10.5h6" />
+              </svg>
+              <span className="app-sidebar-label">{APP_SHELL.giveFeedback}</span>
+            </button>
+            <a
+              className="app-sidebar-item interactive-surface"
+              href="https://ko-fi.com/J7P123TYGK"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`${SETTINGS_VIEW.support.supportPlot} (${APP_SHELL.opensNewTab})`}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20.8 5.6a5.4 5.4 0 0 0-7.7 0L12 6.7l-1.1-1.1a5.4 5.4 0 1 0-7.7 7.7l8.8 8.7 8.8-8.7a5.4 5.4 0 0 0 0-7.7Z" />
+              </svg>
+              <span className="app-sidebar-label">{SETTINGS_VIEW.support.supportPlot}</span>
+            </a>
+          </div>
+        )}
         {profile?.username && (
-          <button
-            type="button"
-            className={`app-sidebar-item app-sidebar-profile interactive-surface${isOwnProfile ? ' active' : ''}`}
-            onClick={() => onNavigateProfile(profile.username)}
-            aria-current={isOwnProfile ? 'page' : undefined}
-          >
-            {profile.avatar_url
-              ? <img className="app-sidebar-avatar" src={profile.avatar_url} alt="" />
-              : <span className="app-sidebar-avatar app-sidebar-avatar-initial">{(profile.display_name || profile.username).charAt(0).toUpperCase()}</span>}
-            <span className="app-sidebar-profile-copy"><span className="app-sidebar-label">{profile.display_name || profile.username}</span><small>{APP_SHELL.viewYourProfile}</small></span>
-          </button>
+          <div className="app-sidebar-foot-profile">
+            <button
+              type="button"
+              className={`app-sidebar-item app-sidebar-profile interactive-surface${isOwnProfile ? ' active' : ''}`}
+              onClick={() => onNavigateProfile(profile.username)}
+              aria-current={isOwnProfile ? 'page' : undefined}
+            >
+              {profile.avatar_url
+                ? <img className="app-sidebar-avatar" src={profile.avatar_url} alt="" />
+                : <span className="app-sidebar-avatar app-sidebar-avatar-initial">{(profile.display_name || profile.username).charAt(0).toUpperCase()}</span>}
+              <span className="app-sidebar-profile-copy"><span className="app-sidebar-label">{profile.display_name || profile.username}</span><small>{APP_SHELL.viewYourProfile}</small></span>
+            </button>
+          </div>
         )}
       </div>
     </aside>

@@ -1,11 +1,13 @@
 import {
   View, Text, TouchableOpacity, Animated, Dimensions,
-  StyleSheet, Pressable,
+  StyleSheet, Pressable, Linking,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { useRef, useEffect, useMemo } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, usePathname } from 'expo-router';
+import { APP_SHELL } from '@plot/core/copy/appShell.js';
+import { SETTINGS_VIEW } from '@plot/core/copy/settingsView.js';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAppData } from '../contexts/AppDataContext';
@@ -21,6 +23,8 @@ const NAV_ITEMS = [
   // None is one on web: Guide is a sub-tab of Home, Top 10 a section of My
   // Lists, History a tab of it. This list now matches APP_NAV_ITEMS.
 ];
+
+const KOFI_URL = 'https://ko-fi.com/J7P123TYGK';
 
 const BOTTOM_NAV_ITEMS = [
   { id: 'requests', label: 'Follow Requests', path: '/(app)/requests' },
@@ -60,6 +64,14 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
   const navigate = (path: string) => {
     onClose();
     setTimeout(() => router.push(path as any), 50);
+  };
+
+  const openFeedback = () =>
+    navigate(`/(app)/settings?feedback=general&t=${Date.now()}`);
+
+  const openSupport = () => {
+    onClose();
+    void Linking.openURL(KOFI_URL).catch(() => {});
   };
 
   const activeId = pathname === '/' || pathname === '/(app)' || pathname === '/(app)/'
@@ -115,6 +127,25 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
 
           {/* Spacer */}
           <View style={{ flex: 1 }} />
+
+          <View style={[styles.nav, styles.help]}>
+            <Text style={styles.helpTitle}>{APP_SHELL.helpBuild}</Text>
+            <TouchableOpacity
+              style={styles.navItem}
+              onPress={openFeedback}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.navLabel}>{APP_SHELL.giveFeedback}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.navItem}
+              onPress={openSupport}
+              activeOpacity={0.7}
+              accessibilityRole="link"
+            >
+              <Text style={styles.navLabel}>{SETTINGS_VIEW.support.supportPlot}</Text>
+            </TouchableOpacity>
+          </View>
 
           {/* Bottom-pinned nav */}
           <View style={[styles.nav, styles.navBottom]}>
@@ -183,8 +214,7 @@ const makeStyles = (colors: Palette, dark: boolean) => StyleSheet.create({
     fontFamily: fontFamily.display,
     fontSize: 28,
     color: colors.textPrimary,
-    letterSpacing: 0,
-    textTransform: 'uppercase',
+    letterSpacing: -1,
     paddingHorizontal: spacing.xl,
     marginBottom: spacing.xl,
   },
@@ -192,6 +222,21 @@ const makeStyles = (colors: Palette, dark: boolean) => StyleSheet.create({
   nav: {
     gap: 2,
     paddingHorizontal: spacing.md,
+  },
+  help: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.sm,
+  },
+  helpTitle: {
+    fontFamily: fontFamily.sansBold,
+    fontSize: 11,
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    color: colors.textMuted,
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.xs,
   },
   navBottom: {
     borderTopWidth: StyleSheet.hairlineWidth,
