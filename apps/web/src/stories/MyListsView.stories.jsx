@@ -103,6 +103,25 @@ const allowanceApp = (count) => ({
 
 export const FourCustomLists = { parameters: { app: allowanceApp(4) } };
 export const FiveCustomLists = { parameters: { app: allowanceApp(5) } };
+
+/* A Premium-sized collection: past the column's cap, so the index folds to a
+   "View more" row instead of running the column off the page. Twelve custom
+   lists plus the two built-ins is fourteen rows; the column shows eight. */
+export const ManyLists = {
+  parameters: {
+    app: {
+      ...app,
+      customLists: {
+        ...app.customLists,
+        lists: Array.from({ length: 12 }, (_, i) => ({
+          id: `many-${i}`,
+          name: `List number ${i + 1}`,
+          items: [title(500 + i, `Title ${i + 1}`)],
+        })),
+      },
+    },
+  },
+};
 export const StaleListCount = {
   parameters: {
     app: {

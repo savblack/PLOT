@@ -2,9 +2,12 @@
 // addressed by one key so the overview and the list page agree on what
 // exists. Custom lists are keyed by id; the built-in lists by name.
 
-/** @typedef {'want' | 'favorites' | 'history'} BuiltInKey */
+/** @typedef {'want' | 'favorites'} BuiltInKey */
 
-export const BUILT_IN_KEYS = ['want', 'favorites', 'history'];
+// History left My Lists on 17 Sep 2026: it has had its own page since the
+// sub-tabs went, and a cover that navigated away from /my-lists was the only
+// one that did.
+export const BUILT_IN_KEYS = ['want', 'favorites'];
 
 /* The ranked list shows five slots. user_top_lists still stores ranks 1-10,
    so anything a user ranked 6-10 before the change is kept in the table and
@@ -19,9 +22,9 @@ export function customListIdFromKey(key) {
   return key?.startsWith('list-') ? key.slice(5) : null;
 }
 
-/** Route for a collection. History already has a page of its own. */
+/** Route for a collection. */
 export function collectionPath(key) {
-  return key === 'history' ? '/history' : `/my-lists/${key}`;
+  return `/my-lists/${key}`;
 }
 
 /** "3 titles", "1 title", or the empty-state wording the caller supplies. */

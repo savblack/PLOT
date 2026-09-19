@@ -20,6 +20,7 @@ import { filterByTypeAndGenre } from '@plot/core/mediaFilters.js';
 import { CardGrid, ListCard, SelectCircle } from './ListCards.jsx';
 import { MEDIA } from '../copy/media.js';
 import { TOP_LIST_SIZE } from '@plot/core/listCollections.js';
+import { privateNoteKey } from '@plot/core/privateNotes.js';
 
 /* The lists themselves: one component per list, each rendering into a
    `Frame` it is handed. On My Lists the frame is a section on the page (the
@@ -538,8 +539,26 @@ function wantMeta(item) {
   return parts.join(' · ');
 }
 
-export function WantToWatchSection({ items, narrowed, Frame = ListSection }) {
-  const { openPanel, watchlist } = useApp();
+function NoteLock() {
+  return <span className="list-page-note-lock" title="Has a private note"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2" /><path d="M8 10V7a4 4 0 0 1 8 0v3" /></svg></span>;
+}
+
+function ListPageRow({ item, title, meta, open, selection, note }) {
+  return (
+    <div className="list-page-row">
+      <button type="button" className="list-page-row-poster" onClick={open} aria-label={title}>{item.poster_path && <img src={posterUrl(item.poster_path, 'w185')} alt="" loading="lazy" />}</button>
+      <div className="list-page-row-copy">
+        <button type="button" className="list-page-row-title" onClick={open}>{title}</button>
+        <div className="list-page-row-meta">{meta}</div>
+        {note}
+      </div>
+      {selection.editMode && <SelectCircle variant="row" selected={selection.selected.has(item.tmdb_id)} onClick={open} label={`Select ${title}`} />}
+    </div>
+  );
+}
+
+export function WantToWatchSection({ items, count = items.length, narrowed, Frame = ListSection, pageLayout = false }) {
+  const { openPanel, watchlist, privateNotes } = useApp();
   const selection = useSelection();
 
   if (narrowed && items.length === 0) return null;
@@ -552,6 +571,7 @@ export function WantToWatchSection({ items, narrowed, Frame = ListSection }) {
   return (
     <Frame
       title="Want to Watch"
+      count={count}
       headerRight={
         <SelectControls
           selection={selection}
@@ -565,12 +585,21 @@ export function WantToWatchSection({ items, narrowed, Frame = ListSection }) {
       {items.length === 0 ? (
         <Empty>Nothing saved yet. Tap the bookmark on any title to save it here.</Empty>
       ) : (
-        <div className="private-watchlist">
-          {items.map(item => {
+        <div className={pageLayout ? 'list-page-items' : ''}>
+          {pageLayout && <CardGrid>{items.map(item => {
+            const title = item.title || item.name || MEDIA.unknown;
+            const type = item.media_type || 'movie';
+            const note = privateNotes?.rows?.[privateNoteKey(Number(item.tmdb_id), type)]?.note;
+            return <ListCard key={`${type}:${item.tmdb_id}`} title={title} img={posterUrl(item.poster_path, 'w185')} meta={wantMeta(item)} overlay={note ? <NoteLock /> : null} onOpen={() => openPanel(item.tmdb_id, type)} editMode={selection.editMode} selected={selection.selected.has(item.tmdb_id)} onToggleSelect={() => selection.toggle(item.tmdb_id)} />;
+          })}</CardGrid>}
+          <div className="private-watchlist">
+            {items.map(item => {
             const title = item.title || item.name || MEDIA.unknown;
             const type = item.media_type || 'movie';
             const open = () => selection.editMode ? selection.toggle(item.tmdb_id) : openPanel(item.tmdb_id, type);
-            return (
+            return pageLayout ? (
+              <ListPageRow key={`${type}:${item.tmdb_id}`} item={item} title={title} meta={wantMeta(item)} open={open} selection={selection} note={!selection.editMode && <PrivateNote id={item.tmdb_id} type={type} title={title} />} />
+            ) : (
               <div className="private-watchlist-row" key={`${type}:${item.tmdb_id}`}>
                 <button type="button" className="private-watchlist-poster" onClick={open} aria-label={title}>
                   {item.poster_path && <img src={posterUrl(item.poster_path, 'w185')} alt="" loading="lazy" />}
@@ -584,6 +613,7 @@ export function WantToWatchSection({ items, narrowed, Frame = ListSection }) {
               </div>
             );
           })}
+          </div>
         </div>
       )}
     </Frame>
@@ -591,14 +621,14 @@ export function WantToWatchSection({ items, narrowed, Frame = ListSection }) {
 }
 
 /* ── Favourites ── */
-export function FavoritesSection({ favorites: favsHook, typeFilters, genreFilters = [], narrowed, Frame = ListSection }) {
+export function FavoritesSection({ favorites: favsHook, visibleItems, count, typeFilters, genreFilters = [], narrowed, Frame = ListSection, pageLayout = false }) {
   const { openPanel, profile } = useApp();
   const fw = favoriteWords(profile?.region);
   const [showAdd, setShowAdd] = useState(false);
   const selection = useSelection();
   const { favorites, isFavorite, toggleFavorite } = favsHook;
 
-  const visible = filterByTypeAndGenre(favorites, typeFilters, genreFilters);
+  const visible = visibleItems ?? filterByTypeAndGenre(favorites, typeFilters, genreFilters);
   if (narrowed && visible.length === 0) return null;
 
   const deleteSelected = () => {
@@ -615,6 +645,7 @@ export function FavoritesSection({ favorites: favsHook, typeFilters, genreFilter
   return (
     <Frame
       title={fw.plural}
+      count={count ?? favorites.length}
       headerRight={
         <>
           <SelectControls
@@ -633,6 +664,7 @@ export function FavoritesSection({ favorites: favsHook, typeFilters, genreFilter
       {favorites.length === 0 ? (
         <Empty>Heart anything to add it here.</Empty>
       ) : (
+        <div className={pageLayout ? 'list-page-items' : ''}>
         <CardGrid>
           {visible.map(item => {
             const title = item.title || MEDIA.unknown;
@@ -650,6 +682,12 @@ export function FavoritesSection({ favorites: favsHook, typeFilters, genreFilter
             );
           })}
         </CardGrid>
+        {pageLayout && <div className="list-page-rows">{visible.map(item => {
+          const title = item.title || MEDIA.unknown;
+          const open = () => selection.editMode ? selection.toggle(item.tmdb_id) : openPanel(item.tmdb_id, item.media_type);
+          return <ListPageRow key={`row:${item.id}`} item={item} title={title} meta={item.media_type === 'tv' ? MEDIA.series : MEDIA.movie} open={open} selection={selection} />;
+        })}</div>}
+        </div>
       )}
 
       {showAdd && (
@@ -667,7 +705,7 @@ export function FavoritesSection({ favorites: favsHook, typeFilters, genreFilter
 
 
 /* ── One custom list, as a page: grid plus rename / public / share / delete ── */
-export function CustomListSection({ list, customLists, typeFilters, genreFilters = [], narrowed, share, shareCopied = false, onDeleted, Frame = ListSection }) {
+export function CustomListSection({ list, visibleItems, count, customLists, typeFilters, genreFilters = [], narrowed, share, shareCopied = false, onDeleted, Frame = ListSection, pageLayout = false }) {
   const { openPanel } = useApp();
   const { renameList, setListPublic, addItem, removeItem, deleteList } = customLists;
   const selection = useSelection();
@@ -677,7 +715,7 @@ export function CustomListSection({ list, customLists, typeFilters, genreFilters
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const allItems = list.items || [];
-  const visible  = filterByTypeAndGenre(allItems, typeFilters, genreFilters);
+  const visible  = visibleItems ?? filterByTypeAndGenre(allItems, typeFilters, genreFilters);
 
   const submitRename = async () => {
     if (!renameValue.trim()) return;
@@ -698,6 +736,7 @@ export function CustomListSection({ list, customLists, typeFilters, genreFilters
   return (
     <Frame
       title={list.name}
+      count={count ?? allItems.length}
       subtitle={list.is_public ? 'Public' : undefined}
       headerRight={
         <>
@@ -736,6 +775,7 @@ export function CustomListSection({ list, customLists, typeFilters, genreFilters
       ) : narrowed && visible.length === 0 ? (
         <Empty>No items match the current filter.</Empty>
       ) : (
+        <div className={pageLayout ? 'list-page-items' : ''}>
         <CardGrid>
           {visible.map(item => {
             const title = item.title || MEDIA.unknown;
@@ -753,6 +793,12 @@ export function CustomListSection({ list, customLists, typeFilters, genreFilters
             );
           })}
         </CardGrid>
+        {pageLayout && <div className="list-page-rows">{visible.map(item => {
+          const title = item.title || MEDIA.unknown;
+          const open = () => selection.editMode ? selection.toggle(item.tmdb_id) : openPanel(item.tmdb_id, item.media_type);
+          return <ListPageRow key={`row:${item.id}`} item={item} title={title} meta={item.media_type === 'tv' ? MEDIA.series : MEDIA.movie} open={open} selection={selection} />;
+        })}</div>}
+        </div>
       )}
 
       {showAdd && (

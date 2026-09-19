@@ -1616,7 +1616,17 @@ export default function SettingsView() {
 
   return (
     <>
-      <SettingsPage section={activeSection} onSection={changeSection} onSignOut={() => setConfirmSignOut(true)}>
+      <SettingsPage
+        section={activeSection}
+        onSection={changeSection}
+        onSignOut={() => setConfirmSignOut(true)}
+        account={{
+          name: profile?.display_name || username || currentEmail,
+          username,
+          avatarUrl: profile?.avatar_url || null,
+          isPremium: premium.isPremium,
+        }}
+      >
         {actionError && <p className="settings-error" role="alert">{actionError}</p>}
         {activeSection === 'account' && <>
       {/* Public profile */}

@@ -31,6 +31,11 @@ export const SETTINGS_VIEW = {
     moreSelected: (count) => `+${count} more`,
     signOutTitle: 'Sign out of plot?',
     signOutMessage: 'You can sign back in whenever you like.',
+    // The account card at the top of the settings column.
+    planFree: 'Free plan',
+    planPremium: 'Premium',
+    viewProfile: 'View profile',
+    noName: 'Your account',
   },
   billing: {
     freePlan: 'Your plan: Free',
