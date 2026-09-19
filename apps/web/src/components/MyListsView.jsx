@@ -28,7 +28,7 @@ import {
    stream. The column is the index — every list with its count, capped by a
    "View more" row — with the Show and Genre filters beneath it, the same
    `SideFilters` rows History uses rather than the toolbar pill it used to be.
-   The stream keeps what shipped in #918: the Watching shelf, the Top 5 podium,
+   The stream keeps what shipped in PR 918: the Watching shelf, the Top 5 podium,
    then every list as a cover that opens its own page.
 
    Below the sidebar breakpoint `.cal-side` hides itself, as it does on the
