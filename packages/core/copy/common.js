@@ -43,6 +43,7 @@ export const COMMON = {
   notSet: 'Not set',
   syncing: 'Syncing…',
   clearSearch: 'Clear search',
+  searchTitles: 'Search titles',
   makePublic: 'Make public',
   makePrivate: 'Make private',
   privacyPolicy: 'Privacy Policy',

@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { ErrorScreen } from '../components/ErrorBoundary';
+import { COMMON } from '@plot/core/copy/common.js';
 
 export default function NotFoundPage() {
   const navigate = useNavigate();
@@ -10,7 +11,7 @@ export default function NotFoundPage() {
       body="Let's get you back to something worth watching."
       primaryLabel="Go home"
       primaryAction={() => navigate('/')}
-      ghostLabel="Search titles"
+      ghostLabel={COMMON.searchTitles}
       ghostAction={() => navigate('/search')}
     />
   );

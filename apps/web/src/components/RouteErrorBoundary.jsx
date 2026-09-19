@@ -3,6 +3,7 @@ import { useRouteError, isRouteErrorResponse } from 'react-router-dom';
 import { captureException } from '../lib/analytics.js';
 import { ErrorScreen, CrashScreen } from './ErrorBoundary.jsx';
 import { isChunkError, recentlyReloaded, markChunkReload } from '../utils/chunkError.js';
+import { COMMON } from '@plot/core/copy/common.js';
 
 /**
  * Router-level error element. Catches anything thrown while routing, rendering,
@@ -39,7 +40,7 @@ export default function RouteErrorBoundary() {
         body="Let's get you back to something worth watching."
         primaryLabel="Go home"
         primaryAction={() => { window.location.href = '/'; }}
-        ghostLabel="Search titles"
+        ghostLabel={COMMON.searchTitles}
         ghostAction={() => { window.location.href = '/search'; }}
       />
     );

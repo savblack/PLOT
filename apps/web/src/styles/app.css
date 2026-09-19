@@ -6079,6 +6079,64 @@ a.provider-chip--link:hover {
 .discover-see-all:hover { color: var(--text-primary); }
 .discover-see-all:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
 
+/* Home uses the Calendar/Guide shell: personal context earns the narrow
+   column, while discovery keeps its existing horizontal rails in the stream.
+   The rendering is DOM-specific; state selection and copy live in core so a
+   native treatment can consume the same product decisions. */
+.home-layout { align-items: flex-start; padding: 0 var(--gut) 3rem; }
+.home-stream { flex: 1; min-width: 0; padding-bottom: 0; }
+.home-side { gap: 24px; }
+.home-personal-card--loading { min-height: 210px; background: var(--surface-sunken); }
+.home-personal-icon { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 10px; background: var(--surface-sunken); color: var(--text-primary); font-family: var(--font-display); font-size: 20px; line-height: 1; }
+.home-personal-icon svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.home-personal-card .hist-card-body { gap: 7px; }
+.home-card-link { border: 0; background: none; padding: 4px 0; color: var(--text-secondary); font: inherit; font-size: 12px; cursor: pointer; }
+.home-card-link:hover { color: var(--text-primary); }
+.home-personal-action { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px; border: 0; border-top: 1px solid var(--border); background: none; padding: 12px 4px 0; color: var(--accent-text); font: inherit; font-size: 12px; font-weight: 600; text-align: left; cursor: pointer; }
+.home-personal-action svg { width: 15px; height: 15px; flex-shrink: 0; }
+.home-personal-action:hover { color: var(--text-primary); }
+.home-up-next-list { display: flex; flex-direction: column; }
+.home-up-next-row,
+.home-on-this-day-hit { width: 100%; display: flex; align-items: center; gap: 10px; border: 0; border-bottom: 1px solid var(--border); background: none; padding: 9px 4px; color: var(--text-primary); font: inherit; text-align: left; cursor: pointer; }
+.home-up-next-row:last-child { border-bottom: 0; }
+.home-up-next-row:hover strong,
+.home-on-this-day-hit:hover strong { color: var(--accent-text); }
+.home-up-next-poster,
+.home-on-this-day-poster { width: 34px; height: 51px; flex-shrink: 0; overflow: hidden; border: 1px solid var(--border); border-radius: 6px; background: var(--surface-sunken); }
+.home-up-next-poster img,
+.home-on-this-day-poster img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.home-up-next-copy,
+.home-on-this-day-copy { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 2px; }
+.home-up-next-copy strong,
+.home-on-this-day-copy strong { overflow: hidden; font-size: 13px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; transition: color 0.15s; }
+.home-up-next-copy span,
+.home-on-this-day-copy span { color: var(--text-muted); font-size: 11px; line-height: 1.35; }
+.home-up-next-chev { display: flex; width: 15px; flex-shrink: 0; color: var(--text-muted); }
+.home-up-next-chev svg { width: 15px; height: 15px; }
+.home-on-this-day-hit { border-bottom: 0; padding-block: 0; }
+.home-on-this-day-poster { width: 52px; height: 78px; border-radius: 8px; }
+.home-filter-card { gap: 18px; }
+.home-toolbar-actions { display: flex; align-items: center; gap: 10px; }
+.home-search-trigger { width: 220px; height: 32px; display: flex; align-items: center; gap: 8px; border: 1px solid var(--border-strong); border-radius: var(--radius-pill); background: var(--surface); padding: 0 12px; color: var(--text-muted); font: inherit; font-size: 13px; cursor: text; }
+.home-search-trigger svg { width: 16px; height: 16px; flex-shrink: 0; }
+.home-search-trigger:hover { border-color: var(--text-muted); color: var(--text-secondary); }
+.home-on-this-day--mobile { display: none; }
+
+@media (min-width: 1024px) {
+  .home-stream { --discover-rail-gut: 0px; }
+  .home-stream .discover-section-header,
+  .home-stream .discover-hero-row { padding-inline: 0; }
+  .home-toolbar-actions > .mobile-controls-anchor { display: none; }
+}
+
+@media (max-width: 1023px) {
+  .home-layout { display: block; padding-inline: 0; }
+  .home-toolbar-actions .home-search-trigger { display: none; }
+  .home-stream { width: 100%; }
+  .home-on-this-day--mobile { display: flex; margin: 14px var(--gut) 0; }
+  .home-on-this-day--mobile .home-on-this-day-hit { padding: 0; }
+}
+
 /* The row under a page heading: today's date on the left, that page's
    controls on the right (Home's filter; Calendar's scope toggle). Below
    sidebar widths it is a plain row under the header; at sidebar widths it is
@@ -6212,7 +6270,7 @@ a.provider-chip--link:hover {
   overflow-x: auto;
   overscroll-behavior-x: contain;
   scrollbar-width: none;
-  padding: 2rem 1rem;
+  padding: 2rem var(--discover-rail-gut, 1rem);
   cursor: grab;
   user-select: none;
   -webkit-overflow-scrolling: touch;
@@ -6311,7 +6369,7 @@ a.provider-chip--link:hover {
   overflow-x: auto;
   overscroll-behavior-x: contain;
   scrollbar-width: none;
-  padding: 0.25rem var(--gut) 1rem;
+  padding: 0.25rem var(--discover-rail-gut, var(--gut)) 1rem;
   cursor: grab;
   user-select: none;
   -webkit-overflow-scrolling: touch;

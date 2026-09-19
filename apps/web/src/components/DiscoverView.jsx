@@ -1,5 +1,5 @@
 import { ALL_TYPES } from '@plot/core/mediaFilters.js';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { posterUrl, backdropUrl } from '../utils/images.js';
@@ -17,8 +17,15 @@ import { tmdb, getTmdbRegion } from '@plot/core/tmdb.js';
 import { filterByType, filterByGenre } from '../utils/mediaFilters.js';
 import { MEDIA } from '../copy/media.js';
 import { DISCOVER_VIEW } from '@plot/core/copy/discoverView.js';
+import { COMMON } from '@plot/core/copy/common.js';
+import { homePersonalState, selectHomeUpNext } from '@plot/core/home.js';
+import { getCalendarRelativeLabel } from '@plot/core/calendar.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import GroupedFilterMenu from './GroupedFilterMenu.jsx';
+import SideFilters from './SideFilters.jsx';
+import { IconCalendar, IconChevronRight, IconSearch } from './navIcons.jsx';
+import { useCalendar } from '../hooks/useCalendar.js';
+import { localDateStr } from '../utils/date.js';
 
 /* Home is one scroll. It used to be four sub-tabs (Discover, New Releases,
    Upcoming, Guide) under a sticky toolbar, with every section collapsible and
@@ -34,7 +41,7 @@ function Rail({ rail, children }) {
   return (
     <ScrollRail
       rail={rail}
-      style={{ paddingLeft: 'var(--gut)', paddingRight: 'var(--gut)', paddingTop: '0.25rem', paddingBottom: '1rem' }}
+      style={{ paddingLeft: 'var(--discover-rail-gut, var(--gut))', paddingRight: 'var(--discover-rail-gut, var(--gut))', paddingTop: '0.25rem', paddingBottom: '1rem' }}
     >
       {children}
     </ScrollRail>
@@ -105,16 +112,20 @@ function filterSummary(typeFilters, genreFilters, genres) {
    is pulled up onto the page heading: the date sits under "Home" and the
    filter pill on the right, so Home does not spend a row on one control.
    Below them it is a plain row under the header. */
-export function DiscoverToolbar({ ariaLabel, typeFilters, setTypeFilters, genreFilters, setGenreFilters }) {
+export function DiscoverToolbar({ ariaLabel, typeFilters, setTypeFilters, genreFilters, setGenreFilters, onOpenSearch }) {
   const { genres } = useGenres();
   return (
     <div className="page-toolbar">
       <span className="page-toolbar-date">{todayLongLabel()}</span>
-      <GroupedFilterMenu
-        mobileControls
-        ariaLabel={ariaLabel}
-        label={filterSummary(typeFilters, genreFilters, genres)}
-        groups={[
+      <div className="home-toolbar-actions">
+        <button type="button" className="home-search-trigger" onClick={onOpenSearch}>
+          <IconSearch /><span>{COMMON.searchTitles}</span>
+        </button>
+        <GroupedFilterMenu
+          mobileControls
+          ariaLabel={ariaLabel}
+          label={filterSummary(typeFilters, genreFilters, genres)}
+          groups={[
           {
             heading: MEDIA.typeHeading, allLabel: MEDIA.allTypes,
             options: TYPE_OPTIONS,
@@ -128,9 +139,58 @@ export function DiscoverToolbar({ ariaLabel, typeFilters, setTypeFilters, genreF
             value: genreFilters,
             onChange: setGenreFilters,
           },
-        ]}
-      />
+          ]}
+        />
+      </div>
     </div>
+  );
+}
+
+function HomeUpcomingRow({ event, todayStr, openPanel }) {
+  const image = posterUrl(event.item?.poster_path, 'w92');
+  const date = getCalendarRelativeLabel(event.date, todayStr);
+  const meta = [event.label, date, event.item?.network_name].filter(Boolean).join(' · ');
+  return (
+    <button type="button" className="home-up-next-row" onClick={() => openPanel(event.item?.tmdb_id, 'tv')}>
+      <span className="home-up-next-poster">{image && <img src={image} alt="" />}</span>
+      <span className="home-up-next-copy"><strong>{event.item?.title}</strong><span>{meta}</span></span>
+      <span className="home-up-next-chev" aria-hidden="true"><IconChevronRight /></span>
+    </button>
+  );
+}
+
+function HomePersonalCard({ state, upNext, todayStr, openPanel, openSearch, navigate }) {
+  if (state === 'loading') return <div className="hist-card home-personal-card home-personal-card--loading" aria-hidden="true" />;
+  if (state === 'up-next') {
+    return (
+      <section className="hist-card home-personal-card">
+        <div className="hist-card-head"><h2 className="hist-card-title">{DISCOVER_VIEW.upNext}</h2><button type="button" className="home-card-link" onClick={() => navigate('/calendar')}>{DISCOVER_VIEW.calendar}</button></div>
+        <div className="home-up-next-list">{upNext.map(event => <HomeUpcomingRow key={`${event.item?.tmdb_id}:${event.date}:${event.label}`} event={event} todayStr={todayStr} openPanel={openPanel} />)}</div>
+      </section>
+    );
+  }
+  const start = state === 'start';
+  return (
+    <section className="hist-card home-personal-card">
+      <span className="home-personal-icon" aria-hidden="true">{start ? '+' : <IconCalendar />}</span>
+      <div className="hist-card-body"><h2 className="hist-card-title">{start ? DISCOVER_VIEW.startHere : DISCOVER_VIEW.nothingUpcoming}</h2><p className="hist-card-note">{start ? DISCOVER_VIEW.startHereBody : DISCOVER_VIEW.nothingUpcomingBody}</p></div>
+      <button type="button" className="home-personal-action" onClick={start ? openSearch : () => navigate('/my-lists')}><span>{start ? DISCOVER_VIEW.findFirstShow : DISCOVER_VIEW.browseSavedTitles}</span><IconChevronRight /></button>
+    </section>
+  );
+}
+
+function OnThisDayCard({ item, openPanel, mobile = false }) {
+  if (!item) return null;
+  const image = posterUrl(item.poster_path, 'w185');
+  return (
+    <section className={`hist-card home-on-this-day${mobile ? ' home-on-this-day--mobile' : ''}`}>
+      <span className="hist-card-label">{DISCOVER_VIEW.onThisDay}</span>
+      <button type="button" className="home-on-this-day-hit" onClick={() => openPanel(item.id, item.media_type || 'movie')}>
+        <span className="home-on-this-day-poster">{image && <img src={image} alt="" />}</span>
+        <span className="home-on-this-day-copy"><strong>{item.title || item.name}</strong>{item.archive_year && <span>{DISCOVER_VIEW.releasedThisDay(item.archive_year)}</span>}</span>
+        <span className="home-up-next-chev" aria-hidden="true"><IconChevronRight /></span>
+      </button>
+    </section>
   );
 }
 
@@ -556,8 +616,9 @@ function PlatformCharts({ platformList, openPanel, watchlist, typeFilters, genre
 }
 
 /* ── Home ── */
-function DiscoverContent({ openPanel, watchlist, typeFilters, genreFilters }) {
+function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTypeFilters, genreFilters, setGenreFilters, personalState, upNext, todayStr }) {
   const navigate = useNavigate();
+  const { genres } = useGenres();
   const { data, loading } = useDiscover();
   const { data: releases } = useNewReleases();
   // Hard-coded official-chart platforms — the same set for everyone, unrelated
@@ -589,21 +650,20 @@ function DiscoverContent({ openPanel, watchlist, typeFilters, genreFilters }) {
   }
 
   return (
-    <div className="discover-sections">
+    <div className="home-layout cal-body">
+      <aside className="cal-side home-side">
+        <HomePersonalCard state={personalState} upNext={upNext} todayStr={todayStr} openPanel={openPanel} openSearch={openSearch} navigate={navigate} />
+        <OnThisDayCard item={onThisDay} openPanel={openPanel} />
+        <section className="hist-card home-filter-card"><SideFilters typeFilters={typeFilters} setTypeFilters={setTypeFilters} genreFilters={genreFilters} setGenreFilters={setGenreFilters} genres={genres} /></section>
+      </aside>
+      <div className="discover-sections home-stream">
       {hero && genreFilters.length === 0 && (
         <section className="discover-section discover-featured-section">
           <DiscoverSectionHeader title="plot's Picks" />
-          <div className={`discover-hero-row${onThisDay ? ' has-two' : ''}`}>
+          <div className="discover-hero-row">
             <HeroCard item={hero} openPanel={openPanel} watchlist={watchlist} />
-            {onThisDay && (
-              <HeroCard
-                item={onThisDay}
-                openPanel={openPanel}
-                watchlist={watchlist}
-                badge={onThisDay.archive_year ? MEDIA.fromTheArchiveBadge : MEDIA.onThisDay}
-              />
-            )}
           </div>
+          <OnThisDayCard item={onThisDay} openPanel={openPanel} mobile />
         </section>
       )}
 
@@ -658,6 +718,7 @@ function DiscoverContent({ openPanel, watchlist, typeFilters, genreFilters }) {
       )}
 
       {platformList.length > 0 && <PlatformCharts platformList={platformList} openPanel={openPanel} watchlist={watchlist} typeFilters={typeFilters} genreFilters={genreFilters} />}
+      </div>
     </div>
   );
 }
@@ -670,24 +731,34 @@ export default function DiscoverView() {
   const [typeFilters,  setTypeFilters]  = useState(ALL_TYPES);
   const [genreFilters, setGenreFilters] = useState([]);
 
-  if (!app) return null;
-
-  const { openPanel, watchlist } = app;
+  const { openPanel, openSearch, watchlist, watching, reminders } = app;
+  const todayStr = localDateStr();
+  const listsReady = !watchlist.loading && !watching.loading && !reminders.loading;
+  const { events, loading: calendarLoading } = useCalendar(watchlist.items, watching.items, watching.fetchSeason, reminders.reminders, { ready: listsReady });
+  const upNext = useMemo(() => selectHomeUpNext(events, todayStr), [events, todayStr]);
+  const personalState = homePersonalState({ loading: calendarLoading || !listsReady, upNext, savedCount: watchlist.items.length, watchingCount: watching.items.length });
 
   return (
-    <div>
+    <div className="home-page">
       <DiscoverToolbar
         ariaLabel="Filter discover"
         typeFilters={typeFilters}
         setTypeFilters={setTypeFilters}
         genreFilters={genreFilters}
         setGenreFilters={setGenreFilters}
+        onOpenSearch={openSearch}
       />
       <DiscoverContent
         openPanel={openPanel}
+        openSearch={openSearch}
         watchlist={watchlist}
         typeFilters={typeFilters}
+        setTypeFilters={setTypeFilters}
         genreFilters={genreFilters}
+        setGenreFilters={setGenreFilters}
+        personalState={personalState}
+        upNext={upNext}
+        todayStr={todayStr}
       />
     </div>
   );
