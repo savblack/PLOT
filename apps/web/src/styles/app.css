@@ -3769,6 +3769,49 @@ svg { stroke-width: 1.5; }
   to   { transform: translateX(100%); }
 }
 
+/* Desktop detail panels expose their dismissal control as a quiet rail on the
+   outside edge. It stays separate from the scrolling panel so the overhang is
+   never clipped by long title content. */
+.panel-close-rail {
+  position: fixed;
+  top: 1.5rem;
+  right: min(var(--panel-w), 100vw);
+  z-index: 502;
+  width: 36px;
+  height: 88px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-right: 0;
+  border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+  background: var(--surface-sunken);
+  color: var(--text-primary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: panelCloseRailIn 0.32s var(--ease);
+}
+.panel-close-rail svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.panel-close-rail.closing {
+  animation: panelCloseRailOut 0.25s var(--ease) forwards;
+}
+@keyframes panelCloseRailIn {
+  from { transform: translateX(calc(var(--panel-w) + 100%)); }
+  to   { transform: translateX(0); }
+}
+@keyframes panelCloseRailOut {
+  from { transform: translateX(0); }
+  to   { transform: translateX(calc(var(--panel-w) + 100%)); }
+}
+
 /* ═══════════════════════════════════════
    DOCKED DETAIL PANEL (>= 1280px)
    Below this width .panel is a right drawer over a blurred scrim, so opening a
@@ -3866,6 +3909,13 @@ svg { stroke-width: 1.5; }
   align-items: center;
   justify-content: center;
   z-index: 2;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .panel-close-btn,
+  .panel-toolbar .panel-toolbar-btn:last-child {
+    display: none;
+  }
 }
 /* No backdrop to sit on: the fallback surface is light (or near-black in
    dark mode), so a white ✕ vanishes against it and the panel looks stuck.
@@ -6917,6 +6967,10 @@ a.provider-chip--link:hover {
 }
 
 @media (hover: none), (pointer: coarse) {
+  .panel-close-rail {
+    display: none;
+  }
+
   .media-card:hover,
   .discover-section .media-card:hover {
     transform: none;

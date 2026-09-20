@@ -8,6 +8,7 @@ import { MEDIA_PANEL } from '../copy/mediaPanel.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import CollectionFilms from './CollectionFilms.jsx';
 import CollectionRun from './CollectionRun.jsx';
+import PanelCloseRail from './PanelCloseRail.jsx';
 import { useCollectionProgress } from '../hooks/useCollectionProgress.js';
 import './CollectionCard.css';
 
@@ -65,6 +66,7 @@ export default function CollectionPanel({ collectionId, closing, onClose }) {
   return (
     <>
       <div className={`panel-overlay${closing ? ' closing' : ''}`} onClick={onClose} />
+      <PanelCloseRail closing={closing} onClose={onClose} />
       <div className={`panel${closing ? ' closing' : ''}`}>
         <div className={`panel-header-wrap${collection?.backdrop_path ? '' : ' panel-header-wrap--no-backdrop'}`}>
           {collection?.backdrop_path

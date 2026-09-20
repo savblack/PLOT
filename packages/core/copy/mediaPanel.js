@@ -19,7 +19,6 @@ export const MEDIA_PANEL = {
   // actually asking you to do next.
   upNext: 'Up next',
   seasonEpisode: (season, episode) => `Season ${season} · Episode ${episode}`,
-  openOn: (provider) => `Open on ${provider}`,
   episodeRuntime: (minutes) => `${minutes} min`,
   chooseSeason: 'Choose a season',
   unmarkSeasonWatched: 'Unmark season',
