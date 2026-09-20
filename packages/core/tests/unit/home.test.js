@@ -14,7 +14,9 @@ test('selectHomeUpNext keeps the next distinct shows with episodes', () => {
 });
 
 test('homePersonalState distinguishes new and established accounts', () => {
+  assert.equal(homePersonalState({ offline: true, loading: true }), 'offline');
   assert.equal(homePersonalState({ loading: true }), 'loading');
+  assert.equal(homePersonalState({ error: new Error('failed') }), 'error');
   assert.equal(homePersonalState({ upNext: [{}] }), 'up-next');
   assert.equal(homePersonalState({}), 'start');
   assert.equal(homePersonalState({ savedCount: 1 }), 'quiet');

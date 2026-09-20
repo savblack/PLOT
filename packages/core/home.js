@@ -22,11 +22,13 @@ export function selectHomeUpNext(events = [], todayStr, limit = 3) {
 }
 
 /**
- * @param {{loading?: boolean, upNext?: any[], savedCount?: number, watchingCount?: number}} input
- * @returns {'loading'|'up-next'|'start'|'quiet'}
+ * @param {{loading?: boolean, offline?: boolean, error?: unknown, upNext?: any[], savedCount?: number, watchingCount?: number}} input
+ * @returns {'loading'|'offline'|'error'|'up-next'|'start'|'quiet'}
  */
-export function homePersonalState({ loading = false, upNext = [], savedCount = 0, watchingCount = 0 }) {
+export function homePersonalState({ loading = false, offline = false, error = null, upNext = [], savedCount = 0, watchingCount = 0 }) {
+  if (offline) return 'offline';
   if (loading) return 'loading';
+  if (error) return 'error';
   if (upNext.length) return 'up-next';
   return savedCount + watchingCount === 0 ? 'start' : 'quiet';
 }

@@ -27,6 +27,8 @@ import { tmdb } from '@plot/core/tmdb.js';
 export function useCalendar(watchlistItems = [], watchingItems = [], fetchSeason, reminders = [], { ready = true } = {}) {
   const [events,  setEvents]  = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
   const hasLoadedOnce = useRef(false);
   const buildInFlight = useRef(false);
   const cancelledRef  = useRef(false);
@@ -57,24 +59,34 @@ export function useCalendar(watchlistItems = [], watchingItems = [], fetchSeason
     cancelledRef.current  = false;
     // Only show the full loading spinner on first load — subsequent rebuilds
     // update events in the background so there's no flash
-    if (!hasLoadedOnce.current) setLoading(true);
+    if (hasLoadedOnce.current) setRefreshing(true);
+    else setLoading(true);
+    setError(null);
 
-    const built = await buildCalendarEvents({
-      watchlist: stableWatchlistItemsRef.current,
-      watching:  stableWatchingItemsRef.current,
-      reminders: stableRemindersRef.current,
-      todayStr:  localDateStr(),
-      fetchTvDetails: (tmdbId) => tmdb.getTVDetails(tmdbId),
-      fetchSeason:    (tmdbId, seasonNumber) => fetchSeason?.(tmdbId, seasonNumber),
-      isCancelled:    () => cancelledRef.current,
-    });
+    try {
+      const built = await buildCalendarEvents({
+        watchlist: stableWatchlistItemsRef.current,
+        watching:  stableWatchingItemsRef.current,
+        reminders: stableRemindersRef.current,
+        todayStr:  localDateStr(),
+        fetchTvDetails: (tmdbId) => tmdb.getTVDetails(tmdbId),
+        fetchSeason:    (tmdbId, seasonNumber) => fetchSeason?.(tmdbId, seasonNumber),
+        isCancelled:    () => cancelledRef.current,
+      });
 
-    if (!cancelledRef.current) {
-      setEvents(built);
-      hasLoadedOnce.current = true;
-      setLoading(false);
+      if (!cancelledRef.current) {
+        setEvents(built);
+        hasLoadedOnce.current = true;
+      }
+    } catch (buildError) {
+      if (!cancelledRef.current) setError(buildError);
+    } finally {
+      if (!cancelledRef.current) {
+        setLoading(false);
+        setRefreshing(false);
+      }
+      buildInFlight.current = false;
     }
-    buildInFlight.current = false;
   }, [fetchSeason]);
 
   useEffect(() => {
@@ -88,5 +100,5 @@ export function useCalendar(watchlistItems = [], watchingItems = [], fetchSeason
     [events]
   );
 
-  return { events, loading, eventsForDate };
+  return { events, loading, refreshing, error, retry: buildEvents, eventsForDate };
 }

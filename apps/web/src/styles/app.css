@@ -6270,12 +6270,20 @@ a.provider-chip--link:hover {
 .home-layout { align-items: flex-start; padding: 0 var(--gut) 3rem; }
 .home-stream { flex: 1; min-width: 0; padding-bottom: 0; }
 .home-side { gap: 24px; }
-.home-personal-card--loading { min-height: 210px; background: var(--surface-sunken); }
+.home-personal-card--loading { min-height: 210px; overflow: hidden; }
+.home-personal-card--compact { min-height: 210px; }
+.home-personal-skeleton { position: relative; overflow: hidden; display: block; border-radius: 5px; background: var(--surface-sunken); }
+.home-personal-skeleton::after { content: ''; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--surface) 68%, transparent), transparent); animation: home-personal-shimmer 1.7s infinite; }
+.home-personal-skeleton--icon { width: 34px; height: 34px; border-radius: 10px; }
+.home-personal-skeleton--title { width: 58%; height: 11px; }
+.home-personal-skeleton--body { width: 86%; height: 10px; }
+.home-personal-skeleton--action { width: 72%; height: 10px; margin-top: auto; }
+@keyframes home-personal-shimmer { to { transform: translateX(100%); } }
+@media (prefers-reduced-motion: reduce) { .home-personal-skeleton::after { animation: none; } }
 .home-personal-icon { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 10px; background: var(--surface-sunken); color: var(--text-primary); font-family: var(--font-display); font-size: 20px; line-height: 1; }
 .home-personal-icon svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .home-personal-card .hist-card-body { gap: 7px; }
-.home-card-link { border: 0; background: none; padding: 4px 0; color: var(--text-secondary); font: inherit; font-size: 12px; cursor: pointer; }
-.home-card-link:hover { color: var(--text-primary); }
+.home-personal-status { color: var(--text-muted); font-size: 11px; }
 .home-personal-action { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px; border: 0; border-top: 1px solid var(--border); background: none; padding: 12px 4px 0; color: var(--accent-text); font: inherit; font-size: 12px; font-weight: 600; text-align: left; cursor: pointer; }
 .home-personal-action svg { width: 15px; height: 15px; flex-shrink: 0; }
 .home-personal-action:hover { color: var(--text-primary); }

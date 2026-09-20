@@ -27,6 +27,23 @@ import { IconCalendar, IconChevronRight, IconSearch } from './navIcons.jsx';
 import { useCalendar } from '../hooks/useCalendar.js';
 import { localDateStr } from '../utils/date.js';
 
+// Web-only: navigator connectivity events have no React Native equivalent.
+// State precedence and copy remain shared in core; mobile should render the
+// same states from its platform connectivity source.
+function useOnlineStatus() {
+  const [online, setOnline] = useState(() => typeof navigator === 'undefined' || navigator.onLine);
+  useEffect(() => {
+    const update = () => setOnline(navigator.onLine);
+    window.addEventListener('online', update);
+    window.addEventListener('offline', update);
+    return () => {
+      window.removeEventListener('online', update);
+      window.removeEventListener('offline', update);
+    };
+  }, []);
+  return online;
+}
+
 /* Home is one scroll. It used to be four sub-tabs (Discover, New Releases,
    Upcoming, Guide) under a sticky toolbar, with every section collapsible and
    an expand/collapse-all control. Guide is a schedule, not a feed, so it is a
@@ -185,12 +202,46 @@ function HomeUpcomingRow({ event, todayStr, openPanel }) {
   );
 }
 
-function HomePersonalCard({ state, upNext, todayStr, openPanel, openSearch, navigate }) {
-  if (state === 'loading') return <div className="hist-card home-personal-card home-personal-card--loading" aria-hidden="true" />;
+function HomeOfflineIcon() {
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18M18.5 18H8a5 5 0 0 1-1.7-9.7M8.6 4.2A7 7 0 0 1 18 10.7 4 4 0 0 1 21 15" /></svg>;
+}
+
+function HomeAlertIcon() {
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9v4M12 17h.01M10.3 3.7 2.6 17a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 3.7a2 2 0 0 0-3.4 0Z" /></svg>;
+}
+
+function HomeRefreshIcon() {
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36L21 8M21 3v5h-5" /></svg>;
+}
+
+function HomePersonalCard({ state, refreshing, retry, upNext, todayStr, openPanel, openSearch }) {
+  if (state === 'loading') {
+    return (
+      <section className="hist-card home-personal-card home-personal-card--loading" aria-label="Loading upcoming episodes">
+        <span className="home-personal-skeleton home-personal-skeleton--icon" aria-hidden="true" />
+        <span className="home-personal-skeleton home-personal-skeleton--title" aria-hidden="true" />
+        <span className="home-personal-skeleton home-personal-skeleton--body" aria-hidden="true" />
+        <span className="home-personal-skeleton home-personal-skeleton--action" aria-hidden="true" />
+      </section>
+    );
+  }
+  if (state === 'offline' || state === 'error') {
+    const offline = state === 'offline';
+    return (
+      <section className="hist-card home-personal-card home-personal-card--compact">
+        <span className="home-personal-icon" aria-hidden="true">{offline ? <HomeOfflineIcon /> : <HomeAlertIcon />}</span>
+        <div className="hist-card-body">
+          <h2 className="hist-card-title">{offline ? DISCOVER_VIEW.offline : DISCOVER_VIEW.loadError}</h2>
+          <p className="hist-card-note">{offline ? DISCOVER_VIEW.offlineBody : DISCOVER_VIEW.loadErrorBody}</p>
+        </div>
+        <button type="button" className="home-personal-action" onClick={retry}><span>{DISCOVER_VIEW.retry}</span><HomeRefreshIcon /></button>
+      </section>
+    );
+  }
   if (state === 'up-next') {
     return (
       <section className="hist-card home-personal-card">
-        <div className="hist-card-head"><h2 className="hist-card-title">{DISCOVER_VIEW.upNext}</h2><button type="button" className="home-card-link" onClick={() => navigate('/calendar')}>{DISCOVER_VIEW.calendar}</button></div>
+        <div className="hist-card-head"><h2 className="hist-card-title">{DISCOVER_VIEW.upNext}</h2>{refreshing && <span className="home-personal-status">{DISCOVER_VIEW.refreshing}</span>}</div>
         <div className="home-up-next-list">{upNext.map(event => <HomeUpcomingRow key={`${event.item?.tmdb_id}:${event.date}:${event.label}`} event={event} todayStr={todayStr} openPanel={openPanel} />)}</div>
       </section>
     );
@@ -200,7 +251,7 @@ function HomePersonalCard({ state, upNext, todayStr, openPanel, openSearch, navi
     <section className="hist-card home-personal-card">
       <span className="home-personal-icon" aria-hidden="true">{start ? '+' : <IconCalendar />}</span>
       <div className="hist-card-body"><h2 className="hist-card-title">{start ? DISCOVER_VIEW.startHere : DISCOVER_VIEW.nothingUpcoming}</h2><p className="hist-card-note">{start ? DISCOVER_VIEW.startHereBody : DISCOVER_VIEW.nothingUpcomingBody}</p></div>
-      <button type="button" className="home-personal-action" onClick={start ? openSearch : () => navigate('/my-lists')}><span>{start ? DISCOVER_VIEW.findFirstShow : DISCOVER_VIEW.browseSavedTitles}</span><IconChevronRight /></button>
+      <button type="button" className="home-personal-action" onClick={openSearch}><span>{DISCOVER_VIEW.findAiringShow}</span><IconChevronRight /></button>
     </section>
   );
 }
@@ -642,7 +693,7 @@ function PlatformCharts({ id, platformList, openPanel, watchlist, typeFilters, g
 }
 
 /* ── Home ── */
-function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTypeFilters, genreFilters, setGenreFilters, genres, personalState, upNext, todayStr }) {
+function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTypeFilters, genreFilters, setGenreFilters, genres, personalState, personalRefreshing, retryPersonal, upNext, todayStr }) {
   const navigate = useNavigate();
   const { data, loading } = useDiscover();
   const { data: releases } = useNewReleases();
@@ -687,7 +738,7 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
   return (
     <div className="home-layout cal-body">
       <aside className="cal-side home-side">
-        <HomePersonalCard state={personalState} upNext={upNext} todayStr={todayStr} openPanel={openPanel} openSearch={openSearch} navigate={navigate} />
+        <HomePersonalCard state={personalState} refreshing={personalRefreshing} retry={retryPersonal} upNext={upNext} todayStr={todayStr} openPanel={openPanel} openSearch={openSearch} />
         <OnThisDayCard item={onThisDay} openPanel={openPanel} />
         <HomePageNav sections={pageSections} />
         <section className="hist-card home-filter-card"><SideFilters typeFilters={typeFilters} setTypeFilters={setTypeFilters} genreFilters={genreFilters} setGenreFilters={setGenreFilters} genres={genres} /></section>
@@ -769,11 +820,15 @@ export default function DiscoverView() {
   const [genreFilters, setGenreFilters] = useState([]);
 
   const { openPanel, openSearch, watchlist, watching, reminders } = app;
+  const online = useOnlineStatus();
   const todayStr = localDateStr();
   const listsReady = !watchlist.loading && !watching.loading && !reminders.loading;
-  const { events, loading: calendarLoading } = useCalendar(watchlist.items, watching.items, watching.fetchSeason, reminders.reminders, { ready: listsReady });
+  const { events, loading: calendarLoading, refreshing: calendarRefreshing, error: calendarError, retry: retryCalendar } = useCalendar(watchlist.items, watching.items, watching.fetchSeason, reminders.reminders, { ready: listsReady });
+  useEffect(() => {
+    if (online && listsReady) retryCalendar();
+  }, [listsReady, online, retryCalendar]);
   const upNext = useMemo(() => selectHomeUpNext(events, todayStr), [events, todayStr]);
-  const personalState = homePersonalState({ loading: calendarLoading || !listsReady, upNext, savedCount: watchlist.items.length, watchingCount: watching.items.length });
+  const personalState = homePersonalState({ offline: !online, loading: calendarLoading || !listsReady, error: calendarError, upNext, savedCount: watchlist.items.length, watchingCount: watching.items.length });
 
   return (
     <div className="home-page">
@@ -795,6 +850,8 @@ export default function DiscoverView() {
         setGenreFilters={setGenreFilters}
         genres={genres}
         personalState={personalState}
+        personalRefreshing={calendarRefreshing}
+        retryPersonal={retryCalendar}
         upNext={upNext}
         todayStr={todayStr}
       />
