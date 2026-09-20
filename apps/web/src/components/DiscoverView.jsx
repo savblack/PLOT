@@ -139,7 +139,7 @@ function HomePageNav({ sections }) {
 
 /* The date and title search share the Home header row. The grouped filter is
    retained only as the mobile bottom sheet; the desktop trigger is hidden. */
-export function DiscoverToolbar({ typeFilters, setTypeFilters, genreFilters, setGenreFilters, genres, onOpenSearch }) {
+export function DiscoverToolbar({ typeFilters, setTypeFilters, genreFilters, setGenreFilters, genres = [], onOpenSearch }) {
   return (
     <div className="page-toolbar">
       <span className="page-toolbar-date">{todayLongLabel()}</span>
