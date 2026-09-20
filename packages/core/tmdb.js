@@ -830,14 +830,20 @@ export const tmdb = {
 
   getTopRated: (type) => fetchFromTMDB(`/${type}/top_rated`),
 
-  /* ── Combined genre list (movie + TV, deduplicated) ── */
-  getGenres: async () => {
+  /* ── Movie + TV genre catalogs ── */
+  getGenreCatalog: async () => {
     const [movieRes, tvRes] = await Promise.all([
       fetchFromTMDB('/genre/movie/list'),
       fetchFromTMDB('/genre/tv/list'),
     ]);
+    return { movie: movieRes?.genres || [], tv: tvRes?.genres || [] };
+  },
+
+  /* ── Combined genre list (movie + TV, deduplicated) ── */
+  getGenres: async () => {
+    const { movie, tv } = await tmdb.getGenreCatalog();
     const all = new Map();
-    [...(movieRes?.genres || []), ...(tvRes?.genres || [])].forEach(g => all.set(g.id, g));
+    [...movie, ...tv].forEach(g => all.set(g.id, g));
     return [...all.values()].sort((a, b) => a.name.localeCompare(b.name));
   },
 };

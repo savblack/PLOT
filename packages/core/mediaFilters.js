@@ -45,9 +45,7 @@ export function isTypeNarrowed(typeFilters) {
 /**
  * Items with no genre_ids at all are kept rather than filtered out — an
  * unknown genre shouldn't read as "definitely not this genre" and silently
- * empty a rail. Rails that source TV by keyword (Horror, Thriller, Romance,
- * which have no TV genre in TMDB) tag their results with the equivalent
- * movie genre id so they survive this filter; see the GENRE_RAILS table.
+ * empty a rail.
  *
  * @template {{ genre_ids?: number[] }} T
  * @param {T[] | null | undefined} items

@@ -5,31 +5,29 @@ import { filterByGenre, filterByType } from './mediaFilters.js';
 const hasPoster = item => !!item.poster_path;
 const MIN_RAIL_SIZE = 14;
 
-// Curated genres for dedicated "New in ___" rails. Movie and TV don't share
-// a genre taxonomy — e.g. movie "Action" (28) vs TV "Action & Adventure"
-// (10759), movie "Science Fiction" (878) vs TV "Sci-Fi & Fantasy" (10765) —
-// so each rail carries its own per-type id rather than resolving one id from
-// the merged genre list.
-//
-// Some genres have no TV category at all (Horror, Thriller, Romance) — those
-// pull TV via keyword instead (found via /search/keyword) and get tagged with
-// the movie genre id below so the shared genre filter treats them
-// consistently. "True Crime" isn't a TMDB genre on either side, so both
-// movie and TV pull by keyword — no tagging needed there since "True Crime"
-// was never a selectable option in the genre filter dropdown to begin with.
-export const GENRE_RAILS = [
-  { key: 'horror',      label: 'New in Horror',      movieGenreId: 27,   tvGenreId: null,   tvKeywordId: 315058 },
-  { key: 'comedy',      label: 'New in Comedy',      movieGenreId: 35,   tvGenreId: 35,     tvKeywordId: null   },
-  { key: 'action',      label: 'New in Action',      movieGenreId: 28,   tvGenreId: 10759,  tvKeywordId: null   },
-  { key: 'scifi',       label: 'New in Sci-Fi',      movieGenreId: 878,  tvGenreId: 10765,  tvKeywordId: null   },
-  { key: 'thriller',    label: 'New in Thriller',    movieGenreId: 53,   tvGenreId: null,   tvKeywordId: 316362 },
-  { key: 'romance',     label: 'New in Romance',     movieGenreId: 10749, tvGenreId: null,  tvKeywordId: 9840   },
-  { key: 'drama',       label: 'New in Drama',       movieGenreId: 18,   tvGenreId: 18,     tvKeywordId: null   },
-  { key: 'documentary', label: 'New in Documentary', movieGenreId: 99,   tvGenreId: 99,     tvKeywordId: null   },
-  { key: 'truecrime',   label: 'New in True Crime',  movieKeywordId: 33722, tvKeywordId: 33722 },
-  // Reality is a TV-only TMDB genre — no movie side at all.
-  { key: 'reality',     label: 'New in Reality TV',  tvGenreId: 10764 },
-];
+/**
+ * Build one rail for every genre returned by TMDB. Movie and TV catalogs are
+ * joined by name only when the category is genuinely shared; distinct names
+ * such as "Action" and "Action & Adventure" remain separate sections.
+ *
+ * @param {{movie?:Array<{id:number,name:string}>,tv?:Array<{id:number,name:string}>}} catalog
+ */
+export function buildGenreRailDefinitions(catalog) {
+  const rails = new Map();
+  const add = (genre, type) => {
+    const existing = rails.get(genre.name) || {
+      key: genre.name.toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
+      label: `New in ${genre.name}`,
+      genreIds: [],
+    };
+    existing[`${type}GenreId`] = genre.id;
+    if (!existing.genreIds.includes(genre.id)) existing.genreIds.push(genre.id);
+    rails.set(genre.name, existing);
+  };
+  (catalog?.movie || []).forEach(genre => add(genre, 'movie'));
+  (catalog?.tv || []).forEach(genre => add(genre, 'tv'));
+  return [...rails.values()].sort((a, b) => a.label.localeCompare(b.label));
+}
 
 /**
  * Prepare the genre-only New Releases page. A narrowed genre selection owns
@@ -47,10 +45,7 @@ export function prepareNewReleaseGenreRails(genreRails, typeFilters, genreFilter
   return (genreRails || [])
     .filter(rail => {
       if (!selectedGenres.size) return true;
-      const definition = GENRE_RAILS.find(item => item.key === rail.key);
-      return [definition?.movieGenreId, definition?.tvGenreId]
-        .filter(Boolean)
-        .some(id => selectedGenres.has(id));
+      return (rail.genreIds || []).some(id => selectedGenres.has(id));
     })
     .map(rail => ({
       ...rail,
@@ -61,29 +56,32 @@ export function prepareNewReleaseGenreRails(genreRails, typeFilters, genreFilter
     .sort((a, b) => a.title.localeCompare(b.title));
 }
 
-async function loadGenreRail({ movieGenreId, movieKeywordId, tvGenreId, tvKeywordId }, hideKids) {
-  const [movieGenreRes, movieKeywordRes, tvGenreRes, tvKeywordRes] = await Promise.all([
-    movieGenreId   ? tmdb.discoverNewestByGenre('movie', movieGenreId).catch(() => null)     : Promise.resolve(null),
-    movieKeywordId ? tmdb.discoverNewestByKeyword('movie', movieKeywordId).catch(() => null) : Promise.resolve(null),
-    tvGenreId       ? tmdb.discoverNewestByGenre('tv', tvGenreId).catch(() => null)     : Promise.resolve(null),
-    tvKeywordId     ? tmdb.discoverNewestByKeyword('tv', tvKeywordId).catch(() => null) : Promise.resolve(null),
-  ]);
-  const movies = [
-    ...(movieGenreRes?.results || []),
-    ...(movieKeywordRes?.results || []),
-  ].map(m => ({ ...m, media_type: 'movie' }));
-  const tvByGenre = (tvGenreRes?.results || []).map(s => ({ ...s, media_type: 'tv' }));
-  // TV sourced by keyword (not genre) doesn't carry the matching genre id in
-  // genre_ids — tag it with the movie genre id so the shared genre filter
-  // dropdown (which only ever offers the movie id for these) keeps it
-  // instead of hiding it as "no matching genre." Skipped when there's no
-  // movie genre id to tag with (True Crime).
-  const tvByKeyword = (tvKeywordRes?.results || []).map(s => ({
-    ...s,
-    media_type: 'tv',
-    genre_ids: movieGenreId ? [...new Set([...(s.genre_ids || []), movieGenreId])] : s.genre_ids,
+/**
+ * Apply the client-side cinema distinction used by the shared type filter.
+ * Genre discovery returns plain movies, so match those movies against TMDB's
+ * regional now-playing feed before exposing the rails to filterByType.
+ *
+ * @param {Array<{key:string,label:string,items?:Array}>} genreRails
+ * @param {Array<{id?:number}>} nowPlaying
+ */
+export function tagCinemaReleases(genreRails, nowPlaying) {
+  const cinemaIds = new Set((nowPlaying || []).map(item => item.id));
+  return (genreRails || []).map(rail => ({
+    ...rail,
+    items: (rail.items || []).map(item => item.media_type === 'movie'
+      ? { ...item, _cinema: cinemaIds.has(item.id) }
+      : item),
   }));
-  return excludeKidsContent([...movies, ...tvByGenre, ...tvByKeyword].filter(isEnglishOriginTitle), hideKids)
+}
+
+async function loadGenreRail({ movieGenreId, tvGenreId }, hideKids) {
+  const [movieGenreRes, tvGenreRes] = await Promise.all([
+    movieGenreId   ? tmdb.discoverNewestByGenre('movie', movieGenreId).catch(() => null)     : Promise.resolve(null),
+    tvGenreId       ? tmdb.discoverNewestByGenre('tv', tvGenreId).catch(() => null)     : Promise.resolve(null),
+  ]);
+  const movies = (movieGenreRes?.results || []).map(m => ({ ...m, media_type: 'movie' }));
+  const tv = (tvGenreRes?.results || []).map(s => ({ ...s, media_type: 'tv' }));
+  return excludeKidsContent([...movies, ...tv].filter(isEnglishOriginTitle), hideKids)
     .filter(hasPoster)
     .sort((a, b) => (b.release_date || b.first_air_date || '').localeCompare(a.release_date || a.first_air_date || ''))
     .slice(0, Math.max(MIN_RAIL_SIZE, 18));
@@ -102,9 +100,11 @@ export function useNewReleases({ hideKids = false } = {}) {
       setLoading(true);
       setData(emptyData);
       try {
-        const [recentReleases, ...genreResults] = await Promise.all([
+        const genreDefinitions = buildGenreRailDefinitions(await tmdb.getGenreCatalog());
+        const [recentReleases, nowPlaying, ...genreResults] = await Promise.all([
           tmdb.getRecentReleases(30, []),
-          ...GENRE_RAILS.map(rail => loadGenreRail(rail, hideKids)),
+          tmdb.getNowPlaying(),
+          ...genreDefinitions.map(rail => loadGenreRail(rail, hideKids)),
         ]);
 
         if (cancelled) return;
@@ -120,7 +120,15 @@ export function useNewReleases({ hideKids = false } = {}) {
           return true;
         }).filter(hasPoster).slice(0, Math.max(MIN_RAIL_SIZE, 18));
 
-        const genreRails = GENRE_RAILS.map((rail, i) => ({ key: rail.key, label: rail.label, items: genreResults[i] }));
+        const genreRails = tagCinemaReleases(
+          genreDefinitions.map((rail, i) => ({
+            key: rail.key,
+            label: rail.label,
+            genreIds: rail.genreIds,
+            items: genreResults[i],
+          })),
+          nowPlaying?.results || [],
+        );
 
         setData({ recent, genreRails });
       } catch (error) {

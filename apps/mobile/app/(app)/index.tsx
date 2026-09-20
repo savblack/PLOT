@@ -74,8 +74,7 @@ interface MediaItem {
   first_air_date?: string | null;
   original_language?: string;
   origin_country?: string[];
-  /** Needed by the genre filter; keyword-sourced TV rails are tagged with the
-   *  equivalent movie genre id so they survive it (see GENRE_RAILS). */
+  /** Needed by the shared genre filter. */
   genre_ids?: number[];
   /** Client-side flag for "in cinemas, no digital offer yet" — the type
    *  filter's `cinema` option keys off this, not off a TMDB media_type. */
@@ -469,8 +468,7 @@ function NewReleasesContent({ hideKids, typeFilters, genreFilters, savedIds, onS
     ...data.genreRails
       .map((rail: { key: string; label: string; items: MediaItem[] }) => ({ ...rail, items: applyFilters(rail.items) }))
       .filter((rail: { items: MediaItem[] }) => rail.items.length > 0)
-      // GENRE_RAILS labels are already "New in Horror" — the kicker carries
-      // the section name, so the title drops the prefix web repeats.
+      // Rail labels already include the genre; the kicker carries the section context.
       .map((rail: { key: string; label: string; items: MediaItem[] }) => ({
         key: rail.key, kicker: 'New releases', title: rail.label, items: rail.items,
       })),
