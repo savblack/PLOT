@@ -37,24 +37,22 @@
 .pp-section-heading .btn { flex-shrink: 0; }
 .pp-featured { margin-top: 36px; }
 
-/* Top 5: five equal columns, never wraps. */
+/* Top 5: five equal columns, never wraps. A pick is its own query container so
+   its rank numeral is a share of the column, from a 60px phone poster to a
+   190px one on the desktop (see .rank-cut in app.css). */
 .pp-top5 { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 16px; }
-.pp-top5-pick { margin: 0; min-width: 0; }
+.pp-top5-pick { margin: 0; min-width: 0; container-type: inline-size; --rank-cut-size: 36cqw; }
 .pp-top5-pick figcaption { margin-top: 10px; font-size: 14px; font-weight: 600; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
-/* Posters (Top 5 and rails). */
+/* Posters (Top 5 and rails). The Top 5's rank is the pink numeral cut out of
+   the poster's corner (.rank-cut in app.css). */
 .pp-poster { position: relative; aspect-ratio: 2 / 3; border-radius: 12px; overflow: hidden; background: var(--surface-sunken); cursor: pointer; transition: transform 0.2s var(--ease); }
-.pp-ranked-poster { position: relative; }
-.pp-poster-rank { position: absolute; right: 10px; top: 10px; min-width: 28px; height: 28px; padding: 0 8px; border-radius: var(--radius-pill); display: flex; align-items: center; justify-content: center; background: var(--accent-fill); color: var(--on-accent-fill); font-family: var(--font-display); font-weight: 700; font-size: 14px; z-index: 2; pointer-events: none; }
 .pp-poster:hover { transform: scale(0.98); }
 .pp-poster img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .pp-poster-fallback { display: flex; align-items: center; justify-content: center; height: 100%; padding: 0.6rem; font-size: 0.8rem; line-height: 1.3; text-align: center; color: var(--text-muted); }
 .pp-poster:hover .card-fav-btn, .pp-poster:focus-within .card-fav-btn,
 .pp-poster:hover .card-save-btn, .pp-poster:focus-within .card-save-btn { opacity: 1; }
 .pp-poster .card-save-btn.saved { opacity: 1; }
-/* The rank owns the top-right corner, so the hover actions use the bottom corners. */
-.pp-top5 .card-fav-btn { top: auto; bottom: 6px; right: 6px; }
-.pp-top5 .card-save-btn { top: auto; bottom: 6px; left: 6px; }
 .pp-rail { display: flex; gap: 14px; overflow-x: auto; scrollbar-width: none; cursor: grab; }
 .pp-rail::-webkit-scrollbar { display: none; }
 .pp-rail:active { cursor: grabbing; }
@@ -112,7 +110,6 @@
   .pp-top5 { gap: 6px; }
   .pp-top5-pick figcaption { display: none; }
   .pp-top5 .pp-poster { border-radius: 8px; }
-  .pp-top5 .pp-poster-rank { min-width: 20px; height: 20px; padding: 0 5px; right: 5px; top: 5px; font-size: 11px; }
   .pp-top5 .card-fav-btn, .pp-top5 .card-save-btn { display: none; }
   .pp-profile-columns { grid-template-columns: minmax(0, 1fr); gap: 0; }
   .pp-list-covers { gap: 16px 12px; }
