@@ -42,6 +42,7 @@ import { track, EVENTS, captureException } from '../lib/analytics';
 import { fetchVerifiedAvailability, offersFromTmdb, networksFromDetails, regionDisplayName } from '@plot/core/availability.js';
 import { fetchCriticScore, pickAudienceQuote, getConsensusLine, audienceScoreFromDetails } from '@plot/core/reviews.js';
 import { canCreateCustomList } from '@plot/core/premium.js';
+import { TOP_LIST_SIZE } from '@plot/core/listCollections.js';
 import { TrailerPlayer } from './TrailerPlayer';
 import CollectionCard from './CollectionCard';
 import { MEDIA } from '@plot/core/copy/media.js';
@@ -481,7 +482,7 @@ function AddToListSheet({ item, customLists, topLists, onClose }: {
           <View style={styles.lsTopSection}>
             <TouchableOpacity style={styles.lsRow} onPress={() => setTopOpen(o => !o)} activeOpacity={0.7}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.lsName}>Top 10 {topListType === 'tv' ? 'TV Shows' : 'Movies'}</Text>
+                <Text style={styles.lsName}>{topListType === 'tv' ? MEDIA_PANEL.topFiveTvShows : MEDIA_PANEL.topFiveMovies}</Text>
                 <Text style={styles.lsCount}>{currentRank ? MEDIA_PANEL.currentlyRanked(currentRank) : MEDIA_PANEL.notRanked}</Text>
               </View>
               <View style={[styles.lsCheck, currentRank && styles.lsCheckOn]}>
@@ -490,7 +491,7 @@ function AddToListSheet({ item, customLists, topLists, onClose }: {
             </TouchableOpacity>
             {topOpen && (
               <View style={styles.lsTopGrid}>
-                {Array.from({ length: 10 }, (_, i) => i + 1).map(rank => {
+                {Array.from({ length: TOP_LIST_SIZE }, (_, i) => i + 1).map(rank => {
                   const occupant = topItems.find((t: any) => t.rank === rank);
                   const isThis = occupant?.tmdb_id === item.id;
                   return (
@@ -584,7 +585,7 @@ function AddToListSheet({ item, customLists, topLists, onClose }: {
             <View style={styles.lsHandle} />
             <Text style={styles.lsTitle}>Move "{moveToPicker.occupant.title}" to...</Text>
             <View style={styles.lsTopGrid}>
-              {Array.from({ length: 10 }, (_, i) => i + 1)
+              {Array.from({ length: TOP_LIST_SIZE }, (_, i) => i + 1)
                 .filter(r => r !== moveToPicker.rank && !topItems.find((t: any) => t.rank === r))
                 .map(r => (
                   <TouchableOpacity
@@ -601,7 +602,7 @@ function AddToListSheet({ item, customLists, topLists, onClose }: {
                   </TouchableOpacity>
                 ))}
             </View>
-            {Array.from({ length: 10 }, (_, i) => i + 1).filter(r => r !== moveToPicker.rank && !topItems.find((t: any) => t.rank === r)).length === 0 && (
+            {Array.from({ length: TOP_LIST_SIZE }, (_, i) => i + 1).filter(r => r !== moveToPicker.rank && !topItems.find((t: any) => t.rank === r)).length === 0 && (
               <Text style={styles.lsEmpty}>No open spots — every other rank is taken.</Text>
             )}
           </View>

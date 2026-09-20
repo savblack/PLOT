@@ -24,6 +24,7 @@ import CreditsGrid from './TalentCredits.jsx';
 import CollectionCard from './CollectionCard.jsx';
 import { creditMeta, creditTitle, dedupedActingCredits, mediaType, shortBiography } from '../utils/talentCredits.js';
 import { canCreateCustomList } from '@plot/core/premium.js';
+import { TOP_LIST_SIZE } from '@plot/core/listCollections.js';
 import { buildWatchLink } from '@plot/core/watchLinks.js';
 import {
   getLastSeasonNumber,
@@ -841,7 +842,7 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
             >
               <div>
                 <div style={{ fontWeight: 500, fontSize: '0.875rem', color: 'var(--text-primary)' }}>
-                  Top 10 {topListType === 'tv' ? MEDIA_PANEL.top10TvShows : MEDIA_PANEL.top10Movies}
+                  {topListType === 'tv' ? MEDIA_PANEL.topFiveTvShows : MEDIA_PANEL.topFiveMovies}
                 </div>
                 <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
                   {currentRank ? MEDIA_PANEL.currentlyRanked(currentRank) : MEDIA_PANEL.notRanked}
@@ -862,7 +863,7 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
                 display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.4rem',
                 padding: '0 1rem 0.75rem',
               }}>
-                {Array.from({ length: 10 }, (_, i) => i + 1).map(rank => {
+                {Array.from({ length: TOP_LIST_SIZE }, (_, i) => i + 1).map(rank => {
                   const occupant = topItems.find(t => t.rank === rank);
                   const isThis = occupant?.tmdb_id === itemId;
                   return (
@@ -952,7 +953,7 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
                     Move "{rankConflict.occupant.title}" to which open spot?
                   </p>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.4rem' }}>
-                    {Array.from({ length: 10 }, (_, i) => i + 1)
+                    {Array.from({ length: TOP_LIST_SIZE }, (_, i) => i + 1)
                       .filter(r => r !== rankConflict.rank && !topItems.find(t => t.rank === r))
                       .map(r => (
                         <button
@@ -974,7 +975,7 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
                         </button>
                       ))}
                   </div>
-                  {Array.from({ length: 10 }, (_, i) => i + 1).filter(r => r !== rankConflict.rank && !topItems.find(t => t.rank === r)).length === 0 && (
+                  {Array.from({ length: TOP_LIST_SIZE }, (_, i) => i + 1).filter(r => r !== rankConflict.rank && !topItems.find(t => t.rank === r)).length === 0 && (
                     <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>No open spots. Every other rank is taken.</div>
                   )}
                   <button onClick={() => setPickingMoveTo(false)} style={pillButtonStyle('muted')}>

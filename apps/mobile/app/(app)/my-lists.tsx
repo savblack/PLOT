@@ -598,11 +598,11 @@ export default function MyListsScreen() {
           </CollapsibleSection>
         )}
 
-        {/* ── Top 10 ── */}
+        {/* ── Top 5 ── */}
         {showTop10 && (
           <CollapsibleSection
             id="top10"
-            label="Top 10"
+            label="Top 5"
             open={sectionsOpen.top10}
             onOpenChange={(next) => setSectionOpenFor('top10', next)}
           >

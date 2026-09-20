@@ -182,7 +182,7 @@ export default function ListPage() {
   return (
     <div className="empty-state" style={{ marginTop: '1rem' }}>
       <div className="empty-title">List not found</div>
-      <div className="empty-body">{fw.plural}, Want to Watch, your Top 10s and your own lists live on My Lists.</div>
+      <div className="empty-body">{fw.plural}, Want to Watch, your Top 5s and your own lists live on My Lists.</div>
       <button type="button" className="btn btn-ghost btn-sm" onClick={() => navigate('/my-lists')}>Back to My Lists</button>
     </div>
   );
