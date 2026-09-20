@@ -211,16 +211,11 @@ function PosterCard({ item, ranked, i, openPanel, watchlist, imageSize = 'w185' 
       <SaveBtn item={item} watchlist={watchlist} />
     </div>
   );
-  // A ranked pick carries its numeral cut out of the poster's bottom-left
-  // corner (.rank-cut in app.css). The frame is what clips it, so the poster
-  // itself stays the plain one every other surface on the page uses.
   if (!ranked) return poster;
-  return (
-    <div className="rank-cut-frame">
-      {poster}
-      <span className="rank-cut">{item.rank ?? i + 1}</span>
-    </div>
-  );
+  return <div className="pp-ranked-poster">
+    {poster}
+    <span className="pp-poster-rank">{item.rank ?? i + 1}</span>
+  </div>;
 }
 
 function TopFiveGrid({ items, openPanel, watchlist }) {
