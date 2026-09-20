@@ -61,9 +61,11 @@
 .pp-rail:active { cursor: grabbing; }
 .pp-rail .pp-poster { flex: 0 0 auto; width: 120px; }
 
-/* Lists + history side by side; one column collapses to a single 600px column. */
+/* Lists + favourites sit side by side. A lone list section gets the wider
+   content column; lone favourites retain the approved 136px poster scale. */
 .pp-profile-columns { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 64px; align-items: stretch; margin-top: 52px; }
-.pp-profile-columns:has(> :only-child) { grid-template-columns: minmax(0, 1fr); max-width: 640px; }
+.pp-profile-columns:has(> #pp-profile-lists:only-child) { grid-template-columns: minmax(0, 1fr); max-width: 640px; }
+.pp-profile-columns:has(> #pp-profile-favourites:only-child) { grid-template-columns: minmax(0, 440px); max-width: 440px; }
 .pp-profile-columns .pp-section { margin-top: 0; }
 #pp-profile-lists .pp-section-heading { margin-bottom: 30px; }
 .pp-list-covers { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px 24px; }
