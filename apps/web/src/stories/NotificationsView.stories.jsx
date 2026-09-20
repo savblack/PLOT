@@ -20,9 +20,10 @@ const requests = [
 ];
 export default {
   title: 'Pages/Notifications', component: NotificationsPage, parameters: { layout: 'fullscreen' },
-  args: { list, requests, loading: false, now, onApprove: () => {}, onDecline: () => {}, onOpen: () => {}, wasUnread: n => !n.read_at },
+  args: { list, requests, loading: false, now, onApprove: () => {}, onDecline: () => {}, onOpen: () => {}, onMarkAllRead: () => {}, wasUnread: n => !n.read_at },
   decorators: [(Story) => <MemoryRouter><Story /></MemoryRouter>],
 };
 export const Full = {};
 export const NoRequests = { args: { requests: [] } };
+export const CaughtUp = { args: { requests: [], wasUnread: () => false } };
 export const Empty = { args: { list: [], requests: [] } };

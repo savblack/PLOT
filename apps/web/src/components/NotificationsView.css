@@ -1,10 +1,19 @@
 /* Notifications on the History shell (.hist-page, .hist-toolbar, .hist-card,
    .cal-stream-month). Only the notification-specific parts live here. */
-.notif-page { max-width: 760px; }
-.notif-body { display: flex; flex-direction: column; gap: 28px; }
-.notif-section { display: flex; flex-direction: column; gap: 12px; }
+.notif-page { max-width: 760px; margin-inline: auto; }
+.notif-toolbar { min-height: 58px; }
+.notif-body { display: flex; flex-direction: column; gap: 24px; }
+.notif-section { display: flex; flex-direction: column; gap: 10px; }
 .notif-status { padding: 8px 4px; }
-.notif-hint { padding: 0 4px; }
+
+/* A quiet completion panel: present enough to close the unread loop, without
+   competing with the older notifications that remain useful below it. */
+.notif-caught-up { display: flex; align-items: center; gap: 12px; margin: 12px 0 26px; padding: 14px 16px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); }
+.notif-caught-up-icon { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; flex-shrink: 0; border-radius: 50%; background: var(--accent-dim); color: var(--accent-text); }
+.notif-caught-up-icon svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.notif-caught-up-copy { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.notif-caught-up-copy strong { font-family: var(--font-display); font-size: 15px; font-weight: 700; letter-spacing: var(--font-display-tracking); color: var(--text-primary); }
+.notif-caught-up-copy span { font-size: 12.5px; line-height: 1.45; color: var(--text-secondary); }
 
 /* Requests: cards, two across, Approve as the pink fill. */
 .notif-request-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
@@ -29,8 +38,8 @@
 .notif-rollup-text strong { font-weight: 600; }
 
 /* Everything else: day groups of hairline rows, a pink dot for unread. */
-.notif-group { display: flex; flex-direction: column; gap: 4px; }
-.notif-group-label { font-size: 10px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: var(--text-muted); padding: 8px 4px 0; }
+.notif-group { display: flex; flex-direction: column; gap: 6px; }
+.notif-group-label { padding: 4px 4px 0; font-family: var(--font-display); font-size: 22px; font-weight: 700; line-height: 1; letter-spacing: var(--font-display-tracking); color: var(--text-primary); }
 .notif-rows { display: flex; flex-direction: column; }
 .notif-row { display: flex; align-items: center; gap: 14px; width: 100%; padding: 12px 4px; border: 0; border-bottom: 1px solid var(--border); background: none; text-align: left; cursor: pointer; font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
 .notif-row:last-child { border-bottom: 0; }
@@ -42,9 +51,12 @@
 .notif-time { white-space: nowrap; flex-shrink: 0; }
 
 @media (max-width: 760px) {
+  .notif-caught-up { margin-top: 8px; }
   .notif-request-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 359px) {
   .notif-request { flex-wrap: wrap; }
   .notif-request-actions { width: 100%; padding-left: 56px; }
-  .notif-rollup { flex-wrap: wrap; }
   .notif-rollup .notif-time { display: none; }
 }

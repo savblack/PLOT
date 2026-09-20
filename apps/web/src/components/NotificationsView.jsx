@@ -28,13 +28,26 @@ function Avatar({ url, name, small = false, kind }) {
 }
 
 /** Pure layout; data comes from the hooks in NotificationsView (and from a story). */
-export function NotificationsPage({ list, requests, loading, onApprove, onDecline, onOpen, now, wasUnread = () => false }) {
+export function NotificationsPage({ list, requests, loading, onApprove, onDecline, onOpen, onMarkAllRead, now, wasUnread = () => false }) {
   const { rollup, groups } = useMemo(() => groupNotifications(list, now), [list, now]);
   const unread = list.filter(wasUnread).length;
   const empty = !loading && list.length === 0 && requests.length === 0;
   const labels = { today: T.today, yesterday: T.yesterday, earlier: T.earlier };
   return <div className="hist-page notif-page">
-    <div className="hist-toolbar"><span className="hist-toolbar-sub">{unread ? T.newCount(unread) : T.upToDate}</span></div>
+    {unread > 0
+      ? <div className="hist-toolbar notif-toolbar">
+        <span className="hist-toolbar-sub">{T.unreadCount(unread)}</span>
+        <button type="button" className="btn btn-secondary btn-sm" onClick={onMarkAllRead}>{T.markAllRead}</button>
+      </div>
+      : !loading && !empty && <div className="notif-caught-up" role="status">
+        <span className="notif-caught-up-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><polyline points="5 12.5 9.5 17 19 7.5" /></svg>
+        </span>
+        <span className="notif-caught-up-copy">
+          <strong>{T.upToDate}</strong>
+          <span>{T.upToDateBody}</span>
+        </span>
+      </div>}
     {loading ? <p className="hist-card-note notif-status" role="status">{COMMON.loading}</p>
       : empty ? <div className="empty-state"><div className="empty-title">{NOTIFICATIONS_EMPTY.title}</div><div className="empty-body">{NOTIFICATIONS_EMPTY.body}</div></div>
       : <div className="notif-body">
@@ -53,7 +66,6 @@ export function NotificationsPage({ list, requests, loading, onApprove, onDeclin
               </span>
             </div>)}
           </div>
-          <p className="hist-card-note notif-hint">{T.approveHint}</p>
         </section>}
 
         {rollup && <section className="notif-section">
@@ -92,17 +104,21 @@ export default function NotificationsView() {
   const navigate = useNavigate();
   const { list, loading, refreshList, markAllRead } = useNotifications(user?.id);
   const { requests, loading: requestsLoading, approve, decline } = useFollowRequests(user?.id);
-  // Which rows were unread when the page opened: the dots keep showing for
-  // this visit even though opening the page clears the badge server-side.
+  // Snapshot the rows that were unread when the page opened. They keep their
+  // dots until the person explicitly uses the Option C "Mark all read" action.
   const [unreadIds, setUnreadIds] = useState(null);
   const [now] = useState(() => Date.now());
   useEffect(() => { refreshList(); }, [refreshList]);
-  useEffect(() => { markAllRead(); }, [markAllRead]);
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- snapshot the unread set once the first load lands
     if (unreadIds === null && !loading && list.length) setUnreadIds(new Set(list.filter(n => !n.read_at || Date.parse(n.read_at) > Date.now() - 5000).map(n => n.id)));
   }, [list, loading, unreadIds]);
+  const handleMarkAllRead = async () => {
+    await markAllRead();
+    setUnreadIds(new Set());
+  };
   return <NotificationsPage list={list} requests={requests} loading={loading || requestsLoading} now={now}
     onApprove={approve} onDecline={decline} onOpen={username => { if (username) navigate(`/u/${username}`); }}
+    onMarkAllRead={handleMarkAllRead}
     wasUnread={n => unreadIds?.has(n.id) ?? false} />;
 }
