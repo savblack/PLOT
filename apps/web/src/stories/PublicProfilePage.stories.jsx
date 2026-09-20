@@ -23,6 +23,7 @@ export const Populated = { args: { topMovies: resolvedTitles.slice(0, 5).map((it
 export const ManyLists = { args: { ...Populated.args, customLists: [
   ...Populated.args.customLists, { id: 'comfort', name: 'Comfort rewatches', items: resolvedTitles.slice(3) }, { id: 'cinema', name: 'Want to see in cinemas', items: resolvedTitles.slice(1, 4) }, { id: 'rainy', name: 'Rainy day', items: resolvedTitles.slice(2, 6) }, { id: 'endings', name: 'Best endings', items: resolvedTitles.slice(0, 2) }, { id: 'seventh', name: 'A seventh list that should not show', items: resolvedTitles.slice(4) },
 ] } };
+export const FavouritesOnly = { args: { ...Populated.args, customLists: [] } };
 export const BothTypes = { args: { ...Populated.args, topTv: resolvedTitles.slice(4) } };
 export const OnePick = { args: { topMovies: titles.slice(0, 1) } };
 export const EmptyOwner = { args: {} };
