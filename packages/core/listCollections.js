@@ -34,6 +34,23 @@ export function titleCount(n, empty = 'Nothing yet') {
 }
 
 /**
+ * Sort a list without mutating its source order.
+ * @template {{ title?: string, name?: string }} T
+ * @param {T[]} items
+ * @param {'list'|'title-asc'|'title-desc'} order
+ * @returns {T[]}
+ */
+export function sortListItems(items, order) {
+  if (order === 'list') return items;
+  const direction = order === 'title-desc' ? -1 : 1;
+  return [...items].sort((a, b) => {
+    const aTitle = a.title || a.name || '';
+    const bTitle = b.title || b.name || '';
+    return aTitle.localeCompare(bTitle) * direction;
+  });
+}
+
+/**
  * Want to Watch: the watchlist minus anything being watched, soonest
  * upcoming release first, then what is already out.
  *

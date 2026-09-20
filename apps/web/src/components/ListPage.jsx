@@ -4,24 +4,27 @@ import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
+import { useGenres } from '../hooks/useGenres.js';
 import { useShare } from '../hooks/useShare.js';
 import { favoriteWords } from '../utils/spelling.js';
 import { EVENTS } from '../lib/analytics.js';
 import { ALL_TYPES, filterByTypeAndGenre } from '@plot/core/mediaFilters.js';
-import { customListIdFromKey, customListKey, titleCount, wantToWatchItems } from '@plot/core/listCollections.js';
+import { customListIdFromKey, customListKey, sortListItems, titleCount, wantToWatchItems } from '@plot/core/listCollections.js';
 import { localDateStr } from '../utils/date.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
-import { TypeGenreFilter } from './ListCards.jsx';
 import { CustomListSection, FavoritesSection, WantToWatchSection } from './ListSections.jsx';
 import { IconSearch } from './navIcons.jsx';
+import SideFilters from './SideFilters.jsx';
+import KebabMenu from './KebabMenu.jsx';
 
 const GridIcon = () => <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5" /><rect x="13" y="4" width="7" height="7" rx="1.5" /><rect x="4" y="13" width="7" height="7" rx="1.5" /><rect x="13" y="13" width="7" height="7" rx="1.5" /></svg>;
 const RowsIcon = () => <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="5.5" height="5.5" rx="1.5" /><rect x="3" y="13.5" width="5.5" height="5.5" rx="1.5" /><path d="M12 6.5h9M12 9.5h6M12 15h9M12 18h6" /></svg>;
+const SortIcon = () => <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4v16M5 7l3-3 3 3M16 20V4M13 17l3 3 3-3" /></svg>;
 
-function ListPageFrame({ title, subtitle, count, filter, headerRight, collections, activeKey, onOpen, query, onQuery, view, onView, children }) {
+function ListPageFrame({ title, subtitle, count, filter, headerRight, collections, activeKey, onOpen, query, onQuery, view, onView, onSort, children }) {
   return (
     <section className={`list-page list-page--${view}`}>
-      <Link className="list-page-back" to="/my-lists"><span aria-hidden="true">‹</span> My Lists</Link>
+      <Link className="list-page-back list-page-back--mobile" to="/my-lists"><span aria-hidden="true">‹</span> {CUSTOM_LISTS.backToMyLists}</Link>
       <header className="list-page-head">
         <div className="list-page-heading">
           <h1 className="list-page-title">{title}</h1>
@@ -42,10 +45,19 @@ function ListPageFrame({ title, subtitle, count, filter, headerRight, collection
         </aside>
         <div className="list-page-stream">
           <div className="list-page-toolbar">
-            <span className="list-page-sort">{CUSTOM_LISTS.listOrder}</span>
             <div className="list-page-toolbar-actions">
               <button type="button" className="list-page-view" aria-label={CUSTOM_LISTS.gridView} aria-pressed={view === 'grid'} onClick={() => onView('grid')}><GridIcon /></button>
               <button type="button" className="list-page-view" aria-label={CUSTOM_LISTS.listView} aria-pressed={view === 'rows'} onClick={() => onView('rows')}><RowsIcon /></button>
+              <KebabMenu
+                ariaLabel={CUSTOM_LISTS.sortList}
+                buttonClassName="list-page-view"
+                trigger={<SortIcon />}
+                items={[
+                  { label: CUSTOM_LISTS.listOrder, onClick: () => onSort('list') },
+                  { label: CUSTOM_LISTS.titleAscending, onClick: () => onSort('title-asc') },
+                  { label: CUSTOM_LISTS.titleDescending, onClick: () => onSort('title-desc') },
+                ]}
+              />
               <div className="list-page-actions">{headerRight}</div>
             </div>
           </div>
@@ -60,12 +72,14 @@ export default function ListPage() {
   const { key } = useParams();
   const navigate = useNavigate();
   const { user, profile, topLists, favorites, customLists, watching, watchlist } = useApp();
+  const { genres } = useGenres();
   const fw = favoriteWords(profile?.region);
   const { share, copied } = useShare();
   const [typeFilters,  setTypeFilters]  = useState(ALL_TYPES);
   const [genreFilters, setGenreFilters] = useState([]);
   const [query, setQuery] = useState('');
   const [view, setView] = useState('auto');
+  const [sort, setSort] = useState('list');
   const [narrow, setNarrow] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 1023px)').matches);
   useEffect(() => {
     const media = window.matchMedia('(max-width: 1023px)');
@@ -99,6 +113,8 @@ export default function ListPage() {
     return term ? items.filter(item => (item.title || item.name || '').toLowerCase().includes(term)) : items;
   }, [query]);
 
+  const sortItems = useCallback((items) => sortListItems(items, sort), [sort]);
+
   const showFilter = key === 'want' || key === 'favorites';
 
   // One frame component per page, memoised so the list inside it keeps its
@@ -108,7 +124,15 @@ export default function ListPage() {
       return (
         <ListPageFrame
           count={props.count}
-          filter={showFilter && <TypeGenreFilter ariaLabel={`Filter ${props.title}`} typeFilters={typeFilters} setTypeFilters={setTypeFilters} genreFilters={genreFilters} setGenreFilters={setGenreFilters} />}
+          filter={showFilter && (
+            <SideFilters
+              typeFilters={typeFilters}
+              setTypeFilters={setTypeFilters}
+              genreFilters={genreFilters}
+              setGenreFilters={setGenreFilters}
+              genres={genres}
+            />
+          )}
           collections={collections}
           activeKey={key}
           onOpen={(nextKey) => navigate(`/my-lists/${nextKey}`)}
@@ -116,11 +140,12 @@ export default function ListPage() {
           onQuery={setQuery}
           view={resolvedView}
           onView={setView}
+          onSort={setSort}
           {...props}
         />
       );
     };
-  }, [key, showFilter, typeFilters, genreFilters, collections, navigate, query, resolvedView]);
+  }, [key, showFilter, typeFilters, genreFilters, genres, collections, navigate, query, resolvedView]);
 
   if (!user) return null;
   if (topLists.loading || favorites.loading || customLists.loading || watchlist.loading || watching.loading) {
@@ -128,18 +153,18 @@ export default function ListPage() {
   }
 
   if (key === 'want') {
-    const items = matchQuery(filterByTypeAndGenre(want, typeFilters, genreFilters));
+    const items = sortItems(matchQuery(filterByTypeAndGenre(want, typeFilters, genreFilters)));
     return <WantToWatchSection items={items} count={want.length} narrowed={false} Frame={Frame} pageLayout />;
   }
   if (key === 'favorites') {
-    return <FavoritesSection favorites={favorites} visibleItems={matchQuery(filterByTypeAndGenre(favorites.favorites, typeFilters, genreFilters))} count={favorites.favorites.length} typeFilters={typeFilters} genreFilters={genreFilters} narrowed={false} Frame={Frame} pageLayout />;
+    return <FavoritesSection favorites={favorites} visibleItems={sortItems(matchQuery(filterByTypeAndGenre(favorites.favorites, typeFilters, genreFilters)))} count={favorites.favorites.length} typeFilters={typeFilters} genreFilters={genreFilters} narrowed={false} Frame={Frame} pageLayout />;
   }
   if (list) {
     return (
       <CustomListSection
         key={customListKey(list.id)}
         list={list}
-        visibleItems={matchQuery(list.items || [])}
+        visibleItems={sortItems(matchQuery(list.items || []))}
         count={(list.items || []).length}
         customLists={customLists}
         typeFilters={ALL_TYPES}

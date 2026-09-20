@@ -11,6 +11,7 @@ import { supabase } from './supabase.js';
  *   reload: () => Promise<void>;
  *   setSlot: (listType: string, rank: number, item: any) => Promise<any>;
  *   removeSlot: (listType: string, tmdbId: number) => Promise<any>;
+ *   moveToRank: (listType: string, rank: number, targetRank: number) => Promise<any>;
  *   moveUp: (listType: string, rank: number) => any;
  *   moveDown: (listType: string, rank: number) => any;
  * }}
@@ -185,5 +186,5 @@ export function useTopLists(userId) {
   const moveUp   = useCallback((listType, rank) => moveToRank(listType, rank, rank - 1), [moveToRank]);
   const moveDown = useCallback((listType, rank) => moveToRank(listType, rank, rank + 1), [moveToRank]);
 
-  return { lists, loading, error, reload: load, setSlot, removeSlot, moveUp, moveDown };
+  return { lists, loading, error, reload: load, setSlot, removeSlot, moveToRank, moveUp, moveDown };
 }
