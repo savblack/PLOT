@@ -159,6 +159,7 @@ svg { stroke-width: 1.5; }
    the sections from the centred column — and so never lined up. Hidden below
    the sidebar breakpoint, where the app header still carries the title. */
 .app-page-heading.app-page-heading--with-subtitle { margin-bottom: .5rem; }
+.app-page-heading.app-page-heading--guide { margin-bottom: 0; }
 .app-page-subtitle {
   margin: 0;
   padding: 0 var(--gut);
