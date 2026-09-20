@@ -415,10 +415,10 @@ export function SubHead({ label, count, badge, children }) {
   );
 }
 
-export function HeaderIconButton({ label, onClick, danger = false, children }) {
+export function HeaderIconButton({ label, onClick, danger = false, success = false, children }) {
   return (
     <button
-      className="date-group-action-btn date-group-action-btn--plain"
+      className={`date-group-action-btn date-group-action-btn--plain${success ? ' date-group-action-btn--success' : ''}`}
       type="button"
       aria-label={label}
       title={label}
@@ -441,7 +441,7 @@ export function SelectControls({ selection, hasItems, menuLabel, deleteLabel, on
             <TrashIcon />
           </HeaderIconButton>
         )}
-        <HeaderIconButton label="Done selecting" onClick={exit}>
+        <HeaderIconButton label="Done selecting" onClick={exit} success>
           <TickIcon />
         </HeaderIconButton>
       </>
@@ -842,18 +842,35 @@ export function CustomListSection({ list, visibleItems, count, customLists, type
 export function TopFiveSection({ topLists, Frame = ListSection }) {
   const { openPanel } = useApp();
   const [listType,   setListType]   = useState('movies');
-  const [editMode,   setEditMode]   = useState(false);
+  const [editMode,   setEditMode]   = useState(null);
   const [addingRank, setAddingRank] = useState(null);
   const [draggedRank, setDraggedRank] = useState(null);
   const [dragOverRank, setDragOverRank] = useState(null);
+  const [selected, setSelected] = useState(() => new Set());
   const dragging = useRef(false);
 
   const items   = (topLists.lists[listType] || []).filter(i => i.rank <= TOP_LIST_SIZE);
   const maxRank = items.reduce((max, i) => Math.max(max, i.rank), 0);
   const slots   = Array.from({ length: TOP_LIST_SIZE }, (_, i) => i + 1);
   const typeLabel = listType === 'movies' ? 'movie' : 'TV show';
+  const reordering = editMode === 'reorder';
+  const selecting = editMode === 'select';
 
-  const dragTargetProps = (rank) => !editMode ? {} : {
+  const toggleSelected = (tmdbId) => setSelected(current => {
+    const next = new Set(current);
+    if (next.has(tmdbId)) next.delete(tmdbId); else next.add(tmdbId);
+    return next;
+  });
+  const finishEditing = () => {
+    setEditMode(null);
+    setSelected(new Set());
+  };
+  const removeSelected = async () => {
+    await Promise.all([...selected].map(tmdbId => topLists.removeSlot(listType, tmdbId)));
+    finishEditing();
+  };
+
+  const dragTargetProps = (rank) => !reordering ? {} : {
     onDragOver: (event) => { event.preventDefault(); setDragOverRank(rank); },
     onDragLeave: () => setDragOverRank(current => current === rank ? null : current),
     onDrop: async (event) => {
@@ -889,8 +906,8 @@ export function TopFiveSection({ topLists, Frame = ListSection }) {
     return (
       <div
         key={rank}
-        className={`${cls}${editMode ? ' draggable' : ''}${draggedRank === rank ? ' dragging' : ''}${dragOverRank === rank ? ' drag-over' : ''}`}
-        draggable={editMode}
+        className={`${cls}${reordering ? ' draggable' : ''}${draggedRank === rank ? ' dragging' : ''}${dragOverRank === rank ? ' drag-over' : ''}`}
+        draggable={reordering}
         onDragStart={(event) => {
           dragging.current = true;
           setDraggedRank(rank);
@@ -907,8 +924,13 @@ export function TopFiveSection({ topLists, Frame = ListSection }) {
         <button
           type="button"
           className="top5-hit interactive-surface"
-          onClick={() => { if (!dragging.current) openPanel(item.tmdb_id, item.media_type); }}
-          aria-label={`View details for ${item.title}`}
+          onClick={() => {
+            if (dragging.current) return;
+            if (selecting) toggleSelected(item.tmdb_id);
+            else if (!reordering) openPanel(item.tmdb_id, item.media_type);
+          }}
+          aria-label={selecting ? `${selected.has(item.tmdb_id) ? 'Deselect' : 'Select'} ${item.title}` : reordering ? `Reorder ${item.title}` : `View details for ${item.title}`}
+          aria-pressed={selecting ? selected.has(item.tmdb_id) : undefined}
         >
           <span className="rank-cut-frame">
             <span className="top5-poster">
@@ -918,11 +940,17 @@ export function TopFiveSection({ topLists, Frame = ListSection }) {
           </span>
           <span className="top5-title">{item.title}</span>
         </button>
-        {editMode && (
+        {selecting && (
+          <SelectCircle
+            selected={selected.has(item.tmdb_id)}
+            onClick={(event) => { event.stopPropagation(); toggleSelected(item.tmdb_id); }}
+            label={`${selected.has(item.tmdb_id) ? 'Deselect' : 'Select'} ${item.title}`}
+          />
+        )}
+        {reordering && (
           <div className="mylists-top10-controls">
             <button className="top5-reorder-btn" type="button" disabled={rank === 1} onClick={() => topLists.moveUp(listType, rank)} aria-label={`Move ${item.title} up one place`}>‹</button>
             <button className="top5-reorder-btn" type="button" disabled={rank >= maxRank} onClick={() => topLists.moveDown(listType, rank)} aria-label={`Move ${item.title} down one place`}>›</button>
-            <button className="top5-reorder-btn" type="button" onClick={() => topLists.removeSlot(listType, item.tmdb_id)} aria-label={`Remove ${item.title}`}>✕</button>
           </div>
         )}
       </div>
@@ -938,21 +966,31 @@ export function TopFiveSection({ topLists, Frame = ListSection }) {
           role="tab"
           aria-selected={t.id === listType}
           className={`discover-plat-switch-btn${t.id === listType ? ' active' : ''}`}
-          onClick={() => { setListType(t.id); setEditMode(false); }}
+          onClick={() => { setListType(t.id); finishEditing(); }}
         >
           {t.label}
         </button>
       ))}
     </div>
   );
-  const actions = items.length > 1 && (
+  const actions = items.length > 0 && (
     editMode
       ? (
-        <HeaderIconButton label="Done editing" onClick={() => setEditMode(false)}>
-          <span className="mylists-done">{COMMON.done}</span>
-        </HeaderIconButton>
+        <>
+          {selecting && selected.size > 0 && (
+            <HeaderIconButton label={`Remove ${selected.size} selected`} onClick={removeSelected} danger>
+              <TrashIcon />
+            </HeaderIconButton>
+          )}
+          <HeaderIconButton label="Done editing" onClick={finishEditing} success>
+            <TickIcon />
+          </HeaderIconButton>
+        </>
       )
-      : <KebabMenu ariaLabel="Top 5 options" items={[{ label: 'Reorder', onClick: () => setEditMode(true) }]} />
+      : <KebabMenu ariaLabel="Top 5 options" items={[
+        { label: 'Reorder', onClick: () => setEditMode('reorder') },
+        { label: COMMON.select, onClick: () => setEditMode('select') },
+      ]} />
   );
 
   return (

@@ -1,5 +1,5 @@
 import { Suspense, lazy } from 'react';
-import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom';
+import { createBrowserRouter, Navigate, Outlet, useLocation } from 'react-router-dom';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import RouteErrorBoundary from './components/RouteErrorBoundary.jsx';
 import LoadingSpinner from './components/LoadingSpinner.jsx';
@@ -55,6 +55,11 @@ const PlansPage         = lazy(() => import('./pages/PlansPage.jsx'));
 const wrap = (el) => <Suspense fallback={<LoadingSpinner />}>{el}</Suspense>;
 const isPreview = isPreviewDeployment();
 
+function AppErrorBoundary({ children }) {
+  const location = useLocation();
+  return <ErrorBoundary resetKey={location.pathname}>{children}</ErrorBoundary>;
+}
+
 const router = createBrowserRouter([
   // Top-level layout route: its errorElement catches anything thrown while
   // routing, rendering, or lazy-loading any route below — so a crash shows the
@@ -101,7 +106,7 @@ const router = createBrowserRouter([
   {
     element: wrap(
       <ProtectedRoute publicPrefixes={['/u/']}>
-        <ErrorBoundary><App /></ErrorBoundary>
+        <AppErrorBoundary><App /></AppErrorBoundary>
       </ProtectedRoute>
     ),
     children: [

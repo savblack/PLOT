@@ -180,7 +180,7 @@ export default function MyListsView() {
           <TrashIcon />
         </HeaderIconButton>
       )}
-      <HeaderIconButton label="Done selecting" onClick={selection.exit}>
+      <HeaderIconButton label="Done selecting" onClick={selection.exit} success>
         <TickIcon />
       </HeaderIconButton>
     </>

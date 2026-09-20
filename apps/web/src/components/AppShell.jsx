@@ -139,7 +139,7 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
           </button>
         </div>
 
-        <span className="app-page-title">{desktopTitle}</span>
+        {!isListDetail && <span className="app-page-title">{desktopTitle}</span>}
         <div className="header-end">
           <button
             type="button"
@@ -162,7 +162,7 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
           {/* Sidebar widths only — below them the header above carries the
               title and this is display: none. */}
           {isListDetail && <Link className="app-page-breadcrumb" to="/my-lists"><span aria-hidden="true">‹</span> {CUSTOM_LISTS.backToMyLists}</Link>}
-          <h1 className={`app-page-heading${pageSubtitle ? ' app-page-heading--with-subtitle' : ''}${currentView === 'guide' ? ' app-page-heading--guide' : ''}`}>{desktopTitle}</h1>
+          {!isListDetail && <h1 className={`app-page-heading${pageSubtitle ? ' app-page-heading--with-subtitle' : ''}${currentView === 'guide' ? ' app-page-heading--guide' : ''}`}>{desktopTitle}</h1>}
           {pageSubtitle && <p className="app-page-subtitle">{pageSubtitle}</p>}
           {children}
         </div>

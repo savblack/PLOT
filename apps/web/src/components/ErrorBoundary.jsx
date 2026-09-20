@@ -134,29 +134,43 @@ function CrashScreen() {
 }
 
 export default class ErrorBoundary extends Component {
-  state = { hasError: false };
+  state = { hasError: false, error: null };
 
   static getDerivedStateFromError(error) {
-    if (isChunkError(error)) {
-      // Reload to pull the fresh build, but not again if we just did (avoids an
-      // infinite loop on a genuinely broken deploy). See chunkError.js.
-      if (!recentlyReloaded()) {
-        markChunkReload();
-        window.location.reload();
-        return null; // stay mounted while reloading
-      }
-    }
-    return { hasError: true };
+    // Keep this lifecycle pure. React may invoke it more than once while
+    // recovering a render, so spending the reload budget here can count one
+    // stale chunk twice and incorrectly strand the visitor on CrashScreen.
+    return { hasError: true, error };
   }
 
   componentDidCatch(error, info) {
-    if (isChunkError(error)) return; // already handled above
+    if (isChunkError(error)) {
+      // componentDidCatch runs after the failed render is committed, making it
+      // the safe single place to spend one reload attempt.
+      if (!recentlyReloaded()) {
+        markChunkReload();
+        window.location.reload();
+      }
+      return;
+    }
     console.error('Plot error:', error, info);
     captureException(error, { extra: info });
   }
 
+  componentDidUpdate(prevProps) {
+    // This boundary wraps the persistent app shell. A crash in one child route
+    // must not poison every later route until the whole tab is reloaded.
+    if (this.state.hasError && prevProps.resetKey !== this.props.resetKey) {
+      this.setState({ hasError: false, error: null });
+    }
+  }
+
   render() {
     if (this.state.hasError) {
+      // Hide the failed frame while componentDidCatch starts the guarded
+      // refresh. If the budget is already exhausted, surface the honest error
+      // screen instead of creating a reload loop.
+      if (isChunkError(this.state.error) && !recentlyReloaded()) return null;
       return <CrashScreen />;
     }
     return this.props.children;

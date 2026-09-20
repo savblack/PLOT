@@ -21,7 +21,7 @@ const GridIcon = () => <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y
 const RowsIcon = () => <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="5.5" height="5.5" rx="1.5" /><rect x="3" y="13.5" width="5.5" height="5.5" rx="1.5" /><path d="M12 6.5h9M12 9.5h6M12 15h9M12 18h6" /></svg>;
 const SortIcon = () => <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4v16M5 7l3-3 3 3M16 20V4M13 17l3 3 3-3" /></svg>;
 
-function ListPageFrame({ title, subtitle, count, filter, headerRight, collections, activeKey, onOpen, query, onQuery, view, onView, onSort, children }) {
+function ListPageFrame({ title, subtitle, count, filter, headerRight, query, onQuery, view, onView, onSort, children }) {
   return (
     <section className={`list-page list-page--${view}`}>
       <Link className="list-page-back list-page-back--mobile" to="/my-lists"><span aria-hidden="true">‹</span> {CUSTOM_LISTS.backToMyLists}</Link>
@@ -32,17 +32,8 @@ function ListPageFrame({ title, subtitle, count, filter, headerRight, collection
         </div>
         <label className="hist-search list-page-search"><IconSearch /><input type="search" value={query} onChange={event => onQuery(event.target.value)} placeholder={CUSTOM_LISTS.searchThisList} aria-label={CUSTOM_LISTS.searchThisList} /></label>
       </header>
-      <div className="list-page-body">
-        <aside className="list-page-side">
-          <nav className="hist-card list-page-index" aria-label={CUSTOM_LISTS.yourLists}>
-            {collections.map(collection => (
-              <button key={collection.key} type="button" className="cal-filter-row" aria-current={collection.key === activeKey ? 'page' : undefined} onClick={() => onOpen(collection.key)}>
-                <span className="cal-filter-name">{collection.name}</span><span className="mylists-jump-count">{collection.count}</span>
-              </button>
-            ))}
-          </nav>
-          {filter}
-        </aside>
+      <div className={`list-page-body${filter ? '' : ' list-page-body--no-side'}`}>
+        {filter && <aside className="list-page-side">{filter}</aside>}
         <div className="list-page-stream">
           <div className="list-page-toolbar">
             <div className="list-page-toolbar-actions">
@@ -102,12 +93,6 @@ export default function ListPage() {
   const customId = customListIdFromKey(key);
   const list = customId ? customLists.lists.find(l => l.id === customId) : null;
 
-  const collections = useMemo(() => [
-    { key: 'want', name: 'Want to Watch', count: want.length },
-    { key: 'favorites', name: fw.plural, count: favorites.favorites.length },
-    ...customLists.lists.map(item => ({ key: customListKey(item.id), name: item.name, count: item.items?.length || 0 })),
-  ], [want.length, fw.plural, favorites.favorites.length, customLists.lists]);
-
   const matchQuery = useCallback((items) => {
     const term = query.trim().toLowerCase();
     return term ? items.filter(item => (item.title || item.name || '').toLowerCase().includes(term)) : items;
@@ -133,9 +118,6 @@ export default function ListPage() {
               genres={genres}
             />
           )}
-          collections={collections}
-          activeKey={key}
-          onOpen={(nextKey) => navigate(`/my-lists/${nextKey}`)}
           query={query}
           onQuery={setQuery}
           view={resolvedView}
@@ -145,7 +127,7 @@ export default function ListPage() {
         />
       );
     };
-  }, [key, showFilter, typeFilters, genreFilters, genres, collections, navigate, query, resolvedView]);
+  }, [showFilter, typeFilters, genreFilters, genres, query, resolvedView]);
 
   if (!user) return null;
   if (topLists.loading || favorites.loading || customLists.loading || watchlist.loading || watching.loading) {

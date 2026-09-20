@@ -143,3 +143,4 @@ const listPage = (route) => ({
 
 export const CustomListPage  = listPage('/my-lists/list-l1');
 export const WantToWatchPage = listPage('/my-lists/want');
+export const FavoritesPage   = listPage('/my-lists/favorites');

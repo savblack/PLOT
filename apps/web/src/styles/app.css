@@ -483,6 +483,7 @@ svg { stroke-width: 1.5; }
   }
   .app-page-breadcrumb span { font-size: 1.25rem; line-height: 1; }
   .app-page-breadcrumb + .app-page-heading { padding-top: .75rem; }
+  .app-page-breadcrumb + .list-page { padding-top: .75rem; }
 
   .scroll-top-btn {
     bottom: calc(env(safe-area-inset-bottom, 0px) + 1rem);
@@ -2837,6 +2838,7 @@ svg { stroke-width: 1.5; }
    query container so the numeral is a share of the column it lands in: 36% of
    the slot is 39% of the poster once the numeral's own gutter is taken out. */
 .top5-slot {
+  position: relative;
   min-width: 0;
   container-type: inline-size;
   --rank-cut-size: 36cqw;
@@ -3119,7 +3121,7 @@ svg { stroke-width: 1.5; }
   .mylists-page .hist-search { width: 100%; }
 }
 
-/* ── A list's own page: Option A, index column + responsive collection ── */
+/* ── A list's own page: optional filters + responsive collection ── */
 .list-page { display: flex; flex-direction: column; padding: 0 var(--gut) 3rem; }
 .list-page-back {
   align-self: flex-start; display: inline-flex; align-items: center; gap: 6px;
@@ -3144,10 +3146,8 @@ svg { stroke-width: 1.5; }
 .list-page-sub { font-size: 0.85rem; color: var(--text-muted); }
 .list-page-search { width: 220px; flex-shrink: 0; }
 .list-page-body { display: grid; grid-template-columns: 264px minmax(0, 1fr); gap: 72px; align-items: start; }
+.list-page-body--no-side { display: block; }
 .list-page-side { display: flex; flex-direction: column; gap: 24px; }
-.list-page-index { padding: 6px 12px; gap: 0; }
-.list-page-index .cal-filter-row[aria-current="page"] { color: var(--accent-text); font-weight: 600; }
-.list-page-index .cal-filter-row[aria-current="page"] .mylists-jump-count { color: var(--accent-text); }
 .list-page-stream { min-width: 0; }
 .list-page-toolbar {
   display: flex; align-items: center; justify-content: flex-end; gap: 1rem;
@@ -3156,15 +3156,16 @@ svg { stroke-width: 1.5; }
 .list-page-toolbar-actions, .list-page-actions { display: flex; align-items: center; gap: 8px; }
 .list-page-view {
   width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center;
-  border: 1px solid var(--border-strong); border-radius: 9px; background: var(--surface);
+  border: 1px solid transparent; border-radius: 9px; background: var(--surface-sunken);
   color: var(--text-secondary); cursor: pointer;
 }
 .list-page-view svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
-.list-page-view[aria-pressed="true"] { border-color: transparent; background: var(--surface-sunken); color: var(--text-primary); }
+.list-page-view[aria-pressed="true"],
+.list-page-view[aria-expanded="true"] { border-color: var(--border-strong); background: var(--surface); color: var(--text-primary); }
 .list-page-stream .mylists-grid { padding: 0; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px 14px; }
 .list-page-items > .private-watchlist, .list-page-rows { display: none; }
 .list-page-note-lock {
-  position: absolute; top: 7px; right: 7px; width: 22px; height: 22px; border-radius: 50%;
+  position: absolute; top: 7px; left: 7px; width: 22px; height: 22px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center; background: var(--surface); color: var(--text-secondary);
 }
 .list-page-note-lock svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.8; }
@@ -5371,6 +5372,10 @@ a.provider-chip--link:hover {
   border-color: transparent;
   background: transparent;
   color: var(--text-primary);
+}
+.date-group-action-btn--success,
+.date-group-action-btn--success:hover {
+  color: var(--success);
 }
 .date-group-action-btn svg {
   width: 18px;
