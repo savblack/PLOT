@@ -13,7 +13,7 @@ const CSP = (nonce) => [
   "base-uri 'self'",
   "object-src 'none'",
   "frame-ancestors 'none'",
-  "img-src 'self' data: blob: https://image.tmdb.org https://static.tvmaze.com https://mkegtssedjyqldysvzga.supabase.co https://uzrhfivnhdcfieuaxzip.supabase.co https://a.theplot.tv https://storage.ko-fi.com",
+  "img-src 'self' data: blob: https://image.tmdb.org https://static.tvmaze.com https://mkegtssedjyqldysvzga.supabase.co https://uzrhfivnhdcfieuaxzip.supabase.co https://a.theplot.tv https://storage.ko-fi.com https://10.com.au https://10play.com.au https://cdn.iview.abc.net.au https://i.mjh.nz https://image.pr.sbsod.com https://imageresizer.static9.net.au",
   "style-src 'self' 'unsafe-inline'",
   "font-src 'self'",
   `script-src 'self' 'nonce-${nonce}' https://a.theplot.tv https://challenges.cloudflare.com`,
