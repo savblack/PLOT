@@ -507,8 +507,8 @@ svg { stroke-width: 1.5; }
   top: 1.5rem;
   right: 0;
   z-index: 2;
-  width: 32px;
-  height: 76px;
+  width: 24px;
+  height: 44px;
   padding: 0;
   border: 1px solid var(--border);
   border-left: 0;
@@ -521,8 +521,8 @@ svg { stroke-width: 1.5; }
   justify-content: center;
 }
 .app-sidebar-collapse-rail svg {
-  width: 20px;
-  height: 20px;
+  width: 15px;
+  height: 15px;
   fill: none;
   stroke: currentColor;
   stroke-width: 2;
@@ -3852,10 +3852,10 @@ svg { stroke-width: 1.5; }
 .panel-close-rail {
   position: fixed;
   top: 1.5rem;
-  right: calc(min(var(--panel-w), 100vw) - 32px);
+  right: calc(min(var(--panel-w), 100vw) - 24px);
   z-index: 502;
-  width: 32px;
-  height: 76px;
+  width: 24px;
+  height: 44px;
   padding: 0;
   border: 1px solid var(--border);
   border-left: 0;
@@ -3869,8 +3869,8 @@ svg { stroke-width: 1.5; }
   animation: panelCloseRailIn 0.32s var(--ease);
 }
 .panel-close-rail svg {
-  width: 20px;
-  height: 20px;
+  width: 15px;
+  height: 15px;
   fill: none;
   stroke: currentColor;
   stroke-width: 2;
