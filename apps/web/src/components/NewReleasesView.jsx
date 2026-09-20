@@ -106,6 +106,7 @@ export default function NewReleasesView() {
       />
       <div className="cal-body new-releases-layout">
         <aside className="cal-side new-releases-side">
+          {!loading && <NewReleasesJump rails={rails} />}
           <section className="hist-card home-filter-card">
             <SideFilters
               typeFilters={typeFilters}
@@ -115,7 +116,6 @@ export default function NewReleasesView() {
               genres={genres}
             />
           </section>
-          {!loading && <NewReleasesJump rails={rails} />}
         </aside>
         <div className="new-releases-stream">
           <NewReleasesContent openPanel={openPanel} watchlist={watchlist} rails={rails} loading={loading} />
