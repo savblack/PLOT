@@ -138,8 +138,6 @@ export function BroadcastAgenda({ region, selection, onSave, saving = false, end
         </div>
 
         {(stale || ((error || data?.refreshFailed) && data)) && <p role="status" className="hist-card-note guide-notice">{error || data?.refreshFailed ? COPY.cached : COPY.stale} <button type="button" className="btn btn-secondary btn-xs" onClick={retry}>{COPY.retry}</button></p>}
-        {data && missingChannelCount > 0 && <p className="hist-card-note guide-notice" role="status">{COPY.missingChannels(missingChannelCount)}</p>}
-
         {loading ? <p role="status" className="hist-card-note">{COPY.loading}</p>
           : !data ? <div className="empty-state"><div className="empty-title">{COPY.unavailable}</div><div className="empty-body">{COPY.unavailableBody}</div><button type="button" className="btn btn-secondary btn-sm" onClick={retry}>{COPY.retry}</button></div>
           : !visibleChannels.length ? <div className="empty-state"><div className="empty-body">{COPY.noneSelected}</div></div>
@@ -169,7 +167,7 @@ export function BroadcastAgenda({ region, selection, onSave, saving = false, end
               </div>)}
             </>}
           </>}
-        {data && <footer className="hist-card-note guide-note guide-footer"><a href={data.sourceUrl || 'https://i.mjh.nz/'} target="_blank" rel="noreferrer">{COPY.providerLabel}: {data.source}</a> · {COPY.updated} {new Date(data.fetchedAt).toLocaleString('en-AU', { timeZone: timezone })}</footer>}
+        {data && missingChannelCount > 0 && <p className="hist-card-note guide-note guide-missing-notice" role="status">{COPY.missingChannels(missingChannelCount)}</p>}
       </section>
     </div>
 

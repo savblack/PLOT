@@ -159,7 +159,7 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
         <div className="app-main-inner">
           {/* Sidebar widths only — below them the header above carries the
               title and this is display: none. */}
-          <h1 className={`app-page-heading${pageSubtitle ? ' app-page-heading--with-subtitle' : ''}`}>{desktopTitle}</h1>
+          <h1 className={`app-page-heading${pageSubtitle ? ' app-page-heading--with-subtitle' : ''}${currentView === 'guide' ? ' app-page-heading--guide' : ''}`}>{desktopTitle}</h1>
           {pageSubtitle && <p className="app-page-subtitle">{pageSubtitle}</p>}
           {children}
         </div>

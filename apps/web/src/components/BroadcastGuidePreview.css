@@ -9,17 +9,27 @@
 .guide-side .hist-card { padding: 14px 12px 12px; }
 .guide-note { padding: 0 12px; line-height: 1.7; }
 .guide-notice { padding: 6px 4px 0; }
-.guide-footer { padding: 24px 4px 0; }
-.guide-footer a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+.guide-missing-notice { padding-top: 24px; }
+
+/* Calendar pulls its controls into the desktop heading band by 3.5rem. Keep
+   Guide's market context on its own row, but lift the controls by the same
+   amount so the two page headers share one rhythm. */
+@media (min-width: 1024px) {
+  .guide-page .hist-toolbar-controls { transform: translateY(-3.5rem); }
+}
 
 /* Week picker: the seven days of coverage in one row. */
 .guide-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; }
-.guide-day { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 0 6px; border: 0; border-radius: 10px; background: none; cursor: pointer; font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
+.guide-day { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 0; border: 0; background: none; cursor: pointer; font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
 .guide-day span { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); }
-.guide-day strong { font-family: var(--font-display); font-weight: 700; font-size: 18px; letter-spacing: -0.02em; line-height: 1; }
-.guide-day:hover { background: var(--surface-sunken); }
-.guide-day--on, .guide-day--on:hover { background: var(--accent-fill); }
-.guide-day--on span { color: var(--on-accent-fill); }
+.guide-day strong { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 8px; font-family: var(--font-display); font-weight: 700; font-size: 18px; letter-spacing: -0.02em; line-height: 1; transition: background 0.12s ease; }
+.guide-day:hover strong { background: var(--surface-raised); }
+.guide-day--on strong,
+.guide-day--on:hover strong {
+  background: color-mix(in srgb, var(--chip-cinema) 12%, transparent);
+  color: var(--chip-cinema);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--chip-cinema) 34%, var(--border));
+}
 .guide-day:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
 /* Channel rows reuse .cal-filter-row; the picker adds bulk actions. */
