@@ -4,33 +4,41 @@
 .guide-region { display: inline-flex; align-items: baseline; gap: 5px; color: var(--text-primary); }
 .guide-region a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
 .guide-region a:hover { color: var(--accent-text); }
+.guide-region--action { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.guide-region--action a { display: inline-flex; align-items: center; gap: 8px; color: var(--accent-text); text-decoration: none; font-size: 13px; font-weight: 500; }
+.guide-region--action a:hover { color: var(--accent); }
+.guide-region--action a span { font-size: 18px; line-height: 1; }
 .guide-mobile-region { display: none; }
 .guide-search { width: 240px; }
 .guide-card-head { min-height: 0; padding: 0 4px; }
 .guide-card-head .cal-filter-label { padding: 0; }
 .guide-side .hist-card { padding: 14px 12px 12px; }
-.guide-side .guide-region-card { flex-direction: row; align-items: center; padding: 16px; font-size: 15px; }
-.guide-jump-card { gap: 9px; }
-.guide-jump-card select { width: 100%; height: 38px; padding: 0 32px 0 11px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text-primary); font: inherit; font-size: 13px; cursor: pointer; }
-.guide-jump-card select:hover { border-color: var(--border-strong); }
-.guide-jump-card select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-.guide-jump-card select:disabled { cursor: default; opacity: 0.55; }
+.guide-side .guide-controls-card { gap: 0; padding: 16px 12px 14px; }
+.guide-control-section { display: flex; flex-direction: column; gap: 14px; }
+.guide-control-section + .guide-control-section { margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--border); }
+.guide-jump-control { gap: 10px; }
+.guide-jump-control select { width: 100%; height: 38px; padding: 0 32px 0 11px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text-primary); font: inherit; font-size: 13px; cursor: pointer; }
+.guide-jump-control select:hover { border-color: var(--border-strong); }
+.guide-jump-control select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.guide-jump-control select:disabled { cursor: default; opacity: 0.55; }
+.guide-region-control { gap: 10px; }
+.guide-region-control .guide-region { padding: 0 4px; font-size: 14px; }
 .guide-note { padding: 0 12px; line-height: 1.7; }
 .guide-notice { padding: 6px 4px 0; }
 .guide-missing-notice { padding-top: 24px; }
 
-/* Calendar pulls its controls into the desktop heading band by 3.5rem. Keep
-   Guide's market context on its own row, but lift the controls by the same
-   amount so the two page headers share one rhythm. */
+/* Calendar pulls its whole toolbar into the desktop heading band. Do the same
+   here so both the side panel and the stream begin at Calendar's height. */
 @media (min-width: 1024px) {
-  .guide-page .hist-toolbar-controls { margin-left: auto; transform: translateY(-3.5rem); }
+  .guide-page .hist-toolbar { min-height: 3.5rem; margin-top: calc(-1 * (2rem + 1.5rem)); margin-bottom: 1.5rem; padding: 0; }
+  .guide-page .hist-toolbar-controls { margin-left: auto; }
 }
 
 /* Week picker: the seven days of coverage in one row. */
-.guide-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; }
-.guide-day { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 0; border: 0; background: none; cursor: pointer; font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
+.guide-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 0; }
+.guide-day { display: flex; min-width: 0; flex-direction: column; align-items: center; gap: 7px; padding: 0; border: 0; background: none; cursor: pointer; font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
 .guide-day span { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); }
-.guide-day strong { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 8px; font-family: var(--font-display); font-weight: 700; font-size: 18px; letter-spacing: -0.02em; line-height: 1; transition: background 0.12s ease; }
+.guide-day strong { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 8px; font-family: var(--font-display); font-weight: 600; font-size: 18px; letter-spacing: -0.02em; line-height: 1; transition: background 0.12s ease; }
 .guide-day:hover strong { background: var(--surface-raised); }
 .guide-day--on strong,
 .guide-day--on:hover strong {

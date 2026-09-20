@@ -59,8 +59,11 @@ function DayPicker({ market, today, offset, onPick }) {
   })}</div>;
 }
 
-function RegionLink({ market, settingsPath, className = '' }) {
-  return <span className={`guide-region${className ? ` ${className}` : ''}`}><span>{market.name}</span><span aria-hidden="true">·</span><Link to={settingsPath}>{COPY.changeRegion}</Link></span>;
+function RegionLink({ market, settingsPath, className = '', action = false }) {
+  return <span className={`guide-region${action ? ' guide-region--action' : ''}${className ? ` ${className}` : ''}`}>
+    <span>{market.name}</span>{!action && <span aria-hidden="true">·</span>}
+    <Link to={settingsPath}>{COPY.changeRegion}{action && <span aria-hidden="true">→</span>}</Link>
+  </span>;
 }
 
 function ChannelsCard({ channels, visibleChannels, draft, setDraft, saving, saveError, onApply, onToggle, disabled }) {
@@ -147,15 +150,23 @@ export function BroadcastAgenda({ region, selection, onSave, saving = false, end
 
     <div className="cal-body">
       <aside className="cal-side guide-side">
-        <div className="hist-card guide-region-card"><RegionLink market={market} settingsPath={settingsPath} /></div>
-        <div className="hist-card"><span className="cal-filter-label">{COPY.week}</span><DayPicker market={market} today={today} offset={offset} onPick={pickDay} /></div>
-        <label className="hist-card guide-jump-card">
-          <span className="cal-filter-label">{COPY.jumpToTime}</span>
-          <select value={jumpTarget} onChange={jumpToTime} disabled={!jumpHours.length}>
-            <option value="">{COPY.chooseTime}</option>
-            {jumpHours.map(group => <option value={group.key} key={group.key}>{group.label}</option>)}
-          </select>
-        </label>
+        <div className="hist-card guide-controls-card">
+          <section className="guide-control-section">
+            <span className="cal-filter-label">{COPY.week}</span>
+            <DayPicker market={market} today={today} offset={offset} onPick={pickDay} />
+          </section>
+          <label className="guide-control-section guide-jump-control">
+            <span className="cal-filter-label">{COPY.jumpToTime}</span>
+            <select value={jumpTarget} onChange={jumpToTime} disabled={!jumpHours.length}>
+              <option value="">{COPY.chooseTime}</option>
+              {jumpHours.map(group => <option value={group.key} key={group.key}>{group.label}</option>)}
+            </select>
+          </label>
+          <section className="guide-control-section guide-region-control">
+            <span className="cal-filter-label">{COPY.regionShort}</span>
+            <RegionLink market={market} settingsPath={settingsPath} action />
+          </section>
+        </div>
         {channelsCard}
         <p className="hist-card-note guide-note">{COPY.coverage[market.scope]} {COPY.timezone} {timezone}.</p>
         {preview && <p className="hist-card-note guide-note">{COPY.previewNote}</p>}
