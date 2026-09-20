@@ -7,7 +7,7 @@
 .guide-region--action { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .guide-region--action a { display: inline-flex; align-items: center; gap: 8px; color: var(--accent-text); text-decoration: none; font-size: 13px; font-weight: 500; }
 .guide-region--action a:hover { color: var(--accent); }
-.guide-region--action a span { font-size: 18px; line-height: 1; }
+.guide-region--action a span { font-size: 14px; line-height: 1; }
 .guide-mobile-region { display: none; }
 .guide-search { width: 240px; }
 .guide-card-head { min-height: 0; padding: 0 4px; }

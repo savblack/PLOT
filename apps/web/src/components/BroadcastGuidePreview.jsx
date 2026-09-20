@@ -62,7 +62,7 @@ function DayPicker({ market, today, offset, onPick }) {
 function RegionLink({ market, settingsPath, className = '', action = false }) {
   return <span className={`guide-region${action ? ' guide-region--action' : ''}${className ? ` ${className}` : ''}`}>
     <span>{market.name}</span>{!action && <span aria-hidden="true">·</span>}
-    <Link to={settingsPath}>{COPY.changeRegion}{action && <span aria-hidden="true">→</span>}</Link>
+    <Link to={settingsPath}>{COPY.changeRegion}{action && <span aria-hidden="true">›</span>}</Link>
   </span>;
 }
 
