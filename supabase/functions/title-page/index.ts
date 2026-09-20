@@ -313,8 +313,17 @@ const dedupe = (arr: Prov[]) => {
 const provChip = (p: Prov) =>
   `<span class="prov">${img(p.logo_path, 'w45') ? `<img src="${esc(img(p.logo_path, 'w45'))}" alt="" loading="lazy">` : ''}${esc(p.provider_name)}</span>`;
 
-// Seed sitemap of high-value titles (tracked + latest trending snapshot). The
-// long tail is discovered via internal "more like this" links + shared URLs.
+type SitemapTitle = {
+  id?: number;
+  media_type?: 'movie' | 'tv';
+  title?: string;
+  name?: string;
+};
+
+// Seed the sitemap from PLOT's tracked catalogue plus TMDB's current discovery
+// feeds. Fetching the live feeds here means newly popular and newly released
+// titles become crawlable within the sitemap's one-day cache window, without
+// hardcoding opaque TMDB IDs or creating thin duplicate pages.
 async function titlesSitemap(): Promise<Response> {
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,
@@ -341,6 +350,39 @@ async function titlesSitemap(): Promise<Response> {
     .order('snapshot_date', { ascending: false })
     .limit(1);
   for (const it of (snaps?.[0]?.items || [])) add((it as any).media_type, (it as any).tmdb_id, (it as any).title);
+
+  const key = Deno.env.get('TMDB_API_KEY');
+  if (key) {
+    const feeds: { path: string; type: 'movie' | 'tv' }[] = [
+      { path: 'trending/movie/week', type: 'movie' },
+      { path: 'movie/popular', type: 'movie' },
+      { path: 'movie/now_playing', type: 'movie' },
+      { path: 'movie/upcoming', type: 'movie' },
+      { path: 'trending/tv/week', type: 'tv' },
+      { path: 'tv/popular', type: 'tv' },
+      { path: 'tv/on_the_air', type: 'tv' },
+      { path: 'tv/airing_today', type: 'tv' },
+    ];
+    const requests = feeds.flatMap(({ path, type }) =>
+      [1, 2, 3].map(async (pageNumber) => {
+        try {
+          const response = await fetch(
+            `${TMDB}/${path}?api_key=${key}&language=en-US&page=${pageNumber}`,
+          );
+          if (!response.ok) return;
+          const payload = await response.json();
+          for (const item of (payload.results || []) as SitemapTitle[]) {
+            add(item.media_type || type, item.id, item.title || item.name);
+          }
+        } catch {
+          // The stored catalogue still produces a valid sitemap if one live
+          // feed is temporarily unavailable. A partial refresh is preferable
+          // to turning the entire sitemap into a 5xx response.
+        }
+      })
+    );
+    await Promise.all(requests);
+  }
 
   const body = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -400,7 +442,7 @@ Deno.serve(async (req) => {
   const canonicalUrl = `${SITE}/${type}/${canonicalSlug}`;
   const poster = img(data.poster_path, 'w342');
   const backdrop = img(data.backdrop_path, 'w1280');
-  const posterImage = img(data.backdrop_path, 'w780') || img(data.poster_path, 'w500') || '';
+  const posterImage = img(data.poster_path, 'w780') || '';
   // Link-preview image. This was the branded PLOT card at /api/og on the app
   // domain — a Vercel path that has not existed since the move to Cloudflare,
   // so it resolved to the SPA shell as text/html and every title page unfurled
@@ -529,8 +571,17 @@ Deno.serve(async (req) => {
     : '';
 
   // ── <head>: description, canonical, OG, JSON-LD ──
-  const desc = (overview || `Where to watch ${title}${yr ? ` (${yr})` : ''} — streaming, rent and buy options on plot.`).slice(0, 300);
-  const metaTitle = `${title}${yr ? ` (${yr})` : ''} — where to watch · plot`;
+  const availableOn = streaming.slice(0, 3).map((provider) => provider.provider_name);
+  const availabilityDescription = availableOn.length
+    ? `Watch ${title}${yr ? ` (${yr})` : ''} on ${availableOn.join(', ')} in ${regionName(region)}. See streaming, rental and purchase options.`
+    : inCinemas
+      ? `${title}${yr ? ` (${yr})` : ''} is showing in cinemas in ${regionName(region)}. Track it on plot to know when it starts streaming.`
+      : `Find where to watch ${title}${yr ? ` (${yr})` : ''} in ${regionName(region)} and track when it becomes available to stream, rent or buy.`;
+  const desc = `${availabilityDescription}${overview ? ` ${overview}` : ''}`.slice(0, 300);
+  const metaTitle = `${title}${yr ? ` (${yr})` : ''}: where to watch in ${regionName(region)} · plot`;
+  const actors = (data.credits?.cast || []).slice(0, 8)
+    .filter((person: any) => person.name)
+    .map((person: any) => ({ '@type': 'Person', name: person.name }));
   const jsonLd = ldjson({
     '@context': 'https://schema.org',
     '@type': isMovie ? 'Movie' : 'TVSeries',
@@ -538,6 +589,9 @@ Deno.serve(async (req) => {
     ...(posterImage ? { image: [posterImage] } : {}),
     description: overview || undefined,
     ...(date ? { datePublished: date } : {}),
+    ...(isMovie && date ? { dateCreated: date } : {}),
+    ...(director ? { director: { '@type': 'Person', name: director } } : {}),
+    ...(actors.length ? { actor: actors } : {}),
     ...(genres.length ? { genre: genres } : {}),
     ...(rating && votes ? { aggregateRating: { '@type': 'AggregateRating', ratingValue: rating, ratingCount: votes, bestRating: 10, worstRating: 0 } } : {}),
     url: canonicalUrl,
