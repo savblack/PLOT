@@ -140,16 +140,6 @@ export default function CalendarView() {
           {todayLongLabel()}
         </span>
         <div className="page-toolbar-controls cal-toolbar-controls">
-          <label className="hist-search cal-search">
-            <SearchIcon />
-            <input
-              type="search"
-              value={query}
-              onChange={event => setQuery(event.target.value)}
-              placeholder={COMMON.searchTitles}
-              aria-label={COMMON.searchTitles}
-            />
-          </label>
           <div className="cal-scope" role="tablist">
             <button
               role="tab"
@@ -168,6 +158,16 @@ export default function CalendarView() {
               {CALENDAR_VIEW.scope.all}
             </button>
           </div>
+          <label className="hist-search cal-search">
+            <SearchIcon />
+            <input
+              type="search"
+              value={query}
+              onChange={event => setQuery(event.target.value)}
+              placeholder={COMMON.searchTitles}
+              aria-label={COMMON.searchTitles}
+            />
+          </label>
         </div>
       </div>
 

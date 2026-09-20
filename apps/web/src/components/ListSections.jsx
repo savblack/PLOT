@@ -1,6 +1,6 @@
 import PrivateNote from './PrivateNote.jsx';
 import { customListCreationError } from '@plot/core/customListCreation.js';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useApp } from '../hooks/useApp.js';
 import { countdownChip } from '../utils/countdown.js';
@@ -45,6 +45,10 @@ export function TrashIcon() {
       <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
     </svg>
   );
+}
+
+export function TickIcon() {
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>;
 }
 
 /* ── Search sheet for Top 10 additions ── */
@@ -438,7 +442,7 @@ export function SelectControls({ selection, hasItems, menuLabel, deleteLabel, on
           </HeaderIconButton>
         )}
         <HeaderIconButton label="Done selecting" onClick={exit}>
-          <span className="mylists-done">{COMMON.done}</span>
+          <TickIcon />
         </HeaderIconButton>
       </>
     );
@@ -560,6 +564,7 @@ function ListPageRow({ item, title, meta, open, selection, note }) {
 export function WantToWatchSection({ items, count = items.length, narrowed, Frame = ListSection, pageLayout = false }) {
   const { openPanel, watchlist, privateNotes } = useApp();
   const selection = useSelection();
+  const [showAdd, setShowAdd] = useState(false);
 
   if (narrowed && items.length === 0) return null;
 
@@ -573,13 +578,20 @@ export function WantToWatchSection({ items, count = items.length, narrowed, Fram
       title="Want to Watch"
       count={count}
       headerRight={
-        <SelectControls
-          selection={selection}
-          hasItems={items.length > 0}
-          menuLabel="Want to Watch options"
-          deleteLabel="Remove"
-          onDelete={removeSelected}
-        />
+        <>
+          {pageLayout && (
+            <HeaderIconButton label="Add to Want to Watch" onClick={() => setShowAdd(true)}>
+              <PlusIcon />
+            </HeaderIconButton>
+          )}
+          <SelectControls
+            selection={selection}
+            hasItems={items.length > 0}
+            menuLabel="Want to Watch options"
+            deleteLabel="Remove"
+            onDelete={removeSelected}
+          />
+        </>
       }
     >
       {items.length === 0 ? (
@@ -616,6 +628,9 @@ export function WantToWatchSection({ items, count = items.length, narrowed, Fram
           </div>
         </div>
       )}
+      {showAdd && (
+        <AddToFavoritesModal title="Add to Want to Watch" onAdd={(item) => watchlist.addToList(item)} onClose={() => setShowAdd(false)} />
+      )}
     </Frame>
   );
 }
@@ -648,6 +663,9 @@ export function FavoritesSection({ favorites: favsHook, visibleItems, count, typ
       count={count ?? favorites.length}
       headerRight={
         <>
+          <HeaderIconButton label={`Add ${fw.nounLower}`} onClick={() => setShowAdd(true)}>
+            <PlusIcon />
+          </HeaderIconButton>
           <SelectControls
             selection={selection}
             hasItems={visible.length > 0}
@@ -655,9 +673,6 @@ export function FavoritesSection({ favorites: favsHook, visibleItems, count, typ
             deleteLabel="Remove"
             onDelete={deleteSelected}
           />
-          <HeaderIconButton label={`Add ${fw.nounLower}`} onClick={() => setShowAdd(true)}>
-            <PlusIcon />
-          </HeaderIconButton>
         </>
       }
     >
@@ -741,6 +756,9 @@ export function CustomListSection({ list, visibleItems, count, customLists, type
       headerRight={
         <>
           {list.is_public && share && <button type="button" className="btn btn-ghost btn-sm" onClick={() => share(list)}>{shareCopied ? COMMON.copied : COMMON.share}</button>}
+          <HeaderIconButton label={`Add item to ${list.name}`} onClick={() => setShowAdd(true)}>
+            <PlusIcon />
+          </HeaderIconButton>
           <SelectControls
             selection={selection}
             hasItems={visible.length > 0}
@@ -749,9 +767,6 @@ export function CustomListSection({ list, visibleItems, count, customLists, type
             onDelete={removeSelected}
             extraItems={menuItems}
           />
-          <HeaderIconButton label={`Add item to ${list.name}`} onClick={() => setShowAdd(true)}>
-            <PlusIcon />
-          </HeaderIconButton>
         </>
       }
     >
@@ -820,27 +835,41 @@ export function CustomListSection({ list, visibleItems, count, customLists, type
   );
 }
 
-/* ── Top 5: a podium, one per type behind a Movies / TV switch ──
-   #1 gets the room; 2-5 sit beside it, every rank a numeral cut out of its
-   poster's corner. Five slots is a list people finish, where ten was mostly
-   dashed boxes. Reordering is the arrow pair under each card while editing. */
+/* ── Top 5: one equal slot per rank behind a Movies / TV switch ──
+   Every rank carries a numeral cut out of its poster's corner. Five slots is
+   a list people finish, where ten was mostly dashed boxes. Edit mode supports
+   dragging between ranks, with arrow controls as a precise fallback. */
 export function TopFiveSection({ topLists, Frame = ListSection }) {
   const { openPanel } = useApp();
   const [listType,   setListType]   = useState('movies');
   const [editMode,   setEditMode]   = useState(false);
   const [addingRank, setAddingRank] = useState(null);
+  const [draggedRank, setDraggedRank] = useState(null);
+  const [dragOverRank, setDragOverRank] = useState(null);
+  const dragging = useRef(false);
 
   const items   = (topLists.lists[listType] || []).filter(i => i.rank <= TOP_LIST_SIZE);
   const maxRank = items.reduce((max, i) => Math.max(max, i.rank), 0);
   const slots   = Array.from({ length: TOP_LIST_SIZE }, (_, i) => i + 1);
   const typeLabel = listType === 'movies' ? 'movie' : 'TV show';
 
+  const dragTargetProps = (rank) => !editMode ? {} : {
+    onDragOver: (event) => { event.preventDefault(); setDragOverRank(rank); },
+    onDragLeave: () => setDragOverRank(current => current === rank ? null : current),
+    onDrop: async (event) => {
+      event.preventDefault();
+      if (draggedRank != null && draggedRank !== rank) await topLists.moveToRank(listType, draggedRank, rank);
+      setDraggedRank(null);
+      setDragOverRank(null);
+    },
+  };
+
   const slot = (rank) => {
     const item = items.find(i => i.rank === rank);
-    const cls  = `top5-slot top5-slot--${rank === 1 ? 'first' : 'rest'}`;
+    const cls  = 'top5-slot';
     if (!item) {
       return (
-        <div key={rank} className={cls}>
+        <div key={rank} className={`${cls}${dragOverRank === rank ? ' drag-over' : ''}`} {...dragTargetProps(rank)}>
           <span className="rank-cut-frame">
             <button
               type="button"
@@ -856,13 +885,29 @@ export function TopFiveSection({ topLists, Frame = ListSection }) {
         </div>
       );
     }
-    const img = posterUrl(item.poster_path, rank === 1 ? 'w342' : 'w185');
+    const img = posterUrl(item.poster_path, 'w185');
     return (
-      <div key={rank} className={cls}>
+      <div
+        key={rank}
+        className={`${cls}${editMode ? ' draggable' : ''}${draggedRank === rank ? ' dragging' : ''}${dragOverRank === rank ? ' drag-over' : ''}`}
+        draggable={editMode}
+        onDragStart={(event) => {
+          dragging.current = true;
+          setDraggedRank(rank);
+          event.dataTransfer.effectAllowed = 'move';
+          event.dataTransfer.setData('text/plain', String(rank));
+        }}
+        onDragEnd={() => {
+          setDraggedRank(null);
+          setDragOverRank(null);
+          window.setTimeout(() => { dragging.current = false; }, 0);
+        }}
+        {...dragTargetProps(rank)}
+      >
         <button
           type="button"
           className="top5-hit interactive-surface"
-          onClick={() => openPanel(item.tmdb_id, item.media_type)}
+          onClick={() => { if (!dragging.current) openPanel(item.tmdb_id, item.media_type); }}
           aria-label={`View details for ${item.title}`}
         >
           <span className="rank-cut-frame">
@@ -875,9 +920,9 @@ export function TopFiveSection({ topLists, Frame = ListSection }) {
         </button>
         {editMode && (
           <div className="mylists-top10-controls">
-            <button className="btn btn-ghost btn-xs" type="button" disabled={rank === 1} onClick={() => topLists.moveUp(listType, rank)} aria-label={`Move ${item.title} up one place`}>‹</button>
-            <button className="btn btn-ghost btn-xs" type="button" disabled={rank >= maxRank} onClick={() => topLists.moveDown(listType, rank)} aria-label={`Move ${item.title} down one place`}>›</button>
-            <button className="btn btn-ghost btn-xs" type="button" onClick={() => topLists.removeSlot(listType, item.tmdb_id)} aria-label={`Remove ${item.title}`}>✕</button>
+            <button className="top5-reorder-btn" type="button" disabled={rank === 1} onClick={() => topLists.moveUp(listType, rank)} aria-label={`Move ${item.title} up one place`}>‹</button>
+            <button className="top5-reorder-btn" type="button" disabled={rank >= maxRank} onClick={() => topLists.moveDown(listType, rank)} aria-label={`Move ${item.title} down one place`}>›</button>
+            <button className="top5-reorder-btn" type="button" onClick={() => topLists.removeSlot(listType, item.tmdb_id)} aria-label={`Remove ${item.title}`}>✕</button>
           </div>
         )}
       </div>

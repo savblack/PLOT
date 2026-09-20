@@ -6,19 +6,19 @@ import { useState } from 'react';
  * trigger, same panel look) so every overflow menu in the app behaves the
  * same way.
  */
-export default function KebabMenu({ ariaLabel = 'Open menu', items }) {
+export default function KebabMenu({ ariaLabel = 'Open menu', items, trigger = '···', buttonClassName = 'list-options-btn' }) {
   const [open, setOpen] = useState(false);
 
   return (
     <div className="kebab-menu">
       <button
         type="button"
-        className="list-options-btn"
+        className={buttonClassName}
         onClick={() => setOpen(o => !o)}
         aria-label={ariaLabel}
         aria-expanded={open}
       >
-        ···
+        {trigger}
       </button>
       {open && (
         <>

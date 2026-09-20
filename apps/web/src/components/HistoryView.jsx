@@ -328,7 +328,7 @@ export function HistoryPage({ entries, details, detailsLoading, genreList, openP
 
   return (
     <div className="hist-page">
-      <div className="hist-toolbar">
+      <div className="hist-toolbar hist-toolbar--heading">
         <div className="hist-toolbar-controls">
           {years.length > 1 && (
             years.length <= 4 ? (

@@ -181,6 +181,7 @@ svg { stroke-width: 1.5; }
   padding: 1.75rem var(--gut) 0;
   user-select: none;
 }
+.app-page-breadcrumb { display: none; }
 
 /* The sticky sub-tab bars are chrome, not content: they pin under the header
    and carry its fill and hairline, so stopping them at the column edge left a
@@ -469,6 +470,19 @@ svg { stroke-width: 1.5; }
   .app-page-heading {
     display: block;
   }
+
+  .app-page-breadcrumb {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 1.25rem var(--gut) 0;
+    color: var(--accent-text);
+    font-size: .8rem;
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .app-page-breadcrumb span { font-size: 1.25rem; line-height: 1; }
+  .app-page-breadcrumb + .app-page-heading { padding-top: .75rem; }
 
   .scroll-top-btn {
     bottom: calc(env(safe-area-inset-bottom, 0px) + 1rem);
@@ -2782,12 +2796,27 @@ svg { stroke-width: 1.5; }
   gap: 0.1rem;
   margin-top: 0.25rem;
 }
+.top5-reorder-btn {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+}
+.top5-reorder-btn:hover { color: var(--text-primary); }
+.top5-reorder-btn:disabled { color: var(--text-muted); opacity: .35; cursor: default; }
+.top5-slot.draggable { cursor: grab; }
+.top5-slot.dragging { opacity: .45; cursor: grabbing; }
+.top5-slot.drag-over .rank-cut-frame { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: var(--radius-md); }
 
-/* ── Top 5 podium ──
-   Mobile uses equal slots in a horizontal shelf; desktop keeps the podium. */
+/* ── Top 5 chart ── */
 .top5 {
   display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0.75rem;
   padding: 0 var(--gut);
   align-items: start;
@@ -2797,14 +2826,11 @@ svg { stroke-width: 1.5; }
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.75rem;
 }
-/* At sidebar widths the four sit in one row and #1's column is sized so its
-   poster stands about as tall as a small poster plus its title. */
 @media (min-width: 1024px) {
   .top5 {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 4fr);
-    gap: 1.25rem;
+    gap: 1rem;
   }
-  .top5-rest { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; }
+  .top5-rest { display: contents; }
 }
 /* The podium's posters are grid columns, not --poster-w, and they range from a
    116px phone shelf to about 210px beside the sidebar. Each slot is its own
@@ -2815,8 +2841,6 @@ svg { stroke-width: 1.5; }
   container-type: inline-size;
   --rank-cut-size: 36cqw;
 }
-.top5-slot--first .top5-poster,
-.top5-slot--first .top5-slot--empty { border-radius: var(--radius-md); }
 .top5-hit {
   display: flex;
   flex-direction: column;
@@ -2859,7 +2883,6 @@ svg { stroke-width: 1.5; }
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-.top5-slot--first .top5-title { font-size: 1rem; }
 /* An unfilled rank: a dashed poster and a hint. Its numeral is the same one a
    filled slot carries, cut by the same frame, so the row reads as one chart. */
 .top5-slot--empty {
@@ -2908,7 +2931,6 @@ svg { stroke-width: 1.5; }
   .top5::-webkit-scrollbar { display: none; }
   .top5-rest { display: contents; }
   .top5-slot { scroll-snap-align: start; }
-  .top5-slot--first .top5-title { font-size: 0.82rem; }
 }
 
 /* ── Collection covers ──
@@ -3105,6 +3127,9 @@ svg { stroke-width: 1.5; }
   font-size: .8rem; font-weight: 600; text-decoration: none;
 }
 .list-page-back span { font-size: 1.25rem; line-height: 1; }
+@media (min-width: 1024px) {
+  .list-page-back--mobile { display: none; }
+}
 .list-page-head {
   display: flex; align-items: center; justify-content: space-between; gap: 2rem;
   padding: 0 0 26px;
@@ -3125,10 +3150,9 @@ svg { stroke-width: 1.5; }
 .list-page-index .cal-filter-row[aria-current="page"] .mylists-jump-count { color: var(--accent-text); }
 .list-page-stream { min-width: 0; }
 .list-page-toolbar {
-  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  display: flex; align-items: center; justify-content: flex-end; gap: 1rem;
   min-height: 42px; margin-bottom: 18px; border-bottom: 1px solid var(--border);
 }
-.list-page-sort { color: var(--text-secondary); font-size: .8rem; }
 .list-page-toolbar-actions, .list-page-actions { display: flex; align-items: center; gap: 8px; }
 .list-page-view {
   width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center;
@@ -3180,7 +3204,6 @@ svg { stroke-width: 1.5; }
   .list-page-title { font-size: 1.75rem; }
   .list-page-search { width: 100%; }
   .list-page-toolbar { min-height: 48px; }
-  .list-page-sort { display: none; }
   .list-page-toolbar-actions { width: 100%; justify-content: flex-end; }
   .list-page-view { width: 38px; height: 38px; border-radius: 50%; }
   .list-page-stream .mylists-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px 12px; }
@@ -7324,8 +7347,8 @@ a.provider-chip--link:hover {
 
 /* Web history summary: flexible rows keep full values readable in the sidebar. */
 .hist-year-card {
-  background: var(--surface-sunken);
-  border: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 20px;
   padding: 20px;
   gap: 16px;
@@ -7333,6 +7356,7 @@ a.provider-chip--link:hover {
 .hist-year-card .hist-card-head { flex-wrap: wrap; padding: 0; }
 .hist-year-card .hist-card-title {
   font-weight: 700;
+  font-size: 22px;
   letter-spacing: -0.03em;
 }
 .hist-stats {
@@ -7353,7 +7377,7 @@ a.provider-chip--link:hover {
 .hist-stat-value {
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 24px;
+  font-size: 20px;
   line-height: 1.2;
   letter-spacing: -0.03em;
   color: var(--text-primary);
@@ -7619,6 +7643,13 @@ a.provider-chip--link:hover {
 }
 
 @media (min-width: 1024px) {
+  .hist-toolbar--heading {
+    justify-content: flex-end;
+    min-height: 3.5rem;
+    margin-top: -3.9rem;
+    margin-bottom: 1.5rem;
+    padding: 0;
+  }
   .hist-body { flex-direction: row; align-items: flex-start; gap: 72px; }
   /* Not sticky, unlike the Calendar's panel: with five cards and the filter
      rows it is taller than most viewports, and a sticky column taller than

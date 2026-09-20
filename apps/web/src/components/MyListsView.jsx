@@ -21,7 +21,7 @@ import { IconSearch } from './navIcons.jsx';
 import { posterUrl } from '../utils/images.js';
 import { CardGrid, ListCard, TypeGenreFilter } from './ListCards.jsx';
 import {
-  CreateListModal, HeaderIconButton, ListSection, TopFiveSection, TrashIcon, WatchingSection,
+  CreateListModal, HeaderIconButton, ListSection, TickIcon, TopFiveSection, TrashIcon, WatchingSection,
 } from './ListSections.jsx';
 
 /* My Lists on the Calendar/History shell: a narrow left column beside one wide
@@ -162,6 +162,13 @@ export default function MyListsView() {
   };
 
   const open = (key) => () => { if (!selection.editMode) navigate(collectionPath(key)); };
+  const jumpTo = (key) => () => {
+    const target = document.getElementById(`collection-${key}`);
+    if (!target) return;
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    target.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'center' });
+    target.querySelector('button')?.focus({ preventScroll: true });
+  };
 
   const selectedLists = lists.filter(l => selection.selected.has(l.id));
   const selectedTitles = selectedLists.reduce((n, l) => n + (l.items || []).length, 0);
@@ -174,7 +181,7 @@ export default function MyListsView() {
         </HeaderIconButton>
       )}
       <HeaderIconButton label="Done selecting" onClick={selection.exit}>
-        <span className="mylists-done">{COMMON.done}</span>
+        <TickIcon />
       </HeaderIconButton>
     </>
   ) : (
@@ -192,6 +199,7 @@ export default function MyListsView() {
     return (
       <ListCover
         key={c.key}
+        anchorId={`collection-${c.key}`}
         name={c.name}
         count={coverCount(c.items, c.empty)}
         posters={posters(visible)}
@@ -234,7 +242,7 @@ export default function MyListsView() {
 
       <div className="cal-body">
         <aside className="cal-side mylists-side">
-          <JumpToCard collections={collections} counts={jumpCount} onOpen={open} />
+          <JumpToCard collections={collections} counts={jumpCount} onOpen={jumpTo} />
           <SideFilters
             typeRows={TYPE_ROWS}
             typeFilters={typeFilters}

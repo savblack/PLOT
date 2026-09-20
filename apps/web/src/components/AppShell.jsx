@@ -1,11 +1,12 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { APP_NAV_ITEMS, isActiveView, titleForView } from '../navigation.js';
 import { useNotifications } from '../hooks/useNotifications.js';
 import { APP_SHELL } from '../copy/appShell.js';
 import { SETTINGS_VIEW } from '../copy/settingsView.js';
 import { HISTORY_VIEW } from '@plot/core/copy/historyView.js';
 import { BROADCAST_GUIDE } from '@plot/core/copy/broadcastGuide.js';
+import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
 import AppSidebar from './AppSidebar.jsx';
 import {
   IconMenu, IconClose, IconSearch, IconArrowUp,
@@ -84,6 +85,7 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
 
   const pageTitle = titleForView(currentView);
   const isOwnProfile = !!profile?.username && currentView === `u/${profile.username}`;
+  const isListDetail = currentView?.startsWith('my-lists/');
 
   // At sidebar widths there is no header at all — the brand, search and
   // notifications live in the sidebar, and the title moves into the content
@@ -159,6 +161,7 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
         <div className="app-main-inner">
           {/* Sidebar widths only — below them the header above carries the
               title and this is display: none. */}
+          {isListDetail && <Link className="app-page-breadcrumb" to="/my-lists"><span aria-hidden="true">‹</span> {CUSTOM_LISTS.backToMyLists}</Link>}
           <h1 className={`app-page-heading${pageSubtitle ? ' app-page-heading--with-subtitle' : ''}${currentView === 'guide' ? ' app-page-heading--guide' : ''}`}>{desktopTitle}</h1>
           {pageSubtitle && <p className="app-page-subtitle">{pageSubtitle}</p>}
           {children}
