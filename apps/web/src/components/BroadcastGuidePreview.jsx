@@ -9,6 +9,7 @@ import { GUIDE_REGIONS, guideDay, isOnNow, broadcastTime, broadcastDayLabel, gro
 import { useBroadcastAgenda } from '@plot/core/useBroadcastAgenda.js';
 import { BROADCAST_GUIDE as COPY } from '@plot/core/copy/broadcastGuide.js';
 import { FilterRow } from './SideFilters.jsx';
+import LoadingSpinner from './LoadingSpinner.jsx';
 import './BroadcastGuidePreview.css';
 
 function readSelection(region) {
@@ -52,10 +53,14 @@ function ChannelMark({ channel, small = false }) {
 function DayPicker({ market, today, offset, onPick }) {
   return <div className="guide-days" role="group" aria-label={COPY.week}>{Array.from({ length: market.days }, (_, index) => {
     const day = guideDay(today, index);
-    return <button key={day} type="button" className={`guide-day${index === offset ? ' guide-day--on' : ''}`} aria-pressed={index === offset} onClick={() => onPick(index)}>
-      <span>{index === 0 ? COPY.today : broadcastDayLabel(day, { weekday: 'short' })}</span><strong>{broadcastDayLabel(day, { day: 'numeric' })}</strong>
+    return <button key={day} type="button" className={`guide-day${index === 0 ? ' guide-day--today' : ''}${index === offset ? ' guide-day--on' : ''}`} aria-pressed={index === offset} onClick={() => onPick(index)}>
+      <span>{broadcastDayLabel(day, { weekday: 'short' })}</span><strong>{broadcastDayLabel(day, { day: 'numeric' })}</strong>
     </button>;
   })}</div>;
+}
+
+function RegionLink({ market, settingsPath, className = '' }) {
+  return <span className={`guide-region${className ? ` ${className}` : ''}`}><span>{market.name}</span><span aria-hidden="true">·</span><Link to={settingsPath}>{COPY.changeRegion}</Link></span>;
 }
 
 function ChannelsCard({ channels, visibleChannels, draft, setDraft, saving, saveError, onApply, onToggle, disabled }) {
@@ -86,6 +91,7 @@ export function BroadcastAgenda({ region, selection, onSave, saving = false, end
   const [saveError, setSaveError] = useState(false);
   const [selected, setSelected] = useState(null);
   const [channelsOpen, setChannelsOpen] = useState(false);
+  const [jumpTarget, setJumpTarget] = useState('');
   const dialog = useRef(null);
   useEffect(() => { if (selected) dialog.current?.showModal(); }, [selected]);
   const channelById = new Map(channels.map(c => [c.id, c]));
@@ -101,9 +107,27 @@ export function BroadcastAgenda({ region, selection, onSave, saving = false, end
 
   // On now leads only on today's page; other days are just the hour stream.
   const onNow = offset === 0 ? programmes.filter(p => isOnNow(p, now)) : [];
-  const upcoming = mode === 'now' ? [] : (offset === 0 ? programmes.filter(p => Date.parse(p.end) > now && !isOnNow(p, now)) : programmes);
-  const hours = groupByHour(upcoming, timezone);
+  const upcoming = offset === 0 ? programmes.filter(p => Date.parse(p.end) > now && !isOnNow(p, now)) : programmes;
+  const jumpHours = groupByHour(upcoming, timezone);
+  const hours = mode === 'now' ? [] : jumpHours;
   const dayTitle = broadcastDayLabel(date, { weekday: 'long', day: 'numeric', month: 'long' });
+
+  useEffect(() => {
+    if (!jumpTarget || mode !== 'all') return;
+    document.getElementById(`guide-hour-${jumpTarget}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [jumpTarget, mode]);
+
+  function pickDay(index) {
+    setJumpTarget('');
+    setOffset(index);
+    setMode('all');
+  }
+
+  function jumpToTime(event) {
+    const target = event.target.value;
+    setJumpTarget(target);
+    if (target) setMode('all');
+  }
 
   const channelsCard = <ChannelsCard channels={channels} visibleChannels={visibleChannels} draft={draft} setDraft={setDraft} saving={saving}
     saveError={saveError} onApply={apply} onToggle={toggleChannel} disabled={!data} />;
@@ -111,7 +135,7 @@ export function BroadcastAgenda({ region, selection, onSave, saving = false, end
   return <div className="hist-page guide-page">
     {preview && <header className="broadcast-heading"><h1>{COPY.title}</h1><p>{COPY.subtitle}</p></header>}
     <div className="hist-toolbar">
-      <span className="hist-toolbar-sub">{market.name} · <Link to={settingsPath}>{COPY.changeRegion}</Link></span>
+      <RegionLink market={market} settingsPath={settingsPath} className="hist-toolbar-sub guide-mobile-region" />
       <div className="hist-toolbar-controls">
         <div className="cal-scope" role="group" aria-label={COPY.title}>
           <button type="button" className={`cal-scope-btn${mode === 'all' ? ' active' : ''}`} aria-pressed={mode === 'all'} onClick={() => setMode('all')}>{COPY.allDay}</button>
@@ -123,7 +147,15 @@ export function BroadcastAgenda({ region, selection, onSave, saving = false, end
 
     <div className="cal-body">
       <aside className="cal-side guide-side">
-        <div className="hist-card"><span className="cal-filter-label">{COPY.week}</span><DayPicker market={market} today={today} offset={offset} onPick={index => { setOffset(index); setMode('all'); }} /></div>
+        <div className="hist-card guide-region-card"><RegionLink market={market} settingsPath={settingsPath} /></div>
+        <div className="hist-card"><span className="cal-filter-label">{COPY.week}</span><DayPicker market={market} today={today} offset={offset} onPick={pickDay} /></div>
+        <label className="hist-card guide-jump-card">
+          <span className="cal-filter-label">{COPY.jumpToTime}</span>
+          <select value={jumpTarget} onChange={jumpToTime} disabled={!jumpHours.length}>
+            <option value="">{COPY.chooseTime}</option>
+            {jumpHours.map(group => <option value={group.key} key={group.key}>{group.label}</option>)}
+          </select>
+        </label>
         {channelsCard}
         <p className="hist-card-note guide-note">{COPY.coverage[market.scope]} {COPY.timezone} {timezone}.</p>
         {preview && <p className="hist-card-note guide-note">{COPY.previewNote}</p>}
@@ -132,13 +164,13 @@ export function BroadcastAgenda({ region, selection, onSave, saving = false, end
       <section className="cal-stream guide-stream" aria-label={COPY.title}>
         {/* Below the sidebar breakpoint the column is hidden, so its controls sit here. */}
         <div className="guide-mobile-bar">
-          <DayPicker market={market} today={today} offset={offset} onPick={index => { setOffset(index); setMode('all'); }} />
+          <DayPicker market={market} today={today} offset={offset} onPick={pickDay} />
           <button type="button" className="btn btn-secondary btn-sm" aria-expanded={channelsOpen} onClick={() => setChannelsOpen(v => !v)}>{channelsOpen ? COPY.done : COPY.channelsCount(visibleChannels.length)}</button>
           {channelsOpen && channelsCard}
         </div>
 
         {(stale || ((error || data?.refreshFailed) && data)) && <p role="status" className="hist-card-note guide-notice">{error || data?.refreshFailed ? COPY.cached : COPY.stale} <button type="button" className="btn btn-secondary btn-xs" onClick={retry}>{COPY.retry}</button></p>}
-        {loading ? <p role="status" className="hist-card-note">{COPY.loading}</p>
+        {loading ? <LoadingSpinner />
           : !data ? <div className="empty-state"><div className="empty-title">{COPY.unavailable}</div><div className="empty-body">{COPY.unavailableBody}</div><button type="button" className="btn btn-secondary btn-sm" onClick={retry}>{COPY.retry}</button></div>
           : !visibleChannels.length ? <div className="empty-state"><div className="empty-body">{COPY.noneSelected}</div></div>
           : <>
@@ -156,7 +188,7 @@ export function BroadcastAgenda({ region, selection, onSave, saving = false, end
             {mode === 'all' && <>
               <div className={`cal-stream-month${offset === 0 ? ' guide-upcoming-head' : ''}`}><h2 className="cal-stream-month-name">{offset === 0 ? COPY.comingUp : dayTitle}</h2><span className="cal-stream-month-count">{offset === 0 ? dayTitle : `${upcoming.length}`}</span></div>
               {!hours.length && <p className="hist-card-note guide-notice">{COPY.empty}</p>}
-              {hours.map(group => <div className="cal-stream-day" key={group.key}>
+              {hours.map(group => <div className="cal-stream-day guide-hour-group" id={`guide-hour-${group.key}`} key={group.key}>
                 <div className="cal-stream-gutter"><span className="cal-stream-num guide-hour">{group.label}</span></div>
                 <div className="cal-stream-rows">
                   {group.items.map(p => { const c = channelById.get(p.channelId); return <button type="button" className="guide-row interactive-surface" key={p.id} onClick={() => setSelected(p)}>

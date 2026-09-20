@@ -32,6 +32,7 @@ export const BROADCAST_GUIDE = {
   channels: 'My channels', allChannels: 'Select all', noChannels: 'Clear selection',
   apply: 'Apply channels', cancel: 'Cancel', today: 'Today', now: 'On now', allDay: 'Full day',
   comingUp: 'Coming up', week: 'Week', editChannels: 'Edit channels', done: 'Done',
+  jumpToTime: 'Jump to time', chooseTime: 'Choose a time',
   ends: t => `Ends ${t}`, nothingOnNow: 'Nothing on your channels right now.',
   channelsCount: n => `My channels · ${n}`, of: (n, total) => `${n} of ${total}`,
   search: 'Find a programme', empty: 'No programmes match this view.',

@@ -1,12 +1,20 @@
 /* The Guide on the Calendar/History shell (.hist-page, .hist-toolbar, .cal-body,
    .cal-side, .cal-stream, .hist-card, .cal-filter-row, .cal-scope). Only what
    is guide-specific is defined here. */
-.guide-page .hist-toolbar-sub a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
-.guide-page .hist-toolbar-sub a:hover { color: var(--accent-text); }
+.guide-region { display: inline-flex; align-items: baseline; gap: 5px; color: var(--text-primary); }
+.guide-region a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+.guide-region a:hover { color: var(--accent-text); }
+.guide-mobile-region { display: none; }
 .guide-search { width: 240px; }
 .guide-card-head { min-height: 0; padding: 0 4px; }
 .guide-card-head .cal-filter-label { padding: 0; }
 .guide-side .hist-card { padding: 14px 12px 12px; }
+.guide-side .guide-region-card { flex-direction: row; align-items: center; padding: 16px; font-size: 15px; }
+.guide-jump-card { gap: 9px; }
+.guide-jump-card select { width: 100%; height: 38px; padding: 0 32px 0 11px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text-primary); font: inherit; font-size: 13px; cursor: pointer; }
+.guide-jump-card select:hover { border-color: var(--border-strong); }
+.guide-jump-card select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.guide-jump-card select:disabled { cursor: default; opacity: 0.55; }
 .guide-note { padding: 0 12px; line-height: 1.7; }
 .guide-notice { padding: 6px 4px 0; }
 .guide-missing-notice { padding-top: 24px; }
@@ -15,7 +23,7 @@
    Guide's market context on its own row, but lift the controls by the same
    amount so the two page headers share one rhythm. */
 @media (min-width: 1024px) {
-  .guide-page .hist-toolbar-controls { transform: translateY(-3.5rem); }
+  .guide-page .hist-toolbar-controls { margin-left: auto; transform: translateY(-3.5rem); }
 }
 
 /* Week picker: the seven days of coverage in one row. */
@@ -26,6 +34,11 @@
 .guide-day:hover strong { background: var(--surface-raised); }
 .guide-day--on strong,
 .guide-day--on:hover strong {
+  background: var(--surface-raised);
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+.guide-day--today strong,
+.guide-day--today:hover strong {
   background: color-mix(in srgb, var(--chip-cinema) 12%, transparent);
   color: var(--chip-cinema);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--chip-cinema) 34%, var(--border));
@@ -65,6 +78,7 @@
 
 /* Coming up: the Calendar's day stream, with the hour in the gutter. */
 .guide-hour { font-size: 22px; letter-spacing: -0.03em; white-space: nowrap; }
+.guide-hour-group { scroll-margin-top: 24px; }
 .guide-row { display: flex; align-items: center; gap: 14px; width: 100%; padding: 10px 4px; border: 0; border-bottom: 1px solid var(--border); background: none; text-align: left; cursor: pointer; font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
 .guide-row:last-child { border-bottom: 0; }
 .guide-row:hover strong { color: var(--accent-text); }
@@ -77,6 +91,7 @@
 .guide-mobile-bar .btn { align-self: flex-start; }
 @media (min-width: 1024px) { .guide-mobile-bar { display: none; } }
 @media (max-width: 1023px) {
+  .guide-mobile-region { display: inline-flex; }
   .guide-search { display: none; }
   .guide-now-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .guide-now-head > .guide-now-ends { display: none; }
