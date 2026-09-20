@@ -28,7 +28,7 @@ export const BROADCAST_GUIDE = {
   },
   preview: 'Development preview · Free-to-air television',
   previewNote: 'Local feed evaluation. Channel choices are saved on this device only.',
-  region: 'Broadcast region', regionNote: 'Capital-city feeds for now. Regional reception areas still need verification.',
+  region: 'Broadcast region', regionShort: 'Region', regionNote: 'Capital-city feeds for now. Regional reception areas still need verification.',
   channels: 'My channels', allChannels: 'Select all', noChannels: 'Clear selection',
   apply: 'Apply channels', cancel: 'Cancel', today: 'Today', now: 'On now', allDay: 'Full day',
   comingUp: 'Coming up', week: 'Week', editChannels: 'Edit channels', done: 'Done',
