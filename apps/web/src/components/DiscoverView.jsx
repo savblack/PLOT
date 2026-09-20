@@ -17,7 +17,6 @@ import { tmdb, getTmdbRegion } from '@plot/core/tmdb.js';
 import { filterByType, filterByGenre } from '../utils/mediaFilters.js';
 import { MEDIA } from '../copy/media.js';
 import { DISCOVER_VIEW } from '@plot/core/copy/discoverView.js';
-import { COMMON } from '@plot/core/copy/common.js';
 import { homePersonalState, selectHomeHero, selectHomeUpNext } from '@plot/core/home.js';
 import { getCalendarRelativeLabel } from '@plot/core/calendar.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
@@ -145,7 +144,7 @@ export function DiscoverToolbar({ typeFilters, setTypeFilters, genreFilters, set
       <span className="page-toolbar-date">{todayLongLabel()}</span>
       <div className="home-toolbar-actions">
         <button type="button" className="home-search-trigger" onClick={onOpenSearch}>
-          <IconSearch /><span>{COMMON.searchTitles}</span>
+          <IconSearch /><span>{DISCOVER_VIEW.homeSearchPlaceholder}</span>
         </button>
         <GroupedFilterMenu
           mobileControls

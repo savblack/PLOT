@@ -1,4 +1,5 @@
 export const DISCOVER_VIEW = {
+  homeSearchPlaceholder: 'Search trending, new and coming soon',
   mostAnticipatedTitle: 'Most Anticipated',
   mostAnticipatedSubtitle: 'Coming soon',
   upNext: 'Up next',
