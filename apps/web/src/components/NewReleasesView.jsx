@@ -1,6 +1,7 @@
 import { ALL_TYPES } from '@plot/core/mediaFilters.js';
 import { useState } from 'react';
 import { useApp } from '../hooks/useApp.js';
+import { useGenres } from '../hooks/useGenres.js';
 import { useNewReleases } from '../hooks/useNewReleases.js';
 import { filterByType, filterByGenre } from '../utils/mediaFilters.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
@@ -52,11 +53,12 @@ function NewReleasesContent({ openPanel, watchlist, typeFilters, genreFilters })
 
 export default function NewReleasesView() {
   const app = useApp();
+  const { genres } = useGenres();
   const [typeFilters,  setTypeFilters]  = useState(ALL_TYPES);
   const [genreFilters, setGenreFilters] = useState([]);
 
   if (!app) return null;
-  const { openPanel, watchlist } = app;
+  const { openPanel, openSearch, watchlist } = app;
 
   return (
     <div>
@@ -66,6 +68,8 @@ export default function NewReleasesView() {
         setTypeFilters={setTypeFilters}
         genreFilters={genreFilters}
         setGenreFilters={setGenreFilters}
+        genres={genres}
+        onOpenSearch={openSearch}
       />
       <NewReleasesContent openPanel={openPanel} watchlist={watchlist} typeFilters={typeFilters} genreFilters={genreFilters} />
     </div>
