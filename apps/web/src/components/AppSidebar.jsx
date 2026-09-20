@@ -39,6 +39,8 @@ const SETTINGS_NAV_ITEM = APP_NAV_ITEMS.find(item => item.id === 'settings');
  * @param {object}   [props.profile]         Viewer's profile row; omit for signed-out.
  * @param {object}   [props.user]            Auth user; gates the notifications row.
  * @param {number}   [props.unread]          Unread notification count.
+ * @param {boolean}  [props.collapsed]       Whether the desktop rail is icon-only.
+ * @param {Function} props.onToggleCollapsed Toggles the desktop rail width.
  * @param {Function} props.onNavigate        Called with a view id.
  * @param {Function} props.onFeedback        Opens the existing feedback composer.
  * @param {Function} props.onNavigateProfile Called with a username.
@@ -51,6 +53,8 @@ export default function AppSidebar({
   profile,
   user,
   unread = 0,
+  collapsed = false,
+  onToggleCollapsed,
   onNavigate,
   onNavigateProfile,
   onFeedback,
@@ -63,12 +67,23 @@ export default function AppSidebar({
     <aside className="app-sidebar">
       <button
         type="button"
+        className="app-sidebar-collapse-rail"
+        onClick={onToggleCollapsed}
+        aria-label={collapsed ? APP_SHELL.expandNavigation : APP_SHELL.collapseNavigation}
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <polyline points={collapsed ? '9 18 15 12 9 6' : '15 18 9 12 15 6'} />
+        </svg>
+      </button>
+      <button
+        type="button"
         className="app-sidebar-brand interactive-surface"
         onClick={() => onNavigate('home')}
         aria-label={APP_SHELL.goToHome}
       >
-        <PlotLogo className="app-sidebar-brand-text" style={{ fontSize: '2.35rem' }} />
-        <span className="app-sidebar-beta">{APP_SHELL.beta}</span>
+        {collapsed
+          ? <span className="app-sidebar-brand-mark" aria-hidden="true">p</span>
+          : <><PlotLogo className="app-sidebar-brand-text" style={{ fontSize: '2.35rem' }} /><span className="app-sidebar-beta">{APP_SHELL.beta}</span></>}
       </button>
 
       <div className="app-sidebar-scroll">
