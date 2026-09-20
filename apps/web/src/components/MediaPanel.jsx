@@ -41,6 +41,7 @@ import Spinner from './Spinner.jsx';
 import TitleReview from './TitleReview.jsx';
 import StarIcon from './StarIcon.jsx';
 import KebabMenu from './KebabMenu.jsx';
+import PanelCloseRail from './PanelCloseRail.jsx';
 import { COMMON } from '../copy/common.js';
 import { MEDIA } from '../copy/media.js';
 import { MEDIA_PANEL } from '../copy/mediaPanel.js';
@@ -213,12 +214,9 @@ function UpNextCard({ tvId, details, progress, whereToWatch, onSeriesFinished })
   const watchedInSeason = Math.max(0, episodeNumber - 1);
   const seasonTotal = episodes.length;
   const offer = whereToWatch.streaming[0] || whereToWatch.rentBuy[0] || null;
-  const link = offer && buildWatchLink({ providerUrl: offer.providerUrl, justwatchLink: whereToWatch.justwatchLink });
   const still = episode?.still_path ? backdropUrl(episode.still_path, 'w300') : null;
   const runtime = episode?.runtime ? MEDIA_PANEL.episodeRuntime(episode.runtime) : '';
-  // The button names the provider, so the meta line only carries it when
-  // there is no button to open.
-  const where = [link ? '' : offer?.providerName, runtime].filter(Boolean).join(' · ');
+  const where = [offer?.providerName, runtime].filter(Boolean).join(' · ');
 
   const markWatched = async () => {
     if (pending) return;
@@ -256,11 +254,6 @@ function UpNextCard({ tvId, details, progress, whereToWatch, onSeriesFinished })
             <CheckIcon />
             {pending ? MEDIA_PANEL.updating : MEDIA.markWatched}
           </button>
-          {link && offer && (
-            <a className="panel-pill panel-pill--ghost" href={link.url} target="_blank" rel="noopener">
-              {MEDIA_PANEL.openOn(offer.providerName)}
-            </a>
-          )}
         </div>
       </div>
       {seasonTotal > 0 && (
@@ -1472,6 +1465,7 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
         />
       )}
       <div className={`panel-overlay${closing ? ' closing' : ''}`} onClick={onClose} />
+      <PanelCloseRail closing={closing} onClose={onClose} />
       <div
         className={`panel${closing ? ' closing' : ''}`}
         style={dragY ? { transform: `translateY(${dragY}px)`, transition: 'none' } : undefined}
