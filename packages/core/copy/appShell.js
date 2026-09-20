@@ -6,6 +6,8 @@
 export const APP_SHELL = {
   openMenu: 'Open menu',
   closeMenu: 'Close menu',
+  collapseNavigation: 'Collapse navigation',
+  expandNavigation: 'Expand navigation',
   goToHome: 'Go to home',
   notifications: 'Notifications',
   openSearch: 'Open search',

@@ -24,6 +24,10 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
   const navigate = useNavigate();
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    try { return window.localStorage.getItem('plot-sidebar-collapsed') === 'true'; }
+    catch { return false; }
+  });
   const [showScrollTop, setShowScrollTop] = useState(false);
   const mainRef = useRef(null);
 
@@ -31,6 +35,11 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
 
   // Keep the bell badge fresh as the user navigates (e.g. after viewing the feed).
   useEffect(() => { refreshCount(); }, [currentView, refreshCount]);
+
+  useEffect(() => {
+    try { window.localStorage.setItem('plot-sidebar-collapsed', String(sidebarCollapsed)); }
+    catch { /* Storage can be unavailable in private browsing. */ }
+  }, [sidebarCollapsed]);
 
   useEffect(() => {
     if (!drawerOpen) return undefined;
@@ -103,7 +112,7 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
     : currentView === 'guide' ? BROADCAST_GUIDE.subtitle : null;
 
   return (
-    <div className={`app-shell${panelOpen ? ' panel-docked' : ''}`}>
+    <div className={`app-shell${panelOpen ? ' panel-docked' : ''}${sidebarCollapsed ? ' sidebar-collapsed' : ''}`}>
       {/* ── Desktop sidebar ── */}
       {/* Rendered at every width and revealed by CSS at >=1024px, so there is
           no breakpoint state in JS to get out of step with the stylesheet. */}
@@ -112,6 +121,8 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
         profile={profile}
         user={user}
         unread={unread}
+        collapsed={sidebarCollapsed}
+        onToggleCollapsed={() => setSidebarCollapsed(collapsed => !collapsed)}
         onFeedback={() => user ? setFeedbackOpen(true) : navigate('/login')}
         onNavigate={go}
         onNavigateProfile={(username) => navigate(`/u/${username}`)}
