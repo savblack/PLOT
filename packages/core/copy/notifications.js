@@ -21,7 +21,6 @@ export const NOTIFICATIONS_PAGE = Object.freeze({
   wantsToFollow: 'wants to follow you',
   approve: 'Approve',
   decline: 'Decline',
-  approveHint: 'Approving lets them see your watch count, recent watches and lists.',
   newFollowers: 'New followers',
   thisWeek: 'this week',
   startedFollowing: 'started following you',
@@ -31,8 +30,10 @@ export const NOTIFICATIONS_PAGE = Object.freeze({
   today: 'Today',
   yesterday: 'Yesterday',
   earlier: 'Earlier',
-  newCount: (n) => `${n} new`,
-  upToDate: 'You’re up to date',
+  unreadCount: (n) => `${n} unread`,
+  markAllRead: 'Mark all read',
+  upToDate: 'All caught up',
+  upToDateBody: 'You’ve seen everything for now.',
   nothingElse: 'Nothing else yet.',
 });
 
