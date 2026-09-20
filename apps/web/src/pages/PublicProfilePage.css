@@ -2,18 +2,19 @@
    primary, deeper-cream secondary. Data selection lives in core/publicProfileLayout.js.
    Chosen from the 17 Sep 2026 canvas (option A "Shelf"): the Top 5 is one row of five
    at every width and the Movies/TV switch is always present. */
-.pp-view { box-sizing: border-box; width: 100%; max-width: 1120px; margin: 0 auto; padding: 0 40px 4rem; font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+.pp-view { box-sizing: border-box; width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 40px 4rem; background: var(--bg); font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
 .pp-pad { padding: 0; }
 
 /* ── Header: identity left, actions right ── */
-.pp-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; padding: 48px 0 8px; }
-.pp-intro-copy { min-width: 0; display: flex; flex-direction: column; gap: 20px; }
+.pp-intro { display: flex; flex-direction: column; gap: 22px; padding-top: 48px; }
+.pp-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; }
 .pp-header-top { display: flex; align-items: center; gap: 20px; }
 .pp-header-info { min-width: 0; }
 .pp-name { margin: 0; font-family: var(--font-display); font-size: clamp(2rem, 4vw, 44px); font-weight: 700; letter-spacing: var(--font-display-tracking); line-height: 1.05; overflow-wrap: anywhere; }
 .pp-handle { margin: 6px 0 0; font-size: 14px; color: var(--text-muted); }
 .pp-verified { width: 1.3rem; height: 1.3rem; margin-left: 0.4rem; vertical-align: -0.12rem; }
 .pp-bio { margin: 0; max-width: 560px; font-size: 16px; line-height: 1.55; color: var(--text-secondary); white-space: pre-wrap; }
+.pp-intro-meta { display: flex; align-items: center; gap: 28px; flex-wrap: wrap; }
 .pp-stats { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; margin: 0; }
 .pp-stats:empty { display: none; }
 .pp-stat { display: inline-flex; align-items: baseline; gap: 4px; background: none; border: 0; padding: 0; font: inherit; cursor: default; }
@@ -35,7 +36,7 @@
 .pp-section-heading .pp-section-title { margin: 0; }
 .pp-section-heading h3 { margin: 0; font-family: var(--font-display); font-size: 20px; font-weight: 700; letter-spacing: var(--font-display-tracking); overflow-wrap: anywhere; min-width: 0; }
 .pp-section-heading .btn { flex-shrink: 0; }
-.pp-featured { margin-top: 36px; }
+.pp-featured { margin-top: 48px; }
 
 /* Top 5: five equal columns, never wraps. A pick is its own query container so
    its rank numeral is a share of the column, from a 60px phone poster to a
@@ -43,6 +44,8 @@
 .pp-top5 { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 16px; }
 .pp-top5-pick { margin: 0; min-width: 0; container-type: inline-size; --rank-cut-size: 36cqw; }
 .pp-top5-pick figcaption { margin-top: 10px; font-size: 14px; font-weight: 600; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.pp-top5 .rank-cut-frame { padding-left: 0; }
+.pp-top5-hint { display: none; }
 
 /* Posters (Top 5 and rails). The Top 5's rank is the pink numeral cut out of
    the poster's corner (.rank-cut in app.css). */
@@ -59,9 +62,9 @@
 .pp-rail .pp-poster { flex: 0 0 auto; width: 120px; }
 
 /* Lists + history side by side; one column collapses to a single 600px column. */
-.pp-profile-columns { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 64px; align-items: stretch; }
+.pp-profile-columns { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 64px; align-items: stretch; margin-top: 52px; }
 .pp-profile-columns:has(> :only-child) { grid-template-columns: minmax(0, 1fr); max-width: 640px; }
-.pp-profile-columns .pp-section { margin-top: 44px; }
+.pp-profile-columns .pp-section { margin-top: 0; }
 #pp-profile-lists .pp-section-heading { margin-bottom: 30px; }
 .pp-list-covers { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px 24px; }
 /* Favourites beside the lists: three across, two rows; anything past the sixth is hidden. */
@@ -70,6 +73,7 @@
 .pp-fav-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; flex: 1; align-content: space-between; }
 .pp-fav-grid > :nth-child(n + 7) { display: none; }
 .pp-history-rows--columns { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 40px; }
+#pp-profile-history { margin-top: 52px; }
 .pp-section-page-head { align-items: flex-end; padding-top: 40px; }
 .pp-list-covers--page { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 32px 24px; }
 .pp-poster-page-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 16px; }
@@ -93,22 +97,27 @@
 @media (max-width: 760px) {
   .pp-view { padding: 0 16px 3rem; }
   /* Phone: compact actions top-right, then identity, bio, stats and links. */
-  .pp-header { flex-direction: column-reverse; align-items: stretch; gap: 16px; padding: 20px 0 4px; }
-  .pp-intro-copy { gap: 16px; }
+  .pp-intro { gap: 16px; padding-top: 20px; }
+  .pp-header { flex-direction: column-reverse; align-items: stretch; gap: 16px; }
   .pp-header-top { gap: 14px; }
-  .pp-avatar { width: 60px; height: 60px; font-size: 1.6rem; }
+  .pp-view .pp-avatar { width: 60px; height: 60px; font-size: 1.6rem; }
   .pp-name { font-size: 30px; }
   .pp-bio { font-size: 15px; }
+  .pp-intro-meta { align-items: flex-start; flex-direction: column; gap: 16px; }
   .pp-stats { gap: 18px; }
   .pp-btn-row .btn { min-height: 36px; padding: 0 14px; font-size: 13px; }
-  .pp-section, .pp-profile-columns .pp-section { margin-top: 32px; }
-  .pp-featured { margin-top: 28px; }
+  .pp-section { margin-top: 32px; }
+  .pp-profile-columns { margin-top: 32px; }
+  .pp-profile-columns .pp-section { margin-top: 0; }
+  #pp-profile-history { margin-top: 32px; }
+  .pp-featured { margin-top: 40px; }
   .pp-section-title { font-size: 22px; }
   .pp-section-heading { margin-bottom: 14px; }
   #pp-profile-lists .pp-section-heading { margin-bottom: 26px; }
-  /* Five picks across a phone: the gap tightens to pay for the gutters. */
+  /* Five picks across a phone: the gap tightens to preserve the shelf. */
   .pp-top5 { gap: 6px; }
   .pp-top5-pick figcaption { display: none; }
+  .pp-top5-hint { display: block; margin: 12px 0 0; font-size: 12px; color: var(--text-muted); }
   .pp-top5 .pp-poster { border-radius: 8px; }
   .pp-top5 .card-fav-btn, .pp-top5 .card-save-btn { display: none; }
   .pp-profile-columns { grid-template-columns: minmax(0, 1fr); gap: 0; }

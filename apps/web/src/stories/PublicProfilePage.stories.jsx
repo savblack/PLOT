@@ -12,9 +12,9 @@ export default {
   title: 'Views/PublicProfilePage', component: ProfileContent, parameters: { layout: 'fullscreen' },
   args: { profileId: 'story-profile', username: 'alex', isOwn: true, openPanel: () => {}, watchlist, favouriteLabel: 'Favourites' },
   decorators: [(Story) => <MemoryRouter><AppContext.Provider value={app}>
-    <style>{profileStyles}</style><main className="pp-view"><div className="pp-pad"><ProfileIntro name="Alex Morgan" username="alex" bio="Movies, TV, and a good ending."
+    <div style={{ minHeight: '100vh', background: 'var(--bg)' }}><style>{profileStyles}</style><main className="pp-view"><div className="pp-pad"><ProfileIntro name="Alex Morgan" username="alex" bio="Movies, TV, and a good ending."
       stats={<div className="pp-stats"><span className="pp-stat"><span className="pp-stat-num">248</span><span className="pp-stat-label">watched</span></span><span className="pp-stat"><span className="pp-stat-num">86</span><span className="pp-stat-label">followers</span></span></div>}
-      actions={<div className="pp-btn-row"><button className="btn btn-primary">Follow Alex</button><button className="btn btn-secondary">Share profile</button></div>} /></div><Story /></main>
+      actions={<div className="pp-btn-row"><button className="btn btn-primary">Follow Alex</button><button className="btn btn-secondary">Share profile</button></div>} /></div><Story /></main></div>
   </AppContext.Provider></MemoryRouter>],
 };
 export const Populated = { args: { topMovies: resolvedTitles.slice(0, 5).map((item, i) => ({ ...item, rank: i + 1 })), favourites: [...resolvedTitles, ...resolvedTitles.slice(0, 4)], recent: resolvedTitles.slice(4).map(item => ({ ...item, watched_at: '2026-09-14' })), customLists: [

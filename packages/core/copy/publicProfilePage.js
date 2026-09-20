@@ -10,6 +10,7 @@ export const PUBLIC_PROFILE_PAGE = {
   profileNavigation: 'Profile sections',
   topPicks: 'Top picks',
   topFive: 'Top 5',
+  tapPosterForDetails: 'Tap a poster for details.',
   /** @param {string} type The switch label the shelf is on ('Movies' / 'TV'). */
   noPicksOfType: (type) => `No ${type} picks yet.`,
   topFilms: 'Top movies',

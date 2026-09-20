@@ -807,19 +807,19 @@ export function ProfileSectionPage({ section }) {
 /** DOM layout only. Selection and visibility belong to publicProfileLayout in core. */
 /** Shared visual shell so previews render the production profile header. */
 export function ProfileIntro({ name, username, avatarUrl, bio, badges, stats, links, actions }) {
-  // Desktop: identity left, actions right. Phone: the header column reverses
-  // so the compact actions sit top-right above the identity (see the CSS).
-  return <header className="pp-header" id="pp-profile-top">
-    <div className="pp-intro-copy">
+  // Desktop: identity left, actions right, followed by the bio and a single
+  // metadata row. Phone stacks those same pieces with the actions first.
+  return <div className="pp-intro" id="pp-profile-top">
+    <header className="pp-header">
       <div className="pp-header-top">
         {avatarUrl ? <img className="pp-avatar" src={avatarUrl} alt="" /> : <div className="pp-avatar">{(name || '?').charAt(0).toUpperCase()}</div>}
         <div className="pp-header-info"><h1 className="pp-name">{name}{badges}</h1><p className="pp-handle">@{username}</p></div>
       </div>
-      {bio && <p className="pp-bio">{bio}</p>}
-      {stats}{links}
-    </div>
-    {actions}
-  </header>;
+      {actions}
+    </header>
+    {bio && <p className="pp-bio">{bio}</p>}
+    {(stats || links) && <div className="pp-intro-meta">{stats}{links}</div>}
+  </div>;
 }
 
 export function ProfileContent({ username, isOwn, openPanel, watchlist, favouriteLabel, ...data }) {
@@ -841,7 +841,7 @@ export function ProfileContent({ username, isOwn, openPanel, watchlist, favourit
         </div>
       </div>
       {picks.length > 0
-        ? <TopFiveGrid items={picks} openPanel={openPanel} watchlist={watchlist} />
+        ? <><TopFiveGrid items={picks} openPanel={openPanel} watchlist={watchlist} /><p className="pp-top5-hint">{PUBLIC_PROFILE_PAGE.tapPosterForDetails}</p></>
         : <p className="pp-sparse-line">{PUBLIC_PROFILE_PAGE.noPicksOfType(pickType === 'tv' ? MEDIA.tv : MEDIA.movies)}{isOwn && <> <Link to="/my-lists">{PUBLIC_PROFILE_PAGE.addFirstPick}</Link></>}</p>}
     </section>}
     {(content.customLists.length > 0 || content.favourites.length > 0) && <div className="pp-profile-columns">
