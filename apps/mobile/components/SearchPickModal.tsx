@@ -1,10 +1,10 @@
 /**
  * "Pick a title" sheet — history filter or TMDB search, used wherever a slot
- * needs filling: Favourites, a custom list, or a Top 10 rank.
+ * needs filling: Favourites, a custom list, or a Top 5 rank.
  *
- * Shared because My Lists and the Top 10 screen each carried a near-identical
+ * Shared because My Lists and the former ranked-list screen each carried a near-identical
  * copy (103 vs 106 lines, differing only in whitespace and a stray safe-area
- * pad). Folding Top 10 into My Lists made keeping both indefensible.
+ * pad). Folding the ranked list into My Lists made keeping both indefensible.
  */
 import { useState, useEffect, useMemo } from 'react';
 import {

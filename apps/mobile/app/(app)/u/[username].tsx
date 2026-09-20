@@ -5,7 +5,7 @@ import { EVENTS } from '../../../lib/analytics';
 /**
  * Public profile — /u/:username (mirrors web PublicProfilePage).
  * Header + follow button + stats, a locked state for private profiles the
- * viewer doesn't follow, and Recently-watched / Top-10 / Favourites poster
+ * viewer doesn't follow, and recently watched / Top 5 / favourites poster
  * grids. Followers/Following open a bottom-sheet user list.
  */
 import { useState, useMemo, useEffect } from 'react';
@@ -232,10 +232,10 @@ export default function ProfileScreen({ usernameOverride }: { usernameOverride?:
               <Section title="Recently watched" colors={colors}><PosterGrid items={recent} styles={styles} onPress={openMedia} /></Section>
             )}
             {topMovies.length > 0 && (
-              <Section title="Top 10 movies" colors={colors}><PosterGrid items={topMovies} ranked styles={styles} onPress={openMedia} /></Section>
+              <Section title={PUBLIC_PROFILE_PAGE.topFilms} colors={colors}><PosterGrid items={topMovies} ranked styles={styles} onPress={openMedia} /></Section>
             )}
             {topTv.length > 0 && (
-              <Section title="Top 10 TV" colors={colors}><PosterGrid items={topTv} ranked styles={styles} onPress={openMedia} /></Section>
+              <Section title={PUBLIC_PROFILE_PAGE.topTv} colors={colors}><PosterGrid items={topTv} ranked styles={styles} onPress={openMedia} /></Section>
             )}
             {favourites.length > 0 && (
               <Section title={fw.plural} colors={colors}><PosterGrid items={favourites} styles={styles} onPress={openMedia} /></Section>

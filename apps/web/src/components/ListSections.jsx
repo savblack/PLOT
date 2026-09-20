@@ -51,7 +51,7 @@ export function TickIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>;
 }
 
-/* ── Search sheet for Top 10 additions ── */
+/* ── Search sheet for Top 5 additions ── */
 export function AddToRankModal({ listType, rank, onAdd, onClose }) {
   const { user } = useApp();
   const { entries } = useHistory(user?.id);
@@ -402,7 +402,7 @@ export function Empty({ children, onAdd, addLabel }) {
   );
 }
 
-/* Header label + count + actions for a block inside a section (one Top 10
+/* Header label + count + actions for a block inside a section (one Top 5
    list, one custom list). */
 export function SubHead({ label, count, badge, children }) {
   return (

@@ -9,10 +9,11 @@
 // one that did.
 export const BUILT_IN_KEYS = ['want', 'favorites'];
 
-/* The ranked list shows five slots. user_top_lists still stores ranks 1-10,
-   so anything a user ranked 6-10 before the change is kept in the table and
-   simply not shown; the editor never writes past this. */
+/* Personal ranked lists have five slots on every client and in the database. */
 export const TOP_LIST_SIZE = 5;
+
+/** @param {number} rank */
+export const isTopListRank = (rank) => Number.isInteger(rank) && rank >= 1 && rank <= TOP_LIST_SIZE;
 
 /** @param {string} id */
 export const customListKey = (id) => `list-${id}`;

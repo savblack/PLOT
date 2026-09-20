@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from './supabase.js';
+import { isTopListRank } from './listCollections.js';
 
 /**
- * Ranked Top-10 lists (movies + tv) for a user.
+ * Ranked Top 5 lists (movies + TV) for a user.
  * @param {string|null|undefined} userId
  * @returns {{
  *   lists: { movies: any[]; tv: any[] };
@@ -48,7 +49,7 @@ export function useTopLists(userId) {
   useEffect(() => { load(); }, [load]);
 
   const setSlot = useCallback(async (listType, rank, item) => {
-    if (!userId) return false;
+    if (!userId || !isTopListRank(rank)) return false;
     const tmdbId = Number(item.id || item.tmdb_id);
 
     // Remove any existing entry for this item in this list (same tmdb_id, different rank)
@@ -156,7 +157,7 @@ export function useTopLists(userId) {
   // otherwise just relocates it — so moving into a gap doesn't require an
   // occupied neighbor.
   const moveToRank = useCallback(async (listType, rank, targetRank) => {
-    if (!userId) return false;
+    if (!userId || !isTopListRank(rank) || !isTopListRank(targetRank)) return false;
     const items = lists[listType];
     const item = items.find(i => i.rank === rank);
     if (!item) return false;

@@ -89,7 +89,7 @@ export const MY_LISTS_TABS = [
   { id: 'all',       label: 'All'           },
   { id: 'watching',  label: 'Watching'      },
   { id: 'want',      label: 'Want to Watch' },
-  { id: 'top10',     label: 'Top 10'        },
+  { id: 'top10',     label: 'Top 5'         },
   { id: 'favorites', label: null            }, // region-spelled at the call site
   { id: 'lists',     label: 'Lists'         },
   { id: 'history',   label: 'History'       },

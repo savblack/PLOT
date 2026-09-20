@@ -2704,7 +2704,7 @@ svg { stroke-width: 1.5; }
   color: var(--text-secondary);
 }
 
-/* Blocks inside a section: one custom list, one Top 10 list. */
+/* Blocks inside a section: one custom list, one Top 5 list. */
 .mylists-sub + .mylists-sub { margin-top: 1.25rem; }
 .mylists-sub-head {
   display: flex;
@@ -2773,7 +2773,7 @@ svg { stroke-width: 1.5; }
   border-radius: var(--radius-md);
 }
 
-/* Top 10: ten slots across. Each column is at least 88px and grows to share
+/* Legacy ranked-list rail; the current Top 5 uses the podium below. Each column is at least 88px and grows to share
    the row, so at sidebar widths all ten fit and below them the row scrolls. */
 .mylists-top10-rail {
   display: grid;
