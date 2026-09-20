@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { tmdb, isEnglishOriginTitle, excludeKidsContent } from './tmdb.js';
+import { filterByGenre, filterByType } from './mediaFilters.js';
 
 const hasPoster = item => !!item.poster_path;
 const MIN_RAIL_SIZE = 14;
@@ -29,6 +30,36 @@ export const GENRE_RAILS = [
   // Reality is a TV-only TMDB genre — no movie side at all.
   { key: 'reality',     label: 'New in Reality TV',  tvGenreId: 10764 },
 ];
+
+/**
+ * Prepare the genre-only New Releases page. A narrowed genre selection owns
+ * both the rails and its jump index, so deselecting Horror cannot leave a
+ * mismatched Horror heading whose individual cards merely happen to match
+ * another selected genre. The page title already supplies the "New Releases"
+ * context, so rail headings use the genre name alone.
+ *
+ * @param {Array<{key:string,label:string,items?:Array}>} genreRails
+ * @param {string[]} typeFilters
+ * @param {number[]} genreFilters
+ */
+export function prepareNewReleaseGenreRails(genreRails, typeFilters, genreFilters) {
+  const selectedGenres = new Set(genreFilters);
+  return (genreRails || [])
+    .filter(rail => {
+      if (!selectedGenres.size) return true;
+      const definition = GENRE_RAILS.find(item => item.key === rail.key);
+      return [definition?.movieGenreId, definition?.tvGenreId]
+        .filter(Boolean)
+        .some(id => selectedGenres.has(id));
+    })
+    .map(rail => ({
+      ...rail,
+      title: rail.label.replace(/^New in /, ''),
+      items: filterByGenre(filterByType(rail.items || [], typeFilters), genreFilters) || [],
+    }))
+    .filter(rail => rail.items.length > 0)
+    .sort((a, b) => a.title.localeCompare(b.title));
+}
 
 async function loadGenreRail({ movieGenreId, movieKeywordId, tvGenreId, tvKeywordId }, hideKids) {
   const [movieGenreRes, movieKeywordRes, tvGenreRes, tvKeywordRes] = await Promise.all([

@@ -6261,6 +6261,19 @@ a.provider-chip--link:hover {
 .home-page-nav-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 6px; }
 .home-page-nav-chev { width: 14px; display: flex; flex-shrink: 0; color: var(--text-muted); }
 .home-page-nav-chev svg { width: 14px; height: 14px; }
+
+/* New Releases uses the same narrow-column language as Home and My Lists:
+   the shared Show/Genre rows first, then an index that stays in lockstep with
+   the filtered, alphabetical genre stream. */
+.new-releases-layout { padding: 0 var(--gut) 3rem; }
+.new-releases-side { gap: 24px; }
+.new-releases-stream { flex: 1; min-width: 0; --discover-rail-gut: 0px; }
+.new-releases-stream .discover-sections { padding-bottom: 0; }
+.new-releases-stream .discover-section { scroll-margin-top: 24px; }
+.new-releases-stream .discover-section-header { padding-left: 0; padding-right: 0; }
+.new-releases-jump { gap: 10px; padding: 14px 12px 6px; }
+.new-releases-jump .cal-filter-row[aria-current="true"] .cal-filter-name,
+.new-releases-jump .cal-filter-row[aria-current="true"] .mylists-jump-count { color: var(--accent-text); }
 .home-stream .discover-section { scroll-margin-top: 24px; }
 .home-toolbar-actions { display: flex; align-items: center; gap: 10px; }
 .home-search-trigger { width: 220px; height: 32px; display: flex; align-items: center; gap: 8px; border: 1px solid var(--border-strong); border-radius: var(--radius-pill); background: var(--surface); padding: 0 12px; color: var(--text-muted); font: inherit; font-size: 13px; cursor: text; }

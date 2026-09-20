@@ -1,0 +1,25 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { prepareNewReleaseGenreRails } from '../../useNewReleases.js';
+
+const rails = [
+  { key: 'horror', label: 'New in Horror', items: [{ id: 1, media_type: 'movie', genre_ids: [27] }] },
+  { key: 'comedy', label: 'New in Comedy', items: [{ id: 2, media_type: 'tv', genre_ids: [35] }] },
+  { key: 'action', label: 'New in Action', items: [{ id: 3, media_type: 'movie', genre_ids: [28] }] },
+  { key: 'truecrime', label: 'New in True Crime', items: [{ id: 4, media_type: 'tv', genre_ids: [] }] },
+];
+
+test('prepareNewReleaseGenreRails removes the repeated prefix and sorts by genre', () => {
+  const prepared = prepareNewReleaseGenreRails(rails, ['tv', 'cinema', 'movie'], []);
+  assert.deepEqual(prepared.map(rail => rail.title), ['Action', 'Comedy', 'Horror', 'True Crime']);
+});
+
+test('prepareNewReleaseGenreRails removes deselected genre rails from the page index and stream', () => {
+  const prepared = prepareNewReleaseGenreRails(rails, ['tv', 'cinema', 'movie'], [28, 35]);
+  assert.deepEqual(prepared.map(rail => rail.key), ['action', 'comedy']);
+});
+
+test('prepareNewReleaseGenreRails removes rails emptied by the type filter', () => {
+  const prepared = prepareNewReleaseGenreRails(rails, ['tv'], []);
+  assert.deepEqual(prepared.map(rail => rail.key), ['comedy', 'truecrime']);
+});
