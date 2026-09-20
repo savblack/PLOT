@@ -14,8 +14,9 @@ const PROCESS_DELAY_MS = 600;
  *
  * Runs inside the authenticated app shell so it can reuse the exact watchlist
  * add path the app uses everywhere else (watchlist.addToList → saveListItem).
- * Looks up the full TMDB record at runtime (never hardcoded ids), adds it,
- * fires a PostHog event, then opens the title so the user lands on it.
+ * Editorial recommendations open the title so the viewer can choose a list.
+ * Direct shares look up the full TMDB record at runtime (never hardcoded ids),
+ * add it, fire a PostHog event, then open the title.
  *
  * Idempotent: saving an already-saved title is a no-op confirmation, not an error.
  *
@@ -28,9 +29,10 @@ const PROCESS_DELAY_MS = 600;
  * @param {object}   args.user        Supabase auth user (or null)
  * @param {object}   args.watchlist   useWatchlist() return value
  * @param {function} args.openPanel   (id, mediaType) => void
+ * @param {function} args.openSavePrompt (id, mediaType, source) => void
  * @param {function} [args.onResult]  ({ status, message, title }) => void  (toast)
  */
-export function usePendingSave({ user, watchlist, openPanel, onResult }) {
+export function usePendingSave({ user, watchlist, openPanel, openSavePrompt, onResult }) {
   const processing = useRef(false);
 
   const { loading, addToList, isInList } = watchlist;
@@ -61,6 +63,7 @@ export function usePendingSave({ user, watchlist, openPanel, onResult }) {
               addToList,
               // Side-effects are no-ops once the effect has torn down.
               openPanel: (...a) => { if (!cancelled) openPanel(...a); },
+              openSavePrompt: (...a) => { if (!cancelled) openSavePrompt(...a); },
               track,
               EVENTS,
               onResult: (...a) => { if (!cancelled) onResult?.(...a); },
@@ -87,5 +90,5 @@ export function usePendingSave({ user, watchlist, openPanel, onResult }) {
       // preserving the "can't double-apply" invariant.
       if (!started) processing.current = false;
     };
-  }, [user?.id, loading, addToList, isInList, openPanel, onResult]);
+  }, [user?.id, loading, addToList, isInList, openPanel, openSavePrompt, onResult]);
 }

@@ -6,6 +6,7 @@ import { tmdb } from '@plot/core/tmdb.js';
 import { writePendingSave } from '../utils/pendingSave.js';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import { SAVE_PAGE } from '../copy/savePage.js';
+import { isKnownAccountBrowser } from '../utils/accountRecognition.js';
 
 /**
  * /save?media_type=movie&tmdb_id=12345
@@ -13,15 +14,15 @@ import { SAVE_PAGE } from '../copy/savePage.js';
  * Entry point for "Save to watchlist" links that live OUTSIDE the app (the
  * weekly newsletter, the public chart page, a shared title). This page never
  * adds the title itself — it records the intent (localStorage, survives the
- * signup round-trip) and hands off to the authenticated app, where the
- * pending-save processor (usePendingSave) reuses the normal watchlist add path.
+ * signup round-trip) and hands off to the authenticated app. Editorial links
+ * open the exact title so the viewer can choose a destination; direct shares
+ * retain the existing one-click watchlist save.
  *
- * Two audiences:
- *  - Logged-in  → straight into the app shell; the processor completes the save.
- *  - Logged-out → an editorial PREVIEW of the title with a "Save to your PLOT"
- *    CTA, instead of an immediate bounce to /login. The recipient sees what
- *    they'd be saving (the value) before being asked to sign up — the intent is
- *    already stashed, so signing up (or in) completes the save automatically.
+ * Three audiences:
+ *  - Logged-in  → straight into the app shell; the processor opens or saves it.
+ *  - Recognised, logged-out browser → the same title preview, with sign-in as
+ *    the primary action. Recognition is a local boolean, never account data.
+ *  - New browser → the title preview with account creation as the primary CTA.
  */
 const posterUrl = (path) => (path ? `https://image.tmdb.org/t/p/w342${path}` : null);
 const yearOf = (t) => (t?.release_date || t?.first_air_date || '').slice(0, 4);
@@ -48,7 +49,13 @@ export default function SavePage() {
   // 'checking' → deciding; 'preview' → logged-out preview shown.
   const [phase, setPhase] = useState('checking');
   const [title, setTitle] = useState(null);
+  const [returning, setReturning] = useState(false);
   const src = params.get('src') || 'save';
+  const articleSlug = src === 'whats_on_article' ? params.get('utm_content') : null;
+  const signupHref = `/signup?${new URLSearchParams({
+    src,
+    ...(articleSlug ? { utm_content: articleSlug } : {}),
+  }).toString()}`;
 
   useEffect(() => {
     if (handled.current) return;
@@ -71,11 +78,12 @@ export default function SavePage() {
     // second mount is guarded out, and cancelling would strand the loader.
     supabase.auth.getSession().then(({ data: { session } }) => {
       // Authenticated users go straight to the app shell, where the processor
-      // completes the save and opens the title.
+      // opens the title (editorial) or completes the save (direct share).
       if (session) {
         navigate('/home', { replace: true });
         return;
       }
+      setReturning(isKnownAccountBrowser());
       // Logged-out: show a preview instead of walling at /login. Resolve the
       // title at runtime from the id in the link (never hardcoded). A failed
       // lookup (bad id / rate limit) still shows the generic save preview — the
@@ -84,7 +92,10 @@ export default function SavePage() {
         .then(({ ok, data }) => setTitle(ok ? data : null))
         .catch(() => {})
         .finally(() => setPhase('preview'));
-    }).catch(() => setPhase('preview'));
+    }).catch(() => {
+      setReturning(isKnownAccountBrowser());
+      setPhase('preview');
+    });
   }, [params, navigate, src]);
 
   if (phase !== 'preview') {
@@ -117,7 +128,7 @@ export default function SavePage() {
           ? <img className="save-poster" src={poster} alt={name ? `${name} poster` : ''} />
           : <div className="save-poster save-poster--empty" aria-hidden="true" />}
 
-        <p className="save-kicker">{SHARING.previewKicker}</p>
+        <p className="save-kicker">{returning ? SHARING.returningKicker : SHARING.previewKicker(src)}</p>
         <h1 className="save-title">
           {name || SAVE_PAGE.thisTitleFallback}
           {year && <span className="save-year"> ({year})</span>}
@@ -133,13 +144,20 @@ export default function SavePage() {
         {overview && <p className="save-overview">{overview}</p>}
 
         <div className="save-actions">
-          <Link to={`/signup?src=${encodeURIComponent(src)}`} className="btn btn-primary">
-            {SHARING.signupToSave}
-          </Link>
-          <Link to="/login" className="btn btn-ghost">Sign in</Link>
+          {returning ? (
+            <>
+              <Link to="/login" className="btn btn-primary">{SHARING.signInToSave}</Link>
+              <Link to={signupHref} className="btn btn-secondary">{SHARING.createAccount}</Link>
+            </>
+          ) : (
+            <>
+              <Link to={signupHref} className="btn btn-primary">{SHARING.signupToSave}</Link>
+              <Link to="/login" className="btn btn-secondary">Sign in</Link>
+            </>
+          )}
         </div>
 
-        <p className="save-rule">{SHARING.previewBenefit}</p>
+        <p className="save-rule">{returning ? SHARING.returningBenefit : SHARING.previewBenefit}</p>
       </div>
     </div>
   );

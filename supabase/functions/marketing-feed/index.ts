@@ -27,6 +27,7 @@ type Db = SupabaseClient<Database>;
 // Run `npm run footer` to regenerate after editing the partial.
 import { FOOTER_HTML } from './footer.generated.ts';
 import { serviceKey } from '../_shared/serviceKey.ts';
+import { youtubeKey, youtubeTrailerKey } from '../_shared/youtube.ts';
 
 const SITE = 'https://theplot.tv';
 const APP = 'https://app.theplot.tv';
@@ -129,7 +130,12 @@ type FeedPost = {
   scheduled_for: string;
   status: string;
   tmdb_refs?: TmdbRef[] | null;
-  payload?: { home_kind?: string | null } | null;
+  payload?: {
+    home_kind?: string | null;
+    trailer_url?: string | null;
+    when_label?: string | null;
+    title?: { title?: string | null } | null;
+  } | null;
 };
 
 const postTitle = (p: FeedPost) => p.copy?.page_title || TYPE_META[p.post_type]?.label || p.post_type;
@@ -186,7 +192,9 @@ const storyModule = async (post: FeedPost, region: string, ref = post.tmdb_refs?
   if (!id || !ref?.media_type) return '';
 
   const mediaType = ref.media_type === 'tv' ? 'tv' : 'movie';
-  const saveUrl = `${APP}/save?media_type=${mediaType}&tmdb_id=${id}&src=whats_on_article`;
+  // `src` identifies the surface; `utm_content` names the exact article. The
+  // app keeps both the first-touch value and the current article through signup.
+  const saveUrl = `${APP}/save?media_type=${mediaType}&tmdb_id=${id}&src=whats_on_article&utm_content=${encodeURIComponent(post.slug)}`;
   const pageUrl = titleHref(ref.media_type, id, ref.title || postTitle(post));
 
   let detail: Record<string, unknown> | null = null;
@@ -249,7 +257,57 @@ const storyModule = async (post: FeedPost, region: string, ref = post.tmdb_refs?
       ${facts ? `<span class="sm-facts">${esc(facts)}</span>` : ''}
       ${status}
     </div>
-    <a class="sm-save" data-cta="article_save" href="${esc(saveUrl)}">Add to my watchlist</a>
+    <a class="sm-save" data-cta="article_save" href="${esc(saveUrl)}">Save to your PLOT</a>
+  </aside>`;
+};
+
+// First Look articles carry the exact official YouTube trailer selected by the
+// planner. Keep playback inside the article, but retain an ordinary YouTube
+// link for browsers or privacy tools that block embeds. Only recognized
+// YouTube URLs become embeds; anything else falls back to storyModule below.
+const trailerModule = async (post: FeedPost, ref = post.tmdb_refs?.[0]) => {
+  if (post.post_type !== 'trailer') return '';
+  const id = refId(ref);
+  if (!id || !ref?.media_type) return '';
+
+  const mediaType = ref.media_type === 'tv' ? 'tv' : 'movie';
+  let key = youtubeKey(post.payload?.trailer_url);
+  // Published First Look rows from before trailer_url was added still deserve
+  // the player. Resolve their current official trailer from TMDB using the
+  // verified ref stored on the article; never invent or hardcode a video key.
+  if (!key) {
+    try {
+      const apiKey = Deno.env.get('TMDB_API_KEY');
+      if (apiKey) {
+        const response = await fetch(`https://api.themoviedb.org/3/${mediaType}/${id}/videos?api_key=${apiKey}&language=en-US`);
+        if (response.ok) key = youtubeTrailerKey((await response.json())?.results);
+      }
+    } catch {
+      // The normal story card below remains the safe fallback.
+    }
+  }
+  if (!key) return '';
+
+  const title = post.payload?.title?.title || ref.title || postTitle(post);
+  const saveUrl = `${APP}/save?media_type=${mediaType}&tmdb_id=${id}&src=whats_on_article&utm_content=${encodeURIComponent(post.slug)}`;
+  const youtubeUrl = `https://www.youtube.com/watch?v=${key}`;
+  const release = post.payload?.when_label ? `In cinemas ${post.payload.when_label}` : '';
+
+  return `<aside class="trailermod" aria-label="${esc(title)} trailer">
+    <div class="tm-video">
+      <iframe src="https://www.youtube-nocookie.com/embed/${key}?rel=0" title="Watch the ${esc(title)} trailer" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+    </div>
+    <div class="tm-foot">
+      <div class="tm-copy">
+        <span class="tm-eyebrow">First look</span>
+        <span class="tm-title">Watch the trailer</span>
+        <span class="tm-sub">${esc(title)}${release ? ` · ${esc(release)}` : ''}</span>
+      </div>
+      <div class="tm-actions">
+        <a class="tm-youtube" href="${youtubeUrl}" target="_blank" rel="noopener noreferrer">Open on YouTube</a>
+        <a class="tm-save" data-cta="article_save" href="${esc(saveUrl)}">Save to your PLOT</a>
+      </div>
+    </div>
   </aside>`;
 };
 
@@ -566,6 +624,26 @@ ${head}
   @media (max-width: 640px) {
     .storymod { flex-wrap: wrap; gap: 14px; padding: 16px; }
     .storymod .sm-save { margin-left: auto; }
+  }
+  /* First Look article player. The video remains the visual lead, while the
+     footer carries the same editorial hierarchy and save action as storymod. */
+  .trailermod { margin: 0 0 30px; overflow: hidden; border-radius: 16px; background: var(--paper); }
+  .tm-video { position: relative; width: 100%; aspect-ratio: 16/9; background: var(--ink); }
+  .tm-video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
+  .tm-foot { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 18px 20px 20px; }
+  .tm-copy { min-width: 0; display: flex; flex-direction: column; }
+  .tm-eyebrow { color: var(--mut); font-size: 0.62rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+  .tm-title { margin-top: 4px; font-family: var(--display); font-size: 1.35rem; font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; }
+  .tm-sub { margin-top: 4px; color: var(--mut); font-size: 0.82rem; }
+  .tm-actions { flex-shrink: 0; display: flex; align-items: center; gap: 8px; }
+  .tm-youtube, .tm-save { display: inline-flex; align-items: center; justify-content: center; min-height: 42px; padding: 0.65rem 0.95rem; border-radius: 999px; text-decoration: none; font-size: 0.8rem; font-weight: 600; white-space: nowrap; transition: background 0.2s var(--ease), color 0.2s var(--ease); }
+  .tm-youtube { border: 1px solid var(--hair); color: var(--ink); background: transparent; }
+  .tm-youtube:hover { background: var(--bg); }
+  .tm-save { color: var(--ink); background: var(--fill); }
+  .tm-save:hover { background: var(--fill-hover); }
+  @media (max-width: 640px) {
+    .tm-foot { align-items: flex-start; flex-direction: column; padding: 16px; }
+    .tm-actions { flex-wrap: wrap; }
   }
   .article-cta { display:flex; align-items:center; justify-content:space-between; gap:28px; margin-top:52px; padding:28px 32px; border-radius:20px; background:var(--paper); }
   .article-cta-copy { min-width:0; }
@@ -1062,6 +1140,7 @@ const SUBSCRIBE_CSS = `
   /* on list and article pages the card stands alone below the content */
   .wrap > .nlsub, .post-foot > .nlsub { margin-top: 44px; }
 `;
+const SUBSCRIBE_HEAD = `<style>${SUBSCRIBE_CSS}</style>`;
 
 Deno.serve(async (req) => {
   if (req.method !== 'GET' && req.method !== 'HEAD') {
@@ -1128,7 +1207,7 @@ Deno.serve(async (req) => {
       weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC',
     });
 
-    const head = `<style>${SUBSCRIBE_CSS}</style>
+    const head = `${SUBSCRIBE_HEAD}
 <meta name="description" content="What’s On is plot’s guide to what’s coming, streaming and trending in film and TV, so you can spend less time searching and more time watching.">
 <link rel="canonical" href="${SITE}${FEED_PATH}">
 <meta property="og:title" content="${FEED_SEO_TITLE}">
@@ -1304,7 +1383,8 @@ Deno.serve(async (req) => {
     publisher: { '@type': 'Organization', name: 'plot', url: SITE },
   }).replace(/</g, '\\u003c');
 
-  const head = `<meta name="description" content="${esc(description)}">
+  const head = `${SUBSCRIBE_HEAD}
+<meta name="description" content="${esc(description)}">
 <link rel="canonical" href="${esc(pageUrl)}">
 <meta property="og:type" content="article">
 <meta property="og:title" content="${esc(title)}">
@@ -1347,7 +1427,7 @@ Deno.serve(async (req) => {
     return `<div class="gt-row">
       <a href="${esc(titleHref(r.media_type, rid ?? 0, r.title))}" class="gt-art">${poster ? `<img src="${poster}" alt="" loading="lazy">` : '<span class="gt-ph"></span>'}</a>
       <a href="${esc(titleHref(r.media_type, rid ?? 0, r.title))}" class="gt-name">${esc(r.title)}</a>
-      ${rid ? `<a class="gt-add" href="${APP}/save?media_type=${r.media_type === 'tv' ? 'tv' : 'movie'}&tmdb_id=${rid}&src=whats_on_guide" data-cta="guide_save" aria-label="Add ${esc(r.title)} to my watchlist"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></a>` : ''}
+      ${rid ? `<a class="gt-add" href="${APP}/save?media_type=${r.media_type === 'tv' ? 'tv' : 'movie'}&tmdb_id=${rid}&src=whats_on_guide" data-cta="guide_save" aria-label="Save ${esc(r.title)} to your PLOT"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></a>` : ''}
     </div>`;
   }).join('');
 
@@ -1373,7 +1453,8 @@ Deno.serve(async (req) => {
     : -1;
 
   const wantsModule = (typed.post_type === 'guide' && refs.length > 0) || refs.length === 1;
-  const storyHtml = wantsModule && lead && !inlineTitles ? await storyModule(typed, region, lead.ref) : '';
+  const trailerHtml = lead ? await trailerModule(typed, lead.ref) : '';
+  const storyHtml = trailerHtml || (wantsModule && lead && !inlineTitles ? await storyModule(typed, region, lead.ref) : '');
   const runnerUpHtml = storyHtml && runnerUpAt > 0 ? await storyModule(typed, region, runnerUp!.ref) : '';
   // ~220 wpm, rounded up — enough to set an expectation, not a precise claim.
   const words = body.join(' ').split(/\s+/).filter(Boolean).length;
